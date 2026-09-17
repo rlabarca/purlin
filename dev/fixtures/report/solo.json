@@ -12,11 +12,12 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "audit": 0,
         "failing": 0,
         "held": 0,
         "latest_record": null,
+        "manual": 0,
         "met": 1,
-        "needs_person": 0,
         "passed": 1,
         "rules": 3,
         "stale": 0,
@@ -41,10 +42,11 @@
           "design_hash": null,
           "feature": "login",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -91,10 +93,11 @@
           "design_hash": null,
           "feature": "login",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-2",
@@ -138,10 +141,11 @@
           "design_hash": null,
           "feature": "login",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-3",
@@ -176,11 +180,12 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "audit": 0,
         "failing": 0,
         "held": 0,
         "latest_record": null,
+        "manual": 0,
         "met": 2,
-        "needs_person": 0,
         "passed": 2,
         "rules": 2,
         "stale": 0,
@@ -205,10 +210,11 @@
           "design_hash": null,
           "feature": "invoice",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -255,10 +261,11 @@
           "design_hash": null,
           "feature": "invoice",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-2",
@@ -317,11 +324,12 @@
   "review_list": [],
   "schema_version": 5,
   "summary": {
+    "audit": 0,
     "failing": 0,
     "features": 2,
     "held": 0,
+    "manual": 0,
     "met": 3,
-    "needs_person": 0,
     "passed": 3,
     "rules": 5,
     "stale": 0,

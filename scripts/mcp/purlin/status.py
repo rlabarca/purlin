@@ -195,8 +195,10 @@ def _summary(data):
             second.append('minimum test strength %d%%' % cfg['min_strength'])
         if cfg['ai_review_at'] != 'never':
             second.append('review at risk %s and above' % cfg['ai_review_at'])
-        if summary.get('needs_person'):
-            second.append('%d rules need a person' % summary['needs_person'])
+        if summary.get('manual'):
+            second.append('%d rules with a manual test' % summary['manual'])
+        if summary.get('audit'):
+            second.append('%d rules with a manual audit' % summary['audit'])
         if summary.get('held'):
             second.append('%d rules held' % summary['held'])
     if gate == 'signed':
@@ -247,7 +249,8 @@ def _directives(data, project_root):
     failing = passed.get('failed', 0)
     waiting = passed.get('not run', 0) + passed.get('code changed', 0)
     weak = strong.get('weak', 0)
-    person = (strong.get('needs a person', 0) + signed.get('unsigned', 0)
+    person = (strong.get('manual test', 0) + strong.get('manual audit', 0)
+              + strong.get('held', 0) + signed.get('unsigned', 0)
               + signed.get('stale', 0) + signed.get('held', 0))
 
     if blocked['spec']:

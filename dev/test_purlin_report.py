@@ -556,8 +556,9 @@ def test_the_review_list_counts_what_each_risk_is_waiting_for(browser,
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click('[data-screen="review"]')
     lines = texts(page, '.rsum')
-    assert lines == ['medium0 unsigned·1 stale·0 held·1 needs a person',
-                     'low0 unsigned·0 stale·1 held·0 needs a person']
+    assert lines == [
+        'medium0 unsigned·1 stale·0 held·0 manual test·1 manual audit',
+        'low0 unsigned·0 stale·1 held·1 manual test·0 manual audit']
     page.close()
 
 

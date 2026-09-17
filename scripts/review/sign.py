@@ -23,7 +23,7 @@ closes, and then it makes one signed commit for the signatures and one per
 feature for the holds.
 
 `--note` carries the one line a signer writes where the machine could not
-settle the question: a `@manual` proof, or a model review that could not tell.
+settle the question: a rule reading `manual test` or `manual audit`.
 `--hold` writes the opposite attestation, `<RULE-N>.<hash8>.<holder-slug>.
 hold.json`, a person's statement that the test does not prove the proof as
 written, with the missing case as its reason. A hold only ever withholds, so
@@ -252,9 +252,9 @@ def signable(payload, feature=None, rules=None):
     """Every `(feature, rule)` whose next step is this person, in risk order.
 
     A rule is signable when its signed cell reads `unsigned` or `stale`, or
-    when its strong cell reads `needs a person`: those are the three words
-    that say the machine has gone as far as it can. Everything else is build
-    work and stays on the board.
+    when its strong cell reads `manual test`, `manual audit` or `held`: those
+    are the words that say the machine has gone as far as it can. Everything
+    else is build work and stays on the board.
     """
     found = []
     for entry in (payload or {}).get('features') or ():
@@ -279,7 +279,8 @@ def _needs_a_signature(entry):
     signed = cells.get('signed') or {}
     if signed.get('word') in ('unsigned', 'stale'):
         return True
-    return (cells.get('strong') or {}).get('word') == 'needs a person'
+    return ((cells.get('strong') or {}).get('word')
+            in ('manual test', 'manual audit', 'held'))
 
 
 def _rule_number(rule_id):
@@ -438,7 +439,7 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None):
     result = {'rules': len(entries), 'signed': [], 'cases': [], 'held': [],
               'skipped': [], 'commits': []}
     if not entries:
-        print('Nothing on the review list needs a person.', file=out)
+        print('The review list is empty.', file=out)
         return result
 
     print('Review list: %d rule%s across %d feature%s'

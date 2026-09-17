@@ -47,8 +47,8 @@ found the test does not prove the proof as written:
     specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json
 
 It binds the same hashes and carries the missing case as `reason`. While it is
-current the rule needs a person, and a signature for the same hashes outranks
-it.
+current the rule's strong and signed cells read `held`, and a signature for the
+same hashes outranks it.
 """
 
 import hashlib

@@ -37,7 +37,7 @@ def _payload(items):
 def test_the_list_is_one_line_per_rule_in_review_order():
     payload = _payload(
         [('billing', 'RULE-2', 'low', 'signed', ['unsigned']),
-         ('login', 'RULE-10', 'high', 'strong', ['needs a person']),
+         ('login', 'RULE-10', 'high', 'strong', ['manual audit']),
          ('login', 'RULE-3', 'high', 'signed', ['stale']),
          ('auth', 'RULE-1', 'medium', 'signed', ['unsigned'])])
     lines = scan_module.review_list_text(payload).splitlines()
@@ -49,7 +49,7 @@ def test_the_list_is_one_line_per_rule_in_review_order():
     assert lines[1].split()[:4] == ['high', 'login', 'RULE-3', 'signed']
     assert lines[1].endswith('stale'), lines[1]
     assert lines[2].split()[:4] == ['high', 'login', 'RULE-10', 'strong']
-    assert lines[2].endswith('needs a person'), lines[2]
+    assert lines[2].endswith('manual audit'), lines[2]
     assert lines[3].split()[:4] == ['medium', 'auth', 'RULE-1', 'signed']
     assert lines[4].endswith('unsigned'), lines[4]
     assert scan_module.review_list_text(_payload([])) == \
@@ -65,10 +65,10 @@ def test_one_rule_reads_in_the_singular():
 
 @pytest.mark.proof("records", "PROOF-29", "RULE-25", tier="integration")
 def test_the_scan_prints_the_list_after_the_rollup(tmp_path):
-    """A `@manual` proof is the one thing no machine can settle.
+    """A `@manual` proof is the one thing no machine can run.
 
     The gate is `strong`, so the strong cell exists, and the rule lands on
-    the review list reading `needs a person` with the token `manual`.
+    the review list reading `manual test`.
     """
     source = str(tmp_path / 'source')
     make_project(source)
@@ -91,4 +91,4 @@ def test_the_scan_prints_the_list_after_the_rollup(tmp_path):
             if 'greeting RULE-1' in line]
     assert rows and rows[0][:3] == ['high', 'greeting', 'RULE-1'], text
     assert rows[0][3] == 'strong', text
-    assert rows[0][4] == 'manual', text
+    assert rows[0][4:6] == ['manual', 'test'], text

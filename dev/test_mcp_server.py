@@ -979,19 +979,20 @@ class TestTheStrongCell:
         assert cell['word'] == 'weak', cell
         assert 'asserts_nothing' in cell['findings'], cell
         assert 'asserts_nothing' in cell['reasons'], cell
-
-    @pytest.mark.proof("states", "PROOF-17", "RULE-15")
-    def test_the_brief_settles_level_two_where_the_risk_asks_for_one(self):
-        assert _strong()['word'] == 'needs a person'
-        assert _strong()['reasons'] == ['no brief for the current hashes']
-        unsettled = _strong(brief={'settled': False, 'observations': []})
-        assert unsettled['reasons'] == ['review not settled'], unsettled
         observed = _strong(brief={
             'settled': True,
             'observations': ['The test reads the status code alone.']})
-        assert observed['word'] == 'needs a person'
+        assert observed['word'] == 'weak', observed
         assert observed['reasons'] == [
             'The test reads the status code alone.'], observed
+
+    @pytest.mark.proof("states", "PROOF-17", "RULE-15")
+    def test_the_brief_settles_level_two_where_the_risk_asks_for_one(self):
+        assert _strong()['word'] == 'manual audit'
+        assert _strong()['reasons'] == ['no brief for the current hashes']
+        open_question = _strong(brief={'settled': False, 'observations': []})
+        assert open_question['word'] == 'manual audit', open_question
+        assert open_question['reasons'] == ['review not settled'], open_question
         settled = _strong(brief={'settled': True, 'observations': []})
         assert settled['word'] == 'strong', settled
 
@@ -999,14 +1000,14 @@ class TestTheStrongCell:
     def test_with_no_break_engine_the_threshold_drops_one_level(self):
         assert _strong(risk='medium')['word'] == 'strong'
         widened = _strong(risk='medium', mutation_engine_available=False)
-        assert widened['word'] == 'needs a person', widened
+        assert widened['word'] == 'manual audit', widened
 
     @pytest.mark.proof("states", "PROOF-19", "RULE-16")
-    def test_a_manual_proof_needs_a_person(self):
+    def test_a_manual_proof_asks_for_a_manual_test(self):
         cell = _strong(risk='low', proofs=[
             {'id': 'PROOF-1', 'tier': 'manual', 'env': None, 'text': 'x',
              'findings': [], 'tests': []}])
-        assert cell['word'] == 'needs a person'
+        assert cell['word'] == 'manual test'
         assert cell['reasons'] == ['manual proof'], cell
 
     @pytest.mark.proof("states", "PROOF-23", "RULE-19", tier="integration")
@@ -1041,12 +1042,13 @@ class TestHoldsAndSignatures:
         try:
             made.hold('RULE-2', 'no case for an expired token')
             rule = made.rule('RULE-2')
-            assert rule['cells']['strong']['word'] == 'needs a person'
+            assert rule['cells']['strong']['word'] == 'held'
             assert rule['cells']['strong']['reasons'] == [
                 'held by jane@acme.com: no case for an expired token'], rule
             assert rule['cells']['signed']['word'] == 'held'
             assert rule['flags']['held'] is True
-            assert rule['flags']['needs_person'] is False
+            assert rule['flags']['manual'] is False
+            assert rule['flags']['audit'] is False
         finally:
             made.close()
 
@@ -1229,7 +1231,7 @@ class TestPayload:
         rollup = feature['rollup']
         assert sorted(rollup) == sorted([
             'rules', 'met', 'untested', 'failing', 'passed', 'stale', 'held',
-            'needs_person', 'test_strength', 'latest_record']), rollup
+            'manual', 'audit', 'test_strength', 'latest_record']), rollup
         assert (rollup['rules'], rollup['met']) == (2, 1)
         assert (rollup['passed'], rollup['untested']) == (1, 1), rollup
         assert data['summary']['features'] == 1
@@ -1332,7 +1334,8 @@ class TestTheFixturesAreTheContract:
 
     @pytest.mark.proof("states", "PROOF-34", "RULE-30", tier="integration")
     def test_every_fixture_review_row_uses_the_closed_set(self):
-        allowed = {'unsigned', 'stale', 'held', 'needs a person', 'manual'}
+        allowed = {'unsigned', 'stale', 'held', 'manual test',
+                   'manual audit'}
         for name in ('solo', 'team', 'regulated'):
             for row in self._fixture(name)['review_list']:
                 assert sorted(row) == ['cell', 'feature', 'owner', 'risk',
@@ -1452,7 +1455,7 @@ class TestDriftRoles:
                                                role='qa'))
         assert report['role'] == 'qa'
         assert sorted(report['view']) == [
-            'needs_person', 'review_list_size',
+            'audit', 'manual', 'review_list_size',
             'rules_without_a_negative_case', 'signatures_stale']
 
     @pytest.mark.proof("drift", "PROOF-2", "RULE-1", tier="integration")

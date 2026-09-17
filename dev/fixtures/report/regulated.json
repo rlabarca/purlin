@@ -19,6 +19,7 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "audit": 0,
         "failing": 0,
         "held": 1,
         "latest_record": {
@@ -29,8 +30,8 @@
           "test_strength": 86,
           "timestamp": "2026-09-12T09:14:02Z"
         },
+        "manual": 0,
         "met": 1,
-        "needs_person": 0,
         "passed": 1,
         "rules": 4,
         "signed": 1,
@@ -75,10 +76,11 @@
           "design_hash": null,
           "feature": "login",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -143,10 +145,11 @@
           "design_hash": null,
           "feature": "login",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": true
           },
           "id": "RULE-2",
@@ -206,17 +209,18 @@
               ],
               "settled": null,
               "strength": 86,
-              "word": "needs a person"
+              "word": "held"
             }
           },
           "criterion": null,
           "design_hash": null,
           "feature": "login",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": true,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-3",
@@ -287,10 +291,11 @@
           "design_hash": null,
           "feature": "login",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-4",
@@ -350,6 +355,7 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "audit": 0,
         "failing": 0,
         "held": 0,
         "latest_record": {
@@ -360,10 +366,10 @@
           "test_strength": 64,
           "timestamp": "2026-09-12T09:14:02Z"
         },
+        "manual": 1,
         "met": 0,
-        "needs_person": 0,
-        "passed": 2,
-        "rules": 2,
+        "passed": 3,
+        "rules": 3,
         "signed": 0,
         "stale": 0,
         "strong": 0,
@@ -406,10 +412,11 @@
           "design_hash": null,
           "feature": "invoice",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -477,10 +484,11 @@
           "design_hash": null,
           "feature": "invoice",
           "flags": {
+            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-2",
@@ -511,6 +519,71 @@
           "test_hash": "trule2inv",
           "test_hash_kind": "file",
           "text": "An invoice with no lines totals zero."
+        },
+        {
+          "blocked_by": "strong",
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": null,
+              "word": "passed"
+            },
+            "signed": {
+              "path": null,
+              "reasons": [],
+              "required": false,
+              "signer": null,
+              "word": "not required"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [
+                "manual proof",
+                "strength 64% under 80%"
+              ],
+              "settled": null,
+              "strength": 64,
+              "word": "manual test"
+            }
+          },
+          "criterion": null,
+          "design_hash": null,
+          "feature": "invoice",
+          "flags": {
+            "audit": false,
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "manual": true,
+            "stale": false
+          },
+          "id": "RULE-3",
+          "label": "own",
+          "meets_gate": false,
+          "origin": "pm",
+          "proof_hash": "d4e5f6a7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "proofs": [
+            {
+              "env": null,
+              "findings": [],
+              "id": "PROOF-4",
+              "tests": [],
+              "text": "Raise a credit note against a paid invoice and read the printed note: it names the original invoice number and the reason",
+              "tier": "manual"
+            }
+          ],
+          "risk": "low",
+          "rule_hash": "c3d4e5f6aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "spec": "ready",
+          "test_hash": null,
+          "test_hash_kind": "manual",
+          "text": "A credit note prints the original invoice number and the reason the credit was raised"
         }
       ],
       "scope": [],
@@ -538,6 +611,7 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "audit": 1,
         "failing": 0,
         "held": 0,
         "latest_record": {
@@ -548,8 +622,8 @@
           "test_strength": 90,
           "timestamp": "2026-09-12T09:14:02Z"
         },
+        "manual": 0,
         "met": 0,
-        "needs_person": 1,
         "passed": 1,
         "rules": 1,
         "signed": 0,
@@ -589,17 +663,18 @@
               ],
               "settled": false,
               "strength": 90,
-              "word": "needs a person"
+              "word": "manual audit"
             }
           },
           "criterion": "AC-14",
           "design_hash": "drule1che",
           "feature": "checkout_design",
           "flags": {
+            "audit": true,
             "code_changed": false,
             "failing": false,
             "held": false,
-            "needs_person": true,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -658,6 +733,7 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "audit": 0,
         "failing": 0,
         "held": 0,
         "latest_record": {
@@ -668,8 +744,8 @@
           "test_strength": 82,
           "timestamp": "2026-09-10T17:02:41Z"
         },
+        "manual": 0,
         "met": 0,
-        "needs_person": 0,
         "passed": 0,
         "rules": 1,
         "signed": 0,
@@ -716,10 +792,11 @@
           "design_hash": null,
           "feature": "export",
           "flags": {
+            "audit": false,
             "code_changed": true,
             "failing": false,
             "held": false,
-            "needs_person": false,
+            "manual": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -851,7 +928,7 @@
       "risk": "medium",
       "rule": "RULE-1",
       "why": [
-        "needs a person"
+        "manual audit"
       ]
     },
     {
@@ -863,17 +940,28 @@
       "why": [
         "held"
       ]
+    },
+    {
+      "cell": "strong",
+      "feature": "invoice",
+      "owner": "invoice",
+      "risk": "low",
+      "rule": "RULE-3",
+      "why": [
+        "manual test"
+      ]
     }
   ],
   "schema_version": 5,
   "summary": {
+    "audit": 1,
     "failing": 0,
     "features": 4,
     "held": 1,
+    "manual": 1,
     "met": 1,
-    "needs_person": 1,
-    "passed": 4,
-    "rules": 8,
+    "passed": 5,
+    "rules": 9,
     "signed": 1,
     "stale": 1,
     "strong": 1,

@@ -10,8 +10,8 @@ One project setting decides what this job requires. The gate is read from
             source
     strong  every rule's strong cell is met too: a record CI wrote, test
             strength at or above the project minimum, no finding standing
-            against the proof text or the test body, and nobody holding the
-            rule
+            against the proof text or the test body, no manual test and no
+            manual audit outstanding, and nobody holding the rule
     signed  every rule's signed cell is met too: a person on the signer list
             signed the rule, proof and test hashes
 
@@ -66,11 +66,17 @@ _ENFORCEMENT_NOTE = (
 _SIGNER_LIST_MISSING = (
     '→ signer list missing: run purlin:init --gate signed')
 
+# The strong cell's words for work only a person can do. A rule blocked on one
+# of them is not weak: nothing a build would change moves it.
+_WAITING_WORDS = ('manual test', 'manual audit', 'held')
+
 # One section per cell a rule can be blocked at, in the order the chain reads
 # them. The spec status blocks before the passed cell does, and both mean the
-# same thing to a branch: the rule is not passed.
+# same thing to a branch: the rule is not passed. The strong cell fills two
+# sections, because `weak` is build work and the three waiting words are not.
 _SECTIONS = (('not_passed', 'Not passed', ('spec', 'passed')),
              ('weak', 'Weak', ('strong',)),
+             ('waiting', 'Waiting on a person', ()),
              ('not_signed', 'Not signed', ('signed',)))
 
 
@@ -117,6 +123,7 @@ def check(project_root, payload=None, out=None, as_json=False):
         'met': 0,
         'not_passed': [],
         'weak': [],
+        'waiting': [],
         'not_signed': [],
         'result': 'pass',
     }
@@ -183,9 +190,16 @@ def _collect(payload, result):
                 # the gate, and the passed section is where a reader looks
                 # first.
                 key = 'not_passed'
+            elif key == 'weak' and _cell_word(entry, 'strong') in _WAITING_WORDS:
+                key = 'waiting'
             result[key].append('%s %s: %s'
                                % (entry['feature'], entry['id'],
                                   _why(entry)))
+
+
+def _cell_word(entry, name):
+    """One cell's word, or the empty string where the cell does not exist."""
+    return ((entry.get('cells') or {}).get(name) or {}).get('word') or ''
 
 
 def _why(entry):

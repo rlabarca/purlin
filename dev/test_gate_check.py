@@ -197,13 +197,13 @@ class TestTheStrongGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-9", "RULE-4", tier="integration")
-    def test_a_rule_with_no_brief_needs_a_person(self):
+    def test_a_rule_with_no_brief_waits_on_a_person(self):
         made = project_at('strong', briefs=())
         try:
             code, output = run(made)
             assert code == 1
-            assert 'Weak (1):' in output
-            assert 'login RULE-2: needs a person' in output, output
+            assert 'Waiting on a person (1):' in output, output
+            assert 'login RULE-2: manual audit' in output, output
             assert 'no brief for the current hashes' in output
         finally:
             made.close()
@@ -218,7 +218,8 @@ class TestTheStrongGate:
             commit_as_ci(made.root, 'purlin: record for abc1234')
             code, output = run(made)
             assert code == 1
-            assert 'login RULE-2: needs a person' in output, output
+            assert 'Weak (1):' in output, output
+            assert 'login RULE-2: weak' in output, output
             assert 'never the body the rule names' in output
         finally:
             made.close()
@@ -453,6 +454,7 @@ class TestTheJsonResult:
             assert data['rules'] == 2 and data['met'] == 0
             assert len(data['not_passed']) == 2
             assert data['weak'] == [] and data['not_signed'] == []
+            assert data['waiting'] == []
             assert data['commit'] == made.head()
         finally:
             made.close()

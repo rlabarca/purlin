@@ -21,7 +21,13 @@ WORDS = ("gauge", "HOLLOW", "PROVABLE", "receipt", "platform", "mutation score",
 LITERALS = ("@on(",                     # not a word: the retired scope tag
             "Proof ready", "lowest state", "seven states", "auto-approval", "review queue",
             "purlin:verify", "purlin:review", "purlin:approve", "verify_gate", "verify-gate:",
-            "validated/")
+            "validated/",
+            "needs a person", "needs_person", "needs-a-person")
+
+# The review list is the one place a person is needed, and its header is the
+# one sentence that may still say so. A line is stepped over only when every
+# hit on it falls inside one of these phrases.
+ALLOWED_PHRASES = ("rules need a person", "rule needs a person")
 CASED = (re.compile(r"\bPages\b"),)     # capitalised only; "pages" of a document is fine
 MD_ONLY = (re.compile(r"\bmode\b", re.I),)  # "mode" is only retired in prose
 
@@ -73,6 +79,29 @@ def _tracked():
             and not any(d in p for d in PENDING_DELETE)]
 
 
+def _allowed_spans(probe):
+    """Where the phrases the review list's header may use sit in one line."""
+    spans = []
+    for phrase in ALLOWED_PHRASES:
+        start = probe.find(phrase)
+        while start >= 0:
+            spans.append((start, start + len(phrase)))
+            start = probe.find(phrase, start + 1)
+    return spans
+
+
+def _spans_of(check, probe):
+    """Where one check matches in one line, as `(start, end)` pairs."""
+    if not isinstance(check, str):
+        return [match.span() for match in check.finditer(probe)]
+    found = []
+    start = probe.find(check)
+    while start >= 0:
+        found.append((start, start + len(check)))
+        start = probe.find(check, start + 1)
+    return found
+
+
 def test_no_retired_terms():
     findings = []
     for rel in _tracked():
@@ -89,9 +118,12 @@ def test_no_retired_terms():
             if marker and line.rstrip().endswith(marker):
                 continue
             probe = line.replace("sys.platform", "")  # the one allowed literal
+            spans = _allowed_spans(probe)
             for check in checks:
-                hit = check in probe if isinstance(check, str) else check.search(probe)
-                if hit:
+                for start, end in _spans_of(check, probe):
+                    if any(s <= start and end <= e for s, e in spans):
+                        continue
                     term = check if isinstance(check, str) else check.pattern
                     findings.append("%s:%d: %s" % (rel, lineno, term))
+                    break
     assert not findings, "retired terms found:\n" + "\n".join(findings)

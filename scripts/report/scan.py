@@ -103,9 +103,9 @@ def rollup_text(project_root, payload):
     """The rollup: the gate, one line per bucket, and the newest record.
 
     A bucket is the one tile a rule is counted in, so the counts add up to
-    the rule total and a reader can check them. The flags `stale`, `held` and
-    `needs a person` are counted beside the buckets, never instead of them,
-    and each is printed only when it stands.
+    the rule total and a reader can check them. The flags `stale`, `held`,
+    `manual` and `audit` are counted beside the buckets, never instead of
+    them, and each is printed only when it stands.
     """
     summary = payload['summary']
     gate = payload['gate']['gate']
@@ -126,9 +126,12 @@ def rollup_text(project_root, payload):
     if summary.get('held'):
         lines.append('%d rules held: a person said a test does not prove '
                      'its proof.' % summary['held'])
-    if summary.get('needs_person'):
-        lines.append('%d rules need a person: the machine could not settle '
-                     'them.' % summary['needs_person'])
+    if summary.get('manual'):
+        lines.append('%d rules have a manual test: a person runs it and a '
+                     'signature records what they saw.' % summary['manual'])
+    if summary.get('audit'):
+        lines.append('%d rules need a manual audit: the model review could '
+                     'not settle them.' % summary['audit'])
 
     record = newest_record(payload)
     lines.append('')
@@ -157,7 +160,7 @@ def review_list_text(payload):
     rule first, then by feature and rule number, which is the order the
     payload already sorts them in and the order a person works them in. The
     `why` tokens are the closed set `unsigned`, `stale`, `held`,
-    `needs a person` and `manual`.
+    `manual test` and `manual audit`.
     """
     entries = []
     for item in payload.get('review_list') or ():

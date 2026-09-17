@@ -478,9 +478,12 @@ def _role_views(report, data, file_entries):
                              for feature, rule in rules
                              if rule['flags'].get('stale')],
         'review_list_size': len(data.get('review_list', [])),
-        'needs_person': ['%s/%s' % (feature['name'], rule['id'])
-                         for feature, rule in rules
-                         if rule['flags'].get('needs_person')],
+        'manual': ['%s/%s' % (feature['name'], rule['id'])
+                   for feature, rule in rules
+                   if rule['flags'].get('manual')],
+        'audit': ['%s/%s' % (feature['name'], rule['id'])
+                  for feature, rule in rules
+                  if rule['flags'].get('audit')],
         'rules_without_a_negative_case': [
             '%s/%s' % (feature['name'], rule['id'])
             for feature, rule in rules

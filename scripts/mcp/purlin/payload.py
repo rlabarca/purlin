@@ -17,7 +17,7 @@ they all read instead.
       "gate": {"gate": "strong", "min_strength": 70, "sign_at": null, ...},
       "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
                   "untested": 2, "passed": 4, "strong": 1, "signed": 1,
-                  "stale": 1, "held": 1, "needs_person": 1},
+                  "stale": 1, "held": 1, "manual": 0, "audit": 1},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "requires": [], "source": null, "pinned": null,
@@ -232,10 +232,11 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
     return entry, rollup
 
 
-# The words a review row carries, one per thing that put the rule in front of
-# a person. `manual` replaces `needs a person` when a `@manual` proof is why.
-_WHY_BY_WORD = {'unsigned': 'unsigned', 'stale': 'stale', 'held': 'held',
-                'needs a person': 'needs a person'}
+# The closed set of words a review row carries, one per thing that put the
+# rule in front of a person. The token is the blocking cell's own word, so a
+# row says the same thing the cell does.
+_WHY_AT_STRONG = ('manual test', 'manual audit', 'held')
+_WHY_AT_SIGNED = ('unsigned', 'stale', 'held')
 
 
 def _review_entry(feature, owner, rule, cfg):
@@ -252,18 +253,11 @@ def _review_entry(feature, owner, rule, cfg):
         return None
     cell = (rule.get('cells') or {}).get(blocked) or {}
     word = cell.get('word')
-    if word not in _WHY_BY_WORD:
+    allowed = _WHY_AT_STRONG if blocked == 'strong' else _WHY_AT_SIGNED
+    if word not in allowed:
         return None
-    if blocked == 'strong' and word != 'needs a person':
-        return None
-    why = _WHY_BY_WORD[word]
-    if why == 'needs a person':
-        if (rule.get('flags') or {}).get('held'):
-            why = 'held'
-        elif 'manual proof' in (cell.get('reasons') or ()):
-            why = 'manual'
     return {'feature': feature, 'owner': owner, 'rule': rule['id'],
-            'risk': rule['risk'], 'cell': blocked, 'why': [why]}
+            'risk': rule['risk'], 'cell': blocked, 'why': [word]}
 
 
 def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,

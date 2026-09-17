@@ -15,7 +15,7 @@ decides how many rows exist: a cell above the gate is absent, not empty.
             the project minimum, no finding standing against the proof text or
             the test body, a settled model review where the risk asks for one,
             and nobody holding the rule.
-            `strong`, `weak`, `needs a person`.
+            `strong`, `weak`, `manual test`, `manual audit`, `held`.
 
     signed  Met when a named person signed the rule, proof and test hashes,
             or when the rule's risk is below `sign_at` and no hold is current.
@@ -33,7 +33,7 @@ returns:
      'meets_gate': True,
      'blocked_by': None,
      'flags': {'failing': False, 'stale': False, 'held': False,
-               'needs_person': False, 'code_changed': False}}
+               'manual': False, 'audit': False, 'code_changed': False}}
 
 A rule's **bucket** is the one tile it is counted in, and the two flags
 `stale` and `held` are counted beside the buckets, never instead of them.
@@ -55,8 +55,9 @@ CELLS = ('passed', 'strong', 'signed')
 # The one tile a rule is counted in, weakest first.
 BUCKETS = ('untested', 'failing', 'passed', 'strong', 'signed')
 
-# The two flags counted beside the buckets, and the two counted only in a rule.
-FLAGS = ('failing', 'stale', 'held', 'needs_person', 'code_changed')
+# The two flags counted beside the buckets, and the three read only on a rule.
+# `manual` and `audit` are the two strong-cell words a person answers.
+FLAGS = ('failing', 'stale', 'held', 'manual', 'audit', 'code_changed')
 
 # Where a pass came from, most trusted first.
 SOURCES = ('ci', 'developer', 'local')
@@ -135,13 +136,13 @@ def rule_cells(inp, cfg):
         'failing': passed['word'] == 'failed',
         'code_changed': passed['word'] == 'code changed',
         # A hold and a signature are facts about committed files, so they are
-        # read the same at every gate. Needing a person is the strong cell's
-        # word, and that cell does not exist under `passed`.
+        # read the same at every gate. A manual test and a manual audit are
+        # the strong cell's own words, and that cell does not exist under
+        # `passed`.
         'held': bool(holds) and not counting,
         'stale': bool(signatures) and not current,
-        'needs_person': (gate != 'passed'
-                         and strong['word'] == 'needs a person'
-                         and not (holds and not counting)),
+        'manual': gate != 'passed' and strong['word'] == 'manual test',
+        'audit': gate != 'passed' and strong['word'] == 'manual audit',
     }
 
     met = _met(spec, cells, gate)
@@ -164,7 +165,7 @@ def _passed_cell(inp, cfg):
 
     A `@manual` proof declares that no test is written for it and no proof
     entry is ever produced, so level 1 has no question to ask of it: it is
-    read out here and the question moves to level 2, where `needs a person` is
+    read out here and the question moves to level 2, where `manual test` is
     the honest word and a signature with a note is the evidence.
     """
     gate = cfg.gate if cfg else CELLS[0]
@@ -381,14 +382,22 @@ def _strong_cell(inp, cfg, passed, holds, counting_signatures):
         cell['word'] = 'strong'
     if _test_findings(brief):
         cell['word'] = 'weak'
+    # A review that settled and still observed something answered the
+    # question: the test does not read what the proof names, which is build
+    # work, so the observation lands in the weak cell rather than on a
+    # person's list.
+    observed = cell['observations'] if cell['settled'] is True else []
+    if observed:
+        cell['word'] = 'weak'
 
-    person = _needs_person(inp, cfg, brief, holds, counting_signatures)
-    if person:
-        cell['word'] = 'needs a person'
+    word, person = _waiting_on_a_person(
+        inp, cfg, brief, holds, counting_signatures)
+    if word:
+        cell['word'] = word
 
     # A cell that reads `strong` names only what a reader could not work out
     # from the word: nothing at all where an engine measured the strength.
-    reasons = list(person) + list(notes)
+    reasons = list(person) + list(notes) + list(observed)
     if cell['word'] != 'strong':
         for finding in findings:
             if finding not in reasons:
@@ -397,35 +406,35 @@ def _strong_cell(inp, cfg, passed, holds, counting_signatures):
     return cell
 
 
-def _needs_person(inp, cfg, brief, holds, counting_signatures):
-    """The reasons level 2 cannot be settled without a person.
+def _waiting_on_a_person(inp, cfg, brief, holds, counting_signatures):
+    """`(word, reasons)` when level 2 cannot be settled without a person.
 
-    A signature for the current hashes outranks every one of them: under
-    `strong` a signature from anyone counts, because what it clears there is a
-    question the machine could not settle.
+    Each word names the work the person has to do. `held` is a colleague's
+    committed statement, `manual test` is a proof no test can back, and
+    `manual audit` is a review the model could not settle. A signature for the
+    current hashes outranks all three: under `strong` a signature from anyone
+    counts, because what it clears there is a question the machine could not
+    settle. The word is None when nobody is waited on.
     """
     if counting_signatures:
-        return []
+        return None, []
     if holds:
-        return ['held by %s: %s' % (hold.get('signer') or hold.get('holder')
-                                    or 'a person', hold.get('reason') or '')
-                for hold in holds]
-    reasons = []
+        return 'held', ['held by %s: %s'
+                        % (hold.get('signer') or hold.get('holder')
+                           or 'a person', hold.get('reason') or '')
+                        for hold in holds]
     if any((proof.get('tier') or '') == 'manual' for proof in
            inp.get('proofs') or ()):
-        reasons.append('manual proof')
+        return 'manual test', ['manual proof']
     risk = inp.get('risk') or 'low'
     threshold = review_threshold(
         cfg, inp.get('mutation_engine_available', True))
     if gate_module.risk_at_or_above(risk, threshold):
         if not brief:
-            reasons.append('no brief for the current hashes')
-        elif brief.get('settled') is not True:
-            reasons.append('review not settled')
-        else:
-            reasons.extend(str(line) for line in
-                           (brief.get('observations') or ()))
-    return reasons
+            return 'manual audit', ['no brief for the current hashes']
+        if brief.get('settled') is not True:
+            return 'manual audit', ['review not settled']
+    return None, []
 
 
 def _findings(proofs):
@@ -580,13 +589,13 @@ def feature_rollup(rule_results, gate='passed', latest_record=None,
     """One feature's rollup over `{rule_ref: rule_cells result}`.
 
     Carries how many rules the feature has, how many meet the gate, one count
-    per bucket the gate reaches, the stale, held and needs-a-person counts,
-    the latest record and the test strength.
+    per bucket the gate reaches, the stale, held, manual and audit counts, the
+    latest record and the test strength.
     """
     keys = bucket_keys(gate)
     counts = {key: 0 for key in keys}
     met = 0
-    stale = held = needs_person = 0
+    stale = held = manual = audit = 0
     for result in rule_results.values():
         bucket = result.get('bucket') or 'untested'
         if bucket not in counts:
@@ -599,11 +608,12 @@ def feature_rollup(rule_results, gate='passed', latest_record=None,
         flags = result.get('flags') or {}
         stale += 1 if flags.get('stale') else 0
         held += 1 if flags.get('held') else 0
-        needs_person += 1 if flags.get('needs_person') else 0
+        manual += 1 if flags.get('manual') else 0
+        audit += 1 if flags.get('audit') else 0
     rollup = {'rules': len(rule_results), 'met': met}
     rollup.update(counts)
-    rollup.update({'stale': stale, 'held': held, 'needs_person': needs_person,
-                   'test_strength': test_strength,
+    rollup.update({'stale': stale, 'held': held, 'manual': manual,
+                   'audit': audit, 'test_strength': test_strength,
                    'latest_record': latest_record})
     return rollup
 
@@ -614,10 +624,10 @@ def project_rollup(feature_rollups, gate='passed'):
     summary = {'features': len(feature_rollups), 'rules': 0, 'met': 0}
     for key in keys:
         summary[key] = 0
-    for name in ('stale', 'held', 'needs_person'):
+    for name in ('stale', 'held', 'manual', 'audit'):
         summary[name] = 0
     for rollup in feature_rollups.values():
-        for key in ('rules', 'met', 'stale', 'held', 'needs_person'):
+        for key in ('rules', 'met', 'stale', 'held', 'manual', 'audit'):
             summary[key] += rollup.get(key, 0)
         for key in keys:
             summary[key] += rollup.get(key, 0)

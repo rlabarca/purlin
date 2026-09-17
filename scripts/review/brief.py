@@ -14,8 +14,8 @@ What it ends with is four things and no judgment: the test strength beside the
 project minimum, the free-check findings under the names
 `references/review_criteria.md` gives them, the model review's observations one
 sentence at a time, and whether the review settled the question. A rule whose
-brief settled with nothing observed is one the machine could read; anything
-else needs a person.
+brief settled with nothing observed is one the machine could read; a review
+that could not settle leaves the strong cell reading `manual audit`.
 
 The brief lands beside the records, as
 `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, with a text rendering

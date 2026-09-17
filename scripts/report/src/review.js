@@ -14,15 +14,15 @@ var WHY_SENTENCES = {
   'stale': 'Its signature no longer matches the rule, proof and test it was '
     + 'written against.',
   'held': 'A person holds it: the test does not prove the proof.',
-  'needs a person': 'The machine could not settle it.',
-  'manual': 'Its proof is @manual, so a person states what they saw.'
+  'manual test': 'Its proof is @manual, so a person runs the test and states '
+    + 'what they saw.',
+  'manual audit': 'The model review could not settle it, so a person judges '
+    + 'the proof against the test.'
 };
 
-/* Which of the four counts a token lands in. `manual` is a reason a person is
-   asked, so it counts with the rest of them. */
-var WHY_COUNTS = [['unsigned', 'unsigned'], ['stale', 'stale'],
-                  ['held', 'held'], ['needs a person', 'needs a person'],
-                  ['manual', 'needs a person']];
+/* The five counts the risk summary carries, in the order it prints them. Each
+   token counts under its own name, because each names different work. */
+var WHY_COUNTS = ['unsigned', 'stale', 'held', 'manual test', 'manual audit'];
 
 function shortText(text) {
   var value = String(text == null ? '' : text);
@@ -85,7 +85,7 @@ function reviewOrder(entries) {
   return first.concat(rest);
 }
 
-/* One line per risk that has a row, with the four counts that say what kind
+/* One line per risk that has a row, with the five counts that say what kind
    of answer each rule is waiting for. */
 function riskSummary(entries) {
   var lines = RISKS.map(function (risk) {
@@ -96,15 +96,13 @@ function riskSummary(entries) {
     var totals = {};
     group.forEach(function (entry) {
       (entry.why || []).forEach(function (token) {
-        WHY_COUNTS.forEach(function (pair) {
-          if (pair[0] === token) {
-            totals[pair[1]] = (totals[pair[1]] || 0) + 1;
-          }
-        });
+        if (WHY_COUNTS.indexOf(token) >= 0) {
+          totals[token] = (totals[token] || 0) + 1;
+        }
       });
     });
     return '<p class="rsum">' + riskTag(risk)
-      + ['unsigned', 'stale', 'held', 'needs a person'].map(function (name) {
+      + WHY_COUNTS.map(function (name) {
         var n = totals[name] || 0;
         return '<span class="' + (n ? 'sec' : 'muted') + '"><b>' + n
           + '</b> ' + esc(name) + '</span>';

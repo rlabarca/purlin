@@ -1,8 +1,8 @@
 """Tests for which rules the review list holds, and in what order.
 
-The review list is what still needs a person: a rule blocked at the strong
-cell by a question the machine could not settle, and a rule blocked at the
-signed cell. A rule with no test is build work and stays on the board.
+The review list is what a person still has to answer: a rule blocked at the
+strong cell by work only a person can do, and a rule blocked at the signed
+cell. A rule with no test is build work and stays on the board.
 
 The throwaway project holds one rule for each row the list can carry, and one
 that must never be on it. `dev/test_mcp_server.py` owns the project fixture.
@@ -108,13 +108,13 @@ def test_the_list_is_empty_under_the_passed_gate(listed):
 
 @pytest.mark.proof("states", "PROOF-34", "RULE-30", tier="integration")
 def test_every_why_is_one_of_the_five_words(listed):
-    allowed = {'unsigned', 'stale', 'held', 'needs a person', 'manual'}
+    allowed = {'unsigned', 'stale', 'held', 'manual test', 'manual audit'}
     rows = {rule: why for rule, _cell, why in _rows(listed.payload())}
     for why in rows.values():
         assert set(why) <= allowed, why
     assert rows['RULE-1'] == ('stale',)
     assert rows['RULE-2'] == ('held',)
-    assert rows['RULE-3'] == ('manual',), 'a @manual proof names itself'
+    assert rows['RULE-3'] == ('manual test',), 'a @manual proof names itself'
     assert rows['RULE-5'] == ('unsigned',)
 
 
@@ -143,6 +143,6 @@ def test_a_global_anchor_rule_is_named_once():
         entries = [(e['feature'], e['rule']) for e in data['review_list']]
         assert sorted(entries) == [('login', 'RULE-1'),
                                    ('security', 'RULE-1')], entries
-        assert data['summary']['needs_person'] == 2, data['summary']
+        assert data['summary']['audit'] == 2, data['summary']
     finally:
         made.close()

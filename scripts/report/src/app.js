@@ -34,7 +34,8 @@ var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
 var CELL_TONES = {'ready': 'pass', 'drafted': 'idle',
                   'passed': 'pass', 'failed': 'fail', 'no test': 'warn',
                   'not run': 'warn', 'code changed': 'warn',
-                  'strong': 'pass', 'weak': 'warn', 'needs a person': 'warn',
+                  'strong': 'pass', 'weak': 'warn',
+                  'manual test': 'warn', 'manual audit': 'warn',
                   'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail',
                   'held': 'warn', 'not required': 'idle'};
 

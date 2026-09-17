@@ -695,7 +695,7 @@ class TestWhatIsSignable:
             made.close()
 
     @pytest.mark.proof("signatures", "PROOF-30", "RULE-16", tier="integration")
-    def test_a_rule_needing_a_person_is_signable_under_the_review_gate(self):
+    def test_a_rule_waiting_on_a_person_is_signable_under_the_review_gate(self):
         made = Project(gate=REVIEW_GATE, config={'min_strength': 50})
         try:
             made.proofs()
@@ -703,7 +703,7 @@ class TestWhatIsSignable:
             commit_as_ci(made.root)
             assert sign_module.signable(made.payload()) == [
                 ('login', 'RULE-2')], (
-                'the high-risk rule has no brief, so it needs a person')
+                'the high-risk rule has no brief, so a person audits it')
         finally:
             made.close()
 

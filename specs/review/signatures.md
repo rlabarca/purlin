@@ -29,7 +29,7 @@
 - RULE-13: `--note` puts one line on the signature, for a `@manual` proof or a review the model could not settle; `--note` with no rule named, or with no line, exits 2 [risk: medium] [origin: eng]
 - RULE-14: Under `passed` the command writes no signature, names what `purlin:init --gate strong` would add and exits 2 [risk: high] [origin: eng]
 - RULE-15: Under `strong` a signature on a rule that needs none says a signature is required only under `signed`, and writes it anyway [risk: medium] [origin: eng]
-- RULE-16: A rule is signable when its signed cell reads `unsigned` or `stale`, or when its strong cell reads `needs a person`, and in no other case [risk: high] [origin: eng]
+- RULE-16: A rule is signable when its signed cell reads `unsigned` or `stale`, or when its strong cell reads `manual test`, `manual audit` or `held`, and in no other case [risk: high] [origin: eng]
 - RULE-17: With no signing configured the command writes no signature, exits 1 and prints the three git config commands that set signing up [risk: medium] [origin: eng]
 - RULE-18: One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule signed [risk: high] [origin: eng]
 - RULE-19: A batch spanning more than one feature names each feature with its own rules in the subject [risk: low] [origin: eng]
