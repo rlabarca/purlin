@@ -1,0 +1,83 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:39:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "950c499feb4a06586a8ed4607dbf584ee1e2adb84bf0120770f2e03e6e0bc988",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-18",
+      "text": "Open the regulated fixture; verify the tab reads `Review list (4)`, open it and verify the heading reads `4 rules need a person`, that the groups read `medium risk`, `low risk` in that order with the counts `(2)`, `(2)`, that the 4 rows are listed in the order login `RULE-2`, checkout_design `RULE-1`, login `RULE-3`, invoice `RULE-3`, that the first carries the rule text `Five failed attempts lock the account for fifteen minutes.`, the risk `medium` and the word `STALE`, and that clicking it opens a screen whose heading names `RULE-2`",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-36",
+      "text": "Open the regulated fixture and open the review list; verify the risk summary reads 2 lines, `medium` with `0 unsigned`, `1 stale`, `0 held`, `0 manual test` and `1 manual audit`, and `low` with `0 unsigned`, `0 stale`, `1 held`, `1 manual test` and `0 manual audit`",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-37",
+      "text": "Open the solo fixture, whose gate is `passed`; verify the only tab on screen reads `Board`",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T123937Z-df84acf-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-18",
+  "rule_hash": "af6de4ca980dd76e3a8ad3f99b9c0618bacfcf7ffb635afd5ba25c393f354f47",
+  "rule_text": "The review list names how many rules need a person, summarises each risk with its counts of unsigned, stale, held, manual test and manual audit, and groups the rows high risk first with a count per group and stale or held first inside a group; every row carries the feature, the rule id, the rule's text cut to one line, the risk tag, the blocking cell's word as the pill the board draws, and opens the rule screen when clicked. Under the `passed` gate the review list is not offered at all",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d43d984b5b4bb0101ccad6c98b32731de84d16cb7073c8a149f7a7b00aab920d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_review_list_is_ordered_by_risk(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    assert 'Review list (4)' in page.inner_text('.tabs')\n    page.click('[data-screen=\"review\"]')\n    assert '4 rules need a person' in page.inner_text('h1')\n    assert texts(page, '.group .gt') == ['medium risk', 'low risk']\n    assert texts(page, '.group .muted') == ['(2)', '(2)']\n    cells = review_cells(page)\n    assert len(cells) == 4\n    # Stale first inside the medium group, whatever order the payload holds.\n    assert [(row[0], row[1]) for row in cells] == [\n        ('login', 'RULE-2'), ('checkout_design', 'RULE-1'),\n        ('login', 'RULE-3'), ('invoice', 'RULE-3')]\n    assert cells[0][2] == (\n        'Five failed attempts lock the account for fifteen minutes.')\n    assert cells[0][3] == 'medium'\n    assert cells[0][4] == 'STALE'\n    page.click('.rev')\n    assert 'RULE-2' in page.inner_text('h1')\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_review_list_is_ordered_by_risk",
+      "proof": "PROOF-18",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_review_list_counts_what_each_risk_is_waiting_for(browser,\n                                                              tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-screen=\"review\"]')\n    lines = texts(page, '.rsum')\n    assert lines == [\n        'medium0 unsigned\u00b71 stale\u00b70 held\u00b70 manual test\u00b71 manual audit',\n        'low0 unsigned\u00b70 stale\u00b71 held\u00b71 manual test\u00b70 manual audit']\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_review_list_counts_what_each_risk_is_waiting_for",
+      "proof": "PROOF-36",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_review_list_is_absent_under_the_passed_gate(browser, tmp_path):\n    \"\"\"Nothing asks a person under `passed`, so nothing offers the tab.\"\"\"\n    page = open_board(browser, tmp_path, payload_named('solo'))\n    assert texts(page, '.tabs button') == ['Board']\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_review_list_is_absent_under_the_passed_gate",
+      "proof": "PROOF-37",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "cda3c226aa3229299013dd06a3167d487a4875885b607fee4d80614651c36beb"
+}

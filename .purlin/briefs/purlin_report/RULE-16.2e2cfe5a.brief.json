@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:39:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8c7595a0e3c88fab298ffc0da504dd7cb411652f8f1343ee670d0ed5654439d5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-16",
+      "text": "Open the regulated fixture, whose payload names a git host, and open `RULE-1`; verify the spec path is a link whose address begins `https://github.com/acme/ledger/blob/` and that the signature file `RULE-1.1a2b3c4d.jane-doe.json` is a link too. Open the solo fixture, which names no remote, and open `RULE-1`; verify the screen holds zero links and still shows the text `specs/auth/login.md`",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T123937Z-df84acf-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-16",
+  "rule_hash": "252192aeef570816a3c4b8e4d083dc5eb1346e1674bcf3c04da89c8263487e0c",
+  "rule_text": "Where the payload names a git host the page can address, the spec file, the record and each signature file are links to that host at the payload's commit; where it names no remote the same paths stay plain text and nothing on the screen is a link",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d8e271a5ecb81689135afb35526a4b5fd86fbc9e224d14cf5bac2f13f30e8b9e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_with_no_remote_has_no_links(browser, tmp_path):\n    \"\"\"The solo fixture names no remote, so paths stay plain text.\"\"\"\n    page = open_board(browser, tmp_path, payload_named('solo'))\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-1\"]')\n    assert page.query_selector_all('.wrap a') == []\n    assert 'specs/auth/login.md' in page.inner_text('.wrap')\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_a_rule_with_no_remote_has_no_links",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rule_screen_links_to_the_git_host(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-1\"]')\n    href = page.get_attribute('a[href*=\"specs/auth/login.md\"]', 'href')\n    assert href.startswith('https://github.com/acme/ledger/blob/')\n    assert page.query_selector('a[href*=\"RULE-1.1a2b3c4d.jane-doe.json\"]')\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_rule_screen_links_to_the_git_host",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2e2cfe5aef07dc7559b8934525d61511878b033f2880e1329d6d5914a6bf2bf4"
+}

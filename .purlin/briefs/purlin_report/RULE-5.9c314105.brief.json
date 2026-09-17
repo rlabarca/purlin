@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:39:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5cb297f8db0fda229d27fb58ce17aba5d2db1adb1e2a54c1fa47c7772bad93c4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "Run the build and verify the page contains no `<link` element, no `@import`, no `fetch(`, and no `src` or `href` beginning `https:` or `http:`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T123937Z-df84acf-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "7c7666e671e646cb22250b8b99bd1e0eb9919307547da0cf43fb3429a6859af8",
+  "rule_text": "The page asks nothing of anything outside itself: no stylesheet link, no style import, no fetch, and no source or link address on another host",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "20e746ca70701220956ba1510003c1ee3bf99556dd193a07d50fd1ada8ea34bb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_shadow_no_gradient_no_emoji_and_no_outside_request(page_text):\n    \"\"\"The page opens from a disk with no network behind it.\"\"\"\n    inside, outside = token_block(page_text)\n    assert 'box-shadow' not in outside\n    assert 'gradient' not in page_text\n    assert not re.search(u'[\\U0001F300-\\U0001FAFF\u2600-\u27bf]', page_text)\n    # Nothing is fetched: no stylesheet link, no remote script or image, no\n    # request of any kind. The page is the whole page.\n    assert '<link' not in page_text\n    assert '@import' not in page_text\n    assert 'fetch(' not in page_text\n    assert not re.search(r'(?:src|href)\\s*=\\s*\"https?:', page_text)",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_no_shadow_no_gradient_no_emoji_and_no_outside_request",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9c314105168cdc113716516c68e8364e658b6bbce26bcd6cdcdfe5d3f56bc7d5"
+}

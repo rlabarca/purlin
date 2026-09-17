@@ -1,0 +1,84 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-17T12:39:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "0eacdce04a01e154132b91c1c96b58a5b56bf8a20e28c2ecb93ec7180b5491ed",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-1",
+      "text": "Call `write_record()` with a record whose commit is `4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7` and a runner email `ada@example.com`; verify the returned path is `.purlin/records/greeting/<timestamp>-4f1c2ab-ada.json`, that the reader parses the four parts back out of it, that `os_name=\"windows\"` adds the `-windows` tail and sets the file's `os` field to `windows`, and that the dict the caller handed over is not mutated",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "4549b1ee0a6c45f25b875f77878928ee1e11ad65bd9e29312d2993bddf638004",
+  "rule_text": "A record is written to `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`, where `<runner>` is `ci` or the local part of the committer's email, and the `runner`, `os` and `timestamp` fields inside the file are set to match the name rather than left as the caller handed them over",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "dfc749f1992d4dbf59641eae685ec12582aaba933be159d4ef6522a8db3dc6cd",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_file_name_carries_the_run(project):\n    when = datetime(2026, 9, 13, 12, 0, 0)\n    name = records_module.record_filename(\n        '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1', 'ada@example.com', 'linux', when)\n    assert name == '20260913T120000Z-4f1c2ab-ada-linux.json'\n    parts = reader.record_name_parts(name)\n    assert parts == ('20260913T120000Z', '4f1c2ab', 'ada', 'linux')",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_file_name_carries_the_run",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_runner_slug_is_ci_or_the_email_local_part(project):\n    when = datetime(2026, 9, 13, 12, 0, 0)\n    assert records_module.record_filename('4f1c2ab', 'ci', None, when) == (\n        '20260913T120000Z-4f1c2ab-ci.json')\n    assert records_module.record_filename(\n        '4f1c2ab', 'Rich.LaBarca+purlin@example.com', None, when) == (\n        '20260913T120000Z-4f1c2ab-rich-labarca-purlin.json')",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_runner_slug_is_ci_or_the_email_local_part",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_write_record_does_not_mutate_what_the_run_handed_it(project):\n    original = record()\n    records_module.write_record(project, original, 'ada@example.com', 'linux')\n    assert 'runner' not in original\n    assert 'os' not in original",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_write_record_does_not_mutate_what_the_run_handed_it",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_write_record_names_the_operating_system_of_a_matrix_job(project):\n    path = records_module.write_record(project, record(), 'ci', 'windows')\n    assert path.endswith('-ci-windows.json')\n    with open(os.path.join(project, path), encoding='utf-8') as handle:\n        assert json.load(handle)['os'] == 'windows'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_write_record_names_the_operating_system_of_a_matrix_job",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_write_record_returns_a_path_the_reader_parses(project):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    assert path.startswith('.purlin/records/greeting/')\n    assert reader.record_name_parts(os.path.basename(path)) is not None\n    with open(os.path.join(project, path), encoding='utf-8') as handle:\n        written = json.load(handle)\n    assert written['runner'] == 'ada'\n    assert written['os'] is None\n    assert written['timestamp'].endswith('Z')\n    assert written['feature'] == 'greeting'\n    assert written['proofs'][0]['id'] == 'PROOF-1'",
+      "file": "dev/test_records.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_write_record_returns_a_path_the_reader_parses",
+      "proof": "PROOF-1",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    }
+  ],
+  "triple_hash": "66bfeac653ccd25100ff35830ca72b80a6a01f7f8fcdb98cbc15a2a2dcf4576a"
+}

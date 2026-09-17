@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:39:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5aab9b95238846a4510285eee56406c7204b628edf879d1f4c5bc7dbe7b01e00",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Open the regulated fixture and open `RULE-4`, whose proof is scoped to one operating system with no record from it; verify the screen reads `windows: no record yet` and does not read `no negative case`",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T123937Z-df84acf-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "9724de50b673f7dfc4278cf70ae19983818090d6c0484abce7263cda0ad0f397",
+  "rule_text": "A rule whose proof names an operating system that no counting record came from says so on its screen, naming that system, rather than reading as proved",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "570e6eb51d4b31b430c809b90a9888c8c8a27680f45448b541a7e66757e3440e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_waiting_on_an_operating_system_says_so(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-4\"]')\n    body = page.inner_text('.wrap')\n    assert 'windows: no record yet' in body\n    assert 'no negative case' not in body\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_a_rule_waiting_on_an_operating_system_says_so",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "23d4ecec909acd7fa45ef1f0073c9405e77537a7ed43f56d403e941b51b569e9"
+}

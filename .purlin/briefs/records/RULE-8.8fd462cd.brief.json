@@ -1,0 +1,70 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-17T12:39:53Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "be43f40ab2818ae899001f3823422ecb1e66a9f755798a4183bb6d5ed9b3fb6b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "With the Azure DevOps build variables set, call `commit_records(identity=\"ci\")`; verify the POST body names `refs/heads/<branch>`, carries the ref's current `oldObjectId` and one `add` change holding the record's text. Refuse the first push with HTTP 409; verify it reads the ref again and retries. With `GITHUB_HEAD_REF=pr-branch` set, verify the branch used is `pr-branch`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "8fdfea580ff2d638c1e552fc767df6910301f3d84f92b5271eb22114898395a1",
+  "rule_text": "On Azure DevOps the record is pushed through the Pushes API against the ref's current object id, retried when that id is stale, and the branch is the pull request's head branch when the run has one",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "76e941d579b85e52c8a32735ce25b4ef44949431c75639764e707cda339ab9d4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_azure_push_retries_when_the_object_id_is_stale(project, azure_env,\n                                                            monkeypatch):\n    host = FakeHost(fail_patch=1, azure=True)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    assert host.patched == 2\n    assert len([url for url in host.urls('GET') if '/refs?' in url]) == 2",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_azure_push_retries_when_the_object_id_is_stale",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_push_sends_the_ref_and_the_content(project, azure_env,\n                                                      monkeypatch):\n    host = FakeHost(azure=True)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    body = host.body_for('/pushes?', method='POST')\n    assert body['refUpdates'] == [{'name': 'refs/heads/main',\n                                   'oldObjectId': '1' * 40}]\n    change = body['commits'][0]['changes'][0]\n    assert change['changeType'] == 'add'\n    assert change['item']['path'] == '/' + path\n    assert change['newContent']['contentType'] == 'rawtext'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_azure_push_sends_the_ref_and_the_content",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_branch_is_the_pull_requests_head_when_there_is_one(\n        project, github_env, monkeypatch):\n    assert records_module.current_branch(project) == 'main'\n    monkeypatch.setenv('GITHUB_HEAD_REF', 'feature/login')\n    assert records_module.current_branch(project) == 'feature/login'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_branch_is_the_pull_requests_head_when_there_is_one",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_host_is_read_from_the_build_variables(github_env, azure_env):\n    assert records_module.detect_host() == 'azure'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_host_is_read_from_the_build_variables",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8fd462cd6a9d47baf89f241aad8176cedc31890a3b31d98bf37a31a7a7524967"
+}

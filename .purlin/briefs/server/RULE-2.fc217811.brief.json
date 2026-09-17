@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-17T12:40:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "344179d99aa918b6fc7b4db7d8f883ae1887e5d247486753ee581f1cd05133e3",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Send `tools/list`; verify the sorted tool names are exactly `drift`, `purlin_config` and `sync_status`, and that every one of the three declares `project_root` among its input properties",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "e7c2351a5fde2946b2696ed60b15bb6b1807ade82f747b2a8366201acfdfc84d",
+  "rule_text": "`tools/list` returns exactly three tools, `sync_status`, `purlin_config` and `drift`, and every one of them declares the optional `project_root`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "53c54abf97e0b7df19fb692a0e0691dd3e6fdadab9431720c2aca1a5a19def72",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_tools_list_names_the_three_tools(self, project):\n        responses, _stderr = _rpc(project.root, {\n            'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list'})\n        names = [t['name'] for t in responses[0]['result']['tools']]\n        assert sorted(names) == ['drift', 'purlin_config', 'sync_status']\n        for tool in responses[0]['result']['tools']:\n            assert 'project_root' in tool['inputSchema']['properties']",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_tools_list_names_the_three_tools",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "fc217811caa3a2998b6ce7550b281c239ceb5e5c2919907a65dd929dfbac7a8a"
+}

@@ -1,0 +1,51 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-17T12:40:06Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "968bbe79353b2d3c7c24c45eeb87ed03f36b25ed0c107277c1850e6726dbeecd",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-13",
+      "text": "Call the scope tree over `src/login.py`; verify it is 64 characters, write that file afresh and verify the tree changes, and call it on an empty scope and verify it is still 64 characters rather than an error",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/specs/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-12",
+  "rule_hash": "31a45572a91a2a7738575a09c15a8d6abfc0b4936728142402d7de495a076592",
+  "rule_text": "The scope tree is a sha256 over each scoped file's git blob id written beside its path in sorted order; a scope entry naming a directory expands to the files under it, and a path git cannot hash contributes an empty id instead of raising",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "35bce4fc5e5684cc87da3efa52e43008430cfadba334fde7646f9932cc11e267",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_scope_tree_changes_with_the_scoped_files(self, project):\n        first = purlin_specs.scope_tree(project.root, ['src/login.py'])\n        assert len(first) == 64\n        _write(os.path.join(project.root, 'src', 'login.py'),\n               'def login():\\n    return 401\\n')\n        assert purlin_specs.scope_tree(project.root, ['src/login.py']) != first\n        # A scope naming nothing still answers, so a spec with no scope is not\n        # an error.\n        assert len(purlin_specs.scope_tree(project.root, [])) == 64",
+      "file": "dev/test_mcp_server.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_scope_tree_changes_with_the_scoped_files",
+      "proof": "PROOF-13",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "652251e51661018e0fa9522382fe391a252191534e44fe30cab3bc500596bd43"
+}

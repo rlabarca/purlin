@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:40:09Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "f64e3c8061074bf04ab0f50f2efd0d41affceb1dd83e8214f2c322c79b649461",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-29",
+      "text": "Write one passing entry for `PROOF-2` of a two-rule feature at the gate `passed` and build the payload; verify the feature's rollup reads exactly the keys `rules`, `met`, `untested`, `failing`, `passed`, `stale`, `held`, `manual`, `audit`, `test_strength` and `latest_record`, with 2 rules, 1 met, 1 passed and 1 untested",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-25",
+  "rule_hash": "d0b7532d7c28507b129c6fc5d5e4f719ab3b7b8710a152f163cc06872d99bbe9",
+  "rule_text": "A feature's rollup carries `rules`, `met`, one count per bucket the gate reaches, `stale`, `held`, `manual`, `audit`, the test strength and the latest record",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "2738bb72db3c34f982dbf5edda9655e8290d3156e796b83bb363a4d3cf26f0bd",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_fixture_has_the_key_set_the_builder_writes(self):\n        for name, gate in (('solo', 'passed'), ('team', 'strong'),\n                           ('regulated', 'signed')):\n            fixture = self._fixture(name)\n            assert fixture['schema_version'] == purlin_payload.SCHEMA_VERSION\n            assert fixture['gate']['gate'] == gate\n            made = Project(gate=gate, extra_config={'signers': []})\n            try:\n                built = made.payload()\n            finally:\n                made.close()\n            assert sorted(fixture['gate']) == sorted(built['gate']), name\n            assert sorted(fixture['summary']) == sorted(built['summary']), name\n            feature = fixture['features'][0]\n            assert sorted(feature) == sorted(built['features'][0]), name\n            assert sorted(feature['rollup']) == sorted(\n                built['features'][0]['rollup']), name\n            rule = feature['rules'][0]\n            assert sorted(rule) == sorted(built['features'][0]['rules'][0]), name\n            assert sorted(rule['cells']) == sorted(purlin_states.cells_for(gate))\n            for cell_name, cell in rule['cells'].items():\n                built_cell = built['features'][0]['rules'][0]['cells'][cell_name]\n                assert sorted(cell) == sorted(built_cell), (name, cell_name)\n            assert sorted(rule['flags']) == sorted(purlin_states.FLAGS), name",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_every_fixture_has_the_key_set_the_builder_writes",
+      "proof": "PROOF-29",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rollup_counts_the_buckets_the_gate_reaches(self, project):\n        project.proofs([_entry('PROOF-2', 'RULE-2')])\n        data = project.payload()\n        feature = next(f for f in data['features'] if f['name'] == 'login')\n        rollup = feature['rollup']\n        assert sorted(rollup) == sorted([\n            'rules', 'met', 'untested', 'failing', 'passed', 'stale', 'held',\n            'manual', 'audit', 'test_strength', 'latest_record']), rollup\n        assert (rollup['rules'], rollup['met']) == (2, 1)\n        assert (rollup['passed'], rollup['untested']) == (1, 1), rollup\n        assert data['summary']['features'] == 1",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_rollup_counts_the_buckets_the_gate_reaches",
+      "proof": "PROOF-29",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "34a64de41795d0543a5af257422bf0678f5cc3d5f86c882d6c0feb3a5b1d7c12"
+}

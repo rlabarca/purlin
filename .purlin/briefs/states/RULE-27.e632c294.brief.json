@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:40:09Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "105ccdaef6c10a7001a51111823156ef53201130f309a66e200e3a97e09d8694",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-31",
+      "text": "Build the payload and verify `schema_version` is exactly 5, that all twelve named top-level keys are present, that `gate.gate` reads `passed` and that `generated_at` ends in `Z`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-27",
+  "rule_hash": "a4f9684c7810f7a3a17958031ad7264ba432fd8556a4b4a2bf56726d3a2122ae",
+  "rule_text": "The payload carries schema version 5 and the top-level keys `generated_at`, `generated_by`, `project`, `version`, `commit`, `dirty`, `gate`, `summary`, `features`, `review_list`, `records` and `warnings`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "72f2c828bbde5182639eb6ad1fb85c5bb6fceb219e5ab3713774add5c4fc5d8a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_fixture_has_the_key_set_the_builder_writes(self):\n        for name, gate in (('solo', 'passed'), ('team', 'strong'),\n                           ('regulated', 'signed')):\n            fixture = self._fixture(name)\n            assert fixture['schema_version'] == purlin_payload.SCHEMA_VERSION\n            assert fixture['gate']['gate'] == gate\n            made = Project(gate=gate, extra_config={'signers': []})\n            try:\n                built = made.payload()\n            finally:\n                made.close()\n            assert sorted(fixture['gate']) == sorted(built['gate']), name\n            assert sorted(fixture['summary']) == sorted(built['summary']), name\n            feature = fixture['features'][0]\n            assert sorted(feature) == sorted(built['features'][0]), name\n            assert sorted(feature['rollup']) == sorted(\n                built['features'][0]['rollup']), name\n            rule = feature['rules'][0]\n            assert sorted(rule) == sorted(built['features'][0]['rules'][0]), name\n            assert sorted(rule['cells']) == sorted(purlin_states.cells_for(gate))\n            for cell_name, cell in rule['cells'].items():\n                built_cell = built['features'][0]['rules'][0]['cells'][cell_name]\n                assert sorted(cell) == sorted(built_cell), (name, cell_name)\n            assert sorted(rule['flags']) == sorted(purlin_states.FLAGS), name",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_every_fixture_has_the_key_set_the_builder_writes",
+      "proof": "PROOF-31",
+      "reasons": []
+    },
+    {
+      "body": "def test_schema_five_carries_the_documented_top_level(self, project):\n        data = project.payload()\n        assert data['schema_version'] == 5\n        for key in ('generated_at', 'generated_by', 'project', 'version',\n                    'commit', 'dirty', 'gate', 'summary', 'features',\n                    'review_list', 'records', 'warnings'):\n            assert key in data, key\n        assert data['gate']['gate'] == 'passed'\n        assert data['generated_at'].endswith('Z')",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_schema_five_carries_the_documented_top_level",
+      "proof": "PROOF-31",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e632c294741337c904088704278dee90735c772e9ab213d77b4da129395e6f16"
+}

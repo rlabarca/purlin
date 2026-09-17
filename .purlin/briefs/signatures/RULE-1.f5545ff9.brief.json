@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-17T12:40:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "48dbcd33454bbe9d4f37b747bd3b2eeb2f96991caa78ce8b7a1c5531ba4e93fc",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read the hashes of `login RULE-1` in a project with a record; verify the rule, proof and test hashes are each 64 characters, the kind is `file` and the design hash is `none`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "d0751d443b04dc500da9a0e0fad094215c580937a810e4b313eeb567d6988f35",
+  "rule_text": "The three hashes a signature binds come back together with the kind of the test hash and the pinned design hash of a design rule",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a5fb6c67cc77e8c2252fc1d7e6a9566badc8edfa4481b446a12d957be13ee046",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_three_hashes_come_back_with_their_kind(self, proved):\n        parts = sign_module.rule_proof_test_hashes(\n            proved.root, 'login', 'RULE-1')\n        rule_hash, proof_hash, test_hash, kind, design = parts\n        assert len(rule_hash) == 64 and len(proof_hash) == 64\n        assert len(test_hash) == 64\n        assert kind == 'file'\n        assert design is None",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_three_hashes_come_back_with_their_kind",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f5545ff9697681d40ddcc0baefecc70882e57b838d58864e33bfe44fd8b9a087"
+}

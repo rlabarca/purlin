@@ -1,0 +1,92 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "gate_check",
+  "generated_at": "2026-09-17T12:39:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4d8dc17429daa27c546841b90550f3d5b88a780c68c82bae0ff49a5845d29359",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Run the gate over a project at gate `passed` with no record at all; verify it exits 1, opens a section `Not passed (2):`, reads `login RULE-1: no test` and `login RULE-2: no test`, and closes with `gate: FAIL. 2 of 2 rules do not meet passed.`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Write a record whose `PROOF-1` failed and run the gate at gate `passed`; verify it exits 1 and reads `login RULE-1: failed` with a reason opening `failing:`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Rewrite a proof as `The login works correctly` and run the gate at gate `passed`; verify it exits 1, reads `login RULE-1: drafted` and names the finding `vague_verb`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Run the gate at gate `strong` over a record a person committed; verify it exits 1, opens `Not passed (2):` and gives the reason `developer record does not count under strong`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/gate_check/20260917T123937Z-df84acf-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "b6e85ce21f812b555aeaa85f72b3369c19bad6850660618ec941808b788a66ee",
+  "rule_text": "A rule blocked at the spec status or at the passed cell is named under `Not passed` with the blocking word and its reasons",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "48287cc5e7b3203e68a4b779d0d8f9fc0359865eab0098fffbed245b542dcb35",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_with_no_record_is_not_passed(self):\n        made = Project(gate='passed')\n        try:\n            code, output = run(made)\n            assert code == 1\n            assert 'Not passed (2):' in output\n            assert 'login RULE-1: no test' in output, output\n            assert 'login RULE-2: no test' in output, output\n            assert 'gate: FAIL. 2 of 2 rules do not meet passed.' in output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_rule_with_no_record_is_not_passed",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_failing_proof_is_named_with_its_reason(self):\n        made = Project(gate='passed')\n        try:\n            made.proofs({'PROOF-1': 'fail', 'PROOF-2': 'pass'})\n            made.record({'PROOF-1': 'fail', 'PROOF-2': 'pass'})\n            code, output = run(made)\n            assert code == 1\n            assert 'login RULE-1: failed' in output, output\n            assert 'failing:' in output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_failing_proof_is_named_with_its_reason",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_drafted_rule_is_not_passed_and_says_which_finding(self):\n        made = Project(spec=SPEC.replace(\n            'POST /login with the password \"secret\"; verify 200 and a token '\n            '@integration',\n            'The login works correctly @integration'), gate='passed')\n        try:\n            made.proofs()\n            made.record()\n            code, output = run(made)\n            assert code == 1\n            assert 'login RULE-1: drafted' in output, output\n            assert 'vague_verb' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_drafted_rule_is_not_passed_and_says_which_finding",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_developer_record_does_not_count(self):\n        made = project_at('strong', by_ci=False)\n        try:\n            code, output = run(made)\n            assert code == 1\n            assert 'Not passed (2):' in output\n            assert 'developer record does not count under strong' in output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_developer_record_does_not_count",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "db2f18109237f2e268c1e2783d7680eb30d5288982cfc218327181ed3f470238"
+}

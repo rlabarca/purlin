@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-17T12:40:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4a5e633e9ca7ba3e1f5bc0193ad695432698d116fff710ba640338f99f8f1b97",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "Patch the status tool to raise `RuntimeError(\"boom\")` and send a `sync_status` call; verify the answer opens `Error running sync_status` and carries `boom`, and that a second call in the same session still answers normally",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "2319cd8fb2332f0294803b58dab29e0b4e33153d311c6129d27be71ee75c5298",
+  "rule_text": "A tool that raises answers with the text `Error running <tool>` and the message, so one bad call never ends the session",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a8e056bd549c6b6e07a4ba2087d94d4a87cbd4be588d7e7d80bfa6fe65bbe229",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_tool_that_raises_answers_rather_than_crashing(self, project,\n                                                             monkeypatch):\n        def boom(_root):\n            raise RuntimeError('boom')\n\n        request = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',\n                   'params': {'name': 'sync_status', 'arguments': {}}}\n        monkeypatch.setattr(purlin_srv.status_module, 'sync_status', boom)\n        text = purlin_srv.handle_request(\n            request, project.root)['result']['content'][0]['text']\n        assert text.startswith('Error running sync_status'), text\n        assert 'boom' in text, text\n        monkeypatch.undo()\n        # The session is still usable: the next call answers normally.\n        again = purlin_srv.handle_request(\n            request, project.root)['result']['content'][0]['text']\n        assert 'Tests' in again, again",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_tool_that_raises_answers_rather_than_crashing",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "574a5264b23782472e160a97feded37ac277f5dbbe4abd5aba6a86f5c2e38391"
+}

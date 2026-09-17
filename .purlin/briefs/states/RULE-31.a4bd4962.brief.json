@@ -1,0 +1,61 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:40:10Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9c432e79e02d7a794510dd1c1633e98c1fe91f714a203dc914ed9efd6cb24569",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-35",
+      "text": "At the gate `signed`, build the payload over a medium-risk stale rule, a medium-risk rule reading `manual audit` and a low-risk held rule; verify the rows read in exactly that order",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-36",
+      "text": "At the gate `strong`, add a global anchor holding one high-risk rule to a project whose one feature holds one high-risk rule; build the payload and verify the review list is exactly 2 rows, one per owner, that the anchor's rule appears once under the feature `security` and zero times under `login`, and that the summary's `audit` reads 2",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-31",
+  "rule_hash": "fe9d853717ae379c530e645b257d75cf65a3ed874e7fbdab48f6c89321ed2790",
+  "rule_text": "The review list reads risk high first, stale and held before the rest within one risk, then feature and rule number, and names each rule once under the feature that owns it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "9ac4aa6a4959633e32a10c1b1627330e5bb9b72bf70e0e752211f0708953538a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_list_reads_high_risk_first_then_stale_and_held(listed):\n    assert [rule for rule, _cell, _why in _rows(listed.payload())] == [\n        'RULE-5', 'RULE-1', 'RULE-3', 'RULE-2']",
+      "file": "dev/test_review_list.py",
+      "findings": [],
+      "name": "test_the_list_reads_high_risk_first_then_stale_and_held",
+      "proof": "PROOF-35",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_global_anchor_rule_is_named_once():\n    made = Project(gate='strong')\n    try:\n        made.spec(\n            '# Anchor: security\\n\\n> Global: true\\n\\n'\n            '## Rules\\n\\n- RULE-1: No eval anywhere [risk: high]\\n\\n'\n            '## Proof\\n\\n'\n            '- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\\n',\n            name='security', category='_anchors')\n        made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},\n                     {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                    ci=True, strength=90)\n        made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                    feature='security', ci=True, strength=90)\n        data = made.payload()\n        entries = [(e['feature'], e['rule']) for e in data['review_list']]\n        assert sorted(entries) == [('login', 'RULE-1'),\n                                   ('security', 'RULE-1')], entries\n        assert data['summary']['audit'] == 2, data['summary']\n    finally:\n        made.close()",
+      "file": "dev/test_review_list.py",
+      "findings": [],
+      "name": "test_a_global_anchor_rule_is_named_once",
+      "proof": "PROOF-36",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a4bd49626f93afbc03378f7b3eeb83cf68b95476df0830b4ac88b60321a9d7ec"
+}

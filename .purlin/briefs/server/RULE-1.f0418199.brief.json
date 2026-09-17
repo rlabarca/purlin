@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-17T12:40:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5164374c263b182543407b0f46d0bf9c940c68afba23fd2be881c9eff2de7c05",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-1",
+      "text": "Send an `initialize` request to the server as a subprocess; verify the protocol version is exactly `2024-11-05`, the server name is `purlin`, the version equals the contents of the `VERSION` file, and the capabilities carry the tools key",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "d0c391563c70759a77bbb63edf79cf51f30bfd88b4559b24096048eb83286050",
+  "rule_text": "The server answers `initialize` with protocol version `2024-11-05`, the server name `purlin`, the version the `VERSION` file carries, and the tools capability a client needs in order to discover that this server serves tools",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "24df37f6ec0b8fe7fb81b763a68c729c503e073e5630045ebdedab62218e758c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_initialize_names_the_protocol_and_the_version(self, project):\n        responses, stderr = _rpc(project.root, {\n            'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',\n            'params': {'protocolVersion': '2024-11-05', 'capabilities': {},\n                       'clientInfo': {'name': 't', 'version': '0'}}},\n            child=True)\n        result = responses[0]['result']\n        assert result['protocolVersion'] == '2024-11-05'\n        assert result['serverInfo']['name'] == 'purlin'\n        with open(os.path.join(PROJECT_ROOT, 'VERSION'),\n                  encoding='utf-8') as handle:\n            assert result['serverInfo']['version'] == handle.read().strip()\n        assert 'Purlin MCP server' in stderr",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_initialize_names_the_protocol_and_the_version",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f041819906425b62ba8330793e4aa93544fe0c47a12068a432ed87960e9f72ee"
+}

@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:40:10Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "34040a94219b69d34ca1cac9a393e5ba1339a29e715182f12d9e4cd2f061c135",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-34",
+      "text": "Read every `why` value of that list and verify each is one of `unsigned`, `stale`, `held`, `manual test` and `manual audit`, and that a rule whose only proof is `@manual` reads `manual test`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T123938Z-df84acf-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-30",
+  "rule_hash": "49c07f27e83d90dd3220ab883fbb113a2e70792b7cfd3fc4ec22d4d42360a639",
+  "rule_text": "A review row's `why` is the blocking cell's own word, drawn from the closed set `unsigned`, `stale`, `held`, `manual test` and `manual audit`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5b5d8e1100862e9cf8b373885a3fdbc9bf5318fc5d3dc7223fc9c2863b6571ad",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_fixture_review_row_uses_the_closed_set(self):\n        allowed = {'unsigned', 'stale', 'held', 'manual test',\n                   'manual audit'}\n        for name in ('solo', 'team', 'regulated'):\n            for row in self._fixture(name)['review_list']:\n                assert sorted(row) == ['cell', 'feature', 'owner', 'risk',\n                                       'rule', 'why'], row\n                assert set(row['why']) <= allowed, row",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_every_fixture_review_row_uses_the_closed_set",
+      "proof": "PROOF-34",
+      "reasons": []
+    },
+    {
+      "body": "def test_every_why_is_one_of_the_five_words(listed):\n    allowed = {'unsigned', 'stale', 'held', 'manual test', 'manual audit'}\n    rows = {rule: why for rule, _cell, why in _rows(listed.payload())}\n    for why in rows.values():\n        assert set(why) <= allowed, why\n    assert rows['RULE-1'] == ('stale',)\n    assert rows['RULE-2'] == ('held',)\n    assert rows['RULE-3'] == ('manual test',), 'a @manual proof names itself'\n    assert rows['RULE-5'] == ('unsigned',)",
+      "file": "dev/test_review_list.py",
+      "findings": [],
+      "name": "test_every_why_is_one_of_the_five_words",
+      "proof": "PROOF-34",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "75789361569d8545975928e1b9abb5f56b70f71387ebb6bfa4321c01acbe0ae1"
+}
