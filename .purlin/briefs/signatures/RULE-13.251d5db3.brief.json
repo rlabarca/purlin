@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-17T12:41:54Z",
+  "generated_at": "2026-09-17T12:52:13Z",
   "layers": [
     "proof text",
     "test body",
@@ -33,7 +33,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/signatures/20260917T124127Z-8ea9df0-ci-linux.json",
+  "record": ".purlin/records/signatures/20260917T125134Z-8ea9df0-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-13",
   "rule_hash": "9a40008bc30831cee1edfc03cf073be1ccf0ad00bbc227e6fdcb7ee12c887dab",
