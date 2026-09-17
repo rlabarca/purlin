@@ -22,11 +22,14 @@ var REFRESH_AFTER = 60;
    not opted into reads as a project falling short. */
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
 
-/* The one tile a rule is counted in. `stale` and `held` are flags counted
-   beside these, never instead of them. */
-var BUCKETS = ['untested', 'failing', 'passed', 'strong', 'signed'];
+/* The tiles, lowest level first. `Untested` and `Failing` count the rules
+   that are not passing at all. The three above them are cumulative, not
+   exclusive: a signed rule is still passing and still strong, so it is
+   counted in all three. `stale` and `held` are flags counted beside the
+   tiles, never instead of one. */
+var BUCKETS = ['untested', 'failing', 'passing', 'strong', 'signed'];
 var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
-                     passed: 'Passed', strong: 'Strong', signed: 'Signed'};
+                     passing: 'Passing', strong: 'Strong', signed: 'Signed'};
 
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
@@ -103,13 +106,26 @@ function pill(word) {
     + '</b></span>';
 }
 
-/* A tile counts the rules in one bucket, and its tone answers the only
-   question the tile is asked: does a rule sitting there meet this project's
-   gate? Under `signed` a passed rule does not, so it reads warn. */
+/* A tile counts the rules that reached its level, and its tone answers the
+   only question the tile is asked: does a rule sitting there meet this
+   project's gate? Under `signed` a passing rule does not, so it reads warn. */
 function bucketTone(bucket) {
   if (bucket === 'untested') { return 'idle'; }
   if (bucket === 'failing') { return 'fail'; }
-  return bucket === gateName() ? 'pass' : 'warn';
+  return (bucket === 'passing' ? 'passed' : bucket) === gateName()
+    ? 'pass' : 'warn';
+}
+
+/* How many rules reached this level, read off the payload's exclusive
+   buckets. The payload counts a rule once, in the highest bucket it reached;
+   the board asks how many got at least this far, which is that bucket and
+   every one above it. A name that is not a level is one bucket of its own. */
+function reached(counted, name) {
+  var from = GATE_LEVELS.indexOf(name === 'passing' ? 'passed' : name);
+  if (from < 0) { return counted[name] || 0; }
+  return GATE_LEVELS.slice(from).reduce(function (sum, key) {
+    return sum + (counted[key] || 0);
+  }, 0);
 }
 
 function tag(text, plain) {
@@ -125,26 +141,36 @@ function riskTag(risk) {
     + '</span>';
 }
 
-/* `n of m` with a bar under it. The bar is the share, so a spec of three
-   rules and a spec of three hundred read at the same glance. */
-function ratio(count, total) {
+/* `n of m` with a bar beside it. The bar is the share, so a spec of three
+   rules and a spec of three hundred read at the same glance. `suffix` says
+   what the share is of, where the column heading is not there to say it. */
+function ratio(count, total, suffix) {
   var pct = total ? Math.round((count / total) * 100) : 0;
   var hue = total && count === total ? 'pass' : count ? 'warn' : 'idle';
   return '<span class="cov" style="color:var(--state-' + hue + ')"><b>'
-    + count + ' of ' + total + '</b><i><span style="width:' + pct
-    + '%"></span></i></span>';
+    + count + ' of ' + total + '</b>'
+    + (suffix ? '<span class="sec">' + esc(suffix) + '</span>' : '')
+    + '<i><span style="width:' + pct + '%"></span></i></span>';
 }
 
-/* Several counts in one cell, each in its own tone, a zero muted so a spec
-   with nothing to say there does not read as a failure. The heading names the
-   column; the title names which number is which. */
+/* Several counts in one cell, each labelled with the word it counts and set
+   in that word's tone. `24 passed · 2 failing` says what a bare `24 · 2 · 0`
+   left the reader to work out from the heading. The first part is always
+   drawn, because the column's total is the number the row is about; a later
+   part at zero is not, because nothing is waiting there. Each item is
+   `[count, word, tone]`, and a word may be empty where the count already
+   reads as a sentence (`5 of 24`). The separator rides inside the part it
+   introduces, so a cell narrow enough to wrap breaks between parts and never
+   leaves a lone dot at the end of a line. */
 function counts(items) {
-  return '<span class="trio" title="' + esc(items.map(function (item) {
-    return item[1];
-  }).join(' · ')) + '">' + items.map(function (item) {
-    return '<b style="color:var(--state-' + (item[0] ? item[2] : 'idle')
-      + ')">' + item[0] + '</b>';
-  }).join('<i>·</i>') + '</span>';
+  return '<span class="trio">' + items.filter(function (item, index) {
+    return index === 0 || item[0];
+  }).map(function (item, index) {
+    var hue = index === 0 && !item[0] ? 'idle' : item[2];
+    return '<b style="color:var(--state-' + hue + ')">'
+      + (index ? '<i class="sec">·</i> ' : '')
+      + esc(item[1] ? item[0] + ' ' + item[1] : item[0]) + '</b>';
+  }).join('') + '</span>';
 }
 
 /* An integer percent against the minimum this gate asks for, or n/a when

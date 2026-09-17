@@ -37,28 +37,36 @@ there is one.
 
 ## Board
 
-The Board is where every rule stands. Its headline is one line:
+The Board is where every rule stands. Its headline is two lines:
 
 ```
-3 of 5 rules meet the gate passed · 0 failing
+3 of 5 rules pass their tests · 0 failing · 2 untested
+3 of 5 meet the gate passed
 ```
 
-A rule meets the gate when every cell up to the gate's level is met. The gate decides how many
-cells a rule has, so it also decides how much of this page exists.
+The first line is what the board is mainly about: whether the rules pass their tests. The
+second names the gate. A rule meets the gate when every cell up to the gate's level is met. The
+gate decides how many cells a rule has, so it also decides how much of this page exists.
 
-![The Board at the passed gate: the Untested, Failing and Passed tiles, and two specs with their spec status, tests and last run](images/dashboard-solo.png)
+![The Board at the passed gate: the Untested, Failing and Passing tiles, and two specs with their spec status, tests and last run](images/dashboard-solo.png)
 
 At the `passed` gate a rule has two cells, its spec status and its passed cell, so the board
-carries three tiles and five columns. The tiles are `Untested`, `Failing` and `Passed`. The
-columns are `Spec`, `Rules`, `Spec status`, `Tests` and `Last run`.
+carries three tiles and five columns. The tiles are `Untested`, `Failing` and `Passing`. They
+count levels rather than buckets: a rule that is signed is still passing, so it is counted in
+`Passing`, in `Strong` and in `Signed` alike. The columns are `Spec`, `Rules`, `Spec status`,
+`Tests` and `Last run`.
 
 | Column | What it reads |
 |---|---|
 | `Spec` | the feature name, under the band that names its category |
 | `Rules` | how many rules the spec holds |
-| `Spec status` | `ready · drafted`, the two counts of what the spec says |
-| `Tests` | `passed · failing · no test`, each count in its own tone |
+| `Spec status` | `24 ready · 2 drafted`, what the spec says of its own rules |
+| `Tests` | `24 passed · 2 failing · 1 no test`, each count in its own tone |
 | `Last run` | one box per operating system, `linux`, `mac` and `win`, each in the tone of what that system's newest record found, then the newest record's source and age, or the source alone before any record exists |
+
+Every count names the word it counts beside the number. The first part is always drawn, so a
+spec with nothing ready reads `0 ready`; a later part is drawn only where it is above zero, so
+a spec with nothing failing and nothing untested reads `24 passed` and stops there.
 
 ![The Board at the strong gate: a Strong tile beside the first three, and the Strength and Strong columns](images/dashboard-team.png)
 
@@ -77,7 +85,13 @@ headline, one per line: an uncommitted working tree, or a spec line the parser c
 as a rule.
 
 Specs are grouped by category. The band above each group carries the category, how many specs
-are in it, and how many of their rules meet the gate as `n of m` with a bar.
+are in it, and how many of their rules pass their tests, as `mcp · 6 specs · 108 of 113 pass`
+with a bar after it. The gate is not repeated there: the `Signed` column carries it for each
+spec and the headline's second line carries it for the project.
+
+Every column holds a minimum width. In a window too narrow for their sum the table scrolls
+sideways rather than squeezing a heading into its neighbour, and no text on the board is set
+smaller than 13 pixels in either theme.
 
 **A column exists only where its cell does.** A project at `passed` is not shown two empty
 evidence columns, and nothing has to be configured to get the rest: `purlin:init --gate strong`

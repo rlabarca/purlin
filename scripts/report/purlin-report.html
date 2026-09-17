@@ -21,6 +21,7 @@
   --slate-700:#334155;
   --slate-500:#64738B;
   --slate-400:#94A2B8;
+  --slate-300:#CBD5E1;
   --slate-200:#E2E8F0;
   --white:#FFFFFF;
   --green-500:#22C55D;
@@ -40,6 +41,7 @@
   --purlin-paper-200:#E4DDD4;
   --purlin-paper-300:#D3C9BC;
   --purlin-ink-700:#1B4A5C;
+  --purlin-ink-600:#345865;
   --purlin-ink-500:#4D676F;
 }
 :root{
@@ -240,13 +242,13 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .btn.glyph{padding:4px 12px;font-size:var(--ui-base);line-height:1}
 .panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6)}
 .notice{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-6);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);margin-bottom:var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
-.pill{display:inline-flex;align-items:center;justify-content:center;font-size:var(--ui-xs);font-weight:var(--weight-bold);letter-spacing:.08em;padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid currentColor;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;justify-content:center;font-size:var(--ui-sm);font-weight:var(--weight-bold);letter-spacing:.08em;padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid currentColor;white-space:nowrap}
 .pill.solid{background:currentColor}
 .pill b{font-weight:var(--weight-bold)}
 .pill.solid b{color:var(--canvas-deep)}
 .cov{display:inline-flex;align-items:center;gap:var(--space-4);max-width:100%;min-width:0}
-.cov b{font-family:var(--font-mono);font-size:var(--ui-sm);font-weight:var(--weight-regular);color:var(--text-primary);white-space:nowrap}
-.cov i{width:96px;height:5px;background:var(--border-hairline);border-radius:var(--radius-pill);overflow:hidden;display:inline-block}
+.cov b{font-family:var(--font-mono);font-size:var(--ui-base);font-weight:var(--weight-regular);color:var(--text-primary);white-space:nowrap}
+.cov i{flex:1;min-width:32px;max-width:80px;height:5px;background:var(--border-hairline);border-radius:var(--radius-pill);overflow:hidden;display:inline-block}
 .cov i>span{display:block;height:100%;background:currentColor;transition:width var(--duration-slow) var(--ease-out)}
 .thumb{display:block;width:60px;height:38px;object-fit:cover;border:1px solid var(--border-hairline);border-radius:var(--radius-sm)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
@@ -255,30 +257,28 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
 .tile,.flag{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3)}
 .tile-v,.flag-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
-.tile-l,.flag-l{margin-top:var(--space-3);font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+.tile-l,.flag-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
 .flag{color:var(--state-idle)}
 .flag.on{border-color:var(--state-fail);color:var(--state-fail)}
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
 .chip{font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
 .chip:hover{background:var(--hover-tint)}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
-.tbl{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow:hidden}
-.th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline)}
+.tbl{--cols-min:calc(var(--cols-floor,0px) + var(--space-4) * var(--cols-gaps,0) + var(--space-6) * 2);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
+.th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);min-width:var(--cols-min)}
 .th>div,.tr>div{min-width:0}
-.tr>div .cov{max-width:100%}
-.trio{display:inline-flex;align-items:center;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-sm);white-space:nowrap}
-.trio b{font-weight:var(--weight-regular)}
+.trio{display:inline-flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-base)}
+.trio b{font-weight:var(--weight-regular);white-space:nowrap}
 .trio i,.rsum i{color:var(--text-muted);font-style:normal}
 .run{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2) var(--space-3);min-width:0}
-.run .mono{font-size:var(--ui-sm);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tr>div .cov i{flex:0 1 96px;min-width:24px}
-.th{font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
+.run .mono{font-size:var(--ui-base);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.th{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 .tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .tr:hover{background:var(--hover-tint)}
 .tbl>:last-child{border-bottom:0}
-.group{display:flex;align-items:center;gap:var(--space-5);padding:var(--space-4) var(--space-6);background:var(--surface-2);border-bottom:1px solid var(--border-hairline);cursor:pointer}
+.group{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3);min-width:var(--cols-min);padding:var(--space-4) var(--space-6);background:var(--surface-2);border-bottom:1px solid var(--border-hairline);cursor:pointer}
 .group .gt{font-weight:var(--weight-bold);font-size:var(--ui-base);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-primary)}
-.caret{color:var(--text-muted);font-size:10px;flex:none}
+.caret{color:var(--text-muted);font-size:var(--ui-sm);flex:none}
 .name{display:inline-flex;align-items:center;gap:var(--space-4);min-width:0}
 .name .n{font-size:var(--ui-base);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rule{display:grid;grid-template-columns:96px 1fr auto;gap:var(--space-4);align-items:start;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:pointer;font-size:var(--ui-sm)}
@@ -289,7 +289,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .right{text-align:right}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 .kv{display:grid;grid-template-columns:170px 1fr;gap:var(--space-3) var(--space-6);margin:0;font-size:var(--ui-base)}
-.kv dt{font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary);padding-top:2px}
+.kv dt{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary);padding-top:2px}
 .kv dd{margin:0;color:var(--text-primary);min-width:0;overflow-wrap:anywhere}
 .stack>*+*{margin-top:var(--space-5)}
 .finding{font-size:var(--ui-sm);color:var(--state-warn)}
@@ -386,34 +386,32 @@ function ownRules(feature) {
 function statStrip() {
   var summary = DATA.summary || {};
   var shown = BUCKETS.filter(function (bucket) {
-    return bucket === 'untested' || bucket === 'failing' || level(bucket);
+    return GATE_LEVELS.indexOf(bucket) < 0 || level(bucket);
   });
   var tiles = shown.map(function (bucket) {
     return '<div class="tile"><div class="tile-v" style="color:var(--state-'
-      + bucketTone(bucket) + ')">' + (summary[bucket] || 0) + '</div>'
+      + bucketTone(bucket) + ')">' + reached(summary, bucket) + '</div>'
       + '<div class="tile-l">' + esc(BUCKET_LABELS[bucket]) + '</div></div>';
   }).join('');
   var stale = summary.stale || 0;
   var flag = level('signed')
-    ? '<div class="flag' + (stale ? ' on' : '') + '">'
-      + '<div class="flag-v">' + stale + '</div>'
-      + '<div class="flag-l">Stale</div></div>'
-    : '';
+    ? '<div class="flag' + (stale ? ' on' : '') + '"><div class="flag-v">'
+      + stale + '</div><div class="flag-l">Stale</div></div>' : '';
   return '<div class="strip' + (flag ? ' flagged' : '') + '">'
     + '<div class="tiles">' + tiles + '</div>' + flag + '</div>';
 }
 function boardColumns() {
-  var columns = [{label: 'Spec', width: '2fr'},
-                 {label: 'Rules', width: '0.4fr'},
-                 {label: 'Spec status', width: '0.8fr'},
-                 {label: 'Tests', width: '0.9fr'},
-                 {label: 'Last run', width: '2.6fr'}];
+  var columns = [{label: 'Spec', width: '2fr', floor: 160},
+                 {label: 'Rules', width: '0.4fr', floor: 56, right: true},
+                 {label: 'Spec status', width: '0.8fr', floor: 150},
+                 {label: 'Tests', width: '0.9fr', floor: 150},
+                 {label: 'Last run', width: '2.6fr', floor: 260}];
   if (level('strong')) {
-    columns.push({label: 'Strength', width: '0.6fr'});
-    columns.push({label: 'Strong', width: '1.2fr'});
+    columns.push({label: 'Strength', width: '0.6fr', floor: 92, right: true},
+                 {label: 'Strong', width: '1.2fr', floor: 130});
   }
   if (level('signed')) {
-    columns.push({label: 'Signed', width: '1.1fr'});
+    columns.push({label: 'Signed', width: '1.1fr', floor: 130});
   }
   return columns;
 }
@@ -426,25 +424,22 @@ function specStatusCell(feature) {
   return counts([[ready, 'ready', 'pass'], [drafted, 'drafted', 'idle']]);
 }
 function testsCell(feature) {
-  var passed = 0;
-  var failing = 0;
-  var none = 0;
+  var found = {};
   ownRules(feature).forEach(function (rule) {
     var word = cellWord(rule, 'passed');
-    if (word === 'passed') { passed += 1; }
-    else if (word === 'failed') { failing += 1; }
-    else if (word === 'no test') { none += 1; }
+    found[word] = (found[word] || 0) + 1;
   });
-  return counts([[passed, 'passed', 'pass'], [failing, 'failing', 'fail'],
-                 [none, 'no test', 'warn']]);
+  return counts([[found.passed || 0, 'passed', 'pass'],
+                 [found.failed || 0, 'failing', 'fail'],
+                 [found['no test'] || 0, 'no test', 'warn']]);
 }
 function signedCell(feature) {
   var rollup = feature.rollup || {};
-  var stale = rollup.stale || 0;
-  return '<span class="trio"><b>' + (rollup.signed || 0) + ' of '
-    + (rollup.rules || 0) + '</b>'
-    + (stale ? '<i>·</i><b style="color:var(--state-fail)">' + stale
-        + ' stale</b>' : '') + '</span>';
+  var signed = rollup.signed || 0;
+  var rules = rollup.rules || 0;
+  return counts([[signed + ' of ' + rules, '',
+    rules && signed === rules ? 'pass' : signed ? 'warn' : 'idle'],
+    [rollup.stale || 0, 'stale', 'fail']]);
 }
 function featureRow(feature, columns) {
   var rollup = feature.rollup || {};
@@ -463,8 +458,9 @@ function featureRow(feature, columns) {
   }
   if (level('signed')) { cells.push(signedCell(feature)); }
   var row = '<div class="tr" data-act="feature" data-feature="'
-    + esc(feature.name) + '">' + cells.map(function (cell) {
-      return '<div>' + cell + '</div>';
+    + esc(feature.name) + '">' + cells.map(function (cell, index) {
+      return '<div' + (columns[index].right ? ' class="right"' : '') + '>'
+        + cell + '</div>';
     }).join('') + '</div>';
   if (!open) { return row; }
   return row + visibleRules(feature).map(function (rule) {
@@ -480,17 +476,19 @@ function featureRow(feature, columns) {
 }
 function groupBand(name, features, columns) {
   var open = VIEW.groups[name] !== false;
-  var met = 0;
+  var passing = 0;
   var total = 0;
   features.forEach(function (feature) {
-    met += (feature.rollup || {}).met || 0;
+    passing += reached(feature.rollup || {}, 'passing');
     total += (feature.rollup || {}).rules || 0;
   });
   return '<div class="group" data-act="group" data-group="' + esc(name) + '">'
     + '<span class="caret">' + (open ? '▼' : '▶') + '</span>'
-    + '<span class="gt">' + esc(name) + '</span>'
-    + '<span class="muted">(' + features.length + ')</span>'
-    + ratio(met, total) + '</div>'
+    + '<span class="gt">' + esc(name) + '</span><span class="muted">·</span>'
+    + '<span class="sec">' + features.length
+    + (features.length === 1 ? ' spec' : ' specs')
+    + '</span><span class="muted">·</span>' + ratio(passing, total, 'pass')
+    + '</div>'
     + (open ? features.map(function (feature) {
       return featureRow(feature, columns);
     }).join('') : '');
@@ -508,16 +506,23 @@ function renderBoard() {
     groups[name].push(feature);
   });
   var summary = DATA.summary || {};
-  var head = '<section class="ledger"><h1 class="line">'
-    + '<b>' + (summary.met || 0) + '</b> of <b>' + (summary.rules || 0)
-    + '</b> rules meet the gate <b>' + esc(gateName()) + '</b>'
-    + '<span class="sep">·</span><b>' + (summary.failing || 0)
-    + '</b> failing</h1></section><section>' + statStrip() + '</section>';
+  var floor = columns.reduce(function (sum, c) { return sum + c.floor; }, 0);
+  var head = '<section class="ledger"><h1 class="line"><b>'
+    + reached(summary, 'passing') + '</b> of <b>' + (summary.rules || 0)
+    + '</b> rules pass their tests<span class="sep">·</span><b>'
+    + (summary.failing || 0) + '</b> failing<span class="sep">·</span><b>'
+    + (summary.untested || 0) + '</b> untested</h1>'
+    + '<p class="line"><span class="mono">' + (summary.met || 0)
+    + '</span> of <span class="mono">' + (summary.rules || 0)
+    + '</span> meet the gate <span class="mono">' + esc(gateName())
+    + '</span></p></section><section>' + statStrip() + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
-        return 'minmax(0,' + c.width + ')';
-      }).join(' ') + '"><div class="th">' + columns.map(function (c) {
-        return '<div>' + esc(c.label) + '</div>';
+        return 'minmax(' + c.floor + 'px,' + c.width + ')';
+      }).join(' ') + ';--cols-floor:' + floor + 'px;--cols-gaps:'
+      + (columns.length - 1) + '"><div class="th">' + columns.map(function (c) {
+        return '<div' + (c.right ? ' class="right"' : '') + '>'
+          + esc(c.label) + '</div>';
       }).join('') + '</div>' + order.map(function (name) {
         return groupBand(name, groups[name], columns);
       }).join('') + '</div>'
@@ -807,9 +812,9 @@ var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
 var SCHEMA = 5;
 var REFRESH_AFTER = 60;
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
-var BUCKETS = ['untested', 'failing', 'passed', 'strong', 'signed'];
+var BUCKETS = ['untested', 'failing', 'passing', 'strong', 'signed'];
 var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
-                     passed: 'Passed', strong: 'Strong', signed: 'Signed'};
+                     passing: 'Passing', strong: 'Strong', signed: 'Signed'};
 var CELL_TONES = {'ready': 'pass', 'drafted': 'idle',
                   'passed': 'pass', 'failed': 'fail', 'no test': 'warn',
                   'not run': 'warn', 'code changed': 'warn',
@@ -869,7 +874,15 @@ function pill(word) {
 function bucketTone(bucket) {
   if (bucket === 'untested') { return 'idle'; }
   if (bucket === 'failing') { return 'fail'; }
-  return bucket === gateName() ? 'pass' : 'warn';
+  return (bucket === 'passing' ? 'passed' : bucket) === gateName()
+    ? 'pass' : 'warn';
+}
+function reached(counted, name) {
+  var from = GATE_LEVELS.indexOf(name === 'passing' ? 'passed' : name);
+  if (from < 0) { return counted[name] || 0; }
+  return GATE_LEVELS.slice(from).reduce(function (sum, key) {
+    return sum + (counted[key] || 0);
+  }, 0);
 }
 function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text)
@@ -880,20 +893,23 @@ function riskTag(risk) {
   return '<span class="tag risk-' + band + '">' + esc(risk || 'low')
     + '</span>';
 }
-function ratio(count, total) {
+function ratio(count, total, suffix) {
   var pct = total ? Math.round((count / total) * 100) : 0;
   var hue = total && count === total ? 'pass' : count ? 'warn' : 'idle';
   return '<span class="cov" style="color:var(--state-' + hue + ')"><b>'
-    + count + ' of ' + total + '</b><i><span style="width:' + pct
-    + '%"></span></i></span>';
+    + count + ' of ' + total + '</b>'
+    + (suffix ? '<span class="sec">' + esc(suffix) + '</span>' : '')
+    + '<i><span style="width:' + pct + '%"></span></i></span>';
 }
 function counts(items) {
-  return '<span class="trio" title="' + esc(items.map(function (item) {
-    return item[1];
-  }).join(' · ')) + '">' + items.map(function (item) {
-    return '<b style="color:var(--state-' + (item[0] ? item[2] : 'idle')
-      + ')">' + item[0] + '</b>';
-  }).join('<i>·</i>') + '</span>';
+  return '<span class="trio">' + items.filter(function (item, index) {
+    return index === 0 || item[0];
+  }).map(function (item, index) {
+    var hue = index === 0 && !item[0] ? 'idle' : item[2];
+    return '<b style="color:var(--state-' + hue + ')">'
+      + (index ? '<i class="sec">·</i> ' : '')
+      + esc(item[1] ? item[0] + ' ' + item[1] : item[0]) + '</b>';
+  }).join('') + '</span>';
 }
 function strength(value) {
   if (value == null) { return '<span class="mono muted">n/a</span>'; }
