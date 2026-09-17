@@ -72,12 +72,14 @@ left to a lane's judgment except wording.
 22. **Format versions bump as `CLAUDE.md` says**: record 1 → 2, approval 2 → signature 3, payload
     schema 4 → 5, drift criteria 3 → 4. Spec, proofs and anchor formats change wording only.
 
-23. **`needs a person` is retired** (added 2026-09-17). It stood for two things. A rule whose
-    proofs are `@manual` reads `manual test` in its strong cell: the test itself must be
-    manual. A rule whose model review could not settle, or that has no brief where its risk
-    asks for one, reads `unsettled`. A held rule reads `held` there too. The review list is the
-    one place a person is needed, and its header keeps the sentence `<n> rules need a person`.
-    The `why` tokens are `unsigned`, `stale`, `held`, `manual test`, `unsettled`. Lane 7B.
+23. **`needs a person` is retired** (added 2026-09-17). It stood for two things, and each
+    now names the work a person has to do. A rule whose proofs are `@manual` reads
+    `manual test` in its strong cell: a person runs the test. A rule whose model review could
+    not settle, or that has no brief where its risk asks for one, reads `manual audit`: a
+    person judges the proof against the test. A held rule reads `held` there too. The review
+    list is the one place a person is needed, and its header keeps the sentence `<n> rules
+    need a person`. The `why` tokens are `unsigned`, `stale`, `held`, `manual test`,
+    `manual audit`. Lane 7B.
 
 ---
 
@@ -114,7 +116,7 @@ Every doc, skill, reference, message and test uses these words and no others.
 - **signature**: a named person's attestation that a rule, proof and test belong together, a
   committed file. **signer list**: `signers` in `.purlin/config.json`. **hold**: a person's
   committed statement that the test does not prove the proof, with the missing case.
-  **note**: the one line a signer writes for a `@manual` proof or an unsettled review.
+  **note**: the one line a signer writes for a `@manual` proof or a review the model could not settle.
 - **signature stale**: the signed cell's word when a signature exists and its hashes no longer
   match.
 - **review list**: the rules whose next step is a person. Exists only at `strong` and above.

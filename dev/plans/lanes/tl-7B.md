@@ -1,4 +1,4 @@
-# Lane 7B: manual test, and the review list is where a person is needed
+# Lane 7B: manual test, manual audit, and the review list is where a person is needed
 
 Plan: `dev/plans/three-levels.md` (in full, and decision 23 at the top). Rules:
 `dev/plans/lanes/tl-_rules.md` (in full). Worktree `/Users/richlabarca/LocalCode/purlin-wt/7B`,
@@ -14,40 +14,40 @@ a test that must be manual, and a rule waiting on a person. From now on:
   must be manual; a person runs it and a signer's `--note` records it). Flag `manual`, summary
   and rollup key `manual`, `why` token `manual test`, review-list summary column `manual`.
 - A rule whose model review could not settle, or that has no brief for the current hashes when
-  its risk asks for one, reads **`unsettled`** in its strong cell (reason `review not settled`
-  or `no brief for the current hashes`). Flag `unsettled`, summary and rollup key `unsettled`,
-  `why` token `unsettled`.
+  its risk asks for one, reads **`manual audit`** in its strong cell (reason `review not settled`
+  or `no brief for the current hashes`). Flag `audit`, summary and rollup key `audit`,
+  `why` token `manual audit`.
 - A held rule reads **`held`** in its strong cell as well as its signed cell (reason `held by
   <email>: <case>`); flag `held` as today.
-- The strong cell's words are therefore `strong`, `weak`, `manual test`, `unsettled`, `held`.
-  The `why` tokens are the closed set `unsigned`, `stale`, `held`, `manual test`, `unsettled`.
+- The strong cell's words are therefore `strong`, `weak`, `manual test`, `manual audit`, `held`.
+  The `why` tokens are the closed set `unsigned`, `stale`, `held`, `manual test`, `manual audit`.
 - **The review list is the one place a person is needed.** Its membership rule is unchanged:
-  a rule blocked at `strong` with `manual test`, `unsettled` or `held`, or at `signed` with
+  a rule blocked at `strong` with `manual test`, `manual audit` or `held`, or at `signed` with
   `unsigned`, `stale` or `held`. Its header stays `<n> rules need a person`; that sentence is
   the only place the words "need a person" survive, and only in that sentence shape (the
   vocabulary guard allows the literal `rules need a person` and `rule needs a person`, and
   nothing else).
-- `flags.needs_person` and `summary.needs_person` are gone: `manual` and `unsettled` replace
-  them. `CELL_TONES`: `manual test` and `unsettled` warn.
+- `flags.needs_person` and `summary.needs_person` are gone: `manual` and `audit` replace
+  them. `CELL_TONES`: `manual test` and `manual audit` warn.
 
 ## What you own
 
 Everything that carries the phrase. Start with `grep -rni "needs a person\|needs_person\|needs-a-person\|needs a human" --include=* .` outside `.git`, `.purlin/records`, `.purlin/briefs` and `dev/plans/`:
 
 - `dev/fixtures/report/team.json` and `regulated.json` (the contract: team login RULE-1 and
-  regulated checkout_design RULE-1 read `unsettled`; regulated login RULE-3 reads `held` in the
+  regulated checkout_design RULE-1 read `manual audit`; regulated login RULE-3 reads `held` in the
   strong cell; the flags and summaries follow; add one `manual test` rule to regulated: a new
   low-risk invoice RULE-3 with a `@manual` proof, strong cell `manual test`, signed cell
   `not required`, on the review list with why `manual test`).
 - `scripts/mcp/purlin/states.py`, `payload.py`, `status.py`, `drift.py`
-  (`qa.needs_person` becomes `qa.manual` and `qa.unsettled`), `scripts/review/sign.py`
-  (`signable()`, `--note` allowed on `manual test` and `unsettled`, the walk's rendering),
+  (`qa.needs_person` becomes `qa.manual` and `qa.audit`), `scripts/review/sign.py`
+  (`signable()`, `--note` allowed on `manual test` and `manual audit`, the walk's rendering),
   `scripts/review/brief.py`, `scripts/ci/gate_check.py` (the `Weak (n)` section header is
   wrong for these words: split the strong section into `Weak (n)` for `weak` and
-  `Waiting on a person (n)` for `manual test`, `unsettled` and `held`, JSON keys `weak` and
+  `Waiting on a person (n)` for `manual test`, `manual audit` and `held`, JSON keys `weak` and
   `waiting`), `scripts/report/scan.py`, `scripts/report/src/app.js` (`CELL_TONES`, `level`
   helpers), `filters.js` (`Weak` filter stays `weak` only), `review.js` (the risk summary
-  columns: unsigned, stale, held, manual, unsettled), `rule.js`, `board.js` only where a word
+  columns: unsigned, stale, held, manual test, manual audit), `rule.js`, `board.js` only where a word
   appears (lane 7A rewrites its layout in parallel; do not touch `styles.css` or the count
   renderers).
 - `skills/*/SKILL.md`, `agents/purlin.md`, `references/*.md` and `references/formats/*.md`,
@@ -71,7 +71,7 @@ Everything that carries the phrase. Start with `grep -rni "needs a person\|needs
   word rules only), `specs/skills/skill_sign.md`, `skill_status.md`, `skill_find.md`,
   `specs/tools/qa_report.md`, `specs/instructions/purlin_agent.md`. Keep every marker aligned.
 - `references/glossary.md`: `needs a person` joins the retired table with this replacement
-  text; `manual test` and `unsettled` join the words and the chain table.
+  text; `manual test` and `manual audit` join the words and the chain table.
 - Formats: `record_format.md` and `signature_format.md` only if they name the word; bump only
   if a field changes (none should).
 
