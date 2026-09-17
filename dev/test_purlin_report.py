@@ -410,7 +410,7 @@ def test_the_tiles_scale_with_the_gate(browser, tmp_path):
     # counted again under `Strong` and again under `Passing`.
     assert texts(page, '.tile-v') == [str(reached(payload['summary'], name))
                                       for name in BUCKETS]
-    assert texts(page, '.tile-v') == ['2', '0', '6', '2', '1']
+    assert texts(page, '.tile-v') == ['2', '0', '7', '2', '1']
     assert texts(page, '.flag-l') == ['Stale']
     assert texts(page, '.flag-v') == [str(payload['summary']['stale'])]
     page.close()
@@ -444,7 +444,7 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     assert cells['export']['tests'] == '0 passed'
     assert cells['login']['spec'] == '4 ready'
     assert cells['login']['signed'] == '1 of 4 \u00b7 1 stale'
-    assert cells['invoice']['signed'] == '0 of 2'
+    assert cells['invoice']['signed'] == '0 of 3'
     page.close()
 
 
@@ -458,7 +458,7 @@ def test_the_group_band_says_what_its_numbers_are(browser, tmp_path):
         '.group',
         r'els => els.map(e => e.innerText.replace(/\s+/g, " ").trim())')
     assert bands == ['\u25bc AUTH \u00b7 1 spec \u00b7 3 of 4 pass',
-                     '\u25bc BILLING \u00b7 2 specs \u00b7 2 of 3 pass',
+                     '\u25bc BILLING \u00b7 2 specs \u00b7 3 of 4 pass',
                      '\u25bc _ANCHORS \u00b7 1 spec \u00b7 1 of 1 pass']
     page.close()
 
