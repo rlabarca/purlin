@@ -18,6 +18,7 @@
   --slate-700:#334155;
   --slate-500:#64738B;
   --slate-400:#94A2B8;
+  --slate-300:#CBD5E1;  /* secondary ink on the product ramp */
   --slate-200:#E2E8F0;
   --white:#FFFFFF;
 
@@ -43,5 +44,6 @@
   --purlin-paper-200:#E4DDD4;
   --purlin-paper-300:#D3C9BC;
   --purlin-ink-700:#1B4A5C;
+  --purlin-ink-600:#345865;  /* muted ink on paper, one step darker than 500 */
   --purlin-ink-500:#4D676F;  /* navy under the 30% cream veil */
 }
