@@ -1,0 +1,53 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-17T12:41:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7ef53025f4fdd30fd84f2caf40e945e8b5f1f1b4a3fb80acd4c3326e2271b47d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Read the triple, then change `200` to `201` in the rule, then extend the proof text, then add a comment to the test; verify each of the three values differs from the first",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-4",
+  "rule_hash": "2ae1400b51023aad8421dd625d8acd009de1cace99322faffbb267cc670764f0",
+  "rule_text": "Editing the rule text, the proof text or the test body moves the triple",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "cdbdbc7cf7fc36abcc58912d3dae9857c52338c3d5dbadfbfca113dbe6adcafe",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_editing_the_rule_the_proof_or_the_test_moves_the_triple(\n            self, proved):\n        before = sign_module.triple_for(proved.rule('RULE-1'))\n\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 201 with a session token'))\n        rule_changed = sign_module.triple_for(proved.rule('RULE-1'))\n        assert rule_changed != before\n\n        proved.spec(SPEC.replace('verify 200 and a token',\n                                 'verify 200 and a token that expires'))\n        proof_changed = sign_module.triple_for(proved.rule('RULE-1'))\n        assert proof_changed != before\n\n        proved.spec(SPEC)\n        proved.edit_test(TEST_FILE.replace('== 200', '== 200  # checked'))\n        test_changed = sign_module.triple_for(proved.rule('RULE-1'))\n        assert test_changed != before",
+      "file": "dev/test_signatures.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_editing_the_rule_the_proof_or_the_test_moves_the_triple",
+      "proof": "PROOF-4",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "7d0db58794bb7fee42badbe74a4c77c07eea57929a072021498052e5dd388edc"
+}

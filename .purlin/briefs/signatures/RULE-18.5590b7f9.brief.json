@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-17T12:41:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "57e17b3c3791c8d23f6320c2a857f073f2a37cdc6ed3e2120c438d3b95d841c6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-23",
+      "text": "Configure a throwaway signing key and run the command for the whole feature; verify it exits 0, writes 2 signatures, and that the one commit it made reports signature `G` with the subject `sign(login): RULE-2 RULE-1`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-18",
+  "rule_hash": "79cf6fa0a25e1297ad78faa52bc36b1e9e1ec3f0644d5923e393b395aed7db74",
+  "rule_text": "One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule signed",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "89aa8a0314a867ff3e355ce1bf559e484128b5651f052fe17a413677e2cb47bd",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_one_signed_commit_carries_the_batch(self, capsys):\n        made = signing_project()\n        try:\n            code = sign_module.main(['login', '--project-root', made.root])\n            capsys.readouterr()\n            assert code == 0\n            assert len(made.signatures()) == 2\n            log = git(made.root, 'log', '-1', '--format=%G?%n%s').stdout\n            signature, subject = log.strip().splitlines()\n            assert signature == 'G', log\n            assert subject == 'sign(login): RULE-2 RULE-1', subject\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_one_signed_commit_carries_the_batch",
+      "proof": "PROOF-23",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5590b7f98097666f70d86bb83af782ab37af8e2cf4a3f116d59b8e1bf404c0eb"
+}

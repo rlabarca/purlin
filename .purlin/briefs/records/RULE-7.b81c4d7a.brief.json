@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-17T12:41:43Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "02696544f69166e041ad915f91c369b926369bd9a975d30dc179d63bf68421f2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "Point `GITHUB_EVENT_PATH` at an event whose `pull_request.head.repo.fork` is true; verify `commit_records(identity=\"ci\")` returns `''`, makes no API call, and prints `This pull request comes from a fork`. Unset `GITHUB_TOKEN`; verify it returns `''` and prints that no record was committed",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "ffb25f17c284d3bd534b5b59c2c321c5f6a294e90b2e41e02cdddaaf2379809c",
+  "rule_text": "A pull request from a fork writes no commit, and so does a run with no repository name or no token; each prints the reason and the run carries on",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f8eb7b197866168bf78d776decd20709cee84c7987f6c498b2130742fc8dc69e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_forked_pull_request_writes_no_commit(project, github_env,\n                                                monkeypatch, tmp_path, capsys):\n    event = tmp_path / 'event.json'\n    with open(str(event), 'w', encoding='utf-8') as handle:\n        json.dump({'pull_request': {'number': 7,\n                                    'head': {'repo': {'fork': True}}}}, handle)\n    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == ''\n    assert host.calls == [], 'a forked pull request reached the git host'\n    assert 'fork' in capsys.readouterr().out",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_forked_pull_request_writes_no_commit",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_token_writes_no_commit(project, monkeypatch, capsys):\n    monkeypatch.setenv('GITHUB_REPOSITORY', 'acme/widgets')\n    monkeypatch.delenv('GITHUB_TOKEN', raising=False)\n    monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)\n    _no_workspace(monkeypatch)\n    path = records_module.write_record(project, record(), 'ci')\n\n    assert records_module.commit_records(project, [path], 'ci', 'x') == ''\n    assert 'GITHUB_TOKEN' in capsys.readouterr().out",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_no_token_writes_no_commit",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b81c4d7ab4bbb251e99fff2cca9d7ae7b9256251dfe29b9f870090884acb21f5"
+}

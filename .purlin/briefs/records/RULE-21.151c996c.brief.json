@@ -1,0 +1,64 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-17T12:41:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "bb8aeb71aacd2bfba03d5225561ffb797f3d1e63011e16d859a923af25208731",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-21",
+      "text": "Point a repository's `origin/HEAD` at `refs/remotes/origin/trunk` and call `default_branch()`; verify `trunk`. Call it on a repository with no remote made with `init.defaultBranch=master`; verify `master`, not `main`. Call it on a repository whose HEAD is detached; verify `main`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-21",
+  "rule_hash": "b0d4005ce2868c745ed527471b90700dbe605e401b2ddc8fda84685327716490",
+  "rule_text": "The default branch is the one `origin/HEAD` points at; with no remote it is the branch `HEAD` names, and `main` only when neither can be read, so a repository whose only branch is `master` is never told its signature is not on the branch",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "e3fdb59d27cfe13a76b36625ebae89b538d096a8c204ba2808ded587a59765ef",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_detached_head_falls_back_to_main(project):\n    git(project, 'checkout', '--quiet',\n        git(project, 'rev-parse', 'HEAD').stdout.strip())\n    assert reader.default_branch(project) == 'main'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_detached_head_falls_back_to_main",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_default_branch_is_what_origin_points_at(project):\n    git(project, 'update-ref', 'refs/remotes/origin/trunk',\n        git(project, 'rev-parse', 'HEAD').stdout.strip())\n    git(project, 'symbolic-ref', 'refs/remotes/origin/HEAD',\n        'refs/remotes/origin/trunk')\n    assert reader.default_branch(project) == 'trunk'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_default_branch_is_what_origin_points_at",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_with_no_remote_the_default_branch_is_the_one_head_names(tmp_path):\n    \"\"\"A `master` repository is not told its signature is off the branch.\n\n    A git configured for `master` makes one, and that repository has no\n    `origin/HEAD` to read: answering `main` there sends the gate looking for a\n    branch that does not exist and every signature reads as not on it.\n    \"\"\"\n    root = str(tmp_path / 'no-remote')\n    os.makedirs(root)\n    git(root, '-c', 'init.defaultBranch=master', 'init', '--quiet')\n    assert reader.default_branch(root) == 'master'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_with_no_remote_the_default_branch_is_the_one_head_names",
+      "proof": "PROOF-21",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "151c996c71b0bbb3d424df036c4538f49da2bcb4dfb99836ec102be2064ec678"
+}

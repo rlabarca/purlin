@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-17T12:41:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5c5adf4d23e48ed8c1667314806a6b9d5e85d3121253327ffa362e08e944247b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Write `specs/_anchors/policy.md` opening `# Anchor: policy` with `> Source: https://github.com/acme/p.git specs/no_eval.md` and `> Pinned: abc1234def`; scan it and verify it is marked an anchor, that the source is that URL, the path `specs/no_eval.md` and the pin `abc1234def`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/specs/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-11",
+  "rule_hash": "303118c2bbaf8bf91b6368f5c4ac2ad67c4343b5fc7ec3d3de834fa819cd0c0d",
+  "rule_text": "A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5b29887782c92e56f7141bee39674ae65cb57bc69b552fc9aa01e7ef3bd9e8f7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_anchor_carries_its_source_and_its_pin(self, project):\n        project.spec(\n            '# Anchor: policy\\n\\n'\n            '> Source: https://github.com/acme/p.git specs/no_eval.md\\n'\n            '> Pinned: abc1234def\\n\\n'\n            '## Rules\\n\\n- RULE-1: No eval in source files\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Grep src/ for eval(; verify zero '\n            'matches\\n', name='policy', category='_anchors')\n        info = purlin_specs.scan_specs(project.root)['policy']\n        assert info['is_anchor'] is True\n        assert info['source'] == 'https://github.com/acme/p.git'\n        assert info['source_path'] == 'specs/no_eval.md'\n        assert info['pinned'] == 'abc1234def'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_an_anchor_carries_its_source_and_its_pin",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "36c5c3e73a5450560b953413ed4321f5d78365301110f63273a2b6786fdf0d7c"
+}

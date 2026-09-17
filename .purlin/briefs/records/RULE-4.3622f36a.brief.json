@@ -1,0 +1,80 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-17T12:41:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "e1783e0a7bb864dfee300d0db49323df3f7e937d5e66f3af62f71527fa1042af",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Call `commit_records(identity=\"developer\")` in a repository with an upstream; verify `git log -1` names the record file, that it prints `Record committed. Run: git push` and that the remote's HEAD did not move. Repeat with a record retention deleted and verify the commit carries the deletion. Repeat with no upstream, with no remote, and with the record already at HEAD; verify each prints `Run: git push -u origin HEAD`, `Record committed.` alone and `Nothing to commit` respectively and returns without raising",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "95a7e732134edf0340c54df56f79bbf89c1e79e764d72703431fe5f560aae29d",
+  "rule_text": "A developer's commit stages the records and the deletions retention made, commits under the developer's own git identity and never pushes: it prints `Record committed. Run: git push`, or `Run: git push -u <remote> HEAD` where the branch has no upstream, or `Record committed.` where there is no remote at all; with nothing staged it prints `Nothing to commit` and exits 0",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a23bc1242f6139ef2878262e0c42655589b43a47eddefdc7c8212c54d7e58f70",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_developer_commit_carries_the_deletions_retention_made(project):\n    old = [put_record(project, 'greeting',\n                      '2026091%dT120000Z-4f1c2ab-ada.json' % day)\n           for day in range(5)]\n    records_module.commit_records(project, old, 'developer', 'purlin: records')\n    fresh = records_module.write_record(project, record(), 'ada@example.com')\n    records_module.commit_records(project, [fresh], 'developer',\n                                  'purlin: record')\n\n    listed = git(project, 'ls-tree', '-r', '--name-only', 'HEAD').stdout\n    assert fresh in listed\n    assert old[0] not in listed, 'a pruned record stayed in the commit'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_carries_the_deletions_retention_made",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_lands_and_pushes",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_without_a_remote_says_so",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_without_an_upstream_says_so",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_nothing_to_commit_is_said_and_not_an_error(project, capsys):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    records_module.commit_records(project, [path], 'developer', 'purlin: one')\n    capsys.readouterr()\n    sha = records_module.commit_records(project, [path], 'developer',\n                                        'purlin: again')\n    assert sha == ''\n    assert 'Nothing to commit' in capsys.readouterr().out",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_nothing_to_commit_is_said_and_not_an_error",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3622f36aea079167d6a3221e6a71061ed7b329a7c61998825f258c76b6159046"
+}

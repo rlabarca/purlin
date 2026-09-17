@@ -1,0 +1,83 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "gate_check",
+  "generated_at": "2026-09-17T12:41:31Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "16902922b0a24a4bbdcacbb1b3488e25c00662a8410f0734a7d8f1997c3798af",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-1",
+      "text": "Run the gate over a project at gate `passed` whose record a person committed; verify it exits 0 and prints `gate: gate = passed` and `PASS. Every rule meets passed.`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-6",
+      "text": "Run the gate at gate `strong` over a record CI committed, a strength of 90 and a settled brief for the high-risk rule; verify it exits 0 and prints `gate: gate = strong` and `minimum test strength 50.`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-20",
+      "text": "Declare an anchor holding 1 rule, require it from a feature holding 2, and run the gate with `--json` at gate `passed`; verify it counts 3 rules and names `policy RULE-1` exactly once",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/gate_check/20260917T124126Z-8ea9df0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "af134663d2c17fd93360a60c2f3d2921f0a86ba321389b9453c0238c9b38b8c7",
+  "rule_text": "A rule is counted once, under the feature that owns it, and it is met when the payload reads `meets_gate` true",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "1af250331da9dba18ad71cbeaa34f30ac98d922abe7d88599eec701ca4802d2b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_developer_record_is_enough(self):\n        made = project_at('passed', by_ci=False, briefs=())\n        try:\n            code, output = run(made)\n            assert code == 0, output\n            assert 'gate: gate = passed' in output\n            assert 'PASS. Every rule meets passed.' in output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_developer_record_is_enough",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_record_ci_committed_with_a_settled_brief_passes(self):\n        made = project_at('strong')\n        try:\n            code, output = run(made)\n            assert code == 0, output\n            assert 'gate: gate = strong' in output\n            assert 'minimum test strength 50.' in output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_record_ci_committed_with_a_settled_brief_passes",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_required_rule_is_counted_once_under_its_owner(self):\n        anchor = ('# Feature: policy\\n\\n'\n                  '> Description: The house rules.\\n'\n                  '> Scope: src/login.py\\n\\n'\n                  '## Rules\\n\\n'\n                  '- RULE-1: Every session token is 32 characters '\n                  '[risk: low]\\n\\n'\n                  '## Proof\\n\\n')\n        made = Project(gate='passed')\n        try:\n            made.spec(anchor, name='policy', category='_anchors')\n            made.spec(SPEC.replace('> Scope: src/login.py',\n                                   '> Requires: policy\\n> Scope: src/login.py'))\n            code, output = run(made, as_json=True)\n            data = json.loads(output[output.index('{'):])\n            assert data['rules'] == 3, output\n            assert len([line for line in data['not_passed']\n                        if line.startswith('policy RULE-1')]) == 1, data\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_required_rule_is_counted_once_under_its_owner",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d42e2302fc580fec28c5323ab02d17069c10f85896980060dfba048b821e0d56"
+}

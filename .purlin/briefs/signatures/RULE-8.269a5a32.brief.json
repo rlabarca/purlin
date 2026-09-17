@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-17T12:41:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "cd937662d76c53e0239be522aed242ade555466a4224c7ab4c5a2f221f830c05",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Write a signature for the address `Rich.LaBarca+purlin@example.com`; verify the only file in the signatures directory is named `RULE-1.<hash8>.rich-labarca-purlin.json` for that rule's triple",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "73cdf57742ce2587706c19e5579630c3a5a7d33c624dd214594432ad37f50693",
+  "rule_text": "A signature file is named for the rule, the first eight characters of the triple and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c7e922cb7cd4736acd7e45b483574ca6ee819bdf0ae6305d0c904090e7e724a5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_name_carries_the_rule_the_triple_and_the_slug(self, proved):\n        triple = sign_module.triple_for(proved.rule('RULE-1'))\n        sign_one(proved, email='Rich.LaBarca+purlin@example.com')\n        assert proved.signatures() == [\n            'RULE-1.%s.rich-labarca-purlin.json' % triple[:8]]",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_name_carries_the_rule_the_triple_and_the_slug",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "269a5a3276d36a7c5ac25bb997b97b8cea8a438ec09a6f09171727c69d218858"
+}

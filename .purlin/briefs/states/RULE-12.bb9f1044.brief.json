@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:41:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "db8b92d41ca93bf8f13640df824ad4ca08feec5fbb3d1bdd9e7276cccc4c8b08",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-14",
+      "text": "At the gate `strong`, whose minimum is 70, commit a ci record measuring 48 in which both proofs pass; build the payload and verify the strong cell of the rule whose proofs raise `happy_path_only` reads `weak` with the reasons `[\"strength 48% under 70%\", \"happy_path_only\"]` in that order",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-12",
+  "rule_hash": "ed3e391ed2fe5104be793eba9dfe91b7a54fa0b1541fefa6bf410f1f4495254e",
+  "rule_text": "A test strength under `min_strength` makes the strong cell read `weak` with the reason `strength <n>% under <m>%`, and every free-check finding on the proof text is named after it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f19aef1beeaa3286be717292eb385db8d1eaaf20095e63680e16cff73be6b669",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_strength_under_the_minimum_is_weak_and_names_the_findings(self):\n        made = Project(gate='strong', extra_config={'ai_review_at': 'never'})\n        try:\n            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},\n                         {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                        ci=True, strength=48)\n            cell = made.cell('RULE-1', 'strong')\n            assert cell['word'] == 'weak'\n            assert cell['reasons'] == ['strength 48% under 70%',\n                                       'happy_path_only'], cell\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_strength_under_the_minimum_is_weak_and_names_the_findings",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "bb9f10446ec36cf18a0edb816f01e1f5ce8243080c74b56be01d4bf986c5a531"
+}

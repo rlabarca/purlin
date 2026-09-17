@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-17T12:41:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4aec8b0191fcca364e48c2e8b3d762b1272c049985ebce15dcf2b54a3948d1d5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-25",
+      "text": "Commit a record for `greeting` whose `test_strength` is `71`, an invalid file named like a record under `broken/` holding `not json` and one under `listed/` holding `[1, 2]`; then commit a record for `farewell`, and rewrite the `greeting` record on disk with `test_strength` `5` without committing it. Call `load_records(project, \"HEAD~1\")`; verify the features are exactly `[\"greeting\"]`, its `test_strength` is `71` and its label is `developer`. Call it with `HEAD`; verify the features are exactly `[\"farewell\", \"greeting\"]` and `greeting` still reads `71`. Call it with the missing ref `no-such-ref`; verify an empty map `{}`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-23",
+  "rule_hash": "6c0ac0b4327bb32a61c63a3dc8a873213c696bbb9d9f8669aebcc3054a0a7c14",
+  "rule_text": "Records read at a ref come out of git at that commit rather than off the disk, each labelled from git; a ref git cannot read gives no records, and a file under `.purlin/records/` that is not a JSON object is skipped",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "eac4924e7309d28edefe6954e06cef1716b59059a850288192787d17bebdf101",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_records_read_at_a_ref_come_out_of_git(project):\n    name = '20260913T120000Z-4f1c2ab-ada.json'\n    greeting = put_record(project, 'greeting', name)\n    _put_text(project, 'broken', name, 'not json')\n    _put_text(project, 'listed', name, '[1, 2]')\n    git(project, 'add', '-A')\n    git(project, 'commit', '--quiet', '-m', 'the records')\n    put_record(project, 'farewell', '20260913T130000Z-4f1c2ab-ada.json',\n               record('farewell'))\n    git(project, 'add', '-A')\n    git(project, 'commit', '--quiet', '-m', 'one more record')\n    edited = record()\n    edited['test_strength'] = 5\n    put_record(project, 'greeting', name, edited)\n\n    at_parent = records_module.load_records(project, 'HEAD~1')\n    assert sorted(at_parent) == ['greeting'], at_parent\n    entry = at_parent['greeting'][None]\n    assert entry['test_strength'] == 71\n    assert entry['label'] == 'developer'\n    assert entry['path'] == greeting\n\n    at_head = records_module.load_records(project, 'HEAD')\n    assert sorted(at_head) == ['farewell', 'greeting'], at_head\n    assert at_head['greeting'][None]['test_strength'] == 71\n    # Without a ref the disk is read, and the disk holds the edit.\n    assert records_module.load_records(project)['greeting'][None][\n        'test_strength'] == 5\n\n    assert records_module.load_records(project, 'no-such-ref') == {}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_records_read_at_a_ref_come_out_of_git",
+      "proof": "PROOF-25",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2488e2bbb77d939bc11ca50a19dee8e5b0121adc085182543deed5675d635617"
+}

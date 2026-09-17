@@ -1,0 +1,62 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:41:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5916f3ae81d66a8f8258a5e0121df7eef5f91886c40ab7cae9c807d7aaeb205d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-17",
+      "text": "At the gate `strong`, build the strong cell of a `[risk: high]` rule with no brief and verify it reads `manual audit` with the reason `no brief for the current hashes`; with a brief whose `settled` is false and verify it reads `manual audit` with the reason `review not settled`; and with a brief that settled and observed nothing and verify the cell reads `strong`",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-18",
+      "text": "Build the strong cell of a `[risk: medium]` rule at the gate `strong`, whose threshold is `high`, first with a break engine and then with none; verify the first reads `strong` and the second `manual audit`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-15",
+  "rule_hash": "7b67d0f3c631366112ab4695e46cd485bdab8488820460db5b859cc117382d56",
+  "rule_text": "A rule whose risk is at or above `ai_review_at` needs a brief for its current rule, proof and test hashes that settled; without one the strong cell reads `manual audit` with the reason `no brief for the current hashes`, and a brief that did not settle reads `manual audit` with the reason `review not settled`; with no break engine available the threshold drops one level",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ca6e23128e8b617d1d30dda75811e414fbb75e81ec66f18b50f0122a9912c4ad",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_brief_settles_level_two_where_the_risk_asks_for_one(self):\n        assert _strong()['word'] == 'manual audit'\n        assert _strong()['reasons'] == ['no brief for the current hashes']\n        open_question = _strong(brief={'settled': False, 'observations': []})\n        assert open_question['word'] == 'manual audit', open_question\n        assert open_question['reasons'] == ['review not settled'], open_question\n        settled = _strong(brief={'settled': True, 'observations': []})\n        assert settled['word'] == 'strong', settled",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_brief_settles_level_two_where_the_risk_asks_for_one",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_with_no_break_engine_the_threshold_drops_one_level(self):\n        assert _strong(risk='medium')['word'] == 'strong'\n        widened = _strong(risk='medium', mutation_engine_available=False)\n        assert widened['word'] == 'manual audit', widened",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_with_no_break_engine_the_threshold_drops_one_level",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3e76f6dbccf52d049c26d2d71d7d2f151d95d1fd019b25b385b6230ef0c3634d"
+}

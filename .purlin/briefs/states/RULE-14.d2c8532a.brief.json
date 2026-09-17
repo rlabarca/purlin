@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:41:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d13c1e8fdb298af10c8f8e5991f01c6de888ea246d092307094b006495ad6dda",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Build the strong cell with a brief whose `tests` entry carries the finding `asserts_nothing`; verify the cell reads `weak` and that `asserts_nothing` is among its findings and its reasons. Build it again with a brief that settled and observed `The test reads the status code alone.`; verify the cell reads `weak` with that sentence as its one reason",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "126683239b28dacf35559362fabd031d664488ae36ea1f88e5f913d0db479bdd",
+  "rule_text": "A finding the brief raised against a test body makes the strong cell read `weak` and is named among its findings, and a sentence a settled review observed makes it read `weak` with that sentence among its reasons",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ee9d2c01cd7b26dcced63e9831f37874f53207e3713ab4ec54766fd24a4dd2d5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_finding_against_the_test_body_is_weak(self):\n        cell = _strong(risk='low', brief={\n            'settled': True, 'observations': [],\n            'tests': [{'proof': 'PROOF-1', 'findings': ['asserts_nothing']}]})\n        assert cell['word'] == 'weak', cell\n        assert 'asserts_nothing' in cell['findings'], cell\n        assert 'asserts_nothing' in cell['reasons'], cell\n        observed = _strong(brief={\n            'settled': True,\n            'observations': ['The test reads the status code alone.']})\n        assert observed['word'] == 'weak', observed\n        assert observed['reasons'] == [\n            'The test reads the status code alone.'], observed",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_finding_against_the_test_body_is_weak",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d2c8532a03190dcae25b93903ca83cbd74c7aa352b2b17dcbc3c75b5ad25caf6"
+}

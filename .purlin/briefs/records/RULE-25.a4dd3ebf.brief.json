@@ -1,0 +1,73 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-17T12:41:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "6f42e985f7cac93131efa57c509b0f5a262a934ed570c948f5e3302ae849e55d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-28",
+      "text": "Render the review list of a payload listing `billing RULE-2` low unsigned, `login RULE-10` high reading `manual audit`, `login RULE-3` high stale and `auth RULE-1` medium unsigned; verify the header reads `Review list: 4 rules need a person.` and the lines follow in the order `login RULE-3`, `login RULE-10`, `auth RULE-1`, `billing RULE-2`, each carrying its risk, its blocking cell and its `why` tokens. Render a payload with an empty list and verify it reads `Review list: no rule needs a person.`",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-29",
+      "text": "Scan a local repository at the gate `strong` whose `RULE-1` is tagged `[risk: high]` and whose only proof is `@manual`, so no machine can settle it; verify the output carries a `Review list:` line after the rollup and a line naming `high`, `greeting RULE-1`, the cell `strong` and the token `manual`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/records/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-25",
+  "rule_hash": "a631fdd6d351837846ef2dc48232558ca19a17a6c38b1b31a892b3740355f006",
+  "rule_text": "`scan.py` prints the review list after the rollup, one line per rule naming its risk, its feature and rule id, the cell that blocks it and the `why` tokens that put it there, high risk first and a stale or held rule first within a risk, and says so in one line when no rule needs a person",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "cce5f84467203e7ae900df22a3fa43688bc6d4f255a325a6ad4e016ced33ad96",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_one_rule_reads_in_the_singular():\n    text = scan_module.review_list_text(\n        _payload([('login', 'RULE-3', 'high', 'signed', ['held'])]))\n    assert text.splitlines()[0] == 'Review list: 1 rule needs a person.'",
+      "file": "dev/test_scan_review_list.py",
+      "findings": [],
+      "name": "test_one_rule_reads_in_the_singular",
+      "proof": "PROOF-28",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_list_is_one_line_per_rule_in_review_order():\n    payload = _payload(\n        [('billing', 'RULE-2', 'low', 'signed', ['unsigned']),\n         ('login', 'RULE-10', 'high', 'strong', ['manual audit']),\n         ('login', 'RULE-3', 'high', 'signed', ['stale']),\n         ('auth', 'RULE-1', 'medium', 'signed', ['unsigned'])])\n    lines = scan_module.review_list_text(payload).splitlines()\n\n    assert lines[0] == 'Review list: 4 rules need a person.'\n    order = [line.split()[1] + ' ' + line.split()[2] for line in lines[1:]]\n    assert order == ['login RULE-3', 'login RULE-10', 'auth RULE-1',\n                     'billing RULE-2'], lines\n    assert lines[1].split()[:4] == ['high', 'login', 'RULE-3', 'signed']\n    assert lines[1].endswith('stale'), lines[1]\n    assert lines[2].split()[:4] == ['high', 'login', 'RULE-10', 'strong']\n    assert lines[2].endswith('manual audit'), lines[2]\n    assert lines[3].split()[:4] == ['medium', 'auth', 'RULE-1', 'signed']\n    assert lines[4].endswith('unsigned'), lines[4]\n    assert scan_module.review_list_text(_payload([])) == \\\n        'Review list: no rule needs a person.'",
+      "file": "dev/test_scan_review_list.py",
+      "findings": [],
+      "name": "test_the_list_is_one_line_per_rule_in_review_order",
+      "proof": "PROOF-28",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_scan_prints_the_list_after_the_rollup(tmp_path):\n    \"\"\"A `@manual` proof is the one thing no machine can run.\n\n    The gate is `strong`, so the strong cell exists, and the rule lands on\n    the review list reading `manual test`.\n    \"\"\"\n    source = str(tmp_path / 'source')\n    make_project(source)\n    spec = os.path.join(source, 'specs', 'core', 'greeting.md')\n    with open(spec, 'w', encoding='utf-8') as handle:\n        handle.write(SPEC.replace('returns `Hello, <name>!`',\n                                  'returns `Hello, <name>!` [risk: high]')\n                         .replace('verify `Hello, Ada!` @unit',\n                                  'verify `Hello, Ada!` @manual'))\n    git(source, 'commit', '--quiet', '-am', 'a high-risk rule proved by hand')\n    bare = str(tmp_path / 'origin.git')\n    git(tmp_path, 'init', '--bare', '--quiet', '-b', 'main', bare)\n    git(source, 'push', '--quiet', bare, 'main')\n\n    text = scan_module.scan(bare, 'main')\n\n    assert 'Review list:' in text\n    assert text.index('Review list:') > text.index('rules.')\n    rows = [line.split() for line in text.splitlines()\n            if 'greeting RULE-1' in line]\n    assert rows and rows[0][:3] == ['high', 'greeting', 'RULE-1'], text\n    assert rows[0][3] == 'strong', text\n    assert rows[0][4:6] == ['manual', 'test'], text",
+      "file": "dev/test_scan_review_list.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_scan_prints_the_list_after_the_rollup",
+      "proof": "PROOF-29",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "a4dd3ebf840eea65fdfe9efc6918ed875e7843ceaf995f596aba3372b7993ece"
+}

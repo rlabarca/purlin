@@ -1,0 +1,61 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-17T12:41:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "ac58e75c71c2a40a088c99dbaa741df5bf5140dc825aa1a2ccc0693e33817d3c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-21",
+      "text": "Run the command in a checkout with no signing key; verify it exits 1, prints `git config gpg.format ssh`, `git config user.signingkey ~/.ssh/id_ed25519.pub` and `git config commit.gpgsign true`, and that the signatures directory is empty",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-22",
+      "text": "Run the command in a separate process against a checkout with no signing key; verify it exits 1 and prints `git config gpg.format ssh`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-17",
+  "rule_hash": "2e952511895c1d9b8c980249682a5ee89804437a3ea1e07f94bad7e2ea6f208c",
+  "rule_text": "With no signing configured the command writes no signature, exits 1 and prints the three git config commands that set signing up",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "8a85b457a0bba98bf61e22b2740b648ad241cebf002f47d7e8641fd69c539ffb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_without_signing_the_setup_is_printed_and_nothing_is_written(\n            self, at_strong, capsys):\n        code = sign_module.main(['login', '--project-root', at_strong.root])\n        output = capsys.readouterr().out\n        assert code == 1\n        assert 'git config gpg.format ssh' in output\n        assert 'git config user.signingkey ~/.ssh/id_ed25519.pub' in output\n        assert 'git config commit.gpgsign true' in output\n        assert at_strong.signatures() == []",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_without_signing_the_setup_is_printed_and_nothing_is_written",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_script_runs_as_a_command(self, at_strong):\n        result = subprocess.run(\n            [sys.executable, SIGN_PY, 'login', '--project-root',\n             at_strong.root], capture_output=True, text=True, timeout=120)\n        assert result.returncode == 1, result.stdout + result.stderr\n        assert 'git config gpg.format ssh' in result.stdout",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_script_runs_as_a_command",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d03ba17aab41166d22ef316c034466c7cb35782eec9ebb3e65cafa20317d47c6"
+}

@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-17T12:41:53Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "1bc8bf5c9b93fc61c438e9f970cbf516cf40a69ebdcd229a50952a1ed9dc2a56",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-22",
+      "text": "Read `.claude-plugin/plugin.json` and verify the server entry's command is exactly `sh`, that its first argument ends in `scripts/purlin_python.sh` and that its last ends in `scripts/mcp/purlin/server.py`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/server/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-22",
+  "rule_hash": "837f1c327ceeba3e337c492ab41e4728539229fd7cb2e5e55dfaac34a956b1dd",
+  "rule_text": "The plugin manifest starts the server through `sh` and the interpreter resolver, and the last argument it passes names `scripts/mcp/purlin/server.py`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "76523c54bae50841f92116a73ce7cf223574a03db81061f50f9083a82f97c9b1",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_plugin_entry_point_names_the_package(self):\n        with open(os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json'),\n                  encoding='utf-8') as handle:\n            manifest = json.load(handle)\n        entry = manifest['mcpServers']['purlin']\n        assert entry['command'] == 'sh', entry\n        args = entry['args']\n        assert args[0].endswith('scripts/purlin_python.sh'), args\n        assert args[-1].endswith('scripts/mcp/purlin/server.py'), args",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_plugin_entry_point_names_the_package",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "cdd184732433128b0f817dabde5764a6fca6c9a73a03e2352c8d0eb53c38582f"
+}

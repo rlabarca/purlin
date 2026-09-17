@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:41:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "c98019b3b7769555fa027e8534f10652f33696f15893b6a5167294f563dd00f8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-13",
+      "text": "At the gate `strong`, build the payload for a rule with no test in a feature whose latest record measured 48; verify the strong cell reads `weak`, that its reasons are exactly `[\"not passed\"]` and that its strength reads 48",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-11",
+  "rule_hash": "8edeb6ab7344a121acd755897c29fc52b4949a29840a04db9f0d3519a3eac0ec",
+  "rule_text": "A rule whose passed cell is not met has a strong cell reading `weak` with the one reason `not passed`, and the feature's latest test strength beside it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "e4948d584462a31424d9072a4fce37ae75cc43046f8a6ca9385bc4971957afe7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_that_did_not_pass_is_weak_for_that_one_reason(self):\n        made = Project(gate='strong')\n        try:\n            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                        ci=True, strength=48)\n            cell = made.cell('RULE-2', 'strong')\n            assert cell['word'] == 'weak'\n            assert cell['reasons'] == ['not passed'], cell\n            assert cell['strength'] == 48, cell\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_rule_that_did_not_pass_is_weak_for_that_one_reason",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "db8955bf479bc222f92e1c57c380c52f130cb157d79b06a188034a83bc655d79"
+}

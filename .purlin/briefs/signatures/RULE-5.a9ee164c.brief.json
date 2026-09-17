@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-17T12:41:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "992d5d75141abbe34597ef63d2a86deb676dd58c6478f0f416ac75b8e1c30df4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "Retag `PROOF-2` as `@manual` and read the hashes of `RULE-2`; verify the kind of the test hash is `manual`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260917T124127Z-8ea9df0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "df09d74a8977cf921ef0e23e7106bb23692df7cd1846ae3f77d54bf47d902538",
+  "rule_text": "A rule proved only by a `@manual` proof records `manual` as the kind of its test hash instead of naming a test file",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ddd613e4f3431088e88caf83f20faa88b3ded9dc2a060186dd3617e62a0c6268",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_manual_proof_says_so_instead_of_naming_a_file(self):\n        made = Project(spec=SPEC.replace(\n            'verify 401 and the body \"denied\"',\n            'verify 401 and the body \"denied\" @manual'))\n        try:\n            parts = sign_module.rule_proof_test_hashes(\n                made.root, 'login', 'RULE-2')\n            assert parts[3] == 'manual'\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_manual_proof_says_so_instead_of_naming_a_file",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a9ee164cdc8ca6f7d36aaff464df926e38c2ca7ecc6243a616f5c95f32a312e4"
+}
