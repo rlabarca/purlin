@@ -80,6 +80,14 @@ left to a lane's judgment except wording.
     list is the one place a person is needed, and its header keeps the sentence `<n> rules
     need a person`. The `why` tokens are `unsigned`, `stale`, `held`, `manual test`,
     `manual audit`. Lane 7B.
+24. **The Board tab leads with tests passing** (added 2026-09-17). Its headline is
+    `<passing> of <rules> rules pass their tests · <failing> failing · <untested> untested`,
+    where passing means the passed cell is met, with `<met> of <rules> meet the gate <gate>` as
+    a second, secondary line. The tiles read cumulative levels: `Untested`, `Failing`,
+    `Passing`, then `Strong` (strong cell met, signed rules included), then `Signed` and the
+    `Stale` flag card. The group band reads `<name> · <n> specs · <passing> of <rules> pass`.
+    The gate and the signed layer stay in their own columns. Lane 7A.
+
 
 ---
 
