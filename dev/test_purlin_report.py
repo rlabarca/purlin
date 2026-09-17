@@ -530,17 +530,17 @@ def test_a_rule_waiting_on_an_operating_system_says_so(browser, tmp_path):
 @pytest.mark.proof("purlin_report", "PROOF-18", "RULE-18", tier="e2e")
 def test_the_review_list_is_ordered_by_risk(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
-    assert 'Review list (3)' in page.inner_text('.tabs')
+    assert 'Review list (4)' in page.inner_text('.tabs')
     page.click('[data-screen="review"]')
-    assert '3 rules need a person' in page.inner_text('h1')
+    assert '4 rules need a person' in page.inner_text('h1')
     assert texts(page, '.group .gt') == ['medium risk', 'low risk']
-    assert texts(page, '.group .muted') == ['(2)', '(1)']
+    assert texts(page, '.group .muted') == ['(2)', '(2)']
     cells = review_cells(page)
-    assert len(cells) == 3
+    assert len(cells) == 4
     # Stale first inside the medium group, whatever order the payload holds.
     assert [(row[0], row[1]) for row in cells] == [
         ('login', 'RULE-2'), ('checkout_design', 'RULE-1'),
-        ('login', 'RULE-3')]
+        ('login', 'RULE-3'), ('invoice', 'RULE-3')]
     assert cells[0][2] == (
         'Five failed attempts lock the account for fifteen minutes.')
     assert cells[0][3] == 'medium'
@@ -577,8 +577,10 @@ def test_a_review_row_states_the_blocking_cell_and_its_reasons(browser,
     page.click('[data-screen="review"]')
     rows = {(row[0], row[1]): row for row in review_cells(page)}
     assert rows[('login', 'RULE-2')][5] == 'hashes changed after the signature'
-    assert rows[('checkout_design', 'RULE-1')][4] == 'NEEDS A PERSON'
+    assert rows[('checkout_design', 'RULE-1')][4] == 'MANUAL AUDIT'
     assert rows[('checkout_design', 'RULE-1')][5] == 'review not settled'
+    assert rows[('invoice', 'RULE-3')][4] == 'MANUAL TEST'
+    assert rows[('login', 'RULE-3')][4] == 'HELD'
     assert rows[('login', 'RULE-3')][5] == (
         'held by sam@acme.com: the lock expiry is never read')
     page.close()
@@ -650,10 +652,10 @@ def test_the_working_tree_notice_only_shows_on_the_board(browser, tmp_path):
 @pytest.mark.proof("purlin_report", "PROOF-24", "RULE-24", tier="e2e")
 def test_the_open_rule_is_the_last_tab(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
-    assert texts(page, '.tabs button') == ['Board', 'Review list (3)']
+    assert texts(page, '.tabs button') == ['Board', 'Review list (4)']
     page.click('[data-act="feature"][data-feature="login"]')
     page.click('.rule[data-rule="RULE-1"]')
-    assert texts(page, '.tabs button') == ['Board', 'Review list (3)',
+    assert texts(page, '.tabs button') == ['Board', 'Review list (4)',
                                            'login RULE-1']
     page.click('.tabs button:last-child')
     assert 'RULE-1' in page.inner_text('h1')
@@ -669,8 +671,8 @@ def test_the_link_back_closes_the_rule_where_it_was_opened(browser, tmp_path):
     page.click('.rev')
     assert page.inner_text('[data-act="close"]') == u'\u2190 Review list'
     page.click('[data-act="close"]')
-    assert '3 rules need a person' in page.inner_text('h1')
-    assert texts(page, '.tabs button') == ['Board', 'Review list (3)']
+    assert '4 rules need a person' in page.inner_text('h1')
+    assert texts(page, '.tabs button') == ['Board', 'Review list (4)']
 
     page.click('[data-screen="board"]')
     page.click('[data-act="feature"][data-feature="login"]')
