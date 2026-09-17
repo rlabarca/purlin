@@ -72,6 +72,13 @@ left to a lane's judgment except wording.
 22. **Format versions bump as `CLAUDE.md` says**: record 1 → 2, approval 2 → signature 3, payload
     schema 4 → 5, drift criteria 3 → 4. Spec, proofs and anchor formats change wording only.
 
+23. **`needs a person` is retired** (added 2026-09-17). It stood for two things. A rule whose
+    proofs are `@manual` reads `manual test` in its strong cell: the test itself must be
+    manual. A rule whose model review could not settle, or that has no brief where its risk
+    asks for one, reads `unsettled`. A held rule reads `held` there too. The review list is the
+    one place a person is needed, and its header keeps the sentence `<n> rules need a person`.
+    The `why` tokens are `unsigned`, `stale`, `held`, `manual test`, `unsettled`. Lane 7B.
+
 ---
 
 # Part A: the design
