@@ -9,7 +9,7 @@
 #   3. purlin_run.py --quick            the tests, the results, the commit
 #   4. gate_check.py --check            exits 0 under passed
 #   5. purlin:init --gate strong        raises the gate
-#   6. gate_check.py --check            exits 1: nothing CI wrote is there yet
+#   6. gate_check.py --check            exits 1: no audit has measured it
 #   7. a record and its briefs from --ci, committed under the build identity
 #   8. gate_check.py --check            exits 0: strong is met by that record
 #   8a. a --ci run on a pull request, which commits nothing and says so
@@ -209,7 +209,7 @@ PY
 }
 
 # `ci` or `local` for the newest record, read the way the reader
-# reads it: from the last commit that touched the file.
+# reads it: from the folder the file sits in.
 record_label() {  # dir
   python3 - "$1" <<'PY'
 import os
@@ -219,7 +219,7 @@ from purlin import records
 loaded = records.load_records(sys.argv[1])
 for by_os in loaded.values():
     for record in by_os.values():
-        print(record.get('label'))
+        print(record.get('source'))
         sys.exit(0)
 print('none')
 PY
@@ -264,14 +264,33 @@ gate_walk() {  # dir language
       "$(git -C "$dir" log -1 --format=%s)"
   fi
   expect_absent "$language: no record is written at passed" \
-    "$dir/.purlin/records/greeting"
+    "$dir/.purlin/records/local/greeting"
   expect_exit "$language: passed is met by the test results" 0 \
     python3 "$GATE" --check --project-root "$dir"
 
   init_at "$dir" strong
   expect_in "$language: raising to strong writes the workflow" \
     'wrote .github/workflows/purlin.yml' "$dir/.purlin-init.log"
-  expect_exit "$language: strong refuses a run nobody on CI made" 1 \
+  expect_exit "$language: strong refuses a project no audit has measured" 1 \
+    python3 "$GATE" --check --project-root "$dir"
+
+  # An audit anyone runs counts at strong. It writes its record under
+  # .purlin/records/local/, with the briefs beside it, and commits both
+  # itself under this person's own identity.
+  python3 "$RUN" --all --audit --project-root "$dir" \
+    > "$dir/.purlin-audit.log" 2>&1
+  expect_file "$language: the audit wrote its record under local/" \
+    "$dir/.purlin/records/local/greeting"
+  expect_in "$language: the audit committed its own record" \
+    'Record committed.' "$dir/.purlin-audit.log"
+  expect_in "$language: the audit ends on the strong gate line" \
+    'gate strong: 1 of 1' "$dir/.purlin-audit.log"
+  if [ "$(record_label "$dir")" = "local" ]; then
+    pass "$language: a record under local/ reads local"
+  else
+    bad "$language: a record under local/ reads local" "$(record_label "$dir")"
+  fi
+  expect_exit "$language: strong is met by an audit anyone ran" 0 \
     python3 "$GATE" --check --project-root "$dir"
 
   # A record's file name carries the second it was written, and the reader
@@ -286,10 +305,9 @@ gate_walk() {  # dir language
     > "$dir/.purlin-ci.log" 2>&1
   commit_as_ci "$dir"
   if [ "$(record_label "$dir")" = "ci" ]; then
-    pass "$language: a record the build identity committed is labelled ci"
+    pass "$language: a record under ci/ reads ci"
   else
-    bad "$language: a record the build identity committed is labelled ci" \
-      "$(record_label "$dir")"
+    bad "$language: a record under ci/ reads ci" "$(record_label "$dir")"
   fi
   # CI commits its record on top of the commit it observed, so the record is
   # never at HEAD. What makes it count is its `scope_tree`: the scoped files
@@ -331,6 +349,16 @@ gate_walk() {  # dir language
 
   set_signers "$dir" jane@acme.com
   commit_all "$dir" "name the signers"
+
+  # Only CI's record counts at signed. With CI's out of the way, the one the
+  # local audit wrote is named as the preview it is.
+  mv "$dir/.purlin/records/ci" "$dir/.purlin/records/aside"
+  python3 "$GATE" --check --project-root "$dir" \
+    > "$dir/.purlin-local.log" 2>&1
+  expect_in "$language: signed says a local record does not count" \
+    'local record does not count under signed' "$dir/.purlin-local.log"
+  mv "$dir/.purlin/records/aside" "$dir/.purlin/records/ci"
+
   expect_exit "$language: signed refuses a rule at sign_at with no signature" 1 \
     python3 "$GATE" --check --project-root "$dir"
 

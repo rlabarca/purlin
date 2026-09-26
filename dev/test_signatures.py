@@ -186,7 +186,7 @@ class Project(object):
         write(os.path.join(self.root, rel), json.dumps({
             'schema_version': 3, 'feature': 'login', 'commit': self.head(),
             'source': source, 'timestamp': iso, 'runner': runner,
-            'os': os_name, 'environment': {'os': os_name or 'linux'},
+            'os': os_name, 'environment': {'os': os_name},
             'gate': FIRST_GATE, 'test_strength': strength,
             'scope_tree': purlin_specs.scope_tree(self.root, ['src/login.py']),
             'proofs': proofs}))

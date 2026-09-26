@@ -86,7 +86,7 @@ def test_the_scan_prints_the_list_after_the_rollup(tmp_path):
     text = scan_module.scan(bare, 'main')
 
     assert 'Review list:' in text
-    assert text.index('Review list:') > text.index('rules.')
+    assert text.index('Review list:') > text.index('proof lines.')
     rows = [line.split() for line in text.splitlines()
             if 'greeting RULE-1' in line]
     assert rows and rows[0][:3] == ['high', 'greeting', 'RULE-1'], text

@@ -37,7 +37,8 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import brief as brief_module  # noqa: E402
-from test_signatures import (REVIEW_GATE, SPEC, TEST_FILE,  # noqa: E402
+from test_signatures import (REVIEW_GATE, SIGNING_GATE, SPEC,  # noqa: E402
+                             TEST_FILE,
                              Project, commit_as_ci, write)
 
 BRIEF_PY = os.path.join(ROOT, 'scripts', 'review', 'brief.py')
@@ -62,6 +63,16 @@ def proved():
 def at_strong():
     """The same project at `strong`, where a high-risk rule asks for a model."""
     made = Project(gate=REVIEW_GATE)
+    made.proofs()
+    made.record()
+    yield made
+    made.close()
+
+
+@pytest.fixture
+def at_signed():
+    """A project at `signed`, where only a record CI wrote counts."""
+    made = Project(gate=SIGNING_GATE, config={'signers': ['jane@acme.com']})
     made.proofs()
     made.record()
     yield made
@@ -372,7 +383,7 @@ class TestWriting:
             self, proved):
         built = build(proved, 'RULE-1')
         path = brief_module.write_brief(proved.root, built)
-        assert path == ('.purlin/briefs/login/RULE-1.%s.brief.json'
+        assert path == ('.purlin/briefs/local/login/RULE-1.%s.brief.json'
                         % built['triple_hash'][:8])
         text = os.path.join(proved.root, *(path[:-5] + '.txt').split('/'))
         assert os.path.isfile(text)
@@ -403,15 +414,15 @@ class TestWriting:
             written = brief_module.write_briefs(made.root)
             assert [path.rsplit('/', 1)[1].split('.')[0] for path in written] \
                 == ['RULE-2'], written
-            assert all(path.startswith('.purlin/briefs/login/')
+            assert all(path.startswith('.purlin/briefs/local/login/')
                        for path in written)
         finally:
             made.close()
 
     @pytest.mark.proof("brief", "PROOF-45", "RULE-21", tier="integration")
-    def test_a_rule_with_no_counting_pass_gets_no_brief(self, at_strong):
-        assert brief_module.write_briefs(at_strong.root) == [], (
-            'a developer record does not count under strong, so there is no '
+    def test_a_rule_with_no_counting_pass_gets_no_brief(self, at_signed):
+        assert brief_module.write_briefs(at_signed.root) == [], (
+            'a local record does not count under signed, so there is no '
             'test result to set the proof against')
 
     @pytest.mark.proof("brief", "PROOF-30", "RULE-21", tier="integration")
@@ -451,7 +462,7 @@ class TestTheCommandLine:
         output = capsys.readouterr().out
         assert code == 0
         assert 'login RULE-1' in output
-        assert os.path.isdir(os.path.join(proved.root, '.purlin', 'briefs',
+        assert os.path.isdir(os.path.join(proved.root, '.purlin', 'briefs', 'local',
                                           'login'))
 
     @pytest.mark.proof("brief", "PROOF-35", "RULE-24", tier="integration")

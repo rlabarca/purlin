@@ -65,7 +65,7 @@
 - PROOF-26 (RULE-18): Build the same design rule's brief with no screenshot on disk; verify the mock is shown as the glob `designs/login/*.png` and the screenshot list is empty @integration
 - PROOF-27 (RULE-19): Write the brief for a rule; verify the path is `.purlin/briefs/login/RULE-1.<hash8>.brief.json` for the rule's own triple, that a `.txt` rendering sits beside it, and that the JSON carries schema `purlin-brief/2` @integration
 - PROOF-28 (RULE-19): Write the brief for `RULE-1`, then edit the rule text and build it again; verify the file written first is still on disk and the new triple differs from it @integration
-- PROOF-29 (RULE-21): Write a CI record in a project at gate `strong`, then write briefs with no list named; verify exactly 1 path comes back, it names `RULE-2` and it opens `.purlin/briefs/login/` @integration
+- PROOF-29 (RULE-21): Write a CI record in a project at gate `strong`, then write briefs with no list named; verify exactly 1 path comes back, it names `RULE-2` and it opens `.purlin/briefs/local/login/`, the folder a run with no source named writes into @integration
 - PROOF-30 (RULE-21): Write briefs for the single pair `login RULE-1`; verify exactly 1 path comes back and it names `RULE-1` @integration
 - PROOF-31 (RULE-22): Render the brief for a high-risk rule at gate `strong`; verify the text names `login RULE-2`, the rule text, `PROOF-2`, `Test strength: 90 percent   minimum 70`, an `Observations` heading and a `Settled:` line, and carries no emoji or emoticon @integration
 - PROOF-32 (RULE-23): Run the command with `--help`, with `--nope` and with no argument; verify the exit codes are 0, 2 and 2 @integration
@@ -81,4 +81,4 @@
 - PROOF-42 (RULE-27): Write the brief for `RULE-1`, then write a copy whose `generated_at` and `record` differ; verify the JSON on disk is byte for byte the first write @integration
 - PROOF-43 (RULE-27): Write the brief for `RULE-1`, then write a copy carrying the observation `PROOF-1 never names the token.`; verify the JSON on disk now carries that sentence and reads settled @integration
 - PROOF-44 (RULE-15): Build the model prompt for a high-risk rule; verify it holds `settled: yes`, `one line per observation`, `Do not recommend a change` and `do not grade the rule` @integration
-- PROOF-45 (RULE-21): Write briefs with no list named in a project at gate `strong` whose only record a person committed; verify nothing is written, because a record a person committed does not count there @integration
+- PROOF-45 (RULE-21): Write briefs with no list named in a project at gate `signed` whose only record is under `.purlin/records/local/`; verify nothing is written, because a local record does not count there @integration

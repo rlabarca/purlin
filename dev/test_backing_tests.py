@@ -53,10 +53,11 @@ def _os_record(project, os_name, stamp, proof_one_names):
                    'tier': 'unit', 'env': None,
                    'test_file': 'tests/test_login.py',
                    'test_name': TEST_NAMES['PROOF-2']})
-    rel = '.purlin/records/login/%s-%s-ci-%s.json' % (
+    rel = '.purlin/records/local/login/%s-%s-ci-%s.json' % (
         stamp, project.head()[:7], os_name)
     write(os.path.join(project.root, rel), json.dumps({
-        'schema_version': 1, 'feature': 'login', 'commit': project.head(),
+        'schema_version': 3, 'feature': 'login', 'source': 'local',
+        'commit': project.head(),
         'timestamp': '%s-%s-%sT%s:%s:%sZ' % (stamp[0:4], stamp[4:6], stamp[6:8],
                                              stamp[9:11], stamp[11:13],
                                              stamp[13:15]),
