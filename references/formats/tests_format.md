@@ -16,9 +16,10 @@ Both are tracked. Nothing under `.purlin/tests/` is gitignored, because the
 point of the files is that somebody who did not make the run can read them.
 
 The results are the **`local` source**: they say what the last run on
-somebody's machine saw. They count under the gate `passed` and under nothing
-above it. `strong` and `signed` read a record CI wrote, which is a different
-file in a different directory, described in `references/formats/record_format.md`.
+somebody's machine saw. They count under the gates `passed` and `strong` and
+not under `signed`, where a signature attaches to the run CI made on the
+protected branch. Level 2 reads a record instead, a different file in a
+different directory, described in `references/formats/record_format.md`.
 
 ## The file name
 
@@ -61,7 +62,7 @@ REQUIRED: `schema`, `feature`, `commit`, `at`, `os`, `rules`, `proofs`.
 | `feature` | string | the spec this run covered |
 | `commit` | string | the full sha of the commit the working tree was on |
 | `at` | string | ISO 8601 UTC with `Z`, when the run finished |
-| `os` | string | `windows`, `macos` or `linux`, the machine the run was on |
+| `os` | string | `windows`, `macos` or `linux`, the machine the run was on. It is the **platform** the passed cell lists this run under, beside each record's own |
 | `rules` | object | one entry per rule the spec writes, `RULE-N` to a word |
 | `proofs` | array | one entry per proof of those rules |
 

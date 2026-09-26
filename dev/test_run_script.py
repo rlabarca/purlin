@@ -1063,6 +1063,52 @@ class TestTheMarkerScanReadsEveryFrameworkSMarker:
         assert purlin_run.scan_markers(str(tmp_path), 'jest') == set()
 
 
+class TestTheAuditGateLine:
+    """The audit answers level 2, so its last line names the strong cell."""
+
+    SPEC = ('# Feature: feat\n\n> Scope: src/feat.py\n\n## Rules\n\n'
+            '- RULE-1: The value is 2\n\n## Proof\n\n'
+            '- PROOF-1 (RULE-1): Import feat and read VALUE; verify it is '
+            'exactly 2\n')
+
+    def _project(self, tmp_path, body=None):
+        root = _pytest_project(tmp_path, body=body, gate='strong')
+        (root / 'src').mkdir()
+        (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
+        (root / 'specs' / 'a').mkdir(parents=True, exist_ok=True)
+        (root / 'specs' / 'a' / 'feat.md').write_text(self.SPEC,
+                                                      encoding='utf-8')
+        _git_repo(root)
+        return root
+
+    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48", tier="integration")
+    def test_a_failing_test_leaves_the_gate_not_met_and_exits_one(self,
+                                                                  tmp_path):
+        root = self._project(tmp_path, body=(
+            'import pytest\n\n'
+            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+            'def test_ok():\n'
+            '    assert False\n'))
+        code, out = _run(root, '--all', '--audit')
+        assert 'gate not met: 0 of 1' in out, out
+        assert code == 1, out
+
+    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48", tier="integration")
+    def test_a_strong_rule_ends_the_run_at_gate_strong(self, tmp_path):
+        root = self._project(tmp_path)
+        code, out = _run(root, '--all', '--audit')
+        assert 'gate strong: 1 of 1' in out, out
+        assert code == 0, out
+
+    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48", tier="integration")
+    def test_under_passed_the_line_names_the_passed_cell(self, tmp_path):
+        root = self._project(tmp_path)
+        _gate(root, 'passed')
+        code, out = _run(root, '--all', '--audit')
+        assert 'gate passed: 1 of 1' in out, out
+        assert code == 0, out
+
+
 class TestARecordMeetsThePassedCell:
     """The walk the design traces, run for real against a git checkout.
 

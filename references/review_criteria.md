@@ -92,7 +92,7 @@ Read it beside the findings above, never instead of them.
 Risk is read at `strong` and above. Under `passed` it is never asked for, never shown and
 never required, and a rule's risk tag changes nothing.
 
-**`low`.** The free checks and a passing CI record are enough for the strong cell. Nobody has
+**`low`.** The free checks and a passing record from either source are enough for the strong cell. Nobody has
 to look unless a finding fires. Under `signed` with the default `sign_at: medium` a low-risk
 rule's signed cell reads `not required`, so the rule meets the gate at strong.
 

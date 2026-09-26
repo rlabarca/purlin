@@ -310,7 +310,9 @@ def commit_paths(project_root, paths, message, committed, unchanged,
     caller hands over the three lines a reader sees, because a record and a
     test result are not the same news.
     """
-    paths = list(paths)
+    paths = [path for path in paths if _known(project_root, path)]
+    if not paths:
+        return unchanged
     listed = _git(project_root, ['status', '--porcelain', '--'] + paths)
     if listed is None:
         return no_repository
@@ -321,6 +323,20 @@ def commit_paths(project_root, paths, message, committed, unchanged,
     if _git(project_root, ['commit', '-m', message, '--'] + paths) is None:
         return no_repository
     return committed
+
+
+def _known(project_root, path):
+    """True when git can be handed this pathspec without refusing it.
+
+    A pathspec naming nothing on disk and nothing in the index makes git exit
+    non-zero, which would read as "there is no repository here" and lose the
+    commit. A run that wrote no brief has no brief folder, so the path is
+    dropped rather than sent.
+    """
+    if os.path.exists(os.path.join(project_root, *path.split('/'))):
+        return True
+    listed = _git(project_root, ['ls-files', '--', path])
+    return bool((listed or '').strip())
 
 
 def _git(project_root, args):
