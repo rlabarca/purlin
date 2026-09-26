@@ -252,12 +252,25 @@ def write_table(project_root):
     return TABLE_PATHSPEC
 
 
-def project_totals(project_root):
-    """`(passed, rules)` over every feature the table holds."""
+def project_totals(project_root, features=None):
+    """`(passed, rules)` over the whole project, not over this run.
+
+    The gate is a question about the project, so a `--feature` run answers it
+    for every rule under `specs/` and not only for the features it ran: a
+    feature with no results yet has passed nothing. `features` is the spec
+    scan, which is what says how many rules a feature writes; without it the
+    files on disk are all there is to count.
+    """
+    all_results = reader.load_results(project_root)
+    names = sorted(features) if features is not None else sorted(all_results)
     passed = rules = 0
-    for results in reader.load_results(project_root).values():
+    for name in names:
+        results = all_results.get(name) or {}
         feature_rules, feature_passed, _failing, _none = counts(results)
-        rules += feature_rules
+        if features is None:
+            rules += feature_rules
+        else:
+            rules += len((features.get(name) or {}).get('rule_order') or ())
         passed += feature_passed
     return passed, rules
 

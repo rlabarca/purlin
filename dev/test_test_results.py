@@ -206,6 +206,25 @@ def test_a_feature_run_leaves_the_other_rows_as_they_were(tmp_path):
                          'they count only at the gate `passed`.')
 
 
+@pytest.mark.proof("run_script", "PROOF-11", "RULE-11")
+def test_the_gate_line_answers_for_the_project_not_for_the_run(tmp_path):
+    """A `--feature` run still says where the whole project stands."""
+    root = _project(tmp_path)
+    _spec(root, 'one')
+    _spec(root, 'two')
+    (root / 'tests' / 'test_one.py').write_text(
+        'import pytest\n\n'
+        '@pytest.mark.proof("one", "PROOF-1", "RULE-1")\n'
+        'def test_one():\n'
+        '    assert True\n', encoding='utf-8')
+    _repo(root)
+
+    code, output = _run(root, '--feature', 'one', '--quick')
+    lines = [line for line in output.strip().splitlines() if line.strip()]
+    assert lines[-1] == 'gate not met: 1 of 2', output
+    assert code == 1, output
+
+
 @pytest.mark.proof("test_results", "PROOF-5", "RULE-5")
 def test_each_row_counts_the_words_and_names_the_last_run():
     table = writer.render_table({

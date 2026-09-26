@@ -939,7 +939,7 @@ def _write_test_results(project_root, features, selected, index, os_name):
             name, info, observed, tests, commit, os_name, when))
     write_table(project_root)
     print(commit_results(project_root, commit))
-    return gate_line(*project_totals(project_root))
+    return gate_line(*project_totals(project_root, features))
 
 
 def _audit(project_root, args, features, selected, index, cfg):

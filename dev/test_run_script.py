@@ -400,7 +400,10 @@ class TestLoudFailureB:
             '    assert True\n', encoding='utf-8')
         code, output = _run(root, '--feature', 'feat', '--quick')
         assert 'other PROOF-1' not in output
-        assert code == 0, output
+        assert 'Evidence is missing' not in output, output
+        # `other` was not run, so the project's passed level is not met and
+        # the gate line says so; nothing about it was reported as missing.
+        assert code == 1, output
 
 
 # ---------------------------------------------------------------------------
