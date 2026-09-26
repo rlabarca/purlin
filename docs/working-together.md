@@ -88,8 +88,8 @@ purlin:drift eng            what moved that the specs have not caught up with
 purlin:anchor sync <name>   when a pin is behind
 purlin:spec <name>          when a rule is missing or wrong
 purlin:build <name>         code and tagged tests
-purlin:test                 seconds, tests only
-purlin:audit                tests, breaks, and the record
+purlin:test                 seconds, tests only, and it commits the results
+purlin:audit                tests, breaks, and what they found
 ```
 
 Then push. Rules you add are tagged `[origin: eng]`, and the PM sees them as derived rather

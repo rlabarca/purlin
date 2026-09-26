@@ -4,13 +4,13 @@
     python3 scripts/report/scan.py --repo <url> [--ref <branch|tag>]
 
 QA and a PM want the rollup without a checkout and without a build. This
-fetches `specs/` and `.purlin/records/` alone, reads them with the same
-package every other surface reads, and prints how many rules meet the gate,
-one line per bucket, and how far the working branch has moved past the newest
-record. CI prints the same text as a pull request comment, so one rollup is
-read everywhere. The review list follows, one line per rule, so a reader
-without a checkout can work it: the risk, the rule, the cell that blocks it
-and why a person is needed.
+fetches `specs/` and `.purlin/` alone, which is where the test results and
+the records are, reads them with the same package every other surface reads,
+and prints how many rules meet the gate, one line per bucket, and how far the
+working branch has moved past the newest record. CI prints the same text as a
+pull request comment, so one rollup is read everywhere. The review list
+follows, one line per rule, so a reader without a checkout can work it: the
+risk, the rule, the cell that blocks it and why a person is needed.
 
 Nothing is written outside the temporary directory, and the directory is
 removed before the command returns.
