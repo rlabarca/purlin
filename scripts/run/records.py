@@ -125,7 +125,7 @@ def record_filename(commit, runner, os_name=None, when=None):
 def write_record(project_root, record, runner, os_name=None):
     """Write one record, prune the feature's folder, return its path.
 
-    `record` is the `purlin-record/1` dict the run assembled. The file name
+    `record` is the `purlin-record/2` dict the run assembled. The file name
     carries the timestamp, the commit observed, the runner and the operating
     system when the run was one job of a matrix; the record's own `timestamp`
     and `os` fields are set to match, so the file and its name never disagree.
