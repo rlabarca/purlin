@@ -25,6 +25,7 @@ import pytest
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 
+from purlin import board as purlin_board
 from purlin import signatures as purlin_signatures
 from purlin import checks as purlin_checks
 from purlin import drift as purlin_drift
@@ -137,7 +138,8 @@ class Project(object):
             'timestamp': '2026-09-13T12:00:00Z',
             'runner': runner,
             'os': os_name,
-            'environment': {'os': environment_os or os_name or 'linux'},
+            'environment': {'os': None if environment_os == 'none'
+                            else (environment_os or os_name or 'linux')},
             'test_strength': strength,
             'scope_tree': scope_tree,
             'proofs': proofs,
@@ -1204,6 +1206,131 @@ def _five_bucket_project():
     return made
 
 
+# ---------------------------------------------------------------------------
+# The platforms in the passed cell
+# ---------------------------------------------------------------------------
+
+ENV_SPEC = (
+    '# Feature: login\n\n'
+    '> Description: Signing in with an email and a password.\n'
+    '> Scope: src/login.py\n\n'
+    '## Rules\n\n'
+    '- RULE-1: Valid credentials return 200 with a session token\n\n'
+    '## Proof\n\n'
+    '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200 and a '
+    'token @integration\n'
+    '- PROOF-2 (RULE-1): On Windows, POST /login with valid credentials and '
+    'read the token file; verify it holds exactly the 200 response\'s token '
+    'value @e2e @env(windows)\n'
+)
+
+
+class TestThePlatformsInThePassedCell:
+
+    @pytest.mark.proof("states", "PROOF-51", "RULE-43", tier="integration")
+    def test_one_entry_per_operating_system_a_counting_run_named(self):
+        made = Project(gate='strong')
+        try:
+            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
+                         {'id': 'PROOF-2', 'rule': 'RULE-2',
+                          'status': 'pass'}],
+                        os_name='linux', source='ci')
+            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
+                         {'id': 'PROOF-2', 'rule': 'RULE-2',
+                          'status': 'pass'}],
+                        os_name='windows', source='ci',
+                        stamp='20260913T130000Z')
+            cell = made.cell('RULE-1', 'passed')
+            assert sorted(cell['platforms']) == ['linux', 'windows'], cell
+            for name, entry in cell['platforms'].items():
+                assert entry['word'] == 'passed', (name, entry)
+                assert entry['source'] == 'ci', (name, entry)
+                assert entry['at'] == '2026-09-13T12:00:00Z', (name, entry)
+            assert cell['word'] == 'passed', cell
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-52", "RULE-43", tier="integration")
+    def test_a_platform_a_proof_asks_for_and_nothing_ran_on_is_listed(self):
+        made = Project(spec=ENV_SPEC, gate='strong')
+        try:
+            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                          'status': 'pass'}],
+                        os_name='linux', source='ci')
+            cell = made.cell('RULE-1', 'passed')
+            assert cell['platforms']['windows'] == {
+                'word': 'not run', 'source': None, 'at': None}, cell
+            assert cell['platforms']['linux']['word'] == 'passed', cell
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-53", "RULE-44", tier="integration")
+    def test_platforms_that_disagree_read_partial(self):
+        made = Project(spec=ENV_SPEC, gate='strong')
+        try:
+            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                          'status': 'pass'}],
+                        os_name='linux', source='ci')
+            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
+                         {'id': 'PROOF-2', 'rule': 'RULE-1',
+                          'status': 'fail'}],
+                        os_name='windows', source='ci',
+                        stamp='20260913T130000Z')
+            rule = made.rule('RULE-1')
+            cell = rule['cells']['passed']
+            assert cell['word'] == 'partial', cell
+            assert cell['reasons'] == ['passed on linux',
+                                       'windows: failed'], cell
+            assert rule['bucket'] == 'partial', rule['bucket']
+            assert rule['flags']['partial'] is True, rule['flags']
+            assert rule['flags']['failing'] is False, rule['flags']
+            assert rule['meets_gate'] is False
+            assert rule['blocked_by'] == 'passed'
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-54", "RULE-45", tier="integration")
+    def test_a_run_that_named_no_operating_system_answers_as_one(self):
+        made = Project(gate='strong')
+        try:
+            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                          'status': 'pass'}],
+                        source='ci', environment_os='none')
+            cell = made.cell('RULE-1', 'passed')
+            assert cell['platforms'] == {}, cell
+            assert cell['word'] == 'passed', cell
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-50", "RULE-42", tier="integration")
+    def test_a_record_whose_source_field_disagrees_is_left_out(self):
+        made = Project(gate='strong')
+        try:
+            path = made.record([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                                 'status': 'pass'}],
+                               source='ci', claimed_source='local')
+            data = made.payload()
+            assert made.cell('RULE-1', 'passed')['word'] != 'passed'
+            named = [w for w in data['warnings'] if path in w]
+            assert len(named) == 1, data['warnings']
+            assert 'folder and its source field must agree' in named[0]
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-55", "RULE-46")
+    def test_with_no_record_at_all_the_strong_cell_says_no_audit_has_run(self):
+        cfg = purlin_gate.resolve_gate({'gate': 'strong'})
+        cell = purlin_states.rule_cells({
+            'proofs': [{'id': 'PROOF-1', 'tier': 'unit', 'env': None,
+                        'text': 'x', 'findings': [],
+                        'tests': [{'file': 'tests/t.py', 'name': 'test_x'}]}],
+            'local_status': {'PROOF-1': 'pass'},
+            'records': {}, 'audited': False, 'risk': 'low',
+        }, cfg)['cells']['strong']
+        assert cell['word'] == 'weak', cell
+        assert cell['reasons'] == ['no audit has run'], cell
+
+
 class TestBucketsAndTheGate:
 
     @pytest.mark.proof("states", "PROOF-27", "RULE-23", tier="integration")
@@ -1216,6 +1343,13 @@ class TestBucketsAndTheGate:
                                'signed'], buckets
         finally:
             made.close()
+
+    @pytest.mark.proof("states", "PROOF-27", "RULE-23")
+    def test_partial_sits_between_failing_and_passed(self):
+        assert purlin_states.BUCKETS == ('untested', 'failing', 'partial',
+                                         'passed', 'strong', 'signed')
+        assert purlin_states.bucket_keys('passed') == [
+            'untested', 'failing', 'partial', 'passed']
 
     @pytest.mark.proof("states", "PROOF-28", "RULE-24", tier="integration")
     def test_the_gate_is_met_by_one_of_them_and_blocked_by_name(self):
@@ -1286,6 +1420,40 @@ class TestPayload:
             'PROOF-1 has no test; PROOF-2 was observed by the local run')
         assert rollup['proofs_without_test_ids'] == ['PROOF-1'], rollup
         assert data['summary']['features'] == 1
+
+    @pytest.mark.proof("states", "PROOF-57", "RULE-48", tier="integration")
+    def test_the_proof_counts_call_out_a_proof_with_no_test(self, project):
+        project.spec(
+            '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
+            '- RULE-1: Valid credentials return 200 with a session token\n\n'
+            '## Proof\n\n'
+            '- PROOF-1 (RULE-1): POST /login with valid credentials; verify '
+            '200 and a token\n'
+            '- PROOF-2 (RULE-1): POST /login twice; verify the second reply '
+            'carries the same token\n'
+            '- PROOF-3 (RULE-1): Sign in on the handset and read that the '
+            'home screen names the account; verify it reads the email '
+            '@manual\n')
+        project.proofs([_entry('PROOF-1', 'RULE-1')])
+        rollup = next(f for f in project.payload()['features']
+                      if f['name'] == 'login')['rollup']
+        assert rollup['proofs'] == 3, rollup
+        assert rollup['proofs_without_test'] == 1, rollup
+        assert rollup['proofs_without_test_ids'] == ['PROOF-2'], rollup
+
+    @pytest.mark.proof("states", "PROOF-56", "RULE-47", tier="integration")
+    def test_the_signed_cell_carries_when_it_was_signed(self):
+        made = Project(gate='signed',
+                       extra_config={'signers': ['jane@acme.com']})
+        try:
+            made.sign_commits()
+            made.signature('RULE-2')
+            cell = made.cell('RULE-2', 'signed')
+            assert cell['signer'] == 'jane@acme.com'
+            assert cell['at'] and cell['at'].endswith('Z'), cell
+            assert len(cell['at']) == 20, cell
+        finally:
+            made.close()
 
     @pytest.mark.proof("states", "PROOF-30", "RULE-26", tier="integration")
     def test_global_anchor_rules_are_counted_once_in_the_summary(self, project):
@@ -1401,6 +1569,36 @@ class TestTheFixturesAreTheContract:
 # ---------------------------------------------------------------------------
 
 class TestStatusTable:
+
+    @pytest.mark.proof("states", "PROOF-58", "RULE-49", tier="integration")
+    def test_the_table_and_the_board_render_the_same_cells(self):
+        """One module renders both, so a cell cannot read two ways."""
+        for name, gate in (('solo', 'passed'), ('team', 'strong'),
+                           ('regulated', 'signed')):
+            fixture = TestTheFixturesAreTheContract._fixture(name)
+            columns = purlin_status.columns_for(gate)
+            assert columns == purlin_board.columns_for(gate), name
+            for feature in fixture['features']:
+                row = purlin_status._row(feature, gate)
+                board = purlin_board.row_cells(feature['name'],
+                                               feature['rollup'], gate)
+                assert row[1:] == board[1:], (name, feature['name'], row)
+                assert len(row) == len(columns), (name, row)
+
+    @pytest.mark.proof("states", "PROOF-58", "RULE-49")
+    def test_the_board_cells_read_the_way_the_fixtures_say(self):
+        fixture = TestTheFixturesAreTheContract._fixture('regulated')
+        cells = {f['name']: purlin_board.row_cells(
+            f['name'], f['rollup'], 'signed') for f in fixture['features']}
+        assert cells['login'] == ('login', '4', '5', '3 of 4 · 1 partial',
+                                  '2 of 4 · 86%', '1 of 4'), cells['login']
+        assert cells['invoice'] == ('invoice', '3', '3', '3 of 3',
+                                    '0 of 3 · 64%', '0 of 3'), cells['invoice']
+        team = TestTheFixturesAreTheContract._fixture('team')
+        rows = {f['name']: purlin_board.row_cells(
+            f['name'], f['rollup'], 'strong') for f in team['features']}
+        assert rows['invoice'] == ('invoice', '2', '2 · 1 without a test',
+                                   '1 of 2', '0 of 2 · 48%'), rows['invoice']
 
     @pytest.mark.proof("states", "PROOF-43", "RULE-36", tier="integration")
     def test_the_columns_scale_with_the_gate(self, project):

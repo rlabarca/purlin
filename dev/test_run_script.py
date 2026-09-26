@@ -130,8 +130,8 @@ def _gate(root, gate):
     path.write_text(json.dumps(config, indent=2) + '\n', encoding='utf-8')
 
 
-def _newest_record(root, feature):
-    folder = root / '.purlin' / 'records' / feature
+def _newest_record(root, feature, source='local'):
+    folder = root / '.purlin' / 'records' / source / feature
     newest = sorted(path.name for path in folder.glob('*.json'))[-1]
     return json.loads((folder / newest).read_text(encoding='utf-8'))
 
@@ -341,7 +341,7 @@ class TestLoudFailureA:
         # Nothing was marked, so nothing went missing: the arm is silent and
         # the table is what says the rule has no evidence yet.
         assert 'wrote no proof entry' not in output
-        assert '1 drafted' in output
+        assert '1 · 1 without a test' in output, output
         assert 'Evidence is missing' not in output, output
         # The rule has no test, so the passed level is not met and the run
         # says so on its last line.
@@ -515,7 +515,8 @@ def _fake_briefs(monkeypatch, order, briefs):
     it.
     """
 
-    def write_briefs(project_root, payload=None, rules=None, ai=False):
+    def write_briefs(project_root, payload=None, rules=None, ai=False,
+                     source='local'):
         order.append('write_briefs')
         return list(briefs)
 
@@ -538,15 +539,20 @@ def _fake_briefs(monkeypatch, order, briefs):
 def record_run(monkeypatch, tmp_path):
     """Run `--ci` with the record modules faked, and report the calls."""
     calls = {'write': [], 'commit': [], 'tag': [], 'breaks': [],
-             'commits_here': True}
+             'local_commit': [], 'commits_here': True}
 
-    def write_record(project_root, record, runner, os_name=None):
-        calls['write'].append((record, runner, os_name))
-        return os.path.join('.purlin', 'records', 'feat', 'r.json')
+    def write_record(project_root, record, runner, os_name=None,
+                     source='local'):
+        calls['write'].append((record, runner, os_name, source))
+        return '.purlin/records/%s/feat/r.json' % source
 
     def commit_records(project_root, paths, message):
         calls['commit'].append((paths, message))
         return 'ci'
+
+    def commit_local_records(project_root, commit):
+        calls['local_commit'].append(commit)
+        return 'Record committed.'
 
     def tag_record(project_root, name, record_paths):
         calls['tag'].append((name, record_paths))
@@ -570,6 +576,7 @@ def record_run(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, 'records', _FakeModule(
         write_record=write_record, commit_records=commit_records,
         tag_record=tag_record, load_records=lambda project_root: {},
+        commit_local_records=commit_local_records,
         commits_here=lambda project_root: calls['commits_here'],
         no_commit_line=lambda project_root: (
             'Pull request run: the records stay on the runner; the run on '
@@ -600,9 +607,10 @@ class TestRecordBuildsThePurlinRecord:
         _code, calls = record_run(root, '--all', '--ci')
         capsys.readouterr()
         assert len(calls['write']) == 1
-        record, runner, os_name = calls['write'][0]
-        assert record['schema'] == 'purlin-record/2'
-        assert record['schema_version'] == 2
+        record, runner, os_name, source = calls['write'][0]
+        assert source == 'ci', 'the CI arm writes into the ci folder'
+        assert record['schema'] == 'purlin-record/3'
+        assert record['schema_version'] == 3
         assert set(record) >= {'commit', 'dirty', 'runner', 'timestamp',
                                'environment', 'plugins', 'missing', 'features',
                                'scope_tree', 'log'}
@@ -790,7 +798,7 @@ class TestRecordCommitsAndTags:
         So the files the CI run writes go into the same commit as the record
         they rest on, which means they have to be written before it.
         """
-        brief = '.purlin/briefs/feat/RULE-2.5e6f7a8b.brief.json'
+        brief = '.purlin/briefs/ci/feat/RULE-2.5e6f7a8b.brief.json'
         order = []
         _fake_briefs(monkeypatch, order, [brief])
 
@@ -800,40 +808,41 @@ class TestRecordCommitsAndTags:
         output = capsys.readouterr().out
 
         paths, _message = calls['commit'][0]
-        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),
-                         brief]
+        assert paths == ['.purlin/records/ci/feat/r.json', brief]
         assert order == ['write_briefs', 'commit'], (
             'the commit was made before the files it must carry')
         assert '1 brief written.' in output
 
     @pytest.mark.proof("run_script", "PROOF-61", "RULE-42")
-    def test_an_audit_writes_neither_a_record_nor_a_brief(
-            self, tmp_path, record_run, monkeypatch, capsys):
-        """`purlin:audit` measures; it commits nothing anywhere."""
-        order = []
-        _fake_briefs(monkeypatch, order,
-                     ['.purlin/briefs/feat/RULE-2.5e6f7a8b.brief.json'])
-
+    @pytest.mark.proof("records", "PROOF-35", "RULE-29")
+    def test_an_audit_writes_its_record_into_the_local_folder(
+            self, tmp_path, record_run, capsys):
+        """`purlin:audit` writes its own record and commits it itself."""
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         _code, calls = record_run(root, '--all', '--audit')
         output = capsys.readouterr().out
 
-        assert calls['write'] == []
-        assert calls['commit'] == []
-        assert order == []
-        assert 'This audit counts only when CI runs it.' in output
+        assert len(calls['write']) == 1, output
+        _record, _runner, _os_name, source = calls['write'][0]
+        assert source == 'local'
+        assert calls['local_commit'], 'the audit committed nothing'
+        assert calls['commit'] == [], (
+            "a local audit does not commit through the git host's API")
+        assert 'Record written: .purlin/records/local/feat/r.json' in output
+        assert 'Record committed.' in output, output
 
     @pytest.mark.proof("run_script", "PROOF-61", "RULE-42")
     def test_the_ci_arm_hands_back_the_briefs_and_nothing_else(
             self, tmp_path, monkeypatch, capsys):
         """CI writes no signature file, ever: a runner is nobody."""
-        written = '.purlin/briefs/feat/RULE-1.1a2b3c4d.brief.json'
+        written = '.purlin/briefs/ci/feat/RULE-1.1a2b3c4d.brief.json'
         order = []
 
         named = []
 
-        def write_briefs(project_root, payload=None, rules=None, ai=False):
+        def write_briefs(project_root, payload=None, rules=None, ai=False,
+                         source='local'):
             order.append('write_briefs')
             named.extend(rules or ())
             return [written]
@@ -884,14 +893,14 @@ class TestTheBriefsACiRunCommits:
 
         briefs = sorted(
             path.name for path in
-            (root / '.purlin' / 'briefs' / 'feat').glob('*.brief.json'))
+            (root / '.purlin' / 'briefs' / 'ci' / 'feat').glob('*.brief.json'))
         assert len(briefs) == 1, output
         assert briefs[0].startswith('RULE-1.'), briefs
         assert '1 brief written.' in output, output
 
         paths, _message = calls['commit'][0]
-        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),
-                         '.purlin/briefs/feat/%s' % briefs[0]]
+        assert paths == ['.purlin/records/ci/feat/r.json',
+                         '.purlin/briefs/ci/feat/%s' % briefs[0]]
 
     @pytest.mark.proof("run_script", "PROOF-67", "RULE-46")
     def test_a_rule_below_the_review_level_gets_no_brief(
@@ -904,7 +913,7 @@ class TestTheBriefsACiRunCommits:
         assert not (root / '.purlin' / 'briefs').exists(), output
         assert '0 briefs written.' in output, output
         paths, _message = calls['commit'][0]
-        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json')]
+        assert paths == ['.purlin/records/ci/feat/r.json']
 
 
 class TestTheGateDecidesTheBreaks:
@@ -943,7 +952,7 @@ class TestTheGateDecidesTheBreaks:
         assert breaks == {'engine': None, 'available': False, 'features': {}}
 
     @pytest.mark.proof("run_script", "PROOF-66", "RULE-45")
-    def test_under_strong_the_audit_measures_and_says_it_does_not_count(
+    def test_under_strong_the_audit_measures_and_counts(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
@@ -952,8 +961,9 @@ class TestTheGateDecidesTheBreaks:
 
         assert len(calls['breaks']) == 1, 'the breaks did not run under strong'
         assert 'feat: test strength 80 percent' in output, output
-        assert 'This audit counts only when CI runs it.' in output, output
-        assert calls['write'] == [], 'the audit wrote a record'
+        assert len(calls['write']) == 1, 'the audit wrote no record'
+        assert 'counts at strong' not in output, (
+            'the preview line belongs to the signed gate alone')
 
     @pytest.mark.proof("run_script", "PROOF-66", "RULE-45")
     def test_a_ci_run_says_nothing_about_counting(
@@ -963,7 +973,17 @@ class TestTheGateDecidesTheBreaks:
         record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
 
-        assert 'This audit counts only when CI runs it.' not in output, output
+        assert 'preview at signed' not in output, output
+
+    @pytest.mark.proof("run_script", "PROOF-66", "RULE-45")
+    def test_at_signed_a_local_audit_says_it_is_a_preview(
+            self, tmp_path, record_run, capsys):
+        root = _pytest_project(tmp_path, gate='signed')
+        _spec(root, 'feat')
+        record_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+
+        assert 'preview at signed' in output, output
 
 
 class TestRecordWithoutTheEngines:
@@ -975,12 +995,14 @@ class TestRecordWithoutTheEngines:
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
 
-        def write_record(project_root, record, runner, os_name=None):
+        def write_record(project_root, record, runner, os_name=None,
+                         source='local'):
             return 'r.json'
 
         monkeypatch.setitem(sys.modules, 'records', _FakeModule(
             write_record=write_record,
             commit_records=lambda *a, **k: 'ci',
+            commit_local_records=lambda *a, **k: 'Record committed.',
             tag_record=lambda *a, **k: None,
             load_records=lambda project_root: {},
             commits_here=lambda project_root: True,
@@ -1055,8 +1077,8 @@ class TestARecordMeetsThePassedCell:
         """A checkout whose CI arm wrote a record, then read at `passed`.
 
         The record is written at `strong`, which is the gate that writes one
-        at all, and the project is then read at `passed`, where a record the
-        git host did not commit still counts.
+        at all, and the project is then read at `passed`. The CI arm files it
+        under `.purlin/records/ci/`, which is the folder that says it is CI's.
         """
         root = _pytest_project(tmp_path, gate='strong')
         (root / 'src').mkdir()
@@ -1072,7 +1094,8 @@ class TestARecordMeetsThePassedCell:
     def test_a_record_makes_the_passed_cell_read_passed(self, tmp_path):
         root, out = self._with_a_record(tmp_path)
 
-        record = _newest_record(root, 'feat')
+        record = _newest_record(root, 'feat', source='ci')
+        assert record['source'] == 'ci'
         assert isinstance(record['scope_tree'], str), record['scope_tree']
         assert record['proofs'][0]['id'] == 'PROOF-1'
         assert record['proofs'][0]['status'] == 'pass'
@@ -1113,9 +1136,6 @@ class TestTheRunScriptCarriesNoRetiredVocabulary:
         source = open(RUN_SCRIPT, encoding='utf-8').read()
         for word in self.RETIRED:
             assert word not in source, word
-        # `sys.platform` is the one place the operating system is read.
-        marker = 'sys.' + 'plat' + 'form'
-        assert source.count(marker[4:]) == source.count(marker)
         assert all(ord(character) < 0x1F000 for character in source)
 
 

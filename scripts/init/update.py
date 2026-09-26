@@ -95,7 +95,7 @@ What must be true before CI lets a change merge?
 
 RECORDS_README = """# Records
 
-One file per audit, at
+One file per audit run, at
 `.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>.json`. A
 record says what ran, on which commit, what passed and the test strength. The
 folder says who wrote it: `ci/` is the CI job's, which the git host restricts to

@@ -506,7 +506,7 @@ class TestSkillAudit:
         assert record_source_problems() == []
 
     @pytest.mark.proof("skill_audit", "PROOF-6", "RULE-6")
-    def test_the_gate_decides_the_breaks_and_the_record_is_cis(self):
+    def test_the_gate_decides_the_breaks_and_the_audit_writes_the_record(self):
         assert audit_gate_problems() == []
 
     @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7")
@@ -552,14 +552,15 @@ def record_source_problems():
     for gate in ('passed', 'strong', 'signed'):
         if gate not in rows['ci']:
             problems.append('%s ci row does not count under %r' % (rel, gate))
-    for source in ('local',):
-        if 'passed' not in rows[source]:
-            problems.append('%s %s row does not count under passed'
-                            % (rel, source))
-        for gate in ('strong', 'signed'):
-            if gate in rows[source]:
-                problems.append('%s %s row counts under %r'
-                                % (rel, source, gate))
+    for gate in ('passed', 'strong'):
+        if gate not in rows['local']:
+            problems.append('%s local row does not count under %r'
+                            % (rel, gate))
+    if 'signed' in rows['local']:
+        problems.append('%s local row counts under signed' % rel)
+    for folder in ('.purlin/records/ci/', '.purlin/records/local/'):
+        if folder not in read(rel):
+            problems.append('%s does not name %r' % (rel, folder))
     return problems
 
 
@@ -578,7 +579,8 @@ def audit_gate_problems():
     for needle in ('breaks', 'minimum'):
         if needle not in rows['`strong`']:
             problems.append('%s strong row does not name %r' % (rel, needle))
-    for needle in ("the record is CI's", 'It writes no record'):
+    for needle in ('preview', 'gate strong: <n> of <rules>',
+                   'purlin: record for <sha7>'):
         if needle not in read(rel):
             problems.append('%s does not say %r' % (rel, needle))
     return problems

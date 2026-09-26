@@ -1,11 +1,12 @@
 ---
 name: audit
-description: Run the tests and the breaks, then report how good the tests are
+description: Run the tests and the breaks, then write the record
 ---
 
 Run every tagged test, break the code on purpose to measure how much the tests catch, run the
-free checks and the model review, and print what they found. An audit is level 2: it measures
-how good the tests are. It writes no record, because the record is CI's.
+free checks and the model review, print what they found, and write the record. An audit is
+level 2: it measures how good the tests are. Its record counts at `strong`, whoever ran it; at
+`signed` only the run CI made on the protected branch counts.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -24,7 +25,7 @@ purlin:audit --tag <name>       Pin the records in the tree as record/<name>
 Plain language reaches the same place: "audit this", "how strong are the tests", "pin 1.0".
 
 There is no `--remote` here: a remote runner runs the tests, so that flag is
-`purlin:test --remote`. Nothing on your machine writes a record.
+`purlin:test --remote`.
 
 ## Step 1: run
 
@@ -33,17 +34,20 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --audit
 ```
 
 `--audit` runs the tests, then the breaks where the gate asks for them, then the free checks
-and the model review. It prints each feature's test strength beside the minimum, then each
-rule's findings and observations, and ends with `This audit counts only when CI runs it.` It
-writes nothing to the tree. Exit codes: `0` everything asked for happened, `1` a test failed
-or evidence is missing, `2` the command line was wrong.
+and the model review. It writes one record per feature under
+`.purlin/records/local/<feature>/` with its briefs under `.purlin/briefs/local/<feature>/`,
+prints each feature's test strength beside the minimum and each rule's findings and
+observations, and commits the record and the briefs under your own identity with the subject
+`purlin: record for <sha7>`. It ends with `gate strong: <n> of <rules>` or
+`gate not met: <n> of <rules>`, and it never pushes. Exit codes: `0` every rule met the gate, `1` a test failed, evidence is missing
+or the gate is not met, `2` the command line was wrong.
 
 The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call
 it too, so there is one answer to how a test is run. CI runs the same script in an arm of its
-own, which runs the tests, then the audit at `strong` and above, then writes the record and the
-briefs under `.purlin/briefs/<feature>/`. That arm belongs to the workflow and you never run it
-by hand. A CI run commits on the protected branch and on a run branch only;
-`references/hard_gates.md` says where CI runs and what each run writes.
+own, which writes the same files under `.purlin/records/ci/` and `.purlin/briefs/ci/`. That arm
+belongs to the workflow and you never run it by hand. A CI run commits on the protected branch
+and on a run branch only; `references/hard_gates.md` says where CI runs and what each run
+writes.
 
 ## Step 2: read what came back
 
@@ -59,23 +63,23 @@ not yet observe.
 |------|--------------------|
 | `passed` | Runs the tests only. No breaks, no risk, no brief; the run says `Strength n/a: the gate is passed.` |
 | `strong` | Runs the breaks too, and prints the strength beside the minimum |
-| `signed` | The same as `strong`, and CI's record is what the review list and the signatures rest on |
+| `signed` | The same as `strong`, and this record is a preview: only CI's record on the protected branch counts, and the run says so on its last line |
 
 Raising the gate to `strong` turns the breaks on, locally and in CI.
 
-## Step 4: the record is CI's
+## Step 4: the folder is the source
 
-Nothing here writes a record. The CI job runs the tagged tests, then this audit at `strong`
-and above, and commits one record per feature on the protected branch and on a run branch. The
-last commit that touched a record decides its source, not anything inside the file:
+A record's source is the folder it sits in, and the file's own `source` field says the same
+word. A file where the two disagree is ignored, with one warning naming it.
 
-| Source | How it got there | Counts under |
-|--------|------------------|--------------|
-| ci | Written through the git host's API by the CI identity | `passed`, `strong`, `signed` |
-| local | Anything else: not committed, or committed by somebody other than the git host | `passed` only |
+| Source | The folder | Counts under |
+|--------|------------|--------------|
+| ci | `.purlin/records/ci/<feature>/`, written by the CI identity through the git host's API | `passed`, `strong`, `signed` |
+| local | `.purlin/records/local/<feature>/`, written by this command on anyone's machine | `passed`, `strong` |
 
-Under `passed` the evidence is the test results `purlin:test` commits, under `.purlin/tests/`.
-`references/hard_gates.md` defines the three gates once; do not restate them elsewhere.
+Under `passed` no record is written at all: the evidence there is the test results
+`purlin:test` commits, under `.purlin/tests/`. `references/hard_gates.md` defines the three
+gates once; do not restate them elsewhere.
 
 ## Step 5: `--tag`
 
@@ -93,5 +97,6 @@ records per operating system and the rest are pruned; a record a tag names is ke
 | A finding or an observation on a rule | `→ Run: purlin:build <feature>` (write the case it names) |
 | A rule needs another operating system | `→ Run: purlin:test --remote` |
 | Every rule met the gate `passed` | `→ Next: run git push.` |
-| A `ci` record is missing under `strong` or `signed` | `→ Next: run git push; the run on the protected branch writes the record.` |
+| A `ci` record is missing under `signed` | `→ Next: run git push; the run on the protected branch writes the record a signature attaches to.` |
+| A rule's tests pass on one operating system and not another | `→ Run: purlin:build <feature>` (the passed cell reads `partial` and names the platform) |
 | A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Run: purlin:sign` |

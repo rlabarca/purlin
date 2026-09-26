@@ -197,6 +197,28 @@ class TestTheStrongGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("gate_check", "PROOF-33", "RULE-3", tier="integration")
+    def test_a_partial_rule_has_its_own_section(self):
+        """Green on one operating system, red on another, is neither."""
+        made = Project(gate='strong', config={'min_strength': 50})
+        made.proofs()
+        made.record(strength=90, runner='ci', commit_it=False, source='ci',
+                    os_name='linux')
+        made.record(statuses={'PROOF-1': 'pass', 'PROOF-2': 'fail'},
+                    strength=90, runner='ci', commit_it=False, source='ci',
+                    os_name='windows', stamp='20260913T130000Z')
+        made.brief('RULE-2')
+        commit_as_ci(made.root)
+        try:
+            code, output = run(made)
+            assert code == 1, output
+            assert 'Partial (1):' in output, output
+            assert 'login RULE-2: partial' in output, output
+            assert 'windows: failed' in output, output
+            assert 'Not passed' not in output, output
+        finally:
+            made.close()
+
     @pytest.mark.proof("gate_check", "PROOF-8", "RULE-4", tier="integration")
     def test_below_the_minimum_test_strength_is_weak(self):
         made = project_at('strong', strength=40, config={'min_strength': 70})

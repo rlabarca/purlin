@@ -160,7 +160,7 @@ class Project(object):
 
     def record(self, statuses=None, runner='ada', strength=90,
                commit_it=True, stamp='20260913T120000Z', tests=None,
-               source='local'):
+               source='local', os_name=None):
         """Write a record naming the tests the runtime proofs name.
 
         `tests` maps a proof to the test names the record observed for it, for
@@ -178,14 +178,16 @@ class Project(object):
                     'status': status, 'tier': 'unit', 'env': None,
                     'test_file': 'tests/test_login.py',
                     'test_name': test_name})
-        name = '%s-%s-%s.json' % (stamp, self.head()[:7], runner)
+        name = '%s-%s-%s%s.json' % (stamp, self.head()[:7], runner,
+                                    '-' + os_name if os_name else '')
         rel = '.purlin/records/%s/login/%s' % (source, name)
         iso = '%s-%s-%sT%s:%s:%sZ' % (stamp[0:4], stamp[4:6], stamp[6:8],
                                       stamp[9:11], stamp[11:13], stamp[13:15])
         write(os.path.join(self.root, rel), json.dumps({
             'schema_version': 3, 'feature': 'login', 'commit': self.head(),
             'source': source, 'timestamp': iso, 'runner': runner,
-            'os': None, 'gate': FIRST_GATE, 'test_strength': strength,
+            'os': os_name, 'environment': {'os': os_name or 'linux'},
+            'gate': FIRST_GATE, 'test_strength': strength,
             'scope_tree': purlin_specs.scope_tree(self.root, ['src/login.py']),
             'proofs': proofs}))
         if commit_it:

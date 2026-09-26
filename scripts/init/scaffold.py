@@ -139,11 +139,10 @@ _READMES = {
 A design anchor pins the hash of these files, and a feature spec requires that anchor.
 A new export stales the signatures of that anchor's rules, so a person looks again.
 """,
-    '.purlin/records': """Every audit at the gate strong or signed writes one record per feature here and
-commits it. The folder says who wrote it: ci/ is the CI job's, which the git host restricts to
-the build identity, and local/ is anyone's. Both count at strong; only ci/ counts at signed.
-Under passed the evidence is the test results purlin:test commits, under .purlin/tests/. A run
-keeps the newest three records per feature per operating system.
+    '.purlin/records': """Every audit at the gate strong or signed writes one record per feature here, in ci/
+or local/, and commits it. The folder is the source: ci/ is the CI job's and the git host
+restricts it to the build identity; local/ is anyone's. Both count at strong, only ci/ at signed.
+Under passed the evidence is the test results purlin:test commits, under .purlin/tests/.
 """,
 }
 

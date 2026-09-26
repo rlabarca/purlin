@@ -101,7 +101,7 @@ Purlin
 | `purlin:spec`, `purlin:spec-from-code` | `specs/<category>/<name>.md` |
 | `purlin:build` | Code, test files, and the commit carrying the changeset |
 | `purlin:test` | `.purlin/runtime/proofs/`, which is not committed, and `.purlin/tests/<feature>.json` and `.purlin/tests.md`, which it commits itself as `purlin: tests at <sha7>` and never pushes. `--remote` pushes the run branch `run/<branch>-<sha7>`, which it deletes when the run is back |
-| `purlin:audit` | Nothing, except the tag under `--tag`. The record is CI's: a CI run writes `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, and commits both on the protected branch and on a run branch only |
+| `purlin:audit` | One record per feature under `.purlin/records/local/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and its briefs under `.purlin/briefs/local/<feature>/<RULE-N>.<hash8>.brief.json`, committed as `purlin: record for <sha7>` and never pushed. A CI run writes the same files under `ci/`. `--tag` writes the tag |
 | `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case |
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when the gate needs one or you answer yes at `passed` |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, and `designs/<anchor>/` on a sync |

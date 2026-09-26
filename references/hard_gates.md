@@ -24,8 +24,8 @@ what must be true before CI lets a change merge?
 
 | Gate | Who it fits | Cells that exist | What CI requires before merge |
 |------|-------------|------------------|-------------------------------|
-| `passed` | One person working alone | spec, passed | Every rule's passed cell is met. A pass from any source counts |
-| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule's strong cell is met: a CI pass, the test strength at or above `min_strength`, no finding, no hold. Only a record CI wrote counts |
+| `passed` | One person working alone | spec, passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from any source counts |
+| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule's strong cell is met: an audit wrote a record, the test strength at or above `min_strength`, no finding, no hold. A record from either source counts |
 | `signed` | The same team under GxP | + signed | Every rule's signed cell is met, and the signer list is set |
 
 Each level derives defaults you can override:
@@ -50,15 +50,24 @@ is asked for. Raising the gate to `strong` turns the breaks on, locally and in C
 `.purlin/tests/<feature>.json` and `.purlin/tests.md`, and commits both itself under the
 person's own identity. A teammate reads them on the git host without running anything.
 
-**At `strong` and above the evidence is the record, and the record is CI's.** Nothing on a
-person's machine writes one: `purlin:audit` measures how good the tests are and writes nothing
-at all, saying so on its last line. The source of a record comes from the last commit that
-touched it, never from anything inside the file.
+**At `strong` and above the evidence is the record, and an audit writes it.** `purlin:audit`
+runs the tests and the breaks, writes one record per feature under
+`.purlin/records/local/<feature>/` with its briefs beside it, and commits both under your own
+identity. It never pushes. The CI job does the same under `.purlin/records/ci/`.
 
-| Source | How it got there | Counts under |
-|--------|------------------|--------------|
-| `ci` | Created through the git host's API by the CI identity | `passed`, `strong`, `signed` |
-| `local` | Anything else: not committed, or committed by somebody other than the git host | `passed` only |
+**The folder is the source.** A record's own `source` field must say the same word as the
+folder it sits in, and a file where the two disagree is ignored with one warning naming it.
+What keeps the ci folder honest is the git host's file-path rule, which only the build identity
+may write.
+
+| Source | The folder | Counts under |
+|--------|------------|--------------|
+| `ci` | `.purlin/records/ci/<feature>/`, written by the CI identity through the git host's API | `passed`, `strong`, `signed` |
+| `local` | `.purlin/records/local/<feature>/`, written by `purlin:audit` on anyone's machine, and the test results `purlin:test` commits | `passed`, `strong` |
+
+**Only `signed` requires CI, and there it requires it for the tests and the audit both.** The
+run on the protected branch after the merge is what a signature attaches to; a local run there
+is a preview, and `purlin:audit` says so on its last line.
 
 A record describes the checkout while its commit is HEAD or its scope tree still hashes the
 same. A CI pass that is no longer current makes the passed cell read `code changed`, and CI
@@ -112,8 +121,9 @@ stays narrow:
 1. Require a pull request, and require the `purlin` workflow's checks, with the Actions app as
    the only bypass actor. Every run ends with the gate check, so a green check means the gate
    held.
-2. Restrict file paths on `.purlin/records/**` and `.purlin/briefs/**`, with the Actions app as
-   the only bypass actor, so a person cannot push a record or a brief.
+2. Restrict file paths on `.purlin/records/ci/**` and `.purlin/briefs/ci/**`, with the Actions
+   app as the only bypass actor, so a person cannot push a record or a brief as CI's. The
+   `local/` folders beside them are anyone's.
 3. Block force pushes and restrict deletions, with no bypass at all.
 
 Under `passed`, only the third is suggested.
@@ -178,6 +188,16 @@ the hold. Changing the rule, the proof or the test ends the hold, as it stales a
   run.
 - A proof tagged `@env` for an operating system this host is not. It is listed as
   `<os>: no record yet`, and CI's matrix proves it.
+
+## Platforms
+
+A record and a set of test results each name the operating system they ran on. The passed cell
+lists one **platform** per operating system a counting run named, each with its own word, its
+source and when it ran, and the cell's own word rolls them up. Where the platforms disagree the
+cell reads `partial`: a rule whose tests pass on Linux and fail on Windows is neither passed nor
+failed, `partial` is not met, and it blocks the gate exactly as a failure does. A rule tagged for
+one platform that has not run there still reads `not run`. Test strength is platform independent,
+because the breaks are measured once per feature.
 
 ## The pre-push hook is optional and gates nothing
 

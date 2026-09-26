@@ -164,7 +164,7 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | gauge, Proof Design, Proof Integrity | removed. Both grading scores are gone |
 | `PROVABLE`, `LOOSE`, `UNPROVABLE`, `STRUCTURAL` | removed with Proof Design |
 | `STRONG`, `WEAK`, `HOLLOW`, `EXCLUDED` | removed with Proof Integrity |
-| receipt, vhash, `*.receipt.json` | record: `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json` |
+| receipt, vhash, `*.receipt.json` | record: `.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>.json` |
 | `verify:` as a commit prefix | `purlin: record for <commit7>` |
 | platform registry, `@on(<id>)`, `--platform` | `@env(windows)`, `@env(macos)`, `@env(linux)`, and the CI matrix. **`platform` itself is not retired**: it means one operating system a counting run covered, and the passed cell lists them under `platforms` |
 | `AWAITING RUNNER` | `needs <os>` |

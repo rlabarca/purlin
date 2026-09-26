@@ -26,32 +26,35 @@ sync_status()
 ## Step 2: print the table
 
 The tool opens with `Purlin status: <project>, plugin <version>, gate <gate>`, then the table.
-Every feature and every anchor gets a row, sorted attention first: the most rules short of the
+Every spec and every anchor gets a row, sorted attention first: the most rules short of the
 gate at the top. Anchors carry `(anchor)` after the name. Columns exist only when the gate
-creates the cell behind them, so a project at `passed` has no strength and no signature column.
+creates the cell behind them, so a project at `passed` has no strong and no signed column.
+
+The table is the dashboard's board, rendered as text: the same six columns, the same text in
+each cell. A reader who has learned one has learned the other.
 
 ```
-  Feature      Rules  Spec                   Tests                            Run
-  ────────────────────────────────────────────────────────────────────────────────────
-  billing         14  12 ready · 2 drafted   9 passed · 0 failing · 5 no test  ci linux
-  login (anchor)   8  8 ready · 0 drafted    8 passed · 0 failing · 0 no test  ci linux
-  export           5  0 ready · 5 drafted    0 passed · 0 failing · 5 no test  none
+  Spec           Rules  Proofs                 Tests
+  ──────────────────────────────────────────────────────────────────────
+  billing           14  16 · 2 without a test  9 of 14 · 1 partial · 1 failing
+  login (anchor)     8  8                      8 of 8
 ```
 
-Under `strong` two columns follow `Run`: `Strength`, the test strength as an integer percent
-or `n/a` when no break engine is installed, and `Strong`, `<n> of <m>` rules whose strong cell
-is met. Under `signed` a `Signed` column follows those two, in the same `<n> of <m>` form.
+`Proofs` counts every proof line and appends `· <k> without a test` when a proof has nothing
+tagged against it. `Tests` is `<passed> of <rules>`, then `· <k> partial` and `· <k> failing`
+when either is not zero; `partial` means the tests pass on one operating system and not on
+another. Under `strong` a `Strong` column follows, `<n> of <rules> · <strength>`; under
+`signed` a `Signed` column follows that, `<n> of <rules>`.
 
 Print the numbers `sync_status` returned. Never recount them: the command line and the
 dashboard must show one answer from one computation.
 
 ## Step 3: print the summary line and what stands in the way
 
-The summary is two lines. The first is `<met> of <rules> rules meet the gate <gate>.` The
-second carries the feature count and, as the gate creates them, the failing count, the minimum
-test strength, the risk the model review starts at, how many rules need a person, how many are
-held, the risk a signature starts at, and how many signatures are stale. Print both with their
-denominators intact: a percentage without the count it was taken over is the thing to avoid.
+The summary is three lines: `<met> of <rules> rules meet the gate <gate>.`, then the buckets
+the gate reaches in the tiles' own words and order (`Untested <n> · Failing <n> · Partial <n>
+· Passing <n> · Strong <n> · Signed <n>`), then the feature and proof counts with whatever the
+gate creates beside them. Print them with their denominators intact.
 
 Anything the tool prints after the table and before the directives is its own: an anchor whose
 pin is behind, uncommitted spec changes, and its warnings. Print them verbatim, or nothing
@@ -66,8 +69,11 @@ not empty:
 | What blocks the gate | The line the tool prints |
 |----------------------|--------------------------|
 | A rule's spec status is `drafted` | `→ Next: run purlin:spec.` with the count |
-| A rule has a failing test, or no test | `→ Next: run purlin:build.` with the count |
+| A rule has a failing test | `→ Next: run purlin:build.` with the count |
+| A rule's tests pass on one operating system and not another | `→ Next: run purlin:build.` with the `partial` count |
+| A rule has no test | `→ Next: run purlin:build.` with the count |
 | A rule is waiting for the record that counts | `→ Next: run purlin:test --remote.` under `strong` and above, `→ Next: run purlin:test.` under `passed` |
+| No audit has measured a rule | `→ Next: run purlin:audit.` with the count |
 | A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
 | A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Next: run purlin:sign.` with the count |
 | Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |

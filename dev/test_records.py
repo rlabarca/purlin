@@ -1681,3 +1681,38 @@ def test_a_detached_head_falls_back_to_main(project):
 def teardown_module(module):
     """Leave nothing behind: every repository lived under pytest's tmp_path."""
     shutil.rmtree(os.path.join(DEV, '__pycache__'), ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# The folder is the source
+# ---------------------------------------------------------------------------
+
+@pytest.mark.proof("records", "PROOF-34", "RULE-1", tier="integration")
+def test_the_folder_a_record_is_written_to_is_its_source(project):
+    for source in ('ci', 'local'):
+        path = records_module.write_record(project, record(), 'ci',
+                                           source=source)
+        assert path.startswith('.purlin/records/%s/greeting/' % source), path
+        with open(os.path.join(project, path), encoding='utf-8') as handle:
+            assert json.load(handle)['source'] == source
+
+
+@pytest.mark.proof("records", "PROOF-34", "RULE-1", tier="integration")
+def test_a_source_the_writer_does_not_know_falls_back_to_local(project):
+    path = records_module.write_record(project, record(), 'ci',
+                                       source='somewhere')
+    assert path.startswith('.purlin/records/local/greeting/'), path
+
+
+@pytest.mark.proof("records", "PROOF-2", "RULE-2", tier="integration")
+def test_a_local_audit_never_prunes_what_ci_wrote(project):
+    for day in range(5):
+        put_record(project, 'greeting',
+                   '2026091%dT120000Z-4f1c2ab-ci.json' % day, source='ci')
+    for day in range(5):
+        put_record(project, 'greeting',
+                   '2026091%dT120000Z-4f1c2ab-ada.json' % day,
+                   source='local')
+    records_module.prune(project, 'greeting', source='local')
+    assert len(names(project, 'greeting', 'local')) == 3
+    assert len(names(project, 'greeting', 'ci')) == 5

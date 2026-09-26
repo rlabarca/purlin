@@ -69,7 +69,7 @@ engine, and writes both into `.purlin/config.json`. One `purlin:test` then runs 
 
 It writes `.purlin/config.json` with the gate, the git host, the test framework, the breaks
 engine and the derived defaults; `specs/` for the two-section specs; and `.purlin/records/` with
-a README saying CI writes the files in it and nobody edits them by hand. It installs the proof
+a README saying an audit writes the files in it, under `ci/` or `local/`, and nobody edits them by hand. It installs the proof
 plugin for the detected framework and the breaks engine for the language, writing
 `[tool.mutmut]` into `pyproject.toml` when that file exists and `[mutmut]` into `setup.cfg`
 otherwise. It adds a `.gitignore` block for `.purlin/runtime/`, where test runs put their proof
@@ -77,7 +77,7 @@ files, and copies the dashboard page so it opens from disk. It offers a `pre-pus
 runs the tagged tests, the same run `purlin:test` makes, and refuses a push from an agent
 session, and installs the Claude Code hook that refreshes the local dashboard data. It creates
 `designs/` with a README at `strong` and `signed`, where it also writes the CI workflow and
-ignores `.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON CI commits,
+ignores `.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON an audit commits,
 then prints every file it wrote or edited, one per line.
 
 The workflow runs where the evidence it writes is decided. It triggers on a pull request, on a
@@ -175,8 +175,8 @@ Init prints these; the git host enforces them. Purlin never changes a repository
 1. Require a pull request and require the `purlin` workflow's checks, with the Actions app as
    the only bypass actor. Every run ends with the gate check, so a green check means the gate
    held.
-2. Restrict file paths on `.purlin/records/**` and `.purlin/briefs/**`, with the Actions app as
-   the only bypass actor, so a person cannot push a record or a brief.
+2. Restrict file paths on `.purlin/records/ci/**` and `.purlin/briefs/ci/**`, with the Actions
+   app as the only bypass actor, so a person cannot push a record as CI's. The `local/` folders beside them are anyone's.
 3. Block force pushes and restrict deletions, with no bypass actor at all.
 
 Under `passed`, print only the third.

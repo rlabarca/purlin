@@ -64,7 +64,7 @@ purlin: record for <commit7>
 commit itself.
 
 A record commit carries the record file and the briefs that run wrote under
-`.purlin/briefs/<feature>/`. It carries nothing else: never fold a record into a `feat(...)`
+`.purlin/briefs/<source>/<feature>/`. It carries nothing else: never fold a record into a `feat(...)`
 commit, because the record must be able to say which commit the tests ran against. CI writes no
 signature file, so a record commit never carries one, and it carries no test results either:
 those are yours.

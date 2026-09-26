@@ -14,7 +14,7 @@
 
 - RULE-1: The gate reads the structured payload and never a rendered table, and a caller may hand it a payload it already built [risk: medium] [origin: eng]
 - RULE-2: A rule is counted once, under the feature that owns it, and it is met when the payload reads `meets_gate` true [risk: high] [origin: eng]
-- RULE-3: A rule blocked at the spec status or at the passed cell is named under `Not passed` with the blocking word and its reasons [risk: high] [origin: eng]
+- RULE-3: A rule blocked at the spec status or at the passed cell is named under `Not passed` with the blocking word and its reasons, except where that word is `partial`, which has its own section between `Not passed` and `Weak` [risk: high] [origin: eng]
 - RULE-4: A rule blocked at the strong cell is named with the cell's word and its reasons, under `Weak` where that word is `weak` and under `Waiting on a person` where it is `manual test`, `manual audit` or `held`, because no build moves those three [risk: high] [origin: eng]
 - RULE-5: A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons [risk: high] [origin: eng]
 - RULE-6: Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists [risk: medium] [origin: eng]
@@ -22,7 +22,7 @@
 - RULE-8: Under `signed` with no signer list the gate prints the missing-list directive and fails without grading a rule [risk: high] [origin: eng]
 - RULE-9: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes [risk: high] [origin: eng]
 - RULE-10: `gate_check.py` needs `--check` and a directory that exists; either missing exits 2 [risk: low] [origin: eng]
-- RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, the four sections under the keys `not_passed`, `weak`, `waiting` and `not_signed`, the result and the exit code [risk: medium] [origin: eng]
+- RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, the five sections under the keys `not_passed`, `partial`, `weak`, `waiting` and `not_signed`, the result and the exit code [risk: medium] [origin: eng]
 - RULE-12: The gate creates and changes no file at any gate value [risk: high] [origin: eng]
 - RULE-13: Every line the gate prints either carries the `gate:` prefix or is an indented finding under a section heading [risk: low] [origin: eng]
 
@@ -34,7 +34,8 @@
 - PROOF-4 (RULE-3): Rewrite a proof as `The login works correctly` and run the gate at gate `passed`; verify it exits 1, reads `login RULE-1: drafted` and names the finding `vague_verb` @integration
 - PROOF-5 (RULE-6): Run the gate at gate `passed` over a project naming a minimum of 80 and a record measuring 10; verify it exits 0, prints no line holding `minimum test strength`, and opens neither `Weak` nor `Not signed` @integration
 - PROOF-6 (RULE-2): Run the gate at gate `strong` over a record CI committed, a strength of 90 and a settled brief for the high-risk rule; verify it exits 0 and prints `gate: gate = strong` and `minimum test strength 50.` @integration
-- PROOF-7 (RULE-3): Run the gate at gate `strong` over a record a person committed; verify it exits 1, opens `Not passed (2):` and gives the reason `local record does not count under strong` @integration
+- PROOF-7 (RULE-3): Run the gate at gate `strong` over a record written under `.purlin/records/local/`; verify it exits 0 and passes. Run the same project at gate `signed`; verify it exits 1, opens `Not passed (2):` and gives the reason `local record does not count under signed` @integration
+- PROOF-33 (RULE-3): Run the gate over a project whose rule passed on one operating system and failed on another; verify it exits 1, opens a section `Partial (1):` rather than `Not passed`, and names the platform that failed @integration
 - PROOF-8 (RULE-4): Run the gate at gate `strong` with a minimum of 70 over a record measuring 40; verify it exits 1, opens `Weak (2):` and reads `strength 40% under 70%` @integration
 - PROOF-9 (RULE-4): Run the gate at gate `strong` with no brief written for the high-risk rule; verify it exits 1, opens `Waiting on a person (1):`, reads `login RULE-2: manual audit` and names `no brief for the current hashes` @integration
 - PROOF-10 (RULE-4): Write a settled brief whose observation reads `PROOF-2 asserts the status but never the body the rule names.` and run the gate at gate `strong`; verify it exits 1, opens `Weak (1):`, reads `login RULE-2: weak` and prints that sentence @integration

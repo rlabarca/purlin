@@ -849,7 +849,7 @@ def test_the_records_folder_and_its_readme_are_created(tmp_path, layout):
     root = _project(tmp_path, layout)
     _apply(root)
     readme = _read(root, '.purlin/records/README.md')
-    assert 'One file per CI run' in readme
+    assert 'One file per audit run' in readme
     assert '.purlin/records/README.md' in _tracked(root)
 
 
@@ -984,21 +984,32 @@ def test_a_run_that_leaves_work_names_it(tmp_path, capsys, monkeypatch):
 # --- the records a person committed -----------------------------------------
 
 @pytest.mark.proof("update", "PROOF-23", "RULE-23")
-def test_a_record_the_git_host_did_not_write_is_deleted(tmp_path, capsys):
-    """The record is CI's now, so a record a person committed is dropped."""
+def test_a_loose_record_moves_into_the_folder_its_source_names(tmp_path,
+                                                               capsys):
+    """The source is the folder now, so every loose record moves into one.
+
+    A record nobody but a person could have committed goes to `local/`, which
+    is where an audit writes from now on. Nothing is deleted: a local record
+    counts at `strong`.
+    """
     root = _project(tmp_path, V095)
     rel = '.purlin/records/greeting/20260913T120000Z-4f1c2ab-ada.json'
+    moved = '.purlin/records/local/greeting/20260913T120000Z-4f1c2ab-ada.json'
+    brief = '.purlin/briefs/greeting/RULE-1.1a2b3c4d.brief.json'
+    brief_moved = '.purlin/briefs/local/greeting/RULE-1.1a2b3c4d.brief.json'
     _write(root, rel, '{"schema_version": 2, "feature": "greeting"}\n')
+    _write(root, brief, '{"schema": "purlin-brief/2", "rule": "RULE-1"}\n')
     _git(root, 'add', '-A')
     _git(root, 'commit', '-qm', 'a record by hand')
 
     pending = {entry['id']: entry for entry in update.pending(root)}
-    assert 'records-by-hand' in pending, sorted(pending)
-    assert pending['records-by-hand']['files'] == [rel]
+    assert 'record-folders' in pending, sorted(pending)
+    assert pending['record-folders']['files'] == [brief, rel]
 
     update.main(['--project-root', root, '--yes'])
     printed = capsys.readouterr().out
-    assert "the record is CI's" in printed, printed
+    assert 'the folder is the source now' in printed, printed
     assert not os.path.exists(os.path.join(root, *rel.split('/')))
-    assert rel not in _tracked(root)
-    assert 'records-by-hand' not in [e['id'] for e in update.pending(root)]
+    assert os.path.isfile(os.path.join(root, *moved.split('/')))
+    assert os.path.isfile(os.path.join(root, *brief_moved.split('/')))
+    assert 'record-folders' not in [e['id'] for e in update.pending(root)]

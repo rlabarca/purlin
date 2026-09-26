@@ -5,7 +5,7 @@ description: Run the tagged tests and print each rule's passed cell
 
 Run the tests that carry proof markers, write what they saw into `.purlin/tests/` and
 `.purlin/tests.md`, commit those two, and print the passed cell of every rule. This is level 1
-and it takes seconds: no breaks, no record, no signature. The record is CI's.
+and it takes seconds: no breaks, no record, no signature. `purlin:audit` writes the record.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -72,8 +72,8 @@ or a marker in the tree produced none. Read those before the table.
 
 This is the pattern every Purlin skill follows. Under `passed` the whole project is this one
 cell: no strength, no risk, no review list, no signature. Under `strong` the strong cell and
-the test strength appear beside it, and only a record CI wrote counts. Under `signed` the
-signed cell and the signer list appear too. Read the gate from `.purlin/config.json` and print
+the test strength appear beside it, and a record from either source counts. Under `signed` the
+signed cell and the signer list appear too, and there only a record CI wrote counts. Read the gate from `.purlin/config.json` and print
 only what exists; `references/hard_gates.md` defines the three gates once.
 
 ## Step 5: operating systems
@@ -82,6 +82,9 @@ A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that
 system. On a host that does not match, the run prints `<feature> PROOF-N needs <os>; this
 machine is <os>. A remote runner runs it: purlin:init adds one.` An untagged proof runs
 anywhere, and those three tags are the whole vocabulary.
+
+Each operating system a counting run covered is one **platform** in the passed cell, with its
+own word. A rule that passes on one and fails on another reads `partial`, which is not met.
 
 ## Step 6: the gate line
 
@@ -96,6 +99,7 @@ End with one line, computed from the table:
 | What the table shows | The line to print |
 |----------------------|-------------------|
 | A test failed | `→ Run: purlin:build <feature>` (fix the code or the test) |
+| A rule reads `partial` | `→ Run: purlin:build <feature>` (the cell names the platform that failed) |
 | A rule reads `no test` | `→ Run: purlin:build <feature>` |
 | A rule's spec status is `drafted` | `→ Run: purlin:spec <feature>` |
 | Every rule reads `passed`, gate `passed` | `→ Push.` |

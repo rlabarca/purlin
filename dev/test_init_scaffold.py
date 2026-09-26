@@ -670,8 +670,8 @@ class TestTheWorkflow:
     @pytest.mark.proof("scaffold", "PROOF-17", "RULE-17")
     def test_the_branch_rules_are_printed(self, project):
         output = project.run('--gate', 'strong')
-        assert '.purlin/records/**' in output
-        assert '.purlin/briefs/**' in output
+        assert '.purlin/records/ci/**' in output
+        assert '.purlin/briefs/ci/**' in output
         assert 'force push' in output.lower()
         assert 'gate check' in output
 
@@ -724,7 +724,7 @@ class TestTheWorkflow:
     def test_passed_prints_only_the_force_push_rule(self, project):
         output = project.run('--gate', 'passed')
         assert 'force push' in output.lower()
-        assert '.purlin/records/**' not in output
+        assert '.purlin/records/ci/**' not in output
 
 
 # ---------------------------------------------------------------------------
