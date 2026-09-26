@@ -2,10 +2,10 @@
 
 For one developer working alone at the `passed` gate.
 
-At `passed`, one thing has to be true before a change can merge: every rule has a passing
-tagged test. You write the record yourself, no one signs anything, and no CI workflow is
-written unless you ask for one. This is the smallest thing Purlin can be, and everything above
-it is additive.
+At `passed`, one question is asked of every rule: does every tagged test for it pass? You write
+the record yourself, no one signs anything, and no CI workflow is written unless you ask for
+one, so the answer is one you read on your own machine. This is the smallest thing Purlin can
+be, and everything above it is additive.
 
 If you have not set the project up yet, read [getting-started.md](getting-started.md) first.
 [how-purlin-works.md](how-purlin-works.md) is the model in one page.

@@ -118,7 +118,7 @@ Two cases behave differently, and the job says so in one line rather than failin
 - **A pull request from a fork.** The token is read-only, so no commit could be made even on a
   branch that keeps them. The audit runs and the comment posts, and the job says in one line
   that nothing was written.
-- **A squash merge.** The merge changes the sha, so the record that counts on the default
+- **A squash merge.** The merge changes the sha, so the record that counts on the protected
   branch is the one CI writes after the merge, not the one written on the branch. The
   branch's records fall to the retention rule: the newest three per feature per operating
   system are kept, the rest are pruned as new ones land.
@@ -131,7 +131,7 @@ Level 2 has five answers, and each one names who moves it next.
 |------|---------------|---------------|
 | `strong` | the passed cell is met from a `ci` record, the test strength is at or above `min_strength`, no free check stands against the proof text or the test body, no hold is current, and where the risk asks for a model review there is a brief for the current hashes that observed nothing and settled | nothing; the rule meets the gate |
 | `weak` | the passed cell is not met, or the strength is under the minimum, or a free check found something, or the review settled and still observed something the test does not read | build work: `purlin:build` |
-| `manual test` | every proof of the rule is tagged `@manual`, so no test can be written for it | a person runs the test and records what they saw with `purlin:sign <feature> RULE-N --note "<text>"` |
+| `manual test` | any proof of the rule is tagged `@manual`, so no test can be written for it | a person runs the test and records what they saw with `purlin:sign <feature> RULE-N --note "<text>"` |
 | `manual audit` | the rule's risk is at or above `ai_review_at` and there is no brief for the current hashes, or the review did not settle | a person judges the proof against the test, then signs, adds a case or holds |
 | `held` | a person committed a hold saying the test does not prove the proof, with the missing case | change the rule, the proof or the test, or sign it for the current hashes, which outranks the hold |
 
@@ -139,10 +139,10 @@ A rule with no break engine for its language reads `strong` with the reason `no 
 checks only`, as long as no blocking finding sits on its proof text. An unmeasured rule is
 unmeasured, not a failure.
 
-The review list holds exactly the rules whose strong cell reads `manual test`, `manual audit`
-or `held`. Its header is the one sentence that says so: `<n> rules need a person`. A `weak`
-rule is never on it, because a build moves it and no person has to decide anything. A
-signature file for the current hashes clears all three words at this gate, and at this gate it
+At `strong` the review list holds exactly the rules whose strong cell reads `manual test`,
+`manual audit` or `held`. Its header is the one sentence that says so: `<n> rules need a
+person`. A `weak` rule is never on it, because a build moves it and no person has to decide
+anything. A signature file for the current hashes clears all three words, and at this gate it
 counts from anyone: the signer list is not read below `signed`.
 
 ## One sprint, traced

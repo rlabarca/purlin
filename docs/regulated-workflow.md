@@ -71,8 +71,8 @@ inside the hashes a signature binds.
 | Test strength at or above `min_strength` | default 80 at this gate |
 | A current signature on every rule at or above `sign_at` | `purlin:sign` |
 | Every rule tagged with a risk and an origin | required at this gate, optional below it |
-| The signing commit signed by someone on the signer list | `signers` in `.purlin/config.json` |
-| The signing commit an ancestor of the protected branch head | it merges by pull request like any change |
+| The signing commit signed, by an author on the signer list who did not last touch the test | `signers` in `.purlin/config.json`, read as it stood in that commit |
+| The signing commit an ancestor of the protected branch | it merges by pull request like any change |
 
 The CI check, `scripts/ci/gate_check.py --check`, is the last step of every run. It prints
 four sections, `Not passed (n)`, `Weak (n)`, `Waiting on a person (n)` and `Not signed (n)`,
@@ -184,7 +184,9 @@ purlin:sign <feature> RULE-4 --note "read the four messages on 2026-09-16; each 
 ```
 
 A model review that could not settle the question reads `manual audit`, with the reason
-`review not settled`, and the same `--note` settles it.
+`review not settled`; so does a rule whose risk asks for a review and has no brief for the
+current hashes, with the reason `no brief for the current hashes`. The same `--note` settles
+either.
 
 ## Holds
 
@@ -196,8 +198,10 @@ purlin:sign <feature> RULE-3 --hold "the lock expiry is never read"
 ```
 
 It writes `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json` and
-commits it. While the hold is current both the strong cell and the signed cell read `held`,
-whatever the risk, so no rule slips past level 2 on the free checks alone.
+commits it, signed like any other `purlin:sign` commit. A hold only ever withholds, so the
+person who writes one need not be on the signer list. While the hold is current both the strong
+cell and the signed cell read `held`, whatever the risk, so no rule slips past level 2 on the
+free checks alone.
 Changing the test ends the hold, because the hashes it binds no longer match. A signature by a
 person for the current hashes outranks it.
 
