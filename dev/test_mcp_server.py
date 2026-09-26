@@ -417,6 +417,17 @@ class TestSpecParsing:
         # an error.
         assert len(purlin_specs.scope_tree(project.root, [])) == 64
 
+    @pytest.mark.proof("specs", "PROOF-16", "RULE-12", tier="integration")
+    def test_an_untracked_file_under_a_scoped_directory_is_not_read(
+            self, project):
+        """A scoped directory expands to what git tracks, not to the disk."""
+        first = purlin_specs.scope_tree(project.root, ['src'])
+        _write(os.path.join(project.root, 'src', 'scratch.py'), 'x = 1\n')
+        assert purlin_specs.scope_tree(project.root, ['src']) == first
+        _git(project.root, 'add', '-A')
+        _git(project.root, 'commit', '-q', '-m', 'feat: a second source file')
+        assert purlin_specs.scope_tree(project.root, ['src']) != first
+
     @pytest.mark.proof("specs", "PROOF-15", "RULE-14", tier="integration")
     def test_every_spec_is_keyed_by_its_filename_stem(self, project):
         project.spec(SPEC, name='sign_up')

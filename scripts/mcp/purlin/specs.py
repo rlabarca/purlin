@@ -181,6 +181,13 @@ def scope_tree(project_root, scope):
     contributes its path and an empty id, so a deleted scope file is a
     different tree rather than an error.
 
+    A scope entry naming a directory expands to the files git tracks under
+    it, not to what is on the disk: an untracked file a test or a build left
+    behind would otherwise change the hash on that one machine, and every
+    rule of the spec would read `code changed` there and nowhere else. The
+    walk of the disk is kept for the case where git cannot answer. A scope
+    entry naming a file is hashed as it is named, tracked or not.
+
     The record writer reuses this: a record carries the scope tree of each
     spec it covers, and a record whose scope tree differs from the working
     tree's is what makes a rule's passed cell read `code changed`.
@@ -193,11 +200,16 @@ def scope_tree(project_root, scope):
             continue
         full = os.path.join(project_root, entry)
         if os.path.isdir(full):
-            for dirpath, dirnames, filenames in os.walk(full):
-                dirnames[:] = sorted(d for d in dirnames if not d.startswith('.'))
-                for name in sorted(filenames):
-                    paths.append(os.path.relpath(
-                        os.path.join(dirpath, name), project_root))
+            tracked = _tracked_under(project_root, entry.rstrip('/'))
+            if tracked is None:
+                for dirpath, dirnames, filenames in os.walk(full):
+                    dirnames[:] = sorted(
+                        d for d in dirnames if not d.startswith('.'))
+                    for name in sorted(filenames):
+                        paths.append(os.path.relpath(
+                            os.path.join(dirpath, name), project_root))
+            else:
+                paths.extend(tracked)
         else:
             paths.append(entry.rstrip('/'))
     for path in sorted(set(paths)):
@@ -205,6 +217,24 @@ def scope_tree(project_root, scope):
     digest = hashlib.sha256()
     digest.update('\n'.join(entries).encode('utf-8'))
     return digest.hexdigest()
+
+
+def _tracked_under(project_root, rel_dir):
+    """The paths git tracks under one scoped directory, or `None`.
+
+    `None` says git could not answer, and the caller walks the disk instead.
+    The paths come back NUL-separated, so a path holding a space or a
+    non-ASCII character is read whole rather than quoted.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'ls-files', '-z', '--', rel_dir],
+            capture_output=True, text=True, cwd=project_root, timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    return [path for path in result.stdout.split('\0') if path]
 
 
 def _blob_id(project_root, rel_path):
