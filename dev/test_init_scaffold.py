@@ -575,7 +575,7 @@ class TestTheWorkflow:
             assert reason in output, output
         assert project.has('.github/workflows/purlin.yml')
 
-    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-44")
+    @pytest.mark.proof("scaffold", "PROOF-44", "RULE-44")
     def test_a_missing_prerequisite_is_named_and_nothing_is_written(self):
         made = Project('pytest', remote='https://example.invalid/x.git')
         try:
@@ -585,7 +585,7 @@ class TestTheWorkflow:
         finally:
             made.close()
 
-    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-44")
+    @pytest.mark.proof("scaffold", "PROOF-44", "RULE-44")
     def test_a_branch_the_remote_does_not_have_stops_the_write(self):
         made = Project('pytest', host=None)
         try:
@@ -602,7 +602,7 @@ class TestTheWorkflow:
         finally:
             made.close()
 
-    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-44")
+    @pytest.mark.proof("scaffold", "PROOF-44", "RULE-44")
     def test_the_host_cli_is_reported_either_way(self, project):
         output = project.run('--gate', 'strong')
         assert ('gh is installed' in output
