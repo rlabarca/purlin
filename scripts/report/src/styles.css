@@ -56,7 +56,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 
 /* --- stat strip and flag card ---------------------------------------- */
 .strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
-.strip.flagged{grid-template-columns:5fr 1fr}
+.strip.flagged{grid-template-columns:6fr 1fr}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
 .tile,.flag{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3)}
 .tile-v,.flag-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
@@ -68,15 +68,15 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
 .chip{font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
 .chip:hover{background:var(--hover-tint)}
+.chip b{font-family:var(--font-mono);font-weight:var(--weight-regular);margin-left:var(--space-2);color:var(--text-muted)}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.chip[aria-pressed="true"] b{color:var(--accent)}
 .tbl{--cols-min:calc(var(--cols-floor,0px) + var(--space-3) * var(--cols-gaps,0) + var(--space-6) * 2);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
 .th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-3);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);min-width:var(--cols-min)}
 .th>div,.tr>div{min-width:0}
 .trio{display:inline-flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-base)}
 .trio b{font-weight:var(--weight-regular);white-space:nowrap}
 .trio i,.rsum i{color:var(--text-muted);font-style:normal}
-.run{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);min-width:0}
-.run .mono{font-size:var(--ui-sm);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .th{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 .tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .tr:hover{background:var(--hover-tint)}
@@ -91,7 +91,6 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .rule .rid{font-family:var(--font-mono);color:var(--text-primary)}
 .rule .rt{color:var(--text-secondary)}
 .rule .rp{display:inline-flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;justify-content:flex-end}
-.right{text-align:right}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 
 /* --- rule and review screens ----------------------------------------- */

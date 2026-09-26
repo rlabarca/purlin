@@ -1,26 +1,20 @@
 /* The Board: where every rule stands against the gate, and which specs hold
    the rules that have not got there yet. */
 
-/* A rule the payload lists under the feature that owns it. An anchor's rule
-   appears under every feature that requires it, so counting every entry would
-   count that rule once per feature. */
-function ownRules(feature) {
-  return (feature.rules || []).filter(function (rule) {
-    return rule.label === 'own';
-  });
-}
-
-/* One tile per level the gate reaches, each counting the rules that got at
-   least that far, and at `signed` a flag card beside them for the signatures
-   that no longer match. A flag is counted beside the tiles, never instead of
-   one, so it never shares their row. */
+/* One tile per level the gate reaches, plus the two below them and `Partial`,
+   each counting the rules that got at least that far, and at `signed` a flag
+   card beside them for the signatures that no longer match. A flag is counted
+   beside the tiles, never instead of one, so it never shares their row. Each
+   tile carries the hover its column carries, read over every spec. */
 function statStrip() {
   var summary = DATA.summary || {};
+  var project = wholeProject();
   var shown = BUCKETS.filter(function (bucket) {
     return GATE_LEVELS.indexOf(bucket) < 0 || level(bucket);
   });
   var tiles = shown.map(function (bucket) {
-    return '<div class="tile"><div class="tile-v" style="color:var(--state-'
+    return '<div class="tile"' + hover(tileHover(bucket, project))
+      + '><div class="tile-v" style="color:var(--state-'
       + bucketTone(bucket) + ')">' + reached(summary, bucket) + '</div>'
       + '<div class="tile-l">' + esc(BUCKET_LABELS[bucket]) + '</div></div>';
   }).join('');
@@ -32,73 +26,102 @@ function statStrip() {
     + '<div class="tiles">' + tiles + '</div>' + flag + '</div>';
 }
 
-/* The columns the gate reaches, and no others. `floor` is the width below
-   which the column stops being read: a `0.6fr` track narrower than the word
-   `STRENGTH` ran its heading into the next one, and a share bar with nowhere
-   to go left its cell. Each floor is the widest thing its column has to hold
-   at its narrowest: the heading, or one part of a count cell, or the three
-   operating-system boxes beside the source word. Under the sum of the floors
-   the table scrolls sideways rather than squeezing a column past it; with
-   every column drawn those floors add up to 884 pixels, which with the gaps
-   and the padding is 1016, so a 1100-wide window shows the `Signed` column
-   and the scroll is the fallback below that. `width` is what the column asks
-   for where the window is wider than the floors: the shares are the widths a
-   1440-wide window gives them, in hundreds of pixels. */
+/* What a tile says beyond its count. The three cumulative tiles say what
+   their column says for one spec: where the runs happened, where the audit
+   came from, who signed. The three below them name what they count. */
+function tileHover(bucket, project) {
+  if (bucket === 'passing') { return platformLines(project); }
+  if (bucket === 'strong') { return auditLines(project); }
+  return bucket === 'signed' ? signerLines(project) : [TILE_HOVER[bucket]];
+}
+
+/* The columns the gate reaches, and no others. Every when, who and platform
+   detail is in the cell's hover rather than a column of its own, which is
+   what let the board drop from eight columns to six and fit a 1024-wide
+   window where it used to need 1100.
+
+   `width` is the share of the table the column asks for, and `floor` is the
+   width below which it stops being read: a track narrower than its heading
+   ran that heading into the next one. Each floor is the heading, or the
+   longest single part of a count cell, whichever is wider. The shares are
+   set so that no floor binds at 1024 and every count cell holds its first
+   two parts on one line at 1280; under the sum of the floors, 662 pixels,
+   which with the five gaps and the padding is 770, the table scrolls
+   sideways rather than squeezing a column past one. */
 function boardColumns() {
-  var columns = [{label: 'Spec', width: '2fr', floor: 112},
-                 {label: 'Rules', width: '0.55fr', floor: 58, right: true},
-                 {label: 'Spec status', width: '1.5fr', floor: 108},
-                 {label: 'Tests', width: '2fr', floor: 118},
-                 {label: 'Last run', width: '2.1fr', floor: 202}];
+  var columns = [{label: COLUMNS[0], width: '2.3fr', floor: 132},
+                 {label: COLUMNS[1], width: '0.7fr', floor: 58},
+                 {label: COLUMNS[2], width: '2.15fr', floor: 152},
+                 {label: COLUMNS[3], width: '2.15fr', floor: 120}];
   if (level('strong')) {
-    columns.push({label: 'Strength', width: '0.9fr', floor: 90, right: true},
-                 {label: 'Strong', width: '1.3fr', floor: 112});
+    columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
   if (level('signed')) {
-    columns.push({label: 'Signed', width: '1.25fr', floor: 84});
+    columns.push({label: COLUMNS[5], width: '1.1fr', floor: 90});
   }
   return columns;
 }
 
-/* How many of this spec's own rules the spec itself has finished: a rule no
-   proof line names is drafted, and no test can be written for it. */
-function specStatusCell(feature) {
-  var ready = 0;
-  var drafted = 0;
-  ownRules(feature).forEach(function (rule) {
-    if (rule.spec === 'drafted') { drafted += 1; } else { ready += 1; }
-  });
-  return counts([[ready, 'ready', 'pass'], [drafted, 'drafted', 'idle']]);
+/* How many proof lines this spec holds, and how many of them no tagged test
+   runs. A proof nothing tests is the gap between what the spec claims and
+   what the tests check, so it is on the board rather than one screen deeper,
+   and its ids are in the hover. */
+function proofsCell(feature) {
+  var total = 0;
+  ownRules(feature).forEach(function (r) { total += (r.proofs || []).length; });
+  var without = (feature.rollup || {}).proofs_without_test || {};
+  var ids = without.ids || [];
+  return '<span' + hover([ids.length ? 'no tagged test \u00b7 ' + ids.join(', ')
+      : 'every proof has a tagged test']) + '>'
+    + counts([[total, '', ''],
+      [without.count || 0, WORDS.without_test, 'warn']]) + '</span>';
 }
 
-/* What the tagged tests found, as the passed cells read it. The fourth part
-   counts the rules nothing current ran against, `not run` and `code changed`
-   alike: they passed no test and failed none, and a feature of 24 such rules
-   read `0 passed` and nothing else. The rule's own row and the `why` on its
-   passed cell say which of the two it is. */
+/* What the tagged tests found, as the passed cells read it: how many of the
+   spec's rules passed everywhere they ran, then the two words that say they
+   did not. The hover says which platforms ran and what each found, which is
+   the column the board used to spend on `Last run`. */
 function testsCell(feature) {
   var found = {};
-  ownRules(feature).forEach(function (rule) {
+  var rules = ownRules(feature);
+  rules.forEach(function (rule) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
   });
-  return counts([[found.passed || 0, 'passed', 'pass'],
-                 [found.failed || 0, 'failing', 'fail'],
-                 [found['no test'] || 0, 'no test', 'warn'],
-                 [(found['not run'] || 0) + (found['code changed'] || 0),
-                  'not run', 'warn']]);
+  return '<span' + hover(platformLines(feature)) + '>'
+    + counts([share(found.passed || 0, rules.length),
+      [found.partial || 0, WORDS.partial, 'warn'],
+      [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
 }
 
-/* How many of this spec's rules carry a signature, and how many signatures no
-   longer match. The share reads in the same three tones the share bar uses,
-   so `5 of 24` says the same thing here and in the `Strong` column. */
+/* `n of m` as the first part of a count cell: the share reads pass when every
+   rule is there, warn while some are, and idle while none is. */
+function share(count, total) {
+  return [count + ' ' + WORDS.of + ' ' + total, '',
+          total && count === total ? 'pass' : count ? 'warn' : 'idle'];
+}
+
+/* How many of this spec's rules the audit proved strong, and the strength of
+   the newest record beside it. A signed rule is still strong, so the share is
+   read the way the tiles are: this level and every level above it. */
+function strongCell(feature) {
+  var rollup = feature.rollup || {};
+  var value = rollup.test_strength == null
+    ? feature.test_strength : rollup.test_strength;
+  return '<span' + hover(auditLines(feature)) + '>'
+    + counts([share(reached(rollup, 'strong'), rollup.rules || 0),
+      [value == null ? 'n/a' : Math.round(value) + '%', '',
+        value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
+    + '</span>';
+}
+
+/* How many of this spec's rules carry a signature that counts. Who signed
+   them and how many signatures stopped matching are in the hover; the `Stale`
+   flag card carries the project's stale count. */
 function signedCell(feature) {
   var rollup = feature.rollup || {};
-  var signed = rollup.signed || 0;
-  var rules = rollup.rules || 0;
-  return counts([[signed + ' of ' + rules, '',
-    rules && signed === rules ? 'pass' : signed ? 'warn' : 'idle'],
-    [rollup.stale || 0, 'stale', 'fail']]);
+  return '<span' + hover(signerLines(feature)) + '>'
+    + counts([share(rollup.signed || 0, rollup.rules || 0)]) + '</span>';
 }
 
 function featureRow(feature, columns) {
@@ -106,21 +129,16 @@ function featureRow(feature, columns) {
   var open = !!VIEW.features[feature.name];
   var cells = ['<span class="name"><span class="caret">'
     + (open ? '▼' : '▶') + '</span>' + designThumb(feature)
-    + '<span class="n">' + esc(feature.name) + '</span></span>'];
+    + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
+    + esc(feature.name) + '</span></span>'];
   cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');
-  cells.push(specStatusCell(feature));
+  cells.push(proofsCell(feature));
   cells.push(testsCell(feature));
-  cells.push(lastRun(feature));
-  if (level('strong')) {
-    cells.push(strength(rollup.test_strength == null
-      ? feature.test_strength : rollup.test_strength));
-    cells.push(ratio(rollup.strong || 0, rollup.rules || 0));
-  }
+  if (level('strong')) { cells.push(strongCell(feature)); }
   if (level('signed')) { cells.push(signedCell(feature)); }
   var row = '<div class="tr" data-act="feature" data-feature="'
-    + esc(feature.name) + '">' + cells.map(function (cell, index) {
-      return '<div' + (columns[index].right ? ' class="right"' : '') + '>'
-        + cell + '</div>';
+    + esc(feature.name) + '">' + cells.map(function (cell) {
+      return '<div>' + cell + '</div>';
     }).join('') + '</div>';
   if (!open) { return row; }
   return row + visibleRules(feature).map(function (rule) {
@@ -176,12 +194,14 @@ function renderBoard() {
   var summary = DATA.summary || {};
   var floor = columns.reduce(function (sum, c) { return sum + c.floor; }, 0);
   /* What the board is mainly about is the tests: how many rules pass them,
-     how many fail and how many nothing has run against. The gate is the
-     second line, because the signed layer is one column's business. */
+     how many fail, how many pass on one platform and not another, and how
+     many nothing has run against. The gate is the second line, because the
+     signed layer is one column's business. */
   var head = '<section class="ledger"><h1 class="line"><b>'
     + reached(summary, 'passing') + '</b> of <b>' + (summary.rules || 0)
     + '</b> rules pass their tests<span class="sep">·</span><b>'
     + (summary.failing || 0) + '</b> failing<span class="sep">·</span><b>'
+    + (summary.partial || 0) + '</b> partial<span class="sep">·</span><b>'
     + (summary.untested || 0) + '</b> untested</h1>'
     + '<p class="line"><span class="mono">' + (summary.met || 0)
     + '</span> of <span class="mono">' + (summary.rules || 0)
@@ -196,8 +216,7 @@ function renderBoard() {
         return 'minmax(' + c.floor + 'px,' + c.width + ')';
       }).join(' ') + ';--cols-floor:' + floor + 'px;--cols-gaps:'
       + (columns.length - 1) + '"><div class="th">' + columns.map(function (c) {
-        return '<div' + (c.right ? ' class="right"' : '') + '>'
-          + esc(c.label) + '</div>';
+        return '<div>' + esc(c.label) + '</div>';
       }).join('') + '</div>' + order.map(function (name) {
         return groupBand(name, groups[name], columns);
       }).join('') + '</div>'

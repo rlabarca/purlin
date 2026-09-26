@@ -1,4 +1,4 @@
-"""The board's stale card and the spec table's column alignment, in a browser.
+"""The board's stale card and the spec table's columns, in a browser.
 
 The page and the fixtures are `dev/test_purlin_report.py`'s, opened the same way.
 """
@@ -11,8 +11,13 @@ import pytest
 DEV = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, DEV)
 
-from test_purlin_report import (browser, open_board,  # noqa: E402,F401
-                                payload_named)
+from test_purlin_report import (browser, count_cells,  # noqa: E402,F401
+                                open_board, payload_named)
+
+# The widths a reader opens the board at: a laptop, two desktops and a wide
+# screen. At 1024 every column the gate reaches is on screen; the page's own
+# content stops widening at 1360, so 1440 and 1920 read the same table.
+WIDTHS = (1920, 1440, 1280, 1024)
 
 # For every spec row, how far each cell's left edge sits from its heading's.
 OFFSETS = """() => {
@@ -26,7 +31,7 @@ OFFSETS = """() => {
 
 @pytest.mark.proof("purlin_report", "PROOF-33", "RULE-33", tier="e2e")
 def test_every_heading_starts_where_its_cells_start(browser, tmp_path):  # noqa: F811
-    for width in (1440, 1024):
+    for width in WIDTHS:
         page = open_board(browser, tmp_path / str(width),
                           payload_named('regulated'),
                           viewport={'width': width, 'height': 1000})
@@ -54,8 +59,12 @@ def test_the_stale_card_carries_the_count(browser, tmp_path):  # noqa: F811
         " document.body.appendChild(s); const v = getComputedStyle(s).color;"
         " s.remove(); return v; }", fail)
     assert colour == probe, (colour, probe)
-    assert len(page.query_selector_all('.tile')) == 5
+    assert len(page.query_selector_all('.tile')) == 6
     assert '2 failing' in page.inner_text('h1')
+    # The stale count is the flag card's and the `Signed` hover's; the cell
+    # states the share alone.
+    signed = count_cells(page)['login']['Signed']
+    assert signed == '1 of 4' and 'stale' not in signed
     page.close()
 
     payload['summary']['stale'] = 0
@@ -106,18 +115,23 @@ LAST_HEADING = """() => {
   return heads[heads.length - 1].getBoundingClientRect().right;
 }"""
 
-# How much taller each `Last run` cell is than the first box in it: zero where
-# the three operating-system boxes and the source word sit on one line.
-RUN_LINES = """() => Array.from(document.querySelectorAll('.tr .run')).map(
-  el => el.getBoundingClientRect().height
-    - el.children[0].getBoundingClientRect().height)"""
+# How many count cells draw their parts on more than one line: zero where
+# every part of every cell shares a top edge with the first.
+WRAPPED = """() => Array.from(document.querySelectorAll('.tr > div')).filter(
+  cell => new Set(Array.from(cell.querySelectorAll('.trio b')).map(
+    b => Math.round(b.getBoundingClientRect().top))).size > 1).length"""
+
+# Anything on the table that is set to the right of its own box. Two bare
+# number columns twelve pixels apart read as one number, so nothing is.
+RIGHT_ALIGNED = """() => Array.from(document.querySelectorAll('.tbl *')).filter(
+  el => getComputedStyle(el).textAlign === 'right').length"""
 
 
 @pytest.mark.proof("purlin_report", "PROOF-42", "RULE-35", tier="e2e")
 def test_a_column_keeps_its_floor_and_the_table_scrolls_instead(browser,  # noqa: F811
                                                                 tmp_path):
-    """`STRENGTH` ran into `STRONG` where the track was narrower than the word."""
-    for width in (1440, 1100):
+    """`SIGNED` sat off the right of a 1024-wide window with eight columns."""
+    for width in WIDTHS:
         page = open_board(browser, tmp_path / str(width),
                           payload_named('regulated'),
                           viewport={'width': width, 'height': 1000})
@@ -125,12 +139,14 @@ def test_a_column_keeps_its_floor_and_the_table_scrolls_instead(browser,  # noqa
         assert page.eval_on_selector(
             '.tbl', 'el => el.scrollWidth - el.clientWidth') == 0
         assert page.evaluate(LAST_HEADING) <= width
-        assert max(page.evaluate(RUN_LINES)) == 0
+        assert page.evaluate(RIGHT_ALIGNED) == 0
+        if width >= 1280:
+            assert page.evaluate(WRAPPED) == 0, width
         page.close()
 
     narrow = open_board(browser, tmp_path / 'narrow',
                         payload_named('regulated'),
-                        viewport={'width': 900, 'height': 1000})
+                        viewport={'width': 700, 'height': 1000})
     assert [h for h in narrow.evaluate(HEADINGS) if h['over'] > 0] == []
     assert narrow.eval_on_selector(
         '.tbl', 'el => el.scrollWidth - el.clientWidth') > 0

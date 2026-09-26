@@ -253,7 +253,7 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .thumb{display:block;width:60px;height:38px;object-fit:cover;border:1px solid var(--border-hairline);border-radius:var(--radius-sm)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
 .strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
-.strip.flagged{grid-template-columns:5fr 1fr}
+.strip.flagged{grid-template-columns:6fr 1fr}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
 .tile,.flag{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3)}
 .tile-v,.flag-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
@@ -263,15 +263,15 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
 .chip{font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
 .chip:hover{background:var(--hover-tint)}
+.chip b{font-family:var(--font-mono);font-weight:var(--weight-regular);margin-left:var(--space-2);color:var(--text-muted)}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.chip[aria-pressed="true"] b{color:var(--accent)}
 .tbl{--cols-min:calc(var(--cols-floor,0px) + var(--space-3) * var(--cols-gaps,0) + var(--space-6) * 2);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
 .th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-3);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);min-width:var(--cols-min)}
 .th>div,.tr>div{min-width:0}
 .trio{display:inline-flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-base)}
 .trio b{font-weight:var(--weight-regular);white-space:nowrap}
 .trio i,.rsum i{color:var(--text-muted);font-style:normal}
-.run{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);min-width:0}
-.run .mono{font-size:var(--ui-sm);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .th{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 .tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .tr:hover{background:var(--hover-tint)}
@@ -286,7 +286,6 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .rule .rid{font-family:var(--font-mono);color:var(--text-primary)}
 .rule .rt{color:var(--text-secondary)}
 .rule .rp{display:inline-flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;justify-content:flex-end}
-.right{text-align:right}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 .kv{display:grid;grid-template-columns:170px 1fr;gap:var(--space-3) var(--space-6);margin:0;font-size:var(--ui-base)}
 .kv dt{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary);padding-top:2px}
@@ -334,35 +333,37 @@ function themeButton() {
   return '<button class="btn glyph" data-act="theme" title="' + next
     + '" aria-label="' + next + '">\u25d0</button>';
 }
-var FILTERS = [
-  {id: 'untested', label: 'Untested', level: 'passed',
-   test: function (rule) { return rule.bucket === 'untested'; }},
-  {id: 'failing', label: 'Failing', level: 'passed',
-   test: function (rule) { return rule.bucket === 'failing'; }},
-  {id: 'weak', label: 'Weak', level: 'strong',
-   test: function (rule) { return cellWord(rule, 'strong') === 'weak'; }},
-  {id: 'unsigned', label: 'Unsigned', level: 'signed',
-   test: function (rule) { return cellWord(rule, 'signed') === 'unsigned'; }},
-  {id: 'stale-or-held', label: 'Stale or held', level: 'signed',
-   test: function (rule) {
-     var flags = rule.flags || {};
-     return !!flags.stale || !!flags.held;
-   }}
-];
-function findingsOf(rule) {
-  var found = [];
-  (rule.proofs || []).forEach(function (proof) {
-    (proof.findings || []).forEach(function (name) {
-      if (found.indexOf(name) < 0) { found.push(name); }
-    });
-  });
-  return found;
+function bucketFilter(bucket) {
+  return {id: bucket, label: BUCKET_LABELS[bucket], level: 'passed',
+    test: function (rule) { return rule.bucket === bucket; }};
+}
+function allFilters() {
+  return [bucketFilter('untested'), bucketFilter('failing'),
+          bucketFilter('partial'),
+    {id: 'weak', label: 'Weak', level: 'strong', test: function (rule) {
+      var word = cellWord(rule, 'strong');
+      return !!word && word !== 'strong';
+    }},
+    {id: 'unsigned', label: 'Unsigned', level: 'signed', test: function (rule) {
+      return cellWord(rule, 'signed') === 'unsigned';
+    }},
+    {id: 'stale-or-held', label: 'Stale or held', level: 'signed',
+     test: function (rule) {
+       return !!(rule.flags || {}).stale || !!(rule.flags || {}).held;
+     }}];
 }
 function offeredFilters() {
-  return FILTERS.filter(function (f) { return level(f.level); });
+  return allFilters().filter(function (f) { return level(f.level); });
 }
 function activeFilters() {
   return offeredFilters().filter(function (f) { return VIEW.filters[f.id]; });
+}
+function filterCount(f) {
+  var found = 0;
+  (DATA.features || []).forEach(function (feature) {
+    ownRules(feature).forEach(function (r) { found += f.test(r, feature) ? 1 : 0; });
+  });
+  return found;
 }
 function visibleRules(feature) {
   var active = activeFilters();
@@ -375,21 +376,18 @@ function filtersMarkup() {
   return '<div class="filters">' + offeredFilters().map(function (f) {
     return '<button class="chip" data-act="filter" data-filter="' + f.id
       + '" aria-pressed="' + (VIEW.filters[f.id] ? 'true' : 'false') + '">'
-      + esc(f.label) + '</button>';
+      + esc(f.label) + '<b>' + filterCount(f) + '</b></button>';
   }).join('') + '</div>';
-}
-function ownRules(feature) {
-  return (feature.rules || []).filter(function (rule) {
-    return rule.label === 'own';
-  });
 }
 function statStrip() {
   var summary = DATA.summary || {};
+  var project = wholeProject();
   var shown = BUCKETS.filter(function (bucket) {
     return GATE_LEVELS.indexOf(bucket) < 0 || level(bucket);
   });
   var tiles = shown.map(function (bucket) {
-    return '<div class="tile"><div class="tile-v" style="color:var(--state-'
+    return '<div class="tile"' + hover(tileHover(bucket, project))
+      + '><div class="tile-v" style="color:var(--state-'
       + bucketTone(bucket) + ')">' + reached(summary, bucket) + '</div>'
       + '<div class="tile-l">' + esc(BUCKET_LABELS[bucket]) + '</div></div>';
   }).join('');
@@ -400,69 +398,80 @@ function statStrip() {
   return '<div class="strip' + (flag ? ' flagged' : '') + '">'
     + '<div class="tiles">' + tiles + '</div>' + flag + '</div>';
 }
+function tileHover(bucket, project) {
+  if (bucket === 'passing') { return platformLines(project); }
+  if (bucket === 'strong') { return auditLines(project); }
+  return bucket === 'signed' ? signerLines(project) : [TILE_HOVER[bucket]];
+}
 function boardColumns() {
-  var columns = [{label: 'Spec', width: '2fr', floor: 112},
-                 {label: 'Rules', width: '0.55fr', floor: 58, right: true},
-                 {label: 'Spec status', width: '1.5fr', floor: 108},
-                 {label: 'Tests', width: '2fr', floor: 118},
-                 {label: 'Last run', width: '2.1fr', floor: 202}];
+  var columns = [{label: COLUMNS[0], width: '2.3fr', floor: 132},
+                 {label: COLUMNS[1], width: '0.7fr', floor: 58},
+                 {label: COLUMNS[2], width: '2.15fr', floor: 152},
+                 {label: COLUMNS[3], width: '2.15fr', floor: 120}];
   if (level('strong')) {
-    columns.push({label: 'Strength', width: '0.9fr', floor: 90, right: true},
-                 {label: 'Strong', width: '1.3fr', floor: 112});
+    columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
   if (level('signed')) {
-    columns.push({label: 'Signed', width: '1.25fr', floor: 84});
+    columns.push({label: COLUMNS[5], width: '1.1fr', floor: 90});
   }
   return columns;
 }
-function specStatusCell(feature) {
-  var ready = 0;
-  var drafted = 0;
-  ownRules(feature).forEach(function (rule) {
-    if (rule.spec === 'drafted') { drafted += 1; } else { ready += 1; }
-  });
-  return counts([[ready, 'ready', 'pass'], [drafted, 'drafted', 'idle']]);
+function proofsCell(feature) {
+  var total = 0;
+  ownRules(feature).forEach(function (r) { total += (r.proofs || []).length; });
+  var without = (feature.rollup || {}).proofs_without_test || {};
+  var ids = without.ids || [];
+  return '<span' + hover([ids.length ? 'no tagged test \u00b7 ' + ids.join(', ')
+      : 'every proof has a tagged test']) + '>'
+    + counts([[total, '', ''],
+      [without.count || 0, WORDS.without_test, 'warn']]) + '</span>';
 }
 function testsCell(feature) {
   var found = {};
-  ownRules(feature).forEach(function (rule) {
+  var rules = ownRules(feature);
+  rules.forEach(function (rule) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
   });
-  return counts([[found.passed || 0, 'passed', 'pass'],
-                 [found.failed || 0, 'failing', 'fail'],
-                 [found['no test'] || 0, 'no test', 'warn'],
-                 [(found['not run'] || 0) + (found['code changed'] || 0),
-                  'not run', 'warn']]);
+  return '<span' + hover(platformLines(feature)) + '>'
+    + counts([share(found.passed || 0, rules.length),
+      [found.partial || 0, WORDS.partial, 'warn'],
+      [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
+}
+function share(count, total) {
+  return [count + ' ' + WORDS.of + ' ' + total, '',
+          total && count === total ? 'pass' : count ? 'warn' : 'idle'];
+}
+function strongCell(feature) {
+  var rollup = feature.rollup || {};
+  var value = rollup.test_strength == null
+    ? feature.test_strength : rollup.test_strength;
+  return '<span' + hover(auditLines(feature)) + '>'
+    + counts([share(reached(rollup, 'strong'), rollup.rules || 0),
+      [value == null ? 'n/a' : Math.round(value) + '%', '',
+        value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
+    + '</span>';
 }
 function signedCell(feature) {
   var rollup = feature.rollup || {};
-  var signed = rollup.signed || 0;
-  var rules = rollup.rules || 0;
-  return counts([[signed + ' of ' + rules, '',
-    rules && signed === rules ? 'pass' : signed ? 'warn' : 'idle'],
-    [rollup.stale || 0, 'stale', 'fail']]);
+  return '<span' + hover(signerLines(feature)) + '>'
+    + counts([share(rollup.signed || 0, rollup.rules || 0)]) + '</span>';
 }
 function featureRow(feature, columns) {
   var rollup = feature.rollup || {};
   var open = !!VIEW.features[feature.name];
   var cells = ['<span class="name"><span class="caret">'
     + (open ? '▼' : '▶') + '</span>' + designThumb(feature)
-    + '<span class="n">' + esc(feature.name) + '</span></span>'];
+    + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
+    + esc(feature.name) + '</span></span>'];
   cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');
-  cells.push(specStatusCell(feature));
+  cells.push(proofsCell(feature));
   cells.push(testsCell(feature));
-  cells.push(lastRun(feature));
-  if (level('strong')) {
-    cells.push(strength(rollup.test_strength == null
-      ? feature.test_strength : rollup.test_strength));
-    cells.push(ratio(rollup.strong || 0, rollup.rules || 0));
-  }
+  if (level('strong')) { cells.push(strongCell(feature)); }
   if (level('signed')) { cells.push(signedCell(feature)); }
   var row = '<div class="tr" data-act="feature" data-feature="'
-    + esc(feature.name) + '">' + cells.map(function (cell, index) {
-      return '<div' + (columns[index].right ? ' class="right"' : '') + '>'
-        + cell + '</div>';
+    + esc(feature.name) + '">' + cells.map(function (cell) {
+      return '<div>' + cell + '</div>';
     }).join('') + '</div>';
   if (!open) { return row; }
   return row + visibleRules(feature).map(function (rule) {
@@ -513,6 +522,7 @@ function renderBoard() {
     + reached(summary, 'passing') + '</b> of <b>' + (summary.rules || 0)
     + '</b> rules pass their tests<span class="sep">·</span><b>'
     + (summary.failing || 0) + '</b> failing<span class="sep">·</span><b>'
+    + (summary.partial || 0) + '</b> partial<span class="sep">·</span><b>'
     + (summary.untested || 0) + '</b> untested</h1>'
     + '<p class="line"><span class="mono">' + (summary.met || 0)
     + '</span> of <span class="mono">' + (summary.rules || 0)
@@ -523,8 +533,7 @@ function renderBoard() {
         return 'minmax(' + c.floor + 'px,' + c.width + ')';
       }).join(' ') + ';--cols-floor:' + floor + 'px;--cols-gaps:'
       + (columns.length - 1) + '"><div class="th">' + columns.map(function (c) {
-        return '<div' + (c.right ? ' class="right"' : '') + '>'
-          + esc(c.label) + '</div>';
+        return '<div>' + esc(c.label) + '</div>';
       }).join('') + '</div>' + order.map(function (name) {
         return groupBand(name, groups[name], columns);
       }).join('') + '</div>'
@@ -533,13 +542,10 @@ function renderBoard() {
     + table + '</section>';
 }
 var FINDING_LABELS = {
-  'no_expected_value': 'no expected value',
-  'vague_verb': 'vague verb',
-  'missing_trigger': 'missing trigger',
-  'tier_mismatch': 'tier mismatch',
+  'no_expected_value': 'no expected value', 'vague_verb': 'vague verb',
+  'missing_trigger': 'missing trigger', 'tier_mismatch': 'tier mismatch',
   'implementation_coupling': 'names a symbol, not an outcome',
-  'happy_path_only': 'no negative case'
-};
+  'happy_path_only': 'no negative case'};
 var FINDING_TEXT = {
   'no_expected_value': 'Names no literal, number, quoted string or named constant, so almost any assertion would satisfy it.',
   'vague_verb': 'Uses a vague verb with no expected value beside it. A proof should be readable straight into a test.',
@@ -554,16 +560,31 @@ function ruleInView() {
   var feature = featureNamed(VIEW.feature);
   if (!feature) { return null; }
   var found = null;
-  (feature.rules || []).forEach(function (rule) {
-    if (rule.id === VIEW.rule) { found = rule; }
+  (feature.rules || []).forEach(function (r) {
+    if (r.id === VIEW.rule) { found = r; }
   });
   return found ? {feature: feature, rule: found} : null;
+}
+function platformBoxes(cell) {
+  var platforms = (cell && cell.platforms) || {};
+  return Object.keys(platforms).sort().map(function (os) {
+    var entry = platforms[os];
+    return '<span class="os ' + (entry.word === 'passed' ? 'pass'
+        : entry.word === 'failed' ? 'fail' : 'none') + '"'
+      + hover([[os, entry.word, entry.source || 'local',
+        ageText(entry.at).text].join(' \u00b7 ')])
+      + '>' + esc(os.slice(0, 3)) + '</span>';
+  }).join(' ');
 }
 function cellRow(rule, name) {
   var cell = cellOf(rule, name);
   if (!cell) { return ''; }
   var reasons = (cell.reasons || []).join('; ');
+  var beside = name === 'passed' ? platformBoxes(cell)
+    : name === 'signed' && cell.signer ? '<span class="mono sec">'
+      + esc(cell.signer + ' \u00b7 ' + when(cell.at)) + '</span>' : '';
   return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
+    + (beside ? ' ' + beside : '')
     + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
     + '</dd>';
 }
@@ -600,8 +621,8 @@ function briefPanel(feature, rule) {
   if (cell.settled === true) {
     lines.push('<p class="sec">The model review settled the question.</p>');
   } else if (cell.settled === false) {
-    lines.push('<p class="sec">The model review could not settle the '
-      + 'question, so a person states what they see.</p>');
+    lines.push('<p class="sec">The model review could not settle the question, '
+      + 'so a person states what they see.</p>');
   }
   if (cell.brief) {
     lines.push('<p class="sec">' + hostLink(cell.brief, cell.brief) + '</p>');
@@ -614,17 +635,16 @@ function signaturesFor(feature, rule) {
   });
 }
 function signerOf(path) {
-  var parts = path.split('/').pop().split('.');
-  return parts.length > 2 ? parts[2] : '';
+  return path.split('/').pop().split('.')[2] || '';
 }
 function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
   if (!cell) { return ''; }
   if (cell.word === 'signed') {
-    var who = cell.signer || (cell.path ? signerOf(cell.path) : '');
     return '<div class="panel"><h2>Signed</h2><p class="sec">'
-      + esc('Signed by ' + (who || 'someone on the signer list')
-        + ' against the rule, proof and test text this screen shows. The '
+      + esc('Signed by ' + (cell.signer || signerOf(cell.path || '')
+          || 'someone on the signer list') + ' on ' + when(cell.at)
+        + ', against the rule, proof and test text this screen shows. The '
         + 'signature file beside the spec carries the commit that signed it.')
       + '</p></div>';
   }
@@ -638,11 +658,11 @@ function signPanel(feature, rule) {
         + 'page shows it once it is on the branch.') + '</p></div>';
 }
 function proofPanel(proof) {
-  var tests = (proof.tests || []).map(function (test) {
-    return esc(test.file) + ' :: ' + esc(test.name);
+  var tests = (proof.tests || []).map(function (t) {
+    return esc(t.file) + ' :: ' + esc(t.name);
   }).join('\n') || 'no tagged test yet';
-  var findings = (proof.findings || []).map(function (name) {
-    return '<span class="finding">' + esc(findingLabel(name)) + '</span>';
+  var findings = (proof.findings || []).map(function (n) {
+    return '<span class="finding">' + esc(findingLabel(n)) + '</span>';
   }).join(', ');
   return '<div class="panel"><dl class="kv">'
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
@@ -654,8 +674,8 @@ function proofPanel(proof) {
 }
 function backLink() {
   var from = VIEW.from === 'review' && level('strong') ? 'review' : 'board';
-  return '<button class="btn" data-act="close" data-screen="' + from + '">'
-    + (from === 'review' ? '← Review list' : '← Board') + '</button>';
+  return '<button class="btn" data-act="close" data-screen="' + from + '">← '
+    + (from === 'review' ? 'Review list' : 'Board') + '</button>';
 }
 function renderRule() {
   var found = ruleInView();
@@ -665,8 +685,7 @@ function renderRule() {
   }
   var feature = found.feature;
   var rule = found.rule;
-  var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted')
-    + '</dd>'];
+  var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted') + '</dd>'];
   GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
   if (level('strong')) {
     rows.push('<dt>Risk</dt><dd>' + riskTag(rule.risk) + '</dd>');
@@ -675,8 +694,8 @@ function renderRule() {
   if (rule.criterion) {
     rows.push('<dt>Criterion</dt><dd>' + tag(rule.criterion, true) + '</dd>');
   }
-  rows.push('<dt>Spec</dt><dd>'
-    + hostLink(feature.spec_path, feature.spec_path) + '</dd>');
+  rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
+    + '</dd>');
   rows.push('<dt>Last run</dt><dd>' + recordLine(feature) + '</dd>');
   var signatures = level('signed') ? signaturesFor(feature, rule) : [];
   if (signatures.length) {
@@ -707,33 +726,28 @@ var WHY_SENTENCES = {
   'manual test': 'Its proof is @manual, so a person runs the test and states '
     + 'what they saw.',
   'manual audit': 'The model review could not settle it, so a person judges '
-    + 'the proof against the test.'
-};
+    + 'the proof against the test.'};
 var WHY_COUNTS = ['unsigned', 'stale', 'held', 'manual test', 'manual audit'];
 function shortText(text) {
   var value = String(text == null ? '' : text);
-  if (value.length <= RULE_TEXT_MAX) { return value; }
-  return value.slice(0, RULE_TEXT_MAX).replace(/\s+\S*$/, '') + '…';
+  return value.length <= RULE_TEXT_MAX ? value
+    : value.slice(0, RULE_TEXT_MAX).replace(/\s+\S*$/, '') + '…';
 }
 function reviewRule(entry) {
   var feature = featureNamed(entry.feature);
   var found = null;
-  if (feature) {
-    (feature.rules || []).forEach(function (rule) {
-      if (rule.id === entry.rule) { found = rule; }
-    });
-  }
+  (feature ? feature.rules || [] : []).forEach(function (r) {
+    if (r.id === entry.rule) { found = r; }
+  });
   return found;
 }
 function whySentence(token) {
-  return WHY_SENTENCES[token] || 'It is on the review list because ' + token
-    + '.';
+  return WHY_SENTENCES[token] || 'It is on the review list because ' + token + '.';
 }
 function reviewRowReasons(entry, rule) {
-  var cell = rule ? cellOf(rule, entry.cell) : null;
-  var reasons = (cell && cell.reasons) || [];
-  if (reasons.length) { return reasons.join('; '); }
-  return (entry.why || []).map(whySentence).join(' ');
+  var reasons = ((rule ? cellOf(rule, entry.cell) : null) || {}).reasons || [];
+  return reasons.length ? reasons.join('; ')
+    : (entry.why || []).map(whySentence).join(' ');
 }
 function reviewRow(entry) {
   var rule = reviewRule(entry);
@@ -753,9 +767,8 @@ function reviewOrder(entries) {
   var rest = [];
   entries.forEach(function (entry) {
     var why = entry.why || [];
-    if (why.indexOf('stale') >= 0 || why.indexOf('held') >= 0) {
-      first.push(entry);
-    } else { rest.push(entry); }
+    (why.indexOf('stale') >= 0 || why.indexOf('held') >= 0 ? first : rest)
+      .push(entry);
   });
   return first.concat(rest);
 }
@@ -785,11 +798,11 @@ function riskSummary(entries) {
 function renderReview() {
   var entries = DATA.review_list || [];
   if (!entries.length) {
-    return '<section><p class="eyebrow">Review list</p>'
-      + '<div class="panel empty">No rule is waiting for a person. A rule '
-      + 'arrives here when the machine cannot settle it, when a signature '
-      + 'stops matching, when someone holds it, or when it is unsigned at or '
-      + 'above the risk this project signs from.</div></section>';
+    return '<section><p class="eyebrow">Review list</p><div class="panel empty">'
+      + 'No rule is waiting for a person. A rule arrives here when the machine '
+      + 'cannot settle it, when a signature stops matching, when someone holds '
+      + 'it, or when it is unsigned at or above the risk this project signs '
+      + 'from.</div></section>';
   }
   var head = '<section><p class="eyebrow">Review list</p><h1>'
     + entries.length + (entries.length === 1 ? ' rule needs' : ' rules need')
@@ -809,19 +822,25 @@ function renderReview() {
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
             features: {}, groups: {}, filters: {}};
-var SCHEMA = 5;
+var SCHEMA = 6;
 var REFRESH_AFTER = 60;
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
-var BUCKETS = ['untested', 'failing', 'passing', 'strong', 'signed'];
+var BUCKETS = ['untested', 'failing', 'partial', 'passing', 'strong', 'signed'];
 var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
-                     passing: 'Passing', strong: 'Strong', signed: 'Signed'};
-var CELL_TONES = {'ready': 'pass', 'drafted': 'idle',
-                  'passed': 'pass', 'failed': 'fail', 'no test': 'warn',
-                  'not run': 'warn', 'code changed': 'warn',
-                  'strong': 'pass', 'weak': 'warn',
-                  'manual test': 'warn', 'manual audit': 'warn',
-                  'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail',
-                  'held': 'warn', 'not required': 'idle'};
+  partial: 'Partial', passing: 'Passing', strong: 'Strong', signed: 'Signed'};
+var TILE_HOVER = {
+  untested: 'No test, no current run, or a spec line still drafted.',
+  failing: 'Every platform that ran the tests found a failure.',
+  partial: 'Passed on one platform, failed or did not run on another.'};
+var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
+var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
+             failing: 'failing', stale: 'stale', passed: 'passed',
+             failed: 'failed', not_run: 'not run'};
+var CELL_TONES = {'ready': 'pass', 'drafted': 'idle', 'passed': 'pass',
+  'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
+  'code changed': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
+  'manual test': 'warn', 'manual audit': 'warn', 'signed': 'pass',
+  'unsigned': 'warn', 'stale': 'fail', 'not required': 'idle'};
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
 var RISKS = ['high', 'medium', 'low'];
 function loadData(callback) {
@@ -851,7 +870,7 @@ function loadData(callback) {
 }
 function gateName() {
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
-  return GATE_LEVELS.indexOf(gate) >= 0 ? gate : 'passed';
+  return GATE_LEVELS.indexOf(gate) >= 0 ? gate : GATE_LEVELS[0];
 }
 function level(name) {
   return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
@@ -861,44 +880,40 @@ function minStrength() {
 }
 function esc(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
-    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
-            "'": '&#39;'}[c];
+    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
   });
 }
 function tone(word) { return CELL_TONES[word] || 'idle'; }
 function pill(word) {
-  var solid = word === 'signed' ? ' solid' : '';
-  return '<span class="pill' + solid + '" style="color:var(--state-'
-    + tone(word) + ')"><b>' + esc(String(word).toUpperCase())
-    + '</b></span>';
+  return '<span class="pill' + (word === 'signed' ? ' solid' : '')
+    + '" style="color:var(--state-' + tone(word) + ')"><b>'
+    + esc(String(word).toUpperCase()) + '</b></span>';
 }
 function bucketTone(bucket) {
   if (bucket === 'untested') { return 'idle'; }
   if (bucket === 'failing') { return 'fail'; }
-  return (bucket === 'passing' ? 'passed' : bucket) === gateName()
-    ? 'pass' : 'warn';
+  if (bucket === 'partial') { return 'warn'; }
+  return (bucket === 'passing' ? 'passed' : bucket) === gateName() ? 'pass' : 'warn';
 }
 function reached(counted, name) {
   var from = GATE_LEVELS.indexOf(name === 'passing' ? 'passed' : name);
-  if (from < 0) { return counted[name] || 0; }
-  return GATE_LEVELS.slice(from).reduce(function (sum, key) {
-    return sum + (counted[key] || 0);
-  }, 0);
+  return from < 0 ? counted[name] || 0
+    : GATE_LEVELS.slice(from).reduce(function (sum, key) {
+      return sum + (counted[key] || 0);
+    }, 0);
 }
 function tag(text, plain) {
-  return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text)
-    + '</span>';
+  return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
 }
 function riskTag(risk) {
   var band = risk === 'high' || risk === 'medium' ? risk : 'low';
-  return '<span class="tag risk-' + band + '">' + esc(risk || 'low')
-    + '</span>';
+  return '<span class="tag risk-' + band + '">' + esc(risk || 'low') + '</span>';
 }
 function ratio(count, total, suffix) {
   var pct = total ? Math.round((count / total) * 100) : 0;
-  var hue = total && count === total ? 'pass' : count ? 'warn' : 'idle';
-  return '<span class="cov" style="color:var(--state-' + hue + ')"><b>'
-    + count + ' of ' + total + '</b>'
+  return '<span class="cov" style="color:var(--state-'
+    + (total && count === total ? 'pass' : count ? 'warn' : 'idle')
+    + ')"><b>' + count + ' ' + WORDS.of + ' ' + total + '</b>'
     + (suffix ? '<span class="sec">' + esc(suffix) + '</span>' : '')
     + '<i><span style="width:' + pct + '%"></span></i></span>';
 }
@@ -907,82 +922,83 @@ function counts(items) {
     return index === 0 || item[0];
   }).map(function (item, index) {
     var hue = index === 0 && !item[0] ? 'idle' : item[2];
-    return '<b style="color:var(--state-' + hue + ')">'
+    return '<b' + (hue ? ' style="color:var(--state-' + hue + ')"' : '') + '>'
       + (index ? '<i class="sec">·</i> ' : '')
       + esc(item[1] ? item[0] + ' ' + item[1] : item[0]) + '</b>';
   }).join('') + '</span>';
 }
-function strength(value) {
-  if (value == null) { return '<span class="mono muted">n/a</span>'; }
-  var hue = value >= minStrength() ? 'pass' : 'fail';
-  return '<span class="mono" style="color:var(--state-' + hue + ')">'
-    + Math.round(value) + '%</span>';
+function hover(lines) { return ' title="' + esc(lines.join('\n')) + '"'; }
+function ownRules(feature) {
+  return (feature.rules || []).filter(function (r) { return r.label === 'own'; });
 }
-function recordsFor(feature) {
-  var byOs = (DATA.records || {})[feature.name] || {};
-  return Object.keys(byOs).sort().map(function (key) { return byOs[key]; });
-}
-var OS_BOXES = [['linux', 'lin'], ['macos', 'mac'], ['windows', 'win']];
-function newestByOs(feature) {
-  var byOs = {};
-  recordsFor(feature).forEach(function (record) {
-    var os = record.os || '';
-    if (!byOs[os] || (record.timestamp || '') > (byOs[os].timestamp || '')) {
-      byOs[os] = record;
+function wholeProject() {
+  var rules = [];
+  var rollup = {latest_record: null};
+  Object.keys(DATA.summary || {}).forEach(function (key) {
+    rollup[key] = DATA.summary[key];
+  });
+  (DATA.features || []).forEach(function (feature) {
+    ownRules(feature).forEach(function (rule) { rules.push(rule); });
+    var found = (feature.rollup || {}).latest_record;
+    if (found && newer(found.timestamp, (rollup.latest_record || {}).timestamp)) {
+      rollup.latest_record = found;
     }
   });
-  return byOs;
+  return {rules: rules, rollup: rollup};
 }
-function osBox(os, short, record) {
-  if (!record) {
-    return '<span class="os none" title="' + esc(os) + ': no record">'
-      + esc(short) + '</span>';
-  }
-  var hue = record.result === 'fail' ? 'fail' : 'pass';
-  var who = record.label || 'local';
-  return '<span class="os ' + hue + '" title="' + esc(os + ': ' + who + ' '
-    + (hue === 'fail' ? 'failed' : 'passed') + ' at ' + (record.timestamp || '')
-    + ' · ' + (record.path || '')) + '">' + esc(short) + '</span>';
-}
-function recordCell(feature) {
-  var byOs = newestByOs(feature);
-  return OS_BOXES.map(function (pair) {
-    return osBox(pair[0], pair[1], byOs[pair[0]]);
-  }).join('');
-}
-function sourceOf(feature) {
-  var found = null;
-  (feature.rules || []).forEach(function (rule) {
-    var cell = (rule.cells || {}).passed || {};
-    if (!found && cell.source) { found = cell.source; }
+function newer(one, two) { return (one || '') > (two || ''); }
+function platformLines(feature) {
+  var byOs = {};
+  var names = [];
+  ownRules(feature).forEach(function (rule) {
+    var platforms = ((rule.cells || {}).passed || {}).platforms || {};
+    Object.keys(platforms).forEach(function (os) {
+      var entry = platforms[os];
+      if (!byOs[os]) { byOs[os] = {at: '', words: {}}; names.push(os); }
+      var found = byOs[os];
+      found.words[entry.word] = (found.words[entry.word] || 0) + 1;
+      if (newer(entry.at, found.at)) { found.at = entry.at; found.source = entry.source; }
+    });
   });
-  return found;
+  if (!names.length) { return ['No counting run has covered a platform yet.']; }
+  return names.sort(function (a, b) { return newer(byOs[a].at, byOs[b].at) ? -1 : 1; })
+    .map(function (os) {
+      var found = byOs[os];
+      return [os, found.source || 'local', ageText(found.at).text].concat(
+        [WORDS.passed, WORDS.failed, WORDS.not_run].filter(function (word) {
+          return found.words[word];
+        }).map(function (word) { return found.words[word] + ' ' + word; }))
+        .join(' \u00b7 ');
+    });
 }
-function lastRun(feature) {
-  var record = (feature.rollup || {}).latest_record || feature.latest_record;
-  var source = record ? record.label || 'local' : sourceOf(feature);
-  var age = record ? ' title="the newest record is '
-    + esc(ageText(record.timestamp).text) + '"' : '';
-  var text = source
-    ? '<span class="mono sec"' + age + '>' + esc(source) + '</span>'
-    : '<span class="mono muted">—</span>';
-  return '<span class="run">' + recordCell(feature) + text + '</span>';
+function auditLines(feature) {
+  var record = (feature.rollup || {}).latest_record;
+  return [record ? 'audit \u00b7 ' + (record.label || 'local') + ' \u00b7 '
+      + ageText(record.timestamp).text
+    : 'No audit has written a record here.',
+    'minimum strength ' + minStrength() + '%'];
+}
+function signerLines(feature) {
+  var byWho = {};
+  var names = [];
+  var stale = 0;
+  ownRules(feature).forEach(function (rule) {
+    var cell = (rule.cells || {}).signed || {};
+    if (cell.word === 'stale') { stale += 1; }
+    if (!cell.signer) { return; }
+    if (!byWho[cell.signer]) { byWho[cell.signer] = ''; names.push(cell.signer); }
+    if (newer(cell.at, byWho[cell.signer])) { byWho[cell.signer] = cell.at; }
+  });
+  var out = names.sort().map(function (who) { return who + ' \u00b7 ' + when(byWho[who]); });
+  if (!out.length) { out.push('Nobody has signed a rule here.'); }
+  if (stale) { out.push(stale + ' ' + WORDS.stale); }
+  return out;
 }
 function recordLine(feature) {
-  var byOs = newestByOs(feature);
   var record = (feature.rollup || {}).latest_record || feature.latest_record;
-  if (!record && !sourceOf(feature)) {
-    return '<span class="mono muted">—</span>';
-  }
-  var boxes = OS_BOXES.map(function (pair) {
-    var found = byOs[pair[0]];
-    return osBox(pair[0], pair[1], found)
-      + (found ? ' ' + hostLink(found.path, found.timestamp || found.path) : '');
-  }).join(' ');
-  return boxes + ' ' + (record
-    ? hostLink(record.path, (record.label || 'local') + ' · '
-        + ageText(record.timestamp).text)
-    : '<span class="mono sec">' + esc(sourceOf(feature)) + '</span>');
+  if (!record) { return '<span class="mono muted">\u2014</span>'; }
+  return hostLink(record.path, (record.label || 'local') + ' \u00b7 '
+    + ageText(record.timestamp).text);
 }
 function hostLink(path, text) {
   var base = webRemote();
@@ -1003,8 +1019,7 @@ function designThumb(feature) {
     feature.source_path ? [feature.source_path] : []);
   for (var i = 0; i < files.length; i++) {
     var file = String(files[i]);
-    if (/[*?\[]/.test(file)) { continue; }
-    if (/\.(png|jpg|jpeg|svg|webp)$/i.test(file)) {
+    if (!/[*?\[]/.test(file) && /\.(png|jpg|jpeg|svg|webp)$/i.test(file)) {
       return '<img class="thumb" src="' + esc(file) + '" alt="'
         + esc(feature.name + ' design') + '" onerror="this.remove()">';
     }
@@ -1024,41 +1039,33 @@ function ageText(iso) {
   }
   return {text: Math.round(seconds / 86400) + ' days old', stale: true};
 }
-function eachRule(visit) {
-  (DATA.features || []).forEach(function (feature) {
-    (feature.rules || []).forEach(function (rule) { visit(rule, feature); });
-  });
-}
+function when(iso) { return String(iso || '').slice(0, 10) || 'date unknown'; }
 function cellOf(rule, name) {
   return (rule.cells || {})[name] || null;
 }
 function cellWord(rule, name) {
-  var cell = cellOf(rule, name);
-  return cell ? cell.word : null;
+  return (cellOf(rule, name) || {}).word || null;
 }
 function featureNamed(name) {
   var found = null;
-  (DATA.features || []).forEach(function (feature) {
-    if (feature.name === name) { found = feature; }
+  (DATA.features || []).forEach(function (f) {
+    if (f.name === name) { found = f; }
   });
   return found;
 }
 function ageLine() {
   var age = ageText(DATA && DATA.generated_at);
-  return {hue: age.stale ? 'warn' : 'pass',
-          text: 'Data: ' + age.text
-            + (age.stale ? ' — run purlin:status to refresh' : '')};
+  return {hue: age.stale ? 'warn' : 'pass', text: 'Data: ' + age.text
+    + (age.stale ? ' — run purlin:status to refresh' : '')};
 }
 function topBar() {
   var line = ageLine();
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
   return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
     + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
-    + '<button class="btn fresh" data-act="reload" '
-    + 'style="color:var(--state-' + line.hue + ')">'
-    + '<span class="dot"></span><span class="age">' + esc(line.text)
-    + '</span></button>'
-    + '<span class="spacer"></span>'
+    + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
+    + line.hue + ')"><span class="dot"></span><span class="age">'
+    + esc(line.text) + '</span></button><span class="spacer"></span>'
     + (gate ? tag('gate: ' + gate, true) : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
@@ -1069,8 +1076,7 @@ function tabs() {
   var open = VIEW.screen;
   var items = [['board', 'Board']];
   if (level('strong')) {
-    items.push(['review',
-                'Review list (' + (DATA.review_list || []).length + ')']);
+    items.push(['review', 'Review list (' + (DATA.review_list || []).length + ')']);
   }
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
   return '<nav class="tabs">' + items.map(function (item) {
@@ -1080,11 +1086,9 @@ function tabs() {
   }).join('') + '</nav>';
 }
 function notices() {
-  var lines = [];
-  if (DATA.dirty) {
-    lines.push('The working tree has uncommitted changes, so what is on this '
-      + 'board is not what a commit would carry.');
-  }
+  var lines = DATA.dirty
+    ? ['The working tree has uncommitted changes, so what is on this board is '
+       + 'not what a commit would carry.'] : [];
   (DATA.warnings || []).forEach(function (warning) { lines.push(warning); });
   return lines.map(function (line) {
     return '<div class="notice"><span class="dot" '
@@ -1102,8 +1106,8 @@ function render() {
   if (DATA.schema_version !== SCHEMA) {
     app.innerHTML = topBar() + '<div class="wrap"><div class="notice">'
       + esc('This data was written for schema ' + DATA.schema_version
-        + ' and this page reads schema ' + SCHEMA
-        + '. Run purlin:status to write it again.') + '</div></div>';
+        + ' and this page reads schema ' + SCHEMA + '. Run purlin:status to '
+        + 'write it again.') + '</div></div>';
     return;
   }
   if (VIEW.screen === 'review' && !level('strong')) { VIEW.screen = 'board'; }
@@ -1124,10 +1128,8 @@ function onClick(event) {
   else if (act === 'nav') { VIEW.screen = node.getAttribute('data-screen'); }
   else if (act === 'close') {
     VIEW.screen = node.getAttribute('data-screen') || 'board';
-    VIEW.rule = null;
-    VIEW.feature = null;
-  }
-  else if (act === 'filter') {
+    VIEW.rule = VIEW.feature = null;
+  } else if (act === 'filter') {
     var id = node.getAttribute('data-filter');
     VIEW.filters[id] = !VIEW.filters[id];
   } else if (act === 'group') {
@@ -1148,7 +1150,6 @@ function restoreView() {
   var saved = null;
   try { saved = sessionStorage.getItem('purlin-view'); } catch (e) {}
   try { sessionStorage.removeItem('purlin-view'); } catch (e) {}
-  if (!saved) { return; }
   try {
     var value = JSON.parse(saved);
     if (value && typeof value === 'object') { VIEW = value; }
@@ -1160,8 +1161,7 @@ function reloadPage() {
   location.reload();
 }
 function tickAge() {
-  if (!DATA) { return; }
-  var node = document.querySelector('.topbar .fresh');
+  var node = DATA && document.querySelector('.topbar .fresh');
   var text = node && node.querySelector('.age');
   if (!text) { return; }
   var line = ageLine();
@@ -1174,9 +1174,10 @@ function refreshIfStale() {
   var stamp = String(DATA.generated_at);
   var last = null;
   try { last = sessionStorage.getItem('purlin-reloaded'); } catch (e) {}
-  if (last === stamp) { return; }
-  try { sessionStorage.setItem('purlin-reloaded', stamp); } catch (e) {}
-  reloadPage();
+  if (last !== stamp) {
+    try { sessionStorage.setItem('purlin-reloaded', stamp); } catch (e) {}
+    reloadPage();
+  }
 }
 restoreTheme();
 restoreView();

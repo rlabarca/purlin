@@ -17,8 +17,7 @@ var WHY_SENTENCES = {
   'manual test': 'Its proof is @manual, so a person runs the test and states '
     + 'what they saw.',
   'manual audit': 'The model review could not settle it, so a person judges '
-    + 'the proof against the test.'
-};
+    + 'the proof against the test.'};
 
 /* The five counts the risk summary carries, in the order it prints them. Each
    token counts under its own name, because each names different work. */
@@ -26,35 +25,31 @@ var WHY_COUNTS = ['unsigned', 'stale', 'held', 'manual test', 'manual audit'];
 
 function shortText(text) {
   var value = String(text == null ? '' : text);
-  if (value.length <= RULE_TEXT_MAX) { return value; }
-  return value.slice(0, RULE_TEXT_MAX).replace(/\s+\S*$/, '') + '…';
+  return value.length <= RULE_TEXT_MAX ? value
+    : value.slice(0, RULE_TEXT_MAX).replace(/\s+\S*$/, '') + '…';
 }
 
 /* The rule the entry points at, from the feature entry that owns it. */
 function reviewRule(entry) {
   var feature = featureNamed(entry.feature);
   var found = null;
-  if (feature) {
-    (feature.rules || []).forEach(function (rule) {
-      if (rule.id === entry.rule) { found = rule; }
-    });
-  }
+  (feature ? feature.rules || [] : []).forEach(function (r) {
+    if (r.id === entry.rule) { found = r; }
+  });
   return found;
 }
 
 function whySentence(token) {
-  return WHY_SENTENCES[token] || 'It is on the review list because ' + token
-    + '.';
+  return WHY_SENTENCES[token] || 'It is on the review list because ' + token + '.';
 }
 
 /* What the blocking cell says beyond its one word. The cell's own reasons are
    the specific ones, so they are printed where there are any; the tokens the
    entry carries stand in where there are none. */
 function reviewRowReasons(entry, rule) {
-  var cell = rule ? cellOf(rule, entry.cell) : null;
-  var reasons = (cell && cell.reasons) || [];
-  if (reasons.length) { return reasons.join('; '); }
-  return (entry.why || []).map(whySentence).join(' ');
+  var reasons = ((rule ? cellOf(rule, entry.cell) : null) || {}).reasons || [];
+  return reasons.length ? reasons.join('; ')
+    : (entry.why || []).map(whySentence).join(' ');
 }
 
 function reviewRow(entry) {
@@ -78,9 +73,8 @@ function reviewOrder(entries) {
   var rest = [];
   entries.forEach(function (entry) {
     var why = entry.why || [];
-    if (why.indexOf('stale') >= 0 || why.indexOf('held') >= 0) {
-      first.push(entry);
-    } else { rest.push(entry); }
+    (why.indexOf('stale') >= 0 || why.indexOf('held') >= 0 ? first : rest)
+      .push(entry);
   });
   return first.concat(rest);
 }
@@ -114,11 +108,11 @@ function riskSummary(entries) {
 function renderReview() {
   var entries = DATA.review_list || [];
   if (!entries.length) {
-    return '<section><p class="eyebrow">Review list</p>'
-      + '<div class="panel empty">No rule is waiting for a person. A rule '
-      + 'arrives here when the machine cannot settle it, when a signature '
-      + 'stops matching, when someone holds it, or when it is unsigned at or '
-      + 'above the risk this project signs from.</div></section>';
+    return '<section><p class="eyebrow">Review list</p><div class="panel empty">'
+      + 'No rule is waiting for a person. A rule arrives here when the machine '
+      + 'cannot settle it, when a signature stops matching, when someone holds '
+      + 'it, or when it is unsigned at or above the risk this project signs '
+      + 'from.</div></section>';
   }
   var head = '<section><p class="eyebrow">Review list</p><h1>'
     + entries.length + (entries.length === 1 ? ' rule needs' : ' rules need')

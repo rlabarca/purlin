@@ -6,10 +6,11 @@ gradient, no emoji, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The fixtures under `dev/fixtures/report/` are payloads at schema 5, one for
+The fixtures under `dev/fixtures/report/` are payloads at schema 6, one for
 each of the three processes: solo at the `passed` gate with no record at all,
 team at `strong` with strength and one unsettled review, regulated at `signed`
-with signatures, a stale rule, a held rule and a design anchor.
+with signatures, a stale rule, a held rule, a rule that passed on one platform
+and failed on another, and a design anchor.
 
     python3 -m pytest dev/test_purlin_report.py -q
 """
@@ -137,14 +138,31 @@ def feature_names(page):
     return texts(page, '.tr .name .n')
 
 
+def chip_labels(page):
+    """The filter pills' labels, without the count each one carries."""
+    return page.eval_on_selector_all(
+        '.chip', 'els => els.map(e => e.firstChild.textContent.trim())')
+
+
+def chip_counts(page):
+    """Each filter pill's label and the count it carries, as an integer."""
+    return dict(zip(chip_labels(page), [
+        int(value) for value in texts(page, '.chip b')]))
+
+
+def chip_for(label):
+    return '.chip[data-filter="%s"]' % {
+        'Stale or held': 'stale-or-held'}.get(label, label.lower())
+
+
 def head_labels(page):
     """The spec table's column headings, in the order they are drawn."""
     return texts(page, '.th > div')
 
 
-# How many tiles the strip carries at each gate: three buckets always, the
+# How many tiles the strip carries at each gate: four buckets always, the
 # strong bucket at `strong`, the signed bucket at `signed`.
-TILES = {'solo': 3, 'team': 4, 'regulated': 5}
+TILES = {'solo': 4, 'team': 5, 'regulated': 6}
 
 
 def rule_ids(page):
@@ -159,36 +177,35 @@ def review_cells(page):
         '.map(c => c.textContent.trim()))')
 
 
-# The last run cell of every spec row, found by the heading rather than by a
-# fixed position, so the columns a payload does not carry cannot shift the
-# read onto another cell.
-RECORD_CELLS = """els => {
+# Every operating-system box on the open rule screen: its label, its tone and
+# the hover it carries.
+PLATFORM_BOXES = """() => Array.from(document.querySelectorAll('.kv .os')).map(
+  s => ({os: s.textContent.trim(),
+         tone: s.classList.contains('pass') ? 'pass'
+           : s.classList.contains('fail') ? 'fail' : 'none',
+         title: s.getAttribute('title'),
+         colour: getComputedStyle(s).color}))"""
+
+# Every cell of every spec row, keyed by the spec name, as the `title` the
+# hover carries rather than the text under it.
+HOVERS = """els => {
   const head = Array.from(document.querySelectorAll('.th > div'))
-    .map(d => d.textContent.trim().toLowerCase());
-  const at = head.indexOf('last run');
+    .map(d => d.textContent.trim());
   return els.map(e => {
-    const cell = e.children[at];
-    return {
-      name: e.querySelector('.name .n').textContent.trim(),
-      text: cell.textContent.trim(),
-      source: (cell.querySelector('.mono') || {}).textContent,
-      age: (cell.querySelector('.mono') || {}).title,
-      boxes: Array.from(cell.querySelectorAll('.os')).map(s => ({
-        os: s.textContent.trim(),
-        tone: s.classList.contains('pass') ? 'pass'
-          : s.classList.contains('fail') ? 'fail' : 'none',
-        title: s.getAttribute('title'),
-        colour: getComputedStyle(s).color
-      }))
-    };
+    const row = {name: e.querySelector('.name .n').textContent.trim()};
+    head.forEach((label, i) => {
+      const node = e.children[i].querySelector('[title]');
+      row[label] = node ? node.getAttribute('title') : null;
+    });
+    return row;
   });
 }"""
 
 
-def record_cells(page):
-    """The last run cell of each spec row, keyed by the spec name."""
+def hovers(page):
+    """The hover of each cell of each spec row, keyed by the spec name."""
     return {row['name']: row
-            for row in page.eval_on_selector_all('.tr', RECORD_CELLS)}
+            for row in page.eval_on_selector_all('.tr', HOVERS)}
 
 
 # ---------------------------------------------------------------------------
@@ -259,6 +276,7 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
     assert '%d of %d rules pass their tests' % (
         reached(summary, 'passing'), summary['rules']) in heading
     assert '%d failing' % summary['failing'] in heading
+    assert '%d partial' % summary['partial'] in heading
     assert '%d untested' % summary['untested'] in heading
     assert '%d of %d meet the gate %s' % (
         summary['met'], summary['rules'],
@@ -271,7 +289,11 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
     page.close()
 
 
-BASE_COLUMNS = ['Spec', 'Rules', 'Spec status', 'Tests', 'Last run']
+BASE_COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests']
+
+# The four the board dropped: every when, who and platform detail is in a
+# hover now, which is what let six columns fit a 1024-wide window.
+GONE_COLUMNS = ('Risk', 'Spec status', 'Strength', 'Last run')
 
 
 @pytest.mark.proof("purlin_report", "PROOF-9", "RULE-9", tier="e2e")
@@ -283,68 +305,42 @@ def test_the_columns_scale_with_the_gate(browser, tmp_path):
     solo.close()
 
     team = open_board(browser, tmp_path / 'team', payload_named('team'))
-    assert head_labels(team) == BASE_COLUMNS + ['Strength', 'Strong']
+    assert head_labels(team) == BASE_COLUMNS + ['Strong']
     team.close()
 
     reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))
-    assert head_labels(reg) == BASE_COLUMNS + ['Strength', 'Strong', 'Signed']
-    assert 'Risk' not in head_labels(reg)
+    assert head_labels(reg) == BASE_COLUMNS + ['Strong', 'Signed']
+    for gone in GONE_COLUMNS:
+        assert gone not in head_labels(reg)
     reg.close()
 
 
 @pytest.mark.proof("purlin_report", "PROOF-32", "RULE-31", tier="e2e")
-def test_the_last_run_column_says_what_each_operating_system_found(browser,
-                                                                   tmp_path):
-    """A record's existence is not its result, and two jobs disagree.
+def test_the_rule_screen_says_what_each_platform_found(browser, tmp_path):
+    """A rule can pass on one operating system and fail on another.
 
-    The newest record alone read `ci linux` whether that run passed every
-    proof or failed every one of them, and said nothing about the Windows job
-    that passed beside it.
+    The board used to spend a whole column on three boxes and a source word.
+    The boxes are the rule's business, so they live on its screen, drawn from
+    the platforms its passed cell carries rather than from the records.
     """
-    payload = payload_named('regulated')
-    payload['records']['login'] = {
-        'linux': {
-            'commit': 'a1b2c3d', 'label': 'ci', 'os': 'linux',
-            'path': '.purlin/records/login/'
-                    '20260912T091402Z-a1b2c3d-ci-linux.json',
-            'result': 'fail', 'test_strength': 86,
-            'timestamp': '2026-09-12T09:14:02Z'},
-        'windows': {
-            'commit': 'a1b2c3d', 'label': 'ci', 'os': 'windows',
-            'path': '.purlin/records/login/'
-                    '20260912T090100Z-a1b2c3d-ci-windows.json',
-            'result': 'pass', 'test_strength': 86,
-            'timestamp': '2026-09-12T09:01:00Z'},
-    }
-    del payload['records']['checkout_design']
-    payload['features'][0]['rollup']['latest_record']['timestamp'] = (
-        stamp_ago(7200))
-    page = open_board(browser, tmp_path / 'reg', payload)
-    cells = record_cells(page)
-    tones = {c['os']: c['tone'] for c in cells['login']['boxes']}
-    assert tones == {'lin': 'fail', 'mac': 'none', 'win': 'pass'}
-    tones = {c['os']: c['tone'] for c in cells['invoice']['boxes']}
-    assert tones == {'lin': 'pass', 'mac': 'pass', 'win': 'none'}
-    assert all(c['tone'] == 'none' for c in cells['checkout_design']['boxes'])
-
-    # The source stands beside the boxes and the age rides in its tooltip:
-    # `ci · 13 hours old` cost the column the pixels the columns to its
-    # right need at 1100.
-    assert cells['login']['source'] == 'ci'
-    assert cells['login']['age'] == 'the newest record is 2 hours old'
-    assert 'old' not in cells['login']['text']
-
-    failed, _, passed = cells['login']['boxes']
-    assert failed['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-fail')
-    assert passed['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-pass')
-    assert failed['title'] == (
-        'linux: ci failed at 2026-09-12T09:14:02Z · .purlin/records/login/'
-        '20260912T091402Z-a1b2c3d-ci-linux.json')
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    assert page.query_selector_all('.tr .os') == []
 
     page.click('[data-act="feature"][data-feature="login"]')
+    page.click('.rule[data-rule="RULE-4"]')
+    boxes = page.evaluate(PLATFORM_BOXES)
+    assert [b['os'] for b in boxes] == ['lin', 'win']
+    assert [b['tone'] for b in boxes] == ['pass', 'fail']
+    assert boxes[0]['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-pass')
+    assert boxes[1]['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-fail')
+    assert boxes[1]['title'].startswith('windows \u00b7 failed \u00b7 ci \u00b7 ')
+    assert 'PARTIAL' in page.inner_text('.kv')
+    last = page.inner_text('.kv').splitlines()
+    assert any(line.startswith('ci \u00b7 ') and 'old' in line for line in last)
+
+    page.click('[data-act="close"]')
     page.click('.rule[data-rule="RULE-1"]')
-    assert page.locator('.wrap .os.fail').count() == 1
-    assert page.locator('.wrap .os.pass').count() == 1
+    assert [b['os'] for b in page.evaluate(PLATFORM_BOXES)] == ['lin']
     page.close()
 
 
@@ -395,33 +391,36 @@ def test_the_board_sits_on_the_brand_navy(browser, tmp_path, page_text):
     page.close()
 
 
-BUCKETS = ('untested', 'failing', 'passing', 'strong', 'signed')
+BUCKETS = ('untested', 'failing', 'partial', 'passing', 'strong',
+           'signed')
 
 
 @pytest.mark.proof("purlin_report", "PROOF-8", "RULE-8", tier="e2e")
 def test_the_tiles_scale_with_the_gate(browser, tmp_path):
     solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
-    assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Passing']
+    assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Partial',
+                                      'Passing']
     assert solo.query_selector_all('.flag') == []
     assert solo.eval_on_selector(
         '.tile-l', 'el => getComputedStyle(el).textTransform') == 'uppercase'
     solo.close()
 
     team = open_board(browser, tmp_path / 'team', payload_named('team'))
-    assert texts(team, '.tile-l') == ['Untested', 'Failing', 'Passing',
-                                      'Strong']
+    assert texts(team, '.tile-l') == ['Untested', 'Failing', 'Partial',
+                                      'Passing', 'Strong']
     assert team.query_selector_all('.flag') == []
     team.close()
 
     payload = payload_named('regulated')
     page = open_board(browser, tmp_path / 'reg', payload)
-    assert texts(page, '.tile-l') == ['Untested', 'Failing', 'Passing',
-                                      'Strong', 'Signed']
-    # The tiles are cumulative: the regulated fixture's one signed rule is
-    # counted again under `Strong` and again under `Passing`.
+    assert texts(page, '.tile-l') == ['Untested', 'Failing', 'Partial',
+                                      'Passing', 'Strong', 'Signed']
+    # The three level tiles are cumulative: the regulated fixture's one signed
+    # rule is counted again under `Strong` and again under `Passing`. The
+    # three below them count their own bucket alone.
     assert texts(page, '.tile-v') == [str(reached(payload['summary'], name))
                                       for name in BUCKETS]
-    assert texts(page, '.tile-v') == ['2', '0', '7', '2', '1']
+    assert texts(page, '.tile-v') == ['1', '0', '1', '7', '2', '1']
     assert texts(page, '.flag-l') == ['Stale']
     assert texts(page, '.flag-v') == [str(payload['summary']['stale'])]
     page.close()
@@ -433,13 +432,18 @@ COUNT_CELLS = r"""els => {
   const head = Array.from(document.querySelectorAll('.th > div'))
     .map(d => d.textContent.trim());
   return els.map(e => {
-    const at = name => e.children[head.indexOf(name)].innerText
-      .trim().replace(/\s+/g, ' ');
-    return {name: e.querySelector('.name .n').textContent.trim(),
-            spec: at('Spec status'), tests: at('Tests'),
-            signed: at('Signed')};
+    const row = {name: e.querySelector('.name .n').textContent.trim()};
+    head.forEach((label, i) => {
+      row[label] = e.children[i].innerText.trim().replace(/\s+/g, ' ');
+    });
+    return row;
   });
 }"""
+
+
+def count_cells(page):
+    return {row['name']: row
+            for row in page.eval_on_selector_all('.tr', COUNT_CELLS)}
 
 
 @pytest.mark.proof("purlin_report", "PROOF-40", "RULE-9", tier="e2e")
@@ -448,17 +452,61 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     payload = payload_named('regulated')
     payload['features'][0]['rules'][1]['cells']['passed']['word'] = 'failed'
     page = open_board(browser, tmp_path / 'reg', payload)
-    cells = {row['name']: row
-             for row in page.eval_on_selector_all('.tr', COUNT_CELLS)}
+    cells = count_cells(page)
     # The first part is drawn even at zero, and a later part only above it.
-    assert cells['login']['tests'] == (
-        '2 passed \u00b7 1 failing \u00b7 1 not run')
-    # A rule behind changed code has run against nothing current either, so
-    # the fourth part holds both words and the row is not read as `0 passed`.
-    assert cells['export']['tests'] == '0 passed \u00b7 1 not run'
-    assert cells['login']['spec'] == '4 ready'
-    assert cells['login']['signed'] == '1 of 4 \u00b7 1 stale'
-    assert cells['invoice']['signed'] == '0 of 3'
+    assert cells['login']['Tests'] == (
+        '2 of 4 \u00b7 1 partial \u00b7 1 failing')
+    # A rule behind changed code passed nothing and failed nothing, so the
+    # share alone reads it and the `Untested` tile counts it.
+    assert cells['export']['Tests'] == '0 of 1'
+    assert cells['login']['Proofs'] == '4'
+    assert cells['invoice']['Proofs'] == '3 \u00b7 1 without a test'
+    assert cells['login']['Strong'] == '2 of 4 \u00b7 86%'
+    assert cells['checkout_design']['Strong'] == '0 of 1 \u00b7 90%'
+    assert cells['login']['Signed'] == '1 of 4'
+    assert cells['invoice']['Signed'] == '0 of 3'
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-44", "RULE-37", tier="e2e")
+def test_every_cell_of_a_spec_row_carries_its_hover(browser, tmp_path):
+    """The columns the board dropped became the hovers the cells carry."""
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    rows = hovers(page)
+    assert rows['login']['Spec'] == 'specs/auth/login.md'
+    assert rows['login']['Proofs'] == 'every proof has a tagged test'
+    assert rows['invoice']['Proofs'] == 'no tagged test \u00b7 PROOF-4'
+
+    tests = rows['login']['Tests'].split('\n')
+    assert len(tests) == 2, tests
+    assert tests[0].startswith('linux \u00b7 ci \u00b7 ')
+    assert tests[0].endswith('\u00b7 4 passed')
+    assert tests[1].startswith('windows \u00b7 ci \u00b7 ')
+    assert tests[1].endswith('\u00b7 1 failed')
+
+    strong = rows['login']['Strong'].split('\n')
+    assert strong[0].startswith('audit \u00b7 ci \u00b7 ')
+    assert strong[1] == 'minimum strength 80%'
+
+    assert rows['login']['Signed'].split('\n') == [
+        'jane@acme.com \u00b7 2026-09-11', 'sam@acme.com \u00b7 2026-09-05',
+        '1 stale']
+    assert rows['invoice']['Signed'] == 'Nobody has signed a rule here.'
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-45", "RULE-37", tier="e2e")
+def test_every_tile_carries_its_hover(browser, tmp_path):
+    """A tile says for the project what its column says for one spec."""
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    titles = page.eval_on_selector_all(
+        '.tile', 'els => els.map(e => e.getAttribute("title"))')
+    assert len(titles) == 6
+    for title in titles[:3]:
+        assert '\n' not in title and title.endswith('.'), title
+    assert titles[3].split('\n')[0].startswith('linux \u00b7 ci \u00b7 ')
+    assert titles[4].split('\n')[0].startswith('audit \u00b7 ci \u00b7 ')
+    assert titles[5].split('\n')[0] == 'jane@acme.com \u00b7 2026-09-11'
     page.close()
 
 
@@ -501,9 +549,11 @@ def test_a_design_anchor_row_shows_its_thumbnail(browser, tmp_path):
 
 
 FILTER_CASES = [
-    ('untested', ['login', 'export'], ['RULE-4']),
+    ('untested', ['export'], []),
     ('failing', [], []),
-    ('weak', ['login', 'invoice', 'export'], ['RULE-4']),
+    ('partial', ['login'], ['RULE-4']),
+    ('weak', ['login', 'invoice', 'export', 'checkout_design'],
+     ['RULE-3', 'RULE-4']),
     ('unsigned', ['login', 'checkout_design', 'export'], ['RULE-4']),
     ('stale-or-held', ['login'], ['RULE-2', 'RULE-3']),
 ]
@@ -541,17 +591,39 @@ def test_filters_compose_and_clear(browser, tmp_path):
 def test_a_filter_above_the_gate_is_not_offered(browser, tmp_path):
     """A project at `passed` is never asked about strength or signatures."""
     solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
-    assert texts(solo, '.chip') == ['Untested', 'Failing']
+    assert chip_labels(solo) == ['Untested', 'Failing', 'Partial']
     solo.close()
 
     team = open_board(browser, tmp_path / 'team', payload_named('team'))
-    assert texts(team, '.chip') == ['Untested', 'Failing', 'Weak']
+    assert chip_labels(team) == ['Untested', 'Failing', 'Partial', 'Weak']
     team.close()
 
     reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))
-    assert texts(reg, '.chip') == ['Untested', 'Failing', 'Weak', 'Unsigned',
-                                   'Stale or held']
+    assert chip_labels(reg) == ['Untested', 'Failing', 'Partial', 'Weak',
+                                'Unsigned', 'Stale or held']
     reg.close()
+
+
+@pytest.mark.parametrize('process', PROCESSES)
+@pytest.mark.proof("purlin_report", "PROOF-46", "RULE-13", tier="e2e")
+def test_a_filter_pill_counts_what_it_leaves(browser, tmp_path, process):
+    """A pill that said nothing left the reader to press it to find out.
+
+    The number on the pill is the number of rules it leaves, so it and the
+    tile it mirrors state the same thing before anything is pressed.
+    """
+    payload = payload_named(process)
+    page = open_board(browser, tmp_path, payload)
+    for name in feature_names(page):
+        page.click('[data-act="feature"][data-feature="%s"]' % name)
+    tiles = dict(zip(texts(page, '.tile-l'), texts(page, '.tile-v')))
+    for label, count in chip_counts(page).items():
+        page.click(chip_for(label))
+        assert len(page.query_selector_all('.rule')) == count, label
+        page.click(chip_for(label))
+        if label in ('Untested', 'Failing', 'Partial'):
+            assert tiles[label] == str(count), label
+    page.close()
 
 
 @pytest.mark.proof("purlin_report", "PROOF-15", "RULE-15", tier="e2e")
@@ -601,7 +673,14 @@ def test_a_rule_with_no_remote_has_no_links(browser, tmp_path):
 
 @pytest.mark.proof("purlin_report", "PROOF-17", "RULE-17", tier="e2e")
 def test_a_rule_waiting_on_an_operating_system_says_so(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+    """The fixture's RULE-4 ran on Windows and failed; this one never ran."""
+    payload = payload_named('regulated')
+    cell = payload['features'][0]['rules'][3]['cells']['passed']
+    cell['word'] = 'not run'
+    cell['missing_env'] = ['windows']
+    cell['reasons'] = ['windows: no record yet']
+    cell['platforms'] = {'linux': cell['platforms']['linux']}
+    page = open_board(browser, tmp_path, payload)
     page.click('[data-act="feature"][data-feature="login"]')
     page.click('.rule[data-rule="RULE-4"]')
     body = page.inner_text('.wrap')

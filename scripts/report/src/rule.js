@@ -2,13 +2,10 @@
    the brief the machine wrote, and the proofs that stand for it. */
 
 var FINDING_LABELS = {
-  'no_expected_value': 'no expected value',
-  'vague_verb': 'vague verb',
-  'missing_trigger': 'missing trigger',
-  'tier_mismatch': 'tier mismatch',
+  'no_expected_value': 'no expected value', 'vague_verb': 'vague verb',
+  'missing_trigger': 'missing trigger', 'tier_mismatch': 'tier mismatch',
   'implementation_coupling': 'names a symbol, not an outcome',
-  'happy_path_only': 'no negative case'
-};
+  'happy_path_only': 'no negative case'};
 
 /* The sentence the free checks already write, one per finding, copied from
    the checks module so the page and the brief say the same thing about the
@@ -30,19 +27,41 @@ function ruleInView() {
   var feature = featureNamed(VIEW.feature);
   if (!feature) { return null; }
   var found = null;
-  (feature.rules || []).forEach(function (rule) {
-    if (rule.id === VIEW.rule) { found = rule; }
+  (feature.rules || []).forEach(function (r) {
+    if (r.id === VIEW.rule) { found = r; }
   });
   return found ? {feature: feature, rule: found} : null;
 }
 
-/* One row per cell the gate reaches: the word it reads, then the reasons it
-   carries, each already a sentence fragment the payload wrote. */
+/* One small box per operating system a counting run covered, in the tone of
+   what that run found there. The board draws no such box; this is where the
+   page says which platform passed, and the hover says where the run came from
+   and how old it is. */
+function platformBoxes(cell) {
+  var platforms = (cell && cell.platforms) || {};
+  return Object.keys(platforms).sort().map(function (os) {
+    var entry = platforms[os];
+    return '<span class="os ' + (entry.word === 'passed' ? 'pass'
+        : entry.word === 'failed' ? 'fail' : 'none') + '"'
+      + hover([[os, entry.word, entry.source || 'local',
+        ageText(entry.at).text].join(' \u00b7 ')])
+      + '>' + esc(os.slice(0, 3)) + '</span>';
+  }).join(' ');
+}
+
+/* One row per cell the gate reaches: the word it reads, what the payload
+   carries beside that word, then the reasons, each already a sentence
+   fragment the payload wrote. The passed cell's platforms and the signed
+   cell's signer and date are facts the word alone leaves out. */
 function cellRow(rule, name) {
   var cell = cellOf(rule, name);
   if (!cell) { return ''; }
   var reasons = (cell.reasons || []).join('; ');
+  var beside = name === 'passed' ? platformBoxes(cell)
+    : name === 'signed' && cell.signer ? '<span class="mono sec">'
+      + esc(cell.signer + ' \u00b7 ' + when(cell.at)) + '</span>' : '';
   return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
+    + (beside ? ' ' + beside : '')
     + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
     + '</dd>';
 }
@@ -88,8 +107,8 @@ function briefPanel(feature, rule) {
   if (cell.settled === true) {
     lines.push('<p class="sec">The model review settled the question.</p>');
   } else if (cell.settled === false) {
-    lines.push('<p class="sec">The model review could not settle the '
-      + 'question, so a person states what they see.</p>');
+    lines.push('<p class="sec">The model review could not settle the question, '
+      + 'so a person states what they see.</p>');
   }
   if (cell.brief) {
     lines.push('<p class="sec">' + hostLink(cell.brief, cell.brief) + '</p>');
@@ -106,8 +125,7 @@ function signaturesFor(feature, rule) {
 }
 
 function signerOf(path) {
-  var parts = path.split('/').pop().split('.');
-  return parts.length > 2 ? parts[2] : '';
+  return path.split('/').pop().split('.')[2] || '';
 }
 
 /* A signature is a signed commit, so this page cannot write one: it names the
@@ -116,10 +134,10 @@ function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
   if (!cell) { return ''; }
   if (cell.word === 'signed') {
-    var who = cell.signer || (cell.path ? signerOf(cell.path) : '');
     return '<div class="panel"><h2>Signed</h2><p class="sec">'
-      + esc('Signed by ' + (who || 'someone on the signer list')
-        + ' against the rule, proof and test text this screen shows. The '
+      + esc('Signed by ' + (cell.signer || signerOf(cell.path || '')
+          || 'someone on the signer list') + ' on ' + when(cell.at)
+        + ', against the rule, proof and test text this screen shows. The '
         + 'signature file beside the spec carries the commit that signed it.')
       + '</p></div>';
   }
@@ -134,11 +152,11 @@ function signPanel(feature, rule) {
 }
 
 function proofPanel(proof) {
-  var tests = (proof.tests || []).map(function (test) {
-    return esc(test.file) + ' :: ' + esc(test.name);
+  var tests = (proof.tests || []).map(function (t) {
+    return esc(t.file) + ' :: ' + esc(t.name);
   }).join('\n') || 'no tagged test yet';
-  var findings = (proof.findings || []).map(function (name) {
-    return '<span class="finding">' + esc(findingLabel(name)) + '</span>';
+  var findings = (proof.findings || []).map(function (n) {
+    return '<span class="finding">' + esc(findingLabel(n)) + '</span>';
   }).join(', ');
   return '<div class="panel"><dl class="kv">'
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
@@ -153,8 +171,8 @@ function proofPanel(proof) {
    screen, and it returns to the screen the rule was opened from. */
 function backLink() {
   var from = VIEW.from === 'review' && level('strong') ? 'review' : 'board';
-  return '<button class="btn" data-act="close" data-screen="' + from + '">'
-    + (from === 'review' ? '← Review list' : '← Board') + '</button>';
+  return '<button class="btn" data-act="close" data-screen="' + from + '">← '
+    + (from === 'review' ? 'Review list' : 'Board') + '</button>';
 }
 
 function renderRule() {
@@ -165,8 +183,7 @@ function renderRule() {
   }
   var feature = found.feature;
   var rule = found.rule;
-  var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted')
-    + '</dd>'];
+  var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted') + '</dd>'];
   GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
   if (level('strong')) {
     rows.push('<dt>Risk</dt><dd>' + riskTag(rule.risk) + '</dd>');
@@ -175,8 +192,8 @@ function renderRule() {
   if (rule.criterion) {
     rows.push('<dt>Criterion</dt><dd>' + tag(rule.criterion, true) + '</dd>');
   }
-  rows.push('<dt>Spec</dt><dd>'
-    + hostLink(feature.spec_path, feature.spec_path) + '</dd>');
+  rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
+    + '</dd>');
   rows.push('<dt>Last run</dt><dd>' + recordLine(feature) + '</dd>');
   var signatures = level('signed') ? signaturesFor(feature, rule) : [];
   if (signatures.length) {
