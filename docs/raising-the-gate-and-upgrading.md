@@ -45,12 +45,15 @@ check without the requirement. The only branch rule printed here is the third on
 push, no deletion.
 
 **To `strong`.** On top of that: the CI workflow at `.github/workflows/purlin.yml`, because the
-gate cannot be met without a run that writes records. `designs/` with a README, if it is
-missing. The two remaining branch rules, printed for you to apply on the git host: require a
-pull request and the `purlin` check with the Actions app as the only bypass, and restrict
-`.purlin/records/**` and `.purlin/briefs/**` to the Actions app. If any proof in `specs/`
-carries `@env(windows)` or `@env(macos)`, the workflow gets a matrix: a Linux job always, plus
-one job for each other operating system named. With no such tag there is one Linux job.
+gate cannot be met without a run that writes records. The workflow starts on a pull request, on
+a push to your default branch and on a push to a `run/*` branch, and every run of it ends with
+`scripts/ci/gate_check.py --check`, which fails the job when the gate is not met. `designs/`
+with a README, if it is missing. The two remaining branch rules, printed for you to apply on
+the git host: require a pull request and the `purlin` check with the Actions app as the only
+bypass, and restrict `.purlin/records/**` and `.purlin/briefs/**` to the Actions app. If any
+proof in `specs/` carries `@env(windows)` or `@env(macos)`, the workflow gets a matrix: a Linux
+job always, plus one job for each other operating system named. With no such tag there is one
+Linux job.
 
 The breaks turn on with this raise, locally and in CI, and `min_strength` becomes 70. Below it
 `purlin:audit` runs the tests alone and every record's strength reads `n/a`.
@@ -81,8 +84,10 @@ from the state of the project.
 Three things are true the moment the gate reaches `strong`, and it is worth saying them to
 the team in the same message:
 
-1. Stop committing records. Only a record CI wrote counts now. Your local `purlin:audit` is a
-   preview, and it says so in its own output.
+1. Stop committing records. Only a record CI wrote counts now, and CI writes one where the
+   evidence is decided: on a push to the protected branch, and on the run branch
+   `purlin:audit --remote` creates. A pull request run does the tests and posts the comment and
+   commits nothing. Your local `purlin:audit` is a preview, and it says so in its own output.
 2. Apply the branch rules init printed. Purlin never changes a repository's settings, so until
    someone applies them the gate is a preference rather than a control.
 3. The status table and the dashboard grow a column, a tile and a filter per level, so nobody
@@ -131,9 +136,19 @@ mapped them is dropped and before the workflow matrix is rendered from them:
 | `untracked-files` | drops the proof files that used to be committed and untracks the dashboard data |
 | `hooks` | drops the pre-commit hook and repoints the pre-push shim |
 | `config` | writes `.purlin/config.json` at the current shape and sets the gate |
-| `workflows` | replaces the retired workflows with `purlin.yml` |
+| `workflows` | replaces the retired workflows, and re-renders a `purlin.yml` written before the triggers changed |
 | `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |
 | `records` | creates `.purlin/records/` for the records CI commits |
+
+The `workflows` migration reads each file under `.github/workflows/`. A workflow an earlier
+release wrote under its own name, or one naming something this release moved, is replaced
+outright. A `purlin.yml` that carries no `scripts/ci/gate_check.py` step was written before CI
+started deciding where evidence lands, so its triggers still start a run on every branch and no
+run of it ends with the gate; the update backs it up beside itself, asks before it writes, and
+renders it again from the template with your default branch in the triggers. It then says in
+one line that the new file runs on a pull request, on a push to that branch and on a push to a
+`run/*` branch, and ends with the gate check. A `purlin.yml` that already has the step is left
+alone.
 
 An operating-system tag is rewritten only where the intended system is unambiguous; anything
 else is left for you to decide. The gate question is asked once, during the `config` migration,

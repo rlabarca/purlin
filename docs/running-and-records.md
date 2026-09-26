@@ -46,12 +46,12 @@ where the risk asks for one. It ends in one record per feature, and on CI in the
 An audit proves a rule strong or weak; it never signs anything.
 
 Under the `passed` gate there is nothing to measure, so the audit runs the tests alone, the
-record carries `n/a` for strength, and a record you commit is the evidence. A local audit
-commits and prints `Run: git push`; it never pushes. CI publishes its own evidence; a person
-pushes theirs. Raising the gate to
-`strong` turns the breaks on, locally and in CI. From `strong` upward only a record CI wrote
-counts, so your local audit is a preview: it prints the strength it measured, says that this run
-does not count, and tells you the push will pass before you spend a CI run finding out.
+record carries `n/a` for strength, and a record you commit is the evidence. A local audit with
+`--commit` commits and prints `Record committed. Run: git push`; it never pushes. CI publishes
+its own evidence; a person pushes theirs. Raising the gate to `strong` turns the breaks on,
+locally and in CI. From `strong` upward only a record CI wrote counts, so your local audit is a
+preview: it prints the strength it measured, says that this run does not count, and tells you
+the run will pass before you spend a CI run finding out.
 
 ### The flow
 
@@ -65,8 +65,15 @@ flowchart TD
   E --> F{quick or record}
   F -- quick --> G[Print each rule's cells]
   F -- record --> H[Break the code where the gate asks, hash the captures, write one record per feature]
-  H --> I[Commit the record: as you, or through the git host API under CI]
-  I --> G
+  H --> Ci{"which flag, and where the run is"}
+  Ci -->|"neither flag"| I0["Leave the record on disk, uncommitted"]
+  Ci -->|"--commit"| I1["Commit as you, then print Run: git push"]
+  Ci -->|"--ci, on the protected branch or a run branch"| I2["Commit the records and the briefs through the git host API"]
+  Ci -->|"--ci, on a pull request"| I3["Commit nothing, and say the run on the protected branch writes them"]
+  I0 --> G
+  I1 --> G
+  I2 --> G
+  I3 --> G
   G --> J{Anything failed or missing}
   J -- yes --> K[Exit 1]
   J -- no --> L[Exit 0]
@@ -243,7 +250,51 @@ writes the workflow as `.github/workflows/purlin.yml` on GitHub, or
 `strong` or `signed`. Under `passed` no workflow is written; `purlin:init --ci` adds one
 anyway.
 
-The job runs `purlin_run.py --all --record --ci`. You never pass `--ci` by hand.
+The job is named `audit` and runs `purlin_run.py --all --record --ci`. You never pass `--ci`
+by hand.
+
+### What starts a run
+
+```yaml
+on:
+  pull_request:
+  push:
+    branches: [main, 'run/**']
+```
+
+Three things and nothing else: a pull request, a push to the protected branch, and a push to a
+`run/*` branch, which is the branch `purlin:audit --remote` creates and deletes around one
+run. `purlin:init` writes the project's own default branch in place of `main`. A push to any
+other branch starts nothing, so a feature branch costs no runner minutes until you open it as
+a pull request.
+
+### What a run writes, and where
+
+Evidence is decided where it lands, so where the run happens decides what it commits.
+
+| Where the run happens | The audit runs | Posts the comment | Uploads the dashboard | Runs the gate check | Commits records and briefs |
+|---|---|---|---|---|---|
+| a pull request | yes | yes | yes | yes | no |
+| a push to the protected branch | yes | there is no pull request to comment on | yes | yes | yes |
+| a push to a `run/*` branch | yes | there is no pull request to comment on | yes | yes | yes |
+| any other branch | the run never starts | | | | |
+
+A pull request run prints `Pull request run: the records stay on the runner; the run on <branch>
+writes them.` and moves on. A record on a branch nobody merges from is evidence of a branch
+that will not exist, so it is not committed. The comment and the dashboard still say everything
+the run observed.
+
+### The gate check is the last step
+
+```yaml
+      - name: Check the gate
+        shell: bash
+        run: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check
+```
+
+It runs after the artifact upload, on every run, wherever the run happens. It exits 1 when a
+rule does not meet the gate, which fails the job, which is what a required check on this
+workflow means. It writes nothing: a gate that can edit the evidence it grades is not a gate.
 
 ### Finding Purlin on the runner
 
@@ -285,25 +336,58 @@ land under `.purlin/briefs/<feature>/`. A brief that stayed on the runner is evi
 read: the branch is what a reviewer works from, and every cell above level 1 is read out of a
 checkout. A local `purlin:audit` writes no brief, so its commit holds the records alone.
 
-A squash merge changes the sha, so the record that counts on the default branch is the one CI
-writes after the merge. The pull request branch's own records fall to the retention rule.
+A squash merge changes the sha, so the record that counts on the protected branch is the one
+CI writes after the merge, which is the run that commits it.
 
 ### A pull request from a fork
 
-A forked pull request gets a read-only token, so no commit is made. The audit still runs and
-the comment still posts, and the job says in one line that no record was written.
+A forked pull request gets a read-only token, so no commit could be made even on a branch that
+keeps them. The audit still runs and the comment still posts, and the job says in one line that
+no record was written.
+
+## Who pushes
+
+A push is `git push`, typed by a person. No skill, no agent and no hook pushes, and none opens
+a pull request. `purlin:audit --commit` makes the commit, prints `Record committed. Run: git
+push` and stops. `purlin:sign` makes its signed commit and stops. `purlin:audit --tag` writes
+the tag and stops. CI's record commit is not a push made on your behalf: it is the remote
+runner publishing its own evidence through the git host's API, onto the two paths a branch
+rule reserves for the CI identity.
+
+The pre-push hook enforces the rest. Before it runs anything it checks for
+`CLAUDE_CODE_SESSION_ID` in the environment; with that set and `PURLIN_REMOTE_RUN` unset it
+prints `purlin: an agent does not push. A person runs git push.` and exits 1. `git push
+--no-verify` skips the hook, and that override is yours: an agent reaching for it is doing the
+thing the refusal exists to stop.
 
 ## purlin:audit --remote
 
-Use it when a proof is tagged `@env` for an operating system your machine is not.
+Use it when a proof is tagged `@env` for an operating system your machine is not. It is the one
+case in which Purlin pushes, and it marks the two pushes it makes with `PURLIN_REMOTE_RUN=1`
+so the pre-push hook lets them through.
 
-`--remote` pushes the current branch and waits for the workflow. On GitHub it watches the run
-with `gh run watch`, pulls the records CI committed, and prints the table. On Azure DevOps it
-prints the pipeline URL and returns. Without the `gh` CLI installed it says so and tells you to
-open the run on the pull request instead.
+It pushes a branch of its own rather than the branch you are on:
+
+1. It refuses a detached head, because there is no branch to name, and an uncommitted change,
+   because the run would prove something other than what is on disk.
+2. It pushes this commit to `run/<branch>-<sha7>` on `origin`, creating that branch there and
+   nothing locally. The commit's own short sha is in the name, so two runs of the same branch
+   never share one.
+3. The push to `run/**` starts the workflow, which commits its records and briefs onto that
+   branch.
+4. On GitHub it waits with `gh run watch --exit-status`, then `git pull --ff-only origin
+   run/<branch>-<sha7>` brings the record commit onto your branch as one fast-forward, then it
+   deletes the run branch from `origin` and prints the table. Without the `gh` CLI installed it
+   says so and tells you which branch to open and which pull command to run.
+5. On Azure DevOps it prints the pipeline URL and the two commands to run when the pipeline
+   finishes, and returns.
+
+If the run branch is still on `origin` when the command ends, it says so and gives you the
+delete command.
 
 ## Next
 
+- [how-purlin-works.md](how-purlin-works.md): the chain, the four words, and who writes each file.
 - [dashboard.md](dashboard.md): the same data as a page, locally and as a CI artifact.
 - [team-workflow.md](team-workflow.md): what the `strong` gate asks of a team.
 - [regulated-workflow.md](regulated-workflow.md): signatures on top of records.

@@ -133,10 +133,11 @@ CI runs the tests and the breaks, measures the strength, runs the free checks, r
 review where risk asks, and writes the record and the briefs. It signs nothing. A signature
 directory holds only files a person wrote.
 
-What CI cannot settle it says out loud. A `@manual` proof, and a model review that could not
-tell whether the test observes what the proof names, both make the strong cell read `needs a
-person`. A signature file for the current hashes clears it: from anyone under `strong`, from a
-counting signer under `signed`. The signer writes the one line with `--note`.
+What CI cannot settle it says out loud. A `@manual` proof makes the strong cell read `manual
+test`, and a model review that could not tell whether the test observes what the proof names
+makes it read `manual audit`. A signature file for the current hashes clears either one: from
+anyone under `strong`, from a counting signer under `signed`. The signer writes the one line
+with `--note`.
 
 ## Holds
 
