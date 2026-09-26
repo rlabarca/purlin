@@ -5,7 +5,8 @@ For a team working under GxP or a similar obligation, at the `signed` gate.
 `signed` is `strong` plus one requirement: a rule at or above `sign_at` needs a current
 signature from someone on the signer list, in a signed commit that has reached the protected
 branch. Nothing else about the day changes, so read [team-workflow.md](team-workflow.md) first
-and treat this as what it adds.
+and treat this as what it adds. [how-purlin-works.md](how-purlin-works.md) is the model in one
+page.
 
 ## The three levels
 
@@ -19,24 +20,39 @@ A rule carries a spec status and one cell per level, and the gate says how many 
 | signed | did a person say the rule, the proof and the test belong together? | `purlin:sign` |
 
 Level 2 is fully automatic: the breaks, the free checks and the model review run without anyone
-asking. A person first appears at level 3.
+asking. A person first appears at level 3, and this is where in a change's life they appear.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#0C3444", "primaryColor": "#092936", "primaryTextColor": "#E4DDD4", "primaryBorderColor": "#C0793F", "lineColor": "#C0793F", "secondaryColor": "#0C3444", "tertiaryColor": "#092936", "fontFamily": "Arial", "textColor": "#E4DDD4"}}}%%
-stateDiagram-v2
-    state "spec: drafted" as Drafted
-    state "spec: ready" as Ready
-    state "code changed" as Changed
-    [*] --> Drafted
-    Drafted --> Ready: a proof names the rule and the free checks clear
-    Ready --> Passed: a tagged test passes from a counting source
-    Passed --> Strong: CI's audit measures the tests and nothing blocks
-    Strong --> Signed: a person signs the rule, proof and test hashes
-    Signed --> Stale: the rule, proof or test text changed, or the risk was re-tagged
-    Stale --> Signed: a person reads the brief and signs again
-    Passed --> Changed: only the code under the spec's scope changed
-    Changed --> Passed: CI runs again
+sequenceDiagram
+    actor Engineer
+    participant Origin as origin
+    participant CI as the runner
+    actor Signer
+    Engineer->>Origin: git push, then open the pull request
+    Origin->>CI: pull_request starts the audit job
+    CI->>Origin: the rollup and the dashboard, and no commit on this branch
+    Engineer->>Origin: merge, once the required check is green
+    Origin->>CI: push to main starts the audit job
+    CI->>Origin: purlin: record for commit7, the records and the briefs
+    Signer->>Signer: purlin:sign walks the review list, one brief at a time
+    Signer->>Signer: git commit -S writes RULE-4.hash8.slug.json
+    Signer->>Origin: git push, then open the pull request
+    Engineer->>Origin: merge, so the signature is on main
+    Origin->>CI: push to main starts the audit job
+    CI->>CI: gate_check.py --check reads RULE-4 as signed
 ```
+
+The whole of what `signed` adds is the lower half of that picture. A person reads what CI wrote
+in the briefs, commits one file per rule signed, and that commit reaches the protected branch
+by pull request like any other change. Nothing in the picture pushes but a person: CI commits
+through the git host's API, on the protected branch and on a run branch, and `purlin:sign`
+makes its commit and stops.
+
+A change that leaves a rule's text, its proof and its test alone leaves that rule's signature
+standing, so the ordinary change merges and only the record run follows. A change that touches
+one of the three stales the signature, and the gate check says `Not signed` until a signature
+for the new hashes has reached the protected branch.
 
 Stale and `code changed` are the two answers to "something changed", and the difference is what
 changed. A record carries `scope_tree`, the git tree hash of the files the spec's `> Scope:`
@@ -58,10 +74,13 @@ inside the hashes a signature binds.
 | The signing commit signed by someone on the signer list | `signers` in `.purlin/config.json` |
 | The signing commit an ancestor of the protected branch head | it merges by pull request like any change |
 
-The CI check, `scripts/ci/gate_check.py --check`, prints three sections, `Not passed (n)`,
-`Weak (n)` and `Not signed (n)`, with each rule under the cell that blocks it and the reason
-that cell carries. Every line it prints opens with `gate:`. `purlin:status` reads the same
-cells and ends with one `→ Next:` line naming the step that clears the most rules.
+The CI check, `scripts/ci/gate_check.py --check`, is the last step of every run. It prints
+four sections, `Not passed (n)`, `Weak (n)`, `Waiting on a person (n)` and `Not signed (n)`,
+with each rule under the cell that blocks it and the reason that cell carries; it names the
+first twenty in a section and counts the rest. Every line it prints opens with `gate:`. It
+writes nothing, exits 0 when the gate is met and 1 when it is not, and exits 2 when it cannot
+read the evidence, so an unreadable checkout never passes the branch. `purlin:status` reads the
+same cells and ends with one `→ Next:` line naming the step that clears the most rules.
 
 ## The signer list
 
@@ -93,6 +112,12 @@ git config commit.gpgsign true
 Then they upload the same public key to the git host as a signing key, so the host shows the
 commit as signed. `purlin:init --gate signed` prints this for each person on the list.
 
+`purlin:sign` writes one file per rule and makes one `git commit -S` whether it carries one
+rule or forty. Its subject is `sign(<feature>): RULE-N ...` for one feature and
+`sign(batch): <feature> RULE-N, ...` across several; a hold commit reads `hold(<feature>):
+RULE-N`. It does not push. The signer runs `git push` and opens the pull request, the same as
+for any other change.
+
 A signature counts when five things hold. Each is read from git or from a file, never asserted:
 
 1. The commit that added the signature file is signed and the signature verifies.
@@ -100,8 +125,13 @@ A signature counts when five things hold. Each is read from git or from a file, 
 3. That author is not the author of the commit that last touched the test. Write the test or
    sign it, not both.
 4. The hashes the file binds still match the current rule text, proof text, test body and risk.
-5. The commit is an ancestor of the protected branch head, so a signature living only on a side
-   branch does not let a change merge.
+5. The commit is an ancestor of the protected branch, so a signature living only on a side
+   branch nobody merged does not let a change merge. Purlin reads that branch from what
+   `origin/HEAD` points at, falling back to the branch the checkout is on and then to `main`.
+
+The first four are read on every gate; the fifth is read under `signed` alone. Below `signed`
+a signature from anyone counts, because what it clears there is a question the machine could
+not settle rather than an attestation the gate rests on.
 
 ## Risk, origin and `sign_at`
 
@@ -125,7 +155,8 @@ carries neither tag when you raise the gate, and `purlin:spec <feature>` tags th
 ## What CI writes, and what it never writes
 
 CI's `purlin:audit --ci` writes two kinds of file and commits them as
-`purlin: record for <commit7>`:
+`purlin: record for <commit7>`, on the protected branch and on a run branch only. A pull
+request run writes both on the runner and commits neither:
 
 - **the records**, under `.purlin/records/<feature>/`, one per feature per job;
 - **the briefs**, under `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, one per rule the
