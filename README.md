@@ -8,9 +8,10 @@ For anyone deciding whether to put Purlin in a project, and for the engineer who
 
 Purlin is a Claude Code plugin for spec-driven development. A **rule** is one line in a spec
 saying what the software must do. A **proof** says how that claim is observed. A **test** is the
-executable form of a proof, tagged with the rule it settles. A **record** is the machine's
-evidence of one `purlin:audit` run, written into the repository and committed. A **signature**
-is a named person's attestation that a rule, its proof and its test belong together.
+executable form of a proof, tagged with the rule it settles. The **test results** are what a
+run of the tagged tests saw, committed into the repository. A **record** is the machine's
+evidence of one CI run, written into the repository by CI. A **signature** is a named person's
+attestation that a rule, its proof and its test belong together.
 
 A rule answers up to three questions, each one an **evidence level**, each answered by a
 **cell**: **passed**, every tagged test for the rule passed; **strong**, the tests are worth
@@ -27,8 +28,8 @@ that one question and nothing else.
 
 | Gate | Who it fits | What CI requires before merge | Where the counting record comes from |
 |------|-------------|-------------------------------|--------------------------------------|
-| `passed` | One developer | Every rule's passed cell is met: a tagged test for every proof, passing | your machine or CI; a pass from any source counts |
-| `strong` | A team of PM, designers, engineers and QA | Every rule's strong cell is met: a CI pass at this commit, the test strength at or above `min_strength`, no finding and no hold | CI on the protected branch, or on the run branch `purlin:audit --remote` creates |
+| `passed` | One person working alone | Every rule's passed cell is met: a tagged test for every proof, passing | the test results `purlin:test` commits; a pass from any source counts |
+| `strong` | A team of PM, designers, engineers and QA | Every rule's strong cell is met: a CI pass at this commit, the test strength at or above `min_strength`, no finding and no hold | CI on the protected branch, or on the run branch `purlin:test --remote` creates |
 | `signed` | The same team under GxP | Every rule's signed cell is met: a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list | the same, plus a person's signature |
 
 Raise or lower the gate later with `purlin:init --gate <level>`. Raising adds what is missing;
@@ -89,15 +90,21 @@ Build writes the code and one tagged test per proof, runs them, commits the chan
 prints every rule's cells.
 
 ```
+purlin:test
+```
+
+The tests run, and the results go into `.purlin/tests/login.json` and `.purlin/tests.md`, which
+the run commits itself as `purlin: tests at <sha7>`. It ends with `gate passed: <n> of
+<rules>`. At `passed` that line is the whole answer.
+
+```
 purlin:audit
 ```
 
-The audit runs the tests and writes
-`.purlin/records/login/<timestamp>-<commit7>-<runner>.json`, then commits it. At `passed` it
-stops there and says `Strength n/a: the gate is passed.`; raise the gate to `strong` and it
-also breaks the code on purpose to measure how much the tests catch. Either way it ends with
-`Run: git push`, and the push is yours: nothing in Purlin pushes except `purlin:audit
---remote`, which pushes a run branch of its own.
+The audit runs the tests, then breaks the code on purpose to measure how much the tests catch,
+and prints the strength beside the minimum with every finding and observation. It writes
+nothing: the record is CI's, and the audit says so on its last line. The push is yours too:
+nothing in Purlin pushes except `purlin:test --remote`, which pushes a run branch of its own.
 
 Every command ends by naming the next step, computed from the cells it found.
 
@@ -108,7 +115,7 @@ Every command ends by naming the next step, computed from the cells it found.
 | `purlin:spec <name>` | Scaffold or edit a feature spec in the 2-section format |
 | `purlin:build [name]` | Inject a spec's rules into context, then implement them |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell |
-| `purlin:audit [feature]` | Run the tests and the breaks, then write the record |
+| `purlin:audit [feature]` | Run the tests and the breaks, then report how good the tests are |
 | `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit |
 | `purlin:drift [role]` | Report what changed since the last record, by role |
 | `purlin:init` | Initialize a project for Purlin |

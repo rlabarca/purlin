@@ -10,7 +10,8 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `feat(<name>):` | Implementing a feature, with the changeset in the body | `purlin:build` |
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
-| `purlin: record for <commit7>` | The record of one audit, and on CI the briefs that run wrote | `purlin:audit`, or CI |
+| `purlin: tests at <commit7>` | The test results of one run: `.purlin/tests/` and `.purlin/tests.md` | `purlin:test` |
+| `purlin: record for <commit7>` | The record of one CI run, and the briefs that run wrote | CI, and nothing else |
 | `sign(<name>): RULE-N ...` | Signatures, signed | `purlin:sign` |
 | `sign(batch): <feature> RULE-N, ...` | One signed commit covering more than one feature | `purlin:sign --batch` |
 | `hold(<name>): RULE-N ...` | Holds on rules whose test does not prove the proof, signed | `purlin:sign --hold` |
@@ -28,6 +29,7 @@ spec(auth_login): rules for single sign-on and the lockout window
 feat(auth_login): implement the redirect and the callback
 test(auth_login): a negative case for an expired token
 fix(auth_login): reject a token whose issuer moved
+purlin: tests at a1b2c3d
 purlin: record for a1b2c3d
 sign(auth_login): RULE-3 RULE-4 RULE-7
 sign(batch): auth_login RULE-9, checkout RULE-2
@@ -36,29 +38,40 @@ chore(update): migrate to 0.10.0 (legacy-proof-file, legacy-marker)
 chore: rename login to authentication
 ```
 
+## The test results commit
+
+`purlin:test` commits what it saw as:
+
+```
+purlin: tests at <commit7>
+```
+
+`<commit7>` is the first seven characters of the commit the tests ran against, not of the
+results commit itself. The commit is yours, made under your own git identity, and it carries
+`.purlin/tests/<feature>.json` and `.purlin/tests.md` and nothing else. It is never pushed for
+you. A run that saw the same thing about the same code commits nothing.
+
 ## The record commit
 
-One audit writes one record and commits it as:
+**The record commit is CI's.** Nothing on your machine makes one. The CI job runs the tagged
+tests, then the audit at `strong` and above, and commits one record per feature as:
 
 ```
 purlin: record for <commit7>
 ```
 
 `<commit7>` is the first seven characters of the commit the tests ran against, not of the record
-commit itself. The message is the same whether a developer or CI wrote it: what separates them
-is who committed, which is what the source is read from. Under the `passed` gate you commit your
-own records; under `strong` and `signed` only the commit CI made through the git host's API
-counts, and yours is a preview.
+commit itself.
 
-A record commit carries the record file and, on a CI run, the briefs that run wrote under
+A record commit carries the record file and the briefs that run wrote under
 `.purlin/briefs/<feature>/`. It carries nothing else: never fold a record into a `feat(...)`
 commit, because the record must be able to say which commit the tests ran against. CI writes no
-signature file, so a record commit never carries one.
+signature file, so a record commit never carries one, and it carries no test results either:
+those are yours.
 
 CI's record commit lands on the protected branch or on a run branch, and nowhere else. A pull
 request run posts the comment and commits nothing: a record on a branch nobody merges from is
-evidence of a branch that will not exist. A developer's record commit is their own, on their
-own branch, and it is never pushed for them.
+evidence of a branch that will not exist. At `passed` no run writes a record at all.
 
 ## The signature commit
 

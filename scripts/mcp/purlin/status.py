@@ -266,7 +266,7 @@ def _directives(data, project_root):
         # A push of this branch starts nothing: CI runs on a pull request, on
         # the protected branch and on a run branch. `--remote` is what gets a
         # record that counts onto this branch before the merge.
-        lines.append('%s Next: run purlin:audit --remote. %d rules are waiting '
+        lines.append('%s Next: run purlin:test --remote. %d rules are waiting '
                      'for the record CI writes, which is the only one that '
                      'counts under %s.' % (ARROW, waiting, gate))
     elif waiting:

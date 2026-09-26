@@ -17,17 +17,20 @@ in the shipped prose where a retired spelling may still be written.
   and exists only at or below the project's gate. Above the gate a cell is absent, not empty.
 - **gate**: the one project setting, `passed`, `strong` or `signed`. A rule **meets the gate**
   when every cell up to the gate's level is met.
-- **run**: one execution of the tagged tests. **record**: the machine's evidence of one run:
-  results, strength and scope tree, a committed file written by `purlin:audit`. Nobody signs a
-  record. **source**: where a pass came from: `ci` (a record CI wrote), `developer` (a record a
-  person committed), `local` (the last run in this checkout). Under `passed` every source
-  counts. Under `strong` and `signed` only `ci` counts.
+- **run**: one execution of the tagged tests. **test results**: what `purlin:test` writes and
+  commits after a run, `.purlin/tests/<feature>.json` per feature and `.purlin/tests.md` for the
+  project. They are the evidence at `passed` and count nowhere above it. **record**: the
+  machine's evidence of one run at `strong` and above: results, strength and scope tree, a
+  committed file CI writes. Nobody signs a record, and nothing on a person's machine writes one.
+  **source**: where a pass came from: `ci` (a record CI wrote), `local` (anything else: this
+  checkout's own run, the committed test results, or a record somebody other than the git host
+  committed). Under `passed` both count. Under `strong` and `signed` only `ci` counts.
 - **current**: a record describes the checkout when its commit is HEAD or its scope tree still
   hashes the same. A CI pass that is not current reads **code changed**, and CI clears it on the
   next run.
 - **audit**: the level 2 run: the tests, then the breaks, the free checks and the model review
-  where risk asks, ending in a record and, on CI, the briefs. An audit proves a rule strong or
-  weak. **the breaks**: deliberate changes to the code. **test strength**: the share of the
+  where risk asks. An audit measures how good the tests are and proves a rule strong or weak. It
+  writes nothing; the record it feeds is CI's. **the breaks**: deliberate changes to the code. **test strength**: the share of the
   breaks the tests caught, as a percentage. Config key `min_strength`, record field
   `test_strength`, status column `Strength`. Measured only at `strong` and above.
 - **brief**: the machine's report on one rule: the strength beside the minimum, the free-check
@@ -57,14 +60,16 @@ in the shipped prose where a retired spelling may still be written.
   projects. **pinned anchor**: the project's local copy of an anchor from an anchor repo,
   tied to a commit.
 - **git host**: the service that holds the repository, runs CI, and enforces branch rules:
-  GitHub or Azure DevOps. **CI**: the git host's hosted runner executing the same
-  `purlin:audit` a developer runs, on a pull request, on the protected branch and on a run
-  branch.
+  GitHub or Azure DevOps. **CI**: the git host's hosted runner executing the same run script a
+  person runs, on a pull request, on the protected branch and on a run branch. **remote
+  runner**: CI seen from a person's machine, explained in three reasons and no others: your
+  tests need another operating system; proof from a clean machine that ran exactly the pushed
+  code; no merge while red.
 - **protected branch**: the branch a change merges into, the one the branch rules cover. A CI
   run there writes the records and briefs that count.
 - **push**: `git push`, typed by a person. No skill, agent or hook pushes, and none opens a
   pull request; a command commits, prints `Run: git push` and stops.
-- **remote run**: `purlin:audit --remote`, the one case in which Purlin pushes. **run branch**:
+- **remote run**: `purlin:test --remote`, the one case in which Purlin pushes. **run branch**:
   `run/<branch>-<sha7>`, the branch a remote run creates, waits on, pulls the records back from
   and deletes. The branch you are working on is never pushed.
 
@@ -90,6 +95,7 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 | proof marker, proof file | `references/formats/proofs_format.md` |
 | anchor spec, pinned anchor | `references/formats/anchor_format.md` |
 | record, source, test strength | `references/formats/record_format.md` |
+| test results, the table | `references/formats/tests_format.md` |
 | signature, hold, note | `references/formats/signature_format.md` |
 | the gate, which records count, the signer list | `references/hard_gates.md` |
 | drift, the four role views, config field ownership | `references/drift_criteria.md` |
@@ -159,6 +165,10 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | queue | review list |
 | CODEOWNERS, approver rule | the signer list in `.purlin/config.json` |
 | `verify --manual`, `verify --recheck` | removed. `@manual` proofs are evidenced by a signature file with a one-line note |
+| the source `developer`, a record a person commits | removed. The record is CI's. A record the git host did not commit reads `local`, and a person's own run is the test results `purlin:test` commits |
+| `purlin:audit --commit` | removed. `purlin:audit` writes nothing; `purlin:test` commits the test results |
+| `purlin:audit --remote` | `purlin:test --remote`: a remote runner runs the tests |
+| `purlin_run.py --record` | `purlin_run.py --audit`, and `--ci` for the CI job's arm |
 | `figma://`, `> Visual-Reference:`, the visual hash | `designs/<feature>/` files, pinned by a design anchor |
 | `3-section format` | `2-section format`: `## Rules` and `## Proof` |
 | `## What it does` | the `> Description:` continuation lines |

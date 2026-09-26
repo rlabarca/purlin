@@ -9,7 +9,7 @@
 # It refuses one push outright: a push from an agent session. A push is a
 # person's act, so an agent that has `CLAUDE_CODE_SESSION_ID` in its
 # environment is stopped here and told to hand the push over. The one push
-# Purlin makes on its own is `purlin:audit --remote`, which marks itself with
+# Purlin makes on its own is `purlin:test --remote`, which marks itself with
 # `PURLIN_REMOTE_RUN=1` and goes through. A person who wants the hook out of
 # the way runs `git push --no-verify`; that override is theirs, not the
 # agent's, because an agent that reaches for it is doing the thing this

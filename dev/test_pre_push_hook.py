@@ -258,28 +258,28 @@ class TestTheContract:
 class TestTheAgentGuard:
     """A push is a person's act, and this is where git enforces it."""
 
-    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    @pytest.mark.proof("scaffold", "PROOF-44", "RULE-43")
     def test_an_agent_session_is_refused(self, passing):
         done = passing.push(env={SESSION: 'session-01'})
         assert done.returncode == 1
         assert ('purlin: an agent does not push. A person runs git push.'
                 in done.stdout)
 
-    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    @pytest.mark.proof("scaffold", "PROOF-44", "RULE-43")
     def test_the_remote_run_goes_through(self, passing):
-        """`purlin:audit --remote` is the one push Purlin makes."""
+        """`purlin:test --remote` is the one push Purlin makes."""
         done = passing.push(env={SESSION: 'session-01', REMOTE_RUN: '1'})
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'the tagged tests passed' in done.stdout
         assert 'an agent does not push' not in done.stdout
 
-    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    @pytest.mark.proof("scaffold", "PROOF-44", "RULE-43")
     def test_a_person_is_never_stopped_by_the_guard(self, passing):
         done = passing.push()
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'an agent does not push' not in done.stdout
 
-    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    @pytest.mark.proof("scaffold", "PROOF-44", "RULE-43")
     def test_the_guard_runs_before_the_tests(self, failing):
         """No spec is run and no setting is read: the refusal is the first word."""
         done = failing.push(env={SESSION: 'session-01'})
@@ -289,7 +289,7 @@ class TestTheAgentGuard:
         assert lines == ['purlin: an agent does not push. A person runs '
                          'git push.']
 
-    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    @pytest.mark.proof("scaffold", "PROOF-44", "RULE-43")
     def test_a_project_with_no_spec_is_refused_too(self):
         made = Project(specs=False)
         try:
@@ -440,7 +440,7 @@ class TestTheFilesThemselves:
         text = read(HOOK_SCRIPT).lower()
         # Spelled in halves so this file does not carry the words either.
         # `audit` is not among them: it is the name of the level 2 run and
-        # the hook names the one command that pushes, purlin:audit --remote.
+        # the hook names the one command that pushes, purlin:test --remote.
         for word in ('rece' + 'ipt', 'ga' + 'uge', 'str' + 'ict',
                      'fo' + 'rge', 'appro' + 'val', 'verif' + 'ied'):
             assert word not in text

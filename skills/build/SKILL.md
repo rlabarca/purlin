@@ -104,4 +104,4 @@ Print the state table from `sync_status` for the feature, then name the next ste
 - Some rules still have no test: name them and say what is missing.
 - A rule has a `@manual` proof: say that its evidence is a signature with a one-line note, and
   point at `purlin:sign`.
-- A proof needs another operating system: say which, and point at `purlin:audit --remote`.
+- A proof needs another operating system: say which, and point at `purlin:test --remote`.

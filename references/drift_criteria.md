@@ -123,11 +123,11 @@ and no signature, so `purlin:drift qa` says the gate is `passed` and names what
 | `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/gate_check.py`, every skill that names a next step | `passed` |
 | `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` under `passed`, 70 under `strong`, 80 under `signed` |
 | `signers` | `purlin:init --gate signed`, then by pull request | `scripts/review/sign.py`, `sync_status`, `scripts/ci/gate_check.py` | Not set; required under `signed` |
-| `ai_review_at` | `purlin:init` | `purlin:audit`, which writes the briefs | never, high or medium, from the gate |
+| `ai_review_at` | `purlin:init` | `purlin:audit`, and the CI run that writes the briefs | never, high or medium, from the gate |
 | `sign_at` | By pull request, hand-edited | `sync_status`, `scripts/ci/gate_check.py` | Not written; `medium` derived under `signed` |
 | `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
 | `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py` | Not set; test strength reads `n/a` without one |
-| `ci` | `purlin:init`, from the remote URL | `purlin:audit --remote`, `purlin:init --ci` | Detected: `github` or `azure` |
+| `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure` |
 | `pre_push` | `purlin:init` | The pre-push hook | `off`; the only other value is `on` |
 | `sql_engine` | `purlin:init` | The SQL proof plugin | Not set |
 

@@ -33,10 +33,10 @@ purlin:drift → purlin:spec → purlin:build → purlin:test → purlin:audit �
 
 Run `purlin:drift` when a session opens: it says what changed under you and what that costs.
 Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and
-the tagged tests. Run `purlin:test` while you work; it takes seconds and touches nothing but
-the runtime folder. Run `purlin:audit` last: it runs the tests, breaks the code on purpose to
-measure test strength, and writes the record. Then hand the push over: the loop ends with a
-person running `git push`.
+the tagged tests. Run `purlin:test` while you work; it takes seconds, writes the test results and commits them
+itself. Run `purlin:audit` last: it runs the tests, breaks the code on purpose to measure test
+strength, and reports what it found. It writes no record, because the record is CI's. Then
+hand the push over: the loop ends with a person running `git push`.
 
 Call `sync_status` before you answer any question about state. It returns the spec status and
 the cells of every rule: `drafted` or `ready`, then `passed`, `strong` and `signed` as far as
@@ -53,13 +53,13 @@ signature went stale, the next step is `purlin:sign`. Say which, and say why.
    `[origin: design]` or `[origin: qa]` belongs to that person. Propose the change in the pull
    request and leave the rule alone until they take it.
 2. **Never write a proof file, a record or a signature by hand.** Tests write proof files,
-   `purlin:audit` writes records, `purlin:sign` writes signatures. A file you typed yourself
-   is not evidence of anything.
+   `purlin:test` writes the test results, CI writes records, `purlin:sign` writes signatures.
+   A file you typed yourself is not evidence of anything.
 3. **Never sign a rule whose test you wrote.** A signature counts only when its author differs
    from the author of the commit that last touched the test.
 4. **Never push, never open a pull request, never delete or rewrite a remote branch.** A push
    is a person's act: commit the work, say what it proves, and leave `git push` to them. The
-   one exception is `purlin:audit --remote`, which pushes a run branch of its own, waits for
+   one exception is `purlin:test --remote`, which pushes a run branch of its own, waits for
    it and deletes it. The pre-push hook refuses a push from your session and says so.
 5. **Never use a retired term.** The names to use are git host, test strength, review list,
    signer list, record, signature, gate and breaks. `references/glossary.md` lists what each
@@ -84,7 +84,8 @@ read what the person wants and run the command that serves it.
 | Engineer | "build it", "implement RULE-4" | `purlin:build` |
 | Engineer | "run the tests" | `purlin:test` |
 | Engineer | "is this ready to push?" | `purlin:audit` |
-| Engineer | "prove it on Windows too" | `purlin:audit --remote` |
+| Engineer | "how good are these tests?" | `purlin:audit` |
+| Engineer | "prove it on Windows too" | `purlin:test --remote` |
 | Engineer | "where is the rule about passwords?" | `purlin:find` |
 | Engineer | "this feature has the wrong name" | `purlin:rename` |
 | QA | "what needs my eyes?" | `purlin:sign` |

@@ -20,7 +20,7 @@ merge?** There are three answers, one per evidence level. That answer is the **g
 
 | Gate | Who it fits | What CI requires before merge | Signatures |
 |------|-------------|-------------------------------|------------|
-| `passed` | one developer | every rule's passed cell is met: a passing tagged test, from any source | none |
+| `passed` | one person working alone | every rule's passed cell is met: a passing tagged test, from any source | none |
 | `strong` | a team of PM, designers, engineers and QA | every rule's strong cell is met: a CI-written record at this commit, test strength at or above `min_strength`, no finding and no hold | none required; anyone may sign to clear a rule reading `manual test`, `manual audit` or `held` |
 | `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list | required: the signer list decides who |
 
@@ -28,14 +28,15 @@ The answer sets four defaults, each of which you can change afterwards: `min_str
 unused, 70, 80; `ai_review_at` is never, high, medium; `sign_at` is unset, unset, `medium`;
 risk and origin tags are optional, optional, required.
 
-## The two honest exceptions
+## The three honest exceptions
 
 Init asks nothing else. It reads the language and the test framework from the tree, the git
 host from the remote URL, and it edits config files the way a `conftest.py` or a jest config
-is already edited. Two questions remain because no answer can be read from anywhere:
+is already edited. Three questions remain because no answer can be read from anywhere:
 
 1. An empty repository has nothing to detect, so init asks which language the project will be.
 2. `signed` needs names, so init asks for the signer emails.
+3. At `passed` with a remote, a remote runner is a choice, so init explains it and asks.
 
 ## Run it
 
@@ -50,8 +51,7 @@ printed list back to the person before running it for real on a project that alr
 |------|--------------|
 | `--gate <level>` | Sets the gate, at setup or later. Raising adds what is missing and asks before each write. Lowering changes the setting and deletes nothing |
 | `--update` | Brings a project set up by an older Purlin to the installed one. See below |
-| `--ci` | Writes the CI workflow under `passed`, where it is otherwise skipped |
-| `--ci --upstream-check` | Adds a scheduled job that opens a pull request or an issue when an anchor pin falls behind |
+| `--upstream-check` | Adds a scheduled job that opens a pull request or an issue when an anchor pin falls behind |
 | `--add <language>` | Adds a second language: its test framework, its proof plugin, its breaks engine |
 | `--dry-run` | Prints the plan and writes nothing |
 
@@ -64,13 +64,13 @@ and the signatures all stay where they are, and CI simply stops requiring them.
 
 `--add <language>` is for a repository with, say, a Python service and a TypeScript client:
 init detects the second framework, installs its proof plugin beside the first, adds its breaks
-engine, and records both in `.purlin/config.json`. One `purlin:audit` then runs both.
+engine, and records both in `.purlin/config.json`. One `purlin:test` then runs both.
 
 ## What init writes
 
 It writes `.purlin/config.json` with the gate, the git host, the test framework, the breaks
 engine and the derived defaults; `specs/` for the two-section specs; and `.purlin/records/`
-with a README saying that `purlin:audit` writes the files in it and nobody edits them by hand.
+with a README saying that CI writes the files in it and nobody edits them by hand.
 It installs the proof plugin for the detected framework and the breaks engine for the
 language, writing `[tool.mutmut]` into `pyproject.toml` when that file exists and `[mutmut]`
 into `setup.cfg` otherwise. It adds a `.gitignore` block for `.purlin/runtime/`, which is
@@ -83,7 +83,7 @@ ends by printing every file it wrote or edited, one per line.
 
 The workflow runs where the evidence it writes is decided. It triggers on a pull request, on a
 push to the project's own default branch and on a push to a `run/*` branch, which is the branch
-`purlin:audit --remote` creates and deletes around one run; a push to any other branch starts
+`purlin:test --remote` creates and deletes around one run; a push to any other branch starts
 nothing. A pull request run does the tests, posts the comment and uploads the dashboard, and
 commits nothing. A run on the default branch, or on a run branch, commits its records and
 briefs there. Every run ends with `Check the gate`, which runs `scripts/ci/gate_check.py
@@ -111,14 +111,29 @@ appears only when you set it yourself.
 Read and change it with the `purlin_config` tool rather than editing the file, so a key that
 the installed Purlin no longer reads is reported instead of silently kept.
 
-## Who commits the record
+## Who writes the evidence
 
-The gate decides which record counts, and the source comes from git rather than from the file.
-A record whose last commit was made through the git host's API by the CI identity has the
-source `ci`; one a person committed is `developer`; one that is not committed at all is
-`local`. Under `passed` every source counts, so the developer's own `purlin:audit` is enough.
-Under `strong` and `signed` only `ci` counts, so the developer stops committing records the
-moment the gate is raised and CI writes them instead.
+The record is CI's. Nothing on a person's machine writes one: `purlin:test` commits the test
+results under `.purlin/tests/`, and `purlin:audit` commits nothing at all. The gate decides
+which evidence counts, and a record's source comes from git rather than from the file. A record
+whose last commit was made through the git host's API by the CI identity has the source `ci`;
+anything else is `local`. Under `passed` both count, and the test results are the ordinary
+answer. Under `strong` and `signed` only `ci` counts.
+
+## The remote runner
+
+At `passed`, with a remote, init prints three reasons a remote runner is worth having and no
+others: your tests need another operating system; proof from a clean machine that ran exactly
+the pushed code; no merge while red. It then says teammates see your results without one, from
+the test results `purlin:test` commits, and asks `Run the tests on a remote runner too?
+[y/n]`. A yes writes the workflow; a no writes nothing and says so. At `strong` and above the
+workflow is always written and those same three reasons are the explanation.
+
+Before any workflow is written init checks the prerequisites: a remote exists, its URL names
+GitHub or Azure DevOps, and the protected branch is on that remote. The first that fails is
+printed in one line naming what to do, and no workflow is written. The host CLI, `gh` or `az`,
+is reported as present or absent either way, and a remote nobody here can reach is reported as
+unchecked rather than treated as a failure. The same checks run under `--update`.
 
 ## What each gate brings
 
@@ -129,7 +144,7 @@ ever missing, so a project that skipped it is not stuck.
 Under `strong` and `signed`, init also writes `designs/` and the CI workflow (`purlin.yml`),
 because the gate cannot be met without a CI run that writes records. When `specs/` carries
 `@env(windows)` or `@env(macos)` proofs, the workflow gets a matrix: a Linux job always, plus
-one job for each other operating system named, each running the same audit and writing its own
+one job for each other operating system named, each running the same tests and writing its own
 record. When no proof names Windows or macOS, there is one Linux job.
 
 Under `signed`, init asks for the signer emails, writes them to `signers` in
@@ -141,8 +156,7 @@ and exits 1, and `purlin:sign` says the same and writes nothing.
 Anchor pins, the upstream-check job and the dashboard artifact are added on demand, never by
 default. When a piece is missing later, the tool that needs it says so: `purlin:drift` reports
 a pin behind, `purlin:status` says the gate cannot be met without a workflow, `purlin:audit`
-says the breaks engine is unavailable and runs the model review one level lower, and the
-review list shows the rules waiting on a person.
+says the breaks engine is unavailable, and the review list shows the rules waiting on a person.
 
 ## The branch rules
 
@@ -186,12 +200,13 @@ is judged against the list as it stood in the commit that added it.
 ## What CI runs
 
 A project has no copy of Purlin in it. The workflow init writes therefore clones Purlin at a
-pinned tag and runs the audit with `--ci` from that checkout, so the runner runs the same audit
-a developer runs locally, at a version that changes only when someone edits the workflow. The
-job writes the briefs, commits them together with its record through the git host's API in one
-commit, posts the rollup as a pull request comment, and publishes the dashboard page and its
-data as the `purlin-dashboard` build artifact linked from that comment. CI never writes a
-signature: a signature file is always something a person wrote.
+pinned tag and runs `--ci` from that checkout, so the runner runs the same script a person
+runs, at a version that changes only when someone edits the workflow. At `passed` the job runs
+the tagged tests, posts the rollup as a pull request comment, publishes the dashboard and
+writes no record. At `strong` and above it audits what it ran, writes the briefs, and commits
+them together with its record through the git host's API in one commit. The dashboard page and
+its data are published as the `purlin-dashboard` build artifact linked from that comment. CI
+never writes a signature: a signature file is always something a person wrote.
 
 On a pull request from a fork the API token cannot write, so the audit runs, the comment posts,
 no commit is made, and the job says so in the comment.

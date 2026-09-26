@@ -22,7 +22,12 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             "Proof ready", "lowest state", "seven states", "auto-approval", "review queue",
             "purlin:verify", "purlin:review", "purlin:approve", "verify_gate", "verify-gate:",
             "validated/",
-            "needs a person", "needs_person", "needs-a-person")
+            "needs a person", "needs_person", "needs-a-person",
+            # the source a person's own record had, and the two flags that
+            # went with it. `developer` as a plain English word stays legal,
+            # so only the machine spellings are retired.
+            "`developer`", "'developer'", '"developer"',
+            "--commit", "purlin:audit --remote")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
@@ -48,7 +53,16 @@ EXCLUDED = (
 # Paths a later phase of dev/plans/three-levels.md still rewrites, grouped by
 # the lane that owns them. A lane deletes its entries in the commit that
 # rewrites the files; the tuple is empty at closeout.
-PENDING_REWRITE = ()
+PENDING_REWRITE = (
+    # Lane 10B rewrites these pages against the passed workflow: they still
+    # name `--commit`, the source `developer` and `purlin:audit --remote`.
+    "docs/dashboard.md",
+    "docs/how-purlin-works.md",
+    "docs/raising-the-gate-and-upgrading.md",
+    "docs/running-and-records.md",
+    "docs/solo-workflow.md",
+    "docs/team-workflow.md",
+)
 
 # Phase 7 deletes every signature directory of the old layout; until then the
 # files inside carry the old words.

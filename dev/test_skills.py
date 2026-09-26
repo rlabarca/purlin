@@ -35,7 +35,7 @@ BASH = bash_command()
 CEILINGS = {
     'anchor': 160, 'audit': 105, 'build': 130, 'drift': 150, 'find': 85,
     'init': 240, 'rename': 85, 'sign': 150, 'spec': 210,
-    'spec-from-code': 130, 'status': 80, 'test': 90,
+    'spec-from-code': 130, 'status': 80, 'test': 110,
 }
 COMMANDS = sorted(CEILINGS)
 
@@ -235,7 +235,7 @@ class TestSkillInit:
         assert skill_ceiling_problems('init') == []
 
     @pytest.mark.proof("skill_init", "PROOF-5", "RULE-5")
-    def test_it_asks_one_question_and_names_two_exceptions(self):
+    def test_it_asks_one_question_and_names_three_exceptions(self):
         assert init_question_problems() == []
 
 
@@ -250,11 +250,11 @@ def init_question_problems():
         problems.append('%s has no section naming the further questions' % rel)
         return problems
     items = re.findall(r'^\d+\. ', body, re.M)
-    if len(items) != 2:
-        problems.append('%s names %d further questions, expected 2'
+    if len(items) != 3:
+        problems.append('%s names %d further questions, expected 3'
                         % (rel, len(items)))
     flattened = flat(body)
-    for needle in ('empty repository', 'signer emails'):
+    for needle in ('empty repository', 'signer emails', 'remote runner'):
         if needle not in flattened:
             problems.append('%s exceptions do not name %r' % (rel, needle))
     return problems
@@ -468,6 +468,15 @@ class TestSkillTest:
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('test') == []
 
+    @pytest.mark.proof("skill_test", "PROOF-5", "RULE-5")
+    def test_it_names_the_results_the_commit_and_the_gate_line(self):
+        rel = skill_path('test')
+        assert carries(rel, [
+            '.purlin/tests/<feature>.json', '.purlin/tests.md',
+            'purlin: tests at <sha7>', 'Test results committed.',
+            'Test results unchanged.', 'gate passed: <n> of <rules>',
+            'It never pushes.']) == []
+
 
 # ---------------------------------------------------------------------------
 # skill_audit
@@ -483,8 +492,7 @@ class TestSkillAudit:
     def test_it_runs_the_run_script_and_leaves_ci_to_ci(self):
         rel = skill_path('audit')
         assert (same_line(rel, [
-            '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"',
-            '--record', '--commit'])
+            '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"', '--audit'])
             + carries(rel, ['You never pass `--ci` by hand.'])) == []
 
     @pytest.mark.proof("skill_audit", "PROOF-3", "RULE-3")
@@ -500,14 +508,15 @@ class TestSkillAudit:
         assert record_source_problems() == []
 
     @pytest.mark.proof("skill_audit", "PROOF-6", "RULE-6")
-    def test_the_gate_decides_the_breaks_and_the_preview(self):
+    def test_the_gate_decides_the_breaks_and_the_record_is_cis(self):
         assert audit_gate_problems() == []
 
     @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7")
     def test_it_names_the_briefs_and_the_record_tag(self):
         assert carries(skill_path('audit'), [
             '.purlin/briefs/',
-            '`--tag <name>` writes an annotated tag `record/<name>`']) == []
+            '`--tag <name>` writes an annotated tag `record/<name>`',
+            'purlin:test --remote']) == []
 
 
 def record_source_problems():
@@ -515,7 +524,7 @@ def record_source_problems():
     rows = {cells[0]: cells[-1]
             for cells in table_rows(read(rel), '| Source |')}
     problems = []
-    for source in ('ci', 'developer', 'local'):
+    for source in ('ci', 'local'):
         if source not in rows:
             problems.append('%s record table has no %r row' % (rel, source))
     if problems:
@@ -523,7 +532,7 @@ def record_source_problems():
     for gate in ('passed', 'strong', 'signed'):
         if gate not in rows['ci']:
             problems.append('%s ci row does not count under %r' % (rel, gate))
-    for source in ('developer', 'local'):
+    for source in ('local',):
         if 'passed' not in rows[source]:
             problems.append('%s %s row does not count under passed'
                             % (rel, source))
@@ -546,9 +555,12 @@ def audit_gate_problems():
     for needle in ('n/a', 'tests only'):
         if needle not in rows['`passed`']:
             problems.append('%s passed row does not name %r' % (rel, needle))
-    for needle in ('preview', 'does not count'):
+    for needle in ('breaks', 'minimum'):
         if needle not in rows['`strong`']:
             problems.append('%s strong row does not name %r' % (rel, needle))
+    for needle in ("the record is CI's", 'It writes no record'):
+        if needle not in read(rel):
+            problems.append('%s does not say %r' % (rel, needle))
     return problems
 
 
@@ -797,7 +809,7 @@ def never_problems():
     flattened = flat(body)
     for needle in ('origin', 'proof file', 'record', 'signature',
                    'sign a rule whose test you wrote', 'Never push',
-                   'pull request', 'remote branch', 'purlin:audit --remote',
+                   'pull request', 'remote branch', 'purlin:test --remote',
                    'retired term'):
         if needle not in flattened:
             problems.append('%s NEVERs do not name %r' % (AGENT, needle))

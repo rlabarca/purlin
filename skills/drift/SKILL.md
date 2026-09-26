@@ -126,5 +126,5 @@ line rather than listing those rules as findings.
 | A risk or origin tag missing under a gate that needs it | `→ Run: purlin:spec <feature>` |
 | An anchor pin behind | `→ Run: purlin:anchor sync <name>` |
 | Rules waiting on a person | `→ Run: purlin:sign` |
-| Only `code changed` | `→ Next: run purlin:audit --remote; the next CI run clears it.` |
+| Only `code changed` | `→ Next: run purlin:test --remote; the next CI run clears it.` |
 | Nothing at all | `→ Nothing has drifted.` |
