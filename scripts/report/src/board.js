@@ -66,9 +66,11 @@ function specStatusCell(feature) {
   return counts([[ready, 'ready', 'pass'], [drafted, 'drafted', 'idle']]);
 }
 
-/* What the tagged tests found, as the passed cells read it. A rule waiting on
-   an operating system or sitting behind changed code is in none of the three:
-   the Last run column and the rule's own row say which. */
+/* What the tagged tests found, as the passed cells read it. The fourth part
+   counts the rules nothing current ran against, `not run` and `code changed`
+   alike: they passed no test and failed none, and a feature of 24 such rules
+   read `0 passed` and nothing else. The rule's own row and the `why` on its
+   passed cell say which of the two it is. */
 function testsCell(feature) {
   var found = {};
   ownRules(feature).forEach(function (rule) {
@@ -77,7 +79,9 @@ function testsCell(feature) {
   });
   return counts([[found.passed || 0, 'passed', 'pass'],
                  [found.failed || 0, 'failing', 'fail'],
-                 [found['no test'] || 0, 'no test', 'warn']]);
+                 [found['no test'] || 0, 'no test', 'warn'],
+                 [(found['not run'] || 0) + (found['code changed'] || 0),
+                  'not run', 'warn']]);
 }
 
 /* How many of this spec's rules carry a signature, and how many signatures no

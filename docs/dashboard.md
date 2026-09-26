@@ -61,7 +61,7 @@ count levels rather than buckets: a rule that is signed is still passing, so it 
 | `Spec` | the feature name, under the band that names its category |
 | `Rules` | how many rules the spec holds |
 | `Spec status` | `24 ready · 2 drafted`, what the spec says of its own rules |
-| `Tests` | `24 passed · 2 failing · 1 no test`, each count in its own tone |
+| `Tests` | `24 passed · 2 failing · 1 no test · 3 not run`, each count in its own tone. The last part holds the rules whose passed cell reads `not run` or `code changed`, so a spec behind changed code reads `0 passed · 24 not run` rather than `0 passed` alone |
 | `Last run` | one box per operating system, `linux`, `mac` and `win`, each in the tone of what that system's newest record found, then the newest record's source and age, or the source alone before any record exists |
 
 Every count names the word it counts beside the number. The first part is always drawn, so a

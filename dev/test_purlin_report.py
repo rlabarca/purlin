@@ -440,8 +440,11 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     cells = {row['name']: row
              for row in page.eval_on_selector_all('.tr', COUNT_CELLS)}
     # The first part is drawn even at zero, and a later part only above it.
-    assert cells['login']['tests'] == '2 passed \u00b7 1 failing'
-    assert cells['export']['tests'] == '0 passed'
+    assert cells['login']['tests'] == (
+        '2 passed \u00b7 1 failing \u00b7 1 not run')
+    # A rule behind changed code has run against nothing current either, so
+    # the fourth part holds both words and the row is not read as `0 passed`.
+    assert cells['export']['tests'] == '0 passed \u00b7 1 not run'
     assert cells['login']['spec'] == '4 ready'
     assert cells['login']['signed'] == '1 of 4 \u00b7 1 stale'
     assert cells['invoice']['signed'] == '0 of 3'

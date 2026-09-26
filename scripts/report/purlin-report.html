@@ -431,7 +431,9 @@ function testsCell(feature) {
   });
   return counts([[found.passed || 0, 'passed', 'pass'],
                  [found.failed || 0, 'failing', 'fail'],
-                 [found['no test'] || 0, 'no test', 'warn']]);
+                 [found['no test'] || 0, 'no test', 'warn'],
+                 [(found['not run'] || 0) + (found['code changed'] || 0),
+                  'not run', 'warn']]);
 }
 function signedCell(feature) {
   var rollup = feature.rollup || {};
