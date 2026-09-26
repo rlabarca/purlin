@@ -161,7 +161,7 @@ def rule_text_hash(text):
 
     The tags are already off the text by the time a caller holds it, and
     whitespace is normalised here, so reflowing a long rule line does not
-    stale the approvals that bind it.
+    stale the signatures that bind it.
     """
     return hashlib.sha256(_normalise(text).encode('utf-8')).hexdigest()
 

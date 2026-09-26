@@ -12,9 +12,9 @@ questions of it:
           rules an engineer added, pins behind their source
 `design`  design files that changed, design-owned rules whose signature went
           stale
-`qa`      signatures gone stale, how long the review list is, how many rules
-          need a person, rules no proof of which names a rejection or a
-          boundary
+`qa`      signatures gone stale, how long the review list is, the rules whose
+          strong cell reads `manual test` or `manual audit`, rules no proof of
+          which names a rejection or a boundary
 `eng`     files touched and the rules they affect, rules with no test, rules
           with no risk or origin tag, pins behind, rules whose code changed
 """

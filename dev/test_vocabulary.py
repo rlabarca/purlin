@@ -91,7 +91,7 @@ def _allowed_spans(probe):
 
 
 def _spans_of(check, probe):
-    """Where one check matches in one line, as `(start, end)` pairs."""
+    """Where one check matches in one stretch of text, as `(start, end)` pairs."""
     if not isinstance(check, str):
         return [match.span() for match in check.finditer(probe)]
     found = []
@@ -100,6 +100,58 @@ def _spans_of(check, probe):
         found.append((start, start + len(check)))
         start = probe.find(check, start + 1)
     return found
+
+
+def _collapsed(text):
+    """The text with every run of whitespace as one space, and the original
+    offset of each character of the result.
+
+    A retired phrase a line break splits is invisible to the pass over lines,
+    so the collapsed text is searched as well. The offsets carry each hit back
+    to the line it starts on. The list holds one more entry than the text, the
+    end of the text, so a match's end always has an offset to read.
+    """
+    probe = []
+    offsets = []
+    index = 0
+    while index < len(text):
+        if text[index].isspace():
+            run = index
+            while run < len(text) and text[run].isspace():
+                run += 1
+            probe.append(" ")
+            offsets.append(index)
+            index = run
+        else:
+            probe.append(text[index])
+            offsets.append(index)
+            index += 1
+    offsets.append(len(text))
+    return "".join(probe), offsets
+
+
+def _collapsed_findings(rel, text, checks):
+    """The hits only the collapsed text shows, as `<path>:<line>: <term>`.
+
+    A hit whose text the collapsing did not change sits on one line, and the
+    pass over lines already holds it with its `MARKED` and `ALLOWED_PHRASES`
+    logic, so it is not reported twice. The line reported is the line the
+    hit's first character is on.
+    """
+    findings = []
+    probe, offsets = _collapsed(text)
+    spans = _allowed_spans(probe)
+    for check in checks:
+        for start, end in _spans_of(check, probe):
+            if any(s <= start and end <= e for s, e in spans):
+                continue
+            if text[offsets[start]:offsets[end]] == probe[start:end]:
+                continue
+            term = check if isinstance(check, str) else check.pattern
+            findings.append("%s:%d: %s" % (
+                rel, text.count("\n", 0, offsets[start]) + 1, term))
+            break
+    return findings
 
 
 def test_no_retired_terms():
@@ -126,4 +178,24 @@ def test_no_retired_terms():
                     term = check if isinstance(check, str) else check.pattern
                     findings.append("%s:%d: %s" % (rel, lineno, term))
                     break
+        findings.extend(_collapsed_findings(rel, text, checks))
     assert not findings, "retired terms found:\n" + "\n".join(findings)
+
+
+def test_a_retired_phrase_split_by_a_line_break_is_caught():
+    """The pass over lines cannot see `needs a person` wrapped onto two lines."""
+    fixture = "The board says this one needs a\nperson before it merges.\n"
+    findings = _collapsed_findings("fixture.md", fixture, list(LITERALS))
+    assert findings == ["fixture.md:1: needs a person"], findings
+
+
+def test_the_review_list_header_may_wrap():
+    """The one sentence that may say so is allowed across a line break too."""
+    fixture = "The header reads `4 rules need a\nperson` and nothing else does.\n"
+    assert _collapsed_findings("fixture.md", fixture, list(LITERALS)) == []
+
+
+def test_one_line_hits_are_left_to_the_pass_over_lines():
+    """A hit the collapsing did not change is not reported twice."""
+    fixture = "This one needs a person.\n"
+    assert _collapsed_findings("fixture.md", fixture, list(LITERALS)) == []

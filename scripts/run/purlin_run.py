@@ -1030,8 +1030,8 @@ def _ci_review(project_root, passed_here=()):
     to choose, it reads each rule's passed cell, and at this point in the run
     no cell can read `passed`: the record this run wrote is still uncommitted,
     so its source is `local` and `strong` and `signed` count only `ci`. Every
-    brief would then be skipped, and the rules that need a person would reach
-    the review list with nothing for anyone to read.
+    brief would then be skipped, and the rules on the review list would reach
+    it with nothing for anyone to read.
     """
     try:
         from brief import asks_for_a_review, rule_entry, write_briefs

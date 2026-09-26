@@ -48,9 +48,10 @@ count of features and rules, how many rules sit in each bucket one line at a tim
 newest record with a line reading
 `N commits behind the latest record.`, which is how many commits the branch has moved past the
 newest record. A rule sits in exactly one bucket: `untested`, `failing` and `passed` at every
-gate, `strong` from the `strong` gate up, `signed` at `signed`. Three flags are counted beside
+gate, `strong` from the `strong` gate up, `signed` at `signed`. Four flags are counted beside
 the buckets and never instead of them, and each prints only when it stands: signatures stale,
-rules held, rules that need a person. Read three things off the rollup:
+rules held, rules reading `manual test`, rules reading `manual audit`. Read three things off
+the rollup:
 
 - **Stale and held rules.** A signature goes stale when the rule, its proof or its test changed
   after it was written; a hold is a person saying the test does not prove the proof. A person has

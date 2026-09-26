@@ -42,8 +42,8 @@ sync_status()
 ```
 
 `payload.review_list` is the list, already ordered: risk high first, and within a risk the
-stale and the held before the rest. A rule reaches it when its `strong` cell reads `needs a
-person`, or its `signed` cell reads `unsigned`, `stale` or `held`. A rule blocked lower down —
+stale and the held before the rest. A rule reaches it when its `strong` cell reads `manual
+test`, `manual audit` or `held`, or its `signed` cell reads `unsigned`, `stale` or `held`. A rule blocked lower down —
 no test, a failing test, a weak one — is build work, so it stays on the board and never on
 this list. Print the count by risk and the first five rows.
 
