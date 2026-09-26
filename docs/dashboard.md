@@ -40,7 +40,7 @@ there is one.
 The Board is where every rule stands. Its headline is two lines:
 
 ```
-3 of 5 rules pass their tests · 0 failing · 2 untested
+3 of 5 rules pass their tests · 0 failing · 0 partial · 2 untested
 3 of 5 meet the gate passed
 ```
 
@@ -48,51 +48,61 @@ The first line is what the board is mainly about: whether the rules pass their t
 second names the gate. A rule meets the gate when every cell up to the gate's level is met. The
 gate decides how many cells a rule has, so it also decides how much of this page exists.
 
-![The Board at the passed gate: the Untested, Failing and Passing tiles, and two specs with their spec status, tests and last run](images/dashboard-solo.png)
+![The Board at the passed gate: the Untested, Failing, Partial and Passing tiles, and two specs with their rules, proofs and tests](images/dashboard-solo.png)
 
 At the `passed` gate a rule has two cells, its spec status and its passed cell, so the board
-carries three tiles and five columns. The tiles are `Untested`, `Failing` and `Passing`. They
-count levels rather than buckets: a rule that is signed is still passing, so it is counted in
-`Passing`, in `Strong` and in `Signed` alike. The columns are `Spec`, `Rules`, `Spec status`,
-`Tests` and `Last run`.
+carries four tiles and four columns. The tiles are `Untested`, `Failing`, `Partial` and
+`Passing`. The last of them counts levels rather than buckets: a rule that is signed is still
+passing, so it is counted in `Passing`, in `Strong` and in `Signed` alike. The three below it
+count their own bucket alone. The columns are `Spec`, `Rules`, `Proofs` and `Tests`.
 
-| Column | What it reads |
-|---|---|
-| `Spec` | the feature name, under the band that names its category |
-| `Rules` | how many rules the spec holds |
-| `Spec status` | `24 ready · 2 drafted`, what the spec says of its own rules |
-| `Tests` | `24 passed · 2 failing · 1 no test · 3 not run`, each count in its own tone. The last part holds the rules whose passed cell reads `not run` or `code changed`, so a spec behind changed code reads `0 passed · 24 not run` rather than `0 passed` alone |
-| `Last run` | one box per operating system, `lin`, `mac` and `win`, each in the tone of what that system's newest record found, then the source of the newest evidence, `ci` or `local`. The age is the source word's tooltip here and stands in full on the rule screen |
+| Column | What it reads | What its hover says |
+|---|---|---|
+| `Spec` | the feature name, under the band that names its category | the spec's path |
+| `Rules` | how many rules the spec holds | — |
+| `Proofs` | `24 · 3 without a test`, how many proof lines the spec holds and how many of them no tagged test runs, the second count in the warn tone | which proofs those are |
+| `Tests` | `21 of 24 · 1 partial · 2 failing`, how many rules passed everywhere they ran, then the two words that say they did not | one line per operating system a counting run covered, newest first: `linux · ci · 9 days old · 22 passed · 1 failed · 1 not run` |
 
 Every count names the word it counts beside the number. The first part is always drawn, so a
-spec with nothing ready reads `0 ready`; a later part is drawn only where it is above zero, so
-a spec with nothing failing and nothing untested reads `24 passed` and stops there.
+spec with nothing passing reads `0 of 24`; a later part is drawn only where it is above zero,
+so a spec with nothing partial and nothing failing reads `24 of 24` and stops there.
 
-![The Board at the strong gate: a Strong tile beside the first three, and the Strength and Strong columns](images/dashboard-team.png)
+A rule reads `partial` when its tests passed on one operating system and failed or did not run
+on another. It is not passing and it is not failing, so it has a tile, a filter and a word of
+its own rather than hiding inside either.
 
-At `strong` each rule gains a strong cell, so a `Strong` tile joins the three and two columns
-join the five: `Strength`, the test strength of the newest counting record, and `Strong`, `n of
-m` with a bar. Only a record CI wrote counts at this gate, so evidence from anywhere else reads
-`local` in `Last run` and the rules it covers read `not run`.
+![The Board at the strong gate: a Strong tile beside the first four, and the Strong column](images/dashboard-team.png)
+
+At `strong` each rule gains a strong cell, so a `Strong` tile joins the four and one column
+joins the four: `Strong`, reading `18 of 24 · 71%`, how many rules the audit proved strong and
+the test strength of the newest record. Its hover names where that record came from, how old it
+is, and the minimum strength this gate asks for. Your own `purlin:audit` counts at this gate;
+only at `signed` is CI's the one that counts.
 
 ![The Board at the signed gate: a Signed tile and a Stale flag card, and the Signed column](images/dashboard-regulated.png)
 
-At `signed` each rule gains a signed cell. A `Signed` tile joins the four, a `Stale` flag card
-sits beside the tiles, and a `Signed` column joins the seven, reading `1 of 4 · 1 stale` with
-the stale count in the fail tone. The flag card is counted beside the tiles and never instead
-of them: a stale rule is still in whichever tile its cells put it. Warnings sit above the
-headline, one per line: an uncommitted working tree, or a spec line the parser could not read
-as a rule.
+At `signed` each rule gains a signed cell. A `Signed` tile joins the five, a `Stale` flag card
+sits beside the tiles, and a `Signed` column joins the five, reading `1 of 4`. Its hover names
+each signer with the date of their newest signature and then how many signatures stopped
+matching. The flag card is counted beside the tiles and never instead of them: a stale rule is
+still in whichever tile its cells put it. Warnings sit above the headline, one per line: an
+uncommitted working tree, or a spec line the parser could not read as a rule.
+
+**Every when, who and platform detail is in a hover.** A hover is a `title` attribute, one item
+to a line, so it works on a page opened from disk with no script behind it. That is what let the
+board drop from eight columns to six and fit a 1024-wide window where it used to need 1100.
 
 Specs are grouped by category. The band above each group carries the category, how many specs
 are in it, and how many of their rules pass their tests, as `mcp · 6 specs · 108 of 113 pass`
 with a bar after it. The gate is not repeated there: the `Signed` column carries it for each
 spec and the headline's second line carries it for the project.
 
-Every column holds a minimum width, and those minima sum to less than a 1100-wide window gives
-the table, so a laptop shows every column the gate reaches. In a window narrower than their sum
-the table scrolls sideways rather than squeezing a heading into its neighbour, and no text on
-the board is set smaller than 13 pixels in either theme.
+Every column holds a minimum width, and those minima sum to less than a 1024-wide window gives
+the table, so a laptop shows every column the gate reaches with no sideways scroll. At 1280 and
+above every count cell holds its parts on one line. In a window narrower than the sum of the
+minima the table scrolls sideways rather than squeezing a heading into its neighbour, and no
+text on the board is set smaller than 13 pixels in either theme. Nothing on the table is aligned
+right: two bare number columns twelve pixels apart read as one number.
 
 **A column exists only where its cell does.** A project at `passed` is not shown two empty
 evidence columns, and nothing has to be configured to get the rest: `purlin:init --gate strong`
@@ -100,9 +110,9 @@ is the whole of it.
 
 Pressing a spec expands its rules. Each row carries the rule id, the rule text, and one pill per
 cell that exists, so a rule at `signed` shows three pills and the same rule at `passed` shows
-one. A pill reads the cell's word: `passed`, `failed`, `no test`, `not run` or `code changed` at
-level 1; `strong`, `weak`, `manual test`, `manual audit` or `held` at level 2; `signed`,
-`unsigned`, `stale`, `held` or `not required` at level 3.
+one. A pill reads the cell's word: `passed`, `partial`, `failed`, `no test`, `not run` or
+`code changed` at level 1; `strong`, `weak`, `manual test`, `manual audit` or `held` at level 2;
+`signed`, `unsigned`, `stale`, `held` or `not required` at level 3.
 
 ## Filters
 
@@ -111,11 +121,16 @@ compose: a rule shows when every active filter accepts it, and a spec shows when
 rules does. The gate decides which exist, because a filter with no cell behind it selects
 nothing.
 
+There is one pill per bucket the board shows and one per evidence column beyond the tests, in
+the order the tiles and the columns read. Each pill carries the number of rules it accepts, so
+it and the tile or the cell it mirrors state the same number before anything is pressed.
+
 | Filter | What it selects | Exists at |
 |---|---|---|
 | `Untested` | rules in the untested tile: drafted, or ready with no test or no current counting run | every gate |
-| `Failing` | rules in the failing tile: a counting run failed | every gate |
-| `Weak` | rules whose strong cell reads `weak` | `strong` and above |
+| `Failing` | rules in the failing tile: every platform that ran the tests found a failure | every gate |
+| `Partial` | rules in the partial tile: passed on one platform, failed or did not run on another | every gate |
+| `Weak` | rules whose strong cell reads anything but `strong`: `weak`, `manual test`, `manual audit` or `held` | `strong` and above |
 | `Unsigned` | rules whose signed cell reads `unsigned` | `signed` |
 | `Stale or held` | rules flagged stale, held, or both | `signed` |
 
@@ -132,6 +147,13 @@ the rule. Each cell row carries the cell's word as a pill and the reasons it car
 `failing: tests/test_login.py`, `windows: no record yet`, `code changed since 9f8e7d6`,
 `strength 64% under 80%`, `manual proof`, `held by sam@acme.com: the lock expiry is never
 read`, `by jane@acme.com`. A cell with nothing to add carries no reason.
+
+The passed cell's row also carries one small box per operating system a counting run covered,
+labelled `lin`, `mac` or `win`, green where the rule passed there and red where it failed, each
+naming that system's word, the source of its newest run and how old that run is in its hover.
+The board draws no such box: which platform found what is the rule's business, and the `Tests`
+cell's hover sums it for the spec. The signed cell's row names the signer and the date beside
+the word.
 
 At `strong` and above the **Brief panel** follows: the test strength beside `min_strength`, the
 free-check findings on the proof text and the test body, what the model review observed, each

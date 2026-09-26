@@ -7,9 +7,9 @@ and shows one project's names to every reader.
 
     python3 dev/build_report.py && python3 dev/capture_doc_screenshots.py
 
-    dashboard-solo.png         the board at the passed gate, three tiles
-    dashboard-team.png         the board at strong, with strength and briefs
-    dashboard-regulated.png    the board at signed, with signatures and flags
+    dashboard-solo.png         the board at the passed gate, four tiles
+    dashboard-team.png         the board at strong, with the Strong column
+    dashboard-regulated.png    the board at signed, with the Signed column
     dashboard-rule.png         one rule, its cells, its brief, its proofs
     dashboard-review-list.png  the rules whose next step is a person
 
@@ -44,6 +44,8 @@ SHOTS = (
     ('dashboard-regulated.png', 'regulated', ()),
     ('dashboard-rule.png', 'regulated',
      ('[data-act="feature"][data-feature="login"]', '.rule[data-rule="RULE-1"]')),
+    # RULE-1 is the signed one: its cells show a platform box, a brief and a
+    # signature, which is the whole chain on one screen.
     ('dashboard-review-list.png', 'regulated', ('[data-screen="review"]',)),
 )
 
