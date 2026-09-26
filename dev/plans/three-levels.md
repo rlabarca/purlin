@@ -139,6 +139,42 @@ left to a lane's judgment except wording.
     - At `passed` a person runs no script: `purlin:test` prints the table and the line
       `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`, and exits 1 when not
       met. `gate_check.py` stays the CI step. Lanes 10A (code) and 10B (docs, skills, deck).
+29. **`strong` counts any audit; only `signed` requires CI; platforms roll up** (added
+    2026-09-26, settled question by question; it replaces decision 5's second sentence and
+    the parts of 28 that made the record CI's alone):
+    - `purlin:audit` writes the record for each feature it audited (`.purlin/records/`, the
+      existing shape, `source` `local` or `ci`) and the briefs, and commits them itself as
+      `purlin: record for <sha7>`; it never pushes. CI's job does the same with source `ci`.
+      At `strong` any source counts. At `signed` only `ci` counts, for the tests and the
+      audit both: the run on the protected branch after the merge is what a signature attaches
+      to, and a local run there is a preview. Sources are `local` and `ci`, nothing else.
+    - **Platforms.** A rule's passed cell carries `platforms: {<os>: {word, source, at}}`,
+      one entry per operating system a counting run covered (test results and records). The
+      cell reads `partial` when its tests passed on some platforms and failed or did not run
+      on others, on any rule; `partial` is not met. A rule tagged for one platform that has
+      not run there reads `not run`. Strength is platform independent. The signed cell
+      carries `signer` and `at`.
+    - **Board columns**: `Spec`, `Rules`, `Proofs`, `Tests` (`<passed> of <rules>`, then
+      `· <k> partial` and `· <k> failing` when not zero), then `Strong` (`<n> of <rules> ·
+      <strength>%`) at `strong` and above, then `Signed` (`<n> of <rules>`) at `signed`. No
+      `Spec status`, no `Strength`, no `Last run` column. Every when, who and platform detail
+      lives in hovers: the `Tests` cell's hover lists each platform with its counts, source and
+      newest run age; the `Signed` cell's hover lists signers and dates; the tiles' hovers
+      carry the same for the project. The rule screen keeps the full lines.
+    - **Record paths split by source**: `.purlin/records/ci/<feature>/` and
+      `.purlin/briefs/ci/<feature>/` are what the branch rule restricts to the CI identity;
+      `.purlin/records/local/<feature>/` and `.purlin/briefs/local/<feature>/` are anyone's.
+      The folder is the source; a file's own `source` field must agree or the file is ignored
+      with a warning.
+    - **A sixth tile and filter, `Partial`**, at every gate, counting rules whose passed cell
+      reads `partial`; the bucket `partial` sits between `failing` and `passed`.
+    - **The `Proofs` cell** counts every proof line and appends `· <k> without a test` in the
+      warn tone when a proof has no tagged test, so a reader sees at a glance whether the
+      tests match the proofs; its hover lists those proofs.
+    - `purlin:audit` ends with `gate strong: <n> of <rules>` or `gate not met: ...` and exits
+      1 when not met, the same shape as `purlin:test`'s line. Lanes 11A (code) and 11B (board,
+      docs, slides).
+
 
 
 
