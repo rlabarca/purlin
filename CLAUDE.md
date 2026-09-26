@@ -45,6 +45,7 @@ Do not bump for clarified wording, a new example or a typo.
 | `spec_format.md` | The 2-section spec, parsed by `sync_status` |
 | `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
 | `proofs_format.md` | The proof files the test plugins emit, read by `sync_status` |
+| `tests_format.md` | The test results `purlin:test` writes and commits, read by `sync_status` |
 | `record_format.md` | The record `purlin:audit` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
 | `signature_format.md` | The signature and the hold `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
 

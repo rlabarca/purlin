@@ -755,9 +755,10 @@ class TestRecords:
         assert purlin_records.runner_slug('Jane.Doe+x@acme.com') == 'jane-doe-x'
         assert purlin_records.runner_slug('') == 'unknown'
 
-    def test_a_record_a_person_committed_is_labelled_developer(self, project):
+    def test_a_record_a_person_committed_is_labelled_local(self, project):
+        """Only the git host's own commit is `ci`; everything else is local."""
         path = project.record([_entry('PROOF-1', 'RULE-1')])
-        assert purlin_records.record_label(project.root, path) == 'developer'
+        assert purlin_records.record_label(project.root, path) == 'local'
 
     def test_an_uncommitted_record_is_local(self, project):
         path = project.record([_entry('PROOF-1', 'RULE-1')], commit_it=False)
@@ -766,11 +767,10 @@ class TestRecords:
 
     @pytest.mark.proof("states", "PROOF-5", "RULE-4")
     def test_what_counts_under_each_gate(self):
-        for label in ('ci', 'developer', 'local'):
+        for label in ('ci', 'local'):
             assert purlin_records.counts_under('passed', label), label
         for gate in ('strong', 'signed'):
             assert purlin_records.counts_under(gate, 'ci'), gate
-            assert not purlin_records.counts_under(gate, 'developer'), gate
             assert not purlin_records.counts_under(gate, 'local'), gate
 
     def test_the_latest_record_per_feature_per_os(self, project):
@@ -853,17 +853,18 @@ class TestThePassedCell:
         assert cell['source'] == 'ci'
 
     @pytest.mark.proof("states", "PROOF-6", "RULE-5", tier="integration")
-    def test_a_developer_record_does_not_count_under_strong(self):
+    def test_a_record_the_git_host_did_not_write_does_not_count_under_strong(
+            self):
         made = Project(gate='strong')
         try:
             made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
                         runner='dev')
             cell = made.cell('RULE-2', 'passed')
             assert cell['word'] == 'not run'
-            assert cell['source'] == 'developer'
+            assert cell['source'] == 'local'
             assert cell['counts'] is False
             assert cell['reasons'] == [
-                'developer record does not count under strong'], cell
+                'local record does not count under strong'], cell
         finally:
             made.close()
 
@@ -1279,8 +1280,8 @@ class TestPayload:
         records = project.payload()['records']['login']
         assert records['linux']['result'] == 'fail'
         assert records['windows']['result'] == 'pass'
-        assert records['linux']['label'] == 'developer'
-        assert records['windows']['label'] == 'developer'
+        assert records['linux']['label'] == 'local'
+        assert records['windows']['label'] == 'local'
 
     @pytest.mark.proof("states", "PROOF-37", "RULE-32", tier="integration")
     def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):

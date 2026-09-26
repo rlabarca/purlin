@@ -1,42 +1,41 @@
-"""Run a project's tagged tests, and on request write the record.
+"""Run a project's tagged tests, write the results, and audit them on request.
 
     purlin_run.py (--feature NAME ... | --all)
-                  (--quick | --record [--commit] [--ci] [--tag NAME] | --remote)
+                  (--quick [--remote] | --audit [--tag NAME] | --ci)
                   [--tier unit|all] [--arm-timeout SECONDS]
                   [--project-root DIR]
 
 `--quick` is what `purlin:test` runs: the plugins run the tagged tests into
-`.purlin/runtime/proofs/` and the table is printed. Seconds, tests only.
+`.purlin/runtime/proofs/`, the run writes `.purlin/tests/<feature>.json` and
+`.purlin/tests.md`, commits both under the person's identity, prints the table
+and ends with `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`.
+It never pushes. `--remote` hands the commit to the git host's runner instead
+and brings back what that runner wrote.
 
-`--record` is what `purlin:audit` runs: the tests, then the breaks, then a
-record. The gate decides whether the breaks run at all: under `passed`
-nothing measures test strength, so the record writes `null` for it.
-`--commit` commits the record under the developer's identity, which is what
-the `passed` gate reads, and never pushes: it prints the push command and
-leaves it to a person. `--ci` writes the briefs first, then commits the
-record and the briefs together through the git host's API, but only on the
-protected branch or a run branch; a pull request run says the records stay
-on the runner. Either way it posts the pull request comment and publishes
-the dashboard. Under `strong` and `signed` only a record CI wrote counts, so
-a run here prints its strength as a preview and says so.
+`--audit` is what `purlin:audit` runs: the tests, then the breaks, the free
+checks and the model review, printed per rule as the strength beside the
+minimum, the findings and the observations. It writes no record, because the
+record is CI's; it says so on its last line. `--tag <name>` writes the
+annotated tag `record/<name>` over the records already in the tree.
 
-`--remote` is what `purlin:audit --remote` runs, and it is the one thing in
-Purlin that pushes: it creates a run branch, waits for the workflow, pulls
-the records that run committed onto this branch, deletes the run branch and
-prints the table.
+`--ci` is the arm the CI job runs: the tagged tests, then at `strong` and
+above the breaks and the briefs and one record per feature, committed through
+the git host's API on the protected branch and on a run branch. At `passed`
+it runs the tests, posts the pull request comment, publishes the dashboard,
+writes no record and commits nothing.
 
-A proof the spec tags `@env` for another operating system is not run here: it
-is listed as `needs <os>` and the rule waits for a record from that runner.
+A proof the spec tags `@env` for another operating system is not run here. The
+run says so in one sentence and names the command that adds a remote runner.
 
 No arm and no engine ever reads this process's stdin, and none may ask git
 for a password: a runner is nobody's terminal, and a command that stops for
 an answer holds the whole run until the job limit cancels it. Every arm also
 gets `--arm-timeout` seconds, 3600 by default; past it the arm is killed,
 what it printed is kept, the run reports the timeout as missing evidence and
-carries on to write the record.
+carries on.
 
-Exit codes: 0 everything asked for happened, 1 a test failed or evidence is
-missing, 2 the command line was wrong.
+Exit codes: 0 everything asked for happened, 1 a test failed, evidence is
+missing or the passed level is not met, 2 the command line was wrong.
 
 The flow is one pass. Resolve the configuration and the frameworks, scan the
 specs, run one arm per framework, then check two things the arms cannot check
@@ -48,9 +47,9 @@ themselves:
 
 Both are silent by default in every test framework there is, and both leave a
 reader looking at a proof file from an earlier run believing it describes this
-one. Under `--record` the run then measures the breaks per spec scope where
-the gate asks for them, hashes the attachments, builds the `purlin-record/2`
-dict and hands it to the record writer.
+one. Under `--ci` the run then measures the breaks per spec scope where the
+gate asks for them, hashes the attachments, builds the `purlin-record/2` dict
+and hands it to the record writer.
 """
 
 import hashlib
@@ -83,8 +82,23 @@ LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
 USAGE = (
     'Usage: purlin_run.py (--feature NAME ... | --all) '
-    '(--quick | --record [--commit] [--ci] [--tag NAME] | --remote) '
+    '(--quick [--remote] | --audit [--tag NAME] | --ci) '
     '[--tier unit|all] [--arm-timeout SECONDS] [--project-root DIR]')
+
+# The one line `purlin:test --remote` gets. A remote runner runs the tests,
+# so the flag belongs to the test and nowhere else.
+REMOTE_IS_A_TEST = ('a remote runner runs the tests, so --remote belongs to '
+                    '--quick. Run: purlin:test --remote')
+
+# What the run says about a proof tagged for an operating system it is not on.
+FOREIGN_PROOF = ('%s %s needs %s; this machine is %s. A remote runner runs '
+                 'it: purlin:init adds one.')
+
+# The last line of a local audit. The record that moves a cell is CI's.
+AUDIT_IS_A_PREVIEW = 'This audit counts only when CI runs it.'
+
+# What a `--ci` run says where the gate asks for no record at all.
+NO_RECORD_AT_PASSED = 'The gate is passed, so this run writes no record.'
 
 TIERS = ('unit', 'all')
 
@@ -118,9 +132,8 @@ class Args(object):
     def __init__(self):
         self.features = []
         self.all = False
-        self.action = None          # 'quick', 'record' or 'remote'
-        self.commit = False
-        self.ci = False
+        self.action = None          # 'quick', 'audit' or 'ci'
+        self.remote = False
         self.tag = None
         self.tier = 'all'
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
@@ -142,12 +155,10 @@ def parse_args(argv):
             args.features.append(argv[index])
         elif token == '--all':
             args.all = True
-        elif token in ('--quick', '--record', '--remote'):
+        elif token in ('--quick', '--audit', '--ci'):
             actions.append(token[2:])
-        elif token == '--commit':
-            args.commit = True
-        elif token == '--ci':
-            args.ci = True
+        elif token == '--remote':
+            args.remote = True
         elif token == '--tag':
             index += 1
             if index >= len(argv):
@@ -187,7 +198,7 @@ def parse_args(argv):
         index += 1
 
     if len(actions) != 1:
-        args.error = 'name exactly one of --quick, --record and --remote'
+        args.error = 'name exactly one of --quick, --audit and --ci'
         return args
     args.action = actions[0]
     if args.all and args.features:
@@ -196,8 +207,11 @@ def parse_args(argv):
     if not args.all and not args.features:
         args.error = 'name at least one --feature, or --all'
         return args
-    if args.action != 'record' and (args.commit or args.ci or args.tag):
-        args.error = '--commit, --ci and --tag belong to --record'
+    if args.remote and args.action != 'quick':
+        args.error = REMOTE_IS_A_TEST
+        return args
+    if args.tag and args.action != 'audit':
+        args.error = '--tag belongs to --audit'
         return args
     return args
 
@@ -518,8 +532,9 @@ def runner_identity(project_root, args):
     which machine. None of it claims who wrote the record, because the label on
     a record comes from the commit and never from the file.
     """
-    kind = 'ci' if args.ci else ('developer' if args.commit else 'local')
-    if args.ci:
+    on_ci = args.action == 'ci'
+    kind = 'ci' if on_ci else 'local'
+    if on_ci:
         slug = 'ci'
     else:
         slug = records_module.runner_slug(_git_email(project_root))
@@ -764,8 +779,8 @@ def main(argv=None):
     for warning in cfg.warnings:
         print(warning)
 
-    if args.action == 'remote':
-        return _remote(project_root, args)
+    if args.remote:
+        return _remote(project_root, args, cfg)
 
     features = specs_module.scan_specs(project_root)
     if args.all:
@@ -847,9 +862,8 @@ def main(argv=None):
           % (', '.join(ran) or 'nothing', len(selected), args.tier))
     if foreign:
         print('')
-        print('Proofs another operating system owns:')
         for feature, proof_id, env in foreign:
-            print('  %s %s: needs %s' % (feature, proof_id, env))
+            print(FOREIGN_PROOF % (feature, proof_id, env, os_name))
 
     exit_code = 0
     if failures:
@@ -858,14 +872,27 @@ def main(argv=None):
         for failure in failures:
             print('Evidence is missing: %s.' % failure)
 
-    if args.action == 'record':
-        record_code = _record(project_root, args, features, selected, index,
-                              ran, log, cfg, arm_logs)
-        exit_code = exit_code or record_code
+    gate_code = 0
+    if args.action == 'quick':
+        gate_line = _write_test_results(project_root, features, selected,
+                                        index, os_name)
+    elif args.action == 'audit':
+        _audit(project_root, args, features, selected, index, cfg)
+    else:
+        # Called whatever the arms found: a run that reports missing evidence
+        # still writes its record, posts its comment and publishes its logs,
+        # which is where a reader finds out what went missing.
+        ci_code = _ci(project_root, args, features, selected, index, ran, log,
+                      cfg, arm_logs)
+        exit_code = exit_code or ci_code
 
     print('')
     print(status_module.sync_status(project_root))
-    return exit_code
+    if args.action == 'quick':
+        print('')
+        print(gate_line[0])
+        gate_code = gate_line[1]
+    return exit_code or gate_code
 
 
 def _write_log(project_root, log):
@@ -882,21 +909,162 @@ def _write_log(project_root, log):
             'path': LOG_PATH.replace(os.sep, '/')}
 
 
-def _record(project_root, args, features, selected, index, plugins, log,
-            cfg=None, arm_logs=None):
-    """The `--record` arm: the breaks, the records, the briefs, the commit.
+def _write_test_results(project_root, features, selected, index, os_name):
+    """The `--quick` arm's own evidence: the two files, and the commit.
+
+    Every feature the run covered gets its own file, and the table is
+    rendered from every file on disk, so a `--feature` run leaves the rows it
+    did not run as they were. The commit is the person's own and nothing here
+    pushes. The answer comes back as `(line, exit code)`.
+    """
+    from results import (build_results, commit_results, gate_line,
+                         project_totals, write_results, write_table)
+
+    commit = head_commit(project_root)
+    when = _now_iso()
+    print('')
+    for name in selected:
+        info = features.get(name) or {}
+        observed = {}
+        tests = {}
+        for proof_id in sorted(info.get('proofs') or {}):
+            for entry in index.get((name, proof_id), []):
+                status = entry.get('status')
+                if observed.get(proof_id) != 'fail':
+                    observed[proof_id] = status
+                if proof_id not in tests and entry.get('test_file'):
+                    tests[proof_id] = '%s::%s' % (entry.get('test_file'),
+                                                  entry.get('test_name', ''))
+        write_results(project_root, build_results(
+            name, info, observed, tests, commit, os_name, when))
+    write_table(project_root)
+    print(commit_results(project_root, commit))
+    return gate_line(*project_totals(project_root))
+
+
+def _audit(project_root, args, features, selected, index, cfg):
+    """The `--audit` arm: how good the tests are, and no record at all.
+
+    The breaks run where the gate asks for them, the free checks and the
+    model review are read off the payload and the brief, and every number is
+    printed rather than written: the record that moves a cell is the one CI
+    writes, and this run says so on its last line.
+    """
+    breaks = (_run_breaks(project_root, args, features, selected, index)
+              if cfg.breaks else _no_breaks(cfg.gate))
+    print('')
+    _audit_report(project_root, selected, breaks)
+    if args.tag:
+        _tag(project_root, args.tag, selected)
+    print(AUDIT_IS_A_PREVIEW)
+    return 0
+
+
+def _audit_report(project_root, selected, breaks):
+    """One block per feature: the strength, then each rule's findings."""
+    try:
+        from brief import (asks_for_a_review, build_brief, rule_entry)
+    except ImportError:
+        print('purlin: the brief writer is not available; the free checks and '
+              'the model review did not run.')
+        return
+    payload = payload_module.build_payload(project_root,
+                                           generated_by='audit')
+    minimum = (payload.get('gate') or {}).get('min_strength') or 0
+    break_features = breaks.get('features') or {}
+    for name in selected:
+        score = ((break_features.get(name) or {}).get('scope_score')
+                 or {}).get('score')
+        print('%s: test strength %s, minimum %s'
+              % (name, 'n/a' if score is None else '%d percent' % score,
+                 minimum or 'n/a'))
+        for rule_id in sorted(_own_rules(payload, name), key=_rule_number):
+            entry = rule_entry(payload, name, rule_id)
+            if entry is None:
+                continue
+            findings = []
+            for proof in entry.get('proofs') or ():
+                for finding in proof.get('findings') or ():
+                    if finding not in findings:
+                        findings.append(finding)
+            observations = []
+            settled = None
+            if asks_for_a_review(payload, entry):
+                built = build_brief(project_root, payload, name, rule_id)
+                if built is not None:
+                    observations = built.get('observations') or []
+                    settled = built.get('settled')
+            print('  %s %s' % (name, rule_id))
+            for finding in findings:
+                print('    finding: %s' % finding)
+            for observation in observations:
+                print('    observation: %s' % observation)
+            if settled is not None:
+                print('    settled: %s' % ('yes' if settled else 'no'))
+            if not findings and not observations and settled is None:
+                print('    nothing to report')
+        print('')
+
+
+def _own_rules(payload, feature):
+    """The rule ids one feature's own spec writes, unsorted."""
+    for entry in payload.get('features') or ():
+        if entry.get('name') != feature:
+            continue
+        return [rule['id'] for rule in entry.get('rules') or ()
+                if rule.get('feature') == feature]
+    return []
+
+
+def _rule_number(rule_id):
+    digits = str(rule_id).rsplit('-', 1)[-1]
+    return int(digits) if digits.isdigit() else 0
+
+
+def _tag(project_root, name, selected):
+    """`record/<name>` over the records already in the tree, if there are any.
+
+    An audit writes no record, so a tag names what CI already committed: the
+    latest record of each feature the run covered. With none there is nothing
+    to vouch for and the tag is not written.
+    """
+    from records import load_records, tag_record
+
+    all_records = load_records(project_root)
+    paths = []
+    for feature in selected:
+        for record in (all_records.get(feature) or {}).values():
+            if record.get('path'):
+                paths.append(record['path'])
+    if not paths:
+        print('No record is in the tree yet, so no tag was written.')
+        return
+    tag_record(project_root, name, sorted(paths))
+    print('Record tag written: record/%s' % name)
+
+
+def _ci(project_root, args, features, selected, index, plugins, log,
+        cfg, arm_logs=None):
+    """The `--ci` arm: the record CI writes, the briefs, the comment.
 
     One record per feature, because that is what the record writer files and
     prunes: `.purlin/records/<feature>/` keeps the newest three per operating
     system, which it cannot do for a file covering several features at once.
+    At `passed` there is no record to write at all: the committed test
+    results are the evidence there, and a person writes those themselves.
     """
-    gate = cfg.gate if cfg else 'passed'
-    breaks = (_run_breaks(project_root, args, features, selected, index)
-              if (cfg is None or cfg.breaks) else _no_breaks(gate))
-    log_digest = _write_log(project_root, log)
+    gate = cfg.gate
+    if gate == 'passed':
+        print('')
+        print(NO_RECORD_AT_PASSED)
+        _ci_publish(project_root, arm_logs)
+        return 0
 
-    from records import (commits_here, commit_records, no_commit_line,
-                         tag_record, write_record)
+    from records import (commit_records, commits_here, no_commit_line,
+                         write_record)
+
+    breaks = _run_breaks(project_root, args, features, selected, index)
+    log_digest = _write_log(project_root, log)
 
     print('')
     paths = []
@@ -912,60 +1080,33 @@ def _record(project_root, args, features, selected, index, plugins, log,
         written.append(record)
         print('Record written: %s' % path)
 
-    if not args.ci and gate != 'passed':
-        _preview(written, gate)
-
     # The briefs are written before the commit, because the commit is what
     # carries them: a brief that exists only on the runner is evidence
     # nobody can read.
-    brief_paths = (_ci_review(project_root, _passed_here(written))
-                   if args.ci else [])
+    brief_paths = _ci_review(project_root, _passed_here(written))
 
-    if args.commit or args.ci:
-        if args.ci and not commits_here(project_root):
-            # A pull request run proves the same thing on a branch nobody
-            # merges from. The comment and the dashboard below still say what
-            # it observed; only the commit waits for the branch that keeps it.
-            print(no_commit_line(project_root))
-        else:
-            identity = 'ci' if args.ci else 'developer'
-            commit_records(project_root, paths + brief_paths, identity,
-                           'purlin: record for %s' % head[:7])
-            print('Record committed as %s.' % identity)
-    if args.tag:
-        tag_record(project_root, args.tag, paths)
-        print('Record tag written: record/%s' % args.tag)
-    if args.ci:
-        _ci_publish(project_root, arm_logs)
+    if not commits_here(project_root):
+        # A pull request run proves the same thing on a branch nobody
+        # merges from. The comment and the dashboard below still say what
+        # it observed; only the commit waits for the branch that keeps it.
+        print(no_commit_line(project_root))
+    else:
+        commit_records(project_root, paths + brief_paths,
+                       'purlin: record for %s' % head[:7])
+        print('Record committed.')
+    _ci_publish(project_root, arm_logs)
     return 0
 
 
 def _no_breaks(gate):
-    """What a gate that asks for no breaks hands the record instead.
+    """What a gate that asks for no breaks hands the audit instead.
 
     Under `passed` nothing measures test strength, so there is no number to
-    write and the record carries `null`. The run says so on its own line,
-    because a blank where a percentage usually sits reads as a missing engine
-    rather than as a setting.
+    print and the run says so on its own line, because a blank where a
+    percentage usually sits reads as a missing engine rather than a setting.
     """
     print('Strength n/a: the gate is %s.' % gate)
     return {'engine': None, 'available': False, 'features': {}}
-
-
-def _preview(records, gate):
-    """What a record written here measures, and why it is not evidence.
-
-    Under `strong` and `signed` only a record CI committed counts, so a run
-    on this machine prints its strength as a preview and says plainly that
-    the cell will not move until CI writes its own.
-    """
-    for record in records:
-        strength = record.get('test_strength')
-        print('Preview: %s test strength %s.'
-              % (record.get('feature') or 'the run',
-                 'n/a' if strength is None else '%d%%' % round(strength)))
-    print('This record does not count under %s: only a CI record counts.'
-          % gate)
 
 
 def _run_breaks(project_root, args, features, selected, index):
@@ -1065,14 +1206,21 @@ def _ci_publish(project_root, arm_logs=None):
           % publish_dashboard(project_root, logs=arm_logs))
 
 
-def _remote(project_root, args):
+def _remote(project_root, args, cfg=None):
+    """`--quick --remote`: let the git host's runner do the run.
+
+    The runner runs the same tests this machine would. At `strong` and above
+    it audits them too and commits the record, which is the evidence that
+    counts there, and the run pulls that commit back. At `passed` there is no
+    record to bring home, so the runner's own summary is what comes back.
+    """
     try:
         from remote import run_remote
     except ImportError:
         print('purlin: --remote is not available in this checkout.',
               file=sys.stderr)
         return 1
-    return run_remote(project_root, args)
+    return run_remote(project_root, args, cfg)
 
 
 if __name__ == '__main__':

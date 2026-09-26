@@ -1,7 +1,7 @@
-"""Write, prune, commit and tag the records an audit run produces.
+"""Write, prune, commit and tag the records a CI run produces.
 
-A record is one audit run's observations for one feature, written as a file
-in the tree and committed:
+A record is one CI run's observations for one feature, written as a file in
+the tree and committed:
 
     .purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
 
@@ -12,18 +12,16 @@ Who committed a record is its source, and that is what decides whether it
 counts: `scripts/mcp/purlin/records.py` reads the source off the last commit
 touching the file. This module is the writing half.
 
-**Two identities write.** A developer's audit commits under the developer's
-own git identity and prints the push command rather than running it, which is
-the source `developer` and counts under the `passed` gate. CI publishes its
-own evidence; a person pushes theirs. CI's audit commits through the git
-host's REST API with no author and no committer field, so GitHub signs the
-commit with its own key and reports `github-actions[bot]` as the committer;
-that is the source `ci`, the only one that counts under `strong` and `signed`.
-Azure DevOps pushes through its Pushes API with the build service's token and
-signs nothing, and its documentation says the committer name is the one to
-read. CI's commit carries more than the record: the briefs the same run wrote
-travel in it, because a brief that never leaves the runner is evidence nobody
-can read.
+**One identity writes.** The record is CI's, and nothing on a person's
+machine writes one: `purlin:test` commits the test results and `purlin:audit`
+commits nothing at all. CI commits through the git host's REST API with no
+author and no committer field, so GitHub signs the commit with its own key
+and reports `github-actions[bot]` as the committer; that is the source `ci`,
+the only one that counts under `strong` and `signed`. Azure DevOps pushes
+through its Pushes API with the build service's token and signs nothing, and
+its documentation says the committer name is the one to read. CI's commit
+carries more than the record: the briefs the same run wrote travel in it,
+because a brief that never leaves the runner is evidence nobody can read.
 
 **Where CI commits.** On the protected branch and on a run branch, and
 nowhere else. A pull request run does the same tests and posts the same
@@ -58,11 +56,11 @@ from purlin import records as reader  # noqa: E402
 RECORDS_DIR = reader.RECORDS_DIR
 # What git is handed. A pathspec takes `/` on every operating system: the
 # `os.path.join` spelling of RECORDS_DIR is `.purlin\\records` on Windows, which
-# matches nothing, so a developer's record commit there staged nothing.
+# matches nothing, so a record commit made there staged nothing.
 RECORDS_PATHSPEC = '.purlin/records'
 RETENTION = reader.RETENTION
 
-# The branch `purlin:audit --remote` creates for one run, and the ref prefix
+# The branch `purlin:test --remote` creates for one run, and the ref prefix
 # a git host's own branch variable carries.
 RUN_BRANCH_PREFIX = 'run/'
 REF_HEADS = 'refs/heads/'
@@ -100,7 +98,7 @@ def load_records(project_root, ref=None):
 
 
 def record_label(project_root, path):
-    """`ci`, `developer` or `local` for one record, read by `purlin.records`."""
+    """`ci` or `local` for one record, read by `purlin.records`."""
     return reader.record_label(project_root, path)
 
 
@@ -217,24 +215,17 @@ def tag_record(project_root, name, record_paths):
 # Committing
 # ---------------------------------------------------------------------------
 
-def commit_records(project_root, paths, identity, message):
-    """Commit the files at `paths` and return the commit sha.
+def commit_records(project_root, paths, message):
+    """Commit the files at `paths` through the git host's API. The sha.
 
-    `identity` is `developer` or `ci`. A developer commit is a plain
-    `git commit` under the developer's own identity, and it never pushes: it
-    prints the push command instead, because nothing pushes on a person's
-    behalf. A ci commit goes through the git host's API so the git host, not
-    Purlin, signs it: CI publishes its own evidence; a person pushes theirs.
-
-    A developer's run hands over record paths alone. A CI run hands over the
-    records plus the briefs it wrote, so one commit carries the evidence and
-    the reports that rest on it; every path is sent whether it sits under
-    `.purlin/records/` or under `.purlin/briefs/`.
+    The commit goes through the API so the git host, not Purlin, signs it:
+    CI publishes its own evidence and a person pushes theirs. One CI run
+    hands over the records plus the briefs it wrote, so one commit carries
+    the evidence and the reports that rest on it; every path is sent whether
+    it sits under `.purlin/records/` or under `.purlin/briefs/`.
     """
     paths = [str(path).replace(os.sep, '/') for path in (paths or [])]
-    if identity == 'ci':
-        return _commit_through_api(project_root, paths, message)
-    return _commit_as_developer(project_root, paths, message)
+    return _commit_through_api(project_root, paths, message)
 
 
 def deleted_records(project_root):
@@ -247,38 +238,6 @@ def deleted_records(project_root):
                   ['ls-files', '--deleted', '--', RECORDS_PATHSPEC], check=False)
     return [line.strip() for line in (listed or '').splitlines()
             if line.strip()]
-
-
-def _commit_as_developer(project_root, paths, message):
-    targets = list(paths or [])
-    if os.path.isdir(os.path.join(project_root, *RECORDS_PATHSPEC.split('/'))):
-        targets.append(RECORDS_PATHSPEC)
-    _git(project_root, ['add', '--all', '--'] + (targets or [RECORDS_PATHSPEC]))
-    staged = _git(project_root, ['diff', '--cached', '--name-only'])
-    if not (staged or '').strip():
-        print('Nothing to commit: the records are already at HEAD.')
-        return ''
-    _git(project_root, ['commit', '-m', message])
-    sha = (_git(project_root, ['rev-parse', 'HEAD']) or '').strip()
-    print(_push_line(project_root))
-    return sha
-
-
-def _push_line(project_root):
-    """What to say after a developer's record commit: the push is theirs.
-
-    Nothing here pushes. The one command that reaches a remote on its own is
-    `purlin:audit --remote`, which a person asked for by name.
-    """
-    remotes = (_git(project_root, ['remote']) or '').split()
-    if not remotes:
-        return 'Record committed.'
-    upstream = _git(project_root,
-                    ['rev-parse', '--abbrev-ref', '--symbolic-full-name',
-                     '@{u}'], check=False)
-    if not (upstream or '').strip():
-        return ('Record committed. Run: git push -u %s HEAD' % remotes[0])
-    return 'Record committed. Run: git push'
 
 
 def _commit_through_api(project_root, paths, message):
@@ -370,12 +329,12 @@ def commits_here(project_root):
     """True when a CI run on this ref writes its records into the tree.
 
     Evidence is decided where it lands. A run on the protected branch, or on
-    a run branch `purlin:audit --remote` created for one run, commits its
+    a run branch `purlin:test --remote` created for one run, commits its
     records and briefs there. A pull request run proves the same thing on a
     branch nobody merges from, so it commits nothing and says so.
 
-    Off a runner the answer is True: a developer's `--commit` is their own
-    commit on their own branch, and no branch rule is being spoken for.
+    Off a runner the answer is True: there is no branch rule to speak for,
+    and a test suite driving the arm asked for this commit by name.
     """
     if not detect_host():
         return True

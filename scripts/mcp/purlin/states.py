@@ -60,7 +60,7 @@ BUCKETS = ('untested', 'failing', 'passed', 'strong', 'signed')
 FLAGS = ('failing', 'stale', 'held', 'manual', 'audit', 'code_changed')
 
 # Where a pass came from, most trusted first.
-SOURCES = ('ci', 'developer', 'local')
+SOURCES = ('ci', 'local')
 
 DRAFTED = 'drafted'
 READY = 'ready'

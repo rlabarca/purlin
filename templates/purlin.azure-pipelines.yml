@@ -1,13 +1,16 @@
-# Purlin runs the audit here, where the evidence it writes is decided.
+# Purlin runs here, where the evidence it writes is decided.
 #
 # purlin:init writes this file for a project whose git host is Azure DevOps.
 # Three things start a run and nothing else does: a pull request, a push to
 # the protected branch, and a push to a `run/*` branch, which is the branch
-# `purlin:audit --remote` creates and deletes around one run.
+# `purlin:test --remote` creates and deletes around one run.
 #
-# A pull request run does the tests, posts the comment and publishes the
-# dashboard, and commits nothing. A run on the protected branch, or on a
-# `run/*` branch, commits its records and briefs there. The build service
+# What a run writes depends on the gate. At `passed` it runs the tagged tests,
+# posts the comment and publishes the dashboard, and writes no record: the
+# test results a person commits are the evidence there. At `strong` and above
+# it audits what it ran and writes one record per feature, plus the briefs. A
+# pull request run commits nothing either way; a run on the protected branch,
+# or on a `run/*` branch, commits them there. The build service
 # writes them, so give it Contribute on `.purlin/records/**` and
 # `.purlin/briefs/**` through branch security and give it nothing else.
 #
@@ -21,7 +24,7 @@
 # The artifact each job publishes carries the job name, so a matrix of two
 # operating systems leaves two artifacts rather than one.
 #
-# The audit job is capped at 90 minutes, which is longer than any suite this
+# The job is capped at 90 minutes, which is longer than any suite this
 # runs and short enough to leave a log worth reading when a run stops for
 # something. The run caps each arm at an hour of its own.
 trigger:
@@ -89,8 +92,8 @@ jobs:
           if [ -f package.json ]; then npm ci; fi
         displayName: Set up the test framework
 
-      - bash: python3 "$PURLIN_ROOT/scripts/run/purlin_run.py" --all --record --ci
-        displayName: Run the audit and write the record
+      - bash: python3 "$PURLIN_ROOT/scripts/run/purlin_run.py" --all --ci
+        displayName: Run the tests and write the evidence
         env:
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 

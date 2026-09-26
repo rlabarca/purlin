@@ -1,8 +1,9 @@
-"""Tests for the pathspec a developer's record commit hands git.
+"""Tests for the pathspec the record commit hands git.
 
 `os.path.join` spells the records directory `.purlin\\records` on Windows, and
-a git pathspec with `\\` matches nothing, so a record commit made there staged
-nothing. These tests stand in for Windows by spelling the directory that way.
+a git pathspec with `\\` matches nothing, so a run there found none of the
+records retention had deleted and the CI commit carried no deletion. These
+tests stand in for Windows by spelling the directory that way.
 """
 
 import os
@@ -40,18 +41,13 @@ def test_git_is_handed_a_forward_slash_pathspec(tmp_path, monkeypatch):
 
     def fake_git(project_root, args, check=True):
         calls.append(list(args))
-        if args[:2] == ['diff', '--cached']:
-            return ''
         return ''
 
     monkeypatch.setattr(records_module, '_git', fake_git)
     records_module.deleted_records(root)
-    records_module.commit_records(
-        root, ['.purlin/records/login/20260916T120000Z-abc1234-ada.json'],
-        'developer', 'purlin: record for abc1234')
     handed = [(args[0], args[args.index('--') + 1:]) for args in calls
-              if args[0] in ('ls-files', 'add')]
-    assert [command for command, _specs in handed] == ['ls-files', 'add'], calls
+              if args[0] == 'ls-files']
+    assert [command for command, _specs in handed] == ['ls-files'], calls
     for command, specs in handed:
         assert specs and not [spec for spec in specs if '\\' in spec], \
             (command, specs)
@@ -59,7 +55,14 @@ def test_git_is_handed_a_forward_slash_pathspec(tmp_path, monkeypatch):
 
 
 @pytest.mark.proof("records", "PROOF-27", "RULE-24", tier="integration")
-def test_the_commit_carries_the_new_record_and_the_deletion(tmp_path):
+def test_the_commit_carries_the_new_record_and_the_deletion(tmp_path,
+                                                            monkeypatch):
+    """The tree the CI commit builds adds the new record and drops the old.
+
+    The commit itself goes through the git host's API, so what is checked
+    here is the tree it assembles: the record it was handed, and a deletion
+    entry for every record retention removed.
+    """
     root = str(tmp_path)
     _git(root, 'init', '-q')
     _git(root, 'config', 'user.email', 'dev@example.com')
@@ -74,10 +77,15 @@ def test_the_commit_carries_the_new_record_and_the_deletion(tmp_path):
     _git(root, 'commit', '-q', '-m', 'records')
     os.remove(os.path.join(root, *old.split('/')))
     _write(root, new)
+
     assert records_module.deleted_records(root) == [old]
-    sha = records_module.commit_records(root, [new], 'developer',
-                                        'purlin: record for def5678')
-    assert sha
-    changed = _git(root, 'show', '--no-renames', '--name-status', '--format=', sha).split('\n')
-    assert 'D\t' + old in changed, changed
-    assert 'A\t' + new in changed, changed
+
+    entries = [records_module._tree_entry(root, 'a-token', 'base', new)]
+    for rel in records_module.deleted_records(root):
+        entry = {'path': rel, 'type': 'blob', 'sha': None}
+        entry[records_module._PERM_KEY] = records_module._FILE_PERM
+        entries.append(entry)
+    by_path = {entry['path']: entry for entry in entries}
+    assert sorted(by_path) == sorted([new, old])
+    assert by_path[new].get('content') == '{}\n'
+    assert by_path[old].get('sha') is None

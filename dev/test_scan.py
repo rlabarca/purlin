@@ -165,7 +165,7 @@ def test_the_rollup_names_the_newest_record_and_its_label(remote):
     text = scan_module.scan(bare, 'main')
 
     assert rel in text
-    assert 'developer' in text, 'the label a person\'s commit earns'
+    assert 'local' in text, 'the label a commit the git host did not make earns'
     assert '0 commits behind the latest record.' in text
 
 

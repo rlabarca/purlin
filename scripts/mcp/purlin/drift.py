@@ -203,8 +203,8 @@ def pin_report(project_root, features, network=True, cache=None):
 def resolve_since(project_root, since_arg=None):
     """`(ref, description)`, or `(None, json_text)` when there is nothing to measure.
 
-    Without an argument the anchor is the most recent record CI or a
-    developer committed, then the most recent tag, then the commit that added
+    Without an argument the anchor is the most recent record in the tree,
+    then the most recent tag, then the commit that added
     `.purlin/config.json`. A project with no record and a long history gets a
     recommendation rather than a diff of everything.
     """

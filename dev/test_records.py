@@ -11,16 +11,14 @@ What each group proves:
 *retention*   three records per feature per operating system survive, another
               operating system's records are untouched, and a record an
               annotated `record/<name>` tag names is kept for ever
-*developer*   a plain commit under the developer's identity, which never
-              pushes and prints the push command for the person to run
 *ci*          one tree request carrying every file's text, then commit, then
               ref update, with no author and no committer field, retried
               when the branch moved and paused when the git host asks
 *sources*     `ci` for a commit the git host made, which on GitHub is the
               committer `noreply@github.com` with the author
               `github-actions[bot]` and a signature that does not
-              contradict it, `developer` for a person's, `local` for a
-              file not committed
+              contradict it, and `local` for everything else: a file nobody
+              committed, and a file somebody else committed
 *publishing*  what a CI run puts where anyone else can read it: the pull
               request comment and the dashboard artifact
 *remote*      `--remote` hands the run to the git host and brings it back
@@ -118,6 +116,17 @@ def put_record(root, feature, name, body=None):
     with open(path, 'w', encoding='utf-8') as handle:
         json.dump(body or record(feature), handle)
     return '%s/%s/%s' % (reader.RECORDS_DIR.replace(os.sep, '/'), feature, name)
+
+
+def _commit_by_hand(root, message):
+    """A person's own commit of whatever is in the tree.
+
+    Nothing in Purlin makes one of these over a record any more: the record
+    is CI's. A test still needs one, because the reader has to read a record
+    somebody committed by hand as `local`.
+    """
+    git(root, 'add', '-A')
+    git(root, 'commit', '--quiet', '-m', message)
 
 
 def names(root, feature):
@@ -388,7 +397,7 @@ def test_tagged_paths_is_empty_outside_a_repository(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# The developer's commit
+# The remote a run branch is pushed to
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
@@ -398,69 +407,6 @@ def with_remote(tmp_path, project):
     git(project, 'remote', 'add', 'origin', bare)
     git(project, 'push', '--quiet', '-u', 'origin', 'main')
     return bare
-
-
-@pytest.mark.proof("records", "PROOF-4", "RULE-4")
-def test_a_developer_commit_lands_and_prints_the_push(project, with_remote,
-                                                      capsys):
-    path = records_module.write_record(project, record(), 'ada@example.com')
-    sha = records_module.commit_records(
-        project, [path], 'developer', 'purlin: record for 4f1c2ab')
-
-    assert len(sha) == 40
-    subject = git(project, 'log', '-1', '--format=%s').stdout.strip()
-    assert subject == 'purlin: record for 4f1c2ab'
-    assert 'Record committed. Run: git push' in capsys.readouterr().out
-    listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout
-    assert path not in listed, 'the record was pushed without being asked'
-
-
-@pytest.mark.proof("records", "PROOF-4", "RULE-4")
-def test_a_developer_commit_carries_the_deletions_retention_made(project):
-    old = [put_record(project, 'greeting',
-                      '2026091%dT120000Z-4f1c2ab-ada.json' % day)
-           for day in range(5)]
-    records_module.commit_records(project, old, 'developer', 'purlin: records')
-    fresh = records_module.write_record(project, record(), 'ada@example.com')
-    records_module.commit_records(project, [fresh], 'developer',
-                                  'purlin: record')
-
-    listed = git(project, 'ls-tree', '-r', '--name-only', 'HEAD').stdout
-    assert fresh in listed
-    assert old[0] not in listed, 'a pruned record stayed in the commit'
-
-
-@pytest.mark.proof("records", "PROOF-4", "RULE-4")
-def test_a_developer_commit_without_an_upstream_names_the_remote(project,
-                                                                 capsys):
-    git(project, 'remote', 'add', 'origin', 'https://example.invalid/x.git')
-    path = records_module.write_record(project, record(), 'ada@example.com')
-    sha = records_module.commit_records(project, [path], 'developer',
-                                        'purlin: record')
-    printed = capsys.readouterr().out
-    assert len(sha) == 40
-    assert 'Record committed. Run: git push -u origin HEAD' in printed
-
-
-@pytest.mark.proof("records", "PROOF-4", "RULE-4")
-def test_a_developer_commit_without_a_remote_asks_for_no_push(project, capsys):
-    path = records_module.write_record(project, record(), 'ada@example.com')
-    records_module.commit_records(project, [path], 'developer',
-                                  'purlin: record')
-    printed = capsys.readouterr().out
-    assert 'Record committed.' in printed
-    assert 'git push' not in printed
-
-
-@pytest.mark.proof("records", "PROOF-4", "RULE-4")
-def test_nothing_to_commit_is_said_and_not_an_error(project, capsys):
-    path = records_module.write_record(project, record(), 'ada@example.com')
-    records_module.commit_records(project, [path], 'developer', 'purlin: one')
-    capsys.readouterr()
-    sha = records_module.commit_records(project, [path], 'developer',
-                                        'purlin: again')
-    assert sha == ''
-    assert 'Nothing to commit' in capsys.readouterr().out
 
 
 # ---------------------------------------------------------------------------
@@ -480,7 +426,7 @@ def test_the_ci_commit_is_one_tree_then_commit_then_ref(project, github_env,
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci', 'linux')
 
-    sha = records_module.commit_records(project, [path], 'ci',
+    sha = records_module.commit_records(project, [path],
                                         'purlin: record for 4f1c2ab')
 
     assert sha == 'c' * 40
@@ -502,7 +448,7 @@ def test_the_ci_commit_sends_no_author_and_no_committer(project, github_env,
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    records_module.commit_records(project, [path], 'ci', 'purlin: record')
+    records_module.commit_records(project, [path], 'purlin: record')
 
     body = host.body_for('/git/commits', method='POST')
     assert set(body) == {'message', 'tree', 'parents'}
@@ -517,7 +463,7 @@ def test_the_tree_entry_carries_the_file_and_its_permission(project,
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    records_module.commit_records(project, [path], 'ci', 'purlin: record')
+    records_module.commit_records(project, [path], 'purlin: record')
 
     tree = host.body_for('/git/trees', method='POST')
     entry = tree['tree'][0]
@@ -550,7 +496,7 @@ def test_the_ci_commit_carries_a_path_outside_the_records_directory(
                   encoding='utf-8') as handle:
             handle.write(text)
 
-    records_module.commit_records(project, [path, first, second], 'ci',
+    records_module.commit_records(project, [path, first, second],
                                   'purlin: record for 4f1c2ab')
 
     tree = host.body_for('/git/trees', method='POST')
@@ -582,7 +528,7 @@ def test_a_file_that_is_not_text_gets_a_blob_of_its_own(project, github_env,
     with open(os.path.join(project, *capture.split('/')), 'wb') as handle:
         handle.write(b'\x89PNG\r\n\x1a\n\xff\xfe')
 
-    records_module.commit_records(project, [path, capture], 'ci',
+    records_module.commit_records(project, [path, capture],
                                   'purlin: record for 4f1c2ab')
 
     blobs = [body for _verb, url, body in host.calls if url.endswith('/blobs')]
@@ -639,7 +585,7 @@ def test_a_refusal_that_asks_for_a_pause_is_waited_out_and_retried(
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    sha = records_module.commit_records(project, [path], 'ci',
+    sha = records_module.commit_records(project, [path],
                                         'purlin: record')
 
     assert sha == 'c' * 40
@@ -657,7 +603,7 @@ def test_the_reset_time_is_read_when_there_is_no_retry_after(
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    records_module.commit_records(project, [path], 'ci', 'purlin: record')
+    records_module.commit_records(project, [path], 'purlin: record')
 
     assert len(slept) == 1
     assert 25 <= slept[0] <= 30, slept
@@ -670,7 +616,7 @@ def test_a_pause_longer_than_the_cap_is_shortened_to_it(
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    records_module.commit_records(project, [path], 'ci', 'purlin: record')
+    records_module.commit_records(project, [path], 'purlin: record')
 
     assert slept == [float(records_module.PAUSE_CAP_SECONDS)]
     assert records_module.PAUSE_CAP_SECONDS == 120
@@ -684,7 +630,7 @@ def test_a_fourth_refusal_is_raised_with_its_status(project, github_env,
     path = records_module.write_record(project, record(), 'ci')
 
     with pytest.raises(urllib.error.HTTPError) as raised:
-        records_module.commit_records(project, [path], 'ci', 'purlin: record')
+        records_module.commit_records(project, [path], 'purlin: record')
 
     assert raised.value.code == 403
     assert '403' in str(raised.value)
@@ -701,7 +647,7 @@ def test_a_refusal_that_asks_for_no_pause_is_raised_at_once(
     path = records_module.write_record(project, record(), 'ci')
 
     with pytest.raises(urllib.error.HTTPError) as raised:
-        records_module.commit_records(project, [path], 'ci', 'purlin: record')
+        records_module.commit_records(project, [path], 'purlin: record')
 
     assert raised.value.code == 403
     assert host.trees == 1, 'a refusal that asked for no pause was retried'
@@ -716,7 +662,7 @@ def test_a_429_asking_for_a_pause_is_waited_out_too(project, github_env,
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    sha = records_module.commit_records(project, [path], 'ci',
+    sha = records_module.commit_records(project, [path],
                                         'purlin: record')
 
     assert sha == 'c' * 40
@@ -730,7 +676,7 @@ def test_the_ref_update_is_retried_when_the_branch_moved(project, github_env,
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    sha = records_module.commit_records(project, [path], 'ci',
+    sha = records_module.commit_records(project, [path],
                                         'purlin: record')
 
     assert sha == 'c' * 40
@@ -746,7 +692,7 @@ def test_the_retry_gives_up_and_raises(project, github_env, monkeypatch):
     path = records_module.write_record(project, record(), 'ci')
 
     with pytest.raises(urllib.error.HTTPError) as raised:
-        records_module.commit_records(project, [path], 'ci', 'purlin: record')
+        records_module.commit_records(project, [path], 'purlin: record')
 
     assert raised.value.code == 422
     assert host.patched == records_module.REF_RETRIES
@@ -767,7 +713,7 @@ def test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once(
     path = records_module.write_record(project, record(), 'ci')
 
     with pytest.raises(urllib.error.HTTPError) as raised:
-        records_module.commit_records(project, [path], 'ci', 'purlin: record')
+        records_module.commit_records(project, [path], 'purlin: record')
 
     assert raised.value.code == 403
     assert host.patched == 1, 'a refusal that is not a race was retried'
@@ -785,7 +731,7 @@ def test_a_forked_pull_request_writes_no_commit(project, github_env,
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    sha = records_module.commit_records(project, [path], 'ci',
+    sha = records_module.commit_records(project, [path],
                                         'purlin: record')
 
     assert sha == ''
@@ -801,7 +747,7 @@ def test_no_token_writes_no_commit(project, monkeypatch, capsys):
     _no_workspace(monkeypatch)
     path = records_module.write_record(project, record(), 'ci')
 
-    assert records_module.commit_records(project, [path], 'ci', 'x') == ''
+    assert records_module.commit_records(project, [path], 'x') == ''
     assert 'GITHUB_TOKEN' in capsys.readouterr().out
 
 
@@ -812,7 +758,7 @@ def test_the_azure_push_sends_the_ref_and_the_content(project, azure_env,
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    sha = records_module.commit_records(project, [path], 'ci',
+    sha = records_module.commit_records(project, [path],
                                         'purlin: record')
 
     assert sha == 'c' * 40
@@ -832,7 +778,7 @@ def test_the_azure_push_retries_when_the_object_id_is_stale(project, azure_env,
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    sha = records_module.commit_records(project, [path], 'ci',
+    sha = records_module.commit_records(project, [path],
                                         'purlin: record')
 
     assert sha == 'c' * 40
@@ -864,11 +810,10 @@ def test_a_file_that_is_not_committed_is_local(project):
 
 
 @pytest.mark.proof("records", "PROOF-9", "RULE-9")
-def test_a_persons_commit_is_developer(project):
+def test_a_persons_commit_is_local(project):
     path = records_module.write_record(project, record(), 'ada@example.com')
-    records_module.commit_records(project, [path], 'developer',
-                                  'purlin: record')
-    assert records_module.record_label(project, path) == 'developer'
+    _commit_by_hand(project, 'purlin: record')
+    assert records_module.record_label(project, path) == 'local'
 
 
 @pytest.mark.proof("records", "PROOF-9", "RULE-9")
@@ -1037,7 +982,7 @@ def test_the_web_flow_committer_is_ci_when_the_machine_has_no_gpg(project,
 
 
 @pytest.mark.proof("records", "PROOF-9", "RULE-9")
-def test_the_web_flow_committer_with_no_signature_and_gpg_is_a_person(
+def test_the_web_flow_committer_with_no_signature_and_gpg_is_local(
         project, monkeypatch):
     """With gpg installed, `N` means the commit really carries no signature.
 
@@ -1050,19 +995,18 @@ def test_the_web_flow_committer_with_no_signature_and_gpg_is_a_person(
     path = records_module.write_record(project, record(), 'ci')
     assert _web_flow_commit(project).returncode == 0
     assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')
-    assert records_module.record_label(project, path) == 'developer'
+    assert records_module.record_label(project, path) == 'local'
 
 
 @pytest.mark.proof("records", "PROOF-9", "RULE-9")
 def test_the_reader_is_reachable_through_this_module(project):
     path = records_module.write_record(project, record(), 'ada@example.com')
-    records_module.commit_records(project, [path], 'developer', 'purlin: r')
+    _commit_by_hand(project, 'purlin: r')
     loaded = records_module.load_records(project)
     assert list(loaded) == ['greeting']
-    entry = loaded['greeting'][None]
-    assert entry['path'] == path
-    assert entry['label'] == 'developer'
-    assert entry['commit7'] == '4f1c2ab'
+    assert loaded['greeting'][None]['path'] == path
+    assert loaded['greeting'][None]['label'] == 'local'
+    assert loaded['greeting'][None]['commit7'] == '4f1c2ab'
 
 
 @pytest.mark.proof("records", "PROOF-9", "RULE-9")
@@ -1101,7 +1045,7 @@ def test_records_read_at_a_ref_come_out_of_git(project):
     assert sorted(at_parent) == ['greeting'], at_parent
     entry = at_parent['greeting'][None]
     assert entry['test_strength'] == 71
-    assert entry['label'] == 'developer'
+    assert entry['label'] == 'local'
     assert entry['path'] == greeting
 
     at_head = records_module.load_records(project, 'HEAD')
@@ -1269,7 +1213,7 @@ def test_a_project_that_is_not_the_workspace_commits_nothing(
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
 
-    assert records_module.commit_records(project, [path], 'ci',
+    assert records_module.commit_records(project, [path],
                                          'purlin: record for 4f1c2ab') == ''
     assert host.urls() == []
     assert 'no record was committed' in capsys.readouterr().out
@@ -1547,13 +1491,23 @@ PULL = ['git', 'pull', '--ff-only', 'origin', RUN_BRANCH]
 DELETE = ['git', 'push', 'origin', '--delete', RUN_BRANCH]
 
 
+class _Gate(object):
+    """The one field `run_remote` reads off the resolved gate."""
+
+    def __init__(self, gate):
+        self.gate = gate
+
+
+STRONG = _Gate('strong')
+
+
 @pytest.mark.proof("records", "PROOF-24", "RULE-12")
 def test_the_github_branch_pushes_watches_pulls_and_deletes(project,
                                                             remote_run,
                                                             capsys):
     fake = remote_run()
 
-    assert remote_module.run_remote(project) == 0
+    assert remote_module.run_remote(project, cfg=STRONG) == 0
     assert fake.started == [PUSH, WATCH, PULL, DELETE]
     assert fake.cwds == [project] * 4
     printed = capsys.readouterr().out
@@ -1568,7 +1522,7 @@ def test_the_two_pushes_carry_the_marker_the_hook_reads(project, remote_run):
     """The remote run is the one push the pre-push hook lets an agent make."""
     fake = remote_run()
 
-    remote_module.run_remote(project)
+    remote_module.run_remote(project, cfg=STRONG)
     marked = dict(zip([tuple(argv) for argv in fake.started], fake.marked))
     assert marked[tuple(PUSH)] is True
     assert marked[tuple(DELETE)] is True
@@ -1581,11 +1535,22 @@ def test_a_red_run_still_pulls_and_prints_the_table(project, remote_run,
                                                     capsys):
     fake = remote_run(watch=1)
 
-    assert remote_module.run_remote(project) == 1
+    assert remote_module.run_remote(project, cfg=STRONG) == 1
     assert fake.started == [PUSH, WATCH, PULL, DELETE]
     printed = capsys.readouterr().out
     assert 'The run finished red. The table below is what came back.' in printed
     assert printed.rstrip().endswith('the status table')
+
+
+@pytest.mark.proof("records", "PROOF-24", "RULE-12")
+def test_at_passed_the_runner_wrote_no_record_so_nothing_is_pulled(
+        project, remote_run, capsys):
+    """There is nothing to bring home at `passed`: CI committed nothing."""
+    fake = remote_run()
+
+    assert remote_module.run_remote(project) == 0
+    assert fake.started == [PUSH, WATCH, DELETE]
+    assert 'the runner wrote no record' in capsys.readouterr().out
 
 
 @pytest.mark.proof("records", "PROOF-24", "RULE-12")

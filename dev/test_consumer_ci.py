@@ -182,12 +182,12 @@ def test_the_workflow_names_the_record_step_and_the_artifact():
     names = step_names(jobs.splitlines())
     assert 'actions/checkout@v4' in names
     assert 'Locate Purlin' in names
-    assert 'Run the audit and write the record' in names
+    assert 'Run the tests and write the evidence' in names
     assert 'actions/upload-artifact@v4' in names
     assert names[-1] == 'Check the gate', (
         'the gate check is the last word of every run')
     assert 'name: purlin-dashboard-${{ matrix.os }}' in jobs
-    assert 'scripts/run/purlin_run.py" --all --record --ci' in jobs
+    assert 'scripts/run/purlin_run.py" --all --ci' in jobs
     assert 'scripts/ci/gate_check.py" --check' in jobs
 
 

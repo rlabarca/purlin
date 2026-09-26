@@ -1,11 +1,16 @@
-> Format-Version: 2
+> Format-Version: 3
 
 # Record Format
 
-A record is one audit run's observations for one feature, written as a file in
-the tree and committed. A record is what the passed cell of a rule reads, and
-the git history of `.purlin/records/` is the log of what ran and when. Nobody
-signs a record.
+A record is one CI run's observations for one feature, written as a file in
+the tree and committed. **The record is CI's.** The CI job runs the tagged
+tests, then at `strong` and above the audit, and writes one record per feature
+on the protected branch and on a run branch. Nothing on a person's machine
+writes a record: `purlin:test` commits the test results, described in
+`references/formats/tests_format.md`, and `purlin:audit` commits nothing.
+
+A record is what the strong cell of a rule reads, and the git history of
+`.purlin/records/` is the log of what ran and when. Nobody signs a record.
 
 ## File name
 
@@ -18,7 +23,7 @@ signs a record.
 | `<feature>` | the spec's name, matching `specs/<category>/<feature>.md` |
 | `<timestamp>` | ISO 8601 UTC without separators, `20260913T120000Z` |
 | `<commit7>` | the first seven characters of the commit the run observed |
-| `<runner>` | `ci`, or the developer's git email local part, lowercased, every non-alphanumeric character replaced by `-` |
+| `<runner>` | `ci`, or a git email's local part, lowercased, every non-alphanumeric character replaced by `-` |
 | `<os>` | `windows`, `macos` or `linux`, and absent when the run was not one job of a matrix |
 
 One run writes one file per feature. Adding a file never conflicts, so two runs
@@ -70,7 +75,7 @@ REQUIRED: `schema_version`, `feature`, `commit`, `timestamp`, `runner`,
 | `feature` | string | the spec this run observed |
 | `commit` | string | the full sha of the commit the run observed |
 | `timestamp` | string | ISO 8601 UTC with `Z`, matching the file name |
-| `runner` | string | `ci` or the developer's runner slug, matching the file name |
+| `runner` | string | `ci` or a runner slug, matching the file name |
 | `os` | string or null | the operating system of this matrix job, or null |
 | `gate` | string | `passed`, `strong` or `signed`, the gate in force at the run |
 | `test_strength` | integer or null | of the deliberate breaks made to the code, the percentage the tests caught; null when no engine measured it, which is every run under `passed`, where the breaks do not run at all |
@@ -78,7 +83,7 @@ REQUIRED: `schema_version`, `feature`, `commit`, `timestamp`, `runner`,
 | `environment` | object | where the run happened, described below |
 | `proofs` | array | one entry per proof the run observed |
 
-A record may carry more than this. An audit run also writes the detail it
+A record may carry more than this. A CI run also writes the detail it
 gathered on the way: `features` (the per-rule result, tests and attachments),
 `plugins`, `missing`, `log` and `dirty`. Those are OPTIONAL and no reader
 depends on them, so a record written with the fields above alone is a complete
@@ -90,14 +95,14 @@ The `environment` object, and every field in it, is OPTIONAL:
 |---|---|---|
 | `os` | string | `windows`, `macos` or `linux`, matching the file name's `<os>` |
 | `id` | string | a short name for the machine's shape, such as `darwin-arm64` |
-| `kind` | string | `ci`, `developer` or `local`, what the run called itself |
+| `kind` | string | `ci` or `local`, what the run called itself |
 | `job` | string or null | the CI job the run was part of, or null off CI |
 | `host` | string or null | the runner or machine name |
 | `engines` | array | the break engines the run used, empty when none measured |
 
 `kind` is what the run called itself and is never the source. The source comes
-from the commit, as the next section says: a record claiming `kind` `ci` that a
-person committed is a `developer` record.
+from the commit, as the next section says: a record claiming `kind` `ci` that
+somebody other than the git host committed is a `local` record.
 
 Each `proofs` entry:
 
@@ -120,8 +125,10 @@ cell carries it:
 | Source | What git shows |
 |---|---|
 | `ci` | the git host made the commit. On GitHub the committer is `GitHub <noreply@github.com>`, its web identity, and the author is `github-actions[bot]`, because a commit made through the Git Data API with the Actions token and no author or committer field is attributed that way; GitHub signs it with its own key. On Azure DevOps the committer is the build service and no signature exists, which is what Azure DevOps documents |
-| `developer` | a person committed it |
-| `local` | it is not committed at all |
+| `local` | anything else: a file nobody committed, and a file somebody other than the git host committed. Neither is the git host's evidence |
+
+`ci` is the only source a record is written with, because CI is the only thing
+that writes one.
 
 The identity decides and the signature confirms. `git log --format=%G?`
 prints `G` or `U` for a signature this machine checked, `B` for one that
@@ -132,23 +139,24 @@ commit, `N` refuses it only when gpg is installed, and every other answer
 identity to decide. Requiring `G` would throw away every record CI wrote,
 because almost no checkout holds the git host's signing key.
 
-The gate decides which sources count. `passed` counts a `ci`, a `developer` or
-a `local` record. `strong` and `signed` count a `ci` record alone, which the
-git host's file-path rule on `.purlin/records/**` enforces on the other side.
-A record the gate does not count is still read: the passed cell names its
-source and says `<source> record does not count under <gate>`.
+The gate decides which sources count. `passed` counts a `ci` record and a
+`local` one. `strong` and `signed` count a `ci` record alone, which the git
+host's file-path rule on `.purlin/records/**` enforces on the other side. A
+record the gate does not count is still read: the passed cell names its source
+and says `<source> record does not count under <gate>`.
 
 ## What the record commit carries
 
-An audit run's commit carries the records it wrote and, under `--ci`, the
-briefs the same run wrote under `.purlin/briefs/<feature>/`. Its subject is
-`purlin: record for <commit7>`. It carries no signature file: a signature is a
-named person's attestation, and CI writes none, ever.
+The CI run's commit carries the records it wrote and the briefs the same run
+wrote under `.purlin/briefs/<feature>/`. Its subject is `purlin: record for
+<commit7>`. It carries no signature file: a signature is a named person's
+attestation, and CI writes none, ever. It carries no test results either:
+those are the person's own and they commit them themselves.
 
 ## Retention
 
-A feature keeps the newest three records per operating system. An audit run
-prunes the rest as it writes, so a matrix of three operating systems keeps nine
+A feature keeps the newest three records per operating system. The run prunes
+the rest as it writes, so a matrix of three operating systems keeps nine
 records per feature and no more.
 
 A record any annotated `record/<name>` tag names in its message is kept for

@@ -175,13 +175,13 @@ class TestTheStrongGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-7", "RULE-3", tier="integration")
-    def test_a_developer_record_does_not_count(self):
+    def test_a_record_the_git_host_did_not_write_does_not_count(self):
         made = project_at('strong', by_ci=False)
         try:
             code, output = run(made)
             assert code == 1
             assert 'Not passed (2):' in output
-            assert 'developer record does not count under strong' in output
+            assert 'local record does not count under strong' in output
         finally:
             made.close()
 

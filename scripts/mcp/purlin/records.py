@@ -1,14 +1,14 @@
-"""Read the records a verify run commits.
+"""Read the records a CI run commits.
 
-A record is one verify run's observations for one feature, written as a file
-in the tree and committed:
+A record is one CI run's observations for one feature, written as a file in
+the tree and committed:
 
     .purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
 
 `timestamp` is ISO 8601 UTC without separators (`20260913T120000Z`),
 `commit7` the first seven characters of the commit the run observed, `runner`
-the slug `ci` or the developer's git email local part (lowercased, every
-non-alphanumeric character replaced by `-`), and `os` the operating system
+the slug `ci` or a git email's local part (lowercased, every non-alphanumeric
+character replaced by `-`), and `os` the operating system
 when the run was one job of a matrix. Adding files never conflicts, so two
 runs never collide and the log of every run is the git history of the
 folder.
@@ -16,7 +16,7 @@ folder.
 The file:
 
     {
-      "schema_version": 1,
+      "schema_version": 2,
       "feature": "login",
       "commit": "<full sha>",
       "timestamp": "2026-09-13T12:00:00Z",
@@ -35,11 +35,12 @@ The file:
 **The label comes from git, not from the file.** A file can claim anything.
 The last commit touching a record is what decides whether it counts:
 
-`ci`         the git host made the commit: on GitHub the committer email is
-             `noreply@github.com` and the author is `github-actions[bot]`,
-             on Azure DevOps the committer is the build service
-`developer`  a person committed it
-`local`      it is not committed at all
+`ci`     the git host made the commit: on GitHub the committer email is
+         `noreply@github.com` and the author is `github-actions[bot]`, on
+         Azure DevOps the committer is the build service
+`local`  anything else: a file nobody committed, and a file somebody other
+         than the git host committed. Neither is the git host's evidence, and
+         above `passed` only the git host's counts
 
 Under `passed` a record counts whatever wrote it, because the question there
 is only whether the tests pass. Under `strong` and `signed` only a ci record
@@ -77,7 +78,7 @@ _GITHUB_COMMITTERS = ('github-actions[bot]', 'github-actions')
 _GITHUB_COMMITTER_EMAIL = 'noreply@github.com'
 _GITHUB_ACTIONS_AUTHOR = 'github-actions[bot]'
 
-# How many records a feature keeps per operating system before verify prunes.
+# How many records a feature keeps per operating system before a run prunes.
 RETENTION = 3
 
 
@@ -152,7 +153,7 @@ def carries_a_signature(project_root, commit):
 
 
 def record_label(project_root, rel_path):
-    """`ci`, `developer` or `local` for one record, read from git.
+    """`ci` or `local` for one record, read from git.
 
     `git log -1 --format='%G? %cn %ce %an %H'` over the record's path names
     the signature status, the committer name and email, the author name and
@@ -186,22 +187,23 @@ def record_label(project_root, rel_path):
                       or (committer_email == _GITHUB_COMMITTER_EMAIL
                           and author == _GITHUB_ACTIONS_AUTHOR))
     if not made_by_github:
-        return 'developer'
+        return 'local'
     signed = (signature == 'N'
               and carries_a_signature(project_root, commit))
     if signature_confirms(signature, signed):
         return 'ci'
-    return 'developer'
+    return 'local'
 
 
 def counts_under(gate, label):
     """True when a record with `label` counts under `gate`.
 
-    `passed` counts every label, because the developer's own run is the
-    evidence there. `strong` and `signed` count a ci record only.
+    `passed` counts both labels, because the question there is only whether
+    the tests pass and a person's own run answers it. `strong` and `signed`
+    count a ci record alone.
     """
     if gate == 'passed':
-        return label in ('ci', 'developer', 'local')
+        return label in ('ci', 'local')
     return label == 'ci'
 
 

@@ -81,4 +81,4 @@
 - PROOF-42 (RULE-27): Write the brief for `RULE-1`, then write a copy whose `generated_at` and `record` differ; verify the JSON on disk is byte for byte the first write @integration
 - PROOF-43 (RULE-27): Write the brief for `RULE-1`, then write a copy carrying the observation `PROOF-1 never names the token.`; verify the JSON on disk now carries that sentence and reads settled @integration
 - PROOF-44 (RULE-15): Build the model prompt for a high-risk rule; verify it holds `settled: yes`, `one line per observation`, `Do not recommend a change` and `do not grade the rule` @integration
-- PROOF-45 (RULE-21): Write briefs with no list named in a project at gate `strong` whose only record a person committed; verify nothing is written, because a developer record does not count there @integration
+- PROOF-45 (RULE-21): Write briefs with no list named in a project at gate `strong` whose only record a person committed; verify nothing is written, because a record a person committed does not count there @integration

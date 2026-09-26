@@ -1,17 +1,22 @@
-"""`purlin:audit --remote`: let CI do the run and bring its records back.
+"""`purlin:test --remote`: let the git host's runner do the run.
 
 A proof tagged `@env(windows)` cannot be proven on a Mac. Rather than ask
 anyone to own a second machine, `--remote` hands the commit to the git host's
 runner and brings back what that runner wrote. The evidence is the git host's,
 because the commit is the git host's.
 
+What comes back depends on the gate. At `strong` and above the runner audits
+what it ran and commits the record, so the run pulls that commit onto this
+branch. At `passed` there is no record to bring home: the runner's own
+summary is what the run prints, and the test results in the tree are still
+the ones a person committed here.
+
 **This is the one push Purlin makes.** Everywhere else a push is a person's
-act: a developer's record commit prints `git push` and stops. Here the push is
-the point of the command, and it goes to a branch of its own,
-`run/<branch>-<sha7>`, which this module creates, waits on, pulls back from
-and deletes. The working branch is never pushed, so nothing reaches a pull
-request that a person did not send there, and the pre-push hook is told this
-is the sanctioned push through `PURLIN_REMOTE_RUN=1`.
+act. Here the push is the point of the command, and it goes to a branch of
+its own, `run/<branch>-<sha7>`, which this module creates, waits on, pulls
+back from and deletes. The working branch is never pushed, so nothing reaches
+a pull request that a person did not send there, and the pre-push hook is
+told this is the sanctioned push through `PURLIN_REMOTE_RUN=1`.
 
 A detached head has no branch to name and a dirty tree would run the workflow
 against something other than what is on disk, so both are refused before
@@ -49,9 +54,10 @@ def run_branch_name(project_root, branch):
     return '%s%s-%s' % (RUN_BRANCH_PREFIX, branch, sha[:7])
 
 
-def run_remote(project_root, args=None):
+def run_remote(project_root, args=None, cfg=None):
     """Push a run branch, wait for CI, pull it back, delete it. Exit code."""
     host = _host(project_root, args)
+    gate = getattr(cfg, 'gate', None) or 'passed'
     branch = _branch(project_root)
     if not branch or branch == 'HEAD':
         print('This checkout is not on a branch, so there is nothing to push.')
@@ -59,7 +65,7 @@ def run_remote(project_root, args=None):
     if _dirty(project_root):
         print('This checkout has changes that are not committed, so a run '
               'would prove something other than what is here. Commit them, '
-              'then run purlin:audit --remote again.')
+              'then run purlin:test --remote again.')
         return 1
 
     run_branch = run_branch_name(project_root, branch)
@@ -70,10 +76,10 @@ def run_remote(project_root, args=None):
 
     if host == 'azure':
         return _azure(project_root, branch, run_branch)
-    return _github(project_root, run_branch)
+    return _github(project_root, run_branch, gate)
 
 
-def _github(project_root, run_branch):
+def _github(project_root, run_branch, gate='passed'):
     if not _have('gh'):
         print('GitHub CLI `gh` is not installed, so the run cannot be '
               'watched. Open the run on %s instead, then run: git pull '
@@ -83,9 +89,16 @@ def _github(project_root, run_branch):
     watched = _run(project_root, ['gh', 'run', 'watch', '--exit-status'])
     if watched != 0:
         print('The run finished red. The table below is what came back.')
-    # The run branch is this branch plus the record commit, so a fast-forward
-    # is the whole of it: the records land here as the one commit CI made.
-    _run(project_root, ['git', 'pull', '--ff-only', REMOTE, run_branch])
+    if gate == 'passed':
+        # Nothing was committed on the run branch, so there is nothing to
+        # pull: the runner ran the tests and said what it saw.
+        print('The gate is passed, so the runner wrote no record. What it '
+              'ran is in its own log.')
+    else:
+        # The run branch is this branch plus the record commit, so a
+        # fast-forward is the whole of it: the records land here as the one
+        # commit CI made.
+        _run(project_root, ['git', 'pull', '--ff-only', REMOTE, run_branch])
     _delete(project_root, run_branch)
     print(_table(project_root))
     return watched

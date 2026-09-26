@@ -2,13 +2,13 @@
 
 Every test builds a throwaway project under `tmp_path` and drives the real
 script against it: the arms it runs, the two loud failures it raises, the
-proofs another operating system owns, the exit codes, and the shape of the
-`purlin-record/2` dict it hands to the record writer.
+proofs another operating system owns, the exit codes, the test results the
+`--quick` arm writes and commits, and the shape of the `purlin-record/2` dict
+the `--ci` arm hands to the record writer.
 
-The modules lanes 2B and 2C own (`mutation`, `records`, `ci`, `remote`) are
-imported lazily inside the `--record` and `--remote` arms, so the `--record`
-tests inject fakes through `sys.modules` and read back what the script called
-them with.
+The modules the record arm needs (`mutation`, `records`, `ci`, `remote`) are
+imported lazily inside `--ci` and `--remote`, so those tests inject fakes
+through `sys.modules` and read back what the script called them with.
 """
 
 import json
@@ -122,6 +122,14 @@ def _head(root):
     return _git(root, 'rev-parse', 'HEAD').strip()
 
 
+def _gate(root, gate):
+    """Set the project's gate, so one checkout can be read at two of them."""
+    path = root / '.purlin' / 'config.json'
+    config = json.loads(path.read_text(encoding='utf-8'))
+    config['gate'] = gate
+    path.write_text(json.dumps(config, indent=2) + '\n', encoding='utf-8')
+
+
 def _newest_record(root, feature):
     folder = root / '.purlin' / 'records' / feature
     newest = sorted(path.name for path in folder.glob('*.json'))[-1]
@@ -177,9 +185,10 @@ class TestTheCommandLine:
     @pytest.mark.parametrize('args', [
         (),                                   # no action
         ('--quick',),                         # no feature and no --all
-        ('--all', '--quick', '--record'),     # two actions
+        ('--all', '--quick', '--audit'),      # two actions
         ('--all', '--feature', 'x', '--quick'),
-        ('--all', '--quick', '--commit'),     # --commit belongs to --record
+        ('--all', '--audit', '--remote'),     # --remote belongs to --quick
+        ('--all', '--quick', '--tag', '1.0'),  # --tag belongs to --audit
         ('--all', '--quick', '--tier', 'wide'),
         ('--all', '--quick', '--nonsense'),
         ('--all', '--quick', '--feature'),    # a flag with no value
@@ -333,7 +342,10 @@ class TestLoudFailureA:
         # the table is what says the rule has no evidence yet.
         assert 'wrote no proof entry' not in output
         assert '1 drafted' in output
-        assert code == 0, output
+        assert 'Evidence is missing' not in output, output
+        # The rule has no test, so the passed level is not met and the run
+        # says so on its last line.
+        assert code == 1, output
 
 
 class TestLoudFailureB:
@@ -407,10 +419,12 @@ class TestEnvScopedProofs:
         root = _pytest_project(tmp_path)
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
                                     ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))
+        purlin_run = _load_run_script()
+        here = purlin_run.host_os()
         code, output = _run(root, '--all', '--quick')
-        assert 'Proofs another operating system owns:' in output
-        assert 'feat PROOF-2: needs %s' % other in output
-        assert code == 0, output
+        assert ('feat PROOF-2 needs %s; this machine is %s. A remote runner '
+                'runs it: purlin:init adds one.' % (other, here)) in output
+        assert 'Evidence is missing' not in output, output
 
     @pytest.mark.proof("run_script", "PROOF-10", "RULE-10")
     def test_a_foreign_env_proof_is_not_reported_missing(self, tmp_path):
@@ -428,7 +442,7 @@ class TestEnvScopedProofs:
                                     ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))
         code, output = _run(root, '--all', '--quick')
         assert 'produced no proof entry' not in output
-        assert code == 0, output
+        assert 'Evidence is missing' not in output, output
 
     @pytest.mark.proof("run_script", "PROOF-10", "RULE-10")
     def test_an_env_proof_for_this_os_is_run_normally(self, tmp_path):
@@ -456,7 +470,9 @@ class TestEveryRunEndsWithTheNextStep:
         assert 'Purlin status:' in output
         assert 'Tests' in output
         lines = [line for line in output.strip().splitlines() if line.strip()]
-        assert lines[-1].startswith('→ ')
+        assert any(line.startswith('→ ') for line in lines), output
+        # A `--quick` run ends with the answer a person came for.
+        assert lines[-1].startswith('gate '), output
 
     @pytest.mark.proof("run_script", "PROOF-11", "RULE-11")
     def test_a_project_with_no_specs_says_so(self, tmp_path):
@@ -467,7 +483,7 @@ class TestEveryRunEndsWithTheNextStep:
 
 
 # ---------------------------------------------------------------------------
-# --record
+# --ci, the record and the briefs
 # ---------------------------------------------------------------------------
 
 def _load_run_script():
@@ -517,7 +533,7 @@ def _fake_briefs(monkeypatch, order, briefs):
 
 @pytest.fixture
 def record_run(monkeypatch, tmp_path):
-    """Run `--record` with the 2B and 2C modules faked, and report the calls."""
+    """Run `--ci` with the record modules faked, and report the calls."""
     calls = {'write': [], 'commit': [], 'tag': [], 'breaks': [],
              'commits_here': True}
 
@@ -525,9 +541,9 @@ def record_run(monkeypatch, tmp_path):
         calls['write'].append((record, runner, os_name))
         return os.path.join('.purlin', 'records', 'feat', 'r.json')
 
-    def commit_records(project_root, paths, identity, message):
-        calls['commit'].append((paths, identity, message))
-        return identity
+    def commit_records(project_root, paths, message):
+        calls['commit'].append((paths, message))
+        return 'ci'
 
     def tag_record(project_root, name, record_paths):
         calls['tag'].append((name, record_paths))
@@ -546,11 +562,11 @@ def record_run(monkeypatch, tmp_path):
                                      'attribution': 'per_scope'}}}},
             'log': 'breaks.log'}
 
-    # `commits_here` answers True here: a developer's run is always its own
-    # commit, and the CI cases that turn it off set it for themselves.
+    # `commits_here` answers True here; the cases that turn it off set it
+    # for themselves.
     monkeypatch.setitem(sys.modules, 'records', _FakeModule(
         write_record=write_record, commit_records=commit_records,
-        tag_record=tag_record,
+        tag_record=tag_record, load_records=lambda project_root: {},
         commits_here=lambda project_root: calls['commits_here'],
         no_commit_line=lambda project_root: (
             'Pull request run: the records stay on the runner; the run on '
@@ -560,21 +576,25 @@ def record_run(monkeypatch, tmp_path):
 
     def go(root, *args):
         purlin_run = _load_run_script()
-        code = purlin_run.main(['--project-root', str(root), '--record']
-                               + list(args))
+        code = purlin_run.main(['--project-root', str(root)] + list(args))
         return code, calls
 
     return go
 
 
 class TestRecordBuildsThePurlinRecord:
+    """The record is CI's, so every test here drives the `--ci` arm.
+
+    At `passed` there is no record at all, which is its own test below, so
+    each project here is at `strong`.
+    """
 
     @pytest.mark.proof("run_script", "PROOF-12", "RULE-12")
     def test_the_record_carries_every_field_the_design_lists(
             self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all')
+        _code, calls = record_run(root, '--all', '--ci')
         capsys.readouterr()
         assert len(calls['write']) == 1
         record, runner, os_name = calls['write'][0]
@@ -589,7 +609,7 @@ class TestRecordBuildsThePurlinRecord:
         assert record['environment']['os'] in ('windows', 'macos', 'linux')
         assert os_name == record['environment']['os']
         assert runner == record['runner']
-        assert record['environment']['kind'] == 'local'
+        assert record['environment']['kind'] == 'ci'
         assert 'pytest' in record['plugins']
 
     @pytest.mark.proof("run_script", "PROOF-13", "RULE-13")
@@ -597,7 +617,7 @@ class TestRecordBuildsThePurlinRecord:
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all')
+        _code, calls = record_run(root, '--all', '--ci')
         capsys.readouterr()
         record = calls['write'][0][0]
         feature = record['features']['feat']
@@ -618,10 +638,10 @@ class TestRecordBuildsThePurlinRecord:
     @pytest.mark.proof("run_script", "PROOF-13", "RULE-13")
     def test_a_rule_with_no_evidence_is_listed_as_missing(
             self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
                                     ('PROOF-2', 'RULE-2', '')), rules=2)
-        _code, calls = record_run(root, '--all')
+        _code, calls = record_run(root, '--all', '--ci')
         capsys.readouterr()
         record = calls['write'][0][0]
         assert record['missing'] == ['feat RULE-2']
@@ -630,12 +650,12 @@ class TestRecordBuildsThePurlinRecord:
     @pytest.mark.proof("run_script", "PROOF-14", "RULE-14")
     def test_attachments_are_hashed_into_the_record(
             self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         capture = root / '.purlin' / 'runtime' / 'attachments' / 'feat'
         capture.mkdir(parents=True)
         (capture / 'PROOF-1.png').write_bytes(b'not really a png')
-        _code, calls = record_run(root, '--all')
+        _code, calls = record_run(root, '--all', '--ci')
         capsys.readouterr()
         rule = calls['write'][0][0]['features']['feat']['rules']['RULE-1']
         assert len(rule['attachments']) == 1
@@ -646,9 +666,9 @@ class TestRecordBuildsThePurlinRecord:
 
     @pytest.mark.proof("run_script", "PROOF-15", "RULE-15")
     def test_the_log_is_written_and_hashed(self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all')
+        _code, calls = record_run(root, '--all', '--ci')
         capsys.readouterr()
         log = calls['write'][0][0]['log']
         assert log['path'] == '.purlin/runtime/run.log'
@@ -660,7 +680,7 @@ class TestRecordBuildsThePurlinRecord:
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--tier', 'unit')
+        _code, calls = record_run(root, '--all', '--ci', '--tier', 'unit')
         capsys.readouterr()
         engine, scope, tests, tier = calls['breaks'][0]
         assert engine == 'mutmut'
@@ -672,31 +692,33 @@ class TestRecordBuildsThePurlinRecord:
 class TestRecordCommitsAndTags:
 
     @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
-    def test_commit_passes_the_developer_identity(
+    def test_the_ci_commit_carries_the_record_and_the_ci_runner_slug(
             self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path)
-        _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--commit')
-        capsys.readouterr()
-        paths, identity, message = calls['commit'][0]
-        assert identity == 'developer'
-        assert message.startswith('purlin: record for ')
-        assert len(paths) == 1
-        assert calls['write'][0][0]['environment']['kind'] == 'developer'
-
-    @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
-    def test_ci_passes_the_ci_identity_and_the_ci_runner_slug(
-            self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
-        assert calls['commit'][0][1] == 'ci'
+        paths, message = calls['commit'][0]
+        assert len(paths) == 1
+        assert message.startswith('purlin: record for ')
         assert calls['write'][0][0]['runner'] == 'ci'
         assert calls['write'][0][0]['environment']['kind'] == 'ci'
         # A CI run writes the briefs and nothing else, and says how many in
         # one line. It writes no signature file, ever.
         assert '0 briefs written.' in output
+        assert 'Record committed.' in output
+
+    @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
+    def test_at_passed_a_ci_run_writes_no_record_at_all(
+            self, tmp_path, record_run, capsys):
+        """The evidence at `passed` is the test results a person commits."""
+        root = _pytest_project(tmp_path, gate='passed')
+        _spec(root, 'feat')
+        _code, calls = record_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+        assert calls['write'] == []
+        assert calls['commit'] == []
+        assert 'The gate is passed, so this run writes no record.' in output
 
     @pytest.mark.proof("run_script", "PROOF-68", "RULE-47")
     def test_a_pull_request_run_commits_nothing_and_says_so(
@@ -707,7 +729,7 @@ class TestRecordCommitsAndTags:
             post_pr_comment=lambda root, text: published.append('comment'),
             publish_dashboard=lambda root, logs=None: (
                 published.append('dashboard') or 'out')))
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         _code, calls = record_run(root, '--all', '--ci')
         calls['commits_here'] = False
@@ -724,37 +746,38 @@ class TestRecordCommitsAndTags:
     @pytest.mark.proof("run_script", "PROOF-68", "RULE-47")
     def test_a_run_on_the_branch_that_keeps_them_commits(
             self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
-        assert calls['commit'][0][1] == 'ci'
+        assert len(calls['commit']) == 1
         assert 'Pull request run:' not in output
 
-    @pytest.mark.proof("run_script", "PROOF-68", "RULE-47")
-    def test_a_developer_commit_is_never_held_back(
-            self, tmp_path, record_run, capsys):
-        """A person's commit is their own branch's, so the question is not asked."""
-        root = _pytest_project(tmp_path)
-        _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--commit')
-        calls['commits_here'] = False
-        calls['commit'] = []
-        _code, calls = record_run(root, '--all', '--commit')
-        capsys.readouterr()
-        assert calls['commit'][0][1] == 'developer'
-
     @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
-    def test_tag_names_the_record_it_vouches_for(
-            self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path)
+    def test_tag_names_the_records_already_in_the_tree(
+            self, tmp_path, record_run, monkeypatch, capsys):
+        """An audit writes no record, so a tag names what CI already wrote."""
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--tag', '1.0')
+        records = sys.modules['records']
+        monkeypatch.setattr(records, 'load_records', lambda project_root: {
+            'feat': {None: {'path': '.purlin/records/feat/r.json'}}})
+        _code, calls = record_run(root, '--all', '--audit', '--tag', '1.0')
         output = capsys.readouterr().out
         name, paths = calls['tag'][0]
         assert name == '1.0'
-        assert paths == ['.purlin/records/feat/r.json'.replace('/', os.sep)]
+        assert paths == ['.purlin/records/feat/r.json']
         assert 'Record tag written: record/1.0' in output
+
+    @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
+    def test_a_tag_with_no_record_in_the_tree_writes_nothing(
+            self, tmp_path, record_run, capsys):
+        root = _pytest_project(tmp_path, gate='strong')
+        _spec(root, 'feat')
+        _code, calls = record_run(root, '--all', '--audit', '--tag', '1.0')
+        output = capsys.readouterr().out
+        assert calls['tag'] == []
+        assert 'No record is in the tree yet' in output
 
     @pytest.mark.proof("run_script", "PROOF-61", "RULE-42")
     def test_ci_hands_the_briefs_to_the_commit(
@@ -768,13 +791,12 @@ class TestRecordCommitsAndTags:
         order = []
         _fake_briefs(monkeypatch, order, [brief])
 
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
 
-        paths, identity, _message = calls['commit'][0]
-        assert identity == 'ci'
+        paths, _message = calls['commit'][0]
         assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),
                          brief]
         assert order == ['write_briefs', 'commit'], (
@@ -782,21 +804,22 @@ class TestRecordCommitsAndTags:
         assert '1 brief written.' in output
 
     @pytest.mark.proof("run_script", "PROOF-61", "RULE-42")
-    def test_the_developer_commit_carries_the_records_alone(
+    def test_an_audit_writes_neither_a_record_nor_a_brief(
             self, tmp_path, record_run, monkeypatch, capsys):
+        """`purlin:audit` measures; it commits nothing anywhere."""
         order = []
         _fake_briefs(monkeypatch, order,
                      ['.purlin/briefs/feat/RULE-2.5e6f7a8b.brief.json'])
 
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--commit')
-        capsys.readouterr()
+        _code, calls = record_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
 
-        paths, identity, _message = calls['commit'][0]
-        assert identity == 'developer'
-        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json')]
-        assert order == ['commit']
+        assert calls['write'] == []
+        assert calls['commit'] == []
+        assert order == []
+        assert 'This audit counts only when CI runs it.' in output
 
     @pytest.mark.proof("run_script", "PROOF-61", "RULE-42")
     def test_the_ci_arm_hands_back_the_briefs_and_nothing_else(
@@ -828,12 +851,13 @@ class TestRecordCommitsAndTags:
         assert '1 brief written.' in capsys.readouterr().out
 
     @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
-    def test_without_commit_nothing_is_committed(
+    def test_a_quick_run_commits_no_record(
             self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all')
+        _code, calls = record_run(root, '--all', '--quick')
         capsys.readouterr()
+        assert calls['write'] == []
         assert calls['commit'] == []
 
 
@@ -862,8 +886,7 @@ class TestTheBriefsACiRunCommits:
         assert briefs[0].startswith('RULE-1.'), briefs
         assert '1 brief written.' in output, output
 
-        paths, identity, _message = calls['commit'][0]
-        assert identity == 'ci'
+        paths, _message = calls['commit'][0]
         assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),
                          '.purlin/briefs/feat/%s' % briefs[0]]
 
@@ -877,62 +900,71 @@ class TestTheBriefsACiRunCommits:
 
         assert not (root / '.purlin' / 'briefs').exists(), output
         assert '0 briefs written.' in output, output
-        paths, _identity, _message = calls['commit'][0]
+        paths, _message = calls['commit'][0]
         assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json')]
 
 
 class TestTheGateDecidesTheBreaks:
     """Under `passed` nothing measures test strength, so nothing is broken.
 
-    Raising the gate to `strong` turns the breaks on, and a record written
-    here is still not evidence: only a record CI committed counts there, so
-    the run prints its strength as a preview and says so.
+    Raising the gate to `strong` turns the breaks on, locally and in CI. An
+    audit run on this machine measures and prints, and says on its last line
+    that what it measured counts only when CI runs it.
     """
 
     @pytest.mark.proof("run_script", "PROOF-65", "RULE-45")
-    def test_under_passed_no_break_runs_and_the_strength_is_null(
+    def test_under_passed_no_break_runs_and_the_strength_is_n_a(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='passed')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all')
+        _code, calls = record_run(root, '--all', '--audit')
         output = capsys.readouterr().out
 
         assert calls['breaks'] == [], 'the breaks ran under the passed gate'
         assert 'Strength n/a: the gate is passed.' in output, output
-        record = calls['write'][0][0]
-        assert record['test_strength'] is None
-        rule = record['features']['feat']['rules']['RULE-1']
-        assert rule['test_strength']['score'] is None
-        assert rule['test_strength']['engine'] == 'none'
+        assert 'feat: test strength n/a' in output, output
+
+    @pytest.mark.proof("run_script", "PROOF-65", "RULE-45")
+    def test_under_passed_a_ci_run_writes_a_null_strength(
+            self, tmp_path, record_run, capsys):
+        """A record CI writes above `passed` carries what the breaks found.
+
+        Under `passed` a CI run writes no record at all, so the null strength
+        is what the record carries when the engines measured nothing.
+        """
+        root = _pytest_project(tmp_path, gate='strong')
+        _spec(root, 'feat')
+        purlin_run = _load_run_script()
+        breaks = purlin_run._no_breaks('passed')
+        capsys.readouterr()
+        assert breaks == {'engine': None, 'available': False, 'features': {}}
 
     @pytest.mark.proof("run_script", "PROOF-66", "RULE-45")
-    def test_under_strong_a_local_record_prints_a_preview_that_does_not_count(
+    def test_under_strong_the_audit_measures_and_says_it_does_not_count(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all')
+        _code, calls = record_run(root, '--all', '--audit')
         output = capsys.readouterr().out
 
         assert len(calls['breaks']) == 1, 'the breaks did not run under strong'
-        assert calls['write'][0][0]['test_strength'] == 80
-        assert 'Preview: feat test strength 80%.' in output, output
-        assert ('This record does not count under strong: only a CI record '
-                'counts.') in output, output
+        assert 'feat: test strength 80 percent' in output, output
+        assert 'This audit counts only when CI runs it.' in output, output
+        assert calls['write'] == [], 'the audit wrote a record'
 
     @pytest.mark.proof("run_script", "PROOF-66", "RULE-45")
-    def test_a_ci_record_prints_no_preview(
+    def test_a_ci_run_says_nothing_about_counting(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
 
-        assert 'Preview:' not in output, output
-        assert 'does not count under' not in output, output
+        assert 'This audit counts only when CI runs it.' not in output, output
 
 
 class TestRecordWithoutTheEngines:
-    """`--quick` and `--record` both work before lanes 2B and 2C land."""
+    """`--quick` and `--ci` both work where the break engines are absent."""
 
     @pytest.mark.proof("run_script", "PROOF-18", "RULE-18")
     def test_missing_break_engines_are_reported_and_the_run_continues(
@@ -945,14 +977,15 @@ class TestRecordWithoutTheEngines:
 
         monkeypatch.setitem(sys.modules, 'records', _FakeModule(
             write_record=write_record,
-            commit_records=lambda *a, **k: 'developer',
+            commit_records=lambda *a, **k: 'ci',
             tag_record=lambda *a, **k: None,
+            load_records=lambda project_root: {},
             commits_here=lambda project_root: True,
             no_commit_line=lambda project_root: ''))
         purlin_run = _load_run_script()
         # The break engines are taken off the path, which is the state a
-        # checkout is in before they are installed: `--record` must still
-        # write its record and say what it could not measure.
+        # checkout is in before they are installed: `--ci` must still write
+        # its record and say what it could not measure.
         # Compared through realpath, not abspath: a checkout reached along a
         # symlink (a clone under /tmp on macOS) puts both spellings of this
         # one directory on the path, and abspath leaves the second in place.
@@ -962,7 +995,7 @@ class TestRecordWithoutTheEngines:
             sys, 'path',
             [p for p in sys.path if os.path.realpath(p or '.') != run_dir])
         code = purlin_run.main(['--project-root', str(root), '--all',
-                                '--record'])
+                                '--ci'])
         output = capsys.readouterr().out
         assert 'test strength is not measured' in output
         assert code == 0
@@ -1005,52 +1038,48 @@ class TestTheMarkerScanReadsEveryFrameworkSMarker:
         assert purlin_run.scan_markers(str(tmp_path), 'jest') == set()
 
 
-class TestACommittedRecordMeetsThePassedCell:
+class TestARecordMeetsThePassedCell:
     """The walk the design traces, run for real against a git checkout.
 
-    The record writer commits the record, so the commit the run observed is
-    never the commit the record sits on. What tells the reader the record
-    still describes the code is `scope_tree`, the hash of the feature's
-    scoped files, and the passed cell reads `passed` only when the record
-    writes that hash the way the reader reads it.
+    A record is almost never at the literal HEAD: CI writes its record as a
+    commit of its own on top of the one it observed. What tells the reader
+    the record still describes the code is `scope_tree`, the hash of the
+    feature's scoped files, and the passed cell reads `passed` only when the
+    record writes that hash the way the reader reads it.
     """
 
-    @pytest.mark.proof("run_script", "PROOF-20", "RULE-20")
-    def test_a_committed_record_makes_the_passed_cell_read_passed(
-            self, tmp_path):
-        root = _pytest_project(tmp_path)
+    def _with_a_record(self, tmp_path):
+        """A checkout whose CI arm wrote a record, then read at `passed`.
+
+        The record is written at `strong`, which is the gate that writes one
+        at all, and the project is then read at `passed`, where a record the
+        git host did not commit still counts.
+        """
+        root = _pytest_project(tmp_path, gate='strong')
         (root / 'src').mkdir()
         (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
         _spec(root, 'feat')
         _git_repo(root)
-
-        assert _rule(root, 'feat', 'RULE-1')['spec'] == 'drafted'
-
-        code, out = _run(root, '--all', '--record', '--commit')
+        code, out = _run(root, '--all', '--ci')
         assert code == 0, out
-        assert 'Record committed as developer.' in out, out
+        _gate(root, 'passed')
+        return root, out
+
+    @pytest.mark.proof("run_script", "PROOF-20", "RULE-20")
+    def test_a_record_makes_the_passed_cell_read_passed(self, tmp_path):
+        root, out = self._with_a_record(tmp_path)
 
         record = _newest_record(root, 'feat')
         assert isinstance(record['scope_tree'], str), record['scope_tree']
         assert record['proofs'][0]['id'] == 'PROOF-1'
         assert record['proofs'][0]['status'] == 'pass'
         assert record['feature'] == 'feat'
-        assert record['gate'] == 'passed'
-
-        # The record is one commit behind HEAD, which is the case the scope
-        # tree exists to cover.
-        assert record['commit'] != _head(root)
+        assert record['gate'] == 'strong'
         assert _passed_word(root, 'feat', 'RULE-1') == 'passed'
 
     @pytest.mark.proof("run_script", "PROOF-20", "RULE-20")
     def test_the_cell_reads_code_changed_when_the_scope_changed(self, tmp_path):
-        root = _pytest_project(tmp_path)
-        (root / 'src').mkdir()
-        (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
-        _spec(root, 'feat')
-        _git_repo(root)
-        code, out = _run(root, '--all', '--record', '--commit')
-        assert code == 0, out
+        root, _out = self._with_a_record(tmp_path)
         assert _passed_word(root, 'feat', 'RULE-1') == 'passed'
 
         (root / 'src' / 'feat.py').write_text('VALUE = 3\n', encoding='utf-8')

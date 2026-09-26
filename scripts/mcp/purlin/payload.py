@@ -63,7 +63,7 @@ if _MCP_DIR not in sys.path:
 from config_engine import resolve_config
 from purlin import (PURLIN_VERSION, checks,
                     gate as gate_module, proofs as proofs_module,
-                    records as records_module,
+                    records as records_module, results as results_module,
                     signatures as signatures_module,
                     specs as specs_module, states)
 
@@ -98,6 +98,10 @@ def build_payload(project_root, generated_by='sync_status', config=None):
                 % (len(unnumbered), features[name]['spec_path']))
 
     runtime_proofs = proofs_module.load_proofs(project_root)
+    # The `local` source: the test results `purlin:test` committed, and this
+    # checkout's own run where that run is the newer of the two.
+    local_by_feature = results_module.local_status_map(project_root,
+                                                       runtime_proofs)
     all_records = records_module.load_records(project_root)
     all_signatures = signatures_module.load_signatures(project_root, features)
     all_holds = signatures_module.load_holds(project_root, features)
@@ -122,7 +126,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         entry, rollup = _feature_entry(
             project_root, name, info, features, runtime_proofs, all_records,
             all_signatures, cfg, head, blob_cache, scope_cache, review_list,
-            own_results, all_holds, counted_cache, branch)
+            own_results, all_holds, counted_cache, branch, local_by_feature)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -173,7 +177,7 @@ def _rule_number(rule_id):
 def _feature_entry(project_root, name, info, features, runtime_proofs,
                    all_records, all_signatures, cfg, head, blob_cache,
                    scope_cache, review_list, own_results=None, all_holds=None,
-                   counted_cache=None, branch=None):
+                   counted_cache=None, branch=None, local_by_feature=None):
     counting = _counting(all_records, name, cfg)
     latest = _latest(all_records.get(name) or {})
     test_strength = latest.get('test_strength') if latest else None
@@ -189,7 +193,8 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
             runtime_proofs, counting, all_signatures, cfg, head,
             blob_cache, scope_cache, test_strength, all_holds,
             _counting(all_records, owner, cfg),
-            _uncounted(all_records, owner, cfg), counted_cache, branch)
+            _uncounted(all_records, owner, cfg), counted_cache, branch,
+            local_by_feature)
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
                    'meets_gate': result['meets_gate'],
@@ -266,14 +271,12 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
                 runtime_proofs, counting, all_signatures, cfg, head,
                 blob_cache, scope_cache, test_strength=None, all_holds=None,
                 owner_counting=None, uncounted=None, counted_cache=None,
-                branch=None):
+                branch=None, local_by_feature=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
     entries = runtime_proofs.get(owner, [])
-    local_status = {}
-    for key, status in proofs_module.status_by_proof(entries).items():
-        local_status[key[1]] = status
+    local_status = (local_by_feature or {}).get(owner) or {}
 
     proof_dicts = []
     proof_texts = []
@@ -398,9 +401,9 @@ def _counting(all_records, feature, cfg):
 def _uncounted(all_records, feature, cfg):
     """`{os: record}`, the latest records the gate does not read.
 
-    The passed cell names them anyway. A developer's record under `strong` is
-    not evidence, but "no test" would be a different and wrong answer, so the
-    cell says whose record it found and why it does not count.
+    The passed cell names them anyway. A `local` record under `strong` is not
+    evidence, but "no test" would be a different and wrong answer, so the
+    cell says which record it found and why it does not count.
     """
     return {os_name: record
             for os_name, record in (all_records.get(feature) or {}).items()

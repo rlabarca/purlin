@@ -410,9 +410,9 @@
       "is_global": false,
       "latest_record": {
         "commit": "a1b2c3d",
-        "label": "developer",
+        "label": "local",
         "os": null,
-        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-developer.json",
+        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-ada.json",
         "test_strength": 90,
         "timestamp": "2026-09-12T09:14:02Z"
       },
@@ -425,9 +425,9 @@
         "held": 0,
         "latest_record": {
           "commit": "a1b2c3d",
-          "label": "developer",
+          "label": "local",
           "os": null,
-          "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-developer.json",
+          "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-ada.json",
           "test_strength": 90,
           "timestamp": "2026-09-12T09:14:02Z"
         },
@@ -450,9 +450,9 @@
               "current": true,
               "missing_env": [],
               "reasons": [
-                "developer record does not count under strong"
+                "local record does not count under strong"
               ],
-              "source": "developer",
+              "source": "local",
               "word": "not run"
             },
             "strong": {
@@ -537,9 +537,9 @@
     "checkout_design": {
       "": {
         "commit": "a1b2c3d",
-        "label": "developer",
+        "label": "local",
         "os": null,
-        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-developer.json",
+        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-ada.json",
         "result": "pass",
         "test_strength": 90,
         "timestamp": "2026-09-12T09:14:02Z"
