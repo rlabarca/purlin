@@ -92,10 +92,12 @@ prints every rule's cells.
 purlin:audit
 ```
 
-The audit runs the tests, breaks the code on purpose to measure how much the tests catch, writes
-`.purlin/records/login/<timestamp>-<commit7>-<runner>.json`, commits it, and prints the test
-strength. Then it prints `Run: git push`, and the push is yours: nothing in Purlin pushes
-except `purlin:audit --remote`, which pushes a run branch of its own.
+The audit runs the tests and writes
+`.purlin/records/login/<timestamp>-<commit7>-<runner>.json`, then commits it. At `passed` it
+stops there and says `Strength n/a: the gate is passed.`; raise the gate to `strong` and it
+also breaks the code on purpose to measure how much the tests catch. Either way it ends with
+`Run: git push`, and the push is yours: nothing in Purlin pushes except `purlin:audit
+--remote`, which pushes a run branch of its own.
 
 Every command ends by naming the next step, computed from the cells it found.
 
