@@ -34,8 +34,9 @@ Nothing in that picture pushes but you. `purlin:test` commits the test results a
 push and the pull request are yours to type. If you installed the pre-push hook, it refuses a
 push made from an agent session outright.
 
-`purlin:audit` is available at this gate and counts for nothing here: it runs the tests and
-reports how good they are, writes nothing, and no cell moves because of it.
+`purlin:audit` is available at this gate and counts for nothing here: the strong cell does not
+exist at `passed`, so it runs the tests, reports what the free checks found, writes no record
+and moves no cell.
 
 ## The setting
 
@@ -102,13 +103,13 @@ about the same code, and it never pushes.
 files are written to.
 
 Because both files are tracked, a teammate reading the repository on the git host sees your
-run without running anything and without a remote runner. They are the `local` source: they
-count at `passed` and nowhere above it.
+run without running anything and without a remote runner. They are a `local` source: they
+count at `passed` and at `strong`, and at `signed` only a CI run's results do.
 
-| Source | How it got there | Counts under |
-|--------|------------------|--------------|
-| `ci` | created through the git host's API by the CI identity | `passed`, `strong`, `signed` |
-| `local` | anything else: this checkout's own run, or the test results you committed | `passed` only |
+| Source | Where it sits | Counts under |
+|--------|---------------|--------------|
+| `ci` | `.purlin/records/ci/`, written by the CI job through the git host's API | `passed`, `strong`, `signed` |
+| `local` | this checkout's own run, the test results you committed, and `.purlin/records/local/` | `passed` and `strong` |
 
 ## The gate line
 
@@ -127,22 +128,26 @@ described.
 ## What the board shows
 
 `purlin:status` also refreshes the local dashboard. At `passed` its headline reads `<passing>
-of <rules> rules pass their tests · <failing> failing · <untested> untested`, with `<met> of
-<rules> meet the gate passed` as a second line underneath. Three tiles: `Untested`, `Failing`,
-`Passing`. Five columns: `Spec`, `Rules`, `Spec status`, `Tests`, `Last run`. Two filters:
-`Untested` and `Failing`. No strength, no risk, no review list, no signature: those cells do
-not exist at this gate, so the board has nothing to put in a column for them.
-[dashboard.md](dashboard.md) describes the three screens in full.
+of <rules> rules pass their tests · <failing> failing · <partial> partial · <untested>
+untested`, with `<met> of <rules> meet the gate passed` as a second line underneath. Four
+tiles: `Untested`, `Failing`, `Partial`, `Passing`. Four columns: `Spec`, `Rules`, `Proofs`,
+`Tests`. Three filters: `Untested`, `Failing` and `Partial`. `Proofs` counts the proof lines
+and says how many carry no tagged test; `Tests` reads `<passed> of <rules>`, with the partial
+and failing counts after it. When a run happened, on which operating system and from which
+source is in the hover on those cells rather than in a column of its own. No strength, no
+risk, no review list, no signature: those cells do not exist at this gate, so the board has
+nothing to put in a column for them. [dashboard.md](dashboard.md) describes the three screens
+in full.
 
 ## Test strength
 
 At `passed` the strong cell does not exist, so no strength is measured and nothing asks for
 one. `purlin:audit` still runs here: it runs the tagged tests and reports what the free checks
-found, and it ends with `This audit counts only when CI runs it.` Nothing it prints moves a
-cell at this gate.
+found. It writes no record at this gate, and nothing it prints moves a cell.
 
 Raise the gate to `strong` to turn the breaks on, locally and in CI, and see a real number: of
-the deliberate breaks audit makes to your code, the share your tests caught.
+the deliberate breaks audit makes to your code, the share your tests caught. From that gate up
+the audit writes a record of its own and commits it, and the record counts.
 
 ## When you want a remote runner
 
@@ -212,8 +217,8 @@ Raise to `strong` when any one of these becomes true:
 - Someone outside engineering owns a requirement. A PM's or a designer's rule needs `origin`
   tags and a review list to be worth tagging.
 - You need to answer "what was proved at the commit we shipped?" to someone who was not there.
-  A CI-written record at a known commit answers it; a test results file you committed yourself
-  asks them to trust you.
+  A record at a known commit, carrying the strength the breaks measured, answers it; a test
+  results file only says the tests ran.
 
 ```
 purlin:init --gate strong
@@ -221,8 +226,10 @@ purlin:init --gate strong
 
 Raising is additive. It writes the CI workflow (`purlin.yml`), creates `designs/` if it is
 missing, prints the branch rules for your git host, and asks before each write. It changes no
-rule and deletes no file. From that point the evidence that counts is the record CI writes, and
-the test results stay where they are as the fast answer you read while you work.
+rule and deletes no file. From that point the evidence that counts is a record: the one your
+own `purlin:audit` commits under `.purlin/records/local/`, or the one CI commits under
+`.purlin/records/ci/`. Both count at `strong`. The test results stay where they are as the
+fast answer you read while you work.
 
 [team-workflow.md](team-workflow.md) is the guide for the gate you land on.
 [raising-the-gate-and-upgrading.md](raising-the-gate-and-upgrading.md) covers the move itself,

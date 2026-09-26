@@ -15,8 +15,8 @@ One setting, the **gate**, decides how much of that chain a project asks for.
 | Gate | What CI requires before merge | Where the counting record comes from |
 |------|-------------------------------|--------------------------------------|
 | `passed` | every rule's passed cell is met | your machine's test results, which `purlin:test` commits |
-| `strong` | every rule's strong cell is met too | CI, on the protected branch or on a remote run's run branch |
-| `signed` | every rule's signed cell is met too | the same, plus a person's signature |
+| `strong` | every rule's strong cell is met too | your own `purlin:audit`, or CI: both count here |
+| `signed` | every rule's signed cell is met too | CI alone, on the protected branch or on a remote run's run branch, plus a person's signature |
 
 ## Engineer
 

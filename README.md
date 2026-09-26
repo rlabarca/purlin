@@ -10,8 +10,9 @@ Purlin is a Claude Code plugin for spec-driven development. A **rule** is one li
 saying what the software must do. A **proof** says how that claim is observed. A **test** is the
 executable form of a proof, tagged with the rule it settles. The **test results** are what a
 run of the tagged tests saw, committed into the repository. A **record** is the machine's
-evidence of one CI run, written into the repository by CI. A **signature** is a named person's
-attestation that a rule, its proof and its test belong together.
+evidence of one audit run, committed into the repository by the audit that wrote it, whether
+that was yours or CI's. A **signature** is a named person's attestation that a rule, its proof
+and its test belong together.
 
 A rule answers up to three questions, each one an **evidence level**, each answered by a
 **cell**: **passed**, every tagged test for the rule passed; **strong**, the tests are worth
@@ -29,8 +30,8 @@ that one question and nothing else.
 | Gate | Who it fits | What CI requires before merge | Where the counting record comes from |
 |------|-------------|-------------------------------|--------------------------------------|
 | `passed` | One person working alone | Every rule's passed cell is met: a tagged test for every proof, passing | the test results `purlin:test` commits; a pass from any source counts |
-| `strong` | A team of PM, designers, engineers and QA | Every rule's strong cell is met: a CI pass at this commit, the test strength at or above `min_strength`, no finding and no hold | CI on the protected branch, or on the run branch `purlin:test --remote` creates |
-| `signed` | The same team under GxP | Every rule's signed cell is met: a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list | the same, plus a person's signature |
+| `strong` | A team of PM, designers, engineers and QA | Every rule's strong cell is met: a passing record at this commit, the test strength at or above `min_strength`, no finding and no hold | your own `purlin:audit`, or CI: both count here |
+| `signed` | The same team under GxP | Every rule's signed cell is met: a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list | CI alone, on the protected branch or on the run branch `purlin:test --remote` creates, plus a person's signature |
 
 Raise or lower the gate later with `purlin:init --gate <level>`. Raising adds what is missing;
 lowering deletes nothing. The one definition lives in
@@ -102,9 +103,10 @@ purlin:audit
 ```
 
 The audit runs the tests, then breaks the code on purpose to measure how much the tests catch,
-and prints the strength beside the minimum with every finding and observation. It writes
-nothing: the record is CI's, and the audit says so on its last line. The push is yours too:
-nothing in Purlin pushes except `purlin:test --remote`, which pushes a run branch of its own.
+and prints the strength beside the minimum with every finding and observation. From the
+`strong` gate up it writes one record per feature and the briefs beside them and commits them
+itself as `purlin: record for <sha7>`. The push is yours: nothing in Purlin pushes except
+`purlin:test --remote`, which pushes a run branch of its own.
 
 Every command ends by naming the next step, computed from the cells it found.
 

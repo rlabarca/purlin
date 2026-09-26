@@ -36,7 +36,8 @@ code.
 Init starts from what the project already has, so a raise writes only the missing half.
 
 **To `passed`.** The setting alone, plus what every project gets: `.purlin/config.json`,
-`specs/`, `.purlin/records/` with a README saying CI writes it and nobody edits it by hand, the
+`specs/`, `.purlin/records/` with a README naming what writes the files in it and saying that
+nobody edits one by hand, the
 proof plugin for the detected test framework, the break engine for the language, a `.gitignore`
 block for `.purlin/runtime/`, the dashboard page copied so it opens from disk, the offer of a
 `pre-push` hook, and the Claude Code hook that refreshes the local dashboard data. No CI
@@ -44,13 +45,14 @@ workflow is written at this gate unless you ask for one: with a remote, init pri
 reasons a remote runner is worth having and asks `Run the tests on a remote runner too? [y/n]`.
 The only branch rule printed here is the third one: no force push, no deletion.
 
-**To `strong`.** On top of that: the CI workflow at `.github/workflows/purlin.yml`, because the
-gate cannot be met without a run that writes records. The workflow starts on a pull request, on
+**To `strong`.** On top of that: the CI workflow at `.github/workflows/purlin.yml`, because a
+gate is a job plus a branch rule and without the job there is nothing for the rule to require.
+The workflow starts on a pull request, on
 a push to your default branch and on a push to a `run/*` branch, and every run of it ends with
 `scripts/ci/gate_check.py --check`, which fails the job when the gate is not met. `designs/`
 with a README, if it is missing. The two remaining branch rules, printed for you to apply on
 the git host: require a pull request and the `purlin` check with the Actions app as the only
-bypass, and restrict `.purlin/records/**` and `.purlin/briefs/**` to the Actions app. If any
+bypass, and restrict `.purlin/records/ci/**` and `.purlin/briefs/ci/**` to the Actions app. If any
 proof in `specs/` carries `@env(windows)` or `@env(macos)`, the workflow gets a matrix: a Linux
 job always, plus one job for each other operating system named. With no such tag there is one
 Linux job.
@@ -89,19 +91,22 @@ from the state of the project.
 Three things are true the moment the gate reaches `strong`, and it is worth saying them to
 the team in the same message:
 
-1. The evidence changes hands. Only a record CI wrote counts now, and CI writes one where the
-   evidence is decided: on a push to the protected branch, and on the run branch
-   `purlin:test --remote` creates. A pull request run does the tests and posts the comment and
-   commits nothing. `purlin:test` still commits the test results and they still say what your
-   machine saw; they stop counting. Your local `purlin:audit` is a preview, and it says so in
-   its own output.
+1. A record is now the evidence, and two hands write one. `purlin:audit` writes one record per
+   feature it audited and the briefs beside them into `.purlin/records/local/` and
+   `.purlin/briefs/local/` and commits them itself; CI writes the same files into the `ci/`
+   folders on a push to the protected branch and on the run branch `purlin:test --remote`
+   creates. Both count at `strong`. A pull request run does the tests, posts the comment and
+   commits nothing. `purlin:test` still commits the test results, and they still count towards
+   the passed cell.
 2. Apply the branch rules init printed. Purlin never changes a repository's settings, so until
    someone applies them the gate is a preference rather than a control.
-3. The status table and the dashboard grow a column, a tile and a filter per level, so nobody
-   configures a view. `Strength` and `Strong` appear at this gate; `Signed` appears at the next.
+3. The status table and the board grow a column, a tile and a filter per level, so nobody
+   configures a view. `Strength` joins the status table and `Strong` joins the board at this
+   gate; `Signed` appears at the next.
 
-At `signed`, add a fourth: signing commits reach the default branch by pull request like any
-other change, and a merge waits for them.
+At `signed`, add two more: only CI's tests and CI's audit count there, so a local record
+becomes a preview, and signing commits reach the default branch by pull request like any other
+change, with a merge waiting for them.
 
 [team-workflow.md](team-workflow.md) and [regulated-workflow.md](regulated-workflow.md)
 describe the two higher gates in full.
@@ -145,7 +150,7 @@ mapped them is dropped and before the workflow matrix is rendered from them:
 | `config` | writes `.purlin/config.json` at the current shape and sets the gate |
 | `workflows` | replaces the retired workflows, and re-renders a `purlin.yml` written before the triggers changed |
 | `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |
-| `records` | creates `.purlin/records/` for the records CI commits |
+| `records` | creates `.purlin/records/` for the records an audit commits |
 
 The `workflows` migration reads each file under `.github/workflows/`. A workflow an earlier
 release wrote under its own name, or one naming something this release moved, is replaced
@@ -204,7 +209,8 @@ before you run it:
   what it shows.
 - Evidence moved from files written beside the specs to the test results under
   `.purlin/tests/`, which `purlin:test` commits, and the records under `.purlin/records/`, one
-  per CI run, with the briefs beside them under `.purlin/briefs/`.
+  per audit run, filed under `ci/` or `local/` by source, with the briefs beside them under
+  `.purlin/briefs/`.
   [running-and-records.md](running-and-records.md) has both shapes.
 - Operating-system scoping is now `@env(windows|macos|linux)` and a CI matrix, with no registry
   to maintain and no per-system evidence file.

@@ -12,8 +12,8 @@ settles. Every rule answers the same four questions, top to bottom.
 %%{init: {"theme": "base", "themeVariables": {"background": "#0C3444", "primaryColor": "#092936", "primaryTextColor": "#E4DDD4", "primaryBorderColor": "#C0793F", "lineColor": "#C0793F", "secondaryColor": "#0C3444", "tertiaryColor": "#092936", "fontFamily": "Arial", "textColor": "#E4DDD4"}}}%%
 flowchart TD
     Q0["spec status<br>does a proof name the rule?<br>purlin:spec, from the spec text"]
-    Q1["passed<br>did every tagged test pass?<br>purlin:test, from the test results"]
-    Q2["strong<br>are those tests worth trusting?<br>the audit on CI, from the record and the brief"]
+    Q1["passed<br>did every tagged test pass?<br>purlin:test, from the results and the records"]
+    Q2["strong<br>are those tests worth trusting?<br>purlin:audit, from the record and the brief"]
     Q3["signed<br>did a person say the three belong together?<br>purlin:sign, from the signature file"]
     Met(["the rule meets the gate"])
     Stop(["blocked here; the cell carries the reason"])
@@ -23,7 +23,7 @@ flowchart TD
     Q2 -->|strong| Q3
     Q3 -->|signed| Met
     Q0 -->|drafted| Stop
-    Q1 -->|"failed, no test, not run, code changed"| Stop
+    Q1 -->|"failed, partial, no test, not run, code changed"| Stop
     Q2 -->|"weak, manual test, manual audit, held"| Stop
     Q3 -->|"unsigned, stale, held"| Stop
 ```
@@ -51,14 +51,18 @@ red.
 **The test results are what your own run saw**: one `.purlin/tests/<feature>.json` per feature
 and one `.purlin/tests.md` table for the whole project. `purlin:test` writes both and commits
 them itself as `purlin: tests at <sha7>`, so a teammate reads your run on the git host without
-running anything. They count at `passed` and nowhere above it.
+running anything. They are a `local` source, so they count at `passed` and at `strong`; at
+`signed` only a CI run's results do.
 
-**A record is the machine's evidence of one CI run**: which commit, which operating system,
-every proof's result, and the test strength. CI writes it; nothing on your machine does. What
-decides whether it counts is the last commit that touched it, never anything inside it. That
-answer is its **source**: `ci` when CI committed it through the git host's API, `local` for
-anything else. Under `passed` both count. Under `strong` and `signed` only `ci` counts, so
-nobody writes the evidence their own change is measured by.
+**A record is the machine's evidence of one audit run**: which commit, which operating system,
+every proof's result, and the test strength. `purlin:audit` writes one per feature it audited
+and commits it as `purlin: record for <sha7>`; the CI job writes the same files from the
+runner. Which of the two wrote it is the record's **source**, and the folder it sits in is the
+answer: `.purlin/records/ci/<feature>/` holds what CI wrote, `.purlin/records/local/<feature>/`
+holds what a run on somebody's machine wrote. A file whose own `source` field disagrees with
+its folder is ignored, with a warning. At `strong` both count, so your own audit proves a rule
+strong. At `signed` only `ci` counts, for the tests and the audit both, so nobody writes the
+evidence their own change is measured by.
 
 **A signature is a named person's attestation** that a rule, its proof and its test belong
 together, bound to the hashes of all three and to the rule's risk tag. `purlin:sign` writes it
@@ -69,16 +73,17 @@ reads `stale`.
 
 | File | Written by | Where it lands | Who may write it |
 |------|-----------|----------------|------------------|
-| test results | `purlin:test` | `.purlin/tests/<feature>.json` and `.purlin/tests.md` | you, at every gate. They count at `passed` |
-| record | the CI job | `.purlin/records/<feature>/` | CI alone, through the git host's API, where the run lands one |
-| brief | the CI job | `.purlin/briefs/<feature>/` | CI alone. A local audit writes none |
+| test results | `purlin:test` | `.purlin/tests/<feature>.json` and `.purlin/tests.md` | you, at every gate. They count at `passed` and `strong` |
+| record | `purlin:audit`, and the CI job | `.purlin/records/local/<feature>/`, or `.purlin/records/ci/<feature>/` | anyone, into `local/`; CI alone, into `ci/`, through the git host's API |
+| brief | `purlin:audit`, and the CI job | `.purlin/briefs/local/<feature>/`, or `.purlin/briefs/ci/<feature>/` | the same two hands, into the same two folders |
 | signature | `purlin:sign <feature> RULE-N` | `specs/<category>/<feature>.signatures/` | a person, in a signed commit; under `signed`, one on the signer list |
 | hold | `purlin:sign <feature> RULE-N --hold "<case>"` | the same directory, `.hold.json` | any person, in a signed commit |
 
-A branch rule restricts `.purlin/records/**` and `.purlin/briefs/**` to the CI identity, so a
-person cannot push a record or a brief. The signature directory carries no such rule and needs
-none: a person is supposed to write those, and five conditions, read from git and from the
-file, decide whether one counts.
+A branch rule restricts `.purlin/records/ci/**` and `.purlin/briefs/ci/**` to the CI identity,
+so a person cannot push a file into the folder `signed` reads. The `local/` folders carry no
+such rule: anyone writes those, and they count up to `strong`. The signature directory carries
+no rule either, and needs none: a person is supposed to write those, and five conditions, read
+from git and from the file, decide whether one counts.
 
 ## Where CI runs
 
@@ -86,7 +91,8 @@ The workflow `purlin:init` writes starts on three things and nothing else: a pul
 push to the protected branch, and a push to a `run/*` branch. A push to any other branch starts
 nothing. A pull request run does the tests, posts the comment and uploads the dashboard, and
 commits nothing. A run on the protected branch, or on a run branch, commits its records and
-briefs there. Every run ends with the gate check and fails when the gate is not met.
+briefs there, under `.purlin/records/ci/` and `.purlin/briefs/ci/`. Every run ends with the
+gate check and fails when the gate is not met.
 
 ## Questions every developer asks
 
@@ -99,8 +105,9 @@ adds the audit and the record, and the loop you type stays the same.
 the tagged tests in seconds, commits what they saw and the board reads it at once. CI runs the
 same tests on the git host, and at `strong` and above audits them and writes the record. The
 gate decides which evidence counts: at `passed` your committed test results do, so you can
-meet the gate without CI; at `strong` and `signed` only CI's record does, and your local
-`purlin:audit` is a preview of what CI will find.
+meet the gate without CI; at `strong` your own `purlin:audit` record counts as well, so a rule
+reads `strong` without waiting for a runner; at `signed` only CI's tests and CI's audit count,
+and a local run there is a preview of what CI will find.
 
 **What is my git host?** The service that holds your repository and runs CI: GitHub or Azure
 DevOps. `purlin:init` reads it from your `origin` remote and writes it as `ci` in
@@ -108,19 +115,26 @@ DevOps. `purlin:init` reads it from your `origin` remote and writes it as `ci` i
 and the branch rules all live there.
 
 **What does red mean?** The check ran the tests and at least one rule does not meet your gate.
-The run's log ends with a list naming each rule and why. At `passed` that is a failed test or a
-rule with no test. At `strong` the tests passed but a rule's tests are not yet trusted: the
-breaks got past them, or a proof waits on a person to run it or judge it. At `signed` a rule
-that needs a signature has none, or the code changed after it was signed. Red never stops a
-push; with the branch rule applied it stops the merge until the list is dealt with.
+The run's log ends with a list naming each rule and why. At `passed` that is a failed test, a
+rule with no test, or a rule whose tests passed on one operating system and not on another.
+At `strong` the tests passed but a rule's tests are not yet trusted: the breaks got past them,
+or a proof waits on a person to run it or judge it. At `signed` a rule that needs a signature
+has none, or the code changed after it was signed. Red never stops a push; with the branch
+rule applied it stops the merge until the list is dealt with.
 
 **When do I say which operating system a test needs?** On the proof line, with `@env(windows)`,
 `@env(macos)` or `@env(linux)`. A proof with no tag runs anywhere and any operating system's
 pass satisfies it. Your machine runs the untagged proofs and the ones tagged for it; a proof
 tagged for another system reads `not run` until that system runs it. `purlin:init` reads the
 tags and writes the CI matrix from them: one Linux job always, plus one job per tagged system.
-macOS is never in the matrix by default, so your Mac is the macOS runner; what it ran is what
-lights the `mac` box on the board.
+macOS is never in the matrix by default, so your Mac is the macOS runner, and what it ran is
+what the rule screen shows against `macos`.
+
+**What does `partial` mean?** The passed cell keeps one entry per operating system a counting
+run covered, and it reads `partial` when the rule's tests passed on some of them and failed or
+did not run on the others. `partial` is not met: it has its own tile and its own filter on the
+board, at every gate, and it stands until every operating system the rule's proofs name has a
+passing run. Test strength is not measured per operating system; one number covers the rule.
 
 ## Read next
 

@@ -54,7 +54,7 @@ is the word a rule's last cell reads when it is met.
 | Gate | Who it fits | What CI requires before merge |
 |------|-------------|-------------------------------|
 | `passed` | One person working alone | Every rule has a passing tagged test, from a run of any source |
-| `strong` | A team of PM, designers, engineers and QA | Every rule has a record CI wrote at this commit, with the test strength at or above `min_strength`, no free-check finding and no hold |
+| `strong` | A team of PM, designers, engineers and QA | Every rule has a record at this commit, from your own audit or from CI, with the test strength at or above `min_strength`, no free-check finding and no hold |
 | `signed` | The same team under GxP | Everything `strong` requires, plus a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list |
 
 Answer `passed` for now. You can raise the gate later with `purlin:init --gate strong`, which
@@ -66,7 +66,7 @@ an empty repository is asked which language it will be, and `signed` is asked fo
 emails.
 
 It writes `.purlin/config.json` with the gate and the derived defaults, `specs/` for the specs,
-and `.purlin/records/` with a README saying that CI writes the files in it. It installs the
+and `.purlin/records/` with a README naming what writes the files in it. It installs the
 proof plugin for the detected framework and the breaks engine for the language, adds a
 `.gitignore` block for `.purlin/runtime/`, copies the dashboard page so it opens from disk, and
 offers a pre-push hook. At `passed` with a remote it explains a remote runner in three reasons
@@ -160,8 +160,10 @@ purlin:audit
 
 Run the audit when you want to know how good those tests are. It runs them again, and from
 `strong` upward breaks the code on purpose and measures the share of the breaks the tests
-caught: that share is the **test strength**. It prints what it found and writes nothing, because
-the record is CI's, and it says so on its last line.
+caught: that share is the **test strength**. It prints what it found. At `passed` that is all
+it does; from `strong` up it also writes one record per feature and the briefs beside them,
+commits them itself as `purlin: record for <sha7>`, and ends with `gate strong: <n> of
+<rules>`.
 
 ## Read the table
 

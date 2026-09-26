@@ -3,11 +3,11 @@
 For a team of a PM, a designer, engineers and QA working at the `strong` gate.
 
 At `strong` a rule carries a second cell. Level 1 asks whether the tagged tests passed; level 2
-asks whether those tests are worth trusting, and it is met when CI has written a record at the
-commit under review, the test strength of that run is at or above `min_strength`, no free check
-found a problem and nobody holds the rule. The test results a person commits still say what
-their machine saw, and they stop counting here. That single change is what turns the evidence
-from something each person asserts into something the team shares.
+asks whether those tests are worth trusting, and it is met when a record at the commit under
+review has a test strength at or above `min_strength`, no free check found a problem and
+nobody holds the rule. Either hand may write that record: your own `purlin:audit` commits one,
+and so does CI, and both count at this gate. What the second question adds is the measurement,
+not a second machine.
 
 Level 2 is fully automatic. Nobody is asked to do anything to reach it; a person first appears
 at the `signed` gate, which [regulated-workflow.md](regulated-workflow.md) describes.
@@ -20,10 +20,9 @@ up yet, read [getting-started.md](getting-started.md) first. If it is set up at 
 
 A gate is three things, and all three have to exist:
 
-1. A CI job where the evidence is decided: on a pull request, on a push to the protected
-   branch, and on a push to a `run/*` branch. It runs the tagged tests, then the audit, then
-   writes the record. Every run ends with `gate_check.py --check` and fails when the gate is
-   not met.
+1. A CI job that decides the merge: on a pull request, on a push to the protected branch, and
+   on a push to a `run/*` branch. It runs the tagged tests, then the audit, then writes the
+   record. Every run ends with `gate_check.py --check` and fails when the gate is not met.
 2. A branch rule on the protected branch that blocks a merge unless that job passes.
 3. The setting `gate` in `.purlin/config.json`, here set to `strong`.
 
@@ -42,13 +41,14 @@ sequenceDiagram
     participant Origin as origin
     participant CI as the runner
     actor QA
+    You->>You: purlin:audit commits its record into .purlin/records/local/
     You->>Origin: git push, then open the pull request
     Origin->>CI: pull_request starts the job
     CI->>CI: tests, then the breaks, the free checks and the model review
     CI->>Origin: the rollup as a comment, the dashboard as an artifact
     CI->>CI: prints that the records stay on the runner and the run on main writes them
     CI->>CI: gate_check.py --check is the last step
-    opt purlin:test --remote, when you need a ci record before the merge
+    opt purlin:test --remote, when you want a ci record before the merge
         You->>Origin: Purlin pushes run/<branch>-<sha7>
         Origin->>CI: push to run/** starts the job
         CI->>Origin: purlin: record for <commit7>, on the run branch
@@ -56,7 +56,7 @@ sequenceDiagram
     end
     You->>Origin: merge, once the required check is green
     Origin->>CI: push to main starts the job
-    CI->>Origin: purlin: record for <commit7>, the records and the briefs
+    CI->>Origin: purlin: record for <commit7>, into .purlin/records/ci/
     CI->>CI: gate_check.py --check is the last step
     QA->>QA: purlin:sign walks what the machine could not settle
 ```
@@ -70,19 +70,20 @@ that will not exist, and the job says so in one line. A run on the protected bra
 run branch `purlin:test --remote` creates, commits its records and briefs there. Every run
 ends with the gate check, which is what makes the required check mean the gate held.
 
-The source of a record comes from the last commit that touched it, never from anything inside
-the file. A commit CI made through the git host's API is `ci`; anything else is `local`. At
-`strong` only `ci` counts, so nobody writes the evidence their own change is measured by. A
-`local` pass leaves the passed cell reading `not run`, with the reason naming the source and
-the gate.
+A record's source is the folder it sits in, not a claim inside the file.
+`.purlin/records/ci/<feature>/` is CI's, and a branch rule reserves that path and
+`.purlin/briefs/ci/**` for the CI identity, so a person cannot push one there.
+`.purlin/records/local/<feature>/` is anyone's. A file whose own `source` field disagrees with
+its folder is ignored and the run says so in a warning. Both sources count at `strong`; only
+`ci` counts at `signed`, which is the one thing the next gate adds to this arithmetic.
 
-`purlin:test` still commits the test results here, and they still say what your machine saw;
-they just stop counting. Your local `purlin:audit` is still worth running too. It prints each
-feature's test strength beside the minimum and every finding and observation, then
-`This audit counts only when CI runs it.`, so you know the run will pass before you spend a CI
-run finding out. It writes nothing at all: the record is CI's. Nothing pushes on your behalf
-either: `git push` is yours to type, and if a pre-push hook is installed it refuses a push made
-from an agent session outright.
+`purlin:test` still commits the test results here, and they still count towards the passed
+cell. `purlin:audit` is what moves the second one. It prints each feature's test strength
+beside the minimum and every finding and observation, writes one record per feature it audited
+and the briefs beside them, and commits both itself as `purlin: record for <sha7>`. Its last
+line is `gate strong: <n> of <rules>` or `gate not met: <n> of <rules>`, and it exits 1 on the
+second. It never pushes: `git push` is yours to type, and if a pre-push hook is installed it
+refuses a push made from an agent session outright.
 
 ### The remote runner
 
@@ -117,8 +118,8 @@ while working on Purlin itself.
 
 | Artifact | Where it goes | On a pull request run | Who reads it |
 |----------|---------------|-----------------------|--------------|
-| One record per feature | `.purlin/records/<feature>/` in the tree | written on the runner, not committed | the gate, `purlin:status`, the dashboard |
-| One brief per rule the audit reached | `.purlin/briefs/<feature>/` in the tree | written on the runner, not committed | QA, at the next `purlin:sign` |
+| One record per feature | `.purlin/records/ci/<feature>/` in the tree | written on the runner, not committed | the gate, `purlin:status`, the dashboard |
+| One brief per rule the audit reached | `.purlin/briefs/ci/<feature>/` in the tree | written on the runner, not committed | QA, at the next `purlin:sign` |
 | The rollup | a comment on the pull request | posted | reviewers, the PM, QA |
 | The dashboard | the `purlin-dashboard-<runner>` build artifact, linked from that comment | uploaded | anyone with repository access |
 | The gate check | the job log, every line prefixed `gate:` | run, and the job fails when the gate is not met | the branch rule |
@@ -139,6 +140,18 @@ Two cases behave differently, and the job says so in one line rather than failin
   branch is the one CI writes after the merge, not the one written on the branch. The
   branch's records fall to the retention rule: the newest three per feature per operating
   system are kept, the rest are pruned as new ones land.
+
+## When the tests pass on one operating system and not another
+
+A rule's passed cell keeps one entry per operating system a counting run covered: the word,
+the source and when the run happened. The cell reads `partial` when the tests passed on some
+of those and failed or did not run on the others. `partial` is not met, so the rule does not
+meet the gate, and it has its own tile and its own filter on the board at every gate. A rule
+whose proofs are tagged for one operating system alone, with no run there yet, reads `not run`
+rather than `partial`: nothing passed, so nothing is partial.
+
+Test strength is not measured per operating system. One number covers the rule, whichever job
+measured it, so a matrix of three does not give a rule three strengths to reconcile.
 
 ## What the strong cell can read
 
@@ -178,9 +191,9 @@ about what a person would see. See [design-in-specs.md](design-in-specs.md).
 **The engineer builds.** `purlin:drift eng` at the start of the session says what moved:
 files touched and the rules behind them, rules with no test, tags the gate wants, anchor pins
 behind their source. Then `purlin:anchor sync` if a pin is behind, `purlin:spec` if a rule is
-wrong, `purlin:build`, `purlin:test` while working, and `purlin:audit` before pushing to read
-what CI will find. Rules the engineer adds are tagged `origin: eng`, and the PM sees them in
-`purlin:drift pm` as derived.
+wrong, `purlin:build`, `purlin:test` while working, and `purlin:audit` before pushing, which
+is what writes the record the strong cell reads. Rules the engineer adds are tagged
+`origin: eng`, and the PM sees them in `purlin:drift pm` as derived.
 
 **CI proves it.** The engineer pushes and opens the pull request; that is what starts the
 workflow. It runs the audit: the tests, the breaks, the free checks and the model review where

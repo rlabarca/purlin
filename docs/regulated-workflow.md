@@ -16,8 +16,16 @@ A rule carries a spec status and one cell per level, and the gate says how many 
 | Level | The question it answers | The command that answers it |
 |-------|-------------------------|-----------------------------|
 | passed | did every tagged test for this rule pass? | `purlin:test`, and the same tests on CI |
-| strong | are those tests worth trusting? | the audit, on CI |
+| strong | are those tests worth trusting? | `purlin:audit`, and the same audit on CI |
 | signed | did a person say the rule, the proof and the test belong together? | `purlin:sign` |
+
+Which machine ran them matters here and at no other gate. At `strong` a record your own
+`purlin:audit` committed counts. At `signed` only CI's counts, for the tests and the audit
+both: the run on the protected branch after the merge is what a signature attaches to, and a
+run on your machine there is a preview. That is why every record and brief this page names
+sits under `.purlin/records/ci/` and `.purlin/briefs/ci/`, the two paths a branch rule
+reserves for the CI identity. A local audit still writes its own into `.purlin/records/local/`
+and `.purlin/briefs/local/`, and at this gate the gate reads neither.
 
 Level 2 is fully automatic: the breaks, the free checks and the model review run without anyone
 asking. A person first appears at level 3, and this is where in a change's life they appear.
@@ -68,6 +76,7 @@ inside the hashes a signature binds.
 | Requirement | How it is met |
 |-------------|---------------|
 | A record CI wrote at this commit | the workflow `purlin:init` wrote, running `purlin:audit` |
+| Every operating system the rule's proofs name covered by a passing run | the CI matrix. A rule that passed on some and not others reads `partial`, which is not met |
 | Test strength at or above `min_strength` | default 80 at this gate |
 | A current signature on every rule at or above `sign_at` | `purlin:sign` |
 | Every rule tagged with a risk and an origin | required at this gate, optional below it |
@@ -158,9 +167,9 @@ CI's run writes two kinds of file and commits them as
 `purlin: record for <commit7>`, on the protected branch and on a run branch only. A pull
 request run writes both on the runner and commits neither:
 
-- **the records**, under `.purlin/records/<feature>/`, one per feature per job;
-- **the briefs**, under `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, one per rule the
-  audit reached.
+- **the records**, under `.purlin/records/ci/<feature>/`, one per feature per job;
+- **the briefs**, under `.purlin/briefs/ci/<feature>/<RULE-N>.<hash8>.brief.json`, one per rule
+  the audit reached.
 
 **CI writes no signature file, ever.** A signature directory holds only files a person wrote.
 That is the whole of what makes the trail worth reading: the machine's evidence and a person's
@@ -221,12 +230,15 @@ released, and the evidence behind that release stays readable however many runs 
 Everything an inspection asks for is already in git, in four places, and nobody assembles it by
 hand:
 
-- **`.purlin/records/`.** One file per audit run per feature, each naming the commit it
+- **`.purlin/records/ci/`.** One file per audit run per feature, each naming the commit it
   observed, the operating system, the gate in force, the test strength and every proof's
   result. The git history of the folder is the log of what was proven and when, and the
-  committer on each file is the git host's build identity.
-- **`.purlin/briefs/`.** One file per rule per set of hashes: the strength beside the minimum,
-  the free-check findings, and what the model review observed. It is what a signer was shown.
+  committer on each file is the git host's build identity. The records beside it under
+  `.purlin/records/local/` are what a person's own audit saw, and at this gate they are a
+  preview, not evidence.
+- **`.purlin/briefs/ci/`.** One file per rule per set of hashes: the strength beside the
+  minimum, the free-check findings, and what the model review observed. It is what a signer
+  was shown.
 - **`specs/<category>/<feature>.signatures/`.** One file per signature, binding the hashes of
   the rule, the proof and the test, the risk at the time, the signer's email, the brief they
   read and the record they rested on. The commit that added it is signed by a person.
@@ -238,8 +250,8 @@ have a file that answers them.
 
 For anyone without a checkout,
 `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> --ref <tag>` reads
-`specs/` and `.purlin/records/` by sparse fetch and prints the same rollup for any branch or
-tag, including a `record/<name>` one.
+`specs/` and `.purlin/records/ci/` by sparse fetch and prints the same rollup for any branch
+or tag, including a `record/<name>` one.
 
 ## Branch rules
 
@@ -248,8 +260,9 @@ rulesets on the default branch, so each bypass stays narrow:
 
 1. Require a pull request and require the `purlin` check, with the Actions app as the only
    bypass actor.
-2. Restrict file paths on `.purlin/records/**` and `.purlin/briefs/**`, with the Actions app as
-   the only bypass actor, so a person cannot push a record or a brief.
+2. Restrict file paths on `.purlin/records/ci/**` and `.purlin/briefs/ci/**`, with the Actions
+   app as the only bypass actor, so a person cannot push a file into the folder this gate
+   reads.
 3. Block force pushes and restrict deletions, with no bypass actor at all.
 
 On Azure DevOps: the build service alone holds Contribute on those same two paths through
