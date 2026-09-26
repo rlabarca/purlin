@@ -149,6 +149,18 @@ def test_the_template_still_carries_the_placeholders():
     template = read(os.path.join('templates', 'purlin.yml'), root=ROOT)
     assert '<<MATRIX>>' in template
     assert '<<PURLIN_REF>>' in template
+    assert '<<PROTECTED>>' in template
+
+
+@pytest.mark.proof("records", "PROOF-17", "RULE-17")
+def test_the_protected_branch_is_the_projects_own():
+    named = workflow_module.render_workflow(
+        'github', ['linux'], PURLIN_REF, protected='trunk')
+    assert "branches: [trunk, 'run/**']" in named
+    for blank in (None, ''):
+        fallback = workflow_module.render_workflow(
+            'github', ['linux'], PURLIN_REF, protected=blank)
+        assert "branches: [main, 'run/**']" in fallback
 
 
 @pytest.mark.proof("records", "PROOF-18", "RULE-18")
@@ -157,9 +169,9 @@ def test_the_workflow_is_shaped_like_a_workflow():
     assert sorted(blocks) == ['jobs', 'name', 'on', 'permissions']
     assert 'contents: write' in read(WORKFLOW_REL)
     assert 'pull-requests: write' in read(WORKFLOW_REL)
-    assert '  push:' in '\n'.join(blocks['on'])
-    assert '  pull_request:' in '\n'.join(blocks['on'])
-    for placeholder in ('<<MATRIX>>', '<<PURLIN_REF>>'):
+    assert '\n'.join(blocks['on']) == (
+        "  pull_request:\n  push:\n    branches: [main, 'run/**']")
+    for placeholder in ('<<MATRIX>>', '<<PURLIN_REF>>', '<<PROTECTED>>'):
         assert placeholder not in read(WORKFLOW_REL), (
             '%s was left unfilled' % placeholder)
 
@@ -170,10 +182,13 @@ def test_the_workflow_names_the_record_step_and_the_artifact():
     names = step_names(jobs.splitlines())
     assert 'actions/checkout@v4' in names
     assert 'Locate Purlin' in names
-    assert 'Run verify and write the record' in names
+    assert 'Run the audit and write the record' in names
     assert 'actions/upload-artifact@v4' in names
+    assert names[-1] == 'Check the gate', (
+        'the gate check is the last word of every run')
     assert 'name: purlin-dashboard-${{ matrix.os }}' in jobs
     assert 'scripts/run/purlin_run.py" --all --record --ci' in jobs
+    assert 'scripts/ci/gate_check.py" --check' in jobs
 
 
 @pytest.mark.proof("records", "PROOF-18", "RULE-18")

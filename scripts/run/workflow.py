@@ -1,8 +1,14 @@
 """Render the CI workflow a project's git host runs.
 
-One template per git host lives under `templates/`, and this fills in the two
-things a project decides: which operating systems the matrix covers, and which
-Purlin release the runner clones when the project is not this repository.
+One template per git host lives under `templates/`, and this fills in the
+three things a project decides: which operating systems the matrix covers,
+which Purlin release the runner clones when the project is not this
+repository, and which branch is the protected one a push starts a run on.
+
+The triggers are the same on both hosts: a pull request, a push to the
+protected branch, and a push to a `run/*` branch. A push to any other branch
+starts nothing. `main` stands in when the project's default branch cannot be
+read, which is the name a repository made this decade carries.
 
 The matrix always carries Linux, then the operating systems the `@env` tags in
 `specs/` name. A proof tagged `@env(windows)` adds a Windows job to prove it;
@@ -36,6 +42,9 @@ RUNNERS = {
 }
 DEFAULT_RUNNER = 'ubuntu-latest'
 ORDER = ('linux', 'macos', 'windows')
+
+# The branch a push starts a run on when the project's own cannot be read.
+DEFAULT_PROTECTED = 'main'
 
 BEGIN = '# BEGIN upstream-check'
 END = '# END upstream-check'
@@ -83,14 +92,18 @@ def env_tags_in_specs(project_root):
     return sorted(found)
 
 
-def render_workflow(host, env_tags, purlin_ref, upstream_check=False):
-    """The workflow text for one git host, matrix and Purlin release."""
+def render_workflow(host, env_tags, purlin_ref, upstream_check=False,
+                    protected=DEFAULT_PROTECTED):
+    """The workflow text for one git host, matrix, release and branch."""
     host = _host(host)
     with open(os.path.join(TEMPLATE_DIR, TEMPLATES[host]), 'r',
               encoding='utf-8') as handle:
         text = handle.read()
     text = _upstream(text, upstream_check)
     text = text.replace('<<MATRIX>>', _matrix(host, runners_for(env_tags)))
+    text = text.replace('<<PROTECTED>>',
+                        str(protected or DEFAULT_PROTECTED).strip()
+                        or DEFAULT_PROTECTED)
     return text.replace('<<PURLIN_REF>>', str(purlin_ref or 'main'))
 
 

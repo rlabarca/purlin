@@ -518,7 +518,8 @@ def _fake_briefs(monkeypatch, order, briefs):
 @pytest.fixture
 def record_run(monkeypatch, tmp_path):
     """Run `--record` with the 2B and 2C modules faked, and report the calls."""
-    calls = {'write': [], 'commit': [], 'tag': [], 'breaks': []}
+    calls = {'write': [], 'commit': [], 'tag': [], 'breaks': [],
+             'commits_here': True}
 
     def write_record(project_root, record, runner, os_name=None):
         calls['write'].append((record, runner, os_name))
@@ -545,9 +546,15 @@ def record_run(monkeypatch, tmp_path):
                                      'attribution': 'per_scope'}}}},
             'log': 'breaks.log'}
 
+    # `commits_here` answers True here: a developer's run is always its own
+    # commit, and the CI cases that turn it off set it for themselves.
     monkeypatch.setitem(sys.modules, 'records', _FakeModule(
         write_record=write_record, commit_records=commit_records,
-        tag_record=tag_record))
+        tag_record=tag_record,
+        commits_here=lambda project_root: calls['commits_here'],
+        no_commit_line=lambda project_root: (
+            'Pull request run: the records stay on the runner; the run on '
+            'main writes them.')))
     monkeypatch.setitem(sys.modules, 'mutation', _FakeModule(
         select_engine=select_engine, run_breaks=run_breaks))
 
@@ -690,6 +697,52 @@ class TestRecordCommitsAndTags:
         # A CI run writes the briefs and nothing else, and says how many in
         # one line. It writes no signature file, ever.
         assert '0 briefs written.' in output
+
+    @pytest.mark.proof("run_script", "PROOF-68", "RULE-47")
+    def test_a_pull_request_run_commits_nothing_and_says_so(
+            self, tmp_path, record_run, monkeypatch, capsys):
+        """CI writes evidence where it is kept, not on a branch nobody merges."""
+        published = []
+        monkeypatch.setitem(sys.modules, 'ci', _FakeModule(
+            post_pr_comment=lambda root, text: published.append('comment'),
+            publish_dashboard=lambda root, logs=None: (
+                published.append('dashboard') or 'out')))
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        _code, calls = record_run(root, '--all', '--ci')
+        calls['commits_here'] = False
+        calls['commit'] = []
+        published[:] = []
+        _code, calls = record_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+
+        assert calls['commit'] == []
+        assert ('Pull request run: the records stay on the runner; the run on '
+                'main writes them.') in output
+        assert published == ['comment', 'dashboard']
+
+    @pytest.mark.proof("run_script", "PROOF-68", "RULE-47")
+    def test_a_run_on_the_branch_that_keeps_them_commits(
+            self, tmp_path, record_run, capsys):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        _code, calls = record_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+        assert calls['commit'][0][1] == 'ci'
+        assert 'Pull request run:' not in output
+
+    @pytest.mark.proof("run_script", "PROOF-68", "RULE-47")
+    def test_a_developer_commit_is_never_held_back(
+            self, tmp_path, record_run, capsys):
+        """A person's commit is their own branch's, so the question is not asked."""
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        _code, calls = record_run(root, '--all', '--commit')
+        calls['commits_here'] = False
+        calls['commit'] = []
+        _code, calls = record_run(root, '--all', '--commit')
+        capsys.readouterr()
+        assert calls['commit'][0][1] == 'developer'
 
     @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
     def test_tag_names_the_record_it_vouches_for(
@@ -893,7 +946,9 @@ class TestRecordWithoutTheEngines:
         monkeypatch.setitem(sys.modules, 'records', _FakeModule(
             write_record=write_record,
             commit_records=lambda *a, **k: 'developer',
-            tag_record=lambda *a, **k: None))
+            tag_record=lambda *a, **k: None,
+            commits_here=lambda project_root: True,
+            no_commit_line=lambda project_root: ''))
         purlin_run = _load_run_script()
         # The break engines are taken off the path, which is the state a
         # checkout is in before they are installed: `--record` must still

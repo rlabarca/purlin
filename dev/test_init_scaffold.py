@@ -589,6 +589,53 @@ class TestTheWorkflow:
         assert '.purlin/records/**' in output
         assert '.purlin/briefs/**' in output
         assert 'force push' in output.lower()
+        assert 'gate check' in output
+
+    @pytest.mark.proof("scaffold", "PROOF-42", "RULE-42")
+    def test_the_triggers_are_the_three_the_release_runs_on(self, project):
+        git(project.root, 'symbolic-ref', 'HEAD', 'refs/heads/main')
+        project.run('--gate', 'strong')
+        workflow = read(project.path('.github/workflows/purlin.yml'))
+        block = workflow.split('\non:\n', 1)[1].split('\npermissions:', 1)[0]
+        assert block == "  pull_request:\n  push:\n    branches: [main, 'run/**']\n"
+
+    @pytest.mark.proof("scaffold", "PROOF-42", "RULE-42")
+    def test_the_triggers_name_the_projects_own_default_branch(self):
+        made = Project('pytest')
+        try:
+            git(made.root, 'symbolic-ref', 'HEAD', 'refs/heads/trunk')
+            made.run('--gate', 'strong')
+            workflow = read(made.path('.github/workflows/purlin.yml'))
+            assert "branches: [trunk, 'run/**']" in workflow
+            assert "branches: [main," not in workflow
+        finally:
+            made.close()
+
+    @pytest.mark.proof("scaffold", "PROOF-42", "RULE-42")
+    def test_the_last_step_checks_the_gate(self, project):
+        project.run('--gate', 'strong')
+        workflow = read(project.path('.github/workflows/purlin.yml'))
+        assert 'name: Check the gate' in workflow
+        assert 'scripts/ci/gate_check.py" --check' in workflow
+        # After the upload, so the dashboard is attached before the job fails.
+        assert (workflow.index('actions/upload-artifact@v4')
+                < workflow.index('name: Check the gate'))
+        assert workflow.rstrip().endswith('--check')
+
+    @pytest.mark.proof("scaffold", "PROOF-42", "RULE-42")
+    def test_the_azure_pipeline_carries_the_same_two(self):
+        made = Project('pytest',
+                       remote='https://dev.azure.com/acme/demo/_git/demo')
+        try:
+            git(made.root, 'symbolic-ref', 'HEAD', 'refs/heads/main')
+            made.run('--gate', 'strong')
+            pipeline = read(made.path('purlin.azure-pipelines.yml'))
+            assert '      - main\n      - run/*\n' in pipeline
+            assert 'pr:\n' in pipeline
+            assert 'displayName: Check the gate' in pipeline
+            assert 'scripts/ci/gate_check.py" --check' in pipeline
+        finally:
+            made.close()
 
     @pytest.mark.proof("scaffold", "PROOF-17", "RULE-17")
     def test_passed_prints_only_the_force_push_rule(self, project):

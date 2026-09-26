@@ -69,6 +69,11 @@ PRE_PUSH_SCRIPT = 'scripts/hooks/pre-push.sh'
 _SHIM_LINE = 'PURLIN_SCRIPT="%s"' % PRE_PUSH_SCRIPT
 RECORDS_DIR = '.purlin/records'
 WORKFLOW_DIR = '.github/workflows'
+# What a workflow this release wrote carries and an earlier one does not: the
+# gate check every run now ends with. A purlin.yml without it was written
+# before the triggers changed, so it is rendered again.
+GATE_STEP_MARKER = 'scripts/ci/gate_check.py'
+PURLIN_WORKFLOW_NAMES = ('purlin.yml', 'purlin.yaml')
 OS_NAMES = ('linux', 'macos', 'windows')
 ARROW = '→'
 DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
@@ -407,6 +412,15 @@ def _apply_design_sources(root, files, args, out):
             % (len(files), _s(files)))
 
 def _detect_workflows(root):
+    """The workflow files this release replaces, plus a stale `purlin.yml`.
+
+    Two things are found here. A workflow an earlier release wrote under its
+    own name, or one naming something this release moved, is replaced
+    outright. A `purlin.yml` that carries no gate check was written before CI
+    started deciding where evidence lands, so its triggers still start a run
+    on every branch and no run ends with the gate; it is rendered again from
+    the template.
+    """
     hits = []
     for rel in _files_under(root, WORKFLOW_DIR, ('*.yml', '*.yaml')):
         if os.path.basename(rel) in WORKFLOW_NAMES:
@@ -418,10 +432,13 @@ def _detect_workflows(root):
             continue
         if any(marker in text for marker in WORKFLOW_MARKERS):
             hits.append(rel)
+        elif (os.path.basename(rel) in PURLIN_WORKFLOW_NAMES
+                and GATE_STEP_MARKER not in text):
+            hits.append(rel)
     return hits
 
 def _apply_workflows(root, files, args, out):
-    """One workflow runs the same verify a developer runs, one job per OS."""
+    """One workflow runs the same audit a developer runs, one job per OS."""
     for rel in files:
         out.kept(_back_up_copy(os.path.join(root, rel), rel))
         _untrack(root, rel)
@@ -436,11 +453,21 @@ def _apply_workflows(root, files, args, out):
         out.say('left %s unwritten; run purlin:init --ci to add it later' % rel)
         return
     tags = flow.env_tags_in_specs(root)
+    protected = _protected(root)
     _write(os.path.join(root, rel),
-           flow.render_workflow(host, tags, 'v' + _version()))
+           flow.render_workflow(host, tags, 'v' + _version(),
+                                protected=protected))
     out.done(rel)
     out.say('wrote %s for %s, covering %s'
             % (rel, host, ', '.join(tags) if tags else 'linux'))
+    out.say('it runs on a pull request, on a push to %s and on a push to a '
+            'run/* branch, and ends with the gate check' % protected)
+
+
+def _protected(root):
+    """The branch a push starts a run on: the project's own default branch."""
+    from purlin import records as records_module
+    return records_module.default_branch(root)
 
 def _plugin_source(name):
     source = PLUGIN_SOURCES.get(name, name)
@@ -492,7 +519,8 @@ MIGRATIONS = (
      _detect_hooks, _apply_hooks),
     ('config', 'write .purlin/config.json at this shape and set the gate',
      _detect_config, _apply_config),
-    ('workflows', 'replace the retired workflows with purlin.yml',
+    ('workflows', 'replace the retired workflows and render purlin.yml with '
+     'this release\'s triggers and gate check',
      _detect_workflows, _apply_workflows),
     ('plugin-copies', 'refresh the proof plugin copies under .purlin/plugins/',
      _detect_plugin_copies, _apply_plugin_copies),

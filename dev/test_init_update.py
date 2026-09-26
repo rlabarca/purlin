@@ -745,6 +745,33 @@ def test_purlin_yml_carries_the_matrix_the_tags_name(tmp_path):
 
 
 @pytest.mark.proof("update", "PROOF-15", "RULE-15")
+def test_purlin_yml_carries_this_releases_triggers_and_gate_check(tmp_path):
+    root = _project(tmp_path, V095)
+    _apply(root)
+    text = _read(root, '.github/workflows/purlin.yml')
+    assert "branches: [main, 'run/**']" in text
+    assert 'name: Check the gate' in text
+    assert 'scripts/ci/gate_check.py" --check' in text
+
+
+@pytest.mark.proof("update", "PROOF-15", "RULE-15")
+def test_a_purlin_yml_without_the_gate_check_is_rendered_again(tmp_path):
+    """Its triggers start a run on every branch, so it is not this release's."""
+    root = _project(tmp_path, V095)
+    rel = '%s/purlin.yml' % update.WORKFLOW_DIR
+    _write(root, rel, 'name: purlin\non:\n  push:\n  pull_request:\njobs: {}\n')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'a workflow an earlier release wrote')
+    assert rel in [item['files'] for item in update.pending(root)
+                   if item['id'] == 'workflows'][0]
+    _apply(root)
+    text = _read(root, rel)
+    assert "branches: [main, 'run/**']" in text
+    assert 'scripts/ci/gate_check.py" --check' in text
+    assert 'workflows' not in _ids(root)
+
+
+@pytest.mark.proof("update", "PROOF-15", "RULE-15")
 def test_a_workflow_named_for_the_retired_gate_check_is_removed(tmp_path):
     root = _project(tmp_path, V095)
     rel = '%s/%s' % (update.WORKFLOW_DIR, update.WORKFLOW_NAMES[0])

@@ -25,6 +25,12 @@ read. CI's commit carries more than the record: the briefs the same run wrote
 travel in it, because a brief that never leaves the runner is evidence nobody
 can read.
 
+**Where CI commits.** On the protected branch and on a run branch, and
+nowhere else. A pull request run does the same tests and posts the same
+comment, and commits nothing: a record on a branch nobody merges from is
+evidence of a branch that will not exist. `commits_here()` is the one
+question the run asks.
+
 **Retention.** A feature keeps the newest three records per operating system.
 Anything an annotated `record/<name>` tag names in its message is kept for
 ever, so a state someone named stays readable however many runs follow.
@@ -55,6 +61,11 @@ RECORDS_DIR = reader.RECORDS_DIR
 # matches nothing, so a developer's record commit there staged nothing.
 RECORDS_PATHSPEC = '.purlin/records'
 RETENTION = reader.RETENTION
+
+# The branch `purlin:audit --remote` creates for one run, and the ref prefix
+# a git host's own branch variable carries.
+RUN_BRANCH_PREFIX = 'run/'
+REF_HEADS = 'refs/heads/'
 
 # The tree entry's file-permission key and value, spelled the way GitHub's
 # Git Data API expects them. The key is assembled rather than written out
@@ -310,6 +321,77 @@ def current_branch(project_root):
     branch = (_git(project_root, ['rev-parse', '--abbrev-ref', 'HEAD'],
                    check=False) or '').strip()
     return branch or reader.default_branch(project_root)
+
+
+def is_pull_request():
+    """True when this run belongs to a pull request.
+
+    GitHub sets `GITHUB_HEAD_REF` on a pull request event and on nothing
+    else; Azure DevOps sets the pull request's id. Off a runner neither is
+    set and the answer is False.
+    """
+    for name in ('GITHUB_HEAD_REF', 'SYSTEM_PULLREQUEST_PULLREQUESTID'):
+        if (os.environ.get(name) or '').strip():
+            return True
+    return False
+
+
+def protected_branch(project_root):
+    """The branch a record commit belongs on.
+
+    On a GitHub pull request the target branch is `GITHUB_BASE_REF`, which is
+    the protected branch by name. Everywhere else the project's own default
+    branch answers, which is what `purlin:init` wrote into the workflow's
+    triggers.
+    """
+    base = (os.environ.get('GITHUB_BASE_REF') or '').strip()
+    return base or reader.default_branch(project_root)
+
+
+def ref_branch(project_root):
+    """The branch the ref this run was started for names, run branch and all.
+
+    `BUILD_SOURCEBRANCHNAME` is the last path part of an Azure DevOps ref, so
+    `run/main-4f1c2ab` reaches it as `main-4f1c2ab` alone. The full ref is in
+    `BUILD_SOURCEBRANCH`, and that is read first for exactly that reason.
+    """
+    for name in ('GITHUB_REF_NAME', 'BUILD_SOURCEBRANCH',
+                 'BUILD_SOURCEBRANCHNAME'):
+        value = (os.environ.get(name) or '').strip()
+        if value:
+            if value.startswith(REF_HEADS):
+                return value[len(REF_HEADS):]
+            return value
+    return (_git(project_root, ['rev-parse', '--abbrev-ref', 'HEAD'],
+                 check=False) or '').strip()
+
+
+def commits_here(project_root):
+    """True when a CI run on this ref writes its records into the tree.
+
+    Evidence is decided where it lands. A run on the protected branch, or on
+    a run branch `purlin:audit --remote` created for one run, commits its
+    records and briefs there. A pull request run proves the same thing on a
+    branch nobody merges from, so it commits nothing and says so.
+
+    Off a runner the answer is True: a developer's `--commit` is their own
+    commit on their own branch, and no branch rule is being spoken for.
+    """
+    if not detect_host():
+        return True
+    if is_pull_request():
+        return False
+    branch = ref_branch(project_root)
+    if not branch:
+        return False
+    return (branch == protected_branch(project_root)
+            or branch.startswith(RUN_BRANCH_PREFIX))
+
+
+def no_commit_line(project_root):
+    """The one line a CI run prints where it commits nothing."""
+    return ('Pull request run: the records stay on the runner; the run on %s '
+            'writes them.' % protected_branch(project_root))
 
 
 def _read_file(project_root, rel_path):

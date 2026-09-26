@@ -1,11 +1,25 @@
-# Purlin runs verify here, on every push and every pull request.
+# Purlin runs the audit here, where the evidence it writes is decided.
 #
-# purlin:init writes this file and purlin:init --update refreshes it. The
-# matrix always carries ubuntu-latest first, then one job per operating system
-# the `@env` tags in specs/ name; a project that tags nothing runs on
+# purlin:init writes this file and purlin:init --update refreshes it. Three
+# things start a run and nothing else does: a pull request, a push to the
+# protected branch, and a push to a `run/*` branch, which is the branch
+# `purlin:audit --remote` creates and deletes around one run. A push to any
+# other branch starts nothing, so a feature branch costs no runner minutes
+# until it is opened as a pull request.
+#
+# What a run writes depends on where it runs. A pull request run does the
+# tests, posts the comment and uploads the dashboard, and commits nothing: the
+# records would land on a branch nobody merges from. A run on the protected
+# branch, or on a `run/*` branch, commits its records and briefs there.
+#
+# Every run ends with the gate check, and the job fails when the gate is not
+# met, so a required check on this workflow means the gate held.
+#
+# The matrix always carries ubuntu-latest first, then one job per operating
+# system the `@env` tags in specs/ name; a project that tags nothing runs on
 # ubuntu-latest alone. An untagged proof is satisfied by any operating system,
 # so the Linux job proves those and writes the record that counts. Each job
-# runs the same verify a developer runs and writes its own record, so two jobs
+# runs the same audit a developer runs and writes its own record, so two jobs
 # never write the same file name. The artifact each job uploads carries the
 # runner in its name for the same reason: one name for two jobs keeps only what
 # the job that finished last uploaded.
@@ -13,22 +27,23 @@
 # A pull request from a fork gets a run and a comment and no commit: GitHub
 # gives a forked pull request a read-only token, and the job says so.
 #
-# The verify job is capped at 90 minutes. GitHub cancels a job at 6 hours and
+# The audit job is capped at 90 minutes. GitHub cancels a job at 6 hours and
 # keeps nothing, so a run that stops for something cannot be read; 90 minutes
 # is longer than any suite this runs and short enough to leave a log worth
 # reading. The run caps each arm at an hour of its own.
 name: purlin
 
 on:
-  push:
   pull_request:
+  push:
+    branches: [main, 'run/**']
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  verify:
+  audit:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:
@@ -82,7 +97,7 @@ jobs:
           fi
           if [ -f package.json ]; then npm ci; fi
 
-      - name: Run verify and write the record
+      - name: Run the audit and write the record
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -101,3 +116,10 @@ jobs:
           name: purlin-dashboard-${{ matrix.os }}
           path: ${{ runner.temp }}/purlin-dashboard
           if-no-files-found: ignore
+
+      # The last word of every run. The gate check exits 1 when a rule does
+      # not meet the gate, which fails this job, which is what a required
+      # check on this workflow means.
+      - name: Check the gate
+        shell: bash
+        run: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check

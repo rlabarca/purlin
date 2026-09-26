@@ -13,6 +13,8 @@
 #   7. gate_check.py --check            exits 1: a developer record does not count
 #   8. a record and its briefs from --ci, committed under the build identity
 #   9. gate_check.py --check            exits 0: strong is met by that record
+#   9a. a --ci run on a pull request, which commits nothing and says so
+#   9b. a --ci run on the protected branch and on run/*, which commit
 #  10. purlin:init --gate signed        raises again
 #  11. gate_check.py --check            exits 1: no signer list
 #  12. the signer list, then the gate check exits 1 with no signature
@@ -114,6 +116,12 @@ expect_in() {  # name needle file
   if grep -q -- "$2" "$3" 2>/dev/null; then pass "$1"; else
     bad "$1 (no \"$2\" in $3)" "$(tail -5 "$3" 2>/dev/null)"
   fi
+}
+
+expect_not_in() {  # name needle file
+  if grep -q -- "$2" "$3" 2>/dev/null; then
+    bad "$1 (\"$2\" is in $3)" "$(tail -5 "$3" 2>/dev/null)"
+  else pass "$1"; fi
 }
 
 # --- the project ----------------------------------------------------------
@@ -269,6 +277,30 @@ gate_walk() {  # dir language
   # still hash to what the run wrote down, so the strong cell is met.
   expect_exit "$language: strong is met by a record CI committed" 0 \
     python3 "$GATE" --check --project-root "$dir"
+
+  # Where a CI run commits. The git host variables are what the run reads,
+  # so the three cases are the three sets of variables; no request is made,
+  # because no token is set.
+  env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=topic \
+      GITHUB_HEAD_REF=topic GITHUB_BASE_REF=main \
+      python3 "$RUN" --all --record --ci --project-root "$dir" \
+      > "$dir/.purlin-pr.log" 2>&1
+  expect_in "$language: a pull request run keeps its records on the runner" \
+    'Pull request run: the records stay on the runner' "$dir/.purlin-pr.log"
+
+  env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=main \
+      python3 "$RUN" --all --record --ci --project-root "$dir" \
+      > "$dir/.purlin-main.log" 2>&1
+  expect_not_in "$language: a run on the protected branch commits its records" \
+    'Pull request run:' "$dir/.purlin-main.log"
+
+  env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=run/main-0000000 \
+      python3 "$RUN" --all --record --ci --project-root "$dir" \
+      > "$dir/.purlin-runbranch.log" 2>&1
+  expect_not_in "$language: a run on a run branch commits its records" \
+    'Pull request run:' "$dir/.purlin-runbranch.log"
+  git -C "$dir" checkout -q -- . 2>/dev/null || true
+  git -C "$dir" clean -qfd .purlin/records .purlin/briefs 2>/dev/null || true
 
   init_at "$dir" signed
   commit_all "$dir" "raise the gate to signed"

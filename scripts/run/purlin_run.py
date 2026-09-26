@@ -10,15 +10,20 @@
 
 `--record` is what `purlin:audit` runs: the tests, then the breaks, then a
 record. The gate decides whether the breaks run at all: under `passed`
-nothing measures test strength, so the record writes `null` for it. `--commit`
-commits the record under the developer's identity, which is what the `passed`
-gate reads. `--ci` writes the briefs first, commits the record together with
-them through the git host API, then posts the pull request comment and
-publishes the dashboard. Under `strong` and `signed` only a record CI wrote
-counts, so a run here prints its strength as a preview and says so.
+nothing measures test strength, so the record writes `null` for it.
+`--commit` commits the record under the developer's identity, which is what
+the `passed` gate reads, and never pushes: it prints the push command and
+leaves it to a person. `--ci` writes the briefs first, then commits the
+record and the briefs together through the git host's API, but only on the
+protected branch or a run branch; a pull request run says the records stay
+on the runner. Either way it posts the pull request comment and publishes
+the dashboard. Under `strong` and `signed` only a record CI wrote counts, so
+a run here prints its strength as a preview and says so.
 
-`--remote` is what `purlin:audit --remote` runs: push the current branch,
-wait for the workflow, pull the records CI committed, print the table.
+`--remote` is what `purlin:audit --remote` runs, and it is the one thing in
+Purlin that pushes: it creates a run branch, waits for the workflow, pulls
+the records that run committed onto this branch, deletes the run branch and
+prints the table.
 
 A proof the spec tags `@env` for another operating system is not run here: it
 is listed as `needs <os>` and the rule waits for a record from that runner.
@@ -890,7 +895,8 @@ def _record(project_root, args, features, selected, index, plugins, log,
               if (cfg is None or cfg.breaks) else _no_breaks(gate))
     log_digest = _write_log(project_root, log)
 
-    from records import write_record, commit_records, tag_record
+    from records import (commits_here, commit_records, no_commit_line,
+                         tag_record, write_record)
 
     print('')
     paths = []
@@ -916,10 +922,16 @@ def _record(project_root, args, features, selected, index, plugins, log,
                    if args.ci else [])
 
     if args.commit or args.ci:
-        identity = 'ci' if args.ci else 'developer'
-        commit_records(project_root, paths + brief_paths, identity,
-                       'purlin: record for %s' % head[:7])
-        print('Record committed as %s.' % identity)
+        if args.ci and not commits_here(project_root):
+            # A pull request run proves the same thing on a branch nobody
+            # merges from. The comment and the dashboard below still say what
+            # it observed; only the commit waits for the branch that keeps it.
+            print(no_commit_line(project_root))
+        else:
+            identity = 'ci' if args.ci else 'developer'
+            commit_records(project_root, paths + brief_paths, identity,
+                           'purlin: record for %s' % head[:7])
+            print('Record committed as %s.' % identity)
     if args.tag:
         tag_record(project_root, args.tag, paths)
         print('Record tag written: record/%s' % args.tag)

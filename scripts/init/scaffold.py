@@ -47,8 +47,8 @@ import workflow as workflow_module                            # noqa: E402
 from mutation import mutmut                                   # noqa: E402
 from purlin import (console as console_module,                # noqa: E402
                     frameworks as frameworks_module,
-                    gate as gate_module, specs as specs_module,
-                    status as status_module)
+                    gate as gate_module, records as records_module,
+                    specs as specs_module, status as status_module)
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
@@ -122,19 +122,23 @@ under passed. An audit keeps the newest three records per feature per runner.
 """,
 }
 
-# A gate is three things: a job running the audit on every push, a rule
-# blocking merge unless it passes, and the setting saying what pass means. The
-# setting is in .purlin/config.json; these two are what the git host is told.
-# The two restricted paths are the ones only CI writes: the records and the
-# briefs.
+# A gate is three things: a job running the audit where the evidence is
+# decided, a rule blocking merge unless that job passes, and the setting
+# saying what pass means. The setting is in .purlin/config.json; these two are
+# what the git host is told. The two restricted paths are the ones only CI
+# writes: the records and the briefs.
 _BRANCH_RULES = {
     'github': """Branch rules to apply on GitHub:
-  1. Require a pull request, and require the purlin status check. Bypass: the GitHub Actions app alone.
+  1. Require a pull request, and require the purlin workflow's checks. Every run ends with the
+     gate check and fails when the gate is not met, so a green check means the gate held.
+     Bypass: the GitHub Actions app alone.
   2. Restrict file paths .purlin/records/** and .purlin/briefs/**. Bypass: the GitHub Actions app
      alone, so a person cannot push a record or a brief.
   3. Block force pushes and restrict deletions, with no bypass.""",
     'azure': """Branch security to apply on Azure DevOps:
-  1. Require a pull request, with the purlin pipeline as a build validation policy.
+  1. Require a pull request, with the purlin pipeline as a build validation policy. Every run
+     ends with the gate check and fails when the gate is not met, so a green build means the
+     gate held.
   2. Grant Contribute on .purlin/records/** and .purlin/briefs/** to the build service alone, so a
      person cannot push a record or a brief.
   3. Deny Force Push and Delete branch for everyone.""",
@@ -568,15 +572,25 @@ def write_gitignore(plan, plugin_root):
 
 
 def write_workflow(plan, root, host, purlin_ref, upstream_check):
-    """The workflow the git host runs, with the matrix the `@env` tags name."""
+    """The workflow the git host runs, with the matrix the `@env` tags name.
+
+    The triggers name the project's own default branch as the protected one,
+    read from the tree here rather than guessed at on the runner: a
+    repository whose branch is `master` would otherwise get a workflow that
+    starts on a branch it does not have.
+    """
     env_tags = workflow_module.env_tags_in_specs(root)
+    protected = records_module.default_branch(root)
     name = workflow_module.workflow_filename(host)
     rel = name if host == 'azure' else '.github/workflows/%s' % name
     plan.write(rel, workflow_module.render_workflow(
-        host, env_tags, purlin_ref, upstream_check=upstream_check), own=True)
+        host, env_tags, purlin_ref, upstream_check=upstream_check,
+        protected=protected), own=True)
     plan.note('  the matrix is %s: ubuntu-latest always, then the @env tags '
               'in specs/.'
               % ', '.join(workflow_module.runners_for(env_tags)))
+    plan.note('  it runs on a pull request, on a push to %s and on a push to '
+              'a run/* branch, and ends with the gate check.' % protected)
 
 
 def next_step(root):

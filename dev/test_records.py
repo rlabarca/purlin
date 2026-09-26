@@ -1437,11 +1437,12 @@ def test_the_azure_branch_prints_the_pipeline_and_returns(project, capsys):
     url = 'https://dev.azure.com/acme/widgets/_git/widgets'
     git(project, 'remote', 'add', 'origin', url)
 
-    assert remote_module._azure(project, 'main') == 0
+    assert remote_module._azure(project, 'main', 'run/main-4f1c2ab') == 0
     printed = capsys.readouterr().out
-    assert 'Azure DevOps runs the pipeline for main' in printed
+    assert 'Azure DevOps runs the pipeline for run/main-4f1c2ab' in printed
     assert url in printed
-    assert 'git pull --ff-only' in printed
+    assert 'git pull --ff-only origin run/main-4f1c2ab' in printed
+    assert 'git push origin --delete run/main-4f1c2ab' in printed
 
 
 @pytest.mark.proof("records", "PROOF-12", "RULE-12")
@@ -1450,6 +1451,29 @@ def test_a_detached_head_has_nothing_to_push(project, capsys):
     git(project, 'checkout', '--quiet', head)
     assert remote_module.run_remote(project) == 1
     assert 'not on a branch' in capsys.readouterr().out
+
+
+@pytest.mark.proof("records", "PROOF-12", "RULE-12")
+def test_a_dirty_tree_is_refused_before_anything_is_pushed(project, capsys,
+                                                           monkeypatch):
+    """A run against a commit the tree no longer matches proves the wrong thing."""
+    with open(os.path.join(project, 'uncommitted.txt'), 'w',
+              encoding='utf-8') as handle:
+        handle.write('x\n')
+    started = []
+    monkeypatch.setattr(remote_module, '_run',
+                        lambda root, argv, marked=False: started.append(argv))
+    assert remote_module.run_remote(project) == 1
+    printed = capsys.readouterr().out
+    assert 'changes that are not committed' in printed
+    assert started == []
+
+
+@pytest.mark.proof("records", "PROOF-12", "RULE-12")
+def test_the_run_branch_names_the_branch_and_the_commit(project):
+    head = git(project, 'rev-parse', 'HEAD').stdout.strip()
+    name = remote_module.run_branch_name(project, 'feature-x')
+    assert name == 'run/feature-x-%s' % head[:7]
 
 
 @pytest.mark.proof("records", "PROOF-12", "RULE-12")
@@ -1462,9 +1486,10 @@ def test_the_follow_up_for_azure_is_marked_in_the_source():
 class FakeProcesses(object):
     """`subprocess.run` for `remote.py`: git and gh answer, and nothing runs.
 
-    The branch is `feature-x` and `origin` is a GitHub URL. Every process
-    other than those two reads is kept in `started`, in order, with the
-    directory it was started in.
+    The branch is `feature-x`, HEAD is a fixed sha and `origin` is a GitHub
+    URL. Every process other than those reads is kept in `started`, in order,
+    with the directory it was started in and whether the push marker was in
+    its environment.
     """
 
     def __init__(self, push=0, watch=0):
@@ -1472,17 +1497,23 @@ class FakeProcesses(object):
         self.watch = watch
         self.started = []
         self.cwds = []
+        self.marked = []
 
     def __call__(self, argv, cwd=None, capture_output=False, text=False,
-                 timeout=None):
+                 timeout=None, env=None):
         argv = list(argv)
         if argv[:3] == ['git', 'rev-parse', '--abbrev-ref']:
             return subprocess.CompletedProcess(argv, 0, 'feature-x\n', '')
+        if argv[:2] == ['git', 'rev-parse']:
+            return subprocess.CompletedProcess(argv, 0, SHA + '\n', '')
         if argv[:3] == ['git', 'remote', 'get-url']:
             return subprocess.CompletedProcess(
                 argv, 0, 'https://github.com/acme/widgets.git\n', '')
+        if argv[:3] == ['git', 'status', '--porcelain']:
+            return subprocess.CompletedProcess(argv, 0, '', '')
         self.started.append(argv)
         self.cwds.append(cwd)
+        self.marked.append(bool(env and env.get('PURLIN_REMOTE_RUN')))
         code = 0
         if argv[:2] == ['git', 'push']:
             code = self.push
@@ -1508,24 +1539,41 @@ def remote_run(monkeypatch, tmp_path):
     return arrange
 
 
-PUSH = ['git', 'push', '-u', 'origin', 'feature-x']
+SHA = '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7'
+RUN_BRANCH = 'run/feature-x-4f1c2ab'
+PUSH = ['git', 'push', 'origin', 'HEAD:refs/heads/%s' % RUN_BRANCH]
 WATCH = ['gh', 'run', 'watch', '--exit-status']
-PULL = ['git', 'pull', '--ff-only']
+PULL = ['git', 'pull', '--ff-only', 'origin', RUN_BRANCH]
+DELETE = ['git', 'push', 'origin', '--delete', RUN_BRANCH]
 
 
 @pytest.mark.proof("records", "PROOF-24", "RULE-12")
-def test_the_github_branch_pushes_watches_and_pulls(project, remote_run,
-                                                    capsys):
+def test_the_github_branch_pushes_watches_pulls_and_deletes(project,
+                                                            remote_run,
+                                                            capsys):
     fake = remote_run()
 
     assert remote_module.run_remote(project) == 0
-    assert fake.started == [PUSH, WATCH, PULL]
-    assert fake.cwds == [project, project, project]
+    assert fake.started == [PUSH, WATCH, PULL, DELETE]
+    assert fake.cwds == [project] * 4
     printed = capsys.readouterr().out
-    assert 'Pushing feature-x.' in printed
-    assert 'Waiting for the purlin.yml workflow on feature-x.' in printed
+    assert 'Pushing feature-x as %s.' % RUN_BRANCH in printed
+    assert 'Waiting for the purlin.yml workflow on %s.' % RUN_BRANCH in printed
     assert 'finished red' not in printed
     assert printed.rstrip().endswith('the status table')
+
+
+@pytest.mark.proof("records", "PROOF-24", "RULE-12")
+def test_the_two_pushes_carry_the_marker_the_hook_reads(project, remote_run):
+    """The remote run is the one push the pre-push hook lets an agent make."""
+    fake = remote_run()
+
+    remote_module.run_remote(project)
+    marked = dict(zip([tuple(argv) for argv in fake.started], fake.marked))
+    assert marked[tuple(PUSH)] is True
+    assert marked[tuple(DELETE)] is True
+    assert marked[tuple(WATCH)] is False
+    assert marked[tuple(PULL)] is False
 
 
 @pytest.mark.proof("records", "PROOF-24", "RULE-12")
@@ -1534,7 +1582,7 @@ def test_a_red_run_still_pulls_and_prints_the_table(project, remote_run,
     fake = remote_run(watch=1)
 
     assert remote_module.run_remote(project) == 1
-    assert fake.started == [PUSH, WATCH, PULL]
+    assert fake.started == [PUSH, WATCH, PULL, DELETE]
     printed = capsys.readouterr().out
     assert 'The run finished red. The table below is what came back.' in printed
     assert printed.rstrip().endswith('the status table')
@@ -1561,6 +1609,66 @@ def test_a_failed_push_starts_no_run(project, remote_run, capsys):
     printed = capsys.readouterr().out
     assert 'The push failed, so no run was started.' in printed
     assert 'Waiting for' not in printed
+
+
+# ---------------------------------------------------------------------------
+# Where a CI run commits
+# ---------------------------------------------------------------------------
+
+def _off_a_runner(monkeypatch):
+    for name in ('GITHUB_REPOSITORY', 'GITHUB_REF_NAME', 'GITHUB_HEAD_REF',
+                 'GITHUB_BASE_REF', 'SYSTEM_TEAMFOUNDATIONCOLLECTIONURI',
+                 'SYSTEM_PULLREQUEST_PULLREQUESTID', 'BUILD_SOURCEBRANCH',
+                 'BUILD_SOURCEBRANCHNAME'):
+        monkeypatch.delenv(name, raising=False)
+
+
+@pytest.mark.proof("records", "PROOF-33", "RULE-28")
+def test_off_a_runner_every_commit_is_the_persons_own(project, monkeypatch):
+    _off_a_runner(monkeypatch)
+    assert records_module.commits_here(project) is True
+
+
+@pytest.mark.proof("records", "PROOF-33", "RULE-28")
+def test_the_protected_branch_commits(project, monkeypatch, github_env):
+    monkeypatch.setenv('GITHUB_REF_NAME', 'main')
+    assert records_module.commits_here(project) is True
+    assert records_module.no_commit_line(project).endswith(
+        'the run on main writes them.')
+
+
+@pytest.mark.proof("records", "PROOF-33", "RULE-28")
+def test_a_run_branch_commits(project, monkeypatch, github_env):
+    monkeypatch.setenv('GITHUB_REF_NAME', 'run/main-4f1c2ab')
+    assert records_module.commits_here(project) is True
+
+
+@pytest.mark.proof("records", "PROOF-33", "RULE-28")
+def test_any_other_branch_commits_nothing(project, monkeypatch, github_env):
+    monkeypatch.setenv('GITHUB_REF_NAME', 'topic')
+    assert records_module.commits_here(project) is False
+
+
+@pytest.mark.proof("records", "PROOF-33", "RULE-28")
+def test_a_pull_request_commits_nothing_and_names_its_target(
+        project, monkeypatch, github_env):
+    monkeypatch.setenv('GITHUB_REF_NAME', 'topic')
+    monkeypatch.setenv('GITHUB_HEAD_REF', 'topic')
+    monkeypatch.setenv('GITHUB_BASE_REF', 'main')
+    assert records_module.commits_here(project) is False
+    assert records_module.no_commit_line(project) == (
+        'Pull request run: the records stay on the runner; the run on main '
+        'writes them.')
+
+
+@pytest.mark.proof("records", "PROOF-33", "RULE-28")
+def test_the_azure_ref_is_read_whole(project, monkeypatch, azure_env):
+    """`BUILD_SOURCEBRANCHNAME` is a ref's last part, so `run/x` reaches it as `x`."""
+    monkeypatch.setenv('BUILD_SOURCEBRANCHNAME', 'main-4f1c2ab')
+    monkeypatch.delenv('BUILD_SOURCEBRANCH', raising=False)
+    assert records_module.commits_here(project) is False
+    monkeypatch.setenv('BUILD_SOURCEBRANCH', 'refs/heads/run/main-4f1c2ab')
+    assert records_module.commits_here(project) is True
 
 
 # ---------------------------------------------------------------------------

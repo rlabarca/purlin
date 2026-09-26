@@ -6,7 +6,16 @@
 # thing `purlin:test` runs: the tagged tests, into `.purlin/runtime/proofs/`,
 # in seconds. It prints one line either way.
 #
-# It blocks a push only when both of these are true: `pre_push` in
+# It refuses one push outright: a push from an agent session. A push is a
+# person's act, so an agent that has `CLAUDE_CODE_SESSION_ID` in its
+# environment is stopped here and told to hand the push over. The one push
+# Purlin makes on its own is `purlin:audit --remote`, which marks itself with
+# `PURLIN_REMOTE_RUN=1` and goes through. A person who wants the hook out of
+# the way runs `git push --no-verify`; that override is theirs, not the
+# agent's, because an agent that reaches for it is doing the thing this
+# refuses.
+#
+# Otherwise it blocks a push only when both of these are true: `pre_push` in
 # `.purlin/config.json` is `on`, and a test failed. Every other outcome exits
 # 0, including a missing interpreter, a project with no specs, a run script
 # that never got as far as a test, and a failing test in a project that left
@@ -28,6 +37,15 @@ set -u
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 [ -n "$ROOT" ] || exit 0
 [ -d "$ROOT/.purlin" ] || exit 0
+
+# A push is a person's act. This runs before anything else the hook does,
+# because a project with no spec to run is still a project an agent must not
+# push.
+if [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] && [ -z "${PURLIN_REMOTE_RUN:-}" ]; then
+  echo "purlin: an agent does not push. A person runs git push."
+  exit 1
+fi
+
 # No spec is nothing to run, and the folder alone is not a spec: purlin:init
 # creates specs/ before anything has been written into it.
 [ -n "$(find "$ROOT/specs" -name '*.md' -print 2>/dev/null | head -1)" ] || exit 0

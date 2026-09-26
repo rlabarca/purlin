@@ -1,23 +1,34 @@
-# Purlin runs verify here, on every push and every pull request.
+# Purlin runs the audit here, where the evidence it writes is decided.
 #
 # purlin:init writes this file for a project whose git host is Azure DevOps.
+# Three things start a run and nothing else does: a pull request, a push to
+# the protected branch, and a push to a `run/*` branch, which is the branch
+# `purlin:audit --remote` creates and deletes around one run.
+#
+# A pull request run does the tests, posts the comment and publishes the
+# dashboard, and commits nothing. A run on the protected branch, or on a
+# `run/*` branch, commits its records and briefs there. The build service
+# writes them, so give it Contribute on `.purlin/records/**` and
+# `.purlin/briefs/**` through branch security and give it nothing else.
+#
+# Every run ends with the gate check, and the job fails when the gate is not
+# met, so a build validation policy on this pipeline means the gate held.
+#
 # The matrix always carries ubuntu-latest first, then one job per operating
 # system the `@env` tags in specs/ name; a project that tags nothing runs on
 # ubuntu-latest alone.
 #
-# The build service writes the record, so give it Contribute on
-# `.purlin/records/**` through branch security and give it nothing else.
-#
 # The artifact each job publishes carries the job name, so a matrix of two
 # operating systems leaves two artifacts rather than one.
 #
-# The verify job is capped at 90 minutes, which is longer than any suite this
+# The audit job is capped at 90 minutes, which is longer than any suite this
 # runs and short enough to leave a log worth reading when a run stops for
 # something. The run caps each arm at an hour of its own.
 trigger:
   branches:
     include:
-      - '*'
+      - <<PROTECTED>>
+      - run/*
 
 pr:
   branches:
@@ -25,7 +36,7 @@ pr:
       - '*'
 
 jobs:
-  - job: verify
+  - job: audit
     timeoutInMinutes: 90
     strategy:
       matrix:
@@ -79,7 +90,7 @@ jobs:
         displayName: Set up the test framework
 
       - bash: python3 "$PURLIN_ROOT/scripts/run/purlin_run.py" --all --record --ci
-        displayName: Run verify and write the record
+        displayName: Run the audit and write the record
         env:
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
@@ -88,3 +99,9 @@ jobs:
         inputs:
           artifactName: purlin-dashboard-$(Agent.JobName)
           targetPath: $(Agent.TempDirectory)/purlin-dashboard
+
+      # The last word of every run. The gate check exits 1 when a rule does
+      # not meet the gate, which fails this job, which is what a build
+      # validation policy on this pipeline means.
+      - bash: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check
+        displayName: Check the gate

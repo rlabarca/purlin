@@ -9,8 +9,9 @@ Every case drives the real files against a temp project that `scripts/init/
 scaffold.py` set up, so what these cases prove is what a developer's push
 meets.
 
-The contract in one line: the hook blocks only when `pre_push` is `on` and a
-test failed. Every other outcome exits 0 and prints one line saying why.
+The contract in two lines: the hook refuses a push from an agent session
+outright, and otherwise blocks only when `pre_push` is `on` and a test
+failed. Every other outcome exits 0 and prints one line saying why.
 
 Every case here drives the files through `posix_shell()` rather than `sh`,
 because `sh` is not one shell. On macOS it is bash answering to another name
@@ -59,6 +60,22 @@ SH = posix_shell()
 # sit under one, and then `git rev-parse` answers instead of failing and the
 # case proves something else. This stops the search at the temp root.
 OUTSIDE = {'GIT_CEILING_DIRECTORIES': tempfile.gettempdir()}
+
+# The two variables the agent guard reads. Every case sets what it means to
+# set and clears both otherwise, because this suite is itself run from a
+# session that carries the first one: left in place, every case here would
+# prove the guard and nothing else.
+SESSION = 'CLAUDE_CODE_SESSION_ID'
+REMOTE_RUN = 'PURLIN_REMOTE_RUN'
+
+
+def person_env(base=None, **named):
+    """A copy of the environment with no agent session in it."""
+    env = dict(base if base is not None else os.environ)
+    env.pop(SESSION, None)
+    env.pop(REMOTE_RUN, None)
+    env.update(named)
+    return env
 
 SPEC = """# Feature: greeting
 
@@ -128,7 +145,7 @@ class Project(object):
 
     def push(self, **kwargs):
         """Run the shim the way git runs it, and answer with what it said."""
-        env = dict(os.environ)
+        env = person_env()
         env['HOME'] = self.home
         env.pop('CLAUDE_PLUGIN_ROOT', None)
         env['PURLIN_PLUGIN_ROOT'] = kwargs.get('plugin_root', ROOT)
@@ -224,7 +241,7 @@ class TestTheContract:
             done = subprocess.run(
                 [SH, os.path.join(stub, 'scripts', 'hooks', 'pre-push.sh')],
                 cwd=passing.root, capture_output=True, text=True, timeout=300,
-                stdin=subprocess.DEVNULL)
+                env=person_env(), stdin=subprocess.DEVNULL)
             assert done.returncode == 0, done.stdout + done.stderr
             assert 'not blocked' in done.stdout
             assert 'exited 2' in done.stdout
@@ -236,6 +253,51 @@ class TestTheContract:
         lines = [line for line in passing.push().stdout.splitlines()
                  if line.startswith('purlin:')]
         assert len(lines) == 1
+
+
+class TestTheAgentGuard:
+    """A push is a person's act, and this is where git enforces it."""
+
+    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    def test_an_agent_session_is_refused(self, passing):
+        done = passing.push(env={SESSION: 'session-01'})
+        assert done.returncode == 1
+        assert ('purlin: an agent does not push. A person runs git push.'
+                in done.stdout)
+
+    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    def test_the_remote_run_goes_through(self, passing):
+        """`purlin:audit --remote` is the one push Purlin makes."""
+        done = passing.push(env={SESSION: 'session-01', REMOTE_RUN: '1'})
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'the tagged tests passed' in done.stdout
+        assert 'an agent does not push' not in done.stdout
+
+    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    def test_a_person_is_never_stopped_by_the_guard(self, passing):
+        done = passing.push()
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'an agent does not push' not in done.stdout
+
+    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    def test_the_guard_runs_before_the_tests(self, failing):
+        """No spec is run and no setting is read: the refusal is the first word."""
+        done = failing.push(env={SESSION: 'session-01'})
+        assert done.returncode == 1
+        lines = [line for line in done.stdout.splitlines()
+                 if line.startswith('purlin:')]
+        assert lines == ['purlin: an agent does not push. A person runs '
+                         'git push.']
+
+    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-43")
+    def test_a_project_with_no_spec_is_refused_too(self):
+        made = Project(specs=False)
+        try:
+            done = made.push(env={SESSION: 'session-01'})
+            assert done.returncode == 1
+            assert 'an agent does not push' in done.stdout
+        finally:
+            made.close()
 
 
 class TestWhenThereIsNothingToRun:
@@ -255,14 +317,14 @@ class TestWhenThereIsNothingToRun:
         shutil.rmtree(passing.path('.purlin'), ignore_errors=True)
         done = subprocess.run([SH, HOOK_SCRIPT], cwd=passing.root,
                               capture_output=True, text=True, timeout=300,
-                              stdin=subprocess.DEVNULL)
+                              env=person_env(), stdin=subprocess.DEVNULL)
         assert done.returncode == 0, done.stdout + done.stderr
         assert done.stdout == ''
 
     @pytest.mark.proof("scaffold", "PROOF-28", "RULE-28")
     def test_outside_a_repository_it_exits_zero(self):
         directory = tempfile.mkdtemp(prefix='purlin-norepo-')
-        env = dict(os.environ)
+        env = person_env()
         env.update(OUTSIDE)
         try:
             done = subprocess.run([SH, HOOK_SCRIPT], cwd=directory, env=env,
@@ -341,7 +403,7 @@ class TestTheShim:
         os.remove(passing.path('.purlin/hooks/pre-push'))
         done = subprocess.run([SH, passing.path('.git/hooks/pre-push')],
                               cwd=passing.root, capture_output=True,
-                              text=True, timeout=300,
+                              text=True, timeout=300, env=person_env(),
                               stdin=subprocess.DEVNULL)
         assert done.returncode == 0
         assert 'no hook shim' in done.stdout
@@ -377,8 +439,10 @@ class TestTheFilesThemselves:
     def test_the_script_carries_no_retired_word(self):
         text = read(HOOK_SCRIPT).lower()
         # Spelled in halves so this file does not carry the words either.
-        for word in ('rece' + 'ipt', 'au' + 'dit', 'ga' + 'uge',
-                     'str' + 'ict', 'fo' + 'rge'):
+        # `audit` is not among them: it is the name of the level 2 run and
+        # the hook names the one command that pushes, purlin:audit --remote.
+        for word in ('rece' + 'ipt', 'ga' + 'uge', 'str' + 'ict',
+                     'fo' + 'rge', 'appro' + 'val', 'verif' + 'ied'):
             assert word not in text
 
     @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
