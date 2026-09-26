@@ -143,8 +143,8 @@ A narrower key reaps less, so three rules bound what survives:
   test replaces its own entry.
 
 `scripts/run/purlin_run.py` empties `.purlin/runtime/proofs/` before the first arm of a run, so
-what a `--quick`, `--audit` or `--ci` run reads afterwards is what that run observed and nothing else.
-A plugin invoked on its own merges into whatever is already there, by the rules above.
+what any arm of it reads afterwards is what that run observed and nothing else. A plugin invoked
+on its own merges into whatever is already there, by the rules above.
 
 ### A skipped test writes nothing
 

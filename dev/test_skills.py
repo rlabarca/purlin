@@ -221,10 +221,7 @@ class TestSkillInit:
 
     @pytest.mark.proof("skill_init", "PROOF-2", "RULE-2")
     def test_it_runs_the_scaffold_script(self):
-        assert carries(skill_path('init'), [
-            '"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py"',
-            '--project-root', '--gate', '--update', '--ci', '--add',
-            '--dry-run']) == []
+        assert scaffold_flag_problems() == []
 
     @pytest.mark.proof("skill_init", "PROOF-3", "RULE-3")
     def test_it_closes_by_naming_the_next_step(self):
@@ -493,7 +490,8 @@ class TestSkillAudit:
         rel = skill_path('audit')
         assert (same_line(rel, [
             '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"', '--audit'])
-            + carries(rel, ['You never pass `--ci` by hand.'])) == []
+            + carries(rel, ['CI runs the same script in an arm of its own',
+                            'you never run it by hand'])) == []
 
     @pytest.mark.proof("skill_audit", "PROOF-3", "RULE-3")
     def test_it_closes_by_naming_the_next_step(self):
@@ -517,6 +515,28 @@ class TestSkillAudit:
             '.purlin/briefs/',
             '`--tag <name>` writes an annotated tag `record/<name>`',
             'purlin:test --remote']) == []
+
+
+# Every flag `scripts/init/scaffold.py` takes, and the one retired flag the
+# skill must not name again: `--ci` went when init started asking at `passed`
+# whether to add a remote runner, so a skill that still printed it would hand
+# a person an invocation the script exits 2 on.
+SCAFFOLD_FLAGS = ('--project-root', '--gate', '--update', '--upstream-check',
+                  '--add', '--dry-run')
+SCAFFOLD_RETIRED = ('--ci',)
+
+
+def scaffold_flag_problems():
+    rel = skill_path('init')
+    problems = carries(rel, [
+        '"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py"'] +
+        list(SCAFFOLD_FLAGS))
+    text = read(rel)
+    for flag in SCAFFOLD_RETIRED:
+        if re.search(re.escape(flag) + r'\b', text):
+            problems.append('%s names %s, which scaffold.py does not take'
+                            % (rel, flag))
+    return problems
 
 
 def record_source_problems():

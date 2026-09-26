@@ -7,10 +7,9 @@ already.
 
 **A gate is three things**, and all three must exist for it to mean anything:
 
-1. A CI job running `purlin_run.py --ci` where the evidence is decided: on a pull request, on
-   the protected branch and on a run branch. It runs the tagged tests, then at `strong` and
-   above the audit and the record. Every run ends with `gate_check.py --check` and fails when
-   the gate is not met.
+1. A CI job where the evidence is decided: on a pull request, on the protected branch and on
+   a run branch. It runs the tagged tests, then at `strong` and above the audit and the
+   record. Every run ends with `gate_check.py --check` and fails when the gate is not met.
 2. A branch rule on the protected branch that blocks a merge unless that job passes.
 3. The setting saying what "passes" means.
 

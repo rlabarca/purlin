@@ -118,7 +118,7 @@ presence. Never a selector and never a pixel comparison.
 ## Staying current without asking
 
 ```bash
-purlin:init --ci --upstream-check
+purlin:init --upstream-check
 ```
 
 Adds a scheduled job that opens a pull request, or an issue where it cannot, whenever a pin

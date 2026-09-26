@@ -217,7 +217,7 @@ proposal at all. Put it in a separate local anchor that says `> Requires: <the p
 ### Staying current without asking
 
 ```
-purlin:init --ci --upstream-check
+purlin:init --upstream-check
 ```
 
 That adds a scheduled CI job which opens an issue naming every anchor whose pin is behind its

@@ -120,8 +120,9 @@ gate passed: 3 of 3
 
 or `gate not met: 2 of 3`, and the run exits 1 on the second. It counts every rule under
 `specs/`, not only the rules of the feature you ran, because the gate is a question about the
-project. At `passed` that line is the check: you run no script and you read no record.
-`scripts/ci/gate_check.py --check` is the step a CI job runs, not yours.
+project. At `passed` that line is the check: you run no script and you read no record. The gate
+check belongs to a CI job, and [running-and-records.md](running-and-records.md) is where it is
+described.
 
 ## What the board shows
 

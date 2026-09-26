@@ -80,7 +80,7 @@ is not this one is skipped and listed as `needs <os>`; that is expected locally 
 it on the matching runner.
 
 Never write a proof file, a record or a signature by hand. Tests write proof files,
-`purlin:audit` writes records, `purlin:sign` writes signatures.
+`purlin:test` writes the test results, CI writes records, `purlin:sign` writes signatures.
 
 ## Committing
 
@@ -99,8 +99,9 @@ never enter a commit.
 
 Print the state table from `sync_status` for the feature, then name the next step:
 
-- Every rule has a passing test: `→ Next: purlin:audit`, which breaks the code on purpose,
-  measures the test strength and writes the record.
+- Every rule has a passing test, gate `passed`: `→ Next: run git push.`
+- Every rule has a passing test, gate `strong` or `signed`: `→ Next: purlin:audit`, which breaks
+  the code on purpose and measures the test strength.
 - Some rules still have no test: name them and say what is missing.
 - A rule has a `@manual` proof: say that its evidence is a signature with a one-line note, and
   point at `purlin:sign`.

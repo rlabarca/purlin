@@ -17,9 +17,9 @@ pull request. The pre-push hook refuses a push made from an agent session.
 Three commands carry the three evidence levels: `purlin:test` runs level 1 and commits what it
 saw, `purlin:audit` runs level 2 and reports, and `purlin:sign` is level 3.
 `references/hard_gates.md` says which levels a project asks for. **The record is CI's**: the CI
-job runs the same script with `--ci`, which runs the tests, then the audit at `strong` and
-above, then writes the record and the briefs. You never pass `--ci` by hand, and nothing on
-your machine writes a record.
+job runs the same run script in an arm of its own, which runs the tests, then the audit at
+`strong` and above, then writes the record and the briefs. That arm is the workflow's to pass
+and nobody types it, and nothing on your machine writes a record.
 
 ## Core
 
@@ -83,7 +83,6 @@ Purlin
   ──────
   purlin:init                     One question: what must be true before merge
   purlin:init --gate <level>      passed, strong or signed, afterwards
-  purlin:init --ci                Add the workflow under the passed gate
   purlin:init --add <language>    Wire another language's test framework
   purlin:init --update            Bring the project up to the installed plugin
   purlin:anchor create <name>     A local anchor
@@ -104,7 +103,7 @@ Purlin
 | `purlin:test` | `.purlin/runtime/proofs/`, which is not committed, and `.purlin/tests/<feature>.json` and `.purlin/tests.md`, which it commits itself as `purlin: tests at <sha7>` and never pushes. `--remote` pushes the run branch `run/<branch>-<sha7>`, which it deletes when the run is back |
 | `purlin:audit` | Nothing, except the tag under `--tag`. The record is CI's: a CI run writes `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, and commits both on the protected branch and on a run branch only |
 | `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case |
-| `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when the gate needs one |
+| `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when the gate needs one or you answer yes at `passed` |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, and `designs/<anchor>/` on a sync |
 | `purlin:rename` | Specs, markers, signature directories, record directories |
 | `purlin:status`, `purlin:find`, `purlin:drift` | Nothing |

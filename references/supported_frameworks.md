@@ -24,7 +24,7 @@ of a copy it has to refresh, so neither script holds the fact and the two cannot
 the name a project's file has.
 
 The **Runner setup** column is what the workflow `purlin:init` writes reads: it becomes the
-per-framework install step of the job that runs `purlin:audit --ci`. Every listed framework
+per-framework install step of the CI job. Every listed framework
 carries a cell, because a framework whose setup is unlisted is one a scaffolded workflow cannot
 run.
 

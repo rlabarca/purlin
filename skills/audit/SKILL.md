@@ -39,11 +39,11 @@ writes nothing to the tree. Exit codes: `0` everything asked for happened, `1` a
 or evidence is missing, `2` the command line was wrong.
 
 The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call
-it too, so there is one answer to how a test is run. CI runs the same script with `--ci`, which
-runs the tests, then the audit at `strong` and above, then writes the record and the briefs
-under `.purlin/briefs/<feature>/`. You never pass `--ci` by hand. A CI run commits on the
-protected branch and on a run branch only; `references/hard_gates.md` says where CI runs and
-what each run writes.
+it too, so there is one answer to how a test is run. CI runs the same script in an arm of its
+own, which runs the tests, then the audit at `strong` and above, then writes the record and the
+briefs under `.purlin/briefs/<feature>/`. That arm belongs to the workflow and you never run it
+by hand. A CI run commits on the protected branch and on a run branch only;
+`references/hard_gates.md` says where CI runs and what each run writes.
 
 ## Step 2: read what came back
 
@@ -65,7 +65,7 @@ Raising the gate to `strong` turns the breaks on, locally and in CI.
 
 ## Step 4: the record is CI's
 
-Nothing here writes a record. The CI job runs `purlin:test`'s run, then this audit at `strong`
+Nothing here writes a record. The CI job runs the tagged tests, then this audit at `strong`
 and above, and commits one record per feature on the protected branch and on a run branch. The
 last commit that touched a record decides its source, not anything inside the file:
 

@@ -12,8 +12,10 @@ Purlin cannot prove the code is right. It gives the team a paper trail.
 ## The words
 
 A **rule** is one line saying what the software must do. A **proof** says how that claim is
-observed. A **test** is the executable form of a proof, tagged with its rule. A **record** is
-one audit run's observations, written as a file and committed; nobody signs a record. A
+observed. A **test** is the executable form of a proof, tagged with its rule. The **test
+results** are what a run of the tagged tests saw, which `purlin:test` commits. A **record** is
+one CI run's observations, committed by CI; nobody signs a record, and nothing on a person's
+machine writes one. A
 **brief** is the machine's report on one rule, and it recommends nothing. A **signature** is a
 named person's attestation that a rule, a proof and a test belong together, also committed.
 
@@ -33,10 +35,12 @@ purlin:drift → purlin:spec → purlin:build → purlin:test → purlin:audit �
 
 Run `purlin:drift` when a session opens: it says what changed under you and what that costs.
 Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and
-the tagged tests. Run `purlin:test` while you work; it takes seconds, writes the test results and commits them
-itself. Run `purlin:audit` last: it runs the tests, breaks the code on purpose to measure test
-strength, and reports what it found. It writes no record, because the record is CI's. Then
-hand the push over: the loop ends with a person running `git push`.
+the tagged tests. Run `purlin:test` while you work; it takes seconds, writes the test results
+and commits them itself, and its last line, `gate passed: <n> of <rules>`, is the whole check
+at `passed`. Run `purlin:audit` last: it runs the tests, breaks the code on purpose to measure
+test strength, and reports what it found. It writes no record, because the record is CI's. At
+`passed` the loop is spec, build, test, and the audit is worth running only to see how good
+the tests are. Then hand the push over: the loop ends with a person running `git push`.
 
 Call `sync_status` before you answer any question about state. It returns the spec status and
 the cells of every rule: `drafted` or `ready`, then `passed`, `strong` and `signed` as far as
