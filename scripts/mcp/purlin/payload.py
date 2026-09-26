@@ -37,6 +37,7 @@ they all read instead.
       "review_list": [{"feature": ..., "owner": ..., "rule": ..., "risk": ...,
                        "cell": "signed", "why": ["stale"]}],
       "records": {"login": {"": {..., "label": "ci", "result": "pass"}}},
+      "remote_url": "https://github.com/acme/ledger.git",
       "warnings": ["..."]
     }
 
@@ -145,6 +146,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'records': {feature: {(os_name or ''): _with_result(record)
                               for os_name, record in by_os.items()}
                     for feature, by_os in all_records.items()},
+        'remote_url': _remote_url(project_root),
         'warnings': warnings,
     }
     return payload
@@ -507,6 +509,24 @@ def _record_summary(record):
         'commit': record.get('commit'),
         'test_strength': record.get('test_strength'),
     }
+
+
+def _remote_url(project_root):
+    """The `origin` remote, or `None` when the project has no remote.
+
+    The dashboard turns this into a link to each file on the git host. A
+    project with no remote, or a checkout where git cannot answer, gets
+    plain text instead of a broken link.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'remote', 'get-url', 'origin'],
+            capture_output=True, text=True, cwd=project_root, timeout=15)
+    except (subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
 
 
 def _is_dirty(project_root):

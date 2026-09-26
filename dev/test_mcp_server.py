@@ -1215,10 +1215,16 @@ class TestPayload:
         assert data['schema_version'] == 5
         for key in ('generated_at', 'generated_by', 'project', 'version',
                     'commit', 'dirty', 'gate', 'summary', 'features',
-                    'review_list', 'records', 'warnings'):
+                    'review_list', 'records', 'remote_url', 'warnings'):
             assert key in data, key
         assert data['gate']['gate'] == 'passed'
         assert data['generated_at'].endswith('Z')
+        # A project with no remote gets null rather than a broken link.
+        assert data['remote_url'] is None
+        _git(project.root, 'remote', 'add', 'origin',
+             'https://github.com/acme/ledger.git')
+        assert project.payload()['remote_url'] == (
+            'https://github.com/acme/ledger.git')
 
     @pytest.mark.proof("states", "PROOF-32", "RULE-28", tier="integration")
     def test_a_feature_carries_its_rules_with_their_tags_and_proofs(self,
@@ -1329,6 +1335,7 @@ class TestTheFixturesAreTheContract:
                 built = made.payload()
             finally:
                 made.close()
+            assert sorted(fixture) == sorted(built), name
             assert sorted(fixture['gate']) == sorted(built['gate']), name
             assert sorted(fixture['summary']) == sorted(built['summary']), name
             feature = fixture['features'][0]
