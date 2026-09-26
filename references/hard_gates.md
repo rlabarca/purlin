@@ -7,8 +7,10 @@ already.
 
 **A gate is three things**, and all three must exist for it to mean anything:
 
-1. A CI job running `purlin:audit --ci` on every push and pull request.
-2. A branch rule on the default branch that blocks a merge unless that job passes.
+1. A CI job running `purlin:audit --ci` where the evidence is decided: on a pull request, on
+   the protected branch and on a run branch. Every run ends with `gate_check.py --check` and
+   fails when the gate is not met.
+2. A branch rule on the protected branch that blocks a merge unless that job passes.
 3. The setting saying what "passes" means.
 
 Setting one without the other two is a preference, not a gate.
@@ -60,6 +62,28 @@ A record describes the checkout while its commit is HEAD or its scope tree still
 same. A CI pass that is no longer current makes the passed cell read `code changed`, and CI
 clears it on the next run.
 
+## Where CI runs and what it writes
+
+The workflow `purlin:init` writes triggers on three things and nothing else: a pull request, a
+push to the protected branch, and a push to a `run/*` branch, which is the branch
+`purlin:audit --remote` creates and deletes around one run. A push to any other branch starts
+nothing.
+
+What a run writes depends on where it runs. A pull request run does the tests, posts the
+comment and uploads the dashboard, and commits nothing: a record on a branch nobody merges from
+is evidence of a branch that will not exist. It prints `Pull request run: the records stay on
+the runner; the run on <protected> writes them.` A run on the protected branch, or on a run
+branch, commits its records and briefs there.
+
+Every run ends with `scripts/ci/gate_check.py --check`, and the job fails when the gate is not
+met. That is what makes the required check mean the gate held.
+
+**CI publishes its own evidence; a person pushes theirs.** A push is a person's act: a
+developer's record commit prints `Run: git push` and stops, no skill opens a pull request, and
+the pre-push hook refuses a push made from an agent session unless `PURLIN_REMOTE_RUN=1` marks
+it as the remote run. `purlin:audit --remote` is the one push Purlin makes, and it pushes a run
+branch rather than the branch you are on.
+
 A pull request from a fork gets no record commit. The audit still runs and the comment still
 posts; the job says in one line that nothing was written.
 
@@ -68,12 +92,11 @@ posts; the job says in one line that nothing was written.
 `purlin:init` prints these; you apply them once. On GitHub, three rulesets, so that the bypass
 stays narrow:
 
-1. Require a pull request, and require the `purlin` status check, with the Actions app as the
-   only bypass actor.
+1. Require a pull request, and require the `purlin` workflow's checks, with the Actions app as
+   the only bypass actor. Every run ends with the gate check, so a green check means the gate
+   held.
 2. Restrict file paths on `.purlin/records/**` and `.purlin/briefs/**`, with the Actions app as
-   the only bypass actor, so a person cannot push a record or a brief. Nothing Purlin runs
-   pushes on its own except `purlin:audit --remote`: CI publishes its own evidence; a person
-   pushes theirs.
+   the only bypass actor, so a person cannot push a record or a brief.
 3. Block force pushes and restrict deletions, with no bypass at all.
 
 Under `passed`, only the third is suggested.
@@ -143,6 +166,11 @@ the hold. Changing the rule, the proof or the test ends the hold, as it stales a
 A project may install a pre-push hook. It runs `purlin:test` only: the fast path, no breaks and
 no record, so a push is never held up by a full audit. It prints what it found and lets the push
 through. `git push --no-verify` skips it. It is a convenience, not a control.
+
+The hook refuses one push outright, which is the one thing in it that is not a convenience: a
+push from an agent session. With `CLAUDE_CODE_SESSION_ID` in the environment and
+`PURLIN_REMOTE_RUN` unset it prints `purlin: an agent does not push. A person runs git push.`
+and exits 1, before it runs anything. `--no-verify` is a person's override, not an agent's.
 
 **Nothing in a Claude Code hook gates anything.** The plugin registers no `PreToolUse`, no
 `PermissionRequest` and no `UserPromptSubmit` handler, which are the events through which a hook

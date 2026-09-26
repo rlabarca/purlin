@@ -58,7 +58,15 @@ in the shipped prose where a retired spelling may still be written.
   tied to a commit.
 - **git host**: the service that holds the repository, runs CI, and enforces branch rules:
   GitHub or Azure DevOps. **CI**: the git host's hosted runner executing the same
-  `purlin:audit` a developer runs, on every push and pull request.
+  `purlin:audit` a developer runs, on a pull request, on the protected branch and on a run
+  branch.
+- **protected branch**: the branch a change merges into, the one the branch rules cover. A CI
+  run there writes the records and briefs that count.
+- **push**: `git push`, typed by a person. No skill, agent or hook pushes, and none opens a
+  pull request; a command commits, prints `Run: git push` and stops.
+- **remote run**: `purlin:audit --remote`, the one case in which Purlin pushes. **run branch**:
+  `run/<branch>-<sha7>`, the branch a remote run creates, waits on, pulls the records back from
+  and deletes. The branch you are working on is never pushed.
 
 ## The chain
 

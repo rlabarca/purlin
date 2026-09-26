@@ -263,9 +263,12 @@ def _directives(data, project_root):
         lines.append('%s Next: run purlin:build. %d rules have a proof and no '
                      'passing test.' % (ARROW, no_test))
     elif waiting and gate != 'passed':
-        lines.append('%s Next: push the branch. %d rules are waiting for CI to '
-                     'write the record that counts under %s.'
-                     % (ARROW, waiting, gate))
+        # A push of this branch starts nothing: CI runs on a pull request, on
+        # the protected branch and on a run branch. `--remote` is what gets a
+        # record that counts onto this branch before the merge.
+        lines.append('%s Next: run purlin:audit --remote. %d rules are waiting '
+                     'for the record CI writes, which is the only one that '
+                     'counts under %s.' % (ARROW, waiting, gate))
     elif waiting:
         lines.append('%s Next: run purlin:test. %d rules have no run to read.'
                      % (ARROW, waiting))

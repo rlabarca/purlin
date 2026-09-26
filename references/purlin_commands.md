@@ -10,7 +10,9 @@ tests" reaches `purlin:test` and "what is waiting on a person" reaches `purlin:s
 by naming the next step, computed from the cells it found.
 
 Nothing here pushes on its own except `purlin:audit --remote`, which a person asked for by
-name: CI publishes its own evidence; a person pushes theirs.
+name and which pushes a run branch of its own, never the branch you are on. Everywhere else a
+push is a person's act: a command commits, prints `Run: git push` and stops. No command opens a
+pull request. The pre-push hook refuses a push made from an agent session.
 
 Three commands carry the three evidence levels: `purlin:test` runs level 1, `purlin:audit` runs
 level 2 and writes the record, and `purlin:sign` is level 3. `references/hard_gates.md` says
@@ -24,7 +26,7 @@ the briefs; you never pass `--ci` by hand.
 | `purlin:spec <name>` | Scaffold or edit a feature spec in the 2-section format | An engineer's agent, or a PM or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
 | `purlin:build [name]` | Inject a spec's rules into context, then implement them | An engineer, on every change. With no name it reads the board |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell | An engineer, constantly. Seconds; tests only |
-| `purlin:audit [feature]` | Run the tests and the breaks, then write the record | An engineer locally; CI on every push and pull request |
+| `purlin:audit [feature]` | Run the tests and the breaks, then write the record | An engineer locally; CI on a pull request, on the protected branch and on a run branch |
 | `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit | Anyone on the signer list. With no argument it walks the list |
 | `purlin:drift [role]` | Report what changed since the last record, by role | Everyone, at session start and before a release |
 
@@ -61,7 +63,7 @@ Purlin
   Proving
   ──────
   purlin:audit [feature ...]      Tests, breaks, and a record
-  purlin:audit --remote           Push, wait for CI, pull the records it wrote
+  purlin:audit --remote           Run it on CI through a run branch, and pull the records back
   purlin:audit --tag <name>       Pin this state as record/<name>
   purlin:sign                     Walk the review list one brief at a time
   purlin:sign <feature> [RULE-N ...]  Sign, as a signed commit
@@ -98,7 +100,7 @@ Purlin
 | `purlin:spec`, `purlin:spec-from-code` | `specs/<category>/<name>.md` |
 | `purlin:build` | Code, test files, and the commit carrying the changeset |
 | `purlin:test` | `.purlin/runtime/proofs/` only, which is not committed |
-| `purlin:audit` | `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`; under `--ci` also `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`; the tag under `--tag`. `--commit` commits and prints `Run: git push`; only `--remote` pushes |
+| `purlin:audit` | `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`; under `--ci` also `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`; the tag under `--tag`. `--commit` commits and prints `Run: git push`; only `--remote` pushes, to the run branch `run/<branch>-<sha7>`, which it deletes when the records are back. A CI run commits on the protected branch and on a run branch only |
 | `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case |
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when the gate needs one |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, and `designs/<anchor>/` on a sync |

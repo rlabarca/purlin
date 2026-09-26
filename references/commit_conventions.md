@@ -55,6 +55,11 @@ A record commit carries the record file and, on a CI run, the briefs that run wr
 commit, because the record must be able to say which commit the tests ran against. CI writes no
 signature file, so a record commit never carries one.
 
+CI's record commit lands on the protected branch or on a run branch, and nowhere else. A pull
+request run posts the comment and commits nothing: a record on a branch nobody merges from is
+evidence of a branch that will not exist. A developer's record commit is their own, on their
+own branch, and it is never pushed for them.
+
 ## The signature commit
 
 ```

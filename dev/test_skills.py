@@ -796,8 +796,9 @@ def never_problems():
         problems.append('%s carries %d NEVERs, expected 5' % (AGENT, len(items)))
     flattened = flat(body)
     for needle in ('origin', 'proof file', 'record', 'signature',
-                   'sign a rule whose test you wrote', 'purlin:audit',
-                   '`strong`', '`signed`', 'retired term'):
+                   'sign a rule whose test you wrote', 'Never push',
+                   'pull request', 'remote branch', 'purlin:audit --remote',
+                   'retired term'):
         if needle not in flattened:
             problems.append('%s NEVERs do not name %r' % (AGENT, needle))
     return problems

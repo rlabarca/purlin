@@ -67,7 +67,7 @@ not empty:
 |----------------------|--------------------------|
 | A rule's spec status is `drafted` | `→ Next: run purlin:spec.` with the count |
 | A rule has a failing test, or no test | `→ Next: run purlin:build.` with the count |
-| A rule is waiting for the record that counts | `→ Next: push the branch.` under `strong` and above, `→ Next: run purlin:test.` under `passed` |
+| A rule is waiting for the record that counts | `→ Next: run purlin:audit --remote.` under `strong` and above, `→ Next: run purlin:test.` under `passed` |
 | A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
 | A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Next: run purlin:sign.` with the count |
 | Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |

@@ -75,11 +75,19 @@ It installs the proof plugin for the detected framework and the breaks engine fo
 language, writing `[tool.mutmut]` into `pyproject.toml` when that file exists and `[mutmut]`
 into `setup.cfg` otherwise. It adds a `.gitignore` block for `.purlin/runtime/`, which is
 where test runs put their proof files, and copies the dashboard page so it opens from disk. It
-offers a `pre-push` hook that runs `purlin:test --quick`, and installs the Claude Code hook
-that refreshes the local dashboard data. It creates `designs/` with a README when the gate is
+offers a `pre-push` hook that runs `purlin:test --quick` and refuses a push from an agent
+session, and installs the Claude Code hook that refreshes the local dashboard data. It creates `designs/` with a README when the gate is
 `strong` or `signed`. Under those two gates it also writes the CI workflow, and it ignores
 `.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON that CI commits. It
 ends by printing every file it wrote or edited, one per line.
+
+The workflow runs where the evidence it writes is decided. It triggers on a pull request, on a
+push to the project's own default branch and on a push to a `run/*` branch, which is the branch
+`purlin:audit --remote` creates and deletes around one run; a push to any other branch starts
+nothing. A pull request run does the tests, posts the comment and uploads the dashboard, and
+commits nothing. A run on the default branch, or on a run branch, commits its records and
+briefs there. Every run ends with `Check the gate`, which runs `scripts/ci/gate_check.py
+--check` and fails the job when the gate is not met.
 
 The config it writes looks like this, and every key after `gate` has a default the gate
 implies:
@@ -142,8 +150,9 @@ Init prints these; the git host enforces them. Purlin never changes a repository
 
 **GitHub**, three rulesets so each bypass stays narrow:
 
-1. Require a pull request and require the `purlin` status check, with the Actions app as the
-   only bypass actor.
+1. Require a pull request and require the `purlin` workflow's checks, with the Actions app as
+   the only bypass actor. Every run ends with the gate check, so a green check means the gate
+   held.
 2. Restrict file paths on `.purlin/records/**` and `.purlin/briefs/**`, with the Actions app as
    the only bypass actor, so a person cannot push a record or a brief.
 3. Block force pushes and restrict deletions, with no bypass actor at all.
@@ -151,8 +160,8 @@ Init prints these; the git host enforces them. Purlin never changes a repository
 Under `passed`, print only the third.
 
 **Azure DevOps**, the same three: require a pull request with the purlin pipeline as a build
-validation policy; grant Contribute on those same two paths to the build service alone; deny
-Force Push and Delete branch for everyone.
+validation policy, which also ends with the gate check; grant Contribute on those same two
+paths to the build service alone; deny Force Push and Delete branch for everyone.
 
 ## Commit signing under `signed`
 

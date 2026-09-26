@@ -18,7 +18,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ```
 purlin:audit                    Run the tests and the breaks, write the record
 purlin:audit <feature> [...]    One feature, or several
-purlin:audit --remote           Push the branch, wait for CI, pull the records it wrote
+purlin:audit --remote           Run it on CI through a run branch, and pull the records back
 purlin:audit --tag <name>       Pin this state as record/<name>
 ```
 
@@ -33,14 +33,17 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --record --commi
 `--record` runs the tests, then the breaks, then writes
 `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and prints
 `Record written: <path>`. `--commit` commits it under your own git identity, which is what the
-`passed` gate reads, and prints `Record committed. Run: git push` and
-`Record committed as developer.` It never pushes: CI publishes its own evidence; a person
-pushes theirs. Drop `--commit` to leave the record uncommitted and read it yourself. Exit codes: `0` everything asked for happened, `1` a
-test failed or evidence is missing, `2` the command line was wrong.
+`passed` gate reads, and prints `Record committed. Run: git push` and `Record committed as
+developer.` It never pushes: a push is a person's act, so say what the record proves and leave
+`git push` to them. Drop `--commit` to leave the record uncommitted and read it yourself. Exit
+codes: `0` everything asked for happened, `1` a test failed or evidence is missing, `2` the
+command line was wrong.
 
 The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call
 it too, so there is one answer to how a test is run. CI runs the same script with `--ci`, which
-also writes the briefs under `.purlin/briefs/<feature>/`. You never pass `--ci` by hand.
+also writes the briefs under `.purlin/briefs/<feature>/`. You never pass `--ci` by hand. A CI
+run commits on the protected branch and on a run branch only; `references/hard_gates.md` says
+where CI runs and what each run writes.
 
 ## Step 2: read what came back
 
@@ -71,24 +74,23 @@ The last commit that touched a record decides its source, not anything inside th
 | developer | A person committed it | `passed` only |
 | local | Not committed yet | `passed` only, and only in this checkout |
 
-Under `strong` and `signed` only a `ci` record counts, so your local run tells you the push
-will pass and CI writes the record that the gate reads. Under `passed` your own commit is the
+Under `strong` and `signed` only a `ci` record counts, so your local run tells you what CI will
+find and the record the gate reads is the one CI writes. Under `passed` your own commit is the
 record. `references/hard_gates.md` defines the three gates once; do not restate them elsewhere.
 
 ## Step 5: `--remote` and `--tag`
 
-`--remote` is the one thing here that reaches a remote: it pushes the current branch and
-waits for the workflow. On GitHub it watches the run
-with `gh run watch`, pulls the records CI committed, and prints the table. On Azure DevOps it
-prints the pipeline URL and returns. Use it when a proof is tagged `@env` for an operating
-system this host is not.
+`--remote` is the one thing in Purlin that pushes, and it pushes a branch of its own. It
+creates `run/<branch>-<sha7>` on the remote from this commit, so the branch you work on never
+leaves the machine. On GitHub it watches the run with `gh run watch`, pulls the record commit
+back onto your branch, deletes the run branch and prints the table. On Azure DevOps it pushes
+the run branch the same way, then prints the pipeline URL, the pull and the delete for you to
+run. A detached head and an uncommitted change are both refused first. Use it when a proof is
+tagged `@env` for an operating system this host is not.
 
 `--tag <name>` writes an annotated tag `record/<name>` whose message lists the records it
 vouches for, and prints `Record tag written: record/<name>`. A feature keeps the newest three
 records per operating system and the rest are pruned; a record a tag names is kept for ever.
-
-A forked pull request never gets a record commit. The run still happens and the comment still
-posts; the job says in one line that no record was written.
 
 ## Step 6: name the next step
 
@@ -97,6 +99,6 @@ posts; the job says in one line that no record was written.
 | A test failed | `→ Run: purlin:build <feature>` |
 | Test strength below `min_strength` | `→ Run: purlin:build <feature>` (add the case the break escaped) |
 | A rule needs another operating system | `→ Run: purlin:audit --remote` |
-| Every rule met the gate `passed` | `→ Push.` |
-| A `ci` record is missing under `strong` or `signed` | `→ Push; CI writes the record.` |
+| Every rule met the gate `passed` | `→ Next: run git push.` |
+| A `ci` record is missing under `strong` or `signed` | `→ Next: run git push; the run on the protected branch writes the record.` |
 | A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Run: purlin:sign` |

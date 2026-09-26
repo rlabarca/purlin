@@ -234,7 +234,7 @@ first three, under `signed` all four.
 | spec | `drafted` | No proof line names the rule, or a blocking free check fires on the proof text: `no_expected_value`, `vague_verb`, `missing_trigger` or `tier_mismatch`. | Write or rewrite the proof under `## Proof` so it names a trigger and an expected value at a tier it can reach. `purlin:spec`. |
 | passed | `no test` | The spec status is `ready` and no test carries the proof marker. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
-| passed | `not run` | No record that counts under the gate exists, or the only record is a `developer` or `local` one and the gate is `strong` or above. The reason says which. | Push and let CI run, or `purlin:audit --remote`. |
+| passed | `not run` | No record that counts under the gate exists, or the only record is a `developer` or `local` one and the gate is `strong` or above. The reason says which. | Run `purlin:audit --remote`, which is how a CI record reaches this branch. |
 | passed | `not run`, with `<os>: no record yet` | A proof carries `@env` and no record from that operating system has passed it. | Let the CI matrix run that job, or drop the `@env` tag if any host could prove it. |
 | passed | `code changed` | A CI pass exists but the code moved since. | Nothing. CI clears it on the next run. |
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
