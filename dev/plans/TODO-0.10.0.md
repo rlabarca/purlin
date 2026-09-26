@@ -113,9 +113,9 @@ is what the run could not finish, found and left, or left to a person.
     `Untested`, `Failing`, `Weak`, `Unsigned`, `Stale or held`.
 28. **Done by this release.** The three-level model gives level 1 the word `passed` and retires
     the old level-2 gate word for `strong`.
-29. **The counts line in `RELEASE_NOTES.md` reads 986 passed**; the sweep now collects 1,083
-    tests. `purlin_version` RULE-9 fails locally until the orchestrator sets the line after the
-    closing sweep (item 3).
+29. **The counts line in `RELEASE_NOTES.md`** is held against the sweep's own counts by the
+    sweep's last suite, `Counts line`, which prints both and fails naming the line to write.
+    Run `bash dev/run_tests.sh` after the closing sweep (item 3) and write the line it names.
 
 ## Housekeeping
 

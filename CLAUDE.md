@@ -94,6 +94,10 @@ pull request touching a version-bearing file, then the `purlin_version` proofs. 
 locally before committing a bump. `specs/instructions/purlin_version.md` covers all four locations
 plus the script itself.
 
+The `## Unreleased` section of `RELEASE_NOTES.md` states one counts line, `N passed, M skipped`:
+`bash dev/run_tests.sh` holds it against its own counts in its last suite, `Counts line`, and
+fails naming the line to write, so you run the sweep and write the line it names.
+
 ## Tool folder separation
 
 Everything here ships: `.claude-plugin/marketplace.json` declares the plugin source as `./`, so an

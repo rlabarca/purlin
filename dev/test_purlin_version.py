@@ -360,46 +360,6 @@ class TestDocsCiteVersionFileInsteadOfALiteral:
 
 DEV_SWEEP = 'dev/run_tests.sh'
 RUN_TESTS_SH = os.path.join(PROJECT_ROOT, 'dev', 'run_tests.sh')
-RELEASE_NOTES = os.path.join(PROJECT_ROOT, 'RELEASE_NOTES.md')
-SWEEP_RECORD = os.path.join(PROJECT_ROOT, '.purlin', 'runtime', 'last_sweep.json')
-
-
-def _parse_unreleased_counts():
-    """Return (passed, skipped) from the one counts line in the Unreleased
-    section of RELEASE_NOTES.md, asserting that there is exactly one."""
-    with open(RELEASE_NOTES, encoding='utf-8') as f:
-        notes = f.read()
-    assert '## Unreleased' in notes, "RELEASE_NOTES.md has no Unreleased section"
-    section = notes.split('## Unreleased', 1)[1]
-    section = re.split(r'^## ', section, maxsplit=1, flags=re.MULTILINE)[0]
-    hits = re.findall(r'(\d+) passed, (\d+) skipped', section)
-    assert len(hits) == 1, (
-        f"the Unreleased section must state the sweep counts exactly once "
-        f"as 'N passed, M skipped'; found {len(hits)}: {hits}")
-    return int(hits[0][0]), int(hits[0][1])
-
-
-def _compare_notes_to_sweep(notes_passed, notes_skipped, record_path):
-    """Compare the notes counts to the dev sweep's own record, or say why
-    there is nothing to compare against (RULE-9).
-
-    Returns None once the comparison has been made and both counts agree, and
-    a skip reason when no record exists at `record_path`: it is gitignored
-    runtime state, so a checkout that has never run the sweep has nothing to
-    compare. Asserts, so a disagreement fails the caller naming both numbers.
-    """
-    if not os.path.isfile(record_path):
-        return (f"no sweep record at {record_path}; run `bash dev/run_tests.sh` "
-                f"to write one, then the notes can be checked against it")
-    with open(record_path, encoding='utf-8') as f:
-        record = json.load(f)
-    assert notes_passed == record.get('passed'), (
-        f"RELEASE_NOTES.md Unreleased says {notes_passed} passed; the "
-        f"{DEV_SWEEP} record in {record_path} says {record.get('passed')}")
-    assert notes_skipped == record.get('skipped'), (
-        f"RELEASE_NOTES.md Unreleased says {notes_skipped} skipped; the "
-        f"{DEV_SWEEP} record in {record_path} says {record.get('skipped')}")
-    return None
 
 
 def _write_marker_function_text():
@@ -416,16 +376,18 @@ def _write_marker_function_text():
     return cut
 
 
-class TestReleaseNotesCounts:
-    """RULE-9 - the Unreleased counts are checked against .purlin/runtime/
-    last_sweep.json, the dev sweep's own record of itself, not against the
-    shared marker a proof plugin rewrites mid-sweep and not against the memory
-    of whoever wrote the notes."""
+class TestTheSweepRecordsItself:
+    """RULE-10 - the sweep writes its own whole record of what ran to
+    .purlin/runtime/last_sweep.json, beside the shared test_run.json a proof
+    plugin rewrites as it finishes. The RELEASE_NOTES counts line is not
+    checked here: the sweep checks it itself, in its `Counts line` suite,
+    because only the sweep knows the counts of the run it is in."""
 
-    @pytest.mark.proof("purlin_version", "PROOF-9", "RULE-9", tier="integration")
+    @pytest.mark.proof("purlin_version", "PROOF-10", "RULE-10",
+                       tier="integration")
     def test_sweep_exit_trap_writes_its_own_sweep_record(self, tmp_path):
-        """Leg (a): drive the sweep's real writer and verify it writes
-        last_sweep.json, unmerged, beside the shared test_run.json."""
+        """Drive the sweep's real writer and verify it writes last_sweep.json,
+        unmerged, beside the shared test_run.json."""
         root = tmp_path / 'proj'
         (root / '.purlin' / 'runtime').mkdir(parents=True)
         git = ['git', '-c', 'user.email=t@example.com', '-c', 'user.name=t']
@@ -499,42 +461,3 @@ class TestReleaseNotesCounts:
             f"{DEV_SWEEP!r}")
         assert 'runs' in shared, \
             "test_run.json is the merged marker and must carry a `runs` list"
-
-    @pytest.mark.proof("purlin_version", "PROOF-9", "RULE-9", tier="integration")
-    def test_unreleased_counts_match_the_sweep_record(self, tmp_path):
-        """Legs (b), (c) and (d): the notes parse, the comparison helper, and
-        the real record."""
-        # ── (b) exactly one counts line in the Unreleased section ──────
-        passed, skipped = _parse_unreleased_counts()
-
-        # ── (c) the helper fails loudly on a disagreement ──────────────
-        disagreeing = tmp_path / 'last_sweep.json'
-        disagreeing.write_text(json.dumps({
-            'at': '2026-01-01T00:00:00+00:00',
-            'commit': 'deadbeef',
-            'passed': passed + 1,
-            'failed': 0,
-            'skipped': skipped,
-            'ok': True,
-            'suites': ['All Pytest Tests'],
-        }), encoding='utf-8')
-        with pytest.raises(AssertionError) as raised:
-            _compare_notes_to_sweep(passed, skipped, str(disagreeing))
-        message = str(raised.value)
-        assert str(passed) in message and str(passed + 1) in message, (
-            f"the failure must name the notes count and the sweep's count "
-            f"side by side; got: {message}")
-
-        # ── (c) an absent record is an absent observation, not a failure ─
-        absent = tmp_path / 'never-swept' / 'last_sweep.json'
-        reason = _compare_notes_to_sweep(passed, skipped, str(absent))
-        assert reason is not None, \
-            "an absent sweep record must yield a skip reason, not a comparison"
-        assert str(absent) in reason and 'bash dev/run_tests.sh' in reason, (
-            f"the skip reason must name the missing path and how to write it; "
-            f"got: {reason}")
-
-        # ── (d) the real record ────────────────────────────────────────
-        reason = _compare_notes_to_sweep(passed, skipped, SWEEP_RECORD)
-        if reason is not None:
-            pytest.skip(reason)

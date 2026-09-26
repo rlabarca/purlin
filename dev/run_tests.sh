@@ -10,13 +10,19 @@
 # sweep merges: their `runs` entries and any field they added survive, and
 # only the summary the sweep owns is replaced. last_sweep.json is the sweep's
 # own copy of those counts, written whole, because partway through a run the
-# shared marker is a plugin's and carries only that plugin's share;
-# dev/test_purlin_version.py reads it to check the RELEASE_NOTES counts line.
+# shared marker is a plugin's and carries only that plugin's share.
+#
+# The last suite, `Counts line`, holds the `N passed, M skipped` line in the
+# `## Unreleased` section of RELEASE_NOTES.md against the counts this run has
+# just accumulated. The comparison belongs to the sweep because only the sweep
+# knows its own totals: a test reading last_sweep.json compares this run's
+# notes against the previous run's counts, so a fresh checkout skips the first
+# time and fails the second.
 #
 # `--fast` holds out the shell suites and the browser suite
-# (dev/test_purlin_report.py), nearly all of the wall clock, and writes neither
-# file: both are read as the claim that every suite ran, and a partial run has
-# no right to make it.
+# (dev/test_purlin_report.py), nearly all of the wall clock, writes neither
+# file and compares no counts: all three are read as the claim that every suite
+# ran, and a partial run has no right to make it.
 set -euo pipefail
 
 FAST=0
@@ -163,6 +169,67 @@ PY
 }
 trap write_marker EXIT
 
+# The last suite. It reads the counts line out of the `## Unreleased` section
+# of RELEASE_NOTES.md and holds it against what this run counted, so the sweep
+# checks the line rather than a test reading the previous sweep's record.
+#
+# What write_marker records as `passed` is PYTEST_PASSED plus the shell suites
+# that passed, with the pytest pool dropped from the suite tally because its
+# tests are counted one by one. run_suite increments PASS after the suite
+# returns, so this suite counts itself: with the pool dropped, PASS + 1 - 1 is
+# PASS. When pytest failed, write_marker drops the pool from the failures
+# instead and the passed suites keep their own count, so the 1 stands.
+counts_line() {
+  local expected_passed status=0 outcome
+  if [[ $PYTEST_FAILED -gt 0 ]]; then
+    expected_passed=$((PYTEST_PASSED + PASS + 1))
+  else
+    expected_passed=$((PYTEST_PASSED + PASS))
+  fi
+  PURLIN_COUNTS_PASSED="$expected_passed" \
+  PURLIN_COUNTS_SKIPPED="$PYTEST_SKIPPED" \
+  PURLIN_COUNTS_PARTIAL="$FAST" \
+  python3 - "$ROOT/RELEASE_NOTES.md" <<'COUNTS' || status=$?
+import os, re, sys
+with open(sys.argv[1], encoding='utf-8') as handle:
+    notes = handle.read()
+counted = '%s passed, %s skipped' % (os.environ['PURLIN_COUNTS_PASSED'],
+                                     os.environ['PURLIN_COUNTS_SKIPPED'])
+if '## Unreleased' not in notes:
+    print('counts line: RELEASE_NOTES.md has no ## Unreleased section.')
+    sys.exit(1)
+section = re.split(r'^## ', notes.split('## Unreleased', 1)[1],
+                   maxsplit=1, flags=re.MULTILINE)[0]
+hits = re.findall(r'(\d+) passed, (\d+) skipped', section)
+if len(hits) != 1:
+    print('counts line: the ## Unreleased section states the counts %d times; '
+          'it states them once, as `N passed, M skipped`.' % len(hits))
+    sys.exit(1)
+written = '%s passed, %s skipped' % hits[0]
+print('counts line: RELEASE_NOTES.md says %s' % written)
+print('counts line: this sweep counted %s' % counted)
+if os.environ['PURLIN_COUNTS_PARTIAL'] == '1':
+    print('counts line: --fast held suites out, so the two are not compared.')
+    sys.exit(0)
+if written != counted:
+    print('counts line: they disagree. Write `%s` in the ## Unreleased section '
+          'of RELEASE_NOTES.md.' % counted)
+    sys.exit(1)
+print('counts line: they agree.')
+COUNTS
+  # The proof for purlin_version RULE-9, written by the suite that makes the
+  # comparison. A --fast sweep compares nothing, so it claims nothing.
+  if [[ $FAST -eq 0 ]]; then
+    # shellcheck source=../scripts/proof/shell_purlin.sh
+    . "$ROOT/scripts/proof/shell_purlin.sh"
+    if [[ $status -eq 0 ]]; then outcome=pass; else outcome=fail; fi
+    PURLIN_PROOF_TIER=e2e purlin_proof "purlin_version" "PROOF-9" "RULE-9" \
+      "$outcome" "the notes counts line against the sweep's own counts"
+    purlin_proof_finish
+  fi
+  return $status
+}
+
 # ── Shell suites first (proof files written per feature) ─────────────
 # Held out by `--fast`: these invocations are most of the sweep's wall clock.
 if [[ $FAST -eq 0 ]]; then
@@ -206,6 +273,9 @@ else
   echo "--fast: skipping the browser suites (dev/test_purlin_report*.py)"
 fi
 run_suite "All Pytest Tests" run_pytest "${PYTEST_FILES[@]}" -v
+
+# ── The counts line, last, because it counts every suite above it ─────
+run_suite "Counts line" counts_line
 
 printf '\n━━━━━━━━━━━━━━━━━━━━━━━━━\nSuites: %d passed, %d failed\n━━━━━━━━━━━━━━━━━━━━━━━━━\n' "$PASS" "$FAIL"
 SWEEP_COMPLETE=1
