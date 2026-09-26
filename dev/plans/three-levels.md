@@ -92,6 +92,23 @@ left to a lane's judgment except wording.
     `--remote` keeps its push, because the remote runner is the point of it. CI's record commit
     through the git host's API stays: it is the remote runner writing its own evidence, not a
     push from a person's machine. `purlin:sign` and `--tag` already push nothing. Lane 7B.
+26. **CI runs where evidence is decided, and enforces the gate** (added 2026-09-26). The
+    workflow triggers on pull requests, on pushes to the protected branch, and on pushes to
+    `run/*` branches; a push to any other branch starts nothing. A pull request run tests,
+    posts the comment and uploads the dashboard, and commits nothing. A run on the protected
+    branch, or on a `run/*` branch, writes the records and briefs and commits them there. Every
+    run ends with `scripts/ci/gate_check.py --check`, and the job fails when the gate is not
+    met, so the required check means the gate held. At `passed` init writes no workflow unless
+    `--ci` asks for one (scaffold RULE-13 stands); at `strong` and above it always does.
+27. **A push is a person's act, and git enforces it** (added 2026-09-26). Vocabulary: a
+    **push** is `git push` typed by a person; a **remote run** is `purlin:audit --remote`,
+    the one case in which Purlin pushes, to a **run branch** `run/<branch>-<sha7>` it creates,
+    waits on, pulls the records back from, and deletes. No skill, lane, agent or hook pushes
+    anything else, and none opens a pull request; `purlin:drift` is how a person reads what a
+    pull request changed against the local tree. The pre-push hook refuses a push from an
+    agent session (`CLAUDE_CODE_SESSION_ID` set) unless `PURLIN_REMOTE_RUN=1` marks a remote
+    run, and prints that a person runs `git push`. Lanes 8A (code) and 8B (docs).
+
 
 
 
