@@ -6,15 +6,14 @@
 #
 #   1. purlin:init at gate passed
 #   2. a hand-written spec and one tagged test
-#   3. purlin_run.py --quick            the tests, in seconds
-#   4. purlin_run.py --record --commit  the record a developer commits
-#   5. gate_check.py --check            exits 0 under passed
-#   6. purlin:init --gate strong        raises the gate
-#   7. gate_check.py --check            exits 1: a developer record does not count
-#   8. a record and its briefs from --ci, committed under the build identity
-#   9. gate_check.py --check            exits 0: strong is met by that record
-#   9a. a --ci run on a pull request, which commits nothing and says so
-#   9b. a --ci run on the protected branch and on run/*, which commit
+#   3. purlin_run.py --quick            the tests, the results, the commit
+#   4. gate_check.py --check            exits 0 under passed
+#   5. purlin:init --gate strong        raises the gate
+#   6. gate_check.py --check            exits 1: nothing CI wrote is there yet
+#   7. a record and its briefs from --ci, committed under the build identity
+#   8. gate_check.py --check            exits 0: strong is met by that record
+#   8a. a --ci run on a pull request, which commits nothing and says so
+#   8b. a --ci run on the protected branch and on run/*, which commit
 #  10. purlin:init --gate signed        raises again
 #  11. gate_check.py --check            exits 1: no signer list
 #  12. the signer list, then the gate check exits 1 with no signature
@@ -135,6 +134,19 @@ new_repo() {  # dir
   git -C "$1" config commit.gpgsign false
 }
 
+# A bare repository standing in for the git host, so init's prerequisites are
+# answered on disk with no network: the directory name carries the host and
+# one push puts `main` on it.
+add_remote() {  # dir
+  local dir="$1" url="$1.github-origin.git"
+  git -C "$(dirname "$dir")" init --bare -q -b main "$url"
+  git -C "$dir" remote add origin "$url"
+  git -C "$dir" add -A
+  git -C "$dir" commit -q -m "the project"
+  git -C "$dir" push -q -u origin main
+  TMPDIRS="$TMPDIRS $url"
+}
+
 init_at() {  # dir gate [args...]
   local dir="$1" gate="$2"
   shift 2
@@ -196,7 +208,7 @@ with open(path, 'w', encoding='utf-8') as handle:
 PY
 }
 
-# `ci`, `developer` or `local` for the newest record, read the way the reader
+# `ci` or `local` for the newest record, read the way the reader
 # reads it: from the last commit that touched the file.
 record_label() {  # dir
   python3 - "$1" <<'PY'
@@ -240,19 +252,26 @@ EOF
 gate_walk() {  # dir language
   local dir="$1" language="$2"
 
-  expect_exit "$language: quick run passes" 0 \
+  expect_exit "$language: quick run passes and meets the gate" 0 \
     python3 "$RUN" --all --quick --project-root "$dir"
-  expect_exit "$language: the audit writes and commits the record" 0 \
-    python3 "$RUN" --all --record --commit --project-root "$dir"
-  expect_file "$language: the record is in the tree" \
-    "$(ls -d "$dir"/.purlin/records/greeting 2>/dev/null)"
-  expect_exit "$language: passed is met by the developer's record" 0 \
+  expect_file "$language: the test results are in the tree" \
+    "$dir/.purlin/tests/greeting.json"
+  expect_file "$language: the table is in the tree" "$dir/.purlin/tests.md"
+  if git -C "$dir" log -1 --format=%s | grep -q '^purlin: tests at '; then
+    pass "$language: purlin:test committed the results itself"
+  else
+    bad "$language: purlin:test committed the results itself" \
+      "$(git -C "$dir" log -1 --format=%s)"
+  fi
+  expect_absent "$language: no record is written at passed" \
+    "$dir/.purlin/records/greeting"
+  expect_exit "$language: passed is met by the test results" 0 \
     python3 "$GATE" --check --project-root "$dir"
 
   init_at "$dir" strong
   expect_in "$language: raising to strong writes the workflow" \
     'wrote .github/workflows/purlin.yml' "$dir/.purlin-init.log"
-  expect_exit "$language: strong refuses a developer record" 1 \
+  expect_exit "$language: strong refuses a run nobody on CI made" 1 \
     python3 "$GATE" --check --project-root "$dir"
 
   # A record's file name carries the second it was written, and the reader
@@ -263,7 +282,7 @@ gate_walk() {  # dir language
   # host's API, which no temp repository has, so the walk commits them here
   # under the build identity instead.
   sleep 1
-  python3 "$RUN" --all --record --ci --project-root "$dir" \
+  python3 "$RUN" --all --ci --project-root "$dir" \
     > "$dir/.purlin-ci.log" 2>&1
   commit_as_ci "$dir"
   if [ "$(record_label "$dir")" = "ci" ]; then
@@ -283,19 +302,19 @@ gate_walk() {  # dir language
   # because no token is set.
   env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=topic \
       GITHUB_HEAD_REF=topic GITHUB_BASE_REF=main \
-      python3 "$RUN" --all --record --ci --project-root "$dir" \
+      python3 "$RUN" --all --ci --project-root "$dir" \
       > "$dir/.purlin-pr.log" 2>&1
   expect_in "$language: a pull request run keeps its records on the runner" \
     'Pull request run: the records stay on the runner' "$dir/.purlin-pr.log"
 
   env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=main \
-      python3 "$RUN" --all --record --ci --project-root "$dir" \
+      python3 "$RUN" --all --ci --project-root "$dir" \
       > "$dir/.purlin-main.log" 2>&1
   expect_not_in "$language: a run on the protected branch commits its records" \
     'Pull request run:' "$dir/.purlin-main.log"
 
   env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=run/main-0000000 \
-      python3 "$RUN" --all --record --ci --project-root "$dir" \
+      python3 "$RUN" --all --ci --project-root "$dir" \
       > "$dir/.purlin-runbranch.log" 2>&1
   expect_not_in "$language: a run on a run branch commits its records" \
     'Pull request run:' "$dir/.purlin-runbranch.log"
@@ -338,6 +357,7 @@ walk_python() {
   new_repo "$dir"
   printf '[tool.pytest.ini_options]\n' > "$dir/pyproject.toml"
   printf 'def greet(name):\n    return "Hello, %%s!" %% name\n' > "$dir/greeting.py"
+  add_remote "$dir"
 
   init_at "$dir" passed
   mark
@@ -391,6 +411,7 @@ walk_typescript() {
     note "typescript: vitest could not be installed on this host"
     return 0
   fi
+  add_remote "$dir"
 
   init_at "$dir" passed
   mark
@@ -437,6 +458,7 @@ walk_xunit() {
   </ItemGroup>
 </Project>
 EOF
+  add_remote "$dir"
   init_at "$dir" passed
   mark
   expect_file "xunit: the logger is copied" \

@@ -93,16 +93,40 @@ def git(root, *args):
 class Project(object):
     """A temp git project of one language, and the runs made against it."""
 
-    def __init__(self, language='pytest', remote=None):
+    def __init__(self, language='pytest', remote=None, host='github',
+                 branch='main'):
         self.root = os.path.realpath(tempfile.mkdtemp(prefix='purlin-init-'))
+        self.remote_root = None
         git(self.root, 'init', '-q', '.')
+        git(self.root, 'symbolic-ref', 'HEAD', 'refs/heads/%s' % branch)
         git(self.root, 'config', 'user.email', 'dev@example.com')
         git(self.root, 'config', 'user.name', 'Dev')
+        git(self.root, 'config', 'commit.gpgsign', 'false')
         if language is not None:
             for rel, body in LANGUAGES[language][0].items():
                 write(os.path.join(self.root, rel), body)
         if remote:
             git(self.root, 'remote', 'add', 'origin', remote)
+        elif host:
+            self._bare(host, branch)
+
+    def _bare(self, host, branch='main'):
+        """A local bare repository standing in for the git host.
+
+        Init reads the host off the remote URL and asks the remote whether
+        the protected branch is on it. A bare repository on disk answers
+        both, instantly and with no network: the directory name carries the
+        host, and one push puts `main` on it.
+        """
+        self.remote_root = os.path.realpath(
+            tempfile.mkdtemp(prefix='purlin-remote-'))
+        url = os.path.join(self.remote_root, '%s-origin.git' % host)
+        git(self.remote_root, 'init', '--bare', '-q', '-b', branch, url)
+        git(self.root, 'remote', 'add', 'origin', url)
+        write(os.path.join(self.root, '.keep'), '')
+        git(self.root, 'add', '-A')
+        git(self.root, 'commit', '-q', '-m', 'the project')
+        git(self.root, 'push', '-q', '-u', 'origin', branch)
 
     def run(self, *args, **kwargs):
         """Init against this project, and what its summary printed.
@@ -163,6 +187,8 @@ class Project(object):
 
     def close(self):
         shutil.rmtree(self.root, ignore_errors=True)
+        if self.remote_root:
+            shutil.rmtree(self.remote_root, ignore_errors=True)
 
 
 @pytest.fixture
@@ -503,15 +529,84 @@ class TestTheGateTransitions:
 class TestTheWorkflow:
 
     @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
-    def test_passed_writes_no_workflow(self, project):
+    def test_passed_explains_the_three_reasons_and_asks(self, project):
         output = project.run('--gate', 'passed')
+        assert scaffold_module.REMOTE_INTRO in output
+        for reason in scaffold_module.REMOTE_REASONS:
+            assert reason in output, output
+        assert scaffold_module.REMOTE_WITHOUT in output
+        assert scaffold_module.REMOTE_QUESTION in output
+        # `--yes` takes the default, which is no.
         assert not project.has('.github/workflows/purlin.yml')
-        assert 'pass --ci to write it anyway' in output
+        assert 'you answered no' in output
 
     @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
-    def test_ci_under_passed_writes_it_anyway(self, project):
-        project.run('--gate', 'passed', '--ci', 'github')
+    def test_a_yes_at_passed_writes_the_workflow(self):
+        made = Project('pytest')
+        try:
+            done = subprocess.run(
+                [sys.executable, SCAFFOLD, '--project-root', made.root,
+                 '--gate', 'passed'],
+                input='y\n', capture_output=True, encoding='utf-8',
+                timeout=300)
+            assert done.returncode == 0, done.stdout + done.stderr
+            assert scaffold_module.REMOTE_QUESTION in done.stdout
+            assert made.has('.github/workflows/purlin.yml'), done.stdout
+        finally:
+            made.close()
+
+    @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
+    def test_with_no_remote_at_passed_nothing_is_asked(self):
+        made = Project('pytest', host=None)
+        try:
+            output = made.run('--gate', 'passed')
+            assert scaffold_module.REMOTE_QUESTION not in output
+            assert not made.has('.github/workflows/purlin.yml')
+            assert 'there is no git remote' in output
+        finally:
+            made.close()
+
+    @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
+    def test_strong_writes_it_and_the_reasons_are_the_explanation(self,
+                                                                  project):
+        output = project.run('--gate', 'strong')
+        assert scaffold_module.REMOTE_QUESTION not in output
+        for reason in scaffold_module.REMOTE_REASONS:
+            assert reason in output, output
         assert project.has('.github/workflows/purlin.yml')
+
+    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-44")
+    def test_a_missing_prerequisite_is_named_and_nothing_is_written(self):
+        made = Project('pytest', remote='https://example.invalid/x.git')
+        try:
+            output = made.run('--gate', 'strong')
+            assert 'neither GitHub nor Azure DevOps' in output, output
+            assert not made.has('.github/workflows/purlin.yml')
+        finally:
+            made.close()
+
+    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-44")
+    def test_a_branch_the_remote_does_not_have_stops_the_write(self):
+        made = Project('pytest', host=None)
+        try:
+            bare = os.path.realpath(
+                tempfile.mkdtemp(prefix='purlin-empty-remote-'))
+            url = os.path.join(bare, 'github-origin.git')
+            git(bare, 'init', '--bare', '-q', '-b', 'main', url)
+            git(made.root, 'remote', 'add', 'origin', url)
+            output = made.run('--gate', 'strong')
+            assert 'is not on origin yet' in output, output
+            assert 'git push -u origin main' in output, output
+            assert not made.has('.github/workflows/purlin.yml')
+            shutil.rmtree(bare, ignore_errors=True)
+        finally:
+            made.close()
+
+    @pytest.mark.proof("scaffold", "PROOF-43", "RULE-44")
+    def test_the_host_cli_is_reported_either_way(self, project):
+        output = project.run('--gate', 'strong')
+        assert ('gh is installed' in output
+                or 'gh is not installed' in output), output
 
     @pytest.mark.proof("scaffold", "PROOF-14", "RULE-14")
     def test_the_host_is_read_from_the_remote(self):
@@ -532,16 +627,6 @@ class TestTheWorkflow:
             assert made.config()['ci'] == 'azure'
             assert made.has('purlin.azure-pipelines.yml')
             assert 'Azure DevOps' in output
-        finally:
-            made.close()
-
-    @pytest.mark.proof("scaffold", "PROOF-14", "RULE-14")
-    def test_ci_ado_overrides_the_remote(self):
-        made = Project('pytest', remote='https://github.com/acme/demo.git')
-        try:
-            made.run('--gate', 'strong', '--ci', 'ado')
-            assert made.has('purlin.azure-pipelines.yml')
-            assert made.config()['ci'] == 'azure'
         finally:
             made.close()
 
@@ -571,8 +656,7 @@ class TestTheWorkflow:
 
     @pytest.mark.proof("scaffold", "PROOF-16", "RULE-16")
     def test_upstream_check_adds_the_scheduled_job(self, project):
-        project.run('--gate', 'strong', '--ci', 'github',
-                    '--upstream-check')
+        project.run('--gate', 'strong', '--upstream-check')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         assert 'upstream-check:' in workflow
         assert 'schedule:' in workflow
@@ -601,9 +685,8 @@ class TestTheWorkflow:
 
     @pytest.mark.proof("scaffold", "PROOF-42", "RULE-42")
     def test_the_triggers_name_the_projects_own_default_branch(self):
-        made = Project('pytest')
+        made = Project('pytest', branch='trunk')
         try:
-            git(made.root, 'symbolic-ref', 'HEAD', 'refs/heads/trunk')
             made.run('--gate', 'strong')
             workflow = read(made.path('.github/workflows/purlin.yml'))
             assert "branches: [trunk, 'run/**']" in workflow
@@ -664,10 +747,11 @@ class TestWhatInitWrites:
             assert project.has(rel), rel
 
     @pytest.mark.proof("scaffold", "PROOF-18", "RULE-18")
-    def test_the_two_readmes_are_three_lines_each(self, project):
+    def test_the_two_readmes_are_short(self, project):
         project.run('--gate', 'strong')
         for rel in ('designs/README.md', '.purlin/records/README.md'):
-            assert len(read(project.path(rel)).strip().splitlines()) == 3
+            lines = read(project.path(rel)).strip().splitlines()
+            assert 3 <= len(lines) <= 4, (rel, lines)
 
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")
     def test_the_gitignore_block_is_added_once(self, project):
@@ -1056,8 +1140,13 @@ class TestThePieces:
             made.close()
 
     @pytest.mark.proof("scaffold", "PROOF-14", "RULE-14")
-    def test_no_remote_reads_no_host(self, project):
-        assert scaffold_module.git_host(project.root) is None
+    def test_no_remote_reads_no_host(self):
+        made = Project('pytest', host=None)
+        try:
+            assert scaffold_module.git_host(made.root) is None
+            assert scaffold_module.git_remote(made.root) is False
+        finally:
+            made.close()
 
     @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
     def test_untagged_rules_names_the_feature_and_the_rule(self, project):

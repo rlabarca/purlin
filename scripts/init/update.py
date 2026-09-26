@@ -61,6 +61,8 @@ WORKFLOW_NAMES = ('verify-gate.yml', 'verify-gate.yaml')   # retired
 GATE_RENAMES = {'tested': 'passed', 'recorded': 'strong',  # retired
                 'approved': 'signed'}                      # retired
 SIGNER_KEY_WAS = 'approvers'                               # retired
+RECORD_FLAG_WAS = '--commit'                               # retired
+RECORD_SOURCE_WAS = 'developer'                            # retired
 
 # --- what this release writes instead --------------------------------------
 IGNORE_LINES = ('.purlin/report-data.js', '.purlin/report-stamp.js',
@@ -91,12 +93,13 @@ What must be true before CI lets a change merge?
 
 RECORDS_README = """# Records
 
-One file per audit run, committed, at
+One file per CI run, committed by CI, at
 `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json`. A record says
 what ran, on which commit, what passed and the test strength. The git history of
-this folder is the log, so adding a file never conflicts. An audit prunes a
+this folder is the log, so adding a file never conflicts. A run prunes a
 feature's records past the newest three unless a `record/<name>` tag names them.
-You do not edit anything here by hand.
+Nothing on your own machine writes a record: purlin:test commits what your run
+saw, under `.purlin/tests/`. You do not edit anything here by hand.
 """
 
 # --- helpers ---------------------------------------------------------------
@@ -446,14 +449,24 @@ def _apply_workflows(root, files, args, out):
         out.done(rel)
     out.say('removed %d workflow%s this release replaced'
             % (len(files), _s(files)))
-    flow, host = _flow(), _config(root).get('ci') or _host(root)
+    flow = _flow()
+    protected = _protected(root)
+    # The same prerequisites init checks. A workflow file is no use without
+    # the remote that holds it, a host that runs it and the branch its
+    # triggers name, so a missing one is named and nothing is written.
+    ok, host, lines = flow.prerequisites(root, protected)
+    for line in lines:
+        out.say(line)
+    if not ok:
+        out.say('left the workflow unwritten; a prerequisite is missing')
+        return
     rel = '%s/%s' % (WORKFLOW_DIR, flow.workflow_filename(host))
     if not _confirm('Write %s, one job per operating system your specs name?'
                     % rel, args.yes):
-        out.say('left %s unwritten; run purlin:init --ci to add it later' % rel)
+        out.say('left %s unwritten; run purlin:init again to add it later'
+                % rel)
         return
     tags = flow.env_tags_in_specs(root)
-    protected = _protected(root)
     _write(os.path.join(root, rel),
            flow.render_workflow(host, tags, 'v' + _version(),
                                 protected=protected))
@@ -504,7 +517,44 @@ def _detect_records(root):
 def _apply_records(root, files, args, out):
     _write(os.path.join(root, files[0]), RECORDS_README)
     out.done(files[0])
-    out.say('created %s, where an audit commits one file per run' % RECORDS_DIR)
+    out.say('created %s, where CI commits one file per run' % RECORDS_DIR)
+
+def _committed_records(root):
+    """Every tracked record the git host did not commit, project-relative.
+
+    The record is CI's in this release, and a record a person committed is
+    the evidence of a run nobody else can check. It counted under the old
+    `passed` gate and counts under nothing now, so it is dropped rather than
+    carried: the test results `purlin:test` commits are what a person's own
+    run leaves behind.
+    """
+    from purlin import records as records_module
+
+    ok, listed = _git(root, 'ls-files', '--', RECORDS_DIR)
+    if not ok:
+        return []
+    hits = []
+    for rel in listed.splitlines():
+        rel = rel.strip()
+        if not rel.endswith('.json'):
+            continue
+        if records_module.record_label(root, rel) != 'ci':
+            hits.append(rel)
+    return hits
+
+def _detect_by_hand_records(root):
+    return _committed_records(root)
+
+def _apply_by_hand_records(root, files, args, out):
+    for rel in files:
+        _untrack(root, rel)
+        path = os.path.join(root, rel)
+        if os.path.isfile(path):
+            os.remove(path)
+        out.done(rel)
+    out.say('deleted %d record%s the git host did not write; the record is '
+            "CI's, and purlin:test commits what your own run saw"
+            % (len(files), _s(files)))
 
 # Order matters: the tags are rewritten before the config drops the registry that
 # maps them, and before the workflow matrix is rendered from them.
@@ -526,6 +576,8 @@ MIGRATIONS = (
      _detect_plugin_copies, _apply_plugin_copies),
     ('records', 'create .purlin/records/ for the records CI commits',
      _detect_records, _apply_records),
+    ('records-by-hand', 'delete the records the git host did not write',
+     _detect_by_hand_records, _apply_by_hand_records),
 )
 
 def pending(project_root):

@@ -77,8 +77,15 @@ def _git(root, *args):
                           capture_output=True, text=True)
 
 
-def _project(tmp_path, layout):
-    """One upgrade fixture, copied to a temporary directory and committed."""
+def _project(tmp_path, layout, remote=True):
+    """One upgrade fixture, copied to a temporary directory and committed.
+
+    A bare repository beside it stands in for the git host. The update checks
+    the same prerequisites init does before it writes a workflow: a remote,
+    a host it knows, and the protected branch on that remote. The directory
+    name carries the host and one push puts `main` on it, so the checks are
+    answered on disk with no network.
+    """
     root = os.path.join(str(tmp_path), layout)
     shutil.copytree(os.path.join(DEV, 'fixtures', layout), root)
     os.rename(os.path.join(root, '_gitignore'),
@@ -86,8 +93,14 @@ def _project(tmp_path, layout):
     _git(root, '-c', 'init.defaultBranch=main', 'init', '-q')
     _git(root, 'config', 'user.name', 'Test Person')
     _git(root, 'config', 'user.email', 'test@example.com')
+    _git(root, 'config', 'commit.gpgsign', 'false')
     _git(root, 'add', '-A')
     _git(root, 'commit', '-qm', 'init')
+    if remote:
+        url = os.path.join(str(tmp_path), 'github-origin.git')
+        _git(str(tmp_path), 'init', '--bare', '-q', '-b', 'main', url)
+        _git(root, 'remote', 'add', 'origin', url)
+        _git(root, 'push', '-q', '-u', 'origin', 'main')
     return root
 
 
@@ -793,7 +806,7 @@ def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
     printed = capsys.readouterr().out
     assert not os.path.exists(
         os.path.join(root, '.github', 'workflows', 'purlin.yml'))
-    assert 'run purlin:init --ci to add it later' in printed
+    assert 'run purlin:init again to add it later' in printed
     assert 'workflows' not in _ids(root)
 
 
@@ -836,7 +849,7 @@ def test_the_records_folder_and_its_readme_are_created(tmp_path, layout):
     root = _project(tmp_path, layout)
     _apply(root)
     readme = _read(root, '.purlin/records/README.md')
-    assert 'One file per audit run' in readme
+    assert 'One file per CI run' in readme
     assert '.purlin/records/README.md' in _tracked(root)
 
 
@@ -966,3 +979,26 @@ def test_a_run_that_leaves_work_names_it(tmp_path, capsys, monkeypatch):
     printed = capsys.readouterr().out.rstrip().splitlines()
     assert printed[-1] == ('→ Next: run purlin:init --update again for '
                            'records.')
+
+
+# --- the records a person committed -----------------------------------------
+
+@pytest.mark.proof("update", "PROOF-23", "RULE-23")
+def test_a_record_the_git_host_did_not_write_is_deleted(tmp_path, capsys):
+    """The record is CI's now, so a record a person committed is dropped."""
+    root = _project(tmp_path, V095)
+    rel = '.purlin/records/greeting/20260913T120000Z-4f1c2ab-ada.json'
+    _write(root, rel, '{"schema_version": 2, "feature": "greeting"}\n')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'a record by hand')
+
+    pending = {entry['id']: entry for entry in update.pending(root)}
+    assert 'records-by-hand' in pending, sorted(pending)
+    assert pending['records-by-hand']['files'] == [rel]
+
+    update.main(['--project-root', root, '--yes'])
+    printed = capsys.readouterr().out
+    assert "the record is CI's" in printed, printed
+    assert not os.path.exists(os.path.join(root, *rel.split('/')))
+    assert rel not in _tracked(root)
+    assert 'records-by-hand' not in [e['id'] for e in update.pending(root)]

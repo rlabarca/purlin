@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """purlin:init: one question, then every file a project needs.
 
-    scaffold.py [--gate passed|strong|signed] [--ci github|ado]
-                [--upstream-check] [--add <language>] [--update]
-                [--dry-run] [--project-root DIR] [--plugin-root DIR] [--yes]
+    scaffold.py [--gate passed|strong|signed] [--upstream-check]
+                [--add <language>] [--update] [--dry-run]
+                [--project-root DIR] [--plugin-root DIR] [--yes]
 
 On a project that has code, init asks one question and nothing else:
 
@@ -11,16 +11,23 @@ On a project that has code, init asks one question and nothing else:
 
 Everything else is derived from that answer or read from the tree: the
 language from detection, the git host from the remote URL, the minimum test
-strength and the review threshold from the gate. Two honest exceptions: a tree
-with nothing to detect is asked which framework its tests use, and `signed` is
-asked who may sign.
+strength and the review threshold from the gate. Three honest exceptions: a
+tree with nothing to detect is asked which framework its tests use, `signed` is
+asked who may sign, and `passed` with a remote is asked whether to run the
+tests on a remote runner too.
 
 It then writes, in this order and naming every one in the summary: the config,
 the plugin copies and `.purlin/plugin-root`, the runner's wiring, the engine's
 config block, the `.gitignore` entries, `designs/` and `.purlin/records/` with
-their READMEs, the dashboard, the pre-push hook, and under `strong` and
-`signed` the workflow CI runs. It ends with the branch rules the git host has
-to enforce, and the next step computed from the state.
+their READMEs, the dashboard, the pre-push hook, and the workflow CI runs. It
+ends with the branch rules the git host has to enforce, and the next step
+computed from the state.
+
+At `passed` the workflow is a question rather than a given: the three reasons
+a remote runner is worth having are printed and you answer. At `strong` and
+above it is always written, and the same three reasons are the explanation of
+why. Either way the prerequisites are checked first, and a missing one is
+named with the command that fixes it; nothing is written then.
 
 Both ways of loading Purlin work, and neither is written into a project: this
 checkout under `--plugin-dir`, and the marketplace copy under the plugin cache.
@@ -69,6 +76,22 @@ LANGUAGE_QUESTION = ('There is nothing here to detect a test framework from. '
                      'Which one do the tests use?')
 SIGNER_QUESTION = 'Who may sign a rule? Emails, separated by commas.'
 
+# Why a project would want the git host's runner, and the one question that
+# follows. Three reasons and no others: each one is something a person cannot
+# get from their own machine.
+REMOTE_REASONS = (
+    'Your tests need another operating system.',
+    'Proof from a clean machine that ran exactly the pushed code.',
+    'No merge while red.',
+)
+REMOTE_INTRO = 'A remote runner is worth having for three reasons:'
+REMOTE_WITHOUT = ('Teammates see your results without one, from the test '
+                  'results purlin:test commits.')
+REMOTE_QUESTION = 'Run the tests on a remote runner too? [y/n]'
+REMOTE_DECLINED = ('you answered no; run purlin:init again to add it')
+REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
+                    'it')
+
 # The registry's **Installed as** column is the one place a plugin's name
 # inside a project is written, so this script and the upgrade cannot disagree.
 _REGISTRY = os.path.join('references', 'supported_frameworks.md')
@@ -116,9 +139,10 @@ _READMES = {
 A design anchor pins the hash of these files, and a feature spec requires that anchor.
 A new export stales the signatures of that anchor's rules, so a person looks again.
 """,
-    '.purlin/records': """Every purlin:audit run writes one record per feature here, and commits it.
-CI writes the records that count under strong and signed; a person writes the ones that count
-under passed. An audit keeps the newest three records per feature per runner.
+    '.purlin/records': """Every CI run at the gate strong or signed writes one record per feature here,
+and commits it. The record is CI's: nothing on your machine writes one. Under passed the
+evidence is the test results purlin:test commits, under .purlin/tests/. A run keeps the newest
+three records per feature per runner.
 """,
 }
 
@@ -174,6 +198,12 @@ def _git(root, *args):
     except (OSError, subprocess.SubprocessError):
         return False, ''
     return done.returncode == 0, done.stdout.strip()
+
+
+def git_remote(root):
+    """True when the project has a git remote for a runner to read."""
+    ok, listed = _git(root, 'remote')
+    return bool(ok and listed.strip())
 
 
 def git_host(root):
@@ -571,16 +601,34 @@ def write_gitignore(plan, plugin_root):
                 '.purlin/runtime/')
 
 
-def write_workflow(plan, root, host, purlin_ref, upstream_check):
+def print_remote_reasons():
+    """The three reasons a remote runner is worth having, and no others."""
+    print('')
+    print(REMOTE_INTRO)
+    for reason in REMOTE_REASONS:
+        print('  %s' % reason)
+    print(REMOTE_WITHOUT)
+
+
+def write_workflow(plan, root, purlin_ref, upstream_check):
     """The workflow the git host runs, with the matrix the `@env` tags name.
+
+    The prerequisites are checked first and nothing is written when one is
+    missing: a workflow file is no use without the remote that holds it, a
+    host that runs it and the branch its triggers name.
 
     The triggers name the project's own default branch as the protected one,
     read from the tree here rather than guessed at on the runner: a
     repository whose branch is `master` would otherwise get a workflow that
     starts on a branch it does not have.
     """
-    env_tags = workflow_module.env_tags_in_specs(root)
     protected = records_module.default_branch(root)
+    ok, host, lines = workflow_module.prerequisites(root, protected)
+    for line in lines:
+        plan.note(line)
+    if not ok:
+        return plan.skip('the CI workflow', 'a prerequisite is missing')
+    env_tags = workflow_module.env_tags_in_specs(root)
     name = workflow_module.workflow_filename(host)
     rel = name if host == 'azure' else '.github/workflows/%s' % name
     plan.write(rel, workflow_module.render_workflow(
@@ -591,6 +639,7 @@ def write_workflow(plan, root, host, purlin_ref, upstream_check):
               % ', '.join(workflow_module.runners_for(env_tags)))
     plan.note('  it runs on a pull request, on a push to %s and on a push to '
               'a run/* branch, and ends with the gate check.' % protected)
+    return host
 
 
 def next_step(root):
@@ -611,7 +660,6 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(
         prog='scaffold.py', description='Set a project up for Purlin')
     parser.add_argument('--gate', choices=gate_module.GATES, default=None)
-    parser.add_argument('--ci', choices=('github', 'ado', 'azure'), default=None)
     parser.add_argument('--add', default=None, help='one more framework')
     parser.add_argument('--project-root', default='.')
     parser.add_argument('--plugin-root', default=None)
@@ -754,7 +802,7 @@ def main(argv=None):
 
     selected, framework, dropped = resolve_frameworks(
         root, console, existing, args.add)
-    host = {'ado': 'azure'}.get(args.ci, args.ci) or git_host(root)
+    host = git_host(root)
 
     if hooks is None:
         plan.note(NOT_A_REPOSITORY)
@@ -778,18 +826,33 @@ def main(argv=None):
     plan.copy(os.path.join(plugin_root, 'scripts', 'report',
                            'purlin-report.html'), 'purlin-report.html')
     install_hook(plan, root, hooks)
-    if gate != 'passed' or args.ci:
-        write_workflow(plan, root, host or 'github',
-                       'v%s' % config.get('version', ''), args.upstream_check)
+    # At `passed` the workflow is a question; at `strong` and above it is
+    # always written and the same three reasons say why.
+    wanted = True
+    if gate == 'passed':
+        if not git_remote(root):
+            wanted = False
+            plan.skip('the CI workflow', REMOTE_NO_REMOTE)
+        else:
+            print_remote_reasons()
+            answer = console.ask(REMOTE_QUESTION, 'n')
+            wanted = str(answer).strip().lower().startswith('y')
+            if not wanted:
+                plan.skip('the CI workflow', REMOTE_DECLINED)
     else:
-        plan.skip('the CI workflow',
-                  'the gate is passed; pass --ci to write it anyway')
+        print_remote_reasons()
+    written_host = None
+    if wanted:
+        written_host = write_workflow(
+            plan, root, 'v%s' % config.get('version', ''),
+            args.upstream_check)
 
     for line in plan.lines:
         print(line)
     print('')
-    print(_BRANCH_RULES['passed' if gate == 'passed' and not args.ci
-                        else ('azure' if host == 'azure' else 'github')])
+    print(_BRANCH_RULES['passed' if gate == 'passed' and not written_host
+                        else ('azure' if (written_host or host) == 'azure'
+                              else 'github')])
     if gate == 'signed':
         print_signed(root, signers)
 

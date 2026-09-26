@@ -21,9 +21,16 @@ The scheduled job that reports an anchor pin behind its source is optional:
 the template carries it between `# BEGIN upstream-check` and
 `# END upstream-check` markers, and `upstream_check=False` drops those lines
 along with what they wrap.
+
+`prerequisites()` is what `purlin:init` asks before it writes any of this. A
+workflow is three things at once: a file, a remote that holds it, and a branch
+the triggers name. Writing the file where the other two are missing leaves a
+project believing it has a runner it has not got, so each is checked first and
+a missing one is named with the command that fixes it.
 """
 
 import os
+import subprocess
 
 _RUN_DIR = os.path.dirname(os.path.abspath(__file__))
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(_RUN_DIR))
@@ -141,3 +148,96 @@ def _upstream(text, keep):
             continue
         out.append(line)
     return ''.join(out)
+
+
+# ---------------------------------------------------------------------------
+# What has to be true before a workflow is worth writing
+# ---------------------------------------------------------------------------
+
+REMOTE = 'origin'
+
+NO_REMOTE = ('No git remote, so there is no runner to read this workflow. '
+             'Add one with: git remote add %s <url>' % REMOTE)
+UNKNOWN_HOST = ('The %s remote is neither GitHub nor Azure DevOps, and those '
+                'are the two hosts this release writes a workflow for.'
+                % REMOTE)
+NO_BRANCH = ('The branch %s is not on %s yet, so the workflow would trigger '
+             'on a branch that is not there. Push it with: git push -u %s %s')
+UNREACHABLE = ('%s could not be reached, so whether %s is on it was not '
+               'checked. The workflow names that branch either way.')
+CLI_PRESENT = '%s is installed, so a remote run can be watched from here.'
+CLI_ABSENT = ('%s is not installed, so purlin:test --remote cannot watch a '
+              'run. Install it, or open the run on the git host instead.')
+
+_HOST_CLI = {'github': 'gh', 'azure': 'az'}
+
+
+def host_of(project_root):
+    """`github`, `azure` or None, read from the remote URL."""
+    url = _capture(project_root, ['remote', 'get-url', REMOTE]).lower()
+    if 'github' in url:
+        return 'github'
+    if 'dev.azure.com' in url or 'visualstudio.com' in url:
+        return 'azure'
+    return None
+
+
+def prerequisites(project_root, protected=None):
+    """`(ok, host, lines)`: what a workflow needs, checked before it is written.
+
+    The three checks that can fail are the remote, the host and the protected
+    branch, and the first failure is the one reported: naming a branch on a
+    remote that is not there would say nothing useful. The host CLI is
+    reported either way, because a missing one costs a remote run its watch
+    and nothing else.
+    """
+    if not _capture(project_root, ['remote']).strip():
+        return False, None, [NO_REMOTE]
+    host = host_of(project_root)
+    if host is None:
+        return False, None, [UNKNOWN_HOST]
+    lines = []
+    branch = protected or DEFAULT_PROTECTED
+    # A remote that answers settles the question. One that cannot be reached
+    # at all, which is every offline machine, is not an answer either way, so
+    # it is reported and the workflow is written: refusing there would make a
+    # network the price of setting a project up.
+    reached, heads = _ask(project_root, ['ls-remote', '--heads', REMOTE,
+                                         branch])
+    if not reached:
+        lines.append(UNREACHABLE % (REMOTE, branch))
+    elif not heads.strip():
+        return False, host, [NO_BRANCH % (branch, REMOTE, REMOTE, branch)]
+    cli = _HOST_CLI[host]
+    lines.append((CLI_PRESENT if _which(cli) else CLI_ABSENT) % cli)
+    return True, host, lines
+
+
+def _which(binary):
+    for folder in (os.environ.get('PATH') or '').split(os.pathsep):
+        if folder and os.path.isfile(os.path.join(folder, binary)):
+            return True
+    return False
+
+
+def _capture(project_root, args):
+    """One git command's stdout, or an empty string when it could not run."""
+    return _ask(project_root, args)[1]
+
+
+def _ask(project_root, args):
+    """`(the command worked, its stdout)` for one git command.
+
+    `GIT_TERMINAL_PROMPT=0` makes git fail rather than ask for a password: a
+    remote nobody here can read is a question with no answer, and the whole
+    point of the check is that it finishes.
+    """
+    environment = dict(os.environ)
+    environment['GIT_TERMINAL_PROMPT'] = '0'
+    try:
+        done = subprocess.run(['git'] + list(args), cwd=project_root,
+                              capture_output=True, text=True, timeout=20,
+                              env=environment)
+    except (OSError, subprocess.SubprocessError):
+        return False, ''
+    return done.returncode == 0, done.stdout
