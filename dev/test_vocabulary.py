@@ -13,12 +13,17 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # Whole words, case-insensitive. `Untested` and `test_` never match `tested`
 # because the match is bounded on both sides.
-WORDS = ("gauge", "HOLLOW", "PROVABLE", "receipt", "platform", "mutation score",
+# `platform` is not here. It was retired with the platform registry and came
+# back in 0.10.0 meaning one thing: an operating system a counting run
+# covered, which the passed cell lists under `platforms`. The registry's own
+# spellings stay retired, in LITERALS below.
+WORDS = ("gauge", "HOLLOW", "PROVABLE", "receipt", "mutation score",
          "caught score", "records branch", "forge", "queue", "CODEOWNERS", "approver rule",
          # the 0.10.0 three-level model
          "tested", "recorded", "approved", "approve", "approval", "approver", "approvers",
          "verified", "verdict", "reviewed", "re-verify")
 LITERALS = ("@on(",                     # not a word: the retired scope tag
+            "platform registry", "--platform",
             "Proof ready", "lowest state", "seven states", "auto-approval", "review queue",
             "purlin:verify", "purlin:review", "purlin:approve", "verify_gate", "verify-gate:",
             "validated/",
@@ -174,7 +179,7 @@ def test_no_retired_terms():
         for lineno, line in enumerate(text.splitlines(), 1):
             if marker and line.rstrip().endswith(marker):
                 continue
-            probe = line.replace("sys.platform", "")  # the one allowed literal
+            probe = line
             spans = _allowed_spans(probe)
             for check in checks:
                 for start, end in _spans_of(check, probe):

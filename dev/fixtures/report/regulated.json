@@ -10,10 +10,10 @@
       "latest_record": {
         "commit": "a1b2c3d",
         "label": "ci",
-        "os": null,
-        "path": ".purlin/records/login/20260912T091402Z-a1b2c3d-ci.json",
+        "os": "windows",
+        "path": ".purlin/records/ci/login/20260912T091540Z-a1b2c3d-ci-windows.json",
         "test_strength": 86,
-        "timestamp": "2026-09-12T09:14:02Z"
+        "timestamp": "2026-09-12T09:15:40Z"
       },
       "name": "login",
       "pinned": null,
@@ -25,20 +25,24 @@
         "latest_record": {
           "commit": "a1b2c3d",
           "label": "ci",
-          "os": null,
-          "path": ".purlin/records/login/20260912T091402Z-a1b2c3d-ci.json",
+          "os": "windows",
+          "path": ".purlin/records/ci/login/20260912T091540Z-a1b2c3d-ci-windows.json",
           "test_strength": 86,
-          "timestamp": "2026-09-12T09:14:02Z"
+          "timestamp": "2026-09-12T09:15:40Z"
         },
         "manual": 0,
         "met": 1,
+        "partial": 1,
         "passed": 1,
+        "proofs": 5,
+        "proofs_without_test": 0,
+        "proofs_without_test_ids": [],
         "rules": 4,
         "signed": 1,
         "stale": 1,
         "strong": 1,
         "test_strength": 86,
-        "untested": 1
+        "untested": 0
       },
       "rules": [
         {
@@ -49,11 +53,24 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                },
+                "windows": {
+                  "at": "2026-09-12T09:15:40Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "signed": {
+              "at": "2026-09-12T10:02:11Z",
               "path": "specs/auth/login.signatures/RULE-1.1a2b3c4d.jane-doe.json",
               "reasons": [
                 "by jane@acme.com"
@@ -63,7 +80,7 @@
               "word": "signed"
             },
             "strong": {
-              "brief": ".purlin/briefs/login/RULE-1.1a2b3c4d.brief.json",
+              "brief": ".purlin/briefs/ci/login/RULE-1.1a2b3c4d.brief.json",
               "findings": [],
               "observations": [],
               "reasons": [],
@@ -81,6 +98,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -118,11 +136,24 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                },
+                "windows": {
+                  "at": "2026-09-12T09:15:40Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "signed": {
+              "at": "2026-09-08T16:40:53Z",
               "path": "specs/auth/login.signatures/RULE-2.5e6f7a8b.sam-acme.json",
               "reasons": [
                 "hashes changed after the signature"
@@ -132,7 +163,7 @@
               "word": "stale"
             },
             "strong": {
-              "brief": ".purlin/briefs/login/RULE-2.6f7a8b9c.brief.json",
+              "brief": ".purlin/briefs/ci/login/RULE-2.6f7a8b9c.brief.json",
               "findings": [],
               "observations": [],
               "reasons": [],
@@ -150,6 +181,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": true
           },
           "id": "RULE-2",
@@ -187,11 +219,24 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                },
+                "windows": {
+                  "at": "2026-09-12T09:15:40Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "signed": {
+              "at": null,
               "path": "specs/auth/login.signatures/RULE-3.9c0d1e2f.sam-acme.hold.json",
               "reasons": [
                 "held by sam@acme.com: the lock expiry is never read"
@@ -221,6 +266,7 @@
             "failing": false,
             "held": true,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-3",
@@ -254,21 +300,33 @@
         },
         {
           "blocked_by": "passed",
-          "bucket": "untested",
+          "bucket": "partial",
           "cells": {
             "passed": {
               "counts": true,
               "current": true,
-              "missing_env": [
-                "windows"
-              ],
+              "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                },
+                "windows": {
+                  "at": "2026-09-12T09:15:40Z",
+                  "source": "ci",
+                  "word": "failed"
+                }
+              },
               "reasons": [
-                "windows: no record yet"
+                "passed on linux",
+                "windows: failed"
               ],
               "source": "ci",
-              "word": "not run"
+              "word": "partial"
             },
             "signed": {
+              "at": null,
               "path": null,
               "reasons": [],
               "required": true,
@@ -296,6 +354,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": true,
             "stale": false
           },
           "id": "RULE-4",
@@ -314,8 +373,21 @@
                   "name": "test_no_cookie"
                 }
               ],
-              "text": "Open http://localhost/session and read that no cookie is set.",
+              "text": "On Windows, open http://localhost/session and read that no cookie is set.",
               "tier": "e2e"
+            },
+            {
+              "env": null,
+              "findings": [],
+              "id": "PROOF-5",
+              "tests": [
+                {
+                  "file": "tests/test_login.py",
+                  "name": "test_secure_flag"
+                }
+              ],
+              "text": "Read the Set-Cookie header of a 200 response and verify it carries Secure.",
+              "tier": "unit"
             }
           ],
           "risk": "high",
@@ -347,7 +419,7 @@
         "commit": "a1b2c3d",
         "label": "ci",
         "os": "linux",
-        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
+        "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
         "test_strength": 64,
         "timestamp": "2026-09-12T09:14:02Z"
       },
@@ -362,13 +434,17 @@
           "commit": "a1b2c3d",
           "label": "ci",
           "os": "linux",
-          "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
+          "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
           "test_strength": 64,
           "timestamp": "2026-09-12T09:14:02Z"
         },
         "manual": 1,
         "met": 0,
+        "partial": 0,
         "passed": 3,
+        "proofs": 3,
+        "proofs_without_test": 0,
+        "proofs_without_test_ids": [],
         "rules": 3,
         "signed": 0,
         "stale": 0,
@@ -385,11 +461,24 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                },
+                "macos": {
+                  "at": "2026-09-12T09:13:55Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "signed": {
+              "at": null,
               "path": null,
               "reasons": [],
               "required": false,
@@ -417,6 +506,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -454,11 +544,24 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                },
+                "macos": {
+                  "at": "2026-09-12T09:13:55Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "signed": {
+              "at": null,
               "path": null,
               "reasons": [],
               "required": false,
@@ -489,6 +592,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-2",
@@ -528,11 +632,13 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {},
               "reasons": [],
               "source": null,
               "word": "passed"
             },
             "signed": {
+              "at": null,
               "path": null,
               "reasons": [],
               "required": false,
@@ -561,6 +667,7 @@
             "failing": false,
             "held": false,
             "manual": true,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-3",
@@ -603,7 +710,7 @@
         "commit": "a1b2c3d",
         "label": "ci",
         "os": null,
-        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
+        "path": ".purlin/records/ci/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
         "test_strength": 90,
         "timestamp": "2026-09-12T09:14:02Z"
       },
@@ -618,13 +725,17 @@
           "commit": "a1b2c3d",
           "label": "ci",
           "os": null,
-          "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
+          "path": ".purlin/records/ci/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
           "test_strength": 90,
           "timestamp": "2026-09-12T09:14:02Z"
         },
         "manual": 0,
         "met": 0,
+        "partial": 0,
         "passed": 1,
+        "proofs": 1,
+        "proofs_without_test": 0,
+        "proofs_without_test_ids": [],
         "rules": 1,
         "signed": 0,
         "stale": 0,
@@ -641,11 +752,13 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {},
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "signed": {
+              "at": null,
               "path": null,
               "reasons": [],
               "required": true,
@@ -653,7 +766,7 @@
               "word": "unsigned"
             },
             "strong": {
-              "brief": ".purlin/briefs/checkout_design/RULE-1.7b8c9d0e.brief.json",
+              "brief": ".purlin/briefs/ci/checkout_design/RULE-1.7b8c9d0e.brief.json",
               "findings": [],
               "observations": [
                 "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
@@ -675,6 +788,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -725,7 +839,7 @@
         "commit": "9f8e7d6",
         "label": "ci",
         "os": null,
-        "path": ".purlin/records/export/20260910T170241Z-9f8e7d6-ci.json",
+        "path": ".purlin/records/ci/export/20260910T170241Z-9f8e7d6-ci.json",
         "test_strength": 82,
         "timestamp": "2026-09-10T17:02:41Z"
       },
@@ -740,13 +854,17 @@
           "commit": "9f8e7d6",
           "label": "ci",
           "os": null,
-          "path": ".purlin/records/export/20260910T170241Z-9f8e7d6-ci.json",
+          "path": ".purlin/records/ci/export/20260910T170241Z-9f8e7d6-ci.json",
           "test_strength": 82,
           "timestamp": "2026-09-10T17:02:41Z"
         },
         "manual": 0,
         "met": 0,
+        "partial": 0,
         "passed": 0,
+        "proofs": 1,
+        "proofs_without_test": 0,
+        "proofs_without_test_ids": [],
         "rules": 1,
         "signed": 0,
         "stale": 0,
@@ -763,6 +881,7 @@
               "counts": true,
               "current": false,
               "missing_env": [],
+              "platforms": {},
               "reasons": [
                 "code changed since 9f8e7d6"
               ],
@@ -770,6 +889,7 @@
               "word": "code changed"
             },
             "signed": {
+              "at": null,
               "path": null,
               "reasons": [],
               "required": true,
@@ -797,6 +917,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -860,8 +981,9 @@
         "commit": "a1b2c3d",
         "label": "ci",
         "os": null,
-        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
+        "path": ".purlin/records/ci/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
         "result": "pass",
+        "source": "ci",
         "test_strength": 90,
         "timestamp": "2026-09-12T09:14:02Z"
       }
@@ -871,8 +993,9 @@
         "commit": "9f8e7d6",
         "label": "ci",
         "os": null,
-        "path": ".purlin/records/export/20260910T170241Z-9f8e7d6-ci.json",
+        "path": ".purlin/records/ci/export/20260910T170241Z-9f8e7d6-ci.json",
         "result": "pass",
+        "source": "ci",
         "test_strength": 82,
         "timestamp": "2026-09-10T17:02:41Z"
       }
@@ -882,8 +1005,9 @@
         "commit": "a1b2c3d",
         "label": "ci",
         "os": "linux",
-        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
+        "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
         "result": "pass",
+        "source": "ci",
         "test_strength": 64,
         "timestamp": "2026-09-12T09:14:02Z"
       },
@@ -891,21 +1015,33 @@
         "commit": "a1b2c3d",
         "label": "ci",
         "os": "macos",
-        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci-macos.json",
+        "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci-macos.json",
         "result": "pass",
+        "source": "ci",
         "test_strength": 64,
         "timestamp": "2026-09-12T09:13:55Z"
       }
     },
     "login": {
-      "": {
+      "linux": {
         "commit": "a1b2c3d",
         "label": "ci",
-        "os": null,
-        "path": ".purlin/records/login/20260912T091402Z-a1b2c3d-ci.json",
+        "os": "linux",
+        "path": ".purlin/records/ci/login/20260912T091402Z-a1b2c3d-ci-linux.json",
         "result": "pass",
+        "source": "ci",
         "test_strength": 86,
         "timestamp": "2026-09-12T09:14:02Z"
+      },
+      "windows": {
+        "commit": "a1b2c3d",
+        "label": "ci",
+        "os": "windows",
+        "path": ".purlin/records/ci/login/20260912T091540Z-a1b2c3d-ci-windows.json",
+        "result": "fail",
+        "source": "ci",
+        "test_strength": 86,
+        "timestamp": "2026-09-12T09:15:40Z"
       }
     }
   },
@@ -952,7 +1088,7 @@
       ]
     }
   ],
-  "schema_version": 5,
+  "schema_version": 6,
   "summary": {
     "audit": 1,
     "failing": 0,
@@ -960,12 +1096,16 @@
     "held": 1,
     "manual": 1,
     "met": 1,
+    "partial": 1,
     "passed": 5,
+    "proofs": 10,
+    "proofs_without_test": 0,
+    "proofs_without_test_ids": [],
     "rules": 9,
     "signed": 1,
     "stale": 1,
     "strong": 1,
-    "untested": 2
+    "untested": 1
   },
   "version": "0.10.0",
   "warnings": [

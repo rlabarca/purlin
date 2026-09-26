@@ -18,7 +18,13 @@
         "latest_record": null,
         "manual": 0,
         "met": 1,
+        "partial": 0,
         "passed": 1,
+        "proofs": 2,
+        "proofs_without_test": 1,
+        "proofs_without_test_ids": [
+          "PROOF-2"
+        ],
         "rules": 3,
         "stale": 0,
         "test_strength": null,
@@ -33,6 +39,13 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-12T08:41:19Z",
+                  "source": "local",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "local",
               "word": "passed"
@@ -47,6 +60,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -84,6 +98,7 @@
               "counts": false,
               "current": false,
               "missing_env": [],
+              "platforms": {},
               "reasons": [],
               "source": null,
               "word": "no test"
@@ -98,6 +113,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-2",
@@ -132,6 +148,7 @@
               "counts": false,
               "current": false,
               "missing_env": [],
+              "platforms": {},
               "reasons": [],
               "source": null,
               "word": "no test"
@@ -146,6 +163,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-3",
@@ -186,7 +204,11 @@
         "latest_record": null,
         "manual": 0,
         "met": 2,
+        "partial": 0,
         "passed": 2,
+        "proofs": 2,
+        "proofs_without_test": 0,
+        "proofs_without_test_ids": [],
         "rules": 2,
         "stale": 0,
         "test_strength": null,
@@ -201,6 +223,13 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-12T08:41:19Z",
+                  "source": "local",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "local",
               "word": "passed"
@@ -215,6 +244,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-1",
@@ -252,6 +282,13 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-12T08:41:19Z",
+                  "source": "local",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "local",
               "word": "passed"
@@ -266,6 +303,7 @@
             "failing": false,
             "held": false,
             "manual": false,
+            "partial": false,
             "stale": false
           },
           "id": "RULE-2",
@@ -323,7 +361,7 @@
   "records": {},
   "remote_url": null,
   "review_list": [],
-  "schema_version": 5,
+  "schema_version": 6,
   "summary": {
     "audit": 0,
     "failing": 0,
@@ -331,7 +369,13 @@
     "held": 0,
     "manual": 0,
     "met": 3,
+    "partial": 0,
     "passed": 3,
+    "proofs": 4,
+    "proofs_without_test": 1,
+    "proofs_without_test_ids": [
+      "PROOF-2"
+    ],
     "rules": 5,
     "stale": 0,
     "untested": 2

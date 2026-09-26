@@ -218,6 +218,26 @@ def commit_author(project_root, rel_path):
     return result.stdout.strip().lower()
 
 
+def commit_date(project_root, rel_path):
+    """When the last commit touching a path was authored, ISO 8601 UTC, or None.
+
+    The signed cell shows when a rule was signed, and the commit date is the
+    answer git can vouch for: the file's own `timestamp` is what the writer
+    put in it, and the commit is what a reader can check.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'log', '-1', '--date=format-local:%Y-%m-%dT%H:%M:%SZ',
+             '--format=%ad', '--', rel_path],
+            capture_output=True, text=True, cwd=project_root, timeout=10,
+            env=dict(os.environ, TZ='UTC'))
+    except (subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
 def counts(project_root, signature, signers, test_paths=(), gate='signed'):
     """`(True, '')` when a signature counts under the gate, or `(False, reason)`.
 

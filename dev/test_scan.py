@@ -81,15 +81,18 @@ def make_project(path):
     return path
 
 
-def add_record(path, commit, timestamp='20260913T120000Z', status='pass'):
+def add_record(path, commit, timestamp='20260913T120000Z', status='pass',
+               source='local'):
     """Commit one record naming the commit it observed."""
-    body = {'schema_version': 1, 'feature': 'greeting', 'commit': commit,
-            'gate': 'strong', 'test_strength': 71, 'scope_tree': 'a' * 40,
+    body = {'schema_version': 3, 'feature': 'greeting', 'commit': commit,
+            'source': source, 'gate': 'strong', 'test_strength': 71,
+            'scope_tree': 'a' * 40,
             'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': status,
                         'tier': 'unit', 'env': None,
                         'test_file': 'tests/test_greeting.py',
                         'test_name': 'test_greet'}]}
-    rel = '.purlin/records/greeting/%s-%s-ci.json' % (timestamp, commit[:7])
+    rel = '.purlin/records/%s/greeting/%s-%s-ci.json' % (source, timestamp,
+                                                         commit[:7])
     write(os.path.join(path, rel), json.dumps(body, indent=2) + '\n')
     git(path, 'add', '-A')
     git(path, 'commit', '--quiet', '-m', 'purlin: record for %s' % commit[:7])
@@ -150,8 +153,9 @@ def test_the_rollup_names_the_project_the_gate_and_the_buckets(remote):
     text = scan_module.scan(bare, 'main')
 
     assert 'gate strong' in text
-    assert '1 features, 2 rules.' in text
-    assert 'untested' in text, 'no bucket was counted'
+    assert '1 features, 2 rules, 2 · 2 without a test proof lines.' in text
+    assert 'Untested' in text, 'no bucket was counted'
+    assert 'Partial' in text, 'the sixth bucket was not counted'
     assert 'No record has been committed yet.' in text
 
 
@@ -165,7 +169,7 @@ def test_the_rollup_names_the_newest_record_and_its_label(remote):
     text = scan_module.scan(bare, 'main')
 
     assert rel in text
-    assert 'local' in text, 'the label a commit the git host did not make earns'
+    assert 'local' in text, 'the source of the folder the record sits in'
     assert '0 commits behind the latest record.' in text
 
 
@@ -176,11 +180,14 @@ def test_every_bucket_the_package_names_can_be_printed():
     summary = {'features': 1, 'rules': len(buckets), 'met': 1,
                'stale': 1, 'held': 1, 'manual': 1, 'audit': 2}
     summary.update({bucket: 1 for bucket in buckets})
+    summary.update({'proofs': 6, 'proofs_without_test': 1})
     payload = {'project': 'x', 'gate': {'gate': 'signed'},
                'summary': summary, 'records': {}}
     text = scan_module.rollup_text('.', payload)
+    from purlin import board as board_module
     for bucket in buckets:
-        assert bucket in text, '%s was not printed' % bucket
+        label = board_module.bucket_label(bucket)
+        assert label in text, '%s was not printed' % label
     assert '1 signatures stale' in text
     assert '1 rules have a manual test' in text
     assert '2 rules need a manual audit' in text
@@ -243,8 +250,8 @@ def test_a_tag_is_read_rather_than_the_default_branch(remote):
     git(source, 'commit', '--quiet', '-m', 'a third rule')
     git(source, 'push', '--quiet')
 
-    assert '2 rules.' in scan_module.scan(bare, 'v1.0')
-    assert '3 rules.' in scan_module.scan(bare, 'main')
+    assert '1 features, 2 rules,' in scan_module.scan(bare, 'v1.0')
+    assert '1 features, 3 rules,' in scan_module.scan(bare, 'main')
 
 
 @pytest.mark.proof("records", "PROOF-16", "RULE-16")

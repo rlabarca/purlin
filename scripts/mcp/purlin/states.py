@@ -8,8 +8,13 @@ decides how many rows exist: a cell above the gate is absent, not empty.
             stands against the proof text; `ready` otherwise.
 
     passed  Met when every proof has a passing test from a source that counts
-            under the gate, and that pass describes the current checkout.
-            `passed`, `failed`, `no test`, `not run`, `code changed`.
+            under the gate, on every operating system a counting run covered,
+            and that pass describes the current checkout.
+            `passed`, `partial`, `failed`, `no test`, `not run`,
+            `code changed`. The cell carries `platforms`, one entry per
+            operating system a counting run covered, and reads `partial` when
+            the tests passed on some of them and failed or did not run on
+            others. `partial` is not met.
 
     strong  Met when the tests are worth trusting: test strength at or above
             the project minimum, no finding standing against the proof text or
@@ -32,8 +37,9 @@ returns:
      'bucket': 'strong',
      'meets_gate': True,
      'blocked_by': None,
-     'flags': {'failing': False, 'stale': False, 'held': False,
-               'manual': False, 'audit': False, 'code_changed': False}}
+     'flags': {'failing': False, 'partial': False, 'stale': False,
+               'held': False, 'manual': False, 'audit': False,
+               'code_changed': False}}
 
 A rule's **bucket** is the one tile it is counted in, and the two flags
 `stale` and `held` are counted beside the buckets, never instead of them.
@@ -53,13 +59,16 @@ from purlin import checks, gate as gate_module
 CELLS = ('passed', 'strong', 'signed')
 
 # The one tile a rule is counted in, weakest first.
-BUCKETS = ('untested', 'failing', 'passed', 'strong', 'signed')
+BUCKETS = ('untested', 'failing', 'partial', 'passed', 'strong', 'signed')
 
 # The two flags counted beside the buckets, and the three read only on a rule.
 # `manual` and `audit` are the two strong-cell words a person answers.
-FLAGS = ('failing', 'stale', 'held', 'manual', 'audit', 'code_changed')
+FLAGS = ('failing', 'partial', 'stale', 'held', 'manual', 'audit',
+         'code_changed')
 
-# Where a pass came from, most trusted first.
+# Where a pass came from, most trusted first. A record's source is the folder
+# it sits in, `.purlin/records/ci/` or `.purlin/records/local/`; the test
+# results `purlin:test` commits are `local`.
 SOURCES = ('ci', 'local')
 
 DRAFTED = 'drafted'
@@ -75,7 +84,7 @@ def cells_for(gate):
 
 def bucket_keys(gate):
     """The bucket names a rollup counts under `gate`."""
-    keys = ['untested', 'failing', 'passed']
+    keys = ['untested', 'failing', 'partial', 'passed']
     if gate in ('strong', 'signed'):
         keys.append('strong')
     if gate == 'signed':
@@ -100,6 +109,9 @@ def rule_cells(inp, cfg):
 
     `proofs`        `[{'id', 'tier', 'env', 'text', 'findings', 'tests'}, ...]`
     `local_status`  `{proof_id: 'pass' | 'fail' | None}` from the runtime files
+                    and the committed test results, whichever is newer
+    `local_os`      the operating system that local source ran on, or None
+    `local_at`      when it ran, ISO 8601 UTC, or None
     `records`       `{os_or_None: record}`, already filtered to the records
                     that count under the gate
     `uncounted`     `{os_or_None: record}`, the records that do not
@@ -134,6 +146,7 @@ def rule_cells(inp, cfg):
 
     flags = {
         'failing': passed['word'] == 'failed',
+        'partial': passed['word'] == 'partial',
         'code_changed': passed['word'] == 'code changed',
         # A hold and a signature are facts about committed files, so they are
         # read the same at every gate. A manual test and a manual audit are
@@ -163,6 +176,14 @@ def rule_cells(inp, cfg):
 def _passed_cell(inp, cfg):
     """Level 1: every proof has a passing test from a counting source.
 
+    The question is asked once per operating system a counting run named, and
+    each answer goes in `platforms`. Where those answers disagree the cell
+    reads `partial`, because a rule whose tests pass on Linux and fail on
+    Windows is neither passed nor failed; `partial` is not met, so it blocks
+    the gate exactly as a failure does. Where they agree, or where no run
+    named an operating system at all, the records and this checkout's own
+    run answer as one.
+
     A `@manual` proof declares that no test is written for it and no proof
     entry is ever produced, so level 1 has no question to ask of it: it is
     read out here and the question moves to level 2, where `manual test` is
@@ -175,18 +196,33 @@ def _passed_cell(inp, cfg):
     records = inp.get('records') or {}
     local_status = inp.get('local_status') or {}
     cell = {'word': 'no test', 'source': None, 'current': False,
-            'counts': False, 'missing_env': [], 'reasons': []}
+            'counts': False, 'missing_env': [], 'platforms': {},
+            'reasons': []}
 
     if written and not proofs:
         cell.update({'word': 'passed', 'current': True, 'counts': True})
+        return cell
+
+    platforms = _platforms(inp, proofs)
+    cell['platforms'] = platforms
+    words = [entry['word'] for entry in platforms.values()]
+    if 'passed' in words and any(word != 'passed' for word in words):
+        # The platforms disagree, so neither `passed` nor `failed` is true of
+        # the rule. `partial` is the only honest word, and it is not met.
+        cell['word'] = 'partial'
+        cell['source'] = _passing_source(platforms)
+        cell['current'] = True
+        cell['counts'] = True
+        cell['missing_env'] = [name for name in sorted(platforms)
+                               if platforms[name].get('source') is None]
+        cell['reasons'] = _platform_reasons(platforms)
         return cell
 
     failing = _failing_where(proofs, records, local_status)
     if failing:
         cell['word'] = 'failed'
         cell['reasons'] = ['failing: %s' % where for where in failing]
-        label = _label_of(records) or 'local'
-        cell['source'] = label
+        cell['source'] = _label_of(records) or 'local'
         cell['current'] = True
         cell['counts'] = True
         return cell
@@ -222,18 +258,18 @@ def _passed_cell(inp, cfg):
         would_pass, _env, at_head, scope_matches = _record_passes(
             proofs, uncounted, inp.get('head'), inp.get('scope_tree'))
         if would_pass:
-            label = _label_of(uncounted)
+            source = _label_of(uncounted)
             cell['word'] = 'not run'
-            cell['source'] = label
+            cell['source'] = source
             cell['current'] = at_head or scope_matches
             cell['reasons'] = ['%s record does not count under %s'
-                               % (label, gate)]
+                               % (source, gate)]
             return cell
 
     if proofs and _local_passes(proofs, local_status):
         cell['source'] = 'local'
         cell['current'] = True
-        if gate == CELLS[0]:
+        if counts_under_gate(gate, 'local'):
             cell['word'] = 'passed'
             cell['counts'] = True
         else:
@@ -246,13 +282,125 @@ def _passed_cell(inp, cfg):
     return cell
 
 
-def _label_of(records):
-    """The least trusted label among the records a pass was read from."""
-    labels = [record.get('label') for record in (records or {}).values()
-              if record.get('label')]
-    if not labels:
+def counts_under_gate(gate, source):
+    """True when evidence from `source` counts under `gate`.
+
+    The one answer, read from the record module so a cell and a record reader
+    can never disagree about which source counts where.
+    """
+    from purlin import records as records_module
+    return records_module.counts_under(gate, source)
+
+
+def platform_of(record):
+    """The operating system a record observed: its own, else its environment's."""
+    return (record or {}).get('os') or (
+        (record or {}).get('environment') or {}).get('os')
+
+
+def _platforms(inp, proofs):
+    """`{os: {word, source, at}}` over every platform a counting run covered.
+
+    A record names the operating system it ran on, and so do the test results
+    `purlin:test` commits, so each is one platform's answer about this rule.
+    Where two runs cover one platform the newer answers. A platform a proof
+    is tagged for with `@env` and nothing ran on gets an entry too, reading
+    `not run` with no source, so the map lists every platform the rule is
+    owed an answer from.
+    """
+    candidates = []
+    for record in (inp.get('records') or {}).values():
+        name = platform_of(record)
+        if not name:
+            continue
+        candidates.append((name, record.get('timestamp'),
+                           record.get('source') or record.get('label'),
+                           _word_from_record(proofs, record, name)))
+    local_os = inp.get('local_os')
+    if local_os and (inp.get('local_status') or {}):
+        candidates.append((local_os, inp.get('local_at'), 'local',
+                           _word_from_statuses(
+                               proofs, inp.get('local_status') or {},
+                               local_os)))
+
+    platforms = {}
+    for name, at, source, word in candidates:
+        if word is None:
+            continue
+        held = platforms.get(name)
+        if held is None or str(at or '') >= str(held.get('at') or ''):
+            platforms[name] = {'word': word, 'source': source, 'at': at}
+    for proof in proofs:
+        env = proof.get('env')
+        if env and env not in platforms:
+            platforms[env] = {'word': 'not run', 'source': None, 'at': None}
+    return platforms
+
+
+def _word_from_record(proofs, record, os_name):
+    """One platform's word for a rule, read off one record, or None."""
+    from purlin import records as records_module
+    return _word_from_statuses(proofs, records_module.proof_statuses(record),
+                               os_name)
+
+
+def _word_from_statuses(proofs, statuses, os_name):
+    """`passed`, `failed` or `not run` for one platform, or None when it is idle.
+
+    A proof tagged `@env` for another operating system is not this platform's
+    to answer, so it is left out. A platform with nothing of the rule's to
+    observe answers None and is not listed at all.
+    """
+    mine = [proof for proof in proofs
+            if not proof.get('env') or proof.get('env') == os_name]
+    if not mine:
         return None
-    return max(labels, key=lambda name: SOURCES.index(name)
+    seen = [statuses.get(proof.get('id')) for proof in mine]
+    if not any(seen):
+        return None
+    if 'fail' in seen:
+        return 'failed'
+    if all(status == 'pass' for status in seen):
+        return 'passed'
+    return 'not run'
+
+
+def _passing_source(platforms):
+    """The least trusted source among the platforms that passed."""
+    sources = [entry.get('source') for entry in platforms.values()
+               if entry.get('word') == 'passed' and entry.get('source')]
+    if not sources:
+        return None
+    return max(sources, key=lambda name: SOURCES.index(name)
+               if name in SOURCES else len(SOURCES))
+
+
+def _platform_reasons(platforms):
+    """One reason per platform that did not pass, and one naming those that did."""
+    passed = sorted(name for name, entry in platforms.items()
+                    if entry.get('word') == 'passed')
+    reasons = []
+    if passed:
+        reasons.append('passed on %s' % ', '.join(passed))
+    for name in sorted(platforms):
+        entry = platforms[name]
+        if entry.get('word') == 'passed':
+            continue
+        if entry.get('source') is None:
+            reasons.append('%s: no record yet' % name)
+        else:
+            reasons.append('%s: %s' % (name, entry.get('word')))
+    return reasons
+
+
+def _label_of(records):
+    """The least trusted source among the records a pass was read from."""
+    sources = [record.get('source') or record.get('label')
+               for record in (records or {}).values()
+               if record.get('source') or record.get('label')]
+    if not sources:
+        return None
+    return max(sources, key=lambda name: SOURCES.index(name)
                if name in SOURCES else len(SOURCES))
 
 
@@ -370,7 +518,14 @@ def _strong_cell(inp, cfg, passed, holds, counting_signatures):
 
     min_strength = cfg.min_strength if cfg else None
     notes = []
-    if strength is None:
+    if strength is None and not inp.get('audited', True):
+        # Level 2 asks how good the tests are, and only an audit measures
+        # that. With no record of one there is nothing to read, so the cell
+        # says the work is outstanding rather than passing the rule on the
+        # free checks alone.
+        notes.append('no audit has run')
+        cell['word'] = 'weak'
+    elif strength is None:
         # Nothing measured a strength, so the free checks are the whole of
         # what level 2 has to read, and the cell says so.
         notes.append('no engine: free checks only')
@@ -476,6 +631,11 @@ def review_threshold(cfg, mutation_engine_available=True):
 # The signed cell
 # ---------------------------------------------------------------------------
 
+def _signature_at(signature):
+    """When a signature was made: the commit date, else the file's own stamp."""
+    return signature.get('committed_at') or signature.get('timestamp')
+
+
 def _signed_cell(inp, cfg, holds, signatures, current, counting):
     """Level 3: what the signature files say, whatever the cells below read.
 
@@ -486,12 +646,13 @@ def _signed_cell(inp, cfg, holds, signatures, current, counting):
     sign_at = cfg.sign_at if cfg else None
     required = gate_module.risk_at_or_above(risk, sign_at)
     cell = {'word': 'not required', 'required': required, 'signer': None,
-            'path': None, 'reasons': []}
+            'at': None, 'path': None, 'reasons': []}
 
     if counting:
         signature = counting[0]
         cell['word'] = 'signed'
         cell['signer'] = signature.get('signer')
+        cell['at'] = _signature_at(signature)
         cell['path'] = signature.get('path')
         cell['reasons'] = ['by %s' % signature.get('signer')]
         return cell
@@ -509,6 +670,7 @@ def _signed_cell(inp, cfg, holds, signatures, current, counting):
         signature = current[0]
         cell['word'] = 'unsigned'
         cell['signer'] = signature.get('signer')
+        cell['at'] = _signature_at(signature)
         cell['path'] = signature.get('path')
         reason = signature.get('count_reason')
         cell['reasons'] = [reason] if reason else []
@@ -518,6 +680,7 @@ def _signed_cell(inp, cfg, holds, signatures, current, counting):
         signature = signatures[0]
         cell['word'] = 'stale'
         cell['signer'] = signature.get('signer')
+        cell['at'] = _signature_at(signature)
         cell['path'] = signature.get('path')
         cell['reasons'] = ['hashes changed after the signature']
         return cell
@@ -571,6 +734,8 @@ def _bucket(spec, cells, gate, passed, strong, signed):
     """The one tile a rule is counted in."""
     if passed['word'] == 'failed':
         return 'failing'
+    if passed['word'] == 'partial':
+        return 'partial'
     if spec != READY or not cell_is_met('passed', passed):
         return 'untested'
     if gate == 'passed' or not cell_is_met('strong', strong):

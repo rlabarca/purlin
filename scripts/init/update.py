@@ -70,6 +70,8 @@ IGNORE_LINES = ('.purlin/report-data.js', '.purlin/report-stamp.js',
 PRE_PUSH_SCRIPT = 'scripts/hooks/pre-push.sh'
 _SHIM_LINE = 'PURLIN_SCRIPT="%s"' % PRE_PUSH_SCRIPT
 RECORDS_DIR = '.purlin/records'
+BRIEFS_DIR = '.purlin/briefs'
+RECORD_SOURCES = ('ci', 'local')
 WORKFLOW_DIR = '.github/workflows'
 # What a workflow this release wrote carries and an earlier one does not: the
 # gate check every run now ends with. A purlin.yml without it was written
@@ -93,13 +95,15 @@ What must be true before CI lets a change merge?
 
 RECORDS_README = """# Records
 
-One file per CI run, committed by CI, at
-`.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json`. A record says
-what ran, on which commit, what passed and the test strength. The git history of
-this folder is the log, so adding a file never conflicts. A run prunes a
-feature's records past the newest three unless a `record/<name>` tag names them.
-Nothing on your own machine writes a record: purlin:test commits what your run
-saw, under `.purlin/tests/`. You do not edit anything here by hand.
+One file per audit, at
+`.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>.json`. A
+record says what ran, on which commit, what passed and the test strength. The
+folder says who wrote it: `ci/` is the CI job's, which the git host restricts to
+the build identity, and `local/` is anyone's. Both count at strong; only `ci/`
+counts at signed. The git history of these folders is the log, so adding a file
+never conflicts. A run prunes a feature's records past the newest three per
+operating system unless a `record/<name>` tag names them. You do not edit
+anything here by hand.
 """
 
 # --- helpers ---------------------------------------------------------------
@@ -519,42 +523,82 @@ def _apply_records(root, files, args, out):
     out.done(files[0])
     out.say('created %s, where CI commits one file per run' % RECORDS_DIR)
 
-def _committed_records(root):
-    """Every tracked record the git host did not commit, project-relative.
+def _loose_records(root):
+    """Every record and brief sitting outside a source folder, with its target.
 
-    The record is CI's in this release, and a record a person committed is
-    the evidence of a run nobody else can check. It counted under the old
-    `passed` gate and counts under nothing now, so it is dropped rather than
-    carried: the test results `purlin:test` commits are what a person's own
-    run leaves behind.
+    Before this release a record went straight into
+    `.purlin/records/<feature>/`, and who wrote it was read off the commit.
+    The source is the folder now, because that is what the git host's
+    file-path rule can restrict, so each file moves into `ci/` or `local/` by
+    the answer git still gives for it. `[(rel, target_rel, source)]`, sorted.
     """
     from purlin import records as records_module
 
-    ok, listed = _git(root, 'ls-files', '--', RECORDS_DIR)
-    if not ok:
-        return []
-    hits = []
-    for rel in listed.splitlines():
-        rel = rel.strip()
-        if not rel.endswith('.json'):
+    found = []
+    for directory, is_record in ((RECORDS_DIR, True), (BRIEFS_DIR, False)):
+        ok, listed = _git(root, 'ls-files', '--', directory)
+        names = listed.splitlines() if ok else []
+        for rel in _files_on_disk(root, directory) + names:
+            rel = rel.strip().replace(os.sep, '/')
+            if not rel.endswith('.json'):
+                continue
+            parts = rel.split('/')
+            # `.purlin/<kind>/<feature>/<file>`: four parts means no source
+            # folder, and five means the file is already where it belongs.
+            if len(parts) != 4 or parts[2] in RECORD_SOURCES:
+                continue
+            source = (records_module.record_label(root, rel) if is_record
+                      else _brief_source(root, rel))
+            target = '/'.join(parts[:2] + [source] + parts[2:])
+            pair = (rel, target, source)
+            if pair not in found:
+                found.append(pair)
+    return sorted(found)
+
+
+def _brief_source(root, rel):
+    """Which folder a loose brief belongs in: whoever committed it."""
+    from purlin import records as records_module
+    return records_module.record_label(root, rel)
+
+
+def _files_on_disk(root, directory):
+    """Every `.json` under a directory, project-relative, with `/` separators."""
+    base = os.path.join(root, *directory.split('/'))
+    found = []
+    for current, _dirs, names in os.walk(base):
+        for name in names:
+            if not name.endswith('.json'):
+                continue
+            found.append(os.path.relpath(os.path.join(current, name), root)
+                         .replace(os.sep, '/'))
+    return found
+
+
+def _detect_record_folders(root):
+    return [rel for rel, _target, _source in _loose_records(root)]
+
+def _apply_record_folders(root, files, args, out):
+    moved = {'ci': 0, 'local': 0}
+    for rel, target, source in _loose_records(root):
+        if rel not in files:
             continue
-        if records_module.record_label(root, rel) != 'ci':
-            hits.append(rel)
-    return hits
-
-def _detect_by_hand_records(root):
-    return _committed_records(root)
-
-def _apply_by_hand_records(root, files, args, out):
-    for rel in files:
-        _untrack(root, rel)
-        path = os.path.join(root, rel)
-        if os.path.isfile(path):
-            os.remove(path)
+        destination = os.path.join(root, *target.split('/'))
+        parent = os.path.dirname(destination)
+        if parent and not os.path.isdir(parent):
+            os.makedirs(parent)
+        ok, _said = _git(root, 'mv', '--', rel, target)
+        if not ok:
+            try:
+                shutil.move(os.path.join(root, *rel.split('/')), destination)
+            except (IOError, OSError):
+                continue
+        moved[source] = moved.get(source, 0) + 1
         out.done(rel)
-    out.say('deleted %d record%s the git host did not write; the record is '
-            "CI's, and purlin:test commits what your own run saw"
-            % (len(files), _s(files)))
+    out.say('moved %d file%s into ci/ and %d into local/; the folder is the '
+            'source now, and the git host restricts ci/ to the build identity'
+            % (moved.get('ci', 0), '' if moved.get('ci') == 1 else 's',
+               moved.get('local', 0)))
 
 # Order matters: the tags are rewritten before the config drops the registry that
 # maps them, and before the workflow matrix is rendered from them.
@@ -574,10 +618,11 @@ MIGRATIONS = (
      _detect_workflows, _apply_workflows),
     ('plugin-copies', 'refresh the proof plugin copies under .purlin/plugins/',
      _detect_plugin_copies, _apply_plugin_copies),
-    ('records', 'create .purlin/records/ for the records CI commits',
+    ('records', 'create .purlin/records/ for the records an audit commits',
      _detect_records, _apply_records),
-    ('records-by-hand', 'delete the records the git host did not write',
-     _detect_by_hand_records, _apply_by_hand_records),
+    ('record-folders', 'move every record and brief into .purlin/records/ci/ '
+     'or local/, by who committed it',
+     _detect_record_folders, _apply_record_folders),
 )
 
 def pending(project_root):

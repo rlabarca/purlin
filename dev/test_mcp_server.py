@@ -115,18 +115,29 @@ class Project(object):
 
     def record(self, proofs, feature='login', runner='ci', os_name=None,
                commit=None, scope_tree=None, strength=90, commit_it=True,
-               ci=False):
-        stamp = '20260913T120000Z'
+               ci=False, source=None, stamp='20260913T120000Z',
+               environment_os=None, claimed_source=None):
+        """One record in its source folder. The folder is what the reader reads.
+
+        `source` is `ci` or `local` and defaults to `ci` when `ci=True`, so a
+        test that wanted the git host's own record gets the git host's own
+        folder. `claimed_source` writes a different word into the file, which
+        is how a test makes the two disagree.
+        """
+        source = source or ('ci' if ci else 'local')
         name = '%s-%s-%s%s.json' % (stamp, (commit or self.head())[:7], runner,
                                     '-' + os_name if os_name else '')
-        path = os.path.join(self.root, '.purlin', 'records', feature, name)
+        path = os.path.join(self.root, '.purlin', 'records', source, feature,
+                            name)
         _write(path, json.dumps({
-            'schema_version': 1,
+            'schema_version': 3,
             'feature': feature,
+            'source': claimed_source or source,
             'commit': commit or self.head(),
             'timestamp': '2026-09-13T12:00:00Z',
             'runner': runner,
             'os': os_name,
+            'environment': {'os': environment_os or os_name or 'linux'},
             'test_strength': strength,
             'scope_tree': scope_tree,
             'proofs': proofs,
@@ -183,12 +194,12 @@ class Project(object):
         return os.path.join(directory, name)
 
     def brief(self, rule_id, feature='login', settled=True, observations=(),
-              tests=()):
+              tests=(), source='ci'):
         """Write the brief CI would have written for a rule's current hashes."""
         rule = self.rule(rule_id, feature)
         triple = purlin_signatures.triple_hash(
             rule['rule_hash'], rule['proof_hash'], rule['test_hash'])
-        path = os.path.join(self.root, '.purlin', 'briefs', feature,
+        path = os.path.join(self.root, '.purlin', 'briefs', source, feature,
                             '%s.%s.brief.json' % (rule_id, triple[:8]))
         _write(path, json.dumps({
             'schema': 'purlin-brief/2', 'feature': feature, 'rule': rule_id,
@@ -767,11 +778,12 @@ class TestRecords:
 
     @pytest.mark.proof("states", "PROOF-5", "RULE-4")
     def test_what_counts_under_each_gate(self):
-        for label in ('ci', 'local'):
-            assert purlin_records.counts_under('passed', label), label
-        for gate in ('strong', 'signed'):
-            assert purlin_records.counts_under(gate, 'ci'), gate
-            assert not purlin_records.counts_under(gate, 'local'), gate
+        for gate in ('passed', 'strong'):
+            for source in ('ci', 'local'):
+                assert purlin_records.counts_under(gate, source), (gate,
+                                                                   source)
+        assert purlin_records.counts_under('signed', 'ci')
+        assert not purlin_records.counts_under('signed', 'local')
 
     def test_the_latest_record_per_feature_per_os(self, project):
         project.record([_entry('PROOF-1', 'RULE-1')], os_name='linux')
@@ -853,24 +865,38 @@ class TestThePassedCell:
         assert cell['source'] == 'ci'
 
     @pytest.mark.proof("states", "PROOF-6", "RULE-5", tier="integration")
-    def test_a_record_the_git_host_did_not_write_does_not_count_under_strong(
-            self):
+    def test_a_local_record_counts_under_strong(self):
         made = Project(gate='strong')
         try:
             made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
-                        runner='dev')
+                        runner='dev', source='local')
+            cell = made.cell('RULE-2', 'passed')
+            assert cell['word'] == 'passed', cell
+            assert cell['source'] == 'local'
+            assert cell['counts'] is True
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-6", "RULE-5", tier="integration")
+    def test_a_local_record_does_not_count_under_signed(self):
+        made = Project(gate='signed', extra_config={
+            'signers': ['jane@acme.com']})
+        try:
+            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
+                        runner='dev', source='local')
             cell = made.cell('RULE-2', 'passed')
             assert cell['word'] == 'not run'
             assert cell['source'] == 'local'
             assert cell['counts'] is False
             assert cell['reasons'] == [
-                'local record does not count under strong'], cell
+                'local record does not count under signed'], cell
         finally:
             made.close()
 
     @pytest.mark.proof("states", "PROOF-7", "RULE-5", tier="integration")
-    def test_a_local_run_does_not_count_under_strong(self):
-        made = Project(gate='strong')
+    def test_a_local_run_does_not_count_under_signed(self):
+        made = Project(gate='signed', extra_config={
+            'signers': ['jane@acme.com']})
         try:
             made.proofs([_entry('PROOF-2', 'RULE-2')])
             cell = made.cell('RULE-2', 'passed')
@@ -878,7 +904,7 @@ class TestThePassedCell:
             assert cell['source'] == 'local'
             assert cell['counts'] is False
             assert cell['reasons'] == [
-                'local run does not count under strong'], cell
+                'local run does not count under signed'], cell
         finally:
             made.close()
 
@@ -1211,9 +1237,9 @@ class TestBucketsAndTheGate:
 class TestPayload:
 
     @pytest.mark.proof("states", "PROOF-31", "RULE-27", tier="integration")
-    def test_schema_five_carries_the_documented_top_level(self, project):
+    def test_schema_six_carries_the_documented_top_level(self, project):
         data = project.payload()
-        assert data['schema_version'] == 5
+        assert data['schema_version'] == 6
         for key in ('generated_at', 'generated_by', 'project', 'version',
                     'commit', 'dirty', 'gate', 'summary', 'features',
                     'review_list', 'records', 'remote_url', 'warnings'):
@@ -1248,10 +1274,17 @@ class TestPayload:
         feature = next(f for f in data['features'] if f['name'] == 'login')
         rollup = feature['rollup']
         assert sorted(rollup) == sorted([
-            'rules', 'met', 'untested', 'failing', 'passed', 'stale', 'held',
-            'manual', 'audit', 'test_strength', 'latest_record']), rollup
+            'rules', 'met', 'untested', 'failing', 'partial', 'passed',
+            'stale', 'held', 'manual', 'audit', 'test_strength',
+            'latest_record', 'proofs', 'proofs_without_test',
+            'proofs_without_test_ids']), rollup
         assert (rollup['rules'], rollup['met']) == (2, 1)
         assert (rollup['passed'], rollup['untested']) == (1, 1), rollup
+        assert (rollup['partial'], rollup['failing']) == (0, 0), rollup
+        assert rollup['proofs'] == 2, rollup
+        assert rollup['proofs_without_test'] == 1, (
+            'PROOF-1 has no test; PROOF-2 was observed by the local run')
+        assert rollup['proofs_without_test_ids'] == ['PROOF-1'], rollup
         assert data['summary']['features'] == 1
 
     @pytest.mark.proof("states", "PROOF-30", "RULE-26", tier="integration")
@@ -1282,6 +1315,7 @@ class TestPayload:
         assert records['windows']['result'] == 'pass'
         assert records['linux']['label'] == 'local'
         assert records['windows']['label'] == 'local'
+        assert records['linux']['source'] == 'local'
 
     @pytest.mark.proof("states", "PROOF-37", "RULE-32", tier="integration")
     def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):
@@ -1373,21 +1407,22 @@ class TestStatusTable:
         project.proofs([_entry('PROOF-2', 'RULE-2')])
         text = purlin_status.sync_status(project.root)
         header = next(line for line in text.splitlines()
-                      if line.startswith('Feature'))
-        for column in ('Rules', 'Spec', 'Tests', 'Run'):
+                      if line.startswith('Spec'))
+        for column in ('Spec', 'Rules', 'Proofs', 'Tests'):
             assert column in header, (column, header)
-        assert 'Strength' not in header and 'Signed' not in header, header
+        assert 'Strong' not in header and 'Signed' not in header, header
         row = next(line for line in text.splitlines()
                    if line.startswith('login '))
-        assert '1 passed' in row, row
+        assert '1 of 2' in row, row
+        assert '2 · 1 without a test' in row, row
 
-        for gate, expected in (('strong', ('Strength', 'Strong')),
-                               ('signed', ('Strength', 'Strong', 'Signed'))):
+        for gate, expected in (('strong', ('Strong',)),
+                               ('signed', ('Strong', 'Signed'))):
             made = Project(gate=gate)
             try:
                 text = purlin_status.sync_status(made.root)
                 header = next(line for line in text.splitlines()
-                              if line.startswith('Feature'))
+                              if line.startswith('Spec'))
                 for column in expected:
                     assert column in header, (gate, header)
                 row = next(line for line in text.splitlines()
@@ -1444,9 +1479,9 @@ class TestStatusTable:
     def test_the_repository_own_specs_print_the_table(self):
         text = purlin_status.sync_status(PROJECT_ROOT)
         header = next(line for line in text.splitlines()
-                      if line.startswith('Feature'))
-        assert 'Spec' in header and 'Tests' in header, header
-        assert any('ready' in line for line in text.splitlines()), text
+                      if line.startswith('Spec'))
+        assert 'Proofs' in header and 'Tests' in header, header
+        assert any('of' in line for line in text.splitlines()), text
         assert text.rstrip().splitlines()[-1].startswith('→'), text
 
 
@@ -1693,7 +1728,7 @@ class TestDigest:
         assert path and os.path.isfile(path)
         data = purlin_payload.read_report_payload(project.root)
         assert data['generated_by'] == 'hook'
-        assert data['schema_version'] == 5
+        assert data['schema_version'] == 6
 
     @pytest.mark.proof("server", "PROOF-12", "RULE-12", tier="integration")
     def test_a_project_with_no_config_writes_nothing(self, tmp_path):

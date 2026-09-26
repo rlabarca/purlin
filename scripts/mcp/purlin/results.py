@@ -45,6 +45,9 @@ if _MCP_DIR not in sys.path:
 from purlin import proofs as proofs_module
 
 SCHEMA = 'purlin-tests/1'
+
+# The three operating systems `@env` names, and how `sys.platform` spells them.
+_OS_NAMES = (('win', 'windows'), ('darwin', 'macos'), ('linux', 'linux'))
 TESTS_DIR = os.path.join('.purlin', 'tests')
 TABLE_PATH = os.path.join('.purlin', 'tests.md')
 
@@ -53,6 +56,19 @@ WORDS = ('passed', 'failed', 'no test', 'not run')
 
 # What one proof entry's `result` may say.
 RESULTS = ('pass', 'fail', 'missing')
+
+
+def host_os():
+    """`windows`, `macos` or `linux` for the machine this checkout is on.
+
+    The one answer, so a run that writes a platform into its results and a
+    cell that reads one out of them never spell a system two ways.
+    """
+    import sys as _sys
+    for prefix, name in _OS_NAMES:
+        if _sys.platform.startswith(prefix):
+            return name
+    return _sys.platform
 
 
 def tests_dir(project_root):
@@ -139,6 +155,38 @@ def runtime_times(project_root):
         if when > times.get(stem, 0):
             times[stem] = when
     return times
+
+
+def local_run_map(project_root):
+    """`{feature: {'os': <os>, 'at': <stamp>}}` for the local source.
+
+    The passed cell lists one platform per operating system a counting run
+    covered, and the test results are one of them, so it needs to know which
+    system they came from. A run this checkout made and has not committed yet
+    is this machine's, so a feature with no committed results still answers
+    with the operating system it is being read on.
+    """
+    committed = load_results(project_root)
+    times = runtime_times(project_root)
+    here = host_os()
+    out = {}
+    for feature, data in committed.items():
+        out[feature] = {'os': data.get('os') or here, 'at': data.get('at')}
+    for feature in times:
+        written = _epoch((committed.get(feature) or {}).get('at'))
+        ran = times.get(feature)
+        if feature not in out or written is None or ran >= written:
+            out[feature] = {'os': here, 'at': _iso_from_epoch(ran)}
+    return out
+
+
+def _iso_from_epoch(seconds):
+    """Seconds as an ISO 8601 UTC stamp, or None."""
+    import time
+
+    if seconds is None:
+        return None
+    return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(seconds))
 
 
 def _epoch(stamp):

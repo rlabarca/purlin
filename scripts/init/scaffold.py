@@ -139,10 +139,11 @@ _READMES = {
 A design anchor pins the hash of these files, and a feature spec requires that anchor.
 A new export stales the signatures of that anchor's rules, so a person looks again.
 """,
-    '.purlin/records': """Every CI run at the gate strong or signed writes one record per feature here,
-and commits it. The record is CI's: nothing on your machine writes one. Under passed the
-evidence is the test results purlin:test commits, under .purlin/tests/. A run keeps the newest
-three records per feature per runner.
+    '.purlin/records': """Every audit at the gate strong or signed writes one record per feature here and
+commits it. The folder says who wrote it: ci/ is the CI job's, which the git host restricts to
+the build identity, and local/ is anyone's. Both count at strong; only ci/ counts at signed.
+Under passed the evidence is the test results purlin:test commits, under .purlin/tests/. A run
+keeps the newest three records per feature per operating system.
 """,
 }
 
@@ -150,21 +151,22 @@ three records per feature per runner.
 # decided, a rule blocking merge unless that job passes, and the setting
 # saying what pass means. The setting is in .purlin/config.json; these two are
 # what the git host is told. The two restricted paths are the ones only CI
-# writes: the records and the briefs.
+# writes: its own records and its own briefs. A person's audit writes under
+# local/, which nobody restricts.
 _BRANCH_RULES = {
     'github': """Branch rules to apply on GitHub:
   1. Require a pull request, and require the purlin workflow's checks. Every run ends with the
      gate check and fails when the gate is not met, so a green check means the gate held.
      Bypass: the GitHub Actions app alone.
-  2. Restrict file paths .purlin/records/** and .purlin/briefs/**. Bypass: the GitHub Actions app
-     alone, so a person cannot push a record or a brief.
+  2. Restrict file paths .purlin/records/ci/** and .purlin/briefs/ci/**. Bypass: the GitHub
+     Actions app alone, so a person cannot push a record or a brief as CI's.
   3. Block force pushes and restrict deletions, with no bypass.""",
     'azure': """Branch security to apply on Azure DevOps:
   1. Require a pull request, with the purlin pipeline as a build validation policy. Every run
      ends with the gate check and fails when the gate is not met, so a green build means the
      gate held.
-  2. Grant Contribute on .purlin/records/** and .purlin/briefs/** to the build service alone, so a
-     person cannot push a record or a brief.
+  2. Grant Contribute on .purlin/records/ci/** and .purlin/briefs/ci/** to the build service
+     alone, so a person cannot push a record or a brief as CI's.
   3. Deny Force Push and Delete branch for everyone.""",
     'passed': """Branch rules to apply on the git host: block force pushes and restrict deletions, with no bypass.
 The gate is passed, so nothing else is required until you raise it.""",

@@ -159,11 +159,13 @@ class Project(object):
               json.dumps({'tier': tier, 'proofs': entries}))
 
     def record(self, statuses=None, runner='ada', strength=90,
-               commit_it=True, stamp='20260913T120000Z', tests=None):
+               commit_it=True, stamp='20260913T120000Z', tests=None,
+               source='local'):
         """Write a record naming the tests the runtime proofs name.
 
         `tests` maps a proof to the test names the record observed for it, for
-        a proof backed by more than one test.
+        a proof backed by more than one test. `source` is the folder it goes
+        in, which is what a reader reads the source off.
         """
         statuses = statuses or {'PROOF-1': 'pass', 'PROOF-2': 'pass'}
         proofs = []
@@ -177,12 +179,12 @@ class Project(object):
                     'test_file': 'tests/test_login.py',
                     'test_name': test_name})
         name = '%s-%s-%s.json' % (stamp, self.head()[:7], runner)
-        rel = '.purlin/records/login/' + name
+        rel = '.purlin/records/%s/login/%s' % (source, name)
         iso = '%s-%s-%sT%s:%s:%sZ' % (stamp[0:4], stamp[4:6], stamp[6:8],
                                       stamp[9:11], stamp[11:13], stamp[13:15])
         write(os.path.join(self.root, rel), json.dumps({
-            'schema_version': 1, 'feature': 'login', 'commit': self.head(),
-            'timestamp': iso, 'runner': runner,
+            'schema_version': 3, 'feature': 'login', 'commit': self.head(),
+            'source': source, 'timestamp': iso, 'runner': runner,
             'os': None, 'gate': FIRST_GATE, 'test_strength': strength,
             'scope_tree': purlin_specs.scope_tree(self.root, ['src/login.py']),
             'proofs': proofs}))
@@ -191,7 +193,7 @@ class Project(object):
             git(self.root, 'commit', '-q', '-m', 'purlin: record for abc1234')
         return rel
 
-    def brief(self, rule, observations=(), settled=True):
+    def brief(self, rule, observations=(), settled=True, source='ci'):
         """Write the brief CI would commit for a rule's current triple.
 
         A brief is named for the triple it was built from, so it is found
@@ -201,7 +203,8 @@ class Project(object):
         entry = self.rule(rule)
         triple = purlin_signatures.triple_hash(
             entry['rule_hash'], entry['proof_hash'], entry['test_hash'])
-        rel = '.purlin/briefs/login/%s.%s.brief.json' % (rule, triple[:8])
+        rel = '.purlin/briefs/%s/login/%s.%s.brief.json' % (source, rule,
+                                                            triple[:8])
         write(os.path.join(self.root, *rel.split('/')), json.dumps({
             'schema': 'purlin-brief/2', 'feature': 'login', 'rule': rule,
             'risk': entry['risk'], 'observations': list(observations),
@@ -520,7 +523,7 @@ def signing_project(sign_at='low', signer='jane@acme.com'):
     made = Project(gate=SIGNING_GATE,
                    config={'signers': [signer], 'sign_at': sign_at})
     made.proofs()
-    made.record(runner='ci', commit_it=False)
+    made.record(runner='ci', commit_it=False, source='ci')
     commit_as_ci(made.root)
     signing_key(made.root, signer)
     return made

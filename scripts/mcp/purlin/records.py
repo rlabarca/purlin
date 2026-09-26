@@ -1,10 +1,11 @@
-"""Read the records a CI run commits.
+"""Read the records an audit commits.
 
-A record is one CI run's observations for one feature, written as a file in
+A record is one audit's observations for one feature, written as a file in
 the tree and committed:
 
-    .purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
+    .purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
 
+`source` is `ci` or `local`, and it is the folder the file sits in.
 `timestamp` is ISO 8601 UTC without separators (`20260913T120000Z`),
 `commit7` the first seven characters of the commit the run observed, `runner`
 the slug `ci` or a git email's local part (lowercased, every non-alphanumeric
@@ -16,8 +17,9 @@ folder.
 The file:
 
     {
-      "schema_version": 2,
+      "schema_version": 3,
       "feature": "login",
+      "source": "ci",
       "commit": "<full sha>",
       "timestamp": "2026-09-13T12:00:00Z",
       "runner": "ci",
@@ -32,20 +34,18 @@ The file:
       ]
     }
 
-**The label comes from git, not from the file.** A file can claim anything.
-The last commit touching a record is what decides whether it counts:
+**The folder is the source, and the file must agree.** A record under
+`.purlin/records/ci/` carries `"source": "ci"` and one under
+`.purlin/records/local/` carries `"source": "local"`. A file whose own field
+disagrees with its folder is ignored, with one warning naming the path: the
+two halves of one fact cannot be read apart. What keeps the folder honest is
+the git host, whose file-path rule restricts `.purlin/records/ci/**` to the
+CI identity, so only CI can put a file there.
 
-`ci`     the git host made the commit: on GitHub the committer email is
-         `noreply@github.com` and the author is `github-actions[bot]`, on
-         Azure DevOps the committer is the build service
-`local`  anything else: a file nobody committed, and a file somebody other
-         than the git host committed. Neither is the git host's evidence, and
-         above `passed` only the git host's counts
-
-Under `passed` a record counts whatever wrote it, because the question there
-is only whether the tests pass. Under `strong` and `signed` only a ci record
-counts, which is what the git host's file-path rule enforces on the other
-side.
+`ci` and `local` both count under `passed` and under `strong`: an audit a
+person ran measures the same breaks CI measures. Under `signed` only `ci`
+counts, because the run on the protected branch after the merge is what a
+signature attaches to and a local run there is a preview.
 """
 
 import json
@@ -60,6 +60,11 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 RECORDS_DIR = os.path.join('.purlin', 'records')
+BRIEFS_DIR = os.path.join('.purlin', 'briefs')
+
+# The two source folders, most trusted first. A record's source is the folder
+# it sits in, and the file's own `source` field must say the same.
+SOURCES = ('ci', 'local')
 
 # `<timestamp>-<commit7>-<runner>[-<os>].json`
 _RECORD_NAME_RE = re.compile(
@@ -82,8 +87,60 @@ _GITHUB_ACTIONS_AUTHOR = 'github-actions[bot]'
 RETENTION = 3
 
 
-def records_dir(project_root):
-    return os.path.join(project_root, RECORDS_DIR)
+def records_dir(project_root, source=None):
+    """`.purlin/records/`, or one source's folder inside it."""
+    if source is None:
+        return os.path.join(project_root, RECORDS_DIR)
+    return os.path.join(project_root, RECORDS_DIR, source)
+
+
+def briefs_dir(project_root, source=None):
+    """`.purlin/briefs/`, or one source's folder inside it."""
+    if source is None:
+        return os.path.join(project_root, BRIEFS_DIR)
+    return os.path.join(project_root, BRIEFS_DIR, source)
+
+
+def record_path(source, feature, name):
+    """The project-relative path of one record, with `/` on every system."""
+    return '%s/%s/%s/%s' % (RECORDS_DIR.replace(os.sep, '/'), source,
+                            feature, name)
+
+
+def source_of_path(rel_path):
+    """The source folder a record path sits in, or None when it is elsewhere.
+
+    A path is `.purlin/records/<source>/<feature>/<file>.json`, so the source
+    is the third part. A record still under the pre-0.10.0 layout, with no
+    source folder at all, answers None and is not read; `purlin:init --update`
+    moves it into the folder its own source names.
+    """
+    parts = str(rel_path or '').replace(os.sep, '/').split('/')
+    if len(parts) < 4 or parts[0] != '.purlin' or parts[1] != 'records':
+        return None
+    return parts[2] if parts[2] in SOURCES else None
+
+
+DISAGREES = ('%s says its source is %s and sits under %s, so it is ignored. '
+             'A record\'s folder and its source field must agree.')
+
+
+def record_source(rel_path, data):
+    """`(source, warning)` for one record: its folder, checked against the file.
+
+    The folder is the source, because the git host's file-path rule on
+    `.purlin/records/ci/**` is what keeps a person out of it. The file's own
+    `source` field is the same fact written twice, so a file that disagrees
+    with its folder is not read at all: guessing which half is right would
+    let a copied file claim a source no rule enforces.
+    """
+    folder = source_of_path(rel_path)
+    if folder is None:
+        return None, None
+    claimed = (data or {}).get('source')
+    if claimed is not None and claimed != folder:
+        return None, DISAGREES % (rel_path, claimed, folder)
+    return folder, None
 
 
 def runner_slug(email):
@@ -155,6 +212,11 @@ def carries_a_signature(project_root, commit):
 def record_label(project_root, rel_path):
     """`ci` or `local` for one record, read from git.
 
+    What a record's source is, is its folder. This reads the other answer:
+    who committed the file. `purlin:init --update` is what asks, once, when
+    it moves a record written before the folders existed into the folder its
+    committer names.
+
     `git log -1 --format='%G? %cn %ce %an %H'` over the record's path names
     the signature status, the committer name and email, the author name and
     the commit of the last commit that touched it. No commit means the file
@@ -195,25 +257,35 @@ def record_label(project_root, rel_path):
     return 'local'
 
 
-def counts_under(gate, label):
-    """True when a record with `label` counts under `gate`.
+def counts_under(gate, source):
+    """True when a record from `source` counts under `gate`.
 
-    `passed` counts both labels, because the question there is only whether
-    the tests pass and a person's own run answers it. `strong` and `signed`
-    count a ci record alone.
+    `passed` and `strong` count both sources. At `passed` the question is
+    only whether the tests pass, and a person's own run answers it; at
+    `strong` the question is how good the tests are, and the breaks a person
+    ran are the same breaks CI runs. `signed` counts a ci record alone,
+    because a signature attaches to the run on the protected branch after the
+    merge, and a local run there is a preview.
     """
-    if gate == 'passed':
-        return label in ('ci', 'local')
-    return label == 'ci'
+    if gate in ('passed', 'strong'):
+        return source in SOURCES
+    return source == 'ci'
 
 
-def load_records(project_root, ref=None):
+def load_records(project_root, ref=None, warnings=None):
     """`{feature: {os_or_None: record}}`, the latest record per feature per OS.
 
     `ref` is accepted so a caller can ask what a commit held rather than what
     the working tree holds; with a ref the files are read out of git, and
     without one they are read from disk. Each record dict carries the keys the
-    file holds plus `path` (project-relative) and `label` (from git).
+    file holds plus `path` (project-relative), `source` (its folder) and
+    `label`, which is the same word under the name schema 5 gave it.
+
+    A record whose `source` field disagrees with its folder is left out and
+    one warning naming it is appended to `warnings`, when a list was handed
+    in. Where a feature has both a ci and a local record for one operating
+    system, the newer answers; where they are the same age, ci does, because
+    it is the one every checkout reads alike.
     """
     if ref:
         entries = _read_at_ref(project_root, ref)
@@ -225,6 +297,13 @@ def load_records(project_root, ref=None):
         parts = record_name_parts(os.path.basename(rel_path))
         if parts is None:
             continue
+        source, warning = record_source(rel_path, data)
+        if warning is not None:
+            if warnings is not None and warning not in warnings:
+                warnings.append(warning)
+            continue
+        if source is None:
+            continue
         timestamp, commit7, runner, os_name = parts
         feature = data.get('feature') or os.path.basename(os.path.dirname(rel_path))
         data = dict(data)
@@ -233,13 +312,23 @@ def load_records(project_root, ref=None):
         data.setdefault('runner', runner)
         data.setdefault('os', os_name)
         data['commit7'] = commit7
-        data['label'] = ('local' if ref is None and not _is_tracked(project_root, rel_path)
-                         else record_label(project_root, rel_path))
+        data['source'] = source
+        data['label'] = source
         slot = latest.setdefault(feature, {})
         current = slot.get(data.get('os'))
-        if current is None or str(current.get('timestamp')) <= str(data['timestamp']):
+        if current is None or _newer(data, current):
             slot[data.get('os')] = data
     return latest
+
+
+def _newer(candidate, held):
+    """True when `candidate` answers for its operating system over `held`."""
+    one = str(candidate.get('timestamp') or '')
+    other = str(held.get('timestamp') or '')
+    if one != other:
+        return one > other
+    return (SOURCES.index(candidate['source'])
+            <= SOURCES.index(held['source']))
 
 
 def _iso(compact):
@@ -251,26 +340,29 @@ def _iso(compact):
 
 
 def _read_from_disk(project_root):
-    root = records_dir(project_root)
+    """`[(rel_path, data)]` for every record under a source folder."""
     entries = []
-    if not os.path.isdir(root):
-        return entries
-    for feature in sorted(os.listdir(root)):
-        feature_dir = os.path.join(root, feature)
-        if not os.path.isdir(feature_dir):
+    for source in SOURCES:
+        root = records_dir(project_root, source)
+        if not os.path.isdir(root):
             continue
-        for name in sorted(os.listdir(feature_dir)):
-            if not name.endswith('.json'):
+        for feature in sorted(os.listdir(root)):
+            feature_dir = os.path.join(root, feature)
+            if not os.path.isdir(feature_dir):
                 continue
-            path = os.path.join(feature_dir, name)
-            try:
-                with open(path, 'r', encoding='utf-8') as handle:
-                    data = json.load(handle)
-            except (json.JSONDecodeError, IOError, OSError, UnicodeDecodeError):
-                continue
-            if isinstance(data, dict):
-                entries.append((os.path.relpath(path, project_root)
-                                .replace(os.sep, '/'), data))
+            for name in sorted(os.listdir(feature_dir)):
+                if not name.endswith('.json'):
+                    continue
+                path = os.path.join(feature_dir, name)
+                try:
+                    with open(path, 'r', encoding='utf-8') as handle:
+                        data = json.load(handle)
+                except (json.JSONDecodeError, IOError, OSError,
+                        UnicodeDecodeError):
+                    continue
+                if isinstance(data, dict):
+                    entries.append((os.path.relpath(path, project_root)
+                                    .replace(os.sep, '/'), data))
     return entries
 
 
@@ -305,15 +397,6 @@ def _read_at_ref(project_root, ref):
             entries.append((rel_path, data))
     return entries
 
-
-def _is_tracked(project_root, rel_path):
-    try:
-        result = subprocess.run(
-            ['git', 'ls-files', '--error-unmatch', '--', rel_path],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
-    except (subprocess.SubprocessError, OSError):
-        return False
-    return result.returncode == 0
 
 
 def head_sha(project_root):

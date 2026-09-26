@@ -65,7 +65,7 @@ def project_at(gate, strength=90, by_ci=True, config=None, briefs=('RULE-2',)):
     made = Project(gate=gate, config=settings)
     made.proofs()
     made.record(strength=strength, runner='ci' if by_ci else 'ada',
-                commit_it=False)
+                commit_it=False, source='ci' if by_ci else 'local')
     for rule in briefs or ():
         made.brief(rule)
     if by_ci:
@@ -175,13 +175,25 @@ class TestTheStrongGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-7", "RULE-3", tier="integration")
-    def test_a_record_the_git_host_did_not_write_does_not_count(self):
+    def test_a_local_record_counts_under_strong(self):
+        """An audit a person ran measures the same breaks CI measures."""
         made = project_at('strong', by_ci=False)
+        try:
+            code, output = run(made)
+            assert code == 0, output
+            assert 'PASS. Every rule meets strong.' in output
+        finally:
+            made.close()
+
+    @pytest.mark.proof("gate_check", "PROOF-7", "RULE-3", tier="integration")
+    def test_a_local_record_does_not_count_under_signed(self):
+        made = project_at('signed', by_ci=False,
+                          config={'signers': ['jane@acme.com']})
         try:
             code, output = run(made)
             assert code == 1
             assert 'Not passed (2):' in output
-            assert 'local record does not count under strong' in output
+            assert 'local record does not count under signed' in output
         finally:
             made.close()
 

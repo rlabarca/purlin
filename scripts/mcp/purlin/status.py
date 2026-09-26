@@ -1,10 +1,14 @@
-"""The status table: one row per feature, one cell per evidence level.
+"""The status table: one row per spec, one cell per evidence level.
 
-A row says how many rules the feature has, what its specs say about them, how
-many rules pass their tests, and what the latest record was. At `strong` the
-row adds the test strength and how many rules are strong; at `signed` it adds
-how many are signed. The table scales with the gate: a `passed` project is
-never shown a strength, a risk or a signature it did not ask for.
+The table is the dashboard's board, rendered as text. Its columns are the
+board's columns and its cells are the board's cells, character for character,
+because a reader who learns one should not have to learn the other:
+`purlin:purlin.board` renders both. A row says how many rules the spec has,
+how many proofs it writes and how many of those have no test, and how many
+rules pass their tests. At `strong` the row adds how many rules are strong
+and the test strength; at `signed` it adds how many are signed. The table
+scales with the gate: a `passed` project is never shown a strength, a risk or
+a signature it did not ask for.
 
 Copy follows `design/readme.md`: sentence case, second person for what you
 do, third person for what Purlin does, exact numbers, and the only glyphs are
@@ -19,15 +23,11 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import (drift as drift_module, payload as payload_module,
-                    specs as specs_module, states)
+from purlin import (board as board_module, drift as drift_module,
+                    payload as payload_module, specs as specs_module, states)
 
 ARROW = '→'
-DOT = ' · '
-
-BASE_COLUMNS = ('Feature', 'Rules', 'Spec', 'Tests', 'Run')
-STRONG_COLUMNS = ('Strength', 'Strong')
-SIGNED_COLUMNS = ('Signed',)
+DOT = board_module.DOT
 
 NO_SPECS = ('No specs found under specs/.\n'
             '%s Run: purlin:init to set this project up, or purlin:spec to '
@@ -35,13 +35,8 @@ NO_SPECS = ('No specs found under specs/.\n'
 
 
 def columns_for(gate):
-    """The table's columns under `gate`, left to right."""
-    columns = list(BASE_COLUMNS)
-    if gate in ('strong', 'signed'):
-        columns.extend(STRONG_COLUMNS)
-    if gate == 'signed':
-        columns.extend(SIGNED_COLUMNS)
-    return tuple(columns)
+    """The table's columns under `gate`, left to right: the board's own."""
+    return board_module.columns_for(gate)
 
 
 def sync_status(project_root):
@@ -99,51 +94,10 @@ def _update_pending(project_root):
 # The table
 # ---------------------------------------------------------------------------
 
-def _cell_words(feature, name):
-    """`{word: count}` over one cell of every rule the feature must prove."""
-    counts = {}
-    for rule in feature.get('rules') or ():
-        cell = (rule.get('cells') or {}).get(name)
-        if not cell:
-            continue
-        word = cell.get('word')
-        counts[word] = counts.get(word, 0) + 1
-    return counts
-
-
-def _met_count(feature, name):
-    """How many of a feature's rules meet one cell."""
-    return sum(1 for rule in feature.get('rules') or ()
-               if states.cell_is_met(name, (rule.get('cells') or {}).get(name)))
-
-
 def _row(feature, gate):
-    rollup = feature['rollup']
+    """One spec's row, rendered by the module the board renders from."""
     name = feature['name'] + (' (anchor)' if feature['is_anchor'] else '')
-    total = rollup['rules']
-
-    drafted = sum(1 for rule in feature.get('rules') or ()
-                  if rule.get('spec') == states.DRAFTED)
-    spec_cell = '%d ready%s%d drafted' % (total - drafted, DOT, drafted)
-
-    words = _cell_words(feature, 'passed')
-    tests_cell = '%d passed%s%d failing%s%d no test' % (
-        words.get('passed', 0), DOT, words.get('failed', 0), DOT,
-        total - words.get('passed', 0) - words.get('failed', 0))
-
-    record = feature.get('latest_record') or {}
-    run_cell = record.get('label') or 'none'
-    if record.get('os'):
-        run_cell = '%s %s' % (run_cell, record['os'])
-
-    cells = [name, str(total), spec_cell, tests_cell, run_cell]
-    if gate in ('strong', 'signed'):
-        strength = rollup.get('test_strength')
-        cells.append('n/a' if strength is None else '%d%%' % int(strength))
-        cells.append('%d of %d' % (_met_count(feature, 'strong'), total))
-    if gate == 'signed':
-        cells.append('%d of %d' % (_met_count(feature, 'signed'), total))
-    return tuple(cells)
+    return board_module.row_cells(name, feature['rollup'], gate)
 
 
 def _table(data):
@@ -167,7 +121,7 @@ def _table(data):
 def _line(cells, widths, columns):
     """One table line; the counted columns are right aligned, the rest left."""
     right = {index for index, name in enumerate(columns)
-             if name in ('Rules', 'Strength')}
+             if name in ('Rules',)}
     out = []
     for index, cell in enumerate(cells):
         if index in right:
@@ -185,11 +139,10 @@ def _summary(data):
     summary = data['summary']
     cfg = data['gate']
     gate = cfg['gate']
-    lines = ['%d of %d rules meet the gate %s.'
-             % (summary['met'], summary['rules'], gate)]
-    second = ['%d features' % summary['features']]
-    if summary.get('failing'):
-        second.append('%d failing' % summary['failing'])
+    lines = [board_module.headline(summary, gate),
+             board_module.bucket_line(summary, gate) + '.']
+    second = ['%d features' % summary['features'],
+              board_module.proofs_cell(summary) + ' proof lines']
     if gate != 'passed':
         if cfg.get('min_strength') is not None:
             second.append('minimum test strength %d%%' % cfg['min_strength'])
@@ -232,6 +185,28 @@ def _blocking(data):
     return found
 
 
+NO_AUDIT = 'no audit has run'
+
+
+def _unaudited(data):
+    """How many rules are weak only because no audit has measured them.
+
+    A weak rule is build work, and that is what the next step says, unless
+    nothing has run the breaks over it at all: then the work is the audit,
+    not the build, and telling a reader to build would send them at the
+    wrong thing.
+    """
+    found = 0
+    for feature in data['features']:
+        for rule in feature.get('rules') or ():
+            if rule.get('label') != 'own' or rule.get('blocked_by') != 'strong':
+                continue
+            cell = (rule.get('cells') or {}).get('strong') or {}
+            if NO_AUDIT in (cell.get('reasons') or ()):
+                found += 1
+    return found
+
+
 def _directives(data, project_root):
     """The next step, computed from the blocking cell, plus anything to fix first."""
     lines = []
@@ -247,8 +222,10 @@ def _directives(data, project_root):
 
     no_test = passed.get('no test', 0)
     failing = passed.get('failed', 0)
+    partial = passed.get('partial', 0)
     waiting = passed.get('not run', 0) + passed.get('code changed', 0)
     weak = strong.get('weak', 0)
+    unaudited = _unaudited(data)
     person = (strong.get('manual test', 0) + strong.get('manual audit', 0)
               + strong.get('held', 0) + signed.get('unsigned', 0)
               + signed.get('stale', 0) + signed.get('held', 0))
@@ -259,6 +236,10 @@ def _directives(data, project_root):
     elif failing:
         lines.append('%s Next: run purlin:build. %d rules have a failing test.'
                      % (ARROW, failing))
+    elif partial:
+        lines.append('%s Next: run purlin:build. %d rules are partial; their '
+                     'tests pass on one operating system and not on another.'
+                     % (ARROW, partial))
     elif no_test:
         lines.append('%s Next: run purlin:build. %d rules have a proof and no '
                      'passing test.' % (ARROW, no_test))
@@ -272,6 +253,10 @@ def _directives(data, project_root):
     elif waiting:
         lines.append('%s Next: run purlin:test. %d rules have no run to read.'
                      % (ARROW, waiting))
+    elif unaudited:
+        lines.append('%s Next: run purlin:audit. %d rules have no audit, so '
+                     'nothing has measured how good their tests are.'
+                     % (ARROW, unaudited))
     elif weak:
         lines.append('%s Next: run purlin:build. %d rules are weak; the strong '
                      'cell names what each one is short of.' % (ARROW, weak))

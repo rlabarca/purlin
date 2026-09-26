@@ -103,26 +103,33 @@ def rollup_text(project_root, payload):
     """The rollup: the gate, one line per bucket, and the newest record.
 
     A bucket is the one tile a rule is counted in, so the counts add up to
-    the rule total and a reader can check them. The flags `stale`, `held`,
-    `manual` and `audit` are counted beside the buckets, never instead of
-    them, and each is printed only when it stands.
+    the rule total and a reader can check them, and each is named with the
+    word its tile carries on the board. The flags `stale`, `held`, `manual`
+    and `audit` are counted beside the buckets, never instead of them, and
+    each is printed only when it stands.
     """
+    from purlin import board as board_module
+
     summary = payload['summary']
     gate = payload['gate']['gate']
     lines = ['Purlin: %s, gate %s' % (payload['project'], gate), '']
-    lines.append('%d of %d rules meet the gate %s%s%d failing'
-                 % (summary['met'], summary['rules'], gate, DOT,
-                    summary.get('failing') or 0))
-    lines.append('%d features, %d rules.'
-                 % (summary['features'], summary['rules']))
+    lines.append(board_module.headline(summary, gate))
+    lines.append('%d features, %d rules, %s proof lines.'
+                 % (summary['features'], summary['rules'],
+                    board_module.proofs_cell(summary)))
+    lines.append('')
 
-    from purlin import states
-    for bucket in states.bucket_keys(gate):
-        lines.append('  %-12s %d' % (bucket, summary.get(bucket) or 0))
+    # The tiles' own words, in the tiles' own order, so a reader of the board
+    # and a reader of this text count the same six things.
+    for label, count in board_module.bucket_counts(summary, gate):
+        lines.append('  %-9s %d' % (label, count))
 
     if summary.get('stale'):
         lines.append('%d signatures stale: the hashes changed after signing.'
                      % summary['stale'])
+    if summary.get('partial'):
+        lines.append('%d rules are partial: their tests pass on one operating '
+                     'system and not on another.' % summary['partial'])
     if summary.get('held'):
         lines.append('%d rules held: a person said a test does not prove '
                      'its proof.' % summary['held'])

@@ -1,27 +1,27 @@
 """Write, prune, commit and tag the records a CI run produces.
 
-A record is one CI run's observations for one feature, written as a file in
+A record is one audit's observations for one feature, written as a file in
 the tree and committed:
 
-    .purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
+    .purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
 
 Adding a file never conflicts, so two runs never collide and the log of what
 ran is the git history of that folder.
 
-Who committed a record is its source, and that is what decides whether it
-counts: `scripts/mcp/purlin/records.py` reads the source off the last commit
-touching the file. This module is the writing half.
+**The folder is the source.** `purlin:audit` on a person's machine writes
+under `.purlin/records/local/` and commits it under their own identity;
+the CI job writes under `.purlin/records/ci/` and commits it through the git
+host's API. Each record carries the same word in its own `source` field, and
+`scripts/mcp/purlin/records.py` ignores a file where the two disagree. What
+keeps the ci folder honest is the git host's file-path rule on
+`.purlin/records/ci/**`, which only the build identity may write.
 
-**One identity writes.** The record is CI's, and nothing on a person's
-machine writes one: `purlin:test` commits the test results and `purlin:audit`
-commits nothing at all. CI commits through the git host's REST API with no
-author and no committer field, so GitHub signs the commit with its own key
-and reports `github-actions[bot]` as the committer; that is the source `ci`,
-the only one that counts under `strong` and `signed`. Azure DevOps pushes
-through its Pushes API with the build service's token and signs nothing, and
-its documentation says the committer name is the one to read. CI's commit
-carries more than the record: the briefs the same run wrote travel in it,
-because a brief that never leaves the runner is evidence nobody can read.
+CI commits through the REST API with no author and no committer field, so
+GitHub signs the commit with its own key and reports `github-actions[bot]`
+as the committer; Azure DevOps pushes through its Pushes API with the build
+service's token. Either commit carries more than the record: the briefs the
+same run wrote travel in it, because a brief that never leaves the runner is
+evidence nobody can read.
 
 **Where CI commits.** On the protected branch and on a run branch, and
 nowhere else. A pull request run does the same tests and posts the same
@@ -54,10 +54,24 @@ if _MCP_DIR not in sys.path:
 from purlin import records as reader  # noqa: E402
 
 RECORDS_DIR = reader.RECORDS_DIR
+BRIEFS_DIR = reader.BRIEFS_DIR
+SOURCES = reader.SOURCES
 # What git is handed. A pathspec takes `/` on every operating system: the
 # `os.path.join` spelling of RECORDS_DIR is `.purlin\\records` on Windows, which
 # matches nothing, so a record commit made there staged nothing.
 RECORDS_PATHSPEC = '.purlin/records'
+BRIEFS_PATHSPEC = '.purlin/briefs'
+CI_RECORDS_PATHSPEC = '.purlin/records/ci'
+CI_BRIEFS_PATHSPEC = '.purlin/briefs/ci'
+LOCAL_RECORDS_PATHSPEC = '.purlin/records/local'
+LOCAL_BRIEFS_PATHSPEC = '.purlin/briefs/local'
+
+# What one commit of an audit's own evidence says, whoever made it.
+RECORD_SUBJECT = 'purlin: record for %s'
+RECORD_COMMITTED = 'Record committed.'
+RECORD_UNCHANGED = 'Record unchanged.'
+RECORD_NO_REPOSITORY = ('Record written; there is no git repository to commit '
+                        'it to.')
 RETENTION = reader.RETENTION
 
 # The branch `purlin:test --remote` creates for one run, and the ref prefix
@@ -120,10 +134,12 @@ def record_filename(commit, runner, os_name=None, when=None):
     return '%s-%s-%s%s.json' % (stamp, commit7, slug, tail)
 
 
-def write_record(project_root, record, runner, os_name=None):
+def write_record(project_root, record, runner, os_name=None, source='local'):
     """Write one record, prune the feature's folder, return its path.
 
-    `record` is the `purlin-record/2` dict the run assembled. The file name
+    `record` is the `purlin-record/3` dict the run assembled, and `source` is
+    `ci` or `local`: the folder it goes in and the word its own `source`
+    field carries, which a reader checks against each other. The file name
     carries the timestamp, the commit observed, the runner and the operating
     system when the run was one job of a matrix; the record's own `timestamp`
     and `os` fields are set to match, so the file and its name never disagree.
@@ -131,15 +147,18 @@ def write_record(project_root, record, runner, os_name=None):
     a caller handed over a record without one.
     """
     record = dict(record or {})
+    if source not in SOURCES:
+        source = 'local'
     feature = record.get('feature') or 'unknown'
     now = _utc_now()
     name = record_filename(record.get('commit'), runner, os_name, when=now)
     record.setdefault(
         'runner', 'ci' if runner == 'ci' else reader.runner_slug(runner))
     record['os'] = os_name
+    record['source'] = source
     record['timestamp'] = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    folder = os.path.join(reader.records_dir(project_root), feature)
+    folder = os.path.join(reader.records_dir(project_root, source), feature)
     if not os.path.isdir(folder):
         os.makedirs(folder)
     path = os.path.join(folder, name)
@@ -147,7 +166,7 @@ def write_record(project_root, record, runner, os_name=None):
         json.dump(record, handle, indent=2, sort_keys=True)
         handle.write('\n')
 
-    prune(project_root, feature, os_name)
+    prune(project_root, feature, os_name, source=source)
     return os.path.relpath(path, project_root).replace(os.sep, '/')
 
 
@@ -164,14 +183,18 @@ def tagged_paths(project_root):
     return set(_RECORD_PATH_RE.findall(result.stdout))
 
 
-def prune(project_root, feature, os_name=None, keep=RETENTION):
+def prune(project_root, feature, os_name=None, keep=RETENTION,
+          source='local'):
     """Delete a feature's records past the newest `keep` for one OS.
 
     Records for another operating system are untouched: a matrix keeps three
-    per OS, so a Windows job never prunes what a Linux job wrote. A path an
-    annotated `record/<name>` tag names in its message is never deleted.
+    per OS, so a Windows job never prunes what a Linux job wrote. Records
+    under the other source are untouched too: a local audit never prunes
+    what CI wrote, and it could not, because the git host will not let it.
+    A path an annotated `record/<name>` tag names in its message is never
+    deleted.
     """
-    folder = os.path.join(reader.records_dir(project_root), feature)
+    folder = os.path.join(reader.records_dir(project_root, source), feature)
     if not os.path.isdir(folder):
         return []
     protected = tagged_paths(project_root)
@@ -214,6 +237,23 @@ def tag_record(project_root, name, record_paths):
 # ---------------------------------------------------------------------------
 # Committing
 # ---------------------------------------------------------------------------
+
+def commit_local_records(project_root, commit):
+    """Commit a local audit's record and briefs under the person's identity.
+
+    The same commit path `purlin:test` uses for the test results, because it
+    is the same act: a person's own run writing its own evidence under their
+    own name. Nothing here pushes, and nothing here touches
+    `.purlin/records/ci/`, which the git host reserves for the build
+    identity. The line to print comes back.
+    """
+    from results import commit_paths
+
+    return commit_paths(
+        project_root, [LOCAL_RECORDS_PATHSPEC, LOCAL_BRIEFS_PATHSPEC],
+        RECORD_SUBJECT % (str(commit or '')[:7] or 'an unknown commit'),
+        RECORD_COMMITTED, RECORD_UNCHANGED, RECORD_NO_REPOSITORY)
+
 
 def commit_records(project_root, paths, message):
     """Commit the files at `paths` through the git host's API. The sha.

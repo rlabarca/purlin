@@ -18,11 +18,13 @@ brief settled with nothing observed is one the machine could read; a review
 that could not settle leaves the strong cell reading `manual audit`.
 
 The brief lands beside the records, as
-`.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, with a text rendering
-beside it. A brief is named for the triple it was built from, so a brief for
-text that has since changed is simply not found again.
+`.purlin/briefs/<source>/<feature>/<RULE-N>.<hash8>.brief.json`, with a text
+rendering beside it. `source` is `ci` or `local`, the same folder the record
+of that run went in. A brief is named for the triple it was built from, so a
+brief for text that has since changed is simply not found again.
 
-The JSON is evidence: CI commits it with the record and a signature names it.
+The JSON is evidence: the audit commits it with the record and a signature
+names it.
 Building a brief again for the same triple leaves that file untouched unless
 the evidence in it changed, so reading a brief does not dirty the tree. The
 `.brief.txt` beside it is a local view, named in `.gitignore` and never
@@ -63,9 +65,10 @@ EXIT_BAD_INVOCATION = 2
 
 CRITERIA = os.path.join('references', 'review_criteria.md')
 
-# Where CI commits the briefs, beside the records and under the same branch
-# rule.
+# Where an audit commits the briefs, beside the records, under the same two
+# source folders and the same branch rule.
 BRIEFS_DIR = os.path.join('.purlin', 'briefs')
+SOURCES = ('ci', 'local')
 
 # The layers, cheapest first, and the lowest risk each one is built for.
 LAYERS = ('proof text', 'test body', 'test strength', 'model review')
@@ -385,9 +388,11 @@ def model_observations(answer):
 # Writing
 # ---------------------------------------------------------------------------
 
-def brief_paths(project_root, feature, rule, triple):
-    """`(json_path, text_path)` for one brief, beside the records."""
-    stem = os.path.join(project_root, BRIEFS_DIR, feature,
+def brief_paths(project_root, feature, rule, triple, source='local'):
+    """`(json_path, text_path)` for one brief, beside its run's record."""
+    if source not in SOURCES:
+        source = 'local'
+    stem = os.path.join(project_root, BRIEFS_DIR, source, feature,
                         '%s.%s.brief' % (rule, str(triple)[:8]))
     return stem + '.json', stem + '.txt'
 
@@ -409,14 +414,18 @@ def same_evidence(one, other):
     return evidence(one) == evidence(other)
 
 
-def write_brief(project_root, brief):
+def write_brief(project_root, brief, source='local'):
     """Write one brief and its text rendering. Returns the JSON path.
+
+    `source` is the folder the run's record went in, so the brief and the
+    record it rests on travel together in one commit.
 
     The JSON is left untouched when the brief already on disk for this triple
     holds the same evidence, so a second read of a brief changes no tracked file.
     """
     json_path, text_path = brief_paths(
-        project_root, brief['feature'], brief['rule'], brief['triple_hash'])
+        project_root, brief['feature'], brief['rule'], brief['triple_hash'],
+        source)
     if not json_path:
         return None
     directory = os.path.dirname(json_path)
@@ -436,7 +445,8 @@ def write_brief(project_root, brief):
     return os.path.relpath(json_path, project_root).replace(os.sep, '/')
 
 
-def write_briefs(project_root, payload=None, rules=None, ai=False):
+def write_briefs(project_root, payload=None, rules=None, ai=False,
+                 source='local'):
     """Write a brief for every rule a review is owed for. Returns their paths.
 
     A review is owed when the rule's risk is at or above `ai_review_at` and its
@@ -477,7 +487,7 @@ def write_briefs(project_root, payload=None, rules=None, ai=False):
         brief = build_brief(project_root, payload, feature, rule, ai=ai)
         if brief is None:
             continue
-        path = write_brief(project_root, brief)
+        path = write_brief(project_root, brief, source)
         if path:
             written.append(path)
     return written

@@ -7,19 +7,21 @@ One project setting decides what this job requires. The gate is read from
 `.purlin/config.json` and nothing else has to be configured:
 
     passed  every rule's passed cell is met: the tagged tests pass, from any
-            source
-    strong  every rule's strong cell is met too: a record CI wrote, test
-            strength at or above the project minimum, no finding standing
-            against the proof text or the test body, no manual test and no
-            manual audit outstanding, and nobody holding the rule
-    signed  every rule's signed cell is met too: a person on the signer list
-            signed the rule, proof and test hashes
+            source, on every operating system a counting run covered
+    strong  every rule's strong cell is met too: a record an audit wrote,
+            from either source, test strength at or above the project
+            minimum, no finding standing against the proof text or the test
+            body, no manual test and no manual audit outstanding, and nobody
+            holding the rule
+    signed  every rule's signed cell is met too, and there only a record CI
+            wrote counts: a person on the signer list signed the rule, proof
+            and test hashes
 
 **The setting is the declaration, not the enforcement.** `.purlin/config.json`
 is a file in the repository that an agent can edit. What enforces the gate is
 the git host: a branch rule marking this job a required check, a rule
-restricting who may push `.purlin/records/**` and `.purlin/briefs/**`, and a
-rule blocking force pushes. `purlin:init` prints all three when it writes the
+restricting who may push `.purlin/records/ci/**` and `.purlin/briefs/ci/**`,
+and a rule blocking force pushes. `purlin:init` prints all three when it writes the
 workflow.
 
 What this job reads is the structured payload, which has already worked out
@@ -60,8 +62,8 @@ SHOWN = 20
 _ENFORCEMENT_NOTE = (
     'the gate is declared in .purlin/config.json, which an agent can edit. '
     'The enforcement is the git host: this job is a required check and '
-    '.purlin/records/** and .purlin/briefs/** are restricted to the build '
-    'identity.')
+    '.purlin/records/ci/** and .purlin/briefs/ci/** are restricted to the '
+    'build identity.')
 
 _SIGNER_LIST_MISSING = (
     '→ signer list missing: run purlin:init --gate signed')
@@ -72,9 +74,13 @@ _WAITING_WORDS = ('manual test', 'manual audit', 'held')
 
 # One section per cell a rule can be blocked at, in the order the chain reads
 # them. The spec status blocks before the passed cell does, and both mean the
-# same thing to a branch: the rule is not passed. The strong cell fills two
-# sections, because `weak` is build work and the three waiting words are not.
+# same thing to a branch: the rule is not passed. The passed cell fills two
+# sections, because a rule that passes on one operating system and not on
+# another is a different piece of work from one that passes nowhere. The
+# strong cell fills two as well, because `weak` is build work and the three
+# waiting words are not.
 _SECTIONS = (('not_passed', 'Not passed', ('spec', 'passed')),
+             ('partial', 'Partial', ()),
              ('weak', 'Weak', ('strong',)),
              ('waiting', 'Waiting on a person', ()),
              ('not_signed', 'Not signed', ('signed',)))
@@ -122,6 +128,7 @@ def check(project_root, payload=None, out=None, as_json=False):
         'rules': 0,
         'met': 0,
         'not_passed': [],
+        'partial': [],
         'weak': [],
         'waiting': [],
         'not_signed': [],
@@ -190,6 +197,8 @@ def _collect(payload, result):
                 # the gate, and the passed section is where a reader looks
                 # first.
                 key = 'not_passed'
+            elif key == 'not_passed' and _cell_word(entry, 'passed') == 'partial':
+                key = 'partial'
             elif key == 'weak' and _cell_word(entry, 'strong') in _WAITING_WORDS:
                 key = 'waiting'
             result[key].append('%s %s: %s'

@@ -107,15 +107,22 @@ def record(feature='greeting', commit='4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7'
     }
 
 
-def put_record(root, feature, name, body=None):
-    """Write a record file by name, bypassing `write_record`'s clock."""
-    folder = os.path.join(root, reader.RECORDS_DIR, feature)
+def put_record(root, feature, name, body=None, source='local'):
+    """Write a record file by name, bypassing `write_record`'s clock.
+
+    The folder is the source, so a test that wants a record read at all has
+    to say which of the two folders it sits in.
+    """
+    folder = os.path.join(root, reader.RECORDS_DIR, source, feature)
     if not os.path.isdir(folder):
         os.makedirs(folder)
     path = os.path.join(folder, name)
+    body = dict(body or record(feature))
+    body.setdefault('source', source)
     with open(path, 'w', encoding='utf-8') as handle:
-        json.dump(body or record(feature), handle)
-    return '%s/%s/%s' % (reader.RECORDS_DIR.replace(os.sep, '/'), feature, name)
+        json.dump(body, handle)
+    return '%s/%s/%s/%s' % (reader.RECORDS_DIR.replace(os.sep, '/'), source,
+                            feature, name)
 
 
 def _commit_by_hand(root, message):
@@ -129,8 +136,8 @@ def _commit_by_hand(root, message):
     git(root, 'commit', '--quiet', '-m', message)
 
 
-def names(root, feature):
-    folder = os.path.join(root, reader.RECORDS_DIR, feature)
+def names(root, feature, source='local'):
+    folder = os.path.join(root, reader.RECORDS_DIR, source, feature)
     return sorted(os.listdir(folder)) if os.path.isdir(folder) else []
 
 
@@ -289,11 +296,12 @@ def test_the_runner_slug_is_ci_or_the_email_local_part(project):
 @pytest.mark.proof("records", "PROOF-1", "RULE-1")
 def test_write_record_returns_a_path_the_reader_parses(project):
     path = records_module.write_record(project, record(), 'ada@example.com')
-    assert path.startswith('.purlin/records/greeting/')
+    assert path.startswith('.purlin/records/local/greeting/')
     assert reader.record_name_parts(os.path.basename(path)) is not None
     with open(os.path.join(project, path), encoding='utf-8') as handle:
         written = json.load(handle)
     assert written['runner'] == 'ada'
+    assert written['source'] == 'local'
     assert written['os'] is None
     assert written['timestamp'].endswith('Z')
     assert written['feature'] == 'greeting'
@@ -1017,9 +1025,9 @@ def test_a_matrix_keeps_one_latest_record_per_operating_system(project):
     assert sorted(k for k in loaded) == ['linux', 'windows']
 
 
-def _put_text(root, feature, name, text):
-    """Write a file under `.purlin/records/<feature>/` holding `text` as it is."""
-    folder = os.path.join(root, reader.RECORDS_DIR, feature)
+def _put_text(root, feature, name, text, source='local'):
+    """Write a file under a record folder holding `text` as it is."""
+    folder = os.path.join(root, reader.RECORDS_DIR, source, feature)
     os.makedirs(folder, exist_ok=True)
     with open(os.path.join(folder, name), 'w', encoding='utf-8') as handle:
         handle.write(text)

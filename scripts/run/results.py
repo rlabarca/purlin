@@ -275,11 +275,16 @@ def project_totals(project_root, features=None):
     return passed, rules
 
 
-def gate_line(passed, rules):
-    """The one line a person reads at `passed`, and the exit code with it."""
-    if rules and passed == rules:
-        return 'gate passed: %d of %d' % (passed, rules), 0
-    return 'gate not met: %d of %d' % (passed, rules), 1
+def gate_line(met, rules, level='passed'):
+    """The one line a run ends on, and the exit code with it.
+
+    `level` is the cell the run answered: `passed` for `purlin:test`,
+    `strong` for `purlin:audit` where that cell exists. One shape for both,
+    so a reader learns the line once.
+    """
+    if rules and met == rules:
+        return 'gate %s: %d of %d' % (level, met, rules), 0
+    return 'gate not met: %d of %d' % (met, rules), 1
 
 
 def commit_results(project_root, commit):
@@ -289,18 +294,33 @@ def commit_results(project_root, commit):
     own run, so the commit is theirs; a push is a separate act they make
     themselves.
     """
-    paths = [TESTS_PATHSPEC, TABLE_PATHSPEC]
+    return commit_paths(
+        project_root, [TESTS_PATHSPEC, TABLE_PATHSPEC],
+        COMMIT_SUBJECT % (str(commit or '')[:7] or 'an unknown commit'),
+        COMMITTED, UNCHANGED, NO_REPOSITORY)
+
+
+def commit_paths(project_root, paths, message, committed, unchanged,
+                 no_repository):
+    """Commit `paths` under the person's identity. The line to print.
+
+    The one commit path for everything a person's own run leaves behind: the
+    test results `purlin:test` writes and the record and briefs
+    `purlin:audit` writes. Nothing here pushes, whichever calls it, and each
+    caller hands over the three lines a reader sees, because a record and a
+    test result are not the same news.
+    """
+    paths = list(paths)
     listed = _git(project_root, ['status', '--porcelain', '--'] + paths)
     if listed is None:
-        return NO_REPOSITORY
+        return no_repository
     if not listed.strip():
-        return UNCHANGED
+        return unchanged
     if _git(project_root, ['add', '--'] + paths) is None:
-        return NO_REPOSITORY
-    message = COMMIT_SUBJECT % (str(commit or '')[:7] or 'an unknown commit')
+        return no_repository
     if _git(project_root, ['commit', '-m', message, '--'] + paths) is None:
-        return NO_REPOSITORY
-    return COMMITTED
+        return no_repository
+    return committed
 
 
 def _git(project_root, args):

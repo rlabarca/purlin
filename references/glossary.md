@@ -19,18 +19,29 @@ in the shipped prose where a retired spelling may still be written.
   when every cell up to the gate's level is met.
 - **run**: one execution of the tagged tests. **test results**: what `purlin:test` writes and
   commits after a run, `.purlin/tests/<feature>.json` per feature and `.purlin/tests.md` for the
-  project. They are the evidence at `passed` and count nowhere above it. **record**: the
-  machine's evidence of one run at `strong` and above: results, strength and scope tree, a
-  committed file CI writes. Nobody signs a record, and nothing on a person's machine writes one.
-  **source**: where a pass came from: `ci` (a record CI wrote), `local` (anything else: this
-  checkout's own run, the committed test results, or a record somebody other than the git host
-  committed). Under `passed` both count. Under `strong` and `signed` only `ci` counts.
+  project. **record**: the machine's evidence of one audit at `strong` and above: results,
+  strength and scope tree, a committed file. Nobody signs a record.
+  **source**: where a pass came from, and the folder the record sits in: `ci`
+  (`.purlin/records/ci/`, which the git host restricts to the build identity) or `local`
+  (`.purlin/records/local/`, which anyone may write, and the test results `purlin:test`
+  commits). A record's own `source` field must agree with its folder or the file is ignored.
+  Under `passed` and `strong` both sources count. Under `signed` only `ci` counts, for the
+  tests and the audit both: a signature attaches to the run on the protected branch after the
+  merge, and a local run there is a preview.
+- **platform**: one operating system a counting run covered. The passed cell
+  carries one entry per platform, each with its own word, source and time, and
+  the cell's own word rolls them up. **partial**: the passed cell's word when a
+  rule's tests passed on some platforms and failed or did not run on others.
+  `partial` is not met, so a rule green on one machine and red on another
+  blocks the gate exactly as a failure does. Test strength is platform
+  independent: the breaks are measured once per feature.
 - **current**: a record describes the checkout when its commit is HEAD or its scope tree still
   hashes the same. A CI pass that is not current reads **code changed**, and CI clears it on the
   next run.
 - **audit**: the level 2 run: the tests, then the breaks, the free checks and the model review
   where risk asks. An audit measures how good the tests are and proves a rule strong or weak. It
-  writes nothing; the record it feeds is CI's. **the breaks**: deliberate changes to the code. **test strength**: the share of the
+  writes one record per feature it audited, with the briefs beside it, and commits them itself as
+  `purlin: record for <sha7>`; it never pushes. **the breaks**: deliberate changes to the code. **test strength**: the share of the
   breaks the tests caught, as a percentage. Config key `min_strength`, record field
   `test_strength`, status column `Strength`. Measured only at `strong` and above.
 - **brief**: the machine's report on one rule: the strength beside the minimum, the free-check
@@ -80,12 +91,13 @@ For one rule, top to bottom. Each row is a cell; the gate decides how many rows 
 | Level | Met when | Words the cell can read |
 |-------|----------|-------------------------|
 | spec | the proof text clears the blocking free checks | `drafted`, `ready` |
-| passed | every proof has a passing test from a counting source, and a CI pass is current | `passed`, `failed`, `no test`, `not run`, `code changed` |
-| strong | passed from `ci`, the strength at or above `min_strength`, no finding, and where risk asks a brief for the current triple that observed nothing and settled, no hold | `strong`, `weak`, `manual test`, `manual audit`, `held` |
+| passed | every proof has a passing test from a counting source, on every platform a counting run covered, and that pass is current | `passed`, `partial`, `failed`, `no test`, `not run`, `code changed` |
+| strong | passed, an audit measured it, the strength at or above `min_strength`, no finding, and where risk asks a brief for the current triple that observed nothing and settled, no hold | `strong`, `weak`, `manual test`, `manual audit`, `held` |
 | signed | a counting signature for the current hashes, when risk is at or above `sign_at` | `signed`, `unsigned`, `stale`, `held`, `not required` |
 
-A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `passed`, `strong`,
-`signed`. Two flags are counted beside the buckets, never instead of them: `stale` and `held`.
+A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `partial`, `passed`,
+`strong`, `signed`. Two flags are counted beside the buckets, never instead of them: `stale` and
+`held`.
 
 ## Where each is defined
 
@@ -154,7 +166,7 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | `STRONG`, `WEAK`, `HOLLOW`, `EXCLUDED` | removed with Proof Integrity |
 | receipt, vhash, `*.receipt.json` | record: `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json` |
 | `verify:` as a commit prefix | `purlin: record for <commit7>` |
-| platform, platform registry, `@on(<id>)`, `--platform` | `@env(windows)`, `@env(macos)`, `@env(linux)`, and the CI matrix |
+| platform registry, `@on(<id>)`, `--platform` | `@env(windows)`, `@env(macos)`, `@env(linux)`, and the CI matrix. **`platform` itself is not retired**: it means one operating system a counting run covered, and the passed cell lists them under `platforms` |
 | `AWAITING RUNNER` | `needs <os>` |
 | mutation score, caught score, kill rate | test strength |
 | mutation testing | the breaks, in prose; `mutation_engine` in config and code |
