@@ -6,8 +6,17 @@ For anyone looking for the guide that fits their role. Every entry is one sittin
 
 | Guide | What it covers |
 |-------|----------------|
-| [Getting started](getting-started.md) | Install, `purlin:init` and its one question, the first spec, build, test, verify |
+| [How Purlin works](how-purlin-works.md) | The chain in one diagram, the four words, and who writes each file |
+| [Getting started](getting-started.md) | Install, `purlin:init` and its one question, the first spec, build, test, audit |
 | [Working together](working-together.md) | What each role needs, what they run, what they see, and drift per role |
+
+One setting, the **gate**, decides how much of that chain a project asks for.
+
+| Gate | What CI requires before merge | Where the counting record comes from |
+|------|-------------------------------|--------------------------------------|
+| `passed` | every rule's passed cell is met | your machine or CI |
+| `strong` | every rule's strong cell is met too | CI, on the protected branch or on a remote run's run branch |
+| `signed` | every rule's signed cell is met too | the same, plus a person's signature |
 
 ## Engineer
 

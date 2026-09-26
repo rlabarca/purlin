@@ -25,11 +25,11 @@ observed, what ran, on which commit, and who said so.
 One setting, the **gate**, says what CI must see before a change can merge. `purlin:init` asks
 that one question and nothing else.
 
-| Gate | Who it fits | What CI requires before merge |
-|------|-------------|-------------------------------|
-| `passed` | One developer | Every rule's passed cell is met: a tagged test for every proof, passing. A pass from any source counts |
-| `strong` | A team of PM, designers, engineers and QA | Every rule's strong cell is met: a CI pass at this commit, the test strength at or above `min_strength`, no finding and no hold. Only a record CI wrote counts |
-| `signed` | The same team under GxP | Every rule's signed cell is met: a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list |
+| Gate | Who it fits | What CI requires before merge | Where the counting record comes from |
+|------|-------------|-------------------------------|--------------------------------------|
+| `passed` | One developer | Every rule's passed cell is met: a tagged test for every proof, passing | your machine or CI; a pass from any source counts |
+| `strong` | A team of PM, designers, engineers and QA | Every rule's strong cell is met: a CI pass at this commit, the test strength at or above `min_strength`, no finding and no hold | CI on the protected branch, or on the run branch `purlin:audit --remote` creates |
+| `signed` | The same team under GxP | Every rule's signed cell is met: a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list | the same, plus a person's signature |
 
 Raise or lower the gate later with `purlin:init --gate <level>`. Raising adds what is missing;
 lowering deletes nothing. The one definition lives in
@@ -94,7 +94,8 @@ purlin:audit
 
 The audit runs the tests, breaks the code on purpose to measure how much the tests catch, writes
 `.purlin/records/login/<timestamp>-<commit7>-<runner>.json`, commits it, and prints the test
-strength. Then push.
+strength. Then it prints `Run: git push`, and the push is yours: nothing in Purlin pushes
+except `purlin:audit --remote`, which pushes a run branch of its own.
 
 Every command ends by naming the next step, computed from the cells it found.
 
@@ -115,10 +116,12 @@ Every command ends by naming the next step, computed from the cells it found.
 | `purlin:rename <old> <new>` | Rename a feature across specs, tests, signatures and records |
 | `purlin:spec-from-code [dir]` | Reverse-engineer 2-section specs from existing code |
 
-Plain language reaches every one of them: "run the tests" reaches `purlin:test`, and "what needs
-a person" reaches `purlin:sign`. The syntax above is canonical, never required.
+Plain language reaches every one of them: "run the tests" reaches `purlin:test`, and "what is
+left for me to look at" reaches `purlin:sign`. The syntax above is canonical, never required.
 
 ## Documentation
 
-Start at [docs/index.md](docs/index.md), which maps every guide by who it is for.
+[docs/how-purlin-works.md](docs/how-purlin-works.md) is the whole model in one page: the chain
+in one diagram, who writes each file, and where CI runs. Then
+[docs/index.md](docs/index.md) maps every guide by who it is for, and
 [docs/getting-started.md](docs/getting-started.md) walks the first session in full.
