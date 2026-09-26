@@ -62,7 +62,7 @@ count levels rather than buckets: a rule that is signed is still passing, so it 
 | `Rules` | how many rules the spec holds |
 | `Spec status` | `24 ready · 2 drafted`, what the spec says of its own rules |
 | `Tests` | `24 passed · 2 failing · 1 no test · 3 not run`, each count in its own tone. The last part holds the rules whose passed cell reads `not run` or `code changed`, so a spec behind changed code reads `0 passed · 24 not run` rather than `0 passed` alone |
-| `Last run` | one box per operating system, `linux`, `mac` and `win`, each in the tone of what that system's newest record found, then the newest record's source and age, or the source alone before any record exists |
+| `Last run` | one box per operating system, `lin`, `mac` and `win`, each in the tone of what that system's newest record found, then the newest record's source, `ci`, `developer` or `local`. The age is the source word's tooltip here and stands in full on the rule screen |
 
 Every count names the word it counts beside the number. The first part is always drawn, so a
 spec with nothing ready reads `0 ready`; a later part is drawn only where it is above zero, so
@@ -89,9 +89,10 @@ are in it, and how many of their rules pass their tests, as `mcp · 6 specs · 1
 with a bar after it. The gate is not repeated there: the `Signed` column carries it for each
 spec and the headline's second line carries it for the project.
 
-Every column holds a minimum width. In a window too narrow for their sum the table scrolls
-sideways rather than squeezing a heading into its neighbour, and no text on the board is set
-smaller than 13 pixels in either theme.
+Every column holds a minimum width, and those minima sum to less than a 1100-wide window gives
+the table, so a laptop shows every column the gate reaches. In a window narrower than their sum
+the table scrolls sideways rather than squeezing a heading into its neighbour, and no text on
+the board is set smaller than 13 pixels in either theme.
 
 **A column exists only where its cell does.** A project at `passed` is not shown two empty
 evidence columns, and nothing has to be configured to get the rest: `purlin:init --gate strong`

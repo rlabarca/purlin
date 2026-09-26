@@ -171,6 +171,8 @@ RECORD_CELLS = """els => {
     return {
       name: e.querySelector('.name .n').textContent.trim(),
       text: cell.textContent.trim(),
+      source: (cell.querySelector('.mono') || {}).textContent,
+      age: (cell.querySelector('.mono') || {}).title,
       boxes: Array.from(cell.querySelectorAll('.os')).map(s => ({
         os: s.textContent.trim(),
         tone: s.classList.contains('pass') ? 'pass'
@@ -315,13 +317,22 @@ def test_the_last_run_column_says_what_each_operating_system_found(browser,
             'timestamp': '2026-09-12T09:01:00Z'},
     }
     del payload['records']['checkout_design']
+    payload['features'][0]['rollup']['latest_record']['timestamp'] = (
+        stamp_ago(7200))
     page = open_board(browser, tmp_path / 'reg', payload)
     cells = record_cells(page)
     tones = {c['os']: c['tone'] for c in cells['login']['boxes']}
-    assert tones == {'linux': 'fail', 'mac': 'none', 'win': 'pass'}
+    assert tones == {'lin': 'fail', 'mac': 'none', 'win': 'pass'}
     tones = {c['os']: c['tone'] for c in cells['invoice']['boxes']}
-    assert tones == {'linux': 'pass', 'mac': 'pass', 'win': 'none'}
+    assert tones == {'lin': 'pass', 'mac': 'pass', 'win': 'none'}
     assert all(c['tone'] == 'none' for c in cells['checkout_design']['boxes'])
+
+    # The source stands beside the boxes and the age rides in its tooltip:
+    # `ci · 13 hours old` cost the column the pixels the columns to its
+    # right need at 1100.
+    assert cells['login']['source'] == 'ci'
+    assert cells['login']['age'] == 'the newest record is 2 hours old'
+    assert 'old' not in cells['login']['text']
 
     failed, _, passed = cells['login']['boxes']
     assert failed['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-fail')

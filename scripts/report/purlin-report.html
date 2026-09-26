@@ -233,7 +233,7 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .tag.risk-high{border-color:var(--state-fail)}
 .tag.risk-medium{border-color:var(--state-warn)}
 .tag.risk-low{border-color:var(--text-muted);color:var(--text-muted)}
-.os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:0 5px;border-radius:var(--radius-sm);border:1px solid;margin-right:3px;white-space:nowrap;line-height:1.5}
+.os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:0 5px;border-radius:var(--radius-sm);border:1px solid;white-space:nowrap;line-height:1.5}
 .os.pass{border-color:var(--state-pass);color:var(--state-pass)}
 .os.fail{border-color:var(--state-fail);color:var(--state-fail)}
 .os.none{border-color:var(--border-hairline);color:var(--text-muted)}
@@ -264,14 +264,14 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .chip{font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
 .chip:hover{background:var(--hover-tint)}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
-.tbl{--cols-min:calc(var(--cols-floor,0px) + var(--space-4) * var(--cols-gaps,0) + var(--space-6) * 2);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
-.th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);min-width:var(--cols-min)}
+.tbl{--cols-min:calc(var(--cols-floor,0px) + var(--space-3) * var(--cols-gaps,0) + var(--space-6) * 2);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
+.th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-3);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);min-width:var(--cols-min)}
 .th>div,.tr>div{min-width:0}
 .trio{display:inline-flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-base)}
 .trio b{font-weight:var(--weight-regular);white-space:nowrap}
 .trio i,.rsum i{color:var(--text-muted);font-style:normal}
-.run{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2) var(--space-3);min-width:0}
-.run .mono{font-size:var(--ui-base);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.run{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);min-width:0}
+.run .mono{font-size:var(--ui-sm);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .th{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 .tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .tr:hover{background:var(--hover-tint)}
@@ -401,17 +401,17 @@ function statStrip() {
     + '<div class="tiles">' + tiles + '</div>' + flag + '</div>';
 }
 function boardColumns() {
-  var columns = [{label: 'Spec', width: '2fr', floor: 160},
-                 {label: 'Rules', width: '0.4fr', floor: 56, right: true},
-                 {label: 'Spec status', width: '0.8fr', floor: 150},
-                 {label: 'Tests', width: '0.9fr', floor: 150},
-                 {label: 'Last run', width: '2.6fr', floor: 260}];
+  var columns = [{label: 'Spec', width: '2fr', floor: 112},
+                 {label: 'Rules', width: '0.55fr', floor: 58, right: true},
+                 {label: 'Spec status', width: '1.5fr', floor: 108},
+                 {label: 'Tests', width: '2fr', floor: 118},
+                 {label: 'Last run', width: '2.1fr', floor: 202}];
   if (level('strong')) {
-    columns.push({label: 'Strength', width: '0.6fr', floor: 92, right: true},
-                 {label: 'Strong', width: '1.2fr', floor: 130});
+    columns.push({label: 'Strength', width: '0.9fr', floor: 90, right: true},
+                 {label: 'Strong', width: '1.3fr', floor: 112});
   }
   if (level('signed')) {
-    columns.push({label: 'Signed', width: '1.1fr', floor: 130});
+    columns.push({label: 'Signed', width: '1.25fr', floor: 84});
   }
   return columns;
 }
@@ -922,7 +922,7 @@ function recordsFor(feature) {
   var byOs = (DATA.records || {})[feature.name] || {};
   return Object.keys(byOs).sort().map(function (key) { return byOs[key]; });
 }
-var OS_BOXES = [['linux', 'linux'], ['macos', 'mac'], ['windows', 'win']];
+var OS_BOXES = [['linux', 'lin'], ['macos', 'mac'], ['windows', 'win']];
 function newestByOs(feature) {
   var byOs = {};
   recordsFor(feature).forEach(function (record) {
@@ -960,15 +960,12 @@ function sourceOf(feature) {
 }
 function lastRun(feature) {
   var record = (feature.rollup || {}).latest_record || feature.latest_record;
-  var text;
-  if (record) {
-    text = '<span class="mono sec">' + esc((record.label || 'local') + ' · '
-      + ageText(record.timestamp).text) + '</span>';
-  } else if (sourceOf(feature)) {
-    text = '<span class="mono sec">' + esc(sourceOf(feature)) + '</span>';
-  } else {
-    text = '<span class="mono muted">—</span>';
-  }
+  var source = record ? record.label || 'local' : sourceOf(feature);
+  var age = record ? ' title="the newest record is '
+    + esc(ageText(record.timestamp).text) + '"' : '';
+  var text = source
+    ? '<span class="mono sec"' + age + '>' + esc(source) + '</span>'
+    : '<span class="mono muted">—</span>';
   return '<span class="run">' + recordCell(feature) + text + '</span>';
 }
 function recordLine(feature) {

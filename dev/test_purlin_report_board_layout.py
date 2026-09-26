@@ -98,20 +98,39 @@ HEADINGS = """() => Array.from(document.querySelectorAll('.th > div'))
   }))"""
 
 
+# The right edge of the last column heading, which at the `signed` gate is
+# `Signed`: the column a reader on a laptop never saw while the floors added
+# up to more than a 1100-wide window gives the table.
+LAST_HEADING = """() => {
+  const heads = document.querySelectorAll('.th > div');
+  return heads[heads.length - 1].getBoundingClientRect().right;
+}"""
+
+# How much taller each `Last run` cell is than the first box in it: zero where
+# the three operating-system boxes and the source word sit on one line.
+RUN_LINES = """() => Array.from(document.querySelectorAll('.tr .run')).map(
+  el => el.getBoundingClientRect().height
+    - el.children[0].getBoundingClientRect().height)"""
+
+
 @pytest.mark.proof("purlin_report", "PROOF-42", "RULE-35", tier="e2e")
 def test_a_column_keeps_its_floor_and_the_table_scrolls_instead(browser,  # noqa: F811
                                                                 tmp_path):
     """`STRENGTH` ran into `STRONG` where the track was narrower than the word."""
-    wide = open_board(browser, tmp_path / 'wide', payload_named('regulated'),
-                      viewport={'width': 1440, 'height': 1000})
-    assert [h for h in wide.evaluate(HEADINGS) if h['over'] > 0] == []
-    assert wide.eval_on_selector(
-        '.tbl', 'el => el.scrollWidth - el.clientWidth') == 0
-    wide.close()
+    for width in (1440, 1100):
+        page = open_board(browser, tmp_path / str(width),
+                          payload_named('regulated'),
+                          viewport={'width': width, 'height': 1000})
+        assert [h for h in page.evaluate(HEADINGS) if h['over'] > 0] == []
+        assert page.eval_on_selector(
+            '.tbl', 'el => el.scrollWidth - el.clientWidth') == 0
+        assert page.evaluate(LAST_HEADING) <= width
+        assert max(page.evaluate(RUN_LINES)) == 0
+        page.close()
 
     narrow = open_board(browser, tmp_path / 'narrow',
                         payload_named('regulated'),
-                        viewport={'width': 1100, 'height': 1000})
+                        viewport={'width': 900, 'height': 1000})
     assert [h for h in narrow.evaluate(HEADINGS) if h['over'] > 0] == []
     assert narrow.eval_on_selector(
         '.tbl', 'el => el.scrollWidth - el.clientWidth') > 0

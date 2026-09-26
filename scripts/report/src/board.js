@@ -35,22 +35,27 @@ function statStrip() {
 /* The columns the gate reaches, and no others. `floor` is the width below
    which the column stops being read: a `0.6fr` track narrower than the word
    `STRENGTH` ran its heading into the next one, and a share bar with nowhere
-   to go left its cell. Under the sum of the floors the table scrolls sideways
-   rather than squeezing a column past it; those floors add up to 1288 pixels
-   with every column drawn, which is what a 1440-wide window gives the table,
-   so the scroll starts below that width and not above it. */
+   to go left its cell. Each floor is the widest thing its column has to hold
+   at its narrowest: the heading, or one part of a count cell, or the three
+   operating-system boxes beside the source word. Under the sum of the floors
+   the table scrolls sideways rather than squeezing a column past it; with
+   every column drawn those floors add up to 884 pixels, which with the gaps
+   and the padding is 1016, so a 1100-wide window shows the `Signed` column
+   and the scroll is the fallback below that. `width` is what the column asks
+   for where the window is wider than the floors: the shares are the widths a
+   1440-wide window gives them, in hundreds of pixels. */
 function boardColumns() {
-  var columns = [{label: 'Spec', width: '2fr', floor: 160},
-                 {label: 'Rules', width: '0.4fr', floor: 56, right: true},
-                 {label: 'Spec status', width: '0.8fr', floor: 150},
-                 {label: 'Tests', width: '0.9fr', floor: 150},
-                 {label: 'Last run', width: '2.6fr', floor: 260}];
+  var columns = [{label: 'Spec', width: '2fr', floor: 112},
+                 {label: 'Rules', width: '0.55fr', floor: 58, right: true},
+                 {label: 'Spec status', width: '1.5fr', floor: 108},
+                 {label: 'Tests', width: '2fr', floor: 118},
+                 {label: 'Last run', width: '2.1fr', floor: 202}];
   if (level('strong')) {
-    columns.push({label: 'Strength', width: '0.6fr', floor: 92, right: true},
-                 {label: 'Strong', width: '1.2fr', floor: 130});
+    columns.push({label: 'Strength', width: '0.9fr', floor: 90, right: true},
+                 {label: 'Strong', width: '1.3fr', floor: 112});
   }
   if (level('signed')) {
-    columns.push({label: 'Signed', width: '1.1fr', floor: 130});
+    columns.push({label: 'Signed', width: '1.25fr', floor: 84});
   }
   return columns;
 }

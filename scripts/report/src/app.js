@@ -194,8 +194,10 @@ function recordsFor(feature) {
 /* One small box per operating system, green when that system's newest record
    passed, red when it failed, grey when no record exists. A record's
    existence is not its result, so the colour is the result; who wrote it and
-   when sit in the tooltip. */
-var OS_BOXES = [['linux', 'linux'], ['macos', 'mac'], ['windows', 'win']];
+   when sit in the tooltip. The three labels are the same three characters
+   long, so the boxes read as one set and the column they sit in holds them
+   beside the source word on one line at 202 pixels. */
+var OS_BOXES = [['linux', 'lin'], ['macos', 'mac'], ['windows', 'win']];
 
 function newestByOs(feature) {
   var byOs = {};
@@ -239,20 +241,19 @@ function sourceOf(feature) {
   return found;
 }
 
-/* The source, the operating systems and the age of the newest run, in one
-   cell: three boxes saying what each system found, then who wrote the record
-   and how long ago. */
+/* The operating systems and the source of the newest run, in one cell: three
+   boxes saying what each system found, then who wrote the record. The age
+   rides in that word's tooltip rather than beside it, because the sentence
+   `ci · 13 hours old` cost the column 60 pixels a laptop needs for the
+   columns to its right; the rule screen still prints the age in full. */
 function lastRun(feature) {
   var record = (feature.rollup || {}).latest_record || feature.latest_record;
-  var text;
-  if (record) {
-    text = '<span class="mono sec">' + esc((record.label || 'local') + ' · '
-      + ageText(record.timestamp).text) + '</span>';
-  } else if (sourceOf(feature)) {
-    text = '<span class="mono sec">' + esc(sourceOf(feature)) + '</span>';
-  } else {
-    text = '<span class="mono muted">—</span>';
-  }
+  var source = record ? record.label || 'local' : sourceOf(feature);
+  var age = record ? ' title="the newest record is '
+    + esc(ageText(record.timestamp).text) + '"' : '';
+  var text = source
+    ? '<span class="mono sec"' + age + '>' + esc(source) + '</span>'
+    : '<span class="mono muted">—</span>';
   return '<span class="run">' + recordCell(feature) + text + '</span>';
 }
 
