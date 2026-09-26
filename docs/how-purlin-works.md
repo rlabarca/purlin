@@ -79,6 +79,34 @@ nothing. A pull request run does the tests, posts the comment and uploads the da
 commits nothing. A run on the protected branch, or on a run branch, commits its records and
 briefs there. Every run ends with the gate check and fails when the gate is not met.
 
+## Questions every developer asks
+
+**Do my tests run on my machine, or only in CI?** On your machine first. `purlin:test` runs
+the tagged tests in seconds and the board reads the result at once; `purlin:audit` runs them
+again and writes a record. CI is the same audit run on the git host. The gate decides whose
+record counts: at `passed` yours does, so you can meet the gate without CI; at `strong` and
+`signed` only CI's does, and your local audit is a preview of what CI will find.
+
+**What is my git host?** The service that holds your repository and runs CI: GitHub or Azure
+DevOps. `purlin:init` reads it from your `origin` remote and writes it as `ci` in
+`.purlin/config.json`. The green check or red cross beside a commit, the pull request comment
+and the branch rules all live there.
+
+**What does red mean?** The check ran the tests and at least one rule does not meet your gate.
+The run's log ends with a list naming each rule and why. At `passed` that is a failed test or a
+rule with no test. At `strong` the tests passed but a rule's tests are not yet trusted: the
+breaks got past them, or a proof waits on a person to run it or judge it. At `signed` a rule
+that needs a signature has none, or the code changed after it was signed. Red never stops a
+push; with the branch rule applied it stops the merge until the list is dealt with.
+
+**When do I say which operating system a test needs?** On the proof line, with `@env(windows)`,
+`@env(macos)` or `@env(linux)`. A proof with no tag runs anywhere and any operating system's
+pass satisfies it. Your machine runs the untagged proofs and the ones tagged for it; a proof
+tagged for another system reads `not run` until that system runs it. `purlin:init` reads the
+tags and writes the CI matrix from them: one Linux job always, plus one job per tagged system.
+macOS is never in the matrix by default, so your Mac is the macOS runner; its audit records
+are what light the `mac` box on the board.
+
 ## Read next
 
 Pick the gate you work at: [solo-workflow.md](solo-workflow.md) for `passed`,
