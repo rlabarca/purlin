@@ -108,6 +108,38 @@ left to a lane's judgment except wording.
     pull request changed against the local tree. The pre-push hook refuses a push from an
     agent session (`CLAUDE_CODE_SESSION_ID` set) unless `PURLIN_REMOTE_RUN=1` marks a remote
     run, and prints that a person runs `git push`. Lanes 8A (code) and 8B (docs).
+28. **The `passed` workflow is spec, build, test** (added 2026-09-26). Settled with the user
+    question by question:
+    - `purlin:test` runs the tagged tests and writes the **test results**: one
+      `.purlin/tests/<feature>.json` per feature (commit, time, operating system, each rule's
+      word, each proof's result and test) and one `.purlin/tests.md` table for reading on the
+      git host (feature, rules, passed, failing, no test, last run). It commits them itself as
+      `purlin: tests at <sha7>` and never pushes. At every gate. They are the `local` source,
+      the board reads them, and they count only at `passed`.
+    - `purlin:audit` measures how good the tests are: the breaks, the free checks, the model
+      review. It prints strength, findings and observations and writes no record. `--commit`
+      is gone; the developer record and the source `developer` are gone. Sources are `local`
+      and `ci`. Run at any gate; it never counts locally.
+    - The **record** is CI's. The CI job runs `purlin:test`, then at `strong` and above
+      `purlin:audit`, and writes the records and briefs on the protected branch or a run
+      branch. At `passed` a runner runs `purlin:test`, comments on the pull request, goes red
+      on a failed or missing test, and commits nothing.
+    - A **remote run** is `purlin:test --remote` (the runner runs the tests; at `strong` and
+      above it also audits, and its record counts); `purlin:audit --remote` is gone.
+    - A remote runner is explained in three plain reasons and no others: your tests need
+      another operating system; proof from a clean machine that ran exactly the pushed code;
+      no merge while red. Teammates see results without one, from the committed test results.
+      `purlin:init` explains, then asks, at `passed`; at `strong` and above it always writes
+      the workflow. Before writing it init checks the prerequisites: a remote exists, the host
+      is GitHub or Azure DevOps, the protected branch exists on the remote, the host CLI (`gh`
+      or `az`) is reported as present or absent; a missing prerequisite is named and init
+      stops there. When `purlin:test` finds a proof tagged for an operating system this
+      machine is not, it prints the reason in one sentence and `Run: purlin:init` to add a
+      remote runner; it changes nothing itself.
+    - At `passed` a person runs no script: `purlin:test` prints the table and the line
+      `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`, and exits 1 when not
+      met. `gate_check.py` stays the CI step. Lanes 10A (code) and 10B (docs, skills, deck).
+
 
 
 
