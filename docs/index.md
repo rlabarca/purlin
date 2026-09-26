@@ -6,15 +6,15 @@ For anyone looking for the guide that fits their role. Every entry is one sittin
 
 | Guide | What it covers |
 |-------|----------------|
-| [How Purlin works](how-purlin-works.md) | The chain in one diagram, the four words, who writes each file, and the questions every developer asks: where tests run, what red means, which operating system |
-| [Getting started](getting-started.md) | Install, `purlin:init` and its one question, the first spec, build, test, audit |
+| [How Purlin works](how-purlin-works.md) | The chain in one diagram, the five words, who writes each file, and the questions every developer asks: what the loop is, where tests run, what red means, which operating system |
+| [Getting started](getting-started.md) | Install, `purlin:init` and its one question, the first spec, build, test, push |
 | [Working together](working-together.md) | What each role needs, what they run, what they see, and drift per role |
 
 One setting, the **gate**, decides how much of that chain a project asks for.
 
 | Gate | What CI requires before merge | Where the counting record comes from |
 |------|-------------------------------|--------------------------------------|
-| `passed` | every rule's passed cell is met | your machine or CI |
+| `passed` | every rule's passed cell is met | your machine's test results, which `purlin:test` commits |
 | `strong` | every rule's strong cell is met too | CI, on the protected branch or on a remote run's run branch |
 | `signed` | every rule's signed cell is met too | the same, plus a person's signature |
 
@@ -22,9 +22,9 @@ One setting, the **gate**, decides how much of that chain a project asks for.
 
 | Guide | What it covers |
 |-------|----------------|
-| [Solo workflow](solo-workflow.md) | The `passed` gate end to end, your own record commit, the pre-push hook |
+| [Solo workflow](solo-workflow.md) | The `passed` gate end to end, the test results `purlin:test` commits, the remote runner, the pre-push hook |
 | [Specs and anchors](specs-and-anchors.md) | The spec format, local anchors, the anchor repo option, pins, id allocation |
-| [Running and records](running-and-records.md) | `purlin:test`, `purlin:audit`, CI, the record shape, retention, test strength |
+| [Running and records](running-and-records.md) | `purlin:test` and its two files, `purlin:audit`, CI, the record shape, retention, test strength |
 | [Specs from existing code](spec-from-code.md) | `purlin:spec-from-code` once on a codebase that predates Purlin |
 
 ## PM and designer
@@ -56,7 +56,8 @@ One setting, the **gate**, decides how much of that chain a project asks for.
 | [The gate](../references/hard_gates.md) | The one setting, which records count, the branch rules, the signer list |
 | [Glossary](../references/glossary.md) | The word this project uses for each concept, and the retired spellings |
 | [Spec format](../references/formats/spec_format.md) | The 2-section spec, field by field |
-| [Record format](../references/formats/record_format.md) | The record an audit run writes |
+| [Test results format](../references/formats/tests_format.md) | The two files `purlin:test` writes and commits |
+| [Record format](../references/formats/record_format.md) | The record a CI run writes |
 | [Signature format](../references/formats/signature_format.md) | The signature file and what it binds |
 | [Spec quality](../references/spec_quality_guide.md) | Writing a rule worth having, and diagnosing a failure |
 | [Supported frameworks](../references/supported_frameworks.md) | How each test framework is detected and wired |

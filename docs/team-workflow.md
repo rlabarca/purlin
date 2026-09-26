@@ -5,9 +5,9 @@ For a team of a PM, a designer, engineers and QA working at the `strong` gate.
 At `strong` a rule carries a second cell. Level 1 asks whether the tagged tests passed; level 2
 asks whether those tests are worth trusting, and it is met when CI has written a record at the
 commit under review, the test strength of that run is at or above `min_strength`, no free check
-found a problem and nobody holds the rule. A record a developer committed no longer counts. That
-single change is what turns the evidence from something each person asserts into something the
-team shares.
+found a problem and nobody holds the rule. The test results a person commits still say what
+their machine saw, and they stop counting here. That single change is what turns the evidence
+from something each person asserts into something the team shares.
 
 Level 2 is fully automatic. Nobody is asked to do anything to reach it; a person first appears
 at the `signed` gate, which [regulated-workflow.md](regulated-workflow.md) describes.
@@ -20,9 +20,10 @@ up yet, read [getting-started.md](getting-started.md) first. If it is set up at 
 
 A gate is three things, and all three have to exist:
 
-1. A CI job running `purlin:audit --ci` where the evidence is decided: on a pull request, on a
-   push to the protected branch, and on a push to a `run/*` branch. Every run ends with
-   `gate_check.py --check` and fails when the gate is not met.
+1. A CI job where the evidence is decided: on a pull request, on a push to the protected
+   branch, and on a push to a `run/*` branch. It runs the tagged tests, then the audit, then
+   writes the record. Every run ends with `gate_check.py --check` and fails when the gate is
+   not met.
 2. A branch rule on the protected branch that blocks a merge unless that job passes.
 3. The setting `gate` in `.purlin/config.json`, here set to `strong`.
 
@@ -42,19 +43,19 @@ sequenceDiagram
     participant CI as the runner
     actor QA
     You->>Origin: git push, then open the pull request
-    Origin->>CI: pull_request starts the audit job
+    Origin->>CI: pull_request starts the job
     CI->>CI: tests, then the breaks, the free checks and the model review
     CI->>Origin: the rollup as a comment, the dashboard as an artifact
     CI->>CI: prints that the records stay on the runner and the run on main writes them
     CI->>CI: gate_check.py --check is the last step
-    opt purlin:audit --remote, when you need a ci record before the merge
+    opt purlin:test --remote, when you need a ci record before the merge
         You->>Origin: Purlin pushes run/<branch>-<sha7>
-        Origin->>CI: push to run/** starts the audit job
+        Origin->>CI: push to run/** starts the job
         CI->>Origin: purlin: record for <commit7>, on the run branch
         Origin->>You: Purlin pulls the records back, then deletes the run branch
     end
     You->>Origin: merge, once the required check is green
-    Origin->>CI: push to main starts the audit job
+    Origin->>CI: push to main starts the job
     CI->>Origin: purlin: record for <commit7>, the records and the briefs
     CI->>CI: gate_check.py --check is the last step
     QA->>QA: purlin:sign walks what the machine could not settle
@@ -66,35 +67,51 @@ branch costs no runner minutes until you open it as a pull request. Where the ru
 decides what it writes. A pull request run does the tests, posts the comment, uploads the
 dashboard and commits nothing: a record on a branch nobody merges from is evidence of a branch
 that will not exist, and the job says so in one line. A run on the protected branch, or on the
-run branch `purlin:audit --remote` creates, commits its records and briefs there. Every run
+run branch `purlin:test --remote` creates, commits its records and briefs there. Every run
 ends with the gate check, which is what makes the required check mean the gate held.
 
 The source of a record comes from the last commit that touched it, never from anything inside
-the file. A commit CI made through the git host's API is `ci`; a commit a person made is
-`developer`; an uncommitted record is `local`. At `strong` only `ci` counts, so a developer
-cannot write the evidence their own change is measured by. A record from either of the other
-two leaves the passed cell reading `not run`, with the reason naming the source and the gate.
+the file. A commit CI made through the git host's API is `ci`; anything else is `local`. At
+`strong` only `ci` counts, so nobody writes the evidence their own change is measured by. A
+`local` pass leaves the passed cell reading `not run`, with the reason naming the source and
+the gate.
 
-Your local `purlin:audit` is still worth running. It is a preview: it prints `Preview:
-<feature> test strength <n>%` and then `This record does not count under strong: only a CI
-record counts`, so you know the run will pass before you spend a CI run finding out. Drop
-`--commit` to leave the record where it is: nothing at this gate reads a record you committed,
-and the run says so. Nothing pushes on your behalf either way: `git push` is yours to type,
-and if a pre-push hook is installed it refuses a push made from an agent session outright.
+`purlin:test` still commits the test results here, and they still say what your machine saw;
+they just stop counting. Your local `purlin:audit` is still worth running too. It prints each
+feature's test strength beside the minimum and every finding and observation, then
+`This audit counts only when CI runs it.`, so you know the run will pass before you spend a CI
+run finding out. It writes nothing at all: the record is CI's. Nothing pushes on your behalf
+either: `git push` is yours to type, and if a pre-push hook is installed it refuses a push made
+from an agent session outright.
 
-The one exception is `purlin:audit --remote`, for a proof tagged `@env` for an operating system
-your machine is not. It is the one push Purlin makes, and it pushes a branch of its own:
-`run/<branch>-<sha7>`, created from this commit, watched with `gh run watch`, pulled back with
-one fast-forward, then deleted. The branch you are working on never leaves the machine. A
-detached head and an uncommitted change are both refused before anything is pushed.
+### The remote runner
+
+A remote runner is the git host running your tests for you, and it is worth having for three
+reasons and no others:
+
+- **Your tests need another operating system.** Your machine cannot run a test tagged for
+  Windows or Linux. The runner can, so those rules stop reading `not run`.
+- **Proof from a clean machine.** Your laptop may have uncommitted edits or leftover files.
+  The runner runs exactly the code you pushed, on a machine nobody touched. That is what the
+  `strong` and `signed` gates trust.
+- **No merge while red.** The git host refuses to merge the pull request while a test fails or
+  a rule has no test. Nobody has to remember to check.
+
+At `strong` and above `purlin:init` always writes the workflow, and those three reasons are the
+explanation of why. `purlin:test --remote` asks for one run of it before the merge, for a proof
+tagged `@env` for an operating system your machine is not, or for a `ci` record at this commit.
+It is the one push Purlin makes, and it pushes a branch of its own: `run/<branch>-<sha7>`,
+created from this commit, watched with `gh run watch`, pulled back with one fast-forward, then
+deleted. The branch you are working on never leaves the machine. A detached head and an
+uncommitted change are both refused before anything is pushed.
 
 CI does not need Purlin installed as a plugin. Purlin's own repository is the plugin, so the
 workflow there uses the checkout it already has. A consumer project's runner has no plugin, so
 the workflow clones Purlin at the tag the project pins and runs the same audit from that
 clone. Set the `PURLIN_REF` repository variable to move that pin without editing the
-workflow. Developers load the plugin the other two ways: from the
-marketplace, where it sits under `~/.claude/plugins/cache/purlin/purlin/<version>/`, or with
-`claude --plugin-dir <checkout>` while working on Purlin itself.
+workflow. People load the plugin the other two ways: from the marketplace, where it sits under
+`~/.claude/plugins/cache/purlin/purlin/<version>/`, or with `claude --plugin-dir <checkout>`
+while working on Purlin itself.
 
 ## What a run produces, and where it lands
 
@@ -161,8 +178,9 @@ about what a person would see. See [design-in-specs.md](design-in-specs.md).
 **The engineer builds.** `purlin:drift eng` at the start of the session says what moved:
 files touched and the rules behind them, rules with no test, tags the gate wants, anchor pins
 behind their source. Then `purlin:anchor sync` if a pin is behind, `purlin:spec` if a rule is
-wrong, `purlin:build`, `purlin:test` while working, `purlin:audit` before pushing. Rules the
-engineer adds are tagged `origin: eng`, and the PM sees them in `purlin:drift pm` as derived.
+wrong, `purlin:build`, `purlin:test` while working, and `purlin:audit` before pushing to read
+what CI will find. Rules the engineer adds are tagged `origin: eng`, and the PM sees them in
+`purlin:drift pm` as derived.
 
 **CI proves it.** The engineer pushes and opens the pull request; that is what starts the
 workflow. It runs the audit: the tests, the breaks, the free checks and the model review where

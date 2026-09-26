@@ -36,13 +36,13 @@ code.
 Init starts from what the project already has, so a raise writes only the missing half.
 
 **To `passed`.** The setting alone, plus what every project gets: `.purlin/config.json`,
-`specs/`, `.purlin/records/` with a README saying the audit writes it and nobody edits it by
-hand, the proof plugin for the detected test framework, the break engine for the language, a
-`.gitignore` block for `.purlin/runtime/`, the dashboard page copied so it opens from disk, the
-offer of a `pre-push` hook, and the Claude Code hook that refreshes the local dashboard data.
-There is no CI workflow at this gate; `purlin:init --ci` adds one anyway if you want the
-check without the requirement. The only branch rule printed here is the third one: no force
-push, no deletion.
+`specs/`, `.purlin/records/` with a README saying CI writes it and nobody edits it by hand, the
+proof plugin for the detected test framework, the break engine for the language, a `.gitignore`
+block for `.purlin/runtime/`, the dashboard page copied so it opens from disk, the offer of a
+`pre-push` hook, and the Claude Code hook that refreshes the local dashboard data. No CI
+workflow is written at this gate unless you ask for one: with a remote, init prints the three
+reasons a remote runner is worth having and asks `Run the tests on a remote runner too? [y/n]`.
+The only branch rule printed here is the third one: no force push, no deletion.
 
 **To `strong`.** On top of that: the CI workflow at `.github/workflows/purlin.yml`, because the
 gate cannot be met without a run that writes records. The workflow starts on a pull request, on
@@ -56,7 +56,8 @@ job always, plus one job for each other operating system named. With no such tag
 Linux job.
 
 The breaks turn on with this raise, locally and in CI, and `min_strength` becomes 70. Below it
-`purlin:audit` runs the tests alone and every record's strength reads `n/a`.
+`purlin:audit` runs the tests alone, nothing measures a strength, and no record is written at
+all.
 
 **To `signed`.** On top of that: the signer emails, which init asks for with `Who may sign a
 rule?` and writes to `signers` in `.purlin/config.json`; the commit-signing setup printed once
@@ -70,11 +71,15 @@ everything.
 | Flag | What it does |
 |------|--------------|
 | `--gate <level>` | sets the gate, at setup or later |
-| `--ci` | writes the CI workflow under `passed`, where it is otherwise skipped |
-| `--ci --upstream-check` | adds a scheduled job that opens a pull request or an issue when an anchor pin falls behind |
+| `--upstream-check` | adds a scheduled job that opens a pull request or an issue when an anchor pin falls behind |
 | `--add <language>` | wires a second language: its test framework, its proof plugin, its break engine |
 | `--update` | brings a project set up by an older Purlin onto the installed one |
 | `--dry-run` | prints the plan and writes nothing |
+
+Before any workflow is written, init checks the prerequisites: a remote exists, its URL names
+GitHub or Azure DevOps, and the protected branch is on that remote. The first that fails is
+named in one line with what to do, and no workflow is written. The host CLI, `gh` or `az`, is
+reported as present or absent either way.
 
 Init ends by printing every file it wrote or edited, one per line, then the next step it read
 from the state of the project.
@@ -84,10 +89,12 @@ from the state of the project.
 Three things are true the moment the gate reaches `strong`, and it is worth saying them to
 the team in the same message:
 
-1. Stop committing records. Only a record CI wrote counts now, and CI writes one where the
+1. The evidence changes hands. Only a record CI wrote counts now, and CI writes one where the
    evidence is decided: on a push to the protected branch, and on the run branch
-   `purlin:audit --remote` creates. A pull request run does the tests and posts the comment and
-   commits nothing. Your local `purlin:audit` is a preview, and it says so in its own output.
+   `purlin:test --remote` creates. A pull request run does the tests and posts the comment and
+   commits nothing. `purlin:test` still commits the test results and they still say what your
+   machine saw; they stop counting. Your local `purlin:audit` is a preview, and it says so in
+   its own output.
 2. Apply the branch rules init printed. Purlin never changes a repository's settings, so until
    someone applies them the gate is a preference rather than a control.
 3. The status table and the dashboard grow a column, a tile and a filter per level, so nobody
@@ -195,9 +202,10 @@ before you run it:
 - The grading scores and the reviewer agent that produced them are gone. `purlin:sign` is where
   a person now looks at a rule, and [review-and-signing.md](review-and-signing.md) describes
   what it shows.
-- Evidence moved from files written beside the specs to records under `.purlin/records/`, one
-  per audit run, committed, with the briefs beside them under `.purlin/briefs/`.
-  [running-and-records.md](running-and-records.md) has the shape.
+- Evidence moved from files written beside the specs to the test results under
+  `.purlin/tests/`, which `purlin:test` commits, and the records under `.purlin/records/`, one
+  per CI run, with the briefs beside them under `.purlin/briefs/`.
+  [running-and-records.md](running-and-records.md) has both shapes.
 - Operating-system scoping is now `@env(windows|macos|linux)` and a CI matrix, with no registry
   to maintain and no per-system evidence file.
 - The dashboard is a build artifact CI publishes and a page that opens from disk, with no data

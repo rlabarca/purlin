@@ -1,11 +1,11 @@
 # Solo workflow
 
-For one developer working alone at the `passed` gate.
+For one person working alone at the `passed` gate.
 
-At `passed`, one question is asked of every rule: does every tagged test for it pass? You write
-the record yourself, no one signs anything, and no CI workflow is written unless you ask for
-one, so the answer is one you read on your own machine. This is the smallest thing Purlin can
-be, and everything above it is additive.
+At `passed`, one question is asked of every rule: does every tagged test for it pass? The loop
+is `purlin:spec`, `purlin:build`, `purlin:test`, `git push`, and that is the whole of it.
+Nobody signs anything, nobody runs a script, and no CI workflow is written unless you ask for
+one. This is the smallest thing Purlin can be, and everything above it is additive.
 
 If you have not set the project up yet, read [getting-started.md](getting-started.md) first.
 [how-purlin-works.md](how-purlin-works.md) is the model in one page.
@@ -22,21 +22,20 @@ sequenceDiagram
     loop until every rule's passed cell reads passed
         You->>Tree: purlin:spec, purlin:build
         You->>Tree: purlin:test
-        Tree-->>You: one line per rule: passed, failed, no test, not run
+        Tree->>Tree: purlin: tests at sha7, committed under your identity
+        Tree-->>You: the table, then gate passed: n of n
     end
-    You->>Tree: purlin:audit --commit
-    Tree-->>You: record written, committed, Run: git push
-    You->>Tree: gate_check.py --check
-    Tree-->>You: gate: PASS. Every rule meets passed.
     You->>Origin: git push
     You->>Origin: open the pull request
-    Origin->>Origin: no workflow runs at passed unless purlin:init --ci wrote one
-    Reviewer->>Reviewer: purlin:drift, purlin:status in their own checkout
+    Reviewer->>Origin: read .purlin/tests.md on the git host
 ```
 
-Nothing in that picture pushes but you. `purlin:audit --commit` makes the commit and prints the
-push command; the push and the pull request are yours to type. If you installed the pre-push
-hook, it refuses a push made from an agent session outright.
+Nothing in that picture pushes but you. `purlin:test` commits the test results and stops; the
+push and the pull request are yours to type. If you installed the pre-push hook, it refuses a
+push made from an agent session outright.
+
+`purlin:audit` is available at this gate and counts for nothing here: it runs the tests and
+reports how good they are, writes nothing, and no cell moves because of it.
 
 ## The setting
 
@@ -53,9 +52,7 @@ hook, it refuses a push made from an agent session outright.
 and change the file with the `purlin_config` tool rather than by hand, so a key the installed
 Purlin no longer reads is reported instead of silently kept.
 
-Init skips the CI workflow at this gate, because nothing here needs one. `purlin:init --ci`
-writes it anyway when you want the run without the requirement. Whichever you choose, the only
-branch rule printed at `passed` is the third one: no force push, no deletion.
+The only branch rule init prints at `passed` is the third one: no force push, no deletion.
 
 ## A session
 
@@ -75,62 +72,56 @@ purlin:test <name>
 
 Spec when a requirement is new or a rule turns out to be wrong; build to write the code and the
 tagged tests; test to run them. `purlin:test` takes seconds and is the one you run constantly.
-Loop between build and test until every rule the feature owns has a passing test.
+Loop between build and test until every rule the feature owns has a passing test, then push.
+
+## The test results
+
+`purlin:test` writes what the run saw into two tracked files and commits them itself:
 
 ```
-purlin:audit
+.purlin/tests/<feature>.json
+.purlin/tests.md
 ```
 
-Then audit once, before you push.
-
-## Your own record commit
-
-At `passed`, `purlin:audit` runs the tagged tests only, no breaks, and the record's test
-strength reads `n/a`. The run says `Strength n/a: the gate is passed.` on its own line, so a
-blank where a percentage usually sits is never read as a missing engine.
+The JSON file per feature carries the commit, the time, the operating system, each rule's word
+and each proof's result and test. `.purlin/tests.md` is one table for the whole project, so a
+`--feature` run leaves the rows it did not run exactly as they were:
 
 ```
-.purlin/records/login/20260913T142201Z-a1b2c3d-jane.json
+# Test results at 4f1c2ab
+
+| Feature | Rules | Passed | Failing | No test | Last run |
+|---|---|---|---|---|---|
+| login | 3 | 3 | 0 | 0 | 4f1c2ab · 2026-09-26T12:00:00Z · macos |
 ```
 
-The last part of the name is the runner slug: `ci` on a CI run, and otherwise your git email's
-local part, lowercased. One record per audit run, per feature. Adding a file never conflicts
-with another branch. The commit message is `purlin: record for a1b2c3d`. It is committed and
-not pushed: the run prints `Record committed. Run: git push` and the push is yours. CI
-publishes its own evidence; a person pushes theirs.
+The commit subject is `purlin: tests at <sha7>` and it is made under your own git identity. The
+run prints `Test results committed.`, or `Test results unchanged.` when it saw the same thing
+about the same code, and it never pushes.
+[references/formats/tests_format.md](../references/formats/tests_format.md) is the contract both
+files are written to.
 
-The slug in the name is not what decides whether a record counts. The last commit that touched
-the file decides, and that answer is the passed cell's `source`:
+Because both files are tracked, a teammate reading the repository on the git host sees your
+run without running anything and without a remote runner. They are the `local` source: they
+count at `passed` and nowhere above it.
 
 | Source | How it got there | Counts under |
 |--------|------------------|--------------|
-| `ci` | written through the git host's API by the CI identity | `passed`, `strong`, `signed` |
-| `developer` | a person committed it | `passed` only |
-| `local` | not committed | `passed` only |
+| `ci` | created through the git host's API by the CI identity | `passed`, `strong`, `signed` |
+| `local` | anything else: this checkout's own run, or the test results you committed | `passed` only |
 
-At `passed`, your own commit is the record, so `purlin:audit --commit` commits it for you. That
-is the one gate where a developer writes the evidence their own change is measured by, and it
-is the honest trade for working alone: the point at `passed` is that the tests ran and passed,
-not that someone independent watched them run. The moment you raise the gate to `strong`, only
-a `ci` record counts and you stop committing them.
+## The gate line
 
-Audit keeps the newest three records per feature per operating system and prunes the rest. A
-record named in the message of an annotated `record/<name>` tag, which `purlin:audit --tag
-1.0` writes, is kept for ever. The log of what was proved and when is the git history of
-`.purlin/records/`.
+The last line `purlin:test` prints is the answer:
 
-## Checking the gate before you push
-
-`purlin:status` prints every rule's cells and ends with one `→ Next:` line. To read the same
-answer in the form CI would give it, run the gate check by hand:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/ci/gate_check.py" --check
+```
+gate passed: 3 of 3
 ```
 
-Every line it prints opens with `gate:`. It writes nothing, names each rule that falls short
-under the cell that blocks it, and exits 0 when the gate is met and 1 when it is not. At
-`passed` the only section that can fill is `Not passed`.
+or `gate not met: 2 of 3`, and the run exits 1 on the second. It counts every rule under
+`specs/`, not only the rules of the feature you ran, because the gate is a question about the
+project. At `passed` that line is the check: you run no script and you read no record.
+`scripts/ci/gate_check.py --check` is the step a CI job runs, not yours.
 
 ## What the board shows
 
@@ -144,18 +135,58 @@ not exist at this gate, so the board has nothing to put in a column for them.
 
 ## Test strength
 
-At `passed`, the strong cell does not exist and the record's test strength always reads `n/a`:
-`purlin:audit` runs the tagged tests only, and no breaks are made to measure how much of your
-code they would actually catch.
+At `passed` the strong cell does not exist, so no strength is measured and nothing asks for
+one. `purlin:audit` still runs here: it runs the tagged tests and reports what the free checks
+found, and it ends with `This audit counts only when CI runs it.` Nothing it prints moves a
+cell at this gate.
 
 Raise the gate to `strong` to turn the breaks on, locally and in CI, and see a real number: of
 the deliberate breaks audit makes to your code, the share your tests caught.
 
+## When you want a remote runner
+
+A remote runner is the git host running your tests for you. Nothing at `passed` needs one, and
+`purlin:init` explains it in three reasons and no others:
+
+- **Your tests need another operating system.** Your machine cannot run a test tagged for
+  Windows or Linux. The runner can, so those rules stop reading `not run`.
+- **Proof from a clean machine.** Your laptop may have uncommitted edits or leftover files.
+  The runner runs exactly the code you pushed, on a machine nobody touched. That is what the
+  `strong` and `signed` gates trust.
+- **No merge while red.** The git host refuses to merge the pull request while a test fails or
+  a rule has no test. Nobody has to remember to check.
+
+Teammates do not need a remote runner to see your results: `purlin:test` commits them, so they
+are in the repository, readable on the git host and on the board after a pull.
+
+At `passed` with a remote, init prints those three reasons, then that sentence, then asks:
+
+```
+Run the tests on a remote runner too? [y/n]
+```
+
+A yes writes the workflow; a no writes nothing and says `run purlin:init again to add it`.
+Before either, init checks the prerequisites: a remote exists, its URL names GitHub or Azure
+DevOps, and the protected branch is on that remote. The first that fails is printed in one line
+with what to do, and no workflow is written. The host CLI, `gh` or `az`, is reported as present
+or absent either way.
+
+The one case where you will want it is a proof tagged for an operating system your machine is
+not. `purlin:test` says so in one sentence and changes nothing itself:
+
+```
+login PROOF-4 needs windows; this machine is macos. A remote runner runs it: purlin:init adds one.
+```
+
+The rule reads `not run` until that system runs it. With a workflow in place,
+`purlin:test --remote` hands the commit to the runner on a run branch of its own,
+`run/<branch>-<sha7>`, which it creates, waits on and deletes. At `passed` the runner writes no
+record, so there is nothing to pull back: the run prints what the runner saw.
+
 ## The pre-push hook
 
-`purlin:init` offers a pre-push hook. It runs `purlin:test` and nothing else: the tagged tests
-into `.purlin/runtime/proofs/`, in seconds, with no breaks and no record, so a push is never
-held up by a full audit.
+`purlin:init` offers a pre-push hook. It runs the tagged tests and nothing else: into
+`.purlin/runtime/proofs/`, in seconds, with no breaks, so a push is never held up.
 
 It prints one line either way. It blocks a push only when both of these are true: `pre_push` in
 `.purlin/config.json` is `on`, and a tagged test failed. Every other outcome exits 0 and lets the
@@ -175,13 +206,13 @@ before it merges is the gate, and the gate is the git host's to enforce.
 
 Raise to `strong` when any one of these becomes true:
 
-- A second person commits to the repository. Two people means one of you can write a record for
-  the other's change, and `strong` is what stops that.
+- A second person commits to the repository. Two people means the test results one of you
+  committed stand as evidence for the other's change, and `strong` is what stops that.
 - Someone outside engineering owns a requirement. A PM's or a designer's rule needs `origin`
   tags and a review list to be worth tagging.
 - You need to answer "what was proved at the commit we shipped?" to someone who was not there.
-  A CI-written record at a known commit answers it; a developer-written one asks them to trust
-  you.
+  A CI-written record at a known commit answers it; a test results file you committed yourself
+  asks them to trust you.
 
 ```
 purlin:init --gate strong
@@ -189,9 +220,8 @@ purlin:init --gate strong
 
 Raising is additive. It writes the CI workflow (`purlin.yml`), creates `designs/` if it is
 missing, prints the branch rules for your git host, and asks before each write. It changes no
-rule, deletes no record, and leaves every record you already committed exactly where it is. The
-records you wrote yourself stop counting from that point; CI writes the ones that count from the
-next run.
+rule and deletes no file. From that point the evidence that counts is the record CI writes, and
+the test results stay where they are as the fast answer you read while you work.
 
 [team-workflow.md](team-workflow.md) is the guide for the gate you land on.
 [raising-the-gate-and-upgrading.md](raising-the-gate-and-upgrading.md) covers the move itself,

@@ -15,8 +15,8 @@ A rule carries a spec status and one cell per level, and the gate says how many 
 
 | Level | The question it answers | The command that answers it |
 |-------|-------------------------|-----------------------------|
-| passed | did every tagged test for this rule pass? | `purlin:test`, and `purlin:audit` on CI |
-| strong | are those tests worth trusting? | `purlin:audit`, on CI |
+| passed | did every tagged test for this rule pass? | `purlin:test`, and the same tests on CI |
+| strong | are those tests worth trusting? | the audit, on CI |
 | signed | did a person say the rule, the proof and the test belong together? | `purlin:sign` |
 
 Level 2 is fully automatic: the breaks, the free checks and the model review run without anyone
@@ -30,16 +30,16 @@ sequenceDiagram
     participant CI as the runner
     actor Signer
     Engineer->>Origin: git push, then open the pull request
-    Origin->>CI: pull_request starts the audit job
+    Origin->>CI: pull_request starts the job
     CI->>Origin: the rollup and the dashboard, and no commit on this branch
     Engineer->>Origin: merge, once the required check is green
-    Origin->>CI: push to main starts the audit job
+    Origin->>CI: push to main starts the job
     CI->>Origin: purlin: record for commit7, the records and the briefs
     Signer->>Signer: purlin:sign walks the review list, one brief at a time
     Signer->>Signer: git commit -S writes RULE-4.hash8.slug.json
     Signer->>Origin: git push, then open the pull request
     Engineer->>Origin: merge, so the signature is on main
-    Origin->>CI: push to main starts the audit job
+    Origin->>CI: push to main starts the job
     CI->>CI: gate_check.py --check reads RULE-4 as signed
 ```
 
@@ -154,7 +154,7 @@ carries neither tag when you raise the gate, and `purlin:spec <feature>` tags th
 
 ## What CI writes, and what it never writes
 
-CI's `purlin:audit --ci` writes two kinds of file and commits them as
+CI's run writes two kinds of file and commits them as
 `purlin: record for <commit7>`, on the protected branch and on a run branch only. A pull
 request run writes both on the runner and commits neither:
 

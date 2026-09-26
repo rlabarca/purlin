@@ -62,7 +62,7 @@ count levels rather than buckets: a rule that is signed is still passing, so it 
 | `Rules` | how many rules the spec holds |
 | `Spec status` | `24 ready · 2 drafted`, what the spec says of its own rules |
 | `Tests` | `24 passed · 2 failing · 1 no test · 3 not run`, each count in its own tone. The last part holds the rules whose passed cell reads `not run` or `code changed`, so a spec behind changed code reads `0 passed · 24 not run` rather than `0 passed` alone |
-| `Last run` | one box per operating system, `lin`, `mac` and `win`, each in the tone of what that system's newest record found, then the newest record's source, `ci`, `developer` or `local`. The age is the source word's tooltip here and stands in full on the rule screen |
+| `Last run` | one box per operating system, `lin`, `mac` and `win`, each in the tone of what that system's newest record found, then the source of the newest evidence, `ci` or `local`. The age is the source word's tooltip here and stands in full on the rule screen |
 
 Every count names the word it counts beside the number. The first part is always drawn, so a
 spec with nothing ready reads `0 ready`; a later part is drawn only where it is above zero, so
@@ -72,8 +72,8 @@ a spec with nothing failing and nothing untested reads `24 passed` and stops the
 
 At `strong` each rule gains a strong cell, so a `Strong` tile joins the three and two columns
 join the five: `Strength`, the test strength of the newest counting record, and `Strong`, `n of
-m` with a bar. Only a record CI wrote counts at this gate, so a record a person committed reads
-`developer` in `Last run` and the rules it covers read `not run`.
+m` with a bar. Only a record CI wrote counts at this gate, so evidence from anywhere else reads
+`local` in `Last run` and the rules it covers read `not run`.
 
 ![The Board at the signed gate: a Signed tile and a Stale flag card, and the Signed column](images/dashboard-regulated.png)
 
@@ -185,7 +185,7 @@ Anyone with a repository URL can print the same rollup without cloning the repos
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <branch-or-tag>]
 ```
 
-It reads `specs/` and `.purlin/records/` by sparse fetch and prints the headline, one line per
+It reads `specs/`, `.purlin/tests/` and `.purlin/records/` by sparse fetch and prints the headline, one line per
 bucket, and the flags beside them, then how far the ref has moved past the newest record, then
 the review list, one line per rule with its risk, the rule, the cell that blocks it and why a
 person is needed. `--repo` also takes a local path. CI posts the same rollup as a pull request

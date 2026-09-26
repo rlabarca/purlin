@@ -53,16 +53,7 @@ EXCLUDED = (
 # Paths a later phase of dev/plans/three-levels.md still rewrites, grouped by
 # the lane that owns them. A lane deletes its entries in the commit that
 # rewrites the files; the tuple is empty at closeout.
-PENDING_REWRITE = (
-    # Lane 10B rewrites these pages against the passed workflow: they still
-    # name `--commit`, the source `developer` and `purlin:audit --remote`.
-    "docs/dashboard.md",
-    "docs/how-purlin-works.md",
-    "docs/raising-the-gate-and-upgrading.md",
-    "docs/running-and-records.md",
-    "docs/solo-workflow.md",
-    "docs/team-workflow.md",
-)
+PENDING_REWRITE = ()
 
 # Phase 7 deletes every signature directory of the old layout; until then the
 # files inside carry the old words.

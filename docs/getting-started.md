@@ -2,9 +2,9 @@
 
 For the engineer setting Purlin up on a project for the first time.
 
-By the end of this page you will have a spec, code, a tagged test and a committed record, and
-you will know which process guide to read next. It takes about fifteen minutes on a small
-project.
+By the end of this page you will have a spec, code, a tagged test and a committed set of test
+results, and you will know which process guide to read next. It takes about fifteen minutes on
+a small project.
 
 ## What you need
 
@@ -39,7 +39,7 @@ claude --plugin-dir /path/to/purlin
 ```
 
 Your project never carries a copy of Purlin. Neither does a CI runner, which is why the workflow
-`purlin:init` writes clones Purlin at a pinned tag and runs the audit from that checkout.
+`purlin:init` writes clones Purlin at a pinned tag and runs the same script from that checkout.
 
 ## Initialize
 
@@ -53,7 +53,7 @@ is the word a rule's last cell reads when it is met.
 
 | Gate | Who it fits | What CI requires before merge |
 |------|-------------|-------------------------------|
-| `passed` | One developer | Every rule has a passing tagged test, from a run of any source |
+| `passed` | One person working alone | Every rule has a passing tagged test, from a run of any source |
 | `strong` | A team of PM, designers, engineers and QA | Every rule has a record CI wrote at this commit, with the test strength at or above `min_strength`, no free-check finding and no hold |
 | `signed` | The same team under GxP | Everything `strong` requires, plus a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list |
 
@@ -66,11 +66,12 @@ an empty repository is asked which language it will be, and `signed` is asked fo
 emails.
 
 It writes `.purlin/config.json` with the gate and the derived defaults, `specs/` for the specs,
-and `.purlin/records/` with a README saying that `purlin:audit` writes the files in it. It
-installs the proof plugin for the detected framework and the breaks engine for the language,
-adds a `.gitignore` block for `.purlin/runtime/`, copies the dashboard page so it opens from
-disk, and offers a pre-push hook. It ends by printing every file it wrote or edited, one per
-line. `purlin:init --dry-run` prints that list and writes nothing.
+and `.purlin/records/` with a README saying that CI writes the files in it. It installs the
+proof plugin for the detected framework and the breaks engine for the language, adds a
+`.gitignore` block for `.purlin/runtime/`, copies the dashboard page so it opens from disk, and
+offers a pre-push hook. At `passed` with a remote it explains a remote runner in three reasons
+and asks whether to add one. It ends by printing every file it wrote or edited, one per line.
+`purlin:init --dry-run` prints that list and writes nothing.
 
 ## Write the first spec
 
@@ -111,7 +112,7 @@ tell a code change from a rule change later.
 
 The skill ends with `Spec created: login. Build it now?`
 
-## Build, test, audit
+## Build, test, push
 
 ```
 purlin:build login
@@ -137,16 +138,12 @@ purlin:test login
 
 `purlin:test` runs the tagged tests, writes proof files into `.purlin/runtime/proofs/`, which is
 not committed, and prints the passed cell of every rule. It takes seconds: no breaks, no record.
+It then writes `.purlin/tests/login.json` and `.purlin/tests.md`, commits both itself as
+`purlin: tests at <sha7>`, and ends with `gate passed: 3 of 3`. Those two files are tracked, so
+a teammate reads your run on the git host without running anything.
 
-```
-purlin:audit
-```
-
-`purlin:audit` runs the tests and writes
-`.purlin/records/login/<timestamp>-<commit7>-developer.json`, commits it, and prints the table.
-At the `passed` gate that is all it does, and the record's test strength reads `n/a`. From
-`strong` upward it also breaks the code on purpose and measures the share of those breaks the
-tests caught: that share is the **test strength**.
+At `passed` that is the whole loop: spec, build, test, then `git push`. No record, no signature,
+and no script for you to run.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#0C3444", "primaryColor": "#092936", "primaryTextColor": "#E4DDD4", "primaryBorderColor": "#C0793F", "lineColor": "#C0793F", "secondaryColor": "#0C3444", "tertiaryColor": "#092936", "fontFamily": "Arial", "textColor": "#E4DDD4"}}}%%
@@ -154,17 +151,24 @@ flowchart LR
   spec["purlin:spec"] --> build["purlin:build"]
   build --> test["purlin:test"]
   test --> build
-  test --> audit["purlin:audit"]
-  audit --> push["push"]
-  audit --> build
+  test --> push["git push"]
 ```
+
+```
+purlin:audit
+```
+
+Run the audit when you want to know how good those tests are. It runs them again, and from
+`strong` upward breaks the code on purpose and measures the share of the breaks the tests
+caught: that share is the **test strength**. It prints what it found and writes nothing, because
+the record is CI's, and it says so on its last line.
 
 ## Read the table
 
 ```
 Feature  Rules  Spec                 Tests                             Run
 ──────────────────────────────────────────────────────────────────────────
-login        3  3 ready · 0 drafted  3 passed · 0 failing · 0 no test  developer
+login        3  3 ready · 0 drafted  3 passed · 0 failing · 0 no test  local
 
 3 of 3 rules meet the gate passed.
 → Next: nothing is outstanding at gate passed.
@@ -173,7 +177,7 @@ login        3  3 ready · 0 drafted  3 passed · 0 failing · 0 no test  develo
 `purlin:status` prints that table any time, one row per feature and per anchor, sorted so the
 rows needing the most work come first. `Spec` counts the rules a proof names against the rules
 still drafted; `Tests` counts passed, failing and no test; `Run` names the source of the newest
-record, and the operating system when the run was one job of a matrix. A column exists only
+evidence, `ci` or `local`, and the operating system when the run was one job of a matrix. A column exists only
 when the cell behind it does, so a project at the `passed` gate has no `Strength`, `Strong` or
 `Signed` column. The gate is what adds them: `purlin:init --gate strong` adds the first two,
 `--gate signed` adds the third.
@@ -186,7 +190,7 @@ remembering an order.
 
 ## Where to go next
 
-- One developer, gate `passed`: [solo-workflow.md](solo-workflow.md).
+- One person working alone, gate `passed`: [solo-workflow.md](solo-workflow.md).
 - A team, gate `strong`: [team-workflow.md](team-workflow.md).
 - Under GxP or a similar obligation, gate `signed`: [regulated-workflow.md](regulated-workflow.md).
 - An existing codebase with no specs yet: [spec-from-code.md](spec-from-code.md).
