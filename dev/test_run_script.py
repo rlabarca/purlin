@@ -953,11 +953,14 @@ class TestRecordWithoutTheEngines:
         # The break engines are taken off the path, which is the state a
         # checkout is in before they are installed: `--record` must still
         # write its record and say what it could not measure.
-        run_dir = os.path.join(REPO, 'scripts', 'run')
+        # Compared through realpath, not abspath: a checkout reached along a
+        # symlink (a clone under /tmp on macOS) puts both spellings of this
+        # one directory on the path, and abspath leaves the second in place.
+        run_dir = os.path.realpath(os.path.join(REPO, 'scripts', 'run'))
         monkeypatch.delitem(sys.modules, 'mutation', raising=False)
         monkeypatch.setattr(
             sys, 'path',
-            [p for p in sys.path if os.path.abspath(p or '.') != run_dir])
+            [p for p in sys.path if os.path.realpath(p or '.') != run_dir])
         code = purlin_run.main(['--project-root', str(root), '--all',
                                 '--record'])
         output = capsys.readouterr().out
