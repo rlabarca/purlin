@@ -100,9 +100,7 @@ function level(name) {
   return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
 }
 
-function minStrength() {
-  return (DATA.gate && DATA.gate.min_strength) || 0;
-}
+function minStrength() { return (DATA.gate && DATA.gate.min_strength) || 0; }
 
 /* --- marks the screens share ----------------------------------------- */
 

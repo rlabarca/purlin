@@ -56,7 +56,9 @@ function platformBoxes(cell) {
 function cellRow(rule, name) {
   var cell = cellOf(rule, name);
   if (!cell) { return ''; }
-  var reasons = (cell.reasons || []).join('; ');
+  var reasons = (cell.reasons || []).filter(function (text) {
+    return text !== 'by ' + cell.signer;
+  }).join('; ');
   var beside = name === 'passed' ? platformBoxes(cell)
     : name === 'signed' && cell.signer ? '<span class="mono sec">'
       + esc(cell.signer + ' \u00b7 ' + when(cell.at)) + '</span>' : '';
@@ -145,8 +147,8 @@ function signPanel(feature, rule) {
     + '<p><span class="cmd">purlin:sign ' + esc(feature.name) + ' '
     + esc(rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
     + '<p class="sec">' + (cell.word === 'not required'
-      ? 'No signature is required at this rule’s risk; one written '
-        + 'anyway still counts.'
+      ? 'No signature is required at this rule’s risk; one written anyway '
+        + 'still counts.'
       : 'A signature is a signed commit by someone on the signer list; the '
         + 'page shows it once it is on the branch.') + '</p></div>';
 }

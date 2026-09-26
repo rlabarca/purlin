@@ -637,6 +637,10 @@ def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
     assert 'PROOF-1' in body
     assert 'tests/test_login.py :: test_sign_in' in body
     assert 'PASSED' in body and 'STRONG' in body and 'SIGNED' in body
+    # The signer is named once: the cell's own `by <signer>` reason would
+    # have said it again beside the date.
+    assert 'SIGNED jane@acme.com \u00b7 2026-09-11' in page.eval_on_selector_all(
+        '.kv dd', r'els => els.map(e => e.innerText.trim().replace(/\s+/g, " "))')
     assert 'Test strength 86%, against a minimum of 80%.' in body
     assert 'The model review settled the question.' in body
     page.click('[data-act="close"]')
