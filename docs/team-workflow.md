@@ -103,7 +103,7 @@ marketplace, where it sits under `~/.claude/plugins/cache/purlin/purlin/<version
 | One record per feature | `.purlin/records/<feature>/` in the tree | written on the runner, not committed | the gate, `purlin:status`, the dashboard |
 | One brief per rule the audit reached | `.purlin/briefs/<feature>/` in the tree | written on the runner, not committed | QA, at the next `purlin:sign` |
 | The rollup | a comment on the pull request | posted | reviewers, the PM, QA |
-| The dashboard | the `purlin-dashboard-<os>` build artifact, linked from that comment | uploaded | anyone with repository access |
+| The dashboard | the `purlin-dashboard-<runner>` build artifact, linked from that comment | uploaded | anyone with repository access |
 | The gate check | the job log, every line prefixed `gate:` | run, and the job fails when the gate is not met | the branch rule |
 
 CI writes no signature file, ever. The machine's evidence and a person's attestation are written
