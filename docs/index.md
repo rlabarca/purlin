@@ -24,7 +24,7 @@ One setting, the **gate**, decides how much of that chain a project asks for.
 |-------|----------------|
 | [Solo workflow](solo-workflow.md) | The `passed` gate end to end, the test results `purlin:test` commits, the remote runner, the pre-push hook |
 | [Specs and anchors](specs-and-anchors.md) | The spec format, local anchors, the anchor repo option, pins, id allocation |
-| [Running and records](running-and-records.md) | `purlin:test` and its two files, `purlin:audit`, CI, the record shape, retention, test strength |
+| [Running and records](running-and-records.md) | `purlin:test` and its two files, `purlin:audit` and the record it writes, CI, the record shape, retention, test strength |
 | [Specs from existing code](spec-from-code.md) | `purlin:spec-from-code` once on a codebase that predates Purlin |
 
 ## PM and designer
@@ -32,7 +32,7 @@ One setting, the **gate**, decides how much of that chain a project asks for.
 | Guide | What it covers |
 |-------|----------------|
 | [Design in specs](design-in-specs.md) | `designs/`, design anchors, `origin: design` rules, mock beside screenshot |
-| [Team workflow](team-workflow.md) | The `strong` gate, CI as the writer of the record, one traced sprint |
+| [Team workflow](team-workflow.md) | The `strong` gate, the record and who writes one, one traced sprint |
 
 ## QA
 
