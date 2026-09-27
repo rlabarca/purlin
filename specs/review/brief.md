@@ -43,9 +43,9 @@
 ## Proof
 
 - PROOF-1 (RULE-1): Build the brief for a `[bar: passed]` rule in a project holding a record; verify its layers are exactly `proof text`, `test body` and `test strength` @integration
-- PROOF-2 (RULE-1): Build the brief for that same `[bar: passed]` rule; verify its layers do not name the model review and that its AI audit field is `none` @integration
-- PROOF-3 (RULE-2): Retag the rule `[bar: strong]`, run the tests and write a record, then build the brief; verify its layers add `model review` after `test strength` @integration
-- PROOF-4 (RULE-3): Build the brief for a `[bar: strong]` rule; verify its layers are `proof text`, `test body`, `test strength`, `model review` in that order @integration
+- PROOF-2 (RULE-1): Build the brief for that same `[bar: passed]` rule; verify its layers do not name the AI audit and that its AI audit field is `none` @integration
+- PROOF-3 (RULE-2): Retag the rule `[bar: strong]`, run the tests and write a record, then build the brief; verify its layers add `AI audit` after `test strength` @integration
+- PROOF-4 (RULE-3): Build the brief for a `[bar: strong]` rule; verify its layers are `proof text`, `test body`, `test strength`, `AI audit` in that order @integration
 - PROOF-5 (RULE-4): Build a brief for `RULE-99`, which the spec does not declare; verify nothing comes back @integration
 - PROOF-6 (RULE-5): Write a proof reading `The login works correctly`, then build the brief; verify its `hints` carry the sentence about naming no literal and the one about a vague verb, that every hint is a sentence holding a space and no underscore, and that the model prompt carries each marked `hint:` @integration
 - PROOF-7 (RULE-6): Edit the marked test so it calls the code and asserts nothing, then build the brief; verify the test entry's `hints` is not empty and that every hint is a sentence holding a space and no underscore @integration
@@ -56,7 +56,7 @@
 - PROOF-12 (RULE-10): Build the brief for a `[bar: passed]` rule a record covers; verify its field names are exactly the 23 the module writes, its schema is `purlin-brief/4` and its observations list is empty @integration
 - PROOF-17 (RULE-13): Read the observations out of `settled: yes` and out of `settled: no` followed by `- PROOF-1 never runs the code.`; verify the first settles with nothing observed and the second does not settle and carries that one sentence
 - PROOF-19 (RULE-15): Build the model prompt for a `[bar: strong]` rule at gate `strong`; verify it opens with `references/review_criteria.md` byte for byte and then names `RULE-2`, the rule text, the test `test_a_bad_password_is_denied` and `Test strength: 90 percent (minimum 70)` @integration
-- PROOF-20 (RULE-16): Build the brief for a rule that asks for a model review without passing `--ai`; verify the review it carries reads `not available`, no observation comes back and the rendering reads `Settled: not answered` @integration
+- PROOF-20 (RULE-16): Build the brief for a rule that asks for an AI audit without passing `--ai`; verify the review it carries reads `not available`, no observation comes back and the rendering reads `Settled: not answered` @integration
 - PROOF-21 (RULE-16): With no `claude` on the path, build the brief with `--ai`; verify the review it carries reads `not available` @integration
 - PROOF-22 (RULE-16): Build the brief for a `[bar: passed]` rule with `--ai` and a probe that raises if the path is searched; verify no model is reached, the review it carries is `none` and the rendering holds no `Observations` heading @integration
 - PROOF-23 (RULE-12): Replace the model launch with the answer `settled: no` followed by `- PROOF-2 asserts the status but never the body the rule names.`; verify one `claude -p` call is made, the brief carries that one observation and it did not settle @integration

@@ -236,7 +236,7 @@ The header says `<n> rules to sign`. A row carries the spec, the rule id, the ru
 to one line, the rule's bar, the signed cell's word, `unsigned` or `stale`, and the command
 that signs it, `purlin:sign <feature> <RULE-N>`.
 
-`purlin:sign` with no argument walks the two tabs in the order the page reads them, Review
+`purlin:sign` with no argument walks the two lists in the order the page reads them, Review
 then Sign: a rule a person has not judged is not a rule to sign. The page is the read-only view
 of both, for someone who has no checkout.
 

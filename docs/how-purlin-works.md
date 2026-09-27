@@ -172,7 +172,7 @@ strong cell.
 
 **What is the difference between `not audited` and `unsettled`?** `not audited` means the
 rule's bar is `strong` and no audit has run on this code yet: it waits for `purlin:audit`, not
-for you, so it is on no tab. `unsettled` means the AI audit did run and could not settle
+for you, so it is on no list. `unsettled` means the AI audit did run and could not settle
 whether the test proves the proof, so a person judges it. That one is on the Review list.
 
 **When do I say which operating system a test needs?** On the proof line, with `@env(windows)`,

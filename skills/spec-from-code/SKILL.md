@@ -63,9 +63,9 @@ Every rule this skill writes carries `[origin: eng]` and `[bar: passed]`:
 ```
 
 `eng` is correct because you derived the rule, not a PM: `purlin:drift pm` then shows these as
-engineer-added rules rather than as requirements nobody asked for. `low` is correct because
-nobody has judged the cost of getting it wrong yet. Both are re-tagged later, in one pass, and
-re-tagging never stales a signature.
+engineer-added rules rather than as requirements nobody asked for. `passed` is correct because
+nobody has judged yet whether the rule is worth an audit and a signature. Both are re-tagged
+later, in one pass; re-tagging `origin` never stales a signature, and re-tagging the bar does.
 
 For the rule and proof grammar read `references/formats/spec_format.md`; for what makes a rule
 worth keeping read `references/spec_quality_guide.md`.

@@ -61,7 +61,7 @@ in the shipped prose where a retired spelling may still be written.
   is `strong` and whose strong cell is met.
 - **signable**: a rule that has cleared its bar, needs a signature and does not have a counting
   one. The board's `Signable` column counts them and the `Sign` list holds them.
-- **AI audit**: the model review inside an audit. It runs on every rule whose bar is `strong`
+- **AI audit**: the model's read of one rule inside an audit. It runs on every rule whose bar is `strong`
   and on no other, and it says what it saw the test observe and whether it could settle the
   question.
 - **signature**: a named person's attestation that a rule, its proof, its test and the audit

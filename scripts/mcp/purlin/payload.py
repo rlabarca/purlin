@@ -401,7 +401,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'runs': runs or {},
         # Whether an audit wrote a record the gate counts for this feature.
         # With none, nothing measured how good the tests are and the strong
-        # cell says so rather than passing the rule on the free checks.
+        # cell says so rather than passing the rule on the free scans' hints.
         'audited': bool(owner_counting),
         'head': head,
         'scope_tree': scope_cache[scope_key],

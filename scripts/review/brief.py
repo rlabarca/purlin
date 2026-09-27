@@ -79,7 +79,7 @@ SOURCES = records_module.SOURCES
 
 # The layers, cheapest first, and the bar each set is built for. The AI audit
 # runs on the rules whose bar is `strong` and on no other.
-LAYERS = ('proof text', 'test body', 'test strength', 'model review')
+LAYERS = ('proof text', 'test body', 'test strength', 'AI audit')
 _LAYERS_BY_BAR = {
     'passed': LAYERS[:3],
     'strong': LAYERS,
@@ -173,8 +173,8 @@ def build_brief(project_root, payload, feature, rule, ai=False):
     if 'test strength' in layers:
         brief['test_strength'] = feature_entry.get('test_strength')
 
-    if 'model review' in layers:
-        brief['ai_review'] = (_model_review(project_root, brief) if ai
+    if 'AI audit' in layers:
+        brief['ai_review'] = (_ai_audit(project_root, brief) if ai
                               else NOT_AVAILABLE)
         brief['observations'], brief['settled'] = model_observations(
             brief['ai_review'])
@@ -288,7 +288,7 @@ def _design_layer(project_root, payload, feature, entry):
 
 
 # ---------------------------------------------------------------------------
-# The model review
+# The AI audit
 # ---------------------------------------------------------------------------
 
 def criteria_text(project_root):
@@ -355,7 +355,7 @@ def model_prompt(project_root, brief):
     return '\n'.join(parts)
 
 
-def _model_review(project_root, brief):
+def _ai_audit(project_root, brief):
     """The model's answer, or `not available` when no model can be reached."""
     if not shutil.which('claude'):
         return NOT_AVAILABLE
@@ -556,13 +556,13 @@ def render_brief(brief):
                                    or 'none pinned'))
         lines.append('Screenshot: %s'
                      % (', '.join(design.get('screenshot') or ()) or 'none'))
-    # The model review is printed only where one was asked for, so a brief
-    # for a rule whose bar is `passed` says nothing about a review that was
+    # The AI audit is printed only where one was asked for, so a brief for
+    # a rule whose bar is `passed` says nothing about an audit that was
     # never owed.
     if brief.get('ai_review') is not None:
         if brief['ai_review'] != NOT_AVAILABLE:
             lines.append('')
-            lines.append('Model review')
+            lines.append('AI audit')
             for line in str(brief['ai_review']).splitlines():
                 lines.append('  %s' % line)
         lines.append('')
@@ -577,7 +577,7 @@ def render_brief(brief):
 
 
 def _settled_word(settled):
-    """`yes`, `no` or `not answered`, the three states of a model review."""
+    """`yes`, `no` or `not answered`, the three answers an AI audit gives."""
     if settled is True:
         return 'yes'
     if settled is False:

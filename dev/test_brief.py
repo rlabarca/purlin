@@ -3,7 +3,7 @@
 The throwaway project is `dev/test_signatures.py`'s, so a spec, a test file, a
 runtime proof file and a record are written by the test and nothing reads this
 repository's own specs. No model is ever called: the one test that exercises
-the model review replaces the process launch, so nothing here spends money or
+the AI audit replaces the process launch, so nothing here spends money or
 reaches a service.
 
 What each group holds:
@@ -95,17 +95,17 @@ class TestTheLayers:
     def test_a_passed_bar_stops_after_the_test_strength(self, proved):
         assert build(proved, 'RULE-1')['layers'] == [
             'proof text', 'test body', 'test strength']
-        assert build(proved, 'RULE-2')['layers'][-1] == 'model review'
+        assert build(proved, 'RULE-2')['layers'][-1] == 'AI audit'
 
     @pytest.mark.proof("brief", "PROOF-4", "RULE-3", tier="integration")
     def test_a_strong_bar_runs_every_layer(self, proved):
         assert build(proved, 'RULE-2')['layers'] == [
-            'proof text', 'test body', 'test strength', 'model review']
+            'proof text', 'test body', 'test strength', 'AI audit']
 
     @pytest.mark.proof("brief", "PROOF-2", "RULE-1", tier="integration")
     def test_a_passed_bar_asks_for_no_model(self, proved):
         built = build(proved, 'RULE-1')
-        assert 'model review' not in built['layers']
+        assert 'AI audit' not in built['layers']
         assert built['ai_review'] is None
 
     @pytest.mark.proof("brief", "PROOF-5", "RULE-4", tier="integration")
@@ -227,7 +227,7 @@ class TestTheTestStrength:
 
 
 # ---------------------------------------------------------------------------
-# The model review
+# The AI audit
 # ---------------------------------------------------------------------------
 
 class TestTheModelReview:

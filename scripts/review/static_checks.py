@@ -1031,7 +1031,7 @@ def _sweep_unmeasurable_reason(check, test_file, feature):
     """Why one backing could not be measured, in words a report can print."""
     if check == 'no_checker':
         ext = os.path.splitext(test_file)[1].lower() or '(no extension)'
-        return (f'No free checker reads {ext} files, so nothing looked at this '
+        return (f'No scan reads {ext} files, so nothing looked at this '
                 'test. An unmeasurable proof is a gap in coverage, not a defect.')
     if check == 'missing_file':
         if not test_file:
@@ -1092,7 +1092,7 @@ def _sweep_feature(project_root, feature, rule_descs):
     return best, counted
 
 def deterministic_sweep(project_root):
-    """Run the free checks over every proof in `project_root`."""
+    """Run the free scans over every proof in `project_root`."""
     features = {}
     failing, unmeasurable = [], []
     declared_total = backing_total = passing = 0

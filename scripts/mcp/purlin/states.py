@@ -77,15 +77,15 @@ FLAGS = ('failing', 'partial', 'stale', 'held', 'manual', 'unsettled',
          'not_audited', 'code_changed')
 
 # The strong cell's words that put a rule in front of a person, and the one
-# that waits for the audit instead. `not audited` is on no tab: running
+# that waits for the audit instead. `not audited` is on no list: running
 # `purlin:audit` settles it.
 REVIEW_WORDS = ('manual test', 'unsettled', 'held')
 NOT_AUDITED = 'not audited'
 
 # What a brief writes under `ai_review` when no model could be reached. The
 # AI audit did not run, so it settled nothing and it observed nothing: the
-# free checks and the strength are the whole of level 2, exactly as they are
-# where no break engine measured a strength. `scripts/review/brief.py` reads
+# free scans' hints and the strength are the whole of level 2, exactly as
+# they are where no break engine measured a strength. `scripts/review/brief.py` reads
 # this name from here so the two cannot drift.
 NO_MODEL = 'not available'
 
@@ -569,7 +569,7 @@ def _strong_cell(inp, cfg, bar, passed, holds, counting_signatures):
         # Level 2 asks how good the tests are, and only an audit measures
         # that. With no record of one there is nothing to read, so the cell
         # says the work is outstanding rather than passing the rule on the
-        # free checks alone.
+        # free scans' hints alone.
         notes.append('no audit has run')
         cell['word'] = 'weak'
     elif strength is None:

@@ -239,7 +239,7 @@ purlin:sign <feature> RULE-4 --note "read the four messages on 2026-09-16; each 
 
 A rule whose bar is `strong` and on whose code no audit has run yet reads `not audited`, with
 the reason `no audit has run on this code`. It waits for `purlin:audit`, not for a person, so
-it is on no tab. Once the audit has run and could not settle the question, the cell reads
+it is on no list. Once the audit has run and could not settle the question, the cell reads
 `unsettled` and the rule is on the Review list. The same `--note` settles it.
 
 ## Holds
