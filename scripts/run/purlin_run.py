@@ -12,9 +12,9 @@ and ends with `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`.
 It never pushes. `--remote` hands the commit to the git host's runner instead
 and brings back what that runner wrote.
 
-`--audit` is what `purlin:audit` runs: the tests, then the breaks, the free
-checks and the model review, printed per rule as the strength beside the
-minimum, the findings and the observations. It writes one record per feature
+`--audit` is what `purlin:audit` runs: the tests, then the breaks and the AI
+audit, printed per rule as the strength beside the minimum and the audit's
+observations. It writes one record per feature
 under `.purlin/records/local/` with the briefs under
 `.purlin/briefs/local/`, commits them under the person's own identity as
 `purlin: record for <sha7>`, and never pushes. It ends with `gate strong:
@@ -22,12 +22,11 @@ under `.purlin/records/local/` with the briefs under
 is not met. `--tag <name>` writes the annotated tag `record/<name>` over the
 records in the tree.
 
-`--ci` is the arm the CI job runs: the tagged tests, then at `strong` and
-above the breaks and the briefs and one record per feature, written under
-`.purlin/records/ci/` and committed through the git host's API on the
-protected branch and on a run branch. At `passed` it runs the tests, posts
-the pull request comment, publishes the dashboard, writes no record and
-commits nothing.
+`--ci` is the arm the CI job runs: the tagged tests, and then, on a run
+branch at `strong` and above, the briefs and one record per feature, written
+under `.purlin/records/ci/` and committed through the git host's API. No
+breaks run there. On a tag run it writes nothing at all: the rerun and the
+gate check with `--verify` are what a tag run is for.
 
 A proof the spec tags `@env` for another operating system is not run here. The
 run says so in one sentence and names the command that adds a remote runner.
@@ -892,7 +891,7 @@ def main(argv=None):
         # still writes its record, posts its comment and publishes its logs,
         # which is where a reader finds out what went missing.
         ci_code = _ci(project_root, args, features, selected, index, ran, log,
-                      cfg, arm_logs)
+                      cfg)
         exit_code = exit_code or ci_code
 
     print('')
@@ -1039,7 +1038,7 @@ def _audit_gate_line(project_root, cfg):
 
 
 def _audit_report(project_root, selected, breaks, source='local'):
-    """One block per feature: the strength, then each rule's findings.
+    """One block per feature: the strength, then each rule's observations.
 
     The briefs a review is owed for are written as they are built, into
     `source`'s folder beside the record, so the one commit carries both.
@@ -1066,11 +1065,6 @@ def _audit_report(project_root, selected, breaks, source='local'):
             entry = rule_entry(payload, name, rule_id)
             if entry is None:
                 continue
-            findings = []
-            for proof in entry.get('proofs') or ():
-                for finding in proof.get('findings') or ():
-                    if finding not in findings:
-                        findings.append(finding)
             observations = []
             settled = None
             if asks_for_a_review(entry):
@@ -1082,13 +1076,11 @@ def _audit_report(project_root, selected, breaks, source='local'):
                     if path:
                         written.append(path)
             print('  %s %s' % (name, rule_id))
-            for finding in findings:
-                print('    finding: %s' % finding)
             for observation in observations:
                 print('    observation: %s' % observation)
             if settled is not None:
                 print('    settled: %s' % ('yes' if settled else 'no'))
-            if not findings and not observations and settled is None:
+            if not observations and settled is None:
                 print('    nothing to report')
         print('')
     return written
@@ -1132,24 +1124,34 @@ def _tag(project_root, name, selected):
 
 
 def _ci(project_root, args, features, selected, index, plugins, log,
-        cfg, arm_logs=None):
-    """The `--ci` arm: the record CI writes, the briefs, the comment.
+        cfg):
+    """The `--ci` arm: on a run branch the record CI writes and the briefs.
 
     The record goes under `.purlin/records/ci/`, which the git host's
     file-path rule reserves for the build identity, so the folder a reader
-    finds it in is the source it can trust. At `passed` there is no record to
-    write at all: the committed test results are the evidence there, and a
-    person writes those themselves.
+    finds it in is the source it can trust. A tag run writes nothing, and at
+    `passed` there is no record to write at all: the committed test results
+    are the evidence there, and a person writes those themselves.
     """
+    from records import commit_records, commits_here, no_commit_line
+
+    if not commits_here(project_root):
+        # A tag run writes nothing. What it is for is the rerun on a clean
+        # machine and the check the gate step makes over what is already
+        # committed, so there is no record for it to add.
+        print('')
+        print(no_commit_line(project_root))
+        return 0
+
     if cfg.gate == 'passed':
         print('')
         print(NO_RECORD_AT_PASSED)
-        _ci_publish(project_root, arm_logs)
         return 0
 
-    from records import commit_records, commits_here, no_commit_line
-
-    breaks = _run_breaks(project_root, args, features, selected, index)
+    # No breaks run on CI. Test strength is what `purlin:audit` measures on a
+    # person's machine, and a record either source wrote counts at every
+    # gate, so measuring it twice buys nothing and costs a runner an hour.
+    breaks = _no_breaks_on_ci()
     log_digest = _write_log(project_root, log)
 
     print('')
@@ -1162,17 +1164,21 @@ def _ci(project_root, args, features, selected, index, plugins, log,
     # nobody can read.
     brief_paths = _ci_review(project_root, _passed_here(written))
 
-    if not commits_here(project_root):
-        # A pull request run proves the same thing on a branch nobody
-        # merges from. The comment and the dashboard below still say what
-        # it observed; only the commit waits for the branch that keeps it.
-        print(no_commit_line(project_root))
-    else:
-        commit_records(project_root, paths + brief_paths,
-                       'purlin: record for %s' % head[:7])
-        print('Record committed.')
-    _ci_publish(project_root, arm_logs)
+    commit_records(project_root, paths + brief_paths,
+                   'purlin: record for %s' % head[:7])
+    print('Record committed.')
     return 0
+
+
+def _no_breaks_on_ci():
+    """What a CI run hands the record writer in place of a break measurement.
+
+    CI runs no breaks. The strength a record carries is the one a person's
+    own `purlin:audit` measured, and it counts at every gate, so a runner
+    measuring it again would spend an hour to write the same number.
+    """
+    print('Strength n/a: no breaks run on CI.')
+    return {'engine': None, 'available': False, 'features': {}}
 
 
 def _no_breaks(gate):
@@ -1245,10 +1251,10 @@ def _ci_review(project_root, passed_here=()):
 
     The rules are named rather than left to the brief writer to choose. Left
     to choose, it reads each rule's passed cell, and at this point in the run
-    no cell can read `passed`: the record this run wrote is still uncommitted,
-    so its source is `local` and `strong` and `signed` count only `ci`. Every
-    brief would then be skipped, and the rules on the review list would reach
-    it with nothing for anyone to read.
+    the record this run wrote is not committed yet, so a rule whose evidence
+    is that record alone has nothing for a cell to read. Every brief would
+    then be skipped, and the rules on the Review list would reach it with
+    nothing for anyone to read.
     """
     try:
         from brief import asks_for_a_review, rule_entry, write_briefs
@@ -1267,19 +1273,6 @@ def _ci_review(project_root, passed_here=()):
     print('%d brief%s written.'
           % (len(briefs), '' if len(briefs) == 1 else 's'))
     return [path for path in briefs if path]
-
-
-def _ci_publish(project_root, arm_logs=None):
-    """The pull request comment and the dashboard, after the commit."""
-    try:
-        from ci import post_pr_comment, publish_dashboard
-    except ImportError:
-        print('purlin: the CI helpers are not available; no comment was '
-              'posted and no dashboard was published.')
-        return
-    post_pr_comment(project_root, status_module.sync_status(project_root))
-    print('Dashboard published to %s.'
-          % publish_dashboard(project_root, logs=arm_logs))
 
 
 def _remote(project_root, args, cfg=None):

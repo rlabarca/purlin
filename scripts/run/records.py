@@ -1,4 +1,4 @@
-"""Write, prune, commit and tag the records a CI run produces.
+"""Write, prune and commit the records a run produces.
 
 A record is one audit's observations for one feature, written as a file in
 the tree and committed:
@@ -23,15 +23,15 @@ service's token. Either commit carries more than the record: the briefs the
 same run wrote travel in it, because a brief that never leaves the runner is
 evidence nobody can read.
 
-**Where CI commits.** On the protected branch and on a run branch, and
-nowhere else. A pull request run does the same tests and posts the same
-comment, and commits nothing: a record on a branch nobody merges from is
-evidence of a branch that will not exist. `commits_here()` is the one
-question the run asks.
+**Where CI commits.** On a run branch, and nowhere else. A run branch is what
+`purlin:test --remote` creates for one run and deletes afterwards, so the
+records it writes are pulled home by the command that asked for them. The
+other run CI does is the tag run, and that one writes nothing at all: it
+reruns the tests on a clean machine and verifies what is already committed.
+`commits_here()` is the one question the run asks.
 
-**Retention.** A feature keeps the newest three records per operating system.
-Anything an annotated `record/<name>` tag names in its message is kept for
-ever, so a state someone named stays readable however many runs follow.
+**Retention.** A feature keeps the newest three records per operating system
+per source.
 """
 
 import base64
@@ -60,9 +60,6 @@ SOURCES = reader.SOURCES
 # `os.path.join` spelling of RECORDS_DIR is `.purlin\\records` on Windows, which
 # matches nothing, so a record commit made there staged nothing.
 RECORDS_PATHSPEC = '.purlin/records'
-BRIEFS_PATHSPEC = '.purlin/briefs'
-CI_RECORDS_PATHSPEC = '.purlin/records/ci'
-CI_BRIEFS_PATHSPEC = '.purlin/briefs/ci'
 LOCAL_RECORDS_PATHSPEC = '.purlin/records/local'
 LOCAL_BRIEFS_PATHSPEC = '.purlin/briefs/local'
 
@@ -78,6 +75,10 @@ RETENTION = reader.RETENTION
 # a git host's own branch variable carries.
 RUN_BRANCH_PREFIX = 'run/'
 REF_HEADS = 'refs/heads/'
+REF_TAGS = 'refs/tags/'
+# The tag `purlin:sign` writes when every rule meets the gate, and the one
+# ref besides a run branch that starts a CI run.
+SIGNED_TAG_PREFIX = 'signed/'
 
 # The tree entry's file-permission key and value, spelled the way GitHub's
 # Git Data API expects them. The key is assembled rather than written out
@@ -86,8 +87,6 @@ _PERM_KEY = 'm' + 'ode'
 _FILE_PERM = '100644'
 
 _GITHUB_API = 'https://api.github.com'
-_RECORD_TAG_PREFIX = 'refs/tags/record/'
-_RECORD_PATH_RE = re.compile(r'\.purlin/records/[^\s"\']+\.json')
 
 # How many times a ref update is retried when someone else moved the branch
 # between reading its head and writing the new commit.
@@ -170,19 +169,6 @@ def write_record(project_root, record, runner, os_name=None, source='local'):
     return os.path.relpath(path, project_root).replace(os.sep, '/')
 
 
-def tagged_paths(project_root):
-    """Every record path named in the message of a `record/*` tag."""
-    try:
-        result = subprocess.run(
-            ['git', 'for-each-ref', '--format=%(contents)', _RECORD_TAG_PREFIX],
-            capture_output=True, text=True, cwd=project_root, timeout=15)
-    except (subprocess.SubprocessError, OSError):
-        return set()
-    if result.returncode != 0:
-        return set()
-    return set(_RECORD_PATH_RE.findall(result.stdout))
-
-
 def prune(project_root, feature, os_name=None, keep=RETENTION,
           source='local'):
     """Delete a feature's records past the newest `keep` for one OS.
@@ -191,13 +177,10 @@ def prune(project_root, feature, os_name=None, keep=RETENTION,
     per OS, so a Windows job never prunes what a Linux job wrote. Records
     under the other source are untouched too: a local audit never prunes
     what CI wrote, and it could not, because the git host will not let it.
-    A path an annotated `record/<name>` tag names in its message is never
-    deleted.
     """
     folder = os.path.join(reader.records_dir(project_root, source), feature)
     if not os.path.isdir(folder):
         return []
-    protected = tagged_paths(project_root)
     candidates = []
     for name in os.listdir(folder):
         parts = reader.record_name_parts(name)
@@ -210,28 +193,12 @@ def prune(project_root, feature, os_name=None, keep=RETENTION,
     for _stamp, name in candidates[keep:]:
         rel = os.path.relpath(os.path.join(folder, name),
                               project_root).replace(os.sep, '/')
-        if rel in protected:
-            continue
         try:
             os.remove(os.path.join(folder, name))
         except OSError:
             continue
         removed.append(rel)
     return removed
-
-
-def tag_record(project_root, name, record_paths):
-    """Write the annotated tag `record/<name>` naming the records it vouches for.
-
-    The message is the one place retention reads, so the paths go in one per
-    line under a heading a person can read.
-    """
-    lines = ['Named state: %s' % name, '',
-             'Records this tag vouches for:']
-    lines.extend(str(path) for path in record_paths)
-    message = '\n'.join(lines) + '\n'
-    _git(project_root, ['tag', '-a', 'record/%s' % name, '-m', message])
-    return 'record/%s' % name
 
 
 # ---------------------------------------------------------------------------
@@ -311,40 +278,14 @@ def detect_host():
 
 
 def current_branch(project_root):
-    """The branch the run is on: the pull request's head, else the ref name."""
-    for name in ('GITHUB_HEAD_REF', 'GITHUB_REF_NAME',
-                 'BUILD_SOURCEBRANCHNAME'):
+    """The branch the run is on, read from the runner's own ref variables."""
+    for name in ('GITHUB_REF_NAME', 'BUILD_SOURCEBRANCHNAME'):
         value = (os.environ.get(name) or '').strip()
         if value:
             return value
     branch = (_git(project_root, ['rev-parse', '--abbrev-ref', 'HEAD'],
                    check=False) or '').strip()
     return branch or reader.default_branch(project_root)
-
-
-def is_pull_request():
-    """True when this run belongs to a pull request.
-
-    GitHub sets `GITHUB_HEAD_REF` on a pull request event and on nothing
-    else; Azure DevOps sets the pull request's id. Off a runner neither is
-    set and the answer is False.
-    """
-    for name in ('GITHUB_HEAD_REF', 'SYSTEM_PULLREQUEST_PULLREQUESTID'):
-        if (os.environ.get(name) or '').strip():
-            return True
-    return False
-
-
-def protected_branch(project_root):
-    """The branch a record commit belongs on.
-
-    On a GitHub pull request the target branch is `GITHUB_BASE_REF`, which is
-    the protected branch by name. Everywhere else the project's own default
-    branch answers, which is what `purlin:init` wrote into the workflow's
-    triggers.
-    """
-    base = (os.environ.get('GITHUB_BASE_REF') or '').strip()
-    return base or reader.default_branch(project_root)
 
 
 def ref_branch(project_root):
@@ -365,32 +306,42 @@ def ref_branch(project_root):
                  check=False) or '').strip()
 
 
+def is_a_tag_run():
+    """True when this run was started by a tag push rather than a branch push.
+
+    A tag run is the one `purlin:sign` asks for by writing `signed/<version>`
+    and a person pushing it. It writes nothing: what it does is rerun the
+    tests on a clean machine and check that the committed evidence still
+    hashes to the tagged code.
+    """
+    for name in ('GITHUB_REF', 'BUILD_SOURCEBRANCH'):
+        if (os.environ.get(name) or '').strip().startswith(REF_TAGS):
+            return True
+    return False
+
+
 def commits_here(project_root):
     """True when a CI run on this ref writes its records into the tree.
 
-    Evidence is decided where it lands. A run on the protected branch, or on
-    a run branch `purlin:test --remote` created for one run, commits its
-    records and briefs there. A pull request run proves the same thing on a
-    branch nobody merges from, so it commits nothing and says so.
+    A run branch is the only ref CI commits on: `purlin:test --remote`
+    created it for one run, pulls the records home and deletes it. A tag run
+    commits nothing, because it is there to verify rather than to write.
 
     Off a runner the answer is True: there is no branch rule to speak for,
     and a test suite driving the arm asked for this commit by name.
     """
     if not detect_host():
         return True
-    if is_pull_request():
+    if is_a_tag_run():
         return False
-    branch = ref_branch(project_root)
-    if not branch:
-        return False
-    return (branch == protected_branch(project_root)
-            or branch.startswith(RUN_BRANCH_PREFIX))
+    return ref_branch(project_root).startswith(RUN_BRANCH_PREFIX)
 
 
 def no_commit_line(project_root):
     """The one line a CI run prints where it commits nothing."""
-    return ('Pull request run: the records stay on the runner; the run on %s '
-            'writes them.' % protected_branch(project_root))
+    return ('Tag run: nothing is written. This run reruns the tests and '
+            'checks the evidence already committed to %s.'
+            % (ref_branch(project_root) or 'this ref'))
 
 
 def _read_file(project_root, rel_path):

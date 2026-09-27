@@ -1,28 +1,31 @@
-# Purlin runs here, where the evidence it writes is decided.
+# Purlin runs here, on a clean machine, for one of two reasons and no others.
 #
-# purlin:init writes this file for a project whose git host is Azure DevOps.
-# Three things start a run and nothing else does: a pull request, a push to
-# the protected branch, and a push to a `run/*` branch, which is the branch
-# `purlin:test --remote` creates and deletes around one run.
+# purlin:init writes this file for a project whose git host is Azure DevOps,
+# and only when one of them holds: a proof in specs/ is tagged @env for an
+# operating system your machine is not, or you answered no to init's trust
+# question and the project reads `trust: remote`. A project that trusts its
+# own machine and names no other operating system gets no pipeline at all.
 #
-# What a run writes depends on the gate. At `passed` it runs the tagged tests,
-# posts the comment and publishes the dashboard, and writes no record: the
-# test results a person commits are the evidence there. At `strong` and above
-# it audits what it ran and writes one record per feature, plus the briefs. A
-# pull request run commits nothing either way; a run on the protected branch,
-# or on a `run/*` branch, commits them there. The build service
-# writes them, so give it Contribute on `.purlin/records/ci/**` and
-# `.purlin/briefs/ci/**` through branch security and give it nothing else.
+# Two things start a run and nothing else does: a push to a `run/*` branch,
+# which is the branch purlin:test --remote creates and deletes around one run,
+# and a push of a `signed/*` tag, which is what purlin:sign writes when every
+# rule meets the gate. A pull request starts nothing.
 #
-# Every run ends with the gate check, and the job fails when the gate is not
-# met, so a build validation policy on this pipeline means the gate held.
+# A run branch run runs the tagged tests and, at the gate strong and above,
+# writes one record per feature under .purlin/records/ci/ with the briefs
+# beside it and commits them on that branch. The build service writes them, so
+# give it Contribute on .purlin/records/ci/** and .purlin/briefs/ci/** through
+# branch security and give it nothing else. A tag run writes nothing: it runs
+# the tagged tests, checks that every committed record, brief and signature
+# still hashes to the tagged code, checks that every ci/ record and brief was
+# committed by the build service, and ends with the gate check.
+#
+# No breaks run here. Test strength is measured by purlin:audit on a person's
+# machine, and a record either source wrote counts at every gate.
 #
 # The matrix always carries ubuntu-latest first, then one job per operating
 # system the `@env` tags in specs/ name; a project that tags nothing runs on
 # ubuntu-latest alone.
-#
-# The artifact each job publishes carries the job name, so a matrix of two
-# operating systems leaves two artifacts rather than one.
 #
 # The job is capped at 90 minutes, which is longer than any suite this
 # runs and short enough to leave a log worth reading when a run stops for
@@ -30,16 +33,15 @@
 trigger:
   branches:
     include:
-      - <<PROTECTED>>
       - run/*
-
-pr:
-  branches:
+  tags:
     include:
-      - '*'
+      - signed/*
+
+pr: none
 
 jobs:
-  - job: audit
+  - job: purlin
     timeoutInMinutes: 90
     strategy:
       matrix:
@@ -93,18 +95,12 @@ jobs:
         displayName: Set up the test framework
 
       - bash: python3 "$PURLIN_ROOT/scripts/run/purlin_run.py" --all --ci
-        displayName: Run the tests and write the evidence
+        displayName: Run the tagged tests
         env:
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
-      - task: PublishPipelineArtifact@1
-        condition: always()
-        inputs:
-          artifactName: purlin-dashboard-$(Agent.JobName)
-          targetPath: $(Agent.TempDirectory)/purlin-dashboard
-
       # The last word of every run. The gate check exits 1 when a rule does
-      # not meet the gate, which fails this job, which is what a build
-      # validation policy on this pipeline means.
-      - bash: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check
+      # not meet the gate or when a committed record, brief or signature no
+      # longer hashes to this code, which fails this job.
+      - bash: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check --verify
         displayName: Check the gate

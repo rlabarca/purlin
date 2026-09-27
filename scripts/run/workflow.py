@@ -1,14 +1,19 @@
 """Render the CI workflow a project's git host runs.
 
 One template per git host lives under `templates/`, and this fills in the
-three things a project decides: which operating systems the matrix covers,
+two things a project decides: which operating systems the matrix covers, and
 which Purlin release the runner clones when the project is not this
-repository, and which branch is the protected one a push starts a run on.
+repository.
 
-The triggers are the same on both hosts: a pull request, a push to the
-protected branch, and a push to a `run/*` branch. A push to any other branch
-starts nothing. `main` stands in when the project's default branch cannot be
-read, which is the name a repository made this decade carries.
+The triggers are the same on both hosts: a push to a `run/*` branch and a
+push of a `signed/*` tag. A push to any other branch starts nothing, and a
+pull request starts nothing.
+
+`wanted()` is what decides whether a project has a workflow at all. There
+are two reasons for one and no others: a proof in `specs/` is tagged `@env`
+for an operating system this machine is not, and a project that answered no
+to init's trust question. A project with neither gets no file: `purlin:sign`
+writes the tag, a person pushes it, and nothing runs remotely.
 
 The matrix always carries Linux, then the operating systems the `@env` tags in
 `specs/` name. A proof tagged `@env(windows)` adds a Windows job to prove it;
@@ -99,19 +104,43 @@ def env_tags_in_specs(project_root):
     return sorted(found)
 
 
-def render_workflow(host, env_tags, purlin_ref, upstream_check=False,
-                    protected=DEFAULT_PROTECTED):
-    """The workflow text for one git host, matrix, release and branch."""
+def render_workflow(host, env_tags, purlin_ref, upstream_check=False):
+    """The workflow text for one git host, matrix and release."""
     host = _host(host)
     with open(os.path.join(TEMPLATE_DIR, TEMPLATES[host]), 'r',
               encoding='utf-8') as handle:
         text = handle.read()
     text = _upstream(text, upstream_check)
     text = text.replace('<<MATRIX>>', _matrix(host, runners_for(env_tags)))
-    text = text.replace('<<PROTECTED>>',
-                        str(protected or DEFAULT_PROTECTED).strip()
-                        or DEFAULT_PROTECTED)
     return text.replace('<<PURLIN_REF>>', str(purlin_ref or 'main'))
+
+
+# The two reasons a project has a workflow, in the words init prints them.
+FOREIGN_OS_REASON = ('A proof in specs/ is tagged @env for %s, which this '
+                     'machine is not, so only a runner can prove it.')
+TRUST_REASON = ('You chose not to trust this machine for signing, so the '
+                'tests a signature rests on run on a clean one.')
+NO_REASON = ('every proof runs on this operating system and you trust this '
+             'machine, so nothing has to run remotely')
+
+
+def wanted(env_tags, trust, host_os):
+    """`(write one, the reasons)` for a project's workflow.
+
+    Two reasons and no others. A proof tagged `@env` for another operating
+    system cannot be proven here, and a project that answered no to init's
+    trust question wants the tests behind a signature run on a clean machine.
+    A project with neither gets no workflow at all.
+    """
+    reasons = []
+    foreign = sorted({str(tag).strip().lower() for tag in (env_tags or ())
+                      if str(tag).strip().lower()
+                      and str(tag).strip().lower() != str(host_os or '')})
+    if foreign:
+        reasons.append(FOREIGN_OS_REASON % ', '.join(foreign))
+    if str(trust or '') == 'remote':
+        reasons.append(TRUST_REASON)
+    return bool(reasons), reasons
 
 
 def _host(host):
@@ -161,10 +190,10 @@ NO_REMOTE = ('No git remote, so there is no runner to read this workflow. '
 UNKNOWN_HOST = ('The %s remote is neither GitHub nor Azure DevOps, and those '
                 'are the two hosts this release writes a workflow for.'
                 % REMOTE)
-NO_BRANCH = ('The branch %s is not on %s yet, so the workflow would trigger '
-             'on a branch that is not there. Push it with: git push -u %s %s')
+NO_BRANCH = ('The branch %s is not on %s yet, and a signature counts only on '
+             'a commit that reaches it. Push it with: git push -u %s %s')
 UNREACHABLE = ('%s could not be reached, so whether %s is on it was not '
-               'checked. The workflow names that branch either way.')
+               'checked. The workflow is written either way.')
 CLI_PRESENT = '%s is installed, so a remote run can be watched from here.'
 CLI_ABSENT = ('%s is not installed, so purlin:test --remote cannot watch a '
               'run. Install it, or open the run on the git host instead.')
@@ -185,11 +214,13 @@ def host_of(project_root):
 def prerequisites(project_root, protected=None):
     """`(ok, host, lines)`: what a workflow needs, checked before it is written.
 
-    The three checks that can fail are the remote, the host and the protected
-    branch, and the first failure is the one reported: naming a branch on a
-    remote that is not there would say nothing useful. The host CLI is
-    reported either way, because a missing one costs a remote run its watch
-    and nothing else.
+    Two checks can fail, the remote and the host, and the first failure is
+    the one reported. The protected branch is checked too, because a
+    signature counts under `signed` only on a commit that reaches it, and a
+    branch that is not on the remote is a gate nobody can meet; a remote that
+    cannot be reached at all is not an answer either way and the workflow is
+    written. The host CLI is reported either way, because a missing one costs
+    a remote run its watch and nothing else.
     """
     if not _capture(project_root, ['remote']).strip():
         return False, None, [NO_REMOTE]
@@ -198,10 +229,6 @@ def prerequisites(project_root, protected=None):
         return False, None, [UNKNOWN_HOST]
     lines = []
     branch = protected or DEFAULT_PROTECTED
-    # A remote that answers settles the question. One that cannot be reached
-    # at all, which is every offline machine, is not an answer either way, so
-    # it is reported and the workflow is written: refusing there would make a
-    # network the price of setting a project up.
     reached, heads = _ask(project_root, ['ls-remote', '--heads', REMOTE,
                                          branch])
     if not reached:
