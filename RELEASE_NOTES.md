@@ -64,7 +64,7 @@ and commits them. `purlin:audit` runs the tests and the breaks, then the AI audi
 whose bar is `strong`, and writes the record and the briefs. `purlin:sign` walks the Review list
 and then the Sign list one brief at a time when given no rule, signs, holds or notes a rule when
 given one, and closes by writing the tag. `purlin:verify`, `purlin:review` and `purlin:approve`
-are gone, not aliased, and the skill count falls from 13 to 12.
+are gone, not aliased.
 
 **The tag is the marker.** When every rule meets the gate, `purlin:sign` writes the annotated tag
 `signed/<version>` over the commit, taking the name from the `VERSION` file or from
@@ -246,6 +246,7 @@ Also gone, each without a replacement:
   behind, and `purlin:anchor sync --check` exits 1 on one.
 - `tools/`: the PM and QA skills for Claude Desktop and their packed `.skill` archives. A PM or
   QA person works in Claude Code on the repository, or through a pull request.
+- `purlin:find`. `purlin:status <name>` shows one spec's rules and their cells.
 - `scripts/report/scan.py`, which printed a repository's rollup from its URL without a
   checkout. `.purlin/tests.md`, which `purlin:test` commits, is what a reader without a checkout
   reads on the git host.

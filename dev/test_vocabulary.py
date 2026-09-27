@@ -54,7 +54,8 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             # committed.
             "config.local.json",
             "anchor propose", "upstream-check",
-            "tools/PM", "tools/QA", "pack_tools", "scan.py")
+            "tools/PM", "tools/QA", "pack_tools", "scan.py",
+            "purlin:find")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every

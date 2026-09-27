@@ -136,7 +136,7 @@ def _dirty(root, since=None):
     The spec directory is `specs`. It was read from the config's `spec_dir`
     until that key was retired (`skill_init` RULE-76): this hook was its last
     reader and every other reader of the spec directory, the MCP server and
-    all twelve skills included, had always hardcoded the same literal.
+    every skill included, had always hardcoded the same literal.
 
     A missing digest is dirty. `since` lets the caller ask "did anything land
     after I started?", which is what closes the window between reading the

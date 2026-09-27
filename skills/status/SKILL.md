@@ -13,9 +13,11 @@ is relative to the plugin root; see `references/purlin_commands.md#path-resoluti
 
 ```
 purlin:status                   Every feature and anchor
+purlin:status <name>            One spec: its rules and their cells
 ```
 
-Plain language reaches the same place: "where are we", "what is left", "show the board".
+Plain language reaches the same place: "where are we", "what is left", "show the board",
+"where is the login spec".
 
 ## Step 1: call the tool
 
@@ -59,6 +61,21 @@ gate creates beside them. Print them with their denominators intact.
 Anything the tool prints after the table and before the directives is its own: an anchor whose
 pin is behind, uncommitted spec changes, and its warnings. Print them verbatim, or nothing
 when the tool returned nothing.
+
+## With a name
+
+Naming a spec shows its rules and their standing. Match `specs/**/<name>.md`, then the name
+as part of a spec file name; when several match, list them and ask which one, and when none
+does, print the whole table. Read the spec, call `sync_status`, and print its path, its
+header, and one line per rule with the cells the gate creates and the proof lines behind it:
+
+```
+specs/auth/login.md: 8 rules, 6 meet the gate signed
+  RULE-1  ready  passed  strong  signed      PROOF-1  tests/test_login.py::test_rejects_bad_password
+  RULE-3  ready  no test                     PROOF-3  no test carries this marker
+```
+
+The next step is the Step 4 line for the lowest cell this spec's rules leave unmet.
 
 ## Step 4: name the next step
 

@@ -1,7 +1,7 @@
 # Purlin commands
 
-Twelve skills, no permission system. Six are the core loop; six support it. This page is the one
-home of the skill one-liners: the frontmatter `description` of `skills/<name>/SKILL.md` and
+The skills below, and no permission system. Six are the core loop; the rest support it. This
+page is the one home of the skill one-liners: the frontmatter `description` of `skills/<name>/SKILL.md` and
 the README table carry the sentence in the Purpose column below, and nothing repeats it in its
 own words.
 
@@ -40,8 +40,7 @@ before a signature is `trust: remote`.
 |---------|---------|------------------------|
 | `purlin:init` | Set a project up for Purlin, and change the gate later | An engineer, once. One question |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current | An engineer, or a PM in Claude Code |
-| `purlin:status` | Show every rule's cells and what blocks the gate | Anyone with a checkout, any time |
-| `purlin:find [name]` | Find a spec by name and show its rules' cells | An engineer, to locate one |
+| `purlin:status [name]` | Show every rule's cells and what blocks the gate | Anyone with a checkout, any time; with a name, to see one spec's rules |
 | `purlin:rename <old> <new>` | Rename a feature across specs, tests, signatures and records | An engineer |
 | `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies | An engineer, once, on a codebase that predates Purlin |
 
@@ -56,7 +55,6 @@ Purlin
   purlin:spec <name>              Scaffold or edit a feature spec
   purlin:spec <name> --resolve    Reconcile rule ids after a merge conflict
   purlin:spec-from-code [dir]     Reverse-engineer specs from existing code
-  purlin:find [name]              Find a spec, or list them all
 
   Building
   ──────
@@ -78,6 +76,7 @@ Purlin
   Reporting
   ──────
   purlin:status                   Every rule's cells, and what blocks the gate
+  purlin:status <name>            One spec: its rules and their cells
   purlin:drift [pm|design|qa|eng] What changed that the specs have not caught up with
   purlin:drift --since <N|date>   A window other than since the last record
 
@@ -107,7 +106,7 @@ Purlin
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when a proof names another operating system or the trust answer was no |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, and `designs/<anchor>/` on a sync |
 | `purlin:rename` | Specs, markers, signature directories, record directories |
-| `purlin:status`, `purlin:find`, `purlin:drift` | Nothing |
+| `purlin:status`, `purlin:drift` | Nothing |
 
 ## What each command shows at each gate
 

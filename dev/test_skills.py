@@ -1,4 +1,4 @@
-"""Text checks for the twelve skills and the agent definition.
+"""Text checks for every skill and the agent definition.
 
 Every rule of `specs/skills/*.md` and `specs/instructions/purlin_agent.md` is
 proved here. Each check reads one file and returns the problems it found as a list, so
@@ -29,11 +29,11 @@ from purlin_run import bash_command  # noqa: E402
 # question rather than asking it again.
 BASH = bash_command()
 
-# The twelve skills, each with the ceiling its spec sets.
+# Every skill, each with the ceiling its spec sets.
 CEILINGS = {
-    'anchor': 160, 'audit': 105, 'build': 130, 'drift': 150, 'find': 85,
+    'anchor': 160, 'audit': 105, 'build': 130, 'drift': 150,
     'init': 250, 'rename': 85, 'sign': 185, 'spec': 210,
-    'spec-from-code': 130, 'status': 80, 'test': 120,
+    'spec-from-code': 130, 'status': 100, 'test': 120,
 }
 COMMANDS = sorted(CEILINGS)
 
@@ -604,7 +604,7 @@ def sign_gate_problems():
 
 
 # ---------------------------------------------------------------------------
-# skill_status, skill_drift, skill_find, skill_rename
+# skill_status, skill_drift, skill_rename
 # ---------------------------------------------------------------------------
 
 class TestSkillStatus:
@@ -627,6 +627,14 @@ class TestSkillStatus:
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('status') == []
 
+    @pytest.mark.proof("skill_status", "PROOF-5", "RULE-5")
+    def test_naming_a_spec_shows_its_rules(self):
+        assert (carries(skill_path('status'), [
+            'purlin:status <name>',
+            'Naming a spec shows its rules and their standing.'])
+            + carries('references/purlin_commands.md',
+                      ['purlin:status [name]'])) == []
+
 
 class TestSkillDrift:
 
@@ -648,28 +656,6 @@ class TestSkillDrift:
     @pytest.mark.proof("skill_drift", "PROOF-4", "RULE-4")
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('drift') == []
-
-
-class TestSkillFind:
-
-    @pytest.mark.proof("skill_find", "PROOF-1", "RULE-1")
-    def test_the_frontmatter_names_the_skill(self):
-        assert frontmatter_problems('find') == []
-
-    @pytest.mark.proof("skill_find", "PROOF-2", "RULE-2")
-    def test_it_reads_the_state_and_hides_empty_columns(self):
-        assert carries(skill_path('find'), [
-            'sync_status',
-            'Show the bar and the origin only when the spec tagged them',
-            'under the `passed` gate both are optional']) == []
-
-    @pytest.mark.proof("skill_find", "PROOF-3", "RULE-3")
-    def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('find') == []
-
-    @pytest.mark.proof("skill_find", "PROOF-4", "RULE-4")
-    def test_it_stays_under_its_ceiling(self):
-        assert skill_ceiling_problems('find') == []
 
 
 class TestSkillRename:
@@ -792,7 +778,7 @@ def routing_problems():
                            '\n'.join('|'.join(cells) for cells in rows)))
     for command in sorted(named - set(COMMANDS)):
         problems.append('%s routes to purlin:%s, which is not one of the '
-                        'twelve commands' % (AGENT, command))
+                        'commands' % (AGENT, command))
     return problems
 
 

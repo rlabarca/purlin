@@ -101,7 +101,7 @@ read what the person wants and run the command that serves it.
 | Engineer | "is this ready to push?", "how good are these tests?" | `purlin:audit` |
 | Engineer | "prove it on Windows too" | `purlin:test --remote` |
 | Engineer | "tag the release" | `purlin:sign`, which writes the tag |
-| Engineer | "where is the rule about passwords?" | `purlin:find` |
+| Engineer | "where is the rule about passwords?" | `purlin:status <name>` |
 | Engineer | "this feature has the wrong name" | `purlin:rename` |
 | QA | "what needs my eyes?" | `purlin:sign` |
 | QA | "add a case for the empty basket" | `purlin:sign`, which drafts the proof line |
