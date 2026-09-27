@@ -1,12 +1,14 @@
 # Feature: gate_check
 
-> Description: The gate CI runs before a change may merge. It reads the
->   structured payload, which has already worked out every rule's cells, and
->   groups the rules that fall short by the one cell that blocks each of them:
->   `Not passed`, `Weak`, `Waiting on a person`, `Not signed`. The project's
->   gate decides how far the chain is read: `passed`, `strong` or `signed`.
->   It writes nothing, prints every line under the `gate:` prefix, and fails
->   closed, so a project it cannot read never passes.
+> Description: The gate a tag run ends with. It reads the structured
+>   payload, which has already worked out every rule's cells, and groups the
+>   rules that fall short by the one cell that blocks each of them. The
+>   project's gate decides how far the chain is read: `passed`, `strong` or
+>   `signed`. `--verify` adds one section over the evidence already
+>   committed: every signature and hold must still bind what it names, and
+>   every file under a `ci/` folder must have been committed by the runner
+>   itself. It writes nothing, prints every line under the `gate:` prefix,
+>   and fails closed, so a project it cannot read never passes.
 > Scope: scripts/ci/gate_check.py
 > Stack: python/stdlib (argparse, json)
 
@@ -14,7 +16,7 @@
 
 - RULE-1: The gate reads the structured payload and never a rendered table, and a caller may hand it a payload it already built [bar: strong] [origin: eng]
 - RULE-2: A rule is counted once, under the feature that owns it, and it is met when the payload reads `meets_gate` true [bar: strong] [origin: eng]
-- RULE-3: A rule blocked at the spec status or at the passed cell is named under `Not passed` with the blocking word and its reasons, except where that word is `partial`, which has its own section between `Not passed` and `Weak` [bar: strong] [origin: eng]
+- RULE-3: A rule blocked at the spec status or at the passed cell is named under `Not passed` with the blocking word and its reasons, the spec status reading `no proof names this rule`, except where the passed cell's word is `partial`, which has its own section between `Not passed` and `Weak` [bar: strong] [origin: eng]
 - RULE-4: A rule blocked at the strong cell is named with the cell's word and its reasons, under `Weak` where that word is `weak`, under `Not audited` where it is `not audited` and under `To review` where it is `manual test`, `unsettled` or `held`, because no build moves those three [bar: strong] [origin: eng]
 - RULE-5: A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons [bar: strong] [origin: eng]
 - RULE-6: Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists [bar: strong] [origin: eng]
@@ -22,20 +24,22 @@
 - RULE-8: Under `signed` with no signer list the gate prints the missing-list directive and fails without grading a rule [bar: strong] [origin: eng]
 - RULE-9: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes [bar: strong] [origin: eng]
 - RULE-10: `gate_check.py` needs `--check` and a directory that exists; either missing exits 2 [bar: passed] [origin: eng]
-- RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, the five sections under the keys `not_passed`, `partial`, `weak`, `waiting` and `not_signed`, the result and the exit code [bar: strong] [origin: eng]
+- RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, every section under its own key, the result and the exit code [bar: strong] [origin: eng]
 - RULE-12: The gate creates and changes no file at any gate value [bar: strong] [origin: eng]
 - RULE-13: Every line the gate prints either carries the `gate:` prefix or is an indented finding under a section heading [bar: passed] [origin: eng]
-- RULE-14: The report's sections are `Not passed`, `Partial`, `Weak`, `Not audited`, `To review` and `To sign`, in that order, and a section with no rule in it is not printed [bar: strong] [origin: eng]
+- RULE-14: The report's sections are `Not passed`, `Partial`, `Weak`, `Not audited`, `To review`, `To sign` and `Evidence`, in that order, and a section with no line in it is not printed [bar: strong] [origin: eng]
+- RULE-15: `--verify` names under `Evidence` every signature and every hold that no longer binds the rule, proof, test, bar and audit it names, so a tag cannot stand over code that changed after it was signed, and a file naming a rule the project no longer declares is named too [bar: strong] [origin: eng]
+- RULE-16: `--verify` names under `Evidence` every file under `.purlin/records/ci/` or `.purlin/briefs/ci/` whose commit is not the runner's own, and without `--verify` neither check runs at all [bar: strong] [origin: eng]
 
 ## Proof
 
 - PROOF-1 (RULE-2): Run the gate over a project at gate `passed` whose record a person committed; verify it exits 0 and prints `gate: gate = passed` and `PASS. Every rule meets passed.` @integration
 - PROOF-2 (RULE-3): Run the gate over a project at gate `passed` with no record at all; verify it exits 1, opens a section `Not passed (2):`, reads `login RULE-1: no test` and `login RULE-2: no test`, and closes with `gate: FAIL. 2 of 2 rules do not meet passed.` @integration
 - PROOF-3 (RULE-3): Write a record whose `PROOF-1` failed and run the gate at gate `passed`; verify it exits 1 and reads `login RULE-1: failed` with a reason opening `failing:` @integration
-- PROOF-4 (RULE-3): Rewrite a proof as `The login works correctly` and run the gate at gate `passed`; verify it exits 1, reads `login RULE-1: drafted` and names the finding `vague_verb` @integration
+- PROOF-4 (RULE-3): Delete the proof line naming `RULE-1` and run the gate at gate `passed`; verify it exits 1, reads `login RULE-1: drafted` and gives the reason `no proof names this rule` @integration
 - PROOF-5 (RULE-6): Run the gate at gate `passed` over a project naming a minimum of 80 and a record measuring 10; verify it exits 0, prints no line holding `minimum test strength`, and opens neither `Weak` nor `Not signed` @integration
 - PROOF-6 (RULE-2): Run the gate at gate `strong` over a record CI committed, a strength of 90 and a settled brief for the `[bar: strong]` rule; verify it exits 0 and prints `gate: gate = strong` and `minimum test strength 50.` @integration
-- PROOF-7 (RULE-3): Run the gate at gate `strong` over a record written under `.purlin/records/local/`; verify it exits 0 and passes. Run the same project at gate `signed`; verify it exits 1, opens `Not passed (2):` and gives the reason `local record does not count under signed` @integration
+- PROOF-7 (RULE-3): Run the gate at gate `strong` over a record written under `.purlin/records/local/`; verify it exits 0 and passes. Run the same project at gate `signed`; verify it opens no `Not passed` section, because a local record counts there too, and opens `To sign (1):` instead @integration
 - PROOF-33 (RULE-3): Run the gate over a project whose rule passed on one operating system and failed on another; verify it exits 1, opens a section `Partial (1):` rather than `Not passed`, and names the platform that failed @integration
 - PROOF-8 (RULE-4): Run the gate at gate `strong` with a minimum of 70 over a record measuring 40; verify it exits 1, opens `Weak (2):` and reads `strength 40% under 70%` @integration
 - PROOF-9 (RULE-4): Run the gate at gate `strong` with no brief written for the `[bar: strong]` rule; verify it exits 1, opens `Not audited (1):`, reads `login RULE-2: not audited` and names `no audit has run on this code` @integration
@@ -62,4 +66,8 @@
 - PROOF-30 (RULE-1): Read the gate's own source; verify it builds the payload, reads `meets_gate`, and that none of the box-drawing glyphs a rendered table uses appears in it
 - PROOF-31 (RULE-1): Build the payload, hand it to the gate and run it; verify it exits 0 and prints `PASS` @integration
 - PROOF-32 (RULE-13): Run the gate over a project with no record; verify every line that is not indented either opens with `gate:` or ends with a colon @integration
-- PROOF-34 (RULE-14): Run the gate with `--json` at gate `signed` over a project holding one rule short at each of the six sections; verify the JSON carries the keys `not_passed`, `partial`, `weak`, `not_audited`, `to_review` and `to_sign`, each naming its own rule, and that the printed report opens those six headings in that order @integration
+- PROOF-34 (RULE-14): Run the gate with `--json` at gate `signed` over a project holding one rule short at each section; verify the JSON carries the keys `not_passed`, `partial`, `weak`, `not_audited`, `to_review`, `to_sign` and `evidence`, and that the section titles read `Not passed`, `Partial`, `Weak`, `Not audited`, `To review`, `To sign` and `Evidence` in that order @integration
+- PROOF-35 (RULE-15): Sign a rule at gate `signed`, then edit the rule text and run the gate with `--check --verify`; verify it exits 1, opens `Evidence (1):`, names the signature file and reads `what it binds is not this code`. Run the same project with `--check` alone and verify no `Evidence` section is printed @integration
+- PROOF-36 (RULE-15): Write a hold for a rule, delete that rule from the spec and run the gate with `--check --verify`; verify the hold file is named under `Evidence` with `no rule login RULE-2 is in this project` @integration
+- PROOF-37 (RULE-15): Re-audit a signed rule so the brief observes something it did not before, then run the gate with `--check --verify`; verify the signature is named under `Evidence`, because the audit hash a signature binds moved @integration
+- PROOF-38 (RULE-16): Commit a record under `.purlin/records/ci/` as a person and run the gate with `--check --verify`; verify it exits 1 and names that path under `Evidence` with `the commit that added it is not the runner's`. Commit the same file as the build identity and verify it is not named @integration

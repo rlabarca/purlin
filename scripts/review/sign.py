@@ -311,15 +311,19 @@ def has_a_ci_run(entry):
     """True when a `ci` record answered this rule's tests for this commit.
 
     The passed cell lists one platform per operating system a counting run
-    covered, each with the source that answered it. A project that trusts
-    this machine never asks; one that does not asks here, and a rule with no
-    such entry is refused until `purlin:test --remote` has run.
+    covered, each with the source that answered it, and the cell's own
+    `source` answers for a run that named no operating system at all. A
+    project that trusts this machine never asks; one that does not asks here,
+    and a rule with no such run is refused until `purlin:test --remote` has
+    been run.
     """
     cell = ((entry or {}).get('cells') or {}).get('passed') or {}
     if not cell.get('current'):
         return False
-    return any((platform or {}).get('source') == 'ci'
-               for platform in (cell.get('platforms') or {}).values())
+    if any((platform or {}).get('source') == 'ci'
+           for platform in (cell.get('platforms') or {}).values()):
+        return True
+    return cell.get('source') == 'ci'
 
 
 def untrusted(payload, targets):

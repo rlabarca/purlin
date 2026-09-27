@@ -182,11 +182,11 @@ class TestResolveConfig:
         when config.local.json already exists with unrelated overrides.
         This is the scenario that broke with copy-on-first-access."""
         self._write_shared({"digest": "auto", "version": "0.9.0"})
-        self._write_local({"pre_push": "strict"})
+        self._write_local({"trust": "remote"})
         result = resolve_config(self.project_root)
         assert result["digest"] == "auto", "new framework key must be visible"
         assert result["version"] == "0.9.0", "shared key preserved"
-        assert result["pre_push"] == "strict", "local override preserved"
+        assert result["trust"] == "remote", "local override preserved"
 
     @pytest.mark.proof("config_engine", "PROOF-12", "RULE-8")
     def test_local_override_wins_in_merge(self):

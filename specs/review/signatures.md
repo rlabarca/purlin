@@ -1,12 +1,14 @@
 # Feature: signatures
 
-> Description: The attestation that a rule, its proof and its test belong
->   together, and the command that writes one. One signature is one file, so two
->   signatures never conflict, and it binds the hashes of the rule text, the
->   proof text and the test body, plus the pinned design a design rule rests
->   on. A person writes every one of them, as one signed commit; CI writes
->   none. With no argument the command walks the review list one brief at a
->   time, and what it may do at all scales with the project's gate: nothing
+> Description: The attestation that a rule, its proof, its test and the audit
+>   that read them belong together, and the command that writes one. One
+>   signature is one file, so two signatures never conflict, and it binds the
+>   hashes of the rule text, the proof text and the test body, plus the pinned
+>   design a design rule rests on and what the audit found. A person writes
+>   every one of them, as one signed commit; CI writes none. With no argument
+>   the command walks the Review list and then the Sign list one brief at a
+>   time and, when every rule meets the gate, writes the tag that marks the
+>   commit. What it may do at all scales with the project's gate: nothing
 >   under `passed`, the walk and a hold under `strong`, a counting signature
 >   under `signed`.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
@@ -19,12 +21,12 @@
 - RULE-3: Reflowing a rule's whitespace or adding a tag leaves the triple where it was, because the triple binds the rule text with its tags stripped [bar: strong] [origin: eng]
 - RULE-4: Editing the rule text, the proof text or the test body moves the triple [bar: strong] [origin: eng]
 - RULE-5: A rule proved only by a `@manual` proof records `manual` as the kind of its test hash instead of naming a test file [bar: strong] [origin: eng]
-- RULE-6: A signature stays current only while the rule text, the proof text, the test body and the bar still hash to what it bound, so a bar re-tag stales it [bar: strong] [origin: eng]
+- RULE-6: A signature stays current only while the rule text, the proof text, the test body, the bar and the audit's own findings still hash to what it bound, so a bar re-tag stales it [bar: strong] [origin: eng]
 - RULE-7: A signature whose triple no longer matches still comes back from the reader, so the signed cell can read `stale` rather than `unsigned` [bar: strong] [origin: eng]
 - RULE-8: A signature file is named for the rule, the first eight characters of the triple and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen [bar: strong] [origin: eng]
-- RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the design hash, the bar, the signer, the note, the timestamp, the gate, the brief and the record [bar: strong] [origin: eng]
+- RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the design hash, the audit hash, the bar, the signer, the note, the timestamp, the gate, the brief and the record [bar: strong] [origin: eng]
 - RULE-10: The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec and never reads a brief written under the same first two parts of a name [bar: strong] [origin: eng]
-- RULE-11: With no feature named the command walks the review list one brief at a time, taking one of the four answers sign, case, hold or skip at each stop, and writes nothing until the walk closes [bar: strong] [origin: eng]
+- RULE-11: With no feature named the command opens with `Review: <n> rules. Sign: <n> rules.`, walks the two lists one brief at a time, taking one of the four answers sign, case, hold or skip at each stop, and writes nothing until the walk closes [bar: strong] [origin: eng]
 - RULE-12: `--batch` signs every rule that is signable now, in one signed commit [bar: strong] [origin: eng]
 - RULE-13: `--note` puts one line on the signature, for a `@manual` proof or a review the model could not settle; `--note` with no rule named, or with no line, exits 2 [bar: strong] [origin: eng]
 - RULE-14: Under `passed` the command writes no signature, names what `purlin:init --gate strong` would add and exits 2 [bar: strong] [origin: eng]
@@ -40,6 +42,11 @@
 - RULE-40: `<feature> RULE-N --hold "<the missing case>"` writes `<RULE-N>.<hash8>.<holder-slug>.hold.json` binding the rule's hashes, with schema `purlin-hold/1`, the holder's email and the missing case as `reason`, and commits it signed as `hold(<feature>): RULE-N`; `--hold` with no reason, or with no rule named, exits 2 and writes nothing [bar: strong] [origin: eng]
 - RULE-41: A signature binds the rule's bar, so writing one for a `[bar: strong]` rule and then retagging it `[bar: passed]` leaves the signed cell reading `stale` [bar: strong] [origin: eng]
 - RULE-42: The brief a signature or a hold names is the file an audit committed for the same triple, under `.purlin/briefs/<source>/<feature>/`, and it is null where no audit wrote one [bar: strong] [origin: eng]
+- RULE-43: The audit hash a signature binds is taken over the brief's test strength, its observations sorted and whether it settled, and over nothing that moves on its own, so re-running the same audit over the same code stales nothing and an audit that observes something new stales the signature; a rule with no brief binds the hash of the empty string [bar: strong] [origin: eng]
+- RULE-44: A hold binds the triple, the design and the bar and not the audit, because a hold is a statement about the rule, the proof and the test that a re-audit does not answer [bar: strong] [origin: eng]
+- RULE-45: When the walk closes and every rule meets the gate the command writes the annotated tag `signed/<version>`, taking the version from the `VERSION` file at the project root and falling back to the config's, with a message naming the commit and the gate, and prints `Run: git push origin signed/<version>`; it pushes nothing [bar: strong] [origin: eng]
+- RULE-46: No tag is written while any rule falls short of the gate, and the command says how many of how many; no tag is written over one that is already there, and `--release <name>` names another [bar: strong] [origin: eng]
+- RULE-47: With `trust: remote` the command refuses a rule whose passed cell carries no current `ci` platform entry, printing `sign: <feature> RULE-N has no ci test run for this commit; run purlin:test --remote first`; with `trust: local`, the default, it signs what this machine ran [bar: strong] [origin: eng]
 
 ## Proof
 
@@ -80,3 +87,9 @@
 - PROOF-61 (RULE-40): Run `login RULE-1 --hold` with no reason, `login RULE-1 --hold --batch`, and `login --hold "a case"` with no rule; verify each exits 2 and no `.hold.json` exists @integration
 - PROOF-62 (RULE-41): Write a signature for a `[bar: strong]` rule's current hashes and verify the signed cell reads `signed`; retag the rule `[bar: passed]` and verify it reads `stale` with the reason `hashes changed after the signature` @integration
 - PROOF-63 (RULE-42): Commit the brief CI wrote for `login RULE-1`'s current triple and sign the rule; verify the signature's `brief` reads `.purlin/briefs/ci/login/RULE-1.<hash8>.brief.json` for that triple, and that signing `RULE-2`, which has no brief, leaves the field null @integration
+- PROOF-64 (RULE-43): Build the audit hash over a brief measuring 90, settled, observing nothing; verify it equals the hash of the same brief built again with a later timestamp and a different record path, differs from the hash of a brief observing one sentence, and that a brief of None hashes to the sha256 of the empty string @unit
+- PROOF-65 (RULE-43): Sign a `[bar: strong]` rule whose brief settled observing nothing and verify its signed cell reads `signed`; write a brief for the same triple observing `PROOF-2 reads the status alone.` and verify the cell reads `stale` @integration
+- PROOF-66 (RULE-44): Hold a rule whose brief settled observing nothing, verify its strong cell reads `held`, then write a brief for the same triple observing one sentence and verify the cell still reads `held` @integration
+- PROOF-67 (RULE-45): Walk with every rule already signed in a project whose `VERSION` file reads `2.1.0`; verify the walk prints `Review: 0 rules. Sign: 0 rules.`, that the annotated tag `signed/2.1.0` exists, that its message names the commit and the gate, that the last line is `Run: git push origin signed/2.1.0`, and that `git log origin/main` is unchanged because nothing was pushed @integration
+- PROOF-68 (RULE-46): Walk a project holding one unsigned rule; verify no tag is written and the output reads `No tag: 1 of 2 rules do not meet the gate signed.` Sign it, walk again with `--release beta`, and verify the tag is `signed/beta`; walk a third time and verify it reads `No tag: signed/beta is already written.` @integration
+- PROOF-69 (RULE-47): Set `trust: remote` and sign a rule whose only record is `local`; verify nothing is written and the line reads `sign: login RULE-2 has no ci test run for this commit; run purlin:test --remote first`. Commit a `ci` record for the same commit and verify the signature is written @integration
