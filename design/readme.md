@@ -1,26 +1,7 @@
 # Purlin Design System
 
-Purlin is a spec-driven development plugin for teams building software with AI agents. It turns a feature description into a list of rules, a proof for each rule, a test for each proof, and a signed record of what was checked and when. Its pitch: *specs people agree on, tests that prove them, evidence you can hand over.* The repository is `https://github.com/rlabarca/purlin`.
-
-The product has two surfaces, and they look different on purpose:
-
-1. **The deck** — a 50-slide explainer of the method, set on deep navy in Arial and Courier New, with a warm cream/blush/copper palette. This is the brand's outward voice.
-2. **The dashboard** — the local board `purlin:status` generates, opened from disk. Cool Tailwind-slate ground, the same information architecture, plus a semantic state palette (green / amber / red / teal) that the deck never needed.
-
-This system keeps both. The warm half is the default; `data-surface="product"` switches a subtree to the cool half. State hues are shared.
-
-## Sources used
-
-| Source | What was taken from it |
-| --- | --- |
-| `uploads/Purlin_Presentation_Design.pptx` | Full palette (six colours, exact hex), type stacks and sizes, slide geometry, all deck copy, both logo files (extracted to `assets/`) |
-| `uploads/Screenshot 2026-09-13 at 12.04.35 PM.png` | Dashboard layout, product slate ramp, state hues, component inventory for the product surface |
-
-No codebase or Figma file was provided. Everything in `components/` and `ui_kits/` was derived from those two files; nothing was invented from a similar product.
-
-`scraps/deck-text.md` holds the extracted copy of all 50 slides, verbatim.
-
----
+This page is how Purlin looks: the two surfaces, the colours and what they mean, the type, the
+tokens, the two themes and the logo.
 
 ## Content fundamentals
 
@@ -46,99 +27,75 @@ No codebase or Figma file was provided. Everything in `components/` and `ui_kits
 
 **Avoid:** marketing superlatives, "seamless", "powerful", "revolutionise", exclamation marks, rhetorical questions outside the one on slide 2, and any sentence that describes a benefit without naming the mechanism.
 
----
+## Two surfaces
 
-## Visual foundations
+Purlin has two surfaces, and they look different on purpose:
 
-**Grounds.** Two navies: `#0C3444` for content, `#092936` one step deeper for section breaks and the product's top bar. The deck's PPTX carries a full-bleed 30%-cream veil over the navy on every slide; it is kept here as `--surface-veil` and used for panels, not for the page, because at page scale it lifts cream body text below a comfortable contrast ratio. The product surface replaces both navies with the slate ramp `#0F172A → #1E293C`.
+1. **The brand and the docs.** Deep navy grounds, cream ink, blush labels and one copper accent.
+   This is the default.
+2. **The product.** A cool slate ground under `[data-surface="product"]`, with the same type and
+   the same state colours.
 
-**Palette.** Cream `#E4DDD4` is the ink. Blush `#E6BEB0` labels. Slate-blue `#93AEB8` annotates — list numerals, secondary mono. Copper `#C0793F` is the only accent, used for eyebrows, gate names, measure lines and the one emphasis per slide. There is no second accent, no gradient ramp, and no purple anywhere.
+The state colours are shared by both surfaces.
 
-**Type.** Arial and Courier New, one weight each in the deck (regular), with bold reserved for dashboard metrics and group titles. No display face, no serif. Hierarchy comes from size and letter-spacing, not weight: the cover wordmark tracks −0.006em at 180px, the kicker tracks +0.055em at 33px, eyebrows track +0.12em uppercase.
+## Colour
 
-**Backgrounds.** Flat colour. No photography, no illustration, no texture, no pattern, no gradient — the only gradient in the source file is a flat two-stop of the same colour, which is a flat fill. The logo is the only artwork in the entire deck.
+**Grounds.** Two navies: `#0C3444` for content, `#092936` one step deeper for section breaks and
+the top bar. The product surface replaces both with the slate ramp `#0F172A` to `#1E293C`.
 
-**Layout.** 1920×1080. 200px left and right margins on every slide, no exceptions. Slide titles sit at y=230 with a 1px rule 100px beneath. Numbered lists use a fixed 146 / 336 / rest column grid. Content is left-aligned and top-anchored; the only centred things are dashboard stat tiles.
+**Ink and accent.** Cream `#E4DDD4` is the ink. Blush `#E6BEB0` labels. Slate-blue `#93AEB8`
+annotates: list numerals and secondary machine text. Copper `#C0793F` is the only accent, used
+for eyebrows, gate names and one emphasis per view. There is no second accent, no gradient and
+no purple.
 
-**Corners.** Every shape in the deck is a true rectangle — `prstGeom prst="rect"`, zero rounding. The product softens to 4px on panels and 6px on stat tiles, and fully rounds pills and the 5px coverage bar. Nothing else is rounded.
+**State.** Four hues, one meaning each, on every surface:
 
-**Borders.** 1.5px is the deck's stroke weight (13229 EMU). Three cream weights — 18%, 30%, 45% — plus a solid copper rule for call-outs. Horizontal only; there are no vertical rules in either surface.
+| Hue | Means |
+| --- | --- |
+| green | pass |
+| amber | warn |
+| red | fail |
+| teal | neutral |
 
-**Shadows.** None. Zero drop shadows in the source. Depth is built by stacking tint steps (`canvas-deep → canvas → surface-1 → surface-2`) with a hairline between them. If a card looks flat, add a tint step or a rule — never a shadow.
+**Depth.** No shadows. Depth is built by stacking tint steps (`canvas-deep`, `canvas`,
+`surface-1`, `surface-2`) with a hairline between them. If a panel looks flat, add a tint step
+or a rule, never a shadow. No backgrounds other than flat colour: no photography, no
+illustration, no texture, no gradient.
 
-**Cards.** A card is a rectangle with a 1px or 1.5px hairline, a 4px radius at most, a tint one step above its ground, and 24–32px of padding. No header bar, no accent left-border, no elevation on hover.
+**Shapes.** Panels round to 4px at most, stat tiles to 6px, and pills round fully. Borders are
+horizontal hairlines in three cream weights, 18%, 30% and 45%, plus a solid copper rule for a
+call-out.
 
-**Transparency and blur.** Transparency is used only as a tint against a known ground (6% / 10% / 18% / 30% cream). Blur is used nowhere in the source; `--backdrop-blur` exists for modal scrims only.
+## Type
 
-**Animation.** The deck is static. The dashboard animates state changes only: 140ms hover tints, a 420ms coverage-bar fill on `cubic-bezier(0,0,0,1)`, nothing else. No entrance animations, no parallax, no bounce, no spring. Reduced-motion zeroes every duration.
+Two faces, Arial and Courier New, and no display face or serif. Anything the machine produced,
+commands, rule ids, file paths, shas, gates and transcripts, is set in Courier New. Anything a
+person wrote is set in Arial. Readers use the typeface to tell whose claim they are reading.
+Bold is reserved for dashboard metrics and group titles; hierarchy otherwise comes from size and
+letter-spacing.
 
-**Hover and press.** Hover raises a 6% tint of the element's own hue and brightens the border; it never changes size or adds shadow. Press darkens with a navy overlay and applies a 0.985 scale — barely perceptible, intentionally.
+## Tokens
 
-**Imagery.** There is none. If a future design needs a photograph, it should be cool-toned and desaturated to sit beside the navy, but the honest answer is that this brand has no photographic language yet.
+`styles.css` is the one entry point, and imports every file under `tokens/`.
+`tokens/palette.css` holds the raw values, and only the two theme files reference them.
+`tokens/theme-dark.css` defines the semantic aliases and is the default.
+`tokens/theme-light.css` defines the same aliases under `[data-theme="light"]`.
+`[data-surface="product"]` overrides the grounds and the text for the slate surface and composes
+with either theme. Reference the semantic aliases only, never a raw palette value.
 
-**Protection gradients vs capsules.** No protection gradients — nothing ever sits over an image. Capsules (pills) are the only enclosing shape besides the rectangle, used for status and buttons.
+Both themes ship. The light theme is extrapolated from the warm half: paper grounds `#FBF8EC` to
+`#D3C9BC` from the cream, navy ink, copper darkened to `#8F5626` for contrast, and the four state
+hues dropped to their 700 steps so they clear 4.5:1 on paper.
 
----
+## Icons
 
-## Iconography
+Purlin ships no icon set. The interface uses the unicode glyphs `▶ ▼ ▲ →`, which inherit
+`currentColor`, and status dots drawn in CSS. No emoji.
 
-**Purlin ships no icon set.** Neither source contains an icon font, an SVG sprite, or a single icon file. What the interface uses instead:
+## The logo
 
-- **Unicode geometric glyphs** for disclosure and sort affordances: `▶` `▼` `▲` `▾`. These are typographic, inherit `currentColor`, and are the reason the product needs no icon library.
-- **Filled circles** as status dots — 7px in group summaries, 9px in the top bar. Drawn as CSS, not as icons.
-- **Arrows in prose** — `→` and `↺` appear in the deck as flow connectors between process steps, set in the running typeface.
-- **No emoji.**
-
-The only real asset is the logo: `assets/logo.svg` (cream webs, copper measure lines — for navy grounds), `assets/logo-light.svg` (navy webs, darkened copper — for paper and white), plus `assets/logo.png` and the tighter `logo-closing` crop used on the final slide. It is a roof truss with a dashed centre line — a purlin is the horizontal beam a roof's rafters rest on, which is the whole metaphor. `assets/logo-closing.svg` is the same mark, cropped tighter, as used on the final slide.
-
-If a future screen genuinely needs icons, substitute **Lucide** at 1.5px stroke from CDN — closest match to the hairline weight used everywhere else — and record the substitution here. Do not hand-draw SVGs in the brand's name.
-
----
-
-## Files
-
-```
-styles.css            the single entry point consumers link
-tokens/               palette, both themes, type, spacing, radii, elevation, motion, base
-guidelines/           19 specimen cards rendered in the Design System tab
-components/           19 React primitives, grouped by concern
-ui_kits/dashboard/    click-through recreation of the product board
-slides/               six deck templates at 1920×1080, framed to 1280×720
-assets/               logo.svg, logo-light.svg, logo.png, logo-closing.*, logo-datauri.js
-scraps/deck-text.md   verbatim copy of all 50 slides
-SKILL.md              Agent Skills entry point
-```
-
-### Tokens
-
-`tokens/palette.css` holds raw values; never reference those in a component. `tokens/theme-dark.css` defines the semantic aliases and is the default. `tokens/theme-light.css` defines the same aliases under `[data-theme="light"]`. `[data-surface="product"]` overrides grounds and text for the slate surface and composes with either theme.
-
-**The light theme is extrapolated, not sourced.** Neither the deck nor the dashboard has a light variant. The light theme reads the warm half forward: paper grounds `#F7F4EF → #D3C9BC` from the cream, navy ink, copper darkened to `#8F5626` for contrast, and the four state hues dropped to their 700 steps so they clear 4.5:1 on paper. Treat it as a proposal to review, not a recreation.
-
-### Components
-
-**Brand** — `Logo`, `SectionLabel`
-**Core** — `Button`, `StatusPill`, `Tag`, `Panel`, `Divider`
-**Data** — `StatTile`, `ScorePanel`, `CoverageBar`, `MetricValue`, `DataTable`, `TableHead`, `TableRow`, `GroupHeader`, `DisclosureRow`
-**Product** — `TopBar`, `NoticeBar`
-**Editorial** — `CodeBlock`, `CommandChip`, `NumberedItem`
-
-Every component has a sibling `.d.ts` (props contract) and `.prompt.md` (what & when, with an example). Each directory has one `@dsCard` HTML showing its states.
-
-**Intentional additions.** `Divider` and `SectionLabel` are not distinct objects in the sources — they are a 1px rule and a tracked caps run that recur on nearly every slide. They are factored out because consumers will otherwise re-derive them inconsistently. Everything else maps one-to-one onto something visible in the deck or the dashboard.
-
-### UI kit
-
-`ui_kits/dashboard/` — board, rule detail and QA review list, click-through. **Marked as a reference recreation of the v0.9.5 dashboard**, recoloured onto the current system rather than the borrowed slate ramp the screenshot used. See its README for what is inert and why.
-
-### Slides
-
-`slides/` — cover, section break, numbered list, split prose + terminal, comparison table, closing statement. Authored at 1920×1080 and scaled into a 1280×720 frame. Plain HTML so they render without the bundle.
-
----
-
-## Open questions
-
-- **Fonts.** The PPTX names only Arial and Courier New. Exported decks often flatten a licensed face to Arial, so the real brand font may be something else. If Purlin has one, drop the files in and point `--font-sans` at it.
-- **The cream veil.** The deck applies a 30% cream overlay across every slide, which would render the ground as `#4D676F` rather than `#0C3444`. This system treats it as a panel tint instead. If the slides really are meant to read slate, say so and the grounds move.
-- **The light theme** is an extrapolation, as noted above.
+A roof truss with a dashed centre line: a purlin is the horizontal beam a roof's rafters rest
+on. `assets/logo.svg` has cream webs and copper measure lines, for navy grounds.
+`assets/logo-light.svg` has navy webs and a darkened copper, for paper and white.
+`assets/logo-datauri.js` is the dark mark as a data URI, which the dashboard build reads and
+recolours for the light theme.
