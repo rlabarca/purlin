@@ -120,18 +120,18 @@ Every command ends by naming the next step, computed from the cells it found.
 
 | Command | Purpose |
 |---------|---------|
-| `purlin:spec <name>` | Scaffold or edit a feature spec in the 2-section format |
-| `purlin:build [name]` | Inject a spec's rules into context, then implement them |
+| `purlin:spec <name>` | Turn a requirement in any form into rules and proofs |
+| `purlin:build [name]` | Load a spec's rules, write the code and the tagged tests, commit the changeset |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell |
 | `purlin:audit [feature]` | Run the tests and the breaks, then write the record |
 | `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit |
 | `purlin:drift [role]` | Report what changed since the last record, by role |
-| `purlin:init` | Initialize a project for Purlin |
-| `purlin:anchor <cmd>` | Create and manage anchor specs, local or pinned from elsewhere |
+| `purlin:init` | Set a project up for Purlin, and change the gate later |
+| `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current |
 | `purlin:status` | Show every rule's cells and what blocks the gate |
 | `purlin:find [name]` | Find a spec by name and show its rules' cells |
 | `purlin:rename <old> <new>` | Rename a feature across specs, tests, signatures and records |
-| `purlin:spec-from-code [dir]` | Reverse-engineer 2-section specs from existing code |
+| `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies |
 
 Plain language reaches every one of them: "run the tests" reaches `purlin:test`, and "what is
 left for me to look at" reaches `purlin:sign`. The syntax above is canonical, never required.

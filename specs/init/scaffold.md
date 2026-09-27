@@ -15,7 +15,7 @@
 ## Rules
 
 - RULE-1: A project with code to detect is asked the gate question, and at `passed` with a remote one more: whether to run the tests on a remote runner too [bar: strong] [origin: eng]
-- RULE-2: Each gate answer derives its own settings, and the three pairs are `passed` no minimum and never, `strong` 70 and high, `signed` 80 and medium [bar: strong] [origin: eng]
+- RULE-2: Each gate answer derives its own settings: `passed` has no minimum test strength and asks for no signature, `strong` sets the minimum to 70, and `signed` sets it to 80 and asks which rules need a signature [bar: strong] [origin: eng]
 - RULE-3: `--gate` answers the question without asking it, and a later run with no flag keeps the gate the config already names [bar: strong] [origin: eng]
 - RULE-4: An answer that is not one of the three gates is read as `passed` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently [bar: strong] [origin: eng]
 - RULE-5: The config init writes carries exactly `ci`, `gate`, `min_strength`, `mutation_engine`, `sql_engine`, `test_framework` and `version`, plus `signers` and `sign_at` under `signed`, and no key this release stopped reading; `templates/config.json` carries the same seven keys [bar: strong] [origin: eng]

@@ -242,6 +242,6 @@ again.
 Changing the code alone stales nothing. The passed cell reads `code changed` until CI runs again
 and clears it, and no person is asked to look.
 
-Read next: [team-workflow.md](team-workflow.md) for where the Review list comes from,
+Read next: [team-workflow.md](team-workflow.md) for where the `Review` list comes from,
 [regulated-workflow.md](regulated-workflow.md) for the signer list and signing,
 [specs-and-anchors.md](specs-and-anchors.md) for writing a proof that a test can prove.

@@ -1,9 +1,9 @@
 # Purlin commands
 
 Twelve skills, no permission system. Six are the core loop; six support it. This page is the one
-home of the skill one-liners: the frontmatter `description` of `skills/<name>/SKILL.md`, the
-README table and the `agents/purlin.md` table all carry the sentence in the Purpose column
-below, and nothing repeats it in its own words.
+home of the skill one-liners: the frontmatter `description` of `skills/<name>/SKILL.md` and
+the README table carry the sentence in the Purpose column below, and nothing repeats it in its
+own words.
 
 Plain language reaches every command. The syntax here is canonical, never required: "run the
 tests" reaches `purlin:test` and "what is waiting on a person" reaches `purlin:sign`. Every command ends
@@ -26,8 +26,8 @@ sources count at `strong`; only `ci` counts at `signed`.
 
 | Command | Purpose | Who runs it, and when |
 |---------|---------|------------------------|
-| `purlin:spec <name>` | Scaffold or edit a feature spec in the 2-section format | An engineer's agent, or a PM or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
-| `purlin:build [name]` | Inject a spec's rules into context, then implement them | An engineer, on every change. With no name it reads the board |
+| `purlin:spec <name>` | Turn a requirement in any form into rules and proofs | An engineer's agent, or a PM or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
+| `purlin:build [name]` | Load a spec's rules, write the code and the tagged tests, commit the changeset | An engineer, on every change. With no name it reads the board |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell | An engineer, constantly. Seconds; tests only. It commits the results and never pushes |
 | `purlin:audit [feature]` | Run the tests and the breaks, then write the record | An engineer locally, any time. It commits its record and never pushes |
 | `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit | Anyone on the signer list. With no argument it walks the list |
@@ -37,12 +37,12 @@ sources count at `strong`; only `ci` counts at `signed`.
 
 | Command | Purpose | Who runs it, and when |
 |---------|---------|------------------------|
-| `purlin:init` | Initialize a project for Purlin | An engineer, once. One question |
-| `purlin:anchor <cmd>` | Create and manage anchor specs, local or pinned from elsewhere | An engineer, or a PM in Claude Code |
+| `purlin:init` | Set a project up for Purlin, and change the gate later | An engineer, once. One question |
+| `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current | An engineer, or a PM in Claude Code |
 | `purlin:status` | Show every rule's cells and what blocks the gate | Anyone with a checkout, any time |
 | `purlin:find [name]` | Find a spec by name and show its rules' cells | An engineer, to locate one |
 | `purlin:rename <old> <new>` | Rename a feature across specs, tests, signatures and records | An engineer |
-| `purlin:spec-from-code [dir]` | Reverse-engineer 2-section specs from existing code | An engineer, once, on a codebase that predates Purlin |
+| `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies | An engineer, once, on a codebase that predates Purlin |
 
 ## Syntax
 
@@ -113,7 +113,7 @@ Purlin
 
 A command prints only what the gate asks for. Under `passed` there is no strength, no bar, no
 review list and no signature anywhere in the output, and `purlin:audit` runs no breaks. Under
-`strong` the strength, the strong cell, the bar and the Review list appear, and `purlin:audit`
+`strong` the strength, the strong cell, the bar and the `Review` list appear, and `purlin:audit`
 writes a record that counts. Under `signed` the signed cell, the signer list, the Signable
 column and the Sign list appear, and `purlin:audit` ends by saying its record is a preview of
 the run CI makes on the protected branch.

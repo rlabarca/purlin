@@ -138,9 +138,10 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 ## Skill one-liners
 
 Every skill has exactly one purpose sentence, and it lives in the Purpose column of
-`references/purlin_commands.md`. The frontmatter `description` of `skills/<name>/SKILL.md`, the
-README table and the `agents/purlin.md` table all carry that same sentence. It is not copied
-here: another copy is another thing to edit and the one a reader meets stale.
+`references/purlin_commands.md`. The frontmatter `description` of `skills/<name>/SKILL.md` and
+the README table carry that same sentence; `agents/purlin.md` routes a phrase to a command and
+repeats no purpose. It is not copied here: another copy is another thing to edit and the one a
+reader meets stale.
 
 ## Retired terms
 

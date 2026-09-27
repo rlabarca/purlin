@@ -115,7 +115,7 @@ Review:
 |---------|---------------|----------------------|
 | Changeset | Rule to file and line, for every rule the commit addresses | Never |
 | Decisions | Choices the agent made between alternatives | When every rule had one obvious implementation |
-| Review | What the engineer should look at hardest | When nothing is risky |
+| Review | What the engineer should look at hardest | When nothing needs a second pass |
 
 ## When to commit
 

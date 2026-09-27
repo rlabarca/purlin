@@ -109,7 +109,7 @@ Each view is a filter over the same data, not a different computation.
 `code_changed` appears in the `eng` view as information and never in the `qa` view: only the
 code changed, the signature stands, and CI clears it on the next run.
 
-The `qa` view exists at `strong` and above. Under `passed` there is no Review list, no
+The `qa` view exists at `strong` and above. Under `passed` there is no `Review` list, no
 strength and no signature, so `purlin:drift qa` says the gate is `passed` and names what
 `purlin:init --gate strong` would add.
 

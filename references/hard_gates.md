@@ -157,7 +157,8 @@ security, plus no force push and no delete. Same effect, through that host's own
 `signers` in `.purlin/config.json` holds the emails of the people who may sign. It changes by
 pull request like any other file, so git history records who could sign and when.
 
-A signature counts when all five hold:
+A signature counts under `signed` when all five hold. Under `strong`, where what a signature
+clears is a question the machine could not settle, a committed signature from anyone counts.
 
 - The commit that added the signature file is signed and the signature verifies.
 - The author's email is on `signers` as of that commit.
@@ -178,8 +179,8 @@ level whichever way that cell reads.
 
 ## CI writes no signature file
 
-CI runs the tests and the breaks, measures the strength, runs the free checks, runs the model
-AI audit on every rule whose bar is `strong`, and writes the record and the briefs. It signs
+CI runs the tests and the breaks, measures the strength, runs the free checks, runs the AI
+audit on every rule whose bar is `strong`, and writes the record and the briefs. It signs
 nothing. A signature directory holds only files a person wrote.
 
 What CI cannot settle it says out loud. A `@manual` proof makes the strong cell read `manual
@@ -224,9 +225,14 @@ because the breaks are measured once per feature.
 
 ## The pre-push hook is optional and gates nothing
 
-A project may install a pre-push hook. It runs the tagged tests only: the fast path, no breaks
-and no audit, so a push is never held up by one. It prints what it found and lets the push
-through. `git push --no-verify` skips it. It is a convenience, not a control.
+A project may install a pre-push hook. It runs `purlin:test`: the tagged tests only, no
+breaks and no audit, so a push is never held up by an audit. It prints what it found, and it
+writes and commits the test results as any `purlin:test` run does. It lets the push through in
+every case but one: with `pre_push` set to `on` in `.purlin/config.json` and a tagged test
+failing, it blocks and names the failure. At the default, `off`, a failing test is printed and
+the push goes ahead. `git push --no-verify` skips the hook. What a change must clear before it
+merges is the gate, and the gate is the git host's; this is a convenience in front of it, not a
+control.
 
 The hook refuses one push outright, which is the one thing in it that is not a convenience: a
 push from an agent session. With `CLAUDE_CODE_SESSION_ID` in the environment and
