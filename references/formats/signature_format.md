@@ -1,4 +1,4 @@
-> Format-Version: 5
+> Format-Version: 6
 
 # Signature Format
 
@@ -130,34 +130,35 @@ rule's passed cell reads `code changed` until CI runs again.
 ## When a signature counts
 
 A current signature is not automatically a signature that counts. What decides
-depends on the gate, and each condition has its own line in the status so you
-can see which one failed.
+depends on the gate.
 
-Under `strong` a signature from anyone counts, as long as the file is committed
-and its hashes match. What it clears there is a question the machine could not
-settle: a `@manual` proof, or an AI audit that could not tell.
+Below `signed` a committed signature counts, as long as its hashes match. What
+it clears at `strong` is a question the machine could not settle: a `@manual`
+proof, or an AI audit that could not tell.
 
-Under `signed` four conditions hold. `trust: remote` in
-`.purlin/config.json` adds a fifth before any of them: `purlin:sign` refuses a
-rule whose tests have no `ci` record for the commit being signed, and says to
-run `purlin:test --remote` first. At the default, `trust: local`, your own run
-is the evidence.
+Under `signed` a signature counts when two things hold:
 
 | Condition | How it is read | The reason when it fails |
 |---|---|---|
 | The commit that added the file is signed and verifies | `git log -1 --format=%G?` prints `G` | `the signing commit is not signed` |
-| The author's email is on the signer list | `signers` in `.purlin/config.json`, as of that commit | `the signer is not on the list` |
-| The author is not the author of the commit that last touched the test | write the test or sign it, not both | `the signer last touched the test` |
-| The signing commit is on the protected branch | the commit is an ancestor of the branch head | `the signing commit is not on <branch>` |
+| Its hashes are current | the rule, proof, test, design, bar and audit hashes, as above | `hashes changed after the signature` (the cell reads `stale`) |
 
-The last one keeps a signature that exists only on a side branch from letting a
-change merge.
+Nothing else is read. Signing is recorded, not policed: the file names the
+signer and git names the commit's author, and neither is compared with a list
+or with the author of the test. A signature counts on whatever commit carries
+it, on any branch.
+
+`trust: remote` in `.purlin/config.json` is read when a rule is signed, not
+when a signature is counted: `purlin:sign` refuses a rule whose tests have no
+`ci` record for the commit being signed, and says to run
+`purlin:test --remote` first. At the default, `trust: local`, your own run is
+the evidence.
 
 `sign_at` in `.purlin/config.json` says which rules need a signature:
 `strong`, the default, asks for one on every rule whose bar is `strong`, and
 `all` asks for one on every rule. A rule that needs none carries `required`
 false on its signed cell and meets the level whichever way that cell reads.
-`references/hard_gates.md` holds the gate levels and the signer list.
+`references/hard_gates.md` holds the gate levels and what the tag `signed/<version>` means.
 
 ## Holds
 
@@ -193,5 +194,4 @@ REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
 A hold is current under the same test as a signature. While it is current the
 rule's strong cell and its signed cell both read `held`, each with the reason
 `held by <holder>: <reason>`. A current signature for the
-same hashes outranks it. A hold only ever withholds, so the holder need not be
-on the signer list.
+same hashes outranks it. A hold is committed signed, like a signature.

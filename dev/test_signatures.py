@@ -15,7 +15,7 @@ What each group holds:
 *the file*     the name, the fields, and the brief the reader steps over
 *the commit*   one signed commit for a batch, and the exact setup to print
                when this checkout cannot sign
-*ancestor*     a signature on a side branch is not on the protected branch
+*any branch*   a signature counts on whatever commit carries it
 """
 
 import json
@@ -592,22 +592,36 @@ class TestTheSignedCommit:
     @pytest.mark.proof("signatures", "PROOF-25", "RULE-20", tier="integration")
     def test_what_a_counting_signature_is_at_each_gate(self, at_strong):
         signing_key(at_strong.root)
+        # The signer is the last person to touch the test, and that is
+        # recorded, not policed: git names both authors.
+        at_strong.edit_test(TEST_FILE + '\n')
+        assert git(at_strong.root, 'log', '-1', '--format=%ae', '--',
+                   'tests/test_login.py').stdout.strip() == 'jane@acme.com'
         sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])
         found = at_strong.load()[('login', 'RULE-1')][0]
 
         counted, reason = purlin_signatures.counts(
-            at_strong.root, found, ['jane@acme.com'], gate='signed')
+            at_strong.root, found, gate='signed')
+        assert counted, reason
+        counted, reason = purlin_signatures.counts(
+            at_strong.root, found, gate='strong')
         assert counted, reason
 
+        unsigned = sign_one(at_strong, 'RULE-2')
+        git(at_strong.root, 'add', '-A')
+        git(at_strong.root, '-c', 'commit.gpgsign=false', 'commit', '-q',
+            '-m', 'sign(login): RULE-2')
+        assert git(at_strong.root, 'log', '-1', '--format=%G?').stdout \
+            .strip() == 'N'
+        found = next(item for item in at_strong.load()[('login', 'RULE-2')]
+                     if item['path'] == unsigned)
         counted, reason = purlin_signatures.counts(
-            at_strong.root, found, ['someone@else.com'], gate='signed')
-        assert not counted and 'signer is not on the list' in reason
-
+            at_strong.root, found, gate='signed')
+        assert not counted and reason == 'the signing commit is not signed'
         counted, reason = purlin_signatures.counts(
-            at_strong.root, found, ['someone@else.com'], gate='strong')
+            at_strong.root, found, gate='strong')
         assert counted, (
-            'under strong a signature from anyone settles what the machine '
-            'could not: %s' % reason)
+            'below signed a committed signature counts: %s' % reason)
 
     @pytest.mark.proof("signatures", "PROOF-24", "RULE-19")
     def test_a_batch_across_features_names_each_one(self):
@@ -806,22 +820,29 @@ class TestTheWalk:
 
 
 # ---------------------------------------------------------------------------
-# The ancestor check
+# Any branch
 # ---------------------------------------------------------------------------
 
-class TestTheAncestorCheck:
+class TestAnyBranch:
 
     @pytest.mark.proof("signatures", "PROOF-29", "RULE-23", tier="integration")
-    def test_a_signature_on_a_side_branch_is_not_on_the_protected_branch(
-            self, at_strong):
-        signing_key(at_strong.root)
-        git(at_strong.root, 'checkout', '-q', '-b', 'side')
-        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])
-        path = at_strong.load()[('login', 'RULE-1')][0]['path']
-        assert not purlin_signatures.is_ancestor(at_strong.root, path, 'main')
-        git(at_strong.root, 'checkout', '-q', 'main')
-        git(at_strong.root, 'merge', '-q', '--ff-only', 'side')
-        assert purlin_signatures.is_ancestor(at_strong.root, path, 'main')
+    def test_a_signature_on_a_side_branch_counts_there(self, capsys):
+        made = signing_project(sign_at='strong')
+        try:
+            git(made.root, 'checkout', '-q', '-b', 'side')
+            code = sign_module.main(['login', 'RULE-2', '--project-root',
+                                     made.root])
+            capsys.readouterr()
+            assert code == 0
+            on_main = git(made.root, 'ls-tree', '-r', '--name-only', 'main',
+                          'specs/auth/login.signatures').stdout.strip()
+            assert on_main == '', 'main does not carry the signature'
+            cell = made.rule('RULE-2')['cells']['signed']
+            assert cell['word'] == 'signed', cell
+            assert not any('branch' in reason or ' on main' in reason
+                           for reason in cell.get('reasons') or ()), cell
+        finally:
+            made.close()
 
 
 # ---------------------------------------------------------------------------

@@ -47,10 +47,10 @@ whose first audit writes a brief is stale from that moment, which is the
 honest answer: there is evidence now that there was not before.
 
 A signature **counts** under the `signed` gate when the commit that added it
-is signed (`%G?` is `G`), its author email is on the signer list as of that
-commit, and that author differs from the author of the commit that last
-touched the test. Under `strong` a signature from anyone counts, because what
-it clears there is a question the machine could not settle.
+is signed and the signature verifies (`%G?` is `G`), and its hashes are
+current. Who signed is recorded, not policed: the file names the signer and
+git names the commit's author, and neither is compared with anything. Below
+`signed` a committed signature counts.
 
 A **hold** is the opposite attestation, from a person who read the brief and
 found the test does not prove the proof as written:
@@ -244,19 +244,6 @@ def commit_is_signed(project_root, rel_path):
     return result.returncode == 0 and result.stdout.strip() == 'G'
 
 
-def commit_author(project_root, rel_path):
-    """The author email of the last commit touching a path, lowercased."""
-    try:
-        result = subprocess.run(
-            ['git', 'log', '-1', '--format=%ae', '--', rel_path],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
-    except (subprocess.SubprocessError, OSError):
-        return ''
-    if result.returncode != 0:
-        return ''
-    return result.stdout.strip().lower()
-
-
 def commit_date(project_root, rel_path):
     """When the last commit touching a path was authored, ISO 8601 UTC, or None.
 
@@ -277,17 +264,14 @@ def commit_date(project_root, rel_path):
     return result.stdout.strip() or None
 
 
-def counts(project_root, signature, signers, test_paths=(), gate='signed'):
+def counts(project_root, signature, gate='signed'):
     """`(True, '')` when a signature counts under the gate, or `(False, reason)`.
 
-    Whether the hashes still match is `is_current`; this answers who wrote the
-    file and how. Under `passed` and `strong` a signature from anyone counts,
-    because what it clears there is a question the machine could not settle.
-    Under `signed` three conditions hold, each with its own reason so the
-    status line can say which one failed: the signing commit is signed, its
-    author is on the signer list, and that author is not the person who last
-    touched the test. The fourth condition of the `signed` gate, that the
-    signing commit is on the protected branch, is `is_ancestor`.
+    Whether the hashes still match is `is_current`; this answers how the file
+    was committed. Below `signed` a committed signature counts. Under
+    `signed` the commit that added it must be signed and verify, and that is
+    all: the signature counts on whatever commit carries it, whoever wrote
+    it and whoever last touched the test.
     """
     if not signature:
         return False, 'no signature'
@@ -298,35 +282,4 @@ def counts(project_root, signature, signers, test_paths=(), gate='signed'):
         return True, ''
     if not commit_is_signed(project_root, path):
         return False, 'the signing commit is not signed'
-    author = commit_author(project_root, path)
-    if signers and author not in signers:
-        return False, 'the signer is not on the list'
-    for test_path in test_paths or ():
-        if commit_author(project_root, test_path) == author:
-            return False, 'the signer last touched the test'
     return True, ''
-
-
-def is_ancestor(project_root, rel_path, branch):
-    """True when the commit that added a path is an ancestor of `branch`.
-
-    Under `signed` the gate checks this, so a signature that only exists on a
-    side branch does not let a change merge.
-    """
-    try:
-        commit = subprocess.run(
-            ['git', 'log', '-1', '--format=%H', '--', rel_path],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
-    except (subprocess.SubprocessError, OSError):
-        return False
-    sha = commit.stdout.strip()
-    if commit.returncode != 0 or not sha:
-        return False
-    try:
-        result = subprocess.run(
-            ['git', 'merge-base', '--is-ancestor', '--end-of-options',
-             sha, branch],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
-    except (subprocess.SubprocessError, OSError):
-        return False
-    return result.returncode == 0

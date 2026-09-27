@@ -16,8 +16,8 @@ What each group holds:
 *passed*    a passing tagged test in a record a person or CI committed
 *strong*    a record CI committed, the test strength at or above the
             minimum, and a settled brief where the bar asks for one
-*signed*    a current signature by someone on the signer list, made by someone
-            other than the test's author and already on the protected branch
+*signed*    a current signature in a signed commit, whoever wrote it and on
+            whatever branch carries it
 *sections*  one section per cell a rule can be blocked at, capped at 20 rules
 *exit codes* 0, 1 and 2, and never 0 when the evidence cannot be read
 *json*      the same result as a machine reads it
@@ -335,14 +335,17 @@ class TestTheSignedGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-15", "RULE-5", tier="integration")
-    def test_the_author_of_the_test_may_not_sign_it(self):
+    def test_the_author_of_the_test_may_sign_it(self):
         made = signed_project(signer='dev@example.com')
         try:
+            assert git(made.root, 'log', '-1', '--format=%ae', '--',
+                       'tests/test_login.py').stdout.strip() \
+                == 'dev@example.com'
             assert sign_module.main(
                 ['login', 'RULE-2', '--project-root', made.root]) == 0
             code, output = run(made)
-            assert code == 1
-            assert 'the signer last touched the test' in output, output
+            assert code == 0, output
+            assert 'last touched' not in output, output
         finally:
             made.close()
 
@@ -362,22 +365,22 @@ class TestTheSignedGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-17", "RULE-5", tier="integration")
-    def test_a_signature_only_on_a_side_branch_is_not_on_the_branch(self):
+    def test_a_signature_only_on_a_side_branch_counts_there(self):
         made = signed_project()
         try:
-            # A side branch is only a side branch next to a protected one, and
-            # what says which that is is `origin/HEAD`. Without it the reader
-            # has nothing but the branch it is standing on, and every branch
-            # is the branch.
+            # `origin/HEAD` names `main`, so the project has a default branch
+            # the side branch is not. A signature counts on whatever commit
+            # carries it all the same.
             git(made.root, 'update-ref', 'refs/remotes/origin/main',
                 git(made.root, 'rev-parse', 'HEAD').stdout.strip())
             git(made.root, 'symbolic-ref', 'refs/remotes/origin/HEAD',
                 'refs/remotes/origin/main')
             git(made.root, 'checkout', '-q', '-b', 'side')
-            sign_module.main(['login', 'RULE-2', '--project-root', made.root])
+            assert sign_module.main(
+                ['login', 'RULE-2', '--project-root', made.root]) == 0
             code, output = run(made)
-            assert code == 1
-            assert 'the signing commit is not on main' in output, output
+            assert code == 0, output
+            assert 'not on main' not in output, output
         finally:
             made.close()
 

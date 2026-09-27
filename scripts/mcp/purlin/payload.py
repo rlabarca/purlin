@@ -127,8 +127,6 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     blob_cache = {}
     scope_cache = {}
     counted_cache = {}
-    branch = (records_module.default_branch(project_root)
-              if cfg.gate == 'signed' and all_signatures else None)
     feature_entries = []
     review_list = []
     sign_list = []
@@ -144,7 +142,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         entry, rollup = _feature_entry(
             project_root, name, info, features, runtime_proofs, all_records,
             all_signatures, cfg, head, blob_cache, scope_cache, review_list,
-            own_results, all_holds, counted_cache, branch, local_by_feature,
+            own_results, all_holds, counted_cache, local_by_feature,
             local_run, sign_list, ci_runs)
         feature_entries.append(entry)
         rollups[name] = rollup
@@ -234,7 +232,7 @@ def _rule_number(rule_id):
 def _feature_entry(project_root, name, info, features, runtime_proofs,
                    all_records, all_signatures, cfg, head, blob_cache,
                    scope_cache, review_list, own_results=None, all_holds=None,
-                   counted_cache=None, branch=None, local_by_feature=None,
+                   counted_cache=None, local_by_feature=None,
                    local_run=None, sign_list=None, ci_runs=None):
     counting = _counting(all_records, name, cfg)
     latest = _latest(all_records.get(name) or {})
@@ -251,7 +249,7 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
             runtime_proofs, counting, all_signatures, cfg, head,
             blob_cache, scope_cache, test_strength, all_holds,
             _counting(all_records, owner, cfg),
-            counted_cache, branch, local_by_feature, local_run,
+            counted_cache, local_by_feature, local_run,
             (ci_runs or {}).get(owner))
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
@@ -341,8 +339,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
                 runtime_proofs, counting, all_signatures, cfg, head,
                 blob_cache, scope_cache, test_strength=None, all_holds=None,
                 owner_counting=None, counted_cache=None,
-                branch=None, local_by_feature=None, local_run=None,
-                runs=None):
+                local_by_feature=None, local_run=None, runs=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -378,10 +375,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         scope_cache[scope_key] = specs_module.scope_tree(
             project_root, owner_info.get('scope', []))
 
-    test_paths = sorted({test['file'] for proof in proof_dicts
-                         for test in proof['tests'] if test.get('file')})
-    signatures = [_counted(project_root, signature, cfg, test_paths,
-                           counted_cache, branch)
+    signatures = [_counted(project_root, signature, cfg, counted_cache)
                   for signature in all_signatures.get((owner, rule_id), [])]
 
     brief, brief_path = _read_brief(project_root, owner, rule_id, rule_hash,
@@ -447,23 +441,18 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
     }
 
 
-def _counted(project_root, signature, cfg, test_paths, cache, branch):
+def _counted(project_root, signature, cfg, cache):
     """One signature plus whether it counts under the gate, and why not.
 
     Reading git for each signature is the expensive part, and the answer is a
     property of the committed file rather than of the rule asking, so it is
-    cached on the path and the tests it is compared against.
+    cached on the path.
     """
     cache = cache if cache is not None else {}
-    key = (signature.get('path'), cfg.gate, tuple(test_paths))
+    key = (signature.get('path'), cfg.gate)
     if key not in cache:
-        ok, reason = signatures_module.counts(
-            project_root, signature, cfg.signers or [], test_paths, cfg.gate)
-        if ok and cfg.gate == 'signed' and branch:
-            if not signatures_module.is_ancestor(
-                    project_root, signature.get('path'), branch):
-                ok = False
-                reason = 'the signing commit is not on %s' % branch
+        ok, reason = signatures_module.counts(project_root, signature,
+                                              cfg.gate)
         cache[key] = (ok, reason, signatures_module.commit_date(
             project_root, signature.get('path')))
     ok, reason, committed_at = cache[key]
