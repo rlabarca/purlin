@@ -208,6 +208,48 @@ left to a lane's judgment except wording.
 
 
 
+31. **Tags are the marker; push is free; local counts everywhere; the signature locks the
+    audit too** (added 2026-09-27, settled question by question after the closing review):
+    - **Local counts at every gate**, `signed` included. The strong cell reads the newest
+      audit, yours or CI's. Decision 29's "only `ci` at `signed`" is withdrawn.
+    - **The pre-push hook is removed.** A push is free, for anyone, to any branch. Nothing
+      runs at push time. (Decision 27's guard goes with it; the rule that an agent never
+      pushes stays an instruction in `agents/purlin.md`.)
+    - **The tag is the marker of proven code.** `purlin:sign` with no arguments prints
+      `Review: <n> rules. Sign: <n> rules.`, walks Review then Sign, and when every rule meets
+      the gate writes the annotated tag `signed/<version>` (the `VERSION` file's value;
+      `--release <name>` overrides). No tag while any rule does not meet the gate. A person
+      pushes the tag. `purlin:audit --tag` and `record/<name>` are retired.
+    - **CI runs on a tag push and on a remote run's `run/*` branch, nowhere else.** No pull
+      request run, no run on the protected branch. The tag run runs the tagged tests on a
+      clean machine, verifies every committed record, brief and signature against the tagged
+      code (hashes), checks the provenance of every `ci/` record and brief (the commit that
+      added it is the runner's own, signed by the host), and ends with the gate check; the
+      job is named `purlin`. No breaks on CI. Branch rules: none. Init prints none.
+    - **Trust**, set by init: `Do you trust your own machine for the tests and the signing?
+      [y/n]`, config key `trust: local | remote`, default `local`. Under `local`: sign, tag,
+      push. Under `remote`: `purlin:sign` refuses to sign a rule whose tests have no `ci`
+      record for this commit, so `purlin:test --remote` runs first; the tag run verifies as
+      above. `purlin:init --update` re-asks.
+    - **The signature locks rule, proof, test, bar and the audit's findings**: the hash set
+      gains the brief's evidence (strength, the audit's observations, settled). A re-audit
+      that observes something different stales the signature; timestamps and commit ids are
+      not hashed. `signature_format.md` bumps.
+    - **The free checks fold into the audit.** Their names (`happy_path_only` and the rest)
+      leave every surface, the glossary and the docs. The scans run as hints handed to the AI
+      audit, which writes what it observed in plain sentences; a settled audit that observed a
+      gap reads `weak` with that sentence as the reason, so the audit's judgment carries the
+      hints. `ready` means the rule has a proof, nothing more.
+    - **A hold wins**: a held rule reads `held` in both cells whatever its tests do.
+    - **`purlin:test --remote`** finds its run by branch (`gh run list --branch`, retried
+      while the run registers) and then watches it.
+    - **`purlin:spec` writes no bar tag at `passed`**; at `strong` and above it writes the
+      gate's bar and the person changes the exceptions.
+    - Words: `list` for what `purlin:sign` walks (the Review list, the Sign list), `tab` only
+      for the dashboard. The nine unread module constants the review named are deleted.
+      Lanes 14A (code), 14B (docs, skills, board words, slides), 15 (the second docs review).
+
+
 ---
 
 # Part A: the design
