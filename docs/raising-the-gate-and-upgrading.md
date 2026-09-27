@@ -142,7 +142,8 @@ is rendered from them:
 
 | Migration | What it changes |
 |-----------|-----------------|
-| `os-tags` | rewrites the retired Windows tier tag in `specs/` to `@unit @env(windows)` |
+| `os-tags` | rewrites the retired Windows tag in `specs/` to `@env(windows)` |
+| `kind-tags` | drops the tag naming the kind of test from every proof line in `specs/` |
 | `design-sources` | points design sources at `designs/<feature>/` |
 | `untracked-files` | drops the proof files that used to be committed and untracks the dashboard data |
 | `hooks` | removes the git hooks v0.9.5 installed, and says why |
