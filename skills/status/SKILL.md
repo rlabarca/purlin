@@ -63,8 +63,8 @@ when the tool returned nothing.
 ## Step 4: name the next step
 
 Print the `→` lines the tool returned and add none of your own. There is one `→ Next:` line,
-computed from the lowest cell that blocks the gate, and one more line when the review list is
-not empty. `list` is the word for what `purlin:sign` walks; `tab` belongs to the dashboard:
+computed from the lowest cell that blocks the gate, and one more line when either list is not
+empty. `list` is the word for what `purlin:sign` walks; `tab` belongs to the dashboard:
 
 | What blocks the gate | The line the tool prints |
 |----------------------|--------------------------|
@@ -77,4 +77,4 @@ not empty. `list` is the word for what `purlin:sign` walks; `tab` belongs to the
 | A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
 | A rule reads `manual test`, `unsettled` or `held`, or is signable | `→ Next: run purlin:sign.` with the count |
 | Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |
-| The review list is not empty | `→ Review list: <n> rules need a person. Run purlin:sign.` |
+| Either list is not empty | `→ Review list <n>, Sign list <m>: <n+m> rules need a person. Run purlin:sign.` |
