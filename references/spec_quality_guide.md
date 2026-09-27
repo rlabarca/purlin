@@ -162,7 +162,7 @@ An `@e2e` proof reads as arrange, act, observe through the real running app.
 
 Bad: "Assert `loginRedirect` uses the `access_as_user` scope @e2e". That names an
 internal function, so the test imports internals and asserts a declaration, and the
-audit is handed a hint saying the proof is tagged `@e2e` and reads as a function call.
+AI audit observes that the proof is tagged `@e2e` and reads as a function call.
 
 Good: "Open the app, enter an email, click Sign in; observe that the redirect to the
 identity provider carries scope `access_as_user`; complete login with a test account;
@@ -216,8 +216,8 @@ automated.
 
 ### `@manual`
 
-`@manual` means there is no test, so nothing can run and nothing is scanned off a test
-body. The rule's strong cell reads `manual test` with the reason `manual proof`.
+`@manual` means there is no test, so nothing can run and there is no test body for the AI
+audit to read. The rule's strong cell reads `manual test` with the reason `manual proof`.
 A signature file carrying a one-line note clears it, written by a person:
 `purlin:sign <feature> RULE-N --note "<what you saw>"`. CI never writes that file, at
 any bar and under any gate. Use `@manual` where judgment is the only instrument,

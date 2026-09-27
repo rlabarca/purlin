@@ -232,7 +232,7 @@ spec_file() {  # dir feature scope
 
 > Scope: $3
 > Description: One rule at the strong bar: the machine settles it at strong
->   on the free checks, because no model is reachable here, and the signed
+>   on the test strength, because no model is reachable here, and the signed
 >   gate asks a person because sign_at is strong.
 
 ## Rules

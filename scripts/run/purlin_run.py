@@ -957,8 +957,8 @@ def _audit(project_root, args, features, selected, index, plugins, log,
            cfg):
     """The `--audit` arm: how good the tests are, written down and committed.
 
-    The breaks run where the gate asks for them, the free scans' hints and
-    the AI audit are read off the payload and the brief, and the whole of it
+    The breaks run where the gate asks for them, the AI audit is read off
+    the brief, and the whole of it
     goes into one record per feature under `.purlin/records/local/` with the
     briefs beside it. The commit is the person's own, under their own
     identity, and nothing here pushes. A record this run wrote counts at
@@ -1046,8 +1046,8 @@ def _audit_report(project_root, selected, breaks, source='local'):
         from brief import (asks_for_a_review, build_brief, rule_entry,
                            write_brief)
     except ImportError:
-        print('purlin: the brief writer is not available; the free scans '
-              'and the AI audit did not run.')
+        print('purlin: the brief writer is not available; the AI audit did '
+              'not run.')
         return []
     payload = payload_module.build_payload(project_root,
                                            generated_by='audit')

@@ -113,7 +113,7 @@ When the product manager uploads mocks, screenshots, a PDF or an HTML prototype,
 files to `designs/<feature>/` in the same pull request and write `[origin: design]` rules about
 what a person would see: the text, the order of the elements, the states present. Never write a
 rule or a proof that names a CSS selector, a class or a pixel value; a refactor breaks it
-without changing behaviour, and the audit is handed a hint saying so.
+without changing behaviour, and the AI audit observes that it does.
 
 A design is a versioned file read and merged by pull request, never a live connection to a
 design tool. There is no importer: the files the product manager uploads are the design.

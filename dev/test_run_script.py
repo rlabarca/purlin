@@ -1054,7 +1054,7 @@ class TestTheAuditGateLine:
     """The audit answers level 2, so its last line names the strong cell."""
 
     # The bar is `passed`, so the AI audit is not owed on the rule and the
-    # free checks are the whole of level 2.
+    # strength is the whole of level 2.
     SPEC = ('# Feature: feat\n\n> Scope: src/feat.py\n\n## Rules\n\n'
             '- RULE-1: The value is 2 [bar: passed]\n\n## Proof\n\n'
             '- PROOF-1 (RULE-1): Import feat and read VALUE; verify it is '

@@ -84,9 +84,8 @@ NOT_AUDITED = 'not audited'
 
 # What a brief writes under `ai_review` when no model could be reached. The
 # AI audit did not run, so it settled nothing and it observed nothing: the
-# free scans' hints and the strength are the whole of level 2, exactly as
-# they are where no break engine measured a strength. `scripts/review/brief.py` reads
-# this name from here so the two cannot drift.
+# strength is the whole of level 2. `scripts/review/brief.py` reads this name
+# from here so the two cannot drift.
 NO_MODEL = 'not available'
 
 # The flags a rollup counts, beside the buckets and never instead of them.
@@ -568,8 +567,8 @@ def _strong_cell(inp, cfg, bar, passed, holds, counting_signatures):
     elif strength is None and not inp.get('audited', True):
         # Level 2 asks how good the tests are, and only an audit measures
         # that. With no record of one there is nothing to read, so the cell
-        # says the work is outstanding rather than passing the rule on the
-        # free scans' hints alone.
+        # says the work is outstanding rather than passing the rule on
+        # nothing at all.
         notes.append('no audit has run')
         cell['word'] = 'weak'
     elif strength is None:

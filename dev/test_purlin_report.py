@@ -729,8 +729,8 @@ def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
     held = page.inner_text('.wrap')
     assert 'PROOF-3' in held
     assert 'held by sam@acme.com: the lock expiry is never read' in held
-    # No finding name and no hint reaches the screen: what a scan noticed is
-    # the audit's to judge, and the audit's own sentence is what shows.
+    # No check name reaches the screen: the audit's own sentence is what
+    # shows.
     assert 'Free checks' not in held
     page.close()
 
@@ -1141,7 +1141,7 @@ FREE_CHECK_NAMES = ('happy_path_only', 'no_expected_value', 'vague_verb',
 
 @pytest.mark.proof("purlin_report", "PROOF-54", "RULE-39", tier="e2e")
 def test_the_brief_panel_reads_sentences_and_names_no_check(browser, tmp_path):
-    """The audit reads its scans as hints and writes what it observed."""
+    """The audit writes what it observed, in sentences."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click('[data-act="feature"][data-feature="checkout_design"]')
     page.click('.rule[data-rule="RULE-1"]')

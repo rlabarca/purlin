@@ -49,9 +49,7 @@ in the shipped prose where a retired spelling may still be written.
   `min_strength`, record field `test_strength`, status column `Strength`. Measured only at
   `strong` and above.
 - **brief**: the machine's report on one rule: the strength beside the minimum, the AI audit's
-  observations, and whether it settled. It recommends nothing. **hint**: one sentence a free
-  scan of the proof text or the test body wrote, handed to the AI audit inside the brief and
-  read by no cell and no surface; the audit's own judgment is what carries it.
+  observations, and whether it settled. It recommends nothing.
 - **bar**: the evidence a rule must have before it can be signed, `passed` or `strong`. A tag
   on the rule, `[bar: passed]` or `[bar: strong]`; a rule with no tag takes the project's gate
   as its bar, so `passed` at the gate `passed` and `strong` at `strong` and at `signed`. The
@@ -151,7 +149,7 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 | signature, hold, note | `references/formats/signature_format.md` |
 | the gate, which records count, the signer list | `references/hard_gates.md` |
 | drift, the four role views, config field ownership | `references/drift_criteria.md` |
-| the hints the audit reads, the two lists, the brief's layers, what the brief reports | `references/review_criteria.md` |
+| what the audit looks for, the two lists, the brief's layers, what the brief reports | `references/review_criteria.md` |
 | every command's syntax and one-liner | `references/purlin_commands.md` |
 | every commit message shape | `references/commit_conventions.md` |
 
@@ -199,7 +197,8 @@ The repository's own vocabulary check enforces that, reading this table for the 
 | not required | removed. A rule that needs no signature carries `required` false on its signed cell, and the cell reads `signed` or `unsigned` like any other |
 | `ai_review_at` | removed. The AI audit runs on every rule whose bar is `strong` |
 | `sign_at: high`, `medium`, `low` | `sign_at: strong` or `sign_at: all` |
-| the free checks, and every finding name they carried | the **hints** the audit reads, written as plain sentences inside the brief. No name reaches a cell, a list or the board |
+| the free checks, and every finding name they carried | the AI audit's observations, written as plain sentences inside the brief. No name reaches a cell, a list or the board |
+| free scan, free scans, hint, hints (a scan's sentence handed to the audit) | the AI audit's observations. Nothing scans a proof or a test before the audit; `references/review_criteria.md` lists what the audit looks for |
 | `pre_push`, the pre-push hook, the hook shim and the delegator | removed. Nothing runs at push time and nothing runs at commit time; a push is free |
 | `record/<name>` tags, `purlin:audit --tag` | the tag `purlin:sign` writes, `signed/<version>` |
 | the pull request run, the pull request comment, the `purlin-dashboard` artifact | CI runs on a run branch and on a `signed/*` tag and nowhere else, and writes no comment and no artifact |

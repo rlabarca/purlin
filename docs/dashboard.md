@@ -177,7 +177,7 @@ the word.
 At `strong` and above the **Brief panel** follows: the test strength beside `min_strength`,
 then what the audit observed, one sentence to a line as the audit wrote them, then whether the
 audit settled the question, then a link to the brief file. There is no list of check names: the
-audit reads its scans as hints and writes sentences. The brief reports and recommends nothing,
+audit writes sentences. The brief reports and recommends nothing,
 so what you read here is what was seen, not what to do about it.
 
 At `signed` the **Sign panel** comes next. A rule that is not signed is headed `To sign` and

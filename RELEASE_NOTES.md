@@ -113,10 +113,13 @@ brief reports three things: the test strength beside the minimum, what the audit
 sentences the audit wrote, and whether it could settle the question. **It recommends nothing.**
 The four verdict words are retired with it.
 
-**The free checks fold into the audit.** Their names leave every surface. The scans of the proof
-text and the test body run as hints handed to the AI audit, which writes what it observed in
-plain sentences; an audit that settled and still observed a gap proves the rule `weak` with that
-sentence as the reason. `ready` means the rule has a proof, nothing more.
+**The free checks are removed; the AI audit is the one judge of test quality.** Nothing scans the
+proof text or the test body before the audit. `references/review_criteria.md` lists what the AI
+audit looks for when it reads each proof beside the source of its test, and the audit writes what
+it observed in plain sentences; an audit that settled and still observed a gap proves the rule
+`weak` with that sentence as the reason. The brief's layers are `test strength` and `AI audit`,
+and its schema is `purlin-brief/5`. At `passed` nothing reads test quality at all. `ready` means
+the rule has a proof, nothing more.
 
 **The bar replaces risk.** Every rule has a bar, `passed` or `strong`, tagged `[bar: passed]` or
 `[bar: strong]`; a rule with no tag takes the project's gate. The bar decides the evidence the
@@ -206,6 +209,7 @@ output, in any casing:
 | `not required` | removed: the signed cell carries `required` false and reads `signed` or `unsigned` |
 | the source `developer` | the folder: `local/` or `ci/` |
 | `happy_path_only` and the other free-check names | the sentence the audit wrote about what it observed |
+| free scan, hint | the AI audit's observations |
 | `pre_push`, the pre-push hook | nothing: a push is free and no hook runs |
 
 `audit` is un-retired and means one thing: the level 2 run. An audit proves a rule strong or
@@ -222,7 +226,10 @@ pre-push hook and every branch rule Purlin used to print; the pull request comme
 dashboard artifact; the design-tool importer, the visual hash and the live design-tool
 connection, replaced by exported files under `designs/` reviewed by pull request; and C and PHP
 support, so a project that used either keeps its proofs only by writing a custom proof plugin.
-Several flags went with them. A `@manual` proof stays: it has no test, its strong cell reads
+Several flags went with them. The free checks went too: `scripts/review/static_checks.py`, its
+`--sweep`, `scripts/mcp/purlin/checks.py`, and the `rules_without_a_negative_case` key of
+`purlin:drift qa`, which reports what changed and what is waiting and judges nothing. A
+`@manual` proof stays: it has no test, its strong cell reads
 `manual test`, and its evidence is a signature carrying a one-line note.
 
 ### The 0.10.0 line that never shipped

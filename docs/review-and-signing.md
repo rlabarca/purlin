@@ -103,20 +103,7 @@ it out of every commit.
 | Layer | What it reads | Runs at |
 |-------|---------------|---------|
 | Test strength | `test_strength` from the newest counting record, against `min_strength` | every bar |
-| The AI audit | the review criteria, this rule's evidence, and the hints below | bar `strong` |
-
-**The hints.** Two scans run before the AI audit and hand it what they saw as plain sentences:
-one over the proof description and its tier tag, one over the marked test body. Neither is a
-check with a name you will meet, and neither decides anything on its own. A scan sees that no
-proof of a rule names a rejection, an error or a boundary; that a description names no literal,
-number or quoted string; that a test body asserts nothing, or asserts a literal against itself;
-that an `@e2e` proof reads as a function call. The audit is told, and the audit decides what to
-make of it. Where the audit settled and still observed something, the strong cell reads `weak`
-with that sentence as its reason, so the scan reaches you through the audit's judgment rather
-than beside it.
-
-The scans read a spec written before any code exists, which is why a proof can be wrong before
-a test is ever written.
+| The AI audit | the review criteria, the rule, its proofs and the source of each test | bar `strong` |
 
 **Test strength** is the share of the deliberate breaks made to the code that the tests caught,
 as an integer percent, or `n/a` when no engine ran. It says one thing: the tests noticed when
@@ -125,9 +112,13 @@ percent on a proof that observes the wrong thing, and a correct proof of a small
 at 0 percent because nothing broke. Read it beside what the audit observed, never instead of it.
 
 **The AI audit** runs on every rule whose bar is `strong` and on no other. It is built from the
-review criteria verbatim, this rule's evidence and the hints, so it observes by the same
-sentences you read. It is asked to state what the test observes against what the proof names,
-and to say when it cannot tell. When it cannot tell, the strong cell reads `unsettled`, and the
+review criteria verbatim and this rule's evidence, so it observes by the same sentences you
+read. The criteria list what it looks for: no proof of a rule names a rejection, an error or a
+boundary; a description names no literal, number or quoted string; a test body asserts nothing,
+or asserts a literal against itself; an `@e2e` proof reads as a function call. Where the audit
+settled and still observed something, the strong cell reads `weak` with that sentence as its
+reason. It is asked to state what the test observes against what the proof names, and to say
+when it cannot tell. When it cannot tell, the strong cell reads `unsettled`, and the
 rule waits for you rather than for another run. Until the audit has run at all, the cell reads
 `not audited`, and the rule waits for `purlin:audit`. Where no model could be reached at all
 the brief says so and settles nothing: the strength answers on its own, and the cell does not

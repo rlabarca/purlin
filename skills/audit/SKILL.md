@@ -3,8 +3,8 @@ name: audit
 description: Run the tests and the breaks, then write the record
 ---
 
-Run every tagged test, break the code on purpose to measure how much the tests catch, hand the
-scans to the AI audit, print what it observed, and write the record. An audit is level 2: it
+Run every tagged test, break the code on purpose to measure how much the tests catch, run the
+AI audit on each proof beside its test, print what it observed, and write the record. An audit is level 2: it
 measures how good the tests are. Its record counts at every gate, whoever ran it: the strong
 cell reads the newest audit, yours or a runner's.
 
@@ -52,10 +52,9 @@ Test strength is the share of the deliberate breaks the tests caught. `min_stren
 `.purlin/config.json` is the floor the gate holds you to: 70 under `strong`, 80 under `signed`,
 each overridable.
 
-The audit's scans of the proof text and the test body are **hints**: they are handed to the AI
-audit as plain sentences rather than printed as check names, and what comes back is what the
-audit observed, in its own words. An observation is build work: it names what the test does not
-yet observe. An audit that settled and still observed something proves the rule `weak`, with
+The AI audit reads each proof beside the source of its test, against
+`references/review_criteria.md`, and what comes back is what it observed, in its own words. An
+observation is build work: it names what the test does not yet observe. An audit that settled and still observed something proves the rule `weak`, with
 that sentence as the reason.
 
 ## Step 3: what the gate changes

@@ -24,7 +24,9 @@ WORDS = ("gauge", "HOLLOW", "PROVABLE", "receipt", "mutation score",
          "verified", "verdict", "reviewed", "re-verify",
          # the bar replaced it; the two levels that asked for a person became
          # `[bar: strong]` and the one that did not became `[bar: passed]`
-         "risk", "risks")
+         "risk", "risks",
+         # decision 33: nothing scans a proof or a test before the AI audit
+         "free scan", "free scans", "hint", "hints")
 LITERALS = ("@on(",                     # not a word: the retired scope tag
             "platform registry", "--platform",
             "Proof ready", "lowest state", "seven states", "auto-approval", "review queue",

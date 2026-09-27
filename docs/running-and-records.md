@@ -77,11 +77,9 @@ An audit is the level 2 run: the tests, then the breaks, then the AI audit on ev
 bar is `strong`. It prints each feature's test strength beside the minimum, then everything the
 audit observed. An audit proves a rule strong or weak; it signs nothing.
 
-The scans of the proof text and the test body are **hints**. They are handed to the AI audit as
-plain sentences rather than printed as a list of check names, and what comes back is what the
-audit observed, in its own words. An audit that settled and still observed something proves the
-rule `weak`, with that sentence as the reason, so the audit's judgment is what carries the
-scan.
+The AI audit reads each proof beside the source of its test and writes what it observed, in its
+own words, rather than a list of check names. An audit that settled and still observed something
+proves the rule `weak`, with that sentence as the reason.
 
 From `strong` up it writes one record per feature it audited and one brief per rule it
 reached, into `.purlin/records/local/<feature>/` and `.purlin/briefs/local/<feature>/`, and

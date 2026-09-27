@@ -49,8 +49,8 @@ function cellRow(rule, name) {
 /* What the audit found, and nothing about what to do with it: the strength
    beside the minimum this gate asks for, then what the AI audit observed, one
    sentence to a line as it wrote them, then whether it could settle the
-   question. The audit reads its scans as hints and writes sentences, so there
-   is no list of check names to render here. */
+   question. The audit writes sentences, so there is no list of check names
+   to render here. */
 function briefPanel(feature, rule) {
   var cell = cellOf(rule, 'strong');
   if (!cell) { return ''; }
