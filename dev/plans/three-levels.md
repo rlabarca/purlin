@@ -260,6 +260,56 @@ left to a lane's judgment except wording.
       short section per page at most and on one page of their own.
     - **The counts line in `RELEASE_NOTES.md` and `purlin_version` RULE-9 are dropped** (added
       the same day): the sweep writes its record and nothing compares the notes against it.
+32. **Signing is recorded, not policed** (added 2026-09-27, settled question by question from
+    lane 15's Q1, Q2, Q3 and Q5). Purlin's job is a provable, traceable log of where the tests
+    ran and who signed that rule, proof, test, bar and audit match. It does not decide who may.
+    - **The signer list is removed.** No `signers` key, no question for emails in init, no
+      `signer list missing` line, no refusal in `purlin:sign`. `purlin:init --update` drops
+      the key from an existing config and prints one line saying so. A config that still
+      carries it is read without a warning and the key is ignored.
+    - **The self-signing check is removed.** A signature counts whoever last touched the
+      test, and nothing is shown about it; git names both authors.
+    - **The protected branch is removed.** A signature counts on whatever commit carries it;
+      `is_ancestor` and its call go, and so does the branch leg of init's prerequisites. Init
+      checks that a remote exists and that the host is GitHub or Azure DevOps, reports the
+      host CLI, and nothing else.
+    - **A signature counts at `signed` when two things hold**: the commit that added it is
+      cryptographically signed and verifies, and its bound hashes still match the rule, the
+      proof, the test, the bar and what the audit found. Below `signed` a committed signature
+      counts, as before.
+    - **`purlin:sign <feature>` and `purlin:sign --batch` at `strong`** sign every rule on
+      the Review list, for that feature or for the project. The line `a signature is
+      required only under the gate signed. Writing it anyway.` goes for those rules.
+    - **What `signed/<version>` means, formally**: at the tagged commit, every rule meets the
+      gate, which is: it has cleared its bar, and if it needs a signature it has a counting
+      one. A rule that needs no signature (bar `passed` under `sign_at: strong`) meets the
+      gate on its tests and does not hold the tag back. `trust: remote` binds signing alone,
+      as decision 31 wrote it: it is read when a rule is signed and by no cell and not by the
+      tag. The definition lives in `references/glossary.md` and `references/hard_gates.md`;
+      every other page points there.
+    - `signature_format.md` bumps.
+33. **The free scans are removed; drift reports facts** (added 2026-09-27, from lane 15's Q4
+    and Q8). A project at `passed` has said it wants no reading of test quality; at `strong`
+    and above `purlin:audit` is the one place strength is judged, by the breaks and the AI
+    audit.
+    - `scripts/review/static_checks.py`, `scripts/mcp/purlin/checks.py`,
+      `specs/review/static_checks.md`, their tests and their proof files are deleted. The
+      words `free scan` and `hint` join the retired table.
+    - The brief's layers are `test strength` and `AI audit`. It carries no hints; its schema
+      bumps, and a brief written before this one is read with its hint fields ignored.
+    - `references/review_criteria.md` stays the AI audit's prompt. What the scans looked for
+      stays there as what the audit looks for, in plain sentences, with no claim that
+      anything scanned first.
+    - `purlin:drift` reports what changed and what is waiting, for every role, and judges
+      nothing. `rules_without_a_negative_case` goes, with `specs/mcp/drift.md` RULE-14 and
+      PROOF-17.
+34. **Three cleanups** (added 2026-09-27, from lane 15's Q6, Q7 and Q9).
+    - `is_fork()` and its call site are deleted, with `specs/run/records.md` RULE-7's fork
+      half and the docs section `A run from a fork`.
+    - The six unread constants: a grep of `scripts/` on 2026-09-27 finds none of them
+      assigned, so this is a check that they are gone and nothing more.
+    - `--quick` becomes `--test`, with no alias: the skill is the caller, and 0.10.0 has not
+      shipped. `--quick` joins the retired table.
 
 
 ---
