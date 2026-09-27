@@ -16,34 +16,39 @@ observed. A **test** is the executable form of a proof, tagged with its rule. Th
 results** are what a run of the tagged tests saw, which `purlin:test` commits. A **record** is
 one audit's observations, which `purlin:audit` writes and commits; nobody signs a record. Its
 **source** is the folder it sits in, `.purlin/records/ci/` or `.purlin/records/local/`, and
-both count at `strong` while only `ci` counts at `signed`. A
-**brief** is the machine's report on one rule, and it recommends nothing. A **signature** is a
-named person's attestation that a rule, a proof and a test belong together, also committed.
+both count at every gate. A **brief** is the machine's report on one rule, and it recommends
+nothing. A **signature** is a named person's attestation that a rule, a proof and a test
+belong together, also committed. The **tag** `signed/<version>` is the marker that every rule
+met the gate at one commit; `purlin:sign` writes it and a person pushes it.
 
 Each rule carries a **spec status**, `drafted` or `ready`, and up to three **cells**, one per
 **evidence level**: `passed` says every tagged test for the rule passed, on every **platform**
 a counting run covered, `strong` says the tests are worth trusting, `signed` says a person
 signed the rule, proof and test hashes. A passed cell whose platforms disagree reads
 `partial`, which is not met. The
-**gate** is the one project setting naming how far the chain must reach before CI lets a
-change merge: `passed`, `strong` or `signed`. A cell exists only at or below the gate; above
-it the cell is absent, not empty. `references/glossary.md` holds the rest of the terms and the
+**gate** is the one project setting naming how far the chain must reach before a version is
+proven: `passed`, `strong` or `signed`. A cell exists only at or below the gate; above it the
+cell is absent, not empty. `references/glossary.md` holds the rest of the terms and the
 spellings that are retired.
 
 ## The core loop
 
 ```
-purlin:drift → purlin:spec → purlin:build → purlin:test → purlin:audit → push
+purlin:drift → purlin:spec → purlin:build → purlin:test → purlin:audit → purlin:sign
 ```
+
+Every step runs on the person's own machine, at every gate. Nothing in the loop needs a remote
+runner, and a project at `signed` with no CI at all is the ordinary case.
 
 Run `purlin:drift` when a session opens: it says what changed under you and what that costs.
 Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and
-the tagged tests. Run `purlin:test` while you work; it takes seconds, writes the test results
-and commits them itself, and its last line, `gate passed: <n> of <rules>`, is the whole check
-at `passed`. Run `purlin:audit` last: it runs the tests, breaks the code on purpose to measure
-test strength, reports what it found, and writes and commits the record under
-`.purlin/records/local/`. At `passed` the loop is spec, build, test, and the audit writes no
-record at all. Then hand the push over: the loop ends with a person running `git push`.
+the tagged tests. Run `purlin:test` while you work; it takes seconds, commits the results
+itself, and its last line, `gate passed: <n> of <rules>`, is the whole check at `passed`. Run
+`purlin:audit` next: it breaks the code on purpose to measure test strength, reports what it
+observed, and commits the record under `.purlin/records/local/`. At `strong` the loop stops
+there; at `signed` a person runs `purlin:sign`, which walks the two lists and writes the tag
+`signed/<version>` once every rule meets the gate. Then hand the push over: `git push`, and
+`git push origin signed/<version>` for the tag.
 
 Call `sync_status` before you answer any question about state. It returns the spec status and
 the cells of every rule: `drafted` or `ready`, then `passed`, `strong` and `signed` as far as
@@ -61,18 +66,19 @@ signature went stale, the next step is `purlin:sign`. Say which, and say why.
    request and leave the rule alone until they take it.
 2. **Never write a proof file, a record or a signature by hand.** Tests write proof files,
    `purlin:test` writes the test results, `purlin:audit` writes records, `purlin:sign` writes
-   signatures.
+   signatures and the tag.
    A file you typed yourself is not evidence of anything.
 3. **Never sign a rule whose test you wrote.** A signature counts only when its author differs
    from the author of the commit that last touched the test.
-4. **Never push, never open a pull request, never delete or rewrite a remote branch.** A push
-   is a person's act: commit the work, say what it proves, and leave `git push` to them. The
-   one exception is `purlin:test --remote`, which pushes a run branch of its own, waits for
-   it and deletes it. Nothing stops you but this line: no hook runs at push time, so a push
-   you make is a push nobody asked for.
+4. **Never push, never write a tag yourself, never open a pull request, never delete or
+   rewrite a remote branch.** A push is a person's act: commit the work, say what it proves,
+   and leave `git push` to them. So is the tag: `purlin:sign` writes `signed/<version>` in its
+   own run, and pushing it belongs to a person. The one exception is `purlin:test --remote`,
+   which pushes a run branch of its own, waits for it and deletes it. Nothing stops you but
+   this line: no hook runs at push time, so a push you make is a push nobody asked for.
 5. **Never use a retired term.** The names to use are git host, test strength, bar, review
-   list, signer list, record, signature, gate and breaks. `references/glossary.md` lists what
-   each one replaced. No emoji anywhere, including command output and pull request comments.
+   list, signer list, record, signature, tag, gate and breaks. `references/glossary.md` lists
+   what each one replaced. No emoji anywhere, including command output.
 
 ## Routing
 
@@ -92,9 +98,9 @@ read what the person wants and run the command that serves it.
 | Engineer | "pull in the shared policy", "that policy moved" | `purlin:anchor add`, `purlin:anchor sync` |
 | Engineer | "build it", "implement RULE-4" | `purlin:build` |
 | Engineer | "run the tests" | `purlin:test` |
-| Engineer | "is this ready to push?" | `purlin:audit` |
-| Engineer | "how good are these tests?" | `purlin:audit` |
+| Engineer | "is this ready to push?", "how good are these tests?" | `purlin:audit` |
 | Engineer | "prove it on Windows too" | `purlin:test --remote` |
+| Engineer | "tag the release" | `purlin:sign`, which writes the tag |
 | Engineer | "where is the rule about passwords?" | `purlin:find` |
 | Engineer | "this feature has the wrong name" | `purlin:rename` |
 | QA | "what needs my eyes?" | `purlin:sign` |

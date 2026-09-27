@@ -15,18 +15,22 @@ plugin and is reached through `${CLAUDE_PLUGIN_ROOT}`; a project carries none of
 
 ## The one question
 
-Ask one question and nothing else: **what must be true before CI lets a change merge?** There
-are three answers, one per evidence level. That answer is the **gate**.
+Ask one question and nothing else: **what must be true of every rule before a version is
+proven?** There are three answers, one per evidence level. That answer is the **gate**.
 
-| Gate | Who it fits | What CI requires before merge | Signatures |
-|------|-------------|-------------------------------|------------|
-| `passed` | one person working alone | every rule's passed cell is met: a passing tagged test, from any source | none |
-| `strong` | a team of PM, designers, engineers and QA | every rule whose bar is `strong` has a strong cell that is met: a record at this commit, test strength at or above `min_strength`, no finding and no hold | none required; anyone may sign to clear a rule reading `manual test`, `unsettled` or `held` |
+| Gate | Who it fits | What every rule must have | Signatures |
+|------|-------------|---------------------------|------------|
+| `passed` | one person working alone | a passing tagged test for every proof, from any source | none |
+| `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose bar is `strong`: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding, no hold | none required; anyone may sign to clear a rule reading `manual test`, `unsettled` or `held` |
 | `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit by someone on the signer list | required: the signer list decides who |
 
 The answer sets four defaults, each changeable afterwards: `min_strength` unused, 70, 80; the
 default bar `passed`, `strong`, `strong`; `sign_at` unset, unset, `strong`; origin tags
 optional, optional, required.
+
+`purlin:sign` is what says a version met the gate: it walks the two lists and writes the
+annotated tag `signed/<version>`, which a person pushes. The gate is the standard that tag
+stands for.
 
 ## The three honest exceptions
 
@@ -35,7 +39,8 @@ host from the remote URL. Three questions remain because no answer can be read f
 
 1. An empty repository has nothing to detect, so init asks which language the project will be.
 2. `signed` needs names, so init asks for the signer emails.
-3. At `passed` with a remote, a remote runner is a choice, so init explains it and asks.
+3. Whether this machine is trusted for the tests and the signing is a judgment, not a fact in
+   the tree, so init asks it.
 
 ## Run it
 
@@ -54,12 +59,14 @@ list back to the person before running it for real on a project that already has
 | `--add <language>` | Adds a second language: its test framework, its proof plugin, its breaks engine |
 | `--dry-run` | Prints the plan and writes nothing |
 
-Raising the gate is additive. `--gate strong` on a project set up as `passed` writes the CI
-workflow, creates `designs/` if it is missing, turns the breaks on, and prints the branch rules;
-it asks before each write and touches nothing else. `--gate signed` on top of that asks for the
-signer emails, asks which rules need a signature, and lists the rules with no origin tag. Lowering the gate rewrites the
-setting and deletes nothing: the workflow, the records and the signatures stay, and CI stops
-requiring them.
+Raising the gate is additive. `--gate strong` on a project set up as `passed` creates
+`designs/` if it is missing and turns the breaks on; it asks before each write and touches
+nothing else. `--gate signed` on top of that asks for the signer emails, asks which rules need
+a signature, and lists the rules with no origin tag. Lowering the gate rewrites the setting and
+deletes nothing: the workflow, the records and the signatures stay where they are.
+
+Raising the gate writes no workflow. A runner is added for its own two reasons, below, and not
+because the gate moved.
 
 `--add <language>` is for a repository with, say, a Python service and a TypeScript client:
 init detects the second framework, installs its proof plugin beside the first, adds its breaks
@@ -67,25 +74,29 @@ engine, and writes both into `.purlin/config.json`. One `purlin:test` then runs 
 
 ## What init writes
 
-It writes `.purlin/config.json` with the gate, the git host, the test framework, the breaks
-engine and the derived defaults; `specs/` for the two-section specs; and `.purlin/records/` with
-a README saying an audit writes the files in it, under `ci/` or `local/`, and nobody edits them by hand. It installs the proof
-plugin for the detected framework and the breaks engine for the language, writing
-`[tool.mutmut]` into `pyproject.toml` when that file exists and `[mutmut]` into `setup.cfg`
-otherwise. It adds a `.gitignore` block for `.purlin/runtime/`, where test runs put their proof
-files, and copies the dashboard page so it opens from disk. It installs no git hook at all:
-nothing runs at commit time and nothing runs at push time. It installs the Claude Code hook
-that refreshes the local dashboard data. It creates `designs/` with a README at `strong` and
-`signed`, and ignores `.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON an audit commits,
+It writes `.purlin/config.json` with the gate, the trust answer, the git host, the test
+framework, the breaks engine and the derived defaults; `specs/` for the two-section specs; and
+`.purlin/records/` with a README saying an audit writes the files in it, under `ci/` or
+`local/`, and nobody edits them by hand. It installs the proof plugin for the detected
+framework and the breaks engine for the language, writing `[tool.mutmut]` into `pyproject.toml`
+when that file exists and `[mutmut]` into `setup.cfg` otherwise. It adds a `.gitignore` block
+for `.purlin/runtime/`, where test runs put their proof files, and copies the dashboard page so
+it opens from disk. It installs no git hook at all: nothing runs at commit time and nothing
+runs at push time. It installs the Claude Code hook that refreshes the local dashboard data. It
+creates `designs/` with a README at `strong` and `signed`, and ignores
+`.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON an audit commits,
 then prints every file it wrote or edited, one per line.
 
-The workflow runs where the evidence it writes is decided. It triggers on a pull request, on a
-push to the project's own default branch and on a push to a `run/*` branch, the branch
-`purlin:test --remote` creates and deletes around one run; a push to any other branch starts
-nothing. A pull request run does the tests, posts the comment and uploads the dashboard, and
-commits nothing; a run on the default branch or on a run branch commits its records and briefs
-there. Every run ends with `Check the gate`, which runs `scripts/ci/gate_check.py --check` and
-fails the job when the gate is not met.
+That Claude Code hook is the only hook init installs. It writes no git hook at all: nothing
+runs at push time, and a push is free, to any branch, for anyone.
+
+Where a runner is called for, the workflow triggers on two things and nothing else: a push of a
+`signed/**` tag, and a push to a `run/*` branch, the branch `purlin:test --remote` creates and
+deletes around one run. A pull request starts nothing. The job is named `purlin`. The tag run
+reruns the tagged tests on a clean machine, checks every committed record, brief and signature
+against the tagged code, checks that every file under `ci/` was committed by the runner's own
+identity, and ends with `scripts/ci/gate_check.py --check`, which fails the job when the gate
+is not met. No breaks run on the runner.
 
 The config it writes looks like this, and every key after `gate` has a default the gate
 implies:
@@ -94,6 +105,7 @@ implies:
 {
   "version": "0.10.0",
   "gate": "strong",
+  "trust": "local",
   "min_strength": 70,
   "mutation_engine": "mutmut",
   "sql_engine": null,
@@ -109,56 +121,63 @@ silently kept.
 ## Who writes the evidence
 
 `purlin:test` commits the test results under `.purlin/tests/` and `purlin:audit` writes the
-record. A record's source is the folder it sits in: `.purlin/records/ci/`, which the git host
-reserves for the build identity, or `.purlin/records/local/`, which is anyone's. Under `passed`
-and `strong` both count; under `signed` only `ci` does.
+record. A record's source is the folder it sits in: `.purlin/records/ci/`, written by a remote
+runner, or `.purlin/records/local/`, which is anyone's. Both count at every gate.
+
+## The trust question
+
+Ask it exactly like this, with `y` as the default:
+
+```
+Do you trust your own machine for the tests and the signing? [y/n]
+```
+
+A yes writes `"trust": "local"`, a no writes `"trust": "remote"`. `--update` asks again.
+
+Under `local` the whole chain runs here: test, audit, sign, tag, push. Nothing runs anywhere
+else, and a project that answers yes and tags no proof for another operating system has no CI
+at all. That is the ordinary case, at every gate, `signed` included: the tag is your word that
+every rule met the gate on your machine.
+
+Under `remote` a signature rests on a run this machine did not make. `purlin:sign` refuses a
+rule whose tests have no `ci` record for the current commit, so `purlin:test --remote` runs
+first.
 
 ## The remote runner
 
-At `passed`, with a remote, init prints this and nothing else, then asks:
+A remote runner is worth having for two reasons and no others:
 
-```
-A remote runner is worth having for three reasons:
-  Your tests need another operating system.
-  Proof from a clean machine that ran exactly the pushed code.
-  No merge while red.
-Teammates see your results without one, from the test results purlin:test commits.
-Run the tests on a remote runner too? [y/n]
-```
+- **Your tests need another operating system.** This machine cannot run a test tagged
+  `@env(windows)` or `@env(linux)`; the runner can, so those rules stop reading `not run`.
+- **You chose not to trust this machine for signing**, so tests must run on a clean machine
+  before a signature counts.
 
-Those are the three reasons and there are no others. Explain each one only if asked:
-
-- **Your tests need another operating system.** This machine cannot run a test tagged for
-  Windows or Linux; the runner can, so those rules stop reading `not run`.
-- **Proof from a clean machine.** A laptop may carry uncommitted edits or leftover files. The
-  runner runs exactly the code that was pushed, which is what `strong` and `signed` trust.
-- **No merge while red.** The git host refuses the merge while a test fails or a rule has no
-  test, so nobody has to remember to check.
-
-A yes writes the workflow; a no writes nothing and says `run purlin:init again to add it`. At
-`strong` and above the workflow is always written and the same three reasons say why.
+Init writes the workflow where one of the two holds: `specs/` carries an `@env` proof for an
+operating system this machine is not, or the trust answer was no. With neither, no workflow is
+written at any gate, and init says so in one line. Teammates see your results without a runner,
+from the test results `purlin:test` commits.
 
 Before any workflow is written init checks the prerequisites: a remote exists, its URL names
-GitHub or Azure DevOps, and the protected branch is on that remote. The first that fails is
-printed in one line naming what to do, and no workflow is written. The host CLI, `gh` or `az`,
-is reported present or absent either way, and a remote nobody here can reach is reported
-unchecked rather than failed. The same checks run under `--update`.
+GitHub or Azure DevOps, and the branch the project works on is on that remote. The first that
+fails is printed in one line naming what to do, and no workflow is written. The host CLI, `gh`
+or `az`, is reported present or absent either way, and a remote nobody here can reach is
+reported unchecked rather than failed. The same checks run under `--update`.
 
 ## What each gate brings
 
 Under every gate, init creates the records folder and its retention rule, and leaves the bar,
-origin and criterion tags optional. Under `strong` and `signed`, init also writes `designs/` and the CI workflow (`purlin.yml`),
-because the gate cannot be met without a CI run that writes records. When `specs/` carries
-`@env(windows)` or `@env(macos)` proofs, the workflow gets a matrix: a Linux job always, plus
-one job per other operating system named, each running the same tests and writing its own
-record. With no such proof there is one Linux job.
+origin and criterion tags optional. Under `strong` and `signed`, init also writes `designs/`
+and turns the breaks on. Where a workflow is called for, and `specs/` carries `@env(windows)`
+or `@env(macos)` proofs, it gets a matrix: a Linux job always, plus one job per other operating
+system named, each running the same tests and writing its own record. With no such proof there
+is one Linux job.
 
 Under `signed`, init asks for the signer emails, writes them to `signers`, prints the
 commit-signing setup, and lists every rule with no origin tag so `purlin:spec <name>` can tag
 them in one pass. It then asks `Which rules need a signature?` and writes the answer to
 `sign_at`: `strong`, the rules whose bar is strong, the rest meeting the gate on their tests;
-or `all`, every rule whatever its bar. Without a signer list the gate cannot be met: the CI
-gate prints `→ signer list missing: run purlin:init --gate signed` and exits 1, and
+or `all`, every rule whatever its bar. Without a signer list the gate cannot be met: the gate
+check prints `→ signer list missing: run purlin:init --gate signed` and exits 1, and
 `purlin:sign` says the same and writes nothing.
 
 Anchor pins, the upstream-check job and the dashboard artifact are added on demand. When one
@@ -166,23 +185,11 @@ is missing later the tool that needs it says so: `purlin:drift` reports a pin be
 `purlin:status` says the gate cannot be met without a workflow, and `purlin:audit` says the
 breaks engine is unavailable.
 
-## The branch rules
+## Branch rules
 
-Init prints these; the git host enforces them. Purlin never changes a repository's settings.
-**GitHub**, three rulesets so each bypass stays narrow:
-
-1. Require a pull request and require the `purlin` workflow's checks, with the Actions app as
-   the only bypass actor. Every run ends with the gate check, so a green check means the gate
-   held.
-2. Restrict file paths on `.purlin/records/ci/**` and `.purlin/briefs/ci/**`, with the Actions
-   app as the only bypass actor, so a person cannot push a record as CI's. The `local/` folders beside them are anyone's.
-3. Block force pushes and restrict deletions, with no bypass actor at all.
-
-Under `passed`, print only the third.
-
-**Azure DevOps**, the same three: require a pull request with the purlin pipeline as a build
-validation policy, which also ends with the gate check; grant Contribute on those two paths to
-the build service alone; deny Force Push and Delete branch for everyone.
+Init prints none, and Purlin asks for none. A push is free, to any branch, for anyone, and
+nothing runs at push time. The marker that a version met the gate is the tag `purlin:sign`
+writes, not a branch setting on the git host.
 
 ## Commit signing under `signed`
 
@@ -203,17 +210,21 @@ The signer list lives in `.purlin/config.json` and changes by pull request like 
 so git history records who could sign and when. A signature is judged against the list as it
 stood in the commit that added it.
 
-## What CI runs
+## What the runner runs
 
 A project has no copy of Purlin in it, so the workflow init writes clones Purlin at a pinned
 tag and runs the run script's own CI arm from that checkout: the same script a person runs, at
 a version that changes only when someone edits the workflow. Nobody types that arm; the
-workflow carries it. At `passed` the job runs the tagged tests, posts the rollup as a pull
-request comment, publishes the dashboard and writes no record. At `strong` and above it audits
-what it ran, writes the briefs, and commits them with its record through the git host's API in
-one commit. The dashboard and its data go out as the `purlin-dashboard` build artifact linked
-from that comment. CI never writes a signature. On a pull request from a fork the API token
-cannot write, so the run happens, the comment posts, no commit is made, and the job says so.
+workflow carries it.
+
+| The run | What it does |
+|---------|--------------|
+| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks every committed record, brief and signature against the tagged code, checks that every file under `ci/` was committed by the runner's identity, runs the gate check, and commits nothing |
+| a `run/*` branch | Runs the tagged tests, and at `strong` and above audits what it ran, then commits its records and briefs onto that branch under `ci/` through the git host's API |
+
+The runner writes no signature, ever, and it posts no comment and uploads no artifact: the
+dashboard is the page that opens from disk. On a push from a fork the API token cannot write,
+so the run happens, no commit is made, and the job says so.
 
 ## Bringing an older project forward
 
@@ -223,9 +234,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root
 
 `--update` detects the older layout and offers each change separately. It untracks and deletes
 the proof files and the evidence files that used to be committed, untracks the committed
-dashboard data, rewrites the hooks, retires the config keys that no longer exist, asks the gate
-question once with the three answers above, and rewrites an operating-system tag to `@env(...)`
-only where the intended system is unambiguous. Every write asks first, every file it replaces
+dashboard data, removes an installed pre-push hook and says why, retires the config keys that
+no longer exist, asks the gate question and the trust question once each, and rewrites an
+operating-system tag to `@env(...)` only where the intended system is unambiguous. Every write asks first, every file it replaces
 is backed up beside the original, and while the update is pending `sync_status` opens with
 `→ Run: purlin:init --update`.
 

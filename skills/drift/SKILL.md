@@ -31,9 +31,9 @@ you chose in the first line.
 
 ## When to run it
 
-Run it at the start of a session, after an anchor pin or a design export moved, before QA opens
-the review list, and before a release. Those are the four moments where the tree has moved
-ahead of the specs without anyone being told.
+Run it at the start of a session, after an anchor pin or a design export moved, before QA
+walks the review list, and before a release. Those are the four moments where the tree has
+moved ahead of the specs without anyone being told.
 
 Under the gate `passed` the `qa` view has nothing to report: there is no strength, no review
 list and no signature. Say the gate is `passed`, name what `purlin:init --gate strong` would

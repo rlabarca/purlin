@@ -64,7 +64,7 @@ when the tool returned nothing.
 
 Print the `→` lines the tool returned and add none of your own. There is one `→ Next:` line,
 computed from the lowest cell that blocks the gate, and one more line when the review list is
-not empty:
+not empty. `list` is the word for what `purlin:sign` walks; `tab` belongs to the dashboard:
 
 | What blocks the gate | The line the tool prints |
 |----------------------|--------------------------|
@@ -72,7 +72,7 @@ not empty:
 | A rule has a failing test | `→ Next: run purlin:build.` with the count |
 | A rule's tests pass on one operating system and not another | `→ Next: run purlin:build.` with the `partial` count |
 | A rule has no test | `→ Next: run purlin:build.` with the count |
-| A rule is waiting for the record that counts | `→ Next: run purlin:test --remote.` under `strong` and above, `→ Next: run purlin:test.` under `passed` |
+| A rule is waiting for a run | `→ Next: run purlin:test.`, or `→ Next: run purlin:test --remote.` where the proof names an operating system this machine is not |
 | No audit has measured a rule | `→ Next: run purlin:audit.` with the count |
 | A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
 | A rule reads `manual test`, `unsettled` or `held`, or is signable | `→ Next: run purlin:sign.` with the count |

@@ -35,7 +35,9 @@ One feature at a time is `--feature <name>`, repeated for each. Every tier is `-
 The run script owns test execution for the whole plugin: `purlin:build` and `purlin:audit`
 call it too, so there is one answer to how a test is run. `--remote` hands the run to the git
 host's runner instead, on a run branch it creates, waits on and deletes; at `strong` and above
-the runner audits what it ran and commits the record and the run pulls that commit back.
+the runner audits what it ran and commits the record, and the run pulls that commit back. Use
+it for two reasons and no other: a proof is tagged `@env` for an operating system this machine
+is not, or `trust` is `remote`, so a signature rests on a run this machine did not make.
 
 Exit codes: `0` the tests ran and the level is met, `1` a test failed or it is not, `2` the invocation was wrong.
 
@@ -48,7 +50,7 @@ itself, under your own git identity, with the subject `purlin: tests at <sha7>`,
 `Test results committed.`. It never pushes. A run that saw the same thing about the same code
 prints `Test results unchanged.` and commits nothing. A `--feature` run writes what it ran and
 leaves the rest of the table as it was. These results are the `local` source: they count at
-`passed` and at `strong`, and they are how a teammate reads your run on the git host.
+every gate, and they are how a teammate reads your run on the git host.
 `references/formats/tests_format.md` is the contract.
 
 ## Step 3: read the table
@@ -72,8 +74,9 @@ or a marker in the tree produced none. Read those before the table.
 
 This is the pattern every Purlin skill follows. Under `passed` the whole project is this one
 cell: no strength, no bar, no review list, no signature. Under `strong` the strong cell and
-the test strength appear beside it, and a record from either source counts. Under `signed` the
-signed cell and the signer list appear too, and there only a record CI wrote counts. Read the gate from `.purlin/config.json` and print
+the test strength appear beside it; under `signed` the signed cell and the signer list appear
+too. A record from either source counts at every gate; what `trust: remote` changes is that
+`purlin:sign` asks for a `ci` run first. Read the gate from `.purlin/config.json` and print
 only what exists; `references/hard_gates.md` defines the three gates once.
 
 ## Step 5: operating systems

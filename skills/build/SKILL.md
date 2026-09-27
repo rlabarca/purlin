@@ -80,7 +80,8 @@ is not this one is skipped and listed as `needs <os>`; that is expected locally 
 it on the matching runner.
 
 Never write a proof file, a record or a signature by hand. Tests write proof files,
-`purlin:test` writes the test results, CI writes records, `purlin:sign` writes signatures.
+`purlin:test` writes the test results, `purlin:audit` writes records, `purlin:sign` writes
+signatures and the tag.
 
 ## Committing
 

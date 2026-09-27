@@ -3,10 +3,10 @@ name: audit
 description: Run the tests and the breaks, then write the record
 ---
 
-Run every tagged test, break the code on purpose to measure how much the tests catch, run the
-free checks and the model review, print what they found, and write the record. An audit is
-level 2: it measures how good the tests are. Its record counts at `strong`, whoever ran it; at
-`signed` only the run CI made on the protected branch counts.
+Run every tagged test, break the code on purpose to measure how much the tests catch, hand the
+scans to the AI audit, print what it observed, and write the record. An audit is level 2: it
+measures how good the tests are. Its record counts at every gate, whoever ran it: the strong
+cell reads the newest audit, yours or a runner's.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -21,7 +21,7 @@ purlin:audit                    Run the tests and the breaks, and write the reco
 purlin:audit <feature> [...]    One feature, or several
 ```
 
-Plain language reaches the same place: "audit this", "how strong are the tests", "pin 1.0".
+Plain language reaches the same place: "audit this", "how strong are the tests".
 
 There is no `--remote` here: a remote runner runs the tests, so that flag is
 `purlin:test --remote`.
@@ -32,29 +32,31 @@ There is no `--remote` here: a remote runner runs the tests, so that flag is
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --audit
 ```
 
-`--audit` runs the tests, then the breaks where the gate asks for them, then the free checks
-and the model review. It writes one record per feature under
-`.purlin/records/local/<feature>/` with its briefs under `.purlin/briefs/local/<feature>/`,
-prints each feature's test strength beside the minimum and each rule's findings and
-observations, and commits the record and the briefs under your own identity with the subject
+`--audit` runs the tests, then the breaks where the gate asks for them, then the AI audit. It
+writes one record per feature under `.purlin/records/local/<feature>/` with its briefs under
+`.purlin/briefs/local/<feature>/`, prints each feature's test strength beside the minimum and
+each rule's observations, and commits the record and the briefs under your own identity with the subject
 `purlin: record for <sha7>`. It ends with `gate strong: <n> of <rules>` or
 `gate not met: <n> of <rules>`, and it never pushes. Exit codes: `0` every rule met the gate, `1` a test failed, evidence is missing
 or the gate is not met, `2` the command line was wrong.
 
 The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call
-it too, so there is one answer to how a test is run. CI runs the same script in an arm of its
-own, which writes the same files under `.purlin/records/ci/` and `.purlin/briefs/ci/`. That arm
-belongs to the workflow and you never run it by hand. A CI run commits on the protected branch
-and on a run branch only; `references/hard_gates.md` says where CI runs and what each run
-writes.
+it too, so there is one answer to how a test is run. A remote runner runs the same script in an
+arm of its own, which writes the same files under `.purlin/records/ci/` and
+`.purlin/briefs/ci/`. That arm belongs to the workflow and you never run it by hand. A project
+has a runner for two reasons only, and `references/hard_gates.md` says which.
 
 ## Step 2: read what came back
 
 Test strength is the share of the deliberate breaks the tests caught. `min_strength` in
 `.purlin/config.json` is the floor the gate holds you to: 70 under `strong`, 80 under `signed`,
-each overridable. A finding is what a free check saw in the proof text or the test body; an
-observation is what the model review saw. Both are build work: they name what the test does
-not yet observe.
+each overridable.
+
+The audit's scans of the proof text and the test body are **hints**: they are handed to the AI
+audit as plain sentences rather than printed as check names, and what comes back is what the
+audit observed, in its own words. An observation is build work: it names what the test does not
+yet observe. An audit that settled and still observed something proves the rule `weak`, with
+that sentence as the reason.
 
 ## Step 3: what the gate changes
 
@@ -83,7 +85,8 @@ gates once; do not restate them elsewhere.
 ## Step 5: retention
 
 A feature keeps the newest three records per operating system per source, and a run prunes the
-rest as it writes.
+rest as it writes. Nothing pins a record: `purlin:sign` tags the commit, and the tag holds the
+whole tree, every record and brief in it included.
 
 ## Step 6: name the next step
 
@@ -94,6 +97,6 @@ rest as it writes.
 | A finding or an observation on a rule | `→ Run: purlin:build <feature>` (write the case it names) |
 | A rule needs another operating system | `→ Run: purlin:test --remote` |
 | Every rule met the gate `passed` | `→ Next: run git push.` |
-| A `ci` record is missing under `signed` | `→ Next: run git push; the run on the protected branch writes the record a signature attaches to.` |
+| A `ci` record is missing under `trust: remote` | `→ Run: purlin:test --remote` |
 | A rule's tests pass on one operating system and not another | `→ Run: purlin:build <feature>` (the passed cell reads `partial` and names the platform) |
 | A rule reads `manual test`, `unsettled` or `held`, or is signable | `→ Run: purlin:sign` |

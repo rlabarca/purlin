@@ -34,8 +34,8 @@ BASH = bash_command()
 # The twelve skills, each with the ceiling its spec sets.
 CEILINGS = {
     'anchor': 160, 'audit': 105, 'build': 130, 'drift': 150, 'find': 85,
-    'init': 240, 'rename': 85, 'sign': 150, 'spec': 210,
-    'spec-from-code': 130, 'status': 80, 'test': 110,
+    'init': 250, 'rename': 85, 'sign': 185, 'spec': 210,
+    'spec-from-code': 130, 'status': 80, 'test': 115,
 }
 COMMANDS = sorted(CEILINGS)
 
@@ -240,7 +240,7 @@ def init_question_problems():
     rel = skill_path('init')
     text = read(rel)
     problems = carries(rel, [
-        'what must be true before CI lets a change merge',
+        'what must be true of every rule before a version is proven',
         '`passed`', '`strong`', '`signed`'])
     body = section(text, r'exception')
     if body is None:
@@ -251,7 +251,7 @@ def init_question_problems():
         problems.append('%s names %d further questions, expected 3'
                         % (rel, len(items)))
     flattened = flat(body)
-    for needle in ('empty repository', 'signer emails', 'remote runner'):
+    for needle in ('empty repository', 'signer emails', 'trusted'):
         if needle not in flattened:
             problems.append('%s exceptions do not name %r' % (rel, needle))
     return problems
@@ -490,8 +490,9 @@ class TestSkillAudit:
         rel = skill_path('audit')
         assert (same_line(rel, [
             '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"', '--audit'])
-            + carries(rel, ['CI runs the same script in an arm of its own',
-                            'you never run it by hand'])) == []
+            + carries(rel, [
+                'A remote runner runs the same script in an arm of its own',
+                'you never run it by hand'])) == []
 
     @pytest.mark.proof("skill_audit", "PROOF-3", "RULE-3")
     def test_it_closes_by_naming_the_next_step(self):
@@ -806,7 +807,7 @@ def core_loop_problems():
     if not loop:
         return ['%s has no fenced block naming purlin:drift' % AGENT]
     steps = ['purlin:drift', 'purlin:spec', 'purlin:build', 'purlin:test',
-             'purlin:audit', 'push']
+             'purlin:audit', 'purlin:sign']
     text = loop[0]
     missing = [step for step in steps if step not in text]
     if missing:
