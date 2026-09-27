@@ -576,7 +576,7 @@ def _apply_workflows(root, files, args, out):
     # The same prerequisites init checks. A workflow file is no use without
     # the remote that holds it and a host that runs it, so a missing one is
     # named and nothing is written.
-    ok, host, lines = flow.prerequisites(root, _protected(root))
+    ok, host, lines = flow.prerequisites(root)
     for line in lines:
         out.say(line)
     if not ok:
@@ -596,11 +596,6 @@ def _apply_workflows(root, files, args, out):
     out.say('it runs on a push to a run/* branch and on a push of a signed/* '
             'tag, and ends with the gate check')
 
-
-def _protected(root):
-    """The branch a signature has to reach: the project's own default branch."""
-    from purlin import records as records_module
-    return records_module.default_branch(root)
 
 def _plugin_source(name):
     source = PLUGIN_SOURCES.get(name, name)

@@ -28,10 +28,12 @@ the template carries it between `# BEGIN upstream-check` and
 along with what they wrap.
 
 `prerequisites()` is what `purlin:init` asks before it writes any of this. A
-workflow is three things at once: a file, a remote that holds it, and a branch
-the triggers name. Writing the file where the other two are missing leaves a
-project believing it has a runner it has not got, so each is checked first and
-a missing one is named with the command that fixes it.
+workflow is a file, a remote that holds it and a host that runs it. Writing
+the file where the remote or the host is missing leaves a project believing it
+has a runner it has not got, so both are checked first and a missing one is
+named with the command that fixes it. No branch is checked: the triggers name
+the run branches and the signing tags, and a signature counts on whatever
+commit carries it.
 """
 
 import os
@@ -54,9 +56,6 @@ RUNNERS = {
 }
 DEFAULT_RUNNER = 'ubuntu-latest'
 ORDER = ('linux', 'macos', 'windows')
-
-# The branch a push starts a run on when the project's own cannot be read.
-DEFAULT_PROTECTED = 'main'
 
 BEGIN = '# BEGIN upstream-check'
 END = '# END upstream-check'
@@ -190,10 +189,6 @@ NO_REMOTE = ('No git remote, so there is no runner to read this workflow. '
 UNKNOWN_HOST = ('The %s remote is neither GitHub nor Azure DevOps, and those '
                 'are the two hosts this release writes a workflow for.'
                 % REMOTE)
-NO_BRANCH = ('The branch %s is not on %s yet, and a signature counts only on '
-             'a commit that reaches it. Push it with: git push -u %s %s')
-UNREACHABLE = ('%s could not be reached, so whether %s is on it was not '
-               'checked. The workflow is written either way.')
 CLI_PRESENT = '%s is installed, so a remote run can be watched from here.'
 CLI_ABSENT = ('%s is not installed, so purlin:test --remote cannot watch a '
               'run. Install it, or open the run on the git host instead.')
@@ -211,33 +206,22 @@ def host_of(project_root):
     return None
 
 
-def prerequisites(project_root, protected=None):
+def prerequisites(project_root):
     """`(ok, host, lines)`: what a workflow needs, checked before it is written.
 
     Two checks can fail, the remote and the host, and the first failure is
-    the one reported. The protected branch is checked too, because a
-    signature counts under `signed` only on a commit that reaches it, and a
-    branch that is not on the remote is a gate nobody can meet; a remote that
-    cannot be reached at all is not an answer either way and the workflow is
-    written. The host CLI is reported either way, because a missing one costs
-    a remote run its watch and nothing else.
+    the one reported. Nothing else is checked. The host CLI is reported
+    either way, because a missing one costs a remote run its watch and
+    nothing else.
     """
     if not _capture(project_root, ['remote']).strip():
         return False, None, [NO_REMOTE]
     host = host_of(project_root)
     if host is None:
         return False, None, [UNKNOWN_HOST]
-    lines = []
-    branch = protected or DEFAULT_PROTECTED
-    reached, heads = _ask(project_root, ['ls-remote', '--heads', REMOTE,
-                                         branch])
-    if not reached:
-        lines.append(UNREACHABLE % (REMOTE, branch))
-    elif not heads.strip():
-        return False, host, [NO_BRANCH % (branch, REMOTE, REMOTE, branch)]
     cli = _HOST_CLI[host]
-    lines.append((CLI_PRESENT if _which(cli) else CLI_ABSENT) % cli)
-    return True, host, lines
+    line = (CLI_PRESENT if _which(cli) else CLI_ABSENT) % cli
+    return True, host, [line]
 
 
 def _which(binary):

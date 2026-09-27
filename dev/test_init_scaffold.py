@@ -113,10 +113,9 @@ class Project(object):
     def _bare(self, host, branch='main'):
         """A local bare repository standing in for the git host.
 
-        Init reads the host off the remote URL and asks the remote whether
-        the protected branch is on it. A bare repository on disk answers
-        both, instantly and with no network: the directory name carries the
-        host, and one push puts `main` on it.
+        Init reads the host off the remote URL. A bare repository on disk
+        answers that with no network: the directory name carries the host,
+        and one push puts `main` on it.
         """
         self.remote_root = os.path.realpath(
             tempfile.mkdtemp(prefix='purlin-remote-'))
@@ -604,21 +603,20 @@ class TestTheWorkflow:
             made.close()
 
     @pytest.mark.proof("scaffold", "PROOF-44", "RULE-44")
-    def test_a_branch_the_remote_does_not_have_stops_the_write(self):
+    def test_a_remote_with_no_branch_yet_still_gets_the_workflow(self):
         made = Project('pytest', host=None)
+        bare = os.path.realpath(tempfile.mkdtemp(prefix='purlin-empty-remote-'))
         try:
             self._trust_remote(made)
-            bare = os.path.realpath(
-                tempfile.mkdtemp(prefix='purlin-empty-remote-'))
             url = os.path.join(bare, 'github-origin.git')
             git(bare, 'init', '--bare', '-q', '-b', 'main', url)
             git(made.root, 'remote', 'add', 'origin', url)
             output = made.run('--gate', 'strong')
-            assert 'is not on origin yet' in output, output
-            assert 'git push -u origin main' in output, output
-            assert not made.has('.github/workflows/purlin.yml')
-            shutil.rmtree(bare, ignore_errors=True)
+            assert made.has('.github/workflows/purlin.yml'), output
+            assert 'is not on origin' not in output, output
+            assert 'git push -u' not in output, output
         finally:
+            shutil.rmtree(bare, ignore_errors=True)
             made.close()
 
     @pytest.mark.proof("scaffold", "PROOF-44", "RULE-44")

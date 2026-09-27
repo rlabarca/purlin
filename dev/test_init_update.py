@@ -83,9 +83,8 @@ def _project(tmp_path, layout, remote=True):
 
     A bare repository beside it stands in for the git host. The update checks
     the same prerequisites init does before it writes a workflow: a remote,
-    a host it knows, and the protected branch on that remote. The directory
-    name carries the host and one push puts `main` on it, so the checks are
-    answered on disk with no network.
+    and a host it knows. The directory name carries the host, so the checks
+    are answered on disk with no network.
     """
     root = os.path.join(str(tmp_path), layout)
     shutil.copytree(os.path.join(DEV, 'fixtures', layout), root)

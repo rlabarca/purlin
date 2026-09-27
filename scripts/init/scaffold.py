@@ -54,7 +54,7 @@ import workflow as workflow_module                            # noqa: E402
 from mutation import mutmut                                   # noqa: E402
 from purlin import (console as console_module,                # noqa: E402
                     frameworks as frameworks_module,
-                    gate as gate_module, records as records_module,
+                    gate as gate_module,
                     results as results_module,
                     specs as specs_module, status as status_module)
 
@@ -511,16 +511,10 @@ def write_workflow(plan, root, purlin_ref, upstream_check):
     """The workflow the git host runs, with the matrix the `@env` tags name.
 
     The prerequisites are checked first and nothing is written when one is
-    missing: a workflow file is no use without the remote that holds it, a
-    host that runs it and the branch its triggers name.
-
-    The protected branch is read from the tree so the prerequisite check can
-    say whether it is on the remote: a signature counts under `signed` only
-    on a commit that reaches it. The triggers name no branch of the
-    project's own.
+    missing: a workflow file is no use without the remote that holds it and
+    a host that runs it. The triggers name no branch of the project's own.
     """
-    protected = records_module.default_branch(root)
-    ok, host, lines = workflow_module.prerequisites(root, protected)
+    ok, host, lines = workflow_module.prerequisites(root)
     for line in lines:
         plan.note(line)
     if not ok:
