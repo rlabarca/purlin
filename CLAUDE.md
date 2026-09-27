@@ -6,19 +6,19 @@ extensions specific to developing the framework.
 
 ## Design and copy
 
-Every visual surface and every line of prose follows `design/readme.md`, which is the authority.
-It binds the dashboard, the CLI output, the pull request comment, the docs and this file.
+The look follows `design/readme.md` and the wording follows `references/writing_style.md`; each
+is the authority for its half. They bind the dashboard, the CLI output, the docs and this file.
 
 - **Two surfaces, one system.** Warm navy, cream, blush and copper for the brand and the docs;
   `data-surface="product"` for the dashboard. Green, amber, red and teal mean pass, warn, fail
   and neutral on both. No other accent, no gradient, no shadow, no icon set beyond the unicode
-  glyphs `▶ ▼ ▲ →`, and no emoji anywhere, CLI output and pull request comments included.
+  glyphs `▶ ▼ ▲ →`, and no emoji anywhere, CLI output included.
 - **Machine text is monospace, human text is sans.** Commands, rule ids, paths, shas and gates in
   Courier New; prose in Arial. Sentence case; command names lowercase with the colon.
 - **Tokens only.** Reference the semantic aliases in `design/tokens/theme-dark.css` and
   `theme-light.css`, never a raw palette value. Both themes ship.
-- **Copy voice** follows "Content fundamentals": plain and declarative, second person for the
-  reader, third person for the system, exact numbers, limits stated, no superlatives.
+- **Copy voice** follows `references/writing_style.md`: plain and declarative, second person for
+  the reader, third person for the system, exact numbers, limits stated, no superlatives.
 - Docs diagrams are mermaid with the init block from `docs/_mermaid.md`; screenshots come from
   the rebuilt dashboard; the logo is `design/assets/logo.svg`.
 
@@ -73,6 +73,7 @@ concept and consolidate any duplicate in the same commit.
 | `references/supported_frameworks.md` | Test framework detection |
 | `references/proof_plugin_contract.md` | The checklist for a proof plugin and how to prove one |
 | `references/rule_examples.md` | Worked rules and proofs |
+| `references/writing_style.md` | How Purlin writes: voice, person, casing, numbers, machine text |
 
 ## Releasing a new version
 
@@ -107,5 +108,5 @@ and `templates/`. The line below is not what ships; it is what a consumer may de
 - **`dev/`** holds this repository's own maintenance, build and release scripts and its proofs.
   A path into `dev/`, or into this repository's own `specs/`, never appears in a prose line of a
   skill, an agent definition or a reference: a consumer's checkout has neither, so such a citation
-  is an instruction that cannot be followed. `purlin_skills` and `purlin_references` hold that
-  scope.
+  is an instruction that cannot be followed. No proof checks this line across those files; the
+  review of each change holds it.

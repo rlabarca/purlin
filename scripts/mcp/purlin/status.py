@@ -10,7 +10,7 @@ and the test strength; at `signed` it adds how many are signable and how many
 are signed. The table scales with the gate: a `passed` project is never shown
 a strength, a bar or a signature it did not ask for.
 
-Copy follows `design/readme.md`: sentence case, second person for what you
+Copy follows `references/writing_style.md`: sentence case, second person for what you
 do, third person for what Purlin does, exact numbers, and the only glyphs are
 `->`, `>` and `v` in their unicode forms. No emoji, anywhere.
 """
