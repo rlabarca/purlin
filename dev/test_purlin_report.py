@@ -1165,20 +1165,19 @@ def test_the_brief_panel_reads_sentences_and_names_no_check(browser, tmp_path):
 
 @pytest.mark.proof("purlin_report", "PROOF-55", "RULE-40", tier="e2e")
 def test_the_top_bar_states_the_signed_tag(browser, tmp_path):
-    """The payload names the tag or names none, and the bar reads both."""
-    for process in ('solo', 'team', 'regulated'):
+    """The payload names the tag on HEAD, or names none."""
+    payload = payload_named('regulated')
+    page = open_board(browser, tmp_path, payload)
+    bar = page.inner_text('.topbar')
+    assert payload['tag']['name'] in bar
+    assert payload['tag']['commit'][:7] in bar
+    assert 'no signed tag' not in bar
+    page.close()
+    for process in ('solo', 'team'):
         payload = payload_named(process)
-        assert 'tag' not in payload
+        assert payload['tag'] is None
         page = open_board(browser, tmp_path, payload)
         bar = page.inner_text('.topbar')
         assert 'no signed tag' in bar
         assert 'signed/' not in bar
         page.close()
-    payload = payload_named('regulated')
-    payload['tag'] = {'name': 'signed/1.4.0', 'commit': payload['commit']}
-    page = open_board(browser, tmp_path, payload)
-    bar = page.inner_text('.topbar')
-    assert 'signed/1.4.0' in bar
-    assert payload['commit'][:7] in bar
-    assert 'no signed tag' not in bar
-    page.close()

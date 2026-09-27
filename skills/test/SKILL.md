@@ -49,9 +49,10 @@ project: `Feature`, `Rules`, `Passed`, `Failing`, `No test`, `Last run`. It comm
 itself, under your own git identity, with the subject `purlin: tests at <sha7>`, and prints
 `Test results committed.`. It never pushes. A run that saw the same thing about the same code
 prints `Test results unchanged.` and commits nothing. A `--feature` run writes what it ran and
-leaves the rest of the table as it was. These results are the `local` source: they count at
-every gate, and they are how a teammate reads your run on the git host.
-`references/formats/tests_format.md` is the contract.
+leaves the rest of the table as it was. The folder is the source: yours are `local`, and a
+remote run's, under `.purlin/tests/ci/`, are `ci`. Both count at every gate, and both are how a
+teammate reads a run on the git host. `references/formats/tests_format.md` is the contract for
+both folders, and its `> Format-Version:` line says which version this release ships.
 
 ## Step 3: read the table
 
@@ -87,7 +88,10 @@ machine is <os>. A remote runner runs it: purlin:init adds one.` An untagged pro
 anywhere, and those three tags are the whole vocabulary.
 
 Each operating system a counting run covered is one **platform** in the passed cell, with its
-own word. A rule that passes on one and fails on another reads `partial`, which is not met.
+own word, and the cell merges the two sources per platform. A rule that passes on one and fails
+on another reads `partial`, which is not met. `--remote` pulls the runner's results home at
+every gate, so a proof tagged for a system this machine is not reads `passed` with that
+platform beside it rather than `not run`.
 
 ## Step 6: the gate line
 

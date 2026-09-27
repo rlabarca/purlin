@@ -68,10 +68,12 @@ pushes it. No tag is written while any rule falls short. A tag holds the whole t
 commit, so the code, every record, every brief and every signature are pinned together by one
 name.
 
-**The test results are what your own run saw**: one `.purlin/tests/<feature>.json` per feature
-and one `.purlin/tests.md` table for the whole project. `purlin:test` writes both and commits
-them itself as `purlin: tests at <sha7>`, so a teammate reads your run on the git host without
-running anything.
+**The test results are what a run of the tagged tests saw**: one
+`.purlin/tests/<feature>.json` per feature and one `.purlin/tests.md` table for the whole
+project. `purlin:test` writes both and commits them itself as `purlin: tests at <sha7>`, so a
+teammate reads your run on the git host without running anything. The folder is the source
+here too: yours sit in `.purlin/tests/` and a remote run's in `.purlin/tests/ci/`, which
+`purlin:test --remote` pulls home. Both count at every gate.
 
 **A brief is the machine's report on one rule**: the test strength beside the minimum, what
 the audit observed, and whether it could settle the question. It recommends nothing, and a
@@ -96,7 +98,7 @@ new.
 
 | File | Written by | Where it lands | Who may write it |
 |------|-----------|----------------|------------------|
-| test results | `purlin:test` | `.purlin/tests/<feature>.json` and `.purlin/tests.md` | you. They count at every gate |
+| test results | `purlin:test`, and a remote runner | `.purlin/tests/<feature>.json`, or `.purlin/tests/ci/<feature>.json`, and `.purlin/tests.md` | you, into `.purlin/tests/`; a runner, into `ci/`. Both count at every gate |
 | record | `purlin:audit`, and a remote runner | `.purlin/records/local/<feature>/`, or `.purlin/records/ci/<feature>/` | anyone, into `local/`; a runner, into `ci/`, through the git host's API |
 | brief | `purlin:audit`, and a remote runner | `.purlin/briefs/local/<feature>/`, or `.purlin/briefs/ci/<feature>/` | the same two hands, into the same two folders |
 | signature | `purlin:sign <feature> RULE-N` | `specs/<category>/<feature>.signatures/` | a person, in a signed commit; under `signed`, one on the signer list |
@@ -113,7 +115,8 @@ Most do not, and nothing above needs one. `purlin:init` writes a CI workflow for
 and no other:
 
 - **A proof in `specs/` is tagged `@env` for an operating system this machine is not**, so only
-  a runner can prove it.
+  a runner can prove it. `purlin:test --remote` brings the runner's results home, and the
+  rule's passed cell reads `passed` with that platform beside it.
 - **You chose not to trust this machine for signing**, so the tests a signature rests on run on
   a clean one.
 

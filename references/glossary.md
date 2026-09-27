@@ -18,9 +18,11 @@ in the shipped prose where a retired spelling may still be written.
   and exists only at or below the project's gate. Above the gate a cell is absent, not empty.
 - **gate**: the one project setting, `passed`, `strong` or `signed`. A rule **meets the gate**
   when every cell up to the gate's level is met.
-- **run**: one execution of the tagged tests. **test results**: what `purlin:test` writes and
-  commits after a run, `.purlin/tests/<feature>.json` per feature and `.purlin/tests.md` for the
-  project. **record**: the machine's evidence of one audit at `strong` and above: results,
+- **run**: one execution of the tagged tests. **test results**: what a run of the tagged tests
+  writes and commits, `.purlin/tests/<feature>.json` per feature and `.purlin/tests.md` for the
+  project. The folder is the source here too: `purlin:test` writes yours under
+  `.purlin/tests/`, a remote run writes its own under `.purlin/tests/ci/`, and
+  `purlin:test --remote` pulls those home. **record**: the machine's evidence of one audit at `strong` and above: results,
   strength and scope tree, a committed file. Nobody signs a record.
   **source**: where a pass came from, and the folder the record sits in: `ci`
   (`.purlin/records/ci/`, which a remote runner writes and a tag run checks the provenance of)

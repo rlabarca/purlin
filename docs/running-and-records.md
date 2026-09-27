@@ -336,7 +336,7 @@ minutes at all.
 | The run | What it does | Commits |
 |---|---|---|
 | a `signed/**` tag | Reruns the tagged tests on a clean machine, checks that every signature and every hold still binds the rule, the proof, the test, the bar and the audit it names, checks that every record and brief under `ci/` was committed by the runner's own identity, then runs the gate check | nothing |
-| a `run/*` branch | Runs the tagged tests, and at `strong` and above audits what it ran | the records and the briefs, under `ci/`, onto that branch |
+| a `run/*` branch | Runs the tagged tests, and at `strong` and above audits what it ran | at every gate the test results, under `.purlin/tests/ci/`; at `strong` and above the records and the briefs under `ci/` too, all onto that branch |
 
 The tag run is a verification, not a fresh judgment: the evidence is already in the tree and
 the run says whether it still matches the code the tag points at. An attestation that no longer
@@ -429,14 +429,16 @@ It pushes a branch of its own rather than the branch you are on:
 2. It pushes this commit to `run/<branch>-<sha7>` on `origin`, creating that branch there and
    nothing locally. The commit's own short sha is in the name, so two runs of the same branch
    never share one.
-3. The push to `run/**` starts the workflow, which at `strong` and above commits its records
-   and briefs onto that branch. At `passed` it writes no record, so there is nothing to bring
-   home and the run says so.
+3. The push to `run/**` starts the workflow, which commits what it wrote onto that branch: the
+   test results under `.purlin/tests/ci/<feature>.json` at every gate, and at `strong` and
+   above the records and the briefs beside them.
 4. On GitHub it finds the run by that branch, `gh run list --branch run/<branch>-<sha7>`,
    retrying for a short while because a run takes a moment to register, then waits on that run
    by id with `gh run watch --exit-status`. Then `git pull --ff-only origin
-   run/<branch>-<sha7>` brings the record commit onto your branch as one fast-forward, then it
-   deletes the run branch from `origin` and prints the table. Without the `gh` CLI installed it
+   run/<branch>-<sha7>` brings that commit onto your branch as one fast-forward, then it
+   deletes the run branch from `origin` and prints the table. That is how a proof tagged
+   `@env(windows)` stops reading `not run` on a Mac: the runner's results come home, and the
+   rule's passed cell reads `passed` with `windows · ci` beside it. Without the `gh` CLI installed it
    says so and tells you which branch to open and which pull command to run.
 5. On Azure DevOps it prints the pipeline URL and the two commands to run when the pipeline
    finishes, and returns.

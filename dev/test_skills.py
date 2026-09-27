@@ -35,7 +35,7 @@ BASH = bash_command()
 CEILINGS = {
     'anchor': 160, 'audit': 105, 'build': 130, 'drift': 150, 'find': 85,
     'init': 250, 'rename': 85, 'sign': 185, 'spec': 210,
-    'spec-from-code': 130, 'status': 80, 'test': 115,
+    'spec-from-code': 130, 'status': 80, 'test': 120,
 }
 COMMANDS = sorted(CEILINGS)
 

@@ -103,7 +103,11 @@ files are written to.
 
 Because both files are tracked, a teammate reading the repository on the git host sees your
 run without running anything and without a remote runner. They are a `local` source, and a
-`local` source counts at every gate.
+`local` source counts at every gate. A remote run writes the same files under
+`.purlin/tests/ci/` and `purlin:test --remote` pulls them home, so the folder says which hand
+wrote them. `references/formats/tests_format.md` is the contract for both, and its
+`> Format-Version:` line says which version this release ships; the folder, `source` and
+`scope_tree` arrived with the current one.
 
 | Source | Where it sits | Counts under |
 |--------|---------------|--------------|
@@ -166,8 +170,10 @@ login PROOF-4 needs windows; this machine is macos. A remote runner runs it: pur
 
 The rule reads `not run` until that system runs it. With a workflow in place,
 `purlin:test --remote` hands the commit to the runner on a run branch of its own,
-`run/<branch>-<sha7>`, which it creates, waits on and deletes. At `passed` the runner writes no
-record, so there is nothing to pull back: the run prints what the runner saw.
+`run/<branch>-<sha7>`, which it creates, waits on, pulls back from and deletes. The runner
+commits its test results under `.purlin/tests/ci/<feature>.json` and the pull brings them into
+your tree, so the rule stops reading `not run` and its passed cell reads `passed` with
+`windows · ci` beside it.
 [running-and-records.md](running-and-records.md#purlintest---remote) is the whole of it.
 
 Teammates do not need a runner to see your results: `purlin:test` commits them, so they are in

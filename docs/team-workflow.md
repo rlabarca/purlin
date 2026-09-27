@@ -73,7 +73,9 @@ so only a runner can prove it, or you chose not to trust this machine for signin
 a signature rests on run on a clean one. Where one
 exists, `purlin:test --remote` asks for a single run of it on a branch of its own,
 `run/<branch>-<sha7>`, created from this commit, watched, pulled back with one fast-forward and
-then deleted. The branch you are working on never leaves the machine.
+then deleted. What comes back is what the runner committed: its test results under
+`.purlin/tests/ci/`, and at this gate the record and the briefs beside them. The branch you are
+working on never leaves the machine.
 [running-and-records.md](running-and-records.md#purlintest---remote) is the whole of it.
 
 A runner does not need Purlin installed as a plugin. Purlin's own repository is the plugin, so
@@ -88,7 +90,7 @@ while working on Purlin itself.
 
 | Artifact | Where it goes | Who reads it |
 |----------|---------------|--------------|
-| The test results | `.purlin/tests/<feature>.json` and `.purlin/tests.md`, committed | a teammate on the git host, the board |
+| The test results | `.purlin/tests/<feature>.json` and `.purlin/tests.md`, committed; a remote run's under `.purlin/tests/ci/` | a teammate on the git host, the board |
 | One record per feature | `.purlin/records/local/<feature>/`, committed | the gate, `purlin:status`, the dashboard |
 | One brief per rule the audit reached | `.purlin/briefs/local/<feature>/`, committed | QA, at the next `purlin:sign` |
 

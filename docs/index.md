@@ -61,7 +61,7 @@ can be signed. A rule says its own with a tag; a rule with no tag takes the proj
 | [The gate](../references/hard_gates.md) | The one setting, which records count, where the gate is checked, the signer list |
 | [Glossary](../references/glossary.md) | The word this project uses for each concept, and the retired spellings |
 | [Spec format](../references/formats/spec_format.md) | The 2-section spec, field by field |
-| [Test results format](../references/formats/tests_format.md) | The two files `purlin:test` writes and commits |
+| [Test results format](../references/formats/tests_format.md) | The two files a run of the tagged tests writes, yours and a runner's |
 | [Record format](../references/formats/record_format.md) | The record an audit writes, yours or CI's |
 | [Signature format](../references/formats/signature_format.md) | The signature file and what it binds |
 | [Spec quality](../references/spec_quality_guide.md) | Writing a rule worth having, and diagnosing a failure |
