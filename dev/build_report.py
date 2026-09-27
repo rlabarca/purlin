@@ -37,7 +37,7 @@ line in the page is a line someone wrote. The output is a pure function of the
 inputs: building twice gives the same bytes.
 
 The page is also copied to the project root, where `.purlin/report-data.js`
-sits beside it and the design files a spec names resolve.
+sits beside it.
 """
 
 import os

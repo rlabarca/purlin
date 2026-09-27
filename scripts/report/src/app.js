@@ -357,22 +357,6 @@ function webRemote() {
   return remote.indexOf('github.com') >= 0 ? remote : null;
 }
 
-/* The first design file a spec names, when it names one file rather than a
-   pattern: a pattern cannot be resolved without reading the directory, which
-   a page opened from disk cannot do. */
-function designThumb(feature) {
-  var files = (feature.source_globs || []).concat(
-    feature.source_path ? [feature.source_path] : []);
-  for (var i = 0; i < files.length; i++) {
-    var file = String(files[i]);
-    if (!/[*?\[]/.test(file) && /\.(png|jpg|jpeg|svg|webp)$/i.test(file)) {
-      return '<img class="thumb" src="' + esc(file) + '" alt="'
-        + esc(feature.name + ' design') + '" onerror="this.remove()">';
-    }
-  }
-  return '';
-}
-
 function ageText(iso) {
   var then = Date.parse(iso || '');
   if (!then) { return {text: 'age unknown', stale: true}; }

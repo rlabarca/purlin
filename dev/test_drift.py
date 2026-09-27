@@ -769,7 +769,6 @@ class TestDriftClassification:
         for path, text in (('src/thing.py', 'def thing():\n    return 1\n'),
                            ('src/other.py', 'def other():\n    return 2\n'),
                            ('tests/test_thing.py', 'def test_thing():\n    pass\n'),
-                           ('designs/thing/mock.svg', '<svg></svg>\n'),
                            ('README.md', '# thing\n')):
             _write(os.path.join(root, *path.split('/')), text)
         _commit(root, 'chore: the project under test')
@@ -788,7 +787,6 @@ class TestDriftClassification:
                            ('src/other.py', 'def other():\n    return 3\n'),
                            ('tests/test_thing.py',
                             'def test_thing():\n    assert 1\n'),
-                           ('designs/thing/mock.svg', '<svg><rect/></svg>\n'),
                            ('README.md', '# thing, revised\n')):
             _write(os.path.join(root, *path.split('/')), text)
         _commit(root, 'feat: move everything')
@@ -799,7 +797,6 @@ class TestDriftClassification:
             'specs/mcp/thing.md': 'CHANGED_SPECS',
             'tests/test_thing.py': 'TESTS_CHANGED',
             'src/thing.py': 'CHANGED_BEHAVIOR',
-            'designs/thing/mock.svg': 'CHANGED_DESIGNS',
             'README.md': 'NO_IMPACT',
             'src/other.py': 'NEW_BEHAVIOR',
         }, found

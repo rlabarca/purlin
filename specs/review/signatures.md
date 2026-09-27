@@ -3,8 +3,8 @@
 > Description: The attestation that a rule, its proof, its test and the audit
 >   that read them belong together, and the command that writes one. One
 >   signature is one file, so two signatures never conflict, and it binds the
->   hashes of the rule text, the proof text and the test body, plus the pinned
->   design a design rule rests on and what the audit found. A person writes
+>   hashes of the rule text, the proof text and the test body, plus what the
+>   audit found. A person writes
 >   every one of them, as one signed commit; CI writes none. With no argument
 >   the command walks the Review list and then the Sign list one brief at a
 >   time and, when every rule meets the gate, writes the tag that marks the
@@ -16,7 +16,7 @@
 
 ## Rules
 
-- RULE-1: The three hashes a signature binds come back together with the kind of the test hash and the pinned design hash of a design rule [bar: strong] [origin: eng]
+- RULE-1: The three hashes a signature binds come back together with the kind of the test hash [bar: strong] [origin: eng]
 - RULE-2: A rule the project does not declare has no hashes at all [bar: passed] [origin: eng]
 - RULE-3: Reflowing a rule's whitespace or adding a tag leaves the triple where it was, because the triple binds the rule text with its tags stripped [bar: strong] [origin: eng]
 - RULE-4: Editing the rule text, the proof text or the test body moves the triple [bar: strong] [origin: eng]
@@ -24,7 +24,7 @@
 - RULE-6: A signature stays current only while the rule text, the proof text, the test body, the bar and what the audit observed still hash to what it bound, so a bar re-tag stales it [bar: strong] [origin: eng]
 - RULE-7: A signature whose triple no longer matches still comes back from the reader, so the signed cell can read `stale` rather than `unsigned` [bar: strong] [origin: eng]
 - RULE-8: A signature file is named for the rule, the first eight characters of the triple and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen [bar: strong] [origin: eng]
-- RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the design hash, the audit hash, the bar, the signer, the note, the timestamp, the gate, the brief and the record [bar: strong] [origin: eng]
+- RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the audit hash, the bar, the signer, the note, the timestamp, the gate, the brief and the record [bar: strong] [origin: eng]
 - RULE-10: The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec and never reads a brief written under the same first two parts of a name [bar: strong] [origin: eng]
 - RULE-11: With no feature named the command opens with `Review: <n> rules. Sign: <n> rules.`, walks the two lists one brief at a time, taking one of the four answers sign, case, hold or skip at each stop, and writes nothing until the walk closes [bar: strong] [origin: eng]
 - RULE-12: `--batch` signs, in one signed commit, every rule on the Review list at the gate `strong`, and every rule on the Review list and then the Sign list at the gate `signed`; a bare feature signs the same rules of that feature alone [bar: strong] [origin: eng]
@@ -43,14 +43,14 @@
 - RULE-41: A signature binds the rule's bar, so writing one for a `[bar: strong]` rule and then retagging it `[bar: passed]` leaves the signed cell reading `stale` [bar: strong] [origin: eng]
 - RULE-42: The brief a signature or a hold names is the file an audit committed for the same triple, under `.purlin/briefs/<source>/<feature>/`, and it is null where no audit wrote one [bar: strong] [origin: eng]
 - RULE-43: The audit hash a signature binds is taken over the brief's test strength, its observations sorted and whether it settled, and over nothing that moves on its own, so re-running the same audit over the same code stales nothing and an audit that observes something new stales the signature; a rule with no brief binds the hash of the empty string [bar: strong] [origin: eng]
-- RULE-44: A hold binds the triple, the design and the bar and not the audit, because a hold is a statement about the rule, the proof and the test that a re-audit does not answer [bar: strong] [origin: eng]
+- RULE-44: A hold binds the triple and the bar and not the audit, because a hold is a statement about the rule, the proof and the test that a re-audit does not answer [bar: strong] [origin: eng]
 - RULE-45: When the walk closes and every rule meets the gate the command writes the annotated tag `signed/<version>`, taking the version from the `VERSION` file at the project root and falling back to the config's, with a message naming the commit and the gate, and prints `Run: git push origin signed/<version>`; it pushes nothing [bar: strong] [origin: eng]
 - RULE-46: No tag is written while any rule falls short of the gate, and the command says how many of how many; no tag is written over one that is already there, and `--release <name>` names another [bar: strong] [origin: eng]
 - RULE-47: With `trust: remote` the command refuses a rule whose passed cell carries no current `ci` platform entry, printing `sign: <feature> RULE-N has no ci test run for this commit; run purlin:test --remote first`; with `trust: local`, the default, it signs what this machine ran [bar: strong] [origin: eng]
 
 ## Proof
 
-- PROOF-1 (RULE-1): Read the hashes of `login RULE-1` in a project with a record; verify the rule, proof and test hashes are each 64 characters, the kind is `file` and the design hash is `none`
+- PROOF-1 (RULE-1): Read the hashes of `login RULE-1` in a project with a record; verify the rule, proof and test hashes are each 64 characters and the kind is `file`
 - PROOF-2 (RULE-2): Read the hashes of `login RULE-99`, which the spec does not declare; verify all five values are `none`
 - PROOF-3 (RULE-3): Read the triple, rewrite the rule line with doubled spaces and an added `[origin: pm]` tag, and read it again; verify the two values are equal
 - PROOF-4 (RULE-4): Read the triple, then change `200` to `201` in the rule, then extend the proof text, then add a comment to the test; verify each of the three values differs from the first
@@ -62,7 +62,7 @@
 - PROOF-10 (RULE-6): Write a signature, then raise the rule from `[bar: passed]` to `[bar: strong]`; verify zero signatures are current
 - PROOF-11 (RULE-7): Write a signature, then edit the rule text; verify the reader still returns exactly 1 signature for the rule, that its signer is `jane@acme.com` and that it is no longer current
 - PROOF-12 (RULE-8): Write a signature for the address `Rich.LaBarca+purlin@example.com`; verify the only file in the signatures directory is named `RULE-1.<hash8>.rich-labarca-purlin.json` for that rule's triple
-- PROOF-13 (RULE-9): Write a signature naming a brief and a record; verify its schema is `purlin-signature/1`, its field names are exactly the 16 the format lists, its triple is the first 16 characters of the rule's triple, its `note` is null and its timestamp ends `Z`
+- PROOF-13 (RULE-9): Write a signature naming a brief and a record; verify its schema is `purlin-signature/1`, its field names are exactly the 15 the format lists, its triple is the first 16 characters of the rule's triple, its `note` is null and its timestamp ends `Z`
 - PROOF-14 (RULE-10): Write a signature and a brief for the same rule into one signatures directory, then load the signatures; verify exactly 1 comes back and its signer is `jane@acme.com`
 - PROOF-15 (RULE-12): Run `--batch` in a project at gate `signed` whose `sign_at` is `strong`; verify it exits 0, prints `Signed 1 rule in` and writes a signature for `RULE-2` alone
 - PROOF-16 (RULE-13): Run `login RULE-2 --note "I ran the lockout by hand."`; verify it exits 0 and the signature's `note` reads `I ran the lockout by hand.`

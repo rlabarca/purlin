@@ -52,8 +52,6 @@ OLD_SHELL_PLUGIN = 'purlin-proof.sh'                       # retired
 TIER_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')     # retired
 KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'  # retired
                          r'(?=(?:[ \t]+@env\([a-z]+\))?[ \t]*$)')
-DESIGN_SCHEME = 'figma://'                                 # retired
-DESIGN_FIELDS = ('> Visual-Reference:', '> Visual-Hash:')  # retired
 WORKFLOW_MARKER = '.proofs-'                               # retired
 PRE_PUSH_HOOK = '.git/hooks/pre-push'                      # retired
 PRE_PUSH_KEY = 'pre_push'                                  # retired
@@ -406,37 +404,6 @@ def _apply_kind_tags(root, files, args, out):
     out.say('dropped the kind of test from the proof lines of %d spec%s: '
             'purlin:test runs every tagged test' % (len(files), _s(files)))
 
-def _detect_design_sources(root):
-    hits = []
-    for rel in _files_under(root, 'specs', ('*.md',)):
-        for line in _read(os.path.join(root, rel)).splitlines():
-            if line.startswith(DESIGN_FIELDS) or (
-                    line.startswith('> Source:') and DESIGN_SCHEME in line):
-                hits.append(rel)
-                break
-    return hits
-
-def _apply_design_sources(root, files, args, out):
-    """A design is a versioned file under designs/, never a tool connection."""
-    for rel in files:
-        path = os.path.join(root, rel)
-        out.kept(_back_up_copy(path, rel))
-        kept, dropping = [], False
-        for line in _read(path).splitlines(True):
-            if line.startswith(DESIGN_FIELDS):
-                dropping = True
-                continue
-            if dropping and line.startswith('>   '):
-                continue
-            dropping = False
-            if line.startswith('> Source:') and DESIGN_SCHEME in line:
-                line = '> Source: designs/%s/\n' % os.path.basename(rel)[:-3]
-            kept.append(line)
-        _write(path, ''.join(kept))
-        out.done(rel)
-    out.say('pointed %d spec%s at designs/<feature>/ instead of a design tool'
-            % (len(files), _s(files)))
-
 def _detect_workflows(root):
     """The workflow files this release replaces: any that commit proof files.
 
@@ -541,8 +508,6 @@ MIGRATIONS = (
      _detect_os_tags, _apply_os_tags),
     ('kind-tags', 'drop the kind of test from every proof line',
      _detect_kind_tags, _apply_kind_tags),
-    ('design-sources', 'point design sources at designs/<feature>/',
-     _detect_design_sources, _apply_design_sources),
     ('untracked-files', 'drop the proof files and untrack the dashboard data',
      _detect_untracked, _apply_untracked),
     ('hooks', 'remove the git hooks an older release installed',

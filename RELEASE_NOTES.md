@@ -224,7 +224,7 @@ committed evidence files, replaced by records; the committed proof files, which 
 state under `.purlin/runtime/` and are not committed at all; the committed dashboard data; the
 pre-push hook and every branch rule Purlin used to print; the pull request comment and the
 dashboard artifact; the design-tool importer, the visual hash and the live design-tool
-connection, replaced by exported files under `designs/` reviewed by pull request; the signer
+connection; the signer
 list, the check that a signer did not last commit to the test, and the check that a signing
 commit is on the protected branch, so a signature counts on a signed commit whose hashes match
 and init's workflow prerequisites are a remote and a known host; and C and PHP support, so a
@@ -265,6 +265,10 @@ Also gone, each without a replacement:
   flag of `purlin_run.py`, the `tier` field of a proof file and `PURLIN_PROOF_TIER`.
   `purlin:test` runs every tagged test of the features it runs, each plugin writes one proof
   file per feature, and `purlin:init --update` drops the tag from a 0.9.5 proof line.
+- The tie between a design and a spec is gone: the `designs/` folder and README init wrote, the
+  design anchor and its `> Source:` of local file globs, `design_hash` in a signature, the
+  design layer of the brief, the `CHANGED_DESIGNS` kind and the `design` view of
+  `purlin:drift`, and the copying of designs by `purlin:anchor sync`.
 
 ### The 0.10.0 line that never shipped
 

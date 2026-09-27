@@ -19,7 +19,6 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 purlin:drift                    The view for your role, inferred from what you touched
 purlin:drift eng                Files touched, tests missing, tags missing, pins, code changed
 purlin:drift pm                 Criteria, pm-owned rules, rules engineers added, pins
-purlin:drift design             Mocks changed, design rules gone stale
 purlin:drift qa                 Signatures stale, how long Review and Sign are, rules needing a person
 purlin:drift --since <N>        The last N commits instead of since the last record
 purlin:drift --since <date>     Since a date, YYYY-MM-DD
@@ -31,7 +30,7 @@ you chose in the first line.
 
 ## When to run it
 
-Run it at the start of a session, after an anchor pin or a design export moved, before QA
+Run it at the start of a session, after an anchor pin moved, before QA
 walks the review list, and before a release. Those are the four moments where the tree has
 moved ahead of the specs without anyone being told.
 
@@ -89,15 +88,6 @@ drift pm: 3 things to look at
   login RULE-3 (origin: pm)  text changed on this branch; signature stale
   login RULE-9               added by an engineer, origin: eng, derived from RULE-3
   design_tokens (anchor)     pinned 4 commits behind its source
-```
-
-**design.** What moved under the mocks.
-
-```
-drift design: 2 things to look at
-
-  designs/checkout/cart.png  changed; the anchor pin is behind the files
-  checkout RULE-4 (origin: design)  signature stale: the mock it names was re-exported
 ```
 
 **qa.** What is waiting for you.

@@ -148,7 +148,7 @@ the newer sha.
 ## Anchors
 
 An anchor is a spec for something shared across features: a security policy, an API contract,
-a brand rule, a set of design screens. A feature names it with `> Requires: <name>` and the
+a brand rule. A feature names it with `> Requires: <name>` and the
 anchor's rules are counted with the feature's own. An anchor with `> Global: true` applies to
 every feature spec without being named.
 
@@ -191,8 +191,7 @@ file does not carry:
 A pin is always a commit, never a branch. A branch moves, and an anchor whose rules changed
 under a project with no diff to read is exactly what pinning exists to prevent.
 
-**sync** shows the delta, updates the local copy, copies any design files the anchor
-references into `designs/<anchor>/`, and advances the pin, all in one commit. A rule whose
+**sync** shows the delta, updates the local copy and advances the pin, all in one commit. A rule whose
 text moved stales its signature. `purlin:anchor sync --check` reports without writing:
 `anchor security_baseline is 4 commits behind its pin: RULE-3 changed, RULE-6 added`.
 `purlin:drift` runs that same check, one cached lookup per pin per run, so a pin that has
@@ -214,6 +213,5 @@ field or tag is ignored, and the file is named once in the run's warnings. `purl
 
 ## Next
 
-- A design under a spec: [design-in-specs.md](design-in-specs.md)
 - A codebase that predates its specs: [spec-from-code.md](spec-from-code.md)
 - Who writes which rule: [working-together.md](working-together.md)

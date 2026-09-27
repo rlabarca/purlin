@@ -1,4 +1,4 @@
-> Format-Version: 8
+> Format-Version: 9
 
 # Anchor format
 
@@ -23,7 +23,7 @@ This document has two parts:
 
 > Description: <what cross-cutting concern this anchor defines>
 > Scope: <file paths this anchor governs>
-> Type: <optional: design, api, security, brand, schema, legal, prodbrief>
+> Type: <optional: api, security, brand, schema, legal, prodbrief>
 
 ## Rules
 
@@ -55,7 +55,7 @@ it by repo URL plus path.
 | `> Description:` | Plain-language description. Continuation lines start with `>`. Displayed in the dashboard |
 | `> Scope:` | File paths this anchor governs |
 | `> Stack:` | Language and framework |
-| `> Type:` | A suggestion to the reader: `design`, `api`, `security`, `brand`, `schema`, `legal`, `prodbrief`. Not enforced |
+| `> Type:` | A suggestion to the reader: `api`, `security`, `brand`, `schema`, `legal`, `prodbrief`. Not enforced |
 | `> Global:` | `true` applies the anchor's rules to every feature spec without `> Requires:` |
 | `> Note:` | Free text for the reader: setup a checkout needs, why a source points where it does. Repeatable, and every parser ignores it |
 
@@ -67,11 +67,11 @@ file in the source repo does not carry these.
 
 | Field | Description |
 |-------|-------------|
-| `> Source:` | Where the anchor comes from. Two shapes, below |
+| `> Source:` | Where the anchor comes from: a git URL plus a path, below |
 | `> Path:` | The path inside the source repo, when `> Source:` carries the URL alone |
-| `> Pinned:` | The commit sha of a git source, or the hash of the pinned local files |
+| `> Pinned:` | The commit sha of the source |
 
-### Source shape 1: a git URL plus a path
+### The source: a git URL plus a path
 
 ```markdown
 > Source: https://github.com/acme/security-policies.git specs/no_eval.md
@@ -85,40 +85,12 @@ what pinning exists to prevent.
 
 `purlin:drift` runs one cached `git ls-remote` per source per run and reports
 `anchor X is behind its pin`. `purlin:anchor sync X` shows the delta, updates
-the local copy, copies any designs it references into `designs/<anchor>/` and
-advances the pin, all in one commit.
+the local copy and advances the pin, all in one commit.
 
 A `> Source:` value is repository-supplied text, so it never reaches git in
 option position. A value that begins with `-` or names an `ext::` or `fd::`
 transport is refused before any process starts, and the status line says
 `(source rejected: begins with "-")`.
-
-### Source shape 2: local file globs
-
-A design anchor pins files in the project instead of a repo:
-
-```markdown
-# Anchor: checkout_design
-
-> Description: The checkout screens, as exported.
-> Source: designs/checkout/*.png, designs/checkout/*.pdf
-> Pinned: 9f2c1ab4e7d0
-> Type: design
-
-## Rules
-
-- RULE-1: The checkout page shows the order total above the pay button [origin: design]
-
-## Proof
-
-- PROOF-1 (RULE-1): Load /checkout with one item in the basket; verify the text "Order total" appears above the button labelled "Pay"
-```
-
-`> Pinned:` is the hash of the named files. A new export changes it, which
-stales the signatures of that anchor's rules, and the brief shows the mock
-beside the screenshot the test captured. A proof for a design rule is an
-end-to-end observable (a route, a state, visible text, presence), never a
-selector.
 
 ### Example: what a consumer's copy looks like
 
@@ -151,7 +123,7 @@ A feature spec names an anchor:
 ```markdown
 # Feature: checkout
 
-> Requires: security_no_eval, checkout_design
+> Requires: security_no_eval
 ```
 
 Its rules are counted with the feature's own, and its tests must prove both.
@@ -172,7 +144,5 @@ the label `global`.
 ## Retired
 
 `figma://` sources, `> Visual-Reference:`, `> Visual-Hash:` and the visual
-hash comparison are retired. A design is a versioned file, read and merged by
-pull request, never a live tool connection. An anchor that still carries one of
-those fields parses; the field is ignored and the file is named once in the
-run's warnings.
+hash comparison are retired. An anchor that still carries one of those fields
+parses; the field is ignored and the file is named once in the run's warnings.

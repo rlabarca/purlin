@@ -17,9 +17,9 @@ detect is asked which framework its tests use, and `signed` is asked which
 rules need a signature.
 
 It then writes, in this order and naming every one in the summary: the config,
-the plugin copies, the runner's wiring, the engine's
-config block, the `.gitignore` entries, `designs/` and `.purlin/records/` with
-their READMEs, the dashboard, and, where one is wanted, the workflow CI runs.
+the plugin copies, the runner's wiring, the engine's config block, the
+`.gitignore` entries, `.purlin/records/` with its README, the dashboard, and,
+where one is wanted, the workflow CI runs.
 It ends with the next step computed from the state.
 
 A workflow is written for two reasons and no others: a proof in `specs/` is
@@ -143,10 +143,6 @@ _STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
 _TRUST_WORDS = {'local': TRUST_LOCAL, 'remote': TRUST_REMOTE}
 
 _READMES = {
-    'designs': """The mocks a design rule is written against: PNG, PDF, SVG or an HTML prototype.
-A design anchor pins the hash of these files, and a feature spec requires that anchor.
-A new export stales the signatures of that anchor's rules, so a person looks again.
-""",
     '.purlin/records': """Every audit at the gate strong or signed writes one record per feature here, in ci/
 or local/, and commits it. The folder is the source: ci/ is a remote runner's, local/ is
 anyone's, and both count at every gate. A tag run fails on a ci/ file the runner did not commit.
@@ -274,8 +270,7 @@ def mutmut_paths(root):
     test_dirs = [n for n in dirs if any(
         _is_test_file(f) for f in os.listdir(os.path.join(root, n)))]
     sources = [n for n in ('src', 'lib', 'app') if n in dirs] or [
-        n for n in dirs if n not in ('tests', 'test', 'specs', 'designs',
-                                     'mutants')
+        n for n in dirs if n not in ('tests', 'test', 'specs', 'mutants')
         and n not in test_dirs and _holds_python(os.path.join(root, n))]
     if not sources:
         sources = [n for n in names if n.endswith('.py')

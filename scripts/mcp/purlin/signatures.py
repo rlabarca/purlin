@@ -20,7 +20,6 @@ The file, field by field in `references/formats/signature_format.md`:
       "proof_hash": "<sha256 of the proof text>",
       "test_hash": "<sha256 of the test bodies>",
       "test_hash_kind": "file",
-      "design_hash": null,
       "audit_hash": "<sha256 of the brief's evidence>",
       "bar": "strong",
       "signer": "jane@acme.com",
@@ -33,8 +32,7 @@ The file, field by field in `references/formats/signature_format.md`:
 
 A signature is **current** when the hashes it binds still equal the
 recomputed ones and the bar it names still matches the rule's. Anything else
-is a signature stale, and a person has to look. `design_hash` binds the pinned
-design files for a rule whose origin is `design`.
+is a signature stale, and a person has to look.
 
 `audit_hash` is what locks the audit in beside the rule, the proof and the
 test. It is taken over the brief's own evidence: the test strength, the
@@ -146,18 +144,6 @@ def test_hash_kind(proofs):
     return 'none'
 
 
-def design_hash(owner_info, origin):
-    """The D of the triple: the design a `origin: design` rule rests on.
-
-    A design is a versioned file, so what binds the signature is the spec's
-    `> Pinned:` hash of the exported files. A rule from any other origin binds
-    no design and this is None.
-    """
-    if origin != 'design':
-        return None
-    return (owner_info or {}).get('pinned') or None
-
-
 def signatures_dir(project_root, info):
     """The `<feature>.signatures/` directory beside a spec."""
     spec_path = info.get('spec_path', '')
@@ -206,8 +192,7 @@ def _load_named(project_root, features, name_re, skip_slug):
     return found
 
 
-def is_current(signature, rule_hash, proof_hash, test_hash, bar,
-               design_hash=None, audit=None):
+def is_current(signature, rule_hash, proof_hash, test_hash, bar, audit=None):
     """True when a signature still binds what it was given for.
 
     Every part of the triple is compared, so changing a rule, rewording a
@@ -224,9 +209,6 @@ def is_current(signature, rule_hash, proof_hash, test_hash, bar,
     for key, value in (('rule_hash', rule_hash), ('proof_hash', proof_hash),
                        ('test_hash', test_hash)):
         if signature.get(key) != value:
-            return False
-    if signature.get('design_hash') or design_hash:
-        if signature.get('design_hash') != design_hash:
             return False
     if audit is not None and str(signature.get('audit_hash') or '') != str(audit):
         return False

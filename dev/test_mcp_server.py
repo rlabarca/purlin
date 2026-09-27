@@ -174,7 +174,6 @@ class Project(object):
             'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],
             'test_hash': rule['test_hash'],
             'test_hash_kind': rule['test_hash_kind'],
-            'design_hash': rule['design_hash'],
             'audit_hash': rule['audit_hash'],
         }
         data.update(overrides)
@@ -342,7 +341,7 @@ class TestSpecParsing:
             '- PROOF-1 (RULE-1): Lock a file; verify 1 open fails '
             '@on(windows-2022)\n')  # retired
         project.spec(
-            '# Feature: legacy\n\n> Visual-Reference: ./designs/a.png\n\n'
+            '# Feature: legacy\n\n> Visual-Reference: ./mock.png\n\n'
             '## Rules\n\n- RULE-1: It renders\n\n'
             '## Proof\n\n- PROOF-1 (RULE-1): Look at it @manual(a@b.c, '
             '2026-03-31, abc1234)\n', name='legacy')
@@ -363,17 +362,15 @@ class TestSpecParsing:
         assert purlin_specs.unknown_tag_warning(clean) is None
 
     @pytest.mark.proof("specs", "PROOF-10", "RULE-9")
-    def test_a_source_is_a_git_url_plus_a_path_or_local_globs(self):
+    def test_a_source_is_a_git_url_plus_a_path_or_whole(self):
         assert purlin_specs.parse_source(
             'https://github.com/acme/p.git specs/no_eval.md') == (
-                'https://github.com/acme/p.git', 'specs/no_eval.md', [])
-        assert purlin_specs.parse_source(
-            'designs/checkout/*.png, designs/checkout/*.pdf') == (
-                None, None, ['designs/checkout/*.png', 'designs/checkout/*.pdf'])
-        # Neither shape: the whole line is the source, so a value that has to
-        # be refused is refused whole.
-        assert purlin_specs.parse_source('--upload-pack=/bin/echo')[0] == (
-            '--upload-pack=/bin/echo')
+                'https://github.com/acme/p.git', 'specs/no_eval.md')
+        assert purlin_specs.parse_source('./policies') == ('./policies', None)
+        # Not a URL followed by a path: the whole line is the source, so a
+        # value that has to be refused is refused whole.
+        assert purlin_specs.parse_source('--upload-pack=/bin/echo') == (
+            '--upload-pack=/bin/echo', None)
 
     @pytest.mark.proof("specs", "PROOF-11", "RULE-10")
     def test_a_path_field_supplies_the_path_for_a_bare_source_url(self, project):
@@ -1718,13 +1715,13 @@ class TestStatusTable:
 class TestDriftRoles:
 
     @pytest.mark.proof("drift", "PROOF-16", "RULE-14")
-    def test_the_four_role_views_are_present(self, project):
+    def test_the_three_role_views_are_present(self, project):
         _write(os.path.join(project.root, 'src', 'login.py'),
                'def login():\n    return 401\n')
         _git(project.root, 'add', '-A')
         _git(project.root, 'commit', '-q', '-m', 'fix: login')
         report = json.loads(purlin_drift.drift(project.root, since='1'))
-        assert sorted(report['roles']) == ['design', 'eng', 'pm', 'qa']
+        assert sorted(report['roles']) == ['eng', 'pm', 'qa']
         assert 'src/login.py' in report['roles']['eng']['files_touched']
         assert report['roles']['eng']['tests_missing'] == [
             'login/RULE-1', 'login/RULE-2']

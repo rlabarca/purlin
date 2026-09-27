@@ -338,16 +338,15 @@ class TestTheTriple:
     def test_the_three_hashes_come_back_with_their_kind(self, proved):
         parts = sign_module.rule_proof_test_hashes(
             proved.root, 'login', 'RULE-1')
-        rule_hash, proof_hash, test_hash, kind, design = parts
+        rule_hash, proof_hash, test_hash, kind = parts
         assert len(rule_hash) == 64 and len(proof_hash) == 64
         assert len(test_hash) == 64
         assert kind == 'file'
-        assert design is None
 
     @pytest.mark.proof("signatures", "PROOF-2", "RULE-2")
     def test_a_rule_that_is_not_there_has_no_hashes(self, proved):
         assert sign_module.rule_proof_test_hashes(
-            proved.root, 'login', 'RULE-99') == (None, None, None, None, None)
+            proved.root, 'login', 'RULE-99') == (None, None, None, None)
 
     @pytest.mark.proof("signatures", "PROOF-3", "RULE-3")
     def test_reflowing_a_rule_and_adding_a_tag_keep_the_triple(self, proved):
@@ -406,7 +405,7 @@ class TestStale:
         return [s for s in found
                 if purlin_signatures.is_current(
                     s, entry['rule_hash'], entry['proof_hash'],
-                    entry['test_hash'], entry['bar'], entry['design_hash'])]
+                    entry['test_hash'], entry['bar'])]
 
     @pytest.mark.proof("signatures", "PROOF-6", "RULE-6")
     def test_a_fresh_signature_is_current(self, proved):
@@ -483,7 +482,7 @@ class TestTheFile:
         assert data['schema'] == 'purlin-signature/1'
         assert set(data) == {
             'schema', 'feature', 'rule', 'triple', 'rule_hash', 'proof_hash',
-            'test_hash', 'test_hash_kind', 'design_hash', 'audit_hash', 'bar',
+            'test_hash', 'test_hash_kind', 'audit_hash', 'bar',
             'signer', 'note', 'timestamp', 'gate', 'brief', 'record'}
         assert data['feature'] == 'login' and data['rule'] == 'RULE-1'
         assert data['triple'] == sign_module.triple_for(

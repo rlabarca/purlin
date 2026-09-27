@@ -124,11 +124,6 @@ rule waits for you rather than for another run. Until the audit has run at all, 
 the brief says so and settles nothing: the strength answers on its own, and the cell does not
 read `unsettled` for a question nobody asked.
 
-For a rule tagged `origin: design`, the brief shows the pinned mock from `designs/<feature>/`
-beside the screenshot the test captured under `.purlin/runtime/attachments/`. Judge what a
-person would see: the text, the order, the states present. See
-[design-in-specs.md](design-in-specs.md).
-
 ## The four answers
 
 **Sign.** The rule, the proof and the test belong together. The walk writes the signature file
@@ -230,8 +225,7 @@ stops.
 ## What makes a signature count
 
 A signature file binds three hashes - the rule text, the proof descriptions, and the test files
-behind them - plus the pinned design for an `origin: design` rule, the bar at the time, what
-the audit observed, your email, the brief you read and the record you rested on. Under `signed`
+behind them - plus the bar at the time, what the audit observed, your email, the brief you read and the record you rested on. Under `signed`
 two conditions decide whether it counts, and the signed cell names the one that failed:
 
 | The signature counts when | What the cell reads when it does not |
@@ -244,8 +238,8 @@ whatever commit carries it. Below `signed` a committed signature counts.
 
 ## What stales a signature
 
-Changing the rule text, any of its proof descriptions, the body of a test behind it, the pinned
-design for a design rule, or the rule's bar. So does a re-audit that observes something
+Changing the rule text, any of its proof descriptions, the body of a test behind it, or the
+rule's bar. So does a re-audit that observes something
 different: a new strength, a new observation sentence, or a question it could settle before and
 cannot now. Each of those changes what the signature was given about, so the signed cell reads
 `stale`, the rule returns to the Sign list, and a person looks again.

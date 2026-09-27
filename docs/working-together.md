@@ -39,13 +39,8 @@ drift pm: 3 things to look at
 **What you need.** An export and a way to open a pull request, or an assistant that opens one
 for you. No checkout and no git.
 
-**What you do.** Put the exports in `designs/<feature>/`. `purlin:spec` reads the images and
-drafts rules about what a person would see, tagged `[origin: design]`, and a design anchor
-pins the files by hash.
-
-**What you see.** `purlin:drift design` names what moved and which of your rules have a stale
-signature because a mock was re-exported. The brief pairs your mock with the screenshot the test
-captured. The whole flow is in [design-in-specs.md](design-in-specs.md).
+**What you do.** Hand the exports to `purlin:spec`. It reads the images and drafts rules about
+what a person would see.
 
 ## QA
 
@@ -125,17 +120,16 @@ back once it merges.
 
 ## Drift, one view per role
 
-`purlin:drift` is the same data filtered four ways, not four computations. It writes nothing.
+`purlin:drift` is the same data filtered three ways, not three computations. It writes nothing.
 
 | Role | What it reports |
 |------|-----------------|
 | `pm` | Criteria with no rule carrying them, `origin: pm` rules whose text changed, rules an engineer added, pins behind |
-| `design` | Design files that changed, and `origin: design` rules whose signature went stale because a mock was re-exported |
 | `qa` | Signatures gone stale, how long the Review and Sign lists are, the rules reading `manual test`, `unsettled` and `not audited`, rules whose every proof asserts a success path |
 | `eng` | Files touched and the rules behind them, rules with no test, origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` |
 
-Run it at four moments: at the start of a session, after an anchor pin or a design export
-moved, before QA walks the Review list, and before a release. Those are the four times the
+Run it at four moments: at the start of a session, after an anchor pin moved, before QA walks
+the Review list, and before a release. Those are the four times the
 tree has moved ahead of the specs without anyone being told.
 
 With no role named, `purlin:drift` infers one from the files the session touched and says

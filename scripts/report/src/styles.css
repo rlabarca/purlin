@@ -48,7 +48,6 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .cov b{font-family:var(--font-mono);font-size:var(--ui-base);font-weight:var(--weight-regular);color:var(--text-primary);white-space:nowrap}
 .cov i{flex:1;min-width:32px;max-width:80px;height:5px;background:var(--border-hairline);border-radius:var(--radius-pill);overflow:hidden;display:inline-block}
 .cov i>span{display:block;height:100%;background:currentColor;transition:width var(--duration-slow) var(--ease-out)}
-.thumb{display:block;width:60px;height:38px;object-fit:cover;border:1px solid var(--border-hairline);border-radius:var(--radius-sm)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
 
 /* --- stat strip and flag card ---------------------------------------- */

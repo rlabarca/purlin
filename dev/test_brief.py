@@ -16,7 +16,6 @@ What each group holds:
                 only for a rule whose bar is `strong` and only with `--ai`
 *observations*  the answer becomes one observation per sentence, and whether
                 it settled stands beside them
-*design*        a design rule shows the mock beside the screenshot
 *writing*       the brief is written beside the records, named for the triple,
                 with a text rendering beside it
 """
@@ -142,9 +141,9 @@ class TestTheTests:
         assert set(built) == {
             'schema', 'feature', 'rule', 'bar', 'origin', 'rule_text',
             'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',
-            'design_hash', 'triple_hash', 'layers', 'tests', 'test_strength',
-            'min_strength', 'record', 'design', 'ai_review', 'observations',
-            'settled', 'generated_at'}, sorted(built)
+            'triple_hash', 'layers', 'tests', 'test_strength', 'min_strength',
+            'record', 'ai_review', 'observations', 'settled',
+            'generated_at'}, sorted(built)
         assert built['schema'] == 'purlin-brief/5'
         assert built['observations'] == []
 
@@ -344,55 +343,6 @@ class TestTheObservations:
             [], None)
         assert brief_module.model_observations('not available') == ([], None)
         assert brief_module.model_observations('') == ([], None)
-
-
-# ---------------------------------------------------------------------------
-# Design rules
-# ---------------------------------------------------------------------------
-
-DESIGN_SPEC = (
-    '# Feature: login\n\n'
-    '> Description: Signing in.\n'
-    '> Scope: src/login.py\n'
-    '> Source: designs/login/*.png\n'
-    '> Pinned: 3f2a1b0c9d8e7f6a\n\n'
-    '## Rules\n\n'
-    '- RULE-1: The sign-in page shows the heading "Sign in" and one button '
-    '[origin: design] [bar: passed]\n\n'
-    '## Proof\n\n'
-    '- PROOF-1 (RULE-1): Open /sign-in; verify the heading "Sign in" and that '
-    'no error is shown\n'
-)
-
-
-class TestDesignRules:
-
-    @pytest.mark.proof("brief", "PROOF-25", "RULE-18")
-    def test_the_mock_and_the_screenshot_stand_beside_each_other(self):
-        made = Project(spec=DESIGN_SPEC)
-        try:
-            write(os.path.join(made.root, '.purlin', 'runtime', 'attachments',
-                               'login', 'PROOF-1.png'), 'not really a png')
-            write(os.path.join(made.root, 'designs', 'login', 'sign-in.png'),
-                  'not really a png either')
-            built = brief_module.build_brief(made.root, None, 'login', 'RULE-1')
-            assert built['design']['mock'] == ['designs/login/sign-in.png']
-            assert built['design']['screenshot'] == [
-                '.purlin/runtime/attachments/login/PROOF-1.png']
-            assert built['design']['pinned'] == '3f2a1b0c9d8e7f6a'
-            assert built['design_hash'] == '3f2a1b0c9d8e7f6a'
-        finally:
-            made.close()
-
-    @pytest.mark.proof("brief", "PROOF-26", "RULE-18")
-    def test_a_glob_that_matches_nothing_is_shown_as_the_glob(self):
-        made = Project(spec=DESIGN_SPEC)
-        try:
-            built = brief_module.build_brief(made.root, None, 'login', 'RULE-1')
-            assert built['design']['mock'] == ['designs/login/*.png']
-            assert built['design']['screenshot'] == []
-        finally:
-            made.close()
 
 
 # ---------------------------------------------------------------------------

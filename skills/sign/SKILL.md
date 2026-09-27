@@ -67,8 +67,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py" --feature <feature> --ru
 ```
 
 It carries the rule text, the proof text, the test body, the test strength beside
-`min_strength`, what the audit observed and whether it settled, and for an `[origin: design]`
-rule the pinned mock beside the capture the test took.
+`min_strength`, and what the audit observed and whether it settled.
 It reports; it recommends nothing, so the judgment is yours. Judge it against
 `references/review_criteria.md`, which is the one place the criteria live. Signing a rule you
 have not read is the one thing this skill must not help with.

@@ -28,7 +28,6 @@
 - RULE-15: The model prompt is `references/review_criteria.md` verbatim, then this rule's rule text, proof text, test bodies and test strength, and it asks for observations rather than a recommendation or a score [bar: strong] [origin: eng]
 - RULE-16: The AI audit runs only when the caller passes `--ai` and the rule's bar is `strong`; without it, and with no model on the path, the brief records `not available` [bar: strong] [origin: eng]
 - RULE-17: An answer in no shape the brief can read observes nothing and leaves the question not answered [bar: strong] [origin: eng]
-- RULE-18: A rule a designer owns shows the pinned mock beside the screenshot the test captured, and a glob that matches nothing is shown as the glob [bar: strong] [origin: eng]
 - RULE-19: The brief is written as `.purlin/briefs/<source>/<feature>/<RULE-N>.<hash8>.brief.json` carrying schema `purlin-brief/5`, with a text rendering of the same name beside it, and is found again only while the triple stands [bar: strong] [origin: eng]
 - RULE-21: Writing briefs with no list named covers every rule whose bar is `strong` and whose passed cell counts, and a narrower list covers only what it names [bar: passed] [origin: eng]
 - RULE-22: The text rendering names the rule, its proofs, the test strength beside the minimum, the observations and whether the review settled, and carries no emoji [bar: passed] [origin: eng]
@@ -49,7 +48,7 @@
 - PROOF-9 (RULE-8): Retag the proof `@manual` and build the brief; verify the test entry names no file and no source and reads `manual` true
 - PROOF-10 (RULE-9): Write a record whose test strength is 90 and build the brief for a `[bar: strong]` rule; verify the brief reads 90 against a minimum of 50
 - PROOF-11 (RULE-9): Write a record with no test strength and render the brief; verify the rendering reads `Test strength: n/a`
-- PROOF-12 (RULE-10): Build the brief for a `[bar: passed]` rule a record covers; verify its field names are exactly the 23 the module writes, its schema is `purlin-brief/5` and its observations list is empty
+- PROOF-12 (RULE-10): Build the brief for a `[bar: passed]` rule a record covers; verify its field names are exactly the 21 the module writes, its schema is `purlin-brief/5` and its observations list is empty
 - PROOF-17 (RULE-13): Read the observations out of `settled: yes` and out of `settled: no` followed by `- PROOF-1 never runs the code.`; verify the first settles with nothing observed and the second does not settle and carries that one sentence
 - PROOF-19 (RULE-15): Build the model prompt for a `[bar: strong]` rule at gate `strong`; verify it opens with `references/review_criteria.md` byte for byte and then names `RULE-2`, the rule text, the test `test_a_bad_password_is_denied` and `Test strength: 90 percent (minimum 70)`
 - PROOF-20 (RULE-16): Build the brief for a rule that asks for an AI audit without passing `--ai`; verify the review it carries reads `not available`, no observation comes back and the rendering reads `Settled: not answered`
@@ -57,8 +56,6 @@
 - PROOF-22 (RULE-16): Build the brief for a `[bar: passed]` rule with `--ai` and a probe that raises if the path is searched; verify no model is reached, the review it carries is `none` and the rendering holds no `Observations` heading
 - PROOF-23 (RULE-12): Replace the model launch with the answer `settled: no` followed by `- PROOF-2 asserts the status but never the body the rule names.`; verify one `claude -p` call is made, the brief carries that one observation and it did not settle
 - PROOF-24 (RULE-17): Read the observations out of `It looks fine to me.`, `not available` and an empty answer; verify each observes nothing and leaves the question not answered
-- PROOF-25 (RULE-18): Write a mock at `designs/login/sign-in.png` and a screenshot for `PROOF-1`, then build the brief for an `[origin: design]` rule; verify both paths are shown and the pinned hash reads `3f2a1b0c9d8e7f6a`
-- PROOF-26 (RULE-18): Build the same design rule's brief with no screenshot on disk; verify the mock is shown as the glob `designs/login/*.png` and the screenshot list is empty
 - PROOF-27 (RULE-19): Write the brief for a rule; verify the path is `.purlin/briefs/login/RULE-1.<hash8>.brief.json` for the rule's own triple, that a `.txt` rendering sits beside it, and that the JSON carries schema `purlin-brief/5`
 - PROOF-28 (RULE-19): Write the brief for `RULE-1`, then edit the rule text and build it again; verify the file written first is still on disk and the new triple differs from it
 - PROOF-29 (RULE-21): Write a CI record in a project at gate `strong`, then write briefs with no list named; verify exactly 1 path comes back, it names `RULE-2` and it opens `.purlin/briefs/local/login/`, the folder a run with no source named writes into

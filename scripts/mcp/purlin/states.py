@@ -146,7 +146,7 @@ def rule_cells(inp, cfg):
     `signatures`    every signature file for this rule, each carrying `counts`
                     and `count_reason` from `signatures.counts`
     `holds`         every hold a person committed for this rule
-    `rule_hash`, `proof_hash`, `test_hash`, `design_hash`, `bar`
+    `rule_hash`, `proof_hash`, `test_hash`, `bar`
     `audit_hash`    the hash of the brief's own evidence, which a signature
                     binds beside the triple
     `brief`         the brief for this rule's current hashes, or None
@@ -711,7 +711,7 @@ def _binds(signature, inp, bar, audit=None):
     from purlin import signatures as signatures_module
     return signatures_module.is_current(
         signature, inp.get('rule_hash'), inp.get('proof_hash'),
-        inp.get('test_hash'), bar, inp.get('design_hash'), audit)
+        inp.get('test_hash'), bar, audit)
 
 
 # ---------------------------------------------------------------------------

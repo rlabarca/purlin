@@ -24,14 +24,12 @@ copy. A source that is not a repository is free text: the copy carries the text
 and a note saying the rules are still to be drafted, because drafting them is
 the skill's job, not this module's.
 
-`sync` names the rules that changed, copies the designs the source names into
-`designs/<anchor>/`, and advances the pin. `--check` changes nothing and exits
+`sync` names the rules that changed and advances the pin. `--check` changes nothing and exits
 1 when a pin is behind, 2 when a source could not be read. `--json` prints the
 same answer for the skill. A consumer never edits a pinned rule in place.
 """
 
 import argparse
-import glob
 import hashlib
 import json
 import os
@@ -51,20 +49,12 @@ from purlin import drift as drift_module, specs as specs_module  # noqa: E402
 
 ANCHOR_DIR = os.path.join('specs', '_anchors')
 RUNTIME_DIR = os.path.join('.purlin', 'runtime', 'anchors')
-DESIGNS_DIR = 'designs'
 
 # The three fields a local copy carries and the author's file does not. They
 # are rewritten on every add and sync, so an incoming body is stripped of them
 # before it is written.
 _TRACKING_RE = re.compile(r'^>[ \t]*(?:Source|Path|Pinned):.*\n?', re.MULTILINE)
 _HEADING_RE = re.compile(r'^#[ \t]+.*$', re.MULTILINE)
-
-# A design the source names: any path under `designs/` in the anchor's text,
-# glob characters included. The files are copied out of the fetched checkout.
-_DESIGN_REF_RE = re.compile(r'(designs/[A-Za-z0-9_./*?-]+)')
-# Prose ends a sentence on the path it just named, so a trailing stop is
-# part of the sentence and not of the file name.
-_REF_PUNCTUATION = '.,;:)"\''
 
 _CLONE_TIMEOUT = 120
 
@@ -250,34 +240,6 @@ def format_rule_diff(diff):
     return ', '.join(parts) or 'no rule changes'
 
 
-def copy_designs(project_root, name, checkout_dir, content):
-    """Copy every design the anchor's text names into `designs/<anchor>/`.
-
-    A design reference is a path under `designs/` in the anchor's own text,
-    glob characters allowed. Files that the source does not hold are skipped:
-    a stale reference is the anchor author's to fix, not a reason to refuse
-    the sync.
-    """
-    copied = []
-    if not checkout_dir:
-        return copied
-    target_dir = os.path.join(project_root, DESIGNS_DIR, name)
-    references = {reference.rstrip(_REF_PUNCTUATION)
-                  for reference in _DESIGN_REF_RE.findall(content or '')}
-    for reference in sorted(references):
-        if '..' in reference or not reference:
-            continue
-        for found in sorted(glob.glob(os.path.join(checkout_dir, reference))):
-            if not os.path.isfile(found):
-                continue
-            os.makedirs(target_dir, exist_ok=True)
-            destination = os.path.join(target_dir, os.path.basename(found))
-            shutil.copyfile(found, destination)
-            copied.append(os.path.relpath(destination, project_root)
-                          .replace(os.sep, '/'))
-    return sorted(set(copied))
-
-
 # ---------------------------------------------------------------------------
 # add
 # ---------------------------------------------------------------------------
@@ -330,7 +292,6 @@ def add(project_root, source, path=None, name=None):
            compose_copy(content, source_line, head))
     result.update({'status': 'added', 'pinned': head,
                    'spec_path': 'specs/_anchors/%s.md' % name,
-                   'designs': copy_designs(project_root, name, checkout, content),
                    'rules': sorted(parse_rules(name, content))})
     return result
 
@@ -430,8 +391,7 @@ def _sync_one(project_root, name, info, cache, check):
            compose_copy(content, source_line.strip(), head,
                         note=local_notes(project_root, name)))
     row.update({'status': 'synced', 'pinned': head, 'previous': pinned,
-                'rule_changes': diff, 'summary': format_rule_diff(diff),
-                'designs': copy_designs(project_root, name, checkout, content)})
+                'rule_changes': diff, 'summary': format_rule_diff(diff)})
     return row
 
 
@@ -454,8 +414,6 @@ def _render(result):
         else:
             lines.append('  %d rules. Run purlin:status to see them.'
                          % len(result['rules']))
-            for design in result.get('designs', []):
-                lines.append('  design copied: %s' % design)
         return lines
     for row in result['anchors']:
         name = row['anchor']
@@ -474,8 +432,6 @@ def _render(result):
             lines.append('%s: %s. Pin advanced from %s to %s.'
                          % (name, row['summary'], (row.get('previous') or 'none')[:7],
                             row['pinned'][:7]))
-            for design in row.get('designs', []):
-                lines.append('  design copied: %s' % design)
         else:
             lines.append('%s: the source could not be read (%s).'
                          % (name, row.get('error', 'unknown')))

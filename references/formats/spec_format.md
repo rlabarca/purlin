@@ -53,8 +53,8 @@ belongs in `> Description:`, which the dashboard displays.
 | `> Requires:` | No | Comma-separated list of other spec or anchor names whose rules also apply |
 | `> Scope:` | No | Comma-separated file paths this feature touches. A record carries the git tree hash of these files, which is what tells a code change from a rule change |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` |
-| `> Source:` | No | Anchors only. A git URL plus a path in that repo, or local file globs. See the anchor format |
-| `> Pinned:` | No | Anchors only. The commit sha of a git source, or the hash of the local files |
+| `> Source:` | No | Anchors only. A git URL plus a path in that repo. See the anchor format |
+| `> Pinned:` | No | Anchors only. The commit sha of the source |
 | `> Path:` | No | Anchors only. The path in the source repo, when `> Source:` carries the URL alone |
 
 ### Multi-line description
@@ -70,9 +70,7 @@ belongs in `> Description:`, which the dashboard displays.
 
 `> Visual-Reference:`, `> Visual-Hash:` and `> Global:`-adjacent visual
 tracking are retired. A spec that still carries one parses; the field is
-ignored and the file is named once in the run's warnings. A design is a
-versioned file under `designs/`, pinned by an anchor's `> Source:` and
-`> Pinned:`.
+ignored and the file is named once in the run's warnings.
 
 ## Rules format
 

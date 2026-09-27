@@ -287,7 +287,6 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         'scope': info.get('scope', []),
         'source': info.get('source'),
         'source_path': info.get('source_path'),
-        'source_globs': info.get('source_globs', []),
         'pinned': info.get('pinned'),
         'rollup': rollup,
         'test_strength': test_strength,
@@ -368,8 +367,6 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
     bar = meta.get('bar')
     bar_from = 'tag' if bar in gate_module.BARS else 'gate'
     bar = states.bar_of(bar, cfg.gate)
-    design_hash = signatures_module.design_hash(
-        owner_info, meta.get('origin', specs_module.DEFAULT_ORIGIN))
     scope_key = owner
     if scope_key not in scope_cache:
         scope_cache[scope_key] = specs_module.scope_tree(
@@ -404,7 +401,6 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
-        'design_hash': design_hash,
         'bar': bar,
         'brief': brief,
         'brief_path': brief_path,
@@ -427,7 +423,6 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
         'test_hash_kind': test_hash_kind,
-        'design_hash': design_hash,
         'audit_hash': signatures_module.audit_hash(brief),
         'spec': result['spec'],
         'cells': result['cells'],

@@ -195,8 +195,7 @@ Raise to `strong` when any one of these becomes true:
 purlin:init --gate strong
 ```
 
-Raising is additive. It creates `designs/` if it is missing, turns the breaks on, and asks
-before each write. It changes no rule, deletes no file and writes no workflow: a runner is
+Raising is additive. It turns the breaks on, and asks before each write. It changes no rule, deletes no file and writes no workflow: a runner is
 added for its own two reasons, not because the gate moved. From that point the evidence that
 counts is a record, the one your own `purlin:audit` commits under `.purlin/records/local/`.
 The test results stay where they are as the fast answer you read while you work.

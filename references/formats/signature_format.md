@@ -1,4 +1,4 @@
-> Format-Version: 6
+> Format-Version: 7
 
 # Signature Format
 
@@ -36,13 +36,12 @@ What a signature binds is hashes, not the files they came from:
 | R | the rule text, its tags stripped and its whitespace normalised, so reflowing a long line does not stale the signature |
 | P | the proof descriptions of that rule, in order, normalised the same way |
 | T | the test files backing those proofs, each with the test's name and the file's blob id. The tests are the ones the feature's latest counting records observed, every operating system together, so every checkout reads the same T; a proof no record has observed yet takes them from the checkout's own runtime proofs |
-| D | the pinned design a `origin: design` rule rests on, and null for every other origin |
 | A | what the audit found: the brief's test strength, its observations sorted, and whether it settled. `sha256` of the empty string where no brief exists |
 
 The triple hash is `sha256` over R, P and T, one per line, and the first eight
-characters of it name the file. D and A are held and compared beside the
-triple rather than folded into it, because a rule with no design has no D and
-a rule no audit has reached has no brief to take A from.
+characters of it name the file. A is held and compared beside the triple
+rather than folded into it, because a rule no audit has reached has no brief
+to take A from.
 
 A is what locks the audit in. A signature says the test proves the proof, and
 what the signer read before saying so was the brief: the strength, what the
@@ -68,7 +67,6 @@ with nothing behind it yet.
   "proof_hash": "c07a...",
   "test_hash": "1d93...",
   "test_hash_kind": "file",
-  "design_hash": null,
   "audit_hash": "e3b0c442...",
   "bar": "strong",
   "signer": "jane@acme.com",
@@ -94,7 +92,6 @@ OPTIONAL.
 | `proof_hash` | string | P |
 | `test_hash` | string | T |
 | `test_hash_kind` | string | `file`, `manual` or `none` |
-| `design_hash` | string or null | D, the spec's `> Pinned:` hash for a `origin: design` rule |
 | `audit_hash` | string | A, the hash of what the audit found |
 | `bar` | string | `passed` or `strong`, the bar the rule carried when it was signed |
 | `signer` | string | the signer's email |
@@ -107,8 +104,8 @@ OPTIONAL.
 ## Current, and stale
 
 A signature is **current** when the three hashes it binds still equal the
-recomputed ones, the design hash still matches, the audit hash still matches,
-and the bar it names still matches the rule's. Anything else is a signature
+recomputed ones, the audit hash still matches, and the bar it names still
+matches the rule's. Anything else is a signature
 stale and a person has to look.
 
 Changing the bar stales the signature on purpose: raising a rule from
@@ -119,7 +116,7 @@ observe before, or it settled where it had not. A rule whose first audit
 writes a brief where there was none goes stale for the same reason, which is
 the honest answer: there is evidence now that there was not before.
 
-A hold binds the triple, the design and the bar, and not the audit. A hold is
+A hold binds the triple and the bar, and not the audit. A hold is
 a person saying the test does not prove the proof, which is a statement about
 the rule, the proof and the test; a re-audit does not answer it.
 
@@ -141,7 +138,7 @@ Under `signed` a signature counts when two things hold:
 | Condition | How it is read | The reason when it fails |
 |---|---|---|
 | The commit that added the file is signed and verifies | `git log -1 --format=%G?` prints `G` | `the signing commit is not signed` |
-| Its hashes are current | the rule, proof, test, design, bar and audit hashes, as above | `hashes changed after the signature` (the cell reads `stale`) |
+| Its hashes are current | the rule, proof, test, bar and audit hashes, as above | `hashes changed after the signature` (the cell reads `stale`) |
 
 Nothing else is read. Signing is logged, not policed: the file names the
 signer and git names the commit's author, and neither is compared with a list
@@ -177,7 +174,6 @@ a signature, with a fourth part in the name:
   "proof_hash": "c07a...",
   "test_hash": "1d93...",
   "test_hash_kind": "file",
-  "design_hash": null,
   "bar": "passed",
   "holder": "jane@acme.com",
   "reason": "the tests call _azure and _host apart; none calls run_remote()",

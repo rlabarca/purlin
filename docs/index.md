@@ -36,7 +36,6 @@ can be signed. A rule says its own with a tag; a rule with no tag takes the proj
 
 | Guide | What it covers |
 |-------|----------------|
-| [Design in specs](design-in-specs.md) | `designs/`, design anchors, `origin: design` rules, mock beside screenshot |
 | [Team workflow](team-workflow.md) | The `strong` gate, the record and who writes one, one traced sprint |
 
 ## QA

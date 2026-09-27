@@ -3,7 +3,7 @@
 # Drift criteria
 
 How the `drift` tool classifies a changed file, which config field belongs to which command,
-and what each of the four role views reports. The tool does the deterministic half; the
+and what each of the three role views reports. The tool does the deterministic half; the
 `purlin:drift` skill reads the diff and does the judgement half.
 
 ## File classification
@@ -13,11 +13,10 @@ The tool classifies each changed file in this order. The first match wins.
 | Order | Category | Match |
 |-------|----------|-------|
 | 1 | CHANGED_SPECS | The path starts with `specs/` and ends with `.md` |
-| 2 | CHANGED_DESIGNS | The path holds `designs/` anywhere in it |
-| 3 | TESTS_CHANGED | The path matches a test pattern, below |
-| 4 | CHANGED_BEHAVIOR | The path is in some spec's `> Scope:`, exactly or by prefix |
-| 5 | NO_IMPACT | The path matches a documentation or config pattern and is not in a behavioural directory |
-| 6 | NEW_BEHAVIOR | Everything else: code with no spec behind it |
+| 2 | TESTS_CHANGED | The path matches a test pattern, below |
+| 3 | CHANGED_BEHAVIOR | The path is in some spec's `> Scope:`, exactly or by prefix |
+| 4 | NO_IMPACT | The path matches a documentation or config pattern and is not in a behavioural directory |
+| 5 | NEW_BEHAVIOR | Everything else: code with no spec behind it |
 
 **Test patterns.** The path contains any of `test_`, `_test.`, `.test.`, `tests/`.
 
@@ -95,14 +94,13 @@ source and compares its `> Pinned:` sha.
 Drift never advances a pin on its own. A change that came from somewhere else gets read before
 it is adopted.
 
-## The four role views
+## The three role views
 
 Each view is a filter over the same data, not a different computation.
 
 | Role | What it reports | Signal |
 |------|-----------------|--------|
 | `pm` | Criteria with no rule carrying them, rules tagged `origin: pm` whose text changed, rules an engineer added, pins behind | `criteria_without_rules`, `pm_rules_changed`, `engineer_added_rules`, `pins_behind` |
-| `design` | Design files that changed, and rules tagged `origin: design` whose signed cell reads `stale` because a mock was re-exported | `designs_changed`, `design_rules_stale` |
 | `qa` | Signatures gone stale, how long the Review and Sign lists are, the rules reading `manual test`, the rules reading `unsettled`, the rules reading `not audited` | `signatures_stale`, `review_list_size`, `sign_list_size`, `manual`, `unsettled`, `not_audited` |
 | `eng` | Files touched and the rules behind them, rules with no test, rules the gate wants tagged and the spec leaves untagged, pins behind, rules whose passed cell reads `code changed` | `files_touched`, `rules_affected`, `tests_missing`, `tags_missing`, `pins_behind`, `code_changed` |
 

@@ -91,16 +91,6 @@ current signature in a signed commit, whatever `sign_at` says.
 `sign_at` widens that last requirement: `strong`, the default, asks for a signature on the
 rules whose bar is `strong`, and `all` asks for one on every rule.
 
-## Design rules
-
-A rule tagged `[origin: design]` is read as a pair: the pinned mock from `designs/<feature>/`
-beside the screenshot the test wrote to
-`.purlin/runtime/attachments/<feature>/<PROOF-N>.png`. The brief shows both and runs a model
-pre-compare that names what differs. Judge what a person would see: the text, the order, the
-states present. A proof for a design rule that names a selector, a class or a pixel value is
-one the audit observes as coupled to the code, and a new export of the mock stales the
-signatures of that anchor's rules.
-
 ## Who is on Review, and who is on Sign
 
 Two lists hold the rules whose next step is a person, and nothing else holds any.

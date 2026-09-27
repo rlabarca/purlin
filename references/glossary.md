@@ -94,8 +94,7 @@ in the shipped prose where a retired spelling may still be written.
 - **criterion**: optional tag linking a rule to an upstream acceptance-criterion id.
 - **rollup**: rules meeting the gate out of rules total, plus one count per bucket.
 - **anchor**: a spec for something shared across features. **local anchor**: in the project.
-  **anchor repo**: an optional separate repository holding anchors and designs for one or more
-  projects. **pinned anchor**: the project's local copy of an anchor from an anchor repo,
+  **anchor repo**: an optional separate repository holding anchors for one or more projects. **pinned anchor**: the project's local copy of an anchor from an anchor repo,
   tied to a commit.
 - **git host**: the service that holds the repository and runs CI: GitHub or Azure DevOps.
   **CI**: the git host's hosted runner executing the same run script a person runs, on a run
@@ -239,7 +238,7 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | `purlin:audit --commit` | removed. `purlin:audit` always writes and commits its record; `purlin:test` commits the test results |
 | `purlin:audit --remote` | `purlin:test --remote`: a remote runner runs the tests |
 | `purlin_run.py --record` | `purlin_run.py --audit`, and `--ci` for the CI job's arm |
-| `figma://`, `> Visual-Reference:`, the visual hash | `designs/<feature>/` files, pinned by a design anchor |
+| `figma://`, `> Visual-Reference:`, the visual hash | removed: no design file is tied to a spec |
 | `3-section format` | `2-section format`: `## Rules` and `## Proof` |
 | `## What it does` | the `> Description:` continuation lines |
 | `anchor file`, `.anchor.md` | `specs/_anchors/<name>.md` |

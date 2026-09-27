@@ -141,19 +141,17 @@ def rule_entry(payload, feature, rule):
 
 
 def rule_proof_test_hashes(project_root, feature, rule, payload=None):
-    """`(rule_hash, proof_hash, test_hash, test_hash_kind, design_hash)`.
+    """`(rule_hash, proof_hash, test_hash, test_hash_kind)`.
 
     R is the rule text with its tags stripped and its whitespace normalised,
-    P the proof descriptions in order, T the test files backing them and D the
-    pinned design a `origin: design` rule rests on. A rule that is not in the
-    payload has no hashes and every element is None.
+    P the proof descriptions in order and T the test files backing them. A
+    rule that is not in the payload has no hashes and every element is None.
     """
     entry = rule_entry(load_payload(project_root, payload), feature, rule)
     if entry is None:
-        return (None, None, None, None, None)
+        return (None, None, None, None)
     return (entry.get('rule_hash'), entry.get('proof_hash'),
-            entry.get('test_hash'), entry.get('test_hash_kind'),
-            entry.get('design_hash'))
+            entry.get('test_hash'), entry.get('test_hash_kind'))
 
 
 def triple_for(entry):
@@ -199,7 +197,6 @@ def write_signature(project_root, feature, rule, signer_email, brief_path,
         'proof_hash': entry.get('proof_hash'),
         'test_hash': entry.get('test_hash'),
         'test_hash_kind': entry.get('test_hash_kind'),
-        'design_hash': entry.get('design_hash'),
         'audit_hash': entry.get('audit_hash'),
         'bar': bar if bar is not None else entry.get('bar'),
         'signer': str(signer_email),
@@ -256,7 +253,6 @@ def write_hold(project_root, feature, rule, holder_email, reason, payload=None,
         'proof_hash': entry.get('proof_hash'),
         'test_hash': entry.get('test_hash'),
         'test_hash_kind': entry.get('test_hash_kind'),
-        'design_hash': entry.get('design_hash'),
         'bar': entry.get('bar'),
         'holder': str(holder_email),
         'reason': str(reason).strip(),

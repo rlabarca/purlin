@@ -293,33 +293,25 @@ def _split_list(value):
     return [part.strip() for part in value.split(',') if part.strip()]
 
 
-_GLOB_CHARS = re.compile(r'[*?\[]')
-
-
 def parse_source(value):
-    """`(source, path, globs)` for a `> Source:` value.
+    """`(source, path)` for a `> Source:` value.
 
-    Two shapes. A repository followed by a path in it,
-    `https://github.com/acme/policies.git specs/no_eval.md`, gives the first
-    two. A list of local file globs, `designs/checkout/*.png,
-    designs/checkout/*.pdf`, gives the third. A comma or a glob character is
-    what tells them apart, so a source that is neither a URL nor a glob (a
-    bare path, or a string a caller should refuse) still comes back as the
-    source rather than vanishing into an empty glob list.
+    A repository followed by a path in it,
+    `https://github.com/acme/policies.git specs/no_eval.md`, gives the two
+    separately. Anything else (a bare URL, a local path, or a string a caller
+    should refuse) comes back whole as the source.
 
     A `> Path:` line still names the path for a source written as a bare URL.
     """
     value = (value or '').strip()
     if not value:
-        return None, None, []
-    if ',' in value or _GLOB_CHARS.search(value):
-        return None, None, _split_list(value)
+        return None, None
     parts = value.split(None, 1)
     if len(parts) > 1 and _looks_like_git_url(parts[0]):
-        return parts[0], parts[1].strip(), []
-    # Not a URL and not a glob list: the whole line is the source, so a value
+        return parts[0], parts[1].strip()
+    # Not a URL followed by a path: the whole line is the source, so a value
     # that has to be refused is refused whole rather than by its first word.
-    return value, None, []
+    return value, None
 
 
 def _looks_like_git_url(value):
@@ -357,7 +349,7 @@ def scan_specs(project_root):
     `requires`, `scope`, `rules` (`{RULE-N: text}` with tags stripped),
     `rule_meta` (`{RULE-N: {bar, origin, criterion}}`), `rule_order`,
     `proofs` (`{PROOF-N: {rules, text, manual, env}}`), `proof_env`,
-    `proofs_by_rule`, `source`, `source_path`, `source_globs`, `pinned`,
+    `proofs_by_rule`, `source`, `source_path`, `pinned`,
     `has_rules_section`, `unnumbered_lines` and `unknown_tags`.
     """
     features = {}
@@ -420,7 +412,7 @@ def _parse_spec(name, rel_path, content):
                 unknown_tags.append('> %s:' % field)
 
     source_match = _SOURCE_RE.search(content)
-    source, source_path, source_globs = parse_source(
+    source, source_path = parse_source(
         source_match.group(1) if source_match else '')
     path_match = _PATH_RE.search(content)
     if path_match and not source_path:
@@ -452,7 +444,6 @@ def _parse_spec(name, rel_path, content):
         'proofs_by_rule': proofs_by_rule,
         'source': source,
         'source_path': source_path,
-        'source_globs': source_globs,
         'pinned': pinned_match.group(1).strip() if pinned_match else None,
         'has_rules_section': rules_section is not None,
         'unnumbered_lines': unnumbered,

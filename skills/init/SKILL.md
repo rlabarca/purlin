@@ -59,10 +59,9 @@ list back to the person before running it for real on a project that already has
 | `--add <language>` | Adds a second language: its test framework, its proof plugin, its breaks engine |
 | `--dry-run` | Prints the plan and writes nothing |
 
-Raising the gate is additive. `--gate strong` on a project set up as `passed` creates
-`designs/` if it is missing and turns the breaks on; it asks before each write and touches
-nothing else. `--gate signed` on top of that asks which rules need a signature and lists the
-rules with no origin tag. Lowering the gate rewrites the setting and
+Raising the gate is additive. `--gate strong` on a project set up as `passed` turns the
+breaks on; it asks before each write and touches nothing else. `--gate signed` on top of that
+asks which rules need a signature and lists the rules with no origin tag. Lowering the gate rewrites the setting and
 deletes nothing: the workflow, the records and the signatures stay where they are.
 
 Raising the gate writes no workflow. A runner is added for its own two reasons, below, and not
@@ -83,8 +82,7 @@ when that file exists and `[mutmut]` into `setup.cfg` otherwise. It adds a `.git
 for `.purlin/runtime/`, where test runs put their proof files, and copies the dashboard page so
 it opens from disk. It installs no git hook at all: nothing runs at commit time and nothing
 runs at push time. It installs the Claude Code hook that refreshes the local dashboard data. It
-creates `designs/` with a README at `strong` and `signed`, and ignores
-`.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON an audit commits,
+ignores `.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON an audit commits,
 then prints every file it wrote or edited, one per line.
 
 That Claude Code hook is the only hook init installs. It writes no git hook at all: nothing
@@ -167,8 +165,8 @@ same checks run under `--update`.
 ## What each gate brings
 
 Under every gate, init creates the records folder and its retention rule, and leaves the bar,
-origin and criterion tags optional. Under `strong` and `signed`, init also writes `designs/`
-and turns the breaks on. Where a workflow is called for, and `specs/` carries `@env(windows)`
+origin and criterion tags optional. Under `strong` and `signed`, init also turns the breaks
+on. Where a workflow is called for, and `specs/` carries `@env(windows)`
 or `@env(macos)` proofs, it gets a matrix: a Linux job always, plus one job per other operating
 system named, each running the same tests and writing its own record. With no such proof there
 is one Linux job.

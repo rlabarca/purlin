@@ -23,7 +23,6 @@ What each group proves:
 *config*      the file that is left is the gate and what the gate derives
 *tags*        the Windows tag becomes `@env(windows)`, and the kind of test
               goes from every proof line
-*designs*     a design source becomes a path under `designs/`
 *hooks*       the pre-commit and pre-push hooks v0.9.5 installed go
 *workflows*   the retired workflows go and one `purlin.yml` replaces them
 *plugins*     each copy under `.purlin/plugins/` matches the plugin again
@@ -528,64 +527,6 @@ def test_prose_that_is_not_a_tag_is_left_alone(tmp_path):
     _git(root, 'commit', '-qm', 'a spec naming the tag in prose')
     _apply(root)
     assert _read(root, rel) == PROSE_SPEC
-
-
-# --- design sources ----------------------------------------------------------
-
-DESIGN_ANCHOR = """# Anchor: checkout_design
-
-> Type: design
-> Source: figma://file/ABC123/checkout
-> Visual-Reference: figma://file/ABC123/checkout?node-id=7-81
->   the second line of the reference, which goes with it
-> Visual-Hash: 0f1e2d3c
-> Pinned: 0f1e2d3c
-
-## Rules
-
-- RULE-1: The checkout page shows the order total above the pay button
-
-## Proof
-
-- PROOF-1 (RULE-1): Open /checkout and read the two elements in order
-"""
-
-
-def _with_design(tmp_path, layout):
-    root = _project(tmp_path, layout)
-    _write(root, 'specs/_anchors/checkout_design.md', DESIGN_ANCHOR)
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-qm', 'the design anchor')
-    return root
-
-
-@pytest.mark.proof("update", "PROOF-14", "RULE-14")
-def test_a_design_source_becomes_a_designs_path(tmp_path):
-    root = _with_design(tmp_path, V095)
-    assert 'design-sources' in _ids(root)
-    _apply(root)
-    text = _read(root, 'specs/_anchors/checkout_design.md')
-    assert '> Source: designs/checkout_design/' in text
-    assert 'figma://' not in text
-
-
-@pytest.mark.proof("update", "PROOF-14", "RULE-14")
-def test_the_visual_fields_are_dropped(tmp_path):
-    root = _with_design(tmp_path, V095)
-    _apply(root)
-    text = _read(root, 'specs/_anchors/checkout_design.md')
-    assert 'Visual-Reference' not in text
-    assert 'Visual-Hash' not in text
-    assert 'the second line of the reference' not in text
-    assert '> Pinned: 0f1e2d3c' in text
-    assert 'RULE-1: The checkout page' in text
-
-
-@pytest.mark.proof("update", "PROOF-14", "RULE-14")
-def test_the_design_migration_is_not_pending_afterwards(tmp_path):
-    root = _with_design(tmp_path, V095)
-    _apply(root)
-    assert 'design-sources' not in _ids(root)
 
 
 # --- hooks -------------------------------------------------------------------

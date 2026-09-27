@@ -10,13 +10,12 @@ The fixtures under `dev/fixtures/report/` are payloads at schema 7, one for
 each of the three processes: solo at the `passed` gate with no record at all,
 team at `strong` with strength and one rule the AI audit could not settle,
 regulated at `signed` with signatures, a stale rule, a held rule, a rule no
-audit has run on, a rule that passed on one platform and failed on another,
-and a design anchor.
+audit has run on, and a rule that passed on one platform and failed on
+another.
 
     python3 -m pytest dev/test_purlin_report.py -q
 """
 
-import base64
 import datetime
 import json
 import os
@@ -35,13 +34,6 @@ FIXTURES = os.path.join(DEV, 'fixtures', 'report')
 PROCESSES = ('solo', 'team', 'regulated')
 
 sys.path.insert(0, DEV)
-
-# A 1x1 image, so the design file a spec names resolves beside the page and
-# the thumbnail is a real load rather than a broken one.
-PIXEL = base64.b64decode(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmM'
-    'IQAAAABJRU5ErkJggg==')
-
 
 def read(path):
     with open(path, 'r', encoding='utf-8') as handle:
@@ -116,10 +108,6 @@ def open_board(browser, tmp_path, payload, viewport=None, clock_at=None):
     with open(os.path.join(root, '.purlin', 'report-data.js'), 'w',
               encoding='utf-8') as handle:
         handle.write('const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
-    designs = os.path.join(root, 'designs', 'checkout')
-    os.makedirs(designs, exist_ok=True)
-    with open(os.path.join(designs, 'cart.png'), 'wb') as handle:
-        handle.write(PIXEL)
     page = browser.new_page(viewport=viewport or {'width': 1440,
                                                   'height': 1000})
     if clock_at is not None:
@@ -609,17 +597,6 @@ def test_a_feature_row_expands_to_its_rules(browser, tmp_path):
     assert 'SIGNED' in page.inner_text('.rule')
     page.click('[data-act="feature"][data-feature="login"]')
     assert rule_ids(page) == []
-    page.close()
-
-
-@pytest.mark.proof("purlin_report", "PROOF-11", "RULE-11")
-def test_a_design_anchor_row_shows_its_thumbnail(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    thumbs = page.query_selector_all('.tr img.thumb')
-    assert len(thumbs) == 1
-    assert thumbs[0].get_attribute('src') == 'designs/checkout/cart.png'
-    assert page.evaluate(
-        'document.querySelector(".tr img.thumb").naturalWidth') == 1
     page.close()
 
 

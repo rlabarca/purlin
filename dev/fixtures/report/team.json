@@ -77,7 +77,6 @@
           },
           "cleared": false,
           "criterion": null,
-          "design_hash": null,
           "feature": "login",
           "flags": {
             "code_changed": false,
@@ -142,7 +141,6 @@
           },
           "cleared": true,
           "criterion": null,
-          "design_hash": null,
           "feature": "login",
           "flags": {
             "code_changed": false,
@@ -207,7 +205,6 @@
           },
           "cleared": true,
           "criterion": null,
-          "design_hash": null,
           "feature": "login",
           "flags": {
             "code_changed": false,
@@ -249,7 +246,6 @@
       "scope": [],
       "signatures": [],
       "source": null,
-      "source_globs": [],
       "source_path": null,
       "spec_path": "specs/auth/login.md",
       "test_strength": 71
@@ -329,7 +325,6 @@
           },
           "cleared": false,
           "criterion": null,
-          "design_hash": null,
           "feature": "invoice",
           "flags": {
             "code_changed": false,
@@ -396,7 +391,6 @@
           },
           "cleared": false,
           "criterion": null,
-          "design_hash": null,
           "feature": "invoice",
           "flags": {
             "code_changed": false,
@@ -433,7 +427,6 @@
       "scope": [],
       "signatures": [],
       "source": null,
-      "source_globs": [],
       "source_path": null,
       "spec_path": "specs/billing/invoice.md",
       "test_strength": 48
@@ -515,7 +508,6 @@
           },
           "cleared": true,
           "criterion": "AC-14",
-          "design_hash": "drule1che",
           "feature": "checkout_design",
           "flags": {
             "code_changed": false,
@@ -557,10 +549,6 @@
       "scope": [],
       "signatures": [],
       "source": null,
-      "source_globs": [
-        "designs/checkout/cart.png",
-        "designs/checkout/pay.png"
-      ],
       "source_path": null,
       "spec_path": "specs/_anchors/checkout_design.md",
       "test_strength": 90

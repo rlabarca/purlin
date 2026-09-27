@@ -90,8 +90,7 @@ read what the person wants and run the command that serves it.
 | PM | "here is the ticket", "write these criteria down" | `purlin:spec` |
 | PM | "did my requirement land?" | `purlin:drift pm` |
 | PM | "where is the release?" | `purlin:status` |
-| Designer | "here are the screens", "the mocks moved" | put the files in `designs/<feature>/`, then `purlin:spec` |
-| Designer | "is the build still the design?" | `purlin:drift design` |
+| Designer | "here are the screens", "the mocks moved" | `purlin:spec` |
 | Engineer | "set this project up", "raise the gate to sign-off" | `purlin:init`, `purlin:init --gate <level>` |
 | Engineer | "we have code and no specs" | `purlin:spec-from-code` |
 | Engineer | "what changed while I was away?" | `purlin:drift eng` |

@@ -58,7 +58,6 @@
           },
           "cleared": true,
           "criterion": null,
-          "design_hash": null,
           "feature": "login",
           "flags": {
             "code_changed": false,
@@ -115,7 +114,6 @@
           },
           "cleared": false,
           "criterion": null,
-          "design_hash": null,
           "feature": "login",
           "flags": {
             "code_changed": false,
@@ -167,7 +165,6 @@
           },
           "cleared": false,
           "criterion": null,
-          "design_hash": null,
           "feature": "login",
           "flags": {
             "code_changed": false,
@@ -196,7 +193,6 @@
       "scope": [],
       "signatures": [],
       "source": null,
-      "source_globs": [],
       "source_path": null,
       "spec_path": "specs/auth/login.md",
       "test_strength": null
@@ -255,7 +251,6 @@
           },
           "cleared": true,
           "criterion": null,
-          "design_hash": null,
           "feature": "invoice",
           "flags": {
             "code_changed": false,
@@ -318,7 +313,6 @@
           },
           "cleared": true,
           "criterion": null,
-          "design_hash": null,
           "feature": "invoice",
           "flags": {
             "code_changed": false,
@@ -360,7 +354,6 @@
       "scope": [],
       "signatures": [],
       "source": null,
-      "source_globs": [],
       "source_path": null,
       "spec_path": "specs/billing/invoice.md",
       "test_strength": null

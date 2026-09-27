@@ -31,7 +31,7 @@ read `references/spec_quality_guide.md`. Neither is restated here.
 | One sentence | Split it into the claims it actually makes. "Users sign in with email and password, and five failures lock the account for fifteen minutes" is two rules, not one |
 | A product brief or a ticket | Read it whole, then write only the claims a test could settle. Leave the background in `> Description:` |
 | Pasted acceptance criteria | One rule per criterion, each tagged `[criterion: <id>]` so the author can find their own line again |
-| Mocks in `designs/<feature>/` | Read the images. Write rules about what a person would see on the screen, tagged `[origin: design]` |
+| Screens or mocks | Read the images. Write rules about what a person would see on the screen |
 | An existing spec plus a change | Edit in place. Never renumber. See "Whose rule is it" below |
 
 Ask at most one round of questions, and only where a claim no test could settle as written.
@@ -123,9 +123,8 @@ operating system. Those three are the whole vocabulary. A proof with no `@env` i
 a record from any system; a proof with one has its passed cell met only when a record from
 that system passes it.
 
-A design rule's proof is an end-to-end observable: a route, a state, visible text, presence.
-Never a selector, never a pixel comparison. The test writes its capture under
-`.purlin/runtime/attachments/<feature>/<PROOF-N>.png` and the brief puts the mock beside it.
+A proof about what a person sees is an end-to-end observable: a route, a state, visible text,
+presence. Never a selector, never a pixel comparison.
 
 ## Ids
 

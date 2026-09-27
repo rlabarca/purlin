@@ -45,8 +45,7 @@ test framework, the break engine for the language, a `.gitignore` block for `.pu
 the dashboard page copied so it opens from disk, and the Claude Code hook that refreshes the
 local dashboard data. Nothing to apply on the git host, and no git hook.
 
-**To `strong`.** On top of that: `designs/` with a README, if it is missing, and the breaks,
-which turn on with this raise. `min_strength` becomes 70. Below it `purlin:audit` runs the
+**To `strong`.** On top of that: the breaks, which turn on with this raise. `min_strength` becomes 70. Below it `purlin:audit` runs the
 tests alone, nothing measures a strength, and no record is written at all. From here up the
 audit writes one record per feature and the briefs beside them, and commits them.
 
@@ -144,7 +143,6 @@ is rendered from them:
 |-----------|-----------------|
 | `os-tags` | rewrites the retired Windows tag in `specs/` to `@env(windows)` |
 | `kind-tags` | drops the tag naming the kind of test from every proof line in `specs/` |
-| `design-sources` | points design sources at `designs/<feature>/` |
 | `untracked-files` | drops the proof files that used to be committed and untracks the dashboard data |
 | `hooks` | removes the git hooks v0.9.5 installed, and says why |
 | `config` | writes `.purlin/config.json` at the current shape and sets the gate |

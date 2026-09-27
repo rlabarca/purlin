@@ -5,13 +5,11 @@ It reads git for the commits and the changed files, classifies each file
 against the specs' `> Scope:` lines, and adds what the payload already knows
 about the cells, the signatures and the pins.
 
-Four role views come out of the same data, because four people ask different
-questions of it:
+Three role views come out of the same data, because three people ask
+different questions of it:
 
 `pm`      acceptance criteria with no rule, pm-owned rules that changed,
           rules an engineer added, pins behind their source
-`design`  design files that changed, design-owned rules whose signature went
-          stale
 `qa`      signatures gone stale, how long the Review and Sign lists are, the
           rules whose strong cell reads `manual test` or `unsettled`, rules no
           proof of which names a rejection or a boundary
@@ -31,7 +29,7 @@ if _MCP_DIR not in sys.path:
 
 from purlin import payload as payload_module, specs as specs_module, states
 
-ROLES = ('pm', 'design', 'qa', 'eng')
+ROLES = ('pm', 'qa', 'eng')
 
 _NO_IMPACT_PATTERNS = (
     'docs/', 'assets/', 'templates/', 'references/', '.gitignore', 'LICENSE',
@@ -42,10 +40,6 @@ _TEST_PATTERNS = ('test_', '_test.', '.test.', 'tests/')
 
 # Directories holding behavioural definitions even when the files are .md.
 _BEHAVIORAL_MD_PREFIXES = ('skills/', 'agents/', '.claude/agents/')
-
-# Where designs live. A change under one of these stales the design rules that
-# the anchor pinning it covers.
-_DESIGN_PREFIXES = ('designs/',)
 
 # How much of a rule description the report carries. A description is read to
 # judge whether a rule went stale, and the opening clause says it.
@@ -322,9 +316,6 @@ def _classify(project_root, filepath, scope_to_specs, features, stats):
         return {'path': filepath, 'category': 'CHANGED_SPECS',
                 'spec': os.path.splitext(os.path.basename(filepath))[0],
                 'diff_stat': stats.get(filepath, '')}
-    if any(prefix in filepath for prefix in _DESIGN_PREFIXES):
-        return {'path': filepath, 'category': 'CHANGED_DESIGNS', 'spec': None,
-                'diff_stat': stats.get(filepath, '')}
     if any(pattern in filepath for pattern in _TEST_PATTERNS):
         spec = None
         for name in features:
@@ -440,14 +431,12 @@ def compute_drift(project_root, since=None, network=True, data=None):
 
 
 def _role_views(report, data, file_entries):
-    """The four role views, each a list of lines a skill turns into prose."""
+    """The three role views, each a list of lines a skill turns into prose."""
     rules = [(feature, rule) for feature in data.get('features', [])
              for rule in feature.get('rules', []) if rule['label'] == 'own']
 
     changed_specs = {e['spec'] for e in file_entries
                      if e['category'] == 'CHANGED_SPECS' and e.get('spec')}
-    design_changed = [e['path'] for e in file_entries
-                      if e['category'] == 'CHANGED_DESIGNS']
     pins_behind = [p for p in report['pins'] if p['status'] != 'current']
 
     pm = {
@@ -464,14 +453,6 @@ def _role_views(report, data, file_entries):
                                  if rule['origin'] == 'eng'
                                  and feature['name'] in changed_specs],
         'pins_behind': pins_behind,
-    }
-    design = {
-        'designs_changed': design_changed,
-        'design_rules_stale': [
-            '%s/%s' % (feature['name'], rule['id'])
-            for feature, rule in rules
-            if rule['origin'] == 'design'
-            and _cell_word(rule, 'signed') == 'stale'],
     }
     qa = {
         'signatures_stale': ['%s/%s' % (feature['name'], rule['id'])
@@ -506,12 +487,7 @@ def _role_views(report, data, file_entries):
                          for feature, rule in rules
                          if rule['flags'].get('code_changed')],
     }
-    return {'pm': pm, 'design': design, 'qa': qa, 'eng': eng}
-
-
-def _cell_word(rule, name):
-    """The word one cell of a rule reads, or None where that cell is absent."""
-    return ((rule.get('cells') or {}).get(name) or {}).get('word')
+    return {'pm': pm, 'qa': qa, 'eng': eng}
 
 
 def drift(project_root, since=None, role=None):

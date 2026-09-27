@@ -6,7 +6,7 @@ description: Create anchors, pull them from another repository, and keep the pin
 # purlin:anchor
 
 An anchor is a spec for something shared across features: a security policy, an API contract,
-a set of design screens, a brand rule. Feature specs name it with `> Requires: <name>` and its
+a brand rule. Feature specs name it with `> Requires: <name>` and its
 rules are counted with theirs.
 
 **Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
@@ -27,8 +27,8 @@ purlin:anchor create <name>
 ```
 
 Writes `specs/_anchors/<name>.md` with the same two sections every spec uses. Give it a
-`> Description:`, a `> Scope:` and, when it helps the reader, a `> Type:` of `design`, `api`,
-`security`, `brand`, `schema` or `legal`. Rules and proofs follow the grammar in
+`> Description:`, a `> Scope:` and, when it helps the reader, a `> Type:` of `api`, `security`,
+`brand`, `schema` or `legal`. Rules and proofs follow the grammar in
 `references/formats/spec_format.md`.
 
 Commit it with the `anchor(<name>): create` prefix from `references/commit_conventions.md`.
@@ -65,11 +65,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" sync [<name> | --all]
 RULE-3 changed, RULE-6 added`. `purlin:drift` runs the same check, one cached lookup per pin
 per run, so an engineer sees a stale pin at the start of a session without asking for it.
 
-Without `--check`, sync shows the delta, updates the local copy, copies any design files the
-anchor references into `designs/<anchor>/`, and advances the pin. All of that lands in one
-commit with the `anchor(<name>):` prefix, so the diff shows exactly which rules moved. At
-`strong` and above that commit reaches the default branch by pull request like any other
-change, and a rule whose text moved stales its signature.
+Without `--check`, sync shows the delta, updates the local copy and advances the pin. All of
+that lands in one commit with the `anchor(<name>):` prefix, so the diff shows exactly which
+rules moved. At `strong` and above that commit reaches the default branch by pull request
+like any other change, and a rule whose text moved stales its signature.
 
 ## Changing a pinned rule
 
@@ -80,36 +79,6 @@ checkout of it; once it merges, `sync` brings it here.
 A rule that belongs only to this project goes in a separate local anchor that says
 `> Requires: <the pinned one>`, and the pinned copy stays untouched.
 
-## Design anchors
-
-A design is a versioned file that goes through a pull request like any other change, never a
-live connection to a design tool. Exports go in `designs/<feature>/` as PNG, PDF, SVG or an HTML prototype, and a design
-anchor pins the files themselves:
-
-```markdown
-# Anchor: checkout_design
-
-> Description: The checkout screens, as exported on 2026-08-14.
-> Source: designs/checkout/*.png, designs/checkout/*.pdf
-> Pinned: 9f2c1ab4e7d0
-> Type: design
-
-## Rules
-
-- RULE-1: The checkout page shows the order total above the pay button [origin: design]
-
-## Proof
-
-- PROOF-1 (RULE-1): Load /checkout with one item in the basket; verify the text "Order total" appears above the button labelled "Pay"
-```
-
-`> Pinned:` is the hash of the named files, so a new export changes it and stales the
-signatures of that anchor's rules. That is the intended effect: a screen that changed is a
-screen someone has to look at again. The review brief puts the export beside the screenshot
-the test captured.
-
-A proof for a design rule is an end-to-end observable: a route, a state, visible text,
-presence. Never a selector and never a pixel comparison.
 
 ## When you are done
 

@@ -38,7 +38,6 @@ Exit codes: 0 a brief was built, 1 the rule is not in the project, 2 the
 command line was wrong.
 """
 
-import glob
 import json
 import os
 import re
@@ -82,8 +81,6 @@ _LAYERS_BY_BAR = {
     'passed': LAYERS[:1],
     'strong': LAYERS,
 }
-
-ATTACHMENTS = os.path.join('.purlin', 'runtime', 'attachments')
 
 # What the brief writes where no model could be reached. The strong cell
 # reads this word and treats the AI audit as one that never ran, so the name
@@ -150,14 +147,12 @@ def build_brief(project_root, payload, feature, rule, ai=False):
         'proof_hash': entry.get('proof_hash'),
         'test_hash': entry.get('test_hash'),
         'test_hash_kind': entry.get('test_hash_kind'),
-        'design_hash': entry.get('design_hash'),
         'triple_hash': triple_for(entry),
         'layers': list(layers),
         'tests': _test_layer(project_root, feature, entry),
         'test_strength': None,
         'min_strength': min_strength,
         'record': (feature_entry.get('latest_record') or {}).get('path'),
-        'design': _design_layer(project_root, payload, feature, entry),
         'ai_review': None,
         'observations': [],
         'settled': None,
@@ -230,33 +225,6 @@ def _one_test(project_root, feature, proof_id, test):
             body = None
     return {'proof': proof_id, 'file': path or None,
             'name': test.get('name'), 'body': body, 'manual': False}
-
-
-def _design_layer(project_root, payload, feature, entry):
-    """The mock beside the screenshot, for a rule a designer owns."""
-    if entry.get('origin') != 'design':
-        return None
-    owner = _feature_entry(payload, entry.get('feature') or feature)
-    patterns = list(owner.get('source_globs') or ())
-    if owner.get('source_path'):
-        patterns.append(owner['source_path'])
-    elif owner.get('source') and not owner.get('source_globs'):
-        patterns.append(owner['source'])
-    mocks = []
-    for pattern in patterns:
-        matched = sorted(glob.glob(os.path.join(project_root, pattern)))
-        if matched:
-            mocks.extend(os.path.relpath(path, project_root).replace(os.sep, '/')
-                         for path in matched)
-        else:
-            mocks.append(pattern)
-    shots = []
-    for proof in entry.get('proofs') or ():
-        rel = os.path.join(ATTACHMENTS, feature, '%s.png' % proof.get('id'))
-        if os.path.isfile(os.path.join(project_root, rel)):
-            shots.append(rel.replace(os.sep, '/'))
-    return {'mock': mocks, 'screenshot': shots,
-            'pinned': entry.get('design_hash')}
 
 
 # ---------------------------------------------------------------------------
@@ -511,12 +479,6 @@ def render_brief(brief):
                         brief.get('min_strength')))
     if brief.get('record'):
         lines.append('Record: %s' % brief['record'])
-    design = brief.get('design')
-    if design:
-        lines.append('Mock: %s' % (', '.join(design.get('mock') or ())
-                                   or 'none pinned'))
-        lines.append('Screenshot: %s'
-                     % (', '.join(design.get('screenshot') or ()) or 'none'))
     # The AI audit is printed only where one was asked for, so a brief for
     # a rule whose bar is `passed` says nothing about an audit that was
     # never owed.

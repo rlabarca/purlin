@@ -189,7 +189,7 @@ function featureRow(feature, columns) {
   var rollup = feature.rollup || {};
   var open = !!VIEW.features[feature.name];
   var cells = ['<span class="name"><span class="caret">'
-    + (open ? '▼' : '▶') + '</span>' + designThumb(feature)
+    + (open ? '▼' : '▶') + '</span>'
     + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
     + esc(feature.name) + '</span></span>'];
   cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');

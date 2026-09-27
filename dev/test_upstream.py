@@ -1,7 +1,7 @@
 """Tests for scripts/anchor/upstream.py: anchors pulled from an anchor repo.
 
 Two local bare repositories stand in for the two sides of the workflow: an
-anchor repo that publishes `specs/no_eval.md` plus a design, and the origin the
+anchor repo that publishes `specs/no_eval.md`, and the origin the
 consuming project was cloned from. Nothing here reaches a network; every url is
 a path to a bare repository on disk.
 
@@ -10,8 +10,8 @@ What the tests hold:
 `add`      writes the local copy with `> Source:` and `> Pinned:`, derives a
            name when none is given, and turns a free-text source into a copy
            carrying a note instead of rules
-`sync`     reports the rule delta, advances the pin, copies the designs the
-           source names, and reaches each source once per run
+`sync`     reports the rule delta, advances the pin, and reaches each source
+           once per run
 `--check`  changes nothing and exits 1 when a pin is behind
 """
 
@@ -57,8 +57,6 @@ ANCHOR_V2 = """# Anchor: no_eval
 
 > Description: No dynamic code execution in production code.
 > Type: security
-
-The mocks this anchor pins are designs/checkout/cart.png.
 
 ## Rules
 
@@ -143,7 +141,6 @@ def workspace(tmp_path):
     anchor_work = _clone(anchor_bare, os.path.join(base, 'policies_work'))
     _write(os.path.join(anchor_work, 'specs', 'no_eval.md'), ANCHOR_V1)
     _write(os.path.join(anchor_work, 'specs', 'no_secrets.md'), SECOND_ANCHOR)
-    _write(os.path.join(anchor_work, 'designs', 'checkout', 'cart.png'), 'png')
     first = _publish(anchor_work, 'publish the security anchors')
 
     project_bare = _bare(os.path.join(base, 'project.git'))
@@ -451,27 +448,6 @@ def test_sync_says_so_when_only_the_prose_moved(workspace):
     assert row['pinned'] != workspace.first_sha
 
 
-@pytest.mark.proof("upstream", "PROOF-13", "RULE-13")
-def test_sync_copies_the_designs_the_source_names(workspace):
-    _add(workspace)
-    _advance(workspace)
-    row = upstream.sync(workspace.root, names=['no_eval'])['anchors'][0]
-    assert row['designs'] == ['designs/no_eval/cart.png']
-    copied = os.path.join(workspace.root, 'designs', 'no_eval', 'cart.png')
-    with open(copied, 'r', encoding='utf-8') as handle:
-        assert handle.read() == 'png'
-
-
-@pytest.mark.proof("upstream", "PROOF-13", "RULE-13")
-def test_sync_leaves_designs_alone_when_the_source_names_none(workspace):
-    _add(workspace)
-    _advance(workspace, ANCHOR_V2.replace(
-        'The mocks this anchor pins are designs/checkout/cart.png.\n', ''))
-    row = upstream.sync(workspace.root, names=['no_eval'])['anchors'][0]
-    assert row['designs'] == []
-    assert not os.path.isdir(os.path.join(workspace.root, 'designs'))
-
-
 @pytest.mark.proof("upstream", "PROOF-14", "RULE-14")
 def test_sync_all_covers_every_git_sourced_anchor_and_no_others(workspace):
     _add(workspace)
@@ -512,7 +488,6 @@ def test_sync_from_the_command_line_prints_the_delta(workspace):
     code, out = _cli(workspace, ['sync', 'no_eval'])
     assert code == 0
     assert 'RULE-2 changed, RULE-3 added' in out
-    assert 'design copied: designs/no_eval/cart.png' in out
 
 
 # ---------------------------------------------------------------------------

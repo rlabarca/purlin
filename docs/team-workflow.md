@@ -147,10 +147,8 @@ its rules `origin: pm`, and opens a pull request. Without an assistant, the PM w
 criteria anywhere and hands them over; the engineer's agent runs `purlin:spec` and the PM
 reviews that pull request instead. Either way the rules land in `specs/` by pull request.
 
-**The designer hands over the mocks.** They export from whatever tool they use, and either drop
-the files into `designs/<feature>/` by pull request or hand them to an assistant, which opens
-the pull request for them. `purlin:spec` reads the images and drafts `origin: design` rules
-about what a person would see. See [design-in-specs.md](design-in-specs.md).
+**The designer hands over the mocks.** They export from whatever tool they use and hand the
+files to `purlin:spec`, which reads the images and drafts rules about what a person would see.
 
 **The engineer builds.** `purlin:drift eng` at the start of the session says what moved:
 files touched and the rules behind them, rules with no test, tags the gate wants, anchor pins

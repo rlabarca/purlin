@@ -74,7 +74,7 @@ Purlin
   ──────
   purlin:status                   Every rule's cells, and what blocks the gate
   purlin:status <name>            One spec: its rules and their cells
-  purlin:drift [pm|design|qa|eng] What changed that the specs have not caught up with
+  purlin:drift [pm|qa|eng]        What changed that the specs have not caught up with
   purlin:drift --since <N|date>   A window other than since the last record
 
   Project
@@ -100,7 +100,7 @@ Purlin
 | `purlin:audit` | One record per feature under `.purlin/records/local/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and its briefs under `.purlin/briefs/local/<feature>/<RULE-N>.<hash8>.brief.json`, committed as `purlin: record for <sha7>` and never pushed. A remote run writes the same files under `ci/` |
 | `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case. The annotated tag `signed/<version>` when the walk closes with every rule meeting the gate, which a person pushes |
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when a proof names another operating system or the trust answer was no |
-| `purlin:anchor` | `specs/_anchors/<name>.md`, and `designs/<anchor>/` on a sync |
+| `purlin:anchor` | `specs/_anchors/<name>.md` |
 | `purlin:status`, `purlin:drift` | Nothing |
 
 ## What each command shows at each gate
@@ -122,7 +122,7 @@ relative to the plugin root, `${CLAUDE_PLUGIN_ROOT}`: `references/purlin_command
 `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md`. The paths are written bare because the
 reader is the agent, which resolves them once.
 
-Everything else is relative to the project root: `specs/`, `designs/`, `.purlin/`, and the
+Everything else is relative to the project root: `specs/`, `.purlin/`, and the
 project's own source and test files. A consumer project carries no `references/`, no `scripts/`
 and no `templates/` of its own, so the two roots never collide over one path. A shell script
 that needs the same answer outside a skill reads `${CLAUDE_PLUGIN_ROOT}` where it is set and

@@ -136,7 +136,7 @@ def verify(project_root, payload):
             if not signatures_module.is_current(
                     attestation, entry.get('rule_hash'),
                     entry.get('proof_hash'), entry.get('test_hash'),
-                    entry.get('bar'), entry.get('design_hash'), audit):
+                    entry.get('bar'), audit):
                 problems.append('%s: what it binds is not this code' % path)
     return problems + _provenance(project_root)
 
