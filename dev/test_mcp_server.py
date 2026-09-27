@@ -1009,13 +1009,15 @@ class TestTheStrongCell:
             made.close()
 
     @pytest.mark.proof("states", "PROOF-16", "RULE-14")
-    def test_a_hint_on_the_test_body_decides_nothing_and_an_observation_does(self):
-        # A scan of the test body is a hint the audit reads, so a brief that
-        # settled with nothing observed leaves the cell strong.
+    def test_an_old_brief_field_decides_nothing_and_an_observation_does(self):
+        # A brief written before `purlin-brief/5` carried sentences a scan
+        # wrote about the test body. The cell reads none of them, so a brief
+        # that settled with nothing observed leaves the cell strong.
+        old_field = 'hints'  # retired
         cell = _strong(bar='passed', brief={
             'settled': True, 'observations': [],
             'tests': [{'proof': 'PROOF-1',
-                       'hints': ['The marked test body holds no assertion.']}]})
+                       old_field: ['The marked test body holds no assertion.']}]})
         assert cell['word'] == 'strong', cell
         assert 'findings' not in cell, cell
         observed = _strong(brief={
