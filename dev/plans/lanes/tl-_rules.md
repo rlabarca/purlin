@@ -77,7 +77,8 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
    among the cell's reasons: the model could tell, and what it saw is build work.
 6. **`bucket`**: `untested` is drafted, or ready with no test, or ready with no current
    counting run (`not run` and `code changed` both land here); `failing` when any counting
-   run failed; `passed` when level 1 is met and either the gate is `passed` or level 2 is not
+   run failed; `partial` when the tests passed on one operating system and failed or did not
+   run on another; `passed` when level 1 is met and either the gate is `passed` or level 2 is not
    met; `strong` when levels 1 and 2 are met and either the gate is `strong` or level 3 is not
    met; `signed` when every cell to the gate is met at `signed`. `stale` and `held` are flags
    counted beside the buckets.
@@ -93,11 +94,12 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
 9. **A passed cell with no source** (`no test`, or `not run` with nothing to read) has
    `source` null, `current` false, `counts` false. `not run` for a missing `@env` has the
    record's source, `current` true, `counts` true and `missing_env` naming the environment.
-10. **The passed cell's word for a record that does not count** under the gate (a `developer`
-    or `local` source at `strong` and above) is `not run` with the reason
-    `<source> record does not count under <gate>`.
-11. **Rollup and summary keys**: `rules, met, failing, untested, passed, stale, held, manual,
-    audit`, plus `strong` at `strong` and above, plus `signed` at `signed`; the rollup adds
+10. **The passed cell's word for a record that does not count** under the gate (a `local`
+    source at `signed`; `local` counts at `passed` and at `strong`) is `not run` with the
+    reason `<source> record does not count under <gate>`.
+11. **Rollup and summary keys**: `rules, met, failing, partial, untested, passed, proofs,
+    proofs_without_test, proofs_without_test_ids, stale, held, manual, audit`, plus `strong` at
+    `strong` and above, plus `signed` at `signed`; the rollup adds
     `test_strength` and `latest_record`; the summary adds `features`. `met` counts rules with
     `meets_gate` true.
 12. **`test_hash_kind`** is `file`, `manual` or `none`, as `signatures.test_hash_kind` returns.
