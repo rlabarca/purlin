@@ -8,12 +8,12 @@
 
 ## Rules
 
-- RULE-1: `agents/purlin.md` opens with a frontmatter block carrying `name: purlin`, a non-empty `description` and an `effort` value [risk: medium] [origin: eng]
-- RULE-2: The agent states the core loop once, as `purlin:drift`, `purlin:spec`, `purlin:build`, `purlin:test`, `purlin:audit`, push, in that order [risk: medium] [origin: eng]
-- RULE-3: The agent carries five numbered NEVERs, and they are: a rule owned by another origin is never edited silently, a proof file, a record or a signature is never written by hand, a rule whose test you wrote is never signed, nothing is pushed and no pull request is opened except the run branch `purlin:test --remote` owns, and a retired term is never used [risk: high] [origin: eng]
-- RULE-4: The routing table gives at least one row for each of the four roles PM, Designer, Engineer and QA, and every `purlin:` command it names is one of the twelve `references/purlin_commands.md` lists [risk: medium] [origin: eng]
-- RULE-5: The agent says to call `sync_status` before answering any question about state, and names the two spec statuses `drafted` and `ready`, the three evidence levels `passed`, `strong` and `signed`, and the `code changed` word that means only the code moved [risk: high] [origin: eng]
-- RULE-6: The whole of `agents/purlin.md` is at most 120 lines [risk: low] [origin: eng]
+- RULE-1: `agents/purlin.md` opens with a frontmatter block carrying `name: purlin`, a non-empty `description` and an `effort` value [bar: strong] [origin: eng]
+- RULE-2: The agent states the core loop once, as `purlin:drift`, `purlin:spec`, `purlin:build`, `purlin:test`, `purlin:audit`, push, in that order [bar: strong] [origin: eng]
+- RULE-3: The agent carries five numbered NEVERs, and they are: a rule owned by another origin is never edited silently, a proof file, a record or a signature is never written by hand, a rule whose test you wrote is never signed, nothing is pushed and no pull request is opened except the run branch `purlin:test --remote` owns, and a retired term is never used [bar: strong] [origin: eng]
+- RULE-4: The routing table gives at least one row for each of the four roles PM, Designer, Engineer and QA, and every `purlin:` command it names is one of the twelve `references/purlin_commands.md` lists [bar: strong] [origin: eng]
+- RULE-5: The agent says to call `sync_status` before answering any question about state, and names the two spec statuses `drafted` and `ready`, the three evidence levels `passed`, `strong` and `signed`, and the `code changed` word that means only the code moved [bar: strong] [origin: eng]
+- RULE-6: The whole of `agents/purlin.md` is at most 120 lines [bar: passed] [origin: eng]
 
 ## Proof
 

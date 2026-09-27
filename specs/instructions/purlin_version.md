@@ -13,16 +13,16 @@
 
 ## Rules
 
-- RULE-1: A `VERSION` file at the project root holds one semver string and nothing else [risk: medium] [origin: eng]
-- RULE-2: The `purlin` package reads the version out of the `VERSION` file at import time and assigns it to `PURLIN_VERSION`, and the server reports that value rather than a literal of its own [risk: medium] [origin: eng]
-- RULE-3: The `version` field of `templates/config.json`, which `purlin:init` stamps into a new project, equals the `VERSION` file [risk: medium] [origin: eng]
-- RULE-4: No module of the `purlin` package carries a release version literal outside its comments [risk: medium] [origin: eng]
-- RULE-5: The `version` field of `.claude-plugin/plugin.json`, which is what the plugin loader reports and what a consumer installs against, equals the `VERSION` file [risk: high] [origin: eng]
-- RULE-6: Where `.purlin/config.json` exists, because the repository is itself a Purlin project, its `version` field equals the `VERSION` file: the project's own stamp never lags the framework it ships [risk: low] [origin: eng]
-- RULE-7: `dev/bump_version.sh <semver>` is the one propagation entry point: it writes the `VERSION` file and sets the version field in every derived location, it refuses an argument that is not semver before writing anything, and `dev/bump_version.sh --check` exits non-zero naming each location that disagrees while still reporting the ones that match [risk: high] [origin: eng]
-- RULE-8: The one table that describes the config `version` field, in `references/drift_criteria.md`, states the `VERSION` file as its source rather than restating a release number, and no second copy of that row lives anywhere under `skills/` or `references/` [risk: low] [origin: eng]
-- RULE-9: The `## Unreleased` section of `RELEASE_NOTES.md` states the counts of the run it describes once, as `N passed, M skipped`, and `dev/run_tests.sh` holds that line against the counts it has itself accumulated, in a last suite named `Counts line` that counts itself as passed; the suite prints both lines and fails the sweep on a disagreement, naming the line to write. A `--fast` sweep holds suites out, so it prints both and compares nothing [risk: medium] [origin: eng]
-- RULE-10: `dev/run_tests.sh` writes its own whole record of what ran to `.purlin/runtime/last_sweep.json` on exit, beside the shared `test_run.json` each proof plugin rewrites as it finishes: the record carries `passed`, `failed`, `skipped`, `ok`, the suite names, the head sha and a timestamp, and never the merged `runs` list [risk: low] [origin: eng]
+- RULE-1: A `VERSION` file at the project root holds one semver string and nothing else [bar: strong] [origin: eng]
+- RULE-2: The `purlin` package reads the version out of the `VERSION` file at import time and assigns it to `PURLIN_VERSION`, and the server reports that value rather than a literal of its own [bar: strong] [origin: eng]
+- RULE-3: The `version` field of `templates/config.json`, which `purlin:init` stamps into a new project, equals the `VERSION` file [bar: strong] [origin: eng]
+- RULE-4: No module of the `purlin` package carries a release version literal outside its comments [bar: strong] [origin: eng]
+- RULE-5: The `version` field of `.claude-plugin/plugin.json`, which is what the plugin loader reports and what a consumer installs against, equals the `VERSION` file [bar: strong] [origin: eng]
+- RULE-6: Where `.purlin/config.json` exists, because the repository is itself a Purlin project, its `version` field equals the `VERSION` file: the project's own stamp never lags the framework it ships [bar: passed] [origin: eng]
+- RULE-7: `dev/bump_version.sh <semver>` is the one propagation entry point: it writes the `VERSION` file and sets the version field in every derived location, it refuses an argument that is not semver before writing anything, and `dev/bump_version.sh --check` exits non-zero naming each location that disagrees while still reporting the ones that match [bar: strong] [origin: eng]
+- RULE-8: The one table that describes the config `version` field, in `references/drift_criteria.md`, states the `VERSION` file as its source rather than restating a release number, and no second copy of that row lives anywhere under `skills/` or `references/` [bar: passed] [origin: eng]
+- RULE-9: The `## Unreleased` section of `RELEASE_NOTES.md` states the counts of the run it describes once, as `N passed, M skipped`, and `dev/run_tests.sh` holds that line against the counts it has itself accumulated, in a last suite named `Counts line` that counts itself as passed; the suite prints both lines and fails the sweep on a disagreement, naming the line to write. A `--fast` sweep holds suites out, so it prints both and compares nothing [bar: strong] [origin: eng]
+- RULE-10: `dev/run_tests.sh` writes its own whole record of what ran to `.purlin/runtime/last_sweep.json` on exit, beside the shared `test_run.json` each proof plugin rewrites as it finishes: the record carries `passed`, `failed`, `skipped`, `ok`, the suite names, the head sha and a timestamp, and never the merged `runs` list [bar: passed] [origin: eng]
 
 ## Proof
 

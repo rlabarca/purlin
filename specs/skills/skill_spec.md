@@ -8,10 +8,10 @@
 
 ## Rules
 
-- RULE-1: `skills/spec/SKILL.md` opens with a frontmatter block whose `name` is `spec` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec` [risk: medium] [origin: eng]
-- RULE-2: The skill allocates rule and proof ids against `origin/main` with the `ids.next_ids` helper under `${CLAUDE_PLUGIN_ROOT}/scripts/mcp`, never against the working tree [risk: high] [origin: eng]
-- RULE-3: The skill closes by offering the build in one fixed sentence, `Spec created: <name>. Build it now?`, with nothing printed after it [risk: medium] [origin: eng]
-- RULE-4: The whole of `skills/spec/SKILL.md` is at most 210 lines [risk: low] [origin: eng]
+- RULE-1: `skills/spec/SKILL.md` opens with a frontmatter block whose `name` is `spec` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec` [bar: strong] [origin: eng]
+- RULE-2: The skill allocates rule and proof ids against `origin/main` with the `ids.next_ids` helper under `${CLAUDE_PLUGIN_ROOT}/scripts/mcp`, never against the working tree [bar: strong] [origin: eng]
+- RULE-3: The skill closes by offering the build in one fixed sentence, `Spec created: <name>. Build it now?`, with nothing printed after it [bar: strong] [origin: eng]
+- RULE-4: The whole of `skills/spec/SKILL.md` is at most 210 lines [bar: passed] [origin: eng]
 
 ## Proof
 

@@ -8,11 +8,11 @@
 
 ## Rules
 
-- RULE-1: `skills/init/SKILL.md` opens with a frontmatter block whose `name` is `init` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:init` [risk: medium] [origin: eng]
-- RULE-2: The skill runs `scripts/init/scaffold.py` inside `${CLAUDE_PLUGIN_ROOT}`, passing `--project-root` and `--gate`, and names the `--update`, `--upstream-check`, `--add` and `--dry-run` forms, which are every flag the script takes [risk: medium] [origin: eng]
-- RULE-3: The last section of `skills/init/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [risk: medium] [origin: eng]
-- RULE-4: The whole of `skills/init/SKILL.md` is at most 240 lines [risk: low] [origin: eng]
-- RULE-5: The skill asks one question, what must be true before CI lets a change merge, and names exactly three answers, `passed`, `strong` and `signed`, with what CI requires under each; the only three further questions are the language of an empty repository, the signer emails under `signed`, and whether to run the tests on a remote runner at `passed` [risk: high] [origin: eng]
+- RULE-1: `skills/init/SKILL.md` opens with a frontmatter block whose `name` is `init` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:init` [bar: strong] [origin: eng]
+- RULE-2: The skill runs `scripts/init/scaffold.py` inside `${CLAUDE_PLUGIN_ROOT}`, passing `--project-root` and `--gate`, and names the `--update`, `--upstream-check`, `--add` and `--dry-run` forms, which are every flag the script takes [bar: strong] [origin: eng]
+- RULE-3: The last section of `skills/init/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong] [origin: eng]
+- RULE-4: The whole of `skills/init/SKILL.md` is at most 240 lines [bar: passed] [origin: eng]
+- RULE-5: The skill asks one question, what must be true before CI lets a change merge, and names exactly three answers, `passed`, `strong` and `signed`, with what CI requires under each; the only three further questions are the language of an empty repository, the signer emails under `signed`, and whether to run the tests on a remote runner at `passed` [bar: strong] [origin: eng]
 
 ## Proof
 

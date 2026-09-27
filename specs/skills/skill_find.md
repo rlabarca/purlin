@@ -7,10 +7,10 @@
 
 ## Rules
 
-- RULE-1: `skills/find/SKILL.md` opens with a frontmatter block whose `name` is `find` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:find` [risk: medium] [origin: eng]
-- RULE-2: The skill reads the state from `sync_status` rather than counting rules itself, and it shows the risk and the origin columns only when the spec carries them [risk: medium] [origin: eng]
-- RULE-3: The last section of `skills/find/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [risk: medium] [origin: eng]
-- RULE-4: The whole of `skills/find/SKILL.md` is at most 85 lines [risk: low] [origin: eng]
+- RULE-1: `skills/find/SKILL.md` opens with a frontmatter block whose `name` is `find` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:find` [bar: strong] [origin: eng]
+- RULE-2: The skill reads the state from `sync_status` rather than counting rules itself, and it shows the risk and the origin columns only when the spec carries them [bar: strong] [origin: eng]
+- RULE-3: The last section of `skills/find/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong] [origin: eng]
+- RULE-4: The whole of `skills/find/SKILL.md` is at most 85 lines [bar: passed] [origin: eng]
 
 ## Proof
 

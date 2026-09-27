@@ -8,10 +8,10 @@
 
 ## Rules
 
-- RULE-1: `skills/rename/SKILL.md` opens with a frontmatter block whose `name` is `rename` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:rename` [risk: medium] [origin: eng]
-- RULE-2: The skill moves the files with `git mv` so history follows them, and calls `sync_status` afterwards, treating any unresolved reference it reports as a miss to fix before the commit [risk: medium] [origin: eng]
-- RULE-3: The last section of `skills/rename/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [risk: medium] [origin: eng]
-- RULE-4: The whole of `skills/rename/SKILL.md` is at most 85 lines [risk: low] [origin: eng]
+- RULE-1: `skills/rename/SKILL.md` opens with a frontmatter block whose `name` is `rename` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:rename` [bar: strong] [origin: eng]
+- RULE-2: The skill moves the files with `git mv` so history follows them, and calls `sync_status` afterwards, treating any unresolved reference it reports as a miss to fix before the commit [bar: strong] [origin: eng]
+- RULE-3: The last section of `skills/rename/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong] [origin: eng]
+- RULE-4: The whole of `skills/rename/SKILL.md` is at most 85 lines [bar: passed] [origin: eng]
 
 ## Proof
 

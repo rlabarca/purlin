@@ -10,12 +10,12 @@
 
 ## Rules
 
-- RULE-1: The skill opens with a frontmatter block carrying `name: purlin-qa-report` and a `description` that names the words a request reaches it by, among them `review list`, `test strength` and `QA report` [risk: medium] [origin: eng]
-- RULE-2: No instruction in the skill puts a credential in a URL, in any form, placeholder or literal, and a private repository is reached with `gh auth login` or a configured credential helper instead [risk: high] [origin: eng]
-- RULE-3: The skill reaches a project by running `scripts/report/scan.py --repo <url>` from a checkout of the Purlin repository, and reads three things off the rollup: the gate, how many rules sit in each bucket, and how many commits the branch has moved past the newest record [risk: medium] [origin: eng]
-- RULE-4: Every entry in the review list closes with exactly one of the four answers a person gives, `sign`, `add a case`, `hold` and `skip`, and the skill names no fifth [risk: medium] [origin: eng]
-- RULE-5: The skill states its three limits: it does not run the project's tests, it cannot sign a commit, and a `@manual` proof has no test because its evidence is a signature a person wrote [risk: high] [origin: eng]
-- RULE-6: `tools/QA/purlin-qa-report.skill` holds exactly one entry, `purlin-qa-report/SKILL.md`, whose bytes equal the sibling `.md` [risk: high] [origin: eng]
+- RULE-1: The skill opens with a frontmatter block carrying `name: purlin-qa-report` and a `description` that names the words a request reaches it by, among them `review list`, `test strength` and `QA report` [bar: strong] [origin: eng]
+- RULE-2: No instruction in the skill puts a credential in a URL, in any form, placeholder or literal, and a private repository is reached with `gh auth login` or a configured credential helper instead [bar: strong] [origin: eng]
+- RULE-3: The skill reaches a project by running `scripts/report/scan.py --repo <url>` from a checkout of the Purlin repository, and reads three things off the rollup: the gate, how many rules sit in each bucket, and how many commits the branch has moved past the newest record [bar: strong] [origin: eng]
+- RULE-4: Every entry in the review list closes with exactly one of the four answers a person gives, `sign`, `add a case`, `hold` and `skip`, and the skill names no fifth [bar: strong] [origin: eng]
+- RULE-5: The skill states its three limits: it does not run the project's tests, it cannot sign a commit, and a `@manual` proof has no test because its evidence is a signature a person wrote [bar: strong] [origin: eng]
+- RULE-6: `tools/QA/purlin-qa-report.skill` holds exactly one entry, `purlin-qa-report/SKILL.md`, whose bytes equal the sibling `.md` [bar: strong] [origin: eng]
 
 ## Proof
 

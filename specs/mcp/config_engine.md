@@ -10,18 +10,18 @@
 
 ## Rules
 
-- RULE-1: The project root is the `PURLIN_PROJECT_ROOT` environment variable when it names a directory that exists [risk: high] [origin: eng]
-- RULE-2: Failing that, the root is found by climbing from the start directory to the nearest ancestor holding a `.purlin/` marker directory [risk: high] [origin: eng]
-- RULE-3: Failing both, the root is the working directory [risk: medium] [origin: eng]
-- RULE-4: The merged config is `config.json` with `config.local.json` laid over it: a local key wins where both name it, a base key survives where the local file does not, and a key only the local file names is included [risk: high] [origin: eng]
-- RULE-5: With no `config.local.json` on disk the merged config is `config.json` alone, and nothing creates the local file [risk: medium] [origin: eng]
-- RULE-6: A `config.local.json` holding invalid JSON is ignored with a warning on stderr, and `config.json` alone is returned [risk: high] [origin: eng]
-- RULE-7: With neither file on disk the merged config is empty [risk: medium] [origin: eng]
-- RULE-8: A write reaches `config.local.json` and never `config.json`, which belongs to `purlin:init` and to version control [risk: high] [origin: eng]
-- RULE-9: A write preserves every key `config.local.json` already held [risk: medium] [origin: eng]
-- RULE-10: A write is atomic: the whole file is written beside the target and then moved onto it, so an interrupted write leaves the previous contents and no temporary file behind [risk: high] [origin: eng]
-- RULE-11: The overlay is per top-level key. A nested object in `config.local.json` replaces the base object of the same name rather than merging into it, because a write sets a whole top-level value and a second merge rule would make what the user wrote and what the server read differ [risk: high] [origin: eng]
-- RULE-13: `resolve_project_root` returns the root together with the name of how it was found, and is the one implementation of the precedence RULE-1 to RULE-3 describe: the three names are `env`, `climb` and `cwd`, each mapped to the sentence a report prints for it, so the last case is named as the guess it is rather than handed back as a path indistinguishable from a marker that was found. `find_project_root` is the same answer with the name dropped, and nothing recomputes the precedence for itself [risk: high] [origin: eng]
+- RULE-1: The project root is the `PURLIN_PROJECT_ROOT` environment variable when it names a directory that exists [bar: strong] [origin: eng]
+- RULE-2: Failing that, the root is found by climbing from the start directory to the nearest ancestor holding a `.purlin/` marker directory [bar: strong] [origin: eng]
+- RULE-3: Failing both, the root is the working directory [bar: strong] [origin: eng]
+- RULE-4: The merged config is `config.json` with `config.local.json` laid over it: a local key wins where both name it, a base key survives where the local file does not, and a key only the local file names is included [bar: strong] [origin: eng]
+- RULE-5: With no `config.local.json` on disk the merged config is `config.json` alone, and nothing creates the local file [bar: strong] [origin: eng]
+- RULE-6: A `config.local.json` holding invalid JSON is ignored with a warning on stderr, and `config.json` alone is returned [bar: strong] [origin: eng]
+- RULE-7: With neither file on disk the merged config is empty [bar: strong] [origin: eng]
+- RULE-8: A write reaches `config.local.json` and never `config.json`, which belongs to `purlin:init` and to version control [bar: strong] [origin: eng]
+- RULE-9: A write preserves every key `config.local.json` already held [bar: strong] [origin: eng]
+- RULE-10: A write is atomic: the whole file is written beside the target and then moved onto it, so an interrupted write leaves the previous contents and no temporary file behind [bar: strong] [origin: eng]
+- RULE-11: The overlay is per top-level key. A nested object in `config.local.json` replaces the base object of the same name rather than merging into it, because a write sets a whole top-level value and a second merge rule would make what the user wrote and what the server read differ [bar: strong] [origin: eng]
+- RULE-13: `resolve_project_root` returns the root together with the name of how it was found, and is the one implementation of the precedence RULE-1 to RULE-3 describe: the three names are `env`, `climb` and `cwd`, each mapped to the sentence a report prints for it, so the last case is named as the guess it is rather than handed back as a path indistinguishable from a marker that was found. `find_project_root` is the same answer with the name dropped, and nothing recomputes the precedence for itself [bar: strong] [origin: eng]
 
 ## Proof
 

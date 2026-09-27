@@ -14,30 +14,30 @@
 
 ## Rules
 
-- RULE-1: The three hashes a signature binds come back together with the kind of the test hash and the pinned design hash of a design rule [risk: medium] [origin: eng]
-- RULE-2: A rule the project does not declare has no hashes at all [risk: low] [origin: eng]
-- RULE-3: Reflowing a rule's whitespace or adding a tag leaves the triple where it was, because the triple binds the rule text with its tags stripped [risk: high] [origin: eng]
-- RULE-4: Editing the rule text, the proof text or the test body moves the triple [risk: high] [origin: eng]
-- RULE-5: A rule proved only by a `@manual` proof records `manual` as the kind of its test hash instead of naming a test file [risk: high] [origin: eng]
-- RULE-6: A signature stays current only while the rule text, the proof text, the test body and the risk still hash to what it bound, so a risk re-tag stales it [risk: high] [origin: eng]
-- RULE-7: A signature whose triple no longer matches still comes back from the reader, so the signed cell can read `stale` rather than `unsigned` [risk: high] [origin: eng]
-- RULE-8: A signature file is named for the rule, the first eight characters of the triple and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen [risk: medium] [origin: eng]
-- RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the design hash, the risk, the signer, the note, the timestamp, the gate, the brief and the record [risk: medium] [origin: eng]
-- RULE-10: The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec and never reads a brief written under the same first two parts of a name [risk: high] [origin: eng]
-- RULE-11: With no feature named the command walks the review list one brief at a time, taking one of the four answers sign, case, hold or skip at each stop, and writes nothing until the walk closes [risk: high] [origin: eng]
-- RULE-12: `--batch` signs every rule that is signable now, in one signed commit [risk: medium] [origin: eng]
-- RULE-13: `--note` puts one line on the signature, for a `@manual` proof or a review the model could not settle; `--note` with no rule named, or with no line, exits 2 [risk: medium] [origin: eng]
-- RULE-14: Under `passed` the command writes no signature, names what `purlin:init --gate strong` would add and exits 2 [risk: high] [origin: eng]
-- RULE-15: Under `strong` a signature on a rule that needs none says a signature is required only under `signed`, and writes it anyway [risk: medium] [origin: eng]
-- RULE-16: A rule is signable when its signed cell reads `unsigned` or `stale`, or when its strong cell reads `manual test`, `manual audit` or `held`, and in no other case [risk: high] [origin: eng]
-- RULE-17: With no signing configured the command writes no signature, exits 1 and prints the three git config commands that set signing up [risk: medium] [origin: eng]
-- RULE-18: One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule signed [risk: high] [origin: eng]
-- RULE-19: A batch spanning more than one feature names each feature with its own rules in the subject [risk: low] [origin: eng]
-- RULE-20: Under `signed` a signature counts only when the commit that added it is signed, its author is on the signer list and that author did not last touch the test; under `strong` a committed signature from anyone counts [risk: high] [origin: eng]
-- RULE-21: Someone off the signer list is refused by name, and at gate `signed` with no list at all the command names `purlin:init --gate signed` and exits 1 [risk: medium] [origin: eng]
-- RULE-22: The command exits 0 for `--help`, and an unknown option exits 2 whether or not a feature is named [risk: low] [origin: eng]
-- RULE-23: A signature committed on a side branch is not on the protected branch until that branch merges [risk: high] [origin: eng]
-- RULE-40: `<feature> RULE-N --hold "<the missing case>"` writes `<RULE-N>.<hash8>.<holder-slug>.hold.json` binding the rule's hashes, with schema `purlin-hold/1`, the holder's email and the missing case as `reason`, and commits it signed as `hold(<feature>): RULE-N`; `--hold` with no reason, or with no rule named, exits 2 and writes nothing [risk: medium] [origin: eng]
+- RULE-1: The three hashes a signature binds come back together with the kind of the test hash and the pinned design hash of a design rule [bar: strong] [origin: eng]
+- RULE-2: A rule the project does not declare has no hashes at all [bar: passed] [origin: eng]
+- RULE-3: Reflowing a rule's whitespace or adding a tag leaves the triple where it was, because the triple binds the rule text with its tags stripped [bar: strong] [origin: eng]
+- RULE-4: Editing the rule text, the proof text or the test body moves the triple [bar: strong] [origin: eng]
+- RULE-5: A rule proved only by a `@manual` proof records `manual` as the kind of its test hash instead of naming a test file [bar: strong] [origin: eng]
+- RULE-6: A signature stays current only while the rule text, the proof text, the test body and the risk still hash to what it bound, so a risk re-tag stales it [bar: strong] [origin: eng]
+- RULE-7: A signature whose triple no longer matches still comes back from the reader, so the signed cell can read `stale` rather than `unsigned` [bar: strong] [origin: eng]
+- RULE-8: A signature file is named for the rule, the first eight characters of the triple and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen [bar: strong] [origin: eng]
+- RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the design hash, the risk, the signer, the note, the timestamp, the gate, the brief and the record [bar: strong] [origin: eng]
+- RULE-10: The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec and never reads a brief written under the same first two parts of a name [bar: strong] [origin: eng]
+- RULE-11: With no feature named the command walks the review list one brief at a time, taking one of the four answers sign, case, hold or skip at each stop, and writes nothing until the walk closes [bar: strong] [origin: eng]
+- RULE-12: `--batch` signs every rule that is signable now, in one signed commit [bar: strong] [origin: eng]
+- RULE-13: `--note` puts one line on the signature, for a `@manual` proof or a review the model could not settle; `--note` with no rule named, or with no line, exits 2 [bar: strong] [origin: eng]
+- RULE-14: Under `passed` the command writes no signature, names what `purlin:init --gate strong` would add and exits 2 [bar: strong] [origin: eng]
+- RULE-15: Under `strong` a signature on a rule that needs none says a signature is required only under `signed`, and writes it anyway [bar: strong] [origin: eng]
+- RULE-16: A rule is signable when its signed cell reads `unsigned` or `stale`, or when its strong cell reads `manual test`, `manual audit` or `held`, and in no other case [bar: strong] [origin: eng]
+- RULE-17: With no signing configured the command writes no signature, exits 1 and prints the three git config commands that set signing up [bar: strong] [origin: eng]
+- RULE-18: One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule signed [bar: strong] [origin: eng]
+- RULE-19: A batch spanning more than one feature names each feature with its own rules in the subject [bar: passed] [origin: eng]
+- RULE-20: Under `signed` a signature counts only when the commit that added it is signed, its author is on the signer list and that author did not last touch the test; under `strong` a committed signature from anyone counts [bar: strong] [origin: eng]
+- RULE-21: Someone off the signer list is refused by name, and at gate `signed` with no list at all the command names `purlin:init --gate signed` and exits 1 [bar: strong] [origin: eng]
+- RULE-22: The command exits 0 for `--help`, and an unknown option exits 2 whether or not a feature is named [bar: passed] [origin: eng]
+- RULE-23: A signature committed on a side branch is not on the protected branch until that branch merges [bar: strong] [origin: eng]
+- RULE-40: `<feature> RULE-N --hold "<the missing case>"` writes `<RULE-N>.<hash8>.<holder-slug>.hold.json` binding the rule's hashes, with schema `purlin-hold/1`, the holder's email and the missing case as `reason`, and commits it signed as `hold(<feature>): RULE-N`; `--hold` with no reason, or with no rule named, exits 2 and writes nothing [bar: strong] [origin: eng]
 
 ## Proof
 
@@ -50,7 +50,7 @@
 - PROOF-7 (RULE-6): Write a signature, then edit the rule text; verify zero signatures are current @integration
 - PROOF-8 (RULE-6): Write a signature, then edit the proof text; verify zero signatures are current @integration
 - PROOF-9 (RULE-6): Write a signature, then edit the test so its assertion reads `== 200 or True`; verify zero signatures are current @integration
-- PROOF-10 (RULE-6): Write a signature, then raise the rule from `[risk: low]` to `[risk: high]`; verify zero signatures are current @integration
+- PROOF-10 (RULE-6): Write a signature, then raise the rule from `[bar: passed]` to `[bar: strong]`; verify zero signatures are current @integration
 - PROOF-11 (RULE-7): Write a signature, then edit the rule text; verify the reader still returns exactly 1 signature for the rule, that its signer is `jane@acme.com` and that it is no longer current @integration
 - PROOF-12 (RULE-8): Write a signature for the address `Rich.LaBarca+purlin@example.com`; verify the only file in the signatures directory is named `RULE-1.<hash8>.rich-labarca-purlin.json` for that rule's triple @integration
 - PROOF-13 (RULE-9): Write a signature naming a brief and a record; verify its schema is `purlin-signature/1`, its field names are exactly the 16 the format lists, its triple is the first 16 characters of the rule's triple, its `note` is null and its timestamp ends `Z` @integration

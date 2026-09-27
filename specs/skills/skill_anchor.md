@@ -8,11 +8,11 @@
 
 ## Rules
 
-- RULE-1: `skills/anchor/SKILL.md` opens with a frontmatter block whose `name` is `anchor` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:anchor` [risk: medium] [origin: eng]
-- RULE-2: The skill runs `scripts/anchor/upstream.py` inside `${CLAUDE_PLUGIN_ROOT}` for `add`, `sync` and `propose`, and names `sync --check` as the read-only form `purlin:drift` runs as well [risk: medium] [origin: eng]
-- RULE-3: The last section of `skills/anchor/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [risk: medium] [origin: eng]
-- RULE-4: The whole of `skills/anchor/SKILL.md` is at most 160 lines [risk: low] [origin: eng]
-- RULE-5: A pin is a commit and never a branch, and a pinned rule is never edited in the consuming project: the skill sends a change to `purlin:anchor propose` or to a separate local anchor that requires the pinned one [risk: high] [origin: eng]
+- RULE-1: `skills/anchor/SKILL.md` opens with a frontmatter block whose `name` is `anchor` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:anchor` [bar: strong] [origin: eng]
+- RULE-2: The skill runs `scripts/anchor/upstream.py` inside `${CLAUDE_PLUGIN_ROOT}` for `add`, `sync` and `propose`, and names `sync --check` as the read-only form `purlin:drift` runs as well [bar: strong] [origin: eng]
+- RULE-3: The last section of `skills/anchor/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong] [origin: eng]
+- RULE-4: The whole of `skills/anchor/SKILL.md` is at most 160 lines [bar: passed] [origin: eng]
+- RULE-5: A pin is a commit and never a branch, and a pinned rule is never edited in the consuming project: the skill sends a change to `purlin:anchor propose` or to a separate local anchor that requires the pinned one [bar: strong] [origin: eng]
 
 ## Proof
 

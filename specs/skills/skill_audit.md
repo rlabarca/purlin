@@ -8,13 +8,13 @@
 
 ## Rules
 
-- RULE-1: `skills/audit/SKILL.md` opens with a frontmatter block whose `name` is `audit` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:audit` [risk: medium] [origin: eng]
-- RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--audit`, and states that CI runs the same script in an arm of its own that nobody runs by hand [risk: medium] [origin: eng]
-- RULE-3: The last section of `skills/audit/SKILL.md` names the next step and computes it from the cells the skill found, giving a `→` directive for each outcome [risk: medium] [origin: eng]
-- RULE-4: The whole of `skills/audit/SKILL.md` is at most 105 lines [risk: low] [origin: eng]
-- RULE-5: The skill states which record counts under which gate, naming both folders: a `ci` record counts under `passed`, `strong` and `signed`, and a `local` record under `passed` and `strong` and not under `signed` [risk: high] [origin: eng]
-- RULE-6: The skill states that under `passed` the run does the tests only and says `Strength n/a: the gate is passed.`, that under `strong` and `signed` it runs the breaks and prints the strength beside the minimum, that it commits its record as `purlin: record for <sha7>`, that it ends with `gate strong: <n> of <rules>`, and that at `signed` the record it wrote is a preview [risk: high] [origin: eng]
-- RULE-7: The skill states that the run also writes the briefs under `.purlin/briefs/`, that `--tag <name>` writes the tag `record/<name>` over the records already in the tree, and that `--remote` belongs to `purlin:test` [risk: medium] [origin: eng]
+- RULE-1: `skills/audit/SKILL.md` opens with a frontmatter block whose `name` is `audit` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:audit` [bar: strong] [origin: eng]
+- RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--audit`, and states that CI runs the same script in an arm of its own that nobody runs by hand [bar: strong] [origin: eng]
+- RULE-3: The last section of `skills/audit/SKILL.md` names the next step and computes it from the cells the skill found, giving a `→` directive for each outcome [bar: strong] [origin: eng]
+- RULE-4: The whole of `skills/audit/SKILL.md` is at most 105 lines [bar: passed] [origin: eng]
+- RULE-5: The skill states which record counts under which gate, naming both folders: a `ci` record counts under `passed`, `strong` and `signed`, and a `local` record under `passed` and `strong` and not under `signed` [bar: strong] [origin: eng]
+- RULE-6: The skill states that under `passed` the run does the tests only and says `Strength n/a: the gate is passed.`, that under `strong` and `signed` it runs the breaks and prints the strength beside the minimum, that it commits its record as `purlin: record for <sha7>`, that it ends with `gate strong: <n> of <rules>`, and that at `signed` the record it wrote is a preview [bar: strong] [origin: eng]
+- RULE-7: The skill states that the run also writes the briefs under `.purlin/briefs/`, that `--tag <name>` writes the tag `record/<name>` over the records already in the tree, and that `--remote` belongs to `purlin:test` [bar: strong] [origin: eng]
 
 ## Proof
 

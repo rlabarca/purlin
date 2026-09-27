@@ -8,13 +8,13 @@
 
 ## Rules
 
-- RULE-1: `skills/sign/SKILL.md` opens with a frontmatter block whose `name` is `sign` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:sign` [risk: medium] [origin: eng]
-- RULE-2: The skill reads the review list from `sync_status` as `payload.review_list`, shows the brief with `scripts/review/brief.py` before it writes anything, and writes the signature with `scripts/review/sign.py`, both scripts inside `${CLAUDE_PLUGIN_ROOT}` [risk: high] [origin: eng]
-- RULE-3: The last section of `skills/sign/SKILL.md` names the next step and computes it from the cells the skill found, giving a `→` directive for each outcome [risk: medium] [origin: eng]
-- RULE-4: The whole of `skills/sign/SKILL.md` is at most 150 lines [risk: low] [origin: eng]
-- RULE-5: The skill states that a signature does not count when its author is the author of the commit that last touched the test, and that under the `signed` gate the signing commit is signed and reaches the protected branch [risk: high] [origin: eng]
-- RULE-6: The skill names the walk's four answers, sign, add a case, hold and skip, and says that a skipped rule is on the list again next time [risk: high] [origin: eng]
-- RULE-7: The skill says what each of the three gates leaves it able to do: under `passed` it names what `purlin:init --gate strong` would add and stops, under `strong` the walk, `--note` and `--hold` work, and under `signed` every rule at or above `sign_at` needs a signature [risk: high] [origin: eng]
+- RULE-1: `skills/sign/SKILL.md` opens with a frontmatter block whose `name` is `sign` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:sign` [bar: strong] [origin: eng]
+- RULE-2: The skill reads the review list from `sync_status` as `payload.review_list`, shows the brief with `scripts/review/brief.py` before it writes anything, and writes the signature with `scripts/review/sign.py`, both scripts inside `${CLAUDE_PLUGIN_ROOT}` [bar: strong] [origin: eng]
+- RULE-3: The last section of `skills/sign/SKILL.md` names the next step and computes it from the cells the skill found, giving a `→` directive for each outcome [bar: strong] [origin: eng]
+- RULE-4: The whole of `skills/sign/SKILL.md` is at most 150 lines [bar: passed] [origin: eng]
+- RULE-5: The skill states that a signature does not count when its author is the author of the commit that last touched the test, and that under the `signed` gate the signing commit is signed and reaches the protected branch [bar: strong] [origin: eng]
+- RULE-6: The skill names the walk's four answers, sign, add a case, hold and skip, and says that a skipped rule is on the list again next time [bar: strong] [origin: eng]
+- RULE-7: The skill says what each of the three gates leaves it able to do: under `passed` it names what `purlin:init --gate strong` would add and stops, under `strong` the walk, `--note` and `--hold` work, and under `signed` every rule at or above `sign_at` needs a signature [bar: strong] [origin: eng]
 
 ## Proof
 

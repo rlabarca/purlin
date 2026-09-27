@@ -15,37 +15,37 @@
 
 ## Rules
 
-- RULE-1: A low-risk rule's brief runs the proof-text and test-body layers and no others, so its test strength is never read [risk: medium] [origin: eng]
-- RULE-2: A medium-risk rule's brief adds the test strength layer and stops there [risk: medium] [origin: eng]
-- RULE-3: A high-risk rule's brief runs all four layers, the model review last [risk: high] [origin: eng]
-- RULE-4: Building a brief for a rule the project does not hold returns nothing rather than an empty brief [risk: low] [origin: eng]
-- RULE-5: Every free check on the proof text reaches the brief under the name `references/review_criteria.md` gives it [risk: high] [origin: eng]
-- RULE-6: Every free check on the marked test body reaches the brief under its own name, each with the reason a reader acts on [risk: high] [origin: eng]
-- RULE-7: The brief shows the marked test's file, its name and its source beside the rule [risk: medium] [origin: eng]
-- RULE-8: A `@manual` proof carries a note where a test would be and no test file, because its evidence is the signer's note [risk: high] [origin: eng]
-- RULE-9: The test strength comes off the feature's latest record and is shown against the configured minimum, reading `n/a` when no engine measured one [risk: medium] [origin: eng]
-- RULE-10: The brief carries no recommendation, no grade and no state: its fields are the evidence, the observations and the numbers, and nothing else [risk: high] [origin: eng]
-- RULE-12: A model answer becomes one observation per sentence, each naming the proof it concerns [risk: high] [origin: eng]
-- RULE-13: The brief records whether the review settled the question, as yes, no, or not answered at all [risk: high] [origin: eng]
-- RULE-15: The model prompt is `references/review_criteria.md` verbatim, then this rule's rule text, proof text, test bodies and test strength, and it asks for observations rather than a recommendation or a score [risk: medium] [origin: eng]
-- RULE-16: The model review runs only when the caller passes `--ai` and the rule's risk is at or above `ai_review_at`; without it, and with no model on the path, the brief records `not available` [risk: medium] [origin: eng]
-- RULE-17: An answer in no shape the brief can read observes nothing and leaves the question not answered [risk: high] [origin: eng]
-- RULE-18: A rule a designer owns shows the pinned mock beside the screenshot the test captured, and a glob that matches nothing is shown as the glob [risk: medium] [origin: eng]
-- RULE-19: The brief is written as `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json` carrying schema `purlin-brief/2`, with a text rendering of the same name beside it, and is found again only while the triple stands [risk: medium] [origin: eng]
-- RULE-21: Writing briefs with no list named covers every rule whose risk is at or above `ai_review_at` and whose passed cell counts, and a narrower list covers only what it names [risk: low] [origin: eng]
-- RULE-22: The text rendering names the rule, its proofs, the test strength beside the minimum, the observations and whether the review settled, and carries no emoji [risk: low] [origin: eng]
-- RULE-23: `brief.py --help` exits 0, an unknown option or a missing `--feature` exits 2, and a feature with no rule in the project exits 1 [risk: low] [origin: eng]
-- RULE-24: `brief.py --feature <name>` with no `--rule` builds, prints and writes a brief for every rule of that feature [risk: low] [origin: eng]
-- RULE-25: A name that opens with an underscore reaches the brief as `implementation_coupling` unless it follows a `/`, so a path or URL segment such as `specs/_anchors/` or `/_git/` is not read as a private symbol [risk: medium] [origin: eng]
-- RULE-26: When several tests back one proof, each test in the brief shows its own source and its own findings; a test whose source cannot be found shows none rather than another test's [risk: high] [origin: eng]
-- RULE-27: Writing a brief again for a triple that already has one leaves the JSON byte for byte as it was unless the evidence in it changed; a difference only in when it was built or the record it was built from is not a change, so reading a brief dirties no tracked file [risk: medium] [origin: eng]
+- RULE-1: A low-risk rule's brief runs the proof-text and test-body layers and no others, so its test strength is never read [bar: strong] [origin: eng]
+- RULE-2: A medium-risk rule's brief adds the test strength layer and stops there [bar: strong] [origin: eng]
+- RULE-3: A high-risk rule's brief runs all four layers, the model review last [bar: strong] [origin: eng]
+- RULE-4: Building a brief for a rule the project does not hold returns nothing rather than an empty brief [bar: passed] [origin: eng]
+- RULE-5: Every free check on the proof text reaches the brief under the name `references/review_criteria.md` gives it [bar: strong] [origin: eng]
+- RULE-6: Every free check on the marked test body reaches the brief under its own name, each with the reason a reader acts on [bar: strong] [origin: eng]
+- RULE-7: The brief shows the marked test's file, its name and its source beside the rule [bar: strong] [origin: eng]
+- RULE-8: A `@manual` proof carries a note where a test would be and no test file, because its evidence is the signer's note [bar: strong] [origin: eng]
+- RULE-9: The test strength comes off the feature's latest record and is shown against the configured minimum, reading `n/a` when no engine measured one [bar: strong] [origin: eng]
+- RULE-10: The brief carries no recommendation, no grade and no state: its fields are the evidence, the observations and the numbers, and nothing else [bar: strong] [origin: eng]
+- RULE-12: A model answer becomes one observation per sentence, each naming the proof it concerns [bar: strong] [origin: eng]
+- RULE-13: The brief records whether the review settled the question, as yes, no, or not answered at all [bar: strong] [origin: eng]
+- RULE-15: The model prompt is `references/review_criteria.md` verbatim, then this rule's rule text, proof text, test bodies and test strength, and it asks for observations rather than a recommendation or a score [bar: strong] [origin: eng]
+- RULE-16: The model review runs only when the caller passes `--ai` and the rule's risk is at or above `ai_review_at`; without it, and with no model on the path, the brief records `not available` [bar: strong] [origin: eng]
+- RULE-17: An answer in no shape the brief can read observes nothing and leaves the question not answered [bar: strong] [origin: eng]
+- RULE-18: A rule a designer owns shows the pinned mock beside the screenshot the test captured, and a glob that matches nothing is shown as the glob [bar: strong] [origin: eng]
+- RULE-19: The brief is written as `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json` carrying schema `purlin-brief/2`, with a text rendering of the same name beside it, and is found again only while the triple stands [bar: strong] [origin: eng]
+- RULE-21: Writing briefs with no list named covers every rule whose risk is at or above `ai_review_at` and whose passed cell counts, and a narrower list covers only what it names [bar: passed] [origin: eng]
+- RULE-22: The text rendering names the rule, its proofs, the test strength beside the minimum, the observations and whether the review settled, and carries no emoji [bar: passed] [origin: eng]
+- RULE-23: `brief.py --help` exits 0, an unknown option or a missing `--feature` exits 2, and a feature with no rule in the project exits 1 [bar: passed] [origin: eng]
+- RULE-24: `brief.py --feature <name>` with no `--rule` builds, prints and writes a brief for every rule of that feature [bar: passed] [origin: eng]
+- RULE-25: A name that opens with an underscore reaches the brief as `implementation_coupling` unless it follows a `/`, so a path or URL segment such as `specs/_anchors/` or `/_git/` is not read as a private symbol [bar: strong] [origin: eng]
+- RULE-26: When several tests back one proof, each test in the brief shows its own source and its own findings; a test whose source cannot be found shows none rather than another test's [bar: strong] [origin: eng]
+- RULE-27: Writing a brief again for a triple that already has one leaves the JSON byte for byte as it was unless the evidence in it changed; a difference only in when it was built or the record it was built from is not a change, so reading a brief dirties no tracked file [bar: strong] [origin: eng]
 
 ## Proof
 
-- PROOF-1 (RULE-1): Build the brief for a `[risk: low]` rule in a project holding a record; verify its layers are exactly `proof text` and `test body` @integration
+- PROOF-1 (RULE-1): Build the brief for a `[bar: passed]` rule in a project holding a record; verify its layers are exactly `proof text` and `test body` @integration
 - PROOF-2 (RULE-1): Build the brief for that same low-risk rule; verify its test strength is `none` because the strength layer did not run @integration
-- PROOF-3 (RULE-2): Retag the rule `[risk: medium]`, run the tests and write a record, then build the brief; verify its layers are `proof text`, `test body`, `test strength` and nothing after @integration
-- PROOF-4 (RULE-3): Build the brief for a `[risk: high]` rule; verify its layers are `proof text`, `test body`, `test strength`, `model review` in that order @integration
+- PROOF-3 (RULE-2): Retag the rule `[bar: strong]`, run the tests and write a record, then build the brief; verify its layers are `proof text`, `test body`, `test strength` and nothing after @integration
+- PROOF-4 (RULE-3): Build the brief for a `[bar: strong]` rule; verify its layers are `proof text`, `test body`, `test strength`, `model review` in that order @integration
 - PROOF-5 (RULE-4): Build a brief for `RULE-99`, which the spec does not declare; verify nothing comes back @integration
 - PROOF-6 (RULE-5): Write a proof reading `The login works correctly`, then build the brief; verify its findings carry both `no_expected_value` and `vague_verb` @integration
 - PROOF-7 (RULE-6): Edit the marked test so it calls the code and asserts nothing, then build the brief; verify the test's findings are exactly `no_assertion` and that a reason is printed with it @integration

@@ -10,13 +10,13 @@
 
 ## Rules
 
-- RULE-1: The proof files a test run writes live under `.purlin/runtime/proofs/`, one per feature per tier, named `<feature>.<tier>.json` [risk: high] [origin: eng]
-- RULE-2: The tier is the last dotted segment of the file name before `.json`, so a feature stem carrying dots still resolves to one tier [risk: medium] [origin: eng]
-- RULE-3: Entries come back grouped by the `feature` field each one carries, and a project whose proof directory does not exist reads as an empty result rather than an error [risk: high] [origin: eng]
-- RULE-4: An entry that names no tier of its own takes the tier the file name carries [risk: medium] [origin: eng]
-- RULE-5: A file that is not JSON, whose top level is not an object, or whose name does not end `.<tier>.json` is skipped, and every other file in the directory still loads [risk: medium] [origin: eng]
-- RULE-6: A proof has one status per run and `fail` wins: a proof some test claiming it failed on is not proved, whatever another test reported [risk: high] [origin: eng]
-- RULE-7: The tests backing a proof are named once each, so a file run twice does not report the same test twice [risk: low] [origin: eng]
+- RULE-1: The proof files a test run writes live under `.purlin/runtime/proofs/`, one per feature per tier, named `<feature>.<tier>.json` [bar: strong] [origin: eng]
+- RULE-2: The tier is the last dotted segment of the file name before `.json`, so a feature stem carrying dots still resolves to one tier [bar: strong] [origin: eng]
+- RULE-3: Entries come back grouped by the `feature` field each one carries, and a project whose proof directory does not exist reads as an empty result rather than an error [bar: strong] [origin: eng]
+- RULE-4: An entry that names no tier of its own takes the tier the file name carries [bar: strong] [origin: eng]
+- RULE-5: A file that is not JSON, whose top level is not an object, or whose name does not end `.<tier>.json` is skipped, and every other file in the directory still loads [bar: strong] [origin: eng]
+- RULE-6: A proof has one status per run and `fail` wins: a proof some test claiming it failed on is not proved, whatever another test reported [bar: strong] [origin: eng]
+- RULE-7: The tests backing a proof are named once each, so a file run twice does not report the same test twice [bar: passed] [origin: eng]
 
 ## Proof
 
