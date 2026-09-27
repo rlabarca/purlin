@@ -20,7 +20,7 @@ purlin:drift                    The view for your role, inferred from what you t
 purlin:drift eng                Files touched, tests missing, tags missing, pins, code changed
 purlin:drift pm                 Criteria, pm-owned rules, rules engineers added, pins
 purlin:drift design             Mocks changed, design rules gone stale
-purlin:drift qa                 Signatures stale, the review list's length, rules needing a person
+purlin:drift qa                 Signatures stale, how long Review and Sign are, rules needing a person
 purlin:drift --since <N>        The last N commits instead of since the last record
 purlin:drift --since <date>     Since a date, YYYY-MM-DD
 ```
@@ -75,7 +75,7 @@ drift eng: 14 files since the last record (a1b2c3d)
   src/auth/login.js          RULE-2, RULE-5 behind this change
   src/auth/mfa.js            no spec covers this file
   login RULE-7               no test carries PROOF-7
-  billing RULE-3             no risk tag; the gate needs one
+  billing RULE-3             no origin tag; the gate needs one
   design_tokens (anchor)     pinned 4 commits behind
   export                     code changed: the code moved, the signatures stand
 ```
@@ -103,10 +103,10 @@ drift design: 2 things to look at
 **qa.** What is waiting for you.
 
 ```
-drift qa: review list is 12 rules (3 high, 6 medium, 3 low)
+drift qa: Review is 9 rules and Sign is 3
 
   login RULE-3               signature stale: the rule text changed after it
-  billing RULE-2             manual audit: the model review did not settle
+  billing RULE-2             unsettled: the AI audit could not settle
   export RULE-1              no negative case: every proof asserts a success path
 ```
 
@@ -123,7 +123,7 @@ line rather than listing those rules as findings.
 | A file no spec covers | `→ Run: purlin:spec-from-code <path>` |
 | A rule behind a changed file | `→ Run: purlin:spec <feature>` |
 | A rule with no test | `→ Run: purlin:build <feature>` |
-| A risk or origin tag missing under a gate that needs it | `→ Run: purlin:spec <feature>` |
+| An origin tag missing under a gate that needs it | `→ Run: purlin:spec <feature>` |
 | An anchor pin behind | `→ Run: purlin:anchor sync <name>` |
 | Rules waiting on a person | `→ Run: purlin:sign` |
 | Only `code changed` | `→ Next: run purlin:test --remote; the next CI run clears it.` |

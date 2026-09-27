@@ -35,12 +35,12 @@ Found: specs/auth/login.md
 > Scope: src/auth/login.js, src/auth/login.test.js
 
 8 rules, 6 meet the gate signed   strength 81%
-  RULE-1  high    ready  passed  strong  signed      PROOF-1  tests/test_login.py::test_rejects_bad_password
-  RULE-2  medium  ready  passed  strong  unsigned    PROOF-2  tests/test_login.py::test_locks_after_five
-  RULE-3  low     ready  no test                     PROOF-3  no test carries this marker
+  RULE-1  strong  ready  passed  strong  signed      PROOF-1  tests/test_login.py::test_rejects_bad_password
+  RULE-2  strong  ready  passed  strong  unsigned    PROOF-2  tests/test_login.py::test_locks_after_five
+  RULE-3  passed  ready  no test                     PROOF-3  no test carries this marker
 ```
 
-Show the risk and the origin only when the spec carries them; under the `passed` gate both are
+Show the bar and the origin only when the spec tagged them; under the `passed` gate both are
 optional and a column of blanks says nothing.
 
 ## With no name
@@ -66,6 +66,6 @@ End with one line, for the spec you showed or for the weakest one you listed:
 | A rule reads `no test` | `→ Run: purlin:build <feature>` |
 | A rule reads `passed` with no record under `strong` or above | `→ Run: purlin:audit <feature>` |
 | A rule is weak | `→ Run: purlin:build <feature>` |
-| A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Run: purlin:sign <feature>` |
+| A rule reads `manual test`, `unsettled` or `held`, or is signable | `→ Run: purlin:sign <feature>` |
 | An anchor pin is behind | `→ Run: purlin:anchor sync <name>` |
 | Nothing outstanding | `→ Nothing to do here.` |

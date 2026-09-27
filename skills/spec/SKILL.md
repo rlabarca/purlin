@@ -67,9 +67,9 @@ the first two here. The third is a person's decision, so name the rules and leav
 
 ## Rules
 
-- RULE-1: Return 200 and a session cookie for a correct email and password [risk: high] [origin: pm] [criterion: US-12]
-- RULE-2: Return 401 for a wrong password [risk: high] [origin: pm]
-- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [risk: medium] [origin: pm] [criterion: US-13]
+- RULE-1: Return 200 and a session cookie for a correct email and password [bar: strong] [origin: pm] [criterion: US-12]
+- RULE-2: Return 401 for a wrong password [bar: strong] [origin: pm]
+- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [bar: strong] [origin: pm] [criterion: US-13]
 
 ## Proof
 
@@ -90,13 +90,15 @@ tags sit at the end of the line and are read off it, so the claim text stays cle
 
 | Tag | Values | Default | What it decides |
 |-----|--------|---------|-----------------|
-| `[risk: ...]` | `high`, `medium`, `low` | `low` | Read only at `strong` and above: it decides when the model reviews a rule, and under `signed` which rules need a signature |
+| `[bar: ...]` | `passed`, `strong` | the project's gate | The evidence the rule must have before it can be signed. Read only at `strong` and above: it decides whether the AI audit runs on the rule, and under `signed` whether the rule needs a signature |
 | `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. `purlin:drift` routes a change by it |
 | `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 
-Under the `signed` gate, risk and origin are required and an untagged rule is reported. Under
-`passed` risk is never read, so do not ask for it. Re-tagging a rule's risk stales its
-signature, because risk is one of the things a signature binds; say so before you change one.
+Under the `signed` gate, origin is required and a rule without it is reported. The bar is
+not: a rule with no tag takes the project's gate, so leave it off unless the rule needs a
+different answer from the rest. Under `passed` the bar is never read, so do not ask for it.
+Re-tagging a rule's bar stales its signature, because the bar is one of the things a
+signature binds; say so before you change one.
 
 A rule about what the software must never do is an ordinary rule with a proof that asserts
 absence. There is no separate syntax for it.
@@ -178,5 +180,5 @@ Spec created: <name>. Build it now?
 
 When you edited an existing spec rather than creating one, say what moved before the offer:
 which rules were added, which text changed, and which signatures that stales. When the gate is
-`signed` and a rule still has no risk or origin tag, name those rules first: the gate cannot
-be met until they are tagged.
+`signed` and a rule still has no origin tag, name those rules first: the gate cannot be met
+until they are tagged.

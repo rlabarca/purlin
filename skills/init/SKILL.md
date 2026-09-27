@@ -21,11 +21,11 @@ are three answers, one per evidence level. That answer is the **gate**.
 | Gate | Who it fits | What CI requires before merge | Signatures |
 |------|-------------|-------------------------------|------------|
 | `passed` | one person working alone | every rule's passed cell is met: a passing tagged test, from any source | none |
-| `strong` | a team of PM, designers, engineers and QA | every rule's strong cell is met: a CI-written record at this commit, test strength at or above `min_strength`, no finding and no hold | none required; anyone may sign to clear a rule reading `manual test`, `manual audit` or `held` |
-| `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list | required: the signer list decides who |
+| `strong` | a team of PM, designers, engineers and QA | every rule whose bar is `strong` has a strong cell that is met: a record at this commit, test strength at or above `min_strength`, no finding and no hold | none required; anyone may sign to clear a rule reading `manual test`, `unsettled` or `held` |
+| `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit by someone on the signer list | required: the signer list decides who |
 
-The answer sets four defaults, each changeable afterwards: `min_strength` unused, 70, 80;
-`ai_review_at` never, high, medium; `sign_at` unset, unset, `medium`; risk and origin tags
+The answer sets four defaults, each changeable afterwards: `min_strength` unused, 70, 80; the
+default bar `passed`, `strong`, `strong`; `sign_at` unset, unset, `strong`; origin tags
 optional, optional, required.
 
 ## The three honest exceptions
@@ -57,7 +57,7 @@ list back to the person before running it for real on a project that already has
 Raising the gate is additive. `--gate strong` on a project set up as `passed` writes the CI
 workflow, creates `designs/` if it is missing, turns the breaks on, and prints the branch rules;
 it asks before each write and touches nothing else. `--gate signed` on top of that asks for the
-signer emails and lists the rules with no risk or origin tag. Lowering the gate rewrites the
+signer emails, asks which rules need a signature, and lists the rules with no origin tag. Lowering the gate rewrites the
 setting and deletes nothing: the workflow, the records and the signatures stay, and CI stops
 requiring them.
 
@@ -95,7 +95,6 @@ implies:
 {
   "version": "0.10.0",
   "gate": "strong",
-  "ai_review_at": "high",
   "min_strength": 70,
   "mutation_engine": "mutmut",
   "sql_engine": null,
@@ -104,8 +103,7 @@ implies:
 }
 ```
 
-`signers` joins it under `signed` and nowhere else, and `sign_at` is derived from the gate, so
-it appears only when you set it yourself. Read and change the file with the `purlin_config`
+`signers` and `sign_at` join it under `signed` and nowhere else; init asks for both there. Read and change the file with the `purlin_config`
 tool rather than by hand, so a key the installed Purlin no longer reads is reported instead of
 silently kept.
 
@@ -149,16 +147,23 @@ unchecked rather than failed. The same checks run under `--update`.
 
 ## What each gate brings
 
-Under every gate, init creates the records folder and its retention rule, and leaves risk,
+Under every gate, init creates the records folder and its retention rule, and leaves the bar,
 origin and criterion tags optional. Under `strong` and `signed`, init also writes `designs/` and the CI workflow (`purlin.yml`),
 because the gate cannot be met without a CI run that writes records. When `specs/` carries
 `@env(windows)` or `@env(macos)` proofs, the workflow gets a matrix: a Linux job always, plus
 one job per other operating system named, each running the same tests and writing its own
 record. With no such proof there is one Linux job.
 
-Under `signed`, init asks for the signer emails, writes them to `signers`, prints the
-commit-signing setup, and lists every rule with no risk or origin tag so `purlin:spec <name>`
-can tag them in one pass. Without a signer list the gate cannot be met: the CI gate prints
+Under `signed`, init asks for the signer emails, writes them to `signers`, asks which rules
+need a signature and writes the answer to `sign_at`, prints the commit-signing setup, and
+lists every rule with no origin tag so `purlin:spec <name>` can tag them in one pass.
+
+The question it asks is `Which rules need a signature?`, with one line each:
+
+```
+strong  the rules whose bar is strong; the rest meet the gate on their tests
+all     every rule, whatever its bar
+``` Without a signer list the gate cannot be met: the CI gate prints
 `→ signer list missing: run purlin:init --gate signed` and exits 1, and `purlin:sign` says the
 same and writes nothing.
 

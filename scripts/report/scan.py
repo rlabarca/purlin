@@ -137,9 +137,15 @@ def rollup_text(project_root, payload):
     if summary.get('manual'):
         lines.append('%d rules have a manual test: a person runs it and a '
                      'signature records what they saw.' % summary['manual'])
-    if summary.get('audit'):
-        lines.append('%d rules need a manual audit: the model review could '
-                     'not settle them.' % summary['audit'])
+    if summary.get('unsettled'):
+        lines.append('%d rules are unsettled: the AI audit could not settle '
+                     'them.' % summary['unsettled'])
+    if summary.get('not_audited'):
+        lines.append('%d rules are not audited: no audit has run over this '
+                     'code.' % summary['not_audited'])
+    if summary.get('signable'):
+        lines.append('%d rules are signable: they cleared their bar and need '
+                     'a signature.' % summary['signable'])
 
     record = newest_record(payload)
     lines.append('')

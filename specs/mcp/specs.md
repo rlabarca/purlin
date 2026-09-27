@@ -11,7 +11,7 @@
 ## Rules
 
 - RULE-1: A rule line's `[bar: passed]`, `[origin: ...]` and `[criterion: ...]` tags are read off the end of the line one at a time in any order, and the text that remains is the claim alone [bar: strong] [origin: eng]
-- RULE-2: A rule naming no tag takes `risk` `low` and `origin` `eng`, and carries no `criterion` key at all [bar: strong] [origin: eng]
+- RULE-2: A rule naming no tag takes `origin` `eng`, and carries neither a `bar` nor a `criterion` key at all [bar: strong] [origin: eng]
 - RULE-3: The rule and proof text hashes normalise runs of whitespace to one space, so reflowing or retagging a line returns the hash it already had [bar: strong] [origin: eng]
 - RULE-4: A proof line's trailing `@<name>` that is not `@env` is the tier, and a proof naming no tier is tier `unit` [bar: strong] [origin: eng]
 - RULE-5: `@env` takes `windows`, `macos` and `linux` and nothing else; any other value is read as no operating system at all and is listed as an unknown tag [bar: strong] [origin: eng]
@@ -24,12 +24,14 @@
 - RULE-12: The scope tree is a sha256 over each scoped file's git blob id written beside its path in sorted order; a scope entry naming a directory expands to the files git tracks under it, so an untracked file left there changes nothing, and to a walk of the disk only when git cannot answer; a path git cannot hash contributes an empty id instead of raising [bar: strong] [origin: eng]
 - RULE-13: A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`; an anchor proves its own rules and nothing else [bar: strong] [origin: eng]
 - RULE-14: Every spec is keyed by its filename stem, and a file that cannot be read or decoded is skipped while the rest of the scan still answers [bar: strong] [origin: eng]
+- RULE-15: The `[bar: ...]` tag is read off the end of a rule line as `passed` or `strong`, stripped from the text the rule text hash is taken over, and carried in the rule's metadata under `bar` [bar: strong] [origin: eng]
+- RULE-16: A rule line carrying the tag the bar replaced is parsed all the same: the two levels that asked for a person read as `bar` `strong` and the one that did not as `bar` `passed`, and a `[bar: ...]` tag on the same line wins over it [bar: strong] [origin: eng]
 
 ## Proof
 
-- PROOF-1 (RULE-1): Parse a spec whose RULE-1 line ends `[bar: strong] [origin: pm] [criterion: US-12]`; verify the parsed text is exactly `Valid credentials return 200 with a session token` with no bracket left in it, and that the rule's metadata is exactly `{"risk": "high", "origin": "pm", "criterion": "US-12"}` @integration
+- PROOF-1 (RULE-1): Parse a spec whose RULE-1 line ends `[bar: strong] [origin: pm] [criterion: US-12]`; verify the parsed text is exactly `Valid credentials return 200 with a session token` with no bracket left in it, and that the rule's metadata is exactly `{"bar": "strong", "origin": "pm", "criterion": "US-12"}` @integration [origin: pm] [criterion: US-12]
 - PROOF-2 (RULE-1): Call the rule tag splitter on `Tokens expire [origin: qa] [bar: strong]` and `Tokens expire [bar: strong] [origin: qa]`; verify both return the text `Tokens expire` and the same metadata, so the order the tags are written in changes nothing
-- PROOF-3 (RULE-2): Parse a rule line carrying no tag; verify its metadata is exactly `{"risk": "low", "origin": "eng"}` and that no `criterion` key is present @integration
+- PROOF-3 (RULE-2): Parse a rule line carrying no tag; verify its metadata is exactly `{"origin": "eng"}` and that no `bar` or `criterion` key is present @integration
 - PROOF-4 (RULE-3): Call the rule text hash on `Tokens expire after 24 hours`, then call it on the text left by splitting `Tokens  expire   after 24 hours [bar: strong]`; verify the two hashes are equal, so neither a doubled space nor a tag changes the rule text hash a signature binds
 - PROOF-5 (RULE-4): Parse a proof line ending `@unit @env(windows)`; verify the tier is `unit` and the operating system is `windows`, and that a proof line with no tag at all comes back at tier `unit` @integration
 - PROOF-6 (RULE-5): Call the proof tag splitter on `x @env(windows)`, `x @env(macos)` and `x @env(linux)` and verify each returns its own value; then call it on `x @env(bsd)` and verify the operating system is none and the unknown tags are exactly `["@env(bsd)"]` @integration
@@ -43,3 +45,5 @@
 - PROOF-14 (RULE-13): Write anchor `api` with one rule, global anchor `security` with one rule and feature `login` with two own rules and `> Requires: api`; call the rule reference walk for `login` and verify it returns exactly `login/RULE-1 own`, `login/RULE-2 own`, `api/RULE-1 required` and `security/RULE-1 global` in that order; call it for `security` and verify it returns that anchor's own rule alone @integration
 - PROOF-15 (RULE-14): Write `specs/auth/login.md` and a second file whose bytes are not valid UTF-8; scan the directory and verify the result holds the key `login` and no key for the undecodable file, and that scanning a project with no `specs/` directory returns an empty result rather than raising @integration
 - PROOF-16 (RULE-12): Scope the directory `src`, holding one tracked file; take the scope tree, write a second file under it without adding it to git and verify the tree is the one already taken, then commit that file and verify the tree changes @integration
+- PROOF-17 (RULE-15): Parse a rule line ending `[bar: passed]` and one ending `[bar: strong]`; verify each carries that value under `bar`, that neither bracket is left in the text, and that the two lines' rule text hashes are equal @unit
+- PROOF-18 (RULE-16): Parse three rule lines tagged with each level of the tag the bar replaced; verify the two that asked for a person read `bar` `strong` and the third reads `bar` `passed`, and that a line carrying both that tag and `[bar: passed]` reads `passed` @unit

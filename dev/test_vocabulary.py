@@ -21,7 +21,10 @@ WORDS = ("gauge", "HOLLOW", "PROVABLE", "receipt", "mutation score",
          "caught score", "records branch", "forge", "queue", "CODEOWNERS", "approver rule",
          # the 0.10.0 three-level model
          "tested", "recorded", "approved", "approve", "approval", "approver", "approvers",
-         "verified", "verdict", "reviewed", "re-verify")
+         "verified", "verdict", "reviewed", "re-verify",
+         # the bar replaced it; the two levels that asked for a person became
+         # `[bar: strong]` and the one that did not became `[bar: passed]`
+         "risk", "risks")
 LITERALS = ("@on(",                     # not a word: the retired scope tag
             "platform registry", "--platform",
             "Proof ready", "lowest state", "seven states", "auto-approval", "review queue",
@@ -32,7 +35,9 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             # went with it. `developer` as a plain English word stays legal,
             # so only the machine spellings are retired.
             "`developer`", "'developer'", '"developer"',
-            "--commit", "purlin:audit --remote")
+            "--commit", "purlin:audit --remote",
+            # the bar retired these three in one move
+            "manual audit", "not required", "ai_review_at")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
@@ -58,7 +63,16 @@ EXCLUDED = (
 # Paths a later phase of dev/plans/three-levels.md still rewrites, grouped by
 # the lane that owns them. A lane deletes its entries in the commit that
 # rewrites the files; the tuple is empty at closeout.
-PENDING_REWRITE = ()
+PENDING_REWRITE = (
+    # lane 12B: the dashboard, the docs pages and the deck still name the tag
+    # the bar replaced and the words it retired.
+    "scripts/report/purlin-report.html",
+    "scripts/report/src/",
+    "docs/",
+    "design/",
+    "dev/test_purlin_report.py",
+    "specs/dashboard/purlin_report.md",
+)
 
 # Phase 7 deletes every signature directory of the old layout; until then the
 # files inside carry the old words.

@@ -6,7 +6,7 @@ Bad-to-good rule rewrites collected from actual spec reviews and audit findings.
 
 ## Inbound Contracts
 
-Rules about data entering the system: API responses, config, props, messages. The #1 rebuild risk: wrong field names mean wrong data on screen or in storage.
+Rules about data entering the system: API responses, config, props, messages. What goes wrong first: wrong field names mean wrong data on screen or in storage.
 
 ### tca-frontend: Mortgage Report Data (2026-04)
 

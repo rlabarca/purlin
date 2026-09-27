@@ -71,7 +71,7 @@ or a marker in the tree produced none. Read those before the table.
 ## Step 4: what the gate changes
 
 This is the pattern every Purlin skill follows. Under `passed` the whole project is this one
-cell: no strength, no risk, no review list, no signature. Under `strong` the strong cell and
+cell: no strength, no bar, no review list, no signature. Under `strong` the strong cell and
 the test strength appear beside it, and a record from either source counts. Under `signed` the
 signed cell and the signer list appear too, and there only a record CI wrote counts. Read the gate from `.purlin/config.json` and print
 only what exists; `references/hard_gates.md` defines the three gates once.

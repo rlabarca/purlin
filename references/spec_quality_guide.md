@@ -39,7 +39,7 @@ Two more questions for every candidate rule:
 
 ### What a missing rule costs
 
-| Rebuild risk | What goes wrong | Spec priority |
+| What a rebuild gets wrong | What goes wrong | Spec priority |
 |---|---|---|
 | Wrong behaviour | The engineer builds the wrong thing: wrong data source, wrong conditional gate, wrong calculation | Must be a rule. The rebuild produces wrong numbers. |
 | Broken functionality | The feature works, then degrades under real conditions: crashes on missing data, one failure cascades | Must be a rule. An engineer would likely miss it. |
@@ -79,22 +79,23 @@ dependency fails.
 
 ### Rule tags
 
-Three tags go at the end of a rule line: `[risk: high|medium|low]`,
+Three tags go at the end of a rule line: `[bar: passed|strong]`,
 `[origin: pm|design|qa|eng]` and `[criterion: <id>]`.
 
-- **`risk`** says how much a wrong answer costs. It defaults to `low`, and it is read at
+- **`bar`** says what evidence the rule must have before it can be signed. It is read at
   the `strong` gate and above: under `passed` it is never asked for and changes nothing.
-  It decides two things. `ai_review_at` says the risk at which the model review runs, and
-  `sign_at` says the risk at which the signed cell needs a signature, so the tag decides
-  who has to look at the rule.
+  A rule with no tag takes the project's gate as its bar, so `strong` at `strong` and at
+  `signed`. Tag `[bar: passed]` where a passing test is the whole of what the rule needs,
+  and leave the tag off, or write `[bar: strong]`, where the AI audit should read the
+  rule and a person should sign it.
 - **`origin`** says who owns the rule. It defaults to `eng`. Drift routes a change by
   origin, so a PM sees their own rules move and an engineer sees theirs.
 - **`criterion`** links the rule to an upstream acceptance criterion id. It has no
   default and nothing requires it; it exists so a PM can find the rule from the ticket.
 
-Under the `signed` gate, `risk` and `origin` are required on every rule. Tag rules as
-you write them: retagging a spec later is a separate pass over every line, and a risk
-re-tag stales the rule's signature.
+Under the `signed` gate, `origin` is required on every rule. Tag rules as you write
+them: retagging a spec later is a separate pass over every line, and a bar re-tag stales
+the rule's signature.
 
 ## Writing proofs
 
@@ -219,7 +220,7 @@ automated.
 applies. The rule's strong cell reads `manual test` with the reason `manual proof`.
 A signature file carrying a one-line note clears it, written by a person:
 `purlin:sign <feature> RULE-N --note "<what you saw>"`. CI never writes that file, at
-any risk level and under any gate. Use `@manual` where judgment is the only instrument,
+any bar and under any gate. Use `@manual` where judgment is the only instrument,
 and keep the rule's `> Scope:` tight: when a scope file changes, the signature goes
 stale and someone must look again.
 
@@ -239,11 +240,12 @@ first three, under `signed` all four.
 | passed | `code changed` | A CI pass exists but the code moved since. | Nothing. CI clears it on the next run. |
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
 | strong | `weak`, with a finding name | A free check fired on the proof text or on the test body. `references/review_criteria.md` names each. | Rewrite the proof text, or the test body, whichever the finding concerns. |
-| strong | `weak`, with a sentence the model wrote | The model review settled the question and observed that the test does not read what the proof names. | Write the assertion the sentence asks for. `purlin:build`, then `purlin:audit`. |
+| strong | `weak`, with a sentence the model wrote | The AI audit settled the question and observed that the test does not read what the proof names. | Write the assertion the sentence asks for. `purlin:build`, then `purlin:audit`. |
 | strong | `manual test` | The proof is `@manual`, so no test can be written and a person runs it. | `purlin:sign <feature> RULE-N --note "<what you saw>"`. |
-| strong | `manual audit` | No brief exists for the current hashes, or the model review could not settle the question. | `purlin:sign` and answer the brief. A signature for the current hashes clears it. |
+| strong | `not audited` | The rule's bar is `strong` and no audit has run over this code, so there is no brief for the current hashes. | `purlin:audit`, which writes the record and the brief. |
+| strong | `unsettled` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:sign` and answer the brief. A signature for the current hashes clears it. |
 | strong | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
-| signed | `unsigned` | No signature file for the current hashes, and the risk is at or above `sign_at`. | `purlin:sign <feature> RULE-N` as a signed commit from someone on the signer list. |
+| signed | `unsigned` | No signature file for the current hashes, and the rule needs one: `sign_at` is `all`, or the rule's bar is `strong`. | `purlin:sign <feature> RULE-N` as a signed commit from someone on the signer list. |
 | signed | `stale` | The rule text, the proof text or the test body changed after the signature. | Read what changed, then sign again or fix what broke. |
 | signed | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
 

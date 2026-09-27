@@ -1,4 +1,4 @@
-> Format-Version: 11
+> Format-Version: 12
 
 # Spec format
 
@@ -24,7 +24,7 @@ specs/<category>/<name>.md
 
 ## Rules
 
-- RULE-1: <Testable constraint> [risk: high] [origin: pm] [criterion: US-12]
+- RULE-1: <Testable constraint> [bar: strong] [origin: pm] [criterion: US-12]
 - RULE-2: <Another testable constraint>
 
 ## Proof
@@ -77,7 +77,7 @@ versioned file under `designs/`, pinned by an anchor's `> Source:` and
 ## Rules format
 
 ```
-- RULE-N: <description> [risk: <level>] [origin: <role>] [criterion: <id>]
+- RULE-N: <description> [bar: <level>] [origin: <role>] [criterion: <id>]
 ```
 
 Rule ids are assigned in increasing order and never reused. A retired rule
@@ -90,21 +90,30 @@ already names the old id. Unnumbered lines under `## Rules` are reported.
 
 Tags sit at the end of the line and are read off it, so the text that remains
 is the claim alone: reflowing the whitespace or changing the `origin` or
-`criterion` tag leaves the rule text hash the same. The risk tag is the
-exception, because it decides who has to look at the rule: it is bound into a
-signature, so a risk re-tag stales that signature.
+`criterion` tag leaves the rule text hash the same. The bar is the exception,
+because it decides what evidence the rule must have: it is bound into a
+signature, so a bar re-tag stales that signature.
 
 | Tag | Values | Default | Meaning |
 |-----|--------|---------|---------|
-| `[risk: ...]` | `high`, `medium`, `low` | `low` | How much a wrong answer costs. Read at the `strong` gate and above. It decides at which risk the model review runs (`ai_review_at`) and at which risk a signature is required (`sign_at`, `medium` by default under the `signed` gate) |
+| `[bar: ...]` | `passed`, `strong` | the project's gate: `passed` at the gate `passed`, `strong` at `strong` and at `signed` | The evidence the rule must have before it can be signed. A rule whose bar is `strong` is the one the AI audit runs on, and the one that needs a signature under `sign_at: strong` |
 | `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. Drift routes a change by origin |
 | `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 
-Under the `signed` gate, risk and origin are required and a rule without them
-is reported.
+Under the `signed` gate, origin is required and a rule without it is
+reported. The bar is not: a rule that names none takes the project's gate,
+which is an answer rather than a gap.
 
-Tags are read from the end with `\s*\[(risk|origin|criterion):\s*([^\]]+)\]\s*$`,
+Tags are read from the end with `\s*\[(bar|origin|criterion):\s*([^\]]+)\]\s*$`,
 one at a time, in any order.
+
+### The tag the bar replaced
+
+An older spec tags each rule `[risk: high]`, `[risk: medium]` or             <!-- retired -->
+`[risk: low]`. The parser still reads that spelling and maps it, so a spec   <!-- retired -->
+that has not been migrated keeps the same rule text hash: the two levels     <!-- retired -->
+that asked for a person become `[bar: strong]` and the one that did not      <!-- retired -->
+becomes `[bar: passed]`. `purlin:init --update` rewrites the tag in place.   <!-- retired -->
 
 ### Good rules
 

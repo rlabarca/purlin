@@ -43,7 +43,7 @@ this skill writes specs and nothing can read them until the project is set up.
 
 ## What the rules look like
 
-Every rule this skill writes carries `[origin: eng]` and `[risk: low]`:
+Every rule this skill writes carries `[origin: eng]` and `[bar: passed]`:
 
 ```markdown
 # Feature: rate_limit
@@ -53,8 +53,8 @@ Every rule this skill writes carries `[origin: eng]` and `[risk: low]`:
 
 ## Rules
 
-- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [origin: eng] [risk: low]
-- RULE-2: Include a Retry-After header on every 429 response [origin: eng] [risk: low]
+- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [origin: eng] [bar: passed]
+- RULE-2: Include a Retry-After header on every 429 response [origin: eng] [bar: passed]
 
 ## Proof
 
@@ -92,7 +92,7 @@ and note the behaviour in `> Description:`.
 - Do not copy an implementation into a rule. "Uses a Redis sorted set" is not a claim about
   the software's behaviour; "rejects the 61st request in a minute" is.
 - Do not tag anything `[origin: pm]`. No PM said any of this.
-- Do not add risk tags above `low`. That judgment belongs to the people who own the product.
+- Do not write `[bar: strong]`. That judgment belongs to the people who own the product.
 - Do not write signatures or records. Those come from `purlin:audit` and `purlin:sign`.
 
 ## When you are done

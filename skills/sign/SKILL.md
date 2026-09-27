@@ -31,9 +31,9 @@ login rule 3". A narrowing argument never adds a rule the full walk would skip.
 
 | Gate | What this skill does |
 |------|----------------------|
-| `passed` | Prints that the gate asks for no signature, names what `purlin:init --gate strong` adds — the test strength, the free checks on the test body, the model review and the review list — and stops without writing anything |
+| `passed` | Prints that the gate asks for no signature, names what `purlin:init --gate strong` adds — the test strength, the free checks on the test body, the AI audit and the review list — and stops without writing anything |
 | `strong` | The walk, `--note` and `--hold` work. A bare signature says a signature is required only under the gate `signed`, then writes it anyway |
-| `signed` | Every form works, and every rule whose risk is at or above `sign_at` needs a signature before it meets the gate |
+| `signed` | Every form works, and every rule that needs a signature has to carry one before it meets the gate: `sign_at: strong` asks on the rules whose bar is `strong`, `sign_at: all` on every rule |
 
 ## Step 1: the list, and the brief behind each rule
 
@@ -41,11 +41,15 @@ login rule 3". A narrowing argument never adds a rule the full walk would skip.
 sync_status()
 ```
 
-`payload.review_list` is the list, already ordered: risk high first, and within a risk the
-stale and the held before the rest. A rule reaches it when its `strong` cell reads `manual
-test`, `manual audit` or `held`, or its `signed` cell reads `unsigned`, `stale` or `held`. A rule blocked lower down —
-no test, a failing test, a weak one — is build work, so it stays on the board and never on
-this list. Print the count by risk and the first five rows.
+There are two lists and the walk reads them in this order. `payload.review_list` is
+**Review**: the rules whose `strong` cell reads `manual test`, `unsettled` or `held`, at the
+gate `strong` and above. `payload.sign_list` is **Sign**: the signable rules, the ones that
+have cleared their bar and need a signature they do not have, at the gate `signed`. Both are
+already ordered, the rules whose bar is `strong` first, then by feature and rule number.
+
+A rule blocked lower down — no test, a failing test, a weak one — is build work, so it stays
+on the board and never on either list. So is a rule reading `not audited`: what moves that
+one is `purlin:audit`. Print each list's count and its first five rows.
 
 Read the brief for a rule before anything is written:
 
@@ -114,7 +118,7 @@ end of the name. The commit subjects come from `references/commit_conventions.md
 | The commit that added the file is signed and the host verifies it | `the signing commit is not signed` |
 | The author's email is on `signers` in `.purlin/config.json` as of that commit | `the signer is not on the list` |
 | That author did not author the last commit to the test file | `the signer last touched the test` |
-| The bound rule, proof, test and risk hashes still match | `hashes changed after the signature` |
+| The bound rule, proof and test hashes and the rule's bar still match | `hashes changed after the signature` |
 | Under `signed`, the commit is on the protected branch | `the signing commit is not on <branch>` |
 
 The script checks the list itself and stops before writing. Under `signed` with no list it

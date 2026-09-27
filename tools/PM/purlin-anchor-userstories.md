@@ -56,8 +56,8 @@ A spec is two sections and a few metadata lines:
 
 ## Rules
 
-- RULE-1: Reject an order whose cart is empty [risk: high] [origin: pm] [criterion: US-12]
-- RULE-2: Show the tax line before the total [risk: low] [origin: design]
+- RULE-1: Reject an order whose cart is empty [bar: strong] [origin: pm] [criterion: US-12]
+- RULE-2: Show the tax line before the total [bar: passed] [origin: design]
 
 ## Proof
 
@@ -68,10 +68,10 @@ A spec is two sections and a few metadata lines:
 
 Tag every rule you write with `[origin: pm]`, and carry the upstream id across as
 `[criterion: <id>]` whenever the material has one: a ticket number, a story id, a row in a
-requirements sheet. Set `[risk: high]`, `[risk: medium]` or `[risk: low]` on each rule by what
-a wrong answer costs; the default when the tag is absent is `low`. Under the `signed` gate risk
-and origin are both required, so write them every time. Risk is read at the `strong` gate and
-above: it decides at which risk a model review runs and at which risk a person has to sign.
+requirements sheet. Set `[bar: strong]` on a rule the AI audit should read and a person
+should sign, and `[bar: passed]` where a passing test is the whole of what the rule needs; a
+rule with no tag takes the project's gate. Under the `signed` gate origin is required, so
+write it every time. The bar is read at the `strong` gate and above.
 
 Tag a proof with its tier: no tag for pure logic, `@integration` when it needs a database, the
 network or the filesystem, `@e2e` when it needs a browser or the full stack, `@manual` when a
@@ -91,12 +91,12 @@ rule out of the pipeline:
 - **A tier that does not match.** An `@e2e` proof described as a function call is neither.
 
 Write a proof that names a rejection, an error or a boundary for every rule that says reject,
-block, limit or expire. A high-risk rule proved in one direction only is sent back.
+block, limit or expire. A rule whose bar is `strong` proved in one direction only is sent back.
 
 ## The owner comment rule
 
 A rule tagged `[origin: eng]` or `[origin: qa]` belongs to the engineer or to QA. Never edit
-its text, its risk or its proofs, and never delete it, even when the product manager asks and
+its text, its bar or its proofs, and never delete it, even when the product manager asks and
 even when it looks wrong. Leave the rule exactly as it is, and put the proposed change in a
 pull request comment instead:
 

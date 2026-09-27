@@ -1,8 +1,8 @@
 ---
 name: purlin-qa-report
 description: >
-  Read a Purlin project from a git repository URL and produce the QA triage report: the review
-  list ordered by risk, what each rule needs, and what to do about it. Use when the user gives
+  Read a Purlin project from a git repository URL and produce the QA triage report: the
+  Review and Sign lists, what each rule needs, and what to do about it. Use when the user gives
   a repository URL and asks what is waiting on a person, what needs a test, what is stale,
   whether a release is ready, or how a project's rules stand. Also opens pull requests
   carrying proof edits and signature files. Mentions of "Purlin", "QA report", "review list",
@@ -12,8 +12,8 @@ description: >
 # Purlin QA report
 
 This skill reads a repository's specs and records, prints the review list, and turns what QA
-decides into a pull request. QA works the review list, never the whole rule list: the list holds
-only the rules whose next step is a person, ordered by risk.
+decides into a pull request. QA works that list, never the whole rule list: it holds only the
+rules whose next step is a person, the rules whose bar is `strong` first.
 
 ## Step 1: run the scan
 
@@ -50,7 +50,7 @@ newest record with a line reading
 newest record. A rule sits in exactly one bucket: `untested`, `failing` and `passed` at every
 gate, `strong` from the `strong` gate up, `signed` at `signed`. Four flags are counted beside
 the buckets and never instead of them, and each prints only when it stands: signatures stale,
-rules held, rules reading `manual test`, rules reading `manual audit`. Read three things off
+rules held, rules reading `manual test`, rules reading `unsettled`. Read three things off
 the rollup:
 
 - **Stale and held rules.** A signature goes stale when the rule, its proof or its test changed
@@ -61,17 +61,16 @@ the rollup:
 - **The gate.** `passed`, `strong` or `signed`. It decides what counts as evidence and how many
   cells each rule has, and the next two sections change with it.
 
-Under `passed` there is no strength, no risk and no review list. Say so and stop after this
+Under `passed` there is no strength, no bar and no review list. Say so and stop after this
 section: the rest of this skill has nothing to report at that gate.
 
 ## Step 3: print the review list
 
-Work from the review list `scan.py` printed; it is already ordered by risk, `high` first, then
-`medium`, then `low`, and inside each group stale and held first, then by feature and rule
-number. Keep that order. Each line carries the risk, the feature, the rule id, the blocking
-cell's word and the `why` tokens, which are the closed set `unsigned`, `stale`, `held`,
-`manual test` and `manual audit`. For every entry give those, then one of the four answers a
-person gives:
+Work from the two lists `scan.py` printed, Review first and then Sign. Both are already
+ordered, the rules whose bar is `strong` first, then by feature and rule number. Keep that
+order. Each line carries the bar, the feature, the rule id, the cell and the word that put
+the rule there: `manual test`, `unsettled` or `held` on Review, `unsigned`, `stale` or `held`
+on Sign. For every entry give those, then one of the four answers a person gives:
 
 - **`sign`**: the test proves the proof. It becomes `purlin:sign <feature> RULE-N` in a checkout.
 - **`add a case`**: the test is right as far as it goes and a case is missing, usually the
@@ -100,7 +99,7 @@ When the answer is `add a case` or `hold`, write the change into the spec and op
 request. Through the connector, or in a clone of the project:
 
 1. Branch `review/<feature>`.
-2. Edit only the `## Proof` lines, and only for the rules on the review list. Leave rule text
+2. Edit only the `## Proof` lines, and only for the rules on the two lists. Leave rule text
    alone: changing a rule is the product manager's call, and a proposal belongs in a pull
    request comment.
 3. Commit as `spec(<feature>): <what changed>`.
@@ -119,13 +118,13 @@ counts.
 | Gate | What CI requires before a change can merge | Signatures |
 |---|---|---|
 | `passed` | Every rule's passed cell is met; a pass from any source counts | None |
-| `strong` | Every rule's strong cell is met: a CI record at this commit, at or above `min_strength`, no finding and no hold | Only where the strong cell reads `manual test`, `manual audit` or `held` |
-| `signed` | Every rule's signed cell is met, on every rule at or above `sign_at` | Required |
+| `strong` | Every rule whose bar is `strong` has a strong cell that is met: a record at this commit, at or above `min_strength`, no finding and no hold | Only where the strong cell reads `manual test`, `unsettled` or `held` |
+| `signed` | Every rule that needs a signature has one: `sign_at: strong` asks on the rules whose bar is `strong`, `sign_at: all` on every rule | Required |
 
 Under `signed`, a signature counts only when the commit that added the file is signed, its
 author's email is on `signers` in `.purlin/config.json` as of that commit, that author is not the
 author of the commit that last touched the test, and the commit is on the protected branch. CI
-writes no signature file, ever, at any risk level.
+writes no signature file, ever, at any bar.
 
 This skill cannot sign a commit. It can write the proof edits and open the pull request, and you
 should say plainly that a signer has to run `purlin:sign` in a checkout for the signature to

@@ -12,12 +12,12 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "audit": 0,
         "failing": 0,
         "held": 0,
         "latest_record": null,
         "manual": 0,
         "met": 1,
+        "not_audited": 0,
         "partial": 0,
         "passed": 1,
         "proofs": 2,
@@ -26,12 +26,16 @@
           "PROOF-2"
         ],
         "rules": 3,
+        "signable": 0,
         "stale": 0,
         "test_strength": null,
+        "unsettled": 0,
         "untested": 2
       },
       "rules": [
         {
+          "bar": "passed",
+          "bar_from": "gate",
           "blocked_by": null,
           "bucket": "passed",
           "cells": {
@@ -51,17 +55,19 @@
               "word": "passed"
             }
           },
+          "cleared": true,
           "criterion": null,
           "design_hash": null,
           "feature": "login",
           "flags": {
-            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
+            "not_audited": false,
             "partial": false,
-            "stale": false
+            "stale": false,
+            "unsettled": false
           },
           "id": "RULE-1",
           "label": "own",
@@ -83,14 +89,16 @@
               "tier": "unit"
             }
           ],
-          "risk": "low",
           "rule_hash": "rrule1log",
+          "signable": false,
           "spec": "ready",
           "test_hash": "trule1log",
           "test_hash_kind": "file",
           "text": "A person signs in with an email address and a password."
         },
         {
+          "bar": "passed",
+          "bar_from": "gate",
           "blocked_by": "passed",
           "bucket": "untested",
           "cells": {
@@ -104,17 +112,19 @@
               "word": "no test"
             }
           },
+          "cleared": false,
           "criterion": null,
           "design_hash": null,
           "feature": "login",
           "flags": {
-            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
+            "not_audited": false,
             "partial": false,
-            "stale": false
+            "stale": false,
+            "unsettled": false
           },
           "id": "RULE-2",
           "label": "own",
@@ -133,14 +143,16 @@
               "tier": "unit"
             }
           ],
-          "risk": "low",
           "rule_hash": "rrule2log",
+          "signable": false,
           "spec": "ready",
           "test_hash": "trule2log",
           "test_hash_kind": "none",
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
+          "bar": "passed",
+          "bar_from": "gate",
           "blocked_by": "spec",
           "bucket": "untested",
           "cells": {
@@ -154,17 +166,19 @@
               "word": "no test"
             }
           },
+          "cleared": false,
           "criterion": null,
           "design_hash": null,
           "feature": "login",
           "flags": {
-            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
+            "not_audited": false,
             "partial": false,
-            "stale": false
+            "stale": false,
+            "unsettled": false
           },
           "id": "RULE-3",
           "label": "own",
@@ -172,8 +186,8 @@
           "origin": "eng",
           "proof_hash": "prule3log",
           "proofs": [],
-          "risk": "low",
           "rule_hash": "rrule3log",
+          "signable": false,
           "spec": "drafted",
           "test_hash": "trule3log",
           "test_hash_kind": "none",
@@ -198,24 +212,28 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "audit": 0,
         "failing": 0,
         "held": 0,
         "latest_record": null,
         "manual": 0,
         "met": 2,
+        "not_audited": 0,
         "partial": 0,
         "passed": 2,
         "proofs": 2,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 2,
+        "signable": 0,
         "stale": 0,
         "test_strength": null,
+        "unsettled": 0,
         "untested": 0
       },
       "rules": [
         {
+          "bar": "passed",
+          "bar_from": "gate",
           "blocked_by": null,
           "bucket": "passed",
           "cells": {
@@ -235,17 +253,19 @@
               "word": "passed"
             }
           },
+          "cleared": true,
           "criterion": null,
           "design_hash": null,
           "feature": "invoice",
           "flags": {
-            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
+            "not_audited": false,
             "partial": false,
-            "stale": false
+            "stale": false,
+            "unsettled": false
           },
           "id": "RULE-1",
           "label": "own",
@@ -267,14 +287,16 @@
               "tier": "unit"
             }
           ],
-          "risk": "low",
           "rule_hash": "rrule1inv",
+          "signable": false,
           "spec": "ready",
           "test_hash": "trule1inv",
           "test_hash_kind": "file",
           "text": "An invoice totals its lines to the cent."
         },
         {
+          "bar": "passed",
+          "bar_from": "gate",
           "blocked_by": null,
           "bucket": "passed",
           "cells": {
@@ -294,17 +316,19 @@
               "word": "passed"
             }
           },
+          "cleared": true,
           "criterion": null,
           "design_hash": null,
           "feature": "invoice",
           "flags": {
-            "audit": false,
             "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
+            "not_audited": false,
             "partial": false,
-            "stale": false
+            "stale": false,
+            "unsettled": false
           },
           "id": "RULE-2",
           "label": "own",
@@ -326,8 +350,8 @@
               "tier": "unit"
             }
           ],
-          "risk": "low",
           "rule_hash": "rrule2inv",
+          "signable": false,
           "spec": "ready",
           "test_hash": "trule2inv",
           "test_hash_kind": "file",
@@ -344,7 +368,6 @@
     }
   ],
   "gate": {
-    "ai_review_at": "never",
     "ci": "github",
     "gate": "passed",
     "min_strength": null,
@@ -361,14 +384,15 @@
   "records": {},
   "remote_url": null,
   "review_list": [],
-  "schema_version": 6,
+  "schema_version": 7,
+  "sign_list": [],
   "summary": {
-    "audit": 0,
     "failing": 0,
     "features": 2,
     "held": 0,
     "manual": 0,
     "met": 3,
+    "not_audited": 0,
     "partial": 0,
     "passed": 3,
     "proofs": 4,
@@ -377,7 +401,9 @@
       "PROOF-2"
     ],
     "rules": 5,
+    "signable": 0,
     "stale": 0,
+    "unsettled": 0,
     "untested": 2
   },
   "version": "0.10.0",

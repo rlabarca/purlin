@@ -1,4 +1,4 @@
-> Criteria-Version: 4
+> Criteria-Version: 5
 
 # Drift criteria
 
@@ -68,7 +68,7 @@ sides; if it was deleted on purpose, `purlin:spec` updates the spec.
 
 For every spec with changed behaviour files, the tool returns `rule_details`: `spec_path`,
 `changed_files`, `total_rules`, `met`, `unproved`, and one entry per own rule carrying
-`rule_id`, `description`, `bucket`, `risk` and `origin`. The skill reads the diff against those
+`rule_id`, `description`, `bucket`, `bar` and `origin`. The skill reads the diff against those
 rule descriptions and sorts each rule into one of four:
 
 - **Covered**: the rule describes behaviour that did not change, or changed compatibly.
@@ -103,14 +103,14 @@ Each view is a filter over the same data, not a different computation.
 |------|-----------------|--------|
 | `pm` | Criteria with no rule carrying them, rules tagged `origin: pm` whose text changed, rules an engineer added, pins behind | `criteria_without_rules`, `pm_rules_changed`, `engineer_added_rules`, `pins_behind` |
 | `design` | Design files that changed, and rules tagged `origin: design` whose signed cell reads `stale` because a mock was re-exported | `designs_changed`, `design_rules_stale` |
-| `qa` | Signatures gone stale, how long the review list is, the rules reading `manual test`, the rules reading `manual audit`, rules whose every proof asserts a success path | `signatures_stale`, `review_list_size`, `manual`, `audit`, `rules_without_a_negative_case` |
-| `eng` | Files touched and the rules behind them, rules with no test, risk or origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` | `files_touched`, `rules_affected`, `tests_missing`, `tags_missing`, `pins_behind`, `code_changed` |
+| `qa` | Signatures gone stale, how long the Review and Sign lists are, the rules reading `manual test`, the rules reading `unsettled`, the rules reading `not audited`, rules whose every proof asserts a success path | `signatures_stale`, `review_list_size`, `sign_list_size`, `manual`, `unsettled`, `not_audited`, `rules_without_a_negative_case` |
+| `eng` | Files touched and the rules behind them, rules with no test, rules the gate wants tagged and the spec leaves untagged, pins behind, rules whose passed cell reads `code changed` | `files_touched`, `rules_affected`, `tests_missing`, `tags_missing`, `pins_behind`, `code_changed` |
 
 `code_changed` appears in the `eng` view as information and never in the `qa` view: only the
 code changed, the signature stands, and CI clears it on the next run.
 
-The `qa` view exists at `strong` and above. Under `passed` there is no review list, no strength
-and no signature, so `purlin:drift qa` says the gate is `passed` and names what
+The `qa` view exists at `strong` and above. Under `passed` there is no Review list, no
+strength and no signature, so `purlin:drift qa` says the gate is `passed` and names what
 `purlin:init --gate strong` would add.
 
 ## Config field ownership
@@ -123,8 +123,7 @@ and no signature, so `purlin:drift qa` says the gate is `passed` and names what
 | `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/gate_check.py`, every skill that names a next step | `passed` |
 | `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` under `passed`, 70 under `strong`, 80 under `signed` |
 | `signers` | `purlin:init --gate signed`, then by pull request | `scripts/review/sign.py`, `sync_status`, `scripts/ci/gate_check.py` | Not set; required under `signed` |
-| `ai_review_at` | `purlin:init` | `purlin:audit`, and the CI run that writes the briefs | never, high or medium, from the gate |
-| `sign_at` | By pull request, hand-edited | `sync_status`, `scripts/ci/gate_check.py` | Not written; `medium` derived under `signed` |
+| `sign_at` | `purlin:init --gate signed`, which asks for it | `sync_status`, `scripts/ci/gate_check.py`, `scripts/review/sign.py` | Not written below `signed`; `strong` under `signed` |
 | `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
 | `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py` | Not set; test strength reads `n/a` without one |
 | `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure` |

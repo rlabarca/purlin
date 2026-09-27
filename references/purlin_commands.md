@@ -111,12 +111,12 @@ Purlin
 
 ## What each command shows at each gate
 
-A command prints only what the gate asks for. Under `passed` there is no strength, no risk, no
+A command prints only what the gate asks for. Under `passed` there is no strength, no bar, no
 review list and no signature anywhere in the output, and `purlin:audit` runs no breaks. Under
-`strong` the strength, the strong cell, the review list and risk appear, and `purlin:audit`
-writes a record that counts. Under `signed` the signed cell, the signer list and the sign
-panel appear, and `purlin:audit` ends by saying its record is a preview of the run CI makes on
-the protected branch.
+`strong` the strength, the strong cell, the bar and the Review list appear, and `purlin:audit`
+writes a record that counts. Under `signed` the signed cell, the signer list, the Signable
+column and the Sign list appear, and `purlin:audit` ends by saying its record is a preview of
+the run CI makes on the protected branch.
 
 `purlin:sign` under `passed` says the gate is `passed`, names what `purlin:init --gate strong`
 would add, and stops. `purlin:drift qa` says the same.

@@ -1,9 +1,9 @@
 # Review criteria
 
 What the brief checks on one rule before a person reads it, and what a person checks after.
-The brief runs these layers cheapest first and stops when it has enough for the rule's risk:
+The brief runs these layers cheapest first and stops when it has enough for the rule's bar:
 the free checks on the proof text, the free checks on the test body, the test strength from
-the latest record, then a model review when the rule needs one. The brief builds that model
+the latest record, then the AI audit on every rule whose bar is `strong`. The brief builds that model
 prompt from this file verbatim, so every sentence here is written to be read by a person and
 by a model.
 
@@ -87,27 +87,28 @@ worth having. A rule can reach 90 percent strength on a proof that observes the 
 thing, and a correct proof of a small rule can sit at 0 percent because nothing broke.
 Read it beside the findings above, never instead of them.
 
-## The three risk levels
+## The two bars
 
-Risk is read at `strong` and above. Under `passed` it is never asked for, never shown and
-never required, and a rule's risk tag changes nothing.
+A rule's **bar** is the evidence it must have before it can be signed: `passed` or `strong`.
+A rule tagged `[bar: ...]` carries what it names; a rule with no tag takes the project's
+gate, so `passed` at the gate `passed` and `strong` at `strong` and at `signed`. The bar is
+read at `strong` and above; under `passed` it is never shown and it changes nothing.
 
-**`low`.** The free checks and a passing record from either source are enough for the strong cell. Nobody has
-to look unless a finding fires. Under `signed` with the default `sign_at: medium` a low-risk
-rule's signed cell reads `not required`, so the rule meets the gate at strong.
+**`passed`.** The tests are the evidence. The free checks and a passing run from either
+source clear the bar, and the AI audit does not run on the rule at all. Under `signed` with
+the default `sign_at: strong` the rule needs no signature: its signed cell carries `required`
+false and the rule meets the gate on its tests.
 
-**`medium`.** The model review runs when `ai_review_at` is `medium`, which is the derived
-default under `signed`. Every blocking finding on the proof text must be clear and the test
-body must carry no finding. Under `signed` with the default `sign_at: medium` the rule needs
-a current signature from someone on the signer list.
+**`strong`.** The strong cell is the evidence. Every blocking finding on the proof text must
+be clear, the test body must carry no finding, the strength must reach `min_strength`, and
+the AI audit must have run on the current rule, proof and test and settled. Until it has run
+the strong cell reads `not audited`; where it ran and could not tell it reads `unsettled`.
+The rule needs at least one proof that names a rejection, an error or a boundary, so
+`happy_path_only` is blocking rather than advisory here. Under `signed` the rule needs a
+current signature from someone on the signer list, whatever `sign_at` says.
 
-**`high`.** The model review runs whenever `ai_review_at` is `high` or `medium`, which is
-every derived default above `passed`. On top of the medium
-requirements, the rule needs at least one proof that names a rejection, an error or a
-boundary, so `happy_path_only` is blocking rather than advisory here.
-
-Risk defaults to `low` when the rule carries no `[risk: ...]` tag. `ai_review_at` says the
-risk at which the model review runs; `sign_at` says the risk at which a signature is required.
+`sign_at` widens that last requirement: `strong`, the default, asks for a signature on the
+rules whose bar is `strong`, and `all` asks for one on every rule.
 
 ## Design rules
 
@@ -119,19 +120,23 @@ states present. A proof for a design rule that names a selector, a class or a pi
 `implementation_coupling`, and a new export of the mock stales the signatures of that anchor's
 rules.
 
-## Who is on the review list
+## Who is on Review, and who is on Sign
 
-The review list holds the rules whose next step is a person, and nothing else. It exists at
-`strong` and above; under `passed` it is empty. A rule is on it when the lowest cell that
-blocks the gate is one of these:
+Two lists hold the rules whose next step is a person, and nothing else holds any.
 
-- the strong cell reads `manual test` (the proofs are `@manual`), `manual audit` (the model
-  review could not settle, or there is no brief for the current hashes) or `held`;
-- the signed cell reads `unsigned`, `stale` or `held`.
+**Review** exists at `strong` and above and holds the rules whose strong cell reads one of
+three words: `manual test`, because the proofs are `@manual` and no test can be written;
+`unsettled`, because the AI audit ran and could not tell; or `held`, because a person wrote
+the case the test misses.
 
-A rule blocked at its spec status or at its passed cell is not on the list: it is build work
-and it stays on the board. A weak rule is build work too. Rows are grouped by risk, `high`
-first, and within a group stale and held come before the rest.
+**Sign** exists at the gate `signed` and holds the **signable** rules: the ones that have
+cleared their bar, need a signature, and do not have a counting one. Its rows read
+`unsigned`, `stale` or `held`.
+
+A rule blocked at its spec status or at its passed cell is on neither: it is build work and
+it stays on the board. A weak rule is build work too, and so is a rule reading `not audited`,
+whose next step is `purlin:audit` rather than a reader. Both lists read the rules whose bar
+is `strong` first, then by feature and rule number.
 
 ## What the brief reports
 
@@ -145,12 +150,12 @@ The brief reports. It recommends nothing, and it never names a next action. Four
   names, one sentence each. The model is asked to state what it saw and to say when it cannot
   tell. It is never asked what to do.
 - **Whether it settled.** `Settled: yes` when the model could tell, `no` when it could not,
-  and `not answered` when no model review ran. Anything but `yes` makes the strong cell read
-  `manual audit`. A review that settled and still observed something is a different answer: the
-  model could tell, and what it saw is build work, so the cell reads `weak` with each
-  observation sentence among its reasons.
+  and `not answered` when no AI audit ran. Anything but `yes` on a rule whose bar is `strong`
+  makes the strong cell read `unsettled`. A review that settled and still observed something
+  is a different answer: the model could tell, and what it saw is build work, so the cell
+  reads `weak` with each observation sentence among its reasons.
 
-A `@manual` proof has no test, so no free check on a test body runs and no model review is
+A `@manual` proof has no test, so no free check on a test body runs and no AI audit is
 asked for. Its strong cell reads `manual test` and its brief says so.
 
 What a person does with the brief is one of four things, and `purlin:sign` takes each:

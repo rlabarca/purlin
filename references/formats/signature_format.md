@@ -1,4 +1,4 @@
-> Format-Version: 3
+> Format-Version: 4
 
 # Signature Format
 
@@ -59,7 +59,7 @@ with nothing behind it yet.
   "test_hash": "1d93...",
   "test_hash_kind": "file",
   "design_hash": null,
-  "risk": "high",
+  "bar": "strong",
   "signer": "jane@acme.com",
   "note": null,
   "timestamp": "2026-09-13T12:00:00Z",
@@ -70,7 +70,7 @@ with nothing behind it yet.
 ```
 
 REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
-`test_hash`, `risk`, `signer`, `timestamp`. Every other field is OPTIONAL.
+`test_hash`, `bar`, `signer`, `timestamp`. Every other field is OPTIONAL.
 
 | Field | Type | What it holds |
 |---|---|---|
@@ -83,9 +83,9 @@ REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
 | `test_hash` | string | T |
 | `test_hash_kind` | string | `file`, `manual` or `none` |
 | `design_hash` | string or null | D, the spec's `> Pinned:` hash for a `origin: design` rule |
-| `risk` | string | `high`, `medium` or `low`, as the rule was tagged when it was signed |
+| `bar` | string | `passed` or `strong`, the bar the rule carried when it was signed |
 | `signer` | string | the signer's email |
-| `note` | string or null | the one line `purlin:sign --note` writes for a `@manual` proof or a model review that could not settle; null otherwise |
+| `note` | string or null | the one line `purlin:sign --note` writes for a `@manual` proof or an AI audit that could not settle; null otherwise |
 | `timestamp` | string | ISO 8601 UTC with `Z` |
 | `gate` | string | the gate in force when the signature was written: `passed`, `strong` or `signed` |
 | `brief` | string or null | the brief the signer read |
@@ -94,13 +94,13 @@ REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
 ## Current, and stale
 
 A signature is **current** when the three hashes it binds still equal the
-recomputed ones, the design hash still matches, and the risk it names still
+recomputed ones, the design hash still matches, and the bar it names still
 matches the rule's. Anything else is a signature stale and a person has to
 look.
 
-Changing the risk stales the signature on purpose: raising a rule from low to
-high changes what signing it meant, and the old attestation was given under the
-old bar.
+Changing the bar stales the signature on purpose: raising a rule from
+`passed` to `strong` changes what signing it meant, and the old attestation
+was given under the old bar.
 
 Changing the code alone stales nothing. A record carries the tree hash of the
 spec's `> Scope:` files, so a code change leaves the signature standing and the
@@ -114,7 +114,7 @@ can see which one failed.
 
 Under `strong` a signature from anyone counts, as long as the file is committed
 and its hashes match. What it clears there is a question the machine could not
-settle: a `@manual` proof, or a model review that could not tell.
+settle: a `@manual` proof, or an AI audit that could not tell.
 
 Under `signed` four conditions hold:
 
@@ -128,8 +128,10 @@ Under `signed` four conditions hold:
 The last one keeps a signature that exists only on a side branch from letting a
 change merge.
 
-A signature is required at or above `sign_at` in `.purlin/config.json`, which
-defaults to `medium`. Below it the signed cell reads `not required`.
+`sign_at` in `.purlin/config.json` says which rules need a signature:
+`strong`, the default, asks for one on every rule whose bar is `strong`, and
+`all` asks for one on every rule. A rule that needs none carries `required`
+false on its signed cell and meets the level whichever way that cell reads.
 `references/hard_gates.md` holds the gate levels and the signer list.
 
 ## Holds
@@ -150,7 +152,7 @@ a signature, with a fourth part in the name:
   "test_hash": "1d93...",
   "test_hash_kind": "file",
   "design_hash": null,
-  "risk": "low",
+  "bar": "passed",
   "holder": "jane@acme.com",
   "reason": "the tests call _azure and _host apart; none calls run_remote()",
   "timestamp": "2026-09-16T12:00:00Z",
@@ -159,7 +161,7 @@ a signature, with a fourth part in the name:
 ```
 
 REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
-`test_hash`, `risk`, `holder`, `reason`, `timestamp`. The hashes, `risk` and
+`test_hash`, `bar`, `holder`, `reason`, `timestamp`. The hashes, `bar` and
 `brief` mean what they mean in a signature; `holder` is the person's email and
 `reason` the missing case, in words.
 

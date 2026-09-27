@@ -1,4 +1,4 @@
-> Format-Version: 7
+> Format-Version: 8
 
 # Anchor format
 
@@ -132,8 +132,8 @@ selector.
 
 ## Rules
 
-- RULE-1: No eval() in source files [risk: high]
-- RULE-2: No exec() in source files [risk: high]
+- RULE-1: No eval() in source files [bar: strong]
+- RULE-2: No exec() in source files [bar: strong]
 
 ## Proof
 

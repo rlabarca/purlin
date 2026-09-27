@@ -61,7 +61,7 @@ not yet observe.
 
 | Gate | What this run does |
 |------|--------------------|
-| `passed` | Runs the tests only. No breaks, no risk, no brief; the run says `Strength n/a: the gate is passed.` |
+| `passed` | Runs the tests only. No breaks, no bar, no brief; the run says `Strength n/a: the gate is passed.` |
 | `strong` | Runs the breaks too, and prints the strength beside the minimum |
 | `signed` | The same as `strong`, and this record is a preview: only CI's record on the protected branch counts, and the run says so on its last line |
 
@@ -99,4 +99,4 @@ records per operating system and the rest are pruned; a record a tag names is ke
 | Every rule met the gate `passed` | `→ Next: run git push.` |
 | A `ci` record is missing under `signed` | `→ Next: run git push; the run on the protected branch writes the record a signature attaches to.` |
 | A rule's tests pass on one operating system and not another | `→ Run: purlin:build <feature>` (the passed cell reads `partial` and names the platform) |
-| A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Run: purlin:sign` |
+| A rule reads `manual test`, `unsettled` or `held`, or is signable | `→ Run: purlin:sign` |
