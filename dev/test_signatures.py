@@ -10,8 +10,8 @@ What each group holds:
 *the triple*   the three hashes a signature binds, and what does and does not
                change them: reflowing a rule and adding a tag do not, editing
                the rule, the proof or the test do
-*stale*        a signature stops being current when any part of the triple or
-               the risk moves under it
+*stale*        a signature stops being current when any part of the triple
+               or the bar moves under it
 *the file*     the name, the fields, and the brief the reader steps over
 *the commit*   one signed commit for a batch, and the exact setup to print
                when this checkout cannot sign
@@ -57,9 +57,9 @@ SPEC = (
     '> Scope: src/login.py\n\n'
     '## Rules\n\n'
     '- RULE-1: Valid credentials return 200 with a session token '
-    '[risk: low]\n'
+    '[bar: passed]\n'
     '- RULE-2: Invalid credentials return 401 and the body "denied" '
-    '[risk: high]\n\n'
+    '[bar: strong]\n\n'
     '## Proof\n\n'
     '- PROOF-1 (RULE-1): POST /login with the password "secret"; verify 200 '
     'and a token @integration\n'
@@ -208,8 +208,8 @@ class Project(object):
         rel = '.purlin/briefs/%s/login/%s.%s.brief.json' % (source, rule,
                                                             triple[:8])
         write(os.path.join(self.root, *rel.split('/')), json.dumps({
-            'schema': 'purlin-brief/2', 'feature': 'login', 'rule': rule,
-            'risk': entry['risk'], 'observations': list(observations),
+            'schema': 'purlin-brief/3', 'feature': 'login', 'rule': rule,
+            'bar': entry['bar'], 'observations': list(observations),
             'settled': settled, 'tests': []}))
         return rel
 
@@ -316,12 +316,12 @@ def commit_as_ci(root, message='purlin: record for abc1234'):
 
 
 def sign_one(project, rule='RULE-1', email='jane@acme.com', brief=None,
-             record=None, gate='passed', risk=None, note=None):
+             record=None, gate='passed', bar=None, note=None):
     """Write one signature for a rule and return its project-relative path."""
     entry = project.rule(rule)
     return sign_module.write_signature(
         project.root, 'login', rule, email, brief, record, gate,
-        entry['risk'] if risk is None else risk, entry=entry, note=note)
+        entry['bar'] if bar is None else bar, entry=entry, note=note)
 
 
 # ---------------------------------------------------------------------------
@@ -350,9 +350,9 @@ class TestTheTriple:
         before = sign_module.triple_for(proved.rule('RULE-1'))
         proved.spec(SPEC.replace(
             '- RULE-1: Valid credentials return 200 with a session token '
-            '[risk: low]',
+            '[bar: passed]',
             '- RULE-1: Valid   credentials  return 200  with a session token '
-            '[origin: pm] [risk: low]'))
+            '[origin: pm] [bar: passed]'))
         after = sign_module.triple_for(proved.rule('RULE-1'))
         assert after == before, (
             'the triple binds the rule text with its tags stripped')
@@ -402,7 +402,7 @@ class TestStale:
         return [s for s in found
                 if purlin_signatures.is_current(
                     s, entry['rule_hash'], entry['proof_hash'],
-                    entry['test_hash'], entry['risk'], entry['design_hash'])]
+                    entry['test_hash'], entry['bar'], entry['design_hash'])]
 
     @pytest.mark.proof("signatures", "PROOF-6", "RULE-6", tier="integration")
     def test_a_fresh_signature_is_current(self, proved):
@@ -430,15 +430,18 @@ class TestStale:
         assert self._current(proved) == []
 
     @pytest.mark.proof("signatures", "PROOF-10", "RULE-6", tier="integration")
-    def test_the_risk_changing_stales_it(self, proved):
+    @pytest.mark.proof("signatures", "PROOF-62", "RULE-41", tier="integration")
+    def test_the_bar_changing_stales_it(self, proved):
         sign_one(proved)
+        assert len(self._current(proved)) == 1
         proved.spec(SPEC.replace(
             '- RULE-1: Valid credentials return 200 with a session token '
-            '[risk: low]',
+            '[bar: passed]',
             '- RULE-1: Valid credentials return 200 with a session token '
-            '[risk: high]'))
+            '[bar: strong]'))
         assert self._current(proved) == [], (
-            'raising a rule from low to high changes what signing it meant')
+            'raising a rule from passed to strong changes what signing '
+            'it meant')
 
     @pytest.mark.proof("signatures", "PROOF-11", "RULE-7", tier="integration")
     def test_a_stale_signature_still_comes_back_from_the_reader(self, proved):
@@ -476,14 +479,14 @@ class TestTheFile:
         assert data['schema'] == 'purlin-signature/1'
         assert set(data) == {
             'schema', 'feature', 'rule', 'triple', 'rule_hash', 'proof_hash',
-            'test_hash', 'test_hash_kind', 'design_hash', 'risk', 'signer',
+            'test_hash', 'test_hash_kind', 'design_hash', 'bar', 'signer',
             'note', 'timestamp', 'gate', 'brief', 'record'}
         assert data['feature'] == 'login' and data['rule'] == 'RULE-1'
         assert data['triple'] == sign_module.triple_for(
             proved.rule('RULE-1'))[:16]
         assert data['signer'] == 'jane@acme.com'
         assert data['note'] is None
-        assert data['risk'] == 'low'
+        assert data['bar'] == 'passed'
         assert data['record'] == record
         assert data['timestamp'].endswith('Z')
 
@@ -515,18 +518,22 @@ def at_strong():
     made.close()
 
 
-def signing_project(sign_at='low', signer='jane@acme.com'):
+def signing_project(sign_at='all', signer='jane@acme.com', briefs=True):
     """A project at the signing gate whose rules are waiting to be signed.
 
     The record is CI's, because only a CI record counts at this gate, and the
     person's signing key is configured last so the allowed-signers file names
-    the person rather than the build identity.
+    the person rather than the build identity. Every rule whose bar is
+    `strong` carries a brief, so each one has cleared its bar and the only
+    thing outstanding is a person.
     """
     made = Project(gate=SIGNING_GATE,
                    config={'signers': [signer], 'sign_at': sign_at})
     made.proofs()
     made.record(runner='ci', commit_it=False, source='ci')
     commit_as_ci(made.root)
+    if briefs:
+        made.brief('RULE-2')
     signing_key(made.root, signer)
     return made
 
@@ -684,31 +691,36 @@ class TestTheGateScales:
 class TestWhatIsSignable:
 
     @pytest.mark.proof("signatures", "PROOF-20", "RULE-16", tier="integration")
-    def test_it_is_the_unsigned_the_stale_and_the_ones_needing_a_person(self):
-        made = signing_project(sign_at='medium')
+    def test_it_is_the_sign_list_the_payload_wrote(self):
+        made = signing_project(sign_at='strong')
         try:
             assert sign_module.signable(made.payload()) == [
                 ('login', 'RULE-2')], (
-                'only the high-risk rule is at or above sign_at')
+                'only the rule whose bar is strong needs a signature')
             sign_module.main(['login', 'RULE-2', '--project-root', made.root])
             assert sign_module.signable(made.payload()) == []
             made.spec(SPEC.replace('return 401 and the body "denied"',
                                    'return 403 and the body "denied"'))
+            made.brief('RULE-2')
             assert sign_module.signable(made.payload()) == [
                 ('login', 'RULE-2')], 'a stale signature is signable again'
         finally:
             made.close()
 
     @pytest.mark.proof("signatures", "PROOF-30", "RULE-16", tier="integration")
-    def test_a_rule_waiting_on_a_person_is_signable_under_the_review_gate(self):
-        made = Project(gate=REVIEW_GATE, config={'min_strength': 50})
+    def test_the_walk_reads_review_before_sign(self):
+        made = signing_project(sign_at='strong', briefs=False)
         try:
-            made.proofs()
-            made.record(runner='ci', commit_it=False)
-            commit_as_ci(made.root)
-            assert sign_module.signable(made.payload()) == [
-                ('login', 'RULE-2')], (
-                'the high-risk rule has no brief, so a person audits it')
+            payload = made.payload()
+            assert [row['rule'] for row in payload['review_list']] == []
+            assert sign_module.signable(payload) == [], (
+                'the rule whose bar is strong has no brief, so it has not '
+                'cleared its bar')
+            made.brief('RULE-2', settled=False)
+            payload = made.payload()
+            assert [row['rule'] for row in payload['review_list']] == [
+                'RULE-2'], payload['review_list']
+            assert payload['sign_list'] == []
         finally:
             made.close()
 
@@ -721,7 +733,7 @@ class TestTheWalk:
 
     @pytest.mark.proof("signatures", "PROOF-31", "RULE-11", tier="integration")
     def test_the_four_answers_each_do_their_own_thing(self, capsys):
-        made = signing_project(sign_at='low')
+        made = signing_project(sign_at='all')
         try:
             answers = {'RULE-2': ('hold', 'no case for an expired token'),
                        'RULE-1': 'sign'}
@@ -741,7 +753,7 @@ class TestTheWalk:
     @pytest.mark.proof("signatures", "PROOF-32", "RULE-11", tier="integration")
     def test_a_skipped_rule_is_written_nothing_and_stays_on_the_list(
             self, capsys):
-        made = signing_project(sign_at='low')
+        made = signing_project(sign_at='all')
         try:
             given = sign_module.walk(made.root,
                                      answer=lambda _entry, _text: 'skip')
@@ -755,7 +767,7 @@ class TestTheWalk:
 
     @pytest.mark.proof("signatures", "PROOF-33", "RULE-11", tier="integration")
     def test_a_case_is_carried_to_the_close_and_written_nowhere(self, capsys):
-        made = signing_project(sign_at='low')
+        made = signing_project(sign_at='all')
         try:
             given = sign_module.walk(
                 made.root,

@@ -46,8 +46,8 @@ ANCHOR_V1 = """# Anchor: no_eval
 
 ## Rules
 
-- RULE-1: No eval() in source files [risk: high]
-- RULE-2: No exec() in source files [risk: high]
+- RULE-1: No eval() in source files [bar: strong]
+- RULE-2: No exec() in source files [bar: strong]
 
 ## Proof
 
@@ -64,9 +64,9 @@ The mocks this anchor pins are designs/checkout/cart.png.
 
 ## Rules
 
-- RULE-1: No eval() in source files [risk: high]
-- RULE-2: No exec() anywhere in the tree [risk: high]
-- RULE-3: No compile() in source files [risk: medium]
+- RULE-1: No eval() in source files [bar: strong]
+- RULE-2: No exec() anywhere in the tree [bar: strong]
+- RULE-3: No compile() in source files [bar: strong]
 
 ## Proof
 
@@ -79,7 +79,7 @@ SECOND_ANCHOR = """# Anchor: no_secrets
 
 ## Rules
 
-- RULE-1: No credential literals in source files [risk: high]
+- RULE-1: No credential literals in source files [bar: strong]
 
 ## Proof
 
@@ -222,7 +222,7 @@ def test_add_writes_the_copy_with_source_and_pin(workspace):
     assert '> Pinned: %s' % workspace.first_sha in text
     # The author's body survives whole, and the tracking fields sit under the
     # title rather than replacing anything the author wrote.
-    assert '- RULE-1: No eval() in source files [risk: high]' in text
+    assert '- RULE-1: No eval() in source files [bar: strong]' in text
     assert text.startswith('# Anchor: no_eval\n')
     assert result['rules'] == ['RULE-1', 'RULE-2']
 
@@ -429,7 +429,7 @@ def test_sync_advances_the_pin_and_names_the_rule_delta(workspace):
 
     text = _copy_text(workspace)
     assert '> Pinned: %s' % new_sha in text
-    assert '- RULE-3: No compile() in source files [risk: medium]' in text
+    assert '- RULE-3: No compile() in source files [bar: strong]' in text
     assert 'No exec() anywhere in the tree' in text
 
 
@@ -437,7 +437,7 @@ def test_sync_advances_the_pin_and_names_the_rule_delta(workspace):
 def test_sync_reports_a_removed_rule(workspace):
     _add(workspace)
     _advance(workspace, ANCHOR_V1.replace(
-        '- RULE-2: No exec() in source files [risk: high]\n', ''))
+        '- RULE-2: No exec() in source files [bar: strong]\n', ''))
     row = upstream.sync(workspace.root, names=['no_eval'])['anchors'][0]
     assert row['rule_changes']['removed'] == ['RULE-2']
     assert row['summary'] == 'RULE-2 removed'
@@ -523,7 +523,7 @@ def test_sync_from_the_command_line_prints_the_delta(workspace):
 
 def _add_local_rule(workspace):
     text = _copy_text(workspace).replace(
-        '## Proof', '- RULE-9: No pickle imports [risk: low]\n\n## Proof')
+        '## Proof', '- RULE-9: No pickle imports [bar: passed]\n\n## Proof')
     _write(upstream.anchor_path(workspace.root, 'no_eval'), text)
 
 
@@ -537,7 +537,7 @@ def test_propose_writes_the_patch_the_anchor_repo_needs(workspace):
     with open(os.path.join(workspace.root, result['patch']), 'r',
               encoding='utf-8') as handle:
         patch = handle.read()
-    assert '+- RULE-9: No pickle imports [risk: low]' in patch
+    assert '+- RULE-9: No pickle imports [bar: passed]' in patch
     assert '--- a/specs/no_eval.md' in patch
     assert '+++ b/specs/no_eval.md' in patch
     # The tracking fields are the consumer's, so they never reach the patch.
@@ -564,7 +564,7 @@ def test_propose_reads_the_source_at_the_pin_not_at_its_head(workspace):
     # RULE-3 arrived after the pin, so proposing against the pin must not ask
     # the anchor repo to add a rule it already has.
     assert 'RULE-3' not in patch
-    assert '+- RULE-9: No pickle imports [risk: low]' in patch
+    assert '+- RULE-9: No pickle imports [bar: passed]' in patch
 
 
 @pytest.mark.proof("upstream", "PROOF-19", "RULE-19", tier="integration")

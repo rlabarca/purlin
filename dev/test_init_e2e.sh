@@ -231,12 +231,12 @@ spec_file() {  # dir feature scope
 # Feature: $2
 
 > Scope: $3
-> Description: One rule, tagged medium risk: the machine settles it at strong,
+> Description: One rule at the strong bar: the machine settles it at strong,
 >   and the signed gate asks a person because sign_at is medium.
 
 ## Rules
 
-- RULE-1: \`greet(name)\` returns \`Hello, <name>!\` [risk: medium] [origin: eng]
+- RULE-1: \`greet(name)\` returns \`Hello, <name>!\` [bar: strong] [origin: eng]
 
 ## Proof
 

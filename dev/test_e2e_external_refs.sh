@@ -47,8 +47,8 @@ ANCHOR_V1='# Anchor: no_eval
 
 ## Rules
 
-- RULE-1: No eval() in source files [risk: high]
-- RULE-2: No exec() in source files [risk: high]
+- RULE-1: No eval() in source files [bar: strong]
+- RULE-2: No exec() in source files [bar: strong]
 
 ## Proof
 
@@ -63,9 +63,9 @@ ANCHOR_V2='# Anchor: no_eval
 
 ## Rules
 
-- RULE-1: No eval() in source files [risk: high]
-- RULE-2: No exec() anywhere in the tree [risk: high]
-- RULE-3: No compile() in source files [risk: medium]
+- RULE-1: No eval() in source files [bar: strong]
+- RULE-2: No exec() anywhere in the tree [bar: strong]
+- RULE-3: No compile() in source files [bar: strong]
 
 ## Proof
 
@@ -189,7 +189,7 @@ COPY1="$PROJECT1/specs/_anchors/no_eval.md"
 ok=true
 grep -q "^> Source: $BARE1 specs/no_eval.md\$" "$COPY1" || ok=false
 grep -q "^> Pinned: $SHA1\$" "$COPY1" || ok=false
-grep -q '^- RULE-2: No exec() in source files \[risk: high\]$' "$COPY1" || ok=false
+grep -q '^- RULE-2: No exec() in source files \[bar: strong\]$' "$COPY1" || ok=false
 record "add writes Source, Pinned and the author's rules" "$ok" "$(cat "$COPY1")"
 
 # ==========================================================================
@@ -248,7 +248,7 @@ sync_out=$(run_upstream "$PROJECT1" sync no_eval)
 ok=true
 echo "$sync_out" | grep -q "RULE-2 changed, RULE-3 added" || ok=false
 grep -q "^> Pinned: $SHA2\$" "$COPY1" || ok=false
-grep -q '^- RULE-3: No compile() in source files \[risk: medium\]$' "$COPY1" || ok=false
+grep -q '^- RULE-3: No compile() in source files \[bar: strong\]$' "$COPY1" || ok=false
 record "sync names the delta and advances the pin" "$ok" "$sync_out"
 
 # ==========================================================================

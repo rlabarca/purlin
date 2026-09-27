@@ -235,18 +235,20 @@ class TestTheOneQuestion:
         finally:
             made.close()
 
-    @pytest.mark.parametrize('gate,strength,review',
-                             [('passed', None, 'never'),
-                              ('strong', 70, 'high'),
-                              ('signed', 80, 'medium')])
+    @pytest.mark.parametrize('gate,strength,sign_at',
+                             [('passed', None, None),
+                              ('strong', 70, None),
+                              ('signed', 80, 'strong')])
     @pytest.mark.proof("scaffold", "PROOF-2", "RULE-2")
     def test_each_answer_derives_its_own_settings(self, project, gate,
-                                                  strength, review):
+                                                  strength, sign_at):
         project.run('--gate', gate)
         config = project.config()
         assert config['gate'] == gate
         assert config['min_strength'] == strength
-        assert config['ai_review_at'] == review
+        assert config.get('sign_at') == sign_at
+        for key in scaffold_module.gate_module.RETIRED_KEYS:
+            assert key not in config, key
 
     @pytest.mark.proof("scaffold", "PROOF-3", "RULE-3")
     def test_the_gate_flag_answers_the_question_without_asking(self, project):
@@ -270,9 +272,9 @@ class TestTheOneQuestion:
     def test_the_config_holds_the_shape_and_no_retired_key(self, project):
         project.run('--gate', 'strong')
         config = project.config()
-        assert sorted(config) == ['ai_review_at', 'ci', 'gate',
-                                  'min_strength', 'mutation_engine',
-                                  'sql_engine', 'test_framework', 'version']
+        assert sorted(config) == ['ci', 'gate', 'min_strength',
+                                  'mutation_engine', 'sql_engine',
+                                  'test_framework', 'version']
         assert config['version'] == read(os.path.join(ROOT, 'VERSION')).strip()
 
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
@@ -282,8 +284,7 @@ class TestTheOneQuestion:
         try:
             child_out = child.run('--gate', 'strong', subprocess=True)
             inline_out = inline.run('--gate', 'strong')
-            assert sorted(child.config()) == ['ai_review_at', 'ci', 'gate',
-                                              'min_strength',
+            assert sorted(child.config()) == ['ci', 'gate', 'min_strength',
                                               'mutation_engine', 'sql_engine',
                                               'test_framework', 'version']
             assert child.config() == inline.config()
@@ -297,9 +298,9 @@ class TestTheOneQuestion:
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
     def test_the_template_carries_the_same_shape(self):
         template = json.loads(read(TEMPLATE_CONFIG))
-        assert sorted(template) == ['ai_review_at', 'ci', 'gate',
-                                    'min_strength', 'mutation_engine',
-                                    'sql_engine', 'test_framework', 'version']
+        assert sorted(template) == ['ci', 'gate', 'min_strength',
+                                    'mutation_engine', 'sql_engine',
+                                    'test_framework', 'version']
         assert template['version'] == read(
             os.path.join(ROOT, 'VERSION')).strip()
 
@@ -453,19 +454,39 @@ class TestTheSignerQuestion:
         assert project.config()['signers'] == []
 
     @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
-    def test_rules_without_a_risk_tag_are_listed(self, project):
+    def test_rules_without_an_origin_tag_are_listed(self, project):
         project.spec()
         output = project.run('--gate', 'signed')
         assert 'login RULE-1' in output
-        assert 'no risk tag' in output
+        assert 'no origin tag' in output
 
     @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
     def test_a_tagged_rule_is_not_listed(self, project):
         write(project.path('specs/core/login.md'),
               SPEC.replace('and a password',
-                           'and a password [risk: high] [origin: pm]'))
+                           'and a password [bar: strong] [origin: pm]'))
         output = project.run('--gate', 'signed')
         assert 'login RULE-1' not in output
+
+    @pytest.mark.proof("scaffold", "PROOF-45", "RULE-45")
+    def test_signed_asks_which_rules_need_a_signature(self):
+        for answer, written in (('all', 'all'), ('strong', 'strong'),
+                                ('medium', 'strong')):
+            made = Project('pytest')
+            try:
+                done = subprocess.run(
+                    [sys.executable, SCAFFOLD, '--project-root', made.root,
+                     '--gate', 'signed'],
+                    input='jane@acme.com\n%s\n' % answer,
+                    capture_output=True, encoding='utf-8', timeout=300)
+                assert scaffold_module.SIGN_AT_QUESTION in done.stdout
+                for line in scaffold_module.SIGN_AT_CHOICES:
+                    assert line in done.stdout, done.stdout
+                assert made.config()['sign_at'] == written, answer
+                if answer == 'medium':
+                    assert 'is not one of' in done.stdout, done.stdout
+            finally:
+                made.close()
 
 
 # ---------------------------------------------------------------------------

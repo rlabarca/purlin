@@ -62,7 +62,7 @@ cat > "$TMPDIR_E2E/specs/_anchors/security_no_eval.md" << 'SPEC'
 
 ## Rules
 
-- RULE-1: No eval() call in any source file [risk: high] [origin: qa]
+- RULE-1: No eval() call in any source file [bar: strong] [origin: qa]
 
 ## Proof
 
@@ -77,7 +77,7 @@ cat > "$TMPDIR_E2E/specs/auth/login.md" << 'SPEC'
 
 ## Rules
 
-- RULE-1: Valid credentials return 200 with a session token [risk: high] [origin: pm]
+- RULE-1: Valid credentials return 200 with a session token [bar: strong] [origin: pm]
 - RULE-2: Invalid credentials return 401 and the body "denied"
 
 ## Proof
@@ -157,10 +157,10 @@ check "the global rule names its owner" "security_no_eval" \
 
 # ── phase B: the tags ─────────────────────────────────────────────────
 echo "  --- phase B: the rule tags ---"
-check "RULE-1 is high risk, owned by the PM" "high pm" \
-  "$(query "print(own('RULE-1')['risk'], own('RULE-1')['origin'])")"
-check "RULE-2 takes the defaults" "low eng" \
-  "$(query "print(own('RULE-2')['risk'], own('RULE-2')['origin'])")"
+check "RULE-1 carries the strong bar, owned by the PM" "strong pm" \
+  "$(query "print(own('RULE-1')['bar'], own('RULE-1')['origin'])")"
+check "RULE-2 takes the defaults" "passed eng" \
+  "$(query "print(own('RULE-2')['bar'], own('RULE-2')['origin'])")"
 check "the tags are stripped from the text" "Valid credentials return 200 with a session token" \
   "$(query "print(own('RULE-1')['text'])")"
 

@@ -96,7 +96,7 @@ case "$1" in
       if [[ ! -f "$abs" ]]; then
         # .purlin/config.json only exists when the repo is itself a Purlin
         # project. A consumer checkout of the framework has no such file.
-        printf '  %-30s absent (not required)\n' "$rel"
+        printf '  %-30s absent (this repository only)\n' "$rel"
         continue
       fi
       got="$(read_json_version "$abs")"

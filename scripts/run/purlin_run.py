@@ -1073,7 +1073,7 @@ def _audit_report(project_root, selected, breaks, source='local'):
                         findings.append(finding)
             observations = []
             settled = None
-            if asks_for_a_review(payload, entry):
+            if asks_for_a_review(entry):
                 built = build_brief(project_root, payload, name, rule_id)
                 if built is not None:
                     observations = built.get('observations') or []
@@ -1261,7 +1261,7 @@ def _ci_review(project_root, passed_here=()):
     wanted = []
     for feature, rule_id in passed_here or ():
         entry = rule_entry(payload, feature, rule_id)
-        if entry is not None and asks_for_a_review(payload, entry):
+        if entry is not None and asks_for_a_review(entry):
             wanted.append((feature, rule_id))
     briefs = write_briefs(project_root, payload, rules=wanted, source='ci')
     print('%d brief%s written.'

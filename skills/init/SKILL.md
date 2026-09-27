@@ -154,18 +154,13 @@ because the gate cannot be met without a CI run that writes records. When `specs
 one job per other operating system named, each running the same tests and writing its own
 record. With no such proof there is one Linux job.
 
-Under `signed`, init asks for the signer emails, writes them to `signers`, asks which rules
-need a signature and writes the answer to `sign_at`, prints the commit-signing setup, and
-lists every rule with no origin tag so `purlin:spec <name>` can tag them in one pass.
-
-The question it asks is `Which rules need a signature?`, with one line each:
-
-```
-strong  the rules whose bar is strong; the rest meet the gate on their tests
-all     every rule, whatever its bar
-``` Without a signer list the gate cannot be met: the CI gate prints
-`→ signer list missing: run purlin:init --gate signed` and exits 1, and `purlin:sign` says the
-same and writes nothing.
+Under `signed`, init asks for the signer emails, writes them to `signers`, prints the
+commit-signing setup, and lists every rule with no origin tag so `purlin:spec <name>` can tag
+them in one pass. It then asks `Which rules need a signature?` and writes the answer to
+`sign_at`: `strong`, the rules whose bar is strong, the rest meeting the gate on their tests;
+or `all`, every rule whatever its bar. Without a signer list the gate cannot be met: the CI
+gate prints `→ signer list missing: run purlin:init --gate signed` and exits 1, and
+`purlin:sign` says the same and writes nothing.
 
 Anchor pins, the upstream-check job and the dashboard artifact are added on demand. When one
 is missing later the tool that needs it says so: `purlin:drift` reports a pin behind,

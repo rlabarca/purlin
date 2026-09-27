@@ -55,13 +55,13 @@ def _project(tmp_path, frameworks='pytest', gate='passed'):
 
 
 def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1,
-          risk=None):
+          bar=None):
     """A two-section spec. Each proof is `(id, rule, tag_suffix)`.
 
-    `risk` tags every rule, which is what decides whether a brief is owed.
+    `bar` tags every rule, which is what decides whether a brief is owed.
     """
     lines = ['# %s' % feature, '', '> Scope: src/', '', '## Rules', '']
-    tag = ' [risk: %s]' % risk if risk else ''
+    tag = ' [bar: %s]' % bar if bar else ''
     for index in range(1, rules + 1):
         lines.append('- RULE-%d: the software does thing %d%s'
                      % (index, index, tag))
@@ -522,8 +522,8 @@ def _fake_briefs(monkeypatch, order, briefs):
 
     monkeypatch.setitem(sys.modules, 'brief', _FakeModule(
         write_briefs=write_briefs,
-        rule_entry=lambda payload, feature, rule: {'risk': 'high'},
-        asks_for_a_review=lambda payload, entry: True))
+        rule_entry=lambda payload, feature, rule: {'bar': 'strong'},
+        asks_for_a_review=lambda entry: True))
 
     records = sys.modules['records']
     committed = records.commit_records
@@ -706,7 +706,7 @@ class TestRecordCommitsAndTags:
     def test_the_ci_commit_carries_the_record_and_the_ci_runner_slug(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat')
+        _spec(root, 'feat', bar='passed')
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
         paths, message = calls['commit'][0]
@@ -849,11 +849,11 @@ class TestRecordCommitsAndTags:
 
         monkeypatch.setitem(sys.modules, 'brief', _FakeModule(
             write_briefs=write_briefs,
-            rule_entry=lambda payload, feature, rule: {'risk': 'high'},
-            asks_for_a_review=lambda payload, entry: True))
+            rule_entry=lambda payload, feature, rule: {'bar': 'strong'},
+            asks_for_a_review=lambda entry: True))
 
         root = _pytest_project(tmp_path)
-        _spec(root, 'feat', risk='high')
+        _spec(root, 'feat', bar='strong')
         purlin_run = _load_run_script()
         assert purlin_run._ci_review(str(root), [('feat', 'RULE-1')]) == [
             written]
@@ -878,16 +878,16 @@ class TestTheBriefsACiRunCommits:
 
     Left to choose, it reads each rule's passed cell, and while the briefs
     are being written the record this run wrote is still uncommitted: its
-    source is `local`, which `strong` and `signed` do not count. Every brief
-    would be skipped and the review list would carry rules with nothing for
-    anyone to read.
+    source is `local`, which `signed` does not count. Every brief would be
+    skipped and the review list would carry rules with nothing for anyone to
+    read.
     """
 
     @pytest.mark.proof("run_script", "PROOF-67", "RULE-46")
-    def test_a_high_risk_rule_that_passed_gets_its_brief_in_the_commit(
+    def test_a_strong_bar_rule_that_passed_gets_its_brief_in_the_commit(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat', risk='high')
+        _spec(root, 'feat', bar='strong')
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
 
@@ -903,10 +903,10 @@ class TestTheBriefsACiRunCommits:
                          '.purlin/briefs/ci/feat/%s' % briefs[0]]
 
     @pytest.mark.proof("run_script", "PROOF-67", "RULE-46")
-    def test_a_rule_below_the_review_level_gets_no_brief(
+    def test_a_rule_whose_bar_is_passed_gets_no_brief(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat', risk='low')
+        _spec(root, 'feat', bar='passed')
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
 
@@ -1066,8 +1066,10 @@ class TestTheMarkerScanReadsEveryFrameworkSMarker:
 class TestTheAuditGateLine:
     """The audit answers level 2, so its last line names the strong cell."""
 
+    # The bar is `passed`, so the AI audit is not owed on the rule and the
+    # free checks are the whole of level 2.
     SPEC = ('# Feature: feat\n\n> Scope: src/feat.py\n\n## Rules\n\n'
-            '- RULE-1: The value is 2\n\n## Proof\n\n'
+            '- RULE-1: The value is 2 [bar: passed]\n\n## Proof\n\n'
             '- PROOF-1 (RULE-1): Import feat and read VALUE; verify it is '
             'exactly 2\n')
 

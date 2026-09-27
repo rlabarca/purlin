@@ -357,7 +357,6 @@ def test_the_config_is_the_gate_shape(tmp_path, layout):
     config = json.loads(_read(root, '.purlin/config.json'))
     assert config['version'] == VERSION
     assert config['gate'] == 'passed'
-    assert config['ai_review_at'] == 'never'
     assert config['min_strength'] is None
     assert config['mutation_engine'] == 'auto'
     assert config['sql_engine'] is None
@@ -378,6 +377,7 @@ def test_the_old_gate_name_and_signer_key_carry_over(tmp_path):
     written = json.loads(_read(root, '.purlin/config.json'))
     assert written['gate'] == 'signed'
     assert written['signers'] == ['jane@acme.com']
+    assert written['sign_at'] == 'strong'
     assert update.SIGNER_KEY_WAS not in written
 
 
@@ -410,7 +410,7 @@ def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):
     written = json.loads(_read(root, '.purlin/config.json'))
     assert written['gate'] == 'strong'
     assert written['min_strength'] == 70
-    assert written['ai_review_at'] == 'high'
+    assert 'sign_at' not in written
 
 
 @pytest.mark.proof("update", "PROOF-12", "RULE-12")
@@ -1013,3 +1013,34 @@ def test_a_loose_record_moves_into_the_folder_its_source_names(tmp_path,
     assert os.path.isfile(os.path.join(root, *moved.split('/')))
     assert os.path.isfile(os.path.join(root, *brief_moved.split('/')))
     assert 'record-folders' not in [e['id'] for e in update.pending(root)]
+
+
+# --- the bar ------------------------------------------------------------------
+
+RULE_TAGS = (
+    '# Feature: greeting\n\n'
+    '> Description: One rule per level of the tag the bar replaced.\n'
+    '> Scope: greeting.py\n\n'
+    '## Rules\n\n'
+    '- RULE-1: A greeting names the person [risk: high] [origin: pm]\n'  # retired
+    '- RULE-2: A greeting ends in an exclamation [risk: medium]\n'  # retired
+    '- RULE-3: A greeting is one line [risk: low] [criterion: US-3]\n'  # retired
+    '- RULE-4: A greeting is in English\n\n'
+    '## Proof\n\n'
+    '- PROOF-1 (RULE-1): Call greet("Ada"); verify it holds "Ada"\n'
+)
+
+
+@pytest.mark.proof("update", "PROOF-24", "RULE-24")
+def test_the_retired_rule_tag_is_rewritten_as_a_bar(tmp_path):
+    root = _project(tmp_path, V095)
+    _write(root, 'specs/core/greeting.md', RULE_TAGS)
+    assert any(item['id'] == 'rule-tags' for item in update.pending(root))
+    _apply(root)
+    written = _read(root, 'specs/core/greeting.md')
+    assert '[bar: strong] [origin: pm]' in written, written
+    assert '- RULE-2: A greeting ends in an exclamation [bar: strong]' in written
+    assert ('- RULE-3: A greeting is one line [bar: passed] [criterion: US-3]'
+            in written)
+    assert '- RULE-4: A greeting is in English\n' in written
+    assert not any(item['id'] == 'rule-tags' for item in update.pending(root))

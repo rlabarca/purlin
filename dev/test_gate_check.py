@@ -14,8 +14,8 @@ temporary directory. Nothing here reaches a network or a git host.
 What each group holds:
 
 *passed*    a passing tagged test in a record a person or CI committed
-*strong*    a record CI committed, the test strength at or above the minimum,
-            and a settled brief where the risk asks for one
+*strong*    a record CI committed, the test strength at or above the
+            minimum, and a settled brief where the bar asks for one
 *signed*    a current signature by someone on the signer list, made by someone
             other than the test's author and already on the protected branch
 *sections*  one section per cell a rule can be blocked at, capped at 20 rules
@@ -77,7 +77,7 @@ def project_at(gate, strength=90, by_ci=True, config=None, briefs=('RULE-2',)):
 
 
 def signed_project(signer='jane@acme.com', strength=90, config=None):
-    """A project at `signed` whose only unsigned rule is the high-risk one."""
+    """A project at `signed` whose one unsigned rule is the strong-bar one."""
     settings = {'min_strength': 80, 'signers': [signer]}
     settings.update(config or {})
     made = project_at('signed', strength=strength, config=settings)
@@ -225,20 +225,36 @@ class TestTheStrongGate:
         try:
             code, output = run(made)
             assert code == 1
-            assert 'Weak (2):' in output
+            # RULE-1's bar is `passed`, so its strong cell does not block.
+            assert 'Weak (1):' in output, output
+            assert 'login RULE-2: weak' in output, output
             assert 'strength 40% under 70%' in output, output
         finally:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-9", "RULE-4", tier="integration")
-    def test_a_rule_with_no_brief_waits_on_a_person(self):
+    def test_a_rule_with_no_brief_is_not_audited(self):
         made = project_at('strong', briefs=())
         try:
             code, output = run(made)
             assert code == 1
-            assert 'Waiting on a person (1):' in output, output
-            assert 'login RULE-2: manual audit' in output, output
-            assert 'no brief for the current hashes' in output
+            assert 'Not audited (1):' in output, output
+            assert 'login RULE-2: not audited' in output, output
+            assert 'no audit has run on this code' in output
+        finally:
+            made.close()
+
+    @pytest.mark.proof("gate_check", "PROOF-9", "RULE-4", tier="integration")
+    def test_an_unsettled_audit_lands_a_rule_on_the_review_section(self):
+        made = project_at('strong', briefs=())
+        try:
+            made.brief('RULE-2', settled=False)
+            commit_as_ci(made.root, 'purlin: record for abc1234')
+            code, output = run(made)
+            assert code == 1
+            assert 'To review (1):' in output, output
+            assert 'login RULE-2: unsettled' in output, output
+            assert 'the AI audit could not settle' in output
         finally:
             made.close()
 
@@ -285,7 +301,7 @@ class TestTheSignedGate:
             code, output = run(made)
             assert code == 0, output
             assert 'login RULE-1' not in output, (
-                'low risk is below sign_at and never blocks the branch')
+                'its bar is passed, so it needs no signature')
         finally:
             made.close()
 
@@ -295,7 +311,7 @@ class TestTheSignedGate:
         try:
             code, output = run(made)
             assert code == 1
-            assert 'Not signed (1):' in output
+            assert 'To sign (1):' in output
             assert 'login RULE-2: unsigned' in output, output
         finally:
             made.close()
@@ -307,7 +323,7 @@ class TestTheSignedGate:
             entry = made.rule('RULE-2')
             sign_module.write_signature(
                 made.root, 'login', 'RULE-2', 'jane@acme.com', None, None,
-                'signed', 'high', entry=entry)
+                'signed', 'strong', entry=entry)
             git(made.root, 'add', '-A')
             git(made.root, '-c', 'commit.gpgsign=false', 'commit', '-q', '-m',
                 'chore: a signature nobody signed')
@@ -387,7 +403,7 @@ class TestTheSections:
 
     @pytest.mark.proof("gate_check", "PROOF-19", "RULE-7", tier="integration")
     def test_a_section_names_twenty_rules_and_counts_the_rest(self):
-        rules = ''.join('- RULE-%d: Something is true about %d [risk: low]\n'
+        rules = ''.join('- RULE-%d: Something is true about %d [bar: passed]\n'
                         % (n, n) for n in range(1, 31))
         spec = ('# Feature: login\n\n> Description: Many rules.\n\n'
                 '## Rules\n\n' + rules + '\n## Proof\n\n')
@@ -407,7 +423,7 @@ class TestTheSections:
                   '> Scope: src/login.py\n\n'
                   '## Rules\n\n'
                   '- RULE-1: Every session token is 32 characters '
-                  '[risk: low]\n\n'
+                  '[bar: passed]\n\n'
                   '## Proof\n\n')
         made = Project(gate='passed')
         try:
@@ -487,8 +503,8 @@ class TestTheJsonResult:
             assert data['exit'] == 1
             assert data['rules'] == 2 and data['met'] == 0
             assert len(data['not_passed']) == 2
-            assert data['weak'] == [] and data['not_signed'] == []
-            assert data['waiting'] == []
+            assert data['weak'] == [] and data['to_sign'] == []
+            assert data['to_review'] == [] and data['not_audited'] == []
             assert data['commit'] == made.head()
         finally:
             made.close()
@@ -512,7 +528,7 @@ class TestTheJsonResult:
             code, output = run(made, as_json=True)
             data = json.loads(output[output.index('{'):])
             assert code == 1
-            assert len(data['weak']) == 2 and data['not_passed'] == []
+            assert len(data['weak']) == 1 and data['not_passed'] == []
             assert data['min_strength'] == 70
         finally:
             made.close()
@@ -601,3 +617,31 @@ class TestWhatTheGateReads:
                 assert line.startswith('gate:') or line.endswith(':'), line
         finally:
             made.close()
+
+
+# ---------------------------------------------------------------------------
+# The six sections
+# ---------------------------------------------------------------------------
+
+@pytest.mark.proof("gate_check", "PROOF-34", "RULE-14", tier="integration")
+def test_the_report_carries_its_six_sections_in_order():
+    """One rule short at each section, and the six headings in the chain's
+    own order."""
+    made = project_at('signed', briefs=(),
+                      config={'min_strength': 80,
+                              'signers': ['jane@acme.com']})
+    try:
+        code, output = run(made, as_json=True)
+        assert code == 1
+        data = json.loads(output[output.index('{'):])
+        for key in ('not_passed', 'partial', 'weak', 'not_audited',
+                    'to_review', 'to_sign'):
+            assert key in data, sorted(data)
+        titles = [title for _key, title, _cells in gate_check._SECTIONS]
+        assert titles == ['Not passed', 'Partial', 'Weak', 'Not audited',
+                          'To review', 'To sign']
+        printed = [line for line in output.splitlines()
+                   if any(line.startswith(title + ' (') for title in titles)]
+        assert printed == ['Not audited (1):'], output
+    finally:
+        made.close()

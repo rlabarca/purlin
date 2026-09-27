@@ -4,7 +4,8 @@ The machine reads whether the tests pass and how strong they are. It cannot
 read whether a test proves the proof text, so a person who finds that it does
 not commits a hold, and the rule's strong and signed cells read `held` until
 the text moves or a signature outranks it. The throwaway project is `dev/test_signatures.py`'s, at
-the gate that turns the review list on: `RULE-1` is low risk, `RULE-2` high.
+the gate that turns the review list on: `RULE-1` carries the bar `passed`
+and `RULE-2` the bar `strong`.
 """
 
 import json

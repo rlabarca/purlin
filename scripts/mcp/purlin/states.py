@@ -667,8 +667,8 @@ def _signature_at(signature):
 def _signed_cell(inp, cfg, bar, holds, signatures, current, counting):
     """Level 3: what the signature files say, whatever the cells below read.
 
-    A signature is a fact about committed files, so this cell is computed
-    from them alone and reads `signed`, `unsigned`, `stale` or `held`.
+    A signature is a fact about committed files. This cell is computed from
+    those files alone and reads `signed`, `unsigned`, `stale` or `held`.
     Whether the rule needed one is `required`: true at the gate `signed` when
     `sign_at` is `all` or the rule's bar is `strong`. A rule that needs none
     still says whether anyone signed it, and either answer meets the level.

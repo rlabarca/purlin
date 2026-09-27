@@ -33,11 +33,11 @@ from check_spec import (TMP_BASE, call_claude, report, run)  # noqa: E402
 
 TOOL = os.path.join(PLUGIN_ROOT, 'tools', 'QA', 'purlin-qa-report.md')
 SCAN = os.path.join(PLUGIN_ROOT, 'scripts', 'report', 'scan.py')
-RISKS = ('high', 'medium', 'low')
+BARS = ('strong', 'passed')
 ASK = ('The rollup below is what `scan.py --repo %s` printed. The scan has '
        'already run, so do not run it again and do not open a repository. '
        'Read the rollup and print the triage report: the review list, ordered '
-       'by risk, and the closing counts.\n\n%s')
+       'by bar, and the closing counts.\n\n%s')
 
 
 def tool_text():
@@ -82,8 +82,8 @@ def main(argv=None):
     print('\ntranscript: %s\n' % transcript)
     print('report:\n%s\n' % reply.strip())
 
-    seen = [RISKS.index(w.lower()) for w in re.findall(
-        r'\b(high|medium|low)\b', reply, re.IGNORECASE)]
+    seen = [BARS.index(w.lower()) for w in re.findall(
+        r'\bbar (strong|passed)\b', reply, re.IGNORECASE)]
     ordered = all(a <= b for a, b in zip(seen, seen[1:]))
     named = sorted(set(re.findall(r'\bRULE-\d+\b', reply)))
 
@@ -91,8 +91,8 @@ def main(argv=None):
         ('the CLI answered', bool(reply.strip()), '%d characters' % len(reply.strip())),
         ('the gate is named', bool(gate) and gate in reply,
          'gate %s' % (gate or 'not read from the scan')),
-        ('ordered by risk', ordered,
-         'risk words in order: %s' % (', '.join(RISKS[i] for i in seen) or 'none')),
+        ('ordered by bar', ordered,
+         'bar words in order: %s' % (', '.join(BARS[i] for i in seen) or 'none')),
         ('the review list only', total and len(named) < total,
          '%d rule id(s) named of %d in the project' % (len(named), total)),
         ('the review list is named', 'review list' in reply.lower(),

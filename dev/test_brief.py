@@ -8,14 +8,14 @@ reaches a service.
 
 What each group holds:
 
-*layers*        which layers run at which risk, cheapest first
+*layers*        which layers run at which bar, cheapest first
 *findings*      the free checks on the proof text and on the test body reach
                 the brief under the names `references/review_criteria.md`
                 gives them
 *strength*      the test strength comes off the latest record, and reads `n/a`
                 when no engine measured one
-*model*         the prompt is the criteria file verbatim, the review runs only
-                for a rule whose risk asks for one and only with `--ai`
+*model*         the prompt is the criteria file verbatim, the AI audit runs
+                only for a rule whose bar is `strong` and only with `--ai`
 *observations*  the answer becomes one observation per sentence, and whether
                 it settled stands beside them
 *design*        a design rule shows the mock beside the screenshot
@@ -61,7 +61,7 @@ def proved():
 
 @pytest.fixture
 def at_strong():
-    """The same project at `strong`, where a high-risk rule asks for a model."""
+    """The same project at `strong`, where a strong-bar rule asks for a model."""
     made = Project(gate=REVIEW_GATE)
     made.proofs()
     made.record()
@@ -90,24 +90,22 @@ def build(project, rule='RULE-1', ai=False):
 class TestTheLayers:
 
     @pytest.mark.proof("brief", "PROOF-1", "RULE-1", tier="integration")
-    def test_low_risk_stops_after_the_free_checks(self, proved):
-        assert build(proved, 'RULE-1')['layers'] == ['proof text', 'test body']
+    @pytest.mark.proof("brief", "PROOF-3", "RULE-2", tier="integration")
+    def test_a_passed_bar_stops_after_the_test_strength(self, proved):
+        assert build(proved, 'RULE-1')['layers'] == [
+            'proof text', 'test body', 'test strength']
+        assert build(proved, 'RULE-2')['layers'][-1] == 'model review'
 
     @pytest.mark.proof("brief", "PROOF-4", "RULE-3", tier="integration")
-    def test_high_risk_runs_every_layer(self, proved):
+    def test_a_strong_bar_runs_every_layer(self, proved):
         assert build(proved, 'RULE-2')['layers'] == [
             'proof text', 'test body', 'test strength', 'model review']
 
-    @pytest.mark.proof("brief", "PROOF-3", "RULE-2", tier="integration")
-    def test_medium_risk_stops_after_the_test_strength(self):
-        made = Project(spec=SPEC.replace('[risk: high]', '[risk: medium]'))
-        try:
-            made.proofs()
-            made.record()
-            assert build(made, 'RULE-2')['layers'] == [
-                'proof text', 'test body', 'test strength']
-        finally:
-            made.close()
+    @pytest.mark.proof("brief", "PROOF-2", "RULE-1", tier="integration")
+    def test_a_passed_bar_asks_for_no_model(self, proved):
+        built = build(proved, 'RULE-1')
+        assert 'model review' not in built['layers']
+        assert built['ai_review'] is None
 
     @pytest.mark.proof("brief", "PROOF-5", "RULE-4", tier="integration")
     def test_a_rule_that_is_not_there_has_no_brief(self, proved):
@@ -185,12 +183,12 @@ class TestTheFindings:
     def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):
         built = build(proved, 'RULE-1')
         assert set(built) == {
-            'schema', 'feature', 'rule', 'risk', 'origin', 'rule_text',
+            'schema', 'feature', 'rule', 'bar', 'origin', 'rule_text',
             'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',
             'design_hash', 'triple_hash', 'layers', 'tests', 'test_strength',
             'min_strength', 'record', 'design', 'ai_review', 'observations',
             'settled', 'generated_at'}, sorted(built)
-        assert built['schema'] == 'purlin-brief/2'
+        assert built['schema'] == 'purlin-brief/3'
         assert built['observations'] == []
 
 
@@ -205,10 +203,10 @@ class TestTheTestStrength:
         assert build(at_strong, 'RULE-2')['test_strength'] == 90
         assert build(at_strong, 'RULE-2')['min_strength'] == 70
 
-    @pytest.mark.proof("brief", "PROOF-2", "RULE-1", tier="integration")
-    def test_a_low_risk_rule_never_asks_for_it(self, proved):
-        assert build(proved, 'RULE-1')['test_strength'] is None, (
-            'the strength layer does not run at low risk')
+    @pytest.mark.proof("brief", "PROOF-10", "RULE-9", tier="integration")
+    def test_a_passed_bar_still_reads_the_strength(self, proved):
+        assert build(proved, 'RULE-1')['test_strength'] == 90, (
+            'the strength layer runs at either bar')
 
     @pytest.mark.proof("brief", "PROOF-11", "RULE-9", tier="integration")
     def test_no_engine_reads_as_n_a(self):
@@ -265,10 +263,10 @@ class TestTheModelReview:
             'not available')
 
     @pytest.mark.proof("brief", "PROOF-22", "RULE-16", tier="integration")
-    def test_a_rule_below_the_review_level_never_calls_a_model(
+    def test_a_rule_whose_bar_is_passed_never_calls_a_model(
             self, at_strong, monkeypatch):
         def fail(*args, **kwargs):
-            raise AssertionError('a low-risk rule must not call a model')
+            raise AssertionError('a rule whose bar is passed calls no model')
 
         monkeypatch.setattr(brief_module.shutil, 'which', fail)
         built = build(at_strong, 'RULE-1', ai=True)
@@ -335,7 +333,7 @@ DESIGN_SPEC = (
     '> Pinned: 3f2a1b0c9d8e7f6a\n\n'
     '## Rules\n\n'
     '- RULE-1: The sign-in page shows the heading "Sign in" and one button '
-    '[origin: design] [risk: low]\n\n'
+    '[origin: design] [bar: passed]\n\n'
     '## Proof\n\n'
     '- PROOF-1 (RULE-1): Open /sign-in; verify the heading "Sign in" and that '
     'no error is shown @e2e\n'
@@ -389,7 +387,7 @@ class TestWriting:
         assert os.path.isfile(text)
         with open(os.path.join(proved.root, *path.split('/')),
                   encoding='utf-8') as handle:
-            assert json.load(handle)['schema'] == 'purlin-brief/2'
+            assert json.load(handle)['schema'] == 'purlin-brief/3'
 
     @pytest.mark.proof("brief", "PROOF-28", "RULE-19", tier="integration")
     def test_a_brief_is_found_again_only_while_the_text_stands(self, proved):

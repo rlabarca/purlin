@@ -178,7 +178,8 @@ def test_every_bucket_the_package_names_can_be_printed():
     from purlin import states
     buckets = states.bucket_keys('signed')
     summary = {'features': 1, 'rules': len(buckets), 'met': 1,
-               'stale': 1, 'held': 1, 'manual': 1, 'audit': 2}
+               'stale': 1, 'held': 1, 'manual': 1, 'unsettled': 2,
+               'not_audited': 1, 'signable': 3}
     summary.update({bucket: 1 for bucket in buckets})
     summary.update({'proofs': 6, 'proofs_without_test': 1})
     payload = {'project': 'x', 'gate': {'gate': 'signed'},
@@ -190,7 +191,9 @@ def test_every_bucket_the_package_names_can_be_printed():
         assert label in text, '%s was not printed' % label
     assert '1 signatures stale' in text
     assert '1 rules have a manual test' in text
-    assert '2 rules need a manual audit' in text
+    assert '2 rules are unsettled' in text
+    assert '1 rules are not audited' in text
+    assert '3 rules are signable' in text
 
 
 # ---------------------------------------------------------------------------

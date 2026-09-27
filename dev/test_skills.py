@@ -319,7 +319,7 @@ class TestSkillSpecFromCode:
         assert skill_ceiling_problems('spec-from-code') == []
 
     @pytest.mark.proof("skill_spec_from_code", "PROOF-5", "RULE-5")
-    def test_every_rule_it_writes_is_engineer_owned_and_low_risk(self):
+    def test_every_rule_it_writes_is_engineer_owned_at_the_passed_bar(self):
         assert spec_from_code_tag_problems() == []
 
 
@@ -342,13 +342,13 @@ def spec_from_code_tag_problems():
     if not examples:
         problems.append('%s shows no example rule' % rel)
     for line in examples:
-        for tag in ('[origin: eng]', '[risk: low]'):
+        for tag in ('[origin: eng]', '[bar: passed]'):
             if tag not in line:
                 problems.append('%s example rule carries no %s: %s'
                                 % (rel, tag, line))
     problems.extend(carries(rel, [
         'Do not tag anything `[origin: pm]`',
-        'Do not add risk tags above `low`']))
+        'Do not write `[bar: strong]`']))
     return problems
 
 
@@ -719,7 +719,7 @@ class TestSkillFind:
     def test_it_reads_the_state_and_hides_empty_columns(self):
         assert carries(skill_path('find'), [
             'sync_status',
-            'Show the risk and the origin only when the spec carries them',
+            'Show the bar and the origin only when the spec tagged them',
             'under the `passed` gate both are optional']) == []
 
     @pytest.mark.proof("skill_find", "PROOF-3", "RULE-3")
@@ -881,9 +881,9 @@ class TestPmAnchorUserstories:
     @pytest.mark.proof("pm_anchor_userstories", "PROOF-4", "RULE-4")
     def test_it_names_the_tags_and_the_tiers(self):
         assert carries(PM_MD, [
-            '[risk:', '[origin:', '[criterion:', '`[risk: high]`',
-            '`[risk: medium]`', '`[risk: low]`',
-            'Under the `signed` gate risk and origin are both required',
+            '[bar:', '[origin:', '[criterion:', '`[bar: strong]`',
+            '`[bar: passed]`',
+            'Under the `signed` gate origin is required',
             '@integration', '@e2e', '@manual',
             '@env(windows)', '@env(macos)', '@env(linux)']) == []
 
