@@ -254,6 +254,10 @@ left to a lane's judgment except wording.
       Where a runner exists, it runs on `run/**` branches and `signed/**` tags, and the tag
       run reruns the tests, verifies hashes and provenance, and runs the gate check. Init
       explains the two reasons and asks nothing else; "no merge while red" is gone.
+    - **The bare workflow is the story.** Every page, diagram and slide shows spec, build,
+      test, audit, sign, tag, on one machine; a full `signed` gate on a laptop with no CI is
+      the normal case. Remote runners appear only where the two cases are described, in one
+      short section per page at most and on one page of their own.
 
 
 ---
