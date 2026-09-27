@@ -182,8 +182,8 @@ so what you read here is what was seen, not what to do about it.
 
 At `signed` the **Sign panel** comes next. A rule that is not signed is headed `To sign` and
 names the command, `purlin:sign <feature> <RULE-N>`, to run in Claude Code: a signature is a
-signed commit by someone on the signer list, so this page can only read one back once it is on
-the branch. A rule that is signed is headed `Signed` and names who signed it. Where the project
+signed commit that names its signer, so this page can only read one back once it is
+committed. A rule that is signed is headed `Signed` and names who signed it. Where the project
 signs from `strong` and this rule's bar is `passed`, the panel says no signature is required
 and that one written anyway still counts.
 

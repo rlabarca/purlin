@@ -2,7 +2,7 @@
 #
 # purlin:init writes this file and purlin:init --update refreshes it. Three
 # things start a run and nothing else does: a pull request, a push to the
-# protected branch, and a push to a `run/*` branch, which is the branch
+# default branch, and a push to a `run/*` branch, which is the branch
 # `purlin:test --remote` creates and deletes around one run. A push to any
 # other branch starts nothing, so a feature branch costs no runner minutes
 # until it is opened as a pull request.

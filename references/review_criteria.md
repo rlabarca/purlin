@@ -86,7 +86,7 @@ settled. Until it has run the strong cell reads `not audited`; where it ran and 
 tell it reads `unsettled`; where it settled and still observed something the cell reads
 `weak` with that sentence as the reason. Where no model could be reached the audit did not
 run at all, and the strength answers level 2 on its own. Under `signed` the rule needs a
-current signature from someone on the signer list, whatever `sign_at` says.
+current signature in a signed commit, whatever `sign_at` says.
 
 `sign_at` widens that last requirement: `strong`, the default, asks for a signature on the
 rules whose bar is `strong`, and `all` asks for one on every rule.

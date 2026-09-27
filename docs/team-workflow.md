@@ -26,7 +26,8 @@ Two things, and nothing on the git host:
 tags optional. Every rule's bar defaults to `strong` here, so the AI audit runs on every rule
 that carries no `[bar: passed]` tag. Signatures are advisory at this gate and no rule has a
 signed cell. What a signature still does here is clear a strong cell reading `manual test`,
-`unsettled` or `held`, from anyone, because the signer list is not read below `signed`.
+`unsettled` or `held`: `purlin:sign <feature>` and `purlin:sign --batch` sign every rule on the
+Review list, and a committed signature counts at this gate.
 
 ## The loop, and what it writes
 
@@ -135,8 +136,8 @@ At `strong` the Review list holds exactly the rules whose strong cell reads `man
 `unsettled` or `held`. Its header is the one sentence that says so: `<n> rules need a
 person`. A `weak` rule is never on it, because a build moves it and no person has to decide
 anything, and neither is a `not audited` rule: it waits for `purlin:audit`. A signature file
-for the current hashes clears all three words, and at this gate it counts from anyone: the
-signer list is not read below `signed`.
+for the current hashes clears all three words, and at this gate any committed signature
+counts.
 
 ## One sprint, traced
 

@@ -50,7 +50,7 @@ can be signed. A rule says its own with a tag; a rule with no tag takes the proj
 
 | Guide | What it covers |
 |-------|----------------|
-| [Regulated workflow](regulated-workflow.md) | The `signed` gate, the signer list, signed commits, the tag, the evidence trail |
+| [Regulated workflow](regulated-workflow.md) | The `signed` gate, who may sign, signed commits, the tag, the evidence trail |
 | [Raising the gate and upgrading](raising-the-gate-and-upgrading.md) | `purlin:init --gate` both ways, and `purlin:init --update` |
 
 ## Reference
@@ -58,7 +58,7 @@ can be signed. A rule says its own with a tag; a rule with no tag takes the proj
 | File | What it covers |
 |------|----------------|
 | [Commands](../references/purlin_commands.md) | Every command's syntax, its one-liner, and what it writes |
-| [The gate](../references/hard_gates.md) | The one setting, which records count, where the gate is checked, the signer list |
+| [The gate](../references/hard_gates.md) | The one setting, which records count, when a signature counts, what `signed/<version>` means |
 | [Glossary](../references/glossary.md) | The word this project uses for each concept, and the retired spellings |
 | [Spec format](../references/formats/spec_format.md) | The 2-section spec, field by field |
 | [Test results format](../references/formats/tests_format.md) | The two files a run of the tagged tests writes, yours and a runner's |

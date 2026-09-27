@@ -3,8 +3,9 @@
 For a team working under GxP or a similar obligation, at the `signed` gate.
 
 `signed` is `strong` plus two things: a rule that needs a signature needs a current signature
-from someone on the signer list, in a signed commit; and the version carries the tag
-`purlin:sign` writes once every rule meets the gate. Nothing else about the day changes, so
+in a signed commit; and the version carries the tag `purlin:sign` writes once every rule meets
+the gate. What that tag means is defined once, in
+[hard_gates.md](../references/hard_gates.md). Nothing else about the day changes, so
 read [team-workflow.md](team-workflow.md) first and treat this as what it adds.
 [how-purlin-works.md](how-purlin-works.md) is the model in one page.
 
@@ -77,7 +78,7 @@ inside the hashes a signature binds.
 | Test strength at or above `min_strength` | default 80 at this gate |
 | A current signature on every rule that needs one | `purlin:sign` |
 | Every rule tagged with a bar and an origin | the bar defaults to the gate; the origin is required at this gate |
-| The signing commit signed, by an author on the signer list who did not last touch the test | `signers` in `.purlin/config.json`, read as it stood in that commit |
+| The signing commit signed, and the signature verifies | the signer's own key, set up once with the three commands below |
 | The tag `signed/<version>` on the commit | `purlin:sign` writes it once every rule meets the gate, and a person pushes it |
 
 `scripts/ci/gate_check.py --check` is the check a runner makes, as the last step of every run.
@@ -92,22 +93,14 @@ when it is not, and exits 2 when it cannot read the evidence, so an unreadable c
 passes. `purlin:status` reads the same cells and ends with one `→ Next:` line naming the step
 that clears the most rules.
 
-## The signer list
+## Who may sign
 
-`signers` in `.purlin/config.json` holds the emails of the people who may sign:
-
-```json
-"signers": ["jane@acme.com", "sam@acme.com"]
-```
-
-It changes by pull request like any other file, so git history records who could sign and when,
-and a signature is judged against the list as it stood in the commit that added it. Add and
-remove people at any time. There is no setting to configure on the git host, no owners file,
-and no minimum number of people: one QA person is a working list.
-
-`purlin:init --gate signed` asks for the emails. Without a list the gate cannot be met:
-`purlin:status` and the gate check both print
-`→ signer list missing: run purlin:init --gate signed`, and the check exits 1.
+Anyone with commit signing set up. Signing is logged, not policed: Purlin keeps a log you can
+check and trace, of where the tests ran and who signed that the rule, the proof, the test, the
+bar and the audit match, and it does not decide who may. The signature file names the signer and
+git names the commit's author. If your organisation limits who signs, that limit is yours to
+hold; nothing in `.purlin/config.json` names a person, and there is no setting on the git host
+and no owners file.
 
 ## The signed commit
 
@@ -120,7 +113,7 @@ git config commit.gpgsign true
 ```
 
 Then they upload the same public key to the git host as a signing key, so the host shows the
-commit as signed. `purlin:init --gate signed` prints this for each person on the list.
+commit as signed. `purlin:init --gate signed` prints these commands.
 
 `purlin:sign` writes one file per rule and makes one `git commit -S` whether it carries one
 rule or forty. Its subject is `sign(<feature>): RULE-N ...` for one feature and
@@ -128,24 +121,20 @@ rule or forty. Its subject is `sign(<feature>): RULE-N ...` for one feature and
 RULE-N`. It does not push. The signer runs `git push`, and `git push origin signed/<version>`
 for the tag.
 
-A signature counts when these hold. Each is read from git or from a file, never asserted:
+A signature counts under `signed` when two things hold. Each is read from git or from a file,
+never asserted:
 
-1. The commit that added the signature file is signed and the signature verifies.
-2. The author's email is on the signer list as of that commit.
-3. That author is not the author of the commit that last touched the test. Write the test or
-   sign it, not both.
-4. The hashes the file binds still match the current rule text, proof text, test body and bar.
-5. What the audit observed about the rule is still what it observed when the file was written:
-   the strength, the observation sentences and whether the audit settled. A re-audit that sees
-   something different stales the signature, because the person attested to what they were
-   shown.
-6. Under `signed`, the commit is an ancestor of **the protected branch**, the branch the
-   project works from, which Purlin reads from what `origin/HEAD` points at, falling back to
-   the branch the checkout is on and then to `main`. A signature living only on a side branch
-   nobody merged is not evidence about the code anyone runs.
+1. The commit that added the signature file is cryptographically signed and the signature
+   verifies.
+2. The hashes the file binds still match the current rule text, proof text, test body, bar and
+   what the audit found: the strength, the observation sentences and whether the audit
+   settled. A re-audit that sees something different stales the signature, because the person
+   attested to what they were shown.
 
-Below `signed` a signature from anyone counts, because what it clears there is a question the
-machine could not settle rather than an attestation the gate rests on.
+Nothing else is read. A signature counts whoever last committed to the test file, and on
+whatever commit carries it, on any branch. Below `signed` a committed signature counts, because
+what it clears there is a question the machine could not settle rather than an attestation the
+gate rests on.
 
 ## The tag
 
@@ -252,8 +241,7 @@ purlin:sign <feature> RULE-3 --hold "the lock expiry is never read"
 ```
 
 It writes `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json` and
-commits it, signed like any other `purlin:sign` commit. A hold only ever withholds, so the
-person who writes one need not be on the signer list. While the hold is current both the strong
+commits it, signed like any other `purlin:sign` commit. While the hold is current both the strong
 cell and the signed cell read `held`, whatever the bar and whatever the tests do, so no rule
 slips past level 2 on the measurements alone. Changing the test ends the hold, because the
 hashes it binds no longer match. A signature by a person for the current hashes outranks it.

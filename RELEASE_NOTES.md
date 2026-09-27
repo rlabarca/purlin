@@ -131,9 +131,10 @@ writes no bar tag at `passed`. `risk` and `ai_review_at` are gone, and `sign_at`
 `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, so two signatures
 never conflict. It binds the hashes of the rule text, the proof text and the test body, the
 rule's bar, and what the audit observed: the strength, the observation sentences and whether it
-settled. A re-audit that sees something different stales the signature. The people who may sign
-are `signers` in `.purlin/config.json`, changed by pull request, so git history records who could
-sign and when. A hold is a person's committed statement that the test does not prove the proof,
+settled. A re-audit that sees something different stales the signature. Signing is logged, not
+policed: under `signed` a signature counts when the commit that added it is signed and verifies
+and its bound hashes still match, whoever signed, whoever last committed to the test file and on
+whatever branch carries it. No setting names the people who may sign. A hold is a person's committed statement that the test does not prove the proof,
 with the missing case named; while it is current both the strong cell and the signed cell read
 `held`, whatever the tests do. A `--note` is the one line a signer writes for a rule reading
 `manual test` or `unsettled`.
@@ -191,7 +192,7 @@ output, in any casing:
 | `recorded`, the gate value | `strong` |
 | `approved`, the gate value | `signed` |
 | `approve`, `approval`, `approvals` | `sign`, `signature`, `signatures` |
-| `approver`, `approvers` | `signer`, `signers` |
+| `approver`, `approvers` | `signer`; no config key names who may sign |
 | `verified`, `verify` as a command name | the cell's own word; `purlin:audit` for the run |
 | `verdict`, the four verdicts | what the brief reports: the strength, the observations, settled |
 | `Reviewed`, the state | the strong cell's word |
@@ -211,6 +212,9 @@ output, in any casing:
 | `happy_path_only` and the other free-check names | the sentence the audit wrote about what it observed |
 | free scan, hint | the AI audit's observations |
 | `pre_push`, the pre-push hook | nothing: a push is free and no hook runs |
+| `signers`, the signer list, `signer list missing` | nothing: a signature names its signer, and `purlin:init --update` drops the key |
+| the protected branch | nothing: a signature counts on whatever commit carries it |
+| the self-signing check, `the signer last touched the test` | nothing: git names both authors |
 
 `audit` is un-retired and means one thing: the level 2 run. An audit proves a rule strong or
 weak. The grading scores the earlier `purlin:audit` produced stay retired.
@@ -224,10 +228,13 @@ committed evidence files, replaced by records; the committed proof files, which 
 state under `.purlin/runtime/` and are not committed at all; the committed dashboard data; the
 pre-push hook and every branch rule Purlin used to print; the pull request comment and the
 dashboard artifact; the design-tool importer, the visual hash and the live design-tool
-connection, replaced by exported files under `designs/` reviewed by pull request; and C and PHP
-support, so a project that used either keeps its proofs only by writing a custom proof plugin.
-Several flags went with them. The free checks went too: `scripts/review/static_checks.py`, its
-`--sweep`, `scripts/mcp/purlin/checks.py`, and the `rules_without_a_negative_case` key of
+connection, replaced by exported files under `designs/` reviewed by pull request; the signer
+list, the check that a signer did not last commit to the test, and the check that a signing
+commit is on the protected branch, so a signature counts on a signed commit whose hashes match
+and init's workflow prerequisites are a remote and a known host; and C and PHP support, so a
+project that used either keeps its proofs only by writing a custom proof plugin. Several flags
+went with them. The free checks went too: `scripts/review/static_checks.py`, its `--sweep`,
+`scripts/mcp/purlin/checks.py`, and the `rules_without_a_negative_case` key of
 `purlin:drift qa`, which reports what changed and what is waiting and judges nothing. A
 `@manual` proof stays: it has no test, its strong cell reads
 `manual test`, and its evidence is a signature carrying a one-line note.

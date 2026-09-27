@@ -245,7 +245,7 @@ first three, under `signed` all four.
 | strong | `not audited` | The rule's bar is `strong` and no audit has run over this code, so there is no brief for the current hashes. | `purlin:audit`, which writes the record and the brief. |
 | strong | `unsettled` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:sign` and answer the brief. A signature for the current hashes clears it. |
 | strong | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
-| signed | `unsigned` | No signature file for the current hashes, and the rule needs one: `sign_at` is `all`, or the rule's bar is `strong`. | `purlin:sign <feature> RULE-N` as a signed commit from someone on the signer list. |
+| signed | `unsigned` | No signature file for the current hashes, and the rule needs one: `sign_at` is `all`, or the rule's bar is `strong`. | `purlin:sign <feature> RULE-N`, which writes it in a signed commit. |
 | signed | `stale` | The rule text, the proof text, the test body, the bar or what the audit found changed after the signature. | Read what changed, then sign again or fix what broke. |
 | signed | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
 

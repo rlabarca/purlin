@@ -11,7 +11,8 @@ already.
 1. The setting saying what has to be true of every rule.
 2. A marker that says one commit met it, which anyone can check. That marker is the tag:
    `purlin:sign` writes the annotated tag `signed/<version>` when every rule meets the gate,
-   and no tag is written while one falls short.
+   and no tag is written while one falls short. What the tag means, formally, is below under
+   "What `signed/<version>` means".
 
 Setting the first without the second is a preference, not a gate. Where a project has a
 remote runner, the push of that tag starts a run that reruns the tagged tests on a clean
@@ -29,7 +30,7 @@ what must be true of every rule before a version is proven?
 |------|-------------|------------------|---------------------------|
 | `passed` | One person working alone | spec, passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from either source counts |
 | `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose bar is `strong` has a strong cell that is met: an audit wrote a record, the test strength at or above `min_strength`, nothing unsettled, no hold. A record from either source counts |
-| `signed` | The same team under GxP | + signed | Every rule that needs a signature has one, and the signer list is set |
+| `signed` | The same team under GxP | + signed | Every rule that needs a signature has a counting one |
 
 Each level derives defaults you can override:
 
@@ -139,40 +140,65 @@ the branch you are on. No skill opens a pull request.
 ## Branch rules
 
 None. An earlier release printed three rulesets, because the gate was a required check on a
-pull request; the gate is the tag now, and a tag is a marker rather than a barrier. Apply
-whatever your organisation asks of any repository.
+pull request; the gate is the tag now, and a tag is a marker rather than a barrier. A
+signature counts on whatever commit carries it, so no branch has to be guarded for the gate to
+mean what it says. Apply whatever your organisation asks of any repository.
 
-## The signer list
+## When a signature counts
 
-`signers` in `.purlin/config.json` holds the emails of the people who may sign. It changes by
-pull request like any other file, so git history records who could sign and when.
+**Signing is logged, not policed.** Purlin keeps a log you can prove and trace: where the
+tests ran, and who signed that the rule, the proof, the test, the bar and what the audit found
+belong together. It does not decide who may sign. No list names the people who may, and
+nothing compares the signer with whoever last committed to the test file; the signature file names the
+signer and git names both authors.
 
-A signature counts under `signed` when all five hold. Under `strong`, where what a signature
-clears is a question the machine could not settle, a committed signature from anyone counts.
+Under `signed` a signature counts when two things hold:
 
-- The commit that added the signature file is signed and the signature verifies.
-- The author's email is on `signers` as of that commit.
-- That author is not the author of the commit that last touched the test file.
-- The signature's bound hashes still match the current rule text, proof text, test body and
-  what the audit found.
-- Under `signed`, the commit is on the protected branch.
+- The commit that added the signature file is cryptographically signed and the signature
+  verifies.
+- The signature's bound hashes still match the current rule text, proof text, test body, bar
+  and what the audit found.
+
+A signature counts on whatever commit carries it, on any branch. Below `signed` a committed
+signature counts, as before: under `strong` what it clears is a question the machine could not
+settle.
 
 **Trust.** `purlin:init` asks `Do you trust your own machine for the tests and the signing?
 [y/n]` and writes `trust: local` or `trust: remote`. Under `local`, the default, your own run
 is the evidence and `purlin:sign` signs what you ran. Under `remote`, `purlin:sign` refuses a
 rule whose tests have no `ci` record for the commit being signed and says to run
-`purlin:test --remote` first. `purlin:init --update` asks again.
+`purlin:test --remote` first. Trust binds signing alone: it is read when a rule is signed, and
+by no cell and not by the tag. `purlin:init --update` asks again.
 
-`purlin:init --gate signed` asks for the emails and prints the one-time signing setup for each
-person. Under `signed` with no list, `sync_status` and `scripts/ci/gate_check.py --check` both
-print `→ signer list missing: run purlin:init --gate signed` and the check exits 1. This works
-with a single QA person, works the same on both git hosts, and needs nothing the git host has to
-be configured for.
+`purlin:init --gate signed` prints the one-time signing setup each signer runs. It works with a
+single QA person, works the same on both git hosts, and needs nothing the git host has to be
+configured for beyond the signer's public key.
 
 `sign_at` says which rules need one, and `purlin:init --gate signed` asks for it. `strong`,
 the default, asks for a signature on every rule whose bar is `strong`; `all` asks for one on
 every rule. A rule that needs none carries `required` false on its signed cell and meets the
 level whichever way that cell reads.
+
+## What `signed/<version>` means
+
+This is the one definition of the tag. Every other page points here.
+
+At the tagged commit, every rule meets the gate. A rule meets the gate when it has cleared its
+bar and, if it needs a signature, it has a counting one:
+
+- **Cleared its bar.** Its bar is `passed` and its passed cell is met, or its bar is `strong`
+  and its strong cell is met.
+- **Needs a signature.** At the gate `signed`, when `sign_at` is `all`, or when its bar is
+  `strong`.
+- **A counting one.** A signature in a signed commit that verifies, whose bound hashes still
+  match the rule, the proof, the test, the bar and what the audit found.
+
+A rule that needs no signature, bar `passed` under `sign_at: strong`, meets the gate on its
+tests and does not hold the tag back. `trust: remote` is not part of the definition: it is read
+when a rule is signed, and by no cell and not by the tag. `purlin:sign` writes the tag only
+when every rule meets the gate and never over a tag that is already there; a person pushes it.
+Where a project has a remote runner, the push starts a run that checks the same thing against
+the tagged code on a clean machine.
 
 ## CI writes no signature file
 
@@ -184,8 +210,8 @@ What CI cannot settle it says out loud. A `@manual` proof makes the strong cell 
 test`, and an AI audit that could not tell whether the test observes what the proof names
 makes it read `unsettled`. A rule whose bar is `strong` that no audit has reached reads `not
 audited`, and what moves that one is `purlin:audit`, not a person. A signature file for the
-current hashes clears the first two: from anyone under `strong`, from a counting signer under
-`signed`. The signer writes the one line with `--note`.
+current hashes clears the first two: a committed one under `strong`, one in a signed commit
+under `signed`. The signer writes the one line with `--note`.
 
 ## Holds
 

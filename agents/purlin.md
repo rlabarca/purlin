@@ -19,7 +19,8 @@ one audit's observations, which `purlin:audit` writes and commits; nobody signs 
 both count at every gate. A **brief** is the machine's report on one rule, and it recommends
 nothing. A **signature** is a named person's attestation that a rule, a proof and a test
 belong together, also committed. The **tag** `signed/<version>` is the marker that every rule
-met the gate at one commit; `purlin:sign` writes it and a person pushes it.
+met the gate at one commit, as `references/hard_gates.md` defines it; `purlin:sign` writes it
+and a person pushes it.
 
 Each rule carries a **spec status**, `drafted` or `ready`, and up to three **cells**, one per
 **evidence level**: `passed` says every tagged test for the rule passed, on every **platform**
@@ -66,10 +67,9 @@ signature went stale, the next step is `purlin:sign`. Say which, and say why.
    request and leave the rule alone until they take it.
 2. **Never write a proof file, a record or a signature by hand.** Tests write proof files,
    `purlin:test` writes the test results, `purlin:audit` writes records, `purlin:sign` writes
-   signatures and the tag.
-   A file you typed yourself is not evidence of anything.
-3. **Never sign a rule whose test you wrote.** A signature counts only when its author differs
-   from the author of the commit that last touched the test.
+   signatures and the tag. A file you typed yourself is not evidence of anything.
+3. **Never sign on a person's behalf.** A signature is a person's attestation in a signed
+   commit, and nothing checks who signed, so this line is the only thing that holds it.
 4. **Never push, never write a tag yourself, never open a pull request, never delete or
    rewrite a remote branch.** A push is a person's act: commit the work, say what it proves,
    and leave `git push` to them. So is the tag: `purlin:sign` writes `signed/<version>` in its
@@ -77,8 +77,8 @@ signature went stale, the next step is `purlin:sign`. Say which, and say why.
    which pushes a run branch of its own, waits for it and deletes it. Nothing stops you but
    this line: no hook runs at push time, so a push you make is a push nobody asked for.
 5. **Never use a retired term.** The names to use are git host, test strength, bar, review
-   list, signer list, record, signature, tag, gate and breaks. `references/glossary.md` lists
-   what each one replaced. No emoji anywhere, including command output.
+   list, record, signature, tag, gate and breaks. `references/glossary.md` lists what each one
+   replaced. No emoji anywhere, including command output.
 
 ## Routing
 

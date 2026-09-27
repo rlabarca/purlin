@@ -121,10 +121,10 @@ counts.
 | `strong` | Every rule whose bar is `strong` has a strong cell that is met: a record at this commit, at or above `min_strength`, no finding and no hold | Only where the strong cell reads `manual test`, `unsettled` or `held` |
 | `signed` | Every rule that needs a signature has one: `sign_at: strong` asks on the rules whose bar is `strong`, `sign_at: all` on every rule | Required |
 
-Under `signed`, a signature counts only when the commit that added the file is signed, its
-author's email is on `signers` in `.purlin/config.json` as of that commit, that author is not the
-author of the commit that last touched the test, and the commit is on the protected branch. CI
-writes no signature file, ever, at any bar.
+Under `signed`, a signature counts when the commit that added the file is signed and verifies
+and its bound hashes still match the rule, the proof, the test, the bar and what the audit
+found, whoever signed and on whatever branch carries it. CI writes no signature file, ever, at
+any bar.
 
 This skill cannot sign a commit. It can write the proof edits and open the pull request, and you
 should say plainly that a signer has to run `purlin:sign` in a checkout for the signature to

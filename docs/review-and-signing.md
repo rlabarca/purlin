@@ -185,7 +185,8 @@ Tagged signed/1.4.0 at a1b2c3d: every rule meets the gate signed.
 
 A person pushes it; the skill never pushes and never moves a tag that already exists. While any
 rule falls short it writes none and prints `No tag: 3 of 42 rules do not meet the gate signed.`,
-so the tag is the claim: every rule met the gate at this commit. It holds the whole tree, so the code, the records, the briefs and the
+so the tag is the claim: every rule met the gate at this commit, as
+[hard_gates.md](../references/hard_gates.md) defines it. It holds the whole tree, so the code, the records, the briefs and the
 signatures are pinned together under one name, which is what an inspection is handed.
 
 Where a project has a runner, pushing the tag starts one last run that reruns the tagged tests
@@ -197,8 +198,8 @@ red run there is the host's word that this version is not proven.
 
 ```
 purlin:sign <feature> RULE-N [RULE-M ...]        one rule, or several
-purlin:sign <feature>                            every signable rule of one feature
-purlin:sign --batch                              everything currently signable
+purlin:sign <feature>                            every rule of one feature on the lists
+purlin:sign --batch                              every rule on the lists
 purlin:sign <feature> RULE-N --hold "<case>"     the test does not prove the proof
 purlin:sign <feature> RULE-N --note "<text>"     a @manual proof, or a review that did not settle
 ```
@@ -214,15 +215,15 @@ saw for a `@manual` proof, or the judgment the model could not settle. It is all
 whose strong cell reads `manual test` or `unsettled`, and it lands in the signature file's
 `note` field.
 
-If your email is not in `signers` in `.purlin/config.json`, the skill stops and says
-`sign: <email> is not on the signer list. Add it by pull request, or ask someone on it.` With no
-list at all under the `signed` gate it says
-`sign: signer list missing: run purlin:init --gate signed`.
+Nobody is refused for who they are. The signature file names you and git names the commit's
+author; no list says who may sign.
 
-Under the `strong` gate nothing asks for a signature, so a bare signature says
-`sign: a signature is required only under the gate signed. Writing it anyway.` and writes it.
-The file still clears a `manual test`, `unsettled` or `held` cell, from anyone: at `strong`
-the signer list is not read. Under `signed` the signer rules apply in full. Under `passed` nothing is written at all:
+Under the `strong` gate a signature clears a `manual test`, `unsettled` or `held` cell, so
+`purlin:sign <feature>` and `purlin:sign --batch` sign every rule on the Review list, for that
+feature or for the project. A rule you name that is not on the Review list needs no signature
+there, so the skill says `sign: a signature is required only under the gate signed. Writing it
+anyway.` and writes it. Under `signed` both forms read the Review list and then the Sign list,
+the order the walk uses. Under `passed` nothing is written at all:
 the skill says the gate is `passed`, names what `purlin:init --gate strong` would add, and
 stops.
 
@@ -230,17 +231,16 @@ stops.
 
 A signature file binds three hashes - the rule text, the proof descriptions, and the test files
 behind them - plus the pinned design for an `origin: design` rule, the bar at the time, what
-the audit observed, your email, the brief you read and the record you rested on. These conditions decide whether it
-counts, and the signed cell names the one that failed:
+the audit observed, your email, the brief you read and the record you rested on. Under `signed`
+two conditions decide whether it counts, and the signed cell names the one that failed:
 
 | The signature counts when | What the cell reads when it does not |
 |---|---|
-| The commit that added the file is signed and the host verifies it | `the signing commit is not signed` |
-| The author's email is on `signers` as of that commit | `the signer is not on the list` |
-| That author did not author the last commit to the test file | `the signer last touched the test` |
-| The bound rule, proof, test and bar hashes still match | `hashes changed after the signature` |
-| What the audit observed is still what it observed then | `hashes changed after the signature` |
-| Under `signed`, the commit is on the protected branch | `the signing commit is not on <branch>` |
+| The commit that added the file is signed and the signature verifies | `the signing commit is not signed` |
+| The bound rule, proof, test, bar and audit hashes still match | `stale`, `hashes changed after the signature` |
+
+Nothing else is read: a signature counts whoever last committed to the test file, and on
+whatever commit carries it. Below `signed` a committed signature counts.
 
 ## What stales a signature
 
@@ -254,5 +254,5 @@ Changing the code alone stales nothing. The passed cell reads `code changed` unt
 clears it, and no person is asked to look.
 
 Read next: [team-workflow.md](team-workflow.md) for where the Review list comes from,
-[regulated-workflow.md](regulated-workflow.md) for the signer list and signing,
+[regulated-workflow.md](regulated-workflow.md) for signed commits and the tag,
 [specs-and-anchors.md](specs-and-anchors.md) for writing a proof that a test can prove.

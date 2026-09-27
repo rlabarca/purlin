@@ -56,7 +56,7 @@ evidence, and the value is the word a rule's last cell reads when it is met.
 |------|-------------|---------------------------|
 | `passed` | One person working alone | A passing tagged test for every proof, from a run of any source |
 | `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength`, nothing the audit observed outstanding and no hold |
-| `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit by someone on the signer list |
+| `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit |
 
 Answer `passed` for now. You can raise the gate later with `purlin:init --gate strong`, which
 adds what is missing and asks before each write.

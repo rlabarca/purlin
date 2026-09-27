@@ -31,7 +31,7 @@ before a signature is `trust: remote`.
 | `purlin:build [name]` | Load a spec's rules, write the code and the tagged tests, commit the changeset | An engineer, on every change. With no name it reads the board |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell | An engineer, constantly. Seconds; tests only. It commits the results and never pushes |
 | `purlin:audit [feature]` | Run the tests and the breaks, then write the record | An engineer locally, any time. It commits its record and never pushes |
-| `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit | Anyone on the signer list. With no argument it walks the list |
+| `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit | Anyone with commit signing set up; the signature names them. With no argument it walks the list |
 | `purlin:drift [role]` | Report what changed since the last record, by role | Everyone, at session start and before a release |
 
 ## Supporting
@@ -71,7 +71,7 @@ Purlin
   purlin:sign                     Walk the review list, then write the tag
   purlin:sign --release <name>    Name the tag something other than the version
   purlin:sign <feature> [RULE-N ...]  Sign, as a signed commit
-  purlin:sign --batch             Sign everything currently signable
+  purlin:sign --batch             Sign the Review list, and at signed the Sign list
   purlin:sign <feature> RULE-N --hold "<case>"  The test does not prove the proof
   purlin:sign <feature> RULE-N --note "<text>"  Evidence for a @manual proof
 
@@ -115,7 +115,7 @@ Purlin
 A command prints only what the gate asks for. Under `passed` there is no strength, no bar, no
 review list and no signature anywhere in the output, and `purlin:audit` runs no breaks. Under
 `strong` the strength, the strong cell, the bar and the Review list appear. Under `signed` the
-signed cell, the signer list, the Signable column and the Sign list appear, and `purlin:sign`
+signed cell, the Signable column and the Sign list appear, and `purlin:sign`
 writes the tag when every rule meets the gate. A record `purlin:audit` wrote counts at every
 gate.
 

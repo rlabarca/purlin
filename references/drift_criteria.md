@@ -122,7 +122,6 @@ strength and no signature, so `purlin:drift qa` says the gate is `passed` and na
 | `version` | `purlin:init` | The dashboard header | From the `VERSION` file |
 | `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/gate_check.py`, every skill that names a next step | `passed` |
 | `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` under `passed`, 70 under `strong`, 80 under `signed` |
-| `signers` | `purlin:init --gate signed`, then by pull request | `scripts/review/sign.py`, `sync_status`, `scripts/ci/gate_check.py` | Not set; required under `signed` |
 | `sign_at` | `purlin:init --gate signed`, which asks for it | `sync_status`, `scripts/ci/gate_check.py`, `scripts/review/sign.py` | Not written below `signed`; `strong` under `signed` |
 | `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
 | `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py` | Not set; test strength reads `n/a` without one |

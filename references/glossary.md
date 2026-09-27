@@ -13,7 +13,7 @@ in the shipped prose where a retired spelling may still be written.
   audit's question.
 - **evidence level**: one of three questions about a rule, each answered by its own cell.
   **passed**: every tagged test for the rule passed. **strong**: the tests are worth trusting.
-  **signed**: a person signed the rule, proof and test hashes.
+  **signed**: a person signed the rule, proof and test hashes, in a signed commit.
 - **cell**: the answer to one level for one rule. A cell reads one word, carries its reasons,
   and exists only at or below the project's gate. Above the gate a cell is absent, not empty.
 - **gate**: the one project setting, `passed`, `strong` or `signed`. A rule **meets the gate**
@@ -65,9 +65,11 @@ in the shipped prose where a retired spelling may still be written.
 - **signature**: a named person's attestation that a rule, its proof, its test and the audit
   that read them belong together, a committed file. It binds an **audit hash** beside the
   triple, taken over the brief's strength, its observations sorted and whether it settled, so a
-  re-audit that observes something different stales it. **signer list**: `signers` in
-  `.purlin/config.json`, changed by pull request, so who could sign and when is in git history.
-  **hold**: a person's committed statement that the test does not prove the proof, with the
+  re-audit that observes something different stales it. Signing is logged, not policed: the
+  file names the signer and git names the commit's author, and no list says who may sign.
+  **counting signature**: under `signed`, one whose commit is signed and verifies and whose
+  bound hashes still match the rule, proof, test, bar and audit; below `signed`, any committed
+  one. It counts on whatever commit carries it. **hold**: a person's committed statement that the test does not prove the proof, with the
   missing case; a hold binds no audit hash, and it wins in the strong cell whatever the tests
   are doing. **note**: the one line a signer writes for a rule reading `manual test` or
   `unsettled`.
@@ -110,14 +112,16 @@ in the shipped prose where a retired spelling may still be written.
   the tagged tests on a clean machine and ends with `gate_check.py --check --verify`, which
   checks every committed signature and hold against this code and every `ci/` file against the
   runner's own identity.
-- **protected branch**: the branch a change merges into, and the branch a signature's commit
-  has to reach before it counts under `signed`.
 - **push**: `git push`. It is free, to any branch, and nothing runs at push time: no hook is
   installed at all. No skill pushes and none opens a pull request; a command commits, prints
   `Run: git push` and stops. That an agent does not push is an instruction in
   `agents/purlin.md`, not a mechanism.
 - **tag**: the marker of proven code. `purlin:sign` writes the annotated tag `signed/<version>`
   when every rule meets the gate, naming the commit and the gate, and a person pushes it.
+  **`signed/<version>` means**: at the tagged commit every rule meets the gate, which is that
+  it has cleared its bar and, if it needs a signature, it has a counting one. A rule that needs
+  no signature meets the gate on its tests and does not hold the tag back, and `trust: remote`
+  is read when a rule is signed, not by the tag. `references/hard_gates.md` gives it at length.
 - **remote run**: `purlin:test --remote`, the one case in which Purlin pushes. **run branch**:
   `run/<branch>-<sha7>`, the branch a remote run creates, waits on, pulls the records back from
   and deletes. The branch you are working on is never pushed.
@@ -147,7 +151,7 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 | record, source, test strength | `references/formats/record_format.md` |
 | test results, the table | `references/formats/tests_format.md` |
 | signature, hold, note | `references/formats/signature_format.md` |
-| the gate, which records count, the signer list | `references/hard_gates.md` |
+| the gate, which records count, when a signature counts, what `signed/<version>` means | `references/hard_gates.md` |
 | drift, the four role views, config field ownership | `references/drift_criteria.md` |
 | what the audit looks for, the two lists, the brief's layers, what the brief reports | `references/review_criteria.md` |
 | every command's syntax and one-liner | `references/purlin_commands.md` |
@@ -175,7 +179,7 @@ The repository's own vocabulary check enforces that, reading this table for the 
 | approved, Approved, the `approved` gate | `signed`: the level-3 cell word and the third gate value |
 | approve | sign |
 | approval | signature |
-| approver, approvers | signer, signers. The config key is `signers` |
+| approver, approvers | signer. No config key names the people who may sign |
 | verified | the cell word: `passed`, `strong` or `signed` |
 | verdict, the four verdicts | what the brief reports: the strength, the findings, the `observations` and `settled` |
 | Reviewed | removed. A brief is written by the audit; no state stands for it |
@@ -203,6 +207,9 @@ The repository's own vocabulary check enforces that, reading this table for the 
 | `record/<name>` tags, `purlin:audit --tag` | the tag `purlin:sign` writes, `signed/<version>` |
 | the pull request run, the pull request comment, the `purlin-dashboard` artifact | CI runs on a run branch and on a `signed/*` tag and nowhere else, and writes no comment and no artifact |
 | the branch rulesets `purlin:init` printed | removed. The gate's marker is the tag, and a tag is a marker rather than a barrier |
+| `signers`, the signer list, `signer list missing` | removed. Signing is logged, not policed: a signature names its signer and git names the author. `purlin:init --update` drops the key |
+| the protected branch, `is_ancestor` | removed. A signature counts on whatever commit carries it, and init checks only a remote and its host |
+| the self-signing check, `the signer last touched the test` | removed. A signature counts whoever last committed to the test file; git names both authors |
 
 `audit` is not retired. It means one thing: the level-2 run, which proves a rule strong or weak.
 The grading scores the old `purlin:audit` printed stay retired, in the table below.
@@ -225,7 +232,7 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | Pages, the published dashboard site | the dashboard page each person opens from disk, and `scripts/report/scan.py --repo <url>` for anyone without a checkout |
 | forge | git host |
 | queue | review list |
-| CODEOWNERS, approver rule | the signer list in `.purlin/config.json` |
+| CODEOWNERS, approver rule | removed. No file names who may sign; a signature names its signer |
 | `verify --manual`, `verify --recheck` | removed. `@manual` proofs are evidenced by a signature file with a one-line note |
 | the source `developer`, a record a person commits | removed. A record's source is its folder, `ci` or `local`; `purlin:audit` writes into `local/` and a person's own test run is the test results `purlin:test` commits |
 | `purlin:audit --commit` | removed. `purlin:audit` always writes and commits its record; `purlin:test` commits the test results |

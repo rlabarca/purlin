@@ -22,7 +22,7 @@ proven?** There are three answers, one per evidence level. That answer is the **
 |------|-------------|---------------------------|------------|
 | `passed` | one person working alone | a passing tagged test for every proof, from any source | none |
 | `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose bar is `strong`: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding, no hold | none required; anyone may sign to clear a rule reading `manual test`, `unsettled` or `held` |
-| `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit by someone on the signer list | required: the signer list decides who |
+| `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit | required on the rules `sign_at` names; the signature names who signed |
 
 The answer sets four defaults, each changeable afterwards: `min_strength` unused, 70, 80; the
 default bar `passed`, `strong`, `strong`; `sign_at` unset, unset, `strong`; origin tags
@@ -30,7 +30,7 @@ optional, optional, required.
 
 `purlin:sign` is what says a version met the gate: it walks the two lists and writes the
 annotated tag `signed/<version>`, which a person pushes. The gate is the standard that tag
-stands for.
+stands for; `references/hard_gates.md` defines what it means.
 
 ## The three honest exceptions
 
@@ -38,7 +38,8 @@ Init asks nothing else. It reads the language and the test framework from the tr
 host from the remote URL. Three questions remain because no answer can be read from anywhere:
 
 1. An empty repository has nothing to detect, so init asks which language the project will be.
-2. `signed` needs names, so init asks for the signer emails.
+2. `signed` needs to know which rules need a signature, so init asks `Which rules need a
+   signature?` and writes `sign_at`.
 3. Whether this machine is trusted for the tests and the signing is a judgment, not a fact in
    the tree, so init asks it.
 
@@ -61,8 +62,8 @@ list back to the person before running it for real on a project that already has
 
 Raising the gate is additive. `--gate strong` on a project set up as `passed` creates
 `designs/` if it is missing and turns the breaks on; it asks before each write and touches
-nothing else. `--gate signed` on top of that asks for the signer emails, asks which rules need
-a signature, and lists the rules with no origin tag. Lowering the gate rewrites the setting and
+nothing else. `--gate signed` on top of that asks which rules need a signature and lists the
+rules with no origin tag. Lowering the gate rewrites the setting and
 deletes nothing: the workflow, the records and the signatures stay where they are.
 
 Raising the gate writes no workflow. A runner is added for its own two reasons, below, and not
@@ -115,7 +116,7 @@ implies:
 }
 ```
 
-`signers` and `sign_at` join it under `signed` and nowhere else; init asks for both there. Read and change the file with the `purlin_config`
+`sign_at` joins it under `signed` and nowhere else; init asks for it there. Read and change the file with the `purlin_config`
 tool rather than by hand, so a key the installed Purlin no longer reads is reported instead of
 silently kept.
 
@@ -158,11 +159,11 @@ With neither, no workflow is written at any gate and init says `No remote runner
 runs on this operating system and you trust this machine, so nothing has to run remotely.`
 Teammates see your results without one, from the test results `purlin:test` commits.
 
-Before any workflow is written init checks the prerequisites: a remote exists, its URL names
-GitHub or Azure DevOps, and the branch the project works on is on that remote. The first that
-fails is printed in one line naming what to do, and no workflow is written. The host CLI, `gh`
-or `az`, is reported present or absent either way, and a remote nobody here can reach is
-reported unchecked rather than failed. The same checks run under `--update`.
+Before any workflow is written init checks two prerequisites: a remote exists, and its URL
+names GitHub or Azure DevOps. The first that fails is printed in one line naming what to do,
+and no workflow is written. No branch is checked, because a signature counts on whatever
+commit carries it. The host CLI, `gh` or `az`, is reported present or absent either way. The
+same checks run under `--update`.
 
 ## What each gate brings
 
@@ -173,13 +174,11 @@ or `@env(macos)` proofs, it gets a matrix: a Linux job always, plus one job per 
 system named, each running the same tests and writing its own record. With no such proof there
 is one Linux job.
 
-Under `signed`, init asks for the signer emails, writes them to `signers`, prints the
-commit-signing setup, and lists every rule with no origin tag so `purlin:spec <name>` can tag
-them in one pass. It then asks `Which rules need a signature?` and writes the answer to
-`sign_at`: `strong`, the rules whose bar is strong, the rest meeting the gate on their tests;
-or `all`, every rule whatever its bar. Without a signer list the gate cannot be met: the gate
-check prints `→ signer list missing: run purlin:init --gate signed` and exits 1, and
-`purlin:sign` says the same and writes nothing.
+Under `signed`, init asks `Which rules need a signature?` and writes the answer to `sign_at`:
+`strong`, the rules whose bar is strong, the rest meeting the gate on their tests; or `all`,
+every rule whatever its bar. It prints the commit-signing setup and lists every rule with no
+origin tag so `purlin:spec <name>` can tag them in one pass. It asks for no names: signing is
+logged, not policed, and a signature names its signer.
 
 Anchor pins and the upstream-check job are added on demand. When one is missing later the tool
 that needs it says so: `purlin:drift` reports a pin behind, and `purlin:audit` says the breaks
@@ -193,9 +192,9 @@ writes, not a branch setting on the git host.
 
 ## Commit signing under `signed`
 
-A signature counts when the commit that added it is signed, its author email is on the signer
-list as of that commit, and that author did not author the commit that last touched the test.
-Print these three commands once per signer:
+A signature counts when the commit that added it is signed and verifies and its bound hashes
+still match, whoever signed and on whatever branch. Print these three commands once per
+signer:
 
 ```bash
 git config gpg.format ssh
@@ -205,10 +204,6 @@ git config commit.gpgsign true
 
 Then tell them to upload the same public key to the git host as a signing key, so the host
 shows the commit as signed. No git-host reviewer setting and no owners file is needed.
-
-The signer list lives in `.purlin/config.json` and changes by pull request like any other file,
-so git history records who could sign and when. A signature is judged against the list as it
-stood in the commit that added it.
 
 ## What the runner runs
 

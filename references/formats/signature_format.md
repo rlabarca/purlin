@@ -143,7 +143,7 @@ Under `signed` a signature counts when two things hold:
 | The commit that added the file is signed and verifies | `git log -1 --format=%G?` prints `G` | `the signing commit is not signed` |
 | Its hashes are current | the rule, proof, test, design, bar and audit hashes, as above | `hashes changed after the signature` (the cell reads `stale`) |
 
-Nothing else is read. Signing is recorded, not policed: the file names the
+Nothing else is read. Signing is logged, not policed: the file names the
 signer and git names the commit's author, and neither is compared with a list
 or with the author of the test. A signature counts on whatever commit carries
 it, on any branch.

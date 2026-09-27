@@ -39,7 +39,14 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             "`developer`", "'developer'", '"developer"',
             "--commit", "purlin:audit --remote",
             # the bar retired these three in one move
-            "manual audit", "not required", "ai_review_at")
+            "manual audit", "not required", "ai_review_at",
+            # signing is logged, not policed: no list says who may sign,
+            # no branch has to carry the signature, and nothing compares the
+            # signer with the test's author. The plain word `signers` stays
+            # legal; only the config key's spellings are retired.
+            "signer list", "Signer list", "`signers`", "'signers'", '"signers"',
+            "protected branch", "Protected branch", "is_ancestor",
+            "self-signing", "Self-signing")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
@@ -84,6 +91,7 @@ MARKED = {
     "references/formats/spec_format.md": "<!-- retired -->",
     "dev/test_mcp_server.py": "# retired",
     "dev/test_init_update.py": "# retired",
+    "dev/test_signatures.py": "# retired",
     "dev/test_schema_spec_format.py": "# retired",
     "dev/test_schema_proof_format.py": "# retired",
 }

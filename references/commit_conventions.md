@@ -85,10 +85,9 @@ sign(batch): <feature> RULE-N, <feature> RULE-M ...
 hold(<feature>): RULE-N ...
 ```
 
-Signed, always. `purlin:sign` makes the commit with your git identity, and the gate counts the
-signature only when the commit signature verifies, the author's email is on `signers` as of that
-commit, that author is not the author of the commit that last touched the test, and, under the
-`signed` gate, the commit is on the protected branch. One commit may carry a batch; the rule ids
+Signed, always. `purlin:sign` makes the commit with your git identity, and under the `signed`
+gate the signature counts when the commit signature verifies and its bound hashes still match,
+on whatever branch carries it. One commit may carry a batch; the rule ids
 are all listed in the subject, in order. A hold is committed the same way and carries the
 missing case in the file, not in the subject.
 
@@ -100,7 +99,7 @@ signed/<name>            with --release <name>
 ```
 
 Annotated, never lightweight, and written by `purlin:sign` when the walk closes with every rule
-meeting the gate. The version is the `VERSION` file at the project root, or the config's
+meeting the gate; what that means is defined once, in `references/hard_gates.md`. The version is the `VERSION` file at the project root, or the config's
 `version` where there is no such file. The message names the commit and the gate:
 
 ```

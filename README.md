@@ -19,7 +19,7 @@ A rule answers up to three questions, each one an **evidence level**, each answe
 trusting; **signed**, a person signed the rule, proof and test hashes. Three commands carry the
 three levels: `purlin:test`, `purlin:audit` and `purlin:sign`. When every rule meets the gate,
 `purlin:sign` writes the annotated tag `signed/<version>`, and pushing it is how a person says
-this version is proven.
+this version is proven. [The gate](references/hard_gates.md) defines what the tag means.
 
 Purlin cannot prove your code is correct. It gives you a paper trail: every claim, how it is
 observed, what ran, on which commit, and who said so.
@@ -33,7 +33,7 @@ One setting, the **gate**, says what must be true of every rule before a version
 |------|-------------|---------------------------|-------------------------------|
 | `passed` | One person working alone | A tagged test for every proof, passing | the test results `purlin:test` commits; a pass from any source counts |
 | `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength`, nothing outstanding the audit observed, and no hold | `purlin:audit`, run by anyone; its record counts |
-| `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit by someone on the signer list | the same, plus a person's signature and the tag |
+| `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit | the same, plus a person's signature and the tag |
 
 The whole loop runs on one machine: `purlin:spec`, `purlin:build`, `purlin:test`,
 `purlin:audit`, `purlin:sign`, `git push`. A project at `signed` with no CI anywhere is the

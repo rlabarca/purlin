@@ -52,7 +52,7 @@ signature.
 
 **Who signs is logged, not policed.** The signature names the signer and
 git names the commit's author; no list says who may sign, and nothing
-compares the signer with whoever last touched the test.
+compares the signer with whoever last committed to the test file.
 
 `references/formats/signature_format.md` holds the file shape field by field.
 The three hashes come from the payload, which is the one place they are

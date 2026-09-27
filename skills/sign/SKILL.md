@@ -7,7 +7,8 @@ Attest that a rule, its proof and its test belong together. The attestation is a
 commit that adds it is signed, so who signed what and when is in git history. With no argument
 this skill walks the review list, which is the Review list and then the Sign list, one brief at
 a time; with a feature or a rule it goes straight there. When every rule meets the gate the walk
-ends by writing the tag `signed/<version>`, which is the marker that this version is proven.
+ends by writing the tag `signed/<version>`, the marker that this version is proven, as
+`references/hard_gates.md` defines it.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -20,8 +21,8 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ```
 purlin:sign                                    Walk the review list, one brief at a time
 purlin:sign --release <name>                   The same walk, tagging <name> instead of the VERSION file's value
-purlin:sign <feature> [RULE-N ...]             One rule, several rules, or a whole feature
-purlin:sign --batch                            Everything currently signable
+purlin:sign <feature> [RULE-N ...]             One rule, several rules, or a feature's lists
+purlin:sign --batch                            Every rule on the lists, in one signed commit
 purlin:sign <feature> RULE-N --hold "<case>"   Hold a rule: the test does not prove the proof
 purlin:sign <feature> RULE-N --note "<text>"   Sign a @manual proof, or settle what the audit could not
 ```
@@ -34,8 +35,8 @@ login rule 3". A narrowing argument never adds a rule the full walk would skip.
 | Gate | What this skill does |
 |------|----------------------|
 | `passed` | Prints that the gate asks for no signature, names what `purlin:init --gate strong` adds — the test strength, the AI audit and the review list — and stops without writing anything |
-| `strong` | The walk, `--note` and `--hold` work. A bare signature says a signature is required only under the gate `signed`, then writes it anyway |
-| `signed` | Every form works, and every rule that needs a signature has to carry one before it meets the gate: `sign_at: strong` asks on the rules whose bar is `strong`, `sign_at: all` on every rule |
+| `strong` | The walk, `--note` and `--hold` work. A bare feature and `--batch` sign every rule on the Review list; a named rule that is not on it is told a signature is required only under `signed`, then written anyway |
+| `signed` | Every form works; a bare feature and `--batch` read the Review list, then the Sign list. Every rule that needs a signature has to carry one before it meets the gate: `sign_at: strong` asks on the rules whose bar is `strong`, `sign_at: all` on every rule |
 
 ## Step 1: the list, and the brief behind each rule
 
@@ -100,7 +101,7 @@ never code.
 
 **Hold.** The test does not prove the proof as written, and no new proof line would fix it.
 Name the missing case in words and commit it, so the rule cannot reach `strong` or `signed`
-while the hold stands. A holder need not be on the signer list:
+while the hold stands. It is committed signed, like a signature:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py" <feature> RULE-N --hold "<the missing case>"
@@ -121,19 +122,14 @@ end of the name. The commit subjects come from `references/commit_conventions.md
 `sign(<feature>): RULE-N ...`, `sign(batch): <feature> RULE-N, ...` and
 `hold(<feature>): RULE-N ...`.
 
-| The signature counts when | What fails it |
-|---------------------------|---------------|
-| The commit that added the file is signed and the host verifies it | `the signing commit is not signed` |
-| The author's email is on `signers` in `.purlin/config.json` as of that commit | `the signer is not on the list` |
-| That author did not author the last commit to the test file | `the signer last touched the test` |
-| The bound rule, proof and test hashes and the rule's bar still match | `hashes changed after the signature` |
-| What the audit observed about the rule is still what it observed when you signed | `hashes changed after the signature` |
-| Under `signed`, the commit is on the protected branch | `the signing commit is not on <branch>` |
+| Under `signed` the signature counts when | What fails it |
+|------------------------------------------|---------------|
+| The commit that added the file is signed and the signature verifies | `the signing commit is not signed` |
+| Its bound hashes still match the rule, the proof, the test, the bar and what the audit found | `hashes changed after the signature` |
 
-The script checks the list itself and stops before writing. Under `signed` with no list it
-prints `sign: signer list missing: run purlin:init --gate signed`; with an email that is not
-on it, `sign: <email> is not on the signer list. Add it by pull request, or ask someone on
-it.` Read both back as they came. `references/hard_gates.md` defines the three gates once; do
+Nothing else is read. Signing is logged, not policed: the signature counts whoever wrote it,
+whoever last committed to the test file, and on whatever branch carries it. Below `signed` a
+committed signature counts. `references/hard_gates.md` defines the gates and the tag once; do
 not restate them elsewhere.
 
 ## Step 5: the tag, and trust
@@ -180,6 +176,5 @@ Commits: a1b2c3d
 | Rules still on either list | `→ Run: purlin:sign` |
 | Nothing left, and the tag was written | `→ Run: git push origin signed/<version>` |
 | Nothing left, and a rule still does not meet the gate | `→ Run: purlin:status` |
-| A rule you may not sign | `→ Ask someone on the signer list.` |
 | A rule with no `ci` run under `trust: remote` | `→ Run: purlin:test --remote` |
 | The commit was not signed | `→ Set up signing: purlin:init --gate signed prints the three commands.` |

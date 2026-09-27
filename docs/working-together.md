@@ -73,7 +73,8 @@ or the build, and they stay on the board. A rule whose passed cell reads `code c
 on either list: only the code moved, the signature stands, and the next run clears the cell.
 
 When the two lists are empty and every rule meets the gate, `purlin:sign` writes the tag
-`signed/<version>` and you push it. That tag is the whole claim: this version is proven.
+`signed/<version>` and you push it. That tag is the whole claim: this version is proven, as
+[hard_gates.md](../references/hard_gates.md) defines it.
 
 Adding a case is plain language. Say "it should also reject an expired token" and the proof
 line is written into the spec with the next free proof id; the test arrives on the next
@@ -112,9 +113,8 @@ drift eng: 14 files since the last record (a1b2c3d)
   export                     code changed: the code moved, the signatures stand
 ```
 
-You may also be the person who signs. Under the `strong` gate that is fine. Under `signed` the
-signer list decides, and a signature never counts when its author is the author of the commit
-that last touched the test.
+You may also be the person who signs, at either gate. Signing is logged, not policed: the
+signature names you, git names whoever wrote the test, and Purlin decides neither.
 
 ## The owner rule
 

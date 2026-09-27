@@ -36,7 +36,7 @@ Create no other folder.
 Read through the connector. Do not clone.
 
 - The target spec, when it exists.
-- `.purlin/config.json`, for the `gate` value and for whether a signer list is set.
+- `.purlin/config.json`, for the `gate` value and for `sign_at`.
 - The other specs in the same folder, so a new rule does not repeat one that exists.
 
 Rule ids continue the sequence in the file and are never reused, not even a vacant number. A

@@ -50,9 +50,8 @@ which turn on with this raise. `min_strength` becomes 70. Below it `purlin:audit
 tests alone, nothing measures a strength, and no record is written at all. From here up the
 audit writes one record per feature and the briefs beside them, and commits them.
 
-**To `signed`.** On top of that: the signer emails, which init asks for with `Who may sign a
-rule?` and writes to `signers` in `.purlin/config.json`; the commit-signing setup printed once
-per signer; the question `Which rules need a signature?`, whose answers are `strong`, the
+**To `signed`.** On top of that: the commit-signing setup printed once, for each person who
+signs; the question `Which rules need a signature?`, whose answers are `strong`, the
 rules whose bar is strong and the rest meeting the gate on their tests, and `all`, every rule
 whatever its bar; and a list of every rule that still carries no origin tag, which
 `purlin:spec <feature>` tags in one pass. From here `purlin:sign` closes its walk by writing
@@ -107,7 +106,7 @@ the team in the same message:
 
 At `signed`, add one more: `purlin:sign` closes by writing the tag `signed/<version>` when
 every rule meets the gate, and a person pushes it. No tag while any rule falls short, so the
-tag is the claim.
+tag is the claim; [hard_gates.md](../references/hard_gates.md) defines it.
 
 [team-workflow.md](team-workflow.md) and [regulated-workflow.md](regulated-workflow.md)
 describe the two higher gates in full.
@@ -149,7 +148,7 @@ mapped them is dropped and before the workflow matrix is rendered from them:
 | `design-sources` | points design sources at `designs/<feature>/` |
 | `untracked-files` | drops the proof files that used to be committed and untracks the dashboard data |
 | `hooks` | removes the git hooks an older Purlin installed, and says why |
-| `signer-key` | drops the key an older release named its signers under from `.purlin/config.json`, and says so in one line; nothing reads it, because a signature is recorded and no list says who may sign |
+| `signer-key` | drops the key an older release used to name who may sign from `.purlin/config.json`, and says so in one line; nothing reads it, because a signature names its signer and no list says who may sign |
 | `config` | writes `.purlin/config.json` at the current shape and sets the gate |
 | `workflows` | replaces the retired workflows, and re-renders a `purlin.yml` written before the triggers changed |
 | `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |
@@ -190,7 +189,7 @@ Which rules need a signature?
 ```
 
 The `config` migration also drops the settings that named the old gate values and the old list
-of people who could sign, and writes `signers` in their place when you answer `signed`.
+of people who could sign, and writes nothing in their place: no key names who may sign.
 
 ## What it asks, and what it keeps
 
@@ -207,8 +206,8 @@ spec; it never removes a claim.
 The one thing it does not carry forward is the old evidence a person wrote. The files v0.9.5
 left beside the specs bound hashes this release computes differently, and the words they were
 written in are gone, so the update drops them rather than converting them into something nobody
-attested to. After the update, `purlin:sign` walks the Review and Sign lists and the people on the signer
-list sign again. The old files stay in git history, which is where an inspection reads them.
+attested to. After the update, `purlin:sign` walks the Review and Sign lists and the people who sign sign
+again. The old files stay in git history, which is where an inspection reads them.
 
 Exit codes: 0 when nothing is pending or the run applied what was, 1 for `--check` with
 something pending, 2 when the directory is not a Purlin project.

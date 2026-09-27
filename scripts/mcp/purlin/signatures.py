@@ -271,7 +271,7 @@ def counts(project_root, signature, gate='signed'):
     was committed. Below `signed` a committed signature counts. Under
     `signed` the commit that added it must be signed and verify, and that is
     all: the signature counts on whatever commit carries it, whoever wrote
-    it and whoever last touched the test.
+    it and whoever last committed to the test file.
     """
     if not signature:
         return False, 'no signature'

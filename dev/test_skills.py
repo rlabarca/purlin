@@ -251,7 +251,8 @@ def init_question_problems():
         problems.append('%s names %d further questions, expected 3'
                         % (rel, len(items)))
     flattened = flat(body)
-    for needle in ('empty repository', 'signer emails', 'trusted'):
+    for needle in ('empty repository', 'Which rules need a signature?',
+                   'trusted'):
         if needle not in flattened:
             problems.append('%s exceptions do not name %r' % (rel, needle))
     return problems
@@ -612,10 +613,14 @@ class TestSkillSign:
         assert skill_ceiling_problems('sign') == []
 
     @pytest.mark.proof("skill_sign", "PROOF-5", "RULE-5")
-    def test_the_author_of_the_test_cannot_sign_it(self):
+    def test_a_signature_counts_on_a_signed_commit_and_its_hashes(self):
         assert carries(skill_path('sign'), [
-            'That author did not author the last commit to the test file',
-            'the commit is on the protected branch']) == []
+            'The commit that added the file is signed and the signature '
+            'verifies',
+            'Its bound hashes still match the rule, the proof, the test, the '
+            'bar and what the audit found',
+            'whoever wrote it, whoever last committed to the test file, and on '
+            'whatever branch carries it']) == []
 
     @pytest.mark.proof("skill_sign", "PROOF-6", "RULE-6")
     def test_the_walk_takes_one_of_four_answers(self):
@@ -829,7 +834,7 @@ def never_problems():
         problems.append('%s carries %d NEVERs, expected 5' % (AGENT, len(items)))
     flattened = flat(body)
     for needle in ('origin', 'proof file', 'record', 'signature',
-                   'sign a rule whose test you wrote', 'Never push',
+                   "sign on a person's behalf", 'Never push',
                    'pull request', 'remote branch', 'purlin:test --remote',
                    'retired term'):
         if needle not in flattened:

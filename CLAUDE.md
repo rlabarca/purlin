@@ -65,7 +65,7 @@ concept and consolidate any duplicate in the same commit.
 |-----------|---------------------------|
 | `references/glossary.md` | The word this project uses for each concept, the chain, and every retired spelling |
 | `references/purlin_commands.md` | Every command's syntax, its one purpose sentence, and what it writes |
-| `references/hard_gates.md` | The gate, the three levels, which records count, the branch rules, the signer list |
+| `references/hard_gates.md` | The gate, the three levels, which records count, when a signature counts, what `signed/<version>` means |
 | `references/review_criteria.md` | What the audit looks for, the two lists, the brief's layers, what the brief reports |
 | `references/spec_quality_guide.md` | Writing a rule, assigning a tier, reading the cell that blocks it |
 | `references/drift_criteria.md` | File classification, config field ownership, drift by role |

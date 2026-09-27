@@ -64,7 +64,8 @@ request. A command commits, prints `Run: git push` and stops.
 
 **The tag is the marker that a version is proven.** When the walk leaves every rule meeting the
 gate, `purlin:sign` writes the annotated tag `signed/<version>` over the commit, and a person
-pushes it. No tag is written while any rule falls short. A tag holds the whole tree at that
+pushes it. No tag is written while any rule falls short; what the tag means is defined once, in
+[hard_gates.md](../references/hard_gates.md). A tag holds the whole tree at that
 commit, so the code, every record, every brief and every signature are pinned together by one
 name.
 
@@ -101,7 +102,7 @@ new.
 | test results | `purlin:test`, and a remote runner | `.purlin/tests/<feature>.json`, or `.purlin/tests/ci/<feature>.json`, and `.purlin/tests.md` | you, into `.purlin/tests/`; a runner, into `ci/`. Both count at every gate |
 | record | `purlin:audit`, and a remote runner | `.purlin/records/local/<feature>/`, or `.purlin/records/ci/<feature>/` | anyone, into `local/`; a runner, into `ci/`, through the git host's API |
 | brief | `purlin:audit`, and a remote runner | `.purlin/briefs/local/<feature>/`, or `.purlin/briefs/ci/<feature>/` | the same two hands, into the same two folders |
-| signature | `purlin:sign <feature> RULE-N` | `specs/<category>/<feature>.signatures/` | a person, in a signed commit; under `signed`, one on the signer list |
+| signature | `purlin:sign <feature> RULE-N` | `specs/<category>/<feature>.signatures/` | a person, in a signed commit; the file names who signed |
 | hold | `purlin:sign <feature> RULE-N --hold "<case>"` | the same directory, `.hold.json` | any person, in a signed commit |
 
 Nothing on the git host guards those paths, and nothing has to. What makes a file under `ci/`

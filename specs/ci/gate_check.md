@@ -21,7 +21,7 @@
 - RULE-5: A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons [bar: strong] [origin: eng]
 - RULE-6: Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists [bar: strong] [origin: eng]
 - RULE-7: A section names at most 20 rules and counts the rest, pointing at `--json` for every one [bar: passed] [origin: eng]
-- RULE-8: Under `signed` the gate grades every rule whether or not the config names anyone, because no list says who may sign; the key an older release named its signers under is not read [bar: strong] [origin: eng]
+- RULE-8: Under `signed` the gate grades every rule whether or not the config names anyone, because no list says who may sign; the key an older release used to name who may sign is not read [bar: strong] [origin: eng]
 - RULE-9: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes [bar: strong] [origin: eng]
 - RULE-10: `gate_check.py` needs `--check` and a directory that exists; either missing exits 2 [bar: passed] [origin: eng]
 - RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, every section under its own key, the result and the exit code [bar: strong] [origin: eng]
@@ -48,7 +48,7 @@
 - PROOF-12 (RULE-5): Sign only the `[bar: strong]` rule and run the gate at gate `signed` with `sign_at` at `strong`; verify it exits 0 and never names `login RULE-1`, whose bar is `passed` @integration
 - PROOF-13 (RULE-5): Run the gate at gate `signed` with no signature written; verify it exits 1, opens `Not signed (1):` and reads `login RULE-2: unsigned` @integration
 - PROOF-14 (RULE-5): Write a signature and commit it without a signature on the commit, then run the gate at gate `signed`; verify it exits 1 and reads `the signing commit is not signed` @integration
-- PROOF-15 (RULE-5): Sign the `[bar: strong]` rule as `dev@example.com`, the author of the commit that last touched the test, in a signed commit, and run the gate at gate `signed`; verify it exits 0 and never reads `last touched` @integration
+- PROOF-15 (RULE-5): Sign the `[bar: strong]` rule as `dev@example.com`, the author of the last commit to the test file, in a signed commit, and run the gate at gate `signed`; verify it exits 0 and never reads `last touched` @integration
 - PROOF-16 (RULE-5): Sign every rule at gate `signed` with `sign_at` `all`, then change `200` to `signed 200` in the `[bar: passed]` rule and run the gate; verify it exits 1, reads `login RULE-1: stale` and gives the reason `hashes changed after the signature` @integration
 - PROOF-17 (RULE-5): Point `origin/HEAD` at `main`, sign the `[bar: strong]` rule in a signed commit on a branch called `side`, and run the gate at gate `signed` there; verify it exits 0 and never reads `not on main` @integration
 - PROOF-18 (RULE-8): Run the gate at gate `signed` over a project whose config names nobody and whose `[bar: strong]` rule is unsigned; verify it exits 1, opens `To sign (1):` naming `login RULE-2: unsigned`, and never prints `purlin:init --gate signed`. Sign that rule in a signed commit and run it again; verify it exits 0 @integration
@@ -61,7 +61,7 @@
 - PROOF-25 (RULE-11): Run the gate with `--json` over a project at gate `passed` with no record; verify the JSON reads gate `passed`, result `fail`, exit 1, 2 rules, 0 met, 2 entries under `not_passed`, empty `weak`, `waiting` and `not_signed`, and the commit the payload named @integration
 - PROOF-26 (RULE-11): Run the gate with `--json` over a passing project; verify the result is `pass`, that met equals 2 of 2 rules and `not_passed` is empty @integration
 - PROOF-27 (RULE-11): Run the gate with `--json` at gate `strong` with a minimum of 70 over a record measuring 40; verify `weak` holds 2 entries, `not_passed` is empty and the minimum reads 70 @integration
-- PROOF-28 (RULE-8): Run the gate with `--json` at gate `signed` over a project whose config names nobody; verify it exits 1, that `to_sign` holds exactly 1 row, and that the JSON carries no key about a list of signers @integration
+- PROOF-28 (RULE-8): Run the gate with `--json` at gate `signed` over a project whose config names nobody; verify it exits 1, that `to_sign` holds exactly 1 row, and that the JSON carries no key naming who may sign @integration
 - PROOF-29 (RULE-12): Snapshot every file of a project, run the gate at `passed`, `strong` and `signed`, and snapshot again; verify the two snapshots are equal and `git status --porcelain` prints nothing @integration
 - PROOF-30 (RULE-1): Read the gate's own source; verify it builds the payload, reads `meets_gate`, and that none of the box-drawing glyphs a rendered table uses appears in it
 - PROOF-31 (RULE-1): Build the payload, hand it to the gate and run it; verify it exits 0 and prints `PASS` @integration
