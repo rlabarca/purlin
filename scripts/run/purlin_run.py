@@ -1,7 +1,7 @@
 """Run a project's tagged tests, write the results, and audit them on request.
 
     purlin_run.py (--feature NAME ... | --all)
-                  (--quick [--remote] | --audit [--tag NAME] | --ci)
+                  (--quick [--remote] | --audit | --ci)
                   [--tier unit|all] [--arm-timeout SECONDS]
                   [--project-root DIR]
 
@@ -19,8 +19,8 @@ under `.purlin/records/local/` with the briefs under
 `.purlin/briefs/local/`, commits them under the person's own identity as
 `purlin: record for <sha7>`, and never pushes. It ends with `gate strong:
 <n> of <rules>` or `gate not met: <n> of <rules>` and exits 1 when the gate
-is not met. `--tag <name>` writes the annotated tag `record/<name>` over the
-records in the tree.
+is not met. Nothing here pins a record: the tag `purlin:sign` writes,
+`signed/<version>`, holds the whole tree at one commit.
 
 `--ci` is the arm the CI job runs: the tagged tests, and then, on a run
 branch, what the gate asks for. At `strong` and above that is the briefs and
@@ -90,7 +90,7 @@ LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
 USAGE = (
     'Usage: purlin_run.py (--feature NAME ... | --all) '
-    '(--quick [--remote] | --audit [--tag NAME] | --ci) '
+    '(--quick [--remote] | --audit | --ci) '
     '[--tier unit|all] [--arm-timeout SECONDS] [--project-root DIR]')
 
 # The one line `purlin:test --remote` gets. A remote runner runs the tests,
@@ -142,7 +142,6 @@ class Args(object):
         self.all = False
         self.action = None          # 'quick', 'audit' or 'ci'
         self.remote = False
-        self.tag = None
         self.tier = 'all'
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
@@ -167,12 +166,6 @@ def parse_args(argv):
             actions.append(token[2:])
         elif token == '--remote':
             args.remote = True
-        elif token == '--tag':
-            index += 1
-            if index >= len(argv):
-                args.error = '--tag needs a name'
-                return args
-            args.tag = argv[index]
         elif token == '--tier':
             index += 1
             if index >= len(argv) or argv[index] not in TIERS:
@@ -217,9 +210,6 @@ def parse_args(argv):
         return args
     if args.remote and args.action != 'quick':
         args.error = REMOTE_IS_A_TEST
-        return args
-    if args.tag and args.action != 'audit':
-        args.error = '--tag belongs to --audit'
         return args
     return args
 
@@ -989,8 +979,6 @@ def _audit(project_root, args, features, selected, index, plugins, log,
         log_digest, cfg, 'local')
     print('')
     _audit_report(project_root, selected, breaks, 'local')
-    if args.tag:
-        _tag(project_root, args.tag, selected)
     if paths:
         from records import commit_local_records
         print(commit_local_records(project_root, head))
@@ -1117,28 +1105,6 @@ def _own_rules(payload, feature):
 def _rule_number(rule_id):
     digits = str(rule_id).rsplit('-', 1)[-1]
     return int(digits) if digits.isdigit() else 0
-
-
-def _tag(project_root, name, selected):
-    """`record/<name>` over the records already in the tree, if there are any.
-
-    An audit writes no record, so a tag names what CI already committed: the
-    latest record of each feature the run covered. With none there is nothing
-    to vouch for and the tag is not written.
-    """
-    from records import load_records, tag_record
-
-    all_records = load_records(project_root)
-    paths = []
-    for feature in selected:
-        for record in (all_records.get(feature) or {}).values():
-            if record.get('path'):
-                paths.append(record['path'])
-    if not paths:
-        print('No record is in the tree yet, so no tag was written.')
-        return
-    tag_record(project_root, name, sorted(paths))
-    print('Record tag written: record/%s' % name)
 
 
 def _ci(project_root, args, features, selected, index, plugins, log,

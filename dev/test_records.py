@@ -8,9 +8,8 @@ What each group proves:
 
 *naming*      the file name carries the timestamp, the commit, the runner and
               the operating system, and the file's own fields agree with it
-*retention*   three records per feature per operating system survive, another
-              operating system's records are untouched, and a record an
-              annotated `record/<name>` tag names is kept for ever
+*retention*   three records per feature per operating system survive and
+              another operating system's records are untouched
 *ci*          one tree request carrying every file's text, then commit, then
               ref update, with no author and no committer field, retried
               when the branch moved and paused when the git host asks

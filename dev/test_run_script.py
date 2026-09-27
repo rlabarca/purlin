@@ -188,7 +188,7 @@ class TestTheCommandLine:
         ('--all', '--quick', '--audit'),      # two actions
         ('--all', '--feature', 'x', '--quick'),
         ('--all', '--audit', '--remote'),     # --remote belongs to --quick
-        ('--all', '--quick', '--tag', '1.0'),  # --tag belongs to --audit
+        ('--all', '--audit', '--tag', '1.0'),  # nothing pins a record now
         ('--all', '--quick', '--tier', 'wide'),
         ('--all', '--quick', '--nonsense'),
         ('--all', '--quick', '--feature'),    # a flag with no value
@@ -538,7 +538,7 @@ def _fake_briefs(monkeypatch, order, briefs):
 @pytest.fixture
 def record_run(monkeypatch, tmp_path):
     """Run `--ci` with the record modules faked, and report the calls."""
-    calls = {'write': [], 'commit': [], 'tag': [], 'breaks': [],
+    calls = {'write': [], 'commit': [], 'breaks': [],
              'local_commit': [], 'commits_here': True}
 
     def write_record(project_root, record, runner, os_name=None,
@@ -553,9 +553,6 @@ def record_run(monkeypatch, tmp_path):
     def commit_local_records(project_root, commit):
         calls['local_commit'].append(commit)
         return 'Record committed.'
-
-    def tag_record(project_root, name, record_paths):
-        calls['tag'].append((name, record_paths))
 
     def select_engine(config, frameworks):
         return 'mutmut'
@@ -575,7 +572,7 @@ def record_run(monkeypatch, tmp_path):
     # for themselves.
     monkeypatch.setitem(sys.modules, 'records', _FakeModule(
         write_record=write_record, commit_records=commit_records,
-        tag_record=tag_record, load_records=lambda project_root: {},
+        load_records=lambda project_root: {},
         commit_local_records=commit_local_records,
         commits_here=lambda project_root: calls['commits_here'],
         no_commit_line=lambda project_root: (
@@ -776,32 +773,6 @@ class TestRecordCommitsAndTags:
         output = capsys.readouterr().out
         assert len(calls['commit']) == 1
         assert 'Tag run:' not in output
-
-    @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
-    def test_tag_names_the_records_already_in_the_tree(
-            self, tmp_path, record_run, monkeypatch, capsys):
-        """An audit writes no record, so a tag names what CI already wrote."""
-        root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat')
-        records = sys.modules['records']
-        monkeypatch.setattr(records, 'load_records', lambda project_root: {
-            'feat': {None: {'path': '.purlin/records/feat/r.json'}}})
-        _code, calls = record_run(root, '--all', '--audit', '--tag', '1.0')
-        output = capsys.readouterr().out
-        name, paths = calls['tag'][0]
-        assert name == '1.0'
-        assert paths == ['.purlin/records/feat/r.json']
-        assert 'Record tag written: record/1.0' in output
-
-    @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
-    def test_a_tag_with_no_record_in_the_tree_writes_nothing(
-            self, tmp_path, record_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--audit', '--tag', '1.0')
-        output = capsys.readouterr().out
-        assert calls['tag'] == []
-        assert 'No record is in the tree yet' in output
 
     @pytest.mark.proof("run_script", "PROOF-61", "RULE-42")
     def test_ci_hands_the_briefs_to_the_commit(
@@ -1016,7 +987,6 @@ class TestRecordWithoutTheEngines:
             write_record=write_record,
             commit_records=lambda *a, **k: 'ci',
             commit_local_records=lambda *a, **k: 'Record committed.',
-            tag_record=lambda *a, **k: None,
             load_records=lambda project_root: {},
             commits_here=lambda project_root: True,
             no_commit_line=lambda project_root: ''))
