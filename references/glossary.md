@@ -141,7 +141,7 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 
 | Term | Where the authority lives |
 |------|---------------------------|
-| spec, rule, proof, tier | `references/formats/spec_format.md` |
+| spec, rule, proof | `references/formats/spec_format.md` |
 | proof marker, proof file | `references/formats/proofs_format.md` |
 | anchor spec, pinned anchor | `references/formats/anchor_format.md` |
 | record, source, test strength | `references/formats/record_format.md` |

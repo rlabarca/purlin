@@ -49,7 +49,7 @@ RUN_FILE_GLOB = '*.recei[p]t.json'                         # retired
 DASHBOARD_DATA = '.purlin/report-data.js'                  # retired
 CACHE_DIR = '.purlin/cache'                                # retired
 OLD_SHELL_PLUGIN = 'purlin-proof.sh'                       # retired
-TIER_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')     # retired
+WINDOWS_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')  # retired
 KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'  # retired
                          r'(?=(?:[ \t]+@env\([a-z]+\))?[ \t]*$)')
 WORKFLOW_MARKER = '.proofs-'                               # retired
@@ -377,14 +377,14 @@ def _apply_config(root, files, args, out):
 
 def _detect_os_tags(root):
     return [rel for rel in _files_under(root, 'specs', ('*.md',))
-            if TIER_TAG_RE.search(_read(os.path.join(root, rel)))]
+            if WINDOWS_TAG_RE.search(_read(os.path.join(root, rel)))]
 
 def _apply_os_tags(root, files, args, out):
     """A proof names an operating system now, or names none and runs anywhere."""
     for rel in files:
         path = os.path.join(root, rel)
         out.kept(_back_up_copy(path, rel))
-        _write(path, TIER_TAG_RE.sub(' @env(windows)', _read(path)))
+        _write(path, WINDOWS_TAG_RE.sub(' @env(windows)', _read(path)))
         out.done(rel)
     out.say('rewrote the operating-system tags in %d spec%s'
             % (len(files), _s(files)))

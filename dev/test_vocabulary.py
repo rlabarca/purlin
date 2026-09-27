@@ -106,6 +106,8 @@ MARKED = {
     "scripts/mcp/purlin/specs.py": "# retired",
     "references/formats/spec_format.md": "<!-- retired -->",
     "dev/test_mcp_server.py": "# retired",
+    # the 0.9.5 upgrade drops the kind of test, so its test writes one
+    "dev/test_init_update.py": "# retired",
     "dev/test_schema_spec_format.py": "# retired",
     "dev/test_schema_proof_format.py": "# retired",
     "dev/test_run_script.py": "# retired",
