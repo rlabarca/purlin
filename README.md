@@ -17,21 +17,27 @@ and its test belong together.
 A rule answers up to three questions, each one an **evidence level**, each answered by a
 **cell**: **passed**, every tagged test for the rule passed; **strong**, the tests are worth
 trusting; **signed**, a person signed the rule, proof and test hashes. Three commands carry the
-three levels: `purlin:test`, `purlin:audit` and `purlin:sign`.
+three levels: `purlin:test`, `purlin:audit` and `purlin:sign`. When every rule meets the gate,
+`purlin:sign` writes the annotated tag `signed/<version>`, and pushing it is how a person says
+this version is proven.
 
 Purlin cannot prove your code is correct. It gives you a paper trail: every claim, how it is
 observed, what ran, on which commit, and who said so.
 
 ## Three ways to work
 
-One setting, the **gate**, says what CI must see before a change can merge. `purlin:init` asks
-that one question and nothing else.
+One setting, the **gate**, says what must be true of every rule before a version is proven.
+`purlin:init` asks that question, and one more about this machine.
 
-| Gate | Who it fits | What CI requires before merge | Where the counting record comes from |
-|------|-------------|-------------------------------|--------------------------------------|
-| `passed` | One person working alone | Every rule's passed cell is met: a tagged test for every proof, passing | the test results `purlin:test` commits; a pass from any source counts |
-| `strong` | A team of PM, designers, engineers and QA | Every rule's strong cell is met: a passing record at this commit, the test strength at or above `min_strength`, no finding and no hold | your own `purlin:audit`, or CI: both count here |
-| `signed` | The same team under GxP | Every rule has cleared its bar, and every rule that needs a signature has a current one, in a signed commit by someone on the signer list | CI alone, on the protected branch or on the run branch `purlin:test --remote` creates, plus a person's signature |
+| Gate | Who it fits | What every rule must have | Where the evidence comes from |
+|------|-------------|---------------------------|-------------------------------|
+| `passed` | One person working alone | A tagged test for every proof, passing | the test results `purlin:test` commits; a pass from any source counts |
+| `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength`, nothing outstanding the audit observed, and no hold | `purlin:audit`, run by anyone; its record counts |
+| `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit by someone on the signer list | the same, plus a person's signature and the tag |
+
+The whole loop runs on one machine: `purlin:spec`, `purlin:build`, `purlin:test`,
+`purlin:audit`, `purlin:sign`, `git push`. A project at `signed` with no CI anywhere is the
+ordinary case, not a special one.
 
 Every rule also has a **bar**, `passed` or `strong`: the evidence that rule must have before it
 can be signed, written as `[bar: passed]` or `[bar: strong]` on the rule line. A rule with no
@@ -67,9 +73,9 @@ To work on Purlin itself, or to try a checkout before installing it, load it fro
 claude --plugin-dir /path/to/purlin
 ```
 
-A consumer project carries no copy of Purlin, so CI clones Purlin at a pinned tag and runs the
-same run script from that checkout. Set the `PURLIN_REF` repository variable to move that pin
-without editing the workflow.
+A consumer project carries no copy of Purlin, so where a project has a remote runner the
+workflow clones Purlin at a pinned tag and runs the same run script from that checkout. Set the
+`PURLIN_REF` repository variable to move that pin without editing the workflow.
 
 ## Your first session
 
@@ -77,9 +83,11 @@ without editing the workflow.
 purlin:init
 ```
 
-Answer the one question with `passed`. Init detects the language and the test framework from the
-tree, reads the git host from the remote URL, writes `.purlin/` and `specs/`, installs the proof
-plugin, and prints every file it wrote.
+Answer the gate question with `passed`, and `y` to
+`Do you trust your own machine for the tests and the signing?`. Init detects the language and
+the test framework from the tree, reads the git host from the remote URL, writes `.purlin/` and
+`specs/`, installs the proof plugin, and prints every file it wrote. It writes no git hook and
+prints no branch rule.
 
 ```
 purlin:spec "Users sign in with email and password. After five failed attempts the
@@ -109,10 +117,10 @@ purlin:audit
 ```
 
 The audit runs the tests, then breaks the code on purpose to measure how much the tests catch,
-and prints the strength beside the minimum with every finding and observation. From the
-`strong` gate up it writes one record per feature and the briefs beside them and commits them
-itself as `purlin: record for <sha7>`. The push is yours: nothing in Purlin pushes except
-`purlin:test --remote`, which pushes a run branch of its own.
+and prints the strength beside the minimum with everything it observed. From the `strong` gate
+up it writes one record per feature and the briefs beside them and commits them itself as
+`purlin: record for <sha7>`. The push is yours, it is free, and nothing runs when you make one:
+nothing in Purlin pushes except `purlin:test --remote`, which pushes a run branch of its own.
 
 Every command ends by naming the next step, computed from the cells it found.
 
@@ -139,6 +147,6 @@ left for me to look at" reaches `purlin:sign`. The syntax above is canonical, ne
 ## Documentation
 
 [docs/how-purlin-works.md](docs/how-purlin-works.md) is the whole model in one page: the chain
-in one diagram, who writes each file, and where CI runs. Then
+in one diagram, who writes each file, and the two reasons a project has a remote runner. Then
 [docs/index.md](docs/index.md) maps every guide by who it is for, and
 [docs/getting-started.md](docs/getting-started.md) walks the first session in full.

@@ -4,8 +4,13 @@ For QA, or an engineer acting as QA, at the `strong` or `signed` gate.
 
 Reviewing is not reading every rule. It is reading the rules whose next step is a person, the
 ones with the higher bar first, with the evidence already gathered. `purlin:sign` computes two
-lists and walks them: Review, then Sign. This page says what puts a rule on each, what the
-brief shows you, and what makes a signature count.
+lists and walks them: the Review list, then the Sign list. When it leaves every rule meeting
+the gate it writes the tag `signed/<version>`, and a person pushes it. This page says what puts
+a rule on each list, what the brief shows you, what makes a signature count, and what the tag
+stands for.
+
+`list` is the word for what `purlin:sign` walks. The dashboard shows the same two as its Review
+tab and its Sign tab, and `tab` belongs to the page.
 
 ## The bar
 
@@ -29,20 +34,15 @@ still waiting for a signature is **signable**. That is the whole of what `signab
 purlin:sign
 ```
 
-No arguments and no prior reading. The skill asks for the two lists, prints each one's count
-and its first five rows, then starts the walk with Review.
+No arguments and no prior reading. The skill asks for the two lists, prints one line holding
+both counts, then starts the walk with Review.
 
 ```
-Review: 7 rules need a person, across 3 features
-Sign:   5 rules to sign
-
-  login       RULE-7   strong   unsettled: the AI audit could not settle
-  login       RULE-9   strong   held: the lock expiry is never read
-  billing     RULE-2   passed   manual test: the proof is @manual
+Review: 7 rules. Sign: 5 rules.
 ```
 
-A rule is on Review when its strong cell reads one of three words, each of them work only a
-person can do:
+A rule is on the Review list when its strong cell reads one of three words, each of them work
+only a person can do:
 
 | The word | What happened | What you do |
 |---|---|---|
@@ -83,62 +83,55 @@ whose bar is `strong`, and `all` asks for one on every rule. `purlin:init` sets 
 ## The brief
 
 At each stop the walk shows a brief. The brief is the machine's report on one rule, and it
-reports four things:
+reports three things:
 
 1. the test strength beside `min_strength`;
-2. the free-check findings on the proof text;
-3. the free-check findings on the test body;
-4. what the model review observed, and whether it could settle the question.
+2. what the audit observed, each observation in one sentence naming the proofs it concerns;
+3. whether the audit could settle the question.
 
 **The brief recommends nothing.** It does not say the rule is ready, and it does not say what to
-do. It says what was measured and what was seen, each in one sentence naming the proofs it
-concerns, and you decide. That is the whole division of labour: the machine observes, the
-person attests.
+do. It says what was measured and what was seen, and you decide. That is the whole division of
+labour: the machine observes, the person attests.
 
 The brief is written under `.purlin/briefs/<source>/<feature>/<RULE-N>.<hash8>.brief.json` and
-committed beside the records. That file is evidence: your signature names it, so what you were shown
-is recoverable afterwards. Reading the brief again for the same hashes leaves the file as it was
+committed beside the records. That file is evidence: your signature names it and binds what it
+said, so what you were shown is recoverable afterwards and a later audit that saw something
+else stales the signature. Reading the brief again for the same hashes leaves the file as it was
 unless what it found changed. The `.brief.txt` beside it is a local view, and `.gitignore` keeps
 it out of every commit.
 
 | Layer | What it reads | Runs at |
 |-------|---------------|---------|
-| The free checks on the proof text | the proof description and its tier tag alone | every bar |
-| The free checks on the test body | the marked test body, no execution | every bar |
 | Test strength | `test_strength` from the newest counting record, against `min_strength` | every bar |
-| The model review | the criteria plus this rule's evidence | bar `strong` |
+| The AI audit | the review criteria, this rule's evidence, and the hints below | bar `strong` |
 
-The first two layers are free in both senses: nothing runs and nothing is charged. They read a
-spec written before any code exists, which is why a proof can be wrong before a test is ever
-written.
+**The hints.** Two scans run before the AI audit and hand it what they saw as plain sentences:
+one over the proof description and its tier tag, one over the marked test body. Neither is a
+check with a name you will meet, and neither decides anything on its own. A scan sees that no
+proof of a rule names a rejection, an error or a boundary; that a description names no literal,
+number or quoted string; that a test body asserts nothing, or asserts a literal against itself;
+that an `@e2e` proof reads as a function call. The audit is told, and the audit decides what to
+make of it. Where the audit settled and still observed something, the strong cell reads `weak`
+with that sentence as its reason, so the scan reaches you through the audit's judgment rather
+than beside it.
 
-**Findings on the proof text.** `no_expected_value` when the description names no literal,
-number, quoted string or named constant. `vague_verb` when it says "works" or "correctly" with
-no value beside it. `missing_trigger` when nothing runs before the assertion. `tier_mismatch`
-when an `@e2e` proof is described as a function call. Those four keep the spec status at
-`drafted`. `implementation_coupling` names a private symbol, a selector or a source path
-instead of an observable; `happy_path_only` means no proof of this rule names a rejection, an
-error or a boundary. Those two are advisory, except that `happy_path_only` blocks a rule whose
-bar is `strong`.
-
-**Findings on the test body.** `no_assertion`, `tautology`, `assert_true_literal`,
-`bare_except`, `logic_mirroring` and `mock_of_target`. A finding here is structural: no model
-judgment overrides it and no edit to the spec clears it. Only editing the test does.
+The scans read a spec written before any code exists, which is why a proof can be wrong before
+a test is ever written.
 
 **Test strength** is the share of the deliberate breaks made to the code that the tests caught,
 as an integer percent, or `n/a` when no engine ran. It says one thing: the tests noticed when
 the behaviour changed. It does not say the tests prove the right rule. A rule can reach 90
 percent on a proof that observes the wrong thing, and a correct proof of a small rule can sit
-at 0 percent because nothing broke. Read it beside the findings, never instead of them.
+at 0 percent because nothing broke. Read it beside what the audit observed, never instead of it.
 
-**The model review** runs on every rule whose bar is `strong` and on no other. It is built from
-the review criteria verbatim plus this rule's evidence, so it observes by the same sentences
-you read. It is asked to state what the test observes against what the proof names, and to say
-when it cannot tell. When it cannot tell, the strong cell reads `unsettled`, and the rule waits
-for you rather than for another run. Until the audit has run at all, the cell reads
+**The AI audit** runs on every rule whose bar is `strong` and on no other. It is built from the
+review criteria verbatim, this rule's evidence and the hints, so it observes by the same
+sentences you read. It is asked to state what the test observes against what the proof names,
+and to say when it cannot tell. When it cannot tell, the strong cell reads `unsettled`, and the
+rule waits for you rather than for another run. Until the audit has run at all, the cell reads
 `not audited`, and the rule waits for `purlin:audit`. Where no model could be reached at all
-the brief says so and settles nothing: the other layers answer, and the cell does not read
-`unsettled` for a question nobody asked.
+the brief says so and settles nothing: the strength answers on its own, and the cell does not
+read `unsettled` for a question nobody asked.
 
 For a rule tagged `origin: design`, the brief shows the pinned mock from `designs/<feature>/`
 beside the screenshot the test captured under `.purlin/runtime/attachments/`. Judge what a
@@ -178,9 +171,28 @@ Commits: 4f1a9c2, 9b3e07d
 → Run: purlin:sign
 ```
 
-The first `→` line appears when a case was added, the second when a rule is still on the list.
-With nothing left, the line names the next step for the gate: the pull request under `signed`,
-`purlin:status` under `strong`.
+The first `→` line appears when a case was added, the second when a rule is still on a list.
+
+With nothing left and every rule meeting the gate, the walk writes the tag and the last line is
+`→ Run: git push origin signed/<version>`. With nothing left and a rule still short, no tag is
+written and the line is `→ Run: purlin:status`.
+
+## The tag
+
+A signature locks one rule. The tag locks the version.
+
+When the walk leaves every rule meeting the gate, `purlin:sign` writes an annotated tag over
+the current commit, named `signed/<version>` from the `VERSION` file at the project root.
+`purlin:sign --release <name>` names it something else. The message carries the commit and the
+gate. A person pushes it; the skill never pushes and never moves a tag that already exists.
+
+No tag is written while any rule falls short, so the tag is the claim: every rule met the gate
+at this commit. It holds the whole tree, so the code, the records, the briefs and the
+signatures are pinned together under one name, which is what an inspection is handed.
+
+Where a project has a runner, pushing the tag starts one last run that reruns the tagged tests
+on a clean machine and checks every committed record, brief and signature against the tagged
+code. A red run there is the host's word that this version is not proven.
 
 ## Signing outside the walk
 
@@ -218,8 +230,8 @@ stops.
 ## What makes a signature count
 
 A signature file binds three hashes - the rule text, the proof descriptions, and the test files
-behind them - plus the pinned design for an `origin: design` rule, the bar at the time, your
-email, the brief you read and the record you rested on. These conditions decide whether it
+behind them - plus the pinned design for an `origin: design` rule, the bar at the time, what
+the audit observed, your email, the brief you read and the record you rested on. These conditions decide whether it
 counts, and the signed cell names the one that failed:
 
 | The signature counts when | What the cell reads when it does not |
@@ -228,20 +240,20 @@ counts, and the signed cell names the one that failed:
 | The author's email is on `signers` as of that commit | `the signer is not on the list` |
 | That author did not author the last commit to the test file | `the signer last touched the test` |
 | The bound rule, proof, test and bar hashes still match | `hashes changed after the signature` |
+| What the audit observed is still what it observed then | `hashes changed after the signature` |
 | Under `signed`, the commit is on the protected branch | `the signing commit is not on <branch>` |
-
-The last of them is why a signature living only on a side branch does not let a change merge.
 
 ## What stales a signature
 
 Changing the rule text, any of its proof descriptions, the body of a test behind it, the pinned
-design for a design rule, or the rule's bar. Each of those changes what the signature was given
-about, so the signed cell reads `stale`, the rule returns to the Sign list, and a person looks
-again.
+design for a design rule, or the rule's bar. So does a re-audit that observes something
+different: a new strength, a new observation sentence, or a question it could settle before and
+cannot now. Each of those changes what the signature was given about, so the signed cell reads
+`stale`, the rule returns to the Sign list, and a person looks again.
 
-Changing the code alone stales nothing. The passed cell reads `code changed` until CI runs again
-and clears it, and no person is asked to look.
+Changing the code alone stales nothing. The passed cell reads `code changed` until the next run
+clears it, and no person is asked to look.
 
-Read next: [team-workflow.md](team-workflow.md) for where the `Review` list comes from,
+Read next: [team-workflow.md](team-workflow.md) for where the Review list comes from,
 [regulated-workflow.md](regulated-workflow.md) for the signer list and signing,
 [specs-and-anchors.md](specs-and-anchors.md) for writing a proof that a test can prove.

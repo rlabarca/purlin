@@ -81,8 +81,7 @@ A test that captures a screenshot writes it to:
 ```
 
 That directory is runtime, so it is not committed. `purlin:audit` hashes each capture into
-the record, and CI keeps the images as a build artifact. The record is what carries the claim;
-the image is what a person looks at.
+the record, which is what carries the claim; the image beside it is what a person looks at.
 
 The review brief puts the pinned mock beside the screenshot the test captured, so signing a
 design rule means reading the two images side by side and deciding whether the software shows

@@ -20,10 +20,11 @@ comment proposing the change instead.
 **Without one**: write the criteria wherever you already write them, hand them to an engineer,
 and their agent runs `purlin:spec`. You review that pull request like any other.
 
-**What you see.** After CI runs, the pull request carries a comment with the state of every
-rule and a link to the `purlin-dashboard-<os>` build artifact, one per job in the matrix. Tag each rule with the id of the
-criterion it came from, `[criterion: US-12]`, and `purlin:drift pm` tells you which criteria
-still have no rule:
+**What you see.** The state of every rule, from a repository URL and nothing else:
+`scripts/report/scan.py --repo <url>` prints the same **rollup** the board draws, for any
+branch or tag: how many rules meet the gate out of how many there are, plus one count per
+bucket. Tag each rule with the id of the criterion it came from, `[criterion: US-12]`, and
+`purlin:drift pm` tells you which criteria still have no rule:
 
 ```
 drift pm: 3 things to look at
@@ -56,8 +57,7 @@ captured. The whole flow is in [design-in-specs.md](design-in-specs.md).
   case in plain language, hold or skip.
 - **An assistant with the repository connected.** It reads the same rollup, opens pull
   requests carrying proof edits, and batches signatures into one commit.
-- **No AI at all.** Open the `purlin-dashboard-<os>` artifact from the pull request and review the
-  diff by hand.
+- **No AI at all.** Run `scan.py` on the repository URL and review the diff by hand.
 
 Anyone with the repository URL can print the same rollup without cloning it whole:
 
@@ -65,12 +65,15 @@ Anyone with the repository URL can print the same rollup without cloning it whol
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <branch|tag>]
 ```
 
-**What you work.** The Review and Sign tabs, never the whole rule list. A rule reaches them only when the
-cell that blocks it is one a person answers: a strong cell reading `manual test`,
+**What you work.** The Review and Sign lists, never the whole rule list. A rule reaches them
+only when the cell that blocks it is one a person answers: a strong cell reading `manual test`,
 `unsettled` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A rule with no
 test, a failing rule, a weak rule and a rule reading `not audited` are all work for the machine
-or the build, and they stay on the board. A rule whose passed cell reads `code changed` is not on
-the list either: only the code moved, the signature stands, and CI clears it on the next run.
+or the build, and they stay on the board. A rule whose passed cell reads `code changed` is not
+on either list: only the code moved, the signature stands, and the next run clears the cell.
+
+When the two lists are empty and every rule meets the gate, `purlin:sign` writes the tag
+`signed/<version>` and you push it. That tag is the whole claim: this version is proven.
 
 Adding a case is plain language. Say "it should also reject an expired token" and the proof
 line is written into the spec with the next free proof id; the test arrives on the next
@@ -90,11 +93,11 @@ purlin:anchor sync <name>   when a pin is behind
 purlin:spec <name>          when a rule is missing or wrong
 purlin:build <name>         code and tagged tests
 purlin:test                 seconds, tests only, and it commits the results
-purlin:audit                tests, breaks, and what they found
+purlin:audit                tests, breaks, and what it observed
 ```
 
-Then push. Rules you add are tagged `[origin: eng]`, and the PM sees them as derived rather
-than as requirements nobody asked for.
+Then push, which is free and starts nothing. Rules you add are tagged `[origin: eng]`, and the
+PM sees them as derived rather than as requirements nobody asked for.
 
 **What you see.**
 
@@ -138,7 +141,7 @@ A rule that came from a pinned anchor belongs to the anchor repository, whoever 
 | `eng` | Files touched and the rules behind them, rules with no test, origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` |
 
 Run it at four moments: at the start of a session, after an anchor pin or a design export
-moved, before QA opens the Review tab, and before a release. Those are the four times the
+moved, before QA walks the Review list, and before a release. Those are the four times the
 tree has moved ahead of the specs without anyone being told.
 
 With no role named, `purlin:drift` infers one from the files the session touched and says

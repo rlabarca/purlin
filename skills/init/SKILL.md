@@ -180,10 +180,9 @@ or `all`, every rule whatever its bar. Without a signer list the gate cannot be 
 check prints `→ signer list missing: run purlin:init --gate signed` and exits 1, and
 `purlin:sign` says the same and writes nothing.
 
-Anchor pins, the upstream-check job and the dashboard artifact are added on demand. When one
-is missing later the tool that needs it says so: `purlin:drift` reports a pin behind,
-`purlin:status` says the gate cannot be met without a workflow, and `purlin:audit` says the
-breaks engine is unavailable.
+Anchor pins and the upstream-check job are added on demand. When one is missing later the tool
+that needs it says so: `purlin:drift` reports a pin behind, and `purlin:audit` says the breaks
+engine is unavailable.
 
 ## Branch rules
 

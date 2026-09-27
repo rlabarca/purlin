@@ -47,31 +47,32 @@ Your project never carries a copy of Purlin. Neither does a CI runner, which is 
 purlin:init
 ```
 
-Init asks one question: **what must be true before CI lets a change merge?** The answer is the
-**gate**, and it is the only setting. Each value names one more level of evidence, and the value
-is the word a rule's last cell reads when it is met.
+Init asks one question: **what must be true of every rule before a version is proven?** The
+answer is the **gate**, and it is the only setting. Each value names one more level of
+evidence, and the value is the word a rule's last cell reads when it is met.
 
-| Gate | Who it fits | What CI requires before merge |
-|------|-------------|-------------------------------|
-| `passed` | One person working alone | Every rule has a passing tagged test, from a run of any source |
-| `strong` | A team of PM, designers, engineers and QA | Every rule has a record at this commit, from your own audit or from CI, with the test strength at or above `min_strength`, no free-check finding and no hold |
-| `signed` | The same team under GxP | Every rule has cleared its bar, and every rule that needs a signature has a current one, in a signed commit by someone on the signer list |
+| Gate | Who it fits | What every rule must have |
+|------|-------------|---------------------------|
+| `passed` | One person working alone | A passing tagged test for every proof, from a run of any source |
+| `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength`, nothing the audit observed outstanding and no hold |
+| `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit by someone on the signer list |
 
 Answer `passed` for now. You can raise the gate later with `purlin:init --gate strong`, which
 adds what is missing and asks before each write.
 
-Init asks nothing else. It reads the language and the test framework from the tree and the git
-host from the remote URL. Two questions remain only because no answer can be read from anywhere:
-an empty repository is asked which language it will be, and `signed` is asked for the signer
-emails.
+Init asks two more things, because no answer to either can be read from anywhere: an empty
+repository is asked which language it will be, and everyone is asked
+`Do you trust your own machine for the tests and the signing?`. Answer `y` and the whole loop
+runs here, with no CI anywhere. Everything else it reads from the tree and from your `origin`
+remote.
 
-It writes `.purlin/config.json` with the gate and the derived defaults, `specs/` for the specs,
-and `.purlin/records/` with a README naming what writes the files in it. It installs the
-proof plugin for the detected framework and the breaks engine for the language, adds a
-`.gitignore` block for `.purlin/runtime/`, copies the dashboard page so it opens from disk, and
-offers a pre-push hook. At `passed` with a remote it explains a remote runner in three reasons
-and asks whether to add one. It ends by printing every file it wrote or edited, one per line.
-`purlin:init --dry-run` prints that list and writes nothing.
+It writes `.purlin/config.json` with the gate, the trust answer and the derived defaults,
+`specs/` for the specs, and `.purlin/records/` with a README naming what writes the files in
+it. It installs the proof plugin for the detected framework and the breaks engine for the
+language, adds a `.gitignore` block for `.purlin/runtime/`, and copies the dashboard page so it
+opens from disk. It writes no git hook and prints no branch rule. It ends by printing every
+file it wrote or edited, one per line. `purlin:init --dry-run` prints that list and writes
+nothing.
 
 ## Write the first spec
 
@@ -93,9 +94,9 @@ That sentence carries three claims, so it becomes three rules, each with one pro
 
 ## Rules
 
-- RULE-1: Return 200 and a session cookie for a correct email and password [bar: strong]
-- RULE-2: Return 401 for a wrong password [bar: strong]
-- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [bar: strong]
+- RULE-1: Return 200 and a session cookie for a correct email and password
+- RULE-2: Return 401 for a wrong password
+- RULE-3: Lock the account for 15 minutes after 5 consecutive failures
 
 ## Proof
 
@@ -104,9 +105,10 @@ That sentence carries three claims, so it becomes three rules, each with one pro
 - PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423 @integration
 ```
 
-A single rule covering all three would pass while two thirds of the behaviour was missing. A
-rule says what the software does; a proof says what a test asserts, naming a route, an input and
-the observable that settles the claim. `> Scope:` names the files the feature lives in, and it
+No rule carries a `[bar: ...]` tag here, because at `passed` the bar is never read;
+`purlin:spec` starts writing it when you raise the gate. A single rule covering all three would
+pass while two thirds of the behaviour was missing. A rule says what the software does; a proof
+says what a test asserts, naming a route, an input and the observable that settles the claim. `> Scope:` names the files the feature lives in, and it
 earns its place: a record carries the git tree hash of those files, which is what lets Purlin
 tell a code change from a rule change later.
 
@@ -142,8 +144,8 @@ It then writes `.purlin/tests/login.json` and `.purlin/tests.md`, commits both i
 `purlin: tests at <sha7>`, and ends with `gate passed: 3 of 3`. Those two files are tracked, so
 a teammate reads your run on the git host without running anything.
 
-At `passed` that is the whole loop: spec, build, test, then `git push`. No record, no signature,
-and no script for you to run.
+At `passed` that is the whole loop: spec, build, test, then `git push`. No record, no
+signature, and no script for you to run. The push is free: nothing runs when you make one.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#0C3444", "primaryColor": "#092936", "primaryTextColor": "#E4DDD4", "primaryBorderColor": "#C0793F", "lineColor": "#C0793F", "secondaryColor": "#0C3444", "tertiaryColor": "#092936", "fontFamily": "Arial", "textColor": "#E4DDD4"}}}%%
@@ -151,8 +153,14 @@ flowchart LR
   spec["purlin:spec"] --> build["purlin:build"]
   build --> test["purlin:test"]
   test --> build
-  test --> push["git push"]
+  test --> audit["purlin:audit"]
+  audit --> sign["purlin:sign"]
+  sign --> push["git push"]
 ```
+
+Every box in that picture runs on your machine. The gate says how far along it you go: `passed`
+stops after the test, `strong` after the audit, `signed` ends with `purlin:sign`, which writes
+the tag `signed/<version>` once every rule meets the gate.
 
 ```
 purlin:audit
@@ -160,10 +168,10 @@ purlin:audit
 
 Run the audit when you want to know how good those tests are. It runs them again, and from
 `strong` upward breaks the code on purpose and measures the share of the breaks the tests
-caught: that share is the **test strength**. It prints what it found. At `passed` that is all
-it does; from `strong` up it also writes one record per feature and the briefs beside them,
+caught: that share is the **test strength**. It prints what it observed. At `passed` that is
+all it does; from `strong` up it also writes one record per feature and the briefs beside them,
 commits them itself as `purlin: record for <sha7>`, and ends with `gate strong: <n> of
-<rules>`.
+<rules>`. It runs on this machine, and its record counts.
 
 ## Read the table
 
@@ -189,10 +197,10 @@ gate is what adds them: `purlin:init --gate strong` adds the first, `--gate sign
 other two.
 
 Every command ends with one `→ Next:` line naming the step to take, computed from the cell that
-blocks the rules: `purlin:spec` when a rule has no proof that clears the free checks,
-`purlin:build` when a test fails or a proof has none, `purlin:test` when there is no run to
-read, and `purlin:sign` when a rule is waiting for a person. Follow the line rather than
-remembering an order.
+blocks the rules: `purlin:spec` when a rule has no proof at all, `purlin:build` when a test
+fails or a proof has none, `purlin:test` when there is no run to read, `purlin:audit` when no
+audit has measured a rule, and `purlin:sign` when a rule is waiting for a person. Follow the
+line rather than remembering an order.
 
 ## Where to go next
 

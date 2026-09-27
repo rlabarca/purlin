@@ -3,12 +3,12 @@
 For anyone who wants to see where every rule stands without reading a spec file.
 
 The dashboard is one HTML file with no server, no build step and no dependencies. It opens from
-disk beside your editor, and CI publishes the same page as a build artifact so a PM, a designer
-or a QA reviewer can open it from a pull request with no checkout at all.
+disk beside your editor. Anyone without a checkout reads the same numbers from
+[scan.py](#without-a-checkout-scanpy), which prints them from a repository URL.
 
-## The two ways to open it
+## Opening it
 
-**Locally.** `purlin:init` copies the page to `purlin-report.html` at the project root. It is a
+`purlin:init` copies the page to `purlin-report.html` at the project root. It is a
 copy rather than a link, because the only path a plugin install can be linked at is
 version-pinned and the link would break on the first plugin update. The copy does not refresh
 itself; run `purlin:init --update` after a plugin update. The page is gitignored, so each
@@ -21,16 +21,18 @@ tab and what it is showing is more than 60 seconds old, keeping the screen and t
 so a signature you have just written appears without you reloading anything. A commit you make
 by hand outside Claude Code shows up after the next `purlin:status`.
 
-**From CI.** A CI run copies the page and its data into a build artifact named
-`purlin-dashboard-<runner>`, one per job in the matrix, so a run on two operating systems
-leaves two pages rather than one. Anyone with repository access downloads one from the run and
-opens the page. Nothing is provisioned, nothing is hosted, and no site has to be published.
+Nothing is provisioned, nothing is hosted, and no site has to be published. A remote runner
+uploads no artifact and posts no comment: the page is local, and `scan.py` is the route for
+anyone who has no checkout.
 
 ## The chrome
 
 Every screen carries the same top bar: the logo, how old the data is, the gate in force, the
-commit the data was built from, and the theme toggle. How old the data is is a button: press it
-to reload the page. The age recomputes itself every 60 seconds from the stamp the data already
+signed tag this commit carries, the commit the data was built from, and the theme toggle. The
+tag reads `signed/<version>` with the first seven characters of the commit it points at, or
+`no signed tag` where the commit carries none: `purlin:sign` writes one only when every rule
+meets the gate, so its absence is a statement too. How old the data is is a button: press it to
+reload the page. The age recomputes itself every 60 seconds from the stamp the data already
 carries, so a tab left open does not read `less than a minute old` an hour later. Below it are
 the tabs: Board, then Review with its count at `strong` and above, then Sign with its count at
 `signed`, and the open rule last when there is one.
@@ -78,9 +80,9 @@ its own rather than hiding inside either.
 
 At `strong` each rule gains a strong cell, so a `Strong` tile joins the four and one column
 joins the four: `Strong`, reading `18 of 24 · 71%`, how many rules the audit proved strong and
-the test strength of the newest record. Its hover names where that record came from, how old it
-is, and the minimum strength this gate asks for. Your own `purlin:audit` counts at this gate;
-only at `signed` is CI's the one that counts.
+the test strength of the newest record. Its hover names where that record came from, `local` or
+`ci`, how old it is, and the minimum strength this gate asks for. Your own `purlin:audit`
+counts at this gate and at the one above it.
 
 ![The Board at the signed gate: a Signed tile, the To sign and Stale flag cards, and the Signable and Signed columns](images/dashboard-regulated.png)
 
@@ -172,11 +174,11 @@ The board draws no such box: which platform found what is the rule's business, a
 cell's hover sums it for the spec. The signed cell's row names the signer and the date beside
 the word.
 
-At `strong` and above the **Brief panel** follows: the test strength beside `min_strength`, the
-free-check findings on the proof text and the test body, what the model review observed, each
-in one sentence naming the proofs it concerns, whether the review settled the question, and a
-link to the brief file. The brief reports and recommends nothing, so what you read here is what
-was seen, not what to do about it.
+At `strong` and above the **Brief panel** follows: the test strength beside `min_strength`,
+then what the audit observed, one sentence to a line as the audit wrote them, then whether the
+audit settled the question, then a link to the brief file. There is no list of check names: the
+audit reads its scans as hints and writes sentences. The brief reports and recommends nothing,
+so what you read here is what was seen, not what to do about it.
 
 At `signed` the **Sign panel** comes next. A rule that is not signed is headed `To sign` and
 names the command, `purlin:sign <feature> <RULE-N>`, to run in Claude Code: a signature is a
@@ -185,7 +187,7 @@ the branch. A rule that is signed is headed `Signed` and names who signed it. Wh
 signs from `strong` and this rule's bar is `passed`, the panel says no signature is required
 and that one written anyway still counts.
 
-The **Proofs** are last, each with its tier, its findings and the tests that ran it.
+The **Proofs** are last, each with its tier and the tests that ran it.
 
 `← Review` at the top closes the rule and returns to the tab it was opened from; from the Sign
 tab the same link reads `← Sign`, and from the board `← Board`.
@@ -252,12 +254,12 @@ Anyone with a repository URL can print the same rollup without cloning the repos
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <branch-or-tag>]
 ```
 
-It reads `specs/`, `.purlin/tests/` and `.purlin/records/` by sparse fetch and prints the headline, one line per
-bucket, and the flags beside them, then how far the ref has moved past the newest record, then
-Review and Sign under one count, one line per rule with its bar, the rule, the cell that
-blocks it and the word that cell reads. `--repo` also takes a local path. CI posts the same rollup as a pull request
-comment, so a reviewer reads one answer whether they are on the pull request, in a checkout, or
-looking at the page.
+It reads `specs/`, `.purlin/tests/` and `.purlin/records/` by sparse fetch and prints the
+headline, one line per bucket, and the flags beside them, then how far the ref has moved past
+the newest record, then the Review and Sign lists under one count, one line per rule with its
+bar, the rule, the cell that blocks it and the word that cell reads. `--repo` also takes a
+local path, and `--ref` takes a branch or a tag, including a `signed/<version>` one. It prints
+the same numbers the page draws, so a reviewer with no checkout reads one answer.
 
 ## Next
 
