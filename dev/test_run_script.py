@@ -946,8 +946,8 @@ class TestTheGateDecidesTheBreaks:
         assert len(calls['breaks']) == 1, 'the breaks did not run under strong'
         assert 'feat: test strength 80 percent' in output, output
         assert len(calls['write']) == 1, 'the audit wrote no record'
-        assert 'counts at strong' not in output, (
-            'the preview line belongs to the signed gate alone')
+        assert 'preview' not in output, (
+            'a record an audit wrote counts at every gate')
 
     @pytest.mark.proof("run_script", "PROOF-66", "RULE-45")
     def test_a_ci_run_says_nothing_about_counting(
@@ -957,17 +957,19 @@ class TestTheGateDecidesTheBreaks:
         record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
 
-        assert 'preview at signed' not in output, output
+        assert 'preview' not in output, output
 
     @pytest.mark.proof("run_script", "PROOF-66", "RULE-45")
-    def test_at_signed_a_local_audit_says_it_is_a_preview(
+    def test_at_signed_a_local_audit_counts_like_any_other(
             self, tmp_path, record_run, capsys):
+        """Local counts at every gate, so nothing calls this a preview."""
         root = _pytest_project(tmp_path, gate='signed')
         _spec(root, 'feat')
-        record_run(root, '--all', '--audit')
+        _code, calls = record_run(root, '--all', '--audit')
         output = capsys.readouterr().out
 
-        assert 'preview at signed' in output, output
+        assert len(calls['write']) == 1, 'the audit wrote no record'
+        assert 'preview' not in output, output
 
 
 class TestRecordWithoutTheEngines:

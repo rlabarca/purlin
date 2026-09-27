@@ -102,11 +102,6 @@ REMOTE_IS_A_TEST = ('a remote runner runs the tests, so --remote belongs to '
 FOREIGN_PROOF = ('%s %s needs %s; this machine is %s. A remote runner runs '
                  'it: purlin:init adds one.')
 
-# What a local audit says at `signed`, where only CI's record counts.
-AUDIT_IS_A_PREVIEW = ('This record is local, so it counts at strong and is a '
-                      'preview at signed, where the run on the protected '
-                      'branch is what a signature attaches to.')
-
 # What a `--ci` run says where the gate asks for no record at all.
 NO_RECORD_AT_PASSED = 'The gate is passed, so this run writes no record.'
 
@@ -962,13 +957,13 @@ def _audit(project_root, args, features, selected, index, plugins, log,
            cfg):
     """The `--audit` arm: how good the tests are, written down and committed.
 
-    The breaks run where the gate asks for them, the free checks and the
-    model review are read off the payload and the brief, and the whole of it
+    The breaks run where the gate asks for them, the free scans' hints and
+    the AI audit are read off the payload and the brief, and the whole of it
     goes into one record per feature under `.purlin/records/local/` with the
     briefs beside it. The commit is the person's own, under their own
-    identity, and nothing here pushes: at `strong` a record anyone wrote
-    counts, and at `signed` this one is a preview of the run on the protected
-    branch. The answer comes back as `(line, exit code)`.
+    identity, and nothing here pushes. A record this run wrote counts at
+    every gate, `signed` included: what a signature locks is the evidence,
+    not the machine. The answer comes back as `(line, exit code)`.
     """
     breaks = (_run_breaks(project_root, args, features, selected, index)
               if cfg.breaks else _no_breaks(cfg.gate))
@@ -982,8 +977,6 @@ def _audit(project_root, args, features, selected, index, plugins, log,
     if paths:
         from records import commit_local_records
         print(commit_local_records(project_root, head))
-    if cfg.gate == 'signed':
-        print(AUDIT_IS_A_PREVIEW)
     return _audit_gate_line(project_root, cfg)
 
 
@@ -1053,8 +1046,8 @@ def _audit_report(project_root, selected, breaks, source='local'):
         from brief import (asks_for_a_review, build_brief, rule_entry,
                            write_brief)
     except ImportError:
-        print('purlin: the brief writer is not available; the free checks and '
-              'the model review did not run.')
+        print('purlin: the brief writer is not available; the free scans '
+              'and the AI audit did not run.')
         return []
     payload = payload_module.build_payload(project_root,
                                            generated_by='audit')
