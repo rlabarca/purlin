@@ -1108,7 +1108,7 @@ def test_the_age_recomputes_every_minute_from_the_same_payload(browser,
 
 @pytest.mark.proof("purlin_report", "PROOF-23", "RULE-23")
 def test_the_docs_screenshots_come_from_the_fixtures():
-    """Five images, each from a fixture payload, written to docs/images/.
+    """Six images, each from a fixture payload, written to docs/images/.
 
     A screenshot taken from whatever this checkout happens to hold goes stale
     the moment the data moves and shows one project's names to every reader,
@@ -1116,7 +1116,7 @@ def test_the_docs_screenshots_come_from_the_fixtures():
     """
     import capture_doc_screenshots as capture
 
-    assert len(capture.SHOTS) == 5, capture.SHOTS
+    assert len(capture.SHOTS) == 6, capture.SHOTS
     assert capture.FIXTURES == FIXTURES, capture.FIXTURES
     assert capture.IMAGES_DIR == os.path.join(ROOT, 'docs', 'images'), \
         capture.IMAGES_DIR

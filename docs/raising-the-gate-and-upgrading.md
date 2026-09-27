@@ -63,12 +63,19 @@ all.
 
 **To `signed`.** On top of that: the signer emails, which init asks for with `Who may sign a
 rule?` and writes to `signers` in `.purlin/config.json`; the commit-signing setup printed once
-per signer; and a list of every
-rule that still carries no risk or origin tag, which `purlin:spec <feature>` tags in one pass.
-The derived defaults move too: `min_strength` becomes 80, the model review runs at medium risk
-as well as high, and `sign_at` becomes `medium`, so a low-risk rule's signed cell reads `not
-required` and meets the gate at strong. Set `sign_at` to `low` to require a signature on
-everything.
+per signer; the question `Which rules need a signature?`, whose answers are `strong`, the
+rules whose bar is `strong`, and `all`, every rule; and a list of every rule that still
+carries no origin tag, which `purlin:spec <feature>` tags in one pass.
+
+The derived defaults move too: `min_strength` becomes 80, and `sign_at` takes the answer you
+gave, `strong` by default. A rule whose bar is `passed` under `sign_at: strong` needs no
+signature: it meets the gate once its tests pass, and a signature written anyway still counts.
+
+Every rule's **bar** is `strong` at both of the upper gates unless the rule carries a
+`[bar: passed]` tag, so raising the gate is also what turns the AI audit on. Before 0.10.0 a
+rule carried a three-level tag in place of a bar; `--update` rewrites it, the two higher
+levels to `[bar: strong]` and the lowest to `[bar: passed]`, and the signature hashes follow
+the bar as they followed the old tag.
 
 | Flag | What it does |
 |------|--------------|
@@ -170,7 +177,7 @@ with the same three answers a new project is asked:
 What must be true before CI lets a change merge?
   passed  every rule has a passing tagged test, from any source
   strong  CI writes a record at this commit, at or above the minimum strength
-  signed  strong, plus a signature on every rule at or above medium risk
+  signed  strong, plus a signature on every rule whose bar is strong
 ```
 
 The `config` migration also drops the settings that named the old gate values and the old list
@@ -191,7 +198,7 @@ spec; it never removes a claim.
 The one thing it does not carry forward is the old evidence a person wrote. The files v0.9.5
 left beside the specs bound hashes this release computes differently, and the words they were
 written in are gone, so the update drops them rather than converting them into something nobody
-attested to. After the update, `purlin:sign` walks the review list and the people on the signer
+attested to. After the update, `purlin:sign` walks the Review and Sign tabs and the people on the signer
 list sign again. The old files stay in git history, which is where an inspection reads them.
 
 Exit codes: 0 when nothing is pending or the run applied what was, 1 for `--check` with

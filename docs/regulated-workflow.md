@@ -2,7 +2,7 @@
 
 For a team working under GxP or a similar obligation, at the `signed` gate.
 
-`signed` is `strong` plus one requirement: a rule at or above `sign_at` needs a current
+`signed` is `strong` plus one requirement: a rule that needs a signature needs a current
 signature from someone on the signer list, in a signed commit that has reached the protected
 branch. Nothing else about the day changes, so read [team-workflow.md](team-workflow.md) first
 and treat this as what it adds. [how-purlin-works.md](how-purlin-works.md) is the model in one
@@ -43,7 +43,7 @@ sequenceDiagram
     Engineer->>Origin: merge, once the required check is green
     Origin->>CI: push to main starts the job
     CI->>Origin: purlin: record for commit7, the records and the briefs
-    Signer->>Signer: purlin:sign walks the review list, one brief at a time
+    Signer->>Signer: purlin:sign walks Review, then Sign, one brief at a time
     Signer->>Signer: git commit -S writes RULE-4.hash8.slug.json
     Signer->>Origin: git push, then open the pull request
     Engineer->>Origin: merge, so the signature is on main
@@ -66,9 +66,9 @@ Stale and `code changed` are the two answers to "something changed", and the dif
 changed. A record carries `scope_tree`, the git tree hash of the files the spec's `> Scope:`
 line names. When the code under that scope changed and the rule, proof and test text did not,
 the signature stands and the passed cell reads `code changed`; CI clears it on the next run and
-nobody is asked to look. When the rule text, the proof text, the test body or the rule's risk
+nobody is asked to look. When the rule text, the proof text, the test body or the rule's bar
 changed, the signature is stale, because the attestation was given about text that no longer
-exists. Raising a rule from low to high changes what signing it meant, which is why risk sits
+exists. Raising a rule's bar changes what signing it meant, which is why the bar sits
 inside the hashes a signature binds.
 
 ## What the gate requires
@@ -78,8 +78,8 @@ inside the hashes a signature binds.
 | A record CI wrote at this commit | the workflow `purlin:init` wrote, running `purlin:audit` |
 | Every operating system the rule's proofs name covered by a passing run | the CI matrix. A rule that passed on some and not others reads `partial`, which is not met |
 | Test strength at or above `min_strength` | default 80 at this gate |
-| A current signature on every rule at or above `sign_at` | `purlin:sign` |
-| Every rule tagged with a risk and an origin | required at this gate, optional below it |
+| A current signature on every rule that needs one | `purlin:sign` |
+| Every rule tagged with a bar and an origin | the bar defaults to the gate; the origin is required at this gate |
 | The signing commit signed, by an author on the signer list who did not last touch the test | `signers` in `.purlin/config.json`, read as it stood in that commit |
 | The signing commit an ancestor of the protected branch | it merges by pull request like any change |
 
@@ -133,7 +133,7 @@ A signature counts when five things hold. Each is read from git or from a file, 
 2. The author's email is on the signer list as of that commit.
 3. That author is not the author of the commit that last touched the test. Write the test or
    sign it, not both.
-4. The hashes the file binds still match the current rule text, proof text, test body and risk.
+4. The hashes the file binds still match the current rule text, proof text, test body and bar.
 5. The commit is an ancestor of the protected branch, so a signature living only on a side
    branch nobody merged does not let a change merge. Purlin reads that branch from what
    `origin/HEAD` points at, falling back to the branch the checkout is on and then to `main`.
@@ -142,24 +142,32 @@ The first four are read on every gate; the fifth is read under `signed` alone. B
 a signature from anyone counts, because what it clears there is a question the machine could
 not settle rather than an attestation the gate rests on.
 
-## Risk, origin and `sign_at`
+## The bar, origin and `sign_at`
 
-Every rule carries a risk tag and an origin tag at this gate. Risk decides how much evidence a
-rule needs and whether a person has to sign; origin names who owns the claim and routes a
-change to them in `purlin:drift`.
+Every rule has a **bar**, `passed` or `strong`: the evidence that rule must have before anyone
+can sign it. A rule says its own with the tag `[bar: passed]` or `[bar: strong]`; a rule with
+no tag takes the project's gate as its bar, which at this gate is `strong`. Before 0.10.0 a
+rule carried a three-level tag in place of a bar; `purlin:init --update` rewrites it, the two
+higher levels to `[bar: strong]` and the lowest to `[bar: passed]`.
 
-`sign_at` is the risk at which a signature starts being required, `medium` by default. A rule
-below it reads `not required` in its signed cell and meets the gate at strong. Set `sign_at`
-to `low` and every rule needs a signature.
+The bar decides three things:
 
-| Risk | What it needs at this gate |
-|------|----------------------------|
-| `low` | a passing CI record, the strength floor, and a clear set of free checks. The signed cell reads `not required` unless `sign_at` is `low` |
-| `medium` | all of that, the model review, and a signature |
-| `high` | all of that, a signature, and at least one proof naming a rejection, an error or a boundary |
+| The bar | The evidence it asks for | Does the AI audit run? | Does it need a signature? |
+|---|---|---|---|
+| `passed` | the rule's tagged tests pass on every platform a counting run covered | no | only when `sign_at` is `all` |
+| `strong` | all of that, an audit, the strength floor, a clear set of free checks, no hold | yes | yes |
+
+A rule that has met its bar has **cleared** it, and a rule that has cleared its bar is
+**signable**: the board's `Signable` column counts it and the Sign tab lists it until someone
+signs it. A rule meets the gate `signed` when it has cleared its bar and, where it needs a
+signature, that signature counts.
+
+`sign_at` says which rules need a signature at all. `strong`, the default, asks for one on the
+rules whose bar is `strong`; `all` asks for one on every rule. `purlin:init --gate signed`
+asks which you want, and `--update` asks again.
 
 Origin is `pm`, `design`, `qa` or `eng`. `purlin:init --gate signed` lists every rule that
-carries neither tag when you raise the gate, and `purlin:spec <feature>` tags them in one pass.
+carries no origin when you raise the gate, and `purlin:spec <feature>` tags them in one pass.
 
 ## What CI writes, and what it never writes
 
@@ -192,10 +200,10 @@ one-line note saying what the person did and what they saw:
 purlin:sign <feature> RULE-4 --note "read the four messages on 2026-09-16; each matches the guide"
 ```
 
-A model review that could not settle the question reads `manual audit`, with the reason
-`review not settled`; so does a rule whose risk asks for a review and has no brief for the
-current hashes, with the reason `no brief for the current hashes`. The same `--note` settles
-either.
+A rule whose bar is `strong` and on whose code no audit has run yet reads `not audited`, with
+the reason `no audit has run on this code`. It waits for `purlin:audit`, not for a person, so
+it is on no tab. Once the audit has run and could not settle the question, the cell reads
+`unsettled` and the rule is on the Review tab. The same `--note` settles it.
 
 ## Holds
 
@@ -209,7 +217,7 @@ purlin:sign <feature> RULE-3 --hold "the lock expiry is never read"
 It writes `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json` and
 commits it, signed like any other `purlin:sign` commit. A hold only ever withholds, so the
 person who writes one need not be on the signer list. While the hold is current both the strong
-cell and the signed cell read `held`, whatever the risk, so no rule slips past level 2 on the
+cell and the signed cell read `held`, whatever the bar, so no rule slips past level 2 on the
 free checks alone.
 Changing the test ends the hold, because the hashes it binds no longer match. A signature by a
 person for the current hashes outranks it.
@@ -240,7 +248,7 @@ hand:
   minimum, the free-check findings, and what the model review observed. It is what a signer
   was shown.
 - **`specs/<category>/<feature>.signatures/`.** One file per signature, binding the hashes of
-  the rule, the proof and the test, the risk at the time, the signer's email, the brief they
+  the rule, the proof and the test, the bar at the time, the signer's email, the brief they
   read and the record they rested on. The commit that added it is signed by a person.
 - **`refs/tags/record/*`.** The annotated tags naming which records back which release.
 

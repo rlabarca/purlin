@@ -55,7 +55,7 @@ is the word a rule's last cell reads when it is met.
 |------|-------------|-------------------------------|
 | `passed` | One person working alone | Every rule has a passing tagged test, from a run of any source |
 | `strong` | A team of PM, designers, engineers and QA | Every rule has a record at this commit, from your own audit or from CI, with the test strength at or above `min_strength`, no free-check finding and no hold |
-| `signed` | The same team under GxP | Everything `strong` requires, plus a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list |
+| `signed` | The same team under GxP | Every rule has cleared its bar, and every rule that needs a signature has a current one, in a signed commit by someone on the signer list |
 
 Answer `passed` for now. You can raise the gate later with `purlin:init --gate strong`, which
 adds what is missing and asks before each write.
@@ -93,9 +93,9 @@ That sentence carries three claims, so it becomes three rules, each with one pro
 
 ## Rules
 
-- RULE-1: Return 200 and a session cookie for a correct email and password [risk: high]
-- RULE-2: Return 401 for a wrong password [risk: high]
-- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [risk: medium]
+- RULE-1: Return 200 and a session cookie for a correct email and password [bar: strong]
+- RULE-2: Return 401 for a wrong password [bar: strong]
+- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [bar: strong]
 
 ## Proof
 

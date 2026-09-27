@@ -16,5 +16,5 @@ Paste this line, unchanged, directly under the opening ` ```mermaid ` of every d
 At most one diagram per doc, and only where the picture shows a mechanism a paragraph would
 have to describe step by step. A diagram that restates a list is not worth its space.
 
-The only other images in these docs are the five dashboard screenshots under `docs/images/`,
+The only other images in these docs are the six dashboard screenshots under `docs/images/`,
 used by [dashboard.md](dashboard.md).

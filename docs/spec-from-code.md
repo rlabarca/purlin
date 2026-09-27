@@ -38,7 +38,7 @@ skill says so when it hands the result over.
 
 ## What it writes
 
-Every rule carries `[origin: eng]` and `[risk: low]`:
+Every rule carries `[origin: eng]` and `[bar: passed]`:
 
 ```markdown
 # Feature: rate_limit
@@ -48,8 +48,8 @@ Every rule carries `[origin: eng]` and `[risk: low]`:
 
 ## Rules
 
-- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [origin: eng] [risk: low]
-- RULE-2: Include a Retry-After header on every 429 response [origin: eng] [risk: low]
+- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [origin: eng] [bar: passed]
+- RULE-2: Include a Retry-After header on every 429 response [origin: eng] [bar: passed]
 
 ## Proof
 
@@ -78,7 +78,7 @@ and `purlin:build` writes the test on the next pass.
 - No implementation in a rule. "Uses a sorted set in the cache" is not a claim about
   behaviour; "rejects the 61st request in a minute" is.
 - Nothing tagged `[origin: pm]`. No PM said any of this.
-- No risk above `low`. That judgment belongs to the people who own the product.
+- No bar above `passed`. That judgment belongs to the people who own the product.
 - No test results, no records and no signatures. Those come from `purlin:test`, from CI and from `purlin:sign`.
 - No rule for behaviour that could not be stated as an observable. The behaviour is noted in
   `> Description:` and the rule is dropped.
@@ -93,7 +93,7 @@ The skill names the next step from what it found:
 | Rules with no test at all | `purlin:build <name>` on the feature with the most of them |
 | Everything drafted, and the team wants the paper trail | `purlin:init --gate strong` |
 
-Then read the drafts. Retag the risk and the origin of anything a PM or a designer actually
+Then read the drafts. Retag the bar and the origin of anything a PM or a designer actually
 owns, and delete the rules that turned out to describe a bug.
 
 ## Next

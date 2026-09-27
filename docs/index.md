@@ -16,7 +16,10 @@ One setting, the **gate**, decides how much of that chain a project asks for.
 |------|-------------------------------|--------------------------------------|
 | `passed` | every rule's passed cell is met | your machine's test results, which `purlin:test` commits |
 | `strong` | every rule's strong cell is met too | your own `purlin:audit`, or CI: both count here |
-| `signed` | every rule's signed cell is met too | CI alone, on the protected branch or on a remote run's run branch, plus a person's signature |
+| `signed` | every rule has cleared its bar, and every rule that needs a signature has a current one | CI alone, on the protected branch or on a remote run's run branch, plus a person's signature |
+
+Every rule also has a **bar**, `passed` or `strong`: the evidence that rule must have before it
+can be signed. A rule says its own with a tag; a rule with no tag takes the project's gate.
 
 ## Engineer
 
@@ -38,8 +41,8 @@ One setting, the **gate**, decides how much of that chain a project asks for.
 
 | Guide | What it covers |
 |-------|----------------|
-| [Review and signing](review-and-signing.md) | The review list, the brief, `purlin:sign`, what stales a signature |
-| [Dashboard](dashboard.md) | The local page and the CI artifact, the three screens, filters, both themes |
+| [Review and signing](review-and-signing.md) | The bar, the Review and Sign tabs, the brief, `purlin:sign`, what stales a signature |
+| [Dashboard](dashboard.md) | The local page and the CI artifact, the four screens, filters, both themes |
 
 ## Admin
 

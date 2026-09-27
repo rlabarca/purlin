@@ -1,6 +1,6 @@
 """Capture the board screenshots the docs embed.
 
-Five images, from the same fixture payloads `dev/test_purlin_report.py` renders
+Six images, from the same fixture payloads `dev/test_purlin_report.py` renders
 (`dev/fixtures/report/`) rather than from whatever this checkout happens to
 hold: a screenshot taken from live data goes stale the moment the data moves,
 and shows one project's names to every reader.
@@ -12,6 +12,7 @@ and shows one project's names to every reader.
     dashboard-regulated.png    the board at signed, with the Signed column
     dashboard-rule.png         one rule, its cells, its brief, its proofs
     dashboard-review-list.png  the rules whose next step is a person
+    dashboard-sign.png         the rules that have cleared their bar, waiting to be signed
 
 Each is the dark theme at 1440 wide, captured at 2x so the type stays crisp.
 Uses dev/browser_launch.py, so it drives an installed Google Chrome when the
@@ -47,6 +48,7 @@ SHOTS = (
     # RULE-1 is the signed one: its cells show a platform box, a brief and a
     # signature, which is the whole chain on one screen.
     ('dashboard-review-list.png', 'regulated', ('[data-screen="review"]',)),
+    ('dashboard-sign.png', 'regulated', ('[data-screen="sign"]',)),
 )
 
 

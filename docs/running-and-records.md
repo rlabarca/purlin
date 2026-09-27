@@ -74,7 +74,7 @@ purlin:audit --tag <name>       Pin the records in the tree as record/<name>
 ```
 
 An audit is the level 2 run: the tests, then the breaks, the free checks, and the model review
-where the risk asks for one. It prints each feature's test strength beside the minimum, then
+on every rule whose bar is `strong`. It prints each feature's test strength beside the minimum, then
 each rule's findings and observations. An audit proves a rule strong or weak; it signs
 nothing.
 

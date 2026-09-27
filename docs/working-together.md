@@ -52,7 +52,7 @@ captured. The whole flow is in [design-in-specs.md](design-in-specs.md).
 **What you need.** One of three, by preference.
 
 - **A checkout with Claude Code.** `purlin:sign` computes the list of rules whose next step is
-  a person, orders it by risk, and walks it one brief at a time. At each stop you sign, add a
+  a person, the higher bar first, and walks it one brief at a time. At each stop you sign, add a
   case in plain language, hold or skip.
 - **An assistant with the repository connected.** It reads the same rollup, opens pull
   requests carrying proof edits, and batches signatures into one commit.
@@ -65,9 +65,9 @@ Anyone with the repository URL can print the same rollup without cloning it whol
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <branch|tag>]
 ```
 
-**What you work.** The review list, never the whole rule list. A rule reaches it only when the
+**What you work.** The Review and Sign tabs, never the whole rule list. A rule reaches them only when the
 cell that blocks it is one a person answers: a strong cell reading `manual test`,
-`manual audit` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A rule with no test, a failing rule and a weak rule
+`unsettled` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A rule with no test, a failing rule and a weak rule
 are build work and stay on the board. A rule whose passed cell reads `code changed` is not on
 the list either: only the code moved, the signature stands, and CI clears it on the next run.
 
@@ -103,7 +103,7 @@ drift eng: 14 files since the last record (a1b2c3d)
   src/auth/login.js          RULE-2, RULE-5 behind this change
   src/auth/mfa.js            no spec covers this file
   login RULE-7               no test carries PROOF-7
-  billing RULE-3             no risk tag; the gate needs one
+  billing RULE-3             no origin tag; the gate needs one
   design_tokens (anchor)     pinned 4 commits behind
   export                     code changed: the code moved, the signatures stand
 ```
@@ -133,11 +133,11 @@ A rule that came from a pinned anchor belongs to the anchor repository, whoever 
 |------|-----------------|
 | `pm` | Criteria with no rule carrying them, `origin: pm` rules whose text changed, rules an engineer added, pins behind |
 | `design` | Design files that changed, and `origin: design` rules whose signature went stale because a mock was re-exported |
-| `qa` | Signatures gone stale, how long the review list is, how many rules need a person, rules whose every proof asserts a success path |
-| `eng` | Files touched and the rules behind them, rules with no test, risk or origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` |
+| `qa` | Signatures gone stale, how long the Review and Sign lists are, how many rules need a person, rules whose every proof asserts a success path |
+| `eng` | Files touched and the rules behind them, rules with no test, origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` |
 
 Run it at four moments: at the start of a session, after an anchor pin or a design export
-moved, before QA opens the review list, and before a release. Those are the four times the
+moved, before QA opens the Review tab, and before a release. Those are the four times the
 tree has moved ahead of the specs without anyone being told.
 
 With no role named, `purlin:drift` infers one from the files the session touched and says

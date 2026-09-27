@@ -31,7 +31,12 @@ that one question and nothing else.
 |------|-------------|-------------------------------|--------------------------------------|
 | `passed` | One person working alone | Every rule's passed cell is met: a tagged test for every proof, passing | the test results `purlin:test` commits; a pass from any source counts |
 | `strong` | A team of PM, designers, engineers and QA | Every rule's strong cell is met: a passing record at this commit, the test strength at or above `min_strength`, no finding and no hold | your own `purlin:audit`, or CI: both count here |
-| `signed` | The same team under GxP | Every rule's signed cell is met: a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list | CI alone, on the protected branch or on the run branch `purlin:test --remote` creates, plus a person's signature |
+| `signed` | The same team under GxP | Every rule has cleared its bar, and every rule that needs a signature has a current one, in a signed commit by someone on the signer list | CI alone, on the protected branch or on the run branch `purlin:test --remote` creates, plus a person's signature |
+
+Every rule also has a **bar**, `passed` or `strong`: the evidence that rule must have before it
+can be signed, written as `[bar: passed]` or `[bar: strong]` on the rule line. A rule with no
+tag takes the project's gate as its bar. The bar decides what evidence the rule needs, whether
+the AI audit runs on it, and whether it needs a signature.
 
 Raise or lower the gate later with `purlin:init --gate <level>`. Raising adds what is missing;
 lowering deletes nothing. The one definition lives in

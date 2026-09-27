@@ -2,53 +2,83 @@
 
 For QA, or an engineer acting as QA, at the `strong` or `signed` gate.
 
-Reviewing is not reading every rule. It is reading the rules whose next step is a person, in
-risk order, with the evidence already gathered. `purlin:sign` computes that list and walks it.
-This page says what puts a rule on the list, what the brief shows you, and what makes a
-signature count.
+Reviewing is not reading every rule. It is reading the rules whose next step is a person, the
+ones with the higher bar first, with the evidence already gathered. `purlin:sign` computes two
+lists and walks them: Review, then Sign. This page says what puts a rule on each, what the
+brief shows you, and what makes a signature count.
 
-## The review list
+## The bar
+
+Every rule has a **bar**, `passed` or `strong`: the evidence that rule must have before anyone
+can sign it. A rule says its own with a tag, `[bar: passed]` or `[bar: strong]`, and a rule
+with no tag takes the project's gate as its bar. The bar decides three things:
+
+- **the evidence the rule needs.** Bar `passed` asks that its tests pass. Bar `strong` asks
+  that an audit proved them worth trusting.
+- **whether the AI audit runs on it.** It runs on every rule whose bar is `strong` and on no
+  other.
+- **whether it needs a signature.** Under `signed`, a rule needs one when the project's
+  `sign_at` is `all`, or when its own bar is `strong`.
+
+A rule that has met its bar has **cleared** it, and a rule that has cleared its bar is
+**signable**. That is the whole of what `signable` means.
+
+## Review
 
 ```
 purlin:sign
 ```
 
-No arguments and no prior reading. The skill asks for the list, prints the count by risk and
-the first few rows, then starts the walk.
+No arguments and no prior reading. The skill asks for the two lists, prints their counts and
+the first few rows, then starts the walk with Review.
 
 ```
-Review list: 12 rules need a person, across 4 features
-  high 3   medium 6   low 3
+Review: 7 rules need a person, across 3 features
+Sign:   5 rules to sign
 
-  login       RULE-3   high     stale: the rule text changed after the signature
-  login       RULE-7   high     manual audit: the model review did not settle
-  billing     RULE-2   high     unsigned
+  login       RULE-7   strong   unsettled: the AI audit could not settle
+  login       RULE-9   strong   held: the lock expiry is never read
+  billing     RULE-2   passed   manual test: the proof is @manual
 ```
 
-A rule is on the list when the cell that blocks it is one only a person can answer:
+A rule is on Review when its strong cell reads one of three words, each of them work only a
+person can do:
 
-| The blocking cell | The word it reads | What happened |
+| The word | What happened | What you do |
 |---|---|---|
-| strong | `manual test` | every proof of the rule is `@manual`, so a person runs the test |
-| strong | `manual audit` | no brief binds the current hashes, or the model review could not settle |
-| strong | `held` | someone committed a hold saying the test does not prove the proof |
-| signed | `unsigned` | the rule is at or above `sign_at` and no signature binds its hashes |
-| signed | `stale` | a signature exists and the hashes it bound no longer match |
-| signed | `held` | someone committed a hold saying the test does not prove the proof |
+| `manual test` | every proof of the rule is `@manual`, so no test can be written | run the test yourself and sign with a note |
+| `unsettled` | the AI audit ran and could not settle whether the test proves the proof | judge it yourself: sign, add a case, or hold |
+| `held` | someone committed a hold saying the test does not prove the proof | write the case, or lift the hold by signing |
 
-Nothing else reaches it. A drafted rule, a rule with no test, a failing rule and a weak rule are
-all build work, and they stay on the board where `purlin:build` finds them. A rule whose passed
-cell reads `code changed` is not on the list either: only the code moved, the signature stands,
-and CI clears the cell on the next run.
+Nothing else reaches it. A rule whose strong cell reads `not audited` waits for `purlin:audit`
+rather than for you: its bar is `strong` and no audit has run on this code yet. A drafted rule,
+a rule with no test, a failing rule and a weak rule are all build work, and they stay on the
+board where `purlin:build` finds them. A rule whose passed cell reads `code changed` is on
+neither list: only the code moved, the signature stands, and the next run clears the cell.
 
-Rows are grouped by risk with high first, and within a group the stale and held rules come
-before the rest. Arguments narrow the walk and never widen it: `purlin:sign <feature>`,
-`purlin:sign <feature> RULE-N`. Plain language reaches the same place: "what is waiting on a
-person", "show me the high risk ones".
+Rows come bar `strong` first, then by feature and rule id. Arguments narrow the walk and never
+widen it: `purlin:sign <feature>`, `purlin:sign <feature> RULE-N`. Plain language reaches the
+same place: "what is waiting on a person", "show me the ones with the strong bar".
 
-Under the `strong` gate the list is the `manual test`, `manual audit` and `held` rules alone,
-because no rule has a signed cell there. Under `passed` there is no list at all: `purlin:sign` says the gate is
-`passed`, says what `purlin:init --gate strong` would add, and stops.
+Under `passed` there is no list at all: `purlin:sign` says the gate is `passed`, says what
+`purlin:init --gate strong` would add, and stops.
+
+## Sign
+
+The Sign list is the signable rules that no counting signature covers yet: they have cleared
+their bar, they need a signature, and their signed cell reads `unsigned`, `stale` or `held`. It
+exists at `signed` and nowhere else, because no rule has a signed cell below it.
+
+| The word the signed cell reads | What happened |
+|---|---|
+| `unsigned` | the rule needs a signature and none binds its hashes |
+| `stale` | a signature exists and the hashes it bound no longer match |
+| `held` | someone committed a hold saying the test does not prove the proof |
+
+The walk reaches Sign after Review, because a rule a person has not judged is not a rule to
+sign. `sign_at` decides which rules need a signature at all: `strong` asks for one on the rules
+whose bar is `strong`, and `all` asks for one on every rule. `purlin:init` sets it at the
+`signed` gate and `--update` asks again.
 
 ## The brief
 
@@ -65,18 +95,18 @@ do. It says what was measured and what was seen, each in one sentence naming the
 concerns, and you decide. That is the whole division of labour: the machine observes, the
 person attests.
 
-The brief is written under `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json` and committed
-by CI beside the records. That file is evidence: your signature names it, so what you were shown
+The brief is written under `.purlin/briefs/<source>/<feature>/<RULE-N>.<hash8>.brief.json` and
+committed beside the records. That file is evidence: your signature names it, so what you were shown
 is recoverable afterwards. Reading the brief again for the same hashes leaves the file as it was
 unless what it found changed. The `.brief.txt` beside it is a local view, and `.gitignore` keeps
 it out of every commit.
 
 | Layer | What it reads | Runs at |
 |-------|---------------|---------|
-| The free checks on the proof text | the proof description and its tier tag alone | every risk |
-| The free checks on the test body | the marked test body, no execution | every risk |
-| Test strength | `test_strength` from the newest counting record, against `min_strength` | medium and high |
-| The model review | the criteria plus this rule's evidence | when `ai_review_at` says so |
+| The free checks on the proof text | the proof description and its tier tag alone | every bar |
+| The free checks on the test body | the marked test body, no execution | every bar |
+| Test strength | `test_strength` from the newest counting record, against `min_strength` | bar `strong` |
+| The model review | the criteria plus this rule's evidence | bar `strong` |
 
 The first two layers are free in both senses: nothing runs and nothing is charged. They read a
 spec written before any code exists, which is why a proof can be wrong before a test is ever
@@ -88,7 +118,8 @@ no value beside it. `missing_trigger` when nothing runs before the assertion. `t
 when an `@e2e` proof is described as a function call. Those four keep the spec status at
 `drafted`. `implementation_coupling` names a private symbol, a selector or a source path
 instead of an observable; `happy_path_only` means no proof of this rule names a rejection, an
-error or a boundary. Those two are advisory, except that `happy_path_only` blocks at high risk.
+error or a boundary. Those two are advisory, except that `happy_path_only` blocks a rule whose
+bar is `strong`.
 
 **Findings on the test body.** `no_assertion`, `tautology`, `assert_true_literal`,
 `bare_except`, `logic_mirroring` and `mock_of_target`. A finding here is structural: no model
@@ -100,12 +131,12 @@ the behaviour changed. It does not say the tests prove the right rule. A rule ca
 percent on a proof that observes the wrong thing, and a correct proof of a small rule can sit
 at 0 percent because nothing broke. Read it beside the findings, never instead of them.
 
-**The model review** runs when `ai_review_at` allows it: never at `passed`, at high risk under
-`strong`, at medium and high under `signed`. It is built from the review criteria verbatim plus
-this rule's evidence, so it observes by the same sentences you read. It is asked to state what
-the test observes against what the proof names, and to say when it cannot tell. When it cannot
-tell, the strong cell reads `manual audit` with the reason `review not settled`, and the rule
-waits for you rather than for another run.
+**The model review** runs on every rule whose bar is `strong` and on no other. It is built from
+the review criteria verbatim plus this rule's evidence, so it observes by the same sentences
+you read. It is asked to state what the test observes against what the proof names, and to say
+when it cannot tell. When it cannot tell, the strong cell reads `unsettled`, and the rule waits
+for you rather than for another run. Until the audit has run at all, the cell reads
+`not audited`, and the rule waits for `purlin:audit`.
 
 For a rule tagged `origin: design`, the brief shows the pinned mock from `designs/<feature>/`
 beside the screenshot the test captured under `.purlin/runtime/attachments/`. Judge what a
@@ -167,7 +198,7 @@ anyone else's.
 
 `--note` is the one line a person writes where no test can speak: what they did and what they
 saw for a `@manual` proof, or the judgment the model could not settle. It is allowed on any rule
-whose strong cell reads `manual test` or `manual audit`, and it lands in the signature file's
+whose strong cell reads `manual test` or `unsettled`, and it lands in the signature file's
 `note` field.
 
 If your email is not in `signers` in `.purlin/config.json`, the skill stops and says
@@ -175,9 +206,9 @@ If your email is not in `signers` in `.purlin/config.json`, the skill stops and 
 list at all under the `signed` gate it says
 `sign: signer list missing: run purlin:init --gate signed`.
 
-Under the `strong` gate a signature is not required by anything, so a bare signature says
+Under the `strong` gate nothing asks for a signature, so a bare signature says
 `sign: a signature is required only under the gate signed. Writing it anyway.` and writes it.
-The file still clears a `manual test`, `manual audit` or `held` cell, from anyone: at `strong`
+The file still clears a `manual test`, `unsettled` or `held` cell, from anyone: at `strong`
 the signer list is not read. Under `signed` the signer rules apply in full. Under `passed` nothing is written at all:
 the skill says the gate is `passed`, names what `purlin:init --gate strong` would add, and
 stops.
@@ -185,7 +216,7 @@ stops.
 ## What makes a signature count
 
 A signature file binds three hashes - the rule text, the proof descriptions, and the test files
-behind them - plus the pinned design for an `origin: design` rule, the risk at the time, your
+behind them - plus the pinned design for an `origin: design` rule, the bar at the time, your
 email, the brief you read and the record you rested on. These conditions decide whether it
 counts, and the signed cell names the one that failed:
 
@@ -194,7 +225,7 @@ counts, and the signed cell names the one that failed:
 | The commit that added the file is signed and the host verifies it | `the signing commit is not signed` |
 | The author's email is on `signers` as of that commit | `the signer is not on the list` |
 | That author did not author the last commit to the test file | `the signer last touched the test` |
-| The bound rule, proof, test and risk hashes still match | `hashes changed after the signature` |
+| The bound rule, proof, test and bar hashes still match | `hashes changed after the signature` |
 | Under `signed`, the commit is on the protected branch | `the signing commit is not on <branch>` |
 
 The last of them is why a signature living only on a side branch does not let a change merge.
@@ -202,13 +233,13 @@ The last of them is why a signature living only on a side branch does not let a 
 ## What stales a signature
 
 Changing the rule text, any of its proof descriptions, the body of a test behind it, the pinned
-design for a design rule, or the rule's risk. Each of those changes what the signature was given
-about, so the signed cell reads `stale`, the rule returns to the review list, and a person looks
+design for a design rule, or the rule's bar. Each of those changes what the signature was given
+about, so the signed cell reads `stale`, the rule returns to the Sign list, and a person looks
 again.
 
 Changing the code alone stales nothing. The passed cell reads `code changed` until CI runs again
 and clears it, and no person is asked to look.
 
-Read next: [team-workflow.md](team-workflow.md) for where the review list comes from,
+Read next: [team-workflow.md](team-workflow.md) for where the Review list comes from,
 [regulated-workflow.md](regulated-workflow.md) for the signer list and signing,
 [specs-and-anchors.md](specs-and-anchors.md) for writing a proof that a test can prove.

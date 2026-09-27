@@ -99,7 +99,7 @@ The change surfaces in three places, in this order:
 - `purlin:drift design` names the files that moved and the `origin: design` rules whose
   signatures went stale.
 - `purlin:status` shows those rules' signed cell as `stale`.
-- `purlin:sign` puts them on the review list, ordered by risk.
+- `purlin:sign` puts them on the Review tab, the higher bar first.
 
 Advance the pin with `purlin:anchor sync <name>` when the anchor lives in another repository,
 or commit the new hash with the exports when the anchor is local.

@@ -26,11 +26,12 @@ A gate is three things, and all three have to exist:
 2. A branch rule on the protected branch that blocks a merge unless that job passes.
 3. The setting `gate` in `.purlin/config.json`, here set to `strong`.
 
-`strong` derives three defaults, each of which you can change: `min_strength` 70,
-`ai_review_at` high, and risk and origin tags optional. Signatures are advisory at this gate:
-nothing blocks a merge for the want of one, and no rule has a signed cell. What a signature
-still does here is clear a strong cell reading `manual test`, `manual audit` or `held`, from
-anyone, because the signer list is not read below `signed`.
+`strong` derives two defaults, each of which you can change: `min_strength` 70, and origin
+tags optional. Every rule's bar defaults to `strong` here, so the AI audit runs on every rule
+that carries no `[bar: passed]` tag. Signatures are advisory at this gate: nothing blocks a
+merge for the want of one, and no rule has a signed cell. What a signature still does here is
+clear a strong cell reading `manual test`, `unsettled` or `held`, from anyone, because the
+signer list is not read below `signed`.
 
 ## Where the run happens, and what it writes
 
@@ -155,25 +156,27 @@ measured it, so a matrix of three does not give a rule three strengths to reconc
 
 ## What the strong cell can read
 
-Level 2 has five answers, and each one names who moves it next.
+Level 2 has six answers, and each one names who moves it next.
 
 | Word | What it means | What moves it |
 |------|---------------|---------------|
-| `strong` | the passed cell is met from a `ci` record, the test strength is at or above `min_strength`, no free check stands against the proof text or the test body, no hold is current, and where the risk asks for a model review there is a brief for the current hashes that observed nothing and settled | nothing; the rule meets the gate |
-| `weak` | the passed cell is not met, or the strength is under the minimum, or a free check found something, or the review settled and still observed something the test does not read | build work: `purlin:build` |
+| `strong` | the passed cell is met, the test strength is at or above `min_strength`, no free check stands against the proof text or the test body, no hold is current, and the AI audit observed nothing and settled | nothing; the rule meets the gate |
+| `weak` | the passed cell is not met, or the strength is under the minimum, or a free check found something, or the audit settled and still observed something the test does not read | build work: `purlin:build` |
+| `not audited` | the rule's bar is `strong` and no audit has run on this code yet | `purlin:audit`, or the CI job; no person is waiting |
+| `unsettled` | the AI audit ran and could not settle whether the test proves the proof | a person judges the proof against the test, then signs, adds a case or holds |
 | `manual test` | any proof of the rule is tagged `@manual`, so no test can be written for it | a person runs the test and records what they saw with `purlin:sign <feature> RULE-N --note "<text>"` |
-| `manual audit` | the rule's risk is at or above `ai_review_at` and there is no brief for the current hashes, or the review did not settle | a person judges the proof against the test, then signs, adds a case or holds |
 | `held` | a person committed a hold saying the test does not prove the proof, with the missing case | change the rule, the proof or the test, or sign it for the current hashes, which outranks the hold |
 
 A rule with no break engine for its language reads `strong` with the reason `no engine: free
 checks only`, as long as no blocking finding sits on its proof text. An unmeasured rule is
 unmeasured, not a failure.
 
-At `strong` the review list holds exactly the rules whose strong cell reads `manual test`,
-`manual audit` or `held`. Its header is the one sentence that says so: `<n> rules need a
+At `strong` the Review tab holds exactly the rules whose strong cell reads `manual test`,
+`unsettled` or `held`. Its header is the one sentence that says so: `<n> rules need a
 person`. A `weak` rule is never on it, because a build moves it and no person has to decide
-anything. A signature file for the current hashes clears all three words, and at this gate it
-counts from anyone: the signer list is not read below `signed`.
+anything, and neither is a `not audited` rule: it waits for `purlin:audit`. A signature file
+for the current hashes clears all three words, and at this gate it counts from anyone: the
+signer list is not read below `signed`.
 
 ## One sprint, traced
 
@@ -196,16 +199,16 @@ is what writes the record the strong cell reads. Rules the engineer adds are tag
 `origin: eng`, and the PM sees them in `purlin:drift pm` as derived.
 
 **CI proves it.** The engineer pushes and opens the pull request; that is what starts the
-workflow. It runs the audit: the tests, the breaks, the free checks and the model review where
-the risk asks for one. On the pull request it posts the rollup, publishes the dashboard and
+workflow. It runs the audit: the tests, the breaks, the free checks and the model review on
+every rule whose bar is `strong`. On the pull request it posts the rollup, publishes the dashboard and
 runs the gate check, and commits nothing. After the merge it runs again on the protected
 branch and commits the records and the briefs there. Every rule it could settle reads `strong`
 without anyone being asked.
 
-**QA looks at what is left.** `purlin:sign` finds every rule whose next step is a person, orders
-it by risk, and walks it one brief at a time. At this gate that is the rules whose strong cell
-reads `manual test`, `manual audit` or `held`: a `@manual` proof, a model review that could not
-settle, or a rule someone holds. At each stop QA signs, adds a case in plain
+**QA looks at what is left.** `purlin:sign` finds every rule whose next step is a person, the
+ones with the higher bar first, and walks it one brief at a time. At this gate that is the
+rules whose strong cell reads `manual test`, `unsettled` or `held`: a `@manual` proof, an AI
+audit that could not settle, or a rule someone holds. At each stop QA signs, adds a case in plain
 language, holds or skips. Adding a case writes a new proof line into the spec and leaves the
 test for the next `purlin:build`,
 which is how QA's judgment reaches the code without QA writing it.

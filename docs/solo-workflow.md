@@ -43,13 +43,14 @@ and moves no cell.
 ```json
 {
   "gate": "passed",
-  "min_strength": null,
-  "ai_review_at": "never"
+  "min_strength": null
 }
 ```
 
 `purlin:init` writes that into `.purlin/config.json` when you answer the one question with
-`passed`. `min_strength` is unused at this gate, and risk and origin tags stay optional. Read
+`passed`. `min_strength` is unused at this gate, and origin tags stay optional. Every rule's
+bar defaults to `passed` here: a rule clears its bar when its tagged tests pass, which is the
+only evidence this gate asks for. Read
 and change the file with the `purlin_config` tool rather than by hand, so a key the installed
 Purlin no longer reads is reported instead of silently kept.
 
@@ -134,9 +135,9 @@ tiles: `Untested`, `Failing`, `Partial`, `Passing`. Four columns: `Spec`, `Rules
 `Tests`. Three filters: `Untested`, `Failing` and `Partial`. `Proofs` counts the proof lines
 and says how many carry no tagged test; `Tests` reads `<passed> of <rules>`, with the partial
 and failing counts after it. When a run happened, on which operating system and from which
-source is in the hover on those cells rather than in a column of its own. No strength, no
-risk, no review list, no signature: those cells do not exist at this gate, so the board has
-nothing to put in a column for them. [dashboard.md](dashboard.md) describes the three screens
+source is in the hover on those cells rather than in a column of its own. No strength, no bar
+row, no Review tab, no signature: those cells do not exist at this gate, so the board has
+nothing to put in a column for them. [dashboard.md](dashboard.md) describes the four screens
 in full.
 
 ## Test strength
@@ -215,7 +216,7 @@ Raise to `strong` when any one of these becomes true:
 - A second person commits to the repository. Two people means the test results one of you
   committed stand as evidence for the other's change, and `strong` is what stops that.
 - Someone outside engineering owns a requirement. A PM's or a designer's rule needs `origin`
-  tags and a review list to be worth tagging.
+  tags and a Review tab to be worth tagging.
 - You need to answer "what was proved at the commit we shipped?" to someone who was not there.
   A record at a known commit, carrying the strength the breaks measured, answers it; a test
   results file only says the tests ran.
