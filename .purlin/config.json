@@ -8,8 +8,8 @@
   "ci": "github",
   "test_framework": "pytest,shell",
   "digest": "auto",
-  "pre_push": "off",
   "signers": [
     "rich.labarca@gmail.com"
-  ]
+  ],
+  "trust": "local"
 }

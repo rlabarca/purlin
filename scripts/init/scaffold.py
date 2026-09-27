@@ -5,29 +5,29 @@
                 [--add <language>] [--update] [--dry-run]
                 [--project-root DIR] [--plugin-root DIR] [--yes]
 
-On a project that has code, init asks one question and nothing else:
+On a project that has code, init asks two questions and nothing else:
 
     What must be true before CI lets a change merge?
+    Do you trust your own machine for the tests and the signing? [y/n]
 
-Everything else is derived from that answer or read from the tree: the
-language from detection, the git host from the remote URL, the minimum test
-strength and the review threshold from the gate. Three honest exceptions: a
-tree with nothing to detect is asked which framework its tests use, `signed` is
-asked who may sign, and `passed` with a remote is asked whether to run the
-tests on a remote runner too.
+Everything else is derived from those answers or read from the tree: the
+language from detection, the git host from the remote URL, and the minimum
+test strength from the gate. Two honest exceptions: a tree with nothing to
+detect is asked which framework its tests use, and `signed` is asked who may
+sign and which rules need a signature.
 
 It then writes, in this order and naming every one in the summary: the config,
 the plugin copies and `.purlin/plugin-root`, the runner's wiring, the engine's
 config block, the `.gitignore` entries, `designs/` and `.purlin/records/` with
-their READMEs, the dashboard, the pre-push hook, and the workflow CI runs. It
-ends with the branch rules the git host has to enforce, and the next step
-computed from the state.
+their READMEs, the dashboard, and, where one is wanted, the workflow CI runs.
+It ends with the next step computed from the state.
 
-At `passed` the workflow is a question rather than a given: the three reasons
-a remote runner is worth having are printed and you answer. At `strong` and
-above it is always written, and the same three reasons are the explanation of
-why. Either way the prerequisites are checked first, and a missing one is
-named with the command that fixes it; nothing is written then.
+A workflow is written for two reasons and no others: a proof in `specs/` is
+tagged `@env` for an operating system this machine is not, or you answered no
+to the trust question. A project with neither gets no workflow and no runner:
+`purlin:sign` writes the tag, you push it, and nothing runs remotely. Where
+one is wanted the prerequisites are checked first, and a missing one is named
+with the command that fixes it; nothing is written then.
 
 Both ways of loading Purlin work, and neither is written into a project: this
 checkout under `--plugin-dir`, and the marketplace copy under the plugin cache.
@@ -82,19 +82,19 @@ LANGUAGE_QUESTION = ('There is nothing here to detect a test framework from. '
                      'Which one do the tests use?')
 SIGNER_QUESTION = 'Who may sign a rule? Emails, separated by commas.'
 
-# Why a project would want the git host's runner, and the one question that
-# follows. Three reasons and no others: each one is something a person cannot
-# get from their own machine.
-REMOTE_REASONS = (
-    'Your tests need another operating system.',
-    'Proof from a clean machine that ran exactly the pushed code.',
-    'No merge while red.',
-)
-REMOTE_INTRO = 'A remote runner is worth having for three reasons:'
-REMOTE_WITHOUT = ('Teammates see your results without one, from the test '
-                  'results purlin:test commits.')
-REMOTE_QUESTION = 'Run the tests on a remote runner too? [y/n]'
-REMOTE_DECLINED = ('you answered no; run purlin:init again to add it')
+# The one question that is not derived from the gate. A project that trusts
+# this machine runs its tests and writes its signatures here; one that does
+# not has purlin:sign refuse a rule whose tests have no ci record for the
+# commit being signed.
+TRUST_QUESTION = ('Do you trust your own machine for the tests and the '
+                  'signing? [y/n]')
+TRUST_LOCAL = ('Trust local: your own runs count, and purlin:sign signs what '
+               'you ran.')
+TRUST_REMOTE = ('Trust remote: purlin:sign refuses a rule whose tests have no '
+                'ci record for this commit, so purlin:test --remote runs '
+                'first.')
+
+REMOTE_INTRO = 'A remote runner is written for two reasons:'
 REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
                     'it')
 
@@ -140,6 +140,8 @@ _XUNIT_NOTE = ('xunit: compile .purlin/plugins/xunit_purlin.cs into a '
 _STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
                  'strength reads n/a.')
 
+_TRUST_WORDS = {'local': TRUST_LOCAL, 'remote': TRUST_REMOTE}
+
 _READMES = {
     'designs': """The mocks a design rule is written against: PNG, PDF, SVG or an HTML prototype.
 A design anchor pins the hash of these files, and a feature spec requires that anchor.
@@ -147,34 +149,9 @@ A new export stales the signatures of that anchor's rules, so a person looks aga
 """,
     '.purlin/records': """Every audit at the gate strong or signed writes one record per feature here, in ci/
 or local/, and commits it. The folder is the source: ci/ is the CI job's and the git host
-restricts it to the build identity; local/ is anyone's. Both count at strong, only ci/ at signed.
+restricts it to the build identity; local/ is anyone's. Both count at every gate.
 Under passed the evidence is the test results purlin:test commits, under .purlin/tests/.
 """,
-}
-
-# A gate is three things: a job running the audit where the evidence is
-# decided, a rule blocking merge unless that job passes, and the setting
-# saying what pass means. The setting is in .purlin/config.json; these two are
-# what the git host is told. The two restricted paths are the ones only CI
-# writes: its own records and its own briefs. A person's audit writes under
-# local/, which nobody restricts.
-_BRANCH_RULES = {
-    'github': """Branch rules to apply on GitHub:
-  1. Require a pull request, and require the purlin workflow's checks. Every run ends with the
-     gate check and fails when the gate is not met, so a green check means the gate held.
-     Bypass: the GitHub Actions app alone.
-  2. Restrict file paths .purlin/records/ci/** and .purlin/briefs/ci/**. Bypass: the GitHub
-     Actions app alone, so a person cannot push a record or a brief as CI's.
-  3. Block force pushes and restrict deletions, with no bypass.""",
-    'azure': """Branch security to apply on Azure DevOps:
-  1. Require a pull request, with the purlin pipeline as a build validation policy. Every run
-     ends with the gate check and fails when the gate is not met, so a green build means the
-     gate held.
-  2. Grant Contribute on .purlin/records/ci/** and .purlin/briefs/ci/** to the build service
-     alone, so a person cannot push a record or a brief as CI's.
-  3. Deny Force Push and Delete branch for everyone.""",
-    'passed': """Branch rules to apply on the git host: block force pushes and restrict deletions, with no bypass.
-The gate is passed, so nothing else is required until you raise it.""",
 }
 
 
@@ -224,23 +201,14 @@ def git_host(root):
     return None
 
 
-def hooks_dir(root):
-    """The directory git reads hooks from, or None outside a repository.
+def is_repository(root):
+    """True when `root` is inside a git checkout.
 
-    `core.hooksPath` first: a repository that sets it is one where git reads
-    nothing else, and a hook in `.git/hooks` there is a file git never runs.
+    Everything init writes lands in the tree, so this is the one thing git
+    has to answer before it writes any of it.
     """
     ok, top = _git(root, 'rev-parse', '--show-toplevel')
-    if not ok or not top:
-        return None
-    _, setting = _git(root, 'config', '--get', 'core.hooksPath')
-    if setting:
-        return os.path.abspath(setting if os.path.isabs(setting)
-                               else os.path.join(top, setting))
-    ok, common = _git(root, 'rev-parse', '--git-common-dir')
-    if not ok or not common:
-        return None
-    return os.path.join(os.path.abspath(os.path.join(root, common)), 'hooks')
+    return bool(ok and top)
 
 
 def installed_plugin_root():
@@ -447,113 +415,17 @@ class Plan(object):
         return False
 
 
-# --- The pre-push hook -----------------------------------------------------
-
-# The shim is tracked in git on purpose: it names no machine, no release and
-# no checkout, so the file is right for every clone, and everything
-# machine-specific is resolved when it runs. That is what lets a plugin update
-# change the hook with nothing in the project rewritten.
-_SHIM = '''#!/bin/sh
-# Purlin pre-push shim, written by purlin:init. It hands the hook to the
-# installed plugin's own scripts/hooks/pre-push.sh, where the behaviour lives.
-# The first of these carrying that file wins: $PURLIN_PLUGIN_ROOT, line 1 of
-# .purlin/plugin-root, $CLAUDE_PLUGIN_ROOT, a marketplace install under
-# ~/.claude/plugins/cache/purlin/purlin/, then the project root. A push is
-# never blocked because the plugin was not found: no test ran, none failed.
-set -u
-
-PURLIN_SCRIPT="scripts/hooks/pre-push.sh"
-PURLIN_PROJECT="$(git rev-parse --show-toplevel)"
-PURLIN_ROOT=""
-
-purlin_try() {
-  if [ -z "$PURLIN_ROOT" ] && [ -n "${1:-}" ] && [ -f "$1/$PURLIN_SCRIPT" ]; then
-    PURLIN_ROOT="$1"
-  fi
-}
-
-PURLIN_PINNED=""
-if [ -f "$PURLIN_PROJECT/.purlin/plugin-root" ]; then
-  PURLIN_PINNED="$(sed -n 1p "$PURLIN_PROJECT/.purlin/plugin-root")"
-fi
-
-purlin_try "${PURLIN_PLUGIN_ROOT:-}"
-purlin_try "$PURLIN_PINNED"
-purlin_try "${CLAUDE_PLUGIN_ROOT:-}"
-for purlin_cached in "$HOME"/.claude/plugins/cache/purlin/purlin/*; do
-  purlin_try "$purlin_cached"
-done
-purlin_try "$PURLIN_PROJECT"
-
-if [ -z "$PURLIN_ROOT" ]; then
-  echo "purlin: the plugin was not found, so the tagged tests did not run"
-  echo "        before this push. Set PURLIN_PLUGIN_ROOT, or write the plugin"
-  echo "        directory into .purlin/plugin-root, to fix this."
-  exit 0
-fi
-
-exec "$PURLIN_ROOT/$PURLIN_SCRIPT" "$@"
-'''
-
-_DELEGATOR_MARKER = 'purlin-delegator'
-_DELEGATOR = ('#!/bin/sh\n'
-              '# purlin-delegator (purlin:init): the hook body is '
-              '.purlin/hooks/pre-push, tracked in git.\n'
-              'PURLIN_SHIM="$(git rev-parse --show-toplevel)'
-              '/.purlin/hooks/pre-push"\n'
-              'if [ ! -x "$PURLIN_SHIM" ]; then\n'
-              '  echo "purlin: no hook shim at $PURLIN_SHIM; run purlin:init"\n'
-              '  exit 0\n'
-              'fi\n'
-              'exec "$PURLIN_SHIM" "$@"\n')
-
-
-def hook_manager(root):
-    """The tool that already owns this repository's hooks, or None.
-
-    Such a tool runs only its own file, so writing into the slot it points at
-    either loses the project's hooks or has Purlin's overwritten.
-    """
-    _, setting = _git(root, 'config', '--get', 'core.hooksPath')
-    lowered = (setting or '').replace('\\', '/').lower()
-    if '.husky' in lowered:
-        return 'husky', '.husky/pre-push'
-    if 'lefthook' in lowered:
-        return 'lefthook', 'lefthook.yml'
-    if os.path.exists(os.path.join(root, '.pre-commit-config.yaml')):
-        return 'the pre-commit framework', '.pre-commit-config.yaml'
-    return None
-
-
-def install_hook(plan, root, hooks):
-    """The tracked shim, then the hook git itself runs."""
-    plan.write('.purlin/hooks/pre-push', _SHIM, own=True, perm=0o755)
-    line = 'exec "$(git rev-parse --show-toplevel)/.purlin/hooks/pre-push" "$@"'
-    managed = hook_manager(root)
-    if managed is not None:
-        return plan.skip('the pre-push hook', '%s manages this repository\'s '
-                         'hooks; add this line to %s: %s'
-                         % (managed[0], managed[1], line))
-    if hooks is None:
-        return plan.skip('the pre-push hook', 'no git repository yet')
-    dest = os.path.join(hooks, 'pre-push')
-    rel = os.path.relpath(dest, root).replace(os.sep, '/')
-    if os.path.lexists(dest) and _DELEGATOR_MARKER not in _read(dest):
-        return plan.skip(rel, 'a hook is already there and is kept; add this '
-                              'line to it: %s' % line)
-    plan.write(rel, _DELEGATOR, own=True, perm=0o755)
-
-
 # --- The steps -------------------------------------------------------------
 
 def write_config(plan, plugin_root, existing, gate, host, framework, signers,
-                 sign_at=None):
+                 sign_at=None, trust=None):
     """`.purlin/config.json`: the template, the gate, and what follows from it."""
     config = json.loads(_read(plugin_root, 'templates', 'config.json'))
     config.update(existing or {})
     derived = gate_module.resolve_gate({'gate': gate})
     config.update({'version': _read(plugin_root, 'VERSION').strip(),
-                   'gate': gate, 'min_strength': derived.min_strength})
+                   'gate': gate, 'min_strength': derived.min_strength,
+                   'trust': trust or gate_module.DEFAULT_TRUST})
     if host:
         config['ci'] = host
     if framework:
@@ -612,13 +484,29 @@ def write_gitignore(plan, plugin_root):
                 '.purlin/runtime/')
 
 
-def print_remote_reasons():
-    """The three reasons a remote runner is worth having, and no others."""
+def ask_trust(console, existing):
+    """`local` or `remote`: whether this machine's own runs count for signing.
+
+    The default is `local`, which is a yes: your own tests and your own
+    signature are the evidence. A no writes `remote`, and `purlin:sign` then
+    refuses a rule whose tests have no ci record for the commit being signed.
+    """
+    named = str((existing or {}).get('trust') or '').strip().lower()
+    if named in gate_module.TRUST_VALUES:
+        return named
+    answer = str(console.ask(TRUST_QUESTION, 'y') or '').strip().lower()
+    return 'local' if answer.startswith('y') else 'remote'
+
+
+def print_remote_reasons(reasons):
+    """Why this project gets a remote runner, or the line saying it needs none."""
     print('')
+    if not reasons:
+        print('No remote runner: %s.' % workflow_module.NO_REASON)
+        return
     print(REMOTE_INTRO)
-    for reason in REMOTE_REASONS:
+    for reason in reasons:
         print('  %s' % reason)
-    print(REMOTE_WITHOUT)
 
 
 def write_workflow(plan, root, purlin_ref, upstream_check):
@@ -801,8 +689,8 @@ def main(argv=None):
         print('not a Purlin plugin root: %s' % plugin_root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
-    hooks = hooks_dir(root)
-    if hooks is None and not args.dry_run:
+    in_git = is_repository(root)
+    if not in_git and not args.dry_run:
         print(NOT_A_REPOSITORY, file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
@@ -831,21 +719,24 @@ def main(argv=None):
                        if part.strip()]
         sign_at = ask_sign_at(console)
 
+    trust = ask_trust(console, existing)
+
     selected, framework, dropped = resolve_frameworks(
         root, console, existing, args.add)
     host = git_host(root)
 
-    if hooks is None:
+    if not in_git:
         plan.note(NOT_A_REPOSITORY)
     for name in dropped:
         plan.note(DROPPED_FRAMEWORK % name)
     plan.note('Gate %s. Frameworks %s. Git host %s.'
               % (gate, ', '.join(selected), host or 'not read from a remote'))
+    plan.note(_TRUST_WORDS[trust])
     for name in ('.purlin', '.purlin/plugins', 'specs', 'specs/_anchors'):
         plan.directory(name)
 
     config = write_config(plan, plugin_root, existing, gate, host, framework,
-                          signers, sign_at)
+                          signers, sign_at, trust)
     install_plugins(plan, plugin_root, selected)
     plan.write('.purlin/plugin-root', installed_plugin_root() + '\n', own=True)
     write_wiring(plan, selected)
@@ -856,34 +747,24 @@ def main(argv=None):
         plan.write(directory + '/README.md', _READMES[directory])
     plan.copy(os.path.join(plugin_root, 'scripts', 'report',
                            'purlin-report.html'), 'purlin-report.html')
-    install_hook(plan, root, hooks)
-    # At `passed` the workflow is a question; at `strong` and above it is
-    # always written and the same three reasons say why.
-    wanted = True
-    if gate == 'passed':
-        if not git_remote(root):
-            wanted = False
-            plan.skip('the CI workflow', REMOTE_NO_REMOTE)
-        else:
-            print_remote_reasons()
-            answer = console.ask(REMOTE_QUESTION, 'n')
-            wanted = str(answer).strip().lower().startswith('y')
-            if not wanted:
-                plan.skip('the CI workflow', REMOTE_DECLINED)
-    else:
-        print_remote_reasons()
-    written_host = None
+    # A workflow is written for two reasons and no others: a proof this
+    # machine cannot prove, and a project that does not trust this machine
+    # for signing. A project with neither runs nothing remotely.
+    tags = workflow_module.env_tags_in_specs(root)
+    wanted, reasons = workflow_module.wanted(
+        tags, trust, results_module.host_os())
+    print_remote_reasons(reasons)
+    if wanted and not git_remote(root):
+        wanted = False
+        plan.skip('the CI workflow', REMOTE_NO_REMOTE)
+    elif not wanted:
+        plan.skip('the CI workflow', workflow_module.NO_REASON)
     if wanted:
-        written_host = write_workflow(
-            plan, root, 'v%s' % config.get('version', ''),
-            args.upstream_check)
+        write_workflow(plan, root, 'v%s' % config.get('version', ''),
+                       args.upstream_check)
 
     for line in plan.lines:
         print(line)
-    print('')
-    print(_BRANCH_RULES['passed' if gate == 'passed' and not written_host
-                        else ('azure' if (written_host or host) == 'azure'
-                              else 'github')])
     if gate == 'signed':
         print_signed(root, signers)
 

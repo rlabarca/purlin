@@ -5,5 +5,6 @@
   "mutation_engine": "auto",
   "sql_engine": null,
   "ci": "github",
-  "test_framework": "auto"
+  "test_framework": "auto",
+  "trust": "local"
 }

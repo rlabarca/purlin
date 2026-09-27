@@ -61,8 +61,9 @@ WORKFLOW_NAMES = ('verify-gate.yml', 'verify-gate.yaml')   # retired
 GATE_RENAMES = {'tested': 'passed', 'recorded': 'strong',  # retired
                 'approved': 'signed'}                      # retired
 SIGNER_KEY_WAS = 'approvers'                               # retired
-RECORD_FLAG_WAS = '--commit'                               # retired
-RECORD_SOURCE_WAS = 'developer'                            # retired
+PRE_PUSH_SHIM = '.purlin/hooks/pre-push'                   # retired
+PRE_PUSH_DELEGATOR = '.git/hooks/pre-push'                 # retired
+PRE_PUSH_KEY = 'pre_push'                                  # retired
 RULE_TAG_RE = re.compile(r'\[risk:\s*([^\]]*)\]')          # retired
 TAG_TO_BAR = {'high': 'strong', 'medium': 'strong',        # retired
               'low': 'passed'}                             # retired
@@ -70,16 +71,16 @@ TAG_TO_BAR = {'high': 'strong', 'medium': 'strong',        # retired
 # --- what this release writes instead --------------------------------------
 IGNORE_LINES = ('.purlin/report-data.js', '.purlin/report-stamp.js',
                 '.purlin/briefs/**/*.brief.txt')
-PRE_PUSH_SCRIPT = 'scripts/hooks/pre-push.sh'
-_SHIM_LINE = 'PURLIN_SCRIPT="%s"' % PRE_PUSH_SCRIPT
 RECORDS_DIR = '.purlin/records'
 BRIEFS_DIR = '.purlin/briefs'
 RECORD_SOURCES = ('ci', 'local')
 WORKFLOW_DIR = '.github/workflows'
-# What a workflow this release wrote carries and an earlier one does not: the
-# gate check every run now ends with. A purlin.yml without it was written
-# before the triggers changed, so it is rendered again.
-GATE_STEP_MARKER = 'scripts/ci/gate_check.py'
+# What a workflow this release wrote carries and an earlier one does not: a
+# gate check run with `--verify`, and a trigger on the signing tag. A
+# purlin.yml without both was written before CI stopped running on a pull
+# request, so it is rendered again or removed.
+GATE_STEP_MARKER = 'gate_check.py --check --verify'
+TAG_TRIGGER_MARKER = "tags: ['signed/**']"
 PURLIN_WORKFLOW_NAMES = ('purlin.yml', 'purlin.yaml')
 OS_NAMES = ('linux', 'macos', 'windows')
 ARROW = '→'
@@ -102,11 +103,10 @@ One file per audit run, at
 `.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`.
 A record says what ran, on which commit, what passed and the test strength. The
 folder says who wrote it: `ci/` is the CI job's, which the git host restricts to
-the build identity, and `local/` is anyone's. Both count at strong; only `ci/`
-counts at signed. The git history of these folders is the log, so adding a file
-never conflicts. A run prunes a feature's records past the newest three per
-operating system unless a `record/<name>` tag names them. You do not edit
-anything here by hand.
+the build identity, and `local/` is anyone's. Both count at every gate. The git
+history of these folders is the log, so adding a file never conflicts. A run
+prunes a feature's records past the newest three per operating system per
+source. You do not edit anything here by hand.
 """
 
 # --- helpers ---------------------------------------------------------------
@@ -239,31 +239,36 @@ def _apply_untracked(root, files, args, out):
             % (gone, '' if gone == 1 else 's', RECORDS_DIR))
 
 def _detect_hooks(root):
+    """Every git hook an older Purlin installed. This release installs none."""
     hits = []
-    if os.path.isfile(os.path.join(root, '.purlin', 'hooks', 'pre-commit')):
-        hits.append('.purlin/hooks/pre-commit')
-    delegator = os.path.join(root, '.git', 'hooks', 'pre-commit')
-    if os.path.isfile(delegator) and 'purlin' in _read(delegator).lower():
-        hits.append('.git/hooks/pre-commit')
-    shim = os.path.join(root, '.purlin', 'hooks', 'pre-push')
-    if os.path.isfile(shim) and _SHIM_LINE not in _read(shim).splitlines():
-        hits.append('.purlin/hooks/pre-push')
+    for rel in ('.purlin/hooks/pre-commit', PRE_PUSH_SHIM):
+        if os.path.isfile(os.path.join(root, *rel.split('/'))):
+            hits.append(rel)
+    for rel in ('.git/hooks/pre-commit', PRE_PUSH_DELEGATOR):
+        path = os.path.join(root, *rel.split('/'))
+        if os.path.isfile(path) and 'purlin' in _read(path).lower():
+            hits.append(rel)
     return hits
 
 def _apply_hooks(root, files, args, out):
+    """Remove them. Nothing runs at commit time and nothing runs at push time.
+
+    A push is a person's act and a gate is the git host's, so a hook in front
+    of either was a convenience that had to be explained and could be
+    skipped. What is left is the tag: `purlin:sign` writes `signed/<version>`
+    when every rule meets the gate, and a person pushes it.
+    """
     for rel in files:
         path = os.path.join(root, rel)
         out.kept(_back_up_copy(path, rel))
-        if rel.endswith('pre-commit'):
-            _untrack(root, rel)
+        _untrack(root, rel)
+        try:
             os.remove(path)
-            out.say('removed %s; this release runs no pre-commit hook' % rel)
-        else:
-            _write(path, ''.join(_SHIM_LINE + '\n'
-                                 if l.startswith('PURLIN_SCRIPT=') else l
-                                 for l in _read(path).splitlines(True)))
-            out.say('pointed %s at %s' % (rel, PRE_PUSH_SCRIPT))
+        except OSError:
+            continue
         out.done(rel)
+    out.say('removed %d git hook%s; this release runs nothing at commit or '
+            'push time' % (len(files), _s(files)))
 
 def _detect_config(root):
     config = _config(root)
@@ -272,7 +277,7 @@ def _detect_config(root):
     gate = _gate()
     stale = ('gate' not in config
              or config.get('version') != _version()
-             or str(config.get('pre_push', 'off')) not in ('on', 'off')
+             or config.get('trust') not in gate.TRUST_VALUES
              or (config.get('gate') == 'signed'
                  and config.get('sign_at') not in gate.SIGN_AT_VALUES)
              or any(key in config for key in gate.RETIRED_KEYS))
@@ -282,15 +287,43 @@ def _gate_default(old):
     """The gate to offer: the one the project named, read in this release's words.
 
     A project that already named a gate keeps it, under the name this release
-    reads. A project that named none is offered `strong` when its pre-push
-    setting was the blocking one and `passed` otherwise.
+    reads. A project that named none is offered `strong` when the hook
+    setting an older release wrote was the blocking one, because that project
+    asked for something to stop a change, and `passed` otherwise.
     """
     gates = _gate().GATES
     named = str(old.get('gate') or '').strip().lower()
     named = GATE_RENAMES.get(named, named)
     if named in gates:
         return named
-    return 'strong' if str(old.get('pre_push')).strip() == 'strict' else 'passed'
+    return 'strong' if str(old.get(PRE_PUSH_KEY)).strip() == 'strict' else 'passed'
+
+
+TRUST_QUESTION = ('Do you trust your own machine for the tests and the '
+                  'signing? [y/n]')
+
+
+def _ask_trust(default, assume_yes):
+    """The trust question, asked again on an update.
+
+    A yes is `local`, which is a project whose own runs count and whose own
+    signature is the evidence. A no is `remote`, and `purlin:sign` then
+    refuses a rule whose tests have no ci record for the commit being signed.
+    """
+    gate = _gate()
+    default = default if default in gate.TRUST_VALUES else gate.DEFAULT_TRUST
+    if assume_yes:
+        return default
+    try:
+        answer = input('%s [%s] ' % (
+            TRUST_QUESTION, 'y' if default == 'local' else 'n')).strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        return default
+    if answer.startswith('y'):
+        return 'local'
+    if answer.startswith('n'):
+        return 'remote'
+    return default
 
 
 SIGN_AT_QUESTION = """
@@ -360,7 +393,7 @@ def _apply_config(root, files, args, out):
         'min_strength': resolved.min_strength, 'sql_engine': resolved.sql_engine,
         'mutation_engine': resolved.mutation_engine,
         'test_framework': framework, 'digest': old.get('digest', 'auto'),
-        'pre_push': resolved.pre_push,
+        'trust': _ask_trust(resolved.trust, args.yes),
     }
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
@@ -484,10 +517,10 @@ def _detect_workflows(root):
 
     Two things are found here. A workflow an earlier release wrote under its
     own name, or one naming something this release moved, is replaced
-    outright. A `purlin.yml` that carries no gate check was written before CI
-    started deciding where evidence lands, so its triggers still start a run
-    on every branch and no run ends with the gate; it is rendered again from
-    the template.
+    outright. A `purlin.yml` that does not trigger on the signing tag, or
+    whose gate step does not verify, was written before CI stopped running on
+    a pull request; it is rendered again from the template, or removed
+    outright where this project has no reason for a runner at all.
     """
     hits = []
     for rel in _files_under(root, WORKFLOW_DIR, ('*.yml', '*.yaml')):
@@ -501,7 +534,8 @@ def _detect_workflows(root):
         if any(marker in text for marker in WORKFLOW_MARKERS):
             hits.append(rel)
         elif (os.path.basename(rel) in PURLIN_WORKFLOW_NAMES
-                and GATE_STEP_MARKER not in text):
+                and not (GATE_STEP_MARKER in text
+                         and TAG_TRIGGER_MARKER in text)):
             hits.append(rel)
     return hits
 
@@ -515,11 +549,19 @@ def _apply_workflows(root, files, args, out):
     out.say('removed %d workflow%s this release replaced'
             % (len(files), _s(files)))
     flow = _flow()
-    protected = _protected(root)
+    from purlin import results as results_module
+    tags = flow.env_tags_in_specs(root)
+    write_one, reasons = flow.wanted(tags, _config(root).get('trust'),
+                                     results_module.host_os())
+    if not write_one:
+        out.say('wrote no workflow: %s' % flow.NO_REASON)
+        return
+    for reason in reasons:
+        out.say(reason)
     # The same prerequisites init checks. A workflow file is no use without
-    # the remote that holds it, a host that runs it and the branch its
-    # triggers name, so a missing one is named and nothing is written.
-    ok, host, lines = flow.prerequisites(root, protected)
+    # the remote that holds it and a host that runs it, so a missing one is
+    # named and nothing is written.
+    ok, host, lines = flow.prerequisites(root, _protected(root))
     for line in lines:
         out.say(line)
     if not ok:
@@ -531,19 +573,17 @@ def _apply_workflows(root, files, args, out):
         out.say('left %s unwritten; run purlin:init again to add it later'
                 % rel)
         return
-    tags = flow.env_tags_in_specs(root)
     _write(os.path.join(root, rel),
-           flow.render_workflow(host, tags, 'v' + _version(),
-                                protected=protected))
+           flow.render_workflow(host, tags, 'v' + _version()))
     out.done(rel)
     out.say('wrote %s for %s, covering %s'
             % (rel, host, ', '.join(tags) if tags else 'linux'))
-    out.say('it runs on a pull request, on a push to %s and on a push to a '
-            'run/* branch, and ends with the gate check' % protected)
+    out.say('it runs on a push to a run/* branch and on a push of a signed/* '
+            'tag, and ends with the gate check')
 
 
 def _protected(root):
-    """The branch a push starts a run on: the project's own default branch."""
+    """The branch a signature has to reach: the project's own default branch."""
     from purlin import records as records_module
     return records_module.default_branch(root)
 
@@ -673,12 +713,12 @@ MIGRATIONS = (
      _detect_design_sources, _apply_design_sources),
     ('untracked-files', 'drop the proof files and untrack the dashboard data',
      _detect_untracked, _apply_untracked),
-    ('hooks', 'drop the pre-commit hook and repoint the pre-push shim',
+    ('hooks', 'remove the git hooks an older release installed',
      _detect_hooks, _apply_hooks),
     ('config', 'write .purlin/config.json at this shape and set the gate',
      _detect_config, _apply_config),
-    ('workflows', 'replace the retired workflows and render purlin.yml with '
-     'this release\'s triggers and gate check',
+    ('workflows', 'remove the retired workflows and write purlin.yml only '
+     'where this project has a reason for a runner',
      _detect_workflows, _apply_workflows),
     ('plugin-copies', 'refresh the proof plugin copies under .purlin/plugins/',
      _detect_plugin_copies, _apply_plugin_copies),

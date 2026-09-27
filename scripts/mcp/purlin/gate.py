@@ -8,16 +8,22 @@ can merge, and every level above it is not asked for at all:
           source
 `strong`  every rule's strong cell is met too: a record an audit wrote
           under either source, test strength at or above the project
-          minimum, no finding standing against the proof text or the test
-          body, and nobody holding the rule
+          minimum, a settled AI audit where the bar asks for one, and nobody
+          holding the rule
 `signed`  every rule's signed cell is met too: a person on the signer list
-          signed the rule, proof and test hashes
+          signed the rule, proof, test, bar and audit hashes
+
+One setting is not derived from the gate: `trust`, which `purlin:init` asks
+for once. `local`, the default, is a project that trusts this machine for
+the tests and the signing. `remote` is one that does not, and there
+`purlin:sign` refuses a rule whose tests have no `ci` record for the commit
+being signed.
 
 Everything else has a default derived from the gate, and every default can be
 overridden by naming the key:
 
     {"gate": "strong", "min_strength": 70, "mutation_engine": "auto",
-     "sql_engine": null, "ci": "github", "signers": []}
+     "sql_engine": null, "ci": "github", "signers": [], "trust": "local"}
 
 Keys this release no longer reads are ignored with one warning naming
 `purlin:init --update`.
@@ -58,17 +64,19 @@ _DERIVED = {
     'signed': (80, DEFAULT_SIGN_AT, True),
 }
 
+# Whether a project trusts this machine for the tests and the signing.
+# `purlin:init` asks once and `purlin:init --update` asks again.
+TRUST_VALUES = ('local', 'remote')
+DEFAULT_TRUST = 'local'
+
 RETIRED_KEYS = (
     'remote_verification', 'mutation_checks', 'quality_gate', 'platforms',
     'spec_dir', 'audit_criteria', 'audit_mode', 'audit_threshold',
     'approvers',                                                  # retired
     'ai_review_at',                                               # retired
     'risk',                                                       # retired
+    'pre_push',                                                   # retired
 )
-
-# `pre_push` survives as on or off. Any other value named a policy this
-# release no longer has.
-_PRE_PUSH_VALUES = ('on', 'off', True, False)
 
 
 class GateConfig(object):
@@ -76,7 +84,7 @@ class GateConfig(object):
 
     __slots__ = ('gate', 'min_strength', 'sign_at', 'breaks',
                  'mutation_engine', 'sql_engine', 'ci', 'signers',
-                 'test_framework', 'pre_push', 'warnings')
+                 'test_framework', 'trust', 'warnings')
 
     # What a surface reads is the settings a project can name. `breaks` and
     # `warnings` are derived from the gate alone, so neither is written out.
@@ -122,13 +130,13 @@ def resolve_gate(config):
             warnings.append('"min_strength" is not a number; using %s'
                             % ('n/a' if min_strength is None else min_strength))
 
-    pre_push = config.get('pre_push', 'off')
-    if pre_push not in _PRE_PUSH_VALUES:
-        warnings.append(
-            '"pre_push" is %r; this release reads it as on or off only. '
-            'Run purlin:init --update.' % (pre_push,))
-        pre_push = 'on'
-    pre_push = 'on' if pre_push in ('on', True) else 'off'
+    trust = config.get('trust', DEFAULT_TRUST)
+    if trust not in TRUST_VALUES:
+        if 'trust' in config:
+            warnings.append(
+                '"trust" is %r, which is not one of %s; reading it as %r'
+                % (trust, ', '.join(TRUST_VALUES), DEFAULT_TRUST))
+        trust = DEFAULT_TRUST
 
     retired = sorted(key for key in RETIRED_KEYS if key in config)
     if retired:
@@ -151,7 +159,7 @@ def resolve_gate(config):
         ci=config.get('ci'),
         signers=[str(s).strip().lower() for s in signers if str(s).strip()],
         test_framework=config.get('test_framework', 'auto'),
-        pre_push=pre_push,
+        trust=trust,
         warnings=warnings,
     )
     return resolved
