@@ -130,7 +130,7 @@ by different hands, into different paths.
 
 The comment carries the same rollup `purlin:status` prints in a checkout, so a reviewer with
 no clone reads exactly what an engineer reads. [dashboard.md](dashboard.md) describes the
-three screens and the filters.
+four screens and the filters.
 
 Two cases behave differently, and the job says so in one line rather than failing quietly:
 
