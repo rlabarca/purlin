@@ -12,7 +12,7 @@ DEV = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, DEV)
 
 from test_purlin_report import (browser, count_cells,  # noqa: E402,F401
-                                open_board, payload_named)
+                                flag_cards, open_board, payload_named)
 
 # The widths a reader opens the board at: a laptop, two desktops and a wide
 # screen. At 1024 every column the gate reaches is on screen; the page's own
@@ -48,12 +48,13 @@ def test_the_stale_card_carries_the_count(browser, tmp_path):  # noqa: F811
     payload['summary']['stale'] = 3
     payload['summary']['failing'] = 2
     page = open_board(browser, tmp_path / 'three', payload)
-    assert page.inner_text('.flag-v').strip() == '3'
-    assert 'on' in page.get_attribute('.flag', 'class')
+    assert flag_cards(page)['Stale'] == '3'
+    assert 'on' in page.get_attribute('.flag:last-child', 'class')
     fail = page.evaluate(
         "getComputedStyle(document.documentElement)"
         ".getPropertyValue('--state-fail').trim()")
-    colour = page.eval_on_selector('.flag-v', 'el => getComputedStyle(el).color')
+    colour = page.eval_on_selector(
+        '.flag:last-child .flag-v', 'el => getComputedStyle(el).color')
     probe = page.evaluate(
         "c => { const s = document.createElement('span'); s.style.color = c;"
         " document.body.appendChild(s); const v = getComputedStyle(s).color;"
@@ -69,8 +70,8 @@ def test_the_stale_card_carries_the_count(browser, tmp_path):  # noqa: F811
 
     payload['summary']['stale'] = 0
     page = open_board(browser, tmp_path / 'none', payload)
-    assert page.inner_text('.flag-v').strip() == '0'
-    assert 'on' not in page.get_attribute('.flag', 'class').split()
+    assert flag_cards(page)['Stale'] == '0'
+    assert 'on' not in page.get_attribute('.flag:last-child', 'class').split()
     page.close()
 
 
@@ -109,7 +110,7 @@ HEADINGS = """() => Array.from(document.querySelectorAll('.th > div'))
 
 # The right edge of the last column heading, which at the `signed` gate is
 # `Signed`: the column a reader on a laptop never saw while the floors added
-# up to more than a 1100-wide window gives the table.
+# up to more than a 1100-wide window gives the table. Seven columns fit it.
 LAST_HEADING = """() => {
   const heads = document.querySelectorAll('.th > div');
   return heads[heads.length - 1].getBoundingClientRect().right;
