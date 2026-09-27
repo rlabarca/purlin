@@ -67,14 +67,17 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
 4. **A current hold** makes both the strong cell and the signed cell read `held`, each with
    the reason `held by <email>: <case>`, whatever the risk. `flags.held` is true. A signature
    by a person for the current hashes outranks the hold.
-5. **The strong cell's words for work only a person can do** are `manual test`, `manual audit`
-   and `held`. A rule whose proofs are `@manual` reads `manual test` with the reason
-   `manual proof` and sets `flags.manual`. A rule with no brief for the current hashes where
-   its risk asks for one, or whose review did not settle, reads `manual audit` with the reason
-   `no brief for the current hashes` or `review not settled` and sets `flags.audit`. A held
-   rule sets neither: `held`, `manual` and `audit` are counted apart in every rollup. A review
-   that settled and still observed something reads `weak`, with each observation sentence
-   among the cell's reasons: the model could tell, and what it saw is build work.
+5. **The strong cell's words beyond `strong` and `weak`** are `manual test`, `unsettled`,
+   `not audited` and `held`. A rule whose proofs are `@manual` reads `manual test` with the
+   reason `manual proof` and sets `flags.manual`. A rule whose bar is `strong` and over whose
+   current hashes no brief exists reads `not audited` with the reason
+   `no audit has run on this code` and sets `flags.not_audited`; a brief that did not settle
+   reads `unsettled` with the reason `the AI audit could not settle` and sets
+   `flags.unsettled`. A rule whose bar is `passed` reads neither of those two. A held rule
+   sets none of them: `held`, `manual`, `unsettled` and `not_audited` are counted apart in
+   every rollup. A review that settled and still observed something reads `weak`, with each
+   observation sentence among the cell's reasons: the model could tell, and what it saw is
+   build work.
 6. **`bucket`**: `untested` is drafted, or ready with no test, or ready with no current
    counting run (`not run` and `code changed` both land here); `failing` when any counting
    run failed; `partial` when the tests passed on one operating system and failed or did not
@@ -84,13 +87,15 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
    counted beside the buckets.
 7. **`blocked_by`** is the lowest unmet cell in the order `spec`, `passed`, `strong`, `signed`,
    or null when the rule meets the gate. `spec` blocks while the spec status is `drafted`.
-8. **The review list** holds exactly the rules whose `blocked_by` is `strong` with the word
-   `manual test`, `manual audit` or `held`, or `signed` with the word `unsigned`, `stale` or
-   `held`. A rule blocked at `spec` or `passed` is never on it. It is `[]` under `passed`. Rows
-   are grouped by risk high first, then within a group stale and held before the rest, then
-   feature and rule id. A row's `why` token is the blocking cell's own word, from the closed
-   set `unsigned`, `stale`, `held`, `manual test`, `manual audit`. The list's header is the one
-   sentence that may still say a person is needed: `<n> rules need a person`.
+8. **Two lists.** `review_list` holds exactly the rules whose strong cell reads `manual
+   test`, `unsettled` or `held`, and is `[]` under `passed`. `sign_list` holds exactly the
+   signable rules — cleared their bar, need a signature, signed cell not `signed` — and is
+   `[]` below `signed`. A rule reading `not audited` is on neither: `purlin:audit` moves it.
+   Both are ordered by bar, `strong` first, then feature and rule id. Each row carries
+   `feature`, `owner`, `rule`, `bar`, `cell`, `kind` and `why`, where `kind` is the cell's own
+   word — `manual test`, `unsettled` or `held` on Review; `unsigned`, `stale` or `held` on
+   Sign — and `why` is `[kind]`. The lists' header is the one sentence that may still say a
+   person is needed: `<n> rules need a person`.
 9. **A passed cell with no source** (`no test`, or `not run` with nothing to read) has
    `source` null, `current` false, `counts` false. `not run` for a missing `@env` has the
    record's source, `current` true, `counts` true and `missing_env` naming the environment.
@@ -98,10 +103,10 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
     source at `signed`; `local` counts at `passed` and at `strong`) is `not run` with the
     reason `<source> record does not count under <gate>`.
 11. **Rollup and summary keys**: `rules, met, failing, partial, untested, passed, proofs,
-    proofs_without_test, proofs_without_test_ids, stale, held, manual, audit`, plus `strong` at
-    `strong` and above, plus `signed` at `signed`; the rollup adds
-    `test_strength` and `latest_record`; the summary adds `features`. `met` counts rules with
-    `meets_gate` true.
+    proofs_without_test, proofs_without_test_ids, stale, held, manual, unsettled,
+    not_audited, signable`, plus `strong` at `strong` and above, plus `signed` at `signed`;
+    the rollup adds `test_strength` and `latest_record`; the summary adds `features`. `met`
+    counts rules with `meets_gate` true.
 12. **`test_hash_kind`** is `file`, `manual` or `none`, as `signatures.test_hash_kind` returns.
 13. `records`, `latest_record`, `warnings`, `remote_url` and the feature fields not named in
     Part B1 keep their schema 4 shape and names (`label` stays `label` on a record entry; the
