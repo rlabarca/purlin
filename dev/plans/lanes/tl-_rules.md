@@ -62,14 +62,16 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
 
 1. **Every cell at or below the gate exists for every rule**, including a drafted one. A cell
    above the gate is absent (the key is missing, not null).
-2. **When the passed cell is not met, the strong cell reads `weak` with the one reason
-   `not passed`.** The strength shown is the latest counting record's, or null.
+2. **When the passed cell is not met and nobody holds the rule, the strong cell reads `weak`
+   with the one reason `not passed`.** The strength shown is the latest counting record's, or
+   null. A hold is read before the tests are, so a held rule reads `held` there instead
+   (decision 31).
 3. **The signed cell is computed from the signature files regardless of the cells below it**:
    `signed`, `unsigned`, `stale`, `held`, or `not required` when risk is below `sign_at` and
    no hold is current. A signature is a fact about files.
 4. **A current hold** makes both the strong cell and the signed cell read `held`, each with
-   the reason `held by <email>: <case>`, whatever the risk. `flags.held` is true. A signature
-   by a person for the current hashes outranks the hold.
+   the reason `held by <email>: <case>`, whatever the bar and whatever the tests are doing.
+   `flags.held` is true. A signature by a person for the current hashes outranks the hold.
 5. **The strong cell's words beyond `strong` and `weak`** are `manual test`, `unsettled`,
    `not audited` and `held`. A rule whose proofs are `@manual` reads `manual test` with the
    reason `manual proof` and sets `flags.manual`. A rule whose bar is `strong` and over whose
@@ -102,9 +104,10 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
 9. **A passed cell with no source** (`no test`, or `not run` with nothing to read) has
    `source` null, `current` false, `counts` false. `not run` for a missing `@env` has the
    record's source, `current` true, `counts` true and `missing_env` naming the environment.
-10. **The passed cell's word for a record that does not count** under the gate (a `local`
-    source at `signed`; `local` counts at `passed` and at `strong`) is `not run` with the
-    reason `<source> record does not count under <gate>`.
+10. **Every source counts at every gate** (decision 31), so no record and no run is ever
+    read out of the passed cell for the gate's sake, and there is no `does not count`
+    reason. A project that wants CI's word before a signature sets `trust: remote`, which
+    `purlin:sign` reads and no cell does.
 11. **Rollup and summary keys**: `rules, met, failing, partial, untested, passed, proofs,
     proofs_without_test, proofs_without_test_ids, stale, held, manual, unsettled,
     not_audited, signable`, plus `strong` at `strong` and above, plus `signed` at `signed`;

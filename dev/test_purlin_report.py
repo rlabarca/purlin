@@ -723,14 +723,15 @@ def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
     assert 'SIGNED jane@acme.com \u00b7 2026-09-12' in page.eval_on_selector_all(
         '.kv dd', r'els => els.map(e => e.innerText.trim().replace(/\s+/g, " "))')
     assert 'Test strength 86%, against a minimum of 80%.' in body
-    assert 'The model review settled the question.' in body
+    assert 'The AI audit settled the question.' in body
     page.click('[data-act="close"]')
     page.click('.rule[data-rule="RULE-3"]')
     held = page.inner_text('.wrap')
     assert 'PROOF-3' in held
     assert 'held by sam@acme.com: the lock expiry is never read' in held
-    assert 'No proof of this rule names a rejection, an error or a boundary.' \
-        in held
+    # No finding name and no hint reaches the screen: what a scan noticed is
+    # the audit's to judge, and the audit's own sentence is what shows.
+    assert 'Free checks' not in held
     page.close()
 
 
