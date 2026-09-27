@@ -231,8 +231,9 @@ spec_file() {  # dir feature scope
 # Feature: $2
 
 > Scope: $3
-> Description: One rule at the strong bar: the machine settles it at strong,
->   and the signed gate asks a person because sign_at is medium.
+> Description: One rule at the strong bar: the machine settles it at strong
+>   on the free checks, because no model is reachable here, and the signed
+>   gate asks a person because sign_at is strong.
 
 ## Rules
 
@@ -359,7 +360,7 @@ gate_walk() {  # dir language
     'local record does not count under signed' "$dir/.purlin-local.log"
   mv "$dir/.purlin/records/aside" "$dir/.purlin/records/ci"
 
-  expect_exit "$language: signed refuses a rule at sign_at with no signature" 1 \
+  expect_exit "$language: signed refuses a rule that needs a signature" 1 \
     python3 "$GATE" --check --project-root "$dir"
 
   signing_key "$dir" jane@acme.com

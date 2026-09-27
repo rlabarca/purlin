@@ -71,7 +71,9 @@ in the shipped prose where a retired spelling may still be written.
   current code no audit has run. It is on no list: `purlin:audit` moves it, not a person.
 - **unsettled**: the strong cell's word for a rule whose AI audit ran and could not tell
   whether the test observes what the proof names. A person judges the proof against the test
-  and signs, adds a case or holds.
+  and signs, adds a case or holds. Where no model could be reached the audit did not run, so
+  nothing is unsettled: the free checks and the strength answer level 2 on their own, as they
+  do where no break engine measured a strength.
 - **signature stale**: the signed cell's word when a signature exists and its hashes no longer
   match.
 - **Review**: the list of rules whose strong cell reads `manual test`, `unsettled` or `held`.

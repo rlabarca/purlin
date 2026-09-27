@@ -83,6 +83,13 @@ FLAGS = ('failing', 'partial', 'stale', 'held', 'manual', 'unsettled',
 REVIEW_WORDS = ('manual test', 'unsettled', 'held')
 NOT_AUDITED = 'not audited'
 
+# What a brief writes under `ai_review` when no model could be reached. The
+# AI audit did not run, so it settled nothing and it observed nothing: the
+# free checks and the strength are the whole of level 2, exactly as they are
+# where no break engine measured a strength. `scripts/review/brief.py` reads
+# this name from here so the two cannot drift.
+NO_MODEL = 'not available'
+
 # What the signed cell can read when a person is still owed.
 SIGN_WORDS = ('unsigned', 'stale', 'held')
 
@@ -630,6 +637,11 @@ def _outstanding(inp, bar, brief, holds, counting_signatures):
         # this code and the strength beside it is not the question yet.
         if not brief:
             return NOT_AUDITED, ['no audit has run on this code']
+        # A brief whose model could not be reached is not an unsettled
+        # question: nothing asked one. The audit's other layers answer,
+        # as they do where no break engine measured a strength.
+        if brief.get('ai_review') in (None, NO_MODEL):
+            return None, []
         if brief.get('settled') is not True:
             return 'unsettled', ['the AI audit could not settle']
     return None, []

@@ -53,7 +53,7 @@ import static_checks                                          # noqa: E402
 from purlin import (checks,                                    # noqa: E402
                     console as console_module,
                     payload as payload_module,
-                    signatures as signatures_module)
+                    signatures as signatures_module, states)
 
 SCHEMA = 'purlin-brief/3'
 USAGE = ('Usage: brief.py --feature <f> [--rule RULE-N] [--ai] '
@@ -80,7 +80,10 @@ _LAYERS_BY_BAR = {
 
 ATTACHMENTS = os.path.join('.purlin', 'runtime', 'attachments')
 
-NOT_AVAILABLE = 'not available'
+# What the brief writes where no model could be reached. The strong cell
+# reads this word and treats the AI audit as one that never ran, so the name
+# lives in the module that reads it.
+NOT_AVAILABLE = states.NO_MODEL
 
 
 # ---------------------------------------------------------------------------

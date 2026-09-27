@@ -210,6 +210,10 @@ class Project(object):
         write(os.path.join(self.root, *rel.split('/')), json.dumps({
             'schema': 'purlin-brief/3', 'feature': 'login', 'rule': rule,
             'bar': entry['bar'], 'observations': list(observations),
+            # A brief naming no model answer is one no model was reached
+            # for, and the strong cell reads that as an AI audit that never
+            # ran, so a fixture carries the answer it wants read.
+            'ai_review': 'settled: %s' % ('yes' if settled else 'no'),
             'settled': settled, 'tests': []}))
         return rel
 

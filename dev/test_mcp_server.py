@@ -206,6 +206,11 @@ class Project(object):
         _write(path, json.dumps({
             'schema': 'purlin-brief/3', 'feature': feature, 'rule': rule_id,
             'triple_hash': triple, 'settled': settled,
+            # A brief that names no model answer is one no model was
+            # reached for, and the strong cell reads that as an AI audit
+            # that never ran. A fixture that wants a settled or an
+            # unsettled review has to carry the answer.
+            'ai_review': 'settled: %s' % ('yes' if settled else 'no'),
             'observations': list(observations), 'tests': list(tests)}))
         return os.path.relpath(path, self.root).replace(os.sep, '/')
 
@@ -1052,12 +1057,18 @@ class TestTheStrongCell:
     def test_the_brief_settles_level_two_where_the_bar_asks_for_one(self):
         assert _strong()['word'] == 'not audited'
         assert _strong()['reasons'] == ['no audit has run on this code']
-        open_question = _strong(brief={'settled': False, 'observations': []})
+        open_question = _strong(brief={'settled': False, 'observations': [],
+                                       'ai_review': 'settled: no'})
         assert open_question['word'] == 'unsettled', open_question
         assert open_question['reasons'] == [
             'the AI audit could not settle'], open_question
-        settled = _strong(brief={'settled': True, 'observations': []})
+        settled = _strong(brief={'settled': True, 'observations': [],
+                                 'ai_review': 'settled: yes'})
         assert settled['word'] == 'strong', settled
+        no_model = _strong(brief={'settled': None, 'observations': [],
+                                  'ai_review': purlin_states.NO_MODEL})
+        assert no_model['word'] == 'strong', (
+            'no model was reached, so no question was left open')
 
     @pytest.mark.proof("states", "PROOF-18", "RULE-15")
     def test_a_passed_bar_reads_neither_of_the_two_audit_words(self):

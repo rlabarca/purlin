@@ -103,6 +103,8 @@ false and the rule meets the gate on its tests.
 be clear, the test body must carry no finding, the strength must reach `min_strength`, and
 the AI audit must have run on the current rule, proof and test and settled. Until it has run
 the strong cell reads `not audited`; where it ran and could not tell it reads `unsettled`.
+Where no model could be reached the audit did not run at all, and the free checks and the
+strength answer level 2 on their own.
 The rule needs at least one proof that names a rejection, an error or a boundary, so
 `happy_path_only` is blocking rather than advisory here. Under `signed` the rule needs a
 current signature from someone on the signer list, whatever `sign_at` says.
