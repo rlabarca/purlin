@@ -21,6 +21,7 @@ The file, field by field in `references/formats/signature_format.md`:
       "test_hash": "<sha256 of the test bodies>",
       "test_hash_kind": "file",
       "design_hash": null,
+      "audit_hash": "<sha256 of the brief's evidence>",
       "bar": "strong",
       "signer": "jane@acme.com",
       "note": null,
@@ -30,10 +31,20 @@ The file, field by field in `references/formats/signature_format.md`:
       "record": ".purlin/records/ci/login/20260913T120000Z-abc1234-ci.json"
     }
 
-A signature is **current** when the three hashes it binds still equal the
+A signature is **current** when the hashes it binds still equal the
 recomputed ones and the bar it names still matches the rule's. Anything else
 is a signature stale, and a person has to look. `design_hash` binds the pinned
 design files for a rule whose origin is `design`.
+
+`audit_hash` is what locks the audit in beside the rule, the proof and the
+test. It is taken over the brief's own evidence: the test strength, the
+observations sorted, and whether the audit settled. A re-audit that observes
+something different stales the signature, because what was signed was a rule
+whose tests an audit had read and found nothing in. Timestamps and commit ids
+are not hashed, so running the same audit again over the same code changes
+nothing. A rule with no brief carries the hash of the empty string, and one
+whose first audit writes a brief is stale from that moment, which is the
+honest answer: there is evidence now that there was not before.
 
 A signature **counts** under the `signed` gate when the commit that added it
 is signed (`%G?` is `G`), its author email is on the signer list as of that
@@ -88,6 +99,30 @@ def triple_hash(rule_hash, proof_hash, test_hash):
     digest = hashlib.sha256()
     digest.update(('%s\n%s\n%s' % (rule_hash or '', proof_hash or '',
                                    test_hash or '')).encode('utf-8'))
+    return digest.hexdigest()
+
+
+def audit_hash(brief):
+    """The A a signature binds: what the audit found, and nothing else.
+
+    The strength, the observations in a fixed order and whether the audit
+    settled. Nothing that moves on its own goes in: a timestamp, a commit id
+    or the path of the record would stale every signature on the next run of
+    the same audit over the same code. A rule with no brief hashes the empty
+    string, so a rule whose first audit writes a brief goes stale, which is
+    what a person should be asked about.
+    """
+    if not brief:
+        return hashlib.sha256(b'').hexdigest()
+    strength = brief.get('test_strength')
+    settled = brief.get('settled')
+    observations = sorted(str(line) for line in
+                          (brief.get('observations') or ()))
+    parts = ['n/a' if strength is None else str(int(strength)),
+             'none' if settled is None else ('yes' if settled else 'no')]
+    parts.extend(observations)
+    digest = hashlib.sha256()
+    digest.update('\n'.join(parts).encode('utf-8'))
     return digest.hexdigest()
 
 
@@ -172,13 +207,15 @@ def _load_named(project_root, features, name_re, skip_slug):
 
 
 def is_current(signature, rule_hash, proof_hash, test_hash, bar,
-               design_hash=None):
-    """True when a signature still binds the text and the bar it was given for.
+               design_hash=None, audit=None):
+    """True when a signature still binds what it was given for.
 
     Every part of the triple is compared, so changing a rule, rewording a
-    proof or editing a test all stale the signature; the bar is compared too,
+    proof or editing a test all stale the signature. The bar is compared too,
     because raising a rule from `passed` to `strong` is a change in what
-    signing it meant.
+    signing it meant, and so is the audit's own evidence: a re-audit that
+    observes something different is a new answer to the question the signer
+    was answering.
     """
     if not signature:
         return False
@@ -191,6 +228,8 @@ def is_current(signature, rule_hash, proof_hash, test_hash, bar,
     if signature.get('design_hash') or design_hash:
         if signature.get('design_hash') != design_hash:
             return False
+    if audit is not None and str(signature.get('audit_hash') or '') != str(audit):
+        return False
     return True
 
 

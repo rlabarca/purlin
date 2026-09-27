@@ -1,11 +1,11 @@
-> Format-Version: 4
+> Format-Version: 5
 
 # Signature Format
 
-A signature is one named person's attestation that a rule, its proof and its
-test belong together. It is a committed file, so who signed what and when is in
-git history. CI writes no signature, ever: every file in the directory was
-written by a person.
+A signature is one named person's attestation that a rule, its proof, its test
+and the audit that read them belong together. It is a committed file, so who
+signed what and when is in git history. CI writes no signature, ever: every
+file in the directory was written by a person.
 
 ## File name
 
@@ -27,9 +27,9 @@ forty adds forty files in one commit. The slug `brief` is reserved: the reader
 skips `<RULE-N>.<hash8>.brief.json` rather than reading it as a signature by
 someone called `brief`.
 
-## The triple
+## The triple, and the audit beside it
 
-What a signature binds is three hashes, not the files they came from:
+What a signature binds is hashes, not the files they came from:
 
 | Letter | What it hashes |
 |---|---|
@@ -37,10 +37,20 @@ What a signature binds is three hashes, not the files they came from:
 | P | the proof descriptions of that rule, in order, normalised the same way |
 | T | the test files backing those proofs, each with the test's name and the file's blob id. The tests are the ones the feature's latest counting records observed, every operating system together, so every checkout reads the same T; a proof no record has observed yet takes them from the checkout's own runtime proofs |
 | D | the pinned design a `origin: design` rule rests on, and null for every other origin |
+| A | what the audit found: the brief's test strength, its observations sorted, and whether it settled. `sha256` of the empty string where no brief exists |
 
 The triple hash is `sha256` over R, P and T, one per line, and the first eight
-characters of it name the file. D is held and compared beside the triple
-rather than folded into it, because a rule with no design has none.
+characters of it name the file. D and A are held and compared beside the
+triple rather than folded into it, because a rule with no design has no D and
+a rule no audit has reached has no brief to take A from.
+
+A is what locks the audit in. A signature says the test proves the proof, and
+what the signer read before saying so was the brief: the strength, what the
+AI audit observed, and whether it settled. A re-audit that observes something
+different is a new answer to that question, so the signature goes stale and a
+person looks again. Nothing that moves on its own is hashed: no timestamp, no
+commit id, no record path, so running the same audit again over the same code
+changes nothing.
 
 `test_hash_kind` says what T was taken from: `file` for a test file version
 control tracks, `manual` for a proof with no test at all, and `none` for a rule
@@ -59,6 +69,7 @@ with nothing behind it yet.
   "test_hash": "1d93...",
   "test_hash_kind": "file",
   "design_hash": null,
+  "audit_hash": "e3b0c442...",
   "bar": "strong",
   "signer": "jane@acme.com",
   "note": null,
@@ -70,7 +81,8 @@ with nothing behind it yet.
 ```
 
 REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
-`test_hash`, `bar`, `signer`, `timestamp`. Every other field is OPTIONAL.
+`test_hash`, `audit_hash`, `bar`, `signer`, `timestamp`. Every other field is
+OPTIONAL.
 
 | Field | Type | What it holds |
 |---|---|---|
@@ -83,6 +95,7 @@ REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
 | `test_hash` | string | T |
 | `test_hash_kind` | string | `file`, `manual` or `none` |
 | `design_hash` | string or null | D, the spec's `> Pinned:` hash for a `origin: design` rule |
+| `audit_hash` | string | A, the hash of what the audit found |
 | `bar` | string | `passed` or `strong`, the bar the rule carried when it was signed |
 | `signer` | string | the signer's email |
 | `note` | string or null | the one line `purlin:sign --note` writes for a `@manual` proof or an AI audit that could not settle; null otherwise |
@@ -94,13 +107,21 @@ REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
 ## Current, and stale
 
 A signature is **current** when the three hashes it binds still equal the
-recomputed ones, the design hash still matches, and the bar it names still
-matches the rule's. Anything else is a signature stale and a person has to
-look.
+recomputed ones, the design hash still matches, the audit hash still matches,
+and the bar it names still matches the rule's. Anything else is a signature
+stale and a person has to look.
 
 Changing the bar stales the signature on purpose: raising a rule from
 `passed` to `strong` changes what signing it meant, and the old attestation
-was given under the old bar.
+was given under the old bar. So does a re-audit that finds something
+different: the strength moved, the AI audit observed something it did not
+observe before, or it settled where it had not. A rule whose first audit
+writes a brief where there was none goes stale for the same reason, which is
+the honest answer: there is evidence now that there was not before.
+
+A hold binds the triple, the design and the bar, and not the audit. A hold is
+a person saying the test does not prove the proof, which is a statement about
+the rule, the proof and the test; a re-audit does not answer it.
 
 Changing the code alone stales nothing. A record carries the tree hash of the
 spec's `> Scope:` files, so a code change leaves the signature standing and the
@@ -116,7 +137,11 @@ Under `strong` a signature from anyone counts, as long as the file is committed
 and its hashes match. What it clears there is a question the machine could not
 settle: a `@manual` proof, or an AI audit that could not tell.
 
-Under `signed` four conditions hold:
+Under `signed` four conditions hold. `trust: remote` in
+`.purlin/config.json` adds a fifth before any of them: `purlin:sign` refuses a
+rule whose tests have no `ci` record for the commit being signed, and says to
+run `purlin:test --remote` first. At the default, `trust: local`, your own run
+is the evidence.
 
 | Condition | How it is read | The reason when it fails |
 |---|---|---|

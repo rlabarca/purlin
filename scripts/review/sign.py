@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Write the signatures a person attests, and commit them signed.
 
-    sign.py [--project-root DIR]
+    sign.py [--release NAME] [--project-root DIR]
     sign.py <feature> [RULE-N ...] [--batch] [--project-root DIR]
     sign.py <feature> RULE-N [RULE-N ...] --note "<what you checked>"
     sign.py <feature> RULE-N [RULE-N ...] --hold "<the missing case>"
@@ -24,6 +24,19 @@ answer is one of four: sign the rule, add a case (a proof line to write into
 the spec), hold the rule, or skip it. The walk writes nothing until it
 closes, and then it makes one signed commit for the signatures and one per
 feature for the holds.
+
+**The tag is the marker of proven code.** When the walk closes and every rule
+meets the gate, it writes the annotated tag `signed/<version>`, where the
+version is the `VERSION` file at the project root or the one in
+`.purlin/config.json`; `--release <name>` names another. The tag's message
+names the commit and the gate. No tag is written while any rule falls short,
+and none is written over a tag that is already there. Nothing is pushed: the
+last line names the push for a person to run.
+
+**Trust.** With `trust: remote` in `.purlin/config.json` a rule whose tests
+have no `ci` record for this commit is refused, and the line says to run
+`purlin:test --remote` first. With `trust: local`, the default, your own run
+is the evidence.
 
 `--note` carries the one line a signer writes where the machine could not
 settle the question: a rule reading `manual test` or `unsettled`.
@@ -62,7 +75,18 @@ from purlin import (console as console_module,                 # noqa: E402
 SCHEMA = 'purlin-signature/1'
 HOLD_SCHEMA = 'purlin-hold/1'
 USAGE = ('Usage: sign.py [<feature> [RULE-N ...]] [--batch] [--note TEXT] '
-         '[--hold CASE] [--project-root DIR]')
+         '[--hold CASE] [--release NAME] [--project-root DIR]')
+
+# The tag `purlin:sign` writes when every rule meets the gate, and the one
+# ref besides a run branch that starts a CI run.
+TAG_PREFIX = 'signed/'
+NO_TAG_SHORT = 'No tag: %d of %d rules do not meet the gate %s.'
+NO_TAG_EXISTS = ('No tag: %s is already written. Name another with '
+                 '--release <name>.')
+TAGGED = 'Tagged %s at %s: every rule meets the gate %s.'
+PUSH_THE_TAG = 'Run: git push origin %s'
+NO_CI_RUN = ('sign: %s %s has no ci test run for this commit; run '
+             'purlin:test --remote first')
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
@@ -169,6 +193,7 @@ def write_signature(project_root, feature, rule, signer_email, brief_path,
         'test_hash': entry.get('test_hash'),
         'test_hash_kind': entry.get('test_hash_kind'),
         'design_hash': entry.get('design_hash'),
+        'audit_hash': entry.get('audit_hash'),
         'bar': bar if bar is not None else entry.get('bar'),
         'signer': str(signer_email),
         'note': str(note).strip() if str(note or '').strip() else None,
@@ -184,10 +209,10 @@ def write_signature(project_root, feature, rule, signer_email, brief_path,
 def brief_for(project_root, feature, rule, triple):
     """The brief an audit wrote for this triple, or None when none exists.
 
-    A brief sits under `.purlin/briefs/<source>/<feature>/`, so which folder
-    holds it is the source of the run that wrote it. `records.find_brief` is
-    the one place that path is built, so a signature names the file a reader
-    can open rather than a path nothing ever writes.
+    A brief sits under `.purlin/briefs/<source>/<feature>/`, and both folders
+    count. `records.find_brief` is the one place that path is built, so a
+    signature names the file a reader can open rather than a path nothing
+    ever writes.
     """
     rel, _full = records_module.find_brief(project_root, feature, rule, triple)
     return rel
@@ -276,6 +301,140 @@ def _needs_a_signature(entry):
 def _rule_number(rule_id):
     digits = str(rule_id).rsplit('-', 1)[-1]
     return int(digits) if digits.isdigit() else 0
+
+
+# ---------------------------------------------------------------------------
+# Trust: whether this machine's own test run is evidence enough to sign on
+# ---------------------------------------------------------------------------
+
+def has_a_ci_run(entry):
+    """True when a `ci` record answered this rule's tests for this commit.
+
+    The passed cell lists one platform per operating system a counting run
+    covered, each with the source that answered it. A project that trusts
+    this machine never asks; one that does not asks here, and a rule with no
+    such entry is refused until `purlin:test --remote` has run.
+    """
+    cell = ((entry or {}).get('cells') or {}).get('passed') or {}
+    if not cell.get('current'):
+        return False
+    return any((platform or {}).get('source') == 'ci'
+               for platform in (cell.get('platforms') or {}).values())
+
+
+def untrusted(payload, targets):
+    """`[(feature, rule)]` this project's trust setting refuses to sign.
+
+    Empty under `trust: local`, which is the default and is a project saying
+    its own runs count. Under `trust: remote` it is every named rule whose
+    tests no CI run has answered for this commit.
+    """
+    if (payload.get('gate') or {}).get('trust') != 'remote':
+        return []
+    refused = []
+    for feature, rule in targets or ():
+        if not has_a_ci_run(rule_entry(payload, feature, rule)):
+            refused.append((feature, rule))
+    return refused
+
+
+def _allowed(payload, targets, out=None):
+    """The targets trust allows, printing one line for each it refuses."""
+    refused = untrusted(payload, targets)
+    for feature, rule in refused:
+        print(NO_CI_RUN % (feature, rule), file=out or sys.stdout)
+    return [pair for pair in targets if pair not in refused]
+
+
+# ---------------------------------------------------------------------------
+# The tag
+# ---------------------------------------------------------------------------
+
+def project_version(project_root):
+    """The version a tag is named for: the `VERSION` file, else the config."""
+    path = os.path.join(project_root, 'VERSION')
+    try:
+        with open(path, 'r', encoding='utf-8') as handle:
+            named = handle.read().strip()
+    except (IOError, OSError, UnicodeDecodeError):
+        named = ''
+    if named:
+        return named
+    try:
+        with open(os.path.join(project_root, '.purlin', 'config.json'), 'r',
+                  encoding='utf-8') as handle:
+            return str(json.load(handle).get('version') or '').strip()
+    except (IOError, OSError, ValueError, UnicodeDecodeError):
+        return ''
+
+
+def tag_name(project_root, release=None):
+    """`signed/<version>`, or `signed/<name>` where `--release` named one."""
+    named = str(release or '').strip() or project_version(project_root)
+    return TAG_PREFIX + (named or 'unversioned')
+
+
+def tag_exists(project_root, name):
+    """True when the repository already carries this tag."""
+    result = subprocess.run(
+        ['git', 'rev-parse', '--verify', '--quiet', 'refs/tags/%s' % name],
+        capture_output=True, text=True, cwd=project_root, timeout=10)
+    return result.returncode == 0
+
+
+def tag_message(commit, gate):
+    """What the tag says: the commit it stands for, and the gate it met."""
+    return ('Every rule meets the gate %s.\n\nCommit: %s\nGate: %s\n'
+            % (gate, commit or 'unknown', gate))
+
+
+def short_of_the_gate(payload):
+    """`(rules that do not meet the gate, rules in the project)`.
+
+    Each rule is counted once, under the feature that owns it, which is how
+    the gate check counts them, so the two can never disagree about whether
+    a tag is owed.
+    """
+    short = total = 0
+    for feature in payload.get('features') or ():
+        for entry in feature.get('rules') or ():
+            if entry.get('feature') != feature.get('name'):
+                continue
+            total += 1
+            if not entry.get('meets_gate'):
+                short += 1
+    return short, total
+
+
+def tag_if_met(project_root, out=None, release=None, payload=None):
+    """Write `signed/<version>` when every rule meets the gate. The tag name.
+
+    This is the marker of proven code: the rule, the proof, the test, the bar
+    and the audit are locked into a signature for every rule, and the tag
+    says so about one commit. It is written after the walk's own commits, so
+    the payload is read again rather than reused. Nothing is pushed.
+    """
+    out = sys.stdout if out is None else out
+    payload = load_payload(project_root, payload)
+    gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
+    short, total = short_of_the_gate(payload)
+    if short:
+        print(NO_TAG_SHORT % (short, total, gate), file=out)
+        return None
+    name = tag_name(project_root, release)
+    if tag_exists(project_root, name):
+        print(NO_TAG_EXISTS % name, file=out)
+        return None
+    commit = payload.get('commit') or ''
+    written = subprocess.run(
+        ['git', 'tag', '-a', name, '-m', tag_message(commit, gate)],
+        capture_output=True, text=True, cwd=project_root, timeout=30)
+    if written.returncode != 0:
+        print(NO_TAG_EXISTS % name, file=out)
+        return None
+    print(TAGGED % (name, commit[:7] or 'HEAD', gate), file=out)
+    print('%s %s' % (ARROW, PUSH_THE_TAG % name), file=out)
+    return name
 
 
 # ---------------------------------------------------------------------------
@@ -405,7 +564,20 @@ def _commit(project_root, paths, message):
 # The walk
 # ---------------------------------------------------------------------------
 
-def walk(project_root, payload=None, answer=None, out=None, signer_email=None):
+def _count(number, word):
+    """`1 rule` or `4 rules`: one place, so no line prints `1 rules`."""
+    return '%d %s%s' % (number, word, '' if number == 1 else 's')
+
+
+def opening_line(payload):
+    """What the walk prints before the first brief: how long each list is."""
+    return 'Review: %s. Sign: %s.' % (
+        _count(len(payload.get('review_list') or ()), 'rule'),
+        _count(len(payload.get('sign_list') or ()), 'rule'))
+
+
+def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
+         release=None):
     """Walk Review, then Sign, one brief at a time. Returns what happened.
 
     `answer` is called once per stop with the rule entry and the rendered
@@ -435,16 +607,12 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None):
         if entry is not None:
             entries.append(entry)
     result = {'rules': len(entries), 'signed': [], 'cases': [], 'held': [],
-              'skipped': [], 'commits': []}
+              'skipped': [], 'commits': [], 'tag': None}
+    print(opening_line(payload), file=out)
     if not entries:
         print('Nothing is waiting for a person.', file=out)
+        result['tag'] = tag_if_met(project_root, out, release, payload)
         return result
-
-    print('Review and Sign: %d rule%s across %d feature%s'
-          % (len(entries), '' if len(entries) == 1 else 's',
-             len({entry['feature'] for entry in entries}),
-             '' if len({entry['feature'] for entry in entries}) == 1 else 's'),
-          file=out)
 
     import brief as brief_module                               # noqa: PLC0415
     holds = {}
@@ -469,6 +637,11 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None):
             result['skipped'].append(pair)
 
     if result['signed']:
+        allowed = _allowed(payload, result['signed'], out)
+        result['skipped'].extend(pair for pair in result['signed']
+                                 if pair not in allowed)
+        result['signed'] = allowed
+    if result['signed']:
         sha = sign_and_commit(project_root, result['signed'], email,
                               payload=payload)
         if sha:
@@ -480,6 +653,7 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None):
             result['commits'].append(sha)
 
     _close(out, result)
+    result['tag'] = tag_if_met(project_root, out, release)
     return result
 
 
@@ -537,8 +711,8 @@ def _close(out, result):
 class _Args(object):
     """One parsed invocation, or the reason it could not be parsed."""
 
-    __slots__ = ('feature', 'rules', 'batch', 'hold', 'note', 'project_root',
-                 'error', 'help')
+    __slots__ = ('feature', 'rules', 'batch', 'hold', 'note', 'release',
+                 'project_root', 'error', 'help')
 
     def __init__(self):
         self.feature = None
@@ -546,6 +720,7 @@ class _Args(object):
         self.batch = False
         self.hold = None
         self.note = None
+        self.release = None
         self.project_root = '.'
         self.error = None
         self.help = False
@@ -569,6 +744,11 @@ def _parse(argv):
                 args.error = '%s needs %s.' % (item, need)
                 return args
             setattr(args, item[2:], rest.pop(0))
+        elif item == '--release':
+            if not rest or not rest[0].strip() or rest[0].startswith('--'):
+                args.error = '--release needs the name to tag.'
+                return args
+            args.release = rest.pop(0)
         elif item == '--project-root':
             if not rest:
                 args.error = '--project-root needs a directory.'
@@ -619,8 +799,8 @@ def _hold_main(project_root, payload, args):
 def _gate_is_too_low(gate):
     """The two lines `passed` prints in place of writing a signature."""
     return ['sign: the gate is %s, which asks for no signature.' % gate,
-            'sign: purlin:init --gate strong adds the test strength, the free '
-            'checks on the test body, the AI audit and the review list.']
+            'sign: purlin:init --gate strong adds the test strength, the AI '
+            'audit and the review list.']
 
 
 def main(argv=None):
@@ -665,7 +845,7 @@ def main(argv=None):
         return EXIT_NOTHING
 
     if args.feature is None and not args.batch:
-        walk(project_root, payload, signer_email=email)
+        walk(project_root, payload, signer_email=email, release=args.release)
         return EXIT_OK
 
     if args.feature and args.rules:
@@ -678,6 +858,7 @@ def main(argv=None):
             for name, rule in targets):
         print('sign: a signature is required only under the gate signed. '
               'Writing it anyway.')
+    targets = _allowed(payload, targets)
     if not targets:
         print('sign: nothing here needs a signature. Run purlin:status to see '
               'what blocks the gate.')
@@ -689,10 +870,14 @@ def main(argv=None):
         print('sign: the signature commit was not made. Check that signing '
               'works and that the files are not already committed.')
         return EXIT_NOTHING
-    print('Signed %d rule%s in %s.'
-          % (len(targets), '' if len(targets) == 1 else 's', sha[:7]))
+    print('Signed %s in %s.' % (_count(len(targets), 'rule'), sha[:7]))
     for name, rule in targets:
         print('  %s %s' % (name, rule))
+    # The tag is the no-argument walk's to write. A run that named its rules
+    # says whether the walk would now write one, so the last signature of a
+    # release is not a dead end.
+    if not short_of_the_gate(load_payload(project_root))[0]:
+        print('%s Run: purlin:sign' % ARROW)
     return EXIT_OK
 
 
