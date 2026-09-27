@@ -107,6 +107,42 @@ def record_path(source, feature, name):
                             feature, name)
 
 
+def brief_name(rule_id, triple):
+    """The file name a brief takes: `<RULE-N>.<hash8>.brief.json`.
+
+    The name carries the triple the brief was built from, so a brief for text
+    that has since changed is simply not found again.
+    """
+    return '%s.%s.brief.json' % (rule_id, str(triple or '')[:8])
+
+
+def brief_path(source, feature, name):
+    """The project-relative path of one brief, with `/` on every system."""
+    return '%s/%s/%s/%s' % (BRIEFS_DIR.replace(os.sep, '/'), source,
+                            feature, name)
+
+
+def find_brief(project_root, feature, rule_id, triple, gate=None):
+    """`(rel_path, full_path)` of the brief for one triple, or `(None, None)`.
+
+    A brief sits beside the record of the run that wrote it, under
+    `.purlin/briefs/<source>/<feature>/`, so which folders are read is the
+    gate's answer, the same answer `counts_under` gives a record: at `signed`
+    only CI's audit counts, so only CI's briefs are read. `gate` None reads
+    both, which is what a caller that has no project setting to hand wants.
+    CI's folder is read first, because where both hold a brief for one triple
+    the one every checkout reads alike is the one to show.
+    """
+    name = brief_name(rule_id, triple)
+    for source in SOURCES:
+        if gate is not None and not counts_under(gate, source):
+            continue
+        full = os.path.join(briefs_dir(project_root, source), feature, name)
+        if os.path.isfile(full):
+            return brief_path(source, feature, name), full
+    return None, None
+
+
 def source_of_path(rel_path):
     """The source folder a record path sits in, or None when it is elsewhere.
 

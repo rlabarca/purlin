@@ -55,6 +55,7 @@ for _path in (_MCP_DIR, _HERE):
 from purlin import (console as console_module,                 # noqa: E402
                     gate as gate_module,
                     payload as payload_module,
+                    records as records_module,
                     signatures as signatures_module,
                     specs as specs_module)
 
@@ -76,10 +77,6 @@ SIGNING_SETUP = (
 
 # The four answers the walk takes, and the letters that reach each one.
 ANSWERS = ('sign', 'case', 'hold', 'skip')
-
-# Where CI commits the briefs, beside the records and under the same branch
-# rule.
-BRIEFS_DIR = os.path.join('.purlin', 'briefs')
 
 SIGNER_LIST_MISSING = 'signer list missing: run purlin:init --gate signed'
 
@@ -185,12 +182,15 @@ def write_signature(project_root, feature, rule, signer_email, brief_path,
 
 
 def brief_for(project_root, feature, rule, triple):
-    """The brief CI wrote for this triple, or None when nobody wrote one."""
-    rel = '%s/%s/%s.%s.brief.json' % (BRIEFS_DIR.replace(os.sep, '/'), feature,
-                                      rule, str(triple)[:8])
-    if os.path.isfile(os.path.join(project_root, *rel.split('/'))):
-        return rel
-    return None
+    """The brief an audit wrote for this triple, or None when none exists.
+
+    A brief sits under `.purlin/briefs/<source>/<feature>/`, so which folder
+    holds it is the source of the run that wrote it. `records.find_brief` is
+    the one place that path is built, so a signature names the file a reader
+    can open rather than a path nothing ever writes.
+    """
+    rel, _full = records_module.find_brief(project_root, feature, rule, triple)
+    return rel
 
 
 def hold_path(project_root, feature, rule, triple, holder_slug):

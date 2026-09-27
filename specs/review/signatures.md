@@ -39,6 +39,7 @@
 - RULE-23: A signature committed on a side branch is not on the protected branch until that branch merges [bar: strong] [origin: eng]
 - RULE-40: `<feature> RULE-N --hold "<the missing case>"` writes `<RULE-N>.<hash8>.<holder-slug>.hold.json` binding the rule's hashes, with schema `purlin-hold/1`, the holder's email and the missing case as `reason`, and commits it signed as `hold(<feature>): RULE-N`; `--hold` with no reason, or with no rule named, exits 2 and writes nothing [bar: strong] [origin: eng]
 - RULE-41: A signature binds the rule's bar, so writing one for a `[bar: strong]` rule and then retagging it `[bar: passed]` leaves the signed cell reading `stale` [bar: strong] [origin: eng]
+- RULE-42: The brief a signature or a hold names is the file an audit committed for the same triple, under `.purlin/briefs/<source>/<feature>/`, and it is null where no audit wrote one [bar: strong] [origin: eng]
 
 ## Proof
 
@@ -78,3 +79,4 @@
 - PROOF-60 (RULE-40): In a checkout signing as `jane@acme.com`, run `login RULE-1 --hold "no case for an expired token"`; verify it exits 0, the last commit is signed `G` with the subject `hold(login): RULE-1`, and it adds `specs/auth/login.signatures/RULE-1.<hash8>.jane.hold.json` for the rule's own triple, whose schema is `purlin-hold/1`, holder `jane@acme.com` and reason `no case for an expired token` @integration
 - PROOF-61 (RULE-40): Run `login RULE-1 --hold` with no reason, `login RULE-1 --hold --batch`, and `login --hold "a case"` with no rule; verify each exits 2 and no `.hold.json` exists @integration
 - PROOF-62 (RULE-41): Write a signature for a `[bar: strong]` rule's current hashes and verify the signed cell reads `signed`; retag the rule `[bar: passed]` and verify it reads `stale` with the reason `hashes changed after the signature` @integration
+- PROOF-63 (RULE-42): Commit the brief CI wrote for `login RULE-1`'s current triple and sign the rule; verify the signature's `brief` reads `.purlin/briefs/ci/login/RULE-1.<hash8>.brief.json` for that triple, and that signing `RULE-2`, which has no brief, leaves the field null @integration

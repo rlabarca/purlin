@@ -64,8 +64,8 @@ with nothing behind it yet.
   "note": null,
   "timestamp": "2026-09-13T12:00:00Z",
   "gate": "signed",
-  "brief": ".purlin/briefs/login/RULE-3.9f2c7a1e.brief.json",
-  "record": ".purlin/records/login/20260913T120000Z-abc1234-ci.json"
+  "brief": ".purlin/briefs/ci/login/RULE-3.9f2c7a1e.brief.json",
+  "record": ".purlin/records/ci/login/20260913T120000Z-abc1234-ci.json"
 }
 ```
 
@@ -156,7 +156,7 @@ a signature, with a fourth part in the name:
   "holder": "jane@acme.com",
   "reason": "the tests call _azure and _host apart; none calls run_remote()",
   "timestamp": "2026-09-16T12:00:00Z",
-  "brief": ".purlin/briefs/records/RULE-12.9f2c7a1e.brief.json"
+  "brief": ".purlin/briefs/local/records/RULE-12.9f2c7a1e.brief.json"
 }
 ```
 

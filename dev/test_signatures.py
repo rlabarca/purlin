@@ -494,6 +494,25 @@ class TestTheFile:
         assert data['record'] == record
         assert data['timestamp'].endswith('Z')
 
+    @pytest.mark.proof("signatures", "PROOF-63", "RULE-42", tier="integration")
+    def test_the_brief_it_names_is_the_one_an_audit_committed(self, proved):
+        """A brief sits under its source's folder, and the signature says so.
+
+        The path was built without the source folder once, so every signature
+        named a file nothing writes and every `brief` field read null.
+        """
+        rel = proved.brief('RULE-1')
+        triple = sign_module.triple_for(proved.rule('RULE-1'))
+        path = sign_one(proved, brief=sign_module.brief_for(
+            proved.root, 'login', 'RULE-1', triple))
+        with open(os.path.join(proved.root, path), encoding='utf-8') as handle:
+            assert json.load(handle)['brief'] == rel
+        assert rel == ('.purlin/briefs/ci/login/RULE-1.%s.brief.json'
+                       % triple[:8])
+        assert sign_module.brief_for(
+            proved.root, 'login', 'RULE-2',
+            sign_module.triple_for(proved.rule('RULE-2'))) is None
+
     @pytest.mark.proof("signatures", "PROOF-14", "RULE-10", tier="integration")
     def test_the_reader_finds_it_and_never_reads_a_brief_as_one(self, proved):
         triple = sign_module.triple_for(proved.rule('RULE-1'))

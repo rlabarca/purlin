@@ -26,8 +26,8 @@ The file, field by field in `references/formats/signature_format.md`:
       "note": null,
       "timestamp": "2026-09-13T12:00:00Z",
       "gate": "signed",
-      "brief": ".purlin/briefs/login/RULE-3.1a2b3c4d.brief.json",
-      "record": ".purlin/records/login/20260913T120000Z-abc1234-ci.json"
+      "brief": ".purlin/briefs/ci/login/RULE-3.1a2b3c4d.brief.json",
+      "record": ".purlin/records/ci/login/20260913T120000Z-abc1234-ci.json"
     }
 
 A signature is **current** when the three hashes it binds still equal the

@@ -53,6 +53,7 @@ import static_checks                                          # noqa: E402
 from purlin import (checks,                                    # noqa: E402
                     console as console_module,
                     payload as payload_module,
+                    records as records_module,
                     signatures as signatures_module, states)
 
 SCHEMA = 'purlin-brief/3'
@@ -66,9 +67,10 @@ EXIT_BAD_INVOCATION = 2
 CRITERIA = os.path.join('references', 'review_criteria.md')
 
 # Where an audit commits the briefs, beside the records, under the same two
-# source folders and the same branch rule.
-BRIEFS_DIR = os.path.join('.purlin', 'briefs')
-SOURCES = ('ci', 'local')
+# source folders and the same branch rule. The record reader owns both names,
+# so a brief and the record it rests on can never disagree about either.
+BRIEFS_DIR = records_module.BRIEFS_DIR
+SOURCES = records_module.SOURCES
 
 # The layers, cheapest first, and the bar each set is built for. The AI audit
 # runs on the rules whose bar is `strong` and on no other.
@@ -392,9 +394,10 @@ def brief_paths(project_root, feature, rule, triple, source='local'):
     """`(json_path, text_path)` for one brief, beside its run's record."""
     if source not in SOURCES:
         source = 'local'
-    stem = os.path.join(project_root, BRIEFS_DIR, source, feature,
-                        '%s.%s.brief' % (rule, str(triple)[:8]))
-    return stem + '.json', stem + '.txt'
+    json_path = os.path.join(records_module.briefs_dir(project_root, source),
+                             feature,
+                             records_module.brief_name(rule, triple))
+    return json_path, json_path[:-len('.json')] + '.txt'
 
 
 # What says when and where a brief was built, not what it found. A brief that

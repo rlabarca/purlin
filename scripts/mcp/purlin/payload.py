@@ -77,7 +77,6 @@ from purlin import (PURLIN_VERSION, checks,
 
 SCHEMA_VERSION = 7
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
-BRIEFS_DIR = os.path.join('.purlin', 'briefs')
 _PREFIX = 'const PURLIN_DATA = '
 
 
@@ -386,7 +385,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
                   for signature in all_signatures.get((owner, rule_id), [])]
 
     brief, brief_path = _read_brief(project_root, owner, rule_id, rule_hash,
-                                    proof_hash, test_hash)
+                                    proof_hash, test_hash, cfg.gate)
     result = states.rule_cells({
         'proofs': proof_dicts,
         'local_status': local_status,
@@ -530,30 +529,27 @@ def _test_hash(project_root, proof_dicts, blob_cache):
 
 
 def _read_brief(project_root, feature, rule_id, rule_hash, proof_hash,
-                test_hash):
+                test_hash, gate=None):
     """`(brief, path)` for a rule's current text, or `(None, None)`.
 
     A brief is named for the triple it was built from, so a brief for text
     that has since changed is simply not found: that is what keeps the strong
-    cell honest. An audit commits them under
-    `.purlin/briefs/<source>/<feature>/`, beside the records of the same run
-    and under the same branch rule. CI's folder is read first, because where
-    both exist the one every checkout reads alike is the one to show.
+    cell honest. Which source folders are read is the gate's answer, so a
+    local audit's brief is read at `passed` and `strong` and is a preview at
+    `signed`, exactly as its record is. `records.find_brief` is the one place
+    that answer is worked out.
     """
     triple = signatures_module.triple_hash(rule_hash, proof_hash, test_hash)
-    name = '%s.%s.brief.json' % (rule_id, triple[:8])
-    for source in records_module.SOURCES:
-        rel = '%s/%s/%s/%s' % (BRIEFS_DIR.replace(os.sep, '/'), source,
-                               feature, name)
-        path = os.path.join(project_root, BRIEFS_DIR, source, feature, name)
-        try:
-            with open(path, 'r', encoding='utf-8') as handle:
-                brief = json.load(handle)
-        except (json.JSONDecodeError, IOError, OSError, UnicodeDecodeError):
-            continue
-        if isinstance(brief, dict):
-            return brief, rel
-    return None, None
+    rel, path = records_module.find_brief(project_root, feature, rule_id,
+                                          triple, gate)
+    if not path:
+        return None, None
+    try:
+        with open(path, 'r', encoding='utf-8') as handle:
+            brief = json.load(handle)
+    except (json.JSONDecodeError, IOError, OSError, UnicodeDecodeError):
+        return None, None
+    return (brief, rel) if isinstance(brief, dict) else (None, None)
 
 
 def _with_result(record):
