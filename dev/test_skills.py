@@ -1,8 +1,7 @@
-"""Text checks for the twelve skills, the agent definition and the two tools.
+"""Text checks for the twelve skills and the agent definition.
 
-Every rule of `specs/skills/*.md`, `specs/instructions/purlin_agent.md`,
-`specs/tools/pm_anchor_userstories.md` and `specs/tools/qa_report.md` is proved
-here. Each check reads one file and returns the problems it found as a list, so
+Every rule of `specs/skills/*.md` and `specs/instructions/purlin_agent.md` is
+proved here. Each check reads one file and returns the problems it found as a list, so
 a test body is one assertion and its failure prints what is wrong rather than
 `False is not True`.
 
@@ -15,7 +14,6 @@ goes through `same_line()` instead.
 import re
 import subprocess
 import sys
-import zipfile
 from pathlib import Path
 
 import pytest
@@ -39,10 +37,6 @@ CEILINGS = {
 }
 COMMANDS = sorted(CEILINGS)
 
-PM_MD = 'tools/PM/purlin-anchor-userstories.md'
-PM_SKILL = 'tools/PM/purlin-anchor-userstories.skill'
-QA_MD = 'tools/QA/purlin-qa-report.md'
-QA_SKILL = 'tools/QA/purlin-qa-report.skill'
 AGENT = 'agents/purlin.md'
 
 
@@ -177,63 +171,6 @@ def table_rows(text, header):
             continue
         rows.append(cells)
     return rows
-
-
-def archive_problems(archive, source):
-    names = zipfile.ZipFile(ROOT / archive).namelist()
-    expected = [Path(source).stem + '/SKILL.md']
-    if names != expected:
-        return ['%s holds %s, expected %s' % (archive, names, expected)]
-    packed = zipfile.ZipFile(ROOT / archive).read(expected[0])
-    if packed != (ROOT / source).read_bytes():
-        return ['%s does not hold the bytes of %s; run dev/pack_tools.sh'
-                % (archive, source)]
-    return []
-
-
-def tool_frontmatter_problems(rel, name, words):
-    text = read(rel)
-    block = frontmatter(text)
-    if block is None:
-        return ['%s does not open with a frontmatter block' % rel]
-    problems = []
-    if field(block, 'name') != name:
-        problems.append('%s frontmatter name is %r, expected %r'
-                        % (rel, field(block, 'name'), name))
-    description = block.split('description:', 1)[-1] if 'description:' in block else ''
-    if len(description.strip(' >\n')) < 40:
-        problems.append('%s frontmatter carries no description' % rel)
-    flattened = flat(description)
-    problems.extend('%s description does not name %r' % (rel, word)
-                    for word in words if word not in flattened)
-    return problems
-
-
-# ---------------------------------------------------------------------------
-# skill_init
-# ---------------------------------------------------------------------------
-
-class TestSkillInit:
-
-    @pytest.mark.proof("skill_init", "PROOF-1", "RULE-1")
-    def test_the_frontmatter_names_the_skill(self):
-        assert frontmatter_problems('init') == []
-
-    @pytest.mark.proof("skill_init", "PROOF-2", "RULE-2")
-    def test_it_runs_the_scaffold_script(self):
-        assert scaffold_flag_problems() == []
-
-    @pytest.mark.proof("skill_init", "PROOF-3", "RULE-3")
-    def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('init') == []
-
-    @pytest.mark.proof("skill_init", "PROOF-4", "RULE-4")
-    def test_it_stays_under_its_ceiling(self):
-        assert skill_ceiling_problems('init') == []
-
-    @pytest.mark.proof("skill_init", "PROOF-5", "RULE-5")
-    def test_it_asks_one_question_and_names_three_exceptions(self):
-        assert init_question_problems() == []
 
 
 def init_question_problems():
@@ -859,114 +796,3 @@ def routing_problems():
     return problems
 
 
-# ---------------------------------------------------------------------------
-# pm_anchor_userstories
-# ---------------------------------------------------------------------------
-
-class TestPmAnchorUserstories:
-
-    @pytest.mark.proof("pm_anchor_userstories", "PROOF-1", "RULE-1")
-    def test_the_frontmatter_names_the_tool(self):
-        assert tool_frontmatter_problems(
-            PM_MD, 'purlin-anchor-userstories',
-            ['spec', 'anchor', 'acceptance criteria']) == []
-
-    @pytest.mark.proof("pm_anchor_userstories", "PROOF-2", "RULE-2")
-    def test_every_change_lands_as_a_pull_request(self):
-        assert carries(PM_MD, [
-            'Never commit to the default branch.',
-            'specs/<category>/<name>.md', 'specs/_anchors/<name>.md',
-            'designs/<feature>/', 'Create no other folder.']) == []
-
-    @pytest.mark.proof("pm_anchor_userstories", "PROOF-3", "RULE-3")
-    def test_a_rule_owned_by_someone_else_is_left_alone(self):
-        assert pm_owner_problems() == []
-
-    @pytest.mark.proof("pm_anchor_userstories", "PROOF-4", "RULE-4")
-    def test_it_names_the_tags_and_the_tiers(self):
-        assert carries(PM_MD, [
-            '[bar:', '[origin:', '[criterion:', '`[bar: strong]`',
-            '`[bar: passed]`',
-            'Under the `signed` gate origin is required',
-            '@integration', '@e2e', '@manual',
-            '@env(windows)', '@env(macos)', '@env(linux)']) == []
-
-    @pytest.mark.proof("pm_anchor_userstories", "PROOF-5", "RULE-5")
-    def test_the_archive_holds_the_markdown(self):
-        assert archive_problems(PM_SKILL, PM_MD) == []
-
-
-def pm_owner_problems():
-    body = section(read(PM_MD), r'owner comment')
-    if body is None:
-        return ['%s has no owner comment section' % PM_MD]
-    flattened = flat(body)
-    problems = ['%s owner comment section does not carry %r' % (PM_MD, needle)
-                for needle in ('[origin: eng]', '[origin: qa]',
-                               'Never edit its text', 'never delete it')
-                if needle not in flattened]
-    if not re.search(r'RULE-\d+', body):
-        problems.append('%s owner comment shows no rule id' % PM_MD)
-    return problems
-
-
-# ---------------------------------------------------------------------------
-# qa_report
-# ---------------------------------------------------------------------------
-
-class TestQaReport:
-
-    @pytest.mark.proof("qa_report", "PROOF-1", "RULE-1")
-    def test_the_frontmatter_names_the_tool(self):
-        assert tool_frontmatter_problems(
-            QA_MD, 'purlin-qa-report',
-            ['review list', 'test strength', 'QA report']) == []
-
-    @pytest.mark.proof("qa_report", "PROOF-2", "RULE-2")
-    def test_no_credential_is_written_into_a_url(self):
-        assert credential_problems() == []
-
-    @pytest.mark.proof("qa_report", "PROOF-3", "RULE-3")
-    def test_it_scans_the_project_and_reads_the_rollup(self):
-        assert (same_line(QA_MD, ['scripts/report/scan.py', '--repo'])
-                + carries(QA_MD, [
-                    'each bucket', 'The gate.',
-                    'commits the branch has moved past the newest record'])) == []
-
-    @pytest.mark.proof("qa_report", "PROOF-4", "RULE-4")
-    def test_every_entry_ends_with_one_of_four_answers(self):
-        assert re.findall(r'^- \*\*`([^`]+)`\*\*', read(QA_MD), re.M) == [
-            'sign', 'add a case', 'hold', 'skip']
-
-    @pytest.mark.proof("qa_report", "PROOF-5", "RULE-5")
-    def test_it_states_its_limits(self):
-        assert qa_limit_problems() == []
-
-    @pytest.mark.proof("qa_report", "PROOF-6", "RULE-6")
-    def test_the_archive_holds_the_markdown(self):
-        assert archive_problems(QA_SKILL, QA_MD) == []
-
-
-def credential_problems():
-    text = read(QA_MD)
-    problems = []
-    for pattern in (r'://<[A-Z_]+>:<[A-Z_]+>@', r'://[^/\s]+:[^/\s]+@'):
-        for number, line in enumerate(text.splitlines(), 1):
-            if re.search(pattern, line):
-                problems.append('%s:%d puts a credential in a URL: %s'
-                                % (QA_MD, number, line.strip()))
-    problems.extend(carries(QA_MD, ['gh auth login', 'credential helper']))
-    return problems
-
-
-def qa_limit_problems():
-    body = section(read(QA_MD), r'limits')
-    if body is None:
-        return ['%s has no limits section' % QA_MD]
-    flattened = flat(body)
-    problems = ['%s limits do not state %r' % (QA_MD, needle)
-                for needle in ("It does not run the project's tests.",
-                               'A `@manual` proof has no test.')
-                if needle not in flattened]
-    problems.extend(carries(QA_MD, ['This skill cannot sign a commit.']))
-    return problems

@@ -172,10 +172,6 @@ this commit holds and how old the data is. It opens from disk; nothing is publis
 artifact is uploaded. `scripts/report/scan.py --repo <url>` prints the same rollup for anyone
 holding only a URL.
 
-**The tools.** `tools/PM/` and `tools/QA/` are Claude Desktop skills for people with no
-checkout. The PM tool drafts and edits specs and anchors and opens the pull request; the QA tool
-produces the triage report and opens pull requests with proof edits.
-
 **Formats.** The spec, proofs and anchor formats change wording only. The record format, the
 signature format (from `approval_format.md`), the new test results format, the payload schema and
 `references/drift_criteria.md` each carry a `> Format-Version:` line; a tool that parses any of
@@ -249,6 +245,8 @@ Also gone, each without a replacement:
 - `purlin:init --upstream-check`, the weekly job that opened an issue when an anchor pin fell
   behind, and the `issues: write` permission it needed. `purlin:drift` still reports a pin
   behind, and `purlin:anchor sync --check` exits 1 on one.
+- `tools/`: the PM and QA skills for Claude Desktop and their packed `.skill` archives. A PM or
+  QA person works in Claude Code on the repository, or through a pull request.
 
 ### The 0.10.0 line that never shipped
 

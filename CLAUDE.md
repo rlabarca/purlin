@@ -98,8 +98,8 @@ plus the script itself.
 ## Tool folder separation
 
 Everything here ships: `.claude-plugin/marketplace.json` declares the plugin source as `./`, so an
-install carries `scripts/`, `dev/`, `specs/`, `references/`, `docs/`, `skills/`, `agents/`,
-`tools/` and `templates/`. The line below is not what ships; it is what a consumer may depend on.
+install carries `scripts/`, `dev/`, `specs/`, `references/`, `docs/`, `skills/`, `agents/`
+and `templates/`. The line below is not what ships; it is what a consumer may depend on.
 
 - **`scripts/`** is the consumer-facing surface. A consumer project, a shipped skill, an agent
   definition or a reference may name a path under it, and its layout is held stable across

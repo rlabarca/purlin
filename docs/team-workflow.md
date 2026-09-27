@@ -141,14 +141,14 @@ counts.
 
 ## One sprint, traced
 
-**The PM opens the work.** The PM needs no checkout. With Claude Code on the repository, or
-the Purlin PM tool in Claude Desktop, they describe the feature; the tool drafts a spec, tags
+**The PM opens the work.** The PM needs no checkout. With Claude Code on the repository, they
+describe the feature; the agent drafts a spec, tags
 its rules `origin: pm`, and opens a pull request. Without an assistant, the PM writes the
 criteria anywhere and hands them over; the engineer's agent runs `purlin:spec` and the PM
 reviews that pull request instead. Either way the rules land in `specs/` by pull request.
 
 **The designer hands over the mocks.** They export from whatever tool they use, and either drop
-the files into `designs/<feature>/` by pull request or upload them to the PM tool, which opens
+the files into `designs/<feature>/` by pull request or hand them to an assistant, which opens
 the pull request for them. `purlin:spec` reads the images and drafts `origin: design` rules
 about what a person would see. See [design-in-specs.md](design-in-specs.md).
 
