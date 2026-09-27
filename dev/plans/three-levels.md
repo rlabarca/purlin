@@ -174,6 +174,34 @@ left to a lane's judgment except wording.
     - `purlin:audit` ends with `gate strong: <n> of <rules>` or `gate not met: ...` and exits
       1 when not met, the same shape as `purlin:test`'s line. Lanes 11A (code) and 11B (board,
       docs, slides).
+30. **The bar replaces risk; Review and Sign; Signable** (added 2026-09-26, settled question
+    by question):
+    - **Bar.** Every rule has a bar, `passed` or `strong`: the evidence it must have before it
+      can be signed. A tag on the rule, `[bar: passed]` or `[bar: strong]`; a rule with no
+      tag takes the project's gate as its bar (`passed` at `passed`; `strong` at `strong`
+      and `signed`).
+    - **Risk is retired.** The bar decides what risk used to: the evidence a rule needs,
+      whether the AI audit runs on it, whether it needs a signature. `ai_review_at` goes
+      away. Lists group by bar. Migration: `[risk: high]` and `[risk: medium]` become
+      `[bar: strong]`, `[risk: low]` becomes `[bar: passed]`, in this repository's specs and
+      in a consumer's through `purlin:init --update`.
+    - **The AI audit** runs on every rule whose bar is `strong`, none other.
+    - **Two words replace `manual audit`**: `not audited` (bar `strong`, no brief for this
+      code yet; waits for `purlin:audit`; on no tab) and `unsettled` (the AI audit ran and
+      could not settle; a person judges). `manual test` and `held` stay.
+    - **Cleared its bar**: bar `passed` and the passed cell met, or bar `strong` and the
+      strong cell met.
+    - **`sign_at`** is `strong` or `all`, set by init at the `signed` gate (one sentence each,
+      then the question; `--update` re-asks). A rule needs a signature when the gate is
+      `signed` and `sign_at` is `all` or its bar is `strong`. `not required` is retired.
+    - **Signable**: a rule that has cleared its bar. The board's `Signable` column, left of
+      `Signed` at `signed`, counts them signed or not; the `Sign` tab lists the signable
+      rules without a counting signature. A rule meets the gate `signed` when it has cleared
+      its bar and, if it needs a signature, its signed cell reads `signed`.
+    - **Two tabs.** `Review` at `strong` and above: `manual test`, `unsettled`, `held`. `Sign`
+      at `signed`. `purlin:sign` walks Review, then Sign. Lanes 12A (code) and 12B (board,
+      docs, slides).
+
 
 
 
