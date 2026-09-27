@@ -248,6 +248,12 @@ left to a lane's judgment except wording.
     - Words: `list` for what `purlin:sign` walks (the Review list, the Sign list), `tab` only
       for the dashboard. The nine unread module constants the review named are deleted.
       Lanes 14A (code), 14B (docs, skills, board words, slides), 15 (the second docs review).
+    - **A remote runner exists for two reasons and no other** (amended the same day): a
+      proof tagged `@env` for an operating system this machine is not, or `trust: remote`.
+      A trusted project with no `@env` tags has no workflow: the tag is the signer's word.
+      Where a runner exists, it runs on `run/**` branches and `signed/**` tags, and the tag
+      run reruns the tests, verifies hashes and provenance, and runs the gate check. Init
+      explains the two reasons and asks nothing else; "no merge while red" is gone.
 
 
 ---
