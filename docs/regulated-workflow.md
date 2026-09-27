@@ -80,8 +80,9 @@ inside the hashes a signature binds.
 | The signing commit signed, by an author on the signer list who did not last touch the test | `signers` in `.purlin/config.json`, read as it stood in that commit |
 | The tag `signed/<version>` on the commit | `purlin:sign` writes it once every rule meets the gate, and a person pushes it |
 
-`scripts/ci/gate_check.py --check` is the check itself. `purlin:sign` runs it before it writes
-a tag, and a runner runs it as the last step of every run. It prints one section per kind of
+`scripts/ci/gate_check.py --check` is the check a runner makes, as the last step of every run.
+`purlin:sign` asks the same question of the same cells before it writes a tag, and writes none
+while any rule falls short. The check prints one section per kind of
 work, `Not passed (n)`, `Partial (n)`, `Weak (n)`, `Not audited (n)`, `To review (n)`,
 `To sign (n)` and, under `--verify`, `Evidence (n)`, each naming the rules the cell that blocks
 them puts there and the reason that cell carries; it names the first twenty in a section and counts the rest. Its own lines, the

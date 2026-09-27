@@ -353,12 +353,13 @@ rollup for anyone holding only a URL.
 ```yaml
       - name: Check the gate
         shell: bash
-        run: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check
+        run: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check --verify
 ```
 
-It exits 1 when a rule does not meet the gate, which fails the job. It writes nothing: a gate
-that can edit the evidence it grades is not a gate. `purlin:sign` runs the same check before it
-writes a tag, so the two answer the same question from the same code.
+It exits 1 when a rule does not meet the gate, or when `--verify` finds an attestation that no
+longer binds this code or a `ci/` file the runner did not commit, and either fails the job. It writes nothing: a gate
+that can edit the evidence it grades is not a gate. `purlin:sign` asks the same question of the
+same cells before it writes a tag, so the tag and a green run mean the same thing.
 
 A red run on a pushed tag is the git host's word that this version is not proven.
 
