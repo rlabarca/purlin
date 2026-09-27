@@ -79,7 +79,7 @@ TOOLS = [
     {
         "name": "drift",
         "description": (
-            "Structured summary of what changed since the last verification. "
+            "Structured summary of what changed since the last record. "
             "Returns JSON with commits, classified files, spec changes, pins "
             "and the four role views for the purlin:drift skill to read."),
         "inputSchema": {

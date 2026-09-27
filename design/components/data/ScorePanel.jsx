@@ -1,7 +1,7 @@
 import React from 'react';
 import { Panel } from '../core/Panel.jsx';
 
-/** The oversized percentage pair — proof design / proof integrity. */
+/** The oversized percentage — a headline number, such as test strength. */
 export function ScorePanel({ value, label, detail, tone = 'pass', style, ...rest }) {
   const hue = tone === 'pass' ? 'var(--state-pass)' : tone === 'fail' ? 'var(--state-fail)' : tone === 'warn' ? 'var(--state-warn)' : 'var(--text-primary)';
   return (

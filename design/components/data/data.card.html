@@ -6,13 +6,13 @@
 <script src="../../_ds_bundle.js"></script>
 <style>body{padding:18px 20px;background:var(--canvas)}.row{display:flex;flex-wrap:wrap;align-items:center;gap:14px}.col{display:flex;flex-direction:column;gap:12px}</style></head><body><div id="root"></div>
 <script type="text/babel">const {StatTile,ScorePanel,CoverageBar,MetricValue,DataTable,TableHead,TableRow,GroupHeader,DisclosureRow,StatusPill}=window.PurlinDesignSystem_6896a8;
-const cols=[{label:'Spec',width:'1.6fr'},{label:'Coverage',width:'1.4fr'},{label:'Status',width:'1fr'},{label:'Design',width:'.7fr'},{label:'Integrity',width:'.8fr'}];
+const cols=[{label:'Spec',width:'1.6fr'},{label:'Rules',width:'1.4fr'},{label:'Tests',width:'1fr'},{label:'Strong',width:'.7fr'},{label:'Signed',width:'.8fr'}];
 ReactDOM.createRoot(document.getElementById('root')).render(<div className="col">
 <div className="row" style={{gap:10,alignItems:'stretch'}}>
 <StatTile value={42} label="Specs" note="+ 5 anchors" style={{flex:1}}/>
 <StatTile value={37} label="Signed" tone="pass" note="39 on host" style={{flex:1}}/>
 <StatTile value={1} label="Failing" tone="fail" style={{flex:1}}/>
-<ScorePanel value="43%" label="Proof integrity" detail="884 of 1195" tone="fail" style={{flex:1.2,padding:'18px 12px'}}/>
+<ScorePanel value="64%" label="Test strength" detail="minimum 80%" tone="fail" style={{flex:1.2,padding:'18px 12px'}}/>
 </div>
 <DataTable>
 <GroupHeader title="SKILLS" count={12} covered={158} total={158} summary={[{label:'9 signed'},{label:'3 passed'}]}/>
