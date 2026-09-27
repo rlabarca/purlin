@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The gate CI runs before a change may merge.
 
-    python3 scripts/ci/gate_check.py --check [--json] [--project-root DIR]
+    python3 scripts/ci/gate_check.py --check [--verify] [--json]
+                                     [--project-root DIR]
 
 One project setting decides what this job requires. The gate is read from
 `.purlin/config.json` and nothing else has to be configured:
@@ -10,20 +11,26 @@ One project setting decides what this job requires. The gate is read from
             source, on every operating system a counting run covered
     strong  every rule whose bar is `strong` has a strong cell that is met:
             a record an audit wrote, from either source, test strength at or
-            above the project minimum, no finding standing against the proof
-            text or the test body, nothing unsettled and nobody holding the
-            rule
-    signed  every rule that needs a signature has one, and there only a
-            record CI wrote counts: a person on the signer list signed the
-            rule, proof and test hashes. `sign_at` says which rules need
-            one, `strong` (the rules whose bar is `strong`) or `all`
+            above the project minimum, nothing unsettled and nobody holding
+            the rule
+    signed  every rule that needs a signature has one: a person on the signer
+            list signed the rule, proof, test, bar and audit hashes.
+            `sign_at` says which rules need one, `strong` (the rules whose
+            bar is `strong`) or `all`
+
+`--verify` is what the tag run adds, and it asks two more questions of the
+evidence already in the tree. Every signature and every hold must still bind
+the rule, proof, test, bar and audit it names, so a tag cannot stand over code
+that changed after it was signed. Every file under `.purlin/records/ci/**` and
+`.purlin/briefs/ci/**` must have been committed by the runner's own identity,
+read off the commit that added it, so a person cannot write a record as CI's.
+A file that fails either is named and the job fails.
 
 **The setting is the declaration, not the enforcement.** `.purlin/config.json`
-is a file in the repository that an agent can edit. What enforces the gate is
-the git host: a branch rule marking this job a required check, a rule
-restricting who may push `.purlin/records/ci/**` and `.purlin/briefs/ci/**`,
-and a rule blocking force pushes. `purlin:init` prints all three when it writes the
-workflow.
+is a file in the repository that an agent can edit. What enforces it is the
+tag run: `purlin:sign` writes `signed/<version>` only when every rule meets
+the gate, a person pushes the tag, and this job reruns the tests on a clean
+machine and verifies the evidence against the tagged code.
 
 What this job reads is the structured payload, which has already worked out
 every rule's cells. A rule meets the gate when `meets_gate` is true, and
@@ -62,9 +69,9 @@ SHOWN = 20
 
 _ENFORCEMENT_NOTE = (
     'the gate is declared in .purlin/config.json, which an agent can edit. '
-    'The enforcement is the git host: this job is a required check and '
-    '.purlin/records/ci/** and .purlin/briefs/ci/** are restricted to the '
-    'build identity.')
+    'What stands behind it is the tag: purlin:sign writes signed/<version> '
+    'only when every rule meets the gate, and this run checks the evidence '
+    'against the tagged code.')
 
 _SIGNER_LIST_MISSING = (
     '→ signer list missing: run purlin:init --gate signed')
@@ -81,7 +88,8 @@ _SECTIONS = (('not_passed', 'Not passed', ('spec', 'passed')),
              ('weak', 'Weak', ('strong',)),
              ('not_audited', 'Not audited', ()),
              ('to_review', 'To review', ()),
-             ('to_sign', 'To sign', ('signed',)))
+             ('to_sign', 'To sign', ('signed',)),
+             ('not_verified', 'Not verified', ()))
 
 
 def _package():
@@ -93,7 +101,77 @@ def _package():
     return {'gate': gate, 'payload': payload}
 
 
-def check(project_root, payload=None, out=None, as_json=False):
+def verify(project_root, payload):
+    """What `--verify` found wrong with the evidence already in the tree.
+
+    Two questions. Does every signature and hold still bind the rule, proof,
+    test, bar and audit it names? And was every file under the `ci/` folders
+    committed by the runner itself? Each answer that is no is one line naming
+    the file, and any line at all fails the job.
+    """
+    from purlin import signatures as signatures_module, specs as specs_module
+
+    by_rule = {}
+    for feature in payload.get('features') or ():
+        for entry in feature.get('rules') or ():
+            by_rule[(entry.get('feature'), entry.get('id'))] = entry
+
+    problems = []
+    features = specs_module.scan_specs(project_root)
+    bound = [(key, files, True) for key, files
+             in sorted(signatures_module.load_signatures(
+                 project_root, features).items())]
+    bound += [(key, files, False) for key, files
+              in sorted(signatures_module.load_holds(
+                  project_root, features).items())]
+    for key, files, is_signature in bound:
+        entry = by_rule.get(key)
+        for attestation in files:
+            path = attestation.get('path') or '%s %s' % key
+            if entry is None:
+                problems.append('%s: no rule %s %s is in this project'
+                                % (path, key[0], key[1]))
+                continue
+            # A hold says the test does not prove the proof, which is a
+            # statement about the rule, the proof and the test; a re-audit
+            # does not answer it, so the audit hash is not bound into one.
+            audit = entry.get('audit_hash') if is_signature else None
+            if not signatures_module.is_current(
+                    attestation, entry.get('rule_hash'),
+                    entry.get('proof_hash'), entry.get('test_hash'),
+                    entry.get('bar'), entry.get('design_hash'), audit):
+                problems.append('%s: what it binds is not this code' % path)
+    return problems + _provenance(project_root)
+
+
+def _provenance(project_root):
+    """Every file under a `ci/` folder the runner itself did not commit.
+
+    The folder is the source, and what keeps it honest is the git host's
+    file-path rule. This reads the other half of the same fact: the commit
+    that added each file, and whether its identity is the runner's own. A
+    project whose branch rule was never applied finds out here.
+    """
+    from purlin import records as records_module
+
+    problems = []
+    for base in (records_module.RECORDS_DIR, records_module.BRIEFS_DIR):
+        root = os.path.join(project_root, base, 'ci')
+        for current, _dirs, names in os.walk(root):
+            for name in sorted(names):
+                if not name.endswith('.json'):
+                    continue
+                rel = os.path.relpath(os.path.join(current, name),
+                                      project_root).replace(os.sep, '/')
+                if records_module.record_label(project_root, rel) != 'ci':
+                    problems.append(
+                        '%s: the commit that added it is not the runner\'s'
+                        % rel)
+    return problems
+
+
+def check(project_root, payload=None, out=None, as_json=False,
+          verify_evidence=False):
     """Run the gate. Returns an exit code and writes nothing but its report."""
     out = sys.stdout if out is None else out
     package = _package()
@@ -131,6 +209,7 @@ def check(project_root, payload=None, out=None, as_json=False):
         'not_audited': [],
         'to_review': [],
         'to_sign': [],
+        'not_verified': [],
         'result': 'pass',
     }
 
@@ -146,6 +225,8 @@ def check(project_root, payload=None, out=None, as_json=False):
         return EXIT_GATE_FAILED
 
     _collect(payload, result)
+    if verify_evidence:
+        result['not_verified'] = verify(project_root, payload)
 
     # Nothing measures a test strength under `passed`, so naming a minimum
     # there would print a number the gate never reads.
@@ -224,7 +305,7 @@ def _why(entry):
     blocked = entry.get('blocked_by')
     if blocked == 'spec':
         word = entry.get('spec') or 'drafted'
-        reasons = _blocking_findings(entry)
+        reasons = ['no proof names this rule']
     else:
         cell = (entry.get('cells') or {}).get(blocked) or {}
         word = cell.get('word') or 'not met'
@@ -232,20 +313,6 @@ def _why(entry):
     if not reasons:
         return word
     return '%s (%s)' % (word, '; '.join(reasons))
-
-
-def _blocking_findings(entry):
-    """The free-check findings that hold a rule's spec status at `drafted`."""
-    from purlin import checks
-
-    found = []
-    for proof in entry.get('proofs') or ():
-        for finding in proof.get('findings') or ():
-            if finding in checks.BLOCKING and finding not in found:
-                found.append(finding)
-    if not found and not (entry.get('proofs') or ()):
-        return ['no proof names this rule']
-    return found
 
 
 def _report(out, result):
@@ -279,6 +346,9 @@ def main(argv=None):
         description='The gate CI runs before a change may merge.')
     parser.add_argument('--check', action='store_true',
                         help='Run the gate and exit 0 (met) or 1 (not met).')
+    parser.add_argument('--verify', action='store_true',
+                        help='Also check the committed evidence against this '
+                             'code and the runner\'s own identity.')
     parser.add_argument('--json', action='store_true',
                         help='Print the result as JSON after the report.')
     parser.add_argument('--project-root', default='.',
@@ -300,7 +370,8 @@ def main(argv=None):
               file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
-    return check(args.project_root, as_json=args.json)
+    return check(args.project_root, as_json=args.json,
+                 verify_evidence=args.verify)
 
 
 if __name__ == '__main__':
