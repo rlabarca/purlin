@@ -137,33 +137,27 @@ form to run as a preflight step in CI.
 
 ## What the update does
 
-Eleven migrations, applied in this order, because the tags are rewritten before the setting that
-mapped them is dropped and before the workflow matrix is rendered from them:
+The migrations, applied in this order, because the tags are rewritten before the workflow matrix
+is rendered from them:
 
 | Migration | What it changes |
 |-----------|-----------------|
-| `os-tags` | rewrites the retired operating-system tags in `specs/` to `@env(<os>)` |
-| `rule-tags` | rewrites each rule's retired three-level tag as `[bar: passed]` or `[bar: strong]` |
+| `os-tags` | rewrites the retired Windows tier tag in `specs/` to `@unit @env(windows)` |
 | `design-sources` | points design sources at `designs/<feature>/` |
 | `untracked-files` | drops the proof files that used to be committed and untracks the dashboard data |
-| `hooks` | removes the git hooks an older Purlin installed, and says why |
-| `signer-key` | drops the key an older release used to name who may sign from `.purlin/config.json`, and says so in one line; nothing reads it, because a signature names its signer and no list says who may sign |
+| `hooks` | removes the git hooks v0.9.5 installed, and says why |
 | `config` | writes `.purlin/config.json` at the current shape and sets the gate |
-| `workflows` | replaces the retired workflows, and re-renders a `purlin.yml` written before the triggers changed |
+| `workflows` | replaces the workflow that committed proof files |
 | `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |
 | `records` | creates `.purlin/records/` for the records an audit commits |
-| `record-folders` | moves every record and brief into `.purlin/records/ci/` or `local/`, by who committed it |
 
-The `workflows` migration reads each file under `.github/workflows/`. A workflow an earlier
-release wrote under its own name, or one naming something this release moved, is replaced
-outright. A `purlin.yml` whose triggers still name a pull request or a branch was written
-before the tag became the marker, so the update backs it up beside itself, asks before it
-writes, and renders it again from the template. It then says in one line that the new file runs
-on a push of a `signed/**` tag and on a push to a `run/*` branch, that its job is named
-`purlin`, and that it ends with the gate check.
+The `workflows` migration reads each file under `.github/workflows/`. A workflow that committed
+proof files back beside the specs is removed, and where the project has a reason for a runner
+the update asks before it writes `purlin.yml` from the template. It then says in one line that
+the new file runs on a push of a `signed/**` tag and on a push to a `run/*` branch, that its job
+is named `purlin`, and that it ends with the gate check.
 
-An operating-system tag is rewritten only where the intended system is unambiguous; anything
-else is left for you to decide. The gate question is asked once, during the `config` migration,
+The gate question is asked once, during the `config` migration,
 with the same three answers a new project is asked:
 
 ```

@@ -26,10 +26,8 @@ overridden by naming the key:
     {"gate": "strong", "min_strength": 70, "mutation_engine": "auto",
      "sql_engine": null, "ci": "github", "trust": "local"}
 
-Keys this release no longer reads are ignored with one warning naming
-`purlin:init --update`. The key an older release wrote naming who may sign
-is ignored without a warning, because nothing reads it and nothing is lost;
-`purlin:init --update` drops it.
+The keys v0.9.5 wrote that this release no longer reads are ignored with one
+warning naming `purlin:init --update`.
 """
 
 import os
@@ -73,11 +71,7 @@ TRUST_VALUES = ('local', 'remote')
 DEFAULT_TRUST = 'local'
 
 RETIRED_KEYS = (
-    'remote_verification', 'mutation_checks', 'quality_gate', 'platforms',
-    'spec_dir', 'audit_criteria', 'audit_mode', 'audit_threshold',
-    'approvers',                                                  # retired
-    'ai_review_at',                                               # retired
-    'risk',                                                       # retired
+    'spec_dir', 'audit_criteria',
     'pre_push',                                                   # retired
 )
 

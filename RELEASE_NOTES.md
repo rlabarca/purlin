@@ -21,8 +21,8 @@ The update reads what the project actually contains rather than its `version` fi
 delta, and asks before each write. It untracks and deletes the evidence files and the proof
 files that used to be committed, untracks the committed dashboard data, removes the git hooks an
 older Purlin installed, retires the config keys that no longer exist, asks the gate question and
-the trust question once each, and rewrites an operating-system tag to `@env(...)` where the
-intended system is unambiguous. Every file it
+the trust question once each, and rewrites the Windows tier tag to `@unit @env(windows)`. Every
+file it
 replaces is backed up beside the original. `purlin:init --update --check` prints the pending
 list and writes nothing, which is what a preflight runs. Until the update runs, every
 skill opens with `→ Run: purlin:init --update`.
@@ -248,6 +248,10 @@ Also gone, each without a replacement:
   QA person works in Claude Code on the repository, or through a pull request.
 - `purlin:rename`. `agents/purlin.md` says what carries a feature's name and moves together
   in one commit.
+- The upgrade steps for layouts 0.9.5 never shipped: the gate value renames, the signer key,
+  the rule tag the bar replaced, the scope tag and its runner registry, the pre-commit and
+  pre-push shims under `.purlin/hooks/`, the stale `purlin.yml`, and moving records into
+  source folders. `purlin:init --update` reads what 0.9.5 left and nothing else.
 - `purlin:spec --resolve` and `scripts/mcp/purlin/ids.py`. Ids are still allocated against
   `origin/main`; a duplicate after a merge is renumbered by hand.
 - `purlin:find`. `purlin:status <name>` shows one spec's rules and their cells.

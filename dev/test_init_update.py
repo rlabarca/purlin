@@ -7,9 +7,9 @@ itself is frozen: each test copies it into a temporary directory and runs
 `git init` there, then writes by hand whatever that layout does not carry.
 
 One convention runs through this file. The spellings this release retired are
-never written out: the scope tag is built as `'@' + 'on('`, the verification
-file name carries a character class (`recei[p]t`), and a spec is found by
-searching for its text rather than by naming a path that carries a retired word.
+never written out: the verification file name carries a character class
+(`recei[p]t`), and a spec is found by searching for its text rather than by
+naming a path that carries a retired word.
 `dev/test_vocabulary.py` reads this file with no exception for it, so a fixture
 spelled out in full would fail that proof.
 
@@ -21,11 +21,9 @@ What each group proves:
               a declined migration stays pending
 *specs*       no proof file and no run file survives beside a spec
 *config*      the file that is left is the gate and what the gate derives
-*tags*        a scope becomes `@env(<os>)` when the person confirms it, and is
-              dropped when they do not or when it names no operating system
+*tags*        the Windows tier tag becomes `@unit @env(windows)`
 *designs*     a design source becomes a path under `designs/`
-*hooks*       the pre-commit shim and its delegator go, the pre-push shim is
-              repointed
+*hooks*       the pre-commit and pre-push hooks v0.9.5 installed go
 *workflows*   the retired workflows go and one `purlin.yml` replaces them
 *plugins*     each copy under `.purlin/plugins/` matches the plugin again
 *records*     `.purlin/records/` exists with the README that explains it
@@ -35,7 +33,6 @@ What each group proves:
 """
 
 import fnmatch
-import hashlib
 import json
 import os
 import shutil
@@ -57,16 +54,15 @@ V095 = 'upgrade-0.9.5'
 LAYOUTS = (V095,)
 
 # The retired spellings, never written out. See the module docstring.
-SCOPE = '@' + 'on('
 LEFTOVER = ('*.proofs-*.json', '*.recei[p]t.json')
 
-# A pre-commit shim an older release installed, and the pre-push shim it wrote
-# beside it. The v0.9.5 fixture carries neither, so a hooks case writes them.
-OLD_PRE_COMMIT = '#!/bin/sh\nexec purlin-pre-commit "$@"\n'
-OLD_PRE_PUSH = ('#!/bin/sh\n'
-                'PURLIN_SCRIPT="scripts/hooks/pre_push_hook.py"\n'
-                'purlin_interpreter() { command -v python3; }\n'
-                'exec "$(purlin_interpreter)" "$PURLIN_SCRIPT" "$@"\n')
+# The pre-commit and pre-push hooks v0.9.5 installed under `.git/hooks/`, as
+# its `scripts/hooks/` copies open. A fixture carries no `.git/`, so a hooks
+# case writes them.
+OLD_PRE_COMMIT = ('#!/usr/bin/env bash\n'
+                  '# Purlin pre-commit hook: project digest auto-generation.\n')
+OLD_PRE_PUSH = ('#!/usr/bin/env bash\n'
+                '# Purlin pre-push hook: proof coverage check.\n')
 
 VERSION = open(os.path.join(ROOT, 'VERSION'), encoding='utf-8').read().strip()
 
@@ -198,7 +194,7 @@ def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
 @pytest.mark.proof("update", "PROOF-2", "RULE-2")
 def test_a_retired_hook_adds_the_hook_migration(tmp_path):
     root = _project(tmp_path, V095)
-    _write(root, '.purlin/hooks/pre-commit', OLD_PRE_COMMIT)
+    _write(root, '.git/hooks/pre-commit', OLD_PRE_COMMIT)
     found = _ids(root)
     assert 'hooks' in found, found
     for expected in ('os-tags', 'untracked-files', 'config', 'workflows',
@@ -364,26 +360,6 @@ def test_the_config_is_the_gate_shape(tmp_path, layout):
     assert config['trust'] in ('local', 'remote')
 
 
-OLD_SIGNER_KEY = 'approvers'                               # retired
-
-
-@pytest.mark.proof("update", "PROOF-10", "RULE-10")
-def test_the_old_gate_name_carries_over_and_no_signer_key_does(tmp_path):
-    """An older release named the top gate and its people by other words."""
-    root = _project(tmp_path, V095)
-    was = [name for name, now in update.GATE_RENAMES.items() if now == 'signed']
-    config = json.loads(_read(root, '.purlin/config.json'))
-    config.update({'gate': was[0], OLD_SIGNER_KEY: ['Jane@Acme.com'],
-                   update.SIGNER_KEY: ['Jane@Acme.com']})
-    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
-    _apply(root)
-    written = json.loads(_read(root, '.purlin/config.json'))
-    assert written['gate'] == 'signed'
-    assert written['sign_at'] == 'strong'
-    assert OLD_SIGNER_KEY not in written
-    assert update.SIGNER_KEY not in written
-
-
 @pytest.mark.parametrize('layout', LAYOUTS)
 @pytest.mark.proof("update", "PROOF-10", "RULE-10")
 def test_retired_keys_are_gone(tmp_path, layout):
@@ -426,7 +402,6 @@ def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
     assert any('Gate [' in prompt for prompt in asked)
     written = json.loads(_read(root, '.purlin/config.json'))
     assert written['gate'] == 'signed'
-    assert update.SIGNER_KEY not in written
 
 
 @pytest.mark.proof("update", "PROOF-12", "RULE-12")
@@ -488,25 +463,8 @@ def test_a_framework_the_tree_carries_is_kept(tmp_path, capsys):
 
 # --- operating-system tags ---------------------------------------------------
 
-# One proof line carrying a retired scope, and the registry entry that says
-# which operating system that scope ran on. The v0.9.5 layout wrote both, and
-# a copy of the fixture takes them here rather than carrying them frozen.
-SCOPED_SPEC = """# Feature: locking
-
-> Scope: src/locking.py
-
-## Rules
-
-- RULE-1: The cache is written under an exclusive lock
-
-## Proof
-
-- PROOF-1 (RULE-1): Take the lock on a real runner and verify the entries round-trip %swindows-2022)
-- PROOF-2 (RULE-1): Take the lock on the design host and verify the same %sfigma-mcp)
-""" % (SCOPE, SCOPE)
-
-# A second spec, where the same spelling is prose rather than a tag: the
-# rewrite has to leave it exactly as it is.
+# A spec where the tier tag's spelling is prose in the middle of a line rather
+# than a tag at its end: the rewrite has to leave it exactly as it is.
 PROSE_SPEC = """# Feature: runners
 
 > Scope: src/runners.py
@@ -517,57 +475,8 @@ PROSE_SPEC = """# Feature: runners
 
 ## Proof
 
-- PROOF-1 (RULE-1): Read a proof line written %s<runner>) and verify it is left alone @unit
-""" % SCOPE
-
-
-def _with_scopes(tmp_path):
-    """A v0.9.5 project whose specs carry the retired scope tags."""
-    root = _project(tmp_path, V095)
-    _write(root, 'specs/core/locking.md', SCOPED_SPEC)
-    _write(root, 'specs/core/runners.md', PROSE_SPEC)
-    config = json.loads(_read(root, '.purlin/config.json'))
-    config[update.REGISTRY_KEY] = {'windows-2022': {'os': 'windows'},
-                                   'figma-mcp': {}}
-    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-qm', 'the scoped specs')
-    return root
-
-
-@pytest.mark.proof("update", "PROOF-13", "RULE-13")
-def test_a_confirmed_scope_becomes_env(tmp_path):
-    root = _with_scopes(tmp_path)
-    rel = 'specs/core/locking.md'
-    assert SCOPE in _read(root, rel)
-    _apply(root)
-    text = _read(root, rel)
-    assert '@env(windows)' in text
-    assert SCOPE not in text
-
-
-@pytest.mark.parametrize('layout', LAYOUTS)
-@pytest.mark.proof("update", "PROOF-13", "RULE-13")
-def test_no_spec_carries_the_retired_scope_afterwards(tmp_path, layout):
-    root = _project(tmp_path, layout)
-    _apply(root)
-    for rel in _walk(root, ('*.md',)):
-        if rel.startswith('specs/'):
-            assert '%swindows-2022)' % SCOPE not in _read(root, rel)
-            assert '%sfigma-mcp)' % SCOPE not in _read(root, rel)
-
-
-@pytest.mark.proof("update", "PROOF-13", "RULE-13")
-def test_a_declined_scope_drops_the_tag(tmp_path, capsys, monkeypatch):
-    root = _with_scopes(tmp_path)
-    rel = 'specs/core/locking.md'
-    _answers(monkeypatch, [('Rewrite the windows-2022 scope', 'n')])
-    _apply(root, argv=())
-    printed = capsys.readouterr().out
-    text = _read(root, rel)
-    assert SCOPE not in text
-    assert '@env(' not in text
-    assert 'rather than guess an operating system' in printed
+- PROOF-1 (RULE-1): Read a line naming @windows mid-sentence and verify it is left alone @unit
+"""
 
 
 @pytest.mark.proof("update", "PROOF-13", "RULE-13")
@@ -585,24 +494,14 @@ def test_the_retired_tier_tag_becomes_unit_and_env(tmp_path):
 
 
 @pytest.mark.proof("update", "PROOF-13", "RULE-13")
-def test_a_scope_naming_no_operating_system_is_dropped(tmp_path, capsys):
-    root = _with_scopes(tmp_path)
-    rel = 'specs/core/locking.md'
-    assert SCOPE in _read(root, rel)
-    _apply(root)
-    printed = capsys.readouterr().out
-    assert SCOPE not in _read(root, rel)
-    assert 'it names no operating system' in printed
-
-
-@pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_prose_that_is_not_a_tag_is_left_alone(tmp_path):
-    root = _with_scopes(tmp_path)
+    root = _project(tmp_path, V095)
     rel = 'specs/core/runners.md'
-    before = _read(root, rel)
-    assert '%s<' % SCOPE in before       # a placeholder, not a real scope
+    _write(root, rel, PROSE_SPEC)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'a spec naming the tag in prose')
     _apply(root)
-    assert '%s<' % SCOPE in _read(root, rel)
+    assert _read(root, rel) == PROSE_SPEC
 
 
 # --- design sources ----------------------------------------------------------
@@ -666,59 +565,44 @@ def test_the_design_migration_is_not_pending_afterwards(tmp_path):
 # --- hooks -------------------------------------------------------------------
 
 def _with_hooks(tmp_path):
-    """A v0.9.5 project carrying the two hooks an older release installed."""
+    """A v0.9.5 project carrying the two hooks that release installed."""
     root = _project(tmp_path, V095)
-    _write(root, '.purlin/hooks/pre-commit', OLD_PRE_COMMIT)
-    _write(root, '.purlin/hooks/pre-push', OLD_PRE_PUSH)
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-qm', 'the hooks that release installed')
+    _write(root, '.git/hooks/pre-commit', OLD_PRE_COMMIT)
+    _write(root, '.git/hooks/pre-push', OLD_PRE_PUSH)
     return root
 
 
+def _hook_files(root):
+    return [item['files'] for item in update.pending(root)
+            if item['id'] == 'hooks'][0]
+
+
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
-def test_the_pre_commit_shim_goes(tmp_path):
+def test_the_pre_commit_hook_goes(tmp_path):
     root = _with_hooks(tmp_path)
-    assert os.path.isfile(os.path.join(root, '.purlin', 'hooks', 'pre-commit'))
+    hook = os.path.join(root, '.git', 'hooks', 'pre-commit')
+    assert '.git/hooks/pre-commit' in _hook_files(root)
     _apply(root)
-    assert not os.path.exists(
-        os.path.join(root, '.purlin', 'hooks', 'pre-commit'))
-    assert '.purlin/hooks/pre-commit' not in _tracked(root)
+    assert not os.path.exists(hook)
 
 
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
-def test_the_delegator_git_runs_goes_too(tmp_path):
+def test_a_foreign_hook_is_left_alone(tmp_path):
     root = _with_hooks(tmp_path)
-    delegator = os.path.join(root, '.git', 'hooks', 'pre-commit')
-    with open(delegator, 'w', encoding='utf-8') as handle:
-        handle.write('#!/bin/sh\nexec "$(git rev-parse --show-toplevel)"'
-                     '/.purlin/hooks/pre-commit "$@"\n')
-    assert '.git/hooks/pre-commit' in [
-        item['files'] for item in update.pending(root)
-        if item['id'] == 'hooks'][0]
-    _apply(root)
-    assert not os.path.exists(delegator)
-
-
-@pytest.mark.proof("update", "PROOF-9", "RULE-9")
-def test_a_foreign_delegator_is_left_alone(tmp_path):
-    root = _with_hooks(tmp_path)
-    delegator = os.path.join(root, '.git', 'hooks', 'pre-commit')
-    with open(delegator, 'w', encoding='utf-8') as handle:
+    hook = os.path.join(root, '.git', 'hooks', 'pre-commit')
+    with open(hook, 'w', encoding='utf-8') as handle:
         handle.write('#!/bin/sh\nexec ./node_modules/.bin/lint-staged\n')
     _apply(root)
-    assert os.path.isfile(delegator)
+    assert os.path.isfile(hook)
 
 
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
-def test_the_pre_push_shim_goes_too(tmp_path):
-    """Nothing runs at push time, so the shim is removed rather than moved."""
+def test_the_pre_push_hook_goes_too(tmp_path):
+    """Nothing runs at push time, so the hook is removed rather than moved."""
     root = _with_hooks(tmp_path)
-    shim = '.purlin/hooks/pre-push'
-    assert shim in [item['files'] for item in update.pending(root)
-                    if item['id'] == 'hooks'][0]
+    assert '.git/hooks/pre-push' in _hook_files(root)
     _apply(root)
-    assert not os.path.exists(os.path.join(root, *shim.split('/')))
-    assert shim not in _tracked(root)
+    assert not os.path.exists(os.path.join(root, '.git', 'hooks', 'pre-push'))
 
 
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
@@ -766,37 +650,6 @@ def test_purlin_yml_carries_this_releases_triggers_and_gate_check(tmp_path):
     assert "tags: ['signed/**']" in text
     assert 'name: Check the gate' in text
     assert 'scripts/ci/gate_check.py" --check --verify' in text
-
-
-@pytest.mark.proof("update", "PROOF-15", "RULE-15")
-def test_a_purlin_yml_without_the_gate_check_is_rendered_again(tmp_path):
-    """Its triggers start a run on every branch, so it is not this release's."""
-    root = _project(tmp_path, V095)
-    rel = '%s/purlin.yml' % update.WORKFLOW_DIR
-    _write(root, rel, 'name: purlin\non:\n  push:\n  pull_request:\njobs: {}\n')
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-qm', 'a workflow an earlier release wrote')
-    assert rel in [item['files'] for item in update.pending(root)
-                   if item['id'] == 'workflows'][0]
-    _apply(root)
-    text = _read(root, rel)
-    assert "branches: ['run/**']" in text
-    assert "tags: ['signed/**']" in text
-    assert 'scripts/ci/gate_check.py" --check --verify' in text
-    assert 'workflows' not in _ids(root)
-
-
-@pytest.mark.proof("update", "PROOF-15", "RULE-15")
-def test_a_workflow_named_for_the_retired_gate_check_is_removed(tmp_path):
-    root = _project(tmp_path, V095)
-    rel = '%s/%s' % (update.WORKFLOW_DIR, update.WORKFLOW_NAMES[0])
-    _write(root, rel, 'name: gate\non: push\njobs: {}\n')
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-qm', 'the workflow that release wrote')
-    assert rel in [item['files'] for item in update.pending(root)
-                   if item['id'] == 'workflows'][0]
-    _apply(root)
-    assert not os.path.exists(os.path.join(root, rel))
 
 
 @pytest.mark.proof("update", "PROOF-15", "RULE-15")
@@ -981,99 +834,3 @@ def test_a_run_that_leaves_work_names_it(tmp_path, capsys, monkeypatch):
     printed = capsys.readouterr().out.rstrip().splitlines()
     assert printed[-1] == ('→ Next: run purlin:init --update again for '
                            'records.')
-
-
-# --- the records a person committed -----------------------------------------
-
-@pytest.mark.proof("update", "PROOF-23", "RULE-23")
-def test_a_loose_record_moves_into_the_folder_its_source_names(tmp_path,
-                                                               capsys):
-    """The source is the folder now, so every loose record moves into one.
-
-    A record nobody but a person could have committed goes to `local/`, which
-    is where an audit writes from now on. Nothing is deleted: a local record
-    counts at `strong`.
-    """
-    root = _project(tmp_path, V095)
-    rel = '.purlin/records/greeting/20260913T120000Z-4f1c2ab-ada.json'
-    moved = '.purlin/records/local/greeting/20260913T120000Z-4f1c2ab-ada.json'
-    brief = '.purlin/briefs/greeting/RULE-1.1a2b3c4d.brief.json'
-    brief_moved = '.purlin/briefs/local/greeting/RULE-1.1a2b3c4d.brief.json'
-    _write(root, rel, '{"schema_version": 2, "feature": "greeting"}\n')
-    _write(root, brief, '{"schema": "purlin-brief/2", "rule": "RULE-1"}\n')
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-qm', 'a record by hand')
-
-    pending = {entry['id']: entry for entry in update.pending(root)}
-    assert 'record-folders' in pending, sorted(pending)
-    assert pending['record-folders']['files'] == [brief, rel]
-
-    update.main(['--project-root', root, '--yes'])
-    printed = capsys.readouterr().out
-    assert 'the folder is the source now' in printed, printed
-    assert not os.path.exists(os.path.join(root, *rel.split('/')))
-    assert os.path.isfile(os.path.join(root, *moved.split('/')))
-    assert os.path.isfile(os.path.join(root, *brief_moved.split('/')))
-    assert 'record-folders' not in [e['id'] for e in update.pending(root)]
-
-
-# --- the bar ------------------------------------------------------------------
-
-RULE_TAGS = (
-    '# Feature: greeting\n\n'
-    '> Description: One rule per level of the tag the bar replaced.\n'
-    '> Scope: greeting.py\n\n'
-    '## Rules\n\n'
-    '- RULE-1: A greeting names the person [risk: high] [origin: pm]\n'  # retired
-    '- RULE-2: A greeting ends in an exclamation [risk: medium]\n'  # retired
-    '- RULE-3: A greeting is one line [risk: low] [criterion: US-3]\n'  # retired
-    '- RULE-4: A greeting is in English\n\n'
-    '## Proof\n\n'
-    '- PROOF-1 (RULE-1): Call greet("Ada"); verify it holds "Ada"\n'
-)
-
-
-@pytest.mark.proof("update", "PROOF-24", "RULE-24")
-def test_the_retired_rule_tag_is_rewritten_as_a_bar(tmp_path):
-    root = _project(tmp_path, V095)
-    _write(root, 'specs/core/greeting.md', RULE_TAGS)
-    assert any(item['id'] == 'rule-tags' for item in update.pending(root))
-    _apply(root)
-    written = _read(root, 'specs/core/greeting.md')
-    assert '[bar: strong] [origin: pm]' in written, written
-    assert '- RULE-2: A greeting ends in an exclamation [bar: strong]' in written
-    assert ('- RULE-3: A greeting is one line [bar: passed] [criterion: US-3]'
-            in written)
-    assert '- RULE-4: A greeting is in English\n' in written
-    assert not any(item['id'] == 'rule-tags' for item in update.pending(root))
-
-
-@pytest.mark.proof("update", "PROOF-25", "RULE-25")
-def test_the_signer_key_is_dropped_and_nothing_else_is(tmp_path, capsys):
-    root = _project(tmp_path, V095)
-    _apply(root)
-    capsys.readouterr()
-    config = json.loads(_read(root, '.purlin/config.json'))
-    config.update({'gate': 'signed', 'sign_at': 'all', 'trust': 'local',
-                   'min_strength': 80, update.SIGNER_KEY: ['jane@acme.com']})
-    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-q', '-m', 'chore: a config an older release wrote')
-
-    assert update._gate().resolve_gate(config).warnings == []
-    pending = dict((item['id'], item) for item in update.pending(root))
-    assert pending.get('signer-key', {}).get('files') == [
-        '.purlin/config.json'], sorted(pending)
-
-    _apply(root)
-    printed = capsys.readouterr().out
-    written = json.loads(_read(root, '.purlin/config.json'))
-    kept = dict(config)
-    kept.pop(update.SIGNER_KEY)
-    assert written == kept
-    assert 'dropped signers from .purlin/config.json' in printed, printed
-    before = json.dumps(config, indent=2).encode('utf-8')
-    backup = '.purlin/config.json.local-%s.bak' % (
-        hashlib.sha256(before).hexdigest()[:8])
-    assert _read(root, backup) == before.decode('utf-8')
-    assert 'signer-key' not in _ids(root)

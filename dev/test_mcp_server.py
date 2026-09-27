@@ -645,13 +645,11 @@ class TestGate:
 
     def test_retired_keys_are_ignored_with_one_directive(self):
         cfg = purlin_gate.resolve_gate({
-            'gate': 'passed', 'remote_verification': 'optional',
-            'mutation_checks': True, 'quality_gate': 'deterministic',
-            'platforms': {}, 'spec_dir': 'elsewhere'})
+            'gate': 'passed', 'spec_dir': 'elsewhere',
+            'audit_criteria': 'team://custom-standards'})
         retired = [w for w in cfg.warnings if 'purlin:init --update' in w]
         assert len(retired) == 1, cfg.warnings
-        for key in ('remote_verification', 'mutation_checks', 'quality_gate',
-                    'platforms', 'spec_dir'):
+        for key in ('spec_dir', 'audit_criteria'):
             assert key in retired[0], retired[0]
 
     def test_trust_is_local_or_remote_and_defaults_to_local(self):
@@ -1696,7 +1694,7 @@ class TestStatusTable:
 
     @pytest.mark.proof("states", "PROOF-48", "RULE-41", tier="integration")
     def test_retired_config_keys_print_the_update_directive(self):
-        made = Project(extra_config={'remote_verification': 'optional'})
+        made = Project(extra_config={'spec_dir': 'elsewhere'})
         try:
             text = purlin_status.sync_status(made.root)
             assert '→ Run: purlin:init --update' in text, text

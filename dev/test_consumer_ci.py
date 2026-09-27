@@ -281,8 +281,7 @@ def test_the_config_is_the_shape_this_release_reads():
     assert config['gate'] == 'strong'
     assert config['test_framework'] == 'pytest'
     assert config['version'] == PURLIN_REF[1:]
-    retired = {'remote_verification', 'mutation_checks', 'quality_gate',
-               'spec_dir', 'digest', 'report', 'pre_push'}
+    retired = {'spec_dir', 'audit_criteria', 'digest', 'report', 'pre_push'}
     assert not retired & set(config), (
         'the config still carries %s' % sorted(retired & set(config)))
 

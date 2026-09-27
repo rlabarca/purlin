@@ -49,43 +49,18 @@ RUN_FILE_GLOB = '*.recei[p]t.json'                         # retired
 DASHBOARD_DATA = '.purlin/report-data.js'                  # retired
 CACHE_DIR = '.purlin/cache'                                # retired
 OLD_SHELL_PLUGIN = 'purlin-proof.sh'                       # retired
-REGISTRY_KEY = 'platforms'                                 # retired
-SCOPE_TAG_RE = re.compile(r'[ \t]*@on\(([a-z0-9][a-z0-9-]*)\)')  # retired
 TIER_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')     # retired
 DESIGN_SCHEME = 'figma://'                                 # retired
 DESIGN_FIELDS = ('> Visual-Reference:', '> Visual-Hash:')  # retired
-WORKFLOW_MARKERS = ('PURLIN_PLATFORM',                      # retired
-                    'scripts/ci/verify_gate.py',           # retired
-                    'scripts/update/migrate.py', '.proofs-')  # retired
-WORKFLOW_NAMES = ('verify-gate.yml', 'verify-gate.yaml')   # retired
-GATE_RENAMES = {'tested': 'passed', 'recorded': 'strong',  # retired
-                'approved': 'signed'}                      # retired
-SIGNER_KEY = 'signers'                                     # retired
-SIGNER_KEY_DROPPED = ('dropped signers from .purlin/config.json: a '  # retired
-                      'signature names its signer, and no list says who may '
-                      'sign')
-PRE_PUSH_SHIM = '.purlin/hooks/pre-push'                   # retired
-PRE_PUSH_DELEGATOR = '.git/hooks/pre-push'                 # retired
+WORKFLOW_MARKER = '.proofs-'                               # retired
+PRE_PUSH_HOOK = '.git/hooks/pre-push'                      # retired
 PRE_PUSH_KEY = 'pre_push'                                  # retired
-RULE_TAG_RE = re.compile(r'\[risk:\s*([^\]]*)\]')          # retired
-TAG_TO_BAR = {'high': 'strong', 'medium': 'strong',        # retired
-              'low': 'passed'}                             # retired
 
 # --- what this release writes instead --------------------------------------
 IGNORE_LINES = ('.purlin/report-data.js', '.purlin/report-stamp.js',
                 '.purlin/briefs/**/*.brief.txt')
 RECORDS_DIR = '.purlin/records'
-BRIEFS_DIR = '.purlin/briefs'
-RECORD_SOURCES = ('ci', 'local')
 WORKFLOW_DIR = '.github/workflows'
-# What a workflow this release wrote carries and an earlier one does not: a
-# gate check run with `--verify`, and a trigger on the signing tag. A
-# purlin.yml without both was written before CI stopped running on a pull
-# request, so it is rendered again or removed.
-GATE_STEP_MARKER = '--check --verify'
-TAG_TRIGGER_MARKER = "tags: ['signed/**']"
-PURLIN_WORKFLOW_NAMES = ('purlin.yml', 'purlin.yaml')
-OS_NAMES = ('linux', 'macos', 'windows')
 ARROW = '→'
 DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
                      'runs it')
@@ -242,12 +217,9 @@ def _apply_untracked(root, files, args, out):
             % (gone, '' if gone == 1 else 's', RECORDS_DIR))
 
 def _detect_hooks(root):
-    """Every git hook an older Purlin installed. This release installs none."""
+    """Every git hook v0.9.5 installed. This release installs none."""
     hits = []
-    for rel in ('.purlin/hooks/pre-commit', PRE_PUSH_SHIM):
-        if os.path.isfile(os.path.join(root, *rel.split('/'))):
-            hits.append(rel)
-    for rel in ('.git/hooks/pre-commit', PRE_PUSH_DELEGATOR):
+    for rel in ('.git/hooks/pre-commit', PRE_PUSH_HOOK):
         path = os.path.join(root, *rel.split('/'))
         if os.path.isfile(path) and 'purlin' in _read(path).lower():
             hits.append(rel)
@@ -273,22 +245,6 @@ def _apply_hooks(root, files, args, out):
     out.say('removed %d git hook%s; this release runs nothing at commit or '
             'push time' % (len(files), _s(files)))
 
-def _detect_signer_key(root):
-    """The config, while it still names who may sign."""
-    return ['.purlin/config.json'] if SIGNER_KEY in _config(root) else []
-
-def _apply_signer_key(root, files, args, out):
-    """Drop the key naming who may sign; this release reads no such list."""
-    path = os.path.join(root, '.purlin', 'config.json')
-    config = _config(root)
-    if SIGNER_KEY not in config:
-        return
-    out.kept(_back_up_copy(path, '.purlin/config.json'))
-    config.pop(SIGNER_KEY)
-    _write(path, json.dumps(config, indent=2) + '\n')
-    out.done('.purlin/config.json')
-    out.say(SIGNER_KEY_DROPPED)
-
 def _detect_config(root):
     config = _config(root)
     if not config:
@@ -303,16 +259,14 @@ def _detect_config(root):
     return ['.purlin/config.json'] if stale else []
 
 def _gate_default(old):
-    """The gate to offer: the one the project named, read in this release's words.
+    """The gate to offer: the one the project named, when it named one.
 
-    A project that already named a gate keeps it, under the name this release
-    reads. A project that named none is offered `strong` when the hook
-    setting an older release wrote was the blocking one, because that project
-    asked for something to stop a change, and `passed` otherwise.
+    A project that named none is offered `strong` when the hook setting
+    v0.9.5 wrote was the blocking one, because that project asked for
+    something to stop a change, and `passed` otherwise.
     """
     gates = _gate().GATES
     named = str(old.get('gate') or '').strip().lower()
-    named = GATE_RENAMES.get(named, named)
     if named in gates:
         return named
     return 'strong' if str(old.get(PRE_PUSH_KEY)).strip() == 'strict' else 'passed'
@@ -423,77 +377,18 @@ def _apply_config(root, files, args, out):
             % (len(dropped), _s(dropped), ', '.join(dropped))))
 
 def _detect_os_tags(root):
-    hits = []
-    for rel in _files_under(root, 'specs', ('*.md',)):
-        text = _read(os.path.join(root, rel))
-        if SCOPE_TAG_RE.search(text) or TIER_TAG_RE.search(text):
-            hits.append(rel)
-    return hits
+    return [rel for rel in _files_under(root, 'specs', ('*.md',))
+            if TIER_TAG_RE.search(_read(os.path.join(root, rel)))]
 
 def _apply_os_tags(root, files, args, out):
     """A proof names an operating system now, or names none and runs anywhere."""
-    registry = _config(root).get(REGISTRY_KEY) or {}
-    decided = {}
-
-    def tag(name, prefix):  # asked about once per scope, then remembered
-        if name not in decided:
-            entry = registry.get(name)
-            found = (str(entry.get('os', '')).strip().lower()
-                     if isinstance(entry, dict) else name)
-            decided[name] = found if found in OS_NAMES else None
-            if decided[name] is None:
-                out.say('dropped the scope on %s: it names no operating '
-                        'system, so any runner proves it now' % name)
-            elif not _confirm('Rewrite the %s scope to @env(%s)?'
-                              % (name, decided[name]), args.yes):
-                out.say('dropped the scope on %s rather than guess an '
-                        'operating system' % name)
-                decided[name] = None
-        return '' if decided[name] is None else '%s @env(%s)' % (prefix,
-                                                                 decided[name])
-
     for rel in files:
         path = os.path.join(root, rel)
         out.kept(_back_up_copy(path, rel))
-        text = SCOPE_TAG_RE.sub(lambda m: tag(m.group(1).strip(), ''),
-                                _read(path))
-        _write(path, TIER_TAG_RE.sub(lambda m: tag('windows', ' @unit'), text))
+        _write(path, TIER_TAG_RE.sub(' @unit @env(windows)', _read(path)))
         out.done(rel)
     out.say('rewrote the operating-system tags in %d spec%s'
             % (len(files), _s(files)))
-
-def _detect_rule_tags(root):
-    """Every spec still carrying the tag the bar replaced."""
-    hits = []
-    for rel in _files_under(root, 'specs', ('*.md',)):
-        if RULE_TAG_RE.search(_read(os.path.join(root, rel))):
-            hits.append(rel)
-    return hits
-
-
-def _apply_rule_tags(root, files, args, out):
-    """A rule names its bar now: the evidence it must have before a signature.
-
-    The two levels that asked for a person become `[bar: strong]` and the one
-    that did not becomes `[bar: passed]`, so no rule loses the evidence it
-    was asking for. The tag sits outside the rule text hash, as the old one
-    did, so rewriting it stales nothing but the signature's own bar field.
-    """
-    changed = 0
-    for rel in files:
-        path = os.path.join(root, rel)
-        text = _read(path)
-        rewritten = RULE_TAG_RE.sub(
-            lambda m: '[bar: %s]' % TAG_TO_BAR.get(
-                m.group(1).strip().lower(), 'passed'), text)
-        if rewritten == text:
-            continue
-        out.kept(_back_up_copy(path, rel))
-        _write(path, rewritten)
-        out.done(rel)
-        changed += 1
-    out.say('rewrote the tag the bar replaced in %d spec%s'
-            % (changed, '' if changed == 1 else 's'))
 
 
 def _detect_design_sources(root):
@@ -528,29 +423,19 @@ def _apply_design_sources(root, files, args, out):
             % (len(files), _s(files)))
 
 def _detect_workflows(root):
-    """The workflow files this release replaces, plus a stale `purlin.yml`.
+    """The workflow files this release replaces: any that commit proof files.
 
-    Two things are found here. A workflow an earlier release wrote under its
-    own name, or one naming something this release moved, is replaced
-    outright. A `purlin.yml` that does not trigger on the signing tag, or
-    whose gate step does not verify, was written before CI stopped running on
-    a pull request; it is rendered again from the template, or removed
-    outright where this project has no reason for a runner at all.
+    A v0.9.5 project ran its Windows proofs in a workflow that committed the
+    proof file back beside the spec. Proof files are runtime now, so that
+    workflow is removed and one `purlin.yml` is offered in its place.
     """
     hits = []
     for rel in _files_under(root, WORKFLOW_DIR, ('*.yml', '*.yaml')):
-        if os.path.basename(rel) in WORKFLOW_NAMES:
-            hits.append(rel)
-            continue
         try:
             text = _read(os.path.join(root, rel))
         except (IOError, OSError, UnicodeDecodeError):
             continue
-        if any(marker in text for marker in WORKFLOW_MARKERS):
-            hits.append(rel)
-        elif (os.path.basename(rel) in PURLIN_WORKFLOW_NAMES
-                and not (GATE_STEP_MARKER in text
-                         and TAG_TRIGGER_MARKER in text)):
+        if WORKFLOW_MARKER in text:
             hits.append(rel)
     return hits
 
@@ -634,100 +519,17 @@ def _apply_records(root, files, args, out):
     out.done(files[0])
     out.say('created %s, where CI commits one file per run' % RECORDS_DIR)
 
-def _loose_records(root):
-    """Every record and brief sitting outside a source folder, with its target.
-
-    Before this release a record went straight into
-    `.purlin/records/<feature>/`, and who wrote it was read off the commit.
-    The source is the folder now, because that is what a tag run can check
-    the commit behind, so each file moves into `ci/` or `local/` by the
-    answer git still gives for it. `[(rel, target_rel, source)]`, sorted.
-    """
-    from purlin import records as records_module
-
-    found = []
-    for directory, is_record in ((RECORDS_DIR, True), (BRIEFS_DIR, False)):
-        ok, listed = _git(root, 'ls-files', '--', directory)
-        names = listed.splitlines() if ok else []
-        for rel in _files_on_disk(root, directory) + names:
-            rel = rel.strip().replace(os.sep, '/')
-            if not rel.endswith('.json'):
-                continue
-            parts = rel.split('/')
-            # `.purlin/<kind>/<feature>/<file>`: four parts means no source
-            # folder, and five means the file is already where it belongs.
-            if len(parts) != 4 or parts[2] in RECORD_SOURCES:
-                continue
-            source = (records_module.record_label(root, rel) if is_record
-                      else _brief_source(root, rel))
-            target = '/'.join(parts[:2] + [source] + parts[2:])
-            pair = (rel, target, source)
-            if pair not in found:
-                found.append(pair)
-    return sorted(found)
-
-
-def _brief_source(root, rel):
-    """Which folder a loose brief belongs in: whoever committed it."""
-    from purlin import records as records_module
-    return records_module.record_label(root, rel)
-
-
-def _files_on_disk(root, directory):
-    """Every `.json` under a directory, project-relative, with `/` separators."""
-    base = os.path.join(root, *directory.split('/'))
-    found = []
-    for current, _dirs, names in os.walk(base):
-        for name in names:
-            if not name.endswith('.json'):
-                continue
-            found.append(os.path.relpath(os.path.join(current, name), root)
-                         .replace(os.sep, '/'))
-    return found
-
-
-def _detect_record_folders(root):
-    return [rel for rel, _target, _source in _loose_records(root)]
-
-def _apply_record_folders(root, files, args, out):
-    moved = {'ci': 0, 'local': 0}
-    for rel, target, source in _loose_records(root):
-        if rel not in files:
-            continue
-        destination = os.path.join(root, *target.split('/'))
-        parent = os.path.dirname(destination)
-        if parent and not os.path.isdir(parent):
-            os.makedirs(parent)
-        ok, _said = _git(root, 'mv', '--', rel, target)
-        if not ok:
-            try:
-                shutil.move(os.path.join(root, *rel.split('/')), destination)
-            except (IOError, OSError):
-                continue
-        moved[source] = moved.get(source, 0) + 1
-        out.done(rel)
-    out.say('moved %d file%s into ci/ and %d into local/; the folder is the '
-            'source now, and a tag run checks that every ci/ file came from '
-            'the runner'
-            % (moved.get('ci', 0), '' if moved.get('ci') == 1 else 's',
-               moved.get('local', 0)))
-
-# Order matters: the tags are rewritten before the config drops the registry that
-# maps them, and before the workflow matrix is rendered from them.
+# Order matters: the tags are rewritten before the workflow matrix is rendered
+# from them.
 MIGRATIONS = (
-    ('os-tags', 'rewrite the retired operating-system tags to @env(<os>)',
+    ('os-tags', 'rewrite the retired operating-system tag to @env(windows)',
      _detect_os_tags, _apply_os_tags),
-    ('rule-tags', 'rewrite each rule\'s retired tag as [bar: passed] or '
-     '[bar: strong]',
-     _detect_rule_tags, _apply_rule_tags),
     ('design-sources', 'point design sources at designs/<feature>/',
      _detect_design_sources, _apply_design_sources),
     ('untracked-files', 'drop the proof files and untrack the dashboard data',
      _detect_untracked, _apply_untracked),
     ('hooks', 'remove the git hooks an older release installed',
      _detect_hooks, _apply_hooks),
-    ('signer-key', 'drop the key naming who may sign from .purlin/config.json',
-     _detect_signer_key, _apply_signer_key),
     ('config', 'write .purlin/config.json at this shape and set the gate',
      _detect_config, _apply_config),
     ('workflows', 'remove the retired workflows and write purlin.yml only '
@@ -737,9 +539,6 @@ MIGRATIONS = (
      _detect_plugin_copies, _apply_plugin_copies),
     ('records', 'create .purlin/records/ for the records an audit commits',
      _detect_records, _apply_records),
-    ('record-folders', 'move every record and brief into .purlin/records/ci/ '
-     'or local/, by who committed it',
-     _detect_record_folders, _apply_record_folders),
 )
 
 def pending(project_root):
