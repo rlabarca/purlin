@@ -303,9 +303,9 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
 
 BASE_COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests']
 
-# The four the board dropped: every when, who and platform detail is in a
+# The three the board dropped: every when, who and platform detail is in a
 # hover now, which is what let the columns fit a 1024-wide window.
-GONE_COLUMNS = ('Risk', 'Spec status', 'Strength', 'Last run')
+GONE_COLUMNS = ('Spec status', 'Strength', 'Last run')
 
 
 @pytest.mark.proof("purlin_report", "PROOF-9", "RULE-9", tier="e2e")
@@ -438,7 +438,7 @@ def test_the_tiles_scale_with_the_gate(browser, tmp_path):
     # three below them count their own bucket alone.
     assert texts(page, '.tile-v') == [str(reached(payload['summary'], name))
                                       for name in BUCKETS]
-    assert texts(page, '.tile-v') == ['1', '0', '1', '7', '2', '1']
+    assert texts(page, '.tile-v') == ['1', '0', '1', '8', '2', '1']
     assert flag_cards(page) == {'To sign': str(payload['summary']['signable']),
                                 'Stale': str(payload['summary']['stale'])}
     page.close()
@@ -474,9 +474,9 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     # The first part is drawn even at zero, and a later part only above it.
     assert cells['login']['Tests'] == (
         '2 of 4 \u00b7 1 partial \u00b7 1 failing')
-    # A rule behind changed code passed nothing and failed nothing, so the
-    # share alone reads it and the `Untested` tile counts it.
-    assert cells['export']['Tests'] == '0 of 1'
+    # One of export's two rules is behind changed code: it passed nothing
+    # and failed nothing, so the share alone reads it and `Untested` counts it.
+    assert cells['export']['Tests'] == '1 of 2'
     assert cells['login']['Proofs'] == '5'
     # invoice's third proof is `@manual`, which declares that no test is
     # written for it, so the rollup counts no gap and the cell reads the
@@ -534,18 +534,18 @@ def test_every_cell_of_a_spec_row_carries_its_hover(browser, tmp_path):
 
 @pytest.mark.proof("purlin_report", "PROOF-47", "RULE-9", tier="e2e")
 @pytest.mark.proof("purlin_report", "PROOF-48", "RULE-37", tier="e2e")
-def test_the_signable_column_counts_the_rules_that_cleared_their_bar(
+def test_the_signable_column_counts_the_rules_a_signer_can_act_on(
         browser, tmp_path):
-    """Signed or not: the column says how much of a spec a person could sign."""
+    """Cleared its bar, needs a signature, and none counts for it yet."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
     cells = count_cells(page)
-    assert cells['login']['Signable'] == '3 of 4'
-    assert cells['invoice']['Signable'] == '2 of 3'
+    assert cells['login']['Signable'] == '1 of 4'
+    assert cells['invoice']['Signable'] == '0 of 3'
     assert cells['checkout_design']['Signable'] == '0 of 1'
     rows = hovers(page)
     assert rows['login']['Signable'] == 'to sign \u00b7 RULE-2'
     assert rows['invoice']['Signable'] == (
-        'every rule that has cleared its bar is signed')
+        'no rule here is waiting for a signature')
     page.close()
 
 
@@ -595,7 +595,7 @@ def test_the_group_band_says_what_its_numbers_are(browser, tmp_path):
         '.group',
         r'els => els.map(e => e.innerText.replace(/\s+/g, " ").trim())')
     assert bands == ['\u25bc AUTH \u00b7 1 spec \u00b7 3 of 4 pass',
-                     '\u25bc BILLING \u00b7 2 specs \u00b7 3 of 4 pass',
+                     '\u25bc BILLING \u00b7 2 specs \u00b7 4 of 5 pass',
                      '\u25bc _ANCHORS \u00b7 1 spec \u00b7 1 of 1 pass']
     page.close()
 
@@ -629,7 +629,7 @@ FILTER_CASES = [
     ('partial', ['login'], ['RULE-4']),
     # `weak` is the audit's own two words: measured and not proved, or not
     # measured yet. The three words that wait for a person are `to-review`.
-    ('weak', ['login', 'invoice', 'export'], ['RULE-4']),
+    ('weak', ['login', 'invoice', 'export'], ['RULE-4']),  # 5 rules
     ('to-review', ['login', 'invoice', 'checkout_design'], ['RULE-3']),
     ('to-sign', ['login'], ['RULE-2']),
     ('stale', ['login'], ['RULE-2']),
@@ -680,7 +680,7 @@ def test_a_filter_above_the_gate_is_not_offered(browser, tmp_path):
     assert chip_labels(reg) == ['Untested', 'Failing', 'Partial', 'Weak',
                                 'To review', 'To sign', 'Stale']
     assert chip_counts(reg) == {'Untested': 1, 'Failing': 0, 'Partial': 1,
-                                'Weak': 4, 'To review': 3, 'To sign': 1,
+                                'Weak': 5, 'To review': 3, 'To sign': 1,
                                 'Stale': 1}
     reg.close()
 
@@ -750,13 +750,15 @@ KV_ROWS = r"""() => {
 @pytest.mark.proof("purlin_report", "PROOF-53", "RULE-15", tier="e2e")
 def test_the_rule_screen_names_the_bar_and_where_it_came_from(browser,
                                                               tmp_path):
-    """Risk is gone; a rule has a bar, from its own tag or from the gate."""
+    """A rule has a bar, from its own tag or from the project's gate."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click('[data-act="feature"][data-feature="login"]')
     page.click('.rule[data-rule="RULE-1"]')
     rows = page.evaluate(KV_ROWS)
+    # The whole row set, so a row the model dropped cannot come back.
+    assert list(rows) == ['Spec status', 'Passed', 'Strong', 'Signed', 'Bar',
+                          'Origin', 'Spec', 'Last run', 'Signatures']
     assert rows['Bar'] == 'strong from the tag'
-    assert 'Risk' not in rows
 
     page.click('[data-act="close"]')
     page.click('[data-act="feature"][data-feature="export"]')

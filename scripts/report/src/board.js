@@ -160,19 +160,20 @@ function strongCell(feature) {
     + '</span>';
 }
 
-/* How many of this spec's rules have cleared their bar: bar `passed` with the
-   tests passing, or bar `strong` with the audit proving them strong. Those
-   are the rules that can be signed, counted whether they are signed or not,
-   so the column says how much of the spec is ready for a person rather than
-   how much work is left. The hover names the ones still to sign. */
+/* How many of this spec's rules a signer can act on now: they have cleared
+   their bar, they need a signature, and none counts for them yet. It is the
+   rollup's own `signable`, which is `board.signable_cell`, so the column, the
+   `To sign` card and the Sign tab all count the same rules. The hover names
+   them, because a share alone does not say which. */
 function signableCell(feature) {
-  var rules = ownRules(feature);
-  var cleared = rules.filter(function (rule) { return rule.cleared; });
-  var waiting = rules.filter(function (rule) { return rule.signable; })
-    .map(function (rule) { return rule.id; });
+  var rollup = feature.rollup || {};
+  var waiting = ownRules(feature).filter(function (rule) {
+    return rule.signable;
+  }).map(function (rule) { return rule.id; });
   return '<span' + hover([waiting.length ? 'to sign' + DOT + waiting.join(', ')
-      : 'every rule that has cleared its bar is signed'])
-    + '>' + counts([share(cleared.length, rules.length)]) + '</span>';
+      : 'no rule here is waiting for a signature'])
+    + '>' + counts([share(rollup.signable || 0, rollup.rules || 0)])
+    + '</span>';
 }
 
 /* How many of this spec's rules carry a signature that counts. Who signed

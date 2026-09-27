@@ -309,13 +309,14 @@ function strongCell(feature) {
     + '</span>';
 }
 function signableCell(feature) {
-  var rules = ownRules(feature);
-  var cleared = rules.filter(function (rule) { return rule.cleared; });
-  var waiting = rules.filter(function (rule) { return rule.signable; })
-    .map(function (rule) { return rule.id; });
+  var rollup = feature.rollup || {};
+  var waiting = ownRules(feature).filter(function (rule) {
+    return rule.signable;
+  }).map(function (rule) { return rule.id; });
   return '<span' + hover([waiting.length ? 'to sign' + DOT + waiting.join(', ')
-      : 'every rule that has cleared its bar is signed'])
-    + '>' + counts([share(cleared.length, rules.length)]) + '</span>';
+      : 'no rule here is waiting for a signature'])
+    + '>' + counts([share(rollup.signable || 0, rollup.rules || 0)])
+    + '</span>';
 }
 function signedCell(feature) {
   var rollup = feature.rollup || {};
