@@ -115,7 +115,7 @@ A signature is one file,
 of the rule text, the proof text and the test body. If any of the three change, it no longer
 counts.
 
-| Gate | What CI requires before a change can merge | Signatures |
+| Gate | What every rule must have before a version is proven | Signatures |
 |---|---|---|
 | `passed` | Every rule's passed cell is met; a pass from any source counts | None |
 | `strong` | Every rule whose bar is `strong` has a strong cell that is met: a record at this commit, at or above `min_strength`, no finding and no hold | Only where the strong cell reads `manual test`, `unsettled` or `held` |

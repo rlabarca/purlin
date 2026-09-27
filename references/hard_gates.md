@@ -1,6 +1,7 @@
 # The gate
 
-The gate is the one project setting: what CI must see before a change can merge. It is defined
+The gate is the one project setting: what must be true of every rule before a version is
+proven. It is defined
 here and nowhere else. A skill, a doc or a script that needs it links to this page rather than
 restating it, because three copies of this answer drifted into three different answers once
 already.

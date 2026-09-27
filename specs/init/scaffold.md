@@ -1,7 +1,7 @@
 # Feature: scaffold
 
 > Description: `purlin:init`, which sets a project up. It asks one question,
->   "what must be true before CI lets a change merge?", derives everything
+>   "what must be true of every rule before a version is proven?", derives everything
 >   else from that answer or reads it from the tree, writes each file in turn
 >   and names every one of them in the summary. It asks one more question of
 >   every project, `Do you trust your own machine for the tests and the

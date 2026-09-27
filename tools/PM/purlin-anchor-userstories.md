@@ -143,7 +143,7 @@ Close with what the product manager will see, in this order:
   rule yet, the pm-origin rules that changed, and the rules the engineer added.
 - A new rule's spec status is `drafted` until a proof names it, and `ready` once one does. From
   there it answers up to three questions, each one a cell: `passed`, then `strong`, then
-  `signed`. How far it must go before a change can merge is the project's gate: `passed`,
+  `signed`. How far it must go before a version is proven is the project's gate: `passed`,
   `strong` or `signed`.
 
 ## Limits, stated plainly

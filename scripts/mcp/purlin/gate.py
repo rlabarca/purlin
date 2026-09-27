@@ -1,8 +1,8 @@
 """The one project setting, and what it derives.
 
 A project sets `gate` in `.purlin/config.json` and nothing else has to be
-decided. The gate names the deepest evidence level CI requires before a change
-can merge, and every level above it is not asked for at all:
+decided. The gate names the deepest evidence level a version has to reach
+before it is proven, and every level above it is not asked for at all:
 
 `passed`  every rule's passed cell is met: the tagged tests pass, from any
           source

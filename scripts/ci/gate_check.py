@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The gate CI runs before a change may merge.
+"""The gate, checked as the last step of every CI run.
 
     python3 scripts/ci/gate_check.py --check [--verify] [--json]
                                      [--project-root DIR]
@@ -343,7 +343,7 @@ def main(argv=None):
     console_module.force_utf8_stdio()
     parser = argparse.ArgumentParser(
         prog='gate_check.py',
-        description='The gate CI runs before a change may merge.')
+        description='The gate, checked as the last step of every CI run.')
     parser.add_argument('--check', action='store_true',
                         help='Run the gate and exit 0 (met) or 1 (not met).')
     parser.add_argument('--verify', action='store_true',

@@ -82,7 +82,7 @@ Purlin
 
   Project
   ──────
-  purlin:init                     One question: what must be true before merge
+  purlin:init                     One question: what a version must reach
   purlin:init --gate <level>      passed, strong or signed, afterwards
   purlin:init --add <language>    Wire another language's test framework
   purlin:init --update            Bring the project up to the installed plugin
