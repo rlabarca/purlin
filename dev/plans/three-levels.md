@@ -311,6 +311,71 @@ left to a lane's judgment except wording.
     - `--quick` becomes `--test`, with no alias: the skill is the caller, and 0.10.0 has not
       shipped. `--quick` joins the retired table.
 
+Decisions 35 to 44 are the simplification round of 2026-09-27, settled question by question
+from the most basic concept up. All of it lands in 0.10.0, before the tag. The core workflow
+is spec, build, test, audit, sign, tag; whatever is not core to it was up for questioning.
+
+35. **The audit judges strength, by a model and optionally by mutation testing.**
+    - `purlin:audit` calls the AI audit itself. Before this decision nothing in the workflow
+      did: every brief was built with the model off.
+    - Mutation testing is optional. `purlin:init` asks once whether to turn it on; the
+      default is off. On, the score must reach `min_strength` as well. Off, or where no
+      library exists for the language, the AI audit alone decides, and a rule it found
+      sound is `strong` with the reason that no score was measured.
+    - An audit that cannot decide is build work: the rule reads `weak` with the audit's
+      reason. `unsettled` is retired.
+    - A rule whose text, proof and test are unchanged since its last audit is not audited
+      again; the earlier findings stand. `--all` forces a fresh audit.
+    - The signature locks every sentence of the audit, as decision 31 wrote it.
+    - At the gate `passed`, `purlin:audit` runs, prints and commits what it found, and
+      nothing blocks on it.
+36. **A rule's level uses the gate's three words.** A rule may be marked `[level: passed]`,
+    `[level: strong]` or `[level: signed]`, meaning what the gate means: tests; tests and
+    audit; tests, audit and signature. An unmarked rule takes the gate. The gate is the
+    ceiling: a mark above it is read as the gate. `bar`, `cleared its bar`, `sign_at` and
+    `required` are retired. The spec status is folded into the test status: a rule with no
+    proof reads `no test` with the reason `no proof written`; `drafted`, `ready` and
+    `spec status` are retired. In this repository, the rules of
+    `specs/dashboard/purlin_report.md` are marked `[level: passed]`.
+37. **One queue, and no holds.** `purlin:sign` walks one list of the rules that wait on a
+    person, each row saying what is needed: a hand check (`@manual`) or a signature. The
+    dashboard has one tab for it. `Review`, `Sign` as list names, and `signable` are retired.
+    Holds are removed: a reviewer who disagrees adds the missing proof or changes the proof,
+    alone or with AI help. `hold`, `held` and `--hold` are retired.
+38. **A proof says less.** `@integration` and `@e2e` are removed, with the filter by kind and
+    its flag; `purlin:test` runs every tagged test of the features it runs. `@manual` and
+    `@env` stay as they are. `[origin: ...]` and `[criterion: ...]` are removed. The design
+    tie is removed: no `designs/` convention, no design hash in a signature, no mock beside
+    a screenshot.
+39. **A run covers what the change touched.** `purlin:test` with no feature named runs the
+    features whose spec, covered code or tests changed since that feature's last evidence,
+    and prints what it skipped and why; `--all` runs everything. `> Scope:` is required:
+    `purlin:spec` and `purlin:build` write and maintain it, and a spec without one is
+    reported as incomplete. Evidence from a person's own run is checked against the
+    fingerprint like any other. The tag is written only when every feature's evidence is
+    current for the code it covers, and a feature that is not is named.
+40. **One evidence file per feature.** Every run, test or audit, writes
+    `.purlin/evidence/<source>/<feature>.json`: each proof's result, the commit, the
+    operating system, the time, and once audited the strength and the AI audit's findings
+    per rule. One format file, one commit subject. `test results`, `record` and `brief` are
+    retired as names of files. `.purlin/tests.md`, the summary table, stays.
+41. **The periphery is removed.** The per-person settings file; `purlin:anchor propose` and
+    the weekly upstream check with `--upstream-check`; everything under `tools/`; the
+    repository reader script; `purlin:find`, folded into `purlin:status <name>`;
+    `purlin:rename`, folded into a paragraph of `agents/purlin.md`; every upgrade step for a
+    layout that never shipped, and every reader branch that accepts an old spelling.
+    `purlin:spec-from-code` stays. Anchors stay, local and remote.
+42. **Drift reports by role from git.** Three views, `pm`, `eng` and `qa`, each worked out
+    from the log and the diff: rules added, changed and removed; code changed and the rules
+    behind it, rules with no test, anchors behind; tests changed, signatures stale, the
+    size of the queue. The `design` view goes.
+43. **Both git hosts, and Azure DevOps is fixed**: a remote run that waits for its result,
+    and a check of who committed a file that does not rest on a name.
+44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
+    code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
+    `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
+    needs is the one exception in code. This decision is applied last, as a sweep.
+
 
 ---
 
