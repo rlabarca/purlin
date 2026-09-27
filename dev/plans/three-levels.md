@@ -383,6 +383,15 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     page keeps the look. Both colour themes stay. Diagrams are plain mermaid: the init block
     and `docs/_mermaid.md` go. The docs carry three screenshots taken from the rebuilt
     dashboard: the board, the queue, one rule.
+46. **What the design round settled** (added 2026-09-27). `dev/plans/design-35-43.md` is the
+    technical design for decisions 35 to 43, and its section 10 holds the owner's answers,
+    which win over its text. The ones that amend a decision: `> Scope:` is optional below
+    `signed` and required at `signed` (39); a rule whose level is `passed` is never audited
+    under a higher gate (35); the level is logged in a signature and not locked (31, 36);
+    the status word is `out of date` and `code changed` is retired as a word; the audit runs
+    `audit_parallel` calls at once, default four (35); drift measures from the last git
+    action that brought changes in (42). `dev/plans/stale-inventory.md` is the list the
+    final sweep works from.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
