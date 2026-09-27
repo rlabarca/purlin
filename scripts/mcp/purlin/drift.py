@@ -39,7 +39,7 @@ _NO_IMPACT_PATTERNS = (
     'CLAUDE.md', 'README.md', 'RELEASE_NOTES.md', '.mcp.json', 'settings.json',
 )
 
-_TEST_PATTERNS = ('test_', '_test.', '.test.', 'tests/', 'dev/test_')
+_TEST_PATTERNS = ('test_', '_test.', '.test.', 'tests/')
 
 # Directories holding behavioural definitions even when the files are .md.
 _BEHAVIORAL_MD_PREFIXES = ('skills/', 'agents/', '.claude/agents/')

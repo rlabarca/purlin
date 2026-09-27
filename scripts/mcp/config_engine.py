@@ -69,7 +69,7 @@ def _read_json(path):
     if not os.path.isfile(path):
         return None
     try:
-        with open(path, 'r') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         if isinstance(data, dict):
             return data
@@ -123,7 +123,7 @@ def update_config(project_root, key, value):
     local = {}
     if os.path.isfile(local_path):
         try:
-            with open(local_path, 'r') as f:
+            with open(local_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             if isinstance(data, dict):
                 local = data
@@ -135,7 +135,7 @@ def update_config(project_root, key, value):
     os.makedirs(purlin_dir, exist_ok=True)
     tmp_path = local_path + '.tmp'
     try:
-        with open(tmp_path, 'w') as f:
+        with open(tmp_path, 'w', encoding='utf-8') as f:
             json.dump(local, f, indent=4)
             f.write('\n')
         os.replace(tmp_path, local_path)

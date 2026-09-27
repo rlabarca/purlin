@@ -53,7 +53,8 @@ purlin_proof() {
 
   # Absolutize here, at call time, while the cwd is still the caller's. The
   # value is relativized in purlin_proof_finish. Doing it in this order is what
-  # makes `bash dev/x.sh` and `bash /abs/dev/x.sh` record the SAME test_file:
+  # makes `bash tests/x.sh` and `bash /abs/tests/x.sh` record the SAME
+  # test_file:
   # the raw BASH_SOURCE differs between those two, the absolute path does not.
   # Under the (feature, tier, test_file) merge key a difference here would not
   # collapse, it would accumulate as two entries for one proof.

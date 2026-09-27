@@ -19,7 +19,7 @@ The tool classifies each changed file in this order. The first match wins.
 | 5 | NO_IMPACT | The path matches a documentation or config pattern and is not in a behavioural directory |
 | 6 | NEW_BEHAVIOR | Everything else: code with no spec behind it |
 
-**Test patterns.** The path contains any of `test_`, `_test.`, `.test.`, `tests/`, `dev/test_`.
+**Test patterns.** The path contains any of `test_`, `_test.`, `.test.`, `tests/`.
 
 **No-impact patterns.** `docs/`, `assets/`, `templates/`, `references/`, `.gitignore`,
 `LICENSE`, `CLAUDE.md`, `README.md`, `RELEASE_NOTES.md`, `.mcp.json`, `settings.json`, and any

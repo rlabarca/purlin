@@ -21,9 +21,9 @@ PLUGIN_ROOT = os.path.dirname(os.path.dirname(_MCP_DIR))
 def _read_version():
     """The plugin version, read from the `VERSION` file beside `scripts/`.
 
-    One file carries the version (`dev/bump_version.sh` propagates it); this
-    reads it rather than holding a literal, so no release can leave the server
-    reporting a number the file does not.
+    One file carries the version and every other location is written from
+    it; this reads it rather than holding a literal, so no release can leave
+    the server reporting a number the file does not.
     """
     path = os.path.join(PLUGIN_ROOT, 'VERSION')
     try:

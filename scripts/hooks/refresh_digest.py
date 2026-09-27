@@ -226,7 +226,7 @@ if __name__ == '__main__':
     # Silent on every path: an async hook's output is discarded, and a
     # synchronous one's would reach the transcript. Exit 0 on every path: a
     # refresh that failed is a stale dashboard, never a blocked tool call.
-    devnull = open(os.devnull, 'w')
+    devnull = open(os.devnull, 'w', encoding='utf-8')
     sys.stdout = devnull
     sys.stderr = devnull
     try:

@@ -273,10 +273,9 @@ def _holds_python(path):
 def mutmut_paths(root):
     """`(source paths, test selection)` for the engine's config block.
 
-    A directory holding a test file at its top level, such as `dev/` with its
-    `test_*.py` files, is where the tests are. Any other directory holding a
-    `.py` file at any depth, such as `scripts/` whose code sits one level
-    down, is source. `src`, `lib` and `app` win as source, and `tests` and
+    A directory holding a test file at its top level, one with `test_*.py`
+    files directly in it, is where the tests are. Any other directory holding
+    a `.py` file at any depth, one whose code sits a level down, is source. `src`, `lib` and `app` win as source, and `tests` and
     `test` win as the selection, whenever they are there.
 
     A project whose code is modules at the root is named module by module,
