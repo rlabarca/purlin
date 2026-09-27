@@ -54,9 +54,6 @@ TABLE_PATH = os.path.join('.purlin', 'tests.md')
 # The words a rule reads in a result file, which are the passed cell's own.
 WORDS = ('passed', 'failed', 'no test', 'not run')
 
-# What one proof entry's `result` may say.
-RESULTS = ('pass', 'fail', 'missing')
-
 
 def host_os():
     """`windows`, `macos` or `linux` for the machine this checkout is on.

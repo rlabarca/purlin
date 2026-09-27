@@ -1,28 +1,6 @@
 /* The Rule screen: one rule, the spec status and the cells the gate reaches,
    the brief the machine wrote, and the proofs that stand for it. */
 
-var FINDING_LABELS = {
-  'no_expected_value': 'no expected value', 'vague_verb': 'vague verb',
-  'missing_trigger': 'missing trigger', 'tier_mismatch': 'tier mismatch',
-  'implementation_coupling': 'names a symbol, not an outcome',
-  'happy_path_only': 'no negative case'};
-
-/* The sentence the free checks already write, one per finding, copied from
-   the checks module so the page and the brief say the same thing about the
-   same proof rather than keeping a second set of words. */
-var FINDING_TEXT = {
-  'no_expected_value': 'Names no literal, number, quoted string or named constant, so almost any assertion would satisfy it.',
-  'vague_verb': 'Uses a vague verb with no expected value beside it. A proof should be readable straight into a test.',
-  'missing_trigger': 'Nothing runs before the assertion, so the proof reads an artifact that exists whether or not the code is right.',
-  'tier_mismatch': 'An @e2e proof must read as an observable flow. Drive the real interface or retag the proof to the tier it exercises.',
-  'implementation_coupling': 'Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour.',
-  'happy_path_only': 'No proof of this rule names a rejection, an error or a boundary.'
-};
-
-function findingLabel(name) { return FINDING_LABELS[name] || name; }
-
-function findingText(name) { return FINDING_TEXT[name] || findingLabel(name); }
-
 function ruleInView() {
   var feature = featureNamed(VIEW.feature);
   if (!feature) { return null; }
@@ -68,32 +46,9 @@ function cellRow(rule, name) {
     + '</dd>';
 }
 
-/* The findings the free checks raised, grouped by finding and named against
-   the proofs that carry them: a finding raised on the rule as a whole lands
-   on every proof, so grouping states it once. A finding the strong cell
-   carries without a proof beside it is still read out. */
-function findingLines(rule, cell) {
-  var order = [];
-  var ids = {};
-  (rule.proofs || []).forEach(function (proof) {
-    (proof.findings || []).forEach(function (name) {
-      if (!ids[name]) { ids[name] = []; order.push(name); }
-      if (ids[name].indexOf(proof.id) < 0) { ids[name].push(proof.id); }
-    });
-  });
-  ((cell && cell.findings) || []).forEach(function (name) {
-    if (!ids[name]) { ids[name] = []; order.push(name); }
-  });
-  return order.map(function (name) {
-    var where = ids[name].length
-      ? '<span class="mono">' + esc(ids[name].join(', ')) + '</span>: ' : '';
-    return '<p class="sec">' + where + esc(findingText(name)) + '</p>';
-  });
-}
-
 /* What the audit found, and nothing about what to do with it: the strength
-   beside the minimum this gate asks for, the free checks, what the model
-   review observed, and whether it could settle the question. */
+   beside the minimum this gate asks for, what the AI audit observed, and
+   whether it could settle the question. */
 function briefPanel(feature, rule) {
   var cell = cellOf(rule, 'strong');
   if (!cell) { return ''; }
@@ -102,14 +57,13 @@ function briefPanel(feature, rule) {
     ? 'Test strength is n/a: nothing measured it.'
     : esc('Test strength ' + Math.round(cell.strength) + '%, against a '
         + 'minimum of ' + minStrength() + '%.')) + '</p>');
-  findingLines(rule, cell).forEach(function (line) { lines.push(line); });
   (cell.observations || []).forEach(function (text) {
     lines.push('<p class="sec">' + esc(text) + '</p>');
   });
   if (cell.settled === true) {
-    lines.push('<p class="sec">The model review settled the question.</p>');
+    lines.push('<p class="sec">The AI audit settled the question.</p>');
   } else if (cell.settled === false) {
-    lines.push('<p class="sec">The model review could not settle the question, '
+    lines.push('<p class="sec">The AI audit could not settle the question, '
       + 'so a person states what they see.</p>');
   }
   if (cell.brief) {
@@ -158,15 +112,11 @@ function proofPanel(proof) {
   var tests = (proof.tests || []).map(function (t) {
     return esc(t.file) + ' :: ' + esc(t.name);
   }).join('\n') || 'no tagged test yet';
-  var findings = (proof.findings || []).map(function (n) {
-    return '<span class="finding">' + esc(findingLabel(n)) + '</span>';
-  }).join(', ');
   return '<div class="panel"><dl class="kv">'
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
     + '<dt>Tier</dt><dd>' + tag(proof.tier + (proof.env ? ' · ' + proof.env : ''), true)
     + '</dd>'
     + '<dt>Tests</dt><dd><pre class="code">' + tests + '</pre></dd>'
-    + (findings ? '<dt>Free checks</dt><dd>' + findings + '</dd>' : '')
     + '</dl></div>';
 }
 

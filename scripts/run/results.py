@@ -14,9 +14,9 @@ reaches a remote. A `--feature` run writes the features it ran and leaves
 every other row of the table as it was, so the table is always the whole
 project even when the run was not.
 
-These results are the `local` source, so they count at `passed` and at
-`strong`. At `signed` only a CI run's evidence counts, for the tests and the
-audit both, and these are a preview of what that run will find.
+These results are the `local` source, and they count at every gate: the
+tests they name are the tests CI runs. A project that wants CI's word before
+a signature says so once, with `trust: remote` in `.purlin/config.json`.
 """
 
 import json

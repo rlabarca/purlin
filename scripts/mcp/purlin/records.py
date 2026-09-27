@@ -42,10 +42,11 @@ two halves of one fact cannot be read apart. What keeps the folder honest is
 the git host, whose file-path rule restricts `.purlin/records/ci/**` to the
 CI identity, so only CI can put a file there.
 
-`ci` and `local` both count under `passed` and under `strong`: an audit a
-person ran measures the same breaks CI measures. Under `signed` only `ci`
-counts, because the run on the protected branch after the merge is what a
-signature attaches to and a local run there is a preview.
+`ci` and `local` count at every gate, `signed` included: an audit a person
+ran measures the same breaks CI measures, and the tests it ran are the tests
+CI runs. What a signature locks is the evidence, not the machine that
+produced it, and `purlin:init`'s trust question is where a project says it
+wants CI's word instead.
 """
 
 import json
@@ -122,21 +123,17 @@ def brief_path(source, feature, name):
                             feature, name)
 
 
-def find_brief(project_root, feature, rule_id, triple, gate=None):
+def find_brief(project_root, feature, rule_id, triple):
     """`(rel_path, full_path)` of the brief for one triple, or `(None, None)`.
 
     A brief sits beside the record of the run that wrote it, under
-    `.purlin/briefs/<source>/<feature>/`, so which folders are read is the
-    gate's answer, the same answer `counts_under` gives a record: at `signed`
-    only CI's audit counts, so only CI's briefs are read. `gate` None reads
-    both, which is what a caller that has no project setting to hand wants.
-    CI's folder is read first, because where both hold a brief for one triple
-    the one every checkout reads alike is the one to show.
+    `.purlin/briefs/<source>/<feature>/`, and both folders count at every
+    gate, so both are read. CI's folder is read first, because where both
+    hold a brief for one triple the one every checkout reads alike is the one
+    to show.
     """
     name = brief_name(rule_id, triple)
     for source in SOURCES:
-        if gate is not None and not counts_under(gate, source):
-            continue
         full = os.path.join(briefs_dir(project_root, source), feature, name)
         if os.path.isfile(full):
             return brief_path(source, feature, name), full
@@ -294,18 +291,20 @@ def record_label(project_root, rel_path):
 
 
 def counts_under(gate, source):
-    """True when a record from `source` counts under `gate`.
+    """True when a record from `source` counts under `gate`: both do, at all three.
 
-    `passed` and `strong` count both sources. At `passed` the question is
-    only whether the tests pass, and a person's own run answers it; at
-    `strong` the question is how good the tests are, and the breaks a person
-    ran are the same breaks CI runs. `signed` counts a ci record alone,
-    because a signature attaches to the run on the protected branch after the
-    merge, and a local run there is a preview.
+    The question the gate asks is what evidence a rule must have, not which
+    machine produced it. A person's own run answers whether the tests pass,
+    and the breaks they ran are the breaks CI runs, so a `local` record
+    counts at `signed` as it does at `passed`. A project that wants CI's word
+    before a signature says so once, with `trust: remote` in
+    `.purlin/config.json`, and `purlin:sign` is what reads it.
+
+    `gate` is taken so that every caller asks the one question in the one
+    place, and so that a reader finds the answer here rather than four
+    copies of it.
     """
-    if gate in ('passed', 'strong'):
-        return source in SOURCES
-    return source == 'ci'
+    return source in SOURCES
 
 
 def load_records(project_root, ref=None, warnings=None):

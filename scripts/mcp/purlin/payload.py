@@ -1,4 +1,4 @@
-"""The structured project payload, schema 7.
+"""The structured project payload, schema 8.
 
 One reader assembles specs, runtime proofs, records and signatures into the
 spec status and the cells of every rule, and every surface renders that: the
@@ -7,7 +7,7 @@ that parsed the rendered table would be coupled to a layout; this is the shape
 they all read instead.
 
     {
-      "schema_version": 7,
+      "schema_version": 8,
       "generated_at": "2026-09-13T12:00:00Z",
       "generated_by": "sync_status",
       "project": "purlin",
@@ -30,13 +30,13 @@ they all read instead.
          "rules": [
            {"id": "RULE-1", "feature": "login", "label": "own",
             "text": "...", "bar": "strong", "bar_from": "tag",
-            "origin": "eng", "criterion": null,
+            "origin": "eng", "criterion": null, "audit_hash": "<sha256>",
             "spec": "ready", "bucket": "signed", "meets_gate": true,
             "cleared": true, "signable": false,
             "blocked_by": null, "flags": {...},
             "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
             "proofs": [{"id": "PROOF-1", "tier": "unit", "env": null,
-                        "text": "...", "findings": [], "tests": [...]}]}
+                        "text": "...", "tests": [...]}]}
          ]}
       ],
       "review_list": [{"feature": ..., "owner": ..., "rule": ..., "bar": ...,
@@ -69,13 +69,13 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from config_engine import resolve_config
-from purlin import (PURLIN_VERSION, checks,
+from purlin import (PURLIN_VERSION,
                     gate as gate_module, proofs as proofs_module,
                     records as records_module, results as results_module,
                     signatures as signatures_module,
                     specs as specs_module, states)
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -244,8 +244,7 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
             runtime_proofs, counting, all_signatures, cfg, head,
             blob_cache, scope_cache, test_strength, all_holds,
             _counting(all_records, owner, cfg),
-            _uncounted(all_records, owner, cfg), counted_cache, branch,
-            local_by_feature, local_run)
+            counted_cache, branch, local_by_feature, local_run)
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
                    'meets_gate': result['meets_gate'],
@@ -333,7 +332,7 @@ def _sign_entry(feature, owner, rule, cfg):
 def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
                 runtime_proofs, counting, all_signatures, cfg, head,
                 blob_cache, scope_cache, test_strength=None, all_holds=None,
-                owner_counting=None, uncounted=None, counted_cache=None,
+                owner_counting=None, counted_cache=None,
                 branch=None, local_by_feature=None, local_run=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
@@ -343,25 +342,17 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
     local_here = (local_run or {}).get(owner) or {}
 
     proof_dicts = []
-    proof_texts = []
     for proof_id in proof_ids:
         proof = owner_info['proofs'][proof_id]
-        findings = checks.proof_findings(proof['text'], proof['tier'])
-        proof_texts.append(proof['text'])
         proof_dicts.append({
             'id': proof_id,
             'tier': proof['tier'],
             'env': proof['env'],
             'text': proof['text'],
-            'findings': findings,
             'tests': [{'file': f, 'name': n}
                       for f, n in _backing_tests(entries, owner_counting,
                                                  proof_id)],
         })
-    rule_level = checks.rule_findings(proof_texts)
-    for finding in rule_level:
-        for proof in proof_dicts:
-            proof['findings'] = list(proof['findings']) + [finding]
 
     rule_hash = specs_module.rule_text_hash(text)
     proof_hash = specs_module.proof_text_hash(
@@ -385,8 +376,11 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
                   for signature in all_signatures.get((owner, rule_id), [])]
 
     brief, brief_path = _read_brief(project_root, owner, rule_id, rule_hash,
-                                    proof_hash, test_hash, cfg.gate)
+                                    proof_hash, test_hash)
     result = states.rule_cells({
+        # What the signature locks beside the triple: the audit's own
+        # evidence, so a re-audit that observes something different stales it.
+        'audit_hash': signatures_module.audit_hash(brief),
         'proofs': proof_dicts,
         'local_status': local_status,
         'local_os': local_here.get('os'),
@@ -396,7 +390,6 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         # With none, nothing measured how good the tests are and the strong
         # cell says so rather than passing the rule on the free checks.
         'audited': bool(owner_counting),
-        'uncounted': uncounted or {},
         'head': head,
         'scope_tree': scope_cache[scope_key],
         'signatures': signatures,
@@ -428,6 +421,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'test_hash': test_hash,
         'test_hash_kind': test_hash_kind,
         'design_hash': design_hash,
+        'audit_hash': signatures_module.audit_hash(brief),
         'spec': result['spec'],
         'cells': result['cells'],
         'bucket': result['bucket'],
@@ -474,18 +468,6 @@ def _counting(all_records, feature, cfg):
             if records_module.counts_under(cfg.gate, record.get('label'))}
 
 
-def _uncounted(all_records, feature, cfg):
-    """`{os: record}`, the latest records the gate does not read.
-
-    The passed cell names them anyway. A `local` record under `strong` is not
-    evidence, but "no test" would be a different and wrong answer, so the
-    cell says which record it found and why it does not count.
-    """
-    return {os_name: record
-            for os_name, record in (all_records.get(feature) or {}).items()
-            if not records_module.counts_under(cfg.gate, record.get('label'))}
-
-
 def _backing_tests(runtime_entries, records, proof_id):
     """`[(test_file, test_name), ...]` backing one proof, the same on every machine.
 
@@ -529,19 +511,18 @@ def _test_hash(project_root, proof_dicts, blob_cache):
 
 
 def _read_brief(project_root, feature, rule_id, rule_hash, proof_hash,
-                test_hash, gate=None):
+                test_hash):
     """`(brief, path)` for a rule's current text, or `(None, None)`.
 
     A brief is named for the triple it was built from, so a brief for text
     that has since changed is simply not found: that is what keeps the strong
-    cell honest. Which source folders are read is the gate's answer, so a
-    local audit's brief is read at `passed` and `strong` and is a preview at
-    `signed`, exactly as its record is. `records.find_brief` is the one place
-    that answer is worked out.
+    cell honest. Both source folders count at every gate, so a local audit's
+    brief answers wherever it was written. `records.find_brief` is the one
+    place that path is built.
     """
     triple = signatures_module.triple_hash(rule_hash, proof_hash, test_hash)
     rel, path = records_module.find_brief(project_root, feature, rule_id,
-                                          triple, gate)
+                                          triple)
     if not path:
         return None, None
     try:

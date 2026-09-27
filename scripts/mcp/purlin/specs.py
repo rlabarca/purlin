@@ -49,7 +49,6 @@ _RULE_TAG_RE = re.compile(
     r'\s*\[(bar|risk|origin|criterion):\s*([^\]]+)\]\s*$')       # retired
 
 BARS = ('passed', 'strong')
-ORIGINS = ('pm', 'design', 'qa', 'eng')
 DEFAULT_ORIGIN = 'eng'
 
 # The bar replaced the tag an older release wrote at the end of a rule line.

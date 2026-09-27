@@ -3,9 +3,9 @@
 One rule, read top to bottom. Each row below is a cell, and the project's gate
 decides how many rows exist: a cell above the gate is absent, not empty.
 
-    spec    Met when the proof text clears the blocking free checks.
-            `drafted` no proof line names the rule, or a blocking finding
-            stands against the proof text; `ready` otherwise.
+    spec    Met when a proof line names the rule.
+            `drafted` no proof line names it; `ready` one or more do. What
+            the proof is worth is the audit's question, not this one.
 
     passed  Met when every proof has a passing test from a source that counts
             under the gate, on every operating system a counting run covered,
@@ -17,9 +17,8 @@ decides how many rows exist: a cell above the gate is absent, not empty.
             others. `partial` is not met.
 
     strong  Met when the tests are worth trusting: test strength at or above
-            the project minimum, no finding standing against the proof text or
-            the test body, a settled AI audit where the bar asks for one, and
-            nobody holding the rule.
+            the project minimum, a settled AI audit that observed nothing
+            where the bar asks for one, and nobody holding the rule.
             `strong`, `weak`, `not audited`, `unsettled`, `manual test`,
             `held`.
 
@@ -62,7 +61,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import checks, gate as gate_module
+from purlin import gate as gate_module
 
 # The three cells, in the order the chain reads them. A gate value names the
 # deepest cell that exists, so the names are the gate values.
@@ -89,9 +88,6 @@ NOT_AUDITED = 'not audited'
 # where no break engine measured a strength. `scripts/review/brief.py` reads
 # this name from here so the two cannot drift.
 NO_MODEL = 'not available'
-
-# What the signed cell can read when a person is still owed.
-SIGN_WORDS = ('unsigned', 'stale', 'held')
 
 # The flags a rollup counts, beside the buckets and never instead of them.
 COUNTED_FLAGS = ('stale', 'held', 'manual', 'unsettled', 'not_audited')
@@ -123,13 +119,14 @@ def bucket_keys(gate):
 
 
 def spec_status(proofs):
-    """`ready` when a proof names the rule and no blocking finding stands."""
-    if not proofs:
-        return DRAFTED
-    if any(checks.blocks_ready(proof.get('findings') or [])
-           for proof in proofs):
-        return DRAFTED
-    return READY
+    """`ready` when a proof line names the rule, `drafted` when none does.
+
+    Nothing else is read. A scan of the description used to hold a rule at
+    `drafted`, and it was a regular expression deciding what a proof is
+    worth from the words alone. That question belongs to the audit, which
+    reads the test beside the proof and writes what it saw.
+    """
+    return READY if proofs else DRAFTED
 
 
 def rule_cells(inp, cfg):
@@ -137,20 +134,20 @@ def rule_cells(inp, cfg):
 
     `inp` carries:
 
-    `proofs`        `[{'id', 'tier', 'env', 'text', 'findings', 'tests'}, ...]`
+    `proofs`        `[{'id', 'tier', 'env', 'text', 'tests'}, ...]`
     `local_status`  `{proof_id: 'pass' | 'fail' | None}` from the runtime files
                     and the committed test results, whichever is newer
     `local_os`      the operating system that local source ran on, or None
     `local_at`      when it ran, ISO 8601 UTC, or None
-    `records`       `{os_or_None: record}`, already filtered to the records
-                    that count under the gate
-    `uncounted`     `{os_or_None: record}`, the records that do not
+    `records`       `{os_or_None: record}`, the latest record per platform
     `head`          the sha the working tree is on
     `scope_tree`    the current scope tree of the rule's spec
     `signatures`    every signature file for this rule, each carrying `counts`
                     and `count_reason` from `signatures.counts`
     `holds`         every hold a person committed for this rule
     `rule_hash`, `proof_hash`, `test_hash`, `design_hash`, `bar`
+    `audit_hash`    the hash of the brief's own evidence, which a signature
+                    binds beside the triple
     `brief`         the brief for this rule's current hashes, or None
     `brief_path`    where that brief was read from, or None
     `test_strength` an integer percent, or None when nothing measured it
@@ -160,10 +157,11 @@ def rule_cells(inp, cfg):
     proofs = inp.get('proofs') or []
     spec = spec_status(proofs)
 
+    audit = inp.get('audit_hash')
     holds = [hold for hold in inp.get('holds') or ()
              if _binds(hold, inp, bar)]
     signatures = list(inp.get('signatures') or ())
-    current = [sig for sig in signatures if _binds(sig, inp, bar)]
+    current = [sig for sig in signatures if _binds(sig, inp, bar, audit)]
     counting = [sig for sig in current if sig.get('counts')]
 
     passed = _passed_cell(inp, cfg)
@@ -232,19 +230,13 @@ def _passed_cell(inp, cfg):
     read out here and the question moves to level 2, where `manual test` is
     the honest word and a signature with a note is the evidence.
     """
-    gate = cfg.gate if cfg else CELLS[0]
     written = inp.get('proofs') or []
     proofs = [proof for proof in written
               if (proof.get('tier') or '') != 'manual']
     records = inp.get('records') or {}
-    # This checkout's own run is the `local` source, and a source the gate
-    # does not read is not evidence: at `signed` it neither answers for a
-    # platform nor names a failure, because the run on the protected branch
-    # is what a signature attaches to. It is still read out at the end of
-    # this function, where the cell says which run it found and why that run
-    # does not count.
-    local_counts = counts_under_gate(gate, 'local')
-    local_status = (inp.get('local_status') or {}) if local_counts else {}
+    # This checkout's own run is the `local` source, and it counts at every
+    # gate: the tests it ran are the tests CI runs.
+    local_status = inp.get('local_status') or {}
     cell = {'word': 'no test', 'source': None, 'current': False,
             'counts': False, 'missing_env': [], 'platforms': {},
             'reasons': []}
@@ -253,7 +245,7 @@ def _passed_cell(inp, cfg):
         cell.update({'word': 'passed', 'current': True, 'counts': True})
         return cell
 
-    platforms = _platforms(inp, proofs, local_counts)
+    platforms = _platforms(inp, proofs)
     cell['platforms'] = platforms
     words = [entry['word'] for entry in platforms.values()]
     if 'passed' in words and any(word != 'passed' for word in words):
@@ -300,46 +292,19 @@ def _passed_cell(inp, cfg):
         cell['reasons'] = ['code changed since %s' % (commit or '')[:7]]
         return cell
 
-    # Nothing that counts passed. A record the gate does not read, and then
-    # this checkout's own run, each say what they are and why they do not
-    # count, because "no test" would be a different and wrong answer.
-    uncounted = inp.get('uncounted') or {}
-    if uncounted:
-        would_pass, _env, at_head, scope_matches = _record_passes(
-            proofs, uncounted, inp.get('head'), inp.get('scope_tree'))
-        if would_pass:
-            source = _label_of(uncounted)
-            cell['word'] = 'not run'
-            cell['source'] = source
-            cell['current'] = at_head or scope_matches
-            cell['reasons'] = ['%s record does not count under %s'
-                               % (source, gate)]
-            return cell
-
-    if proofs and _local_passes(proofs, inp.get('local_status') or {}):
+    # No record answered. This checkout's own run is the last thing to read,
+    # and it counts, so a rule whose tests have just run here reads `passed`
+    # before any record exists.
+    if proofs and _local_passes(proofs, local_status):
+        cell['word'] = 'passed'
         cell['source'] = 'local'
         cell['current'] = True
-        if local_counts:
-            cell['word'] = 'passed'
-            cell['counts'] = True
-        else:
-            cell['word'] = 'not run'
-            cell['reasons'] = ['local run does not count under %s' % gate]
+        cell['counts'] = True
         return cell
 
     if any(proof.get('tests') for proof in proofs):
         cell['word'] = 'not run'
     return cell
-
-
-def counts_under_gate(gate, source):
-    """True when evidence from `source` counts under `gate`.
-
-    The one answer, read from the record module so a cell and a record reader
-    can never disagree about which source counts where.
-    """
-    from purlin import records as records_module
-    return records_module.counts_under(gate, source)
 
 
 def platform_of(record):
@@ -348,7 +313,7 @@ def platform_of(record):
         (record or {}).get('environment') or {}).get('os')
 
 
-def _platforms(inp, proofs, local_counts=True):
+def _platforms(inp, proofs):
     """`{os: {word, source, at}}` over every platform a counting run covered.
 
     A record names the operating system it ran on, and so do the test results
@@ -357,11 +322,6 @@ def _platforms(inp, proofs, local_counts=True):
     is tagged for with `@env` and nothing ran on gets an entry too, reading
     `not run` with no source, so the map lists every platform the rule is
     owed an answer from.
-
-    `local_counts` is false where the gate does not read this checkout's own
-    run, and then that run answers for no platform: at `signed` a person's
-    macOS run is a preview, and letting it stand as the macOS answer would
-    have a colleague's laptop decide whether a rule is `partial`.
     """
     candidates = []
     for record in (inp.get('records') or {}).values():
@@ -371,7 +331,7 @@ def _platforms(inp, proofs, local_counts=True):
         candidates.append((name, record.get('timestamp'),
                            record.get('source') or record.get('label'),
                            _word_from_record(proofs, record, name)))
-    local_os = inp.get('local_os') if local_counts else None
+    local_os = inp.get('local_os')
     if local_os and (inp.get('local_status') or {}):
         candidates.append((local_os, inp.get('local_at'), 'local',
                            _word_from_statuses(
@@ -551,25 +511,30 @@ def _local_passes(proofs, local_status):
 def _strong_cell(inp, cfg, bar, passed, holds, counting_signatures):
     """Level 2: whether the tests behind a met passed cell are worth trusting."""
     strength = inp.get('test_strength')
-    cell = {'word': 'weak', 'strength': strength, 'findings': [],
+    cell = {'word': 'weak', 'strength': strength,
             'observations': [], 'brief': None, 'settled': None, 'reasons': []}
+
+    # A hold wins. A person read the brief and said the test does not prove
+    # the proof, and that answer stands whatever the tests are doing: a
+    # failing test is work in front of the hold, not instead of it. Reading
+    # anything else here would leave a held rule off the Review list, which
+    # is the one place the hold is meant to appear. A signature for the
+    # current hashes outranks it.
+    if holds and not counting_signatures:
+        cell['word'] = 'held'
+        cell['reasons'] = _hold_reasons(holds)
+        return cell
 
     if passed['word'] != 'passed':
         cell['reasons'] = ['not passed']
         return cell
 
-    proofs = inp.get('proofs') or []
-    findings = _findings(proofs)
     brief = inp.get('brief') or None
     if brief:
         cell['brief'] = inp.get('brief_path')
         cell['observations'] = [str(line) for line in
                                 (brief.get('observations') or ())]
         cell['settled'] = brief.get('settled')
-        for finding in _test_findings(brief):
-            if finding not in findings:
-                findings.append(finding)
-    cell['findings'] = findings
 
     min_strength = cfg.min_strength if cfg else None
     notes = []
@@ -586,17 +551,16 @@ def _strong_cell(inp, cfg, bar, passed, holds, counting_signatures):
         notes.append('no audit has run')
         cell['word'] = 'weak'
     elif strength is None:
-        # Nothing measured a strength, so the free checks are the whole of
-        # what level 2 has to read, and the cell says so.
-        notes.append('no engine: free checks only')
-        cell['word'] = ('weak' if checks.blocks_ready(findings) else 'strong')
+        # An audit ran and no engine measured a strength, so what level 2 has
+        # to read is the audit's own observations. The cell says so rather
+        # than leaving a blank where a percentage usually sits.
+        notes.append('no engine: nothing measured a strength')
+        cell['word'] = 'strong'
     elif min_strength is not None and strength < min_strength:
         notes.append('strength %d%% under %d%%' % (round(strength), min_strength))
         cell['word'] = 'weak'
     else:
         cell['word'] = 'strong'
-    if _test_findings(brief):
-        cell['word'] = 'weak'
     # A review that settled and still observed something answered the
     # question: the test does not read what the proof names, which is build
     # work, so the observation lands in the weak cell rather than on a
@@ -605,41 +569,38 @@ def _strong_cell(inp, cfg, bar, passed, holds, counting_signatures):
     if observed:
         cell['word'] = 'weak'
 
-    word, person = _outstanding(inp, bar, brief, holds, counting_signatures)
+    word, person = _outstanding(inp, bar, brief, counting_signatures)
     if word:
         cell['word'] = word
 
     # A cell that reads `strong` names only what a reader could not work out
     # from the word: nothing at all where an engine measured the strength.
-    reasons = list(person) + list(notes) + list(observed)
-    if cell['word'] != 'strong':
-        for finding in findings:
-            if finding not in reasons:
-                reasons.append(finding)
-    cell['reasons'] = reasons
+    cell['reasons'] = list(person) + list(notes) + list(observed)
     return cell
 
 
-def _outstanding(inp, bar, brief, holds, counting_signatures):
+def _hold_reasons(holds):
+    """One reason per current hold: who wrote it and the case they named."""
+    return ['held by %s: %s'
+            % (hold.get('signer') or hold.get('holder') or 'a person',
+               hold.get('reason') or '')
+            for hold in holds or ()]
+
+
+def _outstanding(inp, bar, brief, counting_signatures):
     """`(word, reasons)` when level 2 is not the machine's to settle alone.
 
-    Each word names the work that is outstanding. `held` is a colleague's
-    committed statement, `manual test` is a proof no test can back,
-    `unsettled` is an AI audit that ran and could not tell, and `not audited`
-    is a rule the audit has not reached: that one waits for `purlin:audit`
-    rather than for a person, which is why it is on no tab. A signature for
-    the current hashes outranks the three that are a person's: under `strong`
-    a signature from anyone counts, because what it clears there is a
-    question the machine could not settle. The word is None when nothing is
-    outstanding.
+    Each word names the work that is outstanding. `manual test` is a proof no
+    test can back, `unsettled` is an AI audit that ran and could not tell,
+    and `not audited` is a rule the audit has not reached: that one waits for
+    `purlin:audit` rather than for a person, which is why it is on no list. A
+    hold is read before any of these, in `_strong_cell`. A signature for the
+    current hashes outranks them: under `strong` a signature from anyone
+    counts, because what it clears there is a question the machine could not
+    settle. The word is None when nothing is outstanding.
     """
     if counting_signatures:
         return None, []
-    if holds:
-        return 'held', ['held by %s: %s'
-                        % (hold.get('signer') or hold.get('holder')
-                           or 'a person', hold.get('reason') or '')
-                        for hold in holds]
     if any((proof.get('tier') or '') == 'manual' for proof in
            inp.get('proofs') or ()):
         return 'manual test', ['manual proof']
@@ -657,26 +618,6 @@ def _outstanding(inp, bar, brief, holds, counting_signatures):
         if brief.get('settled') is not True:
             return 'unsettled', ['the AI audit could not settle']
     return None, []
-
-
-def _findings(proofs):
-    """Every free-check finding on the rule's proof text, deduped, in order."""
-    found = []
-    for proof in proofs or ():
-        for finding in proof.get('findings') or ():
-            if finding not in found:
-                found.append(finding)
-    return found
-
-
-def _test_findings(brief):
-    """The findings a brief raised against a test body, deduped, in order."""
-    found = []
-    for test in (brief or {}).get('tests') or ():
-        for finding in test.get('findings') or ():
-            if finding and finding != 'manual' and finding not in found:
-                found.append(finding)
-    return found
 
 
 # ---------------------------------------------------------------------------
@@ -716,9 +657,7 @@ def _signed_cell(inp, cfg, bar, holds, signatures, current, counting):
         hold = holds[0]
         cell['word'] = 'held'
         cell['path'] = hold.get('path')
-        cell['reasons'] = ['held by %s: %s'
-                           % (hold.get('signer') or hold.get('holder')
-                              or 'a person', hold.get('reason') or '')]
+        cell['reasons'] = _hold_reasons([hold])
         return cell
 
     if current:
@@ -743,12 +682,17 @@ def _signed_cell(inp, cfg, bar, holds, signatures, current, counting):
     return cell
 
 
-def _binds(signature, inp, bar):
-    """True when a signature or a hold still binds the rule's current hashes."""
+def _binds(signature, inp, bar, audit=None):
+    """True when a signature or a hold still binds the rule's current evidence.
+
+    `audit` is passed for a signature and left out for a hold: a hold says
+    the test does not prove the proof, which is a statement about the rule,
+    the proof and the test, and a re-audit does not answer it.
+    """
     from purlin import signatures as signatures_module
     return signatures_module.is_current(
         signature, inp.get('rule_hash'), inp.get('proof_hash'),
-        inp.get('test_hash'), bar, inp.get('design_hash'))
+        inp.get('test_hash'), bar, inp.get('design_hash'), audit)
 
 
 # ---------------------------------------------------------------------------

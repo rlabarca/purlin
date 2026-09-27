@@ -1,34 +1,28 @@
-"""The free checks on proof text.
+"""The hints the audit reads off a proof's own text.
 
 Free because they need nothing but the spec: no test code, no run, no model
-call. `states.py` uses them to decide whether a rule's spec status is `ready`,
-and the brief prints them beside the proof they name.
+call. They are hints and nothing more. `scripts/review/brief.py` hands them
+to the AI audit as plain sentences, beside the rule, the proof and the test
+body, and the audit writes what it observed; a settled audit that observed a
+gap reads `weak` with its own sentence as the reason. Nothing here decides a
+cell on its own, and no name from here reaches a surface.
 
-Every check is a pure function of the text (and, for one of them, the tier),
-and every finding is one of six names:
+Six scans, each a pure function of the text and, for one of them, the tier:
 
-`no_expected_value`   the description names no literal, number, quoted string
-                      or named constant, so almost any assertion satisfies it
-`vague_verb`          "works", "correctly", "as expected" with no value beside it
-`missing_trigger`     nothing runs before the assertion, so the proof reads an
-                      artifact that exists whether or not the code is right
-`tier_mismatch`       an `@e2e` proof described as a function call
-`implementation_coupling`
-                      the description names a private symbol, a CSS selector or
-                      a file path instead of an observable outcome
-`happy_path_only`     a rule whose proofs never name a rejection, an error or
-                      a boundary
+    the proof names no literal, number, quoted string or named constant
+    the proof says "works" or "correctly" with no value beside it
+    nothing runs before the assertion
+    an `@e2e` proof is described as a function call
+    the proof names a private symbol, a selector or a path
+    no proof of the rule names a failure or an edge case
 
-The first four block the spec status `ready`. The last two are advisory: a
-rule can be legitimately positive-only, and a grep proof legitimately names a
-path.
+A rule's spec status does not read them. `ready` means the rule has a proof,
+and what the proof is worth is the audit's question, answered by a model that
+read the test beside it rather than by a regular expression that read the
+description alone.
 """
 
 import re
-
-BLOCKING = ('no_expected_value', 'vague_verb', 'missing_trigger', 'tier_mismatch')
-ADVISORY = ('implementation_coupling', 'happy_path_only')
-FINDINGS = BLOCKING + ADVISORY
 
 # A concrete expected value: a number, a quoted string, a backticked token, a
 # named constant, or one of the words that fixes a value on its own.
@@ -68,66 +62,56 @@ _NEGATIVE_RE = re.compile(
     r'empty|zero|none|no\s+matches|4\d\d|5\d\d|raises?|throws?|warns?)\b',
     re.IGNORECASE)
 
+NO_EXPECTED_VALUE = (
+    'This proof names no literal, number, quoted string or named constant, '
+    'so almost any assertion would satisfy it.')
+VAGUE_VERB = (
+    'This proof uses a vague verb with no expected value beside it.')
+MISSING_TRIGGER = (
+    'Nothing runs before the assertion in this proof, so it reads an '
+    'artifact that exists whether or not the code is right.')
+TIER_MISMATCH = (
+    'This proof is tagged @e2e and reads as a function call rather than as '
+    'an observable flow.')
+COUPLING = (
+    'This proof names a private symbol, a selector or a path instead of an '
+    'observable outcome.')
+NO_NEGATIVE_CASE = (
+    'No proof of this rule names a failure or an edge case.')
 
-def proof_findings(text, tier='unit'):
-    """The findings on one proof description, in a stable order."""
+
+def proof_hints(text, tier='unit'):
+    """The hints on one proof description, as sentences, in a stable order."""
     text = (text or '').strip()
-    found = []
     if not text:
-        return ['no_expected_value', 'missing_trigger']
+        return [NO_EXPECTED_VALUE, MISSING_TRIGGER]
+    found = []
     concrete = bool(_CONCRETE_RE.search(text))
     if tier == 'e2e' and _INTERNAL_CALL_RE.search(text):
-        found.append('tier_mismatch')
+        found.append(TIER_MISMATCH)
     if _VAGUE_RE.search(text) and not concrete:
-        found.append('vague_verb')
+        found.append(VAGUE_VERB)
     if not concrete:
-        found.append('no_expected_value')
+        found.append(NO_EXPECTED_VALUE)
     if not _TRIGGER_RE.search(text):
-        found.append('missing_trigger')
+        found.append(MISSING_TRIGGER)
     if _COUPLING_RE.search(text):
-        found.append('implementation_coupling')
+        found.append(COUPLING)
     return found
 
 
-def rule_findings(proof_texts):
-    """The findings that need every proof of one rule at once.
+def names_a_negative_case(proof_texts):
+    """True when a proof of the rule names a rejection, an error or a boundary.
 
-    Only `happy_path_only` so far: a rule none of whose proofs name a
-    rejection, an error or a boundary has been proved in one direction.
+    Asked of every proof of one rule at once: a rule proved in one direction
+    is a property of the set, not of any one line. The drift report reads
+    this for its `rules_without_a_negative_case` view.
     """
-    if not proof_texts:
+    return any(_NEGATIVE_RE.search(text or '') for text in proof_texts or ())
+
+
+def rule_hints(proof_texts):
+    """The hints that need every proof of one rule at once, as sentences."""
+    if not proof_texts or names_a_negative_case(proof_texts):
         return []
-    if any(_NEGATIVE_RE.search(text or '') for text in proof_texts):
-        return []
-    return ['happy_path_only']
-
-
-def blocks_ready(findings):
-    """True when a finding in `findings` holds a rule's spec status at `drafted`."""
-    return any(name in BLOCKING for name in findings)
-
-
-def describe(finding):
-    """One sentence for a finding name, for a brief or a status line."""
-    return _DESCRIPTIONS.get(finding, finding)
-
-
-_DESCRIPTIONS = {
-    'no_expected_value': (
-        'Names no literal, number, quoted string or named constant, so almost '
-        'any assertion would satisfy it.'),
-    'vague_verb': (
-        'Uses a vague verb with no expected value beside it. A proof should be '
-        'readable straight into a test.'),
-    'missing_trigger': (
-        'Nothing runs before the assertion, so the proof reads an artifact that '
-        'exists whether or not the code is right.'),
-    'tier_mismatch': (
-        'An @e2e proof must read as an observable flow. Drive the real interface '
-        'or retag the proof to the tier it exercises.'),
-    'implementation_coupling': (
-        'Names a private symbol, a selector or a path instead of an observable '
-        'outcome, so a refactor breaks the proof without changing behaviour.'),
-    'happy_path_only': (
-        'No proof of this rule names a rejection, an error or a boundary.'),
-}
+    return [NO_NEGATIVE_CASE]

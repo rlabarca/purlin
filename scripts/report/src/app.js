@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
             features: {}, groups: {}, filters: {}};
-var SCHEMA = 7;
+var SCHEMA = 8;
 /* The data file is rewritten seconds after a tool call changed a spec, a
    record or a signature, and a tab left open would never notice. Coming back
    to the tab reloads it when what it holds is older than this. */
