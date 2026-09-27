@@ -68,7 +68,8 @@ signature went stale, the next step is `purlin:sign`. Say which, and say why.
 4. **Never push, never open a pull request, never delete or rewrite a remote branch.** A push
    is a person's act: commit the work, say what it proves, and leave `git push` to them. The
    one exception is `purlin:test --remote`, which pushes a run branch of its own, waits for
-   it and deletes it. The pre-push hook refuses a push from your session and says so.
+   it and deletes it. Nothing stops you but this line: no hook runs at push time, so a push
+   you make is a push nobody asked for.
 5. **Never use a retired term.** The names to use are git host, test strength, bar, review
    list, signer list, record, signature, gate and breaks. `references/glossary.md` lists what
    each one replaced. No emoji anywhere, including command output and pull request comments.

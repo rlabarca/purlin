@@ -1,4 +1,4 @@
-> Format-Version: 4
+> Format-Version: 5
 
 # Record Format
 
@@ -134,13 +134,12 @@ A record whose `source` field disagrees with its folder is ignored, with one
 warning naming the path. Guessing which half is right would let a file copied
 from one folder to the other claim a source no rule enforces.
 
-The gate decides which sources count. `passed` and `strong` count both: the
-breaks a person ran are the same breaks CI runs, and an audit is an audit.
-`signed` counts a `ci` record alone, for the tests and the audit both,
-because a signature attaches to the run on the protected branch after the
-merge and a local run there is a preview. A record the gate does not count is
-still read: the passed cell names its source and says `<source> record does
-not count under <gate>`.
+Both sources count at every gate, `signed` included: the breaks a person ran
+are the same breaks CI would run, and what a signature locks is the evidence
+rather than the machine that produced it. A project that wants CI's word
+before a signature says so once, with `trust: remote` in
+`.purlin/config.json`, and then `purlin:sign` refuses a rule whose tests have
+no `ci` record for the commit being signed.
 
 ## The platforms a record covers
 
@@ -163,21 +162,19 @@ results either: those are what `purlin:test` commits, with its own subject.
 
 `purlin:audit` prints `Record committed.` when the commit was made,
 `Record unchanged.` when the run saw exactly what the last one saw, and it
-never pushes. CI commits through the git host's REST API with no author and
-no committer field, so GitHub signs the commit with its own key and reports
-`github-actions[bot]` as the committer; Azure DevOps pushes through its
-Pushes API with the build service's token.
+never pushes. CI commits on a run branch and nowhere else, through the git
+host's REST API with no author and no committer field, so GitHub signs the
+commit with its own key and reports `github-actions[bot]` as the committer;
+Azure DevOps pushes through its Pushes API with the build service's token. A
+tag run writes no record at all: it reruns the tests and checks the evidence
+already committed, and `gate_check.py --check --verify` names any `ci/` file
+whose commit is not the runner's own.
 
 ## Retention
 
-A feature keeps the newest three records per operating system. The run prunes
-the rest as it writes, so a matrix of three operating systems keeps nine
-records per feature and no more.
-
-A record any annotated `record/<name>` tag names in its message is kept for
-ever. `purlin:audit --tag <name>` writes such a tag; its message lists the
-record paths it vouches for, one per line, and retention reads those paths with
-`git for-each-ref --format='%(contents)' refs/tags/record/`.
+A feature keeps the newest three records per operating system per source. The
+run prunes the rest as it writes, so a matrix of three operating systems
+keeps nine records per feature per source and no more.
 
 ## Freshness
 

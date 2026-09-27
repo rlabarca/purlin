@@ -53,9 +53,10 @@ you. A run that saw the same thing about the same code commits nothing.
 
 ## The record commit
 
-**An audit makes the record commit, and so does CI.** `purlin:audit` runs the tagged tests,
-then the breaks and the free checks at `strong` and above, and commits one record per feature
-under your own identity. The CI job does the same under the build identity. Both use:
+**An audit makes the record commit, and so does a remote run.** `purlin:audit` runs the tagged
+tests, then the breaks and the AI audit at `strong` and above, and commits one record per
+feature under your own identity. The CI job on a run branch does the same under the build
+identity, with no breaks. Both use:
 
 ```
 purlin: record for <commit7>
@@ -72,9 +73,9 @@ ran against. No run writes a signature file, so a record commit never carries on
 carries no test results either: those go in their own commit.
 
 `purlin:audit` prints `Record committed.` or `Record unchanged.` and never pushes. CI's record
-commit lands on the protected branch or on a run branch, and nowhere else. A pull request run
-posts the comment and commits nothing: a record on a branch nobody merges from is evidence of a
-branch that will not exist. At `passed` no run writes a record at all.
+commit lands on a run branch and nowhere else: a tag run writes nothing at all, because what it
+is for is the rerun and the check over the evidence already committed. At `passed` no run
+writes a record at all.
 
 ## The signature commit
 
@@ -90,6 +91,28 @@ commit, that author is not the author of the commit that last touched the test, 
 `signed` gate, the commit is on the protected branch. One commit may carry a batch; the rule ids
 are all listed in the subject, in order. A hold is committed the same way and carries the
 missing case in the file, not in the subject.
+
+## The tag
+
+```
+signed/<version>
+signed/<name>            with --release <name>
+```
+
+Annotated, never lightweight, and written by `purlin:sign` when the walk closes with every rule
+meeting the gate. The version is the `VERSION` file at the project root, or the config's
+`version` where there is no such file. The message names the commit and the gate:
+
+```
+Every rule meets the gate signed.
+
+Commit: <full sha>
+Gate: signed
+```
+
+No tag is written while one rule falls short, and none is written over a tag that is already
+there. Nothing is pushed: the last line is `Run: git push origin signed/<version>`, and pushing
+it is what starts the run that reruns the tests on a clean machine and checks the evidence.
 
 ## The build commit body
 

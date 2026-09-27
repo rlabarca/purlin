@@ -161,8 +161,8 @@ An `@e2e` proof reads as arrange, act, observe through the real running app.
   request that fired, the storage state after the flow. Never a source constant.
 
 Bad: "Assert `loginRedirect` uses the `access_as_user` scope @e2e". That names an
-internal function, so the test imports internals and asserts a declaration, which the
-free checks report as `tier_mismatch`.
+internal function, so the test imports internals and asserts a declaration, and the
+audit is handed a hint saying the proof is tagged `@e2e` and reads as a function call.
 
 Good: "Open the app, enter an email, click Sign in; observe that the redirect to the
 identity provider carries scope `access_as_user`; complete login with a test account;
@@ -216,8 +216,8 @@ automated.
 
 ### `@manual`
 
-`@manual` means there is no test, so nothing can run and no free check on a test body
-applies. The rule's strong cell reads `manual test` with the reason `manual proof`.
+`@manual` means there is no test, so nothing can run and nothing is scanned off a test
+body. The rule's strong cell reads `manual test` with the reason `manual proof`.
 A signature file carrying a one-line note clears it, written by a person:
 `purlin:sign <feature> RULE-N --note "<what you saw>"`. CI never writes that file, at
 any bar and under any gate. Use `@manual` where judgment is the only instrument,
@@ -232,22 +232,21 @@ first three, under `signed` all four.
 
 | Cell | Word | What it means | What moves it |
 |---|---|---|---|
-| spec | `drafted` | No proof line names the rule, or a blocking free check fires on the proof text: `no_expected_value`, `vague_verb`, `missing_trigger` or `tier_mismatch`. | Write or rewrite the proof under `## Proof` so it names a trigger and an expected value at a tier it can reach. `purlin:spec`. |
+| spec | `drafted` | No proof line names the rule. Nothing else holds a rule here: what a proof is worth is the audit's question. | Write the proof under `## Proof` so it names a trigger and an expected value at a tier it can reach. `purlin:spec`. |
 | passed | `no test` | The spec status is `ready` and no test carries the proof marker. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
-| passed | `not run` | No record that counts under the gate exists, or the only one is `local` and the gate is `signed`. The reason says which. | Run `purlin:audit`, which counts at `strong`; at `signed` run `purlin:test --remote`, or push and let the run on the protected branch write the record. |
-| passed | `not run`, with `<os>: no record yet` | A proof carries `@env` and no record from that operating system has passed it. | Let the CI matrix run that job, or drop the `@env` tag if any host could prove it. |
+| passed | `not run` | Nothing has run the rule's tests yet. | Run `purlin:test`, which counts at every gate. |
+| passed | `not run`, with `<os>: no record yet` | A proof carries `@env` and no record from that operating system has passed it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any host could prove it. |
 | passed | `partial` | The rule's tests passed on one operating system and failed or did not run on another. `partial` is not met. | Fix the platform that failed, or let the CI matrix run the one that has not. |
-| passed | `code changed` | A CI pass exists but the code moved since. | Nothing. CI clears it on the next run. |
+| passed | `code changed` | A pass exists but the code moved since. | Run the tests again; the next run clears it. |
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
-| strong | `weak`, with a finding name | A free check fired on the proof text or on the test body. `references/review_criteria.md` names each. | Rewrite the proof text, or the test body, whichever the finding concerns. |
 | strong | `weak`, with a sentence the model wrote | The AI audit settled the question and observed that the test does not read what the proof names. | Write the assertion the sentence asks for. `purlin:build`, then `purlin:audit`. |
 | strong | `manual test` | The proof is `@manual`, so no test can be written and a person runs it. | `purlin:sign <feature> RULE-N --note "<what you saw>"`. |
 | strong | `not audited` | The rule's bar is `strong` and no audit has run over this code, so there is no brief for the current hashes. | `purlin:audit`, which writes the record and the brief. |
 | strong | `unsettled` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:sign` and answer the brief. A signature for the current hashes clears it. |
 | strong | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
 | signed | `unsigned` | No signature file for the current hashes, and the rule needs one: `sign_at` is `all`, or the rule's bar is `strong`. | `purlin:sign <feature> RULE-N` as a signed commit from someone on the signer list. |
-| signed | `stale` | The rule text, the proof text or the test body changed after the signature. | Read what changed, then sign again or fix what broke. |
+| signed | `stale` | The rule text, the proof text, the test body, the bar or what the audit found changed after the signature. | Read what changed, then sign again or fix what broke. |
 | signed | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
 
 ## When a test fails, fix the code

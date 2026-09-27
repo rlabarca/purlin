@@ -1,4 +1,4 @@
-> Criteria-Version: 5
+> Criteria-Version: 6
 
 # Drift criteria
 
@@ -127,7 +127,7 @@ strength and no signature, so `purlin:drift qa` says the gate is `passed` and na
 | `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
 | `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py` | Not set; test strength reads `n/a` without one |
 | `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure` |
-| `pre_push` | `purlin:init` | The pre-push hook | `off`; the only other value is `on` |
+| `trust` | `purlin:init`, which asks `Do you trust your own machine for the tests and the signing?` | `scripts/review/sign.py`, `scripts/run/workflow.py` | `local`; the only other value is `remote` |
 | `sql_engine` | `purlin:init` | The SQL proof plugin | Not set |
 
 `purlin:init` is the only command that writes config unprompted. Every other command reads. A

@@ -11,8 +11,8 @@ by naming the next step, computed from the cells it found.
 
 Nothing here pushes on its own except `purlin:test --remote`, which a person asked for by
 name and which pushes a run branch of its own, never the branch you are on. Everywhere else a
-push is a person's act: a command commits, prints `Run: git push` and stops. No command opens a
-pull request. The pre-push hook refuses a push made from an agent session.
+push is a person's act, free, to any branch: a command commits, prints `Run: git push` and
+stops. No command opens a pull request, and nothing runs at push time.
 
 Three commands carry the three evidence levels: `purlin:test` runs level 1 and commits what it
 saw, `purlin:audit` runs level 2 and reports, and `purlin:sign` is level 3.
@@ -67,8 +67,8 @@ Purlin
   Proving
   ──────
   purlin:audit [feature ...]      Tests, breaks, what they found, and the record
-  purlin:audit --tag <name>       Pin the records in the tree as record/<name>
-  purlin:sign                     Walk the review list one brief at a time
+  purlin:sign                     Walk the review list, then write the tag
+  purlin:sign --release <name>    Name the tag something other than the version
   purlin:sign <feature> [RULE-N ...]  Sign, as a signed commit
   purlin:sign --batch             Sign everything currently signable
   purlin:sign <feature> RULE-N --hold "<case>"  The test does not prove the proof
@@ -102,9 +102,9 @@ Purlin
 | `purlin:spec`, `purlin:spec-from-code` | `specs/<category>/<name>.md` |
 | `purlin:build` | Code, test files, and the commit carrying the changeset |
 | `purlin:test` | `.purlin/runtime/proofs/`, which is not committed, and `.purlin/tests/<feature>.json` and `.purlin/tests.md`, which it commits itself as `purlin: tests at <sha7>` and never pushes. `--remote` pushes the run branch `run/<branch>-<sha7>`, which it deletes when the run is back |
-| `purlin:audit` | One record per feature under `.purlin/records/local/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and its briefs under `.purlin/briefs/local/<feature>/<RULE-N>.<hash8>.brief.json`, committed as `purlin: record for <sha7>` and never pushed. A CI run writes the same files under `ci/`. `--tag` writes the tag |
-| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case |
-| `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when the gate needs one or you answer yes at `passed` |
+| `purlin:audit` | One record per feature under `.purlin/records/local/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and its briefs under `.purlin/briefs/local/<feature>/<RULE-N>.<hash8>.brief.json`, committed as `purlin: record for <sha7>` and never pushed. A remote run writes the same files under `ci/` |
+| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case. The annotated tag `signed/<version>` when the walk closes with every rule meeting the gate, which a person pushes |
+| `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when a proof names another operating system or the trust answer was no |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, and `designs/<anchor>/` on a sync |
 | `purlin:rename` | Specs, markers, signature directories, record directories |
 | `purlin:status`, `purlin:find`, `purlin:drift` | Nothing |
@@ -113,10 +113,10 @@ Purlin
 
 A command prints only what the gate asks for. Under `passed` there is no strength, no bar, no
 review list and no signature anywhere in the output, and `purlin:audit` runs no breaks. Under
-`strong` the strength, the strong cell, the bar and the `Review` list appear, and `purlin:audit`
-writes a record that counts. Under `signed` the signed cell, the signer list, the Signable
-column and the Sign list appear, and `purlin:audit` ends by saying its record is a preview of
-the run CI makes on the protected branch.
+`strong` the strength, the strong cell, the bar and the Review list appear. Under `signed` the
+signed cell, the signer list, the Signable column and the Sign list appear, and `purlin:sign`
+writes the tag when every rule meets the gate. A record `purlin:audit` wrote counts at every
+gate.
 
 `purlin:sign` under `passed` says the gate is `passed`, names what `purlin:init --gate strong`
 would add, and stops. `purlin:drift qa` says the same.

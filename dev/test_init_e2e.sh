@@ -270,8 +270,12 @@ gate_walk() {  # dir language
     python3 "$GATE" --check --project-root "$dir"
 
   init_at "$dir" strong
-  expect_in "$language: raising to strong writes the workflow" \
-    'wrote .github/workflows/purlin.yml' "$dir/.purlin-init.log"
+  expect_in "$language: a trusted project gets no workflow" \
+    'every proof runs on this operating system' "$dir/.purlin-init.log"
+  expect_absent "$language: and no workflow file is written" \
+    "$dir/.github/workflows/purlin.yml"
+  expect_not_in "$language: and no branch rule is printed" \
+    'force push' "$dir/.purlin-init.log"
   expect_exit "$language: strong refuses a project no audit has measured" 1 \
     python3 "$GATE" --check --project-root "$dir"
 
@@ -316,27 +320,21 @@ gate_walk() {  # dir language
   expect_exit "$language: strong is met by a record CI committed" 0 \
     python3 "$GATE" --check --project-root "$dir"
 
-  # Where a CI run commits. The git host variables are what the run reads,
-  # so the three cases are the three sets of variables; no request is made,
-  # because no token is set.
-  env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=topic \
-      GITHUB_HEAD_REF=topic GITHUB_BASE_REF=main \
+  # Where a CI run writes. The git host variables are what the run reads, so
+  # the two cases are the two sets of variables; no request is made, because
+  # no token is set.
+  env GITHUB_REPOSITORY=acme/demo GITHUB_REF=refs/tags/signed/0.1.0 \
+      GITHUB_REF_NAME=signed/0.1.0 \
       python3 "$RUN" --all --ci --project-root "$dir" \
-      > "$dir/.purlin-pr.log" 2>&1
-  expect_in "$language: a pull request run keeps its records on the runner" \
-    'Pull request run: the records stay on the runner' "$dir/.purlin-pr.log"
-
-  env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=main \
-      python3 "$RUN" --all --ci --project-root "$dir" \
-      > "$dir/.purlin-main.log" 2>&1
-  expect_not_in "$language: a run on the protected branch commits its records" \
-    'Pull request run:' "$dir/.purlin-main.log"
+      > "$dir/.purlin-tagrun.log" 2>&1
+  expect_in "$language: a tag run writes nothing" \
+    'Tag run: nothing is written.' "$dir/.purlin-tagrun.log"
 
   env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=run/main-0000000 \
       python3 "$RUN" --all --ci --project-root "$dir" \
       > "$dir/.purlin-runbranch.log" 2>&1
-  expect_not_in "$language: a run on a run branch commits its records" \
-    'Pull request run:' "$dir/.purlin-runbranch.log"
+  expect_not_in "$language: a run on a run branch writes its records" \
+    'Tag run:' "$dir/.purlin-runbranch.log"
   git -C "$dir" checkout -q -- . 2>/dev/null || true
   git -C "$dir" clean -qfd .purlin/records .purlin/briefs 2>/dev/null || true
 
@@ -351,13 +349,16 @@ gate_walk() {  # dir language
   set_signers "$dir" jane@acme.com
   commit_all "$dir" "name the signers"
 
-  # Only CI's record counts at signed. With CI's out of the way, the one the
-  # local audit wrote is named as the preview it is.
+  # A local record counts at signed too. With CI's out of the way the gate
+  # still reads the one the local audit wrote, and what is left is the
+  # signature nobody has written.
   mv "$dir/.purlin/records/ci" "$dir/.purlin/records/aside"
   python3 "$GATE" --check --project-root "$dir" \
     > "$dir/.purlin-local.log" 2>&1
-  expect_in "$language: signed says a local record does not count" \
-    'local record does not count under signed' "$dir/.purlin-local.log"
+  expect_not_in "$language: a local record is not refused at signed" \
+    'Not passed' "$dir/.purlin-local.log"
+  expect_in "$language: what is left at signed is the signature" \
+    'To sign' "$dir/.purlin-local.log"
   mv "$dir/.purlin/records/aside" "$dir/.purlin/records/ci"
 
   expect_exit "$language: signed refuses a rule that needs a signature" 1 \
@@ -374,6 +375,25 @@ gate_walk() {  # dir language
   fi
   expect_exit "$language: signed is met" 0 \
     python3 "$GATE" --check --project-root "$dir"
+
+  # The tag is the marker of proven code, and the walk writes it when every
+  # rule meets the gate. Nothing is pushed: the last line names the push.
+  python3 "$SIGN" --project-root "$dir" < /dev/null \
+    > "$dir/.purlin-walk.log" 2>&1
+  expect_in "$language: the walk opens with the two lists" \
+    'Review: 0 rules. Sign: 0 rules.' "$dir/.purlin-walk.log"
+  if git -C "$dir" tag -l | grep -q '^signed/'; then
+    pass "$language: the walk wrote the signed tag"
+  else
+    bad "$language: the walk wrote the signed tag" "$(git -C "$dir" tag -l)"
+  fi
+  expect_in "$language: the walk names the push for a person to run" \
+    'Run: git push origin signed/' "$dir/.purlin-walk.log"
+
+  # No git hook of any kind is installed, at commit time or at push time.
+  expect_absent "$language: no pre-push shim" "$dir/.purlin/hooks/pre-push"
+  expect_absent "$language: no pre-push hook" "$dir/.git/hooks/pre-push"
+  expect_absent "$language: no pre-commit hook" "$dir/.git/hooks/pre-commit"
 }
 
 # --- python ---------------------------------------------------------------
