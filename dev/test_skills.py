@@ -32,7 +32,7 @@ BASH = bash_command()
 # Every skill, each with the ceiling its spec sets.
 CEILINGS = {
     'anchor': 160, 'audit': 105, 'build': 130, 'drift': 150,
-    'init': 250, 'rename': 85, 'sign': 185, 'spec': 210,
+    'init': 250, 'sign': 185, 'spec': 210,
     'spec-from-code': 130, 'status': 100, 'test': 120,
 }
 COMMANDS = sorted(CEILINGS)
@@ -208,7 +208,7 @@ class TestSkillSpec:
     @pytest.mark.proof("skill_spec", "PROOF-2", "RULE-2")
     def test_it_allocates_ids_against_the_default_branch(self):
         assert carries(skill_path('spec'), [
-            'ids.next_ids', '${CLAUDE_PLUGIN_ROOT}/scripts/mcp',
+            'git show origin/main:',
             'allocated against `origin/main`, not against the working tree']) == []
 
     @pytest.mark.proof("skill_spec", "PROOF-3", "RULE-3")
@@ -604,7 +604,7 @@ def sign_gate_problems():
 
 
 # ---------------------------------------------------------------------------
-# skill_status, skill_drift, skill_rename
+# skill_status, skill_drift
 # ---------------------------------------------------------------------------
 
 class TestSkillStatus:
@@ -658,28 +658,6 @@ class TestSkillDrift:
         assert skill_ceiling_problems('drift') == []
 
 
-class TestSkillRename:
-
-    @pytest.mark.proof("skill_rename", "PROOF-1", "RULE-1")
-    def test_the_frontmatter_names_the_skill(self):
-        assert frontmatter_problems('rename') == []
-
-    @pytest.mark.proof("skill_rename", "PROOF-2", "RULE-2")
-    def test_it_moves_with_git_mv_then_checks_what_it_missed(self):
-        rel = skill_path('rename')
-        assert (in_order(rel, ['git mv', 'sync_status'])
-                + carries(rel, ['Any unresolved reference it reports is a '
-                                'miss'])) == []
-
-    @pytest.mark.proof("skill_rename", "PROOF-3", "RULE-3")
-    def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('rename') == []
-
-    @pytest.mark.proof("skill_rename", "PROOF-4", "RULE-4")
-    def test_it_stays_under_its_ceiling(self):
-        assert skill_ceiling_problems('rename') == []
-
-
 # ---------------------------------------------------------------------------
 # purlin_agent
 # ---------------------------------------------------------------------------
@@ -711,7 +689,25 @@ class TestPurlinAgent:
 
     @pytest.mark.proof("purlin_agent", "PROOF-6", "RULE-6")
     def test_it_stays_under_its_ceiling(self):
-        assert ceiling_problems(AGENT, 120) == []
+        assert ceiling_problems(AGENT, 135) == []
+
+    @pytest.mark.proof("purlin_agent", "PROOF-7", "RULE-7")
+    def test_it_says_what_a_rename_moves(self):
+        assert rename_problems() == []
+
+
+def rename_problems():
+    body = section(read(AGENT), r'^Renaming a feature$')
+    if body is None:
+        return ['%s has no Renaming a feature section' % AGENT]
+    text = flat(body)
+    return ['%s rename section does not carry %r' % (AGENT, needle)
+            for needle in ('# Feature:', '> Requires:', 'feature-name token',
+                           '.signatures/', '.purlin/records/<source>/<name>/',
+                           '.purlin/briefs/<source>/<name>/',
+                           '.purlin/tests/<name>.json', 'git mv',
+                           'sync_status')
+            if needle not in text]
 
 
 def agent_frontmatter_problems():

@@ -61,8 +61,8 @@ whose `met` is below its `total_rules` first.
 When a spec's `> Scope:` names a file or a directory that is no longer on disk, something was
 deleted or renamed and the spec was not told. The tool checks every scope path against the
 filesystem — exact paths with `os.path.exists`, prefix paths with `os.path.isdir` — and lists
-each spec with a missing path in `broken_scopes`. If it was renamed, `purlin:rename` fixes both
-sides; if it was deleted on purpose, `purlin:spec` updates the spec.
+each spec with a missing path in `broken_scopes`. Whether it was renamed or deleted on purpose,
+`purlin:spec` updates the spec.
 
 ## Rules behind the change
 

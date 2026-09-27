@@ -1,9 +1,8 @@
 """Tests for the core package `scripts/mcp/purlin/`.
 
-Six areas, in the order a project meets them: what a spec parses to, what a
-test run leaves behind, how ids are allocated, what the cells of each rule
-read, what the payload and the status table say about it, and what the MCP
-transport answers.
+Five areas, in the order a project meets them: what a spec parses to, what a
+test run leaves behind, what the cells of each rule read, what the payload
+and the status table say about it, and what the MCP transport answers.
 
 Every fixture is written by the test: a spec, a runtime proof file, a record
 under `.purlin/records/`, a brief under `.purlin/briefs/`, a signature beside
@@ -30,7 +29,6 @@ from purlin import signatures as purlin_signatures
 from purlin import drift as purlin_drift
 from purlin import frameworks as purlin_frameworks
 from purlin import gate as purlin_gate
-from purlin import ids as purlin_ids
 from purlin import payload as purlin_payload
 from purlin import proofs as purlin_proofs
 from purlin import records as purlin_records
@@ -531,72 +529,6 @@ class TestProofFiles:
         entries = purlin_proofs.load_proofs(project.root)['login']
         assert purlin_proofs.tests_for(entries, 'PROOF-1') == [
             ('tests/test_login.py', 'test_proof_1')]
-
-
-# ---------------------------------------------------------------------------
-# Ids
-# ---------------------------------------------------------------------------
-
-class TestIds:
-
-    def test_the_next_id_is_one_past_the_highest_anywhere(self, project):
-        assert purlin_ids.next_ids(project.root, 'specs/auth/login.md') == (3, 3)
-        project.spec(SPEC + '- PROOF-7 (RULE-2): Another look; verify 401\n')
-        assert purlin_ids.next_ids(project.root, 'specs/auth/login.md') == (3, 8)
-
-    def test_a_gap_is_legal_and_never_reused(self, project):
-        project.spec(
-            '# Feature: login\n\n## Rules\n\n'
-            '- RULE-1: First\n- RULE-9: Ninth\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Verify 1\n')
-        assert purlin_ids.next_ids(project.root, 'specs/auth/login.md')[0] == 10
-
-    def test_allocation_reads_the_shared_ref_when_there_is_one(self, project):
-        # With no origin, the ref is HEAD and the answer still comes.
-        assert purlin_ids.allocation_ref(project.root) == 'HEAD'
-
-    def test_a_duplicate_id_after_a_merge_is_reported(self, project):
-        project.spec(
-            '# Feature: login\n\n## Rules\n\n'
-            '- RULE-1: First\n- RULE-1: Both sides of the merge\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Verify 1\n'
-            '- PROOF-1 (RULE-1): Verify 1 again\n')
-        found = purlin_ids.duplicate_ids(project.root, 'specs/auth/login.md')
-        assert found == {'rules': {'RULE-1': 2}, 'proofs': {'PROOF-1': 2}}
-
-    def test_renumber_rewrites_the_spec_the_markers_and_the_signatures(self,
-                                                                      project):
-        _write(os.path.join(project.root, 'tests', 'test_login.py'),
-               '@pytest.mark.proof("login", "PROOF-2", "RULE-2")\n'
-               'def test_denied():\n    assert True\n')
-        project.signature('RULE-2', commit_it=False)
-        changed = purlin_ids.renumber(
-            project.root, 'specs/auth/login.md',
-            {'RULE-2': 'RULE-14', 'PROOF-2': 'PROOF-14'},
-            extra_paths=['tests/test_login.py'])
-        with open(os.path.join(project.root, 'specs', 'auth', 'login.md'),
-                  encoding='utf-8') as handle:
-            spec_text = handle.read()
-        assert 'RULE-14' in spec_text and 'RULE-2:' not in spec_text
-        with open(os.path.join(project.root, 'tests', 'test_login.py'),
-                  encoding='utf-8') as handle:
-            assert '"PROOF-14", "RULE-14"' in handle.read()
-        directory = os.path.join(project.root, 'specs', 'auth',
-                                 'login.signatures')
-        assert [n.split('.')[0] for n in os.listdir(directory)] == ['RULE-14']
-        assert any(p.endswith('tests/test_login.py') for p in changed), changed
-
-    def test_renumber_never_lets_one_id_eat_a_longer_one(self, project):
-        project.spec(
-            '# Feature: login\n\n## Rules\n\n'
-            '- RULE-1: First\n- RULE-12: Twelfth\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Verify 1\n')
-        purlin_ids.renumber(project.root, 'specs/auth/login.md',
-                            {'RULE-1': 'RULE-20'})
-        with open(os.path.join(project.root, 'specs', 'auth', 'login.md'),
-                  encoding='utf-8') as handle:
-            text = handle.read()
-        assert 'RULE-20: First' in text and 'RULE-12: Twelfth' in text, text
 
 
 # ---------------------------------------------------------------------------

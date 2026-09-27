@@ -132,11 +132,11 @@ Never a selector, never a pixel comparison. The test writes its capture under
 ## Ids
 
 Rule and proof ids are allocated against `origin/main`, not against the working tree, so two
-branches cut from the same commit do not both take RULE-9:
+branches cut from the same commit do not both take RULE-9. The next id is one past the highest
+in either copy of the spec:
 
 ```bash
-python3 -c "import sys; sys.path.insert(0, '${CLAUDE_PLUGIN_ROOT}/scripts/mcp'); \
-from purlin import ids; print(ids.next_ids('.', 'specs/auth/login.md'))"
+git show origin/main:specs/auth/login.md | grep -o 'RULE-[0-9]*' | sort -t- -k2 -n | tail -1
 ```
 
 Ids are never reused. A retired rule leaves its number vacant and every other rule keeps the
@@ -162,15 +162,10 @@ stales any signature bound to it, which is the point: a person has to look again
 
 ## After a merge conflict
 
-```bash
-purlin:spec <name> --resolve
-```
-
-Run this when `sync_status` warns that a spec carries a duplicate rule or proof id, which
-happens when two branches allocated the same number before either fetched. `--resolve` keeps
-both rules, renumbers the incoming one, and rewrites its test markers and its signature
-filenames to match. When the conflict is two different texts on the same line, it shows both
-versions, asks which survives, and says which signatures that answer stales.
+Two branches that allocated the same number before either fetched leave a spec with one id
+twice. Keep both rules, give the incoming one the next free number, and move its test markers
+and its signature filenames with it. When the conflict is two different texts on the same line,
+show both versions, ask which survives, and say which signatures that answer stales.
 
 Two branches that advanced the same anchor pin resolve to the newer sha.
 

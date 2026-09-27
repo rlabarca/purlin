@@ -188,8 +188,8 @@ Briefs are one file per rule per set of hashes, and signatures are one file per 
 of forty is forty files in one commit and none of them conflicts either. Proof files are runtime
 output under `.purlin/runtime/`, which is not committed, so two people running tests at once
 cannot disturb each other. The one thing that does collide is rule numbering: two branches can
-allocate the same `RULE-N` before either fetched, and `purlin:spec <name> --resolve` renumbers
-the incoming one and rewrites its markers and signature filenames to match.
+allocate the same `RULE-N` before either fetched, and then the incoming one takes the next free
+number and its markers and signature filenames move with it.
 
 ## When to go further
 

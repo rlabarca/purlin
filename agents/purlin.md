@@ -102,7 +102,7 @@ read what the person wants and run the command that serves it.
 | Engineer | "prove it on Windows too" | `purlin:test --remote` |
 | Engineer | "tag the release" | `purlin:sign`, which writes the tag |
 | Engineer | "where is the rule about passwords?" | `purlin:status <name>` |
-| Engineer | "this feature has the wrong name" | `purlin:rename` |
+| Engineer | "this feature has the wrong name" | the rename below, by hand |
 | QA | "what needs my eyes?" | `purlin:sign` |
 | QA | "add a case for the empty basket" | `purlin:sign`, which drafts the proof line |
 | QA | "sign these off", "this test does not prove it" | `purlin:sign`, with `--hold` for the second |
@@ -111,6 +111,17 @@ read what the person wants and run the command that serves it.
 A request that names no command still routes: "make sure nobody logs in with a blank
 password" is a rule, so it reaches `purlin:spec`, and the spec skill ends by offering the
 build.
+
+## Renaming a feature
+
+A feature's name is carried in six places, and a rename moves them together in one commit: the
+spec file `specs/<category>/<name>.md` and its `# Feature:` line; every `> Requires:` entry
+naming it, matched whole so `login` leaves `login_oauth` alone; every proof marker in test
+code, in each form `references/formats/proofs_format.md` lists under the feature-name token;
+the directory `specs/<category>/<name>.signatures/`; the directories
+`.purlin/records/<source>/<name>/` and `.purlin/briefs/<source>/<name>/`; and the test results
+`.purlin/tests/<name>.json`. Move files with `git mv`, then call `sync_status`: a reference it
+cannot resolve is one the rename missed.
 
 ## How you write
 

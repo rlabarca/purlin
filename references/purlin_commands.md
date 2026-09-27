@@ -41,7 +41,6 @@ before a signature is `trust: remote`.
 | `purlin:init` | Set a project up for Purlin, and change the gate later | An engineer, once. One question |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current | An engineer, or a PM in Claude Code |
 | `purlin:status [name]` | Show every rule's cells and what blocks the gate | Anyone with a checkout, any time; with a name, to see one spec's rules |
-| `purlin:rename <old> <new>` | Rename a feature across specs, tests, signatures and records | An engineer |
 | `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies | An engineer, once, on a codebase that predates Purlin |
 
 ## Syntax
@@ -53,7 +52,6 @@ Purlin
   Specifying
   ──────
   purlin:spec <name>              Scaffold or edit a feature spec
-  purlin:spec <name> --resolve    Reconcile rule ids after a merge conflict
   purlin:spec-from-code [dir]     Reverse-engineer specs from existing code
 
   Building
@@ -89,7 +87,6 @@ Purlin
   purlin:anchor create <name>     A local anchor
   purlin:anchor add <url> --path <file>   Pin an anchor from another repository
   purlin:anchor sync [name|--all] [--check]   Advance a pin
-  purlin:rename <old> <new>       Rename a feature everywhere
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -105,7 +102,6 @@ Purlin
 | `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case. The annotated tag `signed/<version>` when the walk closes with every rule meeting the gate, which a person pushes |
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when a proof names another operating system or the trust answer was no |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, and `designs/<anchor>/` on a sync |
-| `purlin:rename` | Specs, markers, signature directories, record directories |
 | `purlin:status`, `purlin:drift` | Nothing |
 
 ## What each command shows at each gate

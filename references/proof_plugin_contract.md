@@ -105,7 +105,7 @@ Work down the list in order: each step assumes the one above it landed.
 | 6 | `skills/init/SKILL.md` | Nothing hardcoded: the selection list is built from the reference. A framework wired by hand gains a line in the manual-setup note; one whose runner config init writes gains a row in the wiring table. |
 | 7 | `skills/test/SKILL.md` | The plugin path in the write-scoped overwrite paragraph, so the skill names the file that emits the project's evidence. |
 | 8 | `docs/running-and-records.md` | A row in the break-engine table under `## Test strength`, or a place in the sentence naming the languages with no engine, so the docs say how the framework's strength is measured. |
-| 9 | `references/formats/proofs_format.md` | A framework subsection under `## Proof Markers by Framework` (marker syntax, the runner command, the plugin path) and a row in the feature-name token table, which is what `purlin:rename` rewrites. |
+| 9 | `references/formats/proofs_format.md` | A framework subsection under `## Proof Markers by Framework` (marker syntax, the runner command, the plugin path) and a row in the feature-name token table, which is what a rename rewrites. |
 | 10 | `scripts/review/marked_tests.py` | An entry in the extension table for each of the framework's test extensions, reading the same marker the plugin reads, so the brief shows the AI audit the source of each marked test in that language. A framework whose proofs have no test body of their own, as shell's do not, has no entry. |
 
 ### What the six shipped plugins registered

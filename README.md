@@ -137,7 +137,6 @@ Every command ends by naming the next step, computed from the cells it found.
 | `purlin:init` | Set a project up for Purlin, and change the gate later |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current |
 | `purlin:status [name]` | Show every rule's cells and what blocks the gate |
-| `purlin:rename <old> <new>` | Rename a feature across specs, tests, signatures and records |
 | `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies |
 
 Plain language reaches every one of them: "run the tests" reaches `purlin:test`, and "what is

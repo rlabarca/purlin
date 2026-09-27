@@ -144,17 +144,10 @@ status line says `windows: no record yet`.
 `purlin:spec` allocates the next free rule and proof id against `origin/main`, not against the
 working tree, so two branches cut from the same commit do not both take RULE-9.
 
-When two branches allocated the same number before either fetched, `sync_status` warns that a
-spec carries a duplicate id. Then run:
-
-```
-purlin:spec <name> --resolve
-```
-
-It keeps both rules, renumbers the incoming one, and rewrites its test markers and its
-signature filenames to match. When the conflict is two different texts on the same line, it
-shows both versions, asks which survives, and says which signatures that answer stales. Two
-branches that advanced the same anchor pin resolve to the newer sha.
+When two branches allocated the same number before either fetched, the merge leaves one id
+twice. Keep both rules, give the incoming one the next free number, and move its test markers
+and its signature filenames with it. Two branches that advanced the same anchor pin resolve to
+the newer sha.
 
 ## Anchors
 

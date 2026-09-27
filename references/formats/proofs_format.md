@@ -177,8 +177,7 @@ One row per shipped framework: the subsection below that documents its marker, a
 literal in which the feature name sits, with `<feature>` standing for the name itself. This is
 the whole of what a rename has to rewrite, and it is the only place the set is written down. A
 framework missing a row here is a framework whose markers a rename walks past, leaving live tests
-pointing at a name no spec carries any more. `purlin:rename` rewrites every literal in this
-column.
+pointing at a name no spec carries any more. A rename rewrites every literal in this column.
 
 | Framework | Marker section | Feature-name token |
 |-----------|----------------|--------------------|

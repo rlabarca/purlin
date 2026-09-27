@@ -275,7 +275,7 @@ class TestProofsFormatDocumentsTheRuntimeFile:
         for framework in SHIPPED_FRAMEWORKS:
             assert '| %s |' % framework in text, (
                 '%s has no row in the feature-name token table, so '
-                'purlin:rename walks past its markers' % framework)
+                'a rename walks past its markers' % framework)
         for gone in ('phpunit', '| c |'):
             assert gone not in text, gone
 

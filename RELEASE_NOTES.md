@@ -246,6 +246,10 @@ Also gone, each without a replacement:
   behind, and `purlin:anchor sync --check` exits 1 on one.
 - `tools/`: the PM and QA skills for Claude Desktop and their packed `.skill` archives. A PM or
   QA person works in Claude Code on the repository, or through a pull request.
+- `purlin:rename`. `agents/purlin.md` says what carries a feature's name and moves together
+  in one commit.
+- `purlin:spec --resolve` and `scripts/mcp/purlin/ids.py`. Ids are still allocated against
+  `origin/main`; a duplicate after a merge is renumbered by hand.
 - `purlin:find`. `purlin:status <name>` shows one spec's rules and their cells.
 - `scripts/report/scan.py`, which printed a repository's rollup from its URL without a
   checkout. `.purlin/tests.md`, which `purlin:test` commits, is what a reader without a checkout
