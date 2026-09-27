@@ -371,6 +371,18 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     size of the queue. The `design` view goes.
 43. **Both git hosts, and Azure DevOps is fixed**: a remote run that waits for its result,
     and a check of who committed a file that does not rest on a name.
+45. **Three roles, and a brand kit cut to what is used** (added 2026-09-27). The roles are
+    PM, developer and QA; the designer is removed from every page, and
+    `docs/working-together.md` loses its section on one. `purlin:init --update` removes a
+    0.9.5 spec's Figma source and picture fingerprint lines, backs the file up first, and
+    prints one line per spec. Under `design/`, the tokens, `styles.css`, the logo files the
+    build reads and the rules page stay; `design/components/`, `design/guidelines/`,
+    `design/SKILL.md` and `design/assets/logo-closing.svg` are deleted, and the rules page
+    loses every section that names a path that does not exist. The wording rules move to a
+    page of their own under `references/`, the one home for how Purlin writes, and the rules
+    page keeps the look. Both colour themes stay. Diagrams are plain mermaid: the init block
+    and `docs/_mermaid.md` go. The docs carry three screenshots taken from the rebuilt
+    dashboard: the board, the queue, one rule.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
