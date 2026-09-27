@@ -1782,17 +1782,17 @@ class TestStatusTable:
 
     @pytest.mark.proof("states", "PROOF-67", "RULE-58", tier="integration")
     def test_the_next_step_names_the_command_this_gate_would_write_with(self):
-        """At `strong` an audit you run counts, so it is the shortest way.
+        """An audit you run counts at every gate, so it is the shortest way.
 
-        The line sent every reader to `purlin:test --remote` and told them
-        CI's was the only record that counts, which is true at `signed` and
-        not at `strong`.
+        Only `trust: remote` sends a reader to the runner, because that is
+        the one setting that asks for a `ci` run before a signature.
         """
-        for gate, named, unnamed in (('strong', 'purlin:audit',
-                                      'purlin:test --remote'),
-                                     ('signed', 'purlin:test --remote',
-                                      'purlin:audit')):
-            made = Project(gate=gate, extra_config={'signers': ['q@a.com']})
+        for gate, trust, named, unnamed in (
+                ('strong', 'local', 'purlin:audit', 'purlin:test --remote'),
+                ('signed', 'local', 'purlin:audit', 'purlin:test --remote'),
+                ('signed', 'remote', 'purlin:test --remote', 'purlin:audit')):
+            made = Project(gate=gate, extra_config={'signers': ['q@a.com'],
+                                                    'trust': trust})
             try:
                 made.record([{'id': 'PROOF-1', 'rule': 'RULE-1',
                               'status': 'pass'},
@@ -1804,8 +1804,8 @@ class TestStatusTable:
                         purlin_status.sync_status(made.root).splitlines()
                         if line.startswith('→ Next:')]
                 assert len(step) == 1, step
-                assert named in step[0], (gate, step[0])
-                assert unnamed not in step[0], (gate, step[0])
+                assert named in step[0], (gate, trust, step[0])
+                assert unnamed not in step[0], (gate, trust, step[0])
             finally:
                 made.close()
         assert purlin_board.needs_a_person(1) == '1 rule needs a person'

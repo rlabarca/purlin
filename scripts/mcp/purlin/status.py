@@ -224,6 +224,7 @@ def _directives(data, project_root):
         lines.append('%s Run: purlin:init --update' % ARROW)
 
     gate = data['gate']['gate']
+    trust = data['gate'].get('trust')
     blocked = _blocking(data)
     passed = blocked['passed']
     strong = blocked['strong']
@@ -238,8 +239,8 @@ def _directives(data, project_root):
         data.get('sign_list') or ())
 
     if blocked['spec']:
-        lines.append('%s Next: run purlin:spec. %d rules have no proof that '
-                     'clears the free checks.' % (ARROW, blocked['spec']))
+        lines.append('%s Next: run purlin:spec. %d rules have no proof line '
+                     'naming them.' % (ARROW, blocked['spec']))
     elif failing:
         lines.append('%s Next: run purlin:build. %d rules have a failing test.'
                      % (ARROW, failing))
@@ -250,20 +251,19 @@ def _directives(data, project_root):
     elif no_test:
         lines.append('%s Next: run purlin:build. %d rules have a proof and no '
                      'passing test.' % (ARROW, no_test))
-    elif waiting and gate == 'signed':
-        # A push of this branch starts nothing: CI runs on a pull request, on
-        # the protected branch and on a run branch. `--remote` is what gets a
-        # record that counts onto this branch before the merge, and under
-        # `signed` CI's is the only record that counts.
+    elif waiting and trust == 'remote':
+        # This project said it does not trust this machine for the tests a
+        # signature rests on, so the run that clears these rules is the
+        # runner's. It is the only case in which a person is sent there.
         lines.append('%s Next: run purlin:test --remote. %d rules are waiting '
-                     'for the record CI writes, which is the only one that '
-                     'counts under signed.' % (ARROW, waiting))
-    elif waiting and gate == 'strong':
-        # Either source counts here, so the shortest way to a record is the
-        # audit on this machine.
-        lines.append('%s Next: run purlin:audit. %d rules have no record to '
-                     'read, and an audit you run counts under strong.'
+                     'for a ci run, which is what this project signs on.'
                      % (ARROW, waiting))
+    elif waiting and gate != 'passed':
+        # A record either source wrote counts at every gate, so the shortest
+        # way to one is the audit on this machine.
+        lines.append('%s Next: run purlin:audit. %d rules have no record to '
+                     'read, and an audit you run counts at gate %s.'
+                     % (ARROW, waiting, gate))
     elif waiting:
         lines.append('%s Next: run purlin:test. %d rules have no run to read.'
                      % (ARROW, waiting))
