@@ -31,10 +31,13 @@ one. Nothing in the plan is left to a lane's judgment except wording.
   pass" becomes "the run wrote a pass"; "a reviewed rule" becomes what the cell says). `verify`
   as a verb stays legal. Retired by decision 23: `needs a person`, `needs_person` and
   `needs-a-person`, any casing, as a cell word, a flag, a key, a `why` token, a filter, a tile,
-  a message and in prose. The strong cell's words are `strong`, `weak`, `manual test`,
-  `manual audit` and `held`; the only surviving use of the phrase is the review list's header,
+  a message and in prose. The strong cell's words are `strong`, `weak`, `not audited`,
+  `unsettled`, `manual test` and `held`; `manual audit` is retired by decision 30. There is no
+  one review list any more: there are two lists, **Review** at `strong` and above and **Sign**
+  at `signed`, and the only surviving use of the phrase is the Review tab's header,
   `<n> rules need a person`. `audit` is legal and means the level 2 run only. `Stale` survives only
-  as `signature stale` and as the adjective. `record` and `review list` survive. The older
+  as `signature stale` and as the adjective. `record` survives, and `review list` survives only
+  where it names the pair, as `scan.py` and `purlin:sign` print it. The older
   retired words stay retired: gauge, HOLLOW, PROVABLE, receipt, platform, `@on(`, mode (in
   prose), mutation score, caught score, records branch, Pages, forge, queue, CODEOWNERS,
   approver rule.
