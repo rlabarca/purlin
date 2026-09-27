@@ -1104,9 +1104,9 @@ def _ci(project_root, args, features, selected, index, plugins, log,
         cfg):
     """The `--ci` arm: on a run branch the record CI writes and the briefs.
 
-    The record goes under `.purlin/records/ci/`, which the git host's
-    file-path rule reserves for the build identity, so the folder a reader
-    finds it in is the source it can trust. A tag run writes nothing, and at
+    The record goes under `.purlin/records/ci/`, and what makes that folder
+    worth trusting is the tag run, which checks that the runner's own
+    identity committed every file in it. A tag run writes nothing, and at
     `passed` there is no record to write at all: the committed test results
     are the evidence there, and a person writes those themselves.
     """

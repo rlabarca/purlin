@@ -13,9 +13,9 @@
 #
 # A run branch run runs the tagged tests and, at the gate strong and above,
 # writes one record per feature under .purlin/records/ci/ with the briefs
-# beside it and commits them on that branch. The build service writes them, so
-# give it Contribute on .purlin/records/ci/** and .purlin/briefs/ci/** through
-# branch security and give it nothing else. A tag run writes nothing: it runs
+# beside it and commits them on that branch. The build service writes them,
+# and nothing on the host has to be configured for that. A tag run writes
+# nothing: it runs
 # the tagged tests, checks that every committed record, brief and signature
 # still hashes to the tagged code, checks that every ci/ record and brief was
 # committed by the build service, and ends with the gate check.

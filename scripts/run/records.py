@@ -13,8 +13,9 @@ under `.purlin/records/local/` and commits it under their own identity;
 the CI job writes under `.purlin/records/ci/` and commits it through the git
 host's API. Each record carries the same word in its own `source` field, and
 `scripts/mcp/purlin/records.py` ignores a file where the two disagree. What
-keeps the ci folder honest is the git host's file-path rule on
-`.purlin/records/ci/**`, which only the build identity may write.
+keeps the ci folder honest is the tag run: it reads the commit that added
+each file under `ci/` and fails the job where the identity is not the
+runner's own.
 
 CI commits through the REST API with no author and no committer field, so
 GitHub signs the commit with its own key and reports `github-actions[bot]`

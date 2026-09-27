@@ -127,12 +127,12 @@ field:
 
 | Source | The folder | Who may write it |
 |---|---|---|
-| `ci` | `.purlin/records/ci/<feature>/` | the build identity alone, which the git host's file-path rule on `.purlin/records/ci/**` enforces |
+| `ci` | `.purlin/records/ci/<feature>/` | a remote runner, through the git host's API. A tag run reads the commit that added each file here and fails the job where the identity is not the runner's own |
 | `local` | `.purlin/records/local/<feature>/` | anyone. `purlin:audit` writes here and commits under the person's own identity |
 
 A record whose `source` field disagrees with its folder is ignored, with one
 warning naming the path. Guessing which half is right would let a file copied
-from one folder to the other claim a source no rule enforces.
+from one folder to the other claim a source nothing checked.
 
 Both sources count at every gate, `signed` included: the breaks a person ran
 are the same breaks CI would run, and what a signature locks is the evidence

@@ -38,9 +38,10 @@ The file:
 `.purlin/records/ci/` carries `"source": "ci"` and one under
 `.purlin/records/local/` carries `"source": "local"`. A file whose own field
 disagrees with its folder is ignored, with one warning naming the path: the
-two halves of one fact cannot be read apart. What keeps the folder honest is
-the git host, whose file-path rule restricts `.purlin/records/ci/**` to the
-CI identity, so only CI can put a file there.
+two halves of one fact cannot be read apart. Nothing on the git host guards
+the folder and nothing needs to: the tag run reads the commit that added each
+file under `ci/` and fails the job unless the runner's own identity made it,
+so a record a person wrote there is found and named.
 
 `ci` and `local` count at every gate, `signed` included: an audit a person
 ran measures the same breaks CI measures, and the tests it ran are the tests
@@ -161,11 +162,11 @@ DISAGREES = ('%s says its source is %s and sits under %s, so it is ignored. '
 def record_source(rel_path, data):
     """`(source, warning)` for one record: its folder, checked against the file.
 
-    The folder is the source, because the git host's file-path rule on
-    `.purlin/records/ci/**` is what keeps a person out of it. The file's own
+    The folder is the source, and what keeps a person out of `ci/` is the
+    tag run's check on the commit that added each file there. The file's own
     `source` field is the same fact written twice, so a file that disagrees
     with its folder is not read at all: guessing which half is right would
-    let a copied file claim a source no rule enforces.
+    let a copied file claim a source nothing checked.
     """
     folder = source_of_path(rel_path)
     if folder is None:

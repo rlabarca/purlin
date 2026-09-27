@@ -83,8 +83,9 @@ identity. It never pushes. A remote run writes the same files under `.purlin/rec
 
 **The folder is the source.** A record's own `source` field must say the same word as the
 folder it sits in, and a file where the two disagree is ignored with one warning naming it.
-What keeps the ci folder honest is the git host's file-path rule, which only the build identity
-may write.
+What keeps the ci folder honest is the tag run: it reads the commit that added each file under
+`ci/` and fails the job where the identity is not the runner's own. Nothing on the git host
+guards the folder.
 
 | Source | The folder | Counts under |
 |--------|------------|--------------|

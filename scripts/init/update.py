@@ -102,8 +102,8 @@ RECORDS_README = """# Records
 One file per audit run, at
 `.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`.
 A record says what ran, on which commit, what passed and the test strength. The
-folder says who wrote it: `ci/` is the CI job's, which the git host restricts to
-the build identity, and `local/` is anyone's. Both count at every gate. The git
+folder says who wrote it: `ci/` is the CI job's, which a tag run checks the
+commit behind, and `local/` is anyone's. Both count at every gate. The git
 history of these folders is the log, so adding a file never conflicts. A run
 prunes a feature's records past the newest three per operating system per
 source. You do not edit anything here by hand.
@@ -629,9 +629,9 @@ def _loose_records(root):
 
     Before this release a record went straight into
     `.purlin/records/<feature>/`, and who wrote it was read off the commit.
-    The source is the folder now, because that is what the git host's
-    file-path rule can restrict, so each file moves into `ci/` or `local/` by
-    the answer git still gives for it. `[(rel, target_rel, source)]`, sorted.
+    The source is the folder now, because that is what a tag run can check
+    the commit behind, so each file moves into `ci/` or `local/` by the
+    answer git still gives for it. `[(rel, target_rel, source)]`, sorted.
     """
     from purlin import records as records_module
 

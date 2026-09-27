@@ -72,8 +72,8 @@ EXIT_BAD_INVOCATION = 2
 CRITERIA = os.path.join('references', 'review_criteria.md')
 
 # Where an audit commits the briefs, beside the records, under the same two
-# source folders and the same branch rule. The record reader owns both names,
-# so a brief and the record it rests on can never disagree about either.
+# source folders. The record reader owns both names, so a brief and the
+# record it rests on can never disagree about either.
 BRIEFS_DIR = records_module.BRIEFS_DIR
 SOURCES = records_module.SOURCES
 
