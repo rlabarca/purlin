@@ -1,13 +1,8 @@
-"""Stress tests for the proof merge, and for the cheats it cannot catch.
+"""Stress tests for the proof merge.
 
-Two areas:
-
-1. Multi-feature, multi-tier, multi-language merges. Real plugins write the
-   files, in the order a real project would run them, and the reader the rest
-   of Purlin uses (`scripts/mcp/purlin/proofs.py`) reads them back.
-2. Deliberately crafted test patterns that look correct and prove nothing.
-   The free checks catch the structural ones; the rest are named here as
-   semantic cheats so it is written down which is which.
+Multi-feature, multi-tier, multi-language merges. Real plugins write the
+files, in the order a real project would run them, and the reader the rest of
+Purlin uses (`scripts/mcp/purlin/proofs.py`) reads them back.
 
 Every test runs real code. No hand-written proof JSON stands in for a plugin's
 output, except where an earlier run's file is being seeded on purpose.
@@ -35,7 +30,6 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'review'))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'run'))
 
 from purlin import proofs as proofs_module  # noqa: E402
-from static_checks import check_python, check_proof_file  # noqa: E402
 from purlin_run import bash_command, bash_path  # noqa: E402
 
 # The bash a shell test runs under. `bash` on PATH is the Windows
@@ -53,19 +47,6 @@ def _project(tmp_path):
     (tmp_path / 'specs' / 'a').mkdir(parents=True, exist_ok=True)
     (tmp_path / '.purlin').mkdir(parents=True, exist_ok=True)
     return tmp_path
-
-
-def _write_spec(root, feature, rules):
-    lines = ['# %s' % feature, '', '## Rules']
-    for rule_id, description in rules.items():
-        lines.append('- %s: %s' % (rule_id, description))
-    lines.extend(['', '## Proof'])
-    for rule_id in rules:
-        lines.append('- %s (%s): observe it'
-                     % (rule_id.replace('RULE', 'PROOF'), rule_id))
-    path = root / 'specs' / 'a' / ('%s.md' % feature)
-    path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    return path
 
 
 def _seed(root, feature, tier, entries):
@@ -118,7 +99,7 @@ def _read(root):
 
 
 # ===========================================================================
-# Area 1: merges
+# The merges
 # ===========================================================================
 
 class TestMultiFeatureMerge:
@@ -255,103 +236,3 @@ class TestCollisionWithAnEarlierRun:
         assert result.returncode == 0, result.stderr
         assert {e['id'] for e in _read(root)['alpha']} == {'PROOF-1'}
 
-
-# ===========================================================================
-# Area 2: cheats
-# ===========================================================================
-
-class TestTheFreeChecksCatchTheStructuralCheats:
-
-    @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1")
-    def test_an_assertion_with_a_true_branch_is_caught(self, tmp_path):
-        """`assert result > 0 or True` asserts nothing."""
-        path = tmp_path / 'test_cheat.py'
-        path.write_text(
-            'import pytest\n\n\n'
-            '@pytest.mark.proof("login", "PROOF-1", "RULE-1")\n'
-            'def test_tautological_or():\n'
-            '    result = some_function()\n'
-            '    assert result > 0 or True\n', encoding='utf-8')
-        results = check_python(str(path), 'login')
-        assert len(results) == 1
-        assert results[0]['status'] == 'fail'
-        assert results[0]['check'].startswith('assert_true')
-
-    def test_a_test_with_no_assertion_at_all_is_caught(self, tmp_path):
-        path = tmp_path / 'test_cheat.py'
-        path.write_text(
-            'import pytest\n\n\n'
-            '@pytest.mark.proof("login", "PROOF-1", "RULE-1")\n'
-            'def test_nothing():\n'
-            '    login("alice", "secret")\n', encoding='utf-8')
-        results = check_python(str(path), 'login')
-        assert len(results) == 1
-        assert results[0]['status'] == 'fail'
-
-
-class TestTheCheatsOnlyAPersonCatches:
-    """Named here so it is written down which cheats the free checks miss."""
-
-    @pytest.mark.proof("static_checks", "PROOF-2", "RULE-2")
-    def test_asserting_the_fixture_rather_than_the_code_passes(self, tmp_path):
-        """The test never calls the code it claims to prove, and it passes."""
-        path = tmp_path / 'test_fixture_cheat.py'
-        path.write_text(
-            'import pytest\n\n'
-            'EXPECTED_USERS = ["alice", "bob", "charlie"]\n\n\n'
-            '@pytest.mark.proof("user_mgmt", "PROOF-1", "RULE-1")\n'
-            'def test_list_users_returns_three():\n'
-            '    assert len(EXPECTED_USERS) == 3\n'
-            '    assert "alice" in EXPECTED_USERS\n', encoding='utf-8')
-        results = check_python(str(path), 'user_mgmt')
-        assert len(results) == 1
-        assert results[0]['status'] == 'pass', (
-            'there are real assertions, so the free checks pass it: a person '
-            'is what catches this one')
-
-    @pytest.mark.skipif(shutil.which('sqlite3') is None,
-                        reason='sqlite3 not available')
-    def test_a_sql_test_that_asserts_its_own_insert_passes(self, tmp_path):
-        root = _project(tmp_path)
-        spec = _write_spec(root, 'data_integrity', {
-            'RULE-1': 'the foreign key constraint rejects orphan rows'})
-        database = root / 'test.db'
-        subprocess.run(['sqlite3', str(database)],
-                       input='CREATE TABLE orders (id INTEGER PRIMARY KEY, '
-                             'user_id INTEGER);',
-                       capture_output=True, text=True, check=True)
-        (root / 'tests').mkdir(exist_ok=True)
-        (root / 'tests' / 'test_cheat.sql').write_text(
-            '-- @purlin data_integrity PROOF-1 RULE-1 unit\n'
-            '-- Test: foreign key constraint rejects orphan rows\n'
-            'INSERT INTO orders (user_id) VALUES (1);\n'
-            "SELECT CASE WHEN (SELECT count(*) FROM orders) = 1\n"
-            "       THEN 'PASS' ELSE 'FAIL' END;\n", encoding='utf-8')
-        subprocess.run([BASH,
-                        bash_path(os.path.join(PROOF_SCRIPTS,
-                                               'sql_purlin.sh')),
-                        'tests/test_cheat.sql', 'test.db'],
-                       capture_output=True, text=True, cwd=str(root))
-        entries = _read(root)['data_integrity']
-        assert entries[0]['status'] == 'pass', (
-            'it never exercised the constraint and it passed')
-        proof_file = root / PROOF_REL / 'data_integrity.unit.json'
-        findings = check_proof_file(str(proof_file), spec_path=str(spec))
-        assert findings == [], (
-            'the proof file is well formed; the cheat is in what the SQL '
-            'asserts, which no structural check reads')
-
-    def test_a_test_that_mocks_the_code_under_test_passes_structurally(
-            self, tmp_path):
-        path = tmp_path / 'test_mock_cheat.py'
-        path.write_text(
-            'import pytest\n'
-            'from unittest.mock import patch\n\n\n'
-            '@pytest.mark.proof("auth", "PROOF-1", "RULE-1")\n'
-            '@patch("auth.verify_password", return_value=True)\n'
-            'def test_password_verified(mock_verify):\n'
-            '    from auth import verify_password\n'
-            '    assert verify_password("x", "y") is True\n', encoding='utf-8')
-        results = check_python(str(path), 'auth')
-        assert len(results) == 1
-        assert results[0]['status'] in ('pass', 'fail')

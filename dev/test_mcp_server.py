@@ -27,7 +27,6 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 
 from purlin import board as purlin_board
 from purlin import signatures as purlin_signatures
-from purlin import checks as purlin_checks
 from purlin import drift as purlin_drift
 from purlin import frameworks as purlin_frameworks
 from purlin import gate as purlin_gate
@@ -464,50 +463,6 @@ class TestSpecParsing:
             assert purlin_specs.scan_specs(empty) == {}
         finally:
             shutil.rmtree(empty, ignore_errors=True)
-
-
-# ---------------------------------------------------------------------------
-# The hints the audit reads
-# ---------------------------------------------------------------------------
-
-class TestChecks:
-
-    def test_each_scan_has_a_case_that_raises_it(self):
-        assert purlin_checks.NO_EXPECTED_VALUE in purlin_checks.proof_hints(
-            'Call the parser and read the result')
-        assert purlin_checks.VAGUE_VERB in purlin_checks.proof_hints(
-            'Call login and verify it works correctly')
-        assert purlin_checks.MISSING_TRIGGER in purlin_checks.proof_hints(
-            'The response body is "ok"')
-        assert purlin_checks.TIER_MISMATCH in purlin_checks.proof_hints(
-            'Call login(user, pass) and verify 200', tier='e2e')
-        assert purlin_checks.COUPLING in purlin_checks.proof_hints(
-            'Call _resolve_token and verify 200')
-        assert purlin_checks.rule_hints(
-            ['POST /login with valid credentials; verify 200']) == [
-                purlin_checks.NO_NEGATIVE_CASE]
-        assert purlin_checks.rule_hints(
-            ['POST /login with valid credentials; verify 200',
-             'POST with a bad password; verify 401']) == []
-
-    def test_a_clean_proof_raises_nothing(self):
-        assert purlin_checks.proof_hints(
-            'POST /login with a bad password; verify 401 and the body '
-            '"denied"') == []
-
-    def test_every_hint_is_a_sentence_and_no_hint_is_a_name(self):
-        hints = (purlin_checks.proof_hints('The response body is "ok"')
-                 + purlin_checks.rule_hints(['verify 200']))
-        assert hints
-        for hint in hints:
-            assert hint.endswith('.') and ' ' in hint, hint
-            assert '_' not in hint, hint
-
-    def test_a_negative_case_is_read_over_every_proof_of_the_rule(self):
-        assert purlin_checks.names_a_negative_case(
-            ['POST /login; verify 200', 'POST a bad password; verify 401'])
-        assert not purlin_checks.names_a_negative_case(
-            ['POST /login; verify 200'])
 
 
 # ---------------------------------------------------------------------------

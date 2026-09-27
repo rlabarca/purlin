@@ -3,18 +3,17 @@
 
     brief.py --feature <f> [--rule RULE-N] [--ai] [--project-root DIR]
 
-The brief reports; it recommends nothing. It gathers the evidence in layers,
-cheapest first, and stops when it has enough for the rule's bar:
+The brief reports; it recommends nothing. It sets the rule, its proofs and
+the source of each test that backs them beside the evidence, in two layers,
+and stops when it has enough for the rule's bar:
 
-    passed  the hints the free scans read off the proof text and the test
-            body, and the test strength from the latest record
-    strong  plus the AI audit, which is handed those hints
+    passed  the test strength from the latest record
+    strong  plus the AI audit, which reads the rule, the proofs and the
+            test source against `references/review_criteria.md`
 
-The hints are hints. They are plain sentences, never names, and no cell
-reads one: they go into the model prompt beside the rule, the proof and the
-test body, and the audit says what it observed. A settled audit that
-observed a gap leaves the strong cell reading `weak` with that sentence as
-the reason, so the audit's judgment is what carries the hint.
+The AI audit writes what it observed in plain sentences. A settled audit
+that observed a gap leaves the strong cell reading `weak` with that sentence
+as the reason.
 
 What the brief ends with is three things and no judgment: the test strength
 beside the project minimum, the audit's observations one sentence at a time,
@@ -54,14 +53,13 @@ for _path in (_MCP_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-import static_checks                                          # noqa: E402
-from purlin import (checks,                                    # noqa: E402
-                    console as console_module,
+import marked_tests                                           # noqa: E402
+from purlin import (console as console_module,                 # noqa: E402
                     payload as payload_module,
                     records as records_module,
                     signatures as signatures_module, states)
 
-SCHEMA = 'purlin-brief/4'
+SCHEMA = 'purlin-brief/5'
 USAGE = ('Usage: brief.py --feature <f> [--rule RULE-N] [--ai] '
          '[--project-root DIR]')
 
@@ -79,9 +77,9 @@ SOURCES = records_module.SOURCES
 
 # The layers, cheapest first, and the bar each set is built for. The AI audit
 # runs on the rules whose bar is `strong` and on no other.
-LAYERS = ('proof text', 'test body', 'test strength', 'AI audit')
+LAYERS = ('test strength', 'AI audit')
 _LAYERS_BY_BAR = {
-    'passed': LAYERS[:3],
+    'passed': LAYERS[:1],
     'strong': LAYERS,
 }
 
@@ -136,12 +134,8 @@ def build_brief(project_root, payload, feature, rule, ai=False):
     min_strength = gate.get('min_strength') or 0
     feature_entry = _feature_entry(payload, feature)
 
-    texts = [proof.get('text') for proof in entry.get('proofs') or ()]
-    rule_level = checks.rule_hints(texts)
     proofs = [{'id': proof.get('id'), 'tier': proof.get('tier'),
-               'env': proof.get('env'), 'text': proof.get('text'),
-               'hints': checks.proof_hints(proof.get('text'),
-                                           proof.get('tier')) + rule_level}
+               'env': proof.get('env'), 'text': proof.get('text')}
               for proof in entry.get('proofs') or ()]
 
     brief = {
@@ -199,20 +193,13 @@ def _feature_entry(payload, feature):
 
 
 def _test_layer(project_root, feature, entry):
-    """One record per test backing the rule: its body and the hints on it."""
-    proof_ids = set()
-    for proof in entry.get('proofs') or ():
-        if proof.get('id'):
-            proof_ids.add(proof['id'])
-
+    """One record per test backing the rule, with its source."""
     seen = set()
     tests = []
     for proof in entry.get('proofs') or ():
         if proof.get('tier') == 'manual':
             tests.append({'proof': proof.get('id'), 'file': None, 'name': None,
-                          'body': None, 'manual': True,
-                          'hints': ['The evidence for a manual proof is the '
-                                    "signer's note, not a test."]})
+                          'body': None, 'manual': True})
             continue
         for test in proof.get('tests') or ():
             key = (proof.get('id'), test.get('file'), test.get('name'))
@@ -220,44 +207,21 @@ def _test_layer(project_root, feature, entry):
                 continue
             seen.add(key)
             tests.append(_one_test(project_root, feature, proof.get('id'),
-                                   test, proof_ids))
+                                   test))
     return tests
 
 
-def _one_test(project_root, feature, proof_id, test, proof_ids):
+def _one_test(project_root, feature, proof_id, test):
     path = test.get('file') or ''
     body = None
     if path:
         try:
-            body = static_checks._extract_test_code(
+            body = marked_tests.source(
                 project_root, feature, proof_id, path, test.get('name'))
         except (OSError, UnicodeDecodeError, ValueError):
             body = None
-    hints = []
-    full = os.path.join(project_root, *path.split('/')) if path else ''
-    if full and os.path.isfile(full):
-        try:
-            results = static_checks.analyze_test_file(full, feature)
-        except (OSError, UnicodeDecodeError, ValueError, SyntaxError):
-            results = []
-        results = [result for result in results
-                   if result.get('proof_id') == proof_id]
-        # Several tests may back one proof: a hint belongs to the test it was
-        # found in. A name the scans cannot place keeps every hint for the
-        # proof, so nothing found is ever hidden.
-        named = static_checks.test_name_matches(
-            test.get('name'), [result.get('test_name') for result in results])
-        for index, result in enumerate(results):
-            if named and index not in named:
-                continue
-            if result.get('status') != 'fail':
-                continue
-            reason = result.get('reason')
-            if reason and reason not in hints:
-                hints.append(reason)
     return {'proof': proof_id, 'file': path or None,
-            'name': test.get('name'), 'body': body,
-            'manual': False, 'hints': hints}
+            'name': test.get('name'), 'body': body, 'manual': False}
 
 
 def _design_layer(project_root, payload, feature, entry):
@@ -306,10 +270,9 @@ def criteria_text(project_root):
 # tell. Never a recommendation and never a grade: the brief reports, and the
 # person reading it decides.
 INSTRUCTION = (
-    'Read one rule against the criteria above and report what you see. The '
-    'lines marked `hint:` are what free scans of the text noticed; they are '
-    'hints, not findings. Judge each one against the test body below and say '
-    'what you observed. Answer in this shape and nothing else:',
+    'Read one rule against the criteria above and report what you see: '
+    'set each proof against the test body below it and say what you '
+    'observed. Answer in this shape and nothing else:',
     '',
     '    settled: yes',
     '    - <one sentence, naming the proof it concerns>',
@@ -337,14 +300,10 @@ def model_prompt(project_root, brief):
     for proof in brief.get('proofs') or ():
         parts.append('%s (@%s): %s' % (proof.get('id'), proof.get('tier'),
                                        proof.get('text')))
-        for hint in proof.get('hints') or ():
-            parts.append('  hint: %s' % hint)
     for test in brief.get('tests') or ():
         parts.append('')
         parts.append('Test for %s: %s::%s'
                      % (test.get('proof'), test.get('file'), test.get('name')))
-        for hint in test.get('hints') or ():
-            parts.append('  hint: %s' % hint)
         if test.get('body'):
             parts.append(test['body'])
     strength = brief.get('test_strength')
@@ -526,8 +485,6 @@ def render_brief(brief):
                      % (proof.get('id'), proof.get('tier'),
                         ', %s' % proof['env'] if proof.get('env') else '',
                         proof.get('text')))
-        for hint in proof.get('hints') or ():
-            lines.append('    hint: %s' % hint)
     lines.append('')
     lines.append('Test')
     if not brief.get('tests'):
@@ -538,8 +495,6 @@ def render_brief(brief):
                                            test.get('name')))
         else:
             lines.append('  %s  manual' % test.get('proof'))
-        for hint in test.get('hints') or ():
-            lines.append('    hint: %s' % hint)
         for line in (test.get('body') or '').splitlines():
             lines.append('    %s' % line)
     lines.append('')

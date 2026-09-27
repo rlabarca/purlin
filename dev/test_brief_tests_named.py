@@ -2,7 +2,7 @@
 
 A proof may be backed by more than one test, and a person signing from the
 brief reads the source shown under each test's name. These tests hold that the
-source and the findings under a name are that test's own. The throwaway project
+source under a name is that test's own. The throwaway project
 is `dev/test_signatures.py`'s, with a second test marked for the same proof.
 """
 
@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import brief as brief_module  # noqa: E402
-import static_checks  # noqa: E402
+import marked_tests  # noqa: E402
 from test_signatures import TEST_FILE, Project, write  # noqa: E402
 
 SECOND_TEST = (
@@ -28,13 +28,6 @@ SECOND_TEST = (
     'def test_a_token_comes_back():\n'
     '    token = session_for("ada", "secret")\n'
     '    assert token.startswith("tok-")\n'
-)
-
-NO_ASSERTION = (
-    '\n\n'
-    '@pytest.mark.proof("login", "PROOF-1", "RULE-1")\n'
-    'def test_a_token_comes_back():\n'
-    '    session_for("ada", "secret")\n'
 )
 
 NAMES = ('test_valid_credentials_return_200', 'test_a_token_comes_back')
@@ -84,15 +77,6 @@ class TestEachTestShowsItsOwnSource:
         assert 'token' in second, second
         assert 'def test_valid_credentials_return_200' not in second, second
 
-    @pytest.mark.proof("brief", "PROOF-39", "RULE-26", tier="integration")
-    def test_a_hint_stays_with_the_test_it_was_found_in(self, project):
-        _two_tests(project, second=NO_ASSERTION)
-        tests = _tests_by_name(project)
-        assert tests['test_a_token_comes_back']['hints'], \
-            tests['test_a_token_comes_back']
-        assert tests['test_valid_credentials_return_200']['hints'] == [], \
-            tests['test_valid_credentials_return_200']
-
     @pytest.mark.proof("brief", "PROOF-40", "RULE-26", tier="integration")
     def test_a_name_the_file_no_longer_holds_shows_no_body(self, project):
         _two_tests(project, names=NAMES + ('test_renamed_away',))
@@ -119,5 +103,5 @@ class TestANameFromARecordFindsItsSource:
             'test_gone': [],
         }
         for written, indexes in expected.items():
-            assert static_checks.test_name_matches(written, names) == indexes, \
+            assert marked_tests.name_matches(written, names) == indexes, \
                 written

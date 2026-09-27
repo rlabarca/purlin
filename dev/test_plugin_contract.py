@@ -8,8 +8,8 @@ here:
      every path it names still exists;
   2. `references/formats/proofs_format.md` documents the runtime proof file the
      plugins actually write, and says which fields it no longer carries;
-  3. every framework its per-framework table registers reaches a free-check
-     reader, so no shipped language is a hole in the quality gate.
+  3. every framework its per-framework table registers reaches the reader of
+     test source, so the AI audit sees the test in every shipped language.
 
 A checklist that has drifted from the tree is worse than none: it reads as
 authoritative and sends the next author to a file that moved.
@@ -25,8 +25,7 @@ import pytest
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'review'))
-import static_checks  # noqa: E402
-from static_checks import analyze_test_file  # noqa: E402
+import marked_tests  # noqa: E402
 
 CONTRACT = os.path.join(PROJECT_ROOT, 'references', 'proof_plugin_contract.md')
 PROOFS_FORMAT = os.path.join(
@@ -35,7 +34,7 @@ FRAMEWORKS_REF = os.path.join(
     PROJECT_ROOT, 'references', 'supported_frameworks.md')
 
 # Every file a framework has to be named in before a project can select it, a
-# run can execute it and the free checks can grade it. Each entry is a site a
+# run can execute it and the brief can show its source. Each entry is a site a
 # half-wired framework breaks.
 WIRING_SITES = (
     'scripts/proof/',
@@ -47,7 +46,7 @@ WIRING_SITES = (
     'skills/test/SKILL.md',
     'docs/running-and-records.md',
     'references/formats/proofs_format.md',
-    'scripts/review/static_checks.py',
+    'scripts/review/marked_tests.py',
 )
 
 # The seven fields a proof entry carries, and the three it no longer does.
@@ -55,7 +54,7 @@ PROOF_FIELDS = ('feature', 'id', 'rule', 'test_file', 'test_name', 'status',
                 'tier')
 
 # The six plugins Purlin ships. A framework quietly dropped from the contract's
-# per-framework table would otherwise take its checker requirement with it, so
+# per-framework table would otherwise take its reader requirement with it, so
 # the set is pinned here rather than read from the table it grades.
 SHIPPED_FRAMEWORKS = ('pytest', 'jest', 'vitest', 'shell', 'xunit', 'sql')
 
@@ -63,16 +62,15 @@ SHIPPED_FRAMEWORKS = ('pytest', 'jest', 'vitest', 'shell', 'xunit', 'sql')
 # cannot match some other fixture in the same temp project.
 FIXTURE_FEATURE = 'contractfeat'
 
-# One JS/TS body serves every extension the two JS plugins emit: the checker is
+# One JS/TS body serves every extension the two JS plugins emit: the reader is
 # the same, and the point is that each extension reaches it.
 _JS_FIXTURE = ('it("a tautology [proof:contractfeat:PROOF-1:RULE-1]", () => {\n'
                '  expect(true).toBe(true);\n'
                '});\n')
 
-# A marked, tautological test per extension: the marker is the one the
-# framework's own plugin reads, and the body is a tautology that language's
-# checker is documented to catch.
-TAUTOLOGY_FIXTURES = {
+# A marked test per extension: the marker is the one the framework's own
+# plugin reads, and the body asserts `true`, the line the reader must return.
+FIXTURES = {
     '.py': ('import pytest\n'
             '\n'
             '\n'
@@ -85,9 +83,7 @@ TAUTOLOGY_FIXTURES = {
     '.cjs': _JS_FIXTURE,
     '.ts': _JS_FIXTURE,
     '.tsx': _JS_FIXTURE,
-    # No test logic before the marker, which is what check_shell reads as a
-    # hardcoded pass. Nothing above the marker may carry `test`, `[`, `grep`,
-    # `diff` or `||`, or the checker sees an assertion that is not there.
+    # A shell proof is one line inside a script and has no body to read.
     '.sh': ('#!/bin/sh\n'
             'purlin_proof "contractfeat" "PROOF-1" "RULE-1" pass\n'),
     '.cs': ('using Xunit;\n'
@@ -102,6 +98,14 @@ TAUTOLOGY_FIXTURES = {
              '-- Test: a tautology\n'
              "SELECT CASE WHEN 1 = 1 THEN 'PASS' ELSE 'FAIL' END;\n"),
 }
+
+
+# The line each fixture's source must hold when it is read back.
+_ASSERTED = dict(
+    [('.py', 'assert True'), ('.cs', 'Assert.True(true)'),
+     ('.sql', "SELECT CASE WHEN 1 = 1")]
+    + [(ext, 'expect(true).toBe(true)')
+       for ext in ('.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx')])
 
 
 def _read(path):
@@ -307,16 +311,16 @@ class TestTheFrameworkReferenceMatchesTheDetectors:
                 'workflow cannot run: %s' % row)
 
 
-class TestEveryFrameworkHasAFreeCheckReader:
+class TestEveryFrameworkHasATestSourceReader:
 
     @pytest.mark.proof("purlin_references", "PROOF-33", "RULE-33")
-    def test_every_registered_extension_is_graded(self):
+    def test_every_registered_extension_is_read(self):
         table = framework_table()
 
         assert set(table) == set(SHIPPED_FRAMEWORKS), (
             'the per-framework table lists %s, not %s. A framework dropped '
-            'from the table takes its checker requirement with it, and this '
-            'test would then grade a language Purlin no longer claims to '
+            'from the table takes its reader requirement with it, and this '
+            'test would then read a language Purlin no longer claims to '
             'cover instead of failing'
             % (sorted(table), sorted(SHIPPED_FRAMEWORKS)))
 
@@ -325,44 +329,41 @@ class TestEveryFrameworkHasAFreeCheckReader:
             exts = _extensions(cells[2])
             assert exts, (
                 '%s: the table names no test extension, so nothing says which '
-                'files its checker has to read' % framework)
+                'files its reader has to open' % framework)
             for ext in exts:
-                assert static_checks._CHECKERS.get(ext) is not None, (
-                    '%s: %s reaches no checker, so a test in that language is '
-                    'never graded and `assert true` in it passes a gate that '
-                    'fails it in every other language' % (framework, ext))
                 listed[ext] = framework
 
-        assert set(listed) == set(TAUTOLOGY_FIXTURES), (
+        assert set(listed) == set(FIXTURES), (
             'the table registers %s with no fixture here, and this test '
             'carries fixtures for %s the table does not register: an '
-            'extension nothing drives is a checker claim nobody ran'
-            % (sorted(set(listed) - set(TAUTOLOGY_FIXTURES)),
-               sorted(set(TAUTOLOGY_FIXTURES) - set(listed))))
+            'extension nothing drives is a reader claim nobody ran'
+            % (sorted(set(listed) - set(FIXTURES)),
+               sorted(set(FIXTURES) - set(listed))))
 
         with tempfile.TemporaryDirectory() as root:
             os.makedirs(os.path.join(root, 'tests'))
             for ext in sorted(listed):
+                if ext == '.sh':
+                    continue
                 framework = listed[ext]
+                assert ext in marked_tests.EXTENSIONS, (
+                    '%s: %s reaches no reader, so the AI audit never sees a '
+                    'test in that language' % (framework, ext))
                 rel = 'tests/fixture' + ext
                 path = os.path.join(root, *rel.split('/'))
                 with open(path, 'w', encoding='utf-8') as handle:
-                    handle.write(TAUTOLOGY_FIXTURES[ext])
+                    handle.write(FIXTURES[ext])
 
-                results = analyze_test_file(path, FIXTURE_FEATURE)
-                assert len(results) == 1, (
-                    '%s %s: the checker found %d proofs in a file carrying '
-                    'one marker: %s' % (framework, ext, len(results), results))
-                assert results[0]['status'] == 'fail', (
-                    '%s %s: a marked tautology was graded %s rather than '
-                    'flagged, so the registered framework is a hole in the '
-                    'quality gate' % (framework, ext, results[0]))
-                assert results[0]['check'], (
-                    '%s %s: the flagged result names no check, so nothing '
-                    'says why it failed' % (framework, ext))
+                body = marked_tests.source(root, FIXTURE_FEATURE, 'PROOF-1',
+                                           rel)
+                assert body, (
+                    '%s %s: the reader found no source for a file carrying '
+                    'one marker' % (framework, ext))
+                assert _ASSERTED[ext] in body, (
+                    '%s %s: the source read back does not hold the asserting '
+                    'line: %r' % (framework, ext, body))
 
     @pytest.mark.proof("run_script", "PROOF-46", "RULE-37")
-    def test_shell_is_the_one_language_with_no_extractor(self):
-        assert '.sh' not in static_checks._TEST_CODE_EXTENSIONS
-        assert set(static_checks._TEST_CODE_EXTENSIONS) \
-            == set(TAUTOLOGY_FIXTURES) - {'.sh'}
+    def test_shell_is_the_one_language_with_no_reader(self):
+        assert '.sh' not in marked_tests.EXTENSIONS
+        assert set(marked_tests.EXTENSIONS) == set(FIXTURES) - {'.sh'}

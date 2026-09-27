@@ -1,24 +1,22 @@
 # Review criteria
 
 What the audit reads on one rule before a person does, and what a person reads after.
-The brief gathers it in layers, cheapest first, and stops when it has enough for the rule's
-bar: the hints free scans read off the proof text, the hints they read off the test body,
-the test strength from the latest record, then the AI audit on every rule whose bar is
-`strong`. The brief builds that model prompt from this file verbatim, so every sentence
-here is written to be read by a person and by a model.
+The brief sets the rule, its proofs and the source of each test that backs them beside two
+layers of evidence, and stops when it has enough for the rule's bar: the test strength from
+the latest record, then the AI audit on every rule whose bar is `strong`. The brief builds
+that model prompt from this file verbatim, so every sentence here is written to be read by a
+person and by a model.
 
-## The hints the audit reads
+## What the audit looks for
 
-A hint is a sentence a scan wrote, and it is not a finding. Nothing a scan reads decides a
-cell, keeps a rule at `drafted` or appears on the board: the hints go into the audit's
-prompt beside the rule, the proof and the test body, marked `hint:`, and the audit says
-what it observed. A settled audit that observed a gap leaves the strong cell reading
-`weak` with its own sentence as the reason, so the audit's judgment is what carries the
-hint. A scan cannot read a test, and a rule it flagged may be perfectly proved; that is
-why the judgment is the audit's.
+The AI audit reads each proof beside the source of the test that backs it and says what it
+observed, one sentence at a time. A settled audit that observed a gap leaves the strong cell
+reading `weak` with its own sentence as the reason. The checks below are what it looks for;
+a rule that trips one may still be proved, so each is read against the test, never on the
+proof text alone.
 
-**Read off the proof description and its tier tag**, with no test code and nothing run, so
-they apply to a spec written before any code exists:
+**In the proof description and its tier tag.** The audit checks each of these against the
+test the proof names:
 
 - The description names no literal, number, quoted string, backticked token or named
   constant, so almost any assertion would satisfy it. "Verify the parser handles the id"
@@ -26,21 +24,20 @@ they apply to a spec written before any code exists:
 - The description says "works", "correctly", "properly", "as expected" or "successfully"
   with no value beside it. A proof should read straight into a test without interpretation.
 - Nothing runs before the assertion, so the proof reads an artifact that exists whether or
-  not the code is right. Name the call, the request, the render or the grep that produces
-  what you then assert on.
+  not the code is right. A proof names the call, the request, the render or the grep that
+  produces what it then asserts on.
 - An `@e2e` proof is described as a function call. An `@e2e` proof must read as an
   observable flow: arrange, act, observe, through the real running app.
 - The description names a private symbol, a CSS selector or a source path instead of an
   observable outcome, so a refactor would break the proof without changing behaviour. A
   name that opens with an underscore after a `/`, such as `specs/_anchors/` or `/_git/`,
-  is a path segment and does not raise it.
+  is a path segment and not a private symbol.
 - No proof of the rule names a failure or an edge case. A rule that says reject, block,
   limit or expire has been proved in one direction only.
 
-**Read off the marked test body** by `scripts/review/static_checks.py`, which locates each
-marked test and reports what a reader could see without running anything:
+**In the marked test body.** The audit reads the source of each marked test and checks:
 
-- The marked test body holds no assertion at all: no `assert`, no `self.assert*`, no
+- The test body holds no assertion at all: no `assert`, no `self.assert*`, no
   `pytest.raises`, no `expect()`, no `Assert.`. It runs code and checks nothing.
 - The assertion cannot fail: `assert result is not None`, `assert len(x) >= 0`,
   `expect(true).toBe(true)`, a `SELECT 'PASS'` nothing decides.
@@ -51,7 +48,8 @@ marked test and reports what a reader could see without running anything:
 - The expected value is computed by the same function the test is proving, so a bug in that
   function is confirmed rather than caught.
 - A patch target names the very behaviour the rule describes, so the test replaces what it
-  claims to prove. Mock the network, the clock and the filesystem; never the code under test.
+  claims to prove. A test mocks the network, the clock and the filesystem, never the code
+  under test.
 
 A rule's spec status reads `ready` when a proof line names it and `drafted` when none does.
 Nothing else is read there: what a proof is worth is the audit's question, answered by a
@@ -99,9 +97,9 @@ A rule tagged `[origin: design]` is read as a pair: the pinned mock from `design
 beside the screenshot the test wrote to
 `.purlin/runtime/attachments/<feature>/<PROOF-N>.png`. The brief shows both and runs a model
 pre-compare that names what differs. Judge what a person would see: the text, the order, the
-states present. A proof for a design rule that names a selector, a class or a pixel value
-draws a hint saying so, and a new export of the mock stales the signatures of that anchor's
-rules.
+states present. A proof for a design rule that names a selector, a class or a pixel value is
+one the audit observes as coupled to the code, and a new export of the mock stales the
+signatures of that anchor's rules.
 
 ## Who is on Review, and who is on Sign
 
@@ -137,11 +135,11 @@ The brief reports. It recommends nothing, and it never names a next action. Thre
   is a different answer: it could tell, and what it saw is build work, so the cell reads
   `weak` with each observation sentence among its reasons.
 
-The hints are printed beside the proof and the test they were read off, marked `hint:`, so
-a person reading the brief sees what the audit was handed.
+The rule, each proof and the source of each test are printed above the evidence, so a person
+reading the brief sees what the audit read.
 
-A `@manual` proof has no test, so nothing is scanned off a test body and no AI audit is
-asked for. Its strong cell reads `manual test` and its brief says so.
+A `@manual` proof has no test, so there is no test body to read and no AI audit is asked
+for. Its strong cell reads `manual test` and its brief says so.
 
 What a person does with the brief is one of four things, and `purlin:sign` takes each:
 

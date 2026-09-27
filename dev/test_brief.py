@@ -9,9 +9,7 @@ reaches a service.
 What each group holds:
 
 *layers*        which layers run at which bar, cheapest first
-*findings*      the free checks on the proof text and on the test body reach
-                the brief under the names `references/review_criteria.md`
-                gives them
+*tests*         the source of each test backing a proof stands beside it
 *strength*      the test strength comes off the latest record, and reads `n/a`
                 when no engine measured one
 *model*         the prompt is the criteria file verbatim, the AI audit runs
@@ -37,7 +35,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import brief as brief_module  # noqa: E402
-from purlin import checks  # noqa: E402
+import marked_tests  # noqa: E402
 from test_signatures import (REVIEW_GATE, SIGNING_GATE, SPEC,  # noqa: E402
                              TEST_FILE,
                              Project, commit_as_ci, write)
@@ -93,14 +91,13 @@ class TestTheLayers:
     @pytest.mark.proof("brief", "PROOF-1", "RULE-1", tier="integration")
     @pytest.mark.proof("brief", "PROOF-3", "RULE-2", tier="integration")
     def test_a_passed_bar_stops_after_the_test_strength(self, proved):
-        assert build(proved, 'RULE-1')['layers'] == [
-            'proof text', 'test body', 'test strength']
+        assert build(proved, 'RULE-1')['layers'] == ['test strength']
         assert build(proved, 'RULE-2')['layers'][-1] == 'AI audit'
 
     @pytest.mark.proof("brief", "PROOF-4", "RULE-3", tier="integration")
     def test_a_strong_bar_runs_every_layer(self, proved):
         assert build(proved, 'RULE-2')['layers'] == [
-            'proof text', 'test body', 'test strength', 'AI audit']
+            'test strength', 'AI audit']
 
     @pytest.mark.proof("brief", "PROOF-2", "RULE-1", tier="integration")
     def test_a_passed_bar_asks_for_no_model(self, proved):
@@ -114,54 +111,10 @@ class TestTheLayers:
 
 
 # ---------------------------------------------------------------------------
-# The findings
+# The tests beside the rule
 # ---------------------------------------------------------------------------
 
-class TestTheHints:
-
-    @pytest.mark.proof("brief", "PROOF-6", "RULE-5", tier="integration")
-    def test_the_proof_text_hints_reach_the_brief(self):
-        made = Project(spec=SPEC.replace(
-            'POST /login with the password "secret"; verify 200 and a token '
-            '@integration',
-            'The login works correctly @integration'))
-        try:
-            made.proofs()
-            found = build(made, 'RULE-1')['proofs'][0]['hints']
-            assert checks.NO_EXPECTED_VALUE in found
-            assert checks.VAGUE_VERB in found
-            for hint in found:
-                assert '_' not in hint, hint
-        finally:
-            made.close()
-
-    @pytest.mark.proof("brief", "PROOF-37", "RULE-25", tier="integration")
-    def test_a_path_segment_is_not_a_private_symbol(self):
-        original = ('POST /login with the password "secret"; verify 200 and '
-                    'a token @integration')
-        cases = (
-            ('POST /login, then read specs/_anchors/policy.md and '
-             'https://dev.azure.com/acme/_git/policies; verify 200 '
-             '@integration', False),
-            ('Call _resolve_token and verify 200 @integration', True),
-        )
-        for text, coupled in cases:
-            made = Project(spec=SPEC.replace(original, text))
-            try:
-                made.proofs()
-                found = build(made, 'RULE-1')['proofs'][0]['hints']
-                assert (checks.COUPLING in found) is coupled, (text, found)
-            finally:
-                made.close()
-
-    @pytest.mark.proof("brief", "PROOF-7", "RULE-6", tier="integration")
-    def test_the_test_body_hints_reach_the_brief(self, proved):
-        proved.edit_test(TEST_FILE.replace(
-            'assert login("ada", "secret") == 200', 'login("ada", "secret")'))
-        test = build(proved, 'RULE-1')['tests'][0]
-        assert test['hints'], test
-        for hint in test['hints']:
-            assert ' ' in hint and '_' not in hint, hint
+class TestTheTests:
 
     @pytest.mark.proof("brief", "PROOF-8", "RULE-7", tier="integration")
     def test_the_test_body_is_shown_beside_the_rule(self, proved):
@@ -178,10 +131,8 @@ class TestTheHints:
         try:
             test = build(made, 'RULE-1')['tests'][0]
             assert test['file'] is None
+            assert test['body'] is None
             assert test['manual'] is True
-            assert test['hints'] == [
-                "The evidence for a manual proof is the signer's note, not a "
-                'test.'], test
         finally:
             made.close()
 
@@ -194,8 +145,76 @@ class TestTheHints:
             'design_hash', 'triple_hash', 'layers', 'tests', 'test_strength',
             'min_strength', 'record', 'design', 'ai_review', 'observations',
             'settled', 'generated_at'}, sorted(built)
-        assert built['schema'] == 'purlin-brief/4'
+        assert built['schema'] == 'purlin-brief/5'
         assert built['observations'] == []
+
+
+class TestTheJavaScriptReader:
+
+    @staticmethod
+    def _bodies(feature, text):
+        return {proof: body for proof, _rule, _name, body
+                in marked_tests._iter_js_proof_bodies(text, feature)}
+
+    @pytest.mark.proof("brief", "PROOF-46", "RULE-28", tier="integration")
+    def test_braces_and_apostrophes_do_not_cut_a_body(self, tmp_path):
+        text = """import { describe, it, expect } from "vitest";
+import { execSync } from "node:child_process";
+
+describe("repro", () => {
+  it("execSync options trigger early-truncation [proof:demo:PROOF-1:RULE-1]", () => {
+    const out = execSync("ls", { cwd: ".", encoding: "utf8" });
+    expect(out).toMatch(/./);
+  });
+
+  it("cd's into a sibling [proof:demo:PROOF-2:RULE-2]", () => {
+    expect(1).toBe(1);
+  });
+});
+"""
+        (tmp_path / 'tests').mkdir()
+        (tmp_path / 'tests' / 'a.test.ts').write_text(text, encoding='utf-8')
+        first = marked_tests.source(str(tmp_path), 'demo', 'PROOF-1',
+                                    'tests/a.test.ts')
+        second = marked_tests.source(str(tmp_path), 'demo', 'PROOF-2',
+                                     'tests/a.test.ts')
+        assert first is not None and second is not None, (first, second)
+        assert 'expect(out).toMatch' in first, first
+        assert 'expect(1).toBe(1)' in second, second
+
+    @pytest.mark.proof("brief", "PROOF-47", "RULE-28", tier="integration")
+    def test_regex_literals_comments_and_division_do_not_cut_a_body(self):
+        text = r"""import { it, expect } from "vitest";
+
+it("division across a line [proof:rx:PROOF-1:RULE-1]", () => {
+  const s = "a" +
+    / 2;
+  expect(s).toBe("a");
+});
+
+it("a class holding a brace, a slash and quotes [proof:rx:PROOF-2:RULE-2]", () => {
+  const re = /[}/"']+/g;
+  expect("a}/b".replace(re, "")).toBe("ab");
+});
+
+it("an escaped slash [proof:rx:PROOF-3:RULE-3]", () => {
+  const re = /\/}/;
+  expect("x/}".match(re)[0]).toBe("/}");
+});
+
+it("comments [proof:rx:PROOF-4:RULE-4]", () => {
+  // a } in a line comment
+  /* and } in a block one */
+  expect(1 + 1).toBe(2);
+});
+
+it("division [proof:rx:PROOF-5:RULE-5]", () => { const q = 4 / 2; expect(q).toBe(2); }); it("division again [proof:rx:PROOF-6:RULE-6]", () => { expect(8 / 4).toBe(2); });
+"""
+        bodies = self._bodies('rx', text)
+        assert sorted(bodies) == ['PROOF-%d' % n for n in range(1, 7)], (
+            'a misread `/` swallowed a test: %s' % sorted(bodies))
+        for proof, body in sorted(bodies.items()):
+            assert 'expect(' in body, (proof, body)
 
 
 # ---------------------------------------------------------------------------
@@ -393,7 +412,7 @@ class TestWriting:
         assert os.path.isfile(text)
         with open(os.path.join(proved.root, *path.split('/')),
                   encoding='utf-8') as handle:
-            assert json.load(handle)['schema'] == 'purlin-brief/4'
+            assert json.load(handle)['schema'] == 'purlin-brief/5'
 
     @pytest.mark.proof("brief", "PROOF-28", "RULE-19", tier="integration")
     def test_a_brief_is_found_again_only_while_the_text_stands(self, proved):
