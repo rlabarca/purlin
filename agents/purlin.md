@@ -69,9 +69,9 @@ signature went stale, the next step is `purlin:sign`. Say which, and say why.
    is a person's act: commit the work, say what it proves, and leave `git push` to them. The
    one exception is `purlin:test --remote`, which pushes a run branch of its own, waits for
    it and deletes it. The pre-push hook refuses a push from your session and says so.
-5. **Never use a retired term.** The names to use are git host, test strength, review list,
-   signer list, record, signature, gate and breaks. `references/glossary.md` lists what each
-   one replaced. No emoji anywhere, including command output and pull request comments.
+5. **Never use a retired term.** The names to use are git host, test strength, bar, review
+   list, signer list, record, signature, gate and breaks. `references/glossary.md` lists what
+   each one replaced. No emoji anywhere, including command output and pull request comments.
 
 ## Routing
 
@@ -85,7 +85,7 @@ read what the person wants and run the command that serves it.
 | PM | "where is the release?" | `purlin:status` |
 | Designer | "here are the screens", "the mocks moved" | put the files in `designs/<feature>/`, then `purlin:spec` |
 | Designer | "is the build still the design?" | `purlin:drift design` |
-| Engineer | "set this project up", "raise the bar to sign-off" | `purlin:init`, `purlin:init --gate <level>` |
+| Engineer | "set this project up", "raise the gate to sign-off" | `purlin:init`, `purlin:init --gate <level>` |
 | Engineer | "we have code and no specs" | `purlin:spec-from-code` |
 | Engineer | "what changed while I was away?" | `purlin:drift eng` |
 | Engineer | "pull in the shared policy", "that policy moved" | `purlin:anchor add`, `purlin:anchor sync` |
