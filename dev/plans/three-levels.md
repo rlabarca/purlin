@@ -392,6 +392,13 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     `audit_parallel` calls at once, default four (35); drift measures from the last git
     action that brought changes in (42). `dev/plans/stale-inventory.md` is the list the
     final sweep works from.
+47. **Two machines** (added 2026-09-27). This machine takes 0.10.0 as far as it can: every
+    piece of decisions 35 to 46, the Azure DevOps work up to what can be tested without an
+    Azure project, the docs, the diagrams, the slides and the statement of what differs from
+    0.9.5. The owner reviews those. The work is then pushed as a branch. The owner's work
+    machine, which has Azure DevOps access, checks the branch out, runs the live Azure
+    checks, audits, signs, tags and releases. Nothing is signed or tagged here, and `main`
+    is not pushed from here.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
