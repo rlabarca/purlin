@@ -237,7 +237,14 @@ def _passed_cell(inp, cfg):
     proofs = [proof for proof in written
               if (proof.get('tier') or '') != 'manual']
     records = inp.get('records') or {}
-    local_status = inp.get('local_status') or {}
+    # This checkout's own run is the `local` source, and a source the gate
+    # does not read is not evidence: at `signed` it neither answers for a
+    # platform nor names a failure, because the run on the protected branch
+    # is what a signature attaches to. It is still read out at the end of
+    # this function, where the cell says which run it found and why that run
+    # does not count.
+    local_counts = counts_under_gate(gate, 'local')
+    local_status = (inp.get('local_status') or {}) if local_counts else {}
     cell = {'word': 'no test', 'source': None, 'current': False,
             'counts': False, 'missing_env': [], 'platforms': {},
             'reasons': []}
@@ -246,7 +253,7 @@ def _passed_cell(inp, cfg):
         cell.update({'word': 'passed', 'current': True, 'counts': True})
         return cell
 
-    platforms = _platforms(inp, proofs)
+    platforms = _platforms(inp, proofs, local_counts)
     cell['platforms'] = platforms
     words = [entry['word'] for entry in platforms.values()]
     if 'passed' in words and any(word != 'passed' for word in words):
@@ -309,10 +316,10 @@ def _passed_cell(inp, cfg):
                                % (source, gate)]
             return cell
 
-    if proofs and _local_passes(proofs, local_status):
+    if proofs and _local_passes(proofs, inp.get('local_status') or {}):
         cell['source'] = 'local'
         cell['current'] = True
-        if counts_under_gate(gate, 'local'):
+        if local_counts:
             cell['word'] = 'passed'
             cell['counts'] = True
         else:
@@ -341,7 +348,7 @@ def platform_of(record):
         (record or {}).get('environment') or {}).get('os')
 
 
-def _platforms(inp, proofs):
+def _platforms(inp, proofs, local_counts=True):
     """`{os: {word, source, at}}` over every platform a counting run covered.
 
     A record names the operating system it ran on, and so do the test results
@@ -350,6 +357,11 @@ def _platforms(inp, proofs):
     is tagged for with `@env` and nothing ran on gets an entry too, reading
     `not run` with no source, so the map lists every platform the rule is
     owed an answer from.
+
+    `local_counts` is false where the gate does not read this checkout's own
+    run, and then that run answers for no platform: at `signed` a person's
+    macOS run is a preview, and letting it stand as the macOS answer would
+    have a colleague's laptop decide whether a rule is `partial`.
     """
     candidates = []
     for record in (inp.get('records') or {}).values():
@@ -359,7 +371,7 @@ def _platforms(inp, proofs):
         candidates.append((name, record.get('timestamp'),
                            record.get('source') or record.get('label'),
                            _word_from_record(proofs, record, name)))
-    local_os = inp.get('local_os')
+    local_os = inp.get('local_os') if local_counts else None
     if local_os and (inp.get('local_status') or {}):
         candidates.append((local_os, inp.get('local_at'), 'local',
                            _word_from_statuses(

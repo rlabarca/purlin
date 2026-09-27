@@ -1382,6 +1382,42 @@ class TestThePlatformsInThePassedCell:
         finally:
             made.close()
 
+    @pytest.mark.proof("states", "PROOF-66", "RULE-57")
+    def test_a_source_the_gate_does_not_read_answers_for_no_platform(self):
+        """At `signed` a person's own run is a preview, not a platform.
+
+        With it counted, a colleague's red macOS laptop made the rule read
+        `partial` and blocked the gate on evidence the gate does not read.
+        """
+        def cells(gate, local_status, records):
+            return purlin_states.rule_cells({
+                'proofs': [{'id': 'PROOF-1', 'tier': 'unit', 'env': None,
+                            'text': 'x', 'findings': [],
+                            'tests': [{'file': 'tests/t.py',
+                                       'name': 'test_x'}]}],
+                'local_status': local_status, 'local_os': 'macos',
+                'local_at': '2026-09-26T12:00:00Z',
+                'records': records, 'head': 'abc1234', 'bar': 'passed',
+            }, purlin_gate.resolve_gate({'gate': gate}))['cells']['passed']
+
+        linux = {'linux': {'source': 'ci', 'os': 'linux',
+                           'timestamp': '2026-09-25T12:00:00Z',
+                           'commit': 'abc1234',
+                           'proofs': [{'id': 'PROOF-1', 'status': 'pass'}]}}
+        at_strong = cells('strong', {'PROOF-1': 'fail'}, linux)
+        assert at_strong['word'] == 'partial', at_strong
+        assert sorted(at_strong['platforms']) == ['linux', 'macos'], at_strong
+
+        at_signed = cells('signed', {'PROOF-1': 'fail'}, linux)
+        assert at_signed['word'] == 'passed', at_signed
+        assert sorted(at_signed['platforms']) == ['linux'], at_signed
+
+        alone = cells('signed', {'PROOF-1': 'pass'}, {})
+        assert alone['word'] == 'not run', alone
+        assert alone['counts'] is False, alone
+        assert alone['reasons'] == [
+            'local run does not count under signed'], alone
+
     @pytest.mark.proof("states", "PROOF-55", "RULE-46")
     def test_with_no_record_at_all_the_strong_cell_says_no_audit_has_run(self):
         cfg = purlin_gate.resolve_gate({'gate': 'strong'})
