@@ -732,6 +732,53 @@ class TestTheGateScales:
         assert len(at_strong.signatures()) == 1
 
 
+def unsettled_at_strong():
+    """A project at `strong` whose `[bar: strong]` rule is on the Review list."""
+    made = Project(gate=REVIEW_GATE)
+    made.proofs()
+    made.record()
+    made.brief('RULE-2', settled=False)
+    git(made.root, 'add', '-A')
+    git(made.root, 'commit', '-q', '-m', 'purlin: record for abc1234')
+    signing_key(made.root)
+    return made
+
+
+class TestTheReviewListAtStrong:
+
+    @pytest.mark.proof("signatures", "PROOF-70", "RULE-12", tier="integration")
+    def test_a_batch_and_a_bare_feature_sign_the_review_list(self, capsys):
+        for argv in (['--batch'], ['login']):
+            made = unsettled_at_strong()
+            try:
+                assert [row['rule'] for row in made.payload()['review_list']] \
+                    == ['RULE-2']
+                code = sign_module.main(argv + ['--project-root', made.root])
+                output = capsys.readouterr().out
+                assert code == 0, (argv, output)
+                assert 'Signed 1 rule in' in output, output
+                names = made.signatures()
+                assert len(names) == 1 and names[0].startswith('RULE-2.'), (
+                    argv, names)
+                assert 'required only' not in output, output
+            finally:
+                made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-71", "RULE-15", tier="integration")
+    def test_a_named_rule_on_the_review_list_is_not_told_it_needs_none(
+            self, capsys):
+        made = unsettled_at_strong()
+        try:
+            code = sign_module.main(['login', 'RULE-2', '--project-root',
+                                     made.root])
+            output = capsys.readouterr().out
+            assert code == 0, output
+            assert len(made.signatures()) == 1
+            assert 'required only under the gate signed' not in output, output
+        finally:
+            made.close()
+
+
 # ---------------------------------------------------------------------------
 # What a person may sign now
 # ---------------------------------------------------------------------------
@@ -769,6 +816,8 @@ class TestWhatIsSignable:
             assert [row['rule'] for row in payload['review_list']] == [
                 'RULE-2'], payload['review_list']
             assert payload['sign_list'] == []
+            assert sign_module.signable(payload) == [('login', 'RULE-2')], (
+                'a rule on the review list is what a batch signs first')
         finally:
             made.close()
 

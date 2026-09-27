@@ -25,6 +25,11 @@ the spec), hold the rule, or skip it. The walk writes nothing until it
 closes, and then it makes one signed commit for the signatures and one per
 feature for the holds.
 
+A bare feature signs every rule of that feature on the lists, and `--batch`
+every rule of the project, in one signed commit and with no stop: at the
+gate `strong` that is the Review list, and at `signed` the Review list and
+then the Sign list, the order the walk reads them in.
+
 **The tag is the marker of proven code.** When the walk closes and every rule
 meets the gate, it writes the annotated tag `signed/<version>`, where the
 version is the `VERSION` file at the project root or the one in
@@ -276,28 +281,38 @@ def _write_json(path, body):
 # ---------------------------------------------------------------------------
 
 def signable(payload, feature=None, rules=None):
-    """Every `(feature, rule)` on the sign list, in the order it reads.
+    """Every `(feature, rule)` a bare feature or `--batch` signs, in order.
 
-    The payload works out which rules are signable, so this reads the list it
-    wrote rather than asking the question again: a rule is there when it has
-    cleared its bar, needs a signature and has no counting one. Everything
-    else is build work and stays on the board.
+    The payload works out both lists, so this reads what it wrote rather
+    than asking the question again. At the gate `strong` that is the Review
+    list: the rules reading `manual test`, `unsettled` or `held`, which a
+    signature clears. At `signed` it is the Review list and then the Sign
+    list, the order the walk reads them in; the Sign list holds the rules
+    that have cleared their bar, need a signature and have no counting one.
+    Everything else is build work and stays on the board.
     """
+    payload = payload or {}
+    gate = (payload.get('gate') or {}).get('gate')
+    rows = list(payload.get('review_list') or ())
+    if gate == gate_module.GATES[-1]:
+        rows += list(payload.get('sign_list') or ())
     found = []
-    for row in (payload or {}).get('sign_list') or ():
+    for row in rows:
         name, rule = row.get('owner'), row.get('rule')
         if feature and name != feature:
             continue
         if rules and rule not in rules:
             continue
-        if name and rule:
+        if name and rule and (name, rule) not in found:
             found.append((name, rule))
     return found
 
 
-def _needs_a_signature(entry):
-    """True when one rule entry is signable, read off the payload's own field."""
-    return bool((entry or {}).get('signable'))
+def on_review(payload, targets):
+    """The targets the Review list holds, which a signature clears at `strong`."""
+    review = {(row.get('owner'), row.get('rule'))
+              for row in (payload or {}).get('review_list') or ()}
+    return [pair for pair in targets or () if pair in review]
 
 
 def _rule_number(rule_id):
@@ -851,9 +866,9 @@ def main(argv=None):
                    if rule_entry(payload, args.feature, rule) is not None]
     else:
         targets = signable(payload, args.feature, None)
-    if gate == 'strong' and any(
-            not _needs_a_signature(rule_entry(payload, name, rule))
-            for name, rule in targets):
+    # A rule on the Review list is what a signature clears at `strong`, so
+    # only a named rule off that list is told it needs none.
+    if gate == 'strong' and len(on_review(payload, targets)) < len(targets):
         print('sign: a signature is required only under the gate signed. '
               'Writing it anyway.')
     targets = _allowed(payload, targets)
