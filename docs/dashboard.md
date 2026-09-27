@@ -41,11 +41,12 @@ The Board is where every rule stands. Its headline is two lines:
 
 ```
 3 of 5 rules pass their tests · 0 failing · 0 partial · 2 untested
-3 of 5 meet the gate passed
+3 of 5 rules meet the gate passed.
 ```
 
 The first line is what the board is mainly about: whether the rules pass their tests. The
-second names the gate. A rule meets the gate when every cell up to the gate's level is met. The
+second names the gate, in the sentence `purlin:status` opens its own summary on, so the board
+and the table lead with the same words. A rule meets the gate when every cell up to the gate's level is met. The
 gate decides how many cells a rule has, so it also decides how much of this page exists.
 
 ![The Board at the passed gate: the Untested, Failing, Partial and Passing tiles, and two specs with their rules, proofs and tests](images/dashboard-solo.png)
@@ -60,7 +61,7 @@ count their own bucket alone. The columns are `Spec`, `Rules`, `Proofs` and `Tes
 |---|---|---|
 | `Spec` | the feature name, under the band that names its category | the spec's path |
 | `Rules` | how many rules the spec holds | — |
-| `Proofs` | `24 · 3 without a test`, how many proof lines the spec holds and how many of them no tagged test runs, the second count in the warn tone | which proofs those are |
+| `Proofs` | `24 · 3 without a test`, how many proof lines the spec holds and how many of them no tagged test runs, the second count in the warn tone. A `@manual` proof declares that no test is written for it, so it counts as no gap | which proofs those are |
 | `Tests` | `21 of 24 · 1 partial · 2 failing`, how many rules passed everywhere they ran, then the two words that say they did not | one line per operating system a counting run covered, newest first: `linux · ci · 9 days old · 22 passed · 1 failed · 1 not run` |
 
 Every count names the word it counts beside the number. The first part is always drawn, so a

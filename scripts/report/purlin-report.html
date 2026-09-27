@@ -399,7 +399,7 @@ function statStrip() {
     + '<div class="tiles">' + tiles + '</div>' + flag + '</div>';
 }
 function tileHover(bucket, project) {
-  if (bucket === 'passing') { return platformLines(project); }
+  if (bucket === 'passed') { return platformLines(project); }
   if (bucket === 'strong') { return auditLines(project); }
   return bucket === 'signed' ? signerLines(project) : [TILE_HOVER[bucket]];
 }
@@ -417,14 +417,12 @@ function boardColumns() {
   return columns;
 }
 function proofsCell(feature) {
-  var total = 0;
-  ownRules(feature).forEach(function (r) { total += (r.proofs || []).length; });
-  var without = (feature.rollup || {}).proofs_without_test || {};
-  var ids = without.ids || [];
-  return '<span' + hover([ids.length ? 'no tagged test \u00b7 ' + ids.join(', ')
+  var rollup = feature.rollup || {};
+  var ids = rollup.proofs_without_test_ids || [];
+  return '<span' + hover([ids.length ? 'no tagged test' + DOT + ids.join(', ')
       : 'every proof has a tagged test']) + '>'
-    + counts([[total, '', ''],
-      [without.count || 0, WORDS.without_test, 'warn']]) + '</span>';
+    + counts([[rollup.proofs || 0, '', ''],
+      [rollup.proofs_without_test || 0, WORDS.without_test, 'warn']]) + '</span>';
 }
 function testsCell(feature) {
   var found = {};
@@ -448,7 +446,7 @@ function strongCell(feature) {
     ? feature.test_strength : rollup.test_strength;
   return '<span' + hover(auditLines(feature)) + '>'
     + counts([share(reached(rollup, 'strong'), rollup.rules || 0),
-      [value == null ? 'n/a' : Math.round(value) + '%', '',
+      [value == null ? 'n/a' : Math.floor(value) + '%', '',
         value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
     + '</span>';
 }
@@ -490,7 +488,7 @@ function groupBand(name, features, columns) {
   var passing = 0;
   var total = 0;
   features.forEach(function (feature) {
-    passing += reached(feature.rollup || {}, 'passing');
+    passing += reached(feature.rollup || {}, 'passed');
     total += (feature.rollup || {}).rules || 0;
   });
   return '<div class="group" data-act="group" data-group="' + esc(name) + '">'
@@ -519,15 +517,13 @@ function renderBoard() {
   var summary = DATA.summary || {};
   var floor = columns.reduce(function (sum, c) { return sum + c.floor; }, 0);
   var head = '<section class="ledger"><h1 class="line"><b>'
-    + reached(summary, 'passing') + '</b> of <b>' + (summary.rules || 0)
+    + reached(summary, 'passed') + '</b> of <b>' + (summary.rules || 0)
     + '</b> rules pass their tests<span class="sep">·</span><b>'
     + (summary.failing || 0) + '</b> failing<span class="sep">·</span><b>'
     + (summary.partial || 0) + '</b> partial<span class="sep">·</span><b>'
     + (summary.untested || 0) + '</b> untested</h1>'
-    + '<p class="line"><span class="mono">' + (summary.met || 0)
-    + '</span> of <span class="mono">' + (summary.rules || 0)
-    + '</span> meet the gate <span class="mono">' + esc(gateName())
-    + '</span></p></section><section>' + statStrip() + '</section>';
+    + '<p class="line">' + headline(summary, gateName())
+    + '</p></section><section>' + statStrip() + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
         return 'minmax(' + c.floor + 'px,' + c.width + ')';
@@ -827,14 +823,15 @@ var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
 var SCHEMA = 6;
 var REFRESH_AFTER = 60;
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
-var BUCKETS = ['untested', 'failing', 'partial', 'passing', 'strong', 'signed'];
+var BUCKETS = ['untested', 'failing', 'partial', 'passed', 'strong', 'signed'];
 var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
-  partial: 'Partial', passing: 'Passing', strong: 'Strong', signed: 'Signed'};
+  partial: 'Partial', passed: 'Passing', strong: 'Strong', signed: 'Signed'};
 var TILE_HOVER = {
   untested: 'No test, no current run, or a spec line still drafted.',
   failing: 'Every platform that ran the tests found a failure.',
   partial: 'Passed on one platform, failed or did not run on another.'};
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
+var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
              failing: 'failing', stale: 'stale', passed: 'passed',
              failed: 'failed', not_run: 'not run'};
@@ -893,14 +890,20 @@ function bucketTone(bucket) {
   if (bucket === 'untested') { return 'idle'; }
   if (bucket === 'failing') { return 'fail'; }
   if (bucket === 'partial') { return 'warn'; }
-  return (bucket === 'passing' ? 'passed' : bucket) === gateName() ? 'pass' : 'warn';
+  return bucket === gateName() ? 'pass' : 'warn';
 }
 function reached(counted, name) {
-  var from = GATE_LEVELS.indexOf(name === 'passing' ? 'passed' : name);
+  var from = GATE_LEVELS.indexOf(name);
   return from < 0 ? counted[name] || 0
     : GATE_LEVELS.slice(from).reduce(function (sum, key) {
       return sum + (counted[key] || 0);
     }, 0);
+}
+function headline(summary, gate) {
+  return '<span class="mono">' + (summary.met || 0)
+    + '</span> of <span class="mono">' + (summary.rules || 0)
+    + '</span> rules meet the gate <span class="mono">' + esc(gate)
+    + '</span>.';
 }
 function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
@@ -968,12 +971,12 @@ function platformLines(feature) {
         [WORDS.passed, WORDS.failed, WORDS.not_run].filter(function (word) {
           return found.words[word];
         }).map(function (word) { return found.words[word] + ' ' + word; }))
-        .join(' \u00b7 ');
+        .join(DOT);
     });
 }
 function auditLines(feature) {
   var record = (feature.rollup || {}).latest_record;
-  return [record ? 'audit \u00b7 ' + (record.label || 'local') + ' \u00b7 '
+  return [record ? 'audit' + DOT + (record.label || 'local') + DOT
       + ageText(record.timestamp).text
     : 'No audit has written a record here.',
     'minimum strength ' + minStrength() + '%'];
@@ -989,7 +992,7 @@ function signerLines(feature) {
     if (!byWho[cell.signer]) { byWho[cell.signer] = ''; names.push(cell.signer); }
     if (newer(cell.at, byWho[cell.signer])) { byWho[cell.signer] = cell.at; }
   });
-  var out = names.sort().map(function (who) { return who + ' \u00b7 ' + when(byWho[who]); });
+  var out = names.sort().map(function (who) { return who + DOT + when(byWho[who]); });
   if (!out.length) { out.push('Nobody has signed a rule here.'); }
   if (stale) { out.push(stale + ' ' + WORDS.stale); }
   return out;
@@ -997,7 +1000,7 @@ function signerLines(feature) {
 function recordLine(feature) {
   var record = (feature.rollup || {}).latest_record || feature.latest_record;
   if (!record) { return '<span class="mono muted">\u2014</span>'; }
-  return hostLink(record.path, (record.label || 'local') + ' \u00b7 '
+  return hostLink(record.path, (record.label || 'local') + DOT
     + ageText(record.timestamp).text);
 }
 function hostLink(path, text) {

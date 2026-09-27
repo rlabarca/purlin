@@ -74,11 +74,10 @@ LEVELS = ('passed', 'strong', 'signed')
 
 def reached(counted, name):
     """How many rules a payload's counts put at this level or above it."""
-    key = 'passed' if name == 'passing' else name
-    if key not in LEVELS:
+    if name not in LEVELS:
         return counted.get(name, 0)
     return sum(counted.get(above, 0)
-               for above in LEVELS[LEVELS.index(key):])
+               for above in LEVELS[LEVELS.index(name):])
 
 
 @pytest.fixture(scope='module')
@@ -274,11 +273,13 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
     page = open_board(browser, tmp_path, payload)
     heading = page.inner_text('h1')
     assert '%d of %d rules pass their tests' % (
-        reached(summary, 'passing'), summary['rules']) in heading
+        reached(summary, 'passed'), summary['rules']) in heading
     assert '%d failing' % summary['failing'] in heading
     assert '%d partial' % summary['partial'] in heading
     assert '%d untested' % summary['untested'] in heading
-    assert '%d of %d meet the gate %s' % (
+    # The second line is `board.headline`, which the status table's summary
+    # opens on: the same sentence, down to the full stop.
+    assert '%d of %d rules meet the gate %s.' % (
         summary['met'], summary['rules'],
         payload['gate']['gate']) in page.inner_text('.ledger')
     assert len(page.query_selector_all('.tile')) == TILES[process]
@@ -338,9 +339,15 @@ def test_the_rule_screen_says_what_each_platform_found(browser, tmp_path):
     last = page.inner_text('.kv').splitlines()
     assert any(line.startswith('ci \u00b7 ') and 'old' in line for line in last)
 
+    # The boxes come from the rule's own passed cell: invoice ran on a
+    # different pair of systems, and its manual rule ran on none.
     page.click('[data-act="close"]')
-    page.click('.rule[data-rule="RULE-1"]')
-    assert [b['os'] for b in page.evaluate(PLATFORM_BOXES)] == ['lin']
+    page.click('[data-act="feature"][data-feature="invoice"]')
+    page.click('.rule[data-feature="invoice"][data-rule="RULE-1"]')
+    assert [b['os'] for b in page.evaluate(PLATFORM_BOXES)] == ['lin', 'mac']
+    page.click('[data-act="close"]')
+    page.click('.rule[data-feature="invoice"][data-rule="RULE-3"]')
+    assert page.evaluate(PLATFORM_BOXES) == []
     page.close()
 
 
@@ -391,7 +398,7 @@ def test_the_board_sits_on_the_brand_navy(browser, tmp_path, page_text):
     page.close()
 
 
-BUCKETS = ('untested', 'failing', 'partial', 'passing', 'strong',
+BUCKETS = ('untested', 'failing', 'partial', 'passed', 'strong',
            'signed')
 
 
@@ -459,13 +466,23 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     # A rule behind changed code passed nothing and failed nothing, so the
     # share alone reads it and the `Untested` tile counts it.
     assert cells['export']['Tests'] == '0 of 1'
-    assert cells['login']['Proofs'] == '4'
-    assert cells['invoice']['Proofs'] == '3 \u00b7 1 without a test'
+    assert cells['login']['Proofs'] == '5'
+    # invoice's third proof is `@manual`, which declares that no test is
+    # written for it, so the rollup counts no gap and the cell reads the
+    # total alone.
+    assert cells['invoice']['Proofs'] == '3'
     assert cells['login']['Strong'] == '2 of 4 \u00b7 86%'
     assert cells['checkout_design']['Strong'] == '0 of 1 \u00b7 90%'
     assert cells['login']['Signed'] == '1 of 4'
     assert cells['invoice']['Signed'] == '0 of 3'
     page.close()
+
+    # The team board is where a proof has no test at all, and the cell names
+    # the gap in the warn tone beside the total.
+    team = open_board(browser, tmp_path / 'team', payload_named('team'))
+    assert count_cells(team)['invoice']['Proofs'] == (
+        '2 \u00b7 1 without a test')
+    team.close()
 
 
 @pytest.mark.proof("purlin_report", "PROOF-44", "RULE-37", tier="e2e")
@@ -475,24 +492,33 @@ def test_every_cell_of_a_spec_row_carries_its_hover(browser, tmp_path):
     rows = hovers(page)
     assert rows['login']['Spec'] == 'specs/auth/login.md'
     assert rows['login']['Proofs'] == 'every proof has a tagged test'
-    assert rows['invoice']['Proofs'] == 'no tagged test \u00b7 PROOF-4'
+    assert rows['invoice']['Proofs'] == 'every proof has a tagged test'
 
+    # Newest run first: windows ran after linux, and one of its four rules
+    # failed there.
     tests = rows['login']['Tests'].split('\n')
     assert len(tests) == 2, tests
-    assert tests[0].startswith('linux \u00b7 ci \u00b7 ')
-    assert tests[0].endswith('\u00b7 4 passed')
-    assert tests[1].startswith('windows \u00b7 ci \u00b7 ')
-    assert tests[1].endswith('\u00b7 1 failed')
+    assert tests[0].startswith('windows \u00b7 ci \u00b7 ')
+    assert tests[0].endswith('\u00b7 3 passed \u00b7 1 failed')
+    assert tests[1].startswith('linux \u00b7 ci \u00b7 ')
+    assert tests[1].endswith('\u00b7 4 passed')
 
     strong = rows['login']['Strong'].split('\n')
     assert strong[0].startswith('audit \u00b7 ci \u00b7 ')
     assert strong[1] == 'minimum strength 80%'
 
     assert rows['login']['Signed'].split('\n') == [
-        'jane@acme.com \u00b7 2026-09-11', 'sam@acme.com \u00b7 2026-09-05',
+        'jane@acme.com \u00b7 2026-09-12', 'sam@acme.com \u00b7 2026-09-08',
         '1 stale']
     assert rows['invoice']['Signed'] == 'Nobody has signed a rule here.'
     page.close()
+
+    # The gap the regulated board has nowhere: the team board's invoice
+    # writes a proof no tagged test runs, and the hover names it.
+    team = open_board(browser, tmp_path / 'team', payload_named('team'))
+    assert hovers(team)['invoice']['Proofs'] == (
+        'no tagged test \u00b7 PROOF-2')
+    team.close()
 
 
 @pytest.mark.proof("purlin_report", "PROOF-45", "RULE-37", tier="e2e")
@@ -504,9 +530,9 @@ def test_every_tile_carries_its_hover(browser, tmp_path):
     assert len(titles) == 6
     for title in titles[:3]:
         assert '\n' not in title and title.endswith('.'), title
-    assert titles[3].split('\n')[0].startswith('linux \u00b7 ci \u00b7 ')
+    assert titles[3].split('\n')[0].startswith('windows \u00b7 ci \u00b7 ')
     assert titles[4].split('\n')[0].startswith('audit \u00b7 ci \u00b7 ')
-    assert titles[5].split('\n')[0] == 'jane@acme.com \u00b7 2026-09-11'
+    assert titles[5].split('\n')[0] == 'jane@acme.com \u00b7 2026-09-12'
     page.close()
 
 
@@ -639,7 +665,7 @@ def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
     assert 'PASSED' in body and 'STRONG' in body and 'SIGNED' in body
     # The signer is named once: the cell's own `by <signer>` reason would
     # have said it again beside the date.
-    assert 'SIGNED jane@acme.com \u00b7 2026-09-11' in page.eval_on_selector_all(
+    assert 'SIGNED jane@acme.com \u00b7 2026-09-12' in page.eval_on_selector_all(
         '.kv dd', r'els => els.map(e => e.innerText.trim().replace(/\s+/g, " "))')
     assert 'Test strength 86%, against a minimum of 80%.' in body
     assert 'The model review settled the question.' in body

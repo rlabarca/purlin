@@ -26,10 +26,13 @@ var GATE_LEVELS = ['passed', 'strong', 'signed'];
    the rules that are not passing on every platform they ran on. The three
    above them are cumulative, not exclusive: a signed rule is still passing
    and still strong, so it is counted in all three. `stale` and `held` are
-   flags counted beside the tiles, never instead of one. */
-var BUCKETS = ['untested', 'failing', 'partial', 'passing', 'strong', 'signed'];
+   flags counted beside the tiles, never instead of one. The keys and the
+   labels are `board.BUCKET_LABELS`: the bucket `passed` reads `Passing` on a
+   tile, because the tile counts rules whose tests pass now rather than a
+   state they were once put in. */
+var BUCKETS = ['untested', 'failing', 'partial', 'passed', 'strong', 'signed'];
 var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
-  partial: 'Partial', passing: 'Passing', strong: 'Strong', signed: 'Signed'};
+  partial: 'Partial', passed: 'Passing', strong: 'Strong', signed: 'Signed'};
 
 /* What the three tiles that are not a level count, for their hovers. The
    three above them carry the project's own platform, audit and signer lines
@@ -40,9 +43,15 @@ var TILE_HOVER = {
   partial: 'Passed on one platform, failed or did not run on another.'};
 
 /* The board's six column headings and the words its cells append, in one
-   place. `purlin:status` prints the same table, so a word changed here is
-   changed in `scripts/mcp/purlin/status.py` in the same commit. */
+   place. `scripts/mcp/purlin/board.py` renders the same six columns for
+   `purlin:status`, the pull request comment and `scan.py`, so these are its
+   `COLUMNS` and its cell words: a string changed there is changed here in
+   the same commit. */
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
+
+/* The one separator every cell, hover and line puts between two parts, which
+   is `board.DOT`. */
+var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
              failing: 'failing', stale: 'stale', passed: 'passed',
              failed: 'failed', not_run: 'not run'};
@@ -125,7 +134,7 @@ function bucketTone(bucket) {
   if (bucket === 'untested') { return 'idle'; }
   if (bucket === 'failing') { return 'fail'; }
   if (bucket === 'partial') { return 'warn'; }
-  return (bucket === 'passing' ? 'passed' : bucket) === gateName() ? 'pass' : 'warn';
+  return bucket === gateName() ? 'pass' : 'warn';
 }
 
 /* How many rules reached this level, read off the payload's exclusive
@@ -133,11 +142,23 @@ function bucketTone(bucket) {
    the board asks how many got at least this far, which is that bucket and
    every one above it. A name that is not a level is one bucket of its own. */
 function reached(counted, name) {
-  var from = GATE_LEVELS.indexOf(name === 'passing' ? 'passed' : name);
+  var from = GATE_LEVELS.indexOf(name);
   return from < 0 ? counted[name] || 0
     : GATE_LEVELS.slice(from).reduce(function (sum, key) {
       return sum + (counted[key] || 0);
     }, 0);
+}
+
+/* The one sentence that says where the project stands against its gate,
+   which is `board.headline`: the board's gate line and the line a status
+   table's summary opens on are the same words, down to the full stop, so a
+   reader who learns one reads the other. The counts and the gate are mono,
+   the way machine text is set everywhere. */
+function headline(summary, gate) {
+  return '<span class="mono">' + (summary.met || 0)
+    + '</span> of <span class="mono">' + (summary.rules || 0)
+    + '</span> rules meet the gate <span class="mono">' + esc(gate)
+    + '</span>.';
 }
 
 function tag(text, plain) {
@@ -242,7 +263,7 @@ function platformLines(feature) {
         [WORDS.passed, WORDS.failed, WORDS.not_run].filter(function (word) {
           return found.words[word];
         }).map(function (word) { return found.words[word] + ' ' + word; }))
-        .join(' \u00b7 ');
+        .join(DOT);
     });
 }
 
@@ -250,7 +271,7 @@ function platformLines(feature) {
    gate asks for. The strength itself is in the cell beside it. */
 function auditLines(feature) {
   var record = (feature.rollup || {}).latest_record;
-  return [record ? 'audit \u00b7 ' + (record.label || 'local') + ' \u00b7 '
+  return [record ? 'audit' + DOT + (record.label || 'local') + DOT
       + ageText(record.timestamp).text
     : 'No audit has written a record here.',
     'minimum strength ' + minStrength() + '%'];
@@ -269,7 +290,7 @@ function signerLines(feature) {
     if (!byWho[cell.signer]) { byWho[cell.signer] = ''; names.push(cell.signer); }
     if (newer(cell.at, byWho[cell.signer])) { byWho[cell.signer] = cell.at; }
   });
-  var out = names.sort().map(function (who) { return who + ' \u00b7 ' + when(byWho[who]); });
+  var out = names.sort().map(function (who) { return who + DOT + when(byWho[who]); });
   if (!out.length) { out.push('Nobody has signed a rule here.'); }
   if (stale) { out.push(stale + ' ' + WORDS.stale); }
   return out;
@@ -280,7 +301,7 @@ function signerLines(feature) {
 function recordLine(feature) {
   var record = (feature.rollup || {}).latest_record || feature.latest_record;
   if (!record) { return '<span class="mono muted">\u2014</span>'; }
-  return hostLink(record.path, (record.label || 'local') + ' \u00b7 '
+  return hostLink(record.path, (record.label || 'local') + DOT
     + ageText(record.timestamp).text);
 }
 

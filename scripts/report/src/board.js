@@ -30,7 +30,7 @@ function statStrip() {
    their column says for one spec: where the runs happened, where the audit
    came from, who signed. The three below them name what they count. */
 function tileHover(bucket, project) {
-  if (bucket === 'passing') { return platformLines(project); }
+  if (bucket === 'passed') { return platformLines(project); }
   if (bucket === 'strong') { return auditLines(project); }
   return bucket === 'signed' ? signerLines(project) : [TILE_HOVER[bucket]];
 }
@@ -65,16 +65,16 @@ function boardColumns() {
 /* How many proof lines this spec holds, and how many of them no tagged test
    runs. A proof nothing tests is the gap between what the spec claims and
    what the tests check, so it is on the board rather than one screen deeper,
-   and its ids are in the hover. */
+   and its ids are in the hover. Both numbers are the rollup's own, so the
+   cell reads what `board.proofs_cell` reads: a `@manual` proof declares that
+   no test is written for it, and only the payload knows that. */
 function proofsCell(feature) {
-  var total = 0;
-  ownRules(feature).forEach(function (r) { total += (r.proofs || []).length; });
-  var without = (feature.rollup || {}).proofs_without_test || {};
-  var ids = without.ids || [];
-  return '<span' + hover([ids.length ? 'no tagged test \u00b7 ' + ids.join(', ')
+  var rollup = feature.rollup || {};
+  var ids = rollup.proofs_without_test_ids || [];
+  return '<span' + hover([ids.length ? 'no tagged test' + DOT + ids.join(', ')
       : 'every proof has a tagged test']) + '>'
-    + counts([[total, '', ''],
-      [without.count || 0, WORDS.without_test, 'warn']]) + '</span>';
+    + counts([[rollup.proofs || 0, '', ''],
+      [rollup.proofs_without_test || 0, WORDS.without_test, 'warn']]) + '</span>';
 }
 
 /* What the tagged tests found, as the passed cells read it: how many of the
@@ -110,7 +110,7 @@ function strongCell(feature) {
     ? feature.test_strength : rollup.test_strength;
   return '<span' + hover(auditLines(feature)) + '>'
     + counts([share(reached(rollup, 'strong'), rollup.rules || 0),
-      [value == null ? 'n/a' : Math.round(value) + '%', '',
+      [value == null ? 'n/a' : Math.floor(value) + '%', '',
         value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
     + '</span>';
 }
@@ -164,7 +164,7 @@ function groupBand(name, features, columns) {
   var passing = 0;
   var total = 0;
   features.forEach(function (feature) {
-    passing += reached(feature.rollup || {}, 'passing');
+    passing += reached(feature.rollup || {}, 'passed');
     total += (feature.rollup || {}).rules || 0;
   });
   return '<div class="group" data-act="group" data-group="' + esc(name) + '">'
@@ -198,15 +198,13 @@ function renderBoard() {
      many nothing has run against. The gate is the second line, because the
      signed layer is one column's business. */
   var head = '<section class="ledger"><h1 class="line"><b>'
-    + reached(summary, 'passing') + '</b> of <b>' + (summary.rules || 0)
+    + reached(summary, 'passed') + '</b> of <b>' + (summary.rules || 0)
     + '</b> rules pass their tests<span class="sep">·</span><b>'
     + (summary.failing || 0) + '</b> failing<span class="sep">·</span><b>'
     + (summary.partial || 0) + '</b> partial<span class="sep">·</span><b>'
     + (summary.untested || 0) + '</b> untested</h1>'
-    + '<p class="line"><span class="mono">' + (summary.met || 0)
-    + '</span> of <span class="mono">' + (summary.rules || 0)
-    + '</span> meet the gate <span class="mono">' + esc(gateName())
-    + '</span></p></section><section>' + statStrip() + '</section>';
+    + '<p class="line">' + headline(summary, gateName())
+    + '</p></section><section>' + statStrip() + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
         /* minmax sizes every track from these two numbers alone. A bare fr
