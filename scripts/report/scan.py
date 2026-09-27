@@ -182,9 +182,9 @@ def review_list_text(payload):
     from purlin import board as board_module
 
     if not total:
-        return 'Review list: %s.' % board_module.needs_a_person(0)
-    lines = ['Review list: %s.' % board_module.needs_a_person(total)]
-    for title, rows in (('Review', review), ('Sign', sign)):
+        return '%s.' % board_module.needs_a_person(0).capitalize()
+    lines = ['%s.' % board_module.needs_a_person(total).capitalize()]
+    for title, rows in (('Review list', review), ('Sign list', sign)):
         if not rows:
             continue
         lines.append('%s: %d' % (title, len(rows)))

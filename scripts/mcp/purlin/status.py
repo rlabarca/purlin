@@ -168,7 +168,7 @@ def _summary(data):
 
 
 def _list_lines(data, gate):
-    """The two counts a person acts on: the Review tab, then the Sign tab."""
+    """The two counts a person acts on: the Review list, then the Sign list."""
     lines = []
     if gate == 'passed':
         return lines
@@ -280,11 +280,12 @@ def _directives(data, project_root):
     else:
         lines.append('%s Next: nothing is outstanding at gate %s.' % (ARROW, gate))
 
-    if data.get('review_list') or data.get('sign_list'):
-        lines.append('%s Review list: %s. Run purlin:sign.'
-                     % (ARROW, board_module.needs_a_person(
-                         len(data.get('review_list') or ())
-                         + len(data.get('sign_list') or ()))))
+    review = len(data.get('review_list') or ())
+    sign = len(data.get('sign_list') or ())
+    if review or sign:
+        lines.append('%s Review list %d, Sign list %d: %s. Run purlin:sign.'
+                     % (ARROW, review, sign,
+                        board_module.needs_a_person(review + sign)))
     return lines
 
 

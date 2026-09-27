@@ -96,7 +96,12 @@ tags sit at the end of the line and are read off it, so the claim text stays cle
 
 Under the `signed` gate, origin is required and a rule without it is reported. The bar is
 not: a rule with no tag takes the project's gate, so leave it off unless the rule needs a
-different answer from the rest. Under `passed` the bar is never read, so do not ask for it.
+different answer from the rest.
+
+**Write no bar tag at the gate `passed`.** Nothing reads one there, and a tag a reader cannot
+act on is a tag they have to ask about. At `strong` and above write the gate's own bar on
+every rule, `[bar: strong]`, and change the exceptions: a rule whose evidence is its tests
+alone takes `[bar: passed]`.
 Re-tagging a rule's bar stales its signature, because the bar is one of the things a
 signature binds; say so before you change one.
 
