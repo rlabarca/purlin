@@ -45,7 +45,6 @@ TABLE_PATH = reader.TABLE_PATH
 SOURCES = ('ci', 'local')
 # What git is handed. A pathspec takes `/` on every operating system.
 TESTS_PATHSPEC = '.purlin/tests'
-CI_PATHSPEC = '.purlin/tests/ci'
 TABLE_PATHSPEC = '.purlin/tests.md'
 
 COMMIT_SUBJECT = 'purlin: tests at %s'
@@ -304,11 +303,6 @@ def gate_line(met, rules, level='passed'):
     if rules and met == rules:
         return 'gate %s: %d of %d' % (level, met, rules), 0
     return 'gate not met: %d of %d' % (met, rules), 1
-
-
-def results_paths(source='local'):
-    """The paths one source's run commits: its folder and the table."""
-    return [CI_PATHSPEC if source == 'ci' else TESTS_PATHSPEC, TABLE_PATHSPEC]
 
 
 def commit_results(project_root, commit):

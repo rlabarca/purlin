@@ -313,10 +313,12 @@ def is_a_tag_run():
     A tag run is the one `purlin:sign` asks for by writing `signed/<version>`
     and a person pushing it. It writes nothing: what it does is rerun the
     tests on a clean machine and check that the committed evidence still
-    hashes to the tagged code.
+    hashes to the tagged code. Only that tag counts: a release tag a project
+    pushes for its own reasons is not a ref Purlin reads anything into.
     """
+    signing = REF_TAGS + SIGNED_TAG_PREFIX
     for name in ('GITHUB_REF', 'BUILD_SOURCEBRANCH'):
-        if (os.environ.get(name) or '').strip().startswith(REF_TAGS):
+        if (os.environ.get(name) or '').strip().startswith(signing):
             return True
     return False
 

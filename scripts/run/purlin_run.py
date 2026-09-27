@@ -1125,13 +1125,13 @@ def _ci(project_root, args, features, selected, index, plugins, log,
         # run brings home is the test results themselves. They go under
         # `.purlin/tests/ci/`, so a proof tagged for an operating system
         # nobody here has reaches the tree as that platform's own pass.
-        from results import COMMITTED
+        from results import COMMITTED, COMMIT_SUBJECT
 
         print('')
         print(NO_RECORD_AT_PASSED)
         paths, commit = _build_test_results(
             project_root, features, selected, index, host_os(), 'ci')
-        commit_records(project_root, paths, 'purlin: tests at %s'
+        commit_records(project_root, paths, COMMIT_SUBJECT
                        % (str(commit or '')[:7] or 'an unknown commit'))
         print(COMMITTED)
         return 0
@@ -1152,8 +1152,10 @@ def _ci(project_root, args, features, selected, index, plugins, log,
     # nobody can read.
     brief_paths = _ci_review(project_root, _passed_here(written))
 
+    from records import RECORD_SUBJECT
+
     commit_records(project_root, paths + brief_paths,
-                   'purlin: record for %s' % head[:7])
+                   RECORD_SUBJECT % head[:7])
     print('Record committed.')
     return 0
 

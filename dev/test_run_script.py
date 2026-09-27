@@ -572,6 +572,7 @@ def record_run(monkeypatch, tmp_path):
     # for themselves.
     monkeypatch.setitem(sys.modules, 'records', _FakeModule(
         write_record=write_record, commit_records=commit_records,
+        RECORD_SUBJECT='purlin: record for %s',
         load_records=lambda project_root: {},
         commit_local_records=commit_local_records,
         commits_here=lambda project_root: calls['commits_here'],
@@ -987,6 +988,7 @@ class TestRecordWithoutTheEngines:
 
         monkeypatch.setitem(sys.modules, 'records', _FakeModule(
             write_record=write_record,
+            RECORD_SUBJECT='purlin: record for %s',
             commit_records=lambda *a, **k: 'ci',
             commit_local_records=lambda *a, **k: 'Record committed.',
             load_records=lambda project_root: {},

@@ -202,9 +202,6 @@ def _blocking(data):
     return found
 
 
-NO_AUDIT = 'no audit has run'
-
-
 def _unaudited(data):
     """How many rules no audit has measured yet.
 
