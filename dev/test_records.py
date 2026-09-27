@@ -247,7 +247,6 @@ def github_env(monkeypatch):
     monkeypatch.setenv('GITHUB_TOKEN', 'a-token')
     monkeypatch.setenv('GITHUB_REF_NAME', 'main')
     monkeypatch.delenv('GITHUB_HEAD_REF', raising=False)
-    monkeypatch.delenv('GITHUB_EVENT_PATH', raising=False)
     monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)
     _no_workspace(monkeypatch)
 
@@ -688,26 +687,6 @@ def test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once(
 
 
 @pytest.mark.proof("records", "PROOF-7", "RULE-7")
-def test_a_forked_pull_request_writes_no_commit(project, github_env,
-                                                monkeypatch, tmp_path, capsys):
-    event = tmp_path / 'event.json'
-    with open(str(event), 'w', encoding='utf-8') as handle:
-        json.dump({'pull_request': {'number': 7,
-                                    'head': {'repo': {'fork': True}}}}, handle)
-    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))
-    host = FakeHost()
-    monkeypatch.setattr(urllib.request, 'urlopen', host)
-    path = records_module.write_record(project, record(), 'ci')
-
-    sha = records_module.commit_records(project, [path],
-                                        'purlin: record')
-
-    assert sha == ''
-    assert host.calls == [], 'a forked pull request reached the git host'
-    assert 'fork' in capsys.readouterr().out
-
-
-@pytest.mark.proof("records", "PROOF-7", "RULE-7")
 def test_no_token_writes_no_commit(project, monkeypatch, capsys):
     monkeypatch.setenv('GITHUB_REPOSITORY', 'acme/widgets')
     monkeypatch.delenv('GITHUB_TOKEN', raising=False)
@@ -1026,17 +1005,6 @@ def test_records_read_at_a_ref_come_out_of_git(project):
 # ---------------------------------------------------------------------------
 # The workspace check
 # ---------------------------------------------------------------------------
-
-@pytest.fixture
-def pull_request_event(monkeypatch, tmp_path):
-    """A pull request event on disk, so the run reads itself as number 12."""
-    event = tmp_path / 'event.json'
-    with open(str(event), 'w', encoding='utf-8') as handle:
-        json.dump({'pull_request': {'number': 12,
-                                    'head': {'repo': {'fork': False}}}}, handle)
-    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))
-    return str(event)
-
 
 @pytest.mark.proof("records", "PROOF-30", "RULE-26")
 def test_with_no_workspace_variable_every_project_is_its_own(monkeypatch):

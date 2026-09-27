@@ -398,11 +398,6 @@ If the git host asks for a pause anyway, answering 403 or 429 with `Retry-After`
 `x-ratelimit-reset`, the run waits what it was asked for, up to 120 seconds, says so in one
 line, and sends the request again, up to 3 times before it gives up.
 
-### A run from a fork
-
-A fork's push gets a read-only token, so no commit could be made. The run still happens, and
-the job says in one line that no record was written.
-
 ## Who pushes
 
 A push is `git push`, typed by a person, and it is free: any branch, any time, and nothing runs

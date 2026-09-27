@@ -218,8 +218,7 @@ workflow carries it.
 | a `run/*` branch | Runs the tagged tests, and at `strong` and above audits what it ran, then commits its records and briefs onto that branch under `ci/` through the git host's API |
 
 The runner writes no signature, ever, and it posts no comment and uploads no artifact: the
-dashboard is the page that opens from disk. On a push from a fork the API token cannot write,
-so the run happens, no commit is made, and the job says so.
+dashboard is the page that opens from disk.
 
 ## Bringing an older project forward
 

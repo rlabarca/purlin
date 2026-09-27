@@ -399,10 +399,6 @@ def _commit_github(project_root, paths, message):
         print('No GITHUB_REPOSITORY and GITHUB_TOKEN, so no record was '
               'committed.')
         return ''
-    if is_fork():
-        print('This pull request comes from a fork, so the run wrote no '
-              'commit. The comment carries the same rollup.')
-        return ''
 
     base = '%s/repos/%s/git' % (_GITHUB_API, repo)
     branch = current_branch(project_root)
@@ -433,20 +429,6 @@ def _commit_github(project_root, paths, message):
             last_error = error
             time.sleep(0.05)
     raise last_error
-
-
-def is_fork():
-    """True when the run is a pull request from a fork, which cannot commit."""
-    event = os.environ.get('GITHUB_EVENT_PATH')
-    if not event or not os.path.isfile(event):
-        return False
-    try:
-        with open(event, 'r', encoding='utf-8') as handle:
-            data = json.load(handle)
-    except (IOError, OSError, ValueError, UnicodeDecodeError):
-        return False
-    head = ((data.get('pull_request') or {}).get('head') or {})
-    return bool((head.get('repo') or {}).get('fork'))
 
 
 def _commit_azure(project_root, paths, message):
