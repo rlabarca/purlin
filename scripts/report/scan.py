@@ -105,9 +105,9 @@ def rollup_text(project_root, payload):
 
     A bucket is the one tile a rule is counted in, so the counts add up to
     the rule total and a reader can check them, and each is named with the
-    word its tile carries on the board. The flags `stale`, `held`, `manual`
-    and `audit` are counted beside the buckets, never instead of them, and
-    each is printed only when it stands.
+    word its tile carries on the board. The counts beside the buckets, never
+    instead of them, are `stale`, `held`, `manual`, `unsettled`,
+    `not_audited` and `signable`, and each is printed only when it stands.
     """
     from purlin import board as board_module
 
@@ -178,10 +178,11 @@ def review_list_text(payload):
     review = list(payload.get('review_list') or ())
     sign = list(payload.get('sign_list') or ())
     total = len(review) + len(sign)
+    from purlin import board as board_module
+
     if not total:
-        return 'Review list: no rule needs a person.'
-    lines = ['Review list: %d %s a person.'
-             % (total, 'rule needs' if total == 1 else 'rules need')]
+        return 'Review list: %s.' % board_module.needs_a_person(0)
+    lines = ['Review list: %s.' % board_module.needs_a_person(total)]
     for title, rows in (('Review', review), ('Sign', sign)):
         if not rows:
             continue

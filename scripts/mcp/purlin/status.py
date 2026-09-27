@@ -248,13 +248,20 @@ def _directives(data, project_root):
     elif no_test:
         lines.append('%s Next: run purlin:build. %d rules have a proof and no '
                      'passing test.' % (ARROW, no_test))
-    elif waiting and gate != 'passed':
+    elif waiting and gate == 'signed':
         # A push of this branch starts nothing: CI runs on a pull request, on
         # the protected branch and on a run branch. `--remote` is what gets a
-        # record that counts onto this branch before the merge.
+        # record that counts onto this branch before the merge, and under
+        # `signed` CI's is the only record that counts.
         lines.append('%s Next: run purlin:test --remote. %d rules are waiting '
                      'for the record CI writes, which is the only one that '
-                     'counts under %s.' % (ARROW, waiting, gate))
+                     'counts under signed.' % (ARROW, waiting))
+    elif waiting and gate == 'strong':
+        # Either source counts here, so the shortest way to a record is the
+        # audit on this machine.
+        lines.append('%s Next: run purlin:audit. %d rules have no record to '
+                     'read, and an audit you run counts under strong.'
+                     % (ARROW, waiting))
     elif waiting:
         lines.append('%s Next: run purlin:test. %d rules have no run to read.'
                      % (ARROW, waiting))
@@ -272,9 +279,10 @@ def _directives(data, project_root):
         lines.append('%s Next: nothing is outstanding at gate %s.' % (ARROW, gate))
 
     if data.get('review_list') or data.get('sign_list'):
-        lines.append('%s Review list: %d rules need a person. Run purlin:sign.'
-                     % (ARROW, len(data.get('review_list') or ())
-                        + len(data.get('sign_list') or ())))
+        lines.append('%s Review list: %s. Run purlin:sign.'
+                     % (ARROW, board_module.needs_a_person(
+                         len(data.get('review_list') or ())
+                         + len(data.get('sign_list') or ()))))
     return lines
 
 

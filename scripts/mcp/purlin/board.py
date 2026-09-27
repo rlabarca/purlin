@@ -38,8 +38,6 @@ BUCKET_LABELS = (('untested', 'Untested'), ('failing', 'Failing'),
                  ('partial', 'Partial'), ('passed', 'Passing'),
                  ('strong', 'Strong'), ('signed', 'Signed'))
 
-# The two flags counted beside the buckets, never instead of them.
-FLAG_LABELS = (('stale', 'Stale'), ('held', 'Held'))
 
 
 def columns_for(gate):
@@ -177,3 +175,18 @@ def headline(summary, gate):
     """What the board leads with, and the one line a table's summary opens on."""
     return '%d of %d rules meet the gate %s.' % (
         summary.get('met') or 0, summary.get('rules') or 0, gate)
+
+
+def needs_a_person(count):
+    """`<n> rules need a person`: the one sentence that says a person is owed.
+
+    The Review and Sign lists are the one place a person is named, and this
+    is the sentence every surface says it in, so the table, the scan and the
+    dashboard's heading never disagree about the wording or about how one
+    rule reads.
+    """
+    if not count:
+        return 'no rule needs a person'
+    if count == 1:
+        return '1 rule needs a person'
+    return '%d rules need a person' % count

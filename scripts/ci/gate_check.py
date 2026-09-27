@@ -69,15 +69,6 @@ _ENFORCEMENT_NOTE = (
 _SIGNER_LIST_MISSING = (
     '→ signer list missing: run purlin:init --gate signed')
 
-# The strong cell's words for work only a person can do. A rule blocked on one
-# of them is not weak: nothing a build would change moves it.
-_REVIEW_WORDS = ('manual test', 'unsettled', 'held')
-
-# The strong cell's word for a rule the audit has not reached. It is not weak
-# and it is not a person's either: running `purlin:audit` settles it, so it
-# gets a section of its own naming that one command.
-_NOT_AUDITED = 'not audited'
-
 # One section per kind of work, in the order the chain reads it. The spec
 # status blocks before the passed cell does, and both mean the same thing to
 # a branch: the rule is not passed. The passed cell fills two sections,
@@ -190,6 +181,8 @@ def _collect(payload, result):
     declares is proved by every feature that requires it, and counting it once
     per consumer would report one gap several times.
     """
+    from purlin import states
+
     by_cell = {cell: key for key, _title, cells in _SECTIONS for cell in cells}
     for feature in payload.get('features') or ():
         for entry in feature.get('rules') or ():
@@ -200,6 +193,7 @@ def _collect(payload, result):
                 result['met'] += 1
                 continue
             key = by_cell.get(entry.get('blocked_by'))
+            word = _cell_word(entry, 'strong')
             if key is None:
                 # A rule that meets no cell and names none is still short of
                 # the gate, and the passed section is where a reader looks
@@ -207,9 +201,13 @@ def _collect(payload, result):
                 key = 'not_passed'
             elif key == 'not_passed' and _cell_word(entry, 'passed') == 'partial':
                 key = 'partial'
-            elif key == 'weak' and _cell_word(entry, 'strong') in _REVIEW_WORDS:
+            elif key == 'weak' and word in states.REVIEW_WORDS:
+                # Work only a person can do. A rule blocked on one of these
+                # is not weak: nothing a build would change moves it.
                 key = 'to_review'
-            elif key == 'weak' and _cell_word(entry, 'strong') == _NOT_AUDITED:
+            elif key == 'weak' and word == states.NOT_AUDITED:
+                # Not weak and not a person's either: running `purlin:audit`
+                # settles it, so it gets a section naming that one command.
                 key = 'not_audited'
             result[key].append('%s %s: %s'
                                % (entry['feature'], entry['id'],

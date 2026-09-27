@@ -1756,6 +1756,38 @@ class TestStatusTable:
         assert len(directives) == 1, text
         assert 'purlin:build' in directives[0], directives[0]
 
+    @pytest.mark.proof("states", "PROOF-67", "RULE-58", tier="integration")
+    def test_the_next_step_names_the_command_this_gate_would_write_with(self):
+        """At `strong` an audit you run counts, so it is the shortest way.
+
+        The line sent every reader to `purlin:test --remote` and told them
+        CI's was the only record that counts, which is true at `signed` and
+        not at `strong`.
+        """
+        for gate, named, unnamed in (('strong', 'purlin:audit',
+                                      'purlin:test --remote'),
+                                     ('signed', 'purlin:test --remote',
+                                      'purlin:audit')):
+            made = Project(gate=gate, extra_config={'signers': ['q@a.com']})
+            try:
+                made.record([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                              'status': 'pass'},
+                             {'id': 'PROOF-2', 'rule': 'RULE-2',
+                              'status': 'pass'}],
+                            source='ci', commit='0' * 40,
+                            scope_tree='the code has moved on')
+                step = [line for line in
+                        purlin_status.sync_status(made.root).splitlines()
+                        if line.startswith('→ Next:')]
+                assert len(step) == 1, step
+                assert named in step[0], (gate, step[0])
+                assert unnamed not in step[0], (gate, step[0])
+            finally:
+                made.close()
+        assert purlin_board.needs_a_person(1) == '1 rule needs a person'
+        assert purlin_board.needs_a_person(3) == '3 rules need a person'
+        assert purlin_board.needs_a_person(0) == 'no rule needs a person'
+
     @pytest.mark.proof("states", "PROOF-48", "RULE-41", tier="integration")
     def test_retired_config_keys_print_the_update_directive(self):
         made = Project(extra_config={'remote_verification': 'optional'})
