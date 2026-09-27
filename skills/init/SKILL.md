@@ -73,11 +73,10 @@ a README saying an audit writes the files in it, under `ci/` or `local/`, and no
 plugin for the detected framework and the breaks engine for the language, writing
 `[tool.mutmut]` into `pyproject.toml` when that file exists and `[mutmut]` into `setup.cfg`
 otherwise. It adds a `.gitignore` block for `.purlin/runtime/`, where test runs put their proof
-files, and copies the dashboard page so it opens from disk. It offers a `pre-push` hook that
-runs the tagged tests, the same run `purlin:test` makes, and refuses a push from an agent
-session, and installs the Claude Code hook that refreshes the local dashboard data. It creates
-`designs/` with a README at `strong` and `signed`, where it also writes the CI workflow and
-ignores `.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON an audit commits,
+files, and copies the dashboard page so it opens from disk. It installs no git hook at all:
+nothing runs at commit time and nothing runs at push time. It installs the Claude Code hook
+that refreshes the local dashboard data. It creates `designs/` with a README at `strong` and
+`signed`, and ignores `.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON an audit commits,
 then prints every file it wrote or edited, one per line.
 
 The workflow runs where the evidence it writes is decided. It triggers on a pull request, on a

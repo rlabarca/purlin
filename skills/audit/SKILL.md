@@ -19,7 +19,6 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ```
 purlin:audit                    Run the tests and the breaks, and write the record
 purlin:audit <feature> [...]    One feature, or several
-purlin:audit --tag <name>       Pin the records in the tree as record/<name>
 ```
 
 Plain language reaches the same place: "audit this", "how strong are the tests", "pin 1.0".
@@ -63,7 +62,7 @@ not yet observe.
 |------|--------------------|
 | `passed` | Runs the tests only. No breaks, no bar, no brief; the run says `Strength n/a: the gate is passed.` |
 | `strong` | Runs the breaks too, and prints the strength beside the minimum |
-| `signed` | The same as `strong`, and this record is a preview: only CI's record on the protected branch counts, and the run says so on its last line |
+| `signed` | The same as `strong`. A record either source wrote counts here too; a project that wants CI's word before a signature sets `trust: remote`, which `purlin:sign` reads |
 
 Raising the gate to `strong` turns the breaks on, locally and in CI.
 
@@ -75,18 +74,16 @@ word. A file where the two disagree is ignored, with one warning naming it.
 | Source | The folder | Counts under |
 |--------|------------|--------------|
 | ci | `.purlin/records/ci/<feature>/`, written by the CI identity through the git host's API | `passed`, `strong`, `signed` |
-| local | `.purlin/records/local/<feature>/`, written by this command on anyone's machine | `passed`, `strong` |
+| local | `.purlin/records/local/<feature>/`, written by this command on anyone's machine | `passed`, `strong`, `signed` |
 
 Under `passed` no record is written at all: the evidence there is the test results
 `purlin:test` commits, under `.purlin/tests/`. `references/hard_gates.md` defines the three
 gates once; do not restate them elsewhere.
 
-## Step 5: `--tag`
+## Step 5: retention
 
-`--tag <name>` writes an annotated tag `record/<name>` over the records already in the tree,
-whose message lists the records it vouches for, and prints `Record tag written: record/<name>`.
-With no record in the tree it says so and writes nothing. A feature keeps the newest three
-records per operating system and the rest are pruned; a record a tag names is kept for ever.
+A feature keeps the newest three records per operating system per source, and a run prunes the
+rest as it writes.
 
 ## Step 6: name the next step
 

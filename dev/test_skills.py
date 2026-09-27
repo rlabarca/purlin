@@ -510,10 +510,10 @@ class TestSkillAudit:
         assert audit_gate_problems() == []
 
     @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7")
-    def test_it_names_the_briefs_and_the_record_tag(self):
+    def test_it_names_the_briefs_and_the_retention(self):
         assert carries(skill_path('audit'), [
             '.purlin/briefs/',
-            '`--tag <name>` writes an annotated tag `record/<name>`',
+            'per operating system per source',
             'purlin:test --remote']) == []
 
 
@@ -552,12 +552,10 @@ def record_source_problems():
     for gate in ('passed', 'strong', 'signed'):
         if gate not in rows['ci']:
             problems.append('%s ci row does not count under %r' % (rel, gate))
-    for gate in ('passed', 'strong'):
+    for gate in ('passed', 'strong', 'signed'):
         if gate not in rows['local']:
             problems.append('%s local row does not count under %r'
                             % (rel, gate))
-    if 'signed' in rows['local']:
-        problems.append('%s local row counts under signed' % rel)
     for folder in ('.purlin/records/ci/', '.purlin/records/local/'):
         if folder not in read(rel):
             problems.append('%s does not name %r' % (rel, folder))
@@ -579,7 +577,7 @@ def audit_gate_problems():
     for needle in ('breaks', 'minimum'):
         if needle not in rows['`strong`']:
             problems.append('%s strong row does not name %r' % (rel, needle))
-    for needle in ('preview', 'gate strong: <n> of <rules>',
+    for needle in ('counts here too', 'gate strong: <n> of <rules>',
                    'purlin: record for <sha7>'):
         if needle not in read(rel):
             problems.append('%s does not say %r' % (rel, needle))
