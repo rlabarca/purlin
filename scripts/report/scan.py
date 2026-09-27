@@ -114,9 +114,9 @@ def rollup_text(project_root, payload):
     gate = payload['gate']['gate']
     lines = ['Purlin: %s, gate %s' % (payload['project'], gate), '']
     lines.append(board_module.headline(summary, gate))
-    lines.append('%d features, %d rules, %s proof lines.'
+    lines.append('%d features, %d rules, %s.'
                  % (summary['features'], summary['rules'],
-                    board_module.proofs_cell(summary)))
+                    board_module.proofs_summary(summary)))
     lines.append('')
 
     # The tiles' own words, in the tiles' own order, so a reader of the board

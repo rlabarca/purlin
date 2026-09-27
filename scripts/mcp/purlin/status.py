@@ -142,7 +142,7 @@ def _summary(data):
     lines = [board_module.headline(summary, gate),
              board_module.bucket_line(summary, gate) + '.']
     second = ['%d features' % summary['features'],
-              board_module.proofs_cell(summary) + ' proof lines']
+              board_module.proofs_summary(summary)]
     if gate != 'passed':
         if cfg.get('min_strength') is not None:
             second.append('minimum test strength %d%%' % cfg['min_strength'])

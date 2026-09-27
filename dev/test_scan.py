@@ -153,7 +153,7 @@ def test_the_rollup_names_the_project_the_gate_and_the_buckets(remote):
     text = scan_module.scan(bare, 'main')
 
     assert 'gate strong' in text
-    assert '1 features, 2 rules, 2 · 2 without a test proof lines.' in text
+    assert '1 features, 2 rules, 2 proof lines · 2 without a test.' in text
     assert 'Untested' in text, 'no bucket was counted'
     assert 'Partial' in text, 'the sixth bucket was not counted'
     assert 'No record has been committed yet.' in text

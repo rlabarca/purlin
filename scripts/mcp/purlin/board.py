@@ -133,6 +133,20 @@ def row_cells(name, rollup, gate):
     return tuple(cells)
 
 
+def proofs_summary(summary):
+    """`<n> proof lines`, and `· <k> without a test` when a proof has none.
+
+    The cell's own words, read as a sentence rather than as a column, for the
+    summary line under the table and the rollup `scan.py` prints.
+    """
+    total = summary.get('proofs') or 0
+    text = '%d proof line%s' % (total, '' if total == 1 else 's')
+    without = summary.get('proofs_without_test') or 0
+    if without:
+        text += '%s%d without a test' % (DOT, without)
+    return text
+
+
 def bucket_counts(summary, gate):
     """`[(label, count)]` for every bucket the gate reaches, weakest first."""
     from purlin import states

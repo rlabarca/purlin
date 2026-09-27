@@ -11,8 +11,8 @@
 # it audits what it ran and writes one record per feature, plus the briefs. A
 # pull request run commits nothing either way; a run on the protected branch,
 # or on a `run/*` branch, commits them there. The build service
-# writes them, so give it Contribute on `.purlin/records/**` and
-# `.purlin/briefs/**` through branch security and give it nothing else.
+# writes them, so give it Contribute on `.purlin/records/ci/**` and
+# `.purlin/briefs/ci/**` through branch security and give it nothing else.
 #
 # Every run ends with the gate check, and the job fails when the gate is not
 # met, so a build validation policy on this pipeline means the gate held.
