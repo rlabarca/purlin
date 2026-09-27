@@ -1669,6 +1669,16 @@ class TestTheFixturesAreTheContract:
                 assert sorted(cell) == sorted(built_cell), (name, cell_name)
             assert sorted(rule['flags']) == sorted(purlin_states.FLAGS), name
 
+    @pytest.mark.proof("states", "PROOF-68", "RULE-59", tier="integration")
+    def test_the_tag_key_is_present_in_every_fixture(self):
+        """The board's chip reads this key, so a fixture without it is a lie."""
+        for name in ('solo', 'team'):
+            assert self._fixture(name)['tag'] is None, name
+        tag = self._fixture('regulated')['tag']
+        assert sorted(tag) == ['commit', 'name']
+        assert tag['name'].startswith('signed/')
+        assert tag['commit'] == self._fixture('regulated')['commit']
+
     @pytest.mark.proof("states", "PROOF-34", "RULE-30", tier="integration")
     def test_every_fixture_review_row_uses_the_closed_set(self):
         at_strong = {'manual test', 'unsettled', 'held'}
@@ -2139,3 +2149,45 @@ class TestPackageHygiene:
         args = entry['args']
         assert args[0].endswith('scripts/purlin_python.sh'), args
         assert args[-1].endswith('scripts/mcp/purlin/server.py'), args
+
+
+# ---------------------------------------------------------------------------
+# The signed tag on HEAD
+# ---------------------------------------------------------------------------
+
+class TestTheSignedTag:
+    """The payload names the `signed/*` tag pointing at HEAD, or nothing."""
+
+    @pytest.mark.proof("states", "PROOF-68", "RULE-59", tier="integration")
+    def test_no_tag_reads_none_and_a_tag_on_head_reads_its_name(self):
+        made = Project()
+        try:
+            assert made.payload()['tag'] is None
+            _git(made.root, 'tag', '-a', 'signed/1.2.0', '-m', 'a release')
+            tag = made.payload()['tag']
+            assert tag['name'] == 'signed/1.2.0', tag
+            assert tag['commit'] == made.head(), tag
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-68", "RULE-59", tier="integration")
+    def test_a_tag_that_is_not_on_head_says_nothing_about_this_code(self):
+        made = Project()
+        try:
+            _git(made.root, 'tag', '-a', 'signed/1.2.0', '-m', 'a release')
+            _write(os.path.join(made.root, 'src', 'later.py'), 'X = 1\n')
+            _git(made.root, 'add', '-A')
+            _git(made.root, 'commit', '-q', '-m', 'feat: more')
+            assert made.payload()['tag'] is None
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-68", "RULE-59", tier="integration")
+    def test_the_newest_version_wins_where_several_point_at_head(self):
+        made = Project()
+        try:
+            for name in ('signed/1.9.0', 'signed/1.10.0', 'signed/beta'):
+                _git(made.root, 'tag', '-a', name, '-m', name)
+            assert made.payload()['tag']['name'] == 'signed/1.10.0'
+        finally:
+            made.close()
