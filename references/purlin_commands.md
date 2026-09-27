@@ -20,7 +20,8 @@ saw, `purlin:audit` runs level 2 and reports, and `purlin:sign` is level 3.
 is its source**: `purlin:audit` writes yours under `.purlin/records/local/` and commits it
 itself, and the CI job runs the same run script in an arm of its own and writes the same files
 under `.purlin/records/ci/`. That arm is the workflow's to pass and nobody types it. Both
-sources count at `strong`; only `ci` counts at `signed`.
+sources count at every gate, `signed` included; the one setting that asks for a `ci` run
+before a signature is `trust: remote`.
 
 ## Core
 
@@ -101,7 +102,7 @@ Purlin
 |---------|--------|
 | `purlin:spec`, `purlin:spec-from-code` | `specs/<category>/<name>.md` |
 | `purlin:build` | Code, test files, and the commit carrying the changeset |
-| `purlin:test` | `.purlin/runtime/proofs/`, which is not committed, and `.purlin/tests/<feature>.json` and `.purlin/tests.md`, which it commits itself as `purlin: tests at <sha7>` and never pushes. `--remote` pushes the run branch `run/<branch>-<sha7>`, which it deletes when the run is back |
+| `purlin:test` | `.purlin/runtime/proofs/`, which is not committed, and `.purlin/tests/<feature>.json` and `.purlin/tests.md`, which it commits itself as `purlin: tests at <sha7>` and never pushes. `--remote` pushes the run branch `run/<branch>-<sha7>`, pulls the runner's own results home under `.purlin/tests/ci/<feature>.json`, and deletes the branch |
 | `purlin:audit` | One record per feature under `.purlin/records/local/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and its briefs under `.purlin/briefs/local/<feature>/<RULE-N>.<hash8>.brief.json`, committed as `purlin: record for <sha7>` and never pushed. A remote run writes the same files under `ci/` |
 | `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case. The annotated tag `signed/<version>` when the walk closes with every rule meeting the gate, which a person pushes |
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when a proof names another operating system or the trust answer was no |
@@ -131,8 +132,8 @@ reader is the agent, which resolves them once.
 Everything else is relative to the project root: `specs/`, `designs/`, `.purlin/`, and the
 project's own source and test files. A consumer project carries no `references/`, no `scripts/`
 and no `templates/` of its own, so the two roots never collide over one path. A shell script
-that needs the same answer outside a skill resolves it the way the hook shims do, from the two
-install locations `docs/getting-started.md` names.
+that needs the same answer outside a skill reads `${CLAUDE_PLUGIN_ROOT}` where it is set and
+otherwise looks in the two install locations `docs/getting-started.md` names.
 
 ## Pending migrations
 

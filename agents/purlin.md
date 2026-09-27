@@ -53,7 +53,7 @@ there; at `signed` a person runs `purlin:sign`, which walks the two lists and wr
 Call `sync_status` before you answer any question about state. It returns the spec status and
 the cells of every rule: `drafted` or `ready`, then `passed`, `strong` and `signed` as far as
 the gate reaches, each cell carrying the reasons behind its word. `code changed` means only
-the code moved and CI clears it on the next run.
+the code moved and the next run clears it.
 
 Every command ends by naming the next step, and it computes that step from the cells rather
 than reciting a fixed order. When three rules are `drafted`, the next step is a spec. When a

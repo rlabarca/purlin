@@ -62,7 +62,7 @@ signature for the new evidence exists, `purlin:sign` writes no tag and the gate 
 Stale and `code changed` are the two answers to "something changed", and the difference is what
 changed. A record carries `scope_tree`, the git tree hash of the files the spec's `> Scope:`
 line names. When the code under that scope changed and the rule, proof and test text did not,
-the signature stands and the passed cell reads `code changed`; CI clears it on the next run and
+the signature stands and the passed cell reads `code changed`; the next run clears it and
 nobody is asked to look. When the rule text, the proof text, the test body or the rule's bar
 changed, the signature is stale, because the attestation was given about text that no longer
 exists. Raising a rule's bar changes what signing it meant, which is why the bar sits

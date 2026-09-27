@@ -131,8 +131,9 @@ The brief reports. It recommends nothing, and it never names a next action. Thre
   names, one sentence each. The audit is asked to state what it saw and to say when it
   cannot tell. It is never asked what to do.
 - **Whether it settled.** `Settled: yes` when the audit could tell, `no` when it could not,
-  and `not answered` when no AI audit ran. Anything but `yes` on a rule whose bar is `strong`
-  makes the strong cell read `unsettled`. An audit that settled and still observed something
+  and `not answered` when no AI audit ran. `no` on a rule whose bar is `strong` makes the
+  strong cell read `unsettled`; `not answered` does not, because nothing asked the question
+  and the strength answers level 2 on its own. An audit that settled and still observed something
   is a different answer: it could tell, and what it saw is build work, so the cell reads
   `weak` with each observation sentence among its reasons.
 

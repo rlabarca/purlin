@@ -100,8 +100,8 @@ once, by answering no to init's trust question, and then `purlin:sign` refuses a
 tests have no `ci` record for the commit being signed.
 
 A record describes the checkout while its commit is HEAD or its scope tree still hashes the
-same. A CI pass that is no longer current makes the passed cell read `code changed`, and CI
-clears it on the next run.
+same. A pass that is no longer current makes the passed cell read `code changed`, and the next
+run clears it.
 
 ## Where CI runs, and when a project has a runner at all
 

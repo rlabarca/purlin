@@ -113,7 +113,7 @@ Each `proofs` entry:
 |---|---|---|
 | `id` | string | `PROOF-N` |
 | `rule` | string | the `RULE-N` the proof covers |
-| `status` | string | `pass`, `fail` or `skip` |
+| `status` | string | `pass` or `fail`. A test the run skipped writes no entry, so the one an earlier run wrote is kept |
 | `tier` | string | `unit`, `integration`, `e2e` or `manual` |
 | `env` | string or null | the operating system the proof's `@env` tag named, or null |
 | `test_file` | string | the file holding the tagged test |

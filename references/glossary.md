@@ -38,8 +38,8 @@ in the shipped prose where a retired spelling may still be written.
   blocks the gate exactly as a failure does. Test strength is platform
   independent: the breaks are measured once per feature.
 - **current**: a record describes the checkout when its commit is HEAD or its scope tree still
-  hashes the same. A CI pass that is not current reads **code changed**, and CI clears it on the
-  next run.
+  hashes the same. A pass that is not current reads **code changed**, and the next run clears
+  it.
 - **audit**: the level 2 run: the tests, then the breaks and the AI audit on every rule whose
   bar is `strong`. An audit measures how good the tests are and proves a rule strong or weak.
   It writes one record per feature it audited, with the briefs beside it, and commits them

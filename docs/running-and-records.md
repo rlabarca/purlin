@@ -91,7 +91,7 @@ same shape as `purlin:test`'s, and it exits 1 on the second.
 
 Under the `passed` gate there is nothing to measure and no strong cell to move, so the audit
 runs the tests alone and writes no record. Raising the gate to `strong` turns the breaks on,
-locally and in CI, and turns the record on with them.
+on your machine, and turns the record on with them. No breaks ever run on a remote runner.
 
 Your own record counts at every gate, `signed` included: the strong cell reads the newest
 audit, yours or a runner's. What changes at `signed` is only what `trust` says. Under
@@ -248,7 +248,7 @@ Eight fields are required, and every other one is optional:
 | `runner` | `ci` or the slug of whoever ran it, matching the file name |
 | `gate` | the gate in force when the run happened: `passed`, `strong` or `signed` |
 | `source` | `ci` or `local`, and it must match the folder the file sits in |
-| `proofs` | one entry per proof: its rule, `pass`, `fail` or `skip`, its tier, its `@env`, and the test that ran it |
+| `proofs` | one entry per proof: its rule, `pass` or `fail`, its tier, its `@env`, and the test that ran it. A test the run skipped writes no entry at all |
 | `os` | the operating system of this matrix job, or null |
 | `test_strength` | the percentage of the deliberate breaks the tests caught, or null |
 | `scope_tree` | the git tree hash of the spec's `> Scope:` files |
@@ -383,8 +383,10 @@ reads `not run` and carries `windows: no record yet`, and with one of the two pa
 
 ### The commit a run branch makes
 
-A run branch's job creates one commit, `purlin: record for <commit7>`, holding the records and
-the briefs it wrote under `.purlin/records/ci/` and `.purlin/briefs/ci/` and nothing else. It
+A run branch's job creates one commit. At `passed` it is `purlin: tests at <sha7>`, holding
+the test results under `.purlin/tests/ci/`; at `strong` and above it is
+`purlin: record for <commit7>`, holding the records and the briefs it wrote under
+`.purlin/records/ci/` and `.purlin/briefs/ci/`. Either way it holds nothing else, and it
 writes no signature file, ever: a signature directory holds only files a person wrote. The
 commit goes through the git host's REST API as one tree request carrying the text of every one
 of those files, then a commit with no author or committer field, then a ref update, retrying on

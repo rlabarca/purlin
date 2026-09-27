@@ -139,12 +139,13 @@ form to run as a preflight step in CI.
 
 ## What the update does
 
-Eight migrations, applied in this order, because the tags are rewritten before the setting that
+Ten migrations, applied in this order, because the tags are rewritten before the setting that
 mapped them is dropped and before the workflow matrix is rendered from them:
 
 | Migration | What it changes |
 |-----------|-----------------|
 | `os-tags` | rewrites the retired operating-system tags in `specs/` to `@env(<os>)` |
+| `rule-tags` | rewrites each rule's retired three-level tag as `[bar: passed]` or `[bar: strong]` |
 | `design-sources` | points design sources at `designs/<feature>/` |
 | `untracked-files` | drops the proof files that used to be committed and untracks the dashboard data |
 | `hooks` | removes the git hooks an older Purlin installed, and says why |
@@ -152,6 +153,7 @@ mapped them is dropped and before the workflow matrix is rendered from them:
 | `workflows` | replaces the retired workflows, and re-renders a `purlin.yml` written before the triggers changed |
 | `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |
 | `records` | creates `.purlin/records/` for the records an audit commits |
+| `record-folders` | moves every record and brief into `.purlin/records/ci/` or `local/`, by who committed it |
 
 The `workflows` migration reads each file under `.github/workflows/`. A workflow an earlier
 release wrote under its own name, or one naming something this release moved, is replaced

@@ -174,8 +174,9 @@ Commits: 4f1a9c2, 9b3e07d
 The first `→` line appears when a case was added, the second when a rule is still on a list.
 
 With nothing left and every rule meeting the gate, the walk writes the tag and the last line is
-`→ Run: git push origin signed/<version>`. With nothing left and a rule still short, no tag is
-written and the line is `→ Run: purlin:status`.
+`→ Run: git push origin signed/<version>`. With a rule still short it writes no tag and says so,
+`No tag: 3 of 42 rules do not meet the gate signed.`, and `purlin:status` names what blocks
+them.
 
 ## The tag
 
