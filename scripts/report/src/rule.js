@@ -146,8 +146,9 @@ function signPanel(feature, rule) {
   return '<div class="panel"><h2>To sign</h2>'
     + '<p><span class="cmd">purlin:sign ' + esc(feature.name) + ' '
     + esc(rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
-    + '<p class="sec">' + (cell.word === 'not required'
-      ? 'No signature is required at this rule’s risk; one written anyway '
+    + '<p class="sec">' + (cell.required === false
+      ? 'This project signs the rules whose bar is strong, and this rule’s '
+        + 'bar is passed, so no signature is required; one written anyway '
         + 'still counts.'
       : 'A signature is a signed commit by someone on the signer list; the '
         + 'page shows it once it is on the branch.') + '</p></div>';
@@ -172,9 +173,11 @@ function proofPanel(proof) {
 /* The link back closes the rule rather than leaving it open behind another
    screen, and it returns to the screen the rule was opened from. */
 function backLink() {
-  var from = VIEW.from === 'review' && level('strong') ? 'review' : 'board';
+  var from = VIEW.from === 'review' && level('strong') ? 'review'
+    : VIEW.from === 'sign' && level('signed') ? 'sign' : 'board';
+  var label = {review: 'Review', sign: 'Sign', board: 'Board'}[from];
   return '<button class="btn" data-act="close" data-screen="' + from + '">← '
-    + (from === 'review' ? 'Review list' : 'Board') + '</button>';
+    + label + '</button>';
 }
 
 function renderRule() {
@@ -188,7 +191,8 @@ function renderRule() {
   var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted') + '</dd>'];
   GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
   if (level('strong')) {
-    rows.push('<dt>Risk</dt><dd>' + riskTag(rule.risk) + '</dd>');
+    rows.push('<dt>Bar</dt><dd>' + barTag(rule) + ' <span class="sec">'
+      + esc(barSource(rule)) + '</span></dd>');
   }
   rows.push('<dt>Origin</dt><dd>' + tag(rule.origin, true) + '</dd>');
   if (rule.criterion) {

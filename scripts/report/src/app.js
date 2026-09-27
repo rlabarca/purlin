@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
             features: {}, groups: {}, filters: {}};
-var SCHEMA = 6;
+var SCHEMA = 7;
 /* The data file is rewritten seconds after a tool call changed a spec, a
    record or a signature, and a tab left open would never notice. Coming back
    to the tab reloads it when what it holds is older than this. */
@@ -42,12 +42,13 @@ var TILE_HOVER = {
   failing: 'Every platform that ran the tests found a failure.',
   partial: 'Passed on one platform, failed or did not run on another.'};
 
-/* The board's six column headings and the words its cells append, in one
-   place. `scripts/mcp/purlin/board.py` renders the same six columns for
+/* The board's seven column headings and the words its cells append, in one
+   place. `scripts/mcp/purlin/board.py` renders the same seven columns for
    `purlin:status`, the pull request comment and `scan.py`, so these are its
    `COLUMNS` and its cell words: a string changed there is changed here in
    the same commit. */
-var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
+var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signable',
+               'Signed'];
 
 /* The one separator every cell, hover and line puts between two parts, which
    is `board.DOT`. */
@@ -62,11 +63,15 @@ var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
 var CELL_TONES = {'ready': 'pass', 'drafted': 'idle', 'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'code changed': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
-  'manual test': 'warn', 'manual audit': 'warn', 'signed': 'pass',
-  'unsigned': 'warn', 'stale': 'fail', 'not required': 'idle'};
+  'manual test': 'warn', 'not audited': 'idle', 'unsettled': 'warn',
+  'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail'};
 
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
-var RISKS = ['high', 'medium', 'low'];
+
+/* The three words the strong cell reads when the work left is a person's,
+   which is what the Review tab holds and what it groups its rows by. `not
+   audited` is not among them: it waits for `purlin:audit`, not for anyone. */
+var REVIEW_KINDS = ['manual test', 'unsettled', 'held'];
 
 function loadData(callback) {
   var frame = document.createElement('iframe');
@@ -165,11 +170,40 @@ function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
 }
 
-/* A risk tag carries its level in the border: high in the fail hue, medium
-   in the warn hue, low muted. The text stays the primary ink. */
-function riskTag(risk) {
-  var band = risk === 'high' || risk === 'medium' ? risk : 'low';
-  return '<span class="tag risk-' + band + '">' + esc(risk || 'low') + '</span>';
+/* A rule's bar: the evidence it must have before it can be signed, `passed`
+   or `strong`. A bar of `strong` is the higher one, so it carries the accent
+   border the tag already has and a bar of `passed` reads muted. */
+function barTag(rule) {
+  var bar = (rule || {}).bar === 'strong' ? 'strong' : 'passed';
+  return '<span class="tag' + (bar === 'strong' ? '' : ' plain') + '">'
+    + esc(bar) + '</span>';
+}
+
+/* Where a rule's bar came from: the rule's own tag, or the project's gate
+   where the rule carries no tag. */
+function barSource(rule) {
+  return (rule || {}).bar_from === 'gate' ? 'from the gate' : 'from the tag';
+}
+
+/* Every rule the project holds, each paired with the feature that owns it. */
+function everyRule() {
+  var out = [];
+  (DATA.features || []).forEach(function (feature) {
+    ownRules(feature).forEach(function (rule) {
+      out.push({feature: feature, rule: rule});
+    });
+  });
+  return out;
+}
+
+/* The rule one list entry points at, from the feature entry that owns it. */
+function listedRule(entry) {
+  var feature = featureNamed(entry.feature);
+  var found = null;
+  (feature ? feature.rules || [] : []).forEach(function (r) {
+    if (r.id === entry.rule) { found = r; }
+  });
+  return found;
 }
 
 /* `n of m` with a bar beside it. The bar is the share, so a spec of three
@@ -399,13 +433,18 @@ function topBar() {
     + themeButton() + '</header>';
 }
 
-/* The review list is a question for a person, and under `passed` nothing
-   asks one, so the tab is absent rather than empty. */
+/* The two lists are questions for a person, and under `passed` nothing asks
+   one, so the tab is absent rather than empty. Review comes first because
+   `purlin:sign` walks it first: a rule a person has not judged is not a rule
+   to sign. */
 function tabs() {
   var open = VIEW.screen;
   var items = [['board', 'Board']];
   if (level('strong')) {
-    items.push(['review', 'Review list (' + (DATA.review_list || []).length + ')']);
+    items.push(['review', 'Review (' + (DATA.review_list || []).length + ')']);
+  }
+  if (level('signed')) {
+    items.push(['sign', 'Sign (' + (DATA.sign_list || []).length + ')']);
   }
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
   return '<nav class="tabs">' + items.map(function (item) {
@@ -442,10 +481,12 @@ function render() {
     return;
   }
   if (VIEW.screen === 'review' && !level('strong')) { VIEW.screen = 'board'; }
+  if (VIEW.screen === 'sign' && !level('signed')) { VIEW.screen = 'board'; }
   /* The notices are about the tree the whole payload came from, so the board
      carries them once rather than every screen repeating them. */
   var body = VIEW.screen === 'rule' ? renderRule()
     : VIEW.screen === 'review' ? renderReview()
+    : VIEW.screen === 'sign' ? renderSign()
     : notices() + renderBoard();
   app.innerHTML = topBar() + tabs() + '<div class="wrap">' + body + '</div>';
 }
@@ -473,7 +514,8 @@ function onClick(event) {
     var name = node.getAttribute('data-feature');
     VIEW.features[name] = !VIEW.features[name];
   } else if (act === 'rule') {
-    VIEW.from = VIEW.screen === 'review' ? 'review' : 'board';
+    VIEW.from = VIEW.screen === 'review' || VIEW.screen === 'sign'
+      ? VIEW.screen : 'board';
     VIEW.feature = node.getAttribute('data-feature');
     VIEW.rule = node.getAttribute('data-rule');
     VIEW.screen = 'rule';

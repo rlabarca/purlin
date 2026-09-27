@@ -1,27 +1,25 @@
-/* The Review list: the rules whose next step is a person, highest risk first.
-   The group header already says the risk, so a row says the things the group
-   cannot: which rule, what it claims, which cell blocks it, and why. */
+/* The two tabs that hold a person's work: Review, the rules the machine
+   could not finish, and Sign, the rules that have cleared their bar and are
+   waiting for a signature. `purlin:sign` walks them in that order, so the
+   page reads them in that order too.
+
+   A row on either tab reads the rule it points at rather than the list
+   entry: the entry names the feature and the rule, and everything shown —
+   the text, the bar, the cell's word and its reasons — is the rule's own, so
+   the page and the rule screen can never disagree. */
 
 /* Long enough to read the claim, short enough that a list of two hundred rows
    stays one column of text. The rest of the rule is on its own screen. */
 var RULE_TEXT_MAX = 90;
 
-/* The closed set of tokens the payload puts on an entry, as sentences. A
-   token this page does not recognise is still read out, so a new one added
-   upstream reaches the reader unchanged. */
-var WHY_SENTENCES = {
-  'unsigned': 'Nobody has signed it.',
-  'stale': 'Its signature no longer matches the rule, proof and test it was '
-    + 'written against.',
-  'held': 'A person holds it: the test does not prove the proof.',
+/* What each word the Review tab groups by means, as a sentence, for a rule
+   whose cell carries no reason of its own. */
+var KIND_SENTENCES = {
   'manual test': 'Its proof is @manual, so a person runs the test and states '
     + 'what they saw.',
-  'manual audit': 'The model review could not settle it, so a person judges '
-    + 'the proof against the test.'};
-
-/* The five counts the risk summary carries, in the order it prints them. Each
-   token counts under its own name, because each names different work. */
-var WHY_COUNTS = ['unsigned', 'stale', 'held', 'manual test', 'manual audit'];
+  'unsettled': 'The AI audit could not settle it, so a person judges the '
+    + 'proof against the test.',
+  'held': 'A person holds it: the test does not prove the proof.'};
 
 function shortText(text) {
   var value = String(text == null ? '' : text);
@@ -29,103 +27,105 @@ function shortText(text) {
     : value.slice(0, RULE_TEXT_MAX).replace(/\s+\S*$/, '') + '…';
 }
 
-/* The rule the entry points at, from the feature entry that owns it. */
-function reviewRule(entry) {
-  var feature = featureNamed(entry.feature);
-  var found = null;
-  (feature ? feature.rules || [] : []).forEach(function (r) {
-    if (r.id === entry.rule) { found = r; }
-  });
-  return found;
-}
-
-function whySentence(token) {
-  return WHY_SENTENCES[token] || 'It is on the review list because ' + token + '.';
+function kindSentence(word) {
+  return KIND_SENTENCES[word] || 'It is waiting because it reads ' + word + '.';
 }
 
 /* What the blocking cell says beyond its one word. The cell's own reasons are
-   the specific ones, so they are printed where there are any; the tokens the
-   entry carries stand in where there are none. */
-function reviewRowReasons(entry, rule) {
-  var reasons = ((rule ? cellOf(rule, entry.cell) : null) || {}).reasons || [];
-  return reasons.length ? reasons.join('; ')
-    : (entry.why || []).map(whySentence).join(' ');
+   the specific ones, so they are printed where there are any; the word it
+   reads stands in as a sentence where there are none. */
+function reviewRowReasons(rule) {
+  var cell = cellOf(rule, 'strong') || {};
+  return (cell.reasons || []).length ? cell.reasons.join('; ')
+    : kindSentence(cell.word);
 }
 
-function reviewRow(entry) {
-  var rule = reviewRule(entry);
-  var cell = rule ? cellOf(rule, entry.cell) : null;
+/* One row of either tab: the same first four cells, then the two that differ.
+   The row opens the rule screen, so the rule id is the link a reader follows
+   to everything this row had to cut. */
+function listRow(entry, rule, rest) {
   return '<div class="rev" data-act="rule" data-feature="'
     + esc(entry.feature) + '" data-rule="' + esc(entry.rule) + '">'
     + '<span>' + esc(entry.feature) + '</span>'
     + '<span class="mono">' + esc(entry.rule) + '</span>'
     + '<span>' + esc(rule ? shortText(rule.text) : '') + '</span>'
-    + riskTag(entry.risk)
-    + (cell ? pill(cell.word) : '<span></span>')
-    + '<span class="sec">' + esc(reviewRowReasons(entry, rule)) + '</span>'
-    + '</div>';
+    + barTag(rule) + rest + '</div>';
 }
 
-/* Stale and held first inside a group: a signature that stopped counting and
-   a rule a colleague stopped are the two a person came here to settle. */
-function reviewOrder(entries) {
-  var first = [];
-  var rest = [];
-  entries.forEach(function (entry) {
-    var why = entry.why || [];
-    (why.indexOf('stale') >= 0 || why.indexOf('held') >= 0 ? first : rest)
-      .push(entry);
+function reviewRow(entry) {
+  var rule = listedRule(entry);
+  var cell = rule ? cellOf(rule, 'strong') : null;
+  return listRow(entry, rule, (cell ? pill(cell.word) : '<span></span>')
+    + '<span class="sec">' + esc(rule ? reviewRowReasons(rule) : '')
+    + '</span>');
+}
+
+function signRow(entry) {
+  var rule = listedRule(entry);
+  var cell = rule ? cellOf(rule, 'signed') : null;
+  return listRow(entry, rule, (cell ? pill(cell.word) : '<span></span>')
+    + '<span class="cmd">purlin:sign ' + esc(entry.feature) + ' '
+    + esc(entry.rule) + '</span>');
+}
+
+/* The heading row of either tab, so the six cells are named rather than
+   guessed at. */
+function listHead(labels) {
+  return '<div class="rev th">' + labels.map(function (label) {
+    return '<span>' + esc(label) + '</span>';
+  }).join('') + '</div>';
+}
+
+/* A rule whose bar is `strong` is the one a project asked the most of, so it
+   is read first inside its group; the payload already orders the list that
+   way and the page keeps that order. */
+function ofKind(entries, word) {
+  return entries.filter(function (entry) {
+    var rule = listedRule(entry);
+    return rule && cellWord(rule, 'strong') === word;
   });
-  return first.concat(rest);
-}
-
-/* One line per risk that has a row, with the five counts that say what kind
-   of answer each rule is waiting for. */
-function riskSummary(entries) {
-  var lines = RISKS.map(function (risk) {
-    var group = entries.filter(function (entry) {
-      return (entry.risk || 'low') === risk;
-    });
-    if (!group.length) { return ''; }
-    var totals = {};
-    group.forEach(function (entry) {
-      (entry.why || []).forEach(function (token) {
-        if (WHY_COUNTS.indexOf(token) >= 0) {
-          totals[token] = (totals[token] || 0) + 1;
-        }
-      });
-    });
-    return '<p class="rsum">' + riskTag(risk)
-      + WHY_COUNTS.map(function (name) {
-        var n = totals[name] || 0;
-        return '<span class="' + (n ? 'sec' : 'muted') + '"><b>' + n
-          + '</b> ' + esc(name) + '</span>';
-      }).join('<i>·</i>') + '</p>';
-  }).join('');
-  return lines ? '<div class="panel">' + lines + '</div>' : '';
 }
 
 function renderReview() {
   var entries = DATA.review_list || [];
   if (!entries.length) {
-    return '<section><p class="eyebrow">Review list</p><div class="panel empty">'
-      + 'No rule is waiting for a person. A rule arrives here when the machine '
-      + 'cannot settle it, when a signature stops matching, when someone holds '
-      + 'it, or when it is unsigned at or above the risk this project signs '
-      + 'from.</div></section>';
+    return '<section><p class="eyebrow">Review</p><div class="panel empty">'
+      + 'No rule is waiting for a person. A rule arrives here when its proof '
+      + 'is @manual, when the AI audit could not settle it, or when someone '
+      + 'holds it.</div></section>';
   }
-  var head = '<section><p class="eyebrow">Review list</p><h1>'
+  var head = '<section><p class="eyebrow">Review</p><h1>'
     + entries.length + (entries.length === 1 ? ' rule needs' : ' rules need')
-    + ' a person</h1>'
-    + riskSummary(entries) + '</section>';
-  var body = RISKS.map(function (risk) {
-    var group = entries.filter(function (entry) {
-      return (entry.risk || 'low') === risk;
-    });
+    + ' a person</h1><p class="line">Each of these is work only a person can '
+    + 'do. Sign one with <span class="cmd">purlin:sign &lt;feature&gt; '
+    + '&lt;RULE-N&gt;</span>, or hold it with the case the test misses.'
+    + '</p></section>';
+  var body = REVIEW_KINDS.map(function (word) {
+    var group = ofKind(entries, word);
     if (!group.length) { return ''; }
-    return '<div class="group"><span class="gt">' + esc(risk)
-      + ' risk</span><span class="muted">(' + group.length + ')</span></div>'
-      + reviewOrder(group).map(reviewRow).join('');
+    return '<div class="group"><span class="gt">' + esc(word)
+      + '</span><span class="muted">(' + group.length + ')</span></div>'
+      + group.map(reviewRow).join('');
   }).join('');
-  return head + '<section><div class="tbl">' + body + '</div></section>';
+  return head + '<section><div class="tbl">'
+    + listHead(['Spec', 'Rule', 'What it claims', 'Bar', 'Reads', 'Why'])
+    + body + '</div></section>';
+}
+
+function renderSign() {
+  var entries = DATA.sign_list || [];
+  if (!entries.length) {
+    return '<section><p class="eyebrow">Sign</p><div class="panel empty">'
+      + 'No rule is waiting for a signature. A rule arrives here once it has '
+      + 'cleared its bar and needs a signature nobody has written for the '
+      + 'text it carries now.</div></section>';
+  }
+  var head = '<section><p class="eyebrow">Sign</p><h1>' + entries.length
+    + (entries.length === 1 ? ' rule to sign' : ' rules to sign')
+    + '</h1><p class="line">Each of these has cleared its bar, so the '
+    + 'evidence its project asks for is in. A signature is a signed commit '
+    + 'by someone on the signer list.</p></section>';
+  return head + '<section><div class="tbl">'
+    + listHead(['Spec', 'Rule', 'What it claims', 'Bar', 'Signed', 'Command'])
+    + entries.map(signRow).join('') + '</div></section>';
 }

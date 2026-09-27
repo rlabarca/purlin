@@ -10,7 +10,8 @@ project opens from disk and CI attaches to a pull request:
 Four substitutions, in this order:
 
 `/*PURLIN:TOKENS*/`   every file in `design/tokens/`, in the order
-                      `design/styles.css` imports them, inside the one
+                      `design/styles.css` imports them, one rule to a line as
+                      `src/styles.css` is already written, inside the one
                       `<style id="purlin-tokens">` block. Every colour on the
                       page resolves here, which is why the block is named: the
                       page's own acceptance check reads it to prove no raw
@@ -73,8 +74,33 @@ def read(path):
         return handle.read()
 
 
+def collapse_rules(text):
+    """The same CSS with each top-level rule written on one line.
+
+    `src/styles.css` is already written that way, one selector and its whole
+    body to a line, and the token files are not: they set one custom property
+    per line, which is right for a file a person edits and wrong for a single
+    page someone scrolls looking for a rule. Joining them here means the whole
+    stylesheet the page carries reads the same way. A block inside a block, an
+    `@media` and its rules, joins into that one line too.
+    """
+    out = []
+    parts = []
+    depth = 0
+    for line in text.splitlines():
+        parts.append(line.strip())
+        depth += line.count('{') - line.count('}')
+        if depth <= 0:
+            out.append(''.join(parts))
+            parts = []
+            depth = 0
+    if parts:
+        out.append(''.join(parts))
+    return '\n'.join(out)
+
+
 def strip_css(text):
-    """CSS with its comments and blank lines removed, one rule per line."""
+    """CSS with its comments and blank lines removed."""
     lines = [line.rstrip() for line in _COMMENT_RE.sub('', text).splitlines()]
     return '\n'.join(line for line in lines if line.strip())
 
@@ -125,8 +151,9 @@ def drop_surface_rules(text):
 
 
 def token_block():
-    return '\n'.join(drop_surface_rules(strip_css(read(
-        os.path.join(TOKENS, name)))) for name in TOKEN_FILES)
+    return collapse_rules('\n'.join(
+        drop_surface_rules(strip_css(read(os.path.join(TOKENS, name))))
+        for name in TOKEN_FILES))
 
 
 def logo_block():
@@ -153,8 +180,9 @@ def build():
     page = read(os.path.join(SRC, 'page.html'))
     for marker, body in (
             ('/*PURLIN:TOKENS*/', token_block()),
-            ('/*PURLIN:STYLES*/', strip_css(read(os.path.join(SRC,
-                                                              'styles.css')))),
+            ('/*PURLIN:STYLES*/',
+             collapse_rules(strip_css(read(os.path.join(SRC,
+                                                        'styles.css'))))),
             ('/*PURLIN:LOGO*/', logo_block()),
             ('/*PURLIN:SCRIPTS*/', script_block())):
         if marker not in page:

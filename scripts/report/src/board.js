@@ -2,10 +2,11 @@
    the rules that have not got there yet. */
 
 /* One tile per level the gate reaches, plus the two below them and `Partial`,
-   each counting the rules that got at least that far, and at `signed` a flag
-   card beside them for the signatures that no longer match. A flag is counted
-   beside the tiles, never instead of one, so it never shares their row. Each
-   tile carries the hover its column carries, read over every spec. */
+   each counting the rules that got at least that far, and at `signed` two
+   flag cards beside them: the rules waiting for a signature, and the
+   signatures that no longer match. A flag is counted beside the tiles, never
+   instead of one, so it never shares their row. Each tile carries the hover
+   its column carries, read over every spec. */
 function statStrip() {
   var summary = DATA.summary || {};
   var project = wholeProject();
@@ -18,12 +19,55 @@ function statStrip() {
       + bucketTone(bucket) + ')">' + reached(summary, bucket) + '</div>'
       + '<div class="tile-l">' + esc(BUCKET_LABELS[bucket]) + '</div></div>';
   }).join('');
-  var stale = summary.stale || 0;
-  var flag = level('signed')
-    ? '<div class="flag' + (stale ? ' on' : '') + '"><div class="flag-v">'
-      + stale + '</div><div class="flag-l">Stale</div></div>' : '';
-  return '<div class="strip' + (flag ? ' flagged' : '') + '">'
-    + '<div class="tiles">' + tiles + '</div>' + flag + '</div>';
+  var flags = level('signed')
+    ? '<div class="flags">'
+      + flagCard('To sign', summary.signable || 0, 'warn', signableLines())
+      + flagCard('Stale', summary.stale || 0, 'fail', staleLines())
+      + '</div>' : '';
+  return '<div class="strip' + (flags ? ' flagged' : '') + '">'
+    + '<div class="tiles">' + tiles + '</div>' + flags + '</div>';
+}
+
+/* One flag card: a count the tiles do not hold, in its own tone once it is
+   above zero, with the hover that says which rules make it up. */
+function flagCard(label, count, hue, lines) {
+  return '<div class="flag' + (count ? ' on ' + hue : '') + '"'
+    + hover(lines) + '><div class="flag-v">' + count
+    + '</div><div class="flag-l">' + esc(label) + '</div></div>';
+}
+
+/* How many rules each spec is waiting to have signed, which is what the
+   `To sign` card counts for the project and what the Sign tab lists. */
+function signableLines() {
+  var byFeature = {};
+  var names = [];
+  ((DATA.sign_list || [])).forEach(function (entry) {
+    if (!byFeature[entry.feature]) {
+      byFeature[entry.feature] = 0;
+      names.push(entry.feature);
+    }
+    byFeature[entry.feature] += 1;
+  });
+  if (!names.length) { return ['No rule is waiting for a signature.']; }
+  return names.sort().map(function (name) {
+    return name + DOT + byFeature[name];
+  });
+}
+
+/* Which rules carry a signature that no longer matches, one line per spec. */
+function staleLines() {
+  var byFeature = {};
+  var names = [];
+  everyRule().forEach(function (pair) {
+    if (!(pair.rule.flags || {}).stale) { return; }
+    var name = pair.feature.name;
+    if (!byFeature[name]) { byFeature[name] = []; names.push(name); }
+    byFeature[name].push(pair.rule.id);
+  });
+  if (!names.length) { return ['Every signature still matches.']; }
+  return names.sort().map(function (name) {
+    return name + DOT + byFeature[name].join(', ');
+  });
 }
 
 /* What a tile says beyond its count. The three cumulative tiles say what
@@ -51,13 +95,14 @@ function tileHover(bucket, project) {
 function boardColumns() {
   var columns = [{label: COLUMNS[0], width: '2.3fr', floor: 132},
                  {label: COLUMNS[1], width: '0.7fr', floor: 58},
-                 {label: COLUMNS[2], width: '2.15fr', floor: 152},
+                 {label: COLUMNS[2], width: '2.15fr', floor: 180},
                  {label: COLUMNS[3], width: '2.15fr', floor: 120}];
   if (level('strong')) {
     columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
   if (level('signed')) {
-    columns.push({label: COLUMNS[5], width: '1.1fr', floor: 90});
+    columns.push({label: COLUMNS[5], width: '1.2fr', floor: 108});
+    columns.push({label: COLUMNS[6], width: '1.1fr', floor: 90});
   }
   return columns;
 }
@@ -115,6 +160,21 @@ function strongCell(feature) {
     + '</span>';
 }
 
+/* How many of this spec's rules have cleared their bar: bar `passed` with the
+   tests passing, or bar `strong` with the audit proving them strong. Those
+   are the rules that can be signed, counted whether they are signed or not,
+   so the column says how much of the spec is ready for a person rather than
+   how much work is left. The hover names the ones still to sign. */
+function signableCell(feature) {
+  var rules = ownRules(feature);
+  var cleared = rules.filter(function (rule) { return rule.cleared; });
+  var waiting = rules.filter(function (rule) { return rule.signable; })
+    .map(function (rule) { return rule.id; });
+  return '<span' + hover([waiting.length ? 'to sign' + DOT + waiting.join(', ')
+      : 'every rule that has cleared its bar is signed'])
+    + '>' + counts([share(cleared.length, rules.length)]) + '</span>';
+}
+
 /* How many of this spec's rules carry a signature that counts. Who signed
    them and how many signatures stopped matching are in the hover; the `Stale`
    flag card carries the project's stale count. */
@@ -135,7 +195,10 @@ function featureRow(feature, columns) {
   cells.push(proofsCell(feature));
   cells.push(testsCell(feature));
   if (level('strong')) { cells.push(strongCell(feature)); }
-  if (level('signed')) { cells.push(signedCell(feature)); }
+  if (level('signed')) {
+    cells.push(signableCell(feature));
+    cells.push(signedCell(feature));
+  }
   var row = '<div class="tr" data-act="feature" data-feature="'
     + esc(feature.name) + '">' + cells.map(function (cell) {
       return '<div>' + cell + '</div>';

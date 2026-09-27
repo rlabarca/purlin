@@ -5,196 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Purlin board</title>
 <style id="purlin-tokens">
-:root{
-  --purlin-navy-900:#092936;
-  --purlin-navy-800:#0C3444;
-  --purlin-cream-100:#E4DDD4;
-  --purlin-blush-200:#E6BEB0;
-  --purlin-copper-500:#C0793F;
-  --purlin-slate-300:#93AEB8;
-  --purlin-slate-200:#BFCED5;
-  --purlin-cream-050:#F1ECE5;
-  --slate-950:#0F172A;
-  --slate-900:#172034;
-  --slate-800:#1E293C;
-  --slate-750:#263350;
-  --slate-700:#334155;
-  --slate-500:#64738B;
-  --slate-400:#94A2B8;
-  --slate-300:#CBD5E1;
-  --slate-200:#E2E8F0;
-  --white:#FFFFFF;
-  --green-500:#22C55D;
-  --green-600:#269655;
-  --green-300:#3AC968;
-  --green-100:#C6EDCF;
-  --amber-500:#F59E0C;
-  --red-500:#EF4444;
-  --teal-400:#2DD4BF;
-  --green-700:#15803D;
-  --amber-700:#B45309;
-  --red-700:#B91C1C;
-  --teal-700:#0F766E;
-  --copper-700:#8F5626;
-  --purlin-paper-050:#FBF8EC;
-  --purlin-paper-100:#F4EFDF;
-  --purlin-paper-200:#E4DDD4;
-  --purlin-paper-300:#D3C9BC;
-  --purlin-ink-700:#1B4A5C;
-  --purlin-ink-600:#345865;
-  --purlin-ink-500:#4D676F;
-}
-:root{
-  --color-scheme:dark;
-  --canvas:var(--purlin-navy-800);
-  --canvas-deep:var(--purlin-navy-900);
-  --surface-1:rgba(228,221,212,.06);
-  --surface-2:rgba(228,221,212,.10);
-  --surface-sunken:var(--purlin-navy-900);
-  --surface-veil:rgba(228,221,212,.30);
-  --text-primary:var(--purlin-cream-050);
-  --text-secondary:var(--purlin-blush-200);
-  --text-muted:var(--purlin-slate-200);
-  --text-accent:var(--purlin-copper-500);
-  --text-inverse:var(--purlin-navy-900);
-  --border-hairline:rgba(228,221,212,.18);
-  --border-default:rgba(228,221,212,.30);
-  --border-strong:rgba(228,221,212,.45);
-  --border-accent:var(--purlin-copper-500);
-  --accent:var(--purlin-copper-500);
-  --accent-contrast:var(--purlin-navy-900);
-  --state-pass:var(--green-500);
-  --state-pass-soft:rgba(34,197,93,.14);
-  --state-warn:var(--amber-500);
-  --state-warn-soft:rgba(245,158,12,.14);
-  --state-fail:var(--red-500);
-  --state-fail-soft:rgba(239,68,68,.14);
-  --state-neutral:var(--teal-400);
-  --state-neutral-soft:rgba(45,212,191,.14);
-  --state-idle:var(--slate-400);
-  --focus-ring:var(--purlin-blush-200);
-  --link:var(--purlin-blush-200);
-  --link-hover:var(--purlin-copper-500);
-}
-[data-theme="light"]{
-  --color-scheme:light;
-  --canvas:var(--purlin-paper-050);
-  --canvas-deep:var(--purlin-paper-100);
-  --surface-1:var(--white);
-  --surface-2:var(--purlin-paper-100);
-  --surface-sunken:var(--purlin-paper-200);
-  --surface-veil:rgba(12,52,68,.05);
-  --text-primary:var(--purlin-navy-800);
-  --text-secondary:var(--purlin-ink-700);
-  --text-muted:var(--purlin-ink-500);
-  --text-accent:var(--copper-700);
-  --text-inverse:var(--purlin-paper-050);
-  --border-hairline:rgba(12,52,68,.12);
-  --border-default:rgba(12,52,68,.20);
-  --border-strong:rgba(12,52,68,.38);
-  --border-accent:var(--copper-700);
-  --accent:var(--copper-700);
-  --accent-contrast:var(--purlin-paper-050);
-  --state-pass:var(--green-700);
-  --state-pass-soft:rgba(21,128,61,.12);
-  --state-warn:var(--amber-700);
-  --state-warn-soft:rgba(180,83,9,.12);
-  --state-fail:var(--red-700);
-  --state-fail-soft:rgba(185,28,28,.12);
-  --state-neutral:var(--teal-700);
-  --state-neutral-soft:rgba(15,118,110,.12);
-  --state-idle:var(--purlin-ink-500);
-  --focus-ring:var(--copper-700);
-  --link:var(--copper-700);
-  --link-hover:var(--purlin-navy-800);
-}
-:root{
-  --font-sans:Arial,"Helvetica Neue",Helvetica,sans-serif;
-  --font-mono:"Courier New",Courier,monospace;
-  --type-hero:180px;
-  --type-display:98px;
-  --type-title:48px;
-  --type-subtitle:33px;
-  --type-lead:30px;
-  --type-body-lg:22.5px;
-  --type-body:20.25px;
-  --type-body-sm:18px;
-  --type-caption:15.75px;
-  --type-micro:15px;
-  --ui-metric-xl:44px;
-  --ui-metric:32px;
-  --ui-lg:18px;
-  --ui-base:15px;
-  --ui-sm:13px;
-  --ui-xs:11px;
-  --leading-tight:.8;
-  --leading-snug:1.12;
-  --leading-normal:1.35;
-  --leading-relaxed:1.5;
-  --tracking-hero:-.006em;
-  --tracking-normal:0;
-  --tracking-wide:.055em;
-  --tracking-label:.12em;
-  --weight-regular:400;
-  --weight-bold:700;
-}
-:root{
-  --space-0:0;
-  --space-1:4px;
-  --space-2:8px;
-  --space-3:12px;
-  --space-4:16px;
-  --space-5:20px;
-  --space-6:24px;
-  --space-8:32px;
-  --space-10:40px;
-  --space-12:48px;
-  --space-16:64px;
-  --space-20:80px;
-  --space-24:96px;
-  --slide-w:1920px;
-  --slide-h:1080px;
-  --slide-margin-x:200px;
-  --slide-title-y:230px;
-  --slide-content-w:1672px;
-  --slide-rule-w:1520px;
-  --slide-row-h:105px;
-  --app-bar-h:92px;
-  --app-gutter:12px;
-  --row-h:76px;
-}
-:root{
-  --radius-none:0;
-  --radius-sm:4px;
-  --radius-md:6px;
-  --radius-pill:999px;
-  --border-width-hairline:1px;
-  --border-width-default:1.5px;
-  --border-width-strong:2px;
-}
-:root{
-  --shadow-none:none;
-  --elev-flat:0 0 0 0 transparent;
-  --elev-raised:inset 0 0 0 1px var(--border-hairline);
-  --elev-focus:0 0 0 2px var(--canvas),0 0 0 4px var(--focus-ring);
-  --overlay-scrim:rgba(9,41,54,.72);
-  --backdrop-blur:8px;
-}
-:root{
-  --duration-instant:80ms;
-  --duration-fast:140ms;
-  --duration-base:220ms;
-  --duration-slow:420ms;
-  --ease-standard:cubic-bezier(.2,0,0,1);
-  --ease-out:cubic-bezier(0,0,0,1);
-  --ease-in:cubic-bezier(.4,0,1,1);
-  --hover-tint:rgba(228,221,212,.06);
-  --press-tint:rgba(9,41,54,.25);
-  --press-scale:.985;
-}
-@media (prefers-reduced-motion:reduce){
-  :root{--duration-instant:0ms;--duration-fast:0ms;--duration-base:0ms;--duration-slow:0ms}
-}
+:root{--purlin-navy-900:#092936;--purlin-navy-800:#0C3444;--purlin-cream-100:#E4DDD4;--purlin-blush-200:#E6BEB0;--purlin-copper-500:#C0793F;--purlin-slate-300:#93AEB8;--purlin-slate-200:#BFCED5;--purlin-cream-050:#F1ECE5;--slate-950:#0F172A;--slate-900:#172034;--slate-800:#1E293C;--slate-750:#263350;--slate-700:#334155;--slate-500:#64738B;--slate-400:#94A2B8;--slate-300:#CBD5E1;--slate-200:#E2E8F0;--white:#FFFFFF;--green-500:#22C55D;--green-600:#269655;--green-300:#3AC968;--green-100:#C6EDCF;--amber-500:#F59E0C;--red-500:#EF4444;--teal-400:#2DD4BF;--green-700:#15803D;--amber-700:#B45309;--red-700:#B91C1C;--teal-700:#0F766E;--copper-700:#8F5626;--purlin-paper-050:#FBF8EC;--purlin-paper-100:#F4EFDF;--purlin-paper-200:#E4DDD4;--purlin-paper-300:#D3C9BC;--purlin-ink-700:#1B4A5C;--purlin-ink-600:#345865;--purlin-ink-500:#4D676F;}
+:root{--color-scheme:dark;--canvas:var(--purlin-navy-800);--canvas-deep:var(--purlin-navy-900);--surface-1:rgba(228,221,212,.06);--surface-2:rgba(228,221,212,.10);--surface-sunken:var(--purlin-navy-900);--surface-veil:rgba(228,221,212,.30);--text-primary:var(--purlin-cream-050);--text-secondary:var(--purlin-blush-200);--text-muted:var(--purlin-slate-200);--text-accent:var(--purlin-copper-500);--text-inverse:var(--purlin-navy-900);--border-hairline:rgba(228,221,212,.18);--border-default:rgba(228,221,212,.30);--border-strong:rgba(228,221,212,.45);--border-accent:var(--purlin-copper-500);--accent:var(--purlin-copper-500);--accent-contrast:var(--purlin-navy-900);--state-pass:var(--green-500);--state-pass-soft:rgba(34,197,93,.14);--state-warn:var(--amber-500);--state-warn-soft:rgba(245,158,12,.14);--state-fail:var(--red-500);--state-fail-soft:rgba(239,68,68,.14);--state-neutral:var(--teal-400);--state-neutral-soft:rgba(45,212,191,.14);--state-idle:var(--slate-400);--focus-ring:var(--purlin-blush-200);--link:var(--purlin-blush-200);--link-hover:var(--purlin-copper-500);}
+[data-theme="light"]{--color-scheme:light;--canvas:var(--purlin-paper-050);--canvas-deep:var(--purlin-paper-100);--surface-1:var(--white);--surface-2:var(--purlin-paper-100);--surface-sunken:var(--purlin-paper-200);--surface-veil:rgba(12,52,68,.05);--text-primary:var(--purlin-navy-800);--text-secondary:var(--purlin-ink-700);--text-muted:var(--purlin-ink-500);--text-accent:var(--copper-700);--text-inverse:var(--purlin-paper-050);--border-hairline:rgba(12,52,68,.12);--border-default:rgba(12,52,68,.20);--border-strong:rgba(12,52,68,.38);--border-accent:var(--copper-700);--accent:var(--copper-700);--accent-contrast:var(--purlin-paper-050);--state-pass:var(--green-700);--state-pass-soft:rgba(21,128,61,.12);--state-warn:var(--amber-700);--state-warn-soft:rgba(180,83,9,.12);--state-fail:var(--red-700);--state-fail-soft:rgba(185,28,28,.12);--state-neutral:var(--teal-700);--state-neutral-soft:rgba(15,118,110,.12);--state-idle:var(--purlin-ink-500);--focus-ring:var(--copper-700);--link:var(--copper-700);--link-hover:var(--purlin-navy-800);}
+:root{--font-sans:Arial,"Helvetica Neue",Helvetica,sans-serif;--font-mono:"Courier New",Courier,monospace;--type-hero:180px;--type-display:98px;--type-title:48px;--type-subtitle:33px;--type-lead:30px;--type-body-lg:22.5px;--type-body:20.25px;--type-body-sm:18px;--type-caption:15.75px;--type-micro:15px;--ui-metric-xl:44px;--ui-metric:32px;--ui-lg:18px;--ui-base:15px;--ui-sm:13px;--ui-xs:11px;--leading-tight:.8;--leading-snug:1.12;--leading-normal:1.35;--leading-relaxed:1.5;--tracking-hero:-.006em;--tracking-normal:0;--tracking-wide:.055em;--tracking-label:.12em;--weight-regular:400;--weight-bold:700;}
+:root{--space-0:0;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;--space-20:80px;--space-24:96px;--slide-w:1920px;--slide-h:1080px;--slide-margin-x:200px;--slide-title-y:230px;--slide-content-w:1672px;--slide-rule-w:1520px;--slide-row-h:105px;--app-bar-h:92px;--app-gutter:12px;--row-h:76px;}
+:root{--radius-none:0;--radius-sm:4px;--radius-md:6px;--radius-pill:999px;--border-width-hairline:1px;--border-width-default:1.5px;--border-width-strong:2px;}
+:root{--shadow-none:none;--elev-flat:0 0 0 0 transparent;--elev-raised:inset 0 0 0 1px var(--border-hairline);--elev-focus:0 0 0 2px var(--canvas),0 0 0 4px var(--focus-ring);--overlay-scrim:rgba(9,41,54,.72);--backdrop-blur:8px;}
+:root{--duration-instant:80ms;--duration-fast:140ms;--duration-base:220ms;--duration-slow:420ms;--ease-standard:cubic-bezier(.2,0,0,1);--ease-out:cubic-bezier(0,0,0,1);--ease-in:cubic-bezier(.4,0,1,1);--hover-tint:rgba(228,221,212,.06);--press-tint:rgba(9,41,54,.25);--press-scale:.985;}
+@media (prefers-reduced-motion:reduce){:root{--duration-instant:0ms;--duration-fast:0ms;--duration-base:0ms;--duration-slow:0ms}}
 html{color-scheme:var(--color-scheme,dark)}
 body{margin:0;background:var(--canvas);color:var(--text-primary);font-family:var(--font-sans);font-size:var(--ui-base);line-height:var(--leading-normal);-webkit-font-smoothing:antialiased;text-wrap:pretty}
 a{color:var(--link);text-decoration:none;border-bottom:1px solid var(--border-default);transition:color var(--duration-fast) var(--ease-standard),border-color var(--duration-fast) var(--ease-standard)}
@@ -230,9 +49,6 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .sec{color:var(--text-secondary)}
 .tag{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--accent);color:var(--text-primary);white-space:nowrap}
 .tag.plain{border-color:var(--text-muted);color:var(--text-muted)}
-.tag.risk-high{border-color:var(--state-fail)}
-.tag.risk-medium{border-color:var(--state-warn)}
-.tag.risk-low{border-color:var(--text-muted);color:var(--text-muted)}
 .os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:0 5px;border-radius:var(--radius-sm);border:1px solid;white-space:nowrap;line-height:1.5}
 .os.pass{border-color:var(--state-pass);color:var(--state-pass)}
 .os.fail{border-color:var(--state-fail);color:var(--state-fail)}
@@ -253,13 +69,14 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .thumb{display:block;width:60px;height:38px;object-fit:cover;border:1px solid var(--border-hairline);border-radius:var(--radius-sm)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
 .strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
-.strip.flagged{grid-template-columns:6fr 1fr}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
-.tile,.flag{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3)}
+.strip.flagged{grid-template-columns:7fr 2fr}
+.tiles,.flags{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
+.tile,.flag{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-2)}
 .tile-v,.flag-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
 .tile-l,.flag-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
 .flag{color:var(--state-idle)}
-.flag.on{border-color:var(--state-fail);color:var(--state-fail)}
+.flag.on.warn{border-color:var(--state-warn);color:var(--state-warn)}
+.flag.on.fail{border-color:var(--state-fail);color:var(--state-fail)}
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
 .chip{font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
 .chip:hover{background:var(--hover-tint)}
@@ -271,7 +88,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .th>div,.tr>div{min-width:0}
 .trio{display:inline-flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-base)}
 .trio b{font-weight:var(--weight-regular);white-space:nowrap}
-.trio i,.rsum i{color:var(--text-muted);font-style:normal}
+.trio i{color:var(--text-muted);font-style:normal}
 .th{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 .tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .tr:hover{background:var(--hover-tint)}
@@ -279,7 +96,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .group{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3);min-width:var(--cols-min);padding:var(--space-4) var(--space-6);background:var(--surface-2);border-bottom:1px solid var(--border-hairline);cursor:pointer}
 .group .gt{font-weight:var(--weight-bold);font-size:var(--ui-base);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-primary)}
 .caret{color:var(--text-muted);font-size:var(--ui-sm);flex:none}
-.name{display:inline-flex;align-items:center;gap:var(--space-4);min-width:0}
+.name{display:flex;align-items:center;gap:var(--space-4);min-width:0}
 .name .n{font-size:var(--ui-base);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rule{display:grid;grid-template-columns:96px 1fr auto;gap:var(--space-4);align-items:start;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:pointer;font-size:var(--ui-sm)}
 .rule:hover{background:var(--hover-tint)}
@@ -295,11 +112,13 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
 .panel p{margin:0 0 var(--space-3)}
 .panel p:last-child{margin-bottom:0}
-.rev{display:grid;grid-template-columns:0.8fr 0.5fr 2.2fr 0.5fr 1fr 1.8fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer}
+.rev{display:grid;grid-template-columns:0.9fr 0.55fr 2.1fr 0.6fr 1fr 1.9fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer;font-size:var(--ui-base)}
 .rev:hover{background:var(--hover-tint)}
 .rev>.pill,.rev>.tag{justify-self:start}
-.rsum{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3);font-size:var(--ui-base)}
-.rsum b{font-family:var(--font-mono);font-weight:var(--weight-bold);color:var(--text-primary)}
+.rev>span{min-width:0;overflow-wrap:anywhere}
+.rev .cmd{white-space:normal;overflow-wrap:anywhere}
+.rev.th{cursor:default}
+.rev.th:hover{background:none}
 </style>
 </head>
 <body>
@@ -342,15 +161,18 @@ function allFilters() {
           bucketFilter('partial'),
     {id: 'weak', label: 'Weak', level: 'strong', test: function (rule) {
       var word = cellWord(rule, 'strong');
-      return !!word && word !== 'strong';
+      return word === 'weak' || word === 'not audited';
     }},
-    {id: 'unsigned', label: 'Unsigned', level: 'signed', test: function (rule) {
-      return cellWord(rule, 'signed') === 'unsigned';
-    }},
-    {id: 'stale-or-held', label: 'Stale or held', level: 'signed',
+    {id: 'to-review', label: 'To review', level: 'strong',
      test: function (rule) {
-       return !!(rule.flags || {}).stale || !!(rule.flags || {}).held;
-     }}];
+       return REVIEW_KINDS.indexOf(cellWord(rule, 'strong')) >= 0;
+     }},
+    {id: 'to-sign', label: 'To sign', level: 'signed', test: function (rule) {
+      return !!rule.signable;
+    }},
+    {id: 'stale', label: 'Stale', level: 'signed', test: function (rule) {
+      return !!(rule.flags || {}).stale;
+    }}];
 }
 function offeredFilters() {
   return allFilters().filter(function (f) { return level(f.level); });
@@ -391,12 +213,47 @@ function statStrip() {
       + bucketTone(bucket) + ')">' + reached(summary, bucket) + '</div>'
       + '<div class="tile-l">' + esc(BUCKET_LABELS[bucket]) + '</div></div>';
   }).join('');
-  var stale = summary.stale || 0;
-  var flag = level('signed')
-    ? '<div class="flag' + (stale ? ' on' : '') + '"><div class="flag-v">'
-      + stale + '</div><div class="flag-l">Stale</div></div>' : '';
-  return '<div class="strip' + (flag ? ' flagged' : '') + '">'
-    + '<div class="tiles">' + tiles + '</div>' + flag + '</div>';
+  var flags = level('signed')
+    ? '<div class="flags">'
+      + flagCard('To sign', summary.signable || 0, 'warn', signableLines())
+      + flagCard('Stale', summary.stale || 0, 'fail', staleLines())
+      + '</div>' : '';
+  return '<div class="strip' + (flags ? ' flagged' : '') + '">'
+    + '<div class="tiles">' + tiles + '</div>' + flags + '</div>';
+}
+function flagCard(label, count, hue, lines) {
+  return '<div class="flag' + (count ? ' on ' + hue : '') + '"'
+    + hover(lines) + '><div class="flag-v">' + count
+    + '</div><div class="flag-l">' + esc(label) + '</div></div>';
+}
+function signableLines() {
+  var byFeature = {};
+  var names = [];
+  ((DATA.sign_list || [])).forEach(function (entry) {
+    if (!byFeature[entry.feature]) {
+      byFeature[entry.feature] = 0;
+      names.push(entry.feature);
+    }
+    byFeature[entry.feature] += 1;
+  });
+  if (!names.length) { return ['No rule is waiting for a signature.']; }
+  return names.sort().map(function (name) {
+    return name + DOT + byFeature[name];
+  });
+}
+function staleLines() {
+  var byFeature = {};
+  var names = [];
+  everyRule().forEach(function (pair) {
+    if (!(pair.rule.flags || {}).stale) { return; }
+    var name = pair.feature.name;
+    if (!byFeature[name]) { byFeature[name] = []; names.push(name); }
+    byFeature[name].push(pair.rule.id);
+  });
+  if (!names.length) { return ['Every signature still matches.']; }
+  return names.sort().map(function (name) {
+    return name + DOT + byFeature[name].join(', ');
+  });
 }
 function tileHover(bucket, project) {
   if (bucket === 'passed') { return platformLines(project); }
@@ -406,13 +263,14 @@ function tileHover(bucket, project) {
 function boardColumns() {
   var columns = [{label: COLUMNS[0], width: '2.3fr', floor: 132},
                  {label: COLUMNS[1], width: '0.7fr', floor: 58},
-                 {label: COLUMNS[2], width: '2.15fr', floor: 152},
+                 {label: COLUMNS[2], width: '2.15fr', floor: 180},
                  {label: COLUMNS[3], width: '2.15fr', floor: 120}];
   if (level('strong')) {
     columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
   if (level('signed')) {
-    columns.push({label: COLUMNS[5], width: '1.1fr', floor: 90});
+    columns.push({label: COLUMNS[5], width: '1.2fr', floor: 108});
+    columns.push({label: COLUMNS[6], width: '1.1fr', floor: 90});
   }
   return columns;
 }
@@ -450,6 +308,15 @@ function strongCell(feature) {
         value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
     + '</span>';
 }
+function signableCell(feature) {
+  var rules = ownRules(feature);
+  var cleared = rules.filter(function (rule) { return rule.cleared; });
+  var waiting = rules.filter(function (rule) { return rule.signable; })
+    .map(function (rule) { return rule.id; });
+  return '<span' + hover([waiting.length ? 'to sign' + DOT + waiting.join(', ')
+      : 'every rule that has cleared its bar is signed'])
+    + '>' + counts([share(cleared.length, rules.length)]) + '</span>';
+}
 function signedCell(feature) {
   var rollup = feature.rollup || {};
   return '<span' + hover(signerLines(feature)) + '>'
@@ -466,7 +333,10 @@ function featureRow(feature, columns) {
   cells.push(proofsCell(feature));
   cells.push(testsCell(feature));
   if (level('strong')) { cells.push(strongCell(feature)); }
-  if (level('signed')) { cells.push(signedCell(feature)); }
+  if (level('signed')) {
+    cells.push(signableCell(feature));
+    cells.push(signedCell(feature));
+  }
   var row = '<div class="tr" data-act="feature" data-feature="'
     + esc(feature.name) + '">' + cells.map(function (cell) {
       return '<div>' + cell + '</div>';
@@ -649,8 +519,9 @@ function signPanel(feature, rule) {
   return '<div class="panel"><h2>To sign</h2>'
     + '<p><span class="cmd">purlin:sign ' + esc(feature.name) + ' '
     + esc(rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
-    + '<p class="sec">' + (cell.word === 'not required'
-      ? 'No signature is required at this rule’s risk; one written anyway '
+    + '<p class="sec">' + (cell.required === false
+      ? 'This project signs the rules whose bar is strong, and this rule’s '
+        + 'bar is passed, so no signature is required; one written anyway '
         + 'still counts.'
       : 'A signature is a signed commit by someone on the signer list; the '
         + 'page shows it once it is on the branch.') + '</p></div>';
@@ -671,9 +542,11 @@ function proofPanel(proof) {
     + '</dl></div>';
 }
 function backLink() {
-  var from = VIEW.from === 'review' && level('strong') ? 'review' : 'board';
+  var from = VIEW.from === 'review' && level('strong') ? 'review'
+    : VIEW.from === 'sign' && level('signed') ? 'sign' : 'board';
+  var label = {review: 'Review', sign: 'Sign', board: 'Board'}[from];
   return '<button class="btn" data-act="close" data-screen="' + from + '">← '
-    + (from === 'review' ? 'Review list' : 'Board') + '</button>';
+    + label + '</button>';
 }
 function renderRule() {
   var found = ruleInView();
@@ -686,7 +559,8 @@ function renderRule() {
   var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted') + '</dd>'];
   GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
   if (level('strong')) {
-    rows.push('<dt>Risk</dt><dd>' + riskTag(rule.risk) + '</dd>');
+    rows.push('<dt>Bar</dt><dd>' + barTag(rule) + ' <span class="sec">'
+      + esc(barSource(rule)) + '</span></dd>');
   }
   rows.push('<dt>Origin</dt><dd>' + tag(rule.origin, true) + '</dd>');
   if (rule.criterion) {
@@ -716,111 +590,104 @@ function renderRule() {
     + '</div></section>';
 }
 var RULE_TEXT_MAX = 90;
-var WHY_SENTENCES = {
-  'unsigned': 'Nobody has signed it.',
-  'stale': 'Its signature no longer matches the rule, proof and test it was '
-    + 'written against.',
-  'held': 'A person holds it: the test does not prove the proof.',
+var KIND_SENTENCES = {
   'manual test': 'Its proof is @manual, so a person runs the test and states '
     + 'what they saw.',
-  'manual audit': 'The model review could not settle it, so a person judges '
-    + 'the proof against the test.'};
-var WHY_COUNTS = ['unsigned', 'stale', 'held', 'manual test', 'manual audit'];
+  'unsettled': 'The AI audit could not settle it, so a person judges the '
+    + 'proof against the test.',
+  'held': 'A person holds it: the test does not prove the proof.'};
 function shortText(text) {
   var value = String(text == null ? '' : text);
   return value.length <= RULE_TEXT_MAX ? value
     : value.slice(0, RULE_TEXT_MAX).replace(/\s+\S*$/, '') + '…';
 }
-function reviewRule(entry) {
-  var feature = featureNamed(entry.feature);
-  var found = null;
-  (feature ? feature.rules || [] : []).forEach(function (r) {
-    if (r.id === entry.rule) { found = r; }
-  });
-  return found;
+function kindSentence(word) {
+  return KIND_SENTENCES[word] || 'It is waiting because it reads ' + word + '.';
 }
-function whySentence(token) {
-  return WHY_SENTENCES[token] || 'It is on the review list because ' + token + '.';
+function reviewRowReasons(rule) {
+  var cell = cellOf(rule, 'strong') || {};
+  return (cell.reasons || []).length ? cell.reasons.join('; ')
+    : kindSentence(cell.word);
 }
-function reviewRowReasons(entry, rule) {
-  var reasons = ((rule ? cellOf(rule, entry.cell) : null) || {}).reasons || [];
-  return reasons.length ? reasons.join('; ')
-    : (entry.why || []).map(whySentence).join(' ');
-}
-function reviewRow(entry) {
-  var rule = reviewRule(entry);
-  var cell = rule ? cellOf(rule, entry.cell) : null;
+function listRow(entry, rule, rest) {
   return '<div class="rev" data-act="rule" data-feature="'
     + esc(entry.feature) + '" data-rule="' + esc(entry.rule) + '">'
     + '<span>' + esc(entry.feature) + '</span>'
     + '<span class="mono">' + esc(entry.rule) + '</span>'
     + '<span>' + esc(rule ? shortText(rule.text) : '') + '</span>'
-    + riskTag(entry.risk)
-    + (cell ? pill(cell.word) : '<span></span>')
-    + '<span class="sec">' + esc(reviewRowReasons(entry, rule)) + '</span>'
-    + '</div>';
+    + barTag(rule) + rest + '</div>';
 }
-function reviewOrder(entries) {
-  var first = [];
-  var rest = [];
-  entries.forEach(function (entry) {
-    var why = entry.why || [];
-    (why.indexOf('stale') >= 0 || why.indexOf('held') >= 0 ? first : rest)
-      .push(entry);
+function reviewRow(entry) {
+  var rule = listedRule(entry);
+  var cell = rule ? cellOf(rule, 'strong') : null;
+  return listRow(entry, rule, (cell ? pill(cell.word) : '<span></span>')
+    + '<span class="sec">' + esc(rule ? reviewRowReasons(rule) : '')
+    + '</span>');
+}
+function signRow(entry) {
+  var rule = listedRule(entry);
+  var cell = rule ? cellOf(rule, 'signed') : null;
+  return listRow(entry, rule, (cell ? pill(cell.word) : '<span></span>')
+    + '<span class="cmd">purlin:sign ' + esc(entry.feature) + ' '
+    + esc(entry.rule) + '</span>');
+}
+function listHead(labels) {
+  return '<div class="rev th">' + labels.map(function (label) {
+    return '<span>' + esc(label) + '</span>';
+  }).join('') + '</div>';
+}
+function ofKind(entries, word) {
+  return entries.filter(function (entry) {
+    var rule = listedRule(entry);
+    return rule && cellWord(rule, 'strong') === word;
   });
-  return first.concat(rest);
-}
-function riskSummary(entries) {
-  var lines = RISKS.map(function (risk) {
-    var group = entries.filter(function (entry) {
-      return (entry.risk || 'low') === risk;
-    });
-    if (!group.length) { return ''; }
-    var totals = {};
-    group.forEach(function (entry) {
-      (entry.why || []).forEach(function (token) {
-        if (WHY_COUNTS.indexOf(token) >= 0) {
-          totals[token] = (totals[token] || 0) + 1;
-        }
-      });
-    });
-    return '<p class="rsum">' + riskTag(risk)
-      + WHY_COUNTS.map(function (name) {
-        var n = totals[name] || 0;
-        return '<span class="' + (n ? 'sec' : 'muted') + '"><b>' + n
-          + '</b> ' + esc(name) + '</span>';
-      }).join('<i>·</i>') + '</p>';
-  }).join('');
-  return lines ? '<div class="panel">' + lines + '</div>' : '';
 }
 function renderReview() {
   var entries = DATA.review_list || [];
   if (!entries.length) {
-    return '<section><p class="eyebrow">Review list</p><div class="panel empty">'
-      + 'No rule is waiting for a person. A rule arrives here when the machine '
-      + 'cannot settle it, when a signature stops matching, when someone holds '
-      + 'it, or when it is unsigned at or above the risk this project signs '
-      + 'from.</div></section>';
+    return '<section><p class="eyebrow">Review</p><div class="panel empty">'
+      + 'No rule is waiting for a person. A rule arrives here when its proof '
+      + 'is @manual, when the AI audit could not settle it, or when someone '
+      + 'holds it.</div></section>';
   }
-  var head = '<section><p class="eyebrow">Review list</p><h1>'
+  var head = '<section><p class="eyebrow">Review</p><h1>'
     + entries.length + (entries.length === 1 ? ' rule needs' : ' rules need')
-    + ' a person</h1>'
-    + riskSummary(entries) + '</section>';
-  var body = RISKS.map(function (risk) {
-    var group = entries.filter(function (entry) {
-      return (entry.risk || 'low') === risk;
-    });
+    + ' a person</h1><p class="line">Each of these is work only a person can '
+    + 'do. Sign one with <span class="cmd">purlin:sign &lt;feature&gt; '
+    + '&lt;RULE-N&gt;</span>, or hold it with the case the test misses.'
+    + '</p></section>';
+  var body = REVIEW_KINDS.map(function (word) {
+    var group = ofKind(entries, word);
     if (!group.length) { return ''; }
-    return '<div class="group"><span class="gt">' + esc(risk)
-      + ' risk</span><span class="muted">(' + group.length + ')</span></div>'
-      + reviewOrder(group).map(reviewRow).join('');
+    return '<div class="group"><span class="gt">' + esc(word)
+      + '</span><span class="muted">(' + group.length + ')</span></div>'
+      + group.map(reviewRow).join('');
   }).join('');
-  return head + '<section><div class="tbl">' + body + '</div></section>';
+  return head + '<section><div class="tbl">'
+    + listHead(['Spec', 'Rule', 'What it claims', 'Bar', 'Reads', 'Why'])
+    + body + '</div></section>';
+}
+function renderSign() {
+  var entries = DATA.sign_list || [];
+  if (!entries.length) {
+    return '<section><p class="eyebrow">Sign</p><div class="panel empty">'
+      + 'No rule is waiting for a signature. A rule arrives here once it has '
+      + 'cleared its bar and needs a signature nobody has written for the '
+      + 'text it carries now.</div></section>';
+  }
+  var head = '<section><p class="eyebrow">Sign</p><h1>' + entries.length
+    + (entries.length === 1 ? ' rule to sign' : ' rules to sign')
+    + '</h1><p class="line">Each of these has cleared its bar, so the '
+    + 'evidence its project asks for is in. A signature is a signed commit '
+    + 'by someone on the signer list.</p></section>';
+  return head + '<section><div class="tbl">'
+    + listHead(['Spec', 'Rule', 'What it claims', 'Bar', 'Signed', 'Command'])
+    + entries.map(signRow).join('') + '</div></section>';
 }
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
             features: {}, groups: {}, filters: {}};
-var SCHEMA = 6;
+var SCHEMA = 7;
 var REFRESH_AFTER = 60;
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
 var BUCKETS = ['untested', 'failing', 'partial', 'passed', 'strong', 'signed'];
@@ -830,7 +697,8 @@ var TILE_HOVER = {
   untested: 'No test, no current run, or a spec line still drafted.',
   failing: 'Every platform that ran the tests found a failure.',
   partial: 'Passed on one platform, failed or did not run on another.'};
-var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
+var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signable',
+               'Signed'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
              failing: 'failing', stale: 'stale', passed: 'passed',
@@ -838,10 +706,10 @@ var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
 var CELL_TONES = {'ready': 'pass', 'drafted': 'idle', 'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'code changed': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
-  'manual test': 'warn', 'manual audit': 'warn', 'signed': 'pass',
-  'unsigned': 'warn', 'stale': 'fail', 'not required': 'idle'};
+  'manual test': 'warn', 'not audited': 'idle', 'unsettled': 'warn',
+  'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail'};
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
-var RISKS = ['high', 'medium', 'low'];
+var REVIEW_KINDS = ['manual test', 'unsettled', 'held'];
 function loadData(callback) {
   var frame = document.createElement('iframe');
   var done = false;
@@ -908,9 +776,30 @@ function headline(summary, gate) {
 function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
 }
-function riskTag(risk) {
-  var band = risk === 'high' || risk === 'medium' ? risk : 'low';
-  return '<span class="tag risk-' + band + '">' + esc(risk || 'low') + '</span>';
+function barTag(rule) {
+  var bar = (rule || {}).bar === 'strong' ? 'strong' : 'passed';
+  return '<span class="tag' + (bar === 'strong' ? '' : ' plain') + '">'
+    + esc(bar) + '</span>';
+}
+function barSource(rule) {
+  return (rule || {}).bar_from === 'gate' ? 'from the gate' : 'from the tag';
+}
+function everyRule() {
+  var out = [];
+  (DATA.features || []).forEach(function (feature) {
+    ownRules(feature).forEach(function (rule) {
+      out.push({feature: feature, rule: rule});
+    });
+  });
+  return out;
+}
+function listedRule(entry) {
+  var feature = featureNamed(entry.feature);
+  var found = null;
+  (feature ? feature.rules || [] : []).forEach(function (r) {
+    if (r.id === entry.rule) { found = r; }
+  });
+  return found;
 }
 function ratio(count, total, suffix) {
   var pct = total ? Math.round((count / total) * 100) : 0;
@@ -1079,7 +968,10 @@ function tabs() {
   var open = VIEW.screen;
   var items = [['board', 'Board']];
   if (level('strong')) {
-    items.push(['review', 'Review list (' + (DATA.review_list || []).length + ')']);
+    items.push(['review', 'Review (' + (DATA.review_list || []).length + ')']);
+  }
+  if (level('signed')) {
+    items.push(['sign', 'Sign (' + (DATA.sign_list || []).length + ')']);
   }
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
   return '<nav class="tabs">' + items.map(function (item) {
@@ -1114,8 +1006,10 @@ function render() {
     return;
   }
   if (VIEW.screen === 'review' && !level('strong')) { VIEW.screen = 'board'; }
+  if (VIEW.screen === 'sign' && !level('signed')) { VIEW.screen = 'board'; }
   var body = VIEW.screen === 'rule' ? renderRule()
     : VIEW.screen === 'review' ? renderReview()
+    : VIEW.screen === 'sign' ? renderSign()
     : notices() + renderBoard();
   app.innerHTML = topBar() + tabs() + '<div class="wrap">' + body + '</div>';
 }
@@ -1142,7 +1036,8 @@ function onClick(event) {
     var name = node.getAttribute('data-feature');
     VIEW.features[name] = !VIEW.features[name];
   } else if (act === 'rule') {
-    VIEW.from = VIEW.screen === 'review' ? 'review' : 'board';
+    VIEW.from = VIEW.screen === 'review' || VIEW.screen === 'sign'
+      ? VIEW.screen : 'board';
     VIEW.feature = node.getAttribute('data-feature');
     VIEW.rule = node.getAttribute('data-rule');
     VIEW.screen = 'rule';

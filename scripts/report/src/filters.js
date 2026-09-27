@@ -19,20 +19,29 @@ function bucketFilter(bucket) {
 function allFilters() {
   return [bucketFilter('untested'), bucketFilter('failing'),
           bucketFilter('partial'),
-    /* Every word the strong cell can read that is not `strong`: weak, the two
-       a person answers, and held. All four are a rule the audit did not
-       prove, which is the one question this pill asks. */
+    /* The two words the audit itself leaves on a rule: `weak`, which it
+       measured and did not prove, and `not audited`, which it has not run on
+       yet. Both are work for whoever writes the tests, which is the one
+       question this pill asks; the three words that wait for a person are
+       the next pill's. */
     {id: 'weak', label: 'Weak', level: 'strong', test: function (rule) {
       var word = cellWord(rule, 'strong');
-      return !!word && word !== 'strong';
+      return word === 'weak' || word === 'not audited';
     }},
-    {id: 'unsigned', label: 'Unsigned', level: 'signed', test: function (rule) {
-      return cellWord(rule, 'signed') === 'unsigned';
-    }},
-    {id: 'stale-or-held', label: 'Stale or held', level: 'signed',
+    /* The rules the Review tab holds: the strong cell reads `manual test`,
+       `unsettled` or `held`, so the next step is a person's. */
+    {id: 'to-review', label: 'To review', level: 'strong',
      test: function (rule) {
-       return !!(rule.flags || {}).stale || !!(rule.flags || {}).held;
-     }}];
+       return REVIEW_KINDS.indexOf(cellWord(rule, 'strong')) >= 0;
+     }},
+    /* The rules the Sign tab holds: they have cleared their bar, they need a
+       signature, and no signature counts for them yet. */
+    {id: 'to-sign', label: 'To sign', level: 'signed', test: function (rule) {
+      return !!rule.signable;
+    }},
+    {id: 'stale', label: 'Stale', level: 'signed', test: function (rule) {
+      return !!(rule.flags || {}).stale;
+    }}];
 }
 
 function offeredFilters() {
