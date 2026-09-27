@@ -1,11 +1,11 @@
 """Run a project's tagged tests, write the results, and audit them on request.
 
     purlin_run.py (--feature NAME ... | --all)
-                  (--quick [--remote] | --audit | --ci)
+                  (--test [--remote] | --audit | --ci)
                   [--tier unit|all] [--arm-timeout SECONDS]
                   [--project-root DIR]
 
-`--quick` is what `purlin:test` runs: the plugins run the tagged tests into
+`--test` is what `purlin:test` runs: the plugins run the tagged tests into
 `.purlin/runtime/proofs/`, the run writes `.purlin/tests/<feature>.json` and
 `.purlin/tests.md`, commits both under the person's identity, prints the table
 and ends with `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`.
@@ -90,13 +90,13 @@ LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
 USAGE = (
     'Usage: purlin_run.py (--feature NAME ... | --all) '
-    '(--quick [--remote] | --audit | --ci) '
+    '(--test [--remote] | --audit | --ci) '
     '[--tier unit|all] [--arm-timeout SECONDS] [--project-root DIR]')
 
 # The one line `purlin:test --remote` gets. A remote runner runs the tests,
 # so the flag belongs to the test and nowhere else.
 REMOTE_IS_A_TEST = ('a remote runner runs the tests, so --remote belongs to '
-                    '--quick. Run: purlin:test --remote')
+                    '--test. Run: purlin:test --remote')
 
 # What the run says about a proof tagged for an operating system it is not on.
 FOREIGN_PROOF = ('%s %s needs %s; this machine is %s. A remote runner runs '
@@ -135,7 +135,7 @@ class Args(object):
     def __init__(self):
         self.features = []
         self.all = False
-        self.action = None          # 'quick', 'audit' or 'ci'
+        self.action = None          # 'test', 'audit' or 'ci'
         self.remote = False
         self.tier = 'all'
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
@@ -157,7 +157,7 @@ def parse_args(argv):
             args.features.append(argv[index])
         elif token == '--all':
             args.all = True
-        elif token in ('--quick', '--audit', '--ci'):
+        elif token in ('--test', '--audit', '--ci'):
             actions.append(token[2:])
         elif token == '--remote':
             args.remote = True
@@ -194,7 +194,7 @@ def parse_args(argv):
         index += 1
 
     if len(actions) != 1:
-        args.error = 'name exactly one of --quick, --audit and --ci'
+        args.error = 'name exactly one of --test, --audit and --ci'
         return args
     args.action = actions[0]
     if args.all and args.features:
@@ -203,7 +203,7 @@ def parse_args(argv):
     if not args.all and not args.features:
         args.error = 'name at least one --feature, or --all'
         return args
-    if args.remote and args.action != 'quick':
+    if args.remote and args.action != 'test':
         args.error = REMOTE_IS_A_TEST
         return args
     return args
@@ -867,7 +867,7 @@ def main(argv=None):
             print('Evidence is missing: %s.' % failure)
 
     gate_code = 0
-    if args.action == 'quick':
+    if args.action == 'test':
         gate_line = _write_test_results(project_root, features, selected,
                                         index, os_name)
     elif args.action == 'audit':
@@ -883,7 +883,7 @@ def main(argv=None):
 
     print('')
     print(status_module.sync_status(project_root))
-    if args.action in ('quick', 'audit'):
+    if args.action in ('test', 'audit'):
         print('')
         print(gate_line[0])
         gate_code = gate_line[1]
@@ -939,7 +939,7 @@ def _build_test_results(project_root, features, selected, index, os_name,
 
 
 def _write_test_results(project_root, features, selected, index, os_name):
-    """The `--quick` arm's own evidence: the two files, and the commit.
+    """The `--test` arm's own evidence: the two files, and the commit.
 
     The commit is the person's own and nothing here pushes. The answer comes
     back as `(line, exit code)`.
@@ -1266,7 +1266,7 @@ def _ci_review(project_root, passed_here=()):
 
 
 def _remote(project_root, args, cfg=None):
-    """`--quick --remote`: let the git host's runner do the run.
+    """`--test --remote`: let the git host's runner do the run.
 
     The runner runs the same tests this machine would. At `strong` and above
     it audits them too and commits the record, which is the evidence that

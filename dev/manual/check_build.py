@@ -120,14 +120,14 @@ def main(argv=None):
 
     env = dict(os.environ)
     try:
-        _code, quick = run([sys.executable,
+        _code, output = run([sys.executable,
                             os.path.join(PLUGIN_ROOT, 'scripts', 'run',
                                          'purlin_run.py'),
-                            '--all', '--quick', '--project-root', root],
+                            '--all', '--test', '--project-root', root],
                            root, timeout=300, env=env)
     except subprocess.TimeoutExpired:
-        quick = 'purlin_run.py did not finish inside 300 s'
-    print('\npurlin_run.py --all --quick:\n%s' % quick.strip())
+        output = 'purlin_run.py did not finish inside 300 s'
+    print('\npurlin_run.py --all --test:\n%s' % output.strip())
 
     _code, head_after = run(['git', 'rev-parse', 'HEAD'], root)
     body = ''
@@ -147,8 +147,8 @@ def main(argv=None):
          ', '.join(tests) or 'no test file'),
         ('every test carries a proof marker', bool(tests) and len(marked) == len(tests),
          '%d of %d marked' % (len(marked), len(tests))),
-        ('the quick run passed', 'FAIL' not in quick.upper(),
-         (quick.strip().splitlines() or ['no output'])[-1][:70]),
+        ('the test run passed', 'FAIL' not in output.upper(),
+         (output.strip().splitlines() or ['no output'])[-1][:70]),
         ('the commit body carries Changeset', 'Changeset' in present,
          'sections: %s' % (', '.join(present) or 'none')),
         ('the reply named the next step', 'purlin:' in reply,

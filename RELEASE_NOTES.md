@@ -215,6 +215,7 @@ output, in any casing:
 | `signers`, the signer list, `signer list missing` | nothing: a signature names its signer, and `purlin:init --update` drops the key |
 | the protected branch | nothing: a signature counts on whatever commit carries it |
 | the self-signing check, `the signer last touched the test` | nothing: git names both authors |
+| `purlin_run.py --quick` | `purlin_run.py --test`, the arm `purlin:test` runs; `--quick` exits 2 |
 
 `audit` is un-retired and means one thing: the level 2 run. An audit proves a rule strong or
 weak. The grading scores the earlier `purlin:audit` produced stay retired.

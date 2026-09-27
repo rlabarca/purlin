@@ -131,7 +131,7 @@ def test_the_file_carries_the_run_and_the_commit(tmp_path):
     _repo(root)
 
     head = _git(root, 'rev-parse', 'HEAD').strip()
-    _run(root, '--all', '--quick')
+    _run(root, '--all', '--test')
     data = _results(root)
     assert data['schema'] == 'purlin-tests/2'
     # The commit the run observed, which the results commit then sits on top of.
@@ -171,7 +171,7 @@ def test_every_proof_entry_names_its_test_or_says_it_saw_none(tmp_path):
     _test_file(root)
     _repo(root)
 
-    _run(root, '--all', '--quick')
+    _run(root, '--all', '--test')
     entries = {entry['id']: entry for entry in _results(root)['proofs']}
     assert sorted(entries) == ['PROOF-1', 'PROOF-2']
     for entry in entries.values():
@@ -204,11 +204,11 @@ def test_a_feature_run_leaves_the_other_rows_as_they_were(tmp_path):
         '    assert True\n', encoding='utf-8')
     _repo(root)
 
-    _run(root, '--feature', 'one', '--quick')
+    _run(root, '--feature', 'one', '--test')
     first = (root / '.purlin' / 'tests.md').read_text(encoding='utf-8')
     one_row = [line for line in first.splitlines()
                if line.startswith('| one ')][0]
-    _run(root, '--feature', 'two', '--quick')
+    _run(root, '--feature', 'two', '--test')
     table = (root / '.purlin' / 'tests.md').read_text(encoding='utf-8')
 
     lines = [line for line in table.splitlines() if line.strip()]
@@ -233,7 +233,7 @@ def test_the_gate_line_answers_for_the_project_not_for_the_run(tmp_path):
         '    assert True\n', encoding='utf-8')
     _repo(root)
 
-    code, output = _run(root, '--feature', 'one', '--quick')
+    code, output = _run(root, '--feature', 'one', '--test')
     lines = [line for line in output.strip().splitlines() if line.strip()]
     assert lines[-1] == 'gate not met: 1 of 2', output
     assert code == 1, output
@@ -270,7 +270,7 @@ def test_the_run_commits_the_two_files_and_never_pushes(tmp_path):
     _repo(root)
     head = _git(root, 'rev-parse', 'HEAD').strip()
 
-    code, output = _run(root, '--all', '--quick')
+    code, output = _run(root, '--all', '--test')
     assert 'Test results committed.' in output, output
     assert 'git push' not in output, output
     assert _git(root, 'log', '-1', '--format=%s').strip() == (
@@ -289,11 +289,11 @@ def test_a_run_that_saw_the_same_thing_commits_nothing(tmp_path):
     _test_file(root)
     _repo(root)
 
-    _code, first = _run(root, '--all', '--quick')
+    _code, first = _run(root, '--all', '--test')
     observed = _results(root)['commit']
     assert 'Test results committed.' in first, first
     for _again in range(2):
-        _code, output = _run(root, '--all', '--quick')
+        _code, output = _run(root, '--all', '--test')
         assert 'Test results unchanged.' in output, output
     subjects = _git(root, 'log', '--format=%s').splitlines()
     assert len([s for s in subjects if s.startswith('purlin: tests at ')]) == 1
@@ -302,7 +302,7 @@ def test_a_run_that_saw_the_same_thing_commits_nothing(tmp_path):
     (root / 'src' / 'feat.py').write_text('VALUE = 3\n', encoding='utf-8')
     _git(root, 'add', '-A')
     _git(root, 'commit', '-q', '-m', 'change the code')
-    _code, output = _run(root, '--all', '--quick')
+    _code, output = _run(root, '--all', '--test')
     assert 'Test results committed.' in output, output
 
 
@@ -312,7 +312,7 @@ def test_outside_a_repository_the_files_are_still_written(tmp_path):
     _spec(root)
     _test_file(root)
 
-    _code, output = _run(root, '--all', '--quick')
+    _code, output = _run(root, '--all', '--test')
     assert 'there is no git repository to commit them to' in output, output
     assert (root / '.purlin' / 'tests' / 'feat.json').exists()
     assert (root / '.purlin' / 'tests.md').exists()
@@ -410,7 +410,7 @@ def test_a_ci_run_writes_into_its_own_folder_and_a_person_s_file_stays(tmp_path)
     _spec(root)
     _test_file(root)
     _repo(root)
-    _run(root, '--all', '--quick')
+    _run(root, '--all', '--test')
     mine = _results(root)
 
     written = writer.write_results(root, writer.build_results(

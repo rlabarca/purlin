@@ -455,7 +455,7 @@ class TestSkillTest:
     def test_it_runs_the_run_script_and_names_its_exit_codes(self):
         rel = skill_path('test')
         assert (same_line(rel, [
-            '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"', '--quick'])
+            '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"', '--test'])
             + same_line(rel, ['Exit codes:', '`0`', '`1`', '`2`'])) == []
 
     @pytest.mark.proof("skill_test", "PROOF-3", "RULE-3")

@@ -7,7 +7,7 @@ holds it to one timeout (600 seconds by default), and prints where the transcrip
 | Check | What it drives | What it prints |
 |---|---|---|
 | `check_spec.py` | `purlin:spec` on the sentence from the design's solo start | the spec file, its rule count, whether every rule carries a proof, the tags, and whether the reply ends with the offer to build |
-| `check_build.py` | `purlin:build` on that spec | the files created, whether the tests carry proof markers, the quick run, and the commit body's three sections |
+| `check_build.py` | `purlin:build` on that spec | the files created, whether the tests carry proof markers, the `--test` run, and the commit body's three sections |
 | `check_qa_tool.py` | `tools/QA/purlin-qa-report.md` over `scripts/report/scan.py` output | the triage report, and whether it is ordered by bar and names the review list only |
 
 Run them from the repository root, in this order:

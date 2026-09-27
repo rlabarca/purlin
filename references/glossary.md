@@ -210,6 +210,7 @@ The repository's own vocabulary check enforces that, reading this table for the 
 | `signers`, the signer list, `signer list missing` | removed. Signing is logged, not policed: a signature names its signer and git names the author. `purlin:init --update` drops the key |
 | the protected branch, `is_ancestor` | removed. A signature counts on whatever commit carries it, and init checks only a remote and its host |
 | the self-signing check, `the signer last touched the test` | removed. A signature counts whoever last committed to the test file; git names both authors |
+| `--quick`, the first arm of `scripts/run/purlin_run.py` | `--test`, the arm `purlin:test` runs. `--quick` is refused as an unknown flag |
 
 `audit` is not retired. It means one thing: the level-2 run, which proves a rule strong or weak.
 The grading scores the old `purlin:audit` printed stay retired, in the table below.

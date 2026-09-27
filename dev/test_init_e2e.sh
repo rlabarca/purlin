@@ -6,7 +6,7 @@
 #
 #   1. purlin:init at gate passed
 #   2. a hand-written spec and one tagged test
-#   3. purlin_run.py --quick            the tests, the results, the commit
+#   3. purlin_run.py --test             the tests, the results, the commit
 #   4. gate_check.py --check            exits 0 under passed
 #   5. purlin:init --gate strong        raises the gate
 #   6. gate_check.py --check            exits 1: no audit has measured it
@@ -237,8 +237,8 @@ EOF
 gate_walk() {  # dir language
   local dir="$1" language="$2"
 
-  expect_exit "$language: quick run passes and meets the gate" 0 \
-    python3 "$RUN" --all --quick --project-root "$dir"
+  expect_exit "$language: test run passes and meets the gate" 0 \
+    python3 "$RUN" --all --test --project-root "$dir"
   expect_file "$language: the test results are in the tree" \
     "$dir/.purlin/tests/greeting.json"
   expect_file "$language: the table is in the tree" "$dir/.purlin/tests.md"

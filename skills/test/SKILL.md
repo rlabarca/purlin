@@ -28,7 +28,7 @@ everything". The documented syntax is canonical, never required.
 ## Step 1: run the tests
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --quick
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --test
 ```
 
 One feature at a time is `--feature <name>`, repeated for each. Every tier is `--tier all`.

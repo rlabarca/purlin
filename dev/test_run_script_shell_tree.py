@@ -36,7 +36,7 @@ def test_a_shell_test_in_a_subdirectory_proves_what_it_records(tmp_path):
     _script(root, 'tests/shell/feat.test.sh', 'PROOF-1')
     _script(root, 'mutants/tests/shell/feat.test.sh', 'PROOF-2')
     _script(root, '.hidden/feat.test.sh', 'PROOF-2')
-    code, output = _run(root, '--all', '--quick')
+    code, output = _run(root, '--all', '--test')
     data = _proofs(root, 'feat')
     assert data is not None, output
     entries = data['proofs']

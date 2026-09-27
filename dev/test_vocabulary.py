@@ -46,7 +46,10 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             # legal; only the config key's spellings are retired.
             "signer list", "Signer list", "`signers`", "'signers'", '"signers"',
             "protected branch", "Protected branch", "is_ancestor",
-            "self-signing", "Self-signing")
+            "self-signing", "Self-signing",
+            # decision 34: the arm `purlin:test` runs is named for what it
+            # does, and the old spelling is an unknown flag
+            "--quick")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
@@ -94,6 +97,7 @@ MARKED = {
     "dev/test_signatures.py": "# retired",
     "dev/test_schema_spec_format.py": "# retired",
     "dev/test_schema_proof_format.py": "# retired",
+    "dev/test_run_script.py": "# retired",
 }
 
 

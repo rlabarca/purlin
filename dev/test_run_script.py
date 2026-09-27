@@ -3,7 +3,7 @@
 Every test builds a throwaway project under `tmp_path` and drives the real
 script against it: the arms it runs, the two loud failures it raises, the
 proofs another operating system owns, the exit codes, the test results the
-`--quick` arm writes and commits, and the shape of the `purlin-record/2` dict
+`--test` arm writes and commits, and the shape of the `purlin-record/2` dict
 the `--ci` arm hands to the record writer.
 
 The modules the record arm needs (`mutation`, `records`, `ci`, `remote`) are
@@ -170,7 +170,7 @@ class TestTheMutmutCopy:
         (copy / 'test_feat.py').write_text(
             (root / 'tests' / 'test_feat.py').read_text(encoding='utf-8'),
             encoding='utf-8')
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert code == 0, output
         assert 'import file mismatch' not in output
         data = _proofs(root, 'feat')
@@ -184,14 +184,15 @@ class TestTheCommandLine:
 
     @pytest.mark.parametrize('args', [
         (),                                   # no action
-        ('--quick',),                         # no feature and no --all
-        ('--all', '--quick', '--audit'),      # two actions
-        ('--all', '--feature', 'x', '--quick'),
-        ('--all', '--audit', '--remote'),     # --remote belongs to --quick
+        ('--test',),                          # no feature and no --all
+        ('--all', '--test', '--audit'),       # two actions
+        ('--all', '--feature', 'x', '--test'),
+        ('--all', '--audit', '--remote'),     # --remote belongs to --test
         ('--all', '--audit', '--tag', '1.0'),  # nothing pins a record now
-        ('--all', '--quick', '--tier', 'wide'),
-        ('--all', '--quick', '--nonsense'),
-        ('--all', '--quick', '--feature'),    # a flag with no value
+        ('--all', '--test', '--tier', 'wide'),
+        ('--all', '--test', '--nonsense'),
+        ('--all', '--test', '--feature'),     # a flag with no value
+        ('--all', '--quick'),  # retired
     ])
     @pytest.mark.proof("run_script", "PROOF-1", "RULE-1")
     def test_bad_invocation_exits_two(self, tmp_path, args):
@@ -204,29 +205,29 @@ class TestTheCommandLine:
     def test_an_unknown_feature_exits_two(self, tmp_path):
         root = _project(tmp_path)
         _spec(root, 'feat')
-        code, output = _run(root, '--feature', 'nosuch', '--quick')
+        code, output = _run(root, '--feature', 'nosuch', '--test')
         assert code == 2
         assert 'no spec named nosuch' in output
 
     @pytest.mark.proof("run_script", "PROOF-2", "RULE-2")
     def test_a_missing_project_root_exits_two(self, tmp_path):
-        code, output = _run(tmp_path / 'nowhere', '--all', '--quick')
+        code, output = _run(tmp_path / 'nowhere', '--all', '--test')
         assert code == 2
         assert 'is not a directory' in output
 
 
 # ---------------------------------------------------------------------------
-# --quick, per framework
+# --test, per framework
 # ---------------------------------------------------------------------------
 
-class TestQuickRunsEachFramework:
-    """`--quick` runs the arms and leaves the runtime proof files behind."""
+class TestTheTestArmRunsEachFramework:
+    """`--test` runs the arms and leaves the runtime proof files behind."""
 
     @pytest.mark.proof("run_script", "PROOF-3", "RULE-3")
     def test_pytest_arm_writes_the_runtime_proof_file(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         data = _proofs(root, 'feat')
         assert data is not None, output
         assert data['tier'] == 'unit'
@@ -242,7 +243,7 @@ class TestQuickRunsEachFramework:
     def test_the_proof_file_is_not_written_under_specs(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
-        _run(root, '--all', '--quick')
+        _run(root, '--all', '--test')
         stray = [name for name in os.listdir(str(root / 'specs' / 'a'))
                  if not name.endswith('.md')]
         assert stray == []
@@ -256,7 +257,7 @@ class TestQuickRunsEachFramework:
             'purlin_proof "feat" "PROOF-1" "RULE-1" pass "shell case"\n'
             'purlin_proof_finish\n'
             % SHELL_HARNESS, encoding='utf-8')
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         data = _proofs(root, 'feat')
         assert data is not None, output
         assert data['proofs'][0]['test_name'] == 'shell case'
@@ -273,7 +274,7 @@ class TestQuickRunsEachFramework:
             "-- @purlin feat PROOF-1 RULE-1 unit\n"
             "-- Test: the select passes\n"
             "SELECT 'PASS';\n", encoding='utf-8')
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         data = _proofs(root, 'feat')
         assert data is not None, output
         assert data['proofs'][0]['status'] == 'pass'
@@ -287,7 +288,7 @@ class TestQuickRunsEachFramework:
             'def test_no():\n'
             '    assert 1 == 2\n'))
         _spec(root, 'feat')
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert code == 1, output
         assert 'the pytest runner exited' in output
         assert _proofs(root, 'feat')['proofs'][0]['status'] == 'fail'
@@ -304,7 +305,7 @@ class TestQuickRunsEachFramework:
                 {'feature': 'ghost', 'id': 'PROOF-1', 'rule': 'RULE-1',
                  'test_file': 'gone.py', 'test_name': 't', 'status': 'pass',
                  'tier': 'unit'}]}), encoding='utf-8')
-        _run(root, '--all', '--quick')
+        _run(root, '--all', '--test')
         assert not (stale_dir / 'ghost.unit.json').exists()
 
 
@@ -328,7 +329,7 @@ class TestLoudFailureA:
             '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
             'def test_ok():\n'
             '    assert True\n', encoding='utf-8')
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert code == 1, output
         assert 'the pytest arm ran and its plugin wrote no proof entry' in output
         assert '1 marked test(s)' in output
@@ -337,7 +338,7 @@ class TestLoudFailureA:
     def test_an_arm_with_no_markers_is_not_a_failure(self, tmp_path):
         root = _project(tmp_path, frameworks='shell')
         _spec(root, 'feat')
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         # Nothing was marked, so nothing went missing: the arm is silent and
         # the table is what says the rule has no evidence yet.
         assert 'wrote no proof entry' not in output
@@ -364,7 +365,7 @@ class TestLoudFailureB:
             '    assert True\n'))
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
                                     ('PROOF-2', 'RULE-1', '')))
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert code == 1, output
         assert 'produced no proof entry' in output
         assert 'feat PROOF-2' in output
@@ -382,7 +383,7 @@ class TestLoudFailureB:
         root = _pytest_project(tmp_path, body='\n'.join(body))
         _spec(root, 'feat',
               proofs=tuple(('PROOF-%d' % i, 'RULE-1', '') for i in range(1, 9)))
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert code == 1
         assert '8 marker(s) produced no proof entry' in output
         assert 'and 3 more' in output
@@ -398,7 +399,7 @@ class TestLoudFailureB:
             '@pytest.mark.skip(reason="no tool here")\n'
             'def test_skipped():\n'
             '    assert True\n', encoding='utf-8')
-        code, output = _run(root, '--feature', 'feat', '--quick')
+        code, output = _run(root, '--feature', 'feat', '--test')
         assert 'other PROOF-1' not in output
         assert 'Evidence is missing' not in output, output
         # `other` was not run, so the project's passed level is not met and
@@ -424,7 +425,7 @@ class TestEnvScopedProofs:
                                     ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))
         purlin_run = _load_run_script()
         here = purlin_run.host_os()
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert ('feat PROOF-2 needs %s; this machine is %s. A remote runner '
                 'runs it: purlin:init adds one.' % (other, here)) in output
         assert 'Evidence is missing' not in output, output
@@ -443,7 +444,7 @@ class TestEnvScopedProofs:
             '    assert True\n'))
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
                                     ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert 'produced no proof entry' not in output
         assert 'Evidence is missing' not in output, output
 
@@ -453,7 +454,7 @@ class TestEnvScopedProofs:
         here = purlin_run.host_os()
         root = _pytest_project(tmp_path)
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ' @env(%s)' % here),))
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert 'needs %s' % here not in output
         assert _proofs(root, 'feat') is not None, output
         assert code == 0, output
@@ -469,18 +470,18 @@ class TestEveryRunEndsWithTheNextStep:
     def test_the_table_and_one_next_step_are_printed(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
-        _code, output = _run(root, '--all', '--quick')
+        _code, output = _run(root, '--all', '--test')
         assert 'Purlin status:' in output
         assert 'Tests' in output
         lines = [line for line in output.strip().splitlines() if line.strip()]
         assert any(line.startswith('→ ') for line in lines), output
-        # A `--quick` run ends with the answer a person came for.
+        # A `--test` run ends with the answer a person came for.
         assert lines[-1].startswith('gate '), output
 
     @pytest.mark.proof("run_script", "PROOF-11", "RULE-11")
     def test_a_project_with_no_specs_says_so(self, tmp_path):
         root = _project(tmp_path)
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert 'No specs found under specs/' in output
         assert code == 1
 
@@ -848,11 +849,11 @@ class TestRecordCommitsAndTags:
         assert '1 brief written.' in capsys.readouterr().out
 
     @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
-    def test_a_quick_run_commits_no_record(
+    def test_a_test_run_commits_no_record(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--quick')
+        _code, calls = record_run(root, '--all', '--test')
         capsys.readouterr()
         assert calls['write'] == []
         assert calls['commit'] == []
@@ -974,7 +975,7 @@ class TestTheGateDecidesTheBreaks:
 
 
 class TestRecordWithoutTheEngines:
-    """`--quick` and `--ci` both work where the break engines are absent."""
+    """`--test` and `--ci` both work where the break engines are absent."""
 
     @pytest.mark.proof("run_script", "PROOF-18", "RULE-18")
     def test_missing_break_engines_are_reported_and_the_run_continues(
@@ -1190,7 +1191,7 @@ class TestTheConsoleCodecNeverEndsTheRun:
         environment = dict(os.environ, PYTHONIOENCODING='cp1252')
         result = subprocess.run(
             [sys.executable, RUN_SCRIPT, '--project-root', str(root),
-             '--all', '--quick'],
+             '--all', '--test'],
             capture_output=True, encoding='utf-8', cwd=str(root),
             env=environment)
         output = result.stdout + result.stderr
@@ -1218,7 +1219,7 @@ class TestAFailingArmStatesItsReason:
             'def test_bad():\n'
             '    assert 1 == 2\n'))
         _spec(root, 'feat')
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert code == 1, output
         heading = '--- pytest output (last 60 lines) ---'
         assert heading in output, output
@@ -1230,7 +1231,7 @@ class TestAFailingArmStatesItsReason:
     def test_an_arm_that_passed_prints_no_tail(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
-        code, output = _run(root, '--all', '--quick')
+        code, output = _run(root, '--all', '--test')
         assert code == 0, output
         assert 'output (last 60 lines)' not in output, output
 
@@ -1262,7 +1263,7 @@ class TestAnEmptyProjectRootIsRefused:
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
         result = subprocess.run(
-            [sys.executable, RUN_SCRIPT, '--all', '--quick',
+            [sys.executable, RUN_SCRIPT, '--all', '--test',
              '--project-root', ''],
             capture_output=True, encoding='utf-8', cwd=str(root))
         output = result.stdout + result.stderr
