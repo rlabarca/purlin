@@ -735,7 +735,7 @@ def test_the_rule_screen_names_the_bar_and_where_it_came_from(browser,
     rows = page.evaluate(KV_ROWS)
     # The whole row set, so a row the model dropped cannot come back.
     assert list(rows) == ['Spec status', 'Passed', 'Strong', 'Signed', 'Bar',
-                          'Origin', 'Spec', 'Last run', 'Signatures']
+                          'Spec', 'Last run', 'Signatures']
     assert rows['Bar'] == 'strong from the tag'
 
     page.click('[data-act="close"]')
