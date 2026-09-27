@@ -94,7 +94,7 @@ whole tree, every record and brief in it included.
 |--------------------|-------------------|
 | A test failed | `→ Run: purlin:build <feature>` |
 | Test strength below `min_strength` | `→ Run: purlin:build <feature>` (add the case the break escaped) |
-| A finding or an observation on a rule | `→ Run: purlin:build <feature>` (write the case it names) |
+| An observation on a rule | `→ Run: purlin:build <feature>` (write the case it names) |
 | A rule needs another operating system | `→ Run: purlin:test --remote` |
 | Every rule met the gate `passed` | `→ Next: run git push.` |
 | A `ci` record is missing under `trust: remote` | `→ Run: purlin:test --remote` |

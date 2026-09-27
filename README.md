@@ -86,8 +86,8 @@ purlin:init
 Answer the gate question with `passed`, and `y` to
 `Do you trust your own machine for the tests and the signing?`. Init detects the language and
 the test framework from the tree, reads the git host from the remote URL, writes `.purlin/` and
-`specs/`, installs the proof plugin, and prints every file it wrote. It writes no git hook and
-prints no branch rule.
+`specs/`, installs the proof plugin, and prints every file it wrote. It installs no git hook
+and asks nothing of your git host.
 
 ```
 purlin:spec "Users sign in with email and password. After five failed attempts the

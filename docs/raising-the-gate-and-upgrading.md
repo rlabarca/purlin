@@ -43,7 +43,7 @@ the gate and the trust answer, `specs/`, `.purlin/records/` with a README naming
 the files in it and saying that nobody edits one by hand, the proof plugin for the detected
 test framework, the break engine for the language, a `.gitignore` block for `.purlin/runtime/`,
 the dashboard page copied so it opens from disk, and the Claude Code hook that refreshes the
-local dashboard data. No git hook, and no branch rule to apply.
+local dashboard data. Nothing to apply on the git host, and no git hook.
 
 **To `strong`.** On top of that: `designs/` with a README, if it is missing, and the breaks,
 which turn on with this raise. `min_strength` becomes 70. Below it `purlin:audit` runs the

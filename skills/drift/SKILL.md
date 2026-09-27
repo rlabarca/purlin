@@ -107,14 +107,14 @@ drift qa: Review is 9 rules and Sign is 3
 
   login RULE-3               signature stale: the rule text changed after it
   billing RULE-2             unsettled: the AI audit could not settle
-  export RULE-1              no negative case: every proof asserts a success path
+  export RULE-1              weak: no proof of this rule names a rejection or a boundary
 ```
 
 ## Step 4: what drift never does
 
 It never edits a spec, a test or a signature, and it never counts `code changed` as work for a
-person: the code moved, the signature stands, and CI clears it on the next run. Say so in one
-line rather than listing those rules as findings.
+person: the code moved, the signature stands, and the next run clears the cell. Say so in one
+line rather than listing those rules one by one.
 
 ## Step 5: name the next step
 

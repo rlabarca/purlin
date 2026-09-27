@@ -157,7 +157,7 @@ measurements alone. Changing the test ends the hold.
 **Skip.** Move on and leave the cells alone. A skipped rule is on the list again next time,
 which is the intended behaviour: nothing is marked as seen by being seen.
 
-Never narrow a rule or a proof to make a finding disappear. That lowers the claim instead of
+Never narrow a rule or a proof to make an observation disappear. That lowers the claim instead of
 strengthening the evidence. On a rule that came from an anchor it is not yours to change at
 all: `purlin:anchor propose <name>` drafts that change where the rule lives.
 

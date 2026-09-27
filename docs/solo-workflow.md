@@ -51,7 +51,8 @@ only evidence this gate asks for. Read
 and change the file with the `purlin_config` tool rather than by hand, so a key the installed
 Purlin no longer reads is reported instead of silently kept.
 
-Init prints no branch rule, at this gate or any other. Purlin asks the git host for nothing.
+Purlin asks the git host for nothing, at this gate or any other: no setting to apply, no
+check to require.
 
 ## A session
 

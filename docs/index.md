@@ -6,7 +6,7 @@ For anyone looking for the guide that fits their role. Every entry is one sittin
 
 | Guide | What it covers |
 |-------|----------------|
-| [How Purlin works](how-purlin-works.md) | The chain in one diagram, the loop, the five words, who writes each file, and the questions every developer asks: where tests run, what red means, which operating system |
+| [How Purlin works](how-purlin-works.md) | The chain in one diagram, the loop, the six words, who writes each file, and the questions every developer asks: where tests run, what red means, which operating system |
 | [Getting started](getting-started.md) | Install, `purlin:init` and its one question, the first spec, build, test, push |
 | [Working together](working-together.md) | What each role needs, what they run, what they see, and drift per role |
 

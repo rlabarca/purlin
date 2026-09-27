@@ -56,7 +56,7 @@ you run the tests, you audit them, you sign them, `purlin:sign` writes the tag, 
 The gate says how far down the loop you go: `passed` stops after the test, `strong` after the
 audit, `signed` ends with the signature and the tag.
 
-## Five words
+## Six words
 
 **A push is `git push`, typed by a person.** It is free: any branch, any time, and nothing runs
 when you make one. No skill, no agent and no hook pushes for you, and none opens a pull
@@ -96,16 +96,16 @@ new.
 
 | File | Written by | Where it lands | Who may write it |
 |------|-----------|----------------|------------------|
-| test results | `purlin:test` | `.purlin/tests/<feature>.json` and `.purlin/tests.md` | you, at every gate. They count at every gate |
+| test results | `purlin:test` | `.purlin/tests/<feature>.json` and `.purlin/tests.md` | you. They count at every gate |
 | record | `purlin:audit`, and a remote runner | `.purlin/records/local/<feature>/`, or `.purlin/records/ci/<feature>/` | anyone, into `local/`; a runner, into `ci/`, through the git host's API |
 | brief | `purlin:audit`, and a remote runner | `.purlin/briefs/local/<feature>/`, or `.purlin/briefs/ci/<feature>/` | the same two hands, into the same two folders |
 | signature | `purlin:sign <feature> RULE-N` | `specs/<category>/<feature>.signatures/` | a person, in a signed commit; under `signed`, one on the signer list |
 | hold | `purlin:sign <feature> RULE-N --hold "<case>"` | the same directory, `.hold.json` | any person, in a signed commit |
 
-No branch rule guards any of those paths, and none is asked for. What makes a file under
-`ci/` a runner's is the commit that added it: a tag run reads that commit and fails the job
-unless the runner's own identity made it. What makes a signature count is a short list of
-conditions read from git and from the file itself.
+Nothing on the git host guards those paths, and nothing has to. What makes a file under `ci/`
+a runner's is the commit that added it: a tag run reads that commit and fails the job unless
+the runner's own identity made it. What makes a signature count is a short list of conditions
+read from git and from the file itself.
 
 ## When a project has a runner
 

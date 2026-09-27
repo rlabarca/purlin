@@ -444,7 +444,7 @@ delete command.
 
 ## Next
 
-- [how-purlin-works.md](how-purlin-works.md): the chain, the five words, and who writes each file.
+- [how-purlin-works.md](how-purlin-works.md): the chain, the six words, and who writes each file.
 - [dashboard.md](dashboard.md): the same data as a page that opens from disk.
 - [team-workflow.md](team-workflow.md): what the `strong` gate asks of a team.
 - [regulated-workflow.md](regulated-workflow.md): signatures on top of records.

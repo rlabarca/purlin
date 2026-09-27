@@ -233,7 +233,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root
 
 `--update` detects the older layout and offers each change separately. It untracks and deletes
 the proof files and the evidence files that used to be committed, untracks the committed
-dashboard data, removes an installed pre-push hook and says why, retires the config keys that
+dashboard data, removes the git hook an older Purlin installed and says why, retires the config keys that
 no longer exist, asks the gate question and the trust question once each, and rewrites an
 operating-system tag to `@env(...)` only where the intended system is unambiguous. Every write asks first, every file it replaces
 is backed up beside the original, and while the update is pending `sync_status` opens with

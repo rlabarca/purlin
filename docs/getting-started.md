@@ -70,8 +70,8 @@ It writes `.purlin/config.json` with the gate, the trust answer and the derived 
 `specs/` for the specs, and `.purlin/records/` with a README naming what writes the files in
 it. It installs the proof plugin for the detected framework and the breaks engine for the
 language, adds a `.gitignore` block for `.purlin/runtime/`, and copies the dashboard page so it
-opens from disk. It writes no git hook and prints no branch rule. It ends by printing every
-file it wrote or edited, one per line. `purlin:init --dry-run` prints that list and writes
+opens from disk. It installs no git hook and asks nothing of your git host. It ends by
+printing every file it wrote or edited, one per line. `purlin:init --dry-run` prints that list and writes
 nothing.
 
 ## Write the first spec
