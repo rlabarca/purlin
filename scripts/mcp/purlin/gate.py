@@ -10,8 +10,9 @@ before it is proven, and every level above it is not asked for at all:
           under either source, test strength at or above the project
           minimum, a settled AI audit where the bar asks for one, and nobody
           holding the rule
-`signed`  every rule's signed cell is met too: a person on the signer list
-          signed the rule, proof, test, bar and audit hashes
+`signed`  every rule that needs a signature has a counting one: a person
+          signed the rule, proof, test, bar and audit hashes in a signed
+          commit. Who signed is recorded, not policed
 
 One setting is not derived from the gate: `trust`, which `purlin:init` asks
 for once. `local`, the default, is a project that trusts this machine for
@@ -23,10 +24,12 @@ Everything else has a default derived from the gate, and every default can be
 overridden by naming the key:
 
     {"gate": "strong", "min_strength": 70, "mutation_engine": "auto",
-     "sql_engine": null, "ci": "github", "signers": [], "trust": "local"}
+     "sql_engine": null, "ci": "github", "trust": "local"}
 
 Keys this release no longer reads are ignored with one warning naming
-`purlin:init --update`.
+`purlin:init --update`. The key an older release wrote naming who may sign
+is ignored without a warning, because nothing reads it and nothing is lost;
+`purlin:init --update` drops it.
 """
 
 import os
@@ -83,7 +86,7 @@ class GateConfig(object):
     """The resolved settings one run reads, plus the warnings resolving raised."""
 
     __slots__ = ('gate', 'min_strength', 'sign_at', 'breaks',
-                 'mutation_engine', 'sql_engine', 'ci', 'signers',
+                 'mutation_engine', 'sql_engine', 'ci',
                  'test_framework', 'trust', 'warnings')
 
     # What a surface reads is the settings a project can name. `breaks` and
@@ -144,11 +147,6 @@ def resolve_gate(config):
             '.purlin/config.json still carries %s, which this release does not '
             'read. Run purlin:init --update.' % ', '.join(retired))
 
-    signers = config.get('signers') or []
-    if not isinstance(signers, list):
-        warnings.append('"signers" is not a list; reading it as empty')
-        signers = []
-
     resolved = GateConfig(
         gate=gate,
         min_strength=min_strength,
@@ -157,7 +155,6 @@ def resolve_gate(config):
         mutation_engine=config.get('mutation_engine', 'auto'),
         sql_engine=config.get('sql_engine'),
         ci=config.get('ci'),
-        signers=[str(s).strip().lower() for s in signers if str(s).strip()],
         test_framework=config.get('test_framework', 'auto'),
         trust=trust,
         warnings=warnings,

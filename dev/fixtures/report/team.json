@@ -572,7 +572,6 @@
     "min_strength": 70,
     "mutation_engine": "auto",
     "sign_at": null,
-    "signers": [],
     "sql_engine": null,
     "test_framework": "pytest",
     "trust": "local"

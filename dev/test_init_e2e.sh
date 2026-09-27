@@ -15,10 +15,9 @@
 #   8a. a --ci run on a signed/ tag, which commits nothing and says so
 #   8b. a --ci run on a run/* branch, which commits
 #  10. purlin:init --gate signed        raises again
-#  11. gate_check.py --check            exits 1: no signer list
-#  12. the signer list, then the gate check exits 1 with no signature
-#  13. sign.py, signed by a throwaway key that exists only in the temp repo
-#  14. gate_check.py --check            exits 0
+#  11. gate_check.py --check            exits 1: the rule has no signature
+#  12. sign.py, signed by a throwaway key that exists only in the temp repo
+#  13. gate_check.py --check            exits 0
 #
 # Nothing here reaches a git host. The CI identity is a GIT_COMMITTER_NAME and
 # a signature on a local commit, which is what `record_label` reads, and both
@@ -193,21 +192,6 @@ signing_key() {  # dir email
   git -C "$dir" config gpg.ssh.allowedSignersFile "$dir/.git/allowed-signers"
 }
 
-set_signers() {  # dir email
-  python3 - "$1" "$2" <<'PY'
-import json
-import os
-import sys
-path = os.path.join(sys.argv[1], '.purlin', 'config.json')
-with open(path, encoding='utf-8') as handle:
-    config = json.load(handle)
-config['signers'] = [sys.argv[2]]
-with open(path, 'w', encoding='utf-8') as handle:
-    json.dump(config, handle, indent=2)
-    handle.write('\n')
-PY
-}
-
 # `ci` or `local` for the newest record, read the way the reader
 # reads it: from the folder the file sits in.
 record_label() {  # dir
@@ -340,14 +324,9 @@ gate_walk() {  # dir language
 
   init_at "$dir" signed
   commit_all "$dir" "raise the gate to signed"
-  expect_exit "$language: signed refuses an empty signer list" 1 \
-    python3 "$GATE" --check --project-root "$dir"
   python3 "$GATE" --check --project-root "$dir" > "$dir/.purlin-gate.log" 2>&1
-  expect_in "$language: it says which command writes the list" \
+  expect_not_in "$language: signed names nobody who may sign" \
     'purlin:init --gate signed' "$dir/.purlin-gate.log"
-
-  set_signers "$dir" jane@acme.com
-  commit_all "$dir" "name the signers"
 
   # A local record counts at signed too. With CI's out of the way the gate
   # still reads the one the local audit wrote, and what is left is the

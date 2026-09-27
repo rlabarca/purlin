@@ -13,8 +13,8 @@ On a project that has code, init asks two questions and nothing else:
 Everything else is derived from those answers or read from the tree: the
 language from detection, the git host from the remote URL, and the minimum
 test strength from the gate. Two honest exceptions: a tree with nothing to
-detect is asked which framework its tests use, and `signed` is asked who may
-sign and which rules need a signature.
+detect is asked which framework its tests use, and `signed` is asked which
+rules need a signature.
 
 It then writes, in this order and naming every one in the summary: the config,
 the plugin copies and `.purlin/plugin-root`, the runner's wiring, the engine's
@@ -81,7 +81,6 @@ SIGN_AT_CHOICES = (
 )
 LANGUAGE_QUESTION = ('There is nothing here to detect a test framework from. '
                      'Which one do the tests use?')
-SIGNER_QUESTION = 'Who may sign a rule? Emails, separated by commas.'
 
 # The one question that is not derived from the gate. A project that trusts
 # this machine runs its tests and writes its signatures here; one that does
@@ -417,7 +416,7 @@ class Plan(object):
 
 # --- The steps -------------------------------------------------------------
 
-def write_config(plan, plugin_root, existing, gate, host, framework, signers,
+def write_config(plan, plugin_root, existing, gate, host, framework,
                  sign_at=None, trust=None):
     """`.purlin/config.json`: the template, the gate, and what follows from it."""
     config = json.loads(_read(plugin_root, 'templates', 'config.json'))
@@ -433,7 +432,6 @@ def write_config(plan, plugin_root, existing, gate, host, framework, signers,
     for key in gate_module.RETIRED_KEYS:
         config.pop(key, None)
     if gate == 'signed':
-        config['signers'] = signers
         config['sign_at'] = sign_at or derived.sign_at
     else:
         config.pop('sign_at', None)
@@ -652,14 +650,9 @@ def signing_setup():
     return sign_module.SIGNING_SETUP
 
 
-def print_signed(root, signers):
-    """What `signed` needs beyond the config: the signer list, and the origin."""
+def print_signed(root):
+    """What `signed` needs beyond the config: signed commits, and the origin."""
     print('')
-    if signers:
-        print('Signers: %s.' % ', '.join(signers))
-    else:
-        print('%s No signer list yet. Run purlin:init --gate signed and name '
-              'the emails; the gate exits 1 without them.' % ARROW)
     print('Each signer runs this once, then uploads the public key to the git '
           'host:')
     for command in signing_setup():
@@ -708,14 +701,8 @@ def main(argv=None):
                   % (gate, gate_module.DEFAULT_GATE))
             gate = gate_module.DEFAULT_GATE
 
-    signers = [str(e).strip().lower() for e
-               in ((existing or {}).get('signers') or []) if str(e).strip()]
     sign_at = None
     if gate == 'signed':
-        if not signers:
-            signers = [part.strip().lower()
-                       for part in console.ask(SIGNER_QUESTION, '').split(',')
-                       if part.strip()]
         sign_at = ask_sign_at(console)
 
     selected, framework, dropped = resolve_frameworks(
@@ -734,7 +721,7 @@ def main(argv=None):
         plan.directory(name)
 
     config = write_config(plan, plugin_root, existing, gate, host, framework,
-                          signers, sign_at, trust)
+                          sign_at, trust)
     install_plugins(plan, plugin_root, selected)
     plan.write('.purlin/plugin-root', installed_plugin_root() + '\n', own=True)
     write_wiring(plan, selected)
@@ -764,7 +751,7 @@ def main(argv=None):
     for line in plan.lines:
         print(line)
     if gate == 'signed':
-        print_signed(root, signers)
+        print_signed(root)
 
     print('')
     for line in next_step(root):

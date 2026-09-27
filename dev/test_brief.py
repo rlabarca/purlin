@@ -71,7 +71,7 @@ def at_strong():
 @pytest.fixture
 def at_signed():
     """A project at `signed`, where only a record CI wrote counts."""
-    made = Project(gate=SIGNING_GATE, config={'signers': ['jane@acme.com']})
+    made = Project(gate=SIGNING_GATE)
     made.proofs()
     made.record()
     yield made

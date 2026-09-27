@@ -13,10 +13,10 @@ One project setting decides what this job requires. The gate is read from
             a record an audit wrote, from either source, test strength at or
             above the project minimum, nothing unsettled and nobody holding
             the rule
-    signed  every rule that needs a signature has one: a person on the signer
-            list signed the rule, proof, test, bar and audit hashes.
-            `sign_at` says which rules need one, `strong` (the rules whose
-            bar is `strong`) or `all`
+    signed  every rule that needs a signature has a counting one: a person
+            signed the rule, proof, test, bar and audit hashes in a signed
+            commit. `sign_at` says which rules need one, `strong` (the rules
+            whose bar is `strong`) or `all`
 
 `--verify` is what the tag run adds, and it asks two more questions of the
 evidence already in the tree. Every signature and every hold must still bind
@@ -72,9 +72,6 @@ _ENFORCEMENT_NOTE = (
     'What stands behind it is the tag: purlin:sign writes signed/<version> '
     'only when every rule meets the gate, and this run checks the evidence '
     'against the tagged code.')
-
-_SIGNER_LIST_MISSING = (
-    '→ signer list missing: run purlin:init --gate signed')
 
 # One section per kind of work, in the order the chain reads it. The spec
 # status blocks before the passed cell does, and both mean the same thing to
@@ -195,7 +192,6 @@ def check(project_root, payload=None, out=None, as_json=False,
     settings = payload.get('gate') or {}
     gate = settings.get('gate') or package['gate'].DEFAULT_GATE
     min_strength = settings.get('min_strength')
-    signers = [str(name).lower() for name in settings.get('signers') or ()]
 
     result = {
         'gate': gate,
@@ -215,14 +211,6 @@ def check(project_root, payload=None, out=None, as_json=False,
 
     _say(out, 'gate = %s' % gate)
     _say(out, _ENFORCEMENT_NOTE)
-
-    if gate == 'signed' and not signers:
-        _say(out, _SIGNER_LIST_MISSING)
-        result['result'] = 'fail'
-        result['signer_list'] = 'missing'
-        if as_json:
-            _dump(out, result, EXIT_GATE_FAILED)
-        return EXIT_GATE_FAILED
 
     _collect(payload, result)
     if verify_evidence:

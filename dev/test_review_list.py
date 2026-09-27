@@ -59,8 +59,7 @@ REWORDED = SPEC.replace(
 
 def _project():
     """A `signed` project holding one rule per review row, and one without."""
-    made = Project(gate='signed', spec=None,
-                   extra_config={'signers': ['jane@acme.com']})
+    made = Project(gate='signed', spec=None)
     made.spec(SPEC, name='review', category='core')
     _git(made.root, 'add', '-A')
     _git(made.root, 'commit', '-q', '-m', 'docs: the spec under test')

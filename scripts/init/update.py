@@ -11,8 +11,8 @@ line saying what it does, and the files it touches. `--check` prints that list
 and exits 1 while anything is pending, and `sync_status` reads the same
 function, so the advisory you see and the work this script does cannot disagree.
 The detectors read the layout v0.9.5 left, and a project lands straight on this
-release's layout: the three gate values, the signer list, and no directory of
-evidence beside a spec. Every migration asks before it writes, and every file
+release's layout: the three gate values and no directory of evidence beside a
+spec. Every migration asks before it writes, and every file
 it rewrites is copied beside itself first as `<name>.local-<sha8>.bak`. `--yes`
 answers yes to every question. A file this release deletes rather than rewrites
 is left in git history instead of copied.
@@ -60,7 +60,10 @@ WORKFLOW_MARKERS = ('PURLIN_PLATFORM',                      # retired
 WORKFLOW_NAMES = ('verify-gate.yml', 'verify-gate.yaml')   # retired
 GATE_RENAMES = {'tested': 'passed', 'recorded': 'strong',  # retired
                 'approved': 'signed'}                      # retired
-SIGNER_KEY_WAS = 'approvers'                               # retired
+SIGNER_KEY = 'signers'                                     # retired
+SIGNER_KEY_DROPPED = ('dropped signers from .purlin/config.json: a '  # retired
+                      'signature is recorded, and no list says who may '
+                      'sign')
 PRE_PUSH_SHIM = '.purlin/hooks/pre-push'                   # retired
 PRE_PUSH_DELEGATOR = '.git/hooks/pre-push'                 # retired
 PRE_PUSH_KEY = 'pre_push'                                  # retired
@@ -270,6 +273,22 @@ def _apply_hooks(root, files, args, out):
     out.say('removed %d git hook%s; this release runs nothing at commit or '
             'push time' % (len(files), _s(files)))
 
+def _detect_signer_key(root):
+    """The config, while it still names who may sign."""
+    return ['.purlin/config.json'] if SIGNER_KEY in _config(root) else []
+
+def _apply_signer_key(root, files, args, out):
+    """Drop the key naming who may sign; this release reads no such list."""
+    path = os.path.join(root, '.purlin', 'config.json')
+    config = _config(root)
+    if SIGNER_KEY not in config:
+        return
+    out.kept(_back_up_copy(path, '.purlin/config.json'))
+    config.pop(SIGNER_KEY)
+    _write(path, json.dumps(config, indent=2) + '\n')
+    out.done('.purlin/config.json')
+    out.say(SIGNER_KEY_DROPPED)
+
 def _detect_config(root):
     config = _config(root)
     if not config:
@@ -382,10 +401,7 @@ def _apply_config(root, files, args, out):
     path = os.path.join(root, '.purlin', 'config.json')
     out.kept(_back_up_copy(path, '.purlin/config.json'))
     chosen = _ask_gate(_gate_default(old), args.yes)
-    # The list of people who may sign carries over under its new key, so a
-    # project that named one before does not have to name it again.
-    signers = old.get('signers') or old.get(SIGNER_KEY_WAS) or []
-    resolved = gate.resolve_gate(dict(old, gate=chosen, signers=signers))
+    resolved = gate.resolve_gate(dict(old, gate=chosen))
     framework, unwired = _prune_frameworks(root, resolved.test_framework)
     config = {
         'version': _version(), 'gate': chosen,
@@ -398,7 +414,6 @@ def _apply_config(root, files, args, out):
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
     if chosen == 'signed':
-        config['signers'] = resolved.signers
         config['sign_at'] = _ask_sign_at(resolved.sign_at, args.yes)
     dropped = sorted(key for key in gate.RETIRED_KEYS if key in old)
     _write(path, json.dumps(config, indent=2) + '\n')
@@ -716,6 +731,8 @@ MIGRATIONS = (
      _detect_untracked, _apply_untracked),
     ('hooks', 'remove the git hooks an older release installed',
      _detect_hooks, _apply_hooks),
+    ('signer-key', 'drop the key naming who may sign from .purlin/config.json',
+     _detect_signer_key, _apply_signer_key),
     ('config', 'write .purlin/config.json at this shape and set the gate',
      _detect_config, _apply_config),
     ('workflows', 'remove the retired workflows and write purlin.yml only '

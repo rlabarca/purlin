@@ -231,7 +231,7 @@ class TestTheOneQuestion:
             assert scaffold_module.GATE_QUESTION in done.stdout
             assert scaffold_module.TRUST_QUESTION in done.stdout
             assert scaffold_module.LANGUAGE_QUESTION not in done.stdout
-            assert scaffold_module.SIGNER_QUESTION not in done.stdout
+            assert 'email' not in done.stdout.lower(), done.stdout
             assert made.config()['gate'] == 'strong'
             assert made.config()['trust'] == 'local'
         finally:
@@ -423,38 +423,30 @@ class TestTheLanguageQuestion:
 
 
 # ---------------------------------------------------------------------------
-# The signer question
+# Nobody is named
 # ---------------------------------------------------------------------------
 
-class TestTheSignerQuestion:
+class TestNobodyIsNamed:
 
     @pytest.mark.proof("scaffold", "PROOF-10", "RULE-10")
-    def test_only_signed_is_asked(self, project):
-        assert scaffold_module.SIGNER_QUESTION not in project.run(
-            '--gate', 'strong')
-
-    @pytest.mark.proof("scaffold", "PROOF-10", "RULE-10")
-    def test_the_emails_are_written_and_the_signing_setup_printed(self):
-        made = Project('pytest')
-        try:
-            done = subprocess.run(
-                [sys.executable, SCAFFOLD, '--project-root', made.root,
-                 '--gate', 'signed'],
-                input='Jane@Acme.com, sam@acme.com\n', capture_output=True,
-                encoding='utf-8', timeout=300)
-            assert done.returncode == 0, done.stdout + done.stderr
-            assert made.config()['signers'] == ['jane@acme.com',
-                                                'sam@acme.com']
-            assert 'git config gpg.format ssh' in done.stdout
-            assert 'git config commit.gpgsign true' in done.stdout
-        finally:
-            made.close()
-
-    @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
-    def test_no_list_prints_the_directive_the_gate_will_fail_on(self, project):
-        output = project.run('--gate', 'signed')
-        assert 'signer list' in output
-        assert project.config()['signers'] == []
+    def test_no_gate_asks_who_may_sign(self):
+        for gate in ('strong', 'signed'):
+            made = Project('pytest')
+            try:
+                done = subprocess.run(
+                    [sys.executable, SCAFFOLD, '--project-root', made.root,
+                     '--gate', gate],
+                    input='\n', capture_output=True, encoding='utf-8',
+                    timeout=300)
+                assert done.returncode == 0, done.stdout + done.stderr
+                assert 'email' not in done.stdout.lower(), done.stdout
+                assert not [key for key in made.config() if 'signer' in key], (
+                    made.config())
+                if gate == 'signed':
+                    assert 'git config gpg.format ssh' in done.stdout
+                    assert 'git config commit.gpgsign true' in done.stdout
+            finally:
+                made.close()
 
     @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
     def test_rules_without_an_origin_tag_are_listed(self, project):
@@ -480,7 +472,7 @@ class TestTheSignerQuestion:
                 done = subprocess.run(
                     [sys.executable, SCAFFOLD, '--project-root', made.root,
                      '--gate', 'signed'],
-                    input='jane@acme.com\n%s\n' % answer,
+                    input='%s\n' % answer,
                     capture_output=True, encoding='utf-8', timeout=300)
                 assert scaffold_module.SIGN_AT_QUESTION in done.stdout
                 for line in scaffold_module.SIGN_AT_CHOICES:
@@ -528,16 +520,6 @@ class TestTheGateTransitions:
         assert project.config()['gate'] == 'passed'
         assert project.config()['min_strength'] is None
         assert project.has('.github/workflows/purlin.yml')
-
-    @pytest.mark.proof("scaffold", "PROOF-12", "RULE-12")
-    def test_lowering_from_signed_keeps_the_signer_list(self, project):
-        project.run('--gate', 'signed')
-        config = project.config()
-        config['signers'] = ['jane@acme.com']
-        write(project.path('.purlin/config.json'),
-              json.dumps(config, indent=2) + '\n')
-        project.run('--gate', 'strong')
-        assert project.config()['signers'] == ['jane@acme.com']
 
     @pytest.mark.proof("scaffold", "PROOF-20", "RULE-20")
     def test_a_second_run_at_the_same_gate_changes_nothing(self, project):

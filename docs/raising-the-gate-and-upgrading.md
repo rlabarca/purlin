@@ -139,7 +139,7 @@ form to run as a preflight step in CI.
 
 ## What the update does
 
-Ten migrations, applied in this order, because the tags are rewritten before the setting that
+Eleven migrations, applied in this order, because the tags are rewritten before the setting that
 mapped them is dropped and before the workflow matrix is rendered from them:
 
 | Migration | What it changes |
@@ -149,6 +149,7 @@ mapped them is dropped and before the workflow matrix is rendered from them:
 | `design-sources` | points design sources at `designs/<feature>/` |
 | `untracked-files` | drops the proof files that used to be committed and untracks the dashboard data |
 | `hooks` | removes the git hooks an older Purlin installed, and says why |
+| `signer-key` | drops the key an older release named its signers under from `.purlin/config.json`, and says so in one line; nothing reads it, because a signature is recorded and no list says who may sign |
 | `config` | writes `.purlin/config.json` at the current shape and sets the gate |
 | `workflows` | replaces the retired workflows, and re-renders a `purlin.yml` written before the triggers changed |
 | `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |

@@ -675,7 +675,7 @@ class TestGate:
         written = purlin_gate.resolve_gate({'gate': 'signed'}).as_dict()
         assert sorted(written) == [
             'ci', 'gate', 'min_strength', 'mutation_engine',
-            'sign_at', 'signers', 'sql_engine', 'test_framework', 'trust']
+            'sign_at', 'sql_engine', 'test_framework', 'trust']
 
     def test_a_named_key_overrides_the_derived_default(self):
         cfg = purlin_gate.resolve_gate({'gate': 'strong', 'min_strength': 95,
@@ -704,13 +704,12 @@ class TestGate:
         assert cfg.gate == 'passed'
         assert any('stronng' in w for w in cfg.warnings), cfg.warnings
 
-    def test_the_signer_list_is_lowercased_and_a_bad_one_is_read_as_empty(self):
-        cfg = purlin_gate.resolve_gate({'gate': 'signed',
-                                        'signers': ['Jane@Acme.com', ' ']})
-        assert cfg.signers == ['jane@acme.com']
-        empty = purlin_gate.resolve_gate({'gate': 'signed', 'signers': 'jane'})
-        assert empty.signers == [] and any('not a list' in w
-                                           for w in empty.warnings)
+    def test_a_signer_key_an_older_release_wrote_is_ignored_quietly(self):
+        for named in (['Jane@Acme.com'], 'jane', []):
+            cfg = purlin_gate.resolve_gate({'gate': 'signed',
+                                            'signers': named})  # retired
+            assert cfg.warnings == [], cfg.warnings
+            assert not [key for key in cfg.as_dict() if 'signer' in key]
 
     def test_retired_keys_are_ignored_with_one_directive(self):
         cfg = purlin_gate.resolve_gate({
@@ -873,8 +872,7 @@ class TestThePassedCell:
 
     @pytest.mark.proof("states", "PROOF-6", "RULE-5", tier="integration")
     def test_a_local_record_counts_under_signed_too(self):
-        made = Project(gate='signed', extra_config={
-            'signers': ['jane@acme.com']})
+        made = Project(gate='signed')
         try:
             made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
                         runner='dev', source='local')
@@ -888,8 +886,7 @@ class TestThePassedCell:
 
     @pytest.mark.proof("states", "PROOF-7", "RULE-5", tier="integration")
     def test_this_checkouts_own_run_counts_under_signed_too(self):
-        made = Project(gate='signed', extra_config={
-            'signers': ['jane@acme.com']})
+        made = Project(gate='signed')
         try:
             made.proofs([_entry('PROOF-2', 'RULE-2')])
             cell = made.cell('RULE-2', 'passed')
@@ -1077,8 +1074,7 @@ class TestHoldsAndSignatures:
 
     @staticmethod
     def _signed_project():
-        made = Project(gate='signed',
-                       extra_config={'signers': ['jane@acme.com']})
+        made = Project(gate='signed')
         made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
                      {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
                     ci=True, strength=90)
@@ -1224,8 +1220,7 @@ FIVE = (
 
 def _five_bucket_project():
     """A `signed` project with one rule in each of the five buckets."""
-    made = Project(gate='signed', spec=None,
-                   extra_config={'signers': ['jane@acme.com']})
+    made = Project(gate='signed', spec=None)
     made.spec(FIVE, name='ledger', category='core')
     _git(made.root, 'add', '-A')
     _git(made.root, 'commit', '-q', '-m', 'docs: the spec under test')
@@ -1516,8 +1511,7 @@ class TestPayload:
 
     @pytest.mark.proof("states", "PROOF-56", "RULE-47", tier="integration")
     def test_the_signed_cell_carries_when_it_was_signed(self):
-        made = Project(gate='signed',
-                       extra_config={'signers': ['jane@acme.com']})
+        made = Project(gate='signed')
         try:
             made.sign_commits()
             made.signature('RULE-2')
@@ -1606,7 +1600,7 @@ class TestTheFixturesAreTheContract:
             fixture = self._fixture(name)
             assert fixture['schema_version'] == purlin_payload.SCHEMA_VERSION
             assert fixture['gate']['gate'] == gate
-            made = Project(gate=gate, extra_config={'signers': []})
+            made = Project(gate=gate)
             try:
                 built = made.payload()
             finally:
@@ -1748,8 +1742,7 @@ class TestStatusTable:
                 ('strong', 'local', 'purlin:audit', 'purlin:test --remote'),
                 ('signed', 'local', 'purlin:audit', 'purlin:test --remote'),
                 ('signed', 'remote', 'purlin:test --remote', 'purlin:audit')):
-            made = Project(gate=gate, extra_config={'signers': ['q@a.com'],
-                                                    'trust': trust})
+            made = Project(gate=gate, extra_config={'trust': trust})
             try:
                 made.record([{'id': 'PROOF-1', 'rule': 'RULE-1',
                               'status': 'pass'},

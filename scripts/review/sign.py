@@ -42,8 +42,12 @@ is the evidence.
 settle the question: a rule reading `manual test` or `unsettled`.
 `--hold` writes the opposite attestation, `<RULE-N>.<hash8>.<holder-slug>.
 hold.json`, a person's statement that the test does not prove the proof as
-written, with the missing case as its reason. A hold only ever withholds, so
-the holder need not be on the signer list; it is committed signed all the same.
+written, with the missing case as its reason. It is committed signed, like a
+signature.
+
+**Who signs is recorded, not policed.** The signature names the signer and
+git names the commit's author; no list says who may sign, and nothing
+compares the signer with whoever last touched the test.
 
 `references/formats/signature_format.md` holds the file shape field by field.
 The three hashes come from the payload, which is the one place they are
@@ -101,8 +105,6 @@ SIGNING_SETUP = (
 
 # The four answers the walk takes, and the letters that reach each one.
 ANSWERS = ('sign', 'case', 'hold', 'skip')
-
-SIGNER_LIST_MISSING = 'signer list missing: run purlin:init --gate signed'
 
 ARROW = '→'
 
@@ -834,14 +836,6 @@ def main(argv=None):
         return _hold_main(project_root, payload, args)
 
     email = _config(project_root, 'user.email').lower()
-    signers = gate_fields.get('signers') or []
-    if gate == 'signed' and not signers:
-        print('sign: %s' % SIGNER_LIST_MISSING)
-        return EXIT_NOTHING
-    if signers and email not in signers:
-        print('sign: %s is not on the signer list. Add it by pull request, or '
-              'ask someone on it.' % (email or 'this checkout'))
-        return EXIT_NOTHING
 
     if not signing_configured(project_root):
         for line in signing_help():

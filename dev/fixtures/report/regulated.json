@@ -1074,10 +1074,6 @@
     "min_strength": 80,
     "mutation_engine": "auto",
     "sign_at": "strong",
-    "signers": [
-      "jane@acme.com",
-      "sam@acme.com"
-    ],
     "sql_engine": null,
     "test_framework": "pytest",
     "trust": "local"

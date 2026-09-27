@@ -35,6 +35,7 @@ What each group proves:
 """
 
 import fnmatch
+import hashlib
 import json
 import os
 import shutil
@@ -364,21 +365,24 @@ def test_the_config_is_the_gate_shape(tmp_path, layout):
     assert config['trust'] in ('local', 'remote')
 
 
+OLD_SIGNER_KEY = 'approvers'                               # retired
+
+
 @pytest.mark.proof("update", "PROOF-10", "RULE-10")
-def test_the_old_gate_name_and_signer_key_carry_over(tmp_path):
+def test_the_old_gate_name_carries_over_and_no_signer_key_does(tmp_path):
     """An older release named the top gate and its people by other words."""
     root = _project(tmp_path, V095)
     was = [name for name, now in update.GATE_RENAMES.items() if now == 'signed']
     config = json.loads(_read(root, '.purlin/config.json'))
-    config.update({'gate': was[0],
-                   update.SIGNER_KEY_WAS: ['Jane@Acme.com']})
+    config.update({'gate': was[0], OLD_SIGNER_KEY: ['Jane@Acme.com'],
+                   update.SIGNER_KEY: ['Jane@Acme.com']})
     _write(root, '.purlin/config.json', json.dumps(config, indent=2))
     _apply(root)
     written = json.loads(_read(root, '.purlin/config.json'))
     assert written['gate'] == 'signed'
-    assert written['signers'] == ['jane@acme.com']
     assert written['sign_at'] == 'strong'
-    assert update.SIGNER_KEY_WAS not in written
+    assert OLD_SIGNER_KEY not in written
+    assert update.SIGNER_KEY not in written
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
@@ -423,7 +427,7 @@ def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
     assert any('Gate [' in prompt for prompt in asked)
     written = json.loads(_read(root, '.purlin/config.json'))
     assert written['gate'] == 'signed'
-    assert written['signers'] == []
+    assert update.SIGNER_KEY not in written
 
 
 @pytest.mark.proof("update", "PROOF-12", "RULE-12")
@@ -1043,3 +1047,34 @@ def test_the_retired_rule_tag_is_rewritten_as_a_bar(tmp_path):
             in written)
     assert '- RULE-4: A greeting is in English\n' in written
     assert not any(item['id'] == 'rule-tags' for item in update.pending(root))
+
+
+@pytest.mark.proof("update", "PROOF-25", "RULE-25")
+def test_the_signer_key_is_dropped_and_nothing_else_is(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _apply(root)
+    capsys.readouterr()
+    config = json.loads(_read(root, '.purlin/config.json'))
+    config.update({'gate': 'signed', 'sign_at': 'all', 'trust': 'local',
+                   'min_strength': 80, update.SIGNER_KEY: ['jane@acme.com']})
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'chore: a config an older release wrote')
+
+    assert update._gate().resolve_gate(config).warnings == []
+    pending = dict((item['id'], item) for item in update.pending(root))
+    assert pending.get('signer-key', {}).get('files') == [
+        '.purlin/config.json'], sorted(pending)
+
+    _apply(root)
+    printed = capsys.readouterr().out
+    written = json.loads(_read(root, '.purlin/config.json'))
+    kept = dict(config)
+    kept.pop(update.SIGNER_KEY)
+    assert written == kept
+    assert 'dropped signers from .purlin/config.json' in printed, printed
+    before = json.dumps(config, indent=2).encode('utf-8')
+    backup = '.purlin/config.json.local-%s.bak' % (
+        hashlib.sha256(before).hexdigest()[:8])
+    assert _read(root, backup) == before.decode('utf-8')
+    assert 'signer-key' not in _ids(root)

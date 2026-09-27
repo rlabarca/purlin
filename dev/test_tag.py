@@ -64,8 +64,8 @@ def _signed_project(version='2.1.0', trust='local', key=True):
     `ssh-keygen` stop for an overwrite nobody is there to answer.
     """
     made = Project(gate=SIGNING_GATE,
-                   config={'signers': ['jane@acme.com'], 'sign_at': 'strong',
-                           'min_strength': 50, 'trust': trust})
+                   config={'sign_at': 'strong', 'min_strength': 50,
+                           'trust': trust})
     made.proofs()
     made.record(strength=90, runner='ci', commit_it=False, source='ci')
     made.brief('RULE-2')
@@ -174,8 +174,7 @@ class TestTrust:
     @pytest.mark.proof("signatures", "PROOF-69", "RULE-47", tier="integration")
     def test_remote_refuses_a_rule_with_no_ci_run_for_this_commit(self):
         made = Project(gate=SIGNING_GATE,
-                       config={'signers': ['jane@acme.com'],
-                               'min_strength': 50, 'trust': 'remote'})
+                       config={'min_strength': 50, 'trust': 'remote'})
         try:
             made.proofs()
             made.record(strength=90, runner='ada', source='local')
@@ -200,8 +199,7 @@ class TestTrust:
     @pytest.mark.proof("signatures", "PROOF-69", "RULE-47", tier="integration")
     def test_local_asks_nothing_of_the_source(self):
         made = Project(gate=SIGNING_GATE,
-                       config={'signers': ['jane@acme.com'],
-                               'trust': 'local'})
+                       config={'trust': 'local'})
         try:
             made.proofs()
             made.record(strength=90, runner='ada', source='local')

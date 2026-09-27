@@ -265,6 +265,11 @@ def signing_key(root, email='jane@acme.com'):
     return key + '.pub'
 
 
+# The key an older release named the people who may sign under. Nothing
+# reads it now; a test writes it to show that nothing does.
+OLD_SIGNER_KEY = 'signers'                                     # retired
+
+
 # What the git host's build identity looks like on GitHub.
 CI_COMMITTER = 'github-actions[bot]'
 CI_EMAIL = '41898282+github-actions[bot]@users.noreply.github.com'
@@ -550,8 +555,7 @@ def signing_project(sign_at='all', signer='jane@acme.com', briefs=True):
     `strong` carries a brief, so each one has cleared its bar and the only
     thing outstanding is a person.
     """
-    made = Project(gate=SIGNING_GATE,
-                   config={'signers': [signer], 'sign_at': sign_at})
+    made = Project(gate=SIGNING_GATE, config={'sign_at': sign_at})
     made.proofs()
     made.record(runner='ci', commit_it=False, source='ci')
     commit_as_ci(made.root)
@@ -633,24 +637,31 @@ class TestTheSignedCommit:
             'sign(batch): login RULE-1, billing RULE-3')
 
     @pytest.mark.proof("signatures", "PROOF-26", "RULE-21", tier="integration")
-    def test_the_signer_list_bounds_who_may_run_it(self, at_strong, capsys):
-        at_strong.config(signers=['someone@else.com'])
-        code = sign_module.main(['login', '--project-root', at_strong.root])
+    def test_a_signer_key_left_in_the_config_is_never_read(
+            self, at_strong, capsys):
+        at_strong.config(**{OLD_SIGNER_KEY: ['someone@else.com']})
+        signing_key(at_strong.root)
+        code = sign_module.main(['login', 'RULE-1', '--project-root',
+                                 at_strong.root])
         output = capsys.readouterr().out
-        assert code == 1
-        assert 'not on the signer list' in output
+        assert code == 0, output
+        assert 'Signed 1 rule in' in output, output
+        assert len(at_strong.signatures()) == 1
+        assert 'not on' not in output, output
 
     @pytest.mark.proof("signatures", "PROOF-27", "RULE-21", tier="integration")
-    def test_the_signing_gate_with_no_list_names_the_command(self, capsys):
-        made = Project(gate=SIGNING_GATE)
+    def test_the_signing_gate_names_nobody_and_signs(self, capsys):
+        made = signing_project(sign_at='strong')
         try:
-            made.proofs()
-            made.record()
-            code = sign_module.main(['login', '--project-root', made.root])
+            with open(os.path.join(made.root, '.purlin', 'config.json'),
+                      encoding='utf-8') as handle:
+                assert OLD_SIGNER_KEY not in json.load(handle)
+            code = sign_module.main(['--batch', '--project-root', made.root])
             output = capsys.readouterr().out
-            assert code == 1
-            assert 'signer list missing: run purlin:init --gate signed' \
-                in output
+            assert code == 0, output
+            assert any(name.startswith('RULE-2.')
+                       for name in made.signatures()), made.signatures()
+            assert 'purlin:init --gate signed' not in output, output
         finally:
             made.close()
 

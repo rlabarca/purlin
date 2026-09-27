@@ -78,7 +78,7 @@ def project_at(gate, strength=90, by_ci=True, config=None, briefs=('RULE-2',)):
 
 def signed_project(signer='jane@acme.com', strength=90, config=None):
     """A project at `signed` whose one unsigned rule is the strong-bar one."""
-    settings = {'min_strength': 80, 'signers': [signer]}
+    settings = {'min_strength': 80}
     settings.update(config or {})
     made = project_at('signed', strength=strength, config=settings)
     signing_key(made.root, signer)
@@ -186,8 +186,7 @@ class TestTheStrongGate:
 
     @pytest.mark.proof("gate_check", "PROOF-7", "RULE-3", tier="integration")
     def test_a_local_record_counts_under_signed_too(self):
-        made = project_at('signed', by_ci=False,
-                          config={'signers': ['jane@acme.com']})
+        made = project_at('signed', by_ci=False)
         try:
             code, output = run(made)
             assert code == 1
@@ -385,16 +384,18 @@ class TestTheSignedGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-18", "RULE-8", tier="integration")
-    def test_no_signer_list_names_the_command_and_fails(self):
-        made = project_at('signed', config={'min_strength': 80})
+    def test_the_gate_grades_every_rule_with_nobody_named(self):
+        made = signed_project()
         try:
             code, output = run(made)
             assert code == 1
-            assert '→ signer list missing: run purlin:init --gate ' \
-                   'signed' in output
-            assert 'PASS' not in output
-            assert 'Not signed' not in output, (
-                'the gate fails without grading a rule')
+            assert 'To sign (1):' in output, output
+            assert 'login RULE-2: unsigned' in output, output
+            assert 'purlin:init --gate signed' not in output, output
+            assert sign_module.main(
+                ['login', 'RULE-2', '--project-root', made.root]) == 0
+            code, output = run(made)
+            assert code == 0, output
         finally:
             made.close()
 
@@ -538,13 +539,14 @@ class TestTheJsonResult:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-28", "RULE-8", tier="integration")
-    def test_a_missing_signer_list_says_so_in_the_json(self):
+    def test_the_json_grades_the_rules_with_nobody_named(self):
         made = project_at('signed', config={'min_strength': 80})
         try:
             code, output = run(made, as_json=True)
             data = json.loads(output[output.index('{'):])
             assert code == 1
-            assert data['signer_list'] == 'missing'
+            assert len(data['to_sign']) == 1, data['to_sign']
+            assert not [key for key in data if 'signer' in key], sorted(data)
         finally:
             made.close()
 
@@ -558,7 +560,7 @@ class TestTheGateNeverWrites:
     @pytest.mark.proof("gate_check", "PROOF-29", "RULE-12", tier="integration")
     def test_no_file_is_created_or_changed_at_any_level(self):
         for gate in ('passed', 'strong', 'signed'):
-            made = project_at(gate, config={'signers': ['jane@acme.com']})
+            made = project_at(gate)
             try:
                 before = _tree(made.root)
                 run(made)
@@ -632,8 +634,7 @@ def test_the_report_carries_its_seven_sections_in_order():
     """One rule short at each section, and the seven headings in the chain's
     own order."""
     made = project_at('signed', briefs=(),
-                      config={'min_strength': 80,
-                              'signers': ['jane@acme.com']})
+                      config={'min_strength': 80})
     try:
         code, output = run(made, as_json=True)
         assert code == 1
