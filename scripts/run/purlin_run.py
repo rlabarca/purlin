@@ -23,10 +23,12 @@ is not met. `--tag <name>` writes the annotated tag `record/<name>` over the
 records in the tree.
 
 `--ci` is the arm the CI job runs: the tagged tests, and then, on a run
-branch at `strong` and above, the briefs and one record per feature, written
-under `.purlin/records/ci/` and committed through the git host's API. No
-breaks run there. On a tag run it writes nothing at all: the rerun and the
-gate check with `--verify` are what a tag run is for.
+branch, what the gate asks for. At `strong` and above that is the briefs and
+one record per feature under `.purlin/records/ci/`; at `passed` it is the
+test results under `.purlin/tests/ci/`. Either way the commit goes through
+the git host's API, and no breaks run there. On a tag run it writes nothing
+at all: the rerun and the gate check with `--verify` are what a tag run is
+for.
 
 A proof the spec tags `@env` for another operating system is not run here. The
 run says so in one sentence and names the command that adds a remote runner.
@@ -917,20 +919,21 @@ def _write_log(project_root, log):
             'path': LOG_PATH.replace(os.sep, '/')}
 
 
-def _write_test_results(project_root, features, selected, index, os_name):
-    """The `--quick` arm's own evidence: the two files, and the commit.
+def _build_test_results(project_root, features, selected, index, os_name,
+                        source='local'):
+    """Write one results file per feature the run covered, then the table.
 
-    Every feature the run covered gets its own file, and the table is
-    rendered from every file on disk, so a `--feature` run leaves the rows it
-    did not run as they were. The commit is the person's own and nothing here
-    pushes. The answer comes back as `(line, exit code)`.
+    Every feature the run covered gets its own file under the folder its
+    source names, and the table is rendered from every file on disk, so a
+    `--feature` run leaves the rows it did not run as they were. The paths
+    and the commit the run observed come back, because a run branch's arm
+    commits them through the git host's API rather than through git here.
     """
-    from results import (build_results, commit_results, gate_line,
-                         project_totals, write_results, write_table)
+    from results import build_results, write_results, write_table
 
     commit = head_commit(project_root)
     when = _now_iso()
-    print('')
+    paths = []
     for name in selected:
         info = features.get(name) or {}
         observed = {}
@@ -943,9 +946,24 @@ def _write_test_results(project_root, features, selected, index, os_name):
                 if proof_id not in tests and entry.get('test_file'):
                     tests[proof_id] = '%s::%s' % (entry.get('test_file'),
                                                   entry.get('test_name', ''))
-        write_results(project_root, build_results(
-            name, info, observed, tests, commit, os_name, when))
-    write_table(project_root)
+        paths.append(write_results(project_root, build_results(
+            name, info, observed, tests, commit, os_name, when, source,
+            specs_module.scope_tree(project_root, info.get('scope', [])))))
+    paths.append(write_table(project_root))
+    return paths, commit
+
+
+def _write_test_results(project_root, features, selected, index, os_name):
+    """The `--quick` arm's own evidence: the two files, and the commit.
+
+    The commit is the person's own and nothing here pushes. The answer comes
+    back as `(line, exit code)`.
+    """
+    from results import commit_results, gate_line, project_totals
+
+    print('')
+    _paths, commit = _build_test_results(project_root, features, selected,
+                                         index, os_name)
     print(commit_results(project_root, commit))
     return gate_line(*project_totals(project_root, features))
 
@@ -1144,8 +1162,19 @@ def _ci(project_root, args, features, selected, index, plugins, log,
         return 0
 
     if cfg.gate == 'passed':
+        # There is no record to write at `passed`, and the evidence a remote
+        # run brings home is the test results themselves. They go under
+        # `.purlin/tests/ci/`, so a proof tagged for an operating system
+        # nobody here has reaches the tree as that platform's own pass.
+        from results import COMMITTED
+
         print('')
         print(NO_RECORD_AT_PASSED)
+        paths, commit = _build_test_results(
+            project_root, features, selected, index, host_os(), 'ci')
+        commit_records(project_root, paths, 'purlin: tests at %s'
+                       % (str(commit or '')[:7] or 'an unknown commit'))
+        print(COMMITTED)
         return 0
 
     # No breaks run on CI. Test strength is what `purlin:audit` measures on a

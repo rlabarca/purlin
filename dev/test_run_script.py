@@ -733,16 +733,22 @@ class TestRecordCommitsAndTags:
         assert 'Record committed.' in output
 
     @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
-    def test_at_passed_a_ci_run_writes_no_record_at_all(
+    def test_at_passed_a_ci_run_commits_the_test_results_instead(
             self, tmp_path, record_run, capsys):
-        """The evidence at `passed` is the test results a person commits."""
+        """There is no record at `passed`, so the results are the evidence."""
         root = _pytest_project(tmp_path, gate='passed')
         _spec(root, 'feat')
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
         assert calls['write'] == []
-        assert calls['commit'] == []
         assert 'The gate is passed, so this run writes no record.' in output
+        assert (root / '.purlin' / 'tests' / 'ci' / 'feat.json').exists()
+        assert len(calls['commit']) == 1, calls['commit']
+        paths, message = calls['commit'][0]
+        assert message.startswith('purlin: tests at '), message
+        assert '.purlin/tests/ci/feat.json' in paths, paths
+        assert '.purlin/tests.md' in paths, paths
+        assert 'Test results committed.' in output
 
     @pytest.mark.proof("run_script", "PROOF-68", "RULE-47")
     def test_a_tag_run_writes_nothing_and_says_so(

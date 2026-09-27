@@ -107,6 +107,18 @@ def _results(root, feature='feat'):
     return json.loads(path.read_text(encoding='utf-8'))
 
 
+def _scope_tree(root):
+    from purlin import specs as specs_module
+    return specs_module.scope_tree(str(root), ['src/feat.py'])
+
+
+def _passed_cell(root, rule_id, feature='feat'):
+    data = payload_module.build_payload(str(root))
+    entry = next(f for f in data['features'] if f['name'] == feature)
+    rule = next(r for r in entry['rules'] if r['id'] == rule_id)
+    return rule['cells']['passed']
+
+
 # ---------------------------------------------------------------------------
 # The file one run writes
 # ---------------------------------------------------------------------------
@@ -121,13 +133,16 @@ def test_the_file_carries_the_run_and_the_commit(tmp_path):
     head = _git(root, 'rev-parse', 'HEAD').strip()
     _run(root, '--all', '--quick')
     data = _results(root)
-    assert data['schema'] == 'purlin-tests/1'
+    assert data['schema'] == 'purlin-tests/2'
     # The commit the run observed, which the results commit then sits on top of.
     assert data['commit'] == head
     assert STAMP.match(data['at']), data['at']
     assert data['os'] in ('windows', 'macos', 'linux')
-    assert sorted(data) == sorted(['schema', 'feature', 'commit', 'at', 'os',
-                                   'rules', 'proofs'])
+    assert data['source'] == 'local'
+    assert len(data['scope_tree']) == 64, data['scope_tree']
+    assert sorted(data) == sorted(['schema', 'feature', 'source', 'commit',
+                                   'at', 'os', 'scope_tree', 'rules',
+                                   'proofs'])
 
 
 @pytest.mark.proof("test_results", "PROOF-2", "RULE-2")
@@ -228,19 +243,19 @@ def test_the_gate_line_answers_for_the_project_not_for_the_run(tmp_path):
 def test_each_row_counts_the_words_and_names_the_last_run():
     table = writer.render_table({
         'one': {'feature': 'one', 'commit': '4f1c2ab9e1d', 'os': 'linux',
-                'at': '2026-09-26T12:00:00Z',
+                'at': '2026-09-26T12:00:00Z', 'source': 'ci',
                 'rules': {'RULE-1': 'passed', 'RULE-2': 'failed',
                           'RULE-3': 'not run'}},
         'two': {'feature': 'two', 'commit': 'abc1234def0', 'os': 'macos',
-                'at': '2026-09-26T11:00:00Z',
+                'at': '2026-09-26T11:00:00Z', 'source': 'local',
                 'rules': {'RULE-1': 'passed'}},
     })
     rows = {line.split('|')[1].strip(): line for line in table.splitlines()
             if line.startswith('| one ') or line.startswith('| two ')}
     assert rows['one'] == ('| one | 3 | 1 | 1 | 1 | 4f1c2ab · '
-                           '2026-09-26T12:00:00Z · linux |')
+                           '2026-09-26T12:00:00Z · linux · ci |')
     assert rows['two'] == ('| two | 1 | 1 | 0 | 0 | abc1234 · '
-                           '2026-09-26T11:00:00Z · macos |')
+                           '2026-09-26T11:00:00Z · macos · local |')
 
 
 # ---------------------------------------------------------------------------
@@ -383,3 +398,61 @@ def test_the_format_file_is_the_contract():
         assert '| `%s` |' % word in text, word
     for field in ('id', 'rule', 'result', 'tier', 'env', 'test'):
         assert '| `%s` |' % field in text, field
+
+
+# ---------------------------------------------------------------------------
+# The ci folder a remote run writes into
+# ---------------------------------------------------------------------------
+
+@pytest.mark.proof("test_results", "PROOF-12", "RULE-12")
+def test_a_ci_run_writes_into_its_own_folder_and_a_person_s_file_stays(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    _run(root, '--all', '--quick')
+    mine = _results(root)
+
+    written = writer.write_results(root, writer.build_results(
+        'feat', {'rule_order': ['RULE-1'],
+                 'proofs_by_rule': {'RULE-1': ['PROOF-1']},
+                 'proofs': {'PROOF-1': {'tier': 'unit', 'env': 'windows'}}},
+        {'PROOF-1': 'pass'}, {'PROOF-1': 'tests/test_feat.py::test_ok'},
+        'b' * 40, 'windows', '2126-09-26T12:00:00Z', 'ci', 'c' * 64))
+
+    assert written == '.purlin/tests/ci/feat.json', written
+    assert _results(root) == mine, 'a person\'s own file was written over'
+    ci = reader.load_results(root, 'ci')['feat']
+    assert ci['source'] == 'ci' and ci['os'] == 'windows'
+    assert reader.load_results(root, 'local')['feat']['source'] == 'local'
+
+
+@pytest.mark.proof("test_results", "PROOF-13", "RULE-13")
+def test_the_ci_results_reach_the_passed_cell_as_that_platform_s_run(tmp_path):
+    """A proof nobody here can run is answered by the runner's own results."""
+    root = _project(tmp_path)
+    _spec(root, proofs=[('PROOF-1', 'RULE-1', ' @unit @env(windows)')])
+    _test_file(root)
+    _repo(root)
+
+    runs = reader.ci_runs(root)
+    assert runs == {}
+
+    writer.write_results(root, writer.build_results(
+        'feat', {'rule_order': ['RULE-1'],
+                 'proofs_by_rule': {'RULE-1': ['PROOF-1']},
+                 'proofs': {'PROOF-1': {'tier': 'unit', 'env': 'windows'}}},
+        {'PROOF-1': 'pass'}, {'PROOF-1': 'tests/test_feat.py::test_ok'},
+        _git(root, 'rev-parse', 'HEAD').strip(), 'windows', None, 'ci',
+        _scope_tree(root)))
+
+    runs = reader.ci_runs(root)
+    assert sorted(runs['feat']) == ['windows'], runs
+    entry = runs['feat']['windows']
+    assert entry['source'] == 'ci' and entry['label'] == 'ci'
+    assert entry['proofs'] == [{'id': 'PROOF-1', 'rule': 'RULE-1',
+                                'status': 'pass'}]
+
+    cell = _passed_cell(root, 'RULE-1')
+    assert cell['word'] == 'passed', cell
+    assert cell['platforms']['windows']['source'] == 'ci', cell

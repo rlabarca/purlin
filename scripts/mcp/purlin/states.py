@@ -140,6 +140,8 @@ def rule_cells(inp, cfg):
     `local_os`      the operating system that local source ran on, or None
     `local_at`      when it ran, ISO 8601 UTC, or None
     `records`       `{os_or_None: record}`, the latest record per platform
+    `runs`          `{os: record}`, the test results a remote run committed,
+                    read beside the records and never as an audit
     `head`          the sha the working tree is on
     `scope_tree`    the current scope tree of the rule's spec
     `signatures`    every signature file for this rule, each carrying `counts`
@@ -233,7 +235,7 @@ def _passed_cell(inp, cfg):
     written = inp.get('proofs') or []
     proofs = [proof for proof in written
               if (proof.get('tier') or '') != 'manual']
-    records = inp.get('records') or {}
+    records = _runs_and_records(inp.get('records') or {}, inp.get('runs') or {})
     # This checkout's own run is the `local` source, and it counts at every
     # gate: the tests it ran are the tests CI runs.
     local_status = inp.get('local_status') or {}
@@ -245,7 +247,7 @@ def _passed_cell(inp, cfg):
         cell.update({'word': 'passed', 'current': True, 'counts': True})
         return cell
 
-    platforms = _platforms(inp, proofs)
+    platforms = _platforms(inp, proofs, records)
     cell['platforms'] = platforms
     words = [entry['word'] for entry in platforms.values()]
     if 'passed' in words and any(word != 'passed' for word in words):
@@ -307,13 +309,33 @@ def _passed_cell(inp, cfg):
     return cell
 
 
+def _runs_and_records(records, runs):
+    """One map per platform over the records and the committed test results.
+
+    A record an audit wrote and the results a remote run committed are the
+    same news about one platform in two files, so the passed cell reads them
+    as one thing and the newer answers. They are kept apart everywhere else:
+    only an audit measures how good the tests are, and only a record says one
+    did.
+    """
+    if not runs:
+        return records
+    merged = dict(records)
+    for name, run in runs.items():
+        held = merged.get(name)
+        if held is None or str(run.get('timestamp') or '') >= str(
+                held.get('timestamp') or ''):
+            merged[name] = run
+    return merged
+
+
 def platform_of(record):
     """The operating system a record observed: its own, else its environment's."""
     return (record or {}).get('os') or (
         (record or {}).get('environment') or {}).get('os')
 
 
-def _platforms(inp, proofs):
+def _platforms(inp, proofs, records):
     """`{os: {word, source, at}}` over every platform a counting run covered.
 
     A record names the operating system it ran on, and so do the test results
@@ -324,7 +346,7 @@ def _platforms(inp, proofs):
     owed an answer from.
     """
     candidates = []
-    for record in (inp.get('records') or {}).values():
+    for record in (records or {}).values():
         name = platform_of(record)
         if not name:
             continue

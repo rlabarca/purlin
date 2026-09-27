@@ -5,11 +5,11 @@ anyone to own a second machine, `--remote` hands the commit to the git host's
 runner and brings back what that runner wrote. The evidence is the git host's,
 because the commit is the git host's.
 
-What comes back depends on the gate. At `strong` and above the runner audits
-what it ran and commits the record, so the run pulls that commit onto this
-branch. At `passed` there is no record to bring home: the runner's own
-summary is what the run prints, and the test results in the tree are still
-the ones a person committed here.
+What comes back is what the runner committed on the run branch: at `strong`
+and above the record it audited, at `passed` the test results under
+`.purlin/tests/ci/`. Either way the run pulls that commit onto this branch,
+so a proof tagged `@env` for an operating system nobody here has ends up with
+its own platform's pass in the tree.
 
 **This is the one push Purlin makes.** Everywhere else a push is a person's
 act. Here the push is the point of the command, and it goes to a branch of
@@ -68,7 +68,6 @@ def run_branch_name(project_root, branch):
 def run_remote(project_root, args=None, cfg=None):
     """Push a run branch, wait for CI, pull it back, delete it. Exit code."""
     host = _host(project_root, args)
-    gate = getattr(cfg, 'gate', None) or 'passed'
     branch = _branch(project_root)
     if not branch or branch == 'HEAD':
         print('This checkout is not on a branch, so there is nothing to push.')
@@ -87,10 +86,10 @@ def run_remote(project_root, args=None, cfg=None):
 
     if host == 'azure':
         return _azure(project_root, branch, run_branch)
-    return _github(project_root, run_branch, gate)
+    return _github(project_root, run_branch)
 
 
-def _github(project_root, run_branch, gate='passed'):
+def _github(project_root, run_branch):
     if not _have('gh'):
         print('GitHub CLI `gh` is not installed, so the run cannot be '
               'watched. Open the run on %s instead, then run: git pull '
@@ -106,16 +105,10 @@ def _github(project_root, run_branch, gate='passed'):
                    ['gh', 'run', 'watch', run_id, '--exit-status'])
     if watched != 0:
         print('The run finished red. The table below is what came back.')
-    if gate == 'passed':
-        # Nothing was committed on the run branch, so there is nothing to
-        # pull: the runner ran the tests and said what it saw.
-        print('The gate is passed, so the runner wrote no record. What it '
-              'ran is in its own log.')
-    else:
-        # The run branch is this branch plus the record commit, so a
-        # fast-forward is the whole of it: the records land here as the one
-        # commit CI made.
-        _run(project_root, ['git', 'pull', '--ff-only', REMOTE, run_branch])
+    # The run branch is this branch plus the one commit the runner made, so a
+    # fast-forward is the whole of it: at `strong` and above that commit is
+    # the records, and at `passed` the test results under `.purlin/tests/ci/`.
+    _run(project_root, ['git', 'pull', '--ff-only', REMOTE, run_branch])
     _delete(project_root, run_branch)
     print(_table(project_root))
     return watched

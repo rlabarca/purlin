@@ -1242,14 +1242,12 @@ def test_a_red_run_still_pulls_and_prints_the_table(project, remote_run,
 
 
 @pytest.mark.proof("records", "PROOF-24", "RULE-12")
-def test_at_passed_the_runner_wrote_no_record_so_nothing_is_pulled(
-        project, remote_run, capsys):
-    """There is nothing to bring home at `passed`: CI committed nothing."""
+def test_at_passed_the_test_results_come_home_too(project, remote_run):
+    """At `passed` the runner commits the results, so the pull is the same."""
     fake = remote_run()
 
     assert remote_module.run_remote(project) == 0
-    assert fake.started == [PUSH, WATCH, DELETE]
-    assert 'the runner wrote no record' in capsys.readouterr().out
+    assert fake.started == [PUSH, WATCH, PULL, DELETE]
 
 
 @pytest.mark.proof("records", "PROOF-24", "RULE-12")

@@ -45,6 +45,7 @@ they all read instead.
       "sign_list": [{"feature": ..., "owner": ..., "rule": ..., "bar": ...,
                      "cell": "signed", "kind": "stale", "why": ["stale"]}],
       "records": {"login": {"": {..., "label": "ci", "result": "pass"}}},
+      "tag": {"name": "signed/1.4.0", "commit": "<sha>"},
       "remote_url": "https://github.com/acme/ledger.git",
       "warnings": ["..."]
     }
@@ -112,6 +113,11 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     # Which operating system the local source ran on, and when, so the passed
     # cell can list it as one platform beside the records.
     local_run = results_module.local_run_map(project_root)
+    # The results a remote run committed under `.purlin/tests/ci/`. At the
+    # gate `passed` no record is written at all, so these are what carries a
+    # platform nobody here can run, and the passed cell reads them beside the
+    # records.
+    ci_runs = results_module.ci_runs(project_root)
     all_records = records_module.load_records(project_root,
                                               warnings=warnings)
     all_signatures = signatures_module.load_signatures(project_root, features)
@@ -139,7 +145,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
             project_root, name, info, features, runtime_proofs, all_records,
             all_signatures, cfg, head, blob_cache, scope_cache, review_list,
             own_results, all_holds, counted_cache, branch, local_by_feature,
-            local_run, sign_list)
+            local_run, sign_list, ci_runs)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -170,6 +176,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'records': {feature: {(os_name or ''): _with_result(record)
                               for os_name, record in by_os.items()}
                     for feature, by_os in all_records.items()},
+        'tag': signed_tag(project_root, head),
         'remote_url': _remote_url(project_root),
         'warnings': warnings,
     }
@@ -228,7 +235,7 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
                    all_records, all_signatures, cfg, head, blob_cache,
                    scope_cache, review_list, own_results=None, all_holds=None,
                    counted_cache=None, branch=None, local_by_feature=None,
-                   local_run=None, sign_list=None):
+                   local_run=None, sign_list=None, ci_runs=None):
     counting = _counting(all_records, name, cfg)
     latest = _latest(all_records.get(name) or {})
     test_strength = latest.get('test_strength') if latest else None
@@ -244,7 +251,8 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
             runtime_proofs, counting, all_signatures, cfg, head,
             blob_cache, scope_cache, test_strength, all_holds,
             _counting(all_records, owner, cfg),
-            counted_cache, branch, local_by_feature, local_run)
+            counted_cache, branch, local_by_feature, local_run,
+            (ci_runs or {}).get(owner))
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
                    'meets_gate': result['meets_gate'],
@@ -333,7 +341,8 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
                 runtime_proofs, counting, all_signatures, cfg, head,
                 blob_cache, scope_cache, test_strength=None, all_holds=None,
                 owner_counting=None, counted_cache=None,
-                branch=None, local_by_feature=None, local_run=None):
+                branch=None, local_by_feature=None, local_run=None,
+                runs=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -386,6 +395,10 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'local_os': local_here.get('os'),
         'local_at': local_here.get('at'),
         'records': counting,
+        # The test results a remote run committed, read as a run per platform
+        # beside the records. They are not an audit, so `audited` below reads
+        # the records alone.
+        'runs': runs or {},
         # Whether an audit wrote a record the gate counts for this feature.
         # With none, nothing measured how good the tests are and the strong
         # cell says so rather than passing the rule on the free checks.
@@ -569,6 +582,48 @@ def _record_summary(record):
         'commit': record.get('commit'),
         'test_strength': record.get('test_strength'),
     }
+
+
+def signed_tag(project_root, head=None):
+    """`{name, commit}` for the `signed/*` tag on HEAD, or None where there is none.
+
+    The tag is the marker of proven code, so a surface that shows one commit's
+    standing shows whether that commit carries it. Only a tag pointing at HEAD
+    counts: a tag two commits back says nothing about this code. Where several
+    point at the same commit the newest version wins, read as numbers where
+    the name is numeric and as text where it is not, so `signed/1.10.0` sorts
+    after `signed/1.9.0`.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'tag', '--points-at', 'HEAD', 'signed/*'],
+            capture_output=True, text=True, cwd=project_root, timeout=15)
+    except (subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    names = [line.strip() for line in result.stdout.splitlines()
+             if line.strip()]
+    if not names:
+        return None
+    names.sort(key=_tag_order)
+    return {'name': names[-1], 'commit': head or head_sha_of(project_root)}
+
+
+def _tag_order(name):
+    """A sort key for a tag name: its numeric parts first, then the name."""
+    parts = str(name).split('/', 1)[-1].replace('-', '.').split('.')
+    numbers = []
+    for part in parts:
+        if not part.isdigit():
+            break
+        numbers.append(int(part))
+    return (len(numbers) > 0, numbers, str(name))
+
+
+def head_sha_of(project_root):
+    """The sha at HEAD, read once more where the caller had none to hand."""
+    return records_module.head_sha(project_root)
 
 
 def _remote_url(project_root):

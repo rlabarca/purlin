@@ -14,9 +14,15 @@ reaches a remote. A `--feature` run writes the features it ran and leaves
 every other row of the table as it was, so the table is always the whole
 project even when the run was not.
 
-These results are the `local` source, and they count at every gate: the
-tests they name are the tests CI runs. A project that wants CI's word before
-a signature says so once, with `trust: remote` in `.purlin/config.json`.
+**The folder is the source.** A person's own results sit in
+`.purlin/tests/` and a remote run's in `.purlin/tests/ci/`, written on a run
+branch through the git host's API and pulled home by `purlin:test --remote`.
+That is what carries a proof tagged `@env` for an operating system nobody
+here has, at the gate `passed`, where no record is written at all.
+
+Both sources count at every gate: the tests they name are the tests CI runs.
+A project that wants CI's word before a signature says so once, with
+`trust: remote` in `.purlin/config.json`.
 """
 
 import json
@@ -36,8 +42,10 @@ from purlin import results as reader  # noqa: E402
 SCHEMA = reader.SCHEMA
 TESTS_DIR = reader.TESTS_DIR
 TABLE_PATH = reader.TABLE_PATH
+SOURCES = ('ci', 'local')
 # What git is handed. A pathspec takes `/` on every operating system.
 TESTS_PATHSPEC = '.purlin/tests'
+CI_PATHSPEC = '.purlin/tests/ci'
 TABLE_PATHSPEC = '.purlin/tests.md'
 
 COMMIT_SUBJECT = 'purlin: tests at %s'
@@ -49,9 +57,9 @@ NO_REPOSITORY = ('Test results written; there is no git repository to commit '
 TABLE_HEADING = '# Test results at %s'
 TABLE_COLUMNS = ('Feature', 'Rules', 'Passed', 'Failing', 'No test',
                  'Last run')
-TABLE_NOTE = ('These are the last local run of each feature. They count at '
-              'the gate `passed` and at `strong`; at `signed` only a CI run '
-              'counts.')
+TABLE_NOTE = ('These are the last run of each feature, whoever made it. They '
+              'count at every gate; the source in the last column says whose '
+              'run it was.')
 TABLE_EMPTY = 'No feature has been run yet.'
 
 
@@ -88,11 +96,15 @@ def rule_word(proof_ids, proofs, observed, host_os):
     return 'no test'
 
 
-def build_results(feature, info, observed, tests, commit, host_os, when=None):
-    """The `purlin-tests/1` dict for one feature this run covered.
+def build_results(feature, info, observed, tests, commit, host_os, when=None,
+                  source='local', scope_tree=None):
+    """The `purlin-tests/2` dict for one feature this run covered.
 
     `observed` is `{proof_id: 'pass' | 'fail'}` from the run, and `tests` is
-    `{proof_id: '<file>::<name>'}` naming what observed each proof.
+    `{proof_id: '<file>::<name>'}` naming what observed each proof. `source`
+    is the folder the file goes in, and `scope_tree` the git tree hash of the
+    spec's scoped files, which is what says the run still describes this
+    checkout after a later commit.
     """
     proofs = info.get('proofs') or {}
     by_rule = info.get('proofs_by_rule') or {}
@@ -115,9 +127,11 @@ def build_results(feature, info, observed, tests, commit, host_os, when=None):
     return {
         'schema': SCHEMA,
         'feature': feature,
+        'source': source,
         'commit': commit or '',
         'at': when or _now_iso(),
         'os': host_os,
+        'scope_tree': scope_tree or '',
         'rules': rules,
         'proofs': entries,
     }
@@ -155,13 +169,15 @@ def only_results_changed(project_root, one, other):
     return listed is not None and not listed.strip()
 
 
-def write_results(project_root, results):
+def write_results(project_root, results, source=None):
     """Write one feature's results and return the path, project-relative.
 
     A file already saying this is left exactly as it is, so a second run that
-    saw the same thing has nothing to commit.
+    saw the same thing has nothing to commit. The folder is the source, taken
+    from the results themselves unless the caller names one.
     """
-    directory = reader.tests_dir(project_root)
+    source = source or results.get('source') or 'local'
+    directory = reader.tests_dir(project_root, source)
     if not os.path.isdir(directory):
         os.makedirs(directory)
     path = os.path.join(directory, '%s.json' % results.get('feature'))
@@ -224,7 +240,8 @@ def render_table(all_results):
         rules, passed, failing, no_test = counts(results)
         last = ' · '.join([str(results.get('commit') or '')[:7] or '-',
                            str(results.get('at') or '-'),
-                           str(results.get('os') or '-')])
+                           str(results.get('os') or '-'),
+                           str(results.get('source') or 'local')])
         lines.append('| %s | %d | %d | %d | %d | %s |'
                      % (feature, rules, passed, failing, no_test, last))
     lines.append('')
@@ -242,7 +259,7 @@ def write_table(project_root):
     parent = os.path.dirname(path)
     if parent and not os.path.isdir(parent):
         os.makedirs(parent)
-    text = render_table(reader.load_results(project_root))
+    text = render_table(reader.all_results(project_root))
     try:
         with open(path, 'r', encoding='utf-8') as handle:
             if handle.read() == text:
@@ -263,7 +280,7 @@ def project_totals(project_root, features=None):
     scan, which is what says how many rules a feature writes; without it the
     files on disk are all there is to count.
     """
-    all_results = reader.load_results(project_root)
+    all_results = reader.all_results(project_root)
     names = sorted(features) if features is not None else sorted(all_results)
     passed = rules = 0
     for name in names:
@@ -287,6 +304,11 @@ def gate_line(met, rules, level='passed'):
     if rules and met == rules:
         return 'gate %s: %d of %d' % (level, met, rules), 0
     return 'gate not met: %d of %d' % (met, rules), 1
+
+
+def results_paths(source='local'):
+    """The paths one source's run commits: its folder and the table."""
+    return [CI_PATHSPEC if source == 'ci' else TESTS_PATHSPEC, TABLE_PATHSPEC]
 
 
 def commit_results(project_root, commit):

@@ -2,19 +2,23 @@
 
 A run of the tagged tests writes one file per feature it covered:
 
-    .purlin/tests/<feature>.json
+    .purlin/tests/<feature>.json        a person's own run
+    .purlin/tests/ci/<feature>.json     a remote run's, on a run branch
 
-and one table for the whole project at `.purlin/tests.md`. Both are tracked,
-because a teammate reads them on the git host without running anything and
-without a runner. `references/formats/tests_format.md` is the contract.
+and one table for the whole project at `.purlin/tests.md`. All of them are
+tracked, because a teammate reads them on the git host without running
+anything and without a runner. `references/formats/tests_format.md` is the
+contract.
 
 The file:
 
     {
-      "schema": "purlin-tests/1",
+      "schema": "purlin-tests/2",
+      "source": "local",
       "commit": "<full sha>",
       "at": "2026-09-26T12:00:00Z",
       "os": "macos",
+      "scope_tree": "<sha256 from specs.scope_tree>",
       "rules": {"RULE-1": "passed"},
       "proofs": [
         {"id": "PROOF-1", "rule": "RULE-1", "result": "pass",
@@ -26,12 +30,18 @@ The file:
 `passed`, `failed`, `no test` or `not run`. `proofs` carries one entry per
 proof the run observed, with `result` `pass`, `fail` or `missing`.
 
-**These results are the `local` source.** They say what the last run on
-somebody's machine saw, so they count under `passed` and under nothing above
-it, exactly as an uncommitted run in this checkout does. Where both exist the
-newer one answers: a run in this checkout that has not been committed yet is
-newer than the file it will replace, and a file somebody else committed is
-newer than a run this checkout made before pulling it.
+**The folder is the source, as it is for a record.** A file in
+`.purlin/tests/` is a person's own run; one under `.purlin/tests/ci/` is a
+run branch's, written by the runner through the git host's API and pulled
+home by `purlin:test --remote`. That is how a proof tagged `@env` for an
+operating system nobody here has reaches the tree at the gate `passed`, where
+no record is written at all.
+
+A person's own results and an uncommitted run in this checkout are the same
+kind of evidence, and the newer of the two answers: a run in this checkout
+that has not been committed yet is newer than the file it will replace, and a
+file somebody else committed is newer than a run this checkout made before
+pulling it.
 """
 
 import json
@@ -44,11 +54,14 @@ if _MCP_DIR not in sys.path:
 
 from purlin import proofs as proofs_module
 
-SCHEMA = 'purlin-tests/1'
+SCHEMA = 'purlin-tests/2'
 
 # The three operating systems `@env` names, and how `sys.platform` spells them.
 _OS_NAMES = (('win', 'windows'), ('darwin', 'macos'), ('linux', 'linux'))
 TESTS_DIR = os.path.join('.purlin', 'tests')
+# Where a remote run's results land. A person's own sit beside it, in the
+# directory itself, so nothing a person wrote ever moved.
+CI_DIR = os.path.join(TESTS_DIR, 'ci')
 TABLE_PATH = os.path.join('.purlin', 'tests.md')
 
 # The words a rule reads in a result file, which are the passed cell's own.
@@ -68,7 +81,10 @@ def host_os():
     return _sys.platform
 
 
-def tests_dir(project_root):
+def tests_dir(project_root, source='local'):
+    """Where one source's results sit: the directory, or `ci/` inside it."""
+    if source == 'ci':
+        return os.path.join(project_root, CI_DIR)
     return os.path.join(project_root, TESTS_DIR)
 
 
@@ -76,13 +92,16 @@ def table_path(project_root):
     return os.path.join(project_root, TABLE_PATH)
 
 
-def load_results(project_root):
-    """`{feature: data}` from `.purlin/tests/`, each dict carrying `feature`.
+def load_results(project_root, source='local'):
+    """`{feature: data}` for one source, each dict carrying `feature` and `source`.
 
     A missing directory is an empty result rather than an error: a project
-    whose tests have never run is an ordinary state.
+    whose tests have never run is an ordinary state. Only the `.json` names
+    directly in the directory are read, so the `ci/` folder inside it is not
+    mistaken for a person's own run.
     """
-    directory = tests_dir(project_root)
+    directory = tests_dir(project_root, source)
+    prefix = (CI_DIR if source == 'ci' else TESTS_DIR).replace(os.sep, '/')
     found = {}
     try:
         names = sorted(os.listdir(directory))
@@ -102,9 +121,51 @@ def load_results(project_root):
         feature = data.get('feature') or name[:-len('.json')]
         data = dict(data)
         data['feature'] = feature
-        data['path'] = '%s/%s' % (TESTS_DIR.replace(os.sep, '/'), name)
+        data['source'] = source
+        data['path'] = '%s/%s' % (prefix, name)
         found[feature] = data
     return found
+
+
+def all_results(project_root):
+    """`{feature: data}`, the newest run of each feature whichever source.
+
+    The table is one row per feature, so where a person's own run and a run
+    branch's both cover a feature the newer one is the row. Each dict carries
+    the source it came from, which the row names.
+    """
+    found = dict(load_results(project_root, 'local'))
+    for feature, data in load_results(project_root, 'ci').items():
+        held = found.get(feature)
+        if held is None or str(data.get('at') or '') >= str(held.get('at') or ''):
+            found[feature] = data
+    return found
+
+
+def ci_runs(project_root):
+    """`{feature: {os: record_like}}` for the results a remote run committed.
+
+    The passed cell reads a record per platform, and a run branch's results
+    are the same news in a different file, so they are handed over in the
+    shape the cell already reads: the proofs it observed, the operating
+    system it ran on, the commit and the scope tree that say whether it still
+    describes this checkout.
+    """
+    out = {}
+    for feature, data in load_results(project_root, 'ci').items():
+        os_name = data.get('os')
+        proofs = [{'id': entry.get('id'), 'rule': entry.get('rule'),
+                   'status': entry.get('result')}
+                  for entry in data.get('proofs') or ()
+                  if isinstance(entry, dict)]
+        out.setdefault(feature, {})[os_name] = {
+            'feature': feature, 'source': 'ci', 'label': 'ci',
+            'os': os_name, 'environment': {'os': os_name},
+            'commit': data.get('commit'), 'timestamp': data.get('at'),
+            'scope_tree': data.get('scope_tree'),
+            'path': data.get('path'), 'proofs': proofs,
+        }
+    return out
 
 
 def status_by_proof(data):
