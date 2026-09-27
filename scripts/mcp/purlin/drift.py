@@ -12,11 +12,11 @@ questions of it:
           rules an engineer added, pins behind their source
 `design`  design files that changed, design-owned rules whose signature went
           stale
-`qa`      signatures gone stale, how long the review list is, the rules whose
-          strong cell reads `manual test` or `manual audit`, rules no proof of
-          which names a rejection or a boundary
+`qa`      signatures gone stale, how long the Review and Sign lists are, the
+          rules whose strong cell reads `manual test` or `unsettled`, rules no
+          proof of which names a rejection or a boundary
 `eng`     files touched and the rules they affect, rules with no test, rules
-          with no risk or origin tag, pins behind, rules whose code changed
+          with no bar or origin tag, pins behind, rules whose code changed
 """
 
 import json
@@ -419,7 +419,7 @@ def compute_drift(project_root, since=None, network=True, data=None):
             'unproved': [r['id'] for r in feature['rules']
                          if r['spec'] == states.DRAFTED],
             'rules': [{'rule_id': r['id'], 'description': _cap(r['text']),
-                       'bucket': r['bucket'], 'risk': r['risk'],
+                       'bucket': r['bucket'], 'bar': r['bar'],
                        'origin': r['origin']}
                       for r in feature['rules'] if r['label'] == 'own'],
         }
@@ -478,12 +478,16 @@ def _role_views(report, data, file_entries):
                              for feature, rule in rules
                              if rule['flags'].get('stale')],
         'review_list_size': len(data.get('review_list', [])),
+        'sign_list_size': len(data.get('sign_list', [])),
         'manual': ['%s/%s' % (feature['name'], rule['id'])
                    for feature, rule in rules
                    if rule['flags'].get('manual')],
-        'audit': ['%s/%s' % (feature['name'], rule['id'])
-                  for feature, rule in rules
-                  if rule['flags'].get('audit')],
+        'unsettled': ['%s/%s' % (feature['name'], rule['id'])
+                      for feature, rule in rules
+                      if rule['flags'].get('unsettled')],
+        'not_audited': ['%s/%s' % (feature['name'], rule['id'])
+                        for feature, rule in rules
+                        if rule['flags'].get('not_audited')],
         'rules_without_a_negative_case': [
             '%s/%s' % (feature['name'], rule['id'])
             for feature, rule in rules
@@ -500,7 +504,7 @@ def _role_views(report, data, file_entries):
                           if not any(p['tests'] for p in rule['proofs'])],
         'tags_missing': ['%s/%s' % (feature['name'], rule['id'])
                          for feature, rule in rules
-                         if rule['risk'] == specs_module.DEFAULT_RISK
+                         if rule['bar_from'] == 'gate'
                          and rule['origin'] == specs_module.DEFAULT_ORIGIN],
         'pins_behind': pins_behind,
         'code_changed': ['%s/%s' % (feature['name'], rule['id'])

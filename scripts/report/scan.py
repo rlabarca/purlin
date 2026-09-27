@@ -8,9 +8,9 @@ fetches `specs/` and `.purlin/` alone, which is where the test results and
 the records are, reads them with the same package every other surface reads,
 and prints how many rules meet the gate, one line per bucket, and how far the
 working branch has moved past the newest record. CI prints the same text as a
-pull request comment, so one rollup is read everywhere. The review list
-follows, one line per rule, so a reader without a checkout can work it: the
-risk, the rule, the cell that blocks it and why a person is needed.
+pull request comment, so one rollup is read everywhere. The two lists follow,
+one line per rule, so a reader without a checkout can work them: the bar, the
+rule, the cell and the word that put it there.
 
 Nothing is written outside the temporary directory, and the directory is
 removed before the command returns.
@@ -34,8 +34,9 @@ from purlin import console as console_module                  # noqa: E402
 # Only these two trees are fetched. A repository's code is not read here.
 SPARSE = ('specs', '.purlin')
 RECORDS_DIR = '.purlin/records'
-# The order a person reads the review list in.
-RISK_ORDER = ('high', 'medium', 'low')
+# The order a person reads both lists in: the rules whose bar is `strong`
+# first, as the payload already sorts them.
+BAR_ORDER = ('strong', 'passed')
 # The separator the status line and the board both use between two counts.
 DOT = ' · '
 
@@ -161,33 +162,46 @@ def rollup_text(project_root, payload):
 
 
 def review_list_text(payload):
-    """The review list, one line per rule: risk, rule, cell, and why.
+    """Review, then Sign: one line per rule, the bar, the cell and the word.
 
-    High risk first, then medium, then low; inside a level a stale or held
-    rule first, then by feature and rule number, which is the order the
-    payload already sorts them in and the order a person works them in. The
-    `why` tokens are the closed set `unsigned`, `stale`, `held`,
-    `manual test` and `manual audit`.
+    The rules whose bar is `strong` read first, then by feature and rule
+    number, which is the order the payload already sorts them in and the
+    order a person works them in. Review's words are `manual test`,
+    `unsettled` and `held`; Sign's are `unsigned`, `stale` and `held`.
     """
-    entries = []
-    for item in payload.get('review_list') or ():
-        owner = item.get('owner') or item.get('feature')
-        risk = item.get('risk') or 'low'
-        why = list(item.get('why') or ())
-        number = str(item.get('rule') or '').rpartition('-')[2]
-        entries.append((RISK_ORDER.index(risk) if risk in RISK_ORDER else 3,
-                        0 if set(why) & {'stale', 'held'} else 1, owner or '',
-                        int(number) if number.isdigit() else 0,
-                        '  %-6s  %s %s  %s  %s' % (
-                            risk, owner, item.get('rule'),
-                            item.get('cell') or '', ', '.join(why))))
-    if not entries:
+    review = list(payload.get('review_list') or ())
+    sign = list(payload.get('sign_list') or ())
+    total = len(review) + len(sign)
+    if not total:
         return 'Review list: no rule needs a person.'
     lines = ['Review list: %d %s a person.'
-             % (len(entries),
-                'rule needs' if len(entries) == 1 else 'rules need')]
-    lines.extend(line.rstrip() for *_key, line in sorted(entries))
+             % (total, 'rule needs' if total == 1 else 'rules need')]
+    for title, rows in (('Review', review), ('Sign', sign)):
+        if not rows:
+            continue
+        lines.append('%s: %d' % (title, len(rows)))
+        lines.extend(_list_line(item) for item in _sorted(rows))
     return '\n'.join(lines)
+
+
+def _sorted(rows):
+    """One list in the order the payload writes it, sorted again to be sure."""
+    def key(item):
+        bar = item.get('bar') or 'passed'
+        number = str(item.get('rule') or '').rpartition('-')[2]
+        return (BAR_ORDER.index(bar) if bar in BAR_ORDER else 2,
+                item.get('owner') or '',
+                int(number) if number.isdigit() else 0)
+    return sorted(rows, key=key)
+
+
+def _list_line(item):
+    """One row: the bar, the feature and rule, the cell and the word."""
+    owner = item.get('owner') or item.get('feature')
+    return ('  %-6s  %s %s  %s  %s'
+            % (item.get('bar') or 'passed', owner, item.get('rule'),
+               item.get('cell') or '',
+               ', '.join(item.get('why') or ()))).rstrip()
 
 
 def scan(url, ref=None):

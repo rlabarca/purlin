@@ -70,7 +70,13 @@ GATE_QUESTION = 'What must be true before CI lets a change merge?'
 GATE_CHOICES = (
     'passed  every rule has a passing tagged test, from any source',
     'strong  every rule has a record CI wrote, at the minimum test strength',
-    'signed  strong, plus a signature on every rule at or above medium risk',
+    'signed  strong, plus a signature from a person on the rule',
+)
+SIGN_AT_QUESTION = 'Which rules need a signature?'
+SIGN_AT_CHOICES = (
+    'strong  the rules whose bar is strong; the rest meet the gate on their '
+    'tests',
+    'all     every rule, whatever its bar',
 )
 LANGUAGE_QUESTION = ('There is nothing here to detect a test framework from. '
                      'Which one do the tests use?')
@@ -263,10 +269,11 @@ def plugin_files(plugin_root):
 
 
 def untagged_rules(root):
-    """`[(feature, RULE-N)]` for every rule that names no risk.
+    """`[(feature, RULE-N)]` for every rule that names no origin.
 
     Read off the rule line: in the parsed metadata an untagged rule and one
-    tagged `low` are the same thing.
+    tagged `eng` are the same thing. The bar is not read here, because a rule
+    that names none takes the project's gate and is tagged by that.
     """
     found = []
     for path in specs_module.spec_files(root):
@@ -274,7 +281,7 @@ def untagged_rules(root):
         section = specs_module.extract_section(_read(path), '## Rules') or ''
         for line in section.splitlines():
             line = line.strip()
-            if line.startswith('- RULE-') and '[risk:' not in line:
+            if line.startswith('- RULE-') and '[origin:' not in line:
                 found.append((name, line[2:].split(':', 1)[0]))
     return found
 
@@ -539,14 +546,14 @@ def install_hook(plan, root, hooks):
 
 # --- The steps -------------------------------------------------------------
 
-def write_config(plan, plugin_root, existing, gate, host, framework, signers):
+def write_config(plan, plugin_root, existing, gate, host, framework, signers,
+                 sign_at=None):
     """`.purlin/config.json`: the template, the gate, and what follows from it."""
     config = json.loads(_read(plugin_root, 'templates', 'config.json'))
     config.update(existing or {})
     derived = gate_module.resolve_gate({'gate': gate})
     config.update({'version': _read(plugin_root, 'VERSION').strip(),
-                   'gate': gate, 'ai_review_at': derived.ai_review_at,
-                   'min_strength': derived.min_strength})
+                   'gate': gate, 'min_strength': derived.min_strength})
     if host:
         config['ci'] = host
     if framework:
@@ -555,6 +562,9 @@ def write_config(plan, plugin_root, existing, gate, host, framework, signers):
         config.pop(key, None)
     if gate == 'signed':
         config['signers'] = signers
+        config['sign_at'] = sign_at or derived.sign_at
+    else:
+        config.pop('sign_at', None)
     plan.write('.purlin/config.json', json.dumps(config, indent=2) + '\n',
                own=True)
     return config
@@ -723,6 +733,23 @@ def resolve_frameworks(root, console, existing, add):
     return [answer], answer, []
 
 
+def ask_sign_at(console):
+    """Which rules need a signature: the one question the `signed` gate adds.
+
+    A bar is what a rule must prove before anyone signs it, so the answer is
+    either the rules that carry the strong bar or every rule there is.
+    """
+    answer = str(console.ask(SIGN_AT_QUESTION,
+                             gate_module.DEFAULT_SIGN_AT,
+                             SIGN_AT_CHOICES) or '').strip().lower()
+    if answer in gate_module.SIGN_AT_VALUES:
+        return answer
+    print('purlin: "%s" is not one of %s; reading it as %s.'
+          % (answer, ' or '.join(gate_module.SIGN_AT_VALUES),
+             gate_module.DEFAULT_SIGN_AT))
+    return gate_module.DEFAULT_SIGN_AT
+
+
 def _existing_config(root):
     """The project's own `.purlin/config.json`, or None when it has none."""
     try:
@@ -739,7 +766,7 @@ def signing_setup():
 
 
 def print_signed(root, signers):
-    """What `signed` needs beyond the config: the signer list, and tagged risk."""
+    """What `signed` needs beyond the config: the signer list, and the origin."""
     print('')
     if signers:
         print('Signers: %s.' % ', '.join(signers))
@@ -752,7 +779,7 @@ def print_signed(root, signers):
         print('  %s' % command)
     untagged = untagged_rules(root)
     if untagged:
-        print('%s %d rules carry no risk tag, and signed requires one. Run '
+        print('%s %d rules carry no origin tag, and signed requires one. Run '
               'purlin:spec to tag them:' % (ARROW, len(untagged)))
         for feature, rule in untagged[:20]:
             print('  %s %s' % (feature, rule))
@@ -796,10 +823,13 @@ def main(argv=None):
 
     signers = [str(e).strip().lower() for e
                in ((existing or {}).get('signers') or []) if str(e).strip()]
-    if gate == 'signed' and not signers:
-        signers = [part.strip().lower()
-                   for part in console.ask(SIGNER_QUESTION, '').split(',')
-                   if part.strip()]
+    sign_at = None
+    if gate == 'signed':
+        if not signers:
+            signers = [part.strip().lower()
+                       for part in console.ask(SIGNER_QUESTION, '').split(',')
+                       if part.strip()]
+        sign_at = ask_sign_at(console)
 
     selected, framework, dropped = resolve_frameworks(
         root, console, existing, args.add)
@@ -815,7 +845,7 @@ def main(argv=None):
         plan.directory(name)
 
     config = write_config(plan, plugin_root, existing, gate, host, framework,
-                          signers)
+                          signers, sign_at)
     install_plugins(plan, plugin_root, selected)
     plan.write('.purlin/plugin-root', installed_plugin_root() + '\n', own=True)
     write_wiring(plan, selected)

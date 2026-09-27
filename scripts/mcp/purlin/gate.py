@@ -15,9 +15,8 @@ can merge, and every level above it is not asked for at all:
 Everything else has a default derived from the gate, and every default can be
 overridden by naming the key:
 
-    {"gate": "strong", "ai_review_at": "high", "min_strength": 70,
-     "mutation_engine": "auto", "sql_engine": null, "ci": "github",
-     "signers": []}
+    {"gate": "strong", "min_strength": 70, "mutation_engine": "auto",
+     "sql_engine": null, "ci": "github", "signers": []}
 
 Keys this release no longer reads are ignored with one warning naming
 `purlin:init --update`.
@@ -33,20 +32,37 @@ if _MCP_DIR not in sys.path:
 GATES = ('passed', 'strong', 'signed')
 DEFAULT_GATE = 'passed'
 
-# gate -> (ai_review_at, min_strength, sign_at, breaks)
+# The two bars a rule can carry, weakest first. A bar is the evidence a rule
+# must have before it can be signed, and a rule that names none takes the
+# project's gate as its bar.
+BARS = ('passed', 'strong')
+
+# The two values `sign_at` takes: a signature on the rules whose bar is
+# `strong`, or a signature on every rule.
+SIGN_AT_VALUES = ('strong', 'all')
+DEFAULT_SIGN_AT = 'strong'
+
+# An older project wrote one of three levels here. The bar replaced them, so
+# the two that asked for a person map onto the rules whose bar is `strong`,
+# and the one that asked for nobody asks for all of them instead.
+_SIGN_AT_WAS = {'high': 'strong', 'medium': 'strong', 'low': 'all'}  # retired
+
+# gate -> (min_strength, sign_at, breaks)
 #
 # `min_strength` is None under `passed`: nothing measures test strength there,
 # so there is no number to compare and the record writes `n/a`.
 _DERIVED = {
-    'passed': ('never', None, None, False),
-    'strong': ('high', 70, None, True),
-    'signed': ('medium', 80, 'medium', True),
+    'passed': (None, None, False),
+    'strong': (70, None, True),
+    'signed': (80, DEFAULT_SIGN_AT, True),
 }
 
 RETIRED_KEYS = (
     'remote_verification', 'mutation_checks', 'quality_gate', 'platforms',
     'spec_dir', 'audit_criteria', 'audit_mode', 'audit_threshold',
     'approvers',                                                  # retired
+    'ai_review_at',                                               # retired
+    'risk',                                                       # retired
 )
 
 # `pre_push` survives as on or off. Any other value named a policy this
@@ -57,7 +73,7 @@ _PRE_PUSH_VALUES = ('on', 'off', True, False)
 class GateConfig(object):
     """The resolved settings one run reads, plus the warnings resolving raised."""
 
-    __slots__ = ('gate', 'ai_review_at', 'min_strength', 'sign_at', 'breaks',
+    __slots__ = ('gate', 'min_strength', 'sign_at', 'breaks',
                  'mutation_engine', 'sql_engine', 'ci', 'signers',
                  'test_framework', 'pre_push', 'warnings')
 
@@ -94,12 +110,10 @@ def resolve_gate(config):
                 % (gate, ', '.join(GATES), DEFAULT_GATE))
         gate = DEFAULT_GATE
 
-    ai_review_at, min_strength, sign_at, breaks = _DERIVED[gate]
+    min_strength, sign_at, breaks = _DERIVED[gate]
 
-    if 'ai_review_at' in config:
-        ai_review_at = config['ai_review_at']
     if 'sign_at' in config:
-        sign_at = config['sign_at']
+        sign_at = _read_sign_at(config['sign_at'], sign_at, warnings)
     if 'min_strength' in config:
         try:
             min_strength = int(config['min_strength'])
@@ -128,7 +142,6 @@ def resolve_gate(config):
 
     resolved = GateConfig(
         gate=gate,
-        ai_review_at=ai_review_at,
         min_strength=min_strength,
         sign_at=sign_at,
         breaks=breaks,
@@ -143,32 +156,45 @@ def resolve_gate(config):
     return resolved
 
 
-def risk_at_or_above(risk, threshold):
-    """True when `risk` is at or above `threshold` on low < medium < high.
+def _read_sign_at(value, derived, warnings):
+    """`sign_at` as this release reads it, from what the config named.
 
-    `never` is above every risk, so nothing ever reaches it, and `None` is the
-    same answer written the way a gate that does not ask the question writes
-    it.
+    A project written before the bar named one of three levels here. The
+    value is mapped rather than refused, so raising a gate never silently
+    asks for fewer signatures than the project had.
     """
-    order = {'low': 0, 'medium': 1, 'high': 2}
-    if threshold in (None, 'never') or threshold not in order:
+    if value is None:
+        return derived
+    named = str(value).strip().lower()
+    if named in SIGN_AT_VALUES:
+        return named
+    if named in _SIGN_AT_WAS:
+        return _SIGN_AT_WAS[named]
+    warnings.append(
+        '"sign_at" is %r, which is not one of %s; reading it as %r'
+        % (value, ', '.join(SIGN_AT_VALUES), derived))
+    return derived
+
+
+def default_bar(gate):
+    """The bar a rule that names none takes: the project's own gate.
+
+    `passed` at the gate `passed`, `strong` at `strong` and at `signed`, so a
+    project that asks for strong evidence asks for it on every rule until a
+    rule says otherwise.
+    """
+    return 'passed' if gate == GATES[0] else 'strong'
+
+
+def needs_signature(gate, sign_at, bar):
+    """True when a rule with this bar has to carry a signature.
+
+    Only the `signed` gate asks for one at all. There `sign_at: all` asks on
+    every rule and `sign_at: strong` asks on the rules whose bar is `strong`.
+    """
+    if gate != 'signed':
         return False
-    return order.get(risk, 0) >= order[threshold]
+    if str(sign_at or DEFAULT_SIGN_AT) == 'all':
+        return True
+    return str(bar or 'passed') == 'strong'
 
-
-def one_level_lower(threshold):
-    """The threshold one step down, for a project with no breaks engine.
-
-    With nothing measuring test strength there is less evidence per rule, so
-    the review net widens by one level rather than staying where a measured
-    project leaves it.
-    """
-    order = ['high', 'medium', 'low']
-    if threshold is None:
-        return None
-    if threshold == 'never':
-        return 'high'
-    if threshold in order:
-        index = order.index(threshold)
-        return order[min(index + 1, len(order) - 1)]
-    return threshold

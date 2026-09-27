@@ -1,8 +1,8 @@
-"""The six columns every surface reads a spec's row from, rendered once.
+"""The columns every surface reads a spec's row from, rendered once.
 
 The dashboard's board, the `purlin:status` table, the pull request comment
-and `scan.py` all answer the same six questions about one spec, and they have
-to answer them in the same words: a reader who learns the board reads the
+and `scan.py` all answer the same questions about one spec, and they have to
+answer them in the same words: a reader who learns the board reads the
 table without learning it again. So the columns, the cell text, the bucket
 names and the next step live here, and each surface renders what this module
 returns rather than composing its own string. `scripts/report/src/board.js`
@@ -16,6 +16,8 @@ The columns, left to right:
     Proofs   how many proof lines it writes, and how many have no test
     Tests    how many rules pass, and how many are partial or failing
     Strong   how many rules are strong, and the test strength, at `strong`
+    Signable how many rules have cleared their bar and need a signature, at
+             `signed`
     Signed   how many rules are signed, at `signed`
 
 Every when, who and platform detail lives in a hover on the dashboard and on
@@ -24,10 +26,10 @@ the rule screen; a cell here carries counts and nothing else.
 
 DOT = ' · '
 
-# The six columns, and which gate each one appears at.
-COLUMNS = ('Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed')
+# The seven columns, and which gate each one appears at.
+COLUMNS = ('Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signable', 'Signed')
 STRONG_COLUMNS = ('Strong',)
-SIGNED_COLUMNS = ('Signed',)
+SIGNED_COLUMNS = ('Signable', 'Signed')
 
 # The one tile a rule is counted in, and the word every surface prints for it.
 # The bucket key `passed` reads `Passing` on a tile, because the tile counts
@@ -82,6 +84,11 @@ def signed_met(rollup):
     return rollup.get('signed') or 0
 
 
+def signable(rollup):
+    """How many of a spec's rules are signable: cleared their bar, unsigned."""
+    return rollup.get('signable') or 0
+
+
 def strength_text(strength):
     """A test strength as a percentage, or `n/a` where nothing measured one."""
     return 'n/a' if strength is None else '%d%%' % int(strength)
@@ -117,6 +124,11 @@ def strong_cell(rollup):
                              DOT, strength_text(rollup.get('test_strength')))
 
 
+def signable_cell(rollup):
+    """`<n> of <rules>`: the rules a signer can act on now."""
+    return '%d of %d' % (signable(rollup), rollup.get('rules') or 0)
+
+
 def signed_cell(rollup):
     """`<n> of <rules>`."""
     return '%d of %d' % (signed_met(rollup), rollup.get('rules') or 0)
@@ -129,6 +141,7 @@ def row_cells(name, rollup, gate):
     if gate in ('strong', 'signed'):
         cells.append(strong_cell(rollup))
     if gate == 'signed':
+        cells.append(signable_cell(rollup))
         cells.append(signed_cell(rollup))
     return tuple(cells)
 

@@ -16,14 +16,17 @@ the slug is the signer's email local part, lowercased, with every character
 that is not a letter or a digit replaced by `-`. Every file here is a person's:
 CI writes no signature, ever.
 
-With no argument this walks the review list one brief at a time. At each stop
-the answer is one of four: sign the rule, add a case (a proof line to write
-into the spec), hold the rule, or skip it. The walk writes nothing until it
+With no argument this walks two lists one brief at a time, Review first and
+then Sign. Review holds the rules whose strong cell reads `manual test`,
+`unsettled` or `held`; Sign holds the signable rules, the ones that have
+cleared their bar and need a signature they do not have. At each stop the
+answer is one of four: sign the rule, add a case (a proof line to write into
+the spec), hold the rule, or skip it. The walk writes nothing until it
 closes, and then it makes one signed commit for the signatures and one per
 feature for the holds.
 
 `--note` carries the one line a signer writes where the machine could not
-settle the question: a rule reading `manual test` or `manual audit`.
+settle the question: a rule reading `manual test` or `unsettled`.
 `--hold` writes the opposite attestation, `<RULE-N>.<hash8>.<holder-slug>.
 hold.json`, a person's statement that the test does not prove the proof as
 written, with the missing case as its reason. A hold only ever withholds, so
@@ -146,7 +149,7 @@ def signature_path(project_root, feature, rule, triple, signer_slug):
 
 
 def write_signature(project_root, feature, rule, signer_email, brief_path,
-                    record_path, gate, risk, payload=None, entry=None,
+                    record_path, gate, bar, payload=None, entry=None,
                     note=None):
     """Write one signature file and return its project-relative path."""
     entry = entry or rule_entry(load_payload(project_root, payload), feature,
@@ -169,7 +172,7 @@ def write_signature(project_root, feature, rule, signer_email, brief_path,
         'test_hash': entry.get('test_hash'),
         'test_hash_kind': entry.get('test_hash_kind'),
         'design_hash': entry.get('design_hash'),
-        'risk': risk if risk is not None else entry.get('risk'),
+        'bar': bar if bar is not None else entry.get('bar'),
         'signer': str(signer_email),
         'note': str(note).strip() if str(note or '').strip() else None,
         'timestamp': payload_module.now_iso(),
@@ -222,7 +225,7 @@ def write_hold(project_root, feature, rule, holder_email, reason, payload=None,
         'test_hash': entry.get('test_hash'),
         'test_hash_kind': entry.get('test_hash_kind'),
         'design_hash': entry.get('design_hash'),
-        'risk': entry.get('risk'),
+        'bar': entry.get('bar'),
         'holder': str(holder_email),
         'reason': str(reason).strip(),
         'timestamp': payload_module.now_iso(),
@@ -245,42 +248,29 @@ def _write_json(path, body):
 # What a person may sign now
 # ---------------------------------------------------------------------------
 
-_RISK_ORDER = {'high': 0, 'medium': 1, 'low': 2}
-
-
 def signable(payload, feature=None, rules=None):
-    """Every `(feature, rule)` whose next step is this person, in risk order.
+    """Every `(feature, rule)` on the sign list, in the order it reads.
 
-    A rule is signable when its signed cell reads `unsigned` or `stale`, or
-    when its strong cell reads `manual test`, `manual audit` or `held`: those
-    are the words that say the machine has gone as far as it can. Everything
+    The payload works out which rules are signable, so this reads the list it
+    wrote rather than asking the question again: a rule is there when it has
+    cleared its bar, needs a signature and has no counting one. Everything
     else is build work and stays on the board.
     """
     found = []
-    for entry in (payload or {}).get('features') or ():
-        for item in entry.get('rules') or ():
-            if item.get('feature') != entry.get('name'):
-                continue
-            if feature and item.get('feature') != feature:
-                continue
-            if rules and item.get('id') not in rules:
-                continue
-            if not _needs_a_signature(item):
-                continue
-            found.append((_RISK_ORDER.get(item.get('risk'), 2),
-                          item['feature'], _rule_number(item['id']),
-                          item['id']))
-    found.sort()
-    return [(name, rule) for _rank, name, _number, rule in found]
+    for row in (payload or {}).get('sign_list') or ():
+        name, rule = row.get('owner'), row.get('rule')
+        if feature and name != feature:
+            continue
+        if rules and rule not in rules:
+            continue
+        if name and rule:
+            found.append((name, rule))
+    return found
 
 
 def _needs_a_signature(entry):
-    cells = (entry or {}).get('cells') or {}
-    signed = cells.get('signed') or {}
-    if signed.get('word') in ('unsigned', 'stale'):
-        return True
-    return ((cells.get('strong') or {}).get('word')
-            in ('manual test', 'manual audit', 'held'))
+    """True when one rule entry is signable, read off the payload's own field."""
+    return bool((entry or {}).get('signable'))
 
 
 def _rule_number(rule_id):
@@ -362,7 +352,7 @@ def sign_and_commit(project_root, targets, signer_email, note=None,
         path = write_signature(
             project_root, feature, rule, signer_email,
             brief_for(project_root, feature, rule, triple),
-            _latest_record(payload, feature), gate, entry.get('risk'),
+            _latest_record(payload, feature), gate, entry.get('bar'),
             entry=entry, note=note)
         if path:
             paths.append(path)
@@ -416,7 +406,7 @@ def _commit(project_root, paths, message):
 # ---------------------------------------------------------------------------
 
 def walk(project_root, payload=None, answer=None, out=None, signer_email=None):
-    """Walk the review list one brief at a time. Returns what happened.
+    """Walk Review, then Sign, one brief at a time. Returns what happened.
 
     `answer` is called once per stop with the rule entry and the rendered
     brief, and returns one of `sign`, `case`, `hold` or `skip`, optionally as
@@ -433,16 +423,24 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None):
     answer = _prompt if answer is None else answer
     email = (signer_email or _config(project_root, 'user.email')).lower()
 
-    entries = [rule_entry(payload, row['owner'], row['rule'])
-               for row in payload.get('review_list') or ()]
-    entries = [entry for entry in entries if entry is not None]
+    seen = set()
+    entries = []
+    for row in (list(payload.get('review_list') or ())
+                + list(payload.get('sign_list') or ())):
+        key = (row.get('owner'), row.get('rule'))
+        if key in seen:
+            continue
+        seen.add(key)
+        entry = rule_entry(payload, row.get('owner'), row.get('rule'))
+        if entry is not None:
+            entries.append(entry)
     result = {'rules': len(entries), 'signed': [], 'cases': [], 'held': [],
               'skipped': [], 'commits': []}
     if not entries:
-        print('The review list is empty.', file=out)
+        print('Nothing is waiting for a person.', file=out)
         return result
 
-    print('Review list: %d rule%s across %d feature%s'
+    print('Review and Sign: %d rule%s across %d feature%s'
           % (len(entries), '' if len(entries) == 1 else 's',
              len({entry['feature'] for entry in entries}),
              '' if len({entry['feature'] for entry in entries}) == 1 else 's'),
@@ -622,7 +620,7 @@ def _gate_is_too_low(gate):
     """The two lines `passed` prints in place of writing a signature."""
     return ['sign: the gate is %s, which asks for no signature.' % gate,
             'sign: purlin:init --gate strong adds the test strength, the free '
-            'checks on the test body, the model review and the review list.']
+            'checks on the test body, the AI audit and the review list.']
 
 
 def main(argv=None):

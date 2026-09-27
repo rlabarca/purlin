@@ -6,9 +6,9 @@ because a reader who learns one should not have to learn the other:
 `purlin:purlin.board` renders both. A row says how many rules the spec has,
 how many proofs it writes and how many of those have no test, and how many
 rules pass their tests. At `strong` the row adds how many rules are strong
-and the test strength; at `signed` it adds how many are signed. The table
-scales with the gate: a `passed` project is never shown a strength, a risk or
-a signature it did not ask for.
+and the test strength; at `signed` it adds how many are signable and how many
+are signed. The table scales with the gate: a `passed` project is never shown
+a strength, a bar or a signature it did not ask for.
 
 Copy follows `design/readme.md`: sentence case, second person for what you
 do, third person for what Purlin does, exact numbers, and the only glyphs are
@@ -146,20 +146,35 @@ def _summary(data):
     if gate != 'passed':
         if cfg.get('min_strength') is not None:
             second.append('minimum test strength %d%%' % cfg['min_strength'])
-        if cfg['ai_review_at'] != 'never':
-            second.append('review at risk %s and above' % cfg['ai_review_at'])
         if summary.get('manual'):
             second.append('%d rules with a manual test' % summary['manual'])
-        if summary.get('audit'):
-            second.append('%d rules with a manual audit' % summary['audit'])
+        if summary.get('unsettled'):
+            second.append('%d rules unsettled' % summary['unsettled'])
+        if summary.get('not_audited'):
+            second.append('%d rules not audited' % summary['not_audited'])
         if summary.get('held'):
             second.append('%d rules held' % summary['held'])
     if gate == 'signed':
-        if cfg.get('sign_at'):
-            second.append('a signature at risk %s and above' % cfg['sign_at'])
+        second.append('a signature on %s'
+                      % ('every rule' if cfg.get('sign_at') == 'all'
+                         else 'every rule whose bar is strong'))
         if summary.get('stale'):
             second.append('%d signatures stale' % summary['stale'])
     lines.append(', '.join(second) + '.')
+    lines.extend(_list_lines(data, gate))
+    return lines
+
+
+def _list_lines(data, gate):
+    """The two counts a person acts on: the Review tab, then the Sign tab."""
+    lines = []
+    if gate == 'passed':
+        return lines
+    review = len(data.get('review_list') or ())
+    lines.append('%d rule%s to review.' % (review, '' if review == 1 else 's'))
+    if gate == 'signed':
+        sign = len(data.get('sign_list') or ())
+        lines.append('%d rule%s to sign.' % (sign, '' if sign == 1 else 's'))
     return lines
 
 
@@ -189,22 +204,14 @@ NO_AUDIT = 'no audit has run'
 
 
 def _unaudited(data):
-    """How many rules are weak only because no audit has measured them.
+    """How many rules no audit has measured yet.
 
     A weak rule is build work, and that is what the next step says, unless
     nothing has run the breaks over it at all: then the work is the audit,
     not the build, and telling a reader to build would send them at the
     wrong thing.
     """
-    found = 0
-    for feature in data['features']:
-        for rule in feature.get('rules') or ():
-            if rule.get('label') != 'own' or rule.get('blocked_by') != 'strong':
-                continue
-            cell = (rule.get('cells') or {}).get('strong') or {}
-            if NO_AUDIT in (cell.get('reasons') or ()):
-                found += 1
-    return found
+    return (data.get('summary') or {}).get('not_audited') or 0
 
 
 def _directives(data, project_root):
@@ -218,7 +225,6 @@ def _directives(data, project_root):
     blocked = _blocking(data)
     passed = blocked['passed']
     strong = blocked['strong']
-    signed = blocked['signed']
 
     no_test = passed.get('no test', 0)
     failing = passed.get('failed', 0)
@@ -226,9 +232,8 @@ def _directives(data, project_root):
     waiting = passed.get('not run', 0) + passed.get('code changed', 0)
     weak = strong.get('weak', 0)
     unaudited = _unaudited(data)
-    person = (strong.get('manual test', 0) + strong.get('manual audit', 0)
-              + strong.get('held', 0) + signed.get('unsigned', 0)
-              + signed.get('stale', 0) + signed.get('held', 0))
+    person = len(data.get('review_list') or ()) + len(
+        data.get('sign_list') or ())
 
     if blocked['spec']:
         lines.append('%s Next: run purlin:spec. %d rules have no proof that '
@@ -266,9 +271,10 @@ def _directives(data, project_root):
     else:
         lines.append('%s Next: nothing is outstanding at gate %s.' % (ARROW, gate))
 
-    if data['review_list']:
+    if data.get('review_list') or data.get('sign_list'):
         lines.append('%s Review list: %d rules need a person. Run purlin:sign.'
-                     % (ARROW, len(data['review_list'])))
+                     % (ARROW, len(data.get('review_list') or ())
+                        + len(data.get('sign_list') or ())))
     return lines
 
 

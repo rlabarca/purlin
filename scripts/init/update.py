@@ -63,6 +63,9 @@ GATE_RENAMES = {'tested': 'passed', 'recorded': 'strong',  # retired
 SIGNER_KEY_WAS = 'approvers'                               # retired
 RECORD_FLAG_WAS = '--commit'                               # retired
 RECORD_SOURCE_WAS = 'developer'                            # retired
+RULE_TAG_RE = re.compile(r'\[risk:\s*([^\]]*)\]')          # retired
+TAG_TO_BAR = {'high': 'strong', 'medium': 'strong',        # retired
+              'low': 'passed'}                             # retired
 
 # --- what this release writes instead --------------------------------------
 IGNORE_LINES = ('.purlin/report-data.js', '.purlin/report-stamp.js',
@@ -91,7 +94,7 @@ GATE_QUESTION = """
 What must be true before CI lets a change merge?
   passed  every rule has a passing tagged test, from any source
   strong  CI writes a record at this commit, at or above the minimum strength
-  signed  strong, plus a signature on every rule at or above medium risk"""
+  signed  strong, plus a signature from a person on the rule"""
 
 RECORDS_README = """# Records
 
@@ -266,10 +269,13 @@ def _detect_config(root):
     config = _config(root)
     if not config:
         return []
+    gate = _gate()
     stale = ('gate' not in config
              or config.get('version') != _version()
              or str(config.get('pre_push', 'off')) not in ('on', 'off')
-             or any(key in config for key in _gate().RETIRED_KEYS))
+             or (config.get('gate') == 'signed'
+                 and config.get('sign_at') not in gate.SIGN_AT_VALUES)
+             or any(key in config for key in gate.RETIRED_KEYS))
     return ['.purlin/config.json'] if stale else []
 
 def _gate_default(old):
@@ -285,6 +291,26 @@ def _gate_default(old):
     if named in gates:
         return named
     return 'strong' if str(old.get('pre_push')).strip() == 'strict' else 'passed'
+
+
+SIGN_AT_QUESTION = """
+Which rules need a signature?
+  strong  the rules whose bar is strong; the rest meet the gate on their tests
+  all     every rule, whatever its bar"""
+
+
+def _ask_sign_at(default, assume_yes):
+    """The one question the `signed` gate adds, asked again on an update."""
+    gate = _gate()
+    default = default if default in gate.SIGN_AT_VALUES else gate.DEFAULT_SIGN_AT
+    if assume_yes:
+        return default
+    print(SIGN_AT_QUESTION)
+    try:
+        answer = input('Signature on [%s]: ' % default).strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        return default
+    return answer if answer in gate.SIGN_AT_VALUES else default
 
 
 def _ask_gate(default, assume_yes):
@@ -330,7 +356,7 @@ def _apply_config(root, files, args, out):
     framework, unwired = _prune_frameworks(root, resolved.test_framework)
     config = {
         'version': _version(), 'gate': chosen,
-        'ai_review_at': resolved.ai_review_at, 'ci': old.get('ci') or _host(root),
+        'ci': old.get('ci') or _host(root),
         'min_strength': resolved.min_strength, 'sql_engine': resolved.sql_engine,
         'mutation_engine': resolved.mutation_engine,
         'test_framework': framework, 'digest': old.get('digest', 'auto'),
@@ -340,6 +366,7 @@ def _apply_config(root, files, args, out):
         out.say(DROPPED_FRAMEWORK % name)
     if chosen == 'signed':
         config['signers'] = resolved.signers
+        config['sign_at'] = _ask_sign_at(resolved.sign_at, args.yes)
     dropped = sorted(key for key in gate.RETIRED_KEYS if key in old)
     _write(path, json.dumps(config, indent=2) + '\n')
     out.done('.purlin/config.json')
@@ -386,6 +413,40 @@ def _apply_os_tags(root, files, args, out):
         out.done(rel)
     out.say('rewrote the operating-system tags in %d spec%s'
             % (len(files), _s(files)))
+
+def _detect_rule_tags(root):
+    """Every spec still carrying the tag the bar replaced."""
+    hits = []
+    for rel in _files_under(root, 'specs', ('*.md',)):
+        if RULE_TAG_RE.search(_read(os.path.join(root, rel))):
+            hits.append(rel)
+    return hits
+
+
+def _apply_rule_tags(root, files, args, out):
+    """A rule names its bar now: the evidence it must have before a signature.
+
+    The two levels that asked for a person become `[bar: strong]` and the one
+    that did not becomes `[bar: passed]`, so no rule loses the evidence it
+    was asking for. The tag sits outside the rule text hash, as the old one
+    did, so rewriting it stales nothing but the signature's own bar field.
+    """
+    changed = 0
+    for rel in files:
+        path = os.path.join(root, rel)
+        text = _read(path)
+        rewritten = RULE_TAG_RE.sub(
+            lambda m: '[bar: %s]' % TAG_TO_BAR.get(
+                m.group(1).strip().lower(), 'passed'), text)
+        if rewritten == text:
+            continue
+        out.kept(_back_up_copy(path, rel))
+        _write(path, rewritten)
+        out.done(rel)
+        changed += 1
+    out.say('rewrote the tag the bar replaced in %d spec%s'
+            % (changed, '' if changed == 1 else 's'))
+
 
 def _detect_design_sources(root):
     hits = []
@@ -605,6 +666,9 @@ def _apply_record_folders(root, files, args, out):
 MIGRATIONS = (
     ('os-tags', 'rewrite the retired operating-system tags to @env(<os>)',
      _detect_os_tags, _apply_os_tags),
+    ('rule-tags', 'rewrite each rule\'s retired tag as [bar: passed] or '
+     '[bar: strong]',
+     _detect_rule_tags, _apply_rule_tags),
     ('design-sources', 'point design sources at designs/<feature>/',
      _detect_design_sources, _apply_design_sources),
     ('untracked-files', 'drop the proof files and untrack the dashboard data',

@@ -8,7 +8,7 @@ a markdown file with two sections, `## Rules` and `## Proof`, and a block of
 
 Rule lines carry their tags at the end:
 
-    - RULE-3: Expired tokens are rejected with 401 [risk: high] [origin: pm] [criterion: US-12]
+    - RULE-3: Expired tokens are rejected with 401 [bar: strong] [origin: pm] [criterion: US-12]
 
 The tags are read off the end and stripped, so `rule_text_hash` sees the claim
 alone and re-tagging a rule never stales a signature.
@@ -45,12 +45,19 @@ _PROOF_LINE_RE = re.compile(
 
 # Rule tags, read off the end one at a time so the order they are written in
 # does not matter and the text that remains is the claim alone.
-_RULE_TAG_RE = re.compile(r'\s*\[(risk|origin|criterion):\s*([^\]]+)\]\s*$')
+_RULE_TAG_RE = re.compile(
+    r'\s*\[(bar|risk|origin|criterion):\s*([^\]]+)\]\s*$')       # retired
 
-RISK_LEVELS = ('low', 'medium', 'high')
+BARS = ('passed', 'strong')
 ORIGINS = ('pm', 'design', 'qa', 'eng')
-DEFAULT_RISK = 'low'
 DEFAULT_ORIGIN = 'eng'
+
+# The bar replaced the tag an older release wrote at the end of a rule line.
+# A spec that release wrote still carries the old spelling, and the two
+# levels of it that asked for a person map onto the `strong` bar.
+# `purlin:init --update` rewrites the tag; until it runs the parser reads it,
+# so the rule text hash and the signature bound to it stay steady.
+RISK_TO_BAR = {'high': 'strong', 'medium': 'strong', 'low': 'passed'}  # retired
 
 # A trailing tag is metadata appended after the description: ` @e2e`,
 # ` @env(linux)`. It must not match a description whose prose merely ends in
@@ -84,10 +91,12 @@ _RETIRED_FIELD_RE = re.compile(
 def split_rule_tags(text):
     """`(clean_text, meta)` for one rule line's description.
 
-    `meta` always carries `risk` and `origin` (defaults `low` and `eng`) and
-    carries `criterion` only when the line named one. An unrecognised value
-    for risk or origin is kept as written: the reader is better served by
-    seeing what the spec says than by a silent correction.
+    `meta` always carries `origin` (default `eng`) and carries `bar` only
+    where the line named one, because the bar a rule that names none takes is
+    the project's gate and this module does not read the gate. `criterion` is
+    carried only where the line named one. An unrecognised value for the bar
+    or the origin is kept as written: the reader is better served by seeing
+    what the spec says than by a silent correction.
     """
     meta = {}
     text = text.rstrip()
@@ -98,7 +107,9 @@ def split_rule_tags(text):
         name, value = m.group(1), m.group(2).strip()
         meta.setdefault(name, value)
         text = text[:m.start()].rstrip()
-    meta.setdefault('risk', DEFAULT_RISK)
+    older = meta.pop('risk', None)                                 # retired
+    if older is not None and 'bar' not in meta:
+        meta['bar'] = RISK_TO_BAR.get(str(older).strip().lower(), 'passed')
     meta.setdefault('origin', DEFAULT_ORIGIN)
     return text, meta
 
@@ -354,7 +365,7 @@ def scan_specs(project_root):
     `spec_path` (relative, `/` separated), `category` (the directory under
     `specs/`), `name`, `is_anchor`, `is_global`, `description`, `stack`,
     `requires`, `scope`, `rules` (`{RULE-N: text}` with tags stripped),
-    `rule_meta` (`{RULE-N: {risk, origin, criterion}}`), `rule_order`,
+    `rule_meta` (`{RULE-N: {bar, origin, criterion}}`), `rule_order`,
     `proofs` (`{PROOF-N: {rules, text, tier, env}}`), `proof_env`,
     `proofs_by_rule`, `source`, `source_path`, `source_globs`, `pinned`,
     `has_rules_section`, `unnumbered_lines` and `unknown_tags`.

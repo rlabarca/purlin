@@ -1,7 +1,6 @@
 {
   "version": "0.10.0",
   "gate": "passed",
-  "ai_review_at": "never",
   "min_strength": null,
   "mutation_engine": "auto",
   "sql_engine": null,

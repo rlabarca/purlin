@@ -21,7 +21,7 @@ The file, field by field in `references/formats/signature_format.md`:
       "test_hash": "<sha256 of the test bodies>",
       "test_hash_kind": "file",
       "design_hash": null,
-      "risk": "high",
+      "bar": "strong",
       "signer": "jane@acme.com",
       "note": null,
       "timestamp": "2026-09-13T12:00:00Z",
@@ -31,7 +31,7 @@ The file, field by field in `references/formats/signature_format.md`:
     }
 
 A signature is **current** when the three hashes it binds still equal the
-recomputed ones and the risk it names still matches the rule's. Anything else
+recomputed ones and the bar it names still matches the rule's. Anything else
 is a signature stale, and a person has to look. `design_hash` binds the pinned
 design files for a rule whose origin is `design`.
 
@@ -171,18 +171,18 @@ def _load_named(project_root, features, name_re, skip_slug):
     return found
 
 
-def is_current(signature, rule_hash, proof_hash, test_hash, risk,
+def is_current(signature, rule_hash, proof_hash, test_hash, bar,
                design_hash=None):
-    """True when a signature still binds the text and the risk it was given for.
+    """True when a signature still binds the text and the bar it was given for.
 
     Every part of the triple is compared, so changing a rule, rewording a
-    proof or editing a test all stale the signature; the risk is compared too,
-    because raising a rule from low to high is a change in what signing it
-    meant.
+    proof or editing a test all stale the signature; the bar is compared too,
+    because raising a rule from `passed` to `strong` is a change in what
+    signing it meant.
     """
     if not signature:
         return False
-    if str(signature.get('risk', '')) != str(risk):
+    if str(signature.get('bar', '')) != str(bar):
         return False
     for key, value in (('rule_hash', rule_hash), ('proof_hash', proof_hash),
                        ('test_hash', test_hash)):

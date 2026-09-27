@@ -4,18 +4,18 @@
     brief.py --feature <f> [--rule RULE-N] [--ai] [--project-root DIR]
 
 The brief reports; it recommends nothing. It gathers the evidence in layers,
-cheapest first, and stops when it has enough for the rule's risk:
+cheapest first, and stops when it has enough for the rule's bar:
 
-    low     the free checks on the proof text and on the test body
-    medium  plus the test strength from the latest record
-    high    plus the model review
+    passed  the free checks on the proof text and on the test body, and the
+            test strength from the latest record
+    strong  plus the AI audit
 
 What it ends with is four things and no judgment: the test strength beside the
 project minimum, the free-check findings under the names
 `references/review_criteria.md` gives them, the model review's observations one
 sentence at a time, and whether the review settled the question. A rule whose
 brief settled with nothing observed is one the machine could read; a review
-that could not settle leaves the strong cell reading `manual audit`.
+that could not settle leaves the strong cell reading `unsettled`.
 
 The brief lands beside the records, as
 `.purlin/briefs/<source>/<feature>/<RULE-N>.<hash8>.brief.json`, with a text
@@ -52,10 +52,10 @@ for _path in (_MCP_DIR, _HERE):
 import static_checks                                          # noqa: E402
 from purlin import (checks,                                    # noqa: E402
                     console as console_module,
-                    gate as gate_module, payload as payload_module,
-                    signatures as signatures_module, states)
+                    payload as payload_module,
+                    signatures as signatures_module)
 
-SCHEMA = 'purlin-brief/2'
+SCHEMA = 'purlin-brief/3'
 USAGE = ('Usage: brief.py --feature <f> [--rule RULE-N] [--ai] '
          '[--project-root DIR]')
 
@@ -70,12 +70,12 @@ CRITERIA = os.path.join('references', 'review_criteria.md')
 BRIEFS_DIR = os.path.join('.purlin', 'briefs')
 SOURCES = ('ci', 'local')
 
-# The layers, cheapest first, and the lowest risk each one is built for.
+# The layers, cheapest first, and the bar each set is built for. The AI audit
+# runs on the rules whose bar is `strong` and on no other.
 LAYERS = ('proof text', 'test body', 'test strength', 'model review')
-_LAYERS_BY_RISK = {
-    'low': LAYERS[:2],
-    'medium': LAYERS[:3],
-    'high': LAYERS,
+_LAYERS_BY_BAR = {
+    'passed': LAYERS[:3],
+    'strong': LAYERS,
 }
 
 ATTACHMENTS = os.path.join('.purlin', 'runtime', 'attachments')
@@ -120,8 +120,8 @@ def build_brief(project_root, payload, feature, rule, ai=False):
     if entry is None:
         return None
 
-    risk = entry.get('risk') or 'low'
-    layers = _LAYERS_BY_RISK.get(risk, _LAYERS_BY_RISK['low'])
+    bar = entry.get('bar') or 'passed'
+    layers = _LAYERS_BY_BAR.get(bar, _LAYERS_BY_BAR['passed'])
     gate = payload.get('gate') or {}
     min_strength = gate.get('min_strength') or 0
     feature_entry = _feature_entry(payload, feature)
@@ -135,7 +135,7 @@ def build_brief(project_root, payload, feature, rule, ai=False):
         'schema': SCHEMA,
         'feature': feature,
         'rule': rule,
-        'risk': risk,
+        'bar': bar,
         'origin': entry.get('origin'),
         'rule_text': entry.get('text'),
         'proofs': proofs,
@@ -160,7 +160,7 @@ def build_brief(project_root, payload, feature, rule, ai=False):
     if 'test strength' in layers:
         brief['test_strength'] = feature_entry.get('test_strength')
 
-    if 'model review' in layers and asks_for_a_review(payload, entry):
+    if 'model review' in layers:
         brief['ai_review'] = (_model_review(project_root, brief) if ai
                               else NOT_AVAILABLE)
         brief['observations'], brief['settled'] = model_observations(
@@ -169,16 +169,13 @@ def build_brief(project_root, payload, feature, rule, ai=False):
     return brief
 
 
-def asks_for_a_review(payload, entry):
-    """True when a rule's own risk is at or above the project's review level.
+def asks_for_a_review(entry):
+    """True when the AI audit runs on a rule: its bar is `strong`.
 
-    The strong cell asks the same question when it decides whether a brief was
-    owed, so the answer is computed from the one place that knows it.
+    The strong cell asks the same question when it decides whether a brief
+    was owed, so the answer is computed from the one place that knows it.
     """
-    cfg = gate_module.resolve_gate(payload.get('gate') or {})
-    threshold = states.review_threshold(
-        cfg, cfg.mutation_engine not in (None, 'none'))
-    return gate_module.risk_at_or_above(entry.get('risk') or 'low', threshold)
+    return (entry or {}).get('bar') == 'strong'
 
 
 def _feature_entry(payload, feature):
@@ -318,8 +315,8 @@ def model_prompt(project_root, brief):
     parts.extend(INSTRUCTION)
     parts.extend([
         '',
-        '%s %s (risk %s, origin %s)'
-        % (brief.get('feature'), brief.get('rule'), brief.get('risk'),
+        '%s %s (bar %s, origin %s)'
+        % (brief.get('feature'), brief.get('rule'), brief.get('bar'),
            brief.get('origin')),
         'Rule: %s' % (brief.get('rule_text') or '')])
     for proof in brief.get('proofs') or ():
@@ -449,9 +446,9 @@ def write_briefs(project_root, payload=None, rules=None, ai=False,
                  source='local'):
     """Write a brief for every rule a review is owed for. Returns their paths.
 
-    A review is owed when the rule's risk is at or above `ai_review_at` and its
-    passed cell counts: below that risk nothing asks the model a question, and
-    with no counting pass there is no test result to set the proof against.
+    A review is owed when the rule's bar is `strong` and its passed cell
+    counts: the AI audit runs on no other rule, and with no counting pass
+    there is no test result to set the proof against.
 
     `rules` narrows the list: each entry is `(feature, rule)` or a dict with
     `feature` and `rule`. CI writes these with the record, so a person opens a
@@ -473,7 +470,7 @@ def write_briefs(project_root, payload=None, rules=None, ai=False,
             for entry in feature_entry.get('rules') or ():
                 if entry.get('feature') != feature_entry.get('name'):
                     continue
-                if not asks_for_a_review(payload, entry):
+                if not asks_for_a_review(entry):
                     continue
                 if not ((entry.get('cells') or {}).get('passed')
                         or {}).get('counts'):
@@ -500,9 +497,9 @@ def write_briefs(project_root, payload=None, rules=None, ai=False,
 def render_brief(brief):
     """The brief as text: the rule, the proof, the test, and what it found."""
     lines = []
-    lines.append('%s %s   risk %s   origin %s'
+    lines.append('%s %s   bar %s   origin %s'
                  % (brief.get('feature'), brief.get('rule'),
-                    brief.get('risk'), brief.get('origin')))
+                    brief.get('bar'), brief.get('origin')))
     lines.append('')
     lines.append('Rule')
     lines.append('  %s' % (brief.get('rule_text') or ''))
@@ -544,8 +541,8 @@ def render_brief(brief):
         lines.append('Screenshot: %s'
                      % (', '.join(design.get('screenshot') or ()) or 'none'))
     # The model review is printed only where one was asked for, so a brief
-    # for a rule whose risk never reaches `ai_review_at` says nothing about a
-    # review that was never owed.
+    # for a rule whose bar is `passed` says nothing about a review that was
+    # never owed.
     if brief.get('ai_review') is not None:
         if brief['ai_review'] != NOT_AVAILABLE:
             lines.append('')

@@ -1,4 +1,4 @@
-"""The structured project payload, schema 6.
+"""The structured project payload, schema 7.
 
 One reader assembles specs, runtime proofs, records and signatures into the
 spec status and the cells of every rule, and every surface renders that: the
@@ -7,7 +7,7 @@ that parsed the rendered table would be coupled to a layout; this is the shape
 they all read instead.
 
     {
-      "schema_version": 6,
+      "schema_version": 7,
       "generated_at": "2026-09-13T12:00:00Z",
       "generated_by": "sync_status",
       "project": "purlin",
@@ -18,7 +18,7 @@ they all read instead.
       "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 4, "strong": 1,
                   "signed": 1, "stale": 1, "held": 1, "manual": 0,
-                  "audit": 1},
+                  "unsettled": 1, "not_audited": 0, "signable": 2},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "requires": [], "source": null, "pinned": null,
@@ -29,16 +29,21 @@ they all read instead.
          "signatures": [...],
          "rules": [
            {"id": "RULE-1", "feature": "login", "label": "own",
-            "text": "...", "risk": "low", "origin": "eng", "criterion": null,
+            "text": "...", "bar": "strong", "bar_from": "tag",
+            "origin": "eng", "criterion": null,
             "spec": "ready", "bucket": "signed", "meets_gate": true,
+            "cleared": true, "signable": false,
             "blocked_by": null, "flags": {...},
             "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
             "proofs": [{"id": "PROOF-1", "tier": "unit", "env": null,
                         "text": "...", "findings": [], "tests": [...]}]}
          ]}
       ],
-      "review_list": [{"feature": ..., "owner": ..., "rule": ..., "risk": ...,
-                       "cell": "signed", "why": ["stale"]}],
+      "review_list": [{"feature": ..., "owner": ..., "rule": ..., "bar": ...,
+                       "cell": "strong", "kind": "unsettled",
+                       "why": ["unsettled"]}],
+      "sign_list": [{"feature": ..., "owner": ..., "rule": ..., "bar": ...,
+                     "cell": "signed", "kind": "stale", "why": ["stale"]}],
       "records": {"login": {"": {..., "label": "ci", "result": "pass"}}},
       "remote_url": "https://github.com/acme/ledger.git",
       "warnings": ["..."]
@@ -70,7 +75,7 @@ from purlin import (PURLIN_VERSION, checks,
                     signatures as signatures_module,
                     specs as specs_module, states)
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 BRIEFS_DIR = os.path.join('.purlin', 'briefs')
 _PREFIX = 'const PURLIN_DATA = '
@@ -121,6 +126,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
               if cfg.gate == 'signed' and all_signatures else None)
     feature_entries = []
     review_list = []
+    sign_list = []
     rollups = {}
     # The project summary counts each rule once, under the feature that owns
     # it. A feature's own rollup counts what that feature must prove, which
@@ -134,7 +140,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
             project_root, name, info, features, runtime_proofs, all_records,
             all_signatures, cfg, head, blob_cache, scope_cache, review_list,
             own_results, all_holds, counted_cache, branch, local_by_feature,
-            local_run)
+            local_run, sign_list)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -160,7 +166,8 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'gate': cfg.as_dict(),
         'summary': summary,
         'features': feature_entries,
-        'review_list': _sorted_review_list(review_list),
+        'review_list': _sorted_list(review_list),
+        'sign_list': _sorted_list(sign_list),
         'records': {feature: {(os_name or ''): _with_result(record)
                               for os_name, record in by_os.items()}
                     for feature, by_os in all_records.items()},
@@ -201,15 +208,14 @@ def proof_counts(rule_entries):
             'proofs_without_test_ids': without}
 
 
-# The one order the review list is read in: the highest risk first, and within
-# one risk the rules a person already wrote something about before the rest.
-_RISK_ORDER = {'high': 0, 'medium': 1, 'low': 2}
+# The one order both lists are read in: the rules whose bar is `strong`
+# first, then the feature that owns them, then the rule number.
+_BAR_ORDER = {'strong': 0, 'passed': 1}
 
 
-def _sorted_review_list(entries):
+def _sorted_list(entries):
     def key(entry):
-        first = 0 if set(entry['why']) & {'stale', 'held'} else 1
-        return (_RISK_ORDER.get(entry['risk'], 3), first, entry['owner'],
+        return (_BAR_ORDER.get(entry['bar'], 2), entry['owner'],
                 _rule_number(entry['rule']))
     return sorted(entries, key=key)
 
@@ -223,7 +229,7 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
                    all_records, all_signatures, cfg, head, blob_cache,
                    scope_cache, review_list, own_results=None, all_holds=None,
                    counted_cache=None, branch=None, local_by_feature=None,
-                   local_run=None):
+                   local_run=None, sign_list=None):
     counting = _counting(all_records, name, cfg)
     latest = _latest(all_records.get(name) or {})
     test_strength = latest.get('test_strength') if latest else None
@@ -244,16 +250,21 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
                    'meets_gate': result['meets_gate'],
-                   'risk': result['risk']}
+                   'signable': result['signable'], 'bar': result['bar']}
         rule_results[(owner, rule_id)] = summary
         if label == 'own' and own_results is not None:
             own_results[(owner, rule_id)] = summary
-        # The review list names each rule once, under its owner, as the
-        # summary counts it; a required or global rule is read where it is
-        # written, not once per feature that proves it.
+        # Each list names a rule once, under its owner, as the summary counts
+        # it; a required or global rule is read where it is written, not once
+        # per feature that proves it.
+        if label != 'own':
+            continue
         entry = _review_entry(name, owner, result, cfg)
-        if label == 'own' and entry is not None:
+        if entry is not None:
             review_list.append(entry)
+        entry = _sign_entry(name, owner, result, cfg)
+        if entry is not None and sign_list is not None:
+            sign_list.append(entry)
 
     rollup = states.feature_rollup(
         rule_results, cfg.gate,
@@ -286,32 +297,38 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
     return entry, rollup
 
 
-# The closed set of words a review row carries, one per thing that put the
-# rule in front of a person. The token is the blocking cell's own word, so a
-# row says the same thing the cell does.
-_WHY_AT_STRONG = ('manual test', 'manual audit', 'held')
-_WHY_AT_SIGNED = ('unsigned', 'stale', 'held')
-
-
 def _review_entry(feature, owner, rule, cfg):
-    """One review row for a rule whose next step is a person, or None.
+    """One Review row for a rule the machine could not settle, or None.
 
-    The list holds exactly the rules blocked at the strong cell by a question
-    the machine could not settle, and the rules blocked at the signed cell. A
-    rule blocked at `spec` or `passed` is build work and stays on the board.
+    The Review list holds exactly the rules whose strong cell reads `manual
+    test`, `unsettled` or `held`: the three words that name work only a
+    person can do. `not audited` is not among them, because what that rule
+    waits for is `purlin:audit`, not a reader. The list exists at `strong`
+    and above.
     """
     if cfg.gate == 'passed':
         return None
-    blocked = rule.get('blocked_by')
-    if blocked not in ('strong', 'signed'):
-        return None
-    cell = (rule.get('cells') or {}).get(blocked) or {}
-    word = cell.get('word')
-    allowed = _WHY_AT_STRONG if blocked == 'strong' else _WHY_AT_SIGNED
-    if word not in allowed:
+    word = ((rule.get('cells') or {}).get('strong') or {}).get('word')
+    if word not in states.REVIEW_WORDS:
         return None
     return {'feature': feature, 'owner': owner, 'rule': rule['id'],
-            'risk': rule['risk'], 'cell': blocked, 'why': [word]}
+            'bar': rule['bar'], 'cell': 'strong', 'kind': word,
+            'why': [word]}
+
+
+def _sign_entry(feature, owner, rule, cfg):
+    """One Sign row for a signable rule, or None.
+
+    A rule is signable when it has cleared its bar, needs a signature and
+    does not have a counting one, so the Sign list is the rules a signer can
+    act on now. It exists at the gate `signed`.
+    """
+    if cfg.gate != 'signed' or not rule.get('signable'):
+        return None
+    word = ((rule.get('cells') or {}).get('signed') or {}).get('word')
+    return {'feature': feature, 'owner': owner, 'rule': rule['id'],
+            'bar': rule['bar'], 'cell': 'signed', 'kind': word,
+            'why': [word]}
 
 
 def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
@@ -352,7 +369,9 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         '\n'.join('%s %s' % (p['id'], p['text']) for p in proof_dicts))
     test_hash = _test_hash(project_root, proof_dicts, blob_cache)
     test_hash_kind = signatures_module.test_hash_kind(proof_dicts)
-    risk = meta.get('risk', specs_module.DEFAULT_RISK)
+    bar = meta.get('bar')
+    bar_from = 'tag' if bar in gate_module.BARS else 'gate'
+    bar = states.bar_of(bar, cfg.gate)
     design_hash = signatures_module.design_hash(
         owner_info, meta.get('origin', specs_module.DEFAULT_ORIGIN))
     scope_key = owner
@@ -387,14 +406,13 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
         'design_hash': design_hash,
-        'risk': risk,
+        'bar': bar,
         'brief': brief,
         'brief_path': brief_path,
         # The feature's strength stands for every rule in it: a break engine
         # measures a scope, not one rule, and the strong cell compares what
         # was measured rather than assuming nothing was.
         'test_strength': test_strength,
-        'mutation_engine_available': cfg.mutation_engine not in (None, 'none'),
     }, cfg)
 
     return {
@@ -402,7 +420,8 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'feature': owner,
         'label': label,
         'text': text,
-        'risk': risk,
+        'bar': bar,
+        'bar_from': bar_from,
         'origin': meta.get('origin', specs_module.DEFAULT_ORIGIN),
         'criterion': meta.get('criterion'),
         'rule_hash': rule_hash,
@@ -414,6 +433,8 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'cells': result['cells'],
         'bucket': result['bucket'],
         'meets_gate': result['meets_gate'],
+        'cleared': result['cleared'],
+        'signable': result['signable'],
         'blocked_by': result['blocked_by'],
         'flags': result['flags'],
         'proofs': proof_dicts,

@@ -8,14 +8,15 @@ One project setting decides what this job requires. The gate is read from
 
     passed  every rule's passed cell is met: the tagged tests pass, from any
             source, on every operating system a counting run covered
-    strong  every rule's strong cell is met too: a record an audit wrote,
-            from either source, test strength at or above the project
-            minimum, no finding standing against the proof text or the test
-            body, no manual test and no manual audit outstanding, and nobody
-            holding the rule
-    signed  every rule's signed cell is met too, and there only a record CI
-            wrote counts: a person on the signer list signed the rule, proof
-            and test hashes
+    strong  every rule whose bar is `strong` has a strong cell that is met:
+            a record an audit wrote, from either source, test strength at or
+            above the project minimum, no finding standing against the proof
+            text or the test body, nothing unsettled and nobody holding the
+            rule
+    signed  every rule that needs a signature has one, and there only a
+            record CI wrote counts: a person on the signer list signed the
+            rule, proof and test hashes. `sign_at` says which rules need
+            one, `strong` (the rules whose bar is `strong`) or `all`
 
 **The setting is the declaration, not the enforcement.** `.purlin/config.json`
 is a file in the repository that an agent can edit. What enforces the gate is
@@ -70,20 +71,26 @@ _SIGNER_LIST_MISSING = (
 
 # The strong cell's words for work only a person can do. A rule blocked on one
 # of them is not weak: nothing a build would change moves it.
-_WAITING_WORDS = ('manual test', 'manual audit', 'held')
+_REVIEW_WORDS = ('manual test', 'unsettled', 'held')
 
-# One section per cell a rule can be blocked at, in the order the chain reads
-# them. The spec status blocks before the passed cell does, and both mean the
-# same thing to a branch: the rule is not passed. The passed cell fills two
-# sections, because a rule that passes on one operating system and not on
-# another is a different piece of work from one that passes nowhere. The
-# strong cell fills two as well, because `weak` is build work and the three
-# waiting words are not.
+# The strong cell's word for a rule the audit has not reached. It is not weak
+# and it is not a person's either: running `purlin:audit` settles it, so it
+# gets a section of its own naming that one command.
+_NOT_AUDITED = 'not audited'
+
+# One section per kind of work, in the order the chain reads it. The spec
+# status blocks before the passed cell does, and both mean the same thing to
+# a branch: the rule is not passed. The passed cell fills two sections,
+# because a rule that passes on one operating system and not on another is a
+# different piece of work from one that passes nowhere. The strong cell fills
+# three, because `weak` is build work, `not audited` is a run and the review
+# words are a person's.
 _SECTIONS = (('not_passed', 'Not passed', ('spec', 'passed')),
              ('partial', 'Partial', ()),
              ('weak', 'Weak', ('strong',)),
-             ('waiting', 'Waiting on a person', ()),
-             ('not_signed', 'Not signed', ('signed',)))
+             ('not_audited', 'Not audited', ()),
+             ('to_review', 'To review', ()),
+             ('to_sign', 'To sign', ('signed',)))
 
 
 def _package():
@@ -130,8 +137,9 @@ def check(project_root, payload=None, out=None, as_json=False):
         'not_passed': [],
         'partial': [],
         'weak': [],
-        'waiting': [],
-        'not_signed': [],
+        'not_audited': [],
+        'to_review': [],
+        'to_sign': [],
         'result': 'pass',
     }
 
@@ -199,8 +207,10 @@ def _collect(payload, result):
                 key = 'not_passed'
             elif key == 'not_passed' and _cell_word(entry, 'passed') == 'partial':
                 key = 'partial'
-            elif key == 'weak' and _cell_word(entry, 'strong') in _WAITING_WORDS:
-                key = 'waiting'
+            elif key == 'weak' and _cell_word(entry, 'strong') in _REVIEW_WORDS:
+                key = 'to_review'
+            elif key == 'weak' and _cell_word(entry, 'strong') == _NOT_AUDITED:
+                key = 'not_audited'
             result[key].append('%s %s: %s'
                                % (entry['feature'], entry['id'],
                                   _why(entry)))
