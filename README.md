@@ -115,7 +115,7 @@ Every command ends by naming the next step, computed from the cells it found.
 | `purlin:spec <name>` | Scaffold or edit a feature spec in the 2-section format |
 | `purlin:build [name]` | Inject a spec's rules into context, then implement them |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell |
-| `purlin:audit [feature]` | Run the tests and the breaks, then report how good the tests are |
+| `purlin:audit [feature]` | Run the tests and the breaks, then write the record |
 | `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit |
 | `purlin:drift [role]` | Report what changed since the last record, by role |
 | `purlin:init` | Initialize a project for Purlin |

@@ -177,8 +177,8 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | queue | review list |
 | CODEOWNERS, approver rule | the signer list in `.purlin/config.json` |
 | `verify --manual`, `verify --recheck` | removed. `@manual` proofs are evidenced by a signature file with a one-line note |
-| the source `developer`, a record a person commits | removed. The record is CI's. A record the git host did not commit reads `local`, and a person's own run is the test results `purlin:test` commits |
-| `purlin:audit --commit` | removed. `purlin:audit` writes nothing; `purlin:test` commits the test results |
+| the source `developer`, a record a person commits | removed. A record's source is its folder, `ci` or `local`; `purlin:audit` writes into `local/` and a person's own test run is the test results `purlin:test` commits |
+| `purlin:audit --commit` | removed. `purlin:audit` always writes and commits its record; `purlin:test` commits the test results |
 | `purlin:audit --remote` | `purlin:test --remote`: a remote runner runs the tests |
 | `purlin_run.py --record` | `purlin_run.py --audit`, and `--ci` for the CI job's arm |
 | `figma://`, `> Visual-Reference:`, the visual hash | `designs/<feature>/` files, pinned by a design anchor |

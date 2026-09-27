@@ -16,10 +16,11 @@ pull request. The pre-push hook refuses a push made from an agent session.
 
 Three commands carry the three evidence levels: `purlin:test` runs level 1 and commits what it
 saw, `purlin:audit` runs level 2 and reports, and `purlin:sign` is level 3.
-`references/hard_gates.md` says which levels a project asks for. **The record is CI's**: the CI
-job runs the same run script in an arm of its own, which runs the tests, then the audit at
-`strong` and above, then writes the record and the briefs. That arm is the workflow's to pass
-and nobody types it, and nothing on your machine writes a record.
+`references/hard_gates.md` says which levels a project asks for. **The folder a record sits in
+is its source**: `purlin:audit` writes yours under `.purlin/records/local/` and commits it
+itself, and the CI job runs the same run script in an arm of its own and writes the same files
+under `.purlin/records/ci/`. That arm is the workflow's to pass and nobody types it. Both
+sources count at `strong`; only `ci` counts at `signed`.
 
 ## Core
 
@@ -28,7 +29,7 @@ and nobody types it, and nothing on your machine writes a record.
 | `purlin:spec <name>` | Scaffold or edit a feature spec in the 2-section format | An engineer's agent, or a PM or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
 | `purlin:build [name]` | Inject a spec's rules into context, then implement them | An engineer, on every change. With no name it reads the board |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell | An engineer, constantly. Seconds; tests only. It commits the results and never pushes |
-| `purlin:audit [feature]` | Run the tests and the breaks, then report how good the tests are | An engineer locally, any time; it writes nothing |
+| `purlin:audit [feature]` | Run the tests and the breaks, then write the record | An engineer locally, any time. It commits its record and never pushes |
 | `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit | Anyone on the signer list. With no argument it walks the list |
 | `purlin:drift [role]` | Report what changed since the last record, by role | Everyone, at session start and before a release |
 
@@ -65,7 +66,7 @@ Purlin
 
   Proving
   ──────
-  purlin:audit [feature ...]      Tests, breaks, and what they found
+  purlin:audit [feature ...]      Tests, breaks, what they found, and the record
   purlin:audit --tag <name>       Pin the records in the tree as record/<name>
   purlin:sign                     Walk the review list one brief at a time
   purlin:sign <feature> [RULE-N ...]  Sign, as a signed commit
@@ -113,8 +114,9 @@ Purlin
 A command prints only what the gate asks for. Under `passed` there is no strength, no risk, no
 review list and no signature anywhere in the output, and `purlin:audit` runs no breaks. Under
 `strong` the strength, the strong cell, the review list and risk appear, and `purlin:audit`
-ends by saying that what it measured counts only when CI runs it. Under `signed` the signed
-cell, the signer list and the sign panel appear.
+writes a record that counts. Under `signed` the signed cell, the signer list and the sign
+panel appear, and `purlin:audit` ends by saying its record is a preview of the run CI makes on
+the protected branch.
 
 `purlin:sign` under `passed` says the gate is `passed`, names what `purlin:init --gate strong`
 would add, and stops. `purlin:drift qa` says the same.

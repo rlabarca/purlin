@@ -53,8 +53,9 @@ you. A run that saw the same thing about the same code commits nothing.
 
 ## The record commit
 
-**The record commit is CI's.** Nothing on your machine makes one. The CI job runs the tagged
-tests, then the audit at `strong` and above, and commits one record per feature as:
+**An audit makes the record commit, and so does CI.** `purlin:audit` runs the tagged tests,
+then the breaks and the free checks at `strong` and above, and commits one record per feature
+under your own identity. The CI job does the same under the build identity. Both use:
 
 ```
 purlin: record for <commit7>
@@ -63,15 +64,17 @@ purlin: record for <commit7>
 `<commit7>` is the first seven characters of the commit the tests ran against, not of the record
 commit itself.
 
-A record commit carries the record file and the briefs that run wrote under
-`.purlin/briefs/<source>/<feature>/`. It carries nothing else: never fold a record into a `feat(...)`
-commit, because the record must be able to say which commit the tests ran against. CI writes no
-signature file, so a record commit never carries one, and it carries no test results either:
-those are yours.
+A record commit carries the record file and the briefs that run wrote, both under the folder
+that names its source: `.purlin/records/local/` and `.purlin/briefs/local/` for yours,
+`.purlin/records/ci/` and `.purlin/briefs/ci/` for CI's. It carries nothing else: never fold a
+record into a `feat(...)` commit, because the record must be able to say which commit the tests
+ran against. No run writes a signature file, so a record commit never carries one, and it
+carries no test results either: those go in their own commit.
 
-CI's record commit lands on the protected branch or on a run branch, and nowhere else. A pull
-request run posts the comment and commits nothing: a record on a branch nobody merges from is
-evidence of a branch that will not exist. At `passed` no run writes a record at all.
+`purlin:audit` prints `Record committed.` or `Record unchanged.` and never pushes. CI's record
+commit lands on the protected branch or on a run branch, and nowhere else. A pull request run
+posts the comment and commits nothing: a record on a branch nobody merges from is evidence of a
+branch that will not exist. At `passed` no run writes a record at all.
 
 ## The signature commit
 

@@ -111,10 +111,10 @@ silently kept.
 
 ## Who writes the evidence
 
-The record is CI's: `purlin:test` commits the test results under `.purlin/tests/` and
-`purlin:audit` writes nothing at all. A record's source comes from git, not from the file: one
-the git host's API committed under the CI identity is `ci`, anything else is `local`. Under
-`passed` both count and the test results are the ordinary answer; above it only `ci` does.
+`purlin:test` commits the test results under `.purlin/tests/` and `purlin:audit` writes the
+record. A record's source is the folder it sits in: `.purlin/records/ci/`, which the git host
+reserves for the build identity, or `.purlin/records/local/`, which is anyone's. Under `passed`
+and `strong` both count; under `signed` only `ci` does.
 
 ## The remote runner
 

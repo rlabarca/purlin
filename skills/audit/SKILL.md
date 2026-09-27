@@ -17,7 +17,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ## Usage
 
 ```
-purlin:audit                    Run the tests and the breaks, and report
+purlin:audit                    Run the tests and the breaks, and write the record
 purlin:audit <feature> [...]    One feature, or several
 purlin:audit --tag <name>       Pin the records in the tree as record/<name>
 ```
