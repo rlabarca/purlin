@@ -28,10 +28,10 @@ anyone who has no checkout.
 ## The chrome
 
 Every screen carries the same top bar: the logo, how old the data is, the gate in force, the
-signed tag this commit carries, the commit the data was built from, and the theme toggle. The
-tag reads `signed/<version>` with the first seven characters of the commit it points at, or
-`no signed tag` where the commit carries none: `purlin:sign` writes one only when every rule
-meets the gate, so its absence is a statement too. How old the data is is a button: press it to
+signed tag, the commit the data was built from, and the theme toggle. The tag reads
+`signed/<version>` with the first seven characters of the commit it points at, or `no signed
+tag` where the data names none: `purlin:sign` writes one only when every rule meets the gate,
+so its absence is a statement too. How old the data is is a button: press it to
 reload the page. The age recomputes itself every 60 seconds from the stamp the data already
 carries, so a tab left open does not read `less than a minute old` an hour later. Below it are
 the tabs: Board, then Review with its count at `strong` and above, then Sign with its count at
