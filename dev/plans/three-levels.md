@@ -398,7 +398,9 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     0.9.5. The owner reviews those. The work is then pushed as a branch. The owner's work
     machine, which has Azure DevOps access, checks the branch out, runs the live Azure
     checks, audits, signs, tags and releases. Nothing is signed or tagged here, and `main`
-    is not pushed from here.
+    is not pushed from here. Amended the same day: the owner may run `purlin:audit` here for
+    most of the code, so the work machine audits only the rules its own changes touch. The
+    audit's evidence is committed with source `local` and travels in the branch.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
