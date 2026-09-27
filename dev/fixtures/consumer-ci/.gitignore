@@ -7,9 +7,6 @@
 # Purlin plugin cache
 .purlin/plugins/__pycache__/
 
-# Per-user config overlay (machine-local overrides, never shared)
-.purlin/config.local.json
-
 # Dashboard HTML (copied by purlin:init and refreshed by purlin:init --update)
 /purlin-report.html
 

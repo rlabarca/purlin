@@ -240,6 +240,11 @@ went with them. The free checks went too: `scripts/review/static_checks.py`, its
 `@manual` proof stays: it has no test, its strong cell reads
 `manual test`, and its evidence is a signature carrying a one-line note.
 
+Also gone, each without a replacement:
+
+- `.purlin/config.local.json`, the per-person settings file laid over `.purlin/config.json`. A
+  project has one settings file, committed, and the `purlin_config` tool writes to it.
+
 ### The 0.10.0 line that never shipped
 
 An earlier 0.10.0 development line added two LLM grading scores, one for proof descriptions and

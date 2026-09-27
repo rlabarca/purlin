@@ -131,7 +131,7 @@ def generate_digest(project_root, generated_by='hook', network=True,
 
 
 def handle_purlin_config(project_root, arguments):
-    """Read or write one config key, or dump the merged config."""
+    """Read or write one key of `.purlin/config.json`, or dump the whole file."""
     action = arguments.get('action', 'read')
     key = arguments.get('key')
     value = arguments.get('value')

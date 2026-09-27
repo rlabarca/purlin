@@ -49,7 +49,10 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             "self-signing", "Self-signing",
             # decision 34: the arm `purlin:test` runs is named for what it
             # does, and the old spelling is an unknown flag
-            "--quick")
+            "--quick",
+            # decision 41: the periphery is removed. One settings file,
+            # committed.
+            "config.local.json")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every

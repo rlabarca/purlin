@@ -1,22 +1,9 @@
 #!/usr/bin/env python3
 """Config resolver for Purlin projects.
 
-Two-file config with merge semantics:
-  - .purlin/config.json       — team defaults, committed to git
-  - .purlin/config.local.json — per-user overrides, gitignored
-
-Resolution: config.json is the base. config.local.json keys are merged on
-top — local values win for any key present in both files. Keys only in
-config.json are always visible. Keys only in config.local.json are user
-additions (rare, but allowed).
-
-The overlay is flat, per top-level key. A nested object in config.local.json
-(such as `platforms`) replaces the base object of the same name; it does not
-merge into it. update_config writes whole top-level values, so a deep merge
-on read would make what the user wrote and what the server read differ.
-
-update_config writes ONLY to config.local.json. It never modifies
-config.json — that file is owned by purlin:init and version control.
+A project has one settings file, `.purlin/config.json`, committed to git.
+resolve_config reads it whole; update_config sets one top-level key in it
+and keeps every other key it held.
 """
 
 import json
@@ -78,67 +65,32 @@ def _read_json(path):
         return None
 
 
+def _config_path(project_root):
+    return os.path.join(project_root, '.purlin', 'config.json')
+
+
 def resolve_config(project_root):
-    """Resolve and return the merged config as a dict.
-
-    Resolution:
-    1. Read config.json (team defaults).
-    2. Read config.local.json (per-user overrides).
-    3. Merge: start with config.json, overlay config.local.json on top.
-    4. If config.local.json is malformed, ignore it and warn to stderr.
-    5. If neither file exists, return {}.
-    """
-    purlin_dir = os.path.join(project_root, '.purlin')
-    shared_path = os.path.join(purlin_dir, 'config.json')
-    local_path = os.path.join(purlin_dir, 'config.local.json')
-
-    # Base layer: team defaults
-    base = _read_json(shared_path) or {}
-
-    # Override layer: per-user overrides
-    if os.path.isfile(local_path):
-        local = _read_json(local_path)
-        if local is None:
-            print("Warning: config.local.json is malformed; ignoring overrides",
-                  file=sys.stderr)
-            return base
-        # Merge: local wins
-        merged = dict(base)
-        merged.update(local)
-        return merged
-
-    return base
+    """Return `.purlin/config.json` as a dict, or {} when it is absent."""
+    return _read_json(_config_path(project_root)) or {}
 
 
 def update_config(project_root, key, value):
-    """Set a top-level key in config.local.json (per-user overrides).
+    """Set a top-level key in `.purlin/config.json`, keeping every other key.
 
-    Only writes to the local file. Preserves existing local overrides.
-    Never modifies config.json.
+    The whole file is written beside the target and moved onto it, so an
+    interrupted write leaves the previous contents.
     """
-    purlin_dir = os.path.join(project_root, '.purlin')
-    local_path = os.path.join(purlin_dir, 'config.local.json')
+    path = _config_path(project_root)
+    config = _read_json(path) or {}
+    config[key] = value
 
-    # Read existing local overrides (sparse: may have few or no keys)
-    local = {}
-    if os.path.isfile(local_path):
-        try:
-            with open(local_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            if isinstance(data, dict):
-                local = data
-        except (json.JSONDecodeError, IOError, OSError):
-            pass
-
-    local[key] = value
-
-    os.makedirs(purlin_dir, exist_ok=True)
-    tmp_path = local_path + '.tmp'
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp_path = path + '.tmp'
     try:
         with open(tmp_path, 'w', encoding='utf-8') as f:
-            json.dump(local, f, indent=4)
+            json.dump(config, f, indent=2)
             f.write('\n')
-        os.replace(tmp_path, local_path)
+        os.replace(tmp_path, path)
     except (IOError, OSError):
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

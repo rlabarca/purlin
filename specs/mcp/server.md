@@ -19,7 +19,7 @@
 - RULE-6: A call may name its own workspace with `project_root`, which is resolved and used for that call alone; without it the tool uses the root the server resolved at startup [bar: strong] [origin: eng]
 - RULE-7: A root holding no `.purlin/config.json` answers with a line naming that root, how it was chosen and what to run, rather than reporting a project with nothing in it [bar: strong] [origin: eng]
 - RULE-8: A tool that raises answers with the text `Error running <tool>` and the message, so one bad call never ends the session [bar: strong] [origin: eng]
-- RULE-9: The configuration tool reads the whole merged config or one named key, and a write reaches `config.local.json` and never the committed `config.json` [bar: strong] [origin: eng]
+- RULE-9: The configuration tool reads the whole of `.purlin/config.json` or one named key, and a write sets that key in `.purlin/config.json` [bar: strong] [origin: eng]
 - RULE-10: A write naming no key answers that a key is required, and an action that is neither read nor write answers that the action is unknown, in both cases leaving the config as it was [bar: strong] [origin: eng]
 - RULE-11: `generate_digest` writes the dashboard's data file at schema version 4, naming the producer it was given [bar: strong] [origin: eng]
 - RULE-12: A root holding no config writes no data file and returns nothing [bar: strong] [origin: eng]
@@ -44,7 +44,7 @@
 - PROOF-6 (RULE-6): Start the server in an empty directory and send `sync_status` with `project_root` naming a real workspace; verify the answer carries the feature name `login` from that workspace @integration
 - PROOF-7 (RULE-7): Start the server in an empty directory and send `sync_status` with no arguments; verify the answer carries `No Purlin workspace` and names `purlin:init` @integration
 - PROOF-8 (RULE-8): Patch the status tool to raise `RuntimeError("boom")` and send a `sync_status` call; verify the answer opens `Error running sync_status` and carries `boom`, and that a second call in the same session still answers normally @integration
-- PROOF-9 (RULE-9): Send a read of the key `gate` and verify the answer is exactly `{"gate": "passed"}`; send a write setting it to `strong` and read it again, verifying `{"gate": "strong"}`; then read `.purlin/config.json` from disk and verify its gate still reads `passed` @integration
+- PROOF-9 (RULE-9): Send a read of the key `gate` and verify the answer is exactly `{"gate": "passed"}`; send a write setting it to `strong` and read it again, verifying `{"gate": "strong"}`; then read `.purlin/config.json` from disk and verify its gate reads `strong` @integration
 - PROOF-10 (RULE-10): Call the configuration handler with the action `write` and no key; verify the answer names `key` as required. Call it with the action `delete`; verify the answer opens `Unknown action` and that the merged config is unchanged @integration
 - PROOF-11 (RULE-11): Call `generate_digest` with the producer `hook` and the network off; verify the file it names exists, that the payload read back carries `generated_by` `hook` and that its schema version is exactly 4 @integration
 - PROOF-12 (RULE-12): Call `generate_digest` on a directory holding no `.purlin/config.json`; verify it returns nothing and writes no file @integration

@@ -1944,10 +1944,10 @@ class TestTransport:
             'gate': 'passed'}
         assert json.loads(responses[2]['result']['content'][0]['text']) == {
             'gate': 'strong'}
-        # The write goes to the local overlay, never to the committed file.
+        # The write lands in the one settings file.
         with open(os.path.join(project.root, '.purlin', 'config.json'),
                   encoding='utf-8') as handle:
-            assert json.load(handle)['gate'] == 'passed'
+            assert json.load(handle)['gate'] == 'strong'
 
     def test_drift_answers_json(self, project):
         responses, _stderr = _rpc(project.root, {

@@ -60,9 +60,9 @@ belongs in `> Description:`, which the dashboard displays.
 ### Multi-line description
 
 ```markdown
-> Description: Two-file configuration that separates shared team
->   defaults from per-user overrides. Resolution merges both files
->   so plugin updates stay visible.
+> Description: One settings file, `.purlin/config.json`, committed
+>   with the project. The resolver reads it whole and the settings
+>   tool writes one key into it.
 > Scope: scripts/mcp/config_engine.py
 ```
 
