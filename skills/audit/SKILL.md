@@ -96,7 +96,7 @@ whole tree, every record and brief in it included.
 | Test strength below `min_strength` | `→ Run: purlin:build <feature>` (add the case the break escaped) |
 | An observation on a rule | `→ Run: purlin:build <feature>` (write the case it names) |
 | A rule needs another operating system | `→ Run: purlin:test --remote` |
-| Every rule met the gate `passed` | `→ Next: run git push.` |
+| Every rule met the gate `passed` | `→ Run: git push` |
 | A `ci` record is missing under `trust: remote` | `→ Run: purlin:test --remote` |
 | A rule's tests pass on one operating system and not another | `→ Run: purlin:build <feature>` (the passed cell reads `partial` and names the platform) |
 | A rule reads `manual test`, `unsettled` or `held`, or is signable | `→ Run: purlin:sign` |

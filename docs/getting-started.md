@@ -38,8 +38,9 @@ itself:
 claude --plugin-dir /path/to/purlin
 ```
 
-Your project never carries a copy of Purlin. Neither does a CI runner, which is why the workflow
-`purlin:init` writes clones Purlin at a pinned tag and runs the same script from that checkout.
+Your project never carries a copy of Purlin. Neither does a CI runner, which is why the
+workflow `purlin:init` writes, on the two projects that need one, clones Purlin at a pinned tag
+and runs the same script from that checkout.
 
 ## Initialize
 

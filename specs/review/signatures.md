@@ -21,7 +21,7 @@
 - RULE-3: Reflowing a rule's whitespace or adding a tag leaves the triple where it was, because the triple binds the rule text with its tags stripped [bar: strong] [origin: eng]
 - RULE-4: Editing the rule text, the proof text or the test body moves the triple [bar: strong] [origin: eng]
 - RULE-5: A rule proved only by a `@manual` proof records `manual` as the kind of its test hash instead of naming a test file [bar: strong] [origin: eng]
-- RULE-6: A signature stays current only while the rule text, the proof text, the test body, the bar and the audit's own findings still hash to what it bound, so a bar re-tag stales it [bar: strong] [origin: eng]
+- RULE-6: A signature stays current only while the rule text, the proof text, the test body, the bar and what the audit observed still hash to what it bound, so a bar re-tag stales it [bar: strong] [origin: eng]
 - RULE-7: A signature whose triple no longer matches still comes back from the reader, so the signed cell can read `stale` rather than `unsigned` [bar: strong] [origin: eng]
 - RULE-8: A signature file is named for the rule, the first eight characters of the triple and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen [bar: strong] [origin: eng]
 - RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the design hash, the audit hash, the bar, the signer, the note, the timestamp, the gate, the brief and the record [bar: strong] [origin: eng]
@@ -64,12 +64,12 @@
 - PROOF-12 (RULE-8): Write a signature for the address `Rich.LaBarca+purlin@example.com`; verify the only file in the signatures directory is named `RULE-1.<hash8>.rich-labarca-purlin.json` for that rule's triple @integration
 - PROOF-13 (RULE-9): Write a signature naming a brief and a record; verify its schema is `purlin-signature/1`, its field names are exactly the 16 the format lists, its triple is the first 16 characters of the rule's triple, its `note` is null and its timestamp ends `Z` @integration
 - PROOF-14 (RULE-10): Write a signature and a brief for the same rule into one signatures directory, then load the signatures; verify exactly 1 comes back and its signer is `jane@acme.com` @integration
-- PROOF-15 (RULE-12): Run `--batch` in a project at gate `signed` whose `sign_at` is `medium`; verify it exits 0, prints `Signed 1 rule in` and writes a signature for `RULE-2` alone @integration
+- PROOF-15 (RULE-12): Run `--batch` in a project at gate `signed` whose `sign_at` is `strong`; verify it exits 0, prints `Signed 1 rule in` and writes a signature for `RULE-2` alone @integration
 - PROOF-16 (RULE-13): Run `login RULE-2 --note "I ran the lockout by hand."`; verify it exits 0 and the signature's `note` reads `I ran the lockout by hand.` @integration
 - PROOF-17 (RULE-13): Run `login RULE-1 --note` with no line, `login --note "a line"` with no rule, and `--batch --note "a line"`; verify each exits 2
 - PROOF-18 (RULE-14): Run `login RULE-1` in a project at gate `passed` with signing configured; verify it exits 2, prints `the gate is passed, which asks for no signature.` and `purlin:init --gate strong`, and that the signatures directory is empty @integration
 - PROOF-19 (RULE-15): Run `login RULE-1` in a project at gate `strong` whose passed cell is not met; verify it exits 0, prints `required only under the gate signed` and writes exactly 1 signature @integration
-- PROOF-20 (RULE-16): Read what is signable at gate `signed` with `sign_at` at `medium`; verify it is `login RULE-2` alone, that signing it leaves nothing signable, and that changing `401` to `403` in the rule makes it signable again @integration
+- PROOF-20 (RULE-16): Read what is signable at gate `signed` with `sign_at` at `strong`; verify it is `login RULE-2` alone, that signing it leaves nothing signable, and that changing `401` to `403` in the rule makes it signable again @integration
 - PROOF-21 (RULE-17): Run the command in a checkout with no signing key; verify it exits 1, prints `git config gpg.format ssh`, `git config user.signingkey ~/.ssh/id_ed25519.pub` and `git config commit.gpgsign true`, and that the signatures directory is empty @integration
 - PROOF-22 (RULE-17): Run the command in a separate process against a checkout with no signing key; verify it exits 1 and prints `git config gpg.format ssh` @integration
 - PROOF-23 (RULE-18): Configure a throwaway signing key and run the command for the whole feature; verify it exits 0, writes 2 signatures, and that the one commit it made reports signature `G` with the subject `sign(login): RULE-2 RULE-1` @integration

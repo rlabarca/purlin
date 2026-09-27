@@ -113,7 +113,7 @@ push it, and nothing runs remotely.
 
 Where a workflow exists it triggers on two things and nothing else: a push to a `run/*`
 branch, which is the branch `purlin:test --remote` creates and deletes around one run, and
-a push of a `signed/*` tag, which is what `purlin:sign` writes. A push to any other branch
+a push of a `signed/<version>` tag, which is what `purlin:sign` writes. A push to any other branch
 starts nothing, and a pull request starts nothing.
 
 | The run | What starts it | What it writes |

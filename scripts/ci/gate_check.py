@@ -178,8 +178,8 @@ def check(project_root, payload=None, out=None, as_json=False,
     if package is None or not os.path.isdir(
             os.path.join(project_root, '.purlin')):
         _say(out, 'cannot read a Purlin project at %r.' % project_root)
-        _say(out, 'failing closed. A gate that cannot read the evidence does '
-                  'not pass the branch.')
+        _say(out, 'failing closed. A gate that cannot read the evidence '
+                  'does not say the gate was met.')
         return EXIT_BAD_INVOCATION
 
     if payload is None:
@@ -189,7 +189,7 @@ def check(project_root, payload=None, out=None, as_json=False,
         except (OSError, ValueError):
             _say(out, 'the evidence in %r could not be read.' % project_root)
             _say(out, 'failing closed. A gate that cannot read the evidence '
-                      'does not pass the branch.')
+                      'does not say the gate was met.')
             return EXIT_BAD_INVOCATION
 
     settings = payload.get('gate') or {}

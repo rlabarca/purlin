@@ -642,7 +642,7 @@ class TestTheSignedCommit:
 
     @pytest.mark.proof("signatures", "PROOF-15", "RULE-12", tier="integration")
     def test_a_batch_signs_everything_signable(self, capsys):
-        made = signing_project(sign_at='medium')
+        made = signing_project(sign_at='strong')
         try:
             code = sign_module.main(['--batch', '--project-root', made.root])
             output = capsys.readouterr().out

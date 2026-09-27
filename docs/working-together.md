@@ -152,4 +152,4 @@ than since the last record.
 
 - Writing the rules themselves: [specs-and-anchors.md](specs-and-anchors.md)
 - Bringing an existing codebase in: [spec-from-code.md](spec-from-code.md)
-- The gate that decides what CI must see: [team-workflow.md](team-workflow.md)
+- The gate that decides what every rule must have: [team-workflow.md](team-workflow.md)

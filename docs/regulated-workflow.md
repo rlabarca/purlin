@@ -19,8 +19,8 @@ A rule carries a spec status and one cell per level, and the gate says how many 
 
 | Level | The question it answers | The command that answers it |
 |-------|-------------------------|-----------------------------|
-| passed | did every tagged test for this rule pass? | `purlin:test`, and the same tests on CI |
-| strong | are those tests worth trusting? | `purlin:audit`, and the same audit on CI |
+| passed | did every tagged test for this rule pass? | `purlin:test` |
+| strong | are those tests worth trusting? | `purlin:audit` |
 | signed | did a person say the rule, the proof and the test belong together? | `purlin:sign` |
 
 Which machine ran them does not change at this gate. A record your own `purlin:audit`

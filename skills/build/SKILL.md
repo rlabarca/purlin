@@ -100,7 +100,7 @@ never enter a commit.
 
 Print the state table from `sync_status` for the feature, then name the next step:
 
-- Every rule has a passing test, gate `passed`: `→ Next: run git push.`
+- Every rule has a passing test, gate `passed`: `→ Run: git push`
 - Every rule has a passing test, gate `strong` or `signed`: `→ Next: purlin:audit`, which breaks
   the code on purpose and measures the test strength.
 - Some rules still have no test: name them and say what is missing.
