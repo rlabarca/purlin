@@ -1,13 +1,13 @@
 """The columns every surface reads a spec's row from, rendered once.
 
-The dashboard's board, the `purlin:status` table, the pull request comment
-and `scan.py` all answer the same questions about one spec, and they have to
-answer them in the same words: a reader who learns the board reads the
-table without learning it again. So the columns, the cell text, the bucket
-names and the next step live here, and each surface renders what this module
-returns rather than composing its own string. `scripts/report/src/board.js`
-mirrors these strings on the dashboard's side; changing one here changes the
-table, the comment and the scan together.
+The dashboard's board, the `purlin:status` table and `scan.py` all answer
+the same questions about one spec, and they have to answer them in the same
+words: a reader who learns the board reads the table without learning it
+again. So the columns, the cell text, the bucket names and the next step
+live here, and each surface renders what this module returns rather than
+composing its own string. `scripts/report/src/board.js` mirrors these
+strings on the dashboard's side; changing one here changes the table and
+the scan together.
 
 The columns, left to right:
 

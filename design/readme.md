@@ -5,7 +5,7 @@ Purlin is a spec-driven development toolkit for teams building software with AI 
 The product has two surfaces, and they look different on purpose:
 
 1. **The deck** — a 50-slide explainer of the method, set on deep navy in Arial and Courier New, with a warm cream/blush/copper palette. This is the brand's outward voice.
-2. **The dashboard** — the local board `purlin:status` generates and CI attaches to every PR. Cool Tailwind-slate ground, the same information architecture, plus a semantic state palette (green / amber / red / teal) that the deck never needed.
+2. **The dashboard** — the local board `purlin:status` generates, opened from disk. Cool Tailwind-slate ground, the same information architecture, plus a semantic state palette (green / amber / red / teal) that the deck never needed.
 
 This system keeps both. The warm half is the default; `data-surface="product"` switches a subtree to the cool half. State hues are shared.
 

@@ -79,19 +79,19 @@ on Sign. For every entry give those, then one of the four answers a person gives
   Name the missing case.
 - **`skip`**: not settled in this pass. Say why, in one line.
 
-The brief the machine wrote reports and recommends nothing: the strength beside the minimum, the
-free-check findings, what the model review observed, and whether it settled. The answer above is
-yours, not the brief's.
+The brief the machine wrote reports and recommends nothing: the strength beside the minimum,
+what the AI audit observed, and whether it settled. The answer above is yours, not the brief's.
 
 Print it as plain text in the chat. The full board, with every rule and its cells, is the
-dashboard CI publishes as a build artifact on each pull request; link to that rather than
-rebuilding it here.
+dashboard page a person opens from disk in their own checkout; nothing publishes it, so name
+it rather than rebuilding it here.
 
-Close the report with the counts: how many rules are on the list, how many are `high`, how many
-are stale, how many are held, and the project's test strength as an integer percent, or `n/a`
-when no break engine ran. Test strength is the share of the deliberate breaks made to the code
-that the tests caught. It says the tests noticed when the behaviour changed. It does not say the
-tests prove the right rule. Read it beside the findings, never instead of them.
+Close the report with the counts: how many rules are on the list, how many carry the bar
+`strong`, how many are stale, how many are held, and the project's test strength as an integer
+percent, or `n/a` when no break engine ran. Test strength is the share of the deliberate breaks
+made to the code that the tests caught. It says the tests noticed when the behaviour changed. It
+does not say the tests prove the right rule. Read it beside what the audit observed, never
+instead of it.
 
 ## Step 4: open a pull request for proof edits
 

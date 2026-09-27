@@ -110,7 +110,7 @@ Work down the list in order: each step assumes the one above it landed.
 
 ### What the six shipped plugins registered
 
-| Framework | Plugin file | Test extensions | Free-check reader |
+| Framework | Plugin file | Test extensions | Test-body scan |
 |-----------|-------------|-----------------|-------------------|
 | pytest | `scripts/proof/pytest_purlin.py` | `.py` | yes |
 | jest | `scripts/proof/jest_purlin.js` | `.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx` | yes, shared with vitest |

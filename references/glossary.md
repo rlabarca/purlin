@@ -192,7 +192,7 @@ The repository's own vocabulary check enforces that, reading this table for the 
 | `purlin:approve` | `purlin:sign` |
 | `verify_gate`, `scripts/ci/verify_gate.py` | `gate_check`, `scripts/ci/gate_check.py` |
 | `verify-gate:` as a log prefix | `gate:` |
-| `validated/<name>` tags | `record/<name>` tags |
+| `validated/<name>` tags | the tag `purlin:sign` writes, `signed/<version>` |
 | needs a person, needs-a-person, `needs_person` | `manual test` where the proofs are `@manual`, `unsettled` where the AI audit could not settle, `held` where a person holds the rule. The one surviving use is the review list's header, `<n> rules need a person` |
 | risk, the `[risk: ...]` tag, the three levels | the **bar**, `passed` or `strong`, tagged `[bar: ...]`. `high` and `medium` map to `[bar: strong]`, `low` to `[bar: passed]` |
 | manual audit | `not audited` where the bar is `strong` and no audit has run over this code, `unsettled` where the AI audit ran and could not settle. The flags and rollup keys are `not_audited` and `unsettled` |
@@ -223,7 +223,7 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | mutation testing | the breaks, in prose; `mutation_engine` in config and code |
 | mode, pre-push mode, external LLM mode | removed. The gate is the one setting |
 | records branch | records live in the tree, under `.purlin/records/` |
-| Pages, the published dashboard site | the `purlin-dashboard` build artefact, linked from the pull request comment |
+| Pages, the published dashboard site | the dashboard page each person opens from disk, and `scripts/report/scan.py --repo <url>` for anyone without a checkout |
 | forge | git host |
 | queue | review list |
 | CODEOWNERS, approver rule | the signer list in `.purlin/config.json` |

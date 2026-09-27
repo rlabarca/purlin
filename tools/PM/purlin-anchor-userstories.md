@@ -113,7 +113,7 @@ When the product manager uploads mocks, screenshots, a PDF or an HTML prototype,
 files to `designs/<feature>/` in the same pull request and write `[origin: design]` rules about
 what a person would see: the text, the order of the elements, the states present. Never write a
 rule or a proof that names a CSS selector, a class or a pixel value; a refactor breaks it
-without changing behaviour, and the free checks report it as `implementation_coupling`.
+without changing behaviour, and the audit is handed a hint saying so.
 
 A design is a versioned file read and merged by pull request, never a live connection to a
 design tool. There is no importer: the files the product manager uploads are the design.
@@ -136,9 +136,9 @@ Then, through the connector:
 Close with what the product manager will see, in this order:
 
 - The pull request renders the diff. Reading it and merging it is the whole review.
-- CI runs `purlin:audit` on the branch and again after the merge. It writes a record, posts the
-  same rollup as a pull request comment, and publishes the dashboard as a build artifact linked
-  from that comment. Open the artifact to see every rule's cells.
+- `purlin:audit`, which the engineer runs in the checkout, writes a record and commits it.
+  Nothing is posted and nothing is published: the board is a page that opens from disk, and
+  `scripts/report/scan.py --repo <url>` prints the same rollup from a repository URL.
 - `purlin:drift pm`, which the engineer runs in the checkout, lists the criteria that have no
   rule yet, the pm-origin rules that changed, and the rules the engineer added.
 - A new rule's spec status is `drafted` until a proof names it, and `ready` once one does. From

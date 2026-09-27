@@ -3,7 +3,7 @@
 
 `scripts/report/src/` holds the page as a person edits it: one HTML shell, one
 stylesheet, and one script per screen. This joins them into the single file a
-project opens from disk and CI attaches to a pull request:
+project opens from disk:
 
     python3 dev/build_report.py
 

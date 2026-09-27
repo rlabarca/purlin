@@ -7,8 +7,9 @@ QA and a PM want the rollup without a checkout and without a build. This
 fetches `specs/` and `.purlin/` alone, which is where the test results and
 the records are, reads them with the same package every other surface reads,
 and prints how many rules meet the gate, one line per bucket, and how far the
-working branch has moved past the newest record. CI prints the same text as a
-pull request comment, so one rollup is read everywhere. The two lists follow,
+working branch has moved past the newest record. It is the one rollup a
+reader without a checkout gets, and it is the same one the board draws and
+`purlin:status` prints. The two lists follow,
 one line per rule, so a reader without a checkout can work them: the bar, the
 rule, the cell and the word that put it there.
 
