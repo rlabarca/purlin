@@ -23,9 +23,9 @@ in the shipped prose where a retired spelling may still be written.
   project. **record**: the machine's evidence of one audit at `strong` and above: results,
   strength and scope tree, a committed file. Nobody signs a record.
   **source**: where a pass came from, and the folder the record sits in: `ci`
-  (`.purlin/records/ci/`, which the git host restricts to the build identity) or `local`
-  (`.purlin/records/local/`, which anyone may write, and the test results `purlin:test`
-  commits). A record's own `source` field must agree with its folder or the file is ignored.
+  (`.purlin/records/ci/`, which a remote runner writes and a tag run checks the provenance of)
+  or `local` (`.purlin/records/local/`, which anyone may write, and the test results
+  `purlin:test` commits). A record's own `source` field must agree with its folder or the file is ignored.
   Both sources count at every gate, `signed` included: what a signature locks is the
   evidence, not the machine that produced it.
 - **platform**: one operating system a counting run covered. The passed cell

@@ -147,10 +147,10 @@ def verify(project_root, payload):
 def _provenance(project_root):
     """Every file under a `ci/` folder the runner itself did not commit.
 
-    The folder is the source, and what keeps it honest is the git host's
-    file-path rule. This reads the other half of the same fact: the commit
-    that added each file, and whether its identity is the runner's own. A
-    project whose branch rule was never applied finds out here.
+    The folder is the source, and this is what keeps it honest: the commit
+    that added each file, and whether its identity is the runner's own. No
+    branch rule stands behind the folder, so a file a person wrote into it is
+    found here and nowhere else.
     """
     from purlin import records as records_module
 

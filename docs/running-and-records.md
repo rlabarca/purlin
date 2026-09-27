@@ -117,7 +117,7 @@ flowchart TD
   F -- "the runner's arm" --> H["Run the tests, and at strong and above audit what ran"]
   H --> Ci{"what the run is on"}
   Ci -->|"a run/* branch"| I2["Commit the records and briefs into .purlin/records/ci/ and .purlin/briefs/ci/ through the git host API"]
-  Ci -->|"a signed/** tag"| I3["Check every committed record, brief and signature against the tagged code, and commit nothing"]
+  Ci -->|"a signed/** tag"| I3["Check every signature and hold, and who committed each ci/ file. Commit nothing"]
   T1 --> G["Print each rule's cells"]
   A2 --> G
   I2 --> G
@@ -307,12 +307,12 @@ Most have none. Everything above runs on your machine, and at every gate a rule 
 `passed`, `strong` and `signed` without anything leaving it. `purlin:init` writes a CI workflow
 for two reasons and no other:
 
-- **a proof is tagged `@env` for an operating system this machine is not.** The runner has that
-  system, so those rules stop reading `not run` and the rule stops reading `partial`.
-- **you answered no to the trust question**, `Do you trust your own machine for the tests and
-  the signing?`. You chose not to trust this machine for signing, so tests must run on a clean
-  machine before a signature counts, and `purlin:sign` asks for a `ci` record at the commit it
-  is signing.
+- **A proof in `specs/` is tagged `@env` for an operating system this machine is not**, so only
+  a runner can prove it. Those rules stop reading `not run`, and the rule stops reading
+  `partial`.
+- **You chose not to trust this machine for signing**, so the tests a signature rests on run on
+  a clean one. You answered no to `Do you trust your own machine for the tests and the
+  signing?`, and `purlin:sign` asks for a `ci` record at the commit it is signing.
 
 Where one is called for, `purlin:init` writes `.github/workflows/purlin.yml` on GitHub, or
 `purlin.azure-pipelines.yml` at the project root on Azure DevOps. The job is named `purlin`.
@@ -335,13 +335,14 @@ minutes at all.
 
 | The run | What it does | Commits |
 |---|---|---|
-| a `signed/**` tag | Reruns the tagged tests on a clean machine, recomputes every committed record, brief and signature against the tagged code, checks that every file under `ci/` was committed by the runner's own identity, then runs the gate check | nothing |
+| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks that every signature and every hold still binds the rule, the proof, the test, the bar and the audit it names, checks that every record and brief under `ci/` was committed by the runner's own identity, then runs the gate check | nothing |
 | a `run/*` branch | Runs the tagged tests, and at `strong` and above audits what it ran | the records and the briefs, under `ci/`, onto that branch |
 
 The tag run is a verification, not a fresh judgment: the evidence is already in the tree and
-the run says whether it still matches the code the tag points at. A file whose hash no longer
-matches fails the job, and so does a file under `ci/` that a person committed. No breaks run on
-the runner: the strength in a record was measured where the audit ran.
+the run says whether it still matches the code the tag points at. An attestation that no longer
+binds this code fails the job, and so does a file under `ci/` that a person committed; both
+land in the gate check's `Evidence` section. No breaks run on the runner: the strength in a
+record was measured where the audit ran.
 
 The runner posts no comment and uploads no artifact. The dashboard is the page that opens from
 disk beside your editor, and `scripts/report/scan.py --repo <url> --ref <tag>` prints the same

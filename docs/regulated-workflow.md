@@ -82,9 +82,9 @@ inside the hashes a signature binds.
 
 `scripts/ci/gate_check.py --check` is the check itself. `purlin:sign` runs it before it writes
 a tag, and a runner runs it as the last step of every run. It prints one section per kind of
-work, `Not passed (n)`, `Partial (n)`, `Weak (n)`, `Not audited (n)`, `To review (n)` and
-`To sign (n)`, each naming the rules the cell that blocks them puts there and the reason that
-cell carries; it names the first twenty in a section and counts the rest. Its own lines, the
+work, `Not passed (n)`, `Partial (n)`, `Weak (n)`, `Not audited (n)`, `To review (n)`,
+`To sign (n)` and, under `--verify`, `Evidence (n)`, each naming the rules the cell that blocks
+them puts there and the reason that cell carries; it names the first twenty in a section and counts the rest. Its own lines, the
 gate, the counts and the last word on whether the gate held, open with `gate:`; the rules under
 a section heading are indented instead. It writes nothing, exits 0 when the gate is met and 1
 when it is not, and exits 2 when it cannot read the evidence, so an unreadable checkout never
@@ -155,15 +155,21 @@ purlin:sign
 With no argument it walks Review, then Sign. When it leaves every rule meeting the gate it
 writes an annotated tag over the current commit: `signed/<version>`, from the `VERSION` file at
 the project root, or `--release <name>` where a release carries its own name. The message names
-the commit and the gate. Then it prints `→ Run: git push origin signed/<version>`.
+the commit and the gate. Then it prints two lines:
 
-No tag is written while any rule falls short, so the presence of the tag is the claim. A tag
+```
+Tagged signed/1.4.0 at a1b2c3d: every rule meets the gate signed.
+→ Run: git push origin signed/1.4.0
+```
+
+While any rule falls short it writes no tag and says so, `No tag: 3 of 42 rules do not meet the
+gate signed.`, so the presence of the tag is the claim. A tag
 holds the whole tree at that commit: the code, every record, every brief and every signature,
 pinned together under one name. That is what an inspection is handed, and it is why no record
 needs pinning of its own.
 
-A tag of that name that already exists is not moved. A released version's marker stays where it
-was put.
+A tag of that name that already exists is not moved: `No tag: signed/1.4.0 is already written.
+Name another with --release <name>.` A released version's marker stays where it was put.
 
 ## The bar, origin and `sign_at`
 
@@ -207,10 +213,11 @@ worth reading: the machine's evidence and a person's attestation are written by 
 hands, into different paths.
 
 Where a project has a runner, a push of the `signed/**` tag starts one last run: it reruns the
-tagged tests on a clean machine, recomputes the hashes of every committed record, brief and
-signature against the tagged code, checks that every file under `ci/` was committed by the
-runner's own identity, and ends with the gate check. It commits nothing. A red run there is the
-host's word that this version is not proven.
+tagged tests on a clean machine, checks that every signature and every hold still binds the
+rule, the proof, the test, the bar and the audit it names, checks that every record and brief
+under `ci/` was committed by the runner's own identity, and ends with the gate check. Anything
+it finds lands in the gate check's `Evidence` section and fails the job. It commits nothing. A
+red run there is the host's word that this version is not proven.
 
 ## `@manual` proofs
 

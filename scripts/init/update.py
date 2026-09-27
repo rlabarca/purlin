@@ -92,7 +92,7 @@ _COMMIT = 'chore(update): migrate to %s (%s)'
 PLUGIN_SOURCES = {OLD_SHELL_PLUGIN: 'shell_purlin.sh'}
 
 GATE_QUESTION = """
-What must be true before CI lets a change merge?
+What must be true of every rule before a version is proven?
   passed  every rule has a passing tagged test, from any source
   strong  every rule has a record an audit wrote, at the minimum test strength
   signed  strong, plus a signature from a person on the rule"""
@@ -697,7 +697,8 @@ def _apply_record_folders(root, files, args, out):
         moved[source] = moved.get(source, 0) + 1
         out.done(rel)
     out.say('moved %d file%s into ci/ and %d into local/; the folder is the '
-            'source now, and the git host restricts ci/ to the build identity'
+            'source now, and a tag run checks that every ci/ file came from '
+            'the runner'
             % (moved.get('ci', 0), '' if moved.get('ci') == 1 else 's',
                moved.get('local', 0)))
 

@@ -152,10 +152,10 @@ writes a record of its own and commits it, and the record counts.
 
 Nothing above needs one, and `purlin:init` writes no workflow unless one of two things is true:
 
-- **a proof is tagged `@env` for an operating system this machine is not**, so the runner is
-  the only thing that can run it;
-- **you answered no to the trust question**, `Do you trust your own machine for the tests and
-  the signing?`, which at this gate nothing yet rests on.
+- **a proof in `specs/` is tagged `@env` for an operating system this machine is not**, so only
+  a runner can prove it;
+- **you chose not to trust this machine for signing**, so the tests a signature rests on run on
+  a clean one, which at this gate nothing yet does.
 
 At `passed` it is the first that comes up. `purlin:test` says so in one sentence and changes
 nothing itself:

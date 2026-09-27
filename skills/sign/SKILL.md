@@ -143,18 +143,20 @@ gate at this commit, and the one thing a person pushes to say so.
 
 When the walk leaves every rule meeting the gate, the script writes an annotated tag over the
 current commit, named `signed/<version>` from the `VERSION` file at the project root, or the
-config's `version` where there is no such file; `--release <name>` overrides the name. The
-message names the commit and the gate. Then it prints:
+config's `version` where there is no such file, or `signed/unversioned` where neither names
+one; `--release <name>` overrides the name. The message names the commit and the gate. Then it
+prints:
 
 ```
-Tag written: signed/1.4.0
+Tagged signed/1.4.0 at a1b2c3d: every rule meets the gate signed.
 → Run: git push origin signed/1.4.0
 ```
 
-No tag is written while any rule falls short, and the run says which rules do. A tag of that
-name that already exists is not moved: the script says so and writes nothing, so a released
-version's marker cannot be pointed somewhere else. Pushing the tag is a person's act; this
-skill never pushes.
+While any rule falls short it writes no tag and prints
+`No tag: <n> of <m> rules do not meet the gate <gate>.` A tag of that name that already exists
+is not moved: it prints `No tag: signed/1.4.0 is already written. Name another with --release
+<name>.`, so a released version's marker cannot be pointed somewhere else. Pushing the tag is a
+person's act; this skill never pushes.
 
 `trust` in `.purlin/config.json` is `local` or `remote`, and `purlin:init` asks for it. Under
 `local`, the default, this machine's runs are the evidence: sign, tag, push, and a project

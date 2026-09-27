@@ -93,10 +93,11 @@ runs at push time, and a push is free, to any branch, for anyone.
 Where a runner is called for, the workflow triggers on two things and nothing else: a push of a
 `signed/**` tag, and a push to a `run/*` branch, the branch `purlin:test --remote` creates and
 deletes around one run. A pull request starts nothing. The job is named `purlin`. The tag run
-reruns the tagged tests on a clean machine, checks every committed record, brief and signature
-against the tagged code, checks that every file under `ci/` was committed by the runner's own
-identity, and ends with `scripts/ci/gate_check.py --check`, which fails the job when the gate
-is not met. No breaks run on the runner.
+reruns the tagged tests on a clean machine, checks that every signature and every hold still
+binds the rule, the proof, the test, the bar and the audit it names, checks that every record
+and brief under `ci/` was committed by the runner's own identity, and ends with
+`scripts/ci/gate_check.py --check --verify`, which fails the job when the gate is not met or
+the evidence does not hold. No breaks run on the runner.
 
 The config it writes looks like this, and every key after `gate` has a default the gate
 implies:
@@ -145,17 +146,17 @@ first.
 
 ## The remote runner
 
-A remote runner is worth having for two reasons and no others:
+A remote runner is written for two reasons and no others, and init prints the ones that hold:
 
-- **Your tests need another operating system.** This machine cannot run a test tagged
-  `@env(windows)` or `@env(linux)`; the runner can, so those rules stop reading `not run`.
-- **You chose not to trust this machine for signing**, so tests must run on a clean machine
-  before a signature counts.
+```
+A remote runner is written for two reasons:
+  A proof in specs/ is tagged @env for windows, which this machine is not, so only a runner can prove it.
+  You chose not to trust this machine for signing, so the tests a signature rests on run on a clean one.
+```
 
-Init writes the workflow where one of the two holds: `specs/` carries an `@env` proof for an
-operating system this machine is not, or the trust answer was no. With neither, no workflow is
-written at any gate, and init says so in one line. Teammates see your results without a runner,
-from the test results `purlin:test` commits.
+With neither, no workflow is written at any gate and init says `No remote runner: every proof
+runs on this operating system and you trust this machine, so nothing has to run remotely.`
+Teammates see your results without one, from the test results `purlin:test` commits.
 
 Before any workflow is written init checks the prerequisites: a remote exists, its URL names
 GitHub or Azure DevOps, and the branch the project works on is on that remote. The first that
@@ -218,7 +219,7 @@ workflow carries it.
 
 | The run | What it does |
 |---------|--------------|
-| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks every committed record, brief and signature against the tagged code, checks that every file under `ci/` was committed by the runner's identity, runs the gate check, and commits nothing |
+| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks every signature and every hold against the tagged code, checks that every record and brief under `ci/` was committed by the runner's identity, runs the gate check, and commits nothing |
 | a `run/*` branch | Runs the tagged tests, and at `strong` and above audits what it ran, then commits its records and briefs onto that branch under `ci/` through the git host's API |
 
 The runner writes no signature, ever, and it posts no comment and uploads no artifact: the

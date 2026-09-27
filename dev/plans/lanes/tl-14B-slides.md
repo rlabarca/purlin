@@ -128,8 +128,8 @@ pill, so the row reads as a reason rather than a step:
 
 | # | Reason | What it gets you |
 |---|--------|------------------|
-| 1 | `another operating system` | A proof is tagged `@env` for a system this machine is not. The runner has it, so the rule stops reading `not run`. |
-| 2 | `you said not to trust this one` | You answered no to init's trust question, so tests must run on a clean machine before a signature counts. |
+| 1 | `another operating system` | A proof in `specs/` is tagged `@env` for a system this machine is not, so only a runner can prove it. |
+| 2 | `you said not to trust this one` | You chose not to trust this machine for signing, so the tests a signature rests on run on a clean one. |
 
 Closing line, replacing the old one:
 
@@ -145,9 +145,9 @@ Speaker notes, replacing the old ones:
 
 > Two reasons and no others. Where a runner exists it runs on a pushed `signed/**` tag and on
 > the `run/*` branch `purlin:test --remote` creates. The tag run reruns the tests on a clean
-> machine and checks every committed record, brief and signature against the tagged code; a
-> red run there is the host's word that this version is not proven. No pull request run, no
-> comment, no artifact, no branch rule.
+> machine, checks every signature and hold against the tagged code, and checks that every ci/
+> record and brief came from the runner itself; a red run there is the host's word that this
+> version is not proven. No pull request run, no comment, no artifact, no branch rule.
 
 ---
 

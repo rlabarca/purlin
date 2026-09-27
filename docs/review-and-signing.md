@@ -184,15 +184,22 @@ A signature locks one rule. The tag locks the version.
 When the walk leaves every rule meeting the gate, `purlin:sign` writes an annotated tag over
 the current commit, named `signed/<version>` from the `VERSION` file at the project root.
 `purlin:sign --release <name>` names it something else. The message carries the commit and the
-gate. A person pushes it; the skill never pushes and never moves a tag that already exists.
+gate, and the walk closes on two lines:
 
-No tag is written while any rule falls short, so the tag is the claim: every rule met the gate
-at this commit. It holds the whole tree, so the code, the records, the briefs and the
+```
+Tagged signed/1.4.0 at a1b2c3d: every rule meets the gate signed.
+→ Run: git push origin signed/1.4.0
+```
+
+A person pushes it; the skill never pushes and never moves a tag that already exists. While any
+rule falls short it writes none and prints `No tag: 3 of 42 rules do not meet the gate signed.`,
+so the tag is the claim: every rule met the gate at this commit. It holds the whole tree, so the code, the records, the briefs and the
 signatures are pinned together under one name, which is what an inspection is handed.
 
 Where a project has a runner, pushing the tag starts one last run that reruns the tagged tests
-on a clean machine and checks every committed record, brief and signature against the tagged
-code. A red run there is the host's word that this version is not proven.
+on a clean machine, checks that every signature and every hold still binds the code the tag
+points at, and checks that every record and brief under `ci/` came from the runner itself. A
+red run there is the host's word that this version is not proven.
 
 ## Signing outside the walk
 

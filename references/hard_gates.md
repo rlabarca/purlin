@@ -22,10 +22,10 @@ the tag is a claim someone else can test rather than one you have to take on tru
 A rule answers up to three questions, one per level, and each answer is a **cell**. `gate` in
 `.purlin/config.json` says how many of the three the project asks. A rule **meets the gate**
 when every cell up to the gate's level is met. `purlin:init` asks the one question that sets it:
-what must be true before CI lets a change merge?
+what must be true of every rule before a version is proven?
 
-| Gate | Who it fits | Cells that exist | What CI requires before merge |
-|------|-------------|------------------|-------------------------------|
+| Gate | Who it fits | Cells that exist | What every rule must have |
+|------|-------------|------------------|---------------------------|
 | `passed` | One person working alone | spec, passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from either source counts |
 | `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose bar is `strong` has a strong cell that is met: an audit wrote a record, the test strength at or above `min_strength`, nothing unsettled, no hold. A record from either source counts |
 | `signed` | The same team under GxP | + signed | Every rule that needs a signature has one, and the signer list is set |

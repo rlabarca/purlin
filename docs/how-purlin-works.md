@@ -112,17 +112,18 @@ read from git and from the file itself.
 Most do not, and nothing above needs one. `purlin:init` writes a CI workflow for two reasons
 and no other:
 
-- **a proof is tagged `@env` for an operating system this machine is not.** The runner has that
-  system, so those rules stop reading `not run`.
-- **you answered no to the trust question.** You chose not to trust this machine for signing,
-  so tests must run on a clean machine before a signature counts.
+- **A proof in `specs/` is tagged `@env` for an operating system this machine is not**, so only
+  a runner can prove it.
+- **You chose not to trust this machine for signing**, so the tests a signature rests on run on
+  a clean one.
 
 Where one exists it starts on two things: a push of a `signed/**` tag, and a push to the
 `run/*` branch `purlin:test --remote` creates. A pull request starts nothing and a push to an
 ordinary branch starts nothing. The tag run reruns the tagged tests on a clean machine, checks
-every committed record, brief and signature against the tagged code, checks that every file
-under `ci/` was committed by the runner itself, and ends with the gate check. A run on a run
-branch runs the tests, audits at `strong` and above, and commits its records and briefs there.
+that every signature and every hold still binds the rule, the proof, the test, the bar and the
+audit it names, checks that every record and brief under `ci/` was committed by the runner
+itself, and ends with the gate check. A run on a run branch runs the tests, audits at `strong`
+and above, and commits its records and briefs there.
 [running-and-records.md](running-and-records.md) has it in full.
 
 ## Questions every developer asks

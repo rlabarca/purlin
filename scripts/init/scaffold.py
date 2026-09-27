@@ -7,7 +7,7 @@
 
 On a project that has code, init asks two questions and nothing else:
 
-    What must be true before CI lets a change merge?
+    What must be true of every rule before a version is proven?
     Do you trust your own machine for the tests and the signing? [y/n]
 
 Everything else is derived from those answers or read from the tree: the
@@ -67,7 +67,7 @@ NOT_A_REPOSITORY = 'This is not a git repository. Run git init, then init.'
 DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
                      'runs it')
 
-GATE_QUESTION = 'What must be true before CI lets a change merge?'
+GATE_QUESTION = 'What must be true of every rule before a version is proven?'
 GATE_CHOICES = (
     'passed  every rule has a passing tagged test, from any source',
     'strong  every rule has a record an audit wrote, at the minimum test strength',
@@ -149,8 +149,8 @@ A design anchor pins the hash of these files, and a feature spec requires that a
 A new export stales the signatures of that anchor's rules, so a person looks again.
 """,
     '.purlin/records': """Every audit at the gate strong or signed writes one record per feature here, in ci/
-or local/, and commits it. The folder is the source: ci/ is the CI job's and the git host
-restricts it to the build identity; local/ is anyone's. Both count at every gate.
+or local/, and commits it. The folder is the source: ci/ is a remote runner's, local/ is
+anyone's, and both count at every gate. A tag run fails on a ci/ file the runner did not commit.
 Under passed the evidence is the test results purlin:test commits, under .purlin/tests/.
 """,
 }

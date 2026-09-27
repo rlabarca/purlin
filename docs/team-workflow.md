@@ -68,8 +68,9 @@ it.
 ### When a runner joins in
 
 A team at `strong` usually has no CI at all. `purlin:init` writes a workflow for two reasons
-and no other: a proof is tagged `@env` for an operating system this machine is not, or you
-answered no to `Do you trust your own machine for the tests and the signing?`. Where one
+and no other: a proof in `specs/` is tagged `@env` for an operating system this machine is not,
+so only a runner can prove it, or you chose not to trust this machine for signing, so the tests
+a signature rests on run on a clean one. Where one
 exists, `purlin:test --remote` asks for a single run of it on a branch of its own,
 `run/<branch>-<sha7>`, created from this commit, watched, pulled back with one fast-forward and
 then deleted. The branch you are working on never leaves the machine.
