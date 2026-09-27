@@ -11,8 +11,7 @@ is what the run could not finish, found and left, or left to a person.
 2. **Apply the three GitHub rulesets** init printed (require a pull request and the `purlin`
    check with the Actions app as the only bypass; restrict `.purlin/records/**` and
    `.purlin/briefs/**` to the Actions app; block force pushes and deletions).
-3. **Release.** One more green sweep to set the `Tests at this commit` line, `purlin:audit
-   --tag 0.10.0` to write the `record/0.10.0` tag, a pull request from `three-levels` to
+3. **Release.** One more green sweep, a pull request from `three-levels` to
    `main`, the `v0.10.0` tag (`VERSION` already reads 0.10.0; `dev/bump_version.sh --check`
    guards the derived copies).
 4. **`purlin:audit --remote`** from this Mac has not been exercised (C4 item 4); the GitHub
@@ -113,10 +112,6 @@ is what the run could not finish, found and left, or left to a person.
     `Untested`, `Failing`, `Weak`, `Unsigned`, `Stale or held`.
 28. **Done by this release.** The three-level model gives level 1 the word `passed` and retires
     the old level-2 gate word for `strong`.
-29. **The counts line in `RELEASE_NOTES.md`** is held against the sweep's own counts by the
-    sweep's last suite, `Counts line`, which prints both and fails naming the line to write.
-    Run `bash dev/run_tests.sh` after the closing sweep (item 3) and write the line it names.
-
 ## Housekeeping
 
 16. `.purlin/records/` now holds three records per feature per runner plus the developer's;

@@ -258,6 +258,8 @@ left to a lane's judgment except wording.
       test, audit, sign, tag, on one machine; a full `signed` gate on a laptop with no CI is
       the normal case. Remote runners appear only where the two cases are described, in one
       short section per page at most and on one page of their own.
+    - **The counts line in `RELEASE_NOTES.md` and `purlin_version` RULE-9 are dropped** (added
+      the same day): the sweep writes its record and nothing compares the notes against it.
 
 
 ---

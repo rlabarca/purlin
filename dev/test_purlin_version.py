@@ -379,9 +379,8 @@ def _write_marker_function_text():
 class TestTheSweepRecordsItself:
     """RULE-10 - the sweep writes its own whole record of what ran to
     .purlin/runtime/last_sweep.json, beside the shared test_run.json a proof
-    plugin rewrites as it finishes. The RELEASE_NOTES counts line is not
-    checked here: the sweep checks it itself, in its `Counts line` suite,
-    because only the sweep knows the counts of the run it is in."""
+    plugin rewrites as it finishes. The record is runtime state a reader can
+    open; nothing compares `RELEASE_NOTES.md` against it."""
 
     @pytest.mark.proof("purlin_version", "PROOF-10", "RULE-10",
                        tier="integration")

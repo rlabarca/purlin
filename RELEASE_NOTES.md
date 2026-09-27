@@ -11,8 +11,6 @@ whole loop runs on one machine, at every gate: nothing needs a new service, a ho
 a setting on the git host. The evidence is files in git, and the marker that a version met the
 gate is an annotated tag a person pushes.
 
-Tests at this commit: 1172 passed, 6 skipped.
-
 ### What a 0.9.5 user does
 
 ```

@@ -149,11 +149,13 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
 ## Tests
 
 - Run whole test files, never a `-k` subset: a filtered run truncates that file's proof JSON.
-- `dev/run_tests.sh` in your worktree before you report. Green means: every test your brief
-  names passes, `dev/test_vocabulary.py` passes, and every other failure is one your brief
-  lists under "Expected red" or one you name in your report with the lane that owns it. Phase
-  0 changed the fixtures and the gate values before the code, so a later lane's tests may be
-  red in your worktree; do not fix another lane's test, name it.
+- A lane's acceptance is `bash dev/run_tests.sh --fast` plus its own test files, run whole.
+  The full sweep is run once, at integration, by the orchestrator. No lane edits a number to
+  make a sweep green. Green means: every test your brief names passes,
+  `dev/test_vocabulary.py` passes, and every other failure is one your brief lists under
+  "Expected red" or one you name in your report with the lane that owns it. Phase 0 changed
+  the fixtures and the gate values before the code, so a later lane's tests may be red in your
+  worktree; do not fix another lane's test, name it.
 - Spec maxima: report the highest RULE and PROOF id per touched spec, read with
   `grep -o "^- RULE-[0-9]*" <spec> | sort -t- -k3 -n | tail -1` and the same for PROOF.
 - Test count deltas: the pytest summary line before and after, per commit.
