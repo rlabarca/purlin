@@ -1,4 +1,4 @@
-> Format-Version: 12
+> Format-Version: 13
 
 # Spec format
 
@@ -106,14 +106,6 @@ which is an answer rather than a gap.
 
 Tags are read from the end with `\s*\[(bar|origin|criterion):\s*([^\]]+)\]\s*$`,
 one at a time, in any order.
-
-### The tag the bar replaced
-
-An older spec tags each rule `[risk: high]`, `[risk: medium]` or             <!-- retired -->
-`[risk: low]`. The parser still reads that spelling and maps it, so a spec   <!-- retired -->
-that has not been migrated keeps the same rule text hash: the two levels     <!-- retired -->
-that asked for a person become `[bar: strong]` and the one that did not      <!-- retired -->
-becomes `[bar: passed]`. `purlin:init --update` rewrites the tag in place.   <!-- retired -->
 
 ### Good rules
 

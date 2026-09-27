@@ -99,8 +99,6 @@ MARKED = {
     "scripts/mcp/purlin/specs.py": "# retired",
     "references/formats/spec_format.md": "<!-- retired -->",
     "dev/test_mcp_server.py": "# retired",
-    "dev/test_init_update.py": "# retired",
-    "dev/test_signatures.py": "# retired",
     "dev/test_schema_spec_format.py": "# retired",
     "dev/test_schema_proof_format.py": "# retired",
     "dev/test_run_script.py": "# retired",

@@ -350,7 +350,7 @@ class TestTheSignedGate:
 
     @pytest.mark.proof("gate_check", "PROOF-16", "RULE-5", tier="integration")
     def test_a_signature_the_text_moved_under_reads_stale(self):
-        made = signed_project(config={'sign_at': 'low'})
+        made = signed_project(config={'sign_at': 'all'})
         try:
             assert sign_module.main(
                 ['login', '--project-root', made.root]) == 0

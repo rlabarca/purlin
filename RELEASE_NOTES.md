@@ -252,6 +252,9 @@ Also gone, each without a replacement:
   the rule tag the bar replaced, the scope tag and its runner registry, the pre-commit and
   pre-push shims under `.purlin/hooks/`, the stale `purlin.yml`, and moving records into
   source folders. `purlin:init --update` reads what 0.9.5 left and nothing else.
+- The readers that mapped an old spelling: `sign_at: high`, `medium` and `low`, and the rule
+  tag the bar replaced. An old spelling is not recognised: `sign_at` warns and reads the
+  gate's own value, and the tag stays in the rule text.
 - `purlin:spec --resolve` and `scripts/mcp/purlin/ids.py`. Ids are still allocated against
   `origin/main`; a duplicate after a merge is renumbered by hand.
 - `purlin:find`. `purlin:status <name>` shows one spec's rules and their cells.

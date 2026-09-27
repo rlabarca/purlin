@@ -50,11 +50,6 @@ BARS = ('passed', 'strong')
 SIGN_AT_VALUES = ('strong', 'all')
 DEFAULT_SIGN_AT = 'strong'
 
-# An older project wrote one of three levels here. The bar replaced them, so
-# the two that asked for a person map onto the rules whose bar is `strong`,
-# and the one that asked for nobody asks for all of them instead.
-_SIGN_AT_WAS = {'high': 'strong', 'medium': 'strong', 'low': 'all'}  # retired
-
 # gate -> (min_strength, sign_at, breaks)
 #
 # `min_strength` is None under `passed`: nothing measures test strength there,
@@ -157,19 +152,12 @@ def resolve_gate(config):
 
 
 def _read_sign_at(value, derived, warnings):
-    """`sign_at` as this release reads it, from what the config named.
-
-    A project written before the bar named one of three levels here. The
-    value is mapped rather than refused, so raising a gate never silently
-    asks for fewer signatures than the project had.
-    """
+    """`sign_at` as the config named it, or the derived value with a warning."""
     if value is None:
         return derived
     named = str(value).strip().lower()
     if named in SIGN_AT_VALUES:
         return named
-    if named in _SIGN_AT_WAS:
-        return _SIGN_AT_WAS[named]
     warnings.append(
         '"sign_at" is %r, which is not one of %s; reading it as %r'
         % (value, ', '.join(SIGN_AT_VALUES), derived))

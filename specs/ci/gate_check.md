@@ -21,7 +21,7 @@
 - RULE-5: A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons [bar: strong] [origin: eng]
 - RULE-6: Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists [bar: strong] [origin: eng]
 - RULE-7: A section names at most 20 rules and counts the rest, pointing at `--json` for every one [bar: passed] [origin: eng]
-- RULE-8: Under `signed` the gate grades every rule whether or not the config names anyone, because no list says who may sign; the key an older release used to name who may sign is not read [bar: strong] [origin: eng]
+- RULE-8: Under `signed` the gate grades every rule whether or not the config names anyone, because no list says who may sign [bar: strong] [origin: eng]
 - RULE-9: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes [bar: strong] [origin: eng]
 - RULE-10: `gate_check.py` needs `--check` and a directory that exists; either missing exits 2 [bar: passed] [origin: eng]
 - RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, every section under its own key, the result and the exit code [bar: strong] [origin: eng]

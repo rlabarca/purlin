@@ -614,12 +614,12 @@ class TestGate:
                                         'sign_at': 'all'})
         assert cfg.min_strength == 95 and cfg.sign_at == 'all'
 
-    def test_the_old_sign_at_levels_map_onto_the_two_this_release_reads(self):
-        for named, read in (('high', 'strong'), ('medium', 'strong'),
-                            ('low', 'all'), ('all', 'all')):
+    def test_sign_at_reads_its_two_values_and_warns_on_any_other(self):
+        for named in ('strong', 'all'):
             cfg = purlin_gate.resolve_gate({'gate': 'signed',
                                             'sign_at': named})
-            assert cfg.sign_at == read, named
+            assert cfg.sign_at == named, named
+            assert cfg.warnings == [], cfg.warnings
         odd = purlin_gate.resolve_gate({'gate': 'signed', 'sign_at': 'often'})
         assert odd.sign_at == 'strong'
         assert any('often' in w for w in odd.warnings), odd.warnings
@@ -635,13 +635,6 @@ class TestGate:
         cfg = purlin_gate.resolve_gate({'gate': 'stronng'})
         assert cfg.gate == 'passed'
         assert any('stronng' in w for w in cfg.warnings), cfg.warnings
-
-    def test_a_signer_key_an_older_release_wrote_is_ignored_quietly(self):
-        for named in (['Jane@Acme.com'], 'jane', []):
-            cfg = purlin_gate.resolve_gate({'gate': 'signed',
-                                            'signers': named})  # retired
-            assert cfg.warnings == [], cfg.warnings
-            assert not [key for key in cfg.as_dict() if 'signer' in key]
 
     def test_retired_keys_are_ignored_with_one_directive(self):
         cfg = purlin_gate.resolve_gate({

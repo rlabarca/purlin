@@ -265,11 +265,6 @@ def signing_key(root, email='jane@acme.com'):
     return key + '.pub'
 
 
-# The key an older release named the people who may sign under. Nothing
-# reads it now; a test writes it to show that nothing does.
-OLD_SIGNER_KEY = 'signers'                                     # retired
-
-
 # What the git host's build identity looks like on GitHub.
 CI_COMMITTER = 'github-actions[bot]'
 CI_EMAIL = '41898282+github-actions[bot]@users.noreply.github.com'
@@ -636,26 +631,10 @@ class TestTheSignedCommit:
             [('login', 'RULE-1'), ('billing', 'RULE-3')]) == (
             'sign(batch): login RULE-1, billing RULE-3')
 
-    @pytest.mark.proof("signatures", "PROOF-26", "RULE-21", tier="integration")
-    def test_a_signer_key_left_in_the_config_is_never_read(
-            self, at_strong, capsys):
-        at_strong.config(**{OLD_SIGNER_KEY: ['someone@else.com']})
-        signing_key(at_strong.root)
-        code = sign_module.main(['login', 'RULE-1', '--project-root',
-                                 at_strong.root])
-        output = capsys.readouterr().out
-        assert code == 0, output
-        assert 'Signed 1 rule in' in output, output
-        assert len(at_strong.signatures()) == 1
-        assert 'not on' not in output, output
-
     @pytest.mark.proof("signatures", "PROOF-27", "RULE-21", tier="integration")
     def test_the_signing_gate_names_nobody_and_signs(self, capsys):
         made = signing_project(sign_at='strong')
         try:
-            with open(os.path.join(made.root, '.purlin', 'config.json'),
-                      encoding='utf-8') as handle:
-                assert OLD_SIGNER_KEY not in json.load(handle)
             code = sign_module.main(['--batch', '--project-root', made.root])
             output = capsys.readouterr().out
             assert code == 0, output

@@ -46,17 +46,10 @@ _PROOF_LINE_RE = re.compile(
 # Rule tags, read off the end one at a time so the order they are written in
 # does not matter and the text that remains is the claim alone.
 _RULE_TAG_RE = re.compile(
-    r'\s*\[(bar|risk|origin|criterion):\s*([^\]]+)\]\s*$')       # retired
+    r'\s*\[(bar|origin|criterion):\s*([^\]]+)\]\s*$')
 
 BARS = ('passed', 'strong')
 DEFAULT_ORIGIN = 'eng'
-
-# The bar replaced the tag an older release wrote at the end of a rule line.
-# A spec that release wrote still carries the old spelling, and the two
-# levels of it that asked for a person map onto the `strong` bar.
-# `purlin:init --update` rewrites the tag; until it runs the parser reads it,
-# so the rule text hash and the signature bound to it stay steady.
-RISK_TO_BAR = {'high': 'strong', 'medium': 'strong', 'low': 'passed'}  # retired
 
 # A trailing tag is metadata appended after the description: ` @e2e`,
 # ` @env(linux)`. It must not match a description whose prose merely ends in
@@ -106,9 +99,6 @@ def split_rule_tags(text):
         name, value = m.group(1), m.group(2).strip()
         meta.setdefault(name, value)
         text = text[:m.start()].rstrip()
-    older = meta.pop('risk', None)                                 # retired
-    if older is not None and 'bar' not in meta:
-        meta['bar'] = RISK_TO_BAR.get(str(older).strip().lower(), 'passed')
     meta.setdefault('origin', DEFAULT_ORIGIN)
     return text, meta
 
