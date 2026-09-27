@@ -169,8 +169,7 @@ the records back.
 **The dashboard.** One HTML page on the design tokens, with no framework and no build step. Its
 tiles, columns and filters scale with the gate, and its top bar carries the gate, the signed tag
 this commit holds and how old the data is. It opens from disk; nothing is published and no
-artifact is uploaded. `scripts/report/scan.py --repo <url>` prints the same rollup for anyone
-holding only a URL.
+artifact is uploaded.
 
 **Formats.** The spec, proofs and anchor formats change wording only. The record format, the
 signature format (from `approval_format.md`), the new test results format, the payload schema and
@@ -247,6 +246,9 @@ Also gone, each without a replacement:
   behind, and `purlin:anchor sync --check` exits 1 on one.
 - `tools/`: the PM and QA skills for Claude Desktop and their packed `.skill` archives. A PM or
   QA person works in Claude Code on the repository, or through a pull request.
+- `scripts/report/scan.py`, which printed a repository's rollup from its URL without a
+  checkout. `.purlin/tests.md`, which `purlin:test` commits, is what a reader without a checkout
+  reads on the git host.
 
 ### The 0.10.0 line that never shipped
 

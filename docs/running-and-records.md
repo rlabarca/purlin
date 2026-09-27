@@ -343,8 +343,7 @@ land in the gate check's `Evidence` section. No breaks run on the runner: the st
 record was measured where the audit ran.
 
 The runner posts no comment and uploads no artifact. The dashboard is the page that opens from
-disk beside your editor, and `scripts/report/scan.py --repo <url> --ref <tag>` prints the same
-rollup for anyone holding only a URL.
+disk beside your editor.
 
 ### The gate check is the last step
 

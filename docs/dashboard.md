@@ -3,8 +3,8 @@
 For anyone who wants to see where every rule stands without reading a spec file.
 
 The dashboard is one HTML file with no server, no build step and no dependencies. It opens from
-disk beside your editor. Anyone without a checkout reads the same numbers from
-[scan.py](#without-a-checkout-scanpy), which prints them from a repository URL.
+disk beside your editor. Anyone without a checkout reads `.purlin/tests.md` on the git host,
+the table of test results `purlin:test` commits.
 
 ## Opening it
 
@@ -22,8 +22,7 @@ so a signature you have just written appears without you reloading anything. A c
 by hand outside Claude Code shows up after the next `purlin:status`.
 
 Nothing is provisioned, nothing is hosted, and no site has to be published. A remote runner
-uploads no artifact and posts no comment: the page is local, and `scan.py` is the route for
-anyone who has no checkout.
+uploads no artifact and posts no comment: the page is local.
 
 ## The chrome
 
@@ -245,21 +244,6 @@ of both, for someone who has no checkout.
 The toggle in the top bar switches between dark and light. Every colour on the page is a token
 the theme redefines, so nothing else changes and the logo swaps to the colourway that reads on
 the new ground. The choice is remembered in the browser.
-
-## Without a checkout: scan.py
-
-Anyone with a repository URL can print the same rollup without cloning the repository whole:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <branch-or-tag>]
-```
-
-It reads `specs/`, `.purlin/tests/` and `.purlin/records/` by sparse fetch and prints the
-headline, one line per bucket, and the flags beside them, then how far the ref has moved past
-the newest record, then the Review and Sign lists under one count, one line per rule with its
-bar, the rule, the cell that blocks it and the word that cell reads. `--repo` also takes a
-local path, and `--ref` takes a branch or a tag, including a `signed/<version>` one. It prints
-the same numbers the page draws, so a reviewer with no checkout reads one answer.
 
 ## Next
 

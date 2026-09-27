@@ -269,11 +269,6 @@ Add `.purlin/config.json`'s history for who could sign at any date, and the four
 inspection asks - what was required, what the tests proved, who said it was right, and when -
 each have a file that answers them.
 
-For anyone without a checkout,
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> --ref <tag>` reads
-`specs/`, `.purlin/tests/` and `.purlin/records/` by sparse fetch and prints the same rollup for
-any branch or tag, including a `signed/<version>` one.
-
 ## Branch rules
 
 There are none, and Purlin asks for none. A push is free, to any branch, for anyone, and

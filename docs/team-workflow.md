@@ -99,9 +99,9 @@ A remote runner writes the same two kinds of file under `ci/`, and it writes no 
 ever. The machine's evidence and a person's attestation are written by different hands, into
 different paths.
 
-The dashboard is the page that opens from disk beside your editor, and
-`scripts/report/scan.py --repo <url>` prints the same rollup for anyone holding only a URL, so
-a reviewer with no clone reads exactly what an engineer reads. [dashboard.md](dashboard.md)
+The dashboard is the page that opens from disk beside your editor, and a reviewer with no clone
+reads `.purlin/tests.md`, the test results `purlin:test` commits, on the git host.
+[dashboard.md](dashboard.md)
 describes the four screens and the filters.
 
 ## When the tests pass on one operating system and not another

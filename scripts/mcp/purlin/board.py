@@ -1,13 +1,12 @@
 """The columns every surface reads a spec's row from, rendered once.
 
-The dashboard's board, the `purlin:status` table and `scan.py` all answer
-the same questions about one spec, and they have to answer them in the same
+The dashboard's board and the `purlin:status` table both answer the same
+questions about one spec, and they have to answer them in the same
 words: a reader who learns the board reads the table without learning it
 again. So the columns, the cell text, the bucket names and the next step
 live here, and each surface renders what this module returns rather than
 composing its own string. `scripts/report/src/board.js` mirrors these
-strings on the dashboard's side; changing one here changes the table and
-the scan together.
+strings on the dashboard's side; changing one here changes the table.
 
 The columns, left to right:
 
@@ -148,7 +147,7 @@ def proofs_summary(summary):
     """`<n> proof lines`, and `· <k> without a test` when a proof has none.
 
     The cell's own words, read as a sentence rather than as a column, for the
-    summary line under the table and the rollup `scan.py` prints.
+    summary line under the table.
     """
     total = summary.get('proofs') or 0
     text = '%d proof line%s' % (total, '' if total == 1 else 's')
@@ -192,7 +191,7 @@ def needs_a_person(count):
     """`<n> rules need a person`: the one sentence that says a person is owed.
 
     The Review and Sign lists are the one place a person is named, and this
-    is the sentence every surface says it in, so the table, the scan and the
+    is the sentence every surface says it in, so the table and the
     dashboard's heading never disagree about the wording or about how one
     rule reads.
     """

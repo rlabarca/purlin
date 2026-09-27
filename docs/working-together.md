@@ -20,10 +20,9 @@ comment proposing the change instead.
 **Without one**: write the criteria wherever you already write them, hand them to an engineer,
 and their agent runs `purlin:spec`. You review that pull request like any other.
 
-**What you see.** The state of every rule, from a repository URL and nothing else:
-`scripts/report/scan.py --repo <url>` prints the same **rollup** the board draws, for any
-branch or tag: how many rules meet the gate out of how many there are, plus one count per
-bucket. Tag each rule with the id of the criterion it came from, `[criterion: US-12]`, and
+**What you see.** The state of every rule. With a checkout, the dashboard's **rollup** says how
+many rules meet the gate out of how many there are, plus one count per bucket; without one,
+`.purlin/tests.md` on the git host carries the latest test results. Tag each rule with the id of the criterion it came from, `[criterion: US-12]`, and
 `purlin:drift pm` tells you which criteria still have no rule:
 
 ```
@@ -55,15 +54,9 @@ captured. The whole flow is in [design-in-specs.md](design-in-specs.md).
 - **A checkout with Claude Code.** `purlin:sign` computes the list of rules whose next step is
   a person, the higher bar first, and walks it one brief at a time. At each stop you sign, add a
   case in plain language, hold or skip.
-- **An assistant with the repository connected.** It reads the same rollup, opens pull
-  requests carrying proof edits, and batches signatures into one commit.
-- **No AI at all.** Run `scan.py` on the repository URL and review the diff by hand.
-
-Anyone with the repository URL can print the same rollup without cloning it whole:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <branch|tag>]
-```
+- **An assistant with the repository connected.** It reads the specs and the committed test
+  results, opens pull requests carrying proof edits, and batches signatures into one commit.
+- **No AI at all.** Read `.purlin/tests.md` on the git host and review the diff by hand.
 
 **What you work.** The Review and Sign lists, never the whole rule list. A rule reaches them
 only when the cell that blocks it is one a person answers: a strong cell reading `manual test`,

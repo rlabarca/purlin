@@ -44,7 +44,7 @@ var TILE_HOVER = {
 
 /* The board's seven column headings and the words its cells append, in one
    place. `scripts/mcp/purlin/board.py` renders the same seven columns for
-   `purlin:status` and `scan.py`, so these are its
+   `purlin:status`, so these are its
    `COLUMNS` and its cell words: a string changed there is changed here in
    the same commit. */
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signable',

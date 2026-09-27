@@ -230,7 +230,7 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | mutation testing | the breaks, in prose; `mutation_engine` in config and code |
 | mode, pre-push mode, external LLM mode | removed. The gate is the one setting |
 | records branch | records live in the tree, under `.purlin/records/` |
-| Pages, the published dashboard site | the dashboard page each person opens from disk, and `scripts/report/scan.py --repo <url>` for anyone without a checkout |
+| Pages, the published dashboard site | the dashboard page each person opens from disk |
 | forge | git host |
 | queue | review list |
 | CODEOWNERS, approver rule | removed. No file names who may sign; a signature names its signer |
