@@ -124,7 +124,7 @@ function renderSign() {
     + (entries.length === 1 ? ' rule to sign' : ' rules to sign')
     + '</h1><p class="line">Each of these has cleared its bar, so the '
     + 'evidence its project asks for is in. A signature is a signed commit '
-    + 'by someone on the signer list.</p></section>';
+    + 'that names its signer.</p></section>';
   return head + '<section><div class="tbl">'
     + listHead(['Spec', 'Rule', 'What it claims', 'Bar', 'Signed', 'Command'])
     + entries.map(signRow).join('') + '</div></section>';

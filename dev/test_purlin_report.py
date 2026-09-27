@@ -1017,7 +1017,7 @@ def test_the_rule_screen_names_the_sign_command(browser, tmp_path):
     page.click('.rule[data-rule="RULE-2"]')
     body = page.inner_text('.wrap')
     assert 'purlin:sign login RULE-2' in body
-    assert 'signed commit by someone on the signer list' in body
+    assert 'A signature is a signed commit that names its signer' in body
     assert 'courier' in page.eval_on_selector(
         '.cmd', 'el => getComputedStyle(el).fontFamily').lower()
 

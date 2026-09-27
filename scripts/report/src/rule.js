@@ -87,14 +87,14 @@ function signerOf(path) {
 }
 
 /* A signature is a signed commit, so this page cannot write one: it names the
-   command that does, and reads back the signatures already on the branch. */
+   command that does, and reads back the signatures already committed. */
 function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
   if (!cell) { return ''; }
   if (cell.word === 'signed') {
     return '<div class="panel"><h2>Signed</h2><p class="sec">'
       + esc('Signed by ' + (cell.signer || signerOf(cell.path || '')
-          || 'someone on the signer list') + ' on ' + when(cell.at)
+          || 'a person') + ' on ' + when(cell.at)
         + ', against the rule, proof and test text this screen shows. The '
         + 'signature file beside the spec carries the commit that signed it.')
       + '</p></div>';
@@ -106,8 +106,8 @@ function signPanel(feature, rule) {
       ? 'This project signs the rules whose bar is strong, and this rule’s '
         + 'bar is passed, so no signature is required; one written anyway '
         + 'still counts.'
-      : 'A signature is a signed commit by someone on the signer list; the '
-        + 'page shows it once it is on the branch.') + '</p></div>';
+      : 'A signature is a signed commit that names its signer; the page '
+        + 'shows it once it is committed.') + '</p></div>';
 }
 
 function proofPanel(proof) {
