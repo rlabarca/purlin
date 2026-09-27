@@ -12,8 +12,8 @@
 #   6. gate_check.py --check            exits 1: no audit has measured it
 #   7. a record and its briefs from --ci, committed under the build identity
 #   8. gate_check.py --check            exits 0: strong is met by that record
-#   8a. a --ci run on a pull request, which commits nothing and says so
-#   8b. a --ci run on the protected branch and on run/*, which commit
+#   8a. a --ci run on a signed/ tag, which commits nothing and says so
+#   8b. a --ci run on a run/* branch, which commits
 #  10. purlin:init --gate signed        raises again
 #  11. gate_check.py --check            exits 1: no signer list
 #  12. the signer list, then the gate check exits 1 with no signature
