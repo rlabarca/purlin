@@ -5,8 +5,7 @@
 # The anchor repo owns the rules in the pinned copy: a sync overwrites them.
 # The project owns the rules in a separate local anchor that `> Requires:` the
 # pinned one, and a sync never touches those. A rule a consumer does add to the
-# pinned copy reaches the anchor repo as a patch, never as a local edit that
-# survives.
+# pinned copy does not survive the next sync.
 #
 # Every source is a local bare repository on disk, so nothing reaches a
 # network, and every command runs against a temporary project with
@@ -314,40 +313,9 @@ grep -q '^- RULE-3: Every failed sign-in is written to the log' \
 record "a sync replaces the pinned copy and never the local anchor" "$ok" "$detail"
 
 # ==========================================================================
-# 5. A consumer's edit reaches the anchor repo as a patch
+# 5. The anchor name is the spec name, whatever the source path is
 # ==========================================================================
-echo "--- 5: propose carries the edit upstream ---"
-build_workspace
-python3 - "$PROJECT/specs/_anchors/ext_security.md" <<'PY'
-import sys
-path = sys.argv[1]
-with open(path, encoding='utf-8') as handle:
-    text = handle.read()
-text = text.replace(
-    '## Proof',
-    '- RULE-9: Every session expires after eight hours [bar: strong]\n\n## Proof')
-with open(path, 'w', encoding='utf-8') as handle:
-    handle.write(text)
-PY
-propose_out=$(run_upstream "$PROJECT" propose ext_security)
-PATCH="$PROJECT/.purlin/runtime/anchors/ext_security.patch"
-ok=true
-detail="$propose_out"
-[[ -f "$PATCH" ]] || { ok=false; detail="no patch was written"; }
-if [[ -f "$PATCH" ]]; then
-  grep -q '^+- RULE-9: Every session expires after eight hours' "$PATCH" || {
-    ok=false; detail="the patch does not carry the added rule"; }
-  grep -q '^+> Pinned:' "$PATCH" && {
-    ok=false; detail="the patch carries the consumer's tracking fields"; }
-fi
-echo "$propose_out" | grep -q 'git apply' || {
-  ok=false; detail="the commands to run were not printed"; }
-record "propose writes the patch and names the commands" "$ok" "$detail"
-
-# ==========================================================================
-# 6. The anchor name is the spec name, whatever the source path is
-# ==========================================================================
-echo "--- 6: the name drift reports ---"
+echo "--- 5: the name drift reports ---"
 build_workspace "policies/deeply/nested/security.md"
 advance_anchor_repo "$BARE" "$SOURCE_PATH" "$PUBLISHED_V2" >/dev/null
 drift_json=$(run_drift "$PROJECT")
@@ -362,9 +330,9 @@ ok=true
 record "the anchor is named by its spec file, not by its source path" "$ok" "$result"
 
 # ==========================================================================
-# 7. A pin behind does not change what the rollup counts
+# 6. A pin behind does not change what the rollup counts
 # ==========================================================================
-echo "--- 7: the rollup while the pin is behind ---"
+echo "--- 6: the rollup while the pin is behind ---"
 build_workspace
 advance_anchor_repo "$BARE" "$SOURCE_PATH" "$PUBLISHED_V2" >/dev/null
 result=$(PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$PROJECT" python3 -c '

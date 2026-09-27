@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """purlin:init: one question, then every file a project needs.
 
-    scaffold.py [--gate passed|strong|signed] [--upstream-check]
+    scaffold.py [--gate passed|strong|signed]
                 [--add <language>] [--update] [--dry-run]
                 [--project-root DIR] [--plugin-root DIR] [--yes]
 
@@ -507,7 +507,7 @@ def print_remote_reasons(reasons):
         print('  %s' % reason)
 
 
-def write_workflow(plan, root, purlin_ref, upstream_check):
+def write_workflow(plan, root, purlin_ref):
     """The workflow the git host runs, with the matrix the `@env` tags name.
 
     The prerequisites are checked first and nothing is written when one is
@@ -523,7 +523,7 @@ def write_workflow(plan, root, purlin_ref, upstream_check):
     name = workflow_module.workflow_filename(host)
     rel = name if host == 'azure' else '.github/workflows/%s' % name
     plan.write(rel, workflow_module.render_workflow(
-        host, env_tags, purlin_ref, upstream_check=upstream_check), own=True)
+        host, env_tags, purlin_ref), own=True)
     plan.note('  the matrix is %s: ubuntu-latest always, then the @env tags '
               'in specs/.'
               % ', '.join(workflow_module.runners_for(env_tags)))
@@ -553,7 +553,7 @@ def parse_args(argv):
     parser.add_argument('--add', default=None, help='one more framework')
     parser.add_argument('--project-root', default='.')
     parser.add_argument('--plugin-root', default=None)
-    for flag in ('--upstream-check', '--update', '--dry-run', '--yes'):
+    for flag in ('--update', '--dry-run', '--yes'):
         parser.add_argument(flag, action='store_true')
     return parser.parse_args(argv)
 
@@ -739,8 +739,7 @@ def main(argv=None):
     elif not wanted:
         plan.skip('the CI workflow', workflow_module.NO_REASON)
     if wanted:
-        write_workflow(plan, root, 'v%s' % config.get('version', ''),
-                       args.upstream_check)
+        write_workflow(plan, root, 'v%s' % config.get('version', ''))
 
     for line in plan.lines:
         print(line)

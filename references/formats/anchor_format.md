@@ -159,9 +159,9 @@ Its rules are counted with the feature's own, and its tests must prove both.
 ## Editing a pinned anchor
 
 A consumer never edits a pinned rule in place: the next sync would overwrite
-it. `purlin:anchor propose <name>` drafts the pull request to the anchor repo
-instead, and a rule that belongs only to this project goes in a separate
-local anchor that `> Requires:` the pinned one.
+it. A change to the rule is a pull request against the anchor repo, which the
+next sync brings back, and a rule that belongs only to this project goes in a
+separate local anchor that `> Requires:` the pinned one.
 
 ## Global anchors
 

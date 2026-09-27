@@ -70,7 +70,6 @@ the bar as they followed the old tag.
 | Flag | What it does |
 |------|--------------|
 | `--gate <level>` | sets the gate, at setup or later |
-| `--upstream-check` | adds a scheduled job that opens an issue when an anchor pin falls behind |
 | `--add <language>` | wires a second language: its test framework, its proof plugin, its break engine |
 | `--update` | brings a project set up by an older Purlin onto the installed one |
 | `--dry-run` | prints the plan and writes nothing |

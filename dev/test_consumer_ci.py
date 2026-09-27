@@ -252,17 +252,6 @@ def test_no_pull_request_starts_a_run_at_all():
     assert 'fork' not in text
 
 
-@pytest.mark.proof("records", "PROOF-18", "RULE-18")
-def test_the_scheduled_pin_check_is_off_unless_it_is_asked_for():
-    assert 'schedule:' not in read(WORKFLOW_REL)
-    with_check = workflow_module.render_workflow(
-        'github', ['linux'], PURLIN_REF, upstream_check=True)
-    assert 'schedule:' in with_check
-    assert 'upstream-check:' in with_check
-    assert '<<MATRIX>>' not in with_check
-    assert '<<PURLIN_REF>>' not in with_check
-
-
 # ---------------------------------------------------------------------------
 # The project
 # ---------------------------------------------------------------------------

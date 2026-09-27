@@ -364,7 +364,7 @@ class TestSkillAnchor:
         assert frontmatter_problems('anchor') == []
 
     @pytest.mark.proof("skill_anchor", "PROOF-2", "RULE-2")
-    def test_it_runs_the_upstream_script_for_three_subcommands(self):
+    def test_it_runs_the_upstream_script_for_two_subcommands(self):
         assert anchor_command_problems() == []
 
     @pytest.mark.proof("skill_anchor", "PROOF-3", "RULE-3")
@@ -380,7 +380,7 @@ class TestSkillAnchor:
         assert carries(skill_path('anchor'), [
             'A pin is always a commit, never a branch.',
             'Never edit a pinned rule in place.',
-            '`propose` drafts the pull request',
+            'a pull request against the source repository',
             '> Requires: <the pinned one>']) == []
 
 
@@ -389,10 +389,10 @@ def anchor_command_problems():
     script = '"${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py"'
     problems = []
     found = read(rel).count(script)
-    if found < 3:
-        problems.append('%s names %s %d times, expected at least 3'
+    if found < 2:
+        problems.append('%s names %s %d times, expected at least 2'
                         % (rel, script, found))
-    for subcommand in ('add', 'sync', 'propose'):
+    for subcommand in ('add', 'sync'):
         problems.extend(same_line(rel, [script, subcommand]))
     problems.extend(carries(rel, ['--check', 'purlin:drift']))
     return problems
@@ -523,8 +523,8 @@ class TestSkillAudit:
 # skill must not name again: `--ci` went when init started asking at `passed`
 # whether to add a remote runner, so a skill that still printed it would hand
 # a person an invocation the script exits 2 on.
-SCAFFOLD_FLAGS = ('--project-root', '--gate', '--update', '--upstream-check',
-                  '--add', '--dry-run')
+SCAFFOLD_FLAGS = ('--project-root', '--gate', '--update', '--add',
+                  '--dry-run')
 SCAFFOLD_RETIRED = ('--ci',)
 
 

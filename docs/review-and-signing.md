@@ -150,7 +150,7 @@ which is the intended behaviour: nothing is marked as seen by being seen.
 
 Never narrow a rule or a proof to make an observation disappear. That lowers the claim instead of
 strengthening the evidence. On a rule that came from an anchor it is not yours to change at
-all: `purlin:anchor propose <name>` drafts that change where the rule lives.
+all: the change is a pull request against the anchor's source repository.
 
 The walk closes by saying what happened and what is left:
 

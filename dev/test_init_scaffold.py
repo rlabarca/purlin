@@ -676,21 +676,6 @@ class TestTheWorkflow:
         assert 'v%s' % version in read(
             project.path('.github/workflows/purlin.yml'))
 
-    @pytest.mark.proof("scaffold", "PROOF-16", "RULE-16")
-    def test_upstream_check_adds_the_scheduled_job(self, project):
-        self._trust_remote(project)
-        project.run('--gate', 'strong', '--upstream-check')
-        workflow = read(project.path('.github/workflows/purlin.yml'))
-        assert 'upstream-check:' in workflow
-        assert 'schedule:' in workflow
-
-    @pytest.mark.proof("scaffold", "PROOF-16", "RULE-16")
-    def test_without_it_the_scheduled_job_is_absent(self, project):
-        self._trust_remote(project)
-        project.run('--gate', 'strong')
-        workflow = read(project.path('.github/workflows/purlin.yml'))
-        assert 'upstream-check:' not in workflow
-
     @pytest.mark.proof("scaffold", "PROOF-17", "RULE-17")
     def test_no_branch_rule_is_printed(self, project):
         """The gate is the tag now, so there is no rule to apply."""

@@ -71,18 +71,14 @@ commit with the `anchor(<name>):` prefix, so the diff shows exactly which rules 
 `strong` and above that commit reaches the default branch by pull request like any other
 change, and a rule whose text moved stales its signature.
 
-## propose
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" propose <name>
-```
+## Changing a pinned rule
 
 **Never edit a pinned rule in place.** The next sync overwrites it and the change is lost with
-no trace. `propose` drafts the pull request against the source repository instead, carrying
-the rule id, the current text and your replacement.
+no trace. A change to the rule is a pull request against the source repository, made in a
+checkout of it; once it merges, `sync` brings it here.
 
-A rule that belongs only to this project is not a proposal at all: put it in a separate local
-anchor that says `> Requires: <the pinned one>`, and leave the pinned copy untouched.
+A rule that belongs only to this project goes in a separate local anchor that says
+`> Requires: <the pinned one>`, and the pinned copy stays untouched.
 
 ## Design anchors
 
@@ -114,15 +110,6 @@ the test captured.
 
 A proof for a design rule is an end-to-end observable: a route, a state, visible text,
 presence. Never a selector and never a pixel comparison.
-
-## Staying current without asking
-
-```bash
-purlin:init --upstream-check
-```
-
-Adds a scheduled job that opens a pull request, or an issue where it cannot, whenever a pin
-falls behind its source.
 
 ## When you are done
 

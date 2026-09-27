@@ -244,6 +244,11 @@ Also gone, each without a replacement:
 
 - `.purlin/config.local.json`, the per-person settings file laid over `.purlin/config.json`. A
   project has one settings file, committed, and the `purlin_config` tool writes to it.
+- `purlin:anchor propose`. A change to a pinned rule is a pull request against the anchor's
+  source repository, and `purlin:anchor sync` brings it back once it merges.
+- `purlin:init --upstream-check`, the weekly job that opened an issue when an anchor pin fell
+  behind, and the `issues: write` permission it needed. `purlin:drift` still reports a pin
+  behind, and `purlin:anchor sync --check` exits 1 on one.
 
 ### The 0.10.0 line that never shipped
 

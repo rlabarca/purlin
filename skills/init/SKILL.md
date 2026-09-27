@@ -56,7 +56,6 @@ list back to the person before running it for real on a project that already has
 |------|--------------|
 | `--gate <level>` | Sets the gate, at setup or later. Raising adds what is missing and asks before each write. Lowering changes the setting and deletes nothing |
 | `--update` | Brings a project set up by an older Purlin to the installed one. See below |
-| `--upstream-check` | Adds a scheduled job that opens an issue when an anchor pin falls behind |
 | `--add <language>` | Adds a second language: its test framework, its proof plugin, its breaks engine |
 | `--dry-run` | Prints the plan and writes nothing |
 
@@ -180,9 +179,9 @@ every rule whatever its bar. It prints the commit-signing setup and lists every 
 origin tag so `purlin:spec <name>` can tag them in one pass. It asks for no names: signing is
 logged, not policed, and a signature names its signer.
 
-Anchor pins and the upstream-check job are added on demand. When one is missing later the tool
-that needs it says so: `purlin:drift` reports a pin behind, and `purlin:audit` says the breaks
-engine is unavailable.
+Anchor pins are added on demand. When something is missing later the tool that needs it says
+so: `purlin:drift` reports a pin behind, and `purlin:audit` says the breaks engine is
+unavailable.
 
 ## Branch rules
 

@@ -22,11 +22,6 @@ those and writes the record that counts. A project that tags nothing runs on
 Linux alone. Nothing else about the workflow varies, so two projects with the
 same tags get the same file.
 
-The scheduled job that reports an anchor pin behind its source is optional:
-the template carries it between `# BEGIN upstream-check` and
-`# END upstream-check` markers, and `upstream_check=False` drops those lines
-along with what they wrap.
-
 `prerequisites()` is what `purlin:init` asks before it writes any of this. A
 workflow is a file, a remote that holds it and a host that runs it. Writing
 the file where the remote or the host is missing leaves a project believing it
@@ -56,9 +51,6 @@ RUNNERS = {
 }
 DEFAULT_RUNNER = 'ubuntu-latest'
 ORDER = ('linux', 'macos', 'windows')
-
-BEGIN = '# BEGIN upstream-check'
-END = '# END upstream-check'
 
 
 def workflow_filename(host):
@@ -103,13 +95,12 @@ def env_tags_in_specs(project_root):
     return sorted(found)
 
 
-def render_workflow(host, env_tags, purlin_ref, upstream_check=False):
+def render_workflow(host, env_tags, purlin_ref):
     """The workflow text for one git host, matrix and release."""
     host = _host(host)
     with open(os.path.join(TEMPLATE_DIR, TEMPLATES[host]), 'r',
               encoding='utf-8') as handle:
         text = handle.read()
-    text = _upstream(text, upstream_check)
     text = text.replace('<<MATRIX>>', _matrix(host, runners_for(env_tags)))
     return text.replace('<<PURLIN_REF>>', str(purlin_ref or 'main'))
 
@@ -158,24 +149,6 @@ def _matrix(host, images):
         lines.append('        %s:' % image.split('-')[0])
         lines.append('          imageName: %s' % image)
     return '\n'.join(lines)
-
-
-def _upstream(text, keep):
-    """Unwrap the upstream-check blocks, or drop them with what they wrap."""
-    out = []
-    inside = False
-    for line in text.splitlines(True):
-        stripped = line.strip()
-        if stripped == BEGIN:
-            inside = True
-            continue
-        if stripped == END:
-            inside = False
-            continue
-        if inside and not keep:
-            continue
-        out.append(line)
-    return ''.join(out)
 
 
 # ---------------------------------------------------------------------------

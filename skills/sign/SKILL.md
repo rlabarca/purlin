@@ -112,7 +112,7 @@ next time, which is the intended behaviour: nothing is marked as seen by being s
 
 Never narrow a rule or a proof to make an observation disappear. That lowers the claim instead of
 strengthening the evidence, and on a rule that comes from an anchor it is not yours to change:
-`purlin:anchor propose <name>` drafts that change where the rule lives.
+the change is a pull request against the anchor's source repository.
 
 ## Step 4: when a signature counts
 

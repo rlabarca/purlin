@@ -43,14 +43,9 @@ on:
   push:
     branches: ['run/**']
     tags: ['signed/**']
-# BEGIN upstream-check
-  schedule:
-    - cron: '17 6 * * 1'
-# END upstream-check
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
   purlin:
@@ -119,55 +114,3 @@ jobs:
       - name: Check the gate
         shell: bash
         run: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check --verify
-# BEGIN upstream-check
-  upstream-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Locate Purlin
-        shell: bash
-        run: |
-          if [ -f scripts/run/purlin_run.py ]; then
-            echo "PURLIN_ROOT=$PWD" >> "$GITHUB_ENV"
-          else
-            ref="${{ vars.PURLIN_REF }}"
-            if [ -z "$ref" ]; then ref="<<PURLIN_REF>>"; fi
-            git clone --depth 1 --branch "$ref" \
-              https://github.com/rlabarca/purlin "$RUNNER_TEMP/purlin"
-            echo "PURLIN_ROOT=$RUNNER_TEMP/purlin" >> "$GITHUB_ENV"
-          fi
-
-      # One issue when an anchor pin is behind its source, and nothing when
-      # every pin is current.
-      - name: Open an issue when an anchor pin is behind
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          behind=$(python3 - <<'PY'
-          import os
-          import sys
-          sys.path.insert(0, os.path.join(os.environ["PURLIN_ROOT"],
-                                          "scripts", "mcp"))
-          from purlin import drift, specs
-          rows = drift.pin_report(".", specs.scan_specs("."))
-          for row in rows:
-              if row.get("status") != "current":
-                  print("%s: the pin %s is behind its source. Run "
-                        "purlin:anchor sync %s."
-                        % (row["anchor"], (row.get("pinned") or "")[:7],
-                           row["anchor"]))
-          PY
-          )
-          if [ -n "$behind" ]; then
-            gh issue create --title "Purlin: an anchor pin is behind its source" \
-              --body "$behind"
-          else
-            echo "Every anchor pin is current."
-          fi
-# END upstream-check

@@ -127,7 +127,8 @@ owner takes it or leaves it.
 A rule tagged `[origin: eng]`, or carrying no origin at all, is the engineer's to edit.
 
 A rule that came from a pinned anchor belongs to the anchor repository, whoever wrote it.
-`purlin:anchor propose <name>` drafts that change where the rule lives.
+A change to it is a pull request against that repository, and `purlin:anchor sync` brings it
+back once it merges.
 
 ## Drift, one view per role
 

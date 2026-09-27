@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Anchors that come from an anchor repo: add, sync, propose.
+"""Anchors that come from an anchor repo: add and sync.
 
 An anchor repo holds anchors for one or more projects. A project keeps a local
 copy of each anchor it consumes under `specs/_anchors/`, with two tracking
@@ -15,7 +15,6 @@ itself: `purlin.specs` reads every spec, and `purlin.drift` owns the one cached
 
     upstream.py add <source> [--path <file>] [--name <name>]
     upstream.py sync [<name>] [--all] [--check] [--json]
-    upstream.py propose <name>
 
 Every command takes `--project-root DIR`; without it the root is the one
 `config_engine` resolves from the working directory.
@@ -28,15 +27,10 @@ the skill's job, not this module's.
 `sync` names the rules that changed, copies the designs the source names into
 `designs/<anchor>/`, and advances the pin. `--check` changes nothing and exits
 1 when a pin is behind, 2 when a source could not be read. `--json` prints the
-same answer for the skill and for the scheduled job.
-
-`propose` writes the patch the anchor repo needs to
-`.purlin/runtime/anchors/<name>.patch` and prints the commands a person runs to
-open the pull request there. A consumer never edits a pinned rule in place.
+same answer for the skill. A consumer never edits a pinned rule in place.
 """
 
 import argparse
-import difflib
 import glob
 import hashlib
 import json
@@ -130,12 +124,10 @@ def remote_head(project_root, url, cache=None):
     return remote.get('sha'), '' if remote.get('sha') else 'no HEAD ref returned'
 
 
-def fetch_source(project_root, url, sha=None):
+def fetch_source(project_root, url):
     """`(checkout_dir, head_sha, error)` for one source.
 
-    Without a sha the fetch is shallow: the head is all an add or a sync
-    reads. With one the clone carries history, because `propose` has to read
-    the file as it stood at the pin.
+    The fetch is shallow: the head is all an add or a sync reads.
     """
     safe, reason = drift_module.source_url_is_safe(url)
     if not safe:
@@ -144,10 +136,8 @@ def fetch_source(project_root, url, sha=None):
                           _checkout_name(url) + '.src')
     _rmtree(target)
     os.makedirs(os.path.dirname(target), exist_ok=True)
-    args = ['clone', '--quiet']
-    if sha is None:
-        args += ['--depth', '1']
-    args += ['--end-of-options', url, target]
+    args = ['clone', '--quiet', '--depth', '1', '--end-of-options', url,
+            target]
     code, _out, err = _git(args, cwd=project_root, timeout=_CLONE_TIMEOUT)
     if code != 0:
         return None, None, ' '.join(err.split())[:200] or 'clone failed'
@@ -155,16 +145,10 @@ def fetch_source(project_root, url, sha=None):
     return target, head, ''
 
 
-def read_source_file(checkout_dir, path, sha=None):
-    """`(text, error)` for one file in a fetched checkout, at HEAD or at a sha."""
+def read_source_file(checkout_dir, path):
+    """`(text, error)` for one file in a fetched checkout, at its head."""
     if not path:
         return None, 'no path into the source; pass --path'
-    if sha:
-        code, out, err = _git(['show', '--end-of-options', '%s:%s' % (sha, path)],
-                              cwd=checkout_dir)
-        if code != 0:
-            return None, ' '.join(err.split())[:200] or 'not found at the pin'
-        return out, ''
     full = os.path.join(checkout_dir, path)
     if not os.path.isfile(full):
         return None, '%s is not in the source' % path
@@ -199,7 +183,7 @@ def strip_tracking(content):
 
     Removing a line leaves the blank line that followed it, so runs of blank
     lines collapse to one. Without that, every add and sync would add a blank
-    line to the copy and the patch `propose` writes would carry it.
+    line to the copy.
     """
     return re.sub(r'\n{3,}', '\n\n', _TRACKING_RE.sub('', content or ''))
 
@@ -452,69 +436,6 @@ def _sync_one(project_root, name, info, cache, check):
 
 
 # ---------------------------------------------------------------------------
-# propose
-# ---------------------------------------------------------------------------
-
-_GH_HOSTS = ('github.com',)
-_ADO_HOSTS = ('dev.azure.com', 'visualstudio.com')
-
-
-def propose(project_root, name):
-    """Write the patch the anchor repo needs, and the commands to open the PR."""
-    anchors = pinned_anchors(project_root)
-    info = anchors.get(name)
-    result = {'command': 'propose', 'anchor': name}
-    if info is None:
-        result.update({'status': 'error',
-                       'error': 'no anchor named %s carries a git source' % name})
-        return result
-    pinned = info.get('pinned')
-    if not pinned:
-        result.update({'status': 'error',
-                       'error': '%s has no pin; run sync first' % name})
-        return result
-
-    checkout, _head, error = fetch_source(project_root, info['source'], sha=pinned)
-    if error:
-        result.update({'status': 'error', 'error': error})
-        return result
-    path = info.get('source_path')
-    published, error = read_source_file(checkout, path, sha=pinned)
-    if error:
-        result.update({'status': 'error', 'error': error})
-        return result
-
-    with open(anchor_path(project_root, name), 'r', encoding='utf-8') as handle:
-        local = strip_tracking(handle.read())
-    patch = ''.join(difflib.unified_diff(
-        published.splitlines(True), local.splitlines(True),
-        fromfile='a/%s' % path, tofile='b/%s' % path))
-    patch_path = os.path.join(project_root, RUNTIME_DIR, name + '.patch')
-    _write(patch_path, patch)
-    result.update({'status': 'empty' if not patch else 'written',
-                   'patch': os.path.relpath(patch_path, project_root)
-                            .replace(os.sep, '/'),
-                   'source': info['source'], 'path': path, 'pinned': pinned,
-                   'commands': _propose_commands(info['source'], name, patch_path)})
-    return result
-
-
-def _propose_commands(url, name, patch_path):
-    lines = ['git checkout -b purlin/%s' % name,
-             'git apply %s' % patch_path,
-             'git commit -am "anchor(%s): proposed change"' % name]
-    host = url.lower()
-    if any(h in host for h in _GH_HOSTS):
-        lines.append('gh pr create --fill')
-    elif any(h in host for h in _ADO_HOSTS):
-        lines.append('az repos pr create --source-branch purlin/%s' % name)
-    else:
-        lines.append('gh pr create --fill    # on Azure DevOps: '
-                     'az repos pr create --source-branch purlin/%s' % name)
-    return lines
-
-
-# ---------------------------------------------------------------------------
 # The command line
 # ---------------------------------------------------------------------------
 
@@ -536,17 +457,6 @@ def _render(result):
             for design in result.get('designs', []):
                 lines.append('  design copied: %s' % design)
         return lines
-    if result['command'] == 'propose':
-        if result['status'] == 'error':
-            return ['%s: %s' % (result['anchor'], result['error'])]
-        if result['status'] == 'empty':
-            return ['%s: the local copy matches the source at the pin, so there '
-                    'is nothing to propose.' % result['anchor']]
-        lines.append('%s: patch written to %s. In a checkout of %s run:'
-                     % (result['anchor'], result['patch'], result['source']))
-        lines.extend('  ' + command for command in result['commands'])
-        return lines
-
     for row in result['anchors']:
         name = row['anchor']
         status = row['status']
@@ -586,7 +496,7 @@ def _exit_code(result):
 def build_parser():
     parser = argparse.ArgumentParser(
         prog='upstream.py',
-        description='Add, sync and propose anchors held in an anchor repo.')
+        description='Add and sync anchors held in an anchor repo.')
     parser.add_argument('--project-root', default=None,
                         help='the workspace holding .purlin/ and specs/')
     sub = parser.add_subparsers(dest='command')
@@ -608,12 +518,6 @@ def build_parser():
                              help='report only; exit 1 when a pin is behind')
     sync_parser.add_argument('--json', action='store_true',
                              help='print the answer as JSON')
-
-    propose_parser = sub.add_parser(
-        'propose', help='write the patch the anchor repo needs')
-    propose_parser.add_argument('name')
-    propose_parser.add_argument('--json', action='store_true',
-                                help='print the answer as JSON')
     return parser
 
 
@@ -629,8 +533,6 @@ def main(argv=None):
 
     if args.command == 'add':
         result = add(root, args.source, path=args.path, name=args.name)
-    elif args.command == 'propose':
-        result = propose(root, args.name)
     else:
         names = [args.name] if args.name else None
         if args.all:

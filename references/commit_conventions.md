@@ -17,7 +17,6 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `hold(<name>): RULE-N ...` | Holds on rules whose test does not prove the proof, signed | `purlin:sign --hold` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
-| `anchor(<name>): propose` | The branch that becomes the pull request upstream | `purlin:anchor propose` |
 | `chore(update): migrate to <VERSION> (<ids>)` | Migrating a project to the installed plugin | `purlin:init --update` |
 | `chore:` | Project setup, config changes, renames, cleanup | Anyone |
 | `docs:` | Documentation | Anyone |

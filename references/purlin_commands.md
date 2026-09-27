@@ -90,7 +90,6 @@ Purlin
   purlin:anchor create <name>     A local anchor
   purlin:anchor add <url> --path <file>   Pin an anchor from another repository
   purlin:anchor sync [name|--all] [--check]   Advance a pin
-  purlin:anchor propose <name>    Draft the change where the anchor lives
   purlin:rename <old> <new>       Rename a feature everywhere
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -189,7 +189,6 @@ flowchart LR
   B["project<br/>specs/_anchors/no_eval.md<br/>Pinned: abc1234"]
   A -- "anchor add: fetch and pin" --> B
   A -- "anchor sync: read the delta, advance the pin" --> B
-  B -- "anchor propose: draft the pull request" --> A
 ```
 
 **add** fetches the anchor and writes the local copy with two tracking lines the author's own
@@ -210,19 +209,10 @@ text moved stales its signature. `purlin:anchor sync --check` reports without wr
 `purlin:drift` runs that same check, one cached lookup per pin per run, so a pin that has
 fallen behind shows at the start of a session without anyone asking for it.
 
-**propose** drafts the pull request against the source repository, carrying the rule id, the
-current text and the replacement. Never edit a pinned rule in place: the next sync overwrites
-it and the change is lost with no trace. A rule that belongs only to this project is not a
-proposal at all. Put it in a separate local anchor that says `> Requires: <the pinned one>`.
-
-### Staying current without asking
-
-```
-purlin:init --upstream-check
-```
-
-That adds a scheduled CI job which opens an issue naming every anchor whose pin is behind its
-source, and prints `Every anchor pin is current.` when none is.
+Never edit a pinned rule in place: the next sync overwrites it and the change is lost with no
+trace. A change to the rule is a pull request against the source repository, and the next sync
+brings it back once it merges. A rule that belongs only to this project goes in a separate
+local anchor that says `> Requires: <the pinned one>`.
 
 ## Retired fields
 

@@ -13,8 +13,6 @@ What the tests hold:
 `sync`     reports the rule delta, advances the pin, copies the designs the
            source names, and reaches each source once per run
 `--check`  changes nothing and exits 1 when a pin is behind
-`propose`  writes the patch the anchor repo needs and names the right command
-           for the git host
 """
 
 import contextlib
@@ -518,86 +516,6 @@ def test_sync_from_the_command_line_prints_the_delta(workspace):
 
 
 # ---------------------------------------------------------------------------
-# propose
-# ---------------------------------------------------------------------------
-
-def _add_local_rule(workspace):
-    text = _copy_text(workspace).replace(
-        '## Proof', '- RULE-9: No pickle imports [bar: passed]\n\n## Proof')
-    _write(upstream.anchor_path(workspace.root, 'no_eval'), text)
-
-
-@pytest.mark.proof("upstream", "PROOF-16", "RULE-16", tier="integration")
-def test_propose_writes_the_patch_the_anchor_repo_needs(workspace):
-    _add(workspace)
-    _add_local_rule(workspace)
-    result = upstream.propose(workspace.root, 'no_eval')
-    assert result['status'] == 'written'
-    assert result['patch'] == '.purlin/runtime/anchors/no_eval.patch'
-    with open(os.path.join(workspace.root, result['patch']), 'r',
-              encoding='utf-8') as handle:
-        patch = handle.read()
-    assert '+- RULE-9: No pickle imports [bar: passed]' in patch
-    assert '--- a/specs/no_eval.md' in patch
-    assert '+++ b/specs/no_eval.md' in patch
-    # The tracking fields are the consumer's, so they never reach the patch.
-    assert '> Pinned:' not in patch
-    assert '> Source:' not in patch
-
-
-@pytest.mark.proof("upstream", "PROOF-18", "RULE-18", tier="integration")
-def test_propose_is_empty_when_the_copy_matches_the_pin(workspace):
-    _add(workspace)
-    result = upstream.propose(workspace.root, 'no_eval')
-    assert result['status'] == 'empty'
-    assert 'nothing to propose' in '\n'.join(upstream._render(result))
-
-
-@pytest.mark.proof("upstream", "PROOF-17", "RULE-17", tier="integration")
-def test_propose_reads_the_source_at_the_pin_not_at_its_head(workspace):
-    _add(workspace)
-    _add_local_rule(workspace)
-    _advance(workspace)
-    with open(os.path.join(workspace.root, upstream.propose(
-            workspace.root, 'no_eval')['patch']), 'r', encoding='utf-8') as h:
-        patch = h.read()
-    # RULE-3 arrived after the pin, so proposing against the pin must not ask
-    # the anchor repo to add a rule it already has.
-    assert 'RULE-3' not in patch
-    assert '+- RULE-9: No pickle imports [bar: passed]' in patch
-
-
-@pytest.mark.proof("upstream", "PROOF-19", "RULE-19", tier="integration")
-def test_propose_names_the_command_for_the_git_host(workspace):
-    _add(workspace)
-    _add_local_rule(workspace)
-    result = upstream.propose(workspace.root, 'no_eval')
-    joined = ' '.join(result['commands'])
-    assert 'git checkout -b purlin/no_eval' in joined
-    assert 'gh pr create' in joined
-    assert 'az repos pr create' in joined
-
-    github = upstream._propose_commands(
-        'https://github.com/acme/policies.git', 'no_eval', 'p.patch')
-    assert github[-1] == 'gh pr create --fill'
-    ado = upstream._propose_commands(
-        'https://dev.azure.com/acme/_git/policies', 'no_eval', 'p.patch')
-    assert ado[-1].startswith('az repos pr create')
-
-
-@pytest.mark.proof("upstream", "PROOF-20", "RULE-20", tier="integration")
-def test_propose_needs_a_pin(workspace):
-    _write(upstream.anchor_path(workspace.root, 'loose'),
-           '# Anchor: loose\n\n> Source: %s specs/no_eval.md\n\n## Rules\n\n'
-           '- RULE-1: Something\n\n## Proof\n\n- PROOF-1 (RULE-1): Check it\n'
-           % workspace.anchor_repo)
-    result = upstream.propose(workspace.root, 'loose')
-    assert result['status'] == 'error'
-    assert 'no pin' in result['error']
-    assert upstream._exit_code(result) == 2
-
-
-# ---------------------------------------------------------------------------
 # The command line itself
 # ---------------------------------------------------------------------------
 
@@ -606,7 +524,7 @@ def test_help_and_a_bare_call_are_usable(workspace):
     result = subprocess.run([sys.executable, UPSTREAM_PY, '--help'],
                             capture_output=True, text=True)
     assert result.returncode == 0
-    for command in ('add', 'sync', 'propose'):
+    for command in ('add', 'sync'):
         assert command in result.stdout
 
     # No arguments at all: not even `--project-root`.

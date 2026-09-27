@@ -52,7 +52,8 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             "--quick",
             # decision 41: the periphery is removed. One settings file,
             # committed.
-            "config.local.json")
+            "config.local.json",
+            "anchor propose", "upstream-check")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
