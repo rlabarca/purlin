@@ -96,7 +96,6 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .kv dt{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary);padding-top:2px}
 .kv dd{margin:0;color:var(--text-primary);min-width:0;overflow-wrap:anywhere}
 .stack>*+*{margin-top:var(--space-5)}
-.finding{font-size:var(--ui-sm);color:var(--state-warn)}
 .cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
 .panel p{margin:0 0 var(--space-3)}
 .panel p:last-child{margin-bottom:0}

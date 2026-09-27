@@ -589,12 +589,14 @@
             },
             "strong": {
               "brief": null,
-              "observations": [],
+              "observations": [
+                "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
+              ],
               "reasons": [
                 "strength 64% under 80%",
-                "happy_path_only"
+                "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
               ],
-              "settled": null,
+              "settled": true,
               "strength": 64,
               "word": "weak"
             }

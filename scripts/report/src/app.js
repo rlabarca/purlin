@@ -59,7 +59,7 @@ var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
 
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
-   screen and a row on the review list agree. */
+   screen and a row on the Review tab agree. */
 var CELL_TONES = {'ready': 'pass', 'drafted': 'idle', 'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'code changed': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
@@ -418,6 +418,35 @@ function ageLine() {
     + (age.stale ? ' — run purlin:status to refresh' : '')};
 }
 
+/* The tag this commit carries, which is the marker that a version was signed
+   off: `purlin:sign` writes `signed/<version>` once every rule meets the gate,
+   and a person pushes it. The payload's `tag` is whatever git reported, so it
+   is read defensively: a string is the tag's own name, an object carries that
+   name and the commit it points at, and anything else, a missing key
+   included, means this commit carries none. */
+function signedTag() {
+  var found = DATA && DATA.tag;
+  var name = typeof found === 'string' ? found
+    : found && typeof found === 'object' ? found.name || found.tag || null
+    : null;
+  var at = found && typeof found === 'object' && found.commit
+    ? String(found.commit).slice(0, 7) : null;
+  return name ? {name: String(name), at: at} : null;
+}
+
+function tagChip() {
+  var found = signedTag();
+  if (!found) {
+    return '<span class="tag plain"'
+      + hover(['This commit carries no signed tag. purlin:sign writes '
+        + 'signed/<version> once every rule meets the gate, and a person '
+        + 'pushes it.']) + '>no signed tag</span>';
+  }
+  return '<span class="tag"' + hover(['The signed tag on this commit'
+      + (found.at ? DOT + found.at : '')]) + '>'
+    + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
+}
+
 function topBar() {
   var line = ageLine();
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
@@ -426,7 +455,7 @@ function topBar() {
     + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? tag('gate: ' + gate, true) : '')
+    + (gate ? tag('gate: ' + gate, true) : '') + tagChip()
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
          + esc(String(DATA.commit).slice(0, 7)) + '</span>' : '')

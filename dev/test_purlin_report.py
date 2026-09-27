@@ -812,7 +812,7 @@ def test_a_rule_waiting_on_an_operating_system_says_so(browser, tmp_path):
     page.click('.rule[data-rule="RULE-4"]')
     body = page.inner_text('.wrap')
     assert 'windows: no record yet' in body
-    assert 'no negative case' not in body
+    assert 'NOT RUN' in body
     page.close()
 
 
@@ -1131,3 +1131,54 @@ def test_the_docs_screenshots_come_from_the_fixtures():
         assert os.path.isfile(image), \
             'the docs embed %s and it is absent' % image
         assert os.path.getsize(image) > 0, '%s is empty' % image
+
+
+FREE_CHECK_NAMES = ('happy_path_only', 'no_expected_value', 'vague_verb',
+                    'missing_trigger', 'tier_mismatch',
+                    'implementation_coupling', 'no_assertion', 'tautology',
+                    'no negative case')
+
+
+@pytest.mark.proof("purlin_report", "PROOF-54", "RULE-39", tier="e2e")
+def test_the_brief_panel_reads_sentences_and_names_no_check(browser, tmp_path):
+    """The audit reads its scans as hints and writes what it observed."""
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-act="feature"][data-feature="checkout_design"]')
+    page.click('.rule[data-rule="RULE-1"]')
+    body = page.inner_text('.wrap')
+    assert 'The test reads the text "Total"' in body
+    assert 'The AI audit could not settle the question' in body
+    page.click('[data-act="close"]')
+    page.click('[data-act="feature"][data-feature="invoice"]')
+    page.click('.rule[data-rule="RULE-2"]')
+    body = page.inner_text('.wrap')
+    assert 'Test strength 64%, against a minimum of 80%.' in body
+    assert 'No proof of this rule names a rejection' in body
+    assert 'The AI audit settled the question.' in body
+    labels = page.eval_on_selector_all(
+        '.kv dt', 'els => els.map(e => e.innerText.trim())')
+    assert 'Free checks' not in labels
+    for name in FREE_CHECK_NAMES:
+        assert name not in body, name
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-55", "RULE-40", tier="e2e")
+def test_the_top_bar_states_the_signed_tag(browser, tmp_path):
+    """The payload names the tag or names none, and the bar reads both."""
+    for process in ('solo', 'team', 'regulated'):
+        payload = payload_named(process)
+        assert 'tag' not in payload
+        page = open_board(browser, tmp_path, payload)
+        bar = page.inner_text('.topbar')
+        assert 'no signed tag' in bar
+        assert 'signed/' not in bar
+        page.close()
+    payload = payload_named('regulated')
+    payload['tag'] = {'name': 'signed/1.4.0', 'commit': payload['commit']}
+    page = open_board(browser, tmp_path, payload)
+    bar = page.inner_text('.topbar')
+    assert 'signed/1.4.0' in bar
+    assert payload['commit'][:7] in bar
+    assert 'no signed tag' not in bar
+    page.close()

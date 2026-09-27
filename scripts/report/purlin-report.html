@@ -108,7 +108,6 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .kv dt{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary);padding-top:2px}
 .kv dd{margin:0;color:var(--text-primary);min-width:0;overflow-wrap:anywhere}
 .stack>*+*{margin-top:var(--space-5)}
-.finding{font-size:var(--ui-sm);color:var(--state-warn)}
 .cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
 .panel p{margin:0 0 var(--space-3)}
 .panel p:last-child{margin-bottom:0}
@@ -913,6 +912,27 @@ function ageLine() {
   return {hue: age.stale ? 'warn' : 'pass', text: 'Data: ' + age.text
     + (age.stale ? ' — run purlin:status to refresh' : '')};
 }
+function signedTag() {
+  var found = DATA && DATA.tag;
+  var name = typeof found === 'string' ? found
+    : found && typeof found === 'object' ? found.name || found.tag || null
+    : null;
+  var at = found && typeof found === 'object' && found.commit
+    ? String(found.commit).slice(0, 7) : null;
+  return name ? {name: String(name), at: at} : null;
+}
+function tagChip() {
+  var found = signedTag();
+  if (!found) {
+    return '<span class="tag plain"'
+      + hover(['This commit carries no signed tag. purlin:sign writes '
+        + 'signed/<version> once every rule meets the gate, and a person '
+        + 'pushes it.']) + '>no signed tag</span>';
+  }
+  return '<span class="tag"' + hover(['The signed tag on this commit'
+      + (found.at ? DOT + found.at : '')]) + '>'
+    + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
+}
 function topBar() {
   var line = ageLine();
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
@@ -921,7 +941,7 @@ function topBar() {
     + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? tag('gate: ' + gate, true) : '')
+    + (gate ? tag('gate: ' + gate, true) : '') + tagChip()
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
          + esc(String(DATA.commit).slice(0, 7)) + '</span>' : '')
