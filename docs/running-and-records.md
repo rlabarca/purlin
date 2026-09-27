@@ -110,9 +110,9 @@ flowchart TD
   B --> C[Run one arm per framework into .purlin/runtime/proofs/]
   C --> D[Loud failure A: an arm ran and its plugin wrote no entry]
   D --> E[Loud failure B: a marker in a test source produced no entry]
-  E --> F{"which arm: purlin:test, purlin:audit, or the CI job"}
+  E --> F{"which arm: purlin:test, purlin:audit, or a runner's"}
   F -- "purlin:test" --> T1["Write .purlin/tests/ and .purlin/tests.md, commit them as you, never push"]
-  F -- "purlin:audit" --> A1["Break the code where the gate asks, print the strength, the findings and the observations"]
+  F -- "purlin:audit" --> A1["Break the code where the gate asks, print the strength and what the audit observed"]
   A1 --> A2["At strong and above, write the record and the briefs into .purlin/records/local/ and .purlin/briefs/local/, commit them as you, never push"]
   F -- "the runner's arm" --> H["Run the tests, and at strong and above audit what ran"]
   H --> Ci{"what the run is on"}

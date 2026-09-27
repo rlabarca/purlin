@@ -59,8 +59,8 @@ Every metadata line starts with `>` and every one is optional.
 
 `> Scope:` earns its place. A record carries the git tree hash of those files, and that hash
 is what tells a code change from a rule change. Code changed and the rule, proof and test
-text did not: the signature stands and the rule's passed cell reads `code changed` until CI
-runs again. Rule, proof or test text changed: the signature goes stale and a person looks. A
+text did not: the signature stands and the rule's passed cell reads `code changed` until the
+next run clears it. Rule, proof or test text changed: the signature goes stale and a person looks. A
 spec with no `> Scope:` cannot make that distinction.
 
 A path with a trailing slash scopes the directory beneath it, so `> Scope: src/api/` covers
@@ -83,7 +83,7 @@ alone. Re-tagging `origin` or `criterion` never stales a signature, so add a mis
 | `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. `purlin:drift` routes a change by it |
 | `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 
-Under the `signed` gate an origin is required and an untagged rule is reported. A bar tag is never required: a rule without one takes the project's gate.
+Under the `signed` gate an origin is required and an untagged rule is reported. A bar tag is never required: a rule without one takes the project's gate, and at the `passed` gate `purlin:spec` writes none at all, because the bar is not read there.
 
 Ids are assigned in increasing order and never reused. A retired rule leaves its number
 vacant and every other rule keeps the number it had; a gap in the sequence is legal and
@@ -122,7 +122,7 @@ A tier tag says what kind of test the proof is. A proof with no tag is a plain u
 | `@manual` | Needs human judgment |
 
 A `@manual` proof has no test. Its evidence is a signature carrying a one-line note, always
-written by a person, never by CI.
+written by a person, never by a machine.
 
 ### Operating systems
 
@@ -136,7 +136,7 @@ written by a person, never by CI.
 At most one `@env` per proof. A proof with no `@env` is satisfied by a record from any system.
 A proof with one is passed only when a record from that system passes it, and a rule with
 proofs on two systems needs both. `purlin:init` reads the tags in `specs/` and writes one
-CI job per system named. On a machine that is not the named one the test is skipped and the
+runner job per system named, where the project has a runner. On a machine that is not the named one the test is skipped and the
 status line says `windows: no record yet`.
 
 ## Ids across branches

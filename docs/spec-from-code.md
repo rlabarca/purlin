@@ -79,7 +79,7 @@ and `purlin:build` writes the test on the next pass.
   behaviour; "rejects the 61st request in a minute" is.
 - Nothing tagged `[origin: pm]`. No PM said any of this.
 - No bar above `passed`. That judgment belongs to the people who own the product.
-- No test results, no records and no signatures. Those come from `purlin:test`, from CI and from `purlin:sign`.
+- No test results, no records and no signatures. Those come from `purlin:test`, `purlin:audit` and `purlin:sign`.
 - No rule for behaviour that could not be stated as an observable. The behaviour is noted in
   `> Description:` and the rule is dropped.
 
