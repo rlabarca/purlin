@@ -177,7 +177,7 @@ with the same three answers a new project is asked:
 ```
 What must be true before CI lets a change merge?
   passed  every rule has a passing tagged test, from any source
-  strong  every rule has a record CI wrote, at the minimum test strength
+  strong  every rule has a record an audit wrote, at the minimum test strength
   signed  strong, plus a signature from a person on the rule
 ```
 

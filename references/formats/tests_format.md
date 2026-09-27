@@ -100,7 +100,7 @@ numbers are:
 |---|---|---|---|---|---|
 | login | 12 | 11 | 0 | 1 | 4f1c2ab · 2026-09-26T12:00:00Z · macos |
 
-These are the last local run of each feature, and they count only at the gate `passed`.
+These are the last local run of each feature. They count at the gate `passed` and at `strong`; at `signed` only a CI run counts.
 ```
 
 `Passed` counts the rules reading `passed` and `Failing` those reading
@@ -123,5 +123,5 @@ file commits nothing and says `Test results unchanged.`
 ## What is not here
 
 No strength, no findings, no observations and no signature. Those belong to
-the audit and to the record, and a person writes none of them: the record is
-CI's.
+the audit and to the record, which `purlin:audit` writes on anyone's machine
+and the CI job writes from the runner.

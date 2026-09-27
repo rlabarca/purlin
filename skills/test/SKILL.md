@@ -48,7 +48,7 @@ itself, under your own git identity, with the subject `purlin: tests at <sha7>`,
 `Test results committed.`. It never pushes. A run that saw the same thing about the same code
 prints `Test results unchanged.` and commits nothing. A `--feature` run writes what it ran and
 leaves the rest of the table as it was. These results are the `local` source: they count at
-`passed` and nowhere above it, and they are how a teammate reads your run on the git host.
+`passed` and at `strong`, and they are how a teammate reads your run on the git host.
 `references/formats/tests_format.md` is the contract.
 
 ## Step 3: read the table

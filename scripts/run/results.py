@@ -14,8 +14,9 @@ reaches a remote. A `--feature` run writes the features it ran and leaves
 every other row of the table as it was, so the table is always the whole
 project even when the run was not.
 
-These results count at `passed` and nowhere above it. `strong` and `signed`
-read a record CI wrote, which is a different file written by a different run.
+These results are the `local` source, so they count at `passed` and at
+`strong`. At `signed` only a CI run's evidence counts, for the tests and the
+audit both, and these are a preview of what that run will find.
 """
 
 import json
@@ -48,8 +49,9 @@ NO_REPOSITORY = ('Test results written; there is no git repository to commit '
 TABLE_HEADING = '# Test results at %s'
 TABLE_COLUMNS = ('Feature', 'Rules', 'Passed', 'Failing', 'No test',
                  'Last run')
-TABLE_NOTE = ('These are the last local run of each feature, and they count '
-              'only at the gate `passed`.')
+TABLE_NOTE = ('These are the last local run of each feature. They count at '
+              'the gate `passed` and at `strong`; at `signed` only a CI run '
+              'counts.')
 TABLE_EMPTY = 'No feature has been run yet.'
 
 

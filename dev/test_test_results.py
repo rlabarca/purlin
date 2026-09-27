@@ -202,8 +202,7 @@ def test_a_feature_run_leaves_the_other_rows_as_they_were(tmp_path):
                         '| Last run |')
     assert one_row in table, table
     assert [line for line in lines if line.startswith('| two ')], table
-    assert lines[-1] == ('These are the last local run of each feature, and '
-                         'they count only at the gate `passed`.')
+    assert lines[-1] == writer.TABLE_NOTE
 
 
 @pytest.mark.proof("run_script", "PROOF-11", "RULE-11")

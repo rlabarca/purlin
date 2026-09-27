@@ -3,8 +3,8 @@
 How to write a spec worth proving. For spec syntax, section names, id format and
 metadata fields, see [references/formats/spec_format.md](formats/spec_format.md). For
 bad-to-good rewrites taken from real projects, see
-[references/rule_examples.md](rule_examples.md). For what a reviewer or the review
-brief checks once a rule has a test, see
+[references/rule_examples.md](rule_examples.md). For what the brief checks, and
+what a signer checks after it, see
 [references/review_criteria.md](review_criteria.md).
 
 ## Writing rules
@@ -143,9 +143,9 @@ Include setup when the architecture matters:
 Describe what a person would see, never the DOM. The agent picks the tool.
 
 Bad: "Count the table rows with class `fr`; verify the count is 8." Good: "Load the
-dashboard with 3 features (3 of 3 strong, 2 of 6 passed, 0 of 4 untested); verify the
-table shows 3 rows, the strength bars are filled proportionally, and the pills read
-Strong, Passed and Untested; take a screenshot @e2e".
+dashboard with 3 features (3 of 3 strong, 2 of 6 passing, 0 of 4 untested); verify the
+table shows 3 rows, the tiles read Untested 0, Passing 2 and Strong 3, and the first
+row's Tests cell reads `2 of 6`; take a screenshot @e2e".
 
 No selectors, no class names, no `querySelector`. The proof says what is on screen, so
 it survives a refactor of the markup.
@@ -235,8 +235,9 @@ first three, under `signed` all four.
 | spec | `drafted` | No proof line names the rule, or a blocking free check fires on the proof text: `no_expected_value`, `vague_verb`, `missing_trigger` or `tier_mismatch`. | Write or rewrite the proof under `## Proof` so it names a trigger and an expected value at a tier it can reach. `purlin:spec`. |
 | passed | `no test` | The spec status is `ready` and no test carries the proof marker. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
-| passed | `not run` | No record that counts under the gate exists, or the only one is `local` and the gate is `strong` or above. The reason says which. | Push, so the run on the protected branch writes the record, or run `purlin:test --remote`. |
+| passed | `not run` | No record that counts under the gate exists, or the only one is `local` and the gate is `signed`. The reason says which. | Run `purlin:audit`, which counts at `strong`; at `signed` run `purlin:test --remote`, or push and let the run on the protected branch write the record. |
 | passed | `not run`, with `<os>: no record yet` | A proof carries `@env` and no record from that operating system has passed it. | Let the CI matrix run that job, or drop the `@env` tag if any host could prove it. |
+| passed | `partial` | The rule's tests passed on one operating system and failed or did not run on another. `partial` is not met. | Fix the platform that failed, or let the CI matrix run the one that has not. |
 | passed | `code changed` | A CI pass exists but the code moved since. | Nothing. CI clears it on the next run. |
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
 | strong | `weak`, with a finding name | A free check fired on the proof text or on the test body. `references/review_criteria.md` names each. | Rewrite the proof text, or the test body, whichever the finding concerns. |

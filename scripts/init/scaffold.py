@@ -69,7 +69,7 @@ DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
 GATE_QUESTION = 'What must be true before CI lets a change merge?'
 GATE_CHOICES = (
     'passed  every rule has a passing tagged test, from any source',
-    'strong  every rule has a record CI wrote, at the minimum test strength',
+    'strong  every rule has a record an audit wrote, at the minimum test strength',
     'signed  strong, plus a signature from a person on the rule',
 )
 SIGN_AT_QUESTION = 'Which rules need a signature?'

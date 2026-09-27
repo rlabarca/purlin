@@ -1,6 +1,6 @@
 # Rule Examples from Real Projects
 
-Bad-to-good rule rewrites collected from actual spec reviews and audit findings. Organized by the five contract categories from the [spec quality guide](spec_quality_guide.md). This file grows over time: when a bad rule is caught and rewritten, add the pair here.
+Bad-to-good rule rewrites collected from spec reviews and from what the free checks found. Organized by the five contract categories from the [spec quality guide](spec_quality_guide.md). This file grows over time: when a bad rule is caught and rewritten, add the pair here.
 
 ---
 

@@ -93,14 +93,14 @@ PLUGIN_SOURCES = {OLD_SHELL_PLUGIN: 'shell_purlin.sh'}
 GATE_QUESTION = """
 What must be true before CI lets a change merge?
   passed  every rule has a passing tagged test, from any source
-  strong  CI writes a record at this commit, at or above the minimum strength
+  strong  every rule has a record an audit wrote, at the minimum test strength
   signed  strong, plus a signature from a person on the rule"""
 
 RECORDS_README = """# Records
 
 One file per audit run, at
-`.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>.json`. A
-record says what ran, on which commit, what passed and the test strength. The
+`.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`.
+A record says what ran, on which commit, what passed and the test strength. The
 folder says who wrote it: `ci/` is the CI job's, which the git host restricts to
 the build identity, and `local/` is anyone's. Both count at strong; only `ci/`
 counts at signed. The git history of these folders is the log, so adding a file

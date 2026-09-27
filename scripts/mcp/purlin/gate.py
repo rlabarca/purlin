@@ -6,9 +6,10 @@ can merge, and every level above it is not asked for at all:
 
 `passed`  every rule's passed cell is met: the tagged tests pass, from any
           source
-`strong`  every rule's strong cell is met too: a record CI wrote, test
-          strength at or above the project minimum, no finding standing
-          against the proof text or the test body, and nobody holding the rule
+`strong`  every rule's strong cell is met too: a record an audit wrote,
+          from either source, test strength at or above the project minimum,
+          no finding standing against the proof text or the test body, and
+          nobody holding the rule
 `signed`  every rule's signed cell is met too: a person on the signer list
           signed the rule, proof and test hashes
 
