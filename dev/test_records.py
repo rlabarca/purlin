@@ -365,45 +365,6 @@ def test_writing_prunes_as_it_goes(project):
     assert len(names(project, 'greeting')) == 3
 
 
-@pytest.mark.proof("records", "PROOF-3", "RULE-3")
-def test_a_record_tag_keeps_the_records_its_message_names(project):
-    oldest = put_record(project, 'greeting',
-                        '20260101T120000Z-4f1c2ab-ci.json')
-    for day in range(11, 16):
-        put_record(project, 'greeting',
-                   '202609%dT120000Z-4f1c2ab-ci.json' % day)
-    git(project, 'add', '-A')
-    git(project, 'commit', '--quiet', '-m', 'records')
-    records_module.tag_record(project, '1.0', [oldest])
-
-    assert records_module.tagged_paths(project) == {oldest}
-    records_module.prune(project, 'greeting')
-    kept = names(project, 'greeting')
-    assert os.path.basename(oldest) in kept
-    assert len(kept) == 4, 'the newest three plus the one the tag names'
-
-
-@pytest.mark.proof("records", "PROOF-3", "RULE-3")
-def test_the_record_tag_is_annotated_and_lists_every_path(project):
-    first = put_record(project, 'greeting', '20260101T120000Z-4f1c2ab-ci.json')
-    second = put_record(project, 'greeting', '20260102T120000Z-4f1c2ab-ci.json')
-    git(project, 'add', '-A')
-    git(project, 'commit', '--quiet', '-m', 'records')
-    ref = records_module.tag_record(project, '1.0', [first, second])
-
-    assert ref == 'record/1.0'
-    kind = git(project, 'cat-file', '-t', 'record/1.0').stdout.strip()
-    assert kind == 'tag', 'a lightweight tag carries no message to read'
-    message = git(project, 'for-each-ref', '--format=%(contents)',
-                  'refs/tags/record/').stdout
-    assert first in message and second in message
-
-
-@pytest.mark.proof("records", "PROOF-3", "RULE-3")
-def test_tagged_paths_is_empty_outside_a_repository(tmp_path):
-    assert records_module.tagged_paths(str(tmp_path)) == set()
-
-
 # ---------------------------------------------------------------------------
 # The remote a run branch is pushed to
 # ---------------------------------------------------------------------------
@@ -799,14 +760,6 @@ def test_the_host_is_read_from_the_build_variables(github_env, azure_env):
     assert records_module.detect_host() == 'azure'
 
 
-@pytest.mark.proof("records", "PROOF-8", "RULE-8")
-def test_the_branch_is_the_pull_requests_head_when_there_is_one(
-        project, github_env, monkeypatch):
-    assert records_module.current_branch(project) == 'main'
-    monkeypatch.setenv('GITHUB_HEAD_REF', 'feature/login')
-    assert records_module.current_branch(project) == 'feature/login'
-
-
 # ---------------------------------------------------------------------------
 # The label, read from git
 # ---------------------------------------------------------------------------
@@ -1070,63 +1023,6 @@ def test_records_read_at_a_ref_come_out_of_git(project):
 # What a CI run publishes
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("records", "PROOF-10", "RULE-10")
-def test_the_comment_goes_to_the_pull_request_this_run_belongs_to(
-        project, github_env, monkeypatch, tmp_path):
-    event = tmp_path / 'event.json'
-    with open(str(event), 'w', encoding='utf-8') as handle:
-        json.dump({'pull_request': {'number': 12,
-                                    'head': {'repo': {'fork': False}}}}, handle)
-    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))
-    sent = []
-
-    def urlopen(request, timeout=None):
-        sent.append((request.full_url,
-                     json.loads(request.data.decode('utf-8'))))
-        return Response({})
-
-    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
-
-    assert ci_module.post_pr_comment(project, 'Purlin: 2 rules meet the gate.')
-    url, body = sent[0]
-    assert url.endswith('/repos/acme/widgets/issues/12/comments')
-    assert body == {'body': 'Purlin: 2 rules meet the gate.'}
-
-
-@pytest.mark.proof("records", "PROOF-10", "RULE-10")
-def test_a_run_that_is_not_a_pull_request_posts_nothing(project, github_env,
-                                                        capsys):
-    assert ci_module.post_pr_comment(project, 'anything') is False
-    assert 'not a pull request' in capsys.readouterr().out
-
-
-@pytest.mark.proof("records", "PROOF-10", "RULE-10")
-def test_a_local_run_posts_nothing_and_is_not_an_error(project, monkeypatch,
-                                                       capsys):
-    monkeypatch.delenv('GITHUB_REPOSITORY', raising=False)
-    monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)
-    _no_workspace(monkeypatch)
-    assert ci_module.post_pr_comment(project, 'anything') is False
-    assert 'Not running on a git host' in capsys.readouterr().out
-
-
-@pytest.mark.proof("records", "PROOF-10", "RULE-10")
-def test_a_refused_comment_is_reported_rather_than_raised(project, github_env,
-                                                          monkeypatch,
-                                                          tmp_path, capsys):
-    event = tmp_path / 'event.json'
-    with open(str(event), 'w', encoding='utf-8') as handle:
-        json.dump({'pull_request': {'number': 3, 'head': {'repo': {}}}}, handle)
-    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))
-
-    def refuse(request, timeout=None):
-        raise urllib.error.HTTPError(request.full_url, 403, 'Forbidden', {},
-                                     None)
-
-    monkeypatch.setattr(urllib.request, 'urlopen', refuse)
-    assert ci_module.post_pr_comment(project, 'anything') is False
-    assert 'The comment was not posted' in capsys.readouterr().out
-
 
 # ---------------------------------------------------------------------------
 # The workspace check
@@ -1144,68 +1040,10 @@ def pull_request_event(monkeypatch, tmp_path):
 
 
 @pytest.mark.proof("records", "PROOF-30", "RULE-26")
-def test_a_project_that_is_not_the_workspace_posts_nothing(
-        project, github_env, pull_request_event, monkeypatch, tmp_path,
-        capsys):
-    """A test suite driving an audit over a fixture must not speak for the job.
-
-    The fixture inherits the runner's token, repository and pull request, so
-    without this check every fixture project posts its own table to the pull
-    request the job is reviewing.
-    """
-    monkeypatch.setenv('GITHUB_WORKSPACE', str(tmp_path / 'the-checkout'))
-
-    def urlopen(request, timeout=None):
-        raise AssertionError('a fixture project reached the git host')
-
-    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
-
-    assert ci_module.post_pr_comment(project, 'anything') is False
-    assert 'is not the workspace this job checked out' in capsys.readouterr().out
-
-
-@pytest.mark.proof("records", "PROOF-30", "RULE-26")
-def test_a_project_that_is_not_the_workspace_publishes_into_itself(
-        project, github_env, monkeypatch, tmp_path):
-    monkeypatch.setenv('GITHUB_WORKSPACE', str(tmp_path / 'the-checkout'))
-    monkeypatch.setenv('RUNNER_TEMP', '/tmp/rt')
-
-    assert ci_module.publish_dir(project) == os.path.join(
-        project, '.purlin', 'runtime', 'report')
-
-
-@pytest.mark.proof("records", "PROOF-30", "RULE-26")
 def test_with_no_workspace_variable_every_project_is_its_own(monkeypatch):
     for variable in ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY'):
         monkeypatch.delenv(variable, raising=False)
     assert ci_module.is_the_workspace('/anywhere/at/all') is True
-
-
-@pytest.mark.proof("records", "PROOF-31", "RULE-26")
-def test_the_workspace_itself_still_posts_and_publishes(
-        project, github_env, pull_request_event, monkeypatch, tmp_path):
-    """The comparison is between real paths, not between the strings.
-
-    A runner hands over a path that reaches the checkout through a symbolic
-    link often enough that comparing the strings would refuse the job's own
-    project.
-    """
-    linked = tmp_path / 'workspace-link'
-    os.symlink(project, str(linked))
-    monkeypatch.setenv('GITHUB_WORKSPACE', str(linked))
-    monkeypatch.setenv('RUNNER_TEMP', '/tmp/rt')
-    sent = []
-
-    def urlopen(request, timeout=None):
-        sent.append(request.full_url)
-        return Response({})
-
-    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
-
-    assert ci_module.post_pr_comment(project, 'the table') is True
-    assert len(sent) == 1
-    assert sent[0].endswith('/repos/acme/widgets/issues/12/comments')
-    assert ci_module.publish_dir(project) == '/tmp/rt/purlin-dashboard'
 
 
 @pytest.mark.proof("records", "PROOF-32", "RULE-27")
@@ -1225,149 +1063,6 @@ def test_a_project_that_is_not_the_workspace_commits_nothing(
                                          'purlin: record for 4f1c2ab') == ''
     assert host.urls() == []
     assert 'no record was committed' in capsys.readouterr().out
-
-
-AZURE_THREADS = ('https://dev.azure.com/acme/widgets/_apis/git/repositories/'
-                 'repo-id/pullRequests/42/threads?api-version=7.0')
-
-
-@pytest.fixture
-def azure_pr(azure_env, monkeypatch):
-    monkeypatch.setenv('SYSTEM_PULLREQUEST_PULLREQUESTID', '42')
-
-
-@pytest.mark.proof("records", "PROOF-23", "RULE-10")
-def test_the_azure_comment_opens_a_thread_on_the_pull_request(
-        project, azure_pr, monkeypatch):
-    sent = []
-
-    def urlopen(request, timeout=None):
-        sent.append((request.get_method(), request.full_url, timeout,
-                     dict(request.header_items()),
-                     json.loads(request.data.decode('utf-8'))))
-        return Response({})
-
-    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
-
-    assert ci_module.post_pr_comment(project,
-                                     'Purlin: 2 rules meet the gate.') is True
-    assert len(sent) == 1, sent
-    method, url, timeout, headers, body = sent[0]
-    assert method == 'POST'
-    # The collection URI ends in a slash, and the thread URL carries one
-    # separator, not two.
-    assert url == AZURE_THREADS
-    assert timeout == 30
-    assert headers['Authorization'] == 'Bearer a-token'
-    assert headers['Content-type'] == 'application/json'
-    assert body == {'comments': [{'parentCommentId': 0,
-                                  'content': 'Purlin: 2 rules meet the gate.',
-                                  'commentType': 'text'}],
-                    'status': 'closed'}
-
-
-@pytest.mark.proof("records", "PROOF-23", "RULE-10")
-@pytest.mark.parametrize('missing', ['SYSTEM_ACCESSTOKEN', 'SYSTEM_TEAMPROJECT',
-                                     'BUILD_REPOSITORY_ID',
-                                     'SYSTEM_PULLREQUEST_PULLREQUESTID'])
-def test_an_azure_run_missing_a_variable_posts_nothing(project, azure_pr,
-                                                       monkeypatch, capsys,
-                                                       missing):
-    monkeypatch.delenv(missing)
-    sent = []
-    monkeypatch.setattr(urllib.request, 'urlopen',
-                        lambda request, timeout=None: sent.append(request))
-
-    assert ci_module.post_pr_comment(project, 'anything') is False
-    assert sent == []
-    assert 'not an Azure DevOps pull request' in capsys.readouterr().out
-
-
-@pytest.mark.proof("records", "PROOF-23", "RULE-10")
-def test_a_refused_azure_comment_is_reported_rather_than_raised(
-        project, azure_pr, monkeypatch, capsys):
-    def refuse(request, timeout=None):
-        raise urllib.error.HTTPError(request.full_url, 401, 'Unauthorized', {},
-                                     None)
-
-    monkeypatch.setattr(urllib.request, 'urlopen', refuse)
-    assert ci_module.post_pr_comment(project, 'anything') is False
-    printed = capsys.readouterr().out
-    assert 'The comment was not posted' in printed
-    assert '401' in printed
-
-
-@pytest.mark.proof("records", "PROOF-11", "RULE-11")
-def test_the_artifact_carries_the_page_and_the_data(project, tmp_path):
-    data = os.path.join(project, ci_module.DATA_FILE)
-    os.makedirs(os.path.dirname(data))
-    with open(data, 'w', encoding='utf-8') as handle:
-        handle.write('const PURLIN_DATA = {};\n')
-    out = str(tmp_path / 'artifact')
-
-    assert ci_module.publish_dashboard(project, out) == out
-    assert os.path.isfile(os.path.join(out, 'purlin-report.html'))
-    with open(os.path.join(out, '.purlin', 'report-data.js'),
-              encoding='utf-8') as handle:
-        assert handle.read() == 'const PURLIN_DATA = {};\n'
-
-
-@pytest.mark.proof("records", "PROOF-11", "RULE-11")
-def test_the_artifact_says_when_there_is_no_data_to_carry(project, tmp_path,
-                                                          capsys):
-    out = str(tmp_path / 'artifact')
-    ci_module.publish_dashboard(project, out)
-    assert 'No dashboard data' in capsys.readouterr().out
-    assert os.path.isdir(out)
-
-
-def _no_runner_temp(monkeypatch):
-    monkeypatch.delenv('RUNNER_TEMP', raising=False)
-    monkeypatch.delenv('AGENT_TEMPDIRECTORY', raising=False)
-    # The fixture project stands in for the job's own checkout here, so the
-    # workspace check has to read it as one rather than as a stranger.
-    _no_workspace(monkeypatch)
-
-
-@pytest.mark.proof("records", "PROOF-11", "RULE-11")
-def test_the_artifact_goes_to_the_github_runner_temp_directory(project,
-                                                               monkeypatch):
-    _no_runner_temp(monkeypatch)
-    monkeypatch.setenv('RUNNER_TEMP', os.path.join(project, 'runner-temp'))
-
-    # The workflow spells this path with a forward slash and the run has to
-    # write where the upload step reads, so the separator is the one the
-    # workflow can write rather than the local one.
-    expected = '%s/purlin-dashboard' % os.path.join(project, 'runner-temp')
-    assert ci_module.publish_dir(project) == expected
-    assert ci_module.publish_dashboard(project) == expected, (
-        'the upload step names $RUNNER_TEMP/purlin-dashboard, so a run that '
-        'publishes anywhere else attaches an empty artifact')
-    assert os.path.isdir(expected)
-
-
-@pytest.mark.proof("records", "PROOF-11", "RULE-11")
-def test_the_artifact_goes_to_the_azure_agent_temp_directory(project,
-                                                             monkeypatch):
-    _no_runner_temp(monkeypatch)
-    monkeypatch.setenv('AGENT_TEMPDIRECTORY',
-                       os.path.join(project, 'agent-temp'))
-
-    expected = '%s/purlin-dashboard' % os.path.join(project, 'agent-temp')
-    assert ci_module.publish_dir(project) == expected
-    assert ci_module.publish_dashboard(project) == expected
-    assert os.path.isdir(expected)
-
-
-@pytest.mark.proof("records", "PROOF-11", "RULE-11")
-def test_the_artifact_goes_under_the_project_when_no_runner_names_a_directory(
-        project, monkeypatch):
-    _no_runner_temp(monkeypatch)
-
-    expected = os.path.join(project, '.purlin', 'runtime', 'report')
-    assert ci_module.publish_dir(project) == expected
-    assert ci_module.publish_dashboard(project) == expected
-    assert os.path.isdir(expected)
 
 
 # ---------------------------------------------------------------------------
@@ -1444,12 +1139,14 @@ class FakeProcesses(object):
     its environment.
     """
 
-    def __init__(self, push=0, watch=0):
+    def __init__(self, push=0, watch=0, run_id='987'):
         self.push = push
         self.watch = watch
         self.started = []
         self.cwds = []
-        self.marked = []
+        self.listed = []
+        self.run_id_json = (
+            '[{"databaseId": %s}]' % run_id if run_id else '[]')
 
     def __call__(self, argv, cwd=None, capture_output=False, text=False,
                  timeout=None, env=None):
@@ -1463,9 +1160,12 @@ class FakeProcesses(object):
                 argv, 0, 'https://github.com/acme/widgets.git\n', '')
         if argv[:3] == ['git', 'status', '--porcelain']:
             return subprocess.CompletedProcess(argv, 0, '', '')
+        if argv[:3] == ['gh', 'run', 'list']:
+            self.listed.append(argv)
+            return subprocess.CompletedProcess(
+                argv, 0, self.run_id_json, '')
         self.started.append(argv)
         self.cwds.append(cwd)
-        self.marked.append(bool(env and env.get('PURLIN_REMOTE_RUN')))
         code = 0
         if argv[:2] == ['git', 'push']:
             code = self.push
@@ -1477,16 +1177,18 @@ class FakeProcesses(object):
 @pytest.fixture
 def remote_run(monkeypatch, tmp_path):
     """Stand in for every process `run_remote` starts, with or without `gh`."""
-    def arrange(push=0, watch=0, gh=True):
+    def arrange(push=0, watch=0, gh=True, run_id='987'):
         folder = tmp_path / ('with-gh' if gh else 'without-gh')
         folder.mkdir()
         if gh:
             (folder / 'gh').write_text('', encoding='utf-8')
         monkeypatch.setenv('PATH', str(folder))
-        fake = FakeProcesses(push=push, watch=watch)
+        fake = FakeProcesses(push=push, watch=watch, run_id=run_id)
         monkeypatch.setattr(remote_module.subprocess, 'run', fake)
         monkeypatch.setattr(remote_module, '_table',
                             lambda project_root: 'the status table')
+        # A run registers at once here, so no wait is spent on it.
+        monkeypatch.setattr(remote_module.time, 'sleep', lambda _s: None)
         return fake
     return arrange
 
@@ -1494,7 +1196,9 @@ def remote_run(monkeypatch, tmp_path):
 SHA = '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7'
 RUN_BRANCH = 'run/feature-x-4f1c2ab'
 PUSH = ['git', 'push', 'origin', 'HEAD:refs/heads/%s' % RUN_BRANCH]
-WATCH = ['gh', 'run', 'watch', '--exit-status']
+WATCH = ['gh', 'run', 'watch', '987', '--exit-status']
+LIST = ['gh', 'run', 'list', '--branch', RUN_BRANCH, '--limit', '1',
+        '--json', 'databaseId']
 PULL = ['git', 'pull', '--ff-only', 'origin', RUN_BRANCH]
 DELETE = ['git', 'push', 'origin', '--delete', RUN_BRANCH]
 
@@ -1523,19 +1227,6 @@ def test_the_github_branch_pushes_watches_pulls_and_deletes(project,
     assert 'Waiting for the purlin.yml workflow on %s.' % RUN_BRANCH in printed
     assert 'finished red' not in printed
     assert printed.rstrip().endswith('the status table')
-
-
-@pytest.mark.proof("records", "PROOF-24", "RULE-12")
-def test_the_two_pushes_carry_the_marker_the_hook_reads(project, remote_run):
-    """The remote run is the one push the pre-push hook lets an agent make."""
-    fake = remote_run()
-
-    remote_module.run_remote(project, cfg=STRONG)
-    marked = dict(zip([tuple(argv) for argv in fake.started], fake.marked))
-    assert marked[tuple(PUSH)] is True
-    assert marked[tuple(DELETE)] is True
-    assert marked[tuple(WATCH)] is False
-    assert marked[tuple(PULL)] is False
 
 
 @pytest.mark.proof("records", "PROOF-24", "RULE-12")
@@ -1603,14 +1294,6 @@ def test_off_a_runner_every_commit_is_the_persons_own(project, monkeypatch):
 
 
 @pytest.mark.proof("records", "PROOF-33", "RULE-28")
-def test_the_protected_branch_commits(project, monkeypatch, github_env):
-    monkeypatch.setenv('GITHUB_REF_NAME', 'main')
-    assert records_module.commits_here(project) is True
-    assert records_module.no_commit_line(project).endswith(
-        'the run on main writes them.')
-
-
-@pytest.mark.proof("records", "PROOF-33", "RULE-28")
 def test_a_run_branch_commits(project, monkeypatch, github_env):
     monkeypatch.setenv('GITHUB_REF_NAME', 'run/main-4f1c2ab')
     assert records_module.commits_here(project) is True
@@ -1623,15 +1306,15 @@ def test_any_other_branch_commits_nothing(project, monkeypatch, github_env):
 
 
 @pytest.mark.proof("records", "PROOF-33", "RULE-28")
-def test_a_pull_request_commits_nothing_and_names_its_target(
-        project, monkeypatch, github_env):
-    monkeypatch.setenv('GITHUB_REF_NAME', 'topic')
-    monkeypatch.setenv('GITHUB_HEAD_REF', 'topic')
-    monkeypatch.setenv('GITHUB_BASE_REF', 'main')
+def test_a_tag_run_commits_nothing_and_says_so(project, monkeypatch,
+                                              github_env):
+    """A tag run is there to verify, so it has no record to add."""
+    monkeypatch.setenv('GITHUB_REF', 'refs/tags/signed/0.10.0')
+    monkeypatch.setenv('GITHUB_REF_NAME', 'signed/0.10.0')
+    assert records_module.is_a_tag_run() is True
     assert records_module.commits_here(project) is False
-    assert records_module.no_commit_line(project) == (
-        'Pull request run: the records stay on the runner; the run on main '
-        'writes them.')
+    line = records_module.no_commit_line(project)
+    assert line.startswith('Tag run: nothing is written.'), line
 
 
 @pytest.mark.proof("records", "PROOF-33", "RULE-28")
@@ -1716,3 +1399,25 @@ def test_a_local_audit_never_prunes_what_ci_wrote(project):
     records_module.prune(project, 'greeting', source='local')
     assert len(names(project, 'greeting', 'local')) == 3
     assert len(names(project, 'greeting', 'ci')) == 5
+
+
+@pytest.mark.proof("records", "PROOF-24", "RULE-12")
+def test_the_run_is_looked_up_by_its_branch_before_it_is_watched(project,
+                                                                 remote_run):
+    """`gh run watch` with no id prompts and errors off a terminal."""
+    fake = remote_run()
+
+    assert remote_module.run_remote(project, cfg=STRONG) == 0
+    assert fake.listed == [LIST]
+    assert WATCH in fake.started
+
+
+@pytest.mark.proof("records", "PROOF-24", "RULE-12")
+def test_a_run_that_never_registers_is_reported_and_the_branch_deleted(
+        project, remote_run, capsys):
+    fake = remote_run(run_id='')
+
+    assert remote_module.run_remote(project, cfg=STRONG) == 1
+    assert fake.started == [PUSH, DELETE]
+    printed = capsys.readouterr().out
+    assert 'No run registered for %s' % RUN_BRANCH in printed

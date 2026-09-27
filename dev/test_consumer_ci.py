@@ -28,7 +28,6 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'run'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-import ci as ci_module  # noqa: E402
 import workflow as workflow_module  # noqa: E402
 from purlin import payload as payload_module  # noqa: E402
 
@@ -149,18 +148,28 @@ def test_the_template_still_carries_the_placeholders():
     template = read(os.path.join('templates', 'purlin.yml'), root=ROOT)
     assert '<<MATRIX>>' in template
     assert '<<PURLIN_REF>>' in template
-    assert '<<PROTECTED>>' in template
 
 
 @pytest.mark.proof("records", "PROOF-17", "RULE-17")
-def test_the_protected_branch_is_the_projects_own():
-    named = workflow_module.render_workflow(
-        'github', ['linux'], PURLIN_REF, protected='trunk')
-    assert "branches: [trunk, 'run/**']" in named
-    for blank in (None, ''):
-        fallback = workflow_module.render_workflow(
-            'github', ['linux'], PURLIN_REF, protected=blank)
-        assert "branches: [main, 'run/**']" in fallback
+def test_the_triggers_name_a_run_branch_and_the_signing_tag_and_nothing_else():
+    named = workflow_module.render_workflow('github', ['linux'], PURLIN_REF)
+    assert "branches: ['run/**']" in named
+    assert "tags: ['signed/**']" in named
+    assert 'pull_request' not in named
+
+
+@pytest.mark.proof("records", "PROOF-17", "RULE-17")
+def test_a_workflow_is_written_for_two_reasons_and_no_others():
+    wanted, reasons = workflow_module.wanted([], 'local', 'macos')
+    assert wanted is False and reasons == []
+    wanted, reasons = workflow_module.wanted(['windows'], 'local', 'macos')
+    assert wanted is True and len(reasons) == 1
+    assert 'windows' in reasons[0]
+    wanted, reasons = workflow_module.wanted([], 'remote', 'macos')
+    assert wanted is True and len(reasons) == 1
+    assert 'trust' in reasons[0].lower() or 'signing' in reasons[0]
+    wanted, reasons = workflow_module.wanted(['macos'], 'local', 'macos')
+    assert wanted is False, reasons
 
 
 @pytest.mark.proof("records", "PROOF-18", "RULE-18")
@@ -168,10 +177,10 @@ def test_the_workflow_is_shaped_like_a_workflow():
     blocks = parse_blocks(read(WORKFLOW_REL))
     assert sorted(blocks) == ['jobs', 'name', 'on', 'permissions']
     assert 'contents: write' in read(WORKFLOW_REL)
-    assert 'pull-requests: write' in read(WORKFLOW_REL)
+    assert 'pull-requests' not in read(WORKFLOW_REL)
     assert '\n'.join(blocks['on']) == (
-        "  pull_request:\n  push:\n    branches: [main, 'run/**']")
-    for placeholder in ('<<MATRIX>>', '<<PURLIN_REF>>', '<<PROTECTED>>'):
+        "  push:\n    branches: ['run/**']\n    tags: ['signed/**']")
+    for placeholder in ('<<MATRIX>>', '<<PURLIN_REF>>'):
         assert placeholder not in read(WORKFLOW_REL), (
             '%s was left unfilled' % placeholder)
 
@@ -182,35 +191,19 @@ def test_the_workflow_names_the_record_step_and_the_artifact():
     names = step_names(jobs.splitlines())
     assert 'actions/checkout@v4' in names
     assert 'Locate Purlin' in names
-    assert 'Run the tests and write the evidence' in names
-    assert 'actions/upload-artifact@v4' in names
+    assert 'Run the tagged tests' in names
+    assert 'actions/upload-artifact@v4' not in names, (
+        'a run uploads nothing: the two runs are a remote run and a tag run')
     assert names[-1] == 'Check the gate', (
         'the gate check is the last word of every run')
-    assert 'name: purlin-dashboard-${{ matrix.os }}' in jobs
     assert 'scripts/run/purlin_run.py" --all --ci' in jobs
-    assert 'scripts/ci/gate_check.py" --check' in jobs
+    assert 'scripts/ci/gate_check.py" --check --verify' in jobs
 
 
 @pytest.mark.proof("records", "PROOF-18", "RULE-18")
-def test_the_upload_path_is_the_directory_the_run_publishes_to(monkeypatch):
-    """One directory, named twice. Two spellings attach an empty artifact.
-
-    `RUNNER_TEMP` is set to the workflow's own expression, so the path
-    `ci.publish_dir` builds is the text the upload step has to carry.
-    """
-    monkeypatch.delenv('AGENT_TEMPDIRECTORY', raising=False)
-    monkeypatch.setenv('RUNNER_TEMP', '${{ runner.temp }}')
-    # On the runner the project being audited is the checkout, which is what
-    # sends the dashboard to the runner's own directory; the fixture stands in
-    # for that checkout here.
-    monkeypatch.setenv('GITHUB_WORKSPACE', FIXTURE)
-    published = ci_module.publish_dir(FIXTURE)
-
-    jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
-    assert 'path: %s' % published in jobs, (
-        'the run publishes to %s and the upload step reads somewhere else, so '
-        'the purlin-dashboard artifact on the pull request is empty'
-        % published)
+def test_the_job_is_named_purlin():
+    jobs = parse_blocks(read(WORKFLOW_REL))['jobs']
+    assert jobs[0].strip() == 'purlin:', jobs[0]
 
 
 @pytest.mark.proof("records", "PROOF-19", "RULE-19")
@@ -252,10 +245,11 @@ def test_the_workflow_clones_the_release_the_project_pins():
 
 
 @pytest.mark.proof("records", "PROOF-18", "RULE-18")
-def test_a_forked_pull_request_is_told_it_writes_no_commit():
-    jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
-    assert 'github.event.pull_request.head.repo.fork' in jobs
-    assert 'no record was committed' in jobs
+def test_no_pull_request_starts_a_run_at_all():
+    """A fork's read-only token was the awkward case; there is no such run."""
+    text = read(WORKFLOW_REL)
+    assert 'pull_request' not in text
+    assert 'fork' not in text
 
 
 @pytest.mark.proof("records", "PROOF-18", "RULE-18")

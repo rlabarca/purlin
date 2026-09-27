@@ -48,6 +48,7 @@
       },
       "rules": [
         {
+          "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
           "bar": "strong",
           "bar_from": "tag",
           "blocked_by": null,
@@ -85,7 +86,6 @@
             },
             "strong": {
               "brief": ".purlin/briefs/ci/login/RULE-1.1a2b3c4d.brief.json",
-              "findings": [],
               "observations": [],
               "reasons": [],
               "settled": true,
@@ -115,7 +115,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-1",
               "tests": [
                 {
@@ -135,6 +134,7 @@
           "text": "A person signs in with an email address and a password."
         },
         {
+          "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
           "bar": "strong",
           "bar_from": "gate",
           "blocked_by": "signed",
@@ -172,7 +172,6 @@
             },
             "strong": {
               "brief": ".purlin/briefs/ci/login/RULE-2.6f7a8b9c.brief.json",
-              "findings": [],
               "observations": [],
               "reasons": [],
               "settled": true,
@@ -202,7 +201,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-2",
               "tests": [
                 {
@@ -222,6 +220,7 @@
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "passed",
           "bar_from": "tag",
           "blocked_by": "strong",
@@ -259,7 +258,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [
                 "held by sam@acme.com: the lock expiry is never read"
@@ -291,9 +289,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [
-                "happy_path_only"
-              ],
               "id": "PROOF-3",
               "tests": [
                 {
@@ -313,6 +308,7 @@
           "text": "A locked account sends one notification email."
         },
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "strong",
           "bar_from": "tag",
           "blocked_by": "passed",
@@ -351,7 +347,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [
                 "not passed"
@@ -383,7 +378,6 @@
           "proofs": [
             {
               "env": "windows",
-              "findings": [],
               "id": "PROOF-4",
               "tests": [
                 {
@@ -396,7 +390,6 @@
             },
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-5",
               "tests": [
                 {
@@ -474,6 +467,7 @@
       },
       "rules": [
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "passed",
           "bar_from": "tag",
           "blocked_by": null,
@@ -509,7 +503,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [
                 "strength 64% under 80%"
@@ -541,7 +534,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-1",
               "tests": [
                 {
@@ -561,6 +553,7 @@
           "text": "An invoice totals its lines to the cent."
         },
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "passed",
           "bar_from": "tag",
           "blocked_by": null,
@@ -596,9 +589,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [
-                "happy_path_only"
-              ],
               "observations": [],
               "reasons": [
                 "strength 64% under 80%",
@@ -631,9 +621,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [
-                "happy_path_only"
-              ],
               "id": "PROOF-2",
               "tests": [
                 {
@@ -653,6 +640,7 @@
           "text": "An invoice with no lines totals zero."
         },
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "strong",
           "bar_from": "gate",
           "blocked_by": "strong",
@@ -677,7 +665,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [
                 "manual proof",
@@ -710,7 +697,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-4",
               "tests": [],
               "text": "Raise a credit note against a paid invoice and read the printed note: it names the original invoice number and the reason",
@@ -779,6 +765,7 @@
       },
       "rules": [
         {
+          "audit_hash": "9e0234b91cb67b7cc732ed426155abfcd337d8b475526678af23259ba26330d9",
           "bar": "strong",
           "bar_from": "gate",
           "blocked_by": "strong",
@@ -803,7 +790,6 @@
             },
             "strong": {
               "brief": ".purlin/briefs/ci/checkout_design/RULE-1.7b8c9d0e.brief.json",
-              "findings": [],
               "observations": [
                 "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
               ],
@@ -837,7 +823,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-1",
               "tests": [
                 {
@@ -914,6 +899,7 @@
       },
       "rules": [
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "strong",
           "bar_from": "gate",
           "blocked_by": "passed",
@@ -940,7 +926,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [
                 "not passed"
@@ -972,7 +957,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-1",
               "tests": [
                 {
@@ -992,6 +976,7 @@
           "text": "A statement export lists every invoice of the month in date order."
         },
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "strong",
           "bar_from": "gate",
           "blocked_by": "strong",
@@ -1022,7 +1007,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [
                 "no audit has run on this code"
@@ -1054,7 +1038,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-2",
               "tests": [
                 {
@@ -1088,14 +1071,14 @@
     "gate": "signed",
     "min_strength": 80,
     "mutation_engine": "auto",
-    "pre_push": "off",
     "sign_at": "strong",
     "signers": [
       "jane@acme.com",
       "sam@acme.com"
     ],
     "sql_engine": null,
-    "test_framework": "pytest"
+    "test_framework": "pytest",
+    "trust": "local"
   },
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
@@ -1206,7 +1189,7 @@
       ]
     }
   ],
-  "schema_version": 7,
+  "schema_version": 8,
   "sign_list": [
     {
       "bar": "strong",

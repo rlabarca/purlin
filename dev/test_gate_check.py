@@ -129,18 +129,17 @@ class TestThePassedGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-4", "RULE-3", tier="integration")
-    def test_a_drafted_rule_is_not_passed_and_says_which_finding(self):
+    def test_a_rule_no_proof_names_is_drafted_and_says_so(self):
         made = Project(spec=SPEC.replace(
-            'POST /login with the password "secret"; verify 200 and a token '
-            '@integration',
-            'The login works correctly @integration'), gate='passed')
+            '- PROOF-1 (RULE-1): POST /login with the password "secret"; '
+            'verify 200 and a token @integration\n', ''), gate='passed')
         try:
             made.proofs()
             made.record()
             code, output = run(made)
             assert code == 1
             assert 'login RULE-1: drafted' in output, output
-            assert 'vague_verb' in output, output
+            assert 'no proof names this rule' in output, output
         finally:
             made.close()
 
@@ -186,14 +185,16 @@ class TestTheStrongGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-7", "RULE-3", tier="integration")
-    def test_a_local_record_does_not_count_under_signed(self):
+    def test_a_local_record_counts_under_signed_too(self):
         made = project_at('signed', by_ci=False,
                           config={'signers': ['jane@acme.com']})
         try:
             code, output = run(made)
             assert code == 1
-            assert 'Not passed (2):' in output
-            assert 'local record does not count under signed' in output
+            assert 'Not passed' not in output, output
+            # The tests passed on a local record, so what is left is the
+            # signature nobody has written.
+            assert 'To sign (1):' in output, output
         finally:
             made.close()
 
@@ -624,8 +625,8 @@ class TestWhatTheGateReads:
 # ---------------------------------------------------------------------------
 
 @pytest.mark.proof("gate_check", "PROOF-34", "RULE-14", tier="integration")
-def test_the_report_carries_its_six_sections_in_order():
-    """One rule short at each section, and the six headings in the chain's
+def test_the_report_carries_its_seven_sections_in_order():
+    """One rule short at each section, and the seven headings in the chain's
     own order."""
     made = project_at('signed', briefs=(),
                       config={'min_strength': 80,
@@ -635,11 +636,11 @@ def test_the_report_carries_its_six_sections_in_order():
         assert code == 1
         data = json.loads(output[output.index('{'):])
         for key in ('not_passed', 'partial', 'weak', 'not_audited',
-                    'to_review', 'to_sign'):
+                    'to_review', 'to_sign', 'evidence'):
             assert key in data, sorted(data)
         titles = [title for _key, title, _cells in gate_check._SECTIONS]
         assert titles == ['Not passed', 'Partial', 'Weak', 'Not audited',
-                          'To review', 'To sign']
+                          'To review', 'To sign', 'Evidence']
         printed = [line for line in output.splitlines()
                    if any(line.startswith(title + ' (') for title in titles)]
         assert printed == ['Not audited (1):'], output

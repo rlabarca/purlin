@@ -89,7 +89,7 @@ _SECTIONS = (('not_passed', 'Not passed', ('spec', 'passed')),
              ('not_audited', 'Not audited', ()),
              ('to_review', 'To review', ()),
              ('to_sign', 'To sign', ('signed',)),
-             ('not_verified', 'Not verified', ()))
+             ('evidence', 'Evidence', ()))
 
 
 def _package():
@@ -209,7 +209,7 @@ def check(project_root, payload=None, out=None, as_json=False,
         'not_audited': [],
         'to_review': [],
         'to_sign': [],
-        'not_verified': [],
+        'evidence': [],
         'result': 'pass',
     }
 
@@ -226,7 +226,7 @@ def check(project_root, payload=None, out=None, as_json=False,
 
     _collect(payload, result)
     if verify_evidence:
-        result['not_verified'] = verify(project_root, payload)
+        result['evidence'] = verify(project_root, payload)
 
     # Nothing measures a test strength under `passed`, so naming a minimum
     # there would print a number the gate never reads.

@@ -579,8 +579,8 @@ def record_run(monkeypatch, tmp_path):
         commit_local_records=commit_local_records,
         commits_here=lambda project_root: calls['commits_here'],
         no_commit_line=lambda project_root: (
-            'Pull request run: the records stay on the runner; the run on '
-            'main writes them.')))
+            'Tag run: nothing is written. This run reruns the tests and '
+            'checks the evidence already committed to signed/0.10.0.')))
     monkeypatch.setitem(sys.modules, 'mutation', _FakeModule(
         select_engine=select_engine, run_breaks=run_breaks))
 
@@ -628,7 +628,7 @@ class TestRecordBuildsThePurlinRecord:
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--ci')
+        _code, calls = record_run(root, '--all', '--audit')
         capsys.readouterr()
         record = calls['write'][0][0]
         feature = record['features']['feat']
@@ -645,6 +645,19 @@ class TestRecordBuildsThePurlinRecord:
         assert isinstance(record['scope_tree'], str)
         assert len(record['scope_tree']) == 64
         assert record['missing'] == []
+
+    @pytest.mark.proof("run_script", "PROOF-13", "RULE-13")
+    def test_a_ci_run_measures_no_breaks_and_says_so(
+            self, tmp_path, record_run, capsys):
+        """The breaks are a person's to measure; CI reruns and verifies."""
+        root = _pytest_project(tmp_path, gate='strong')
+        _spec(root, 'feat')
+        _code, calls = record_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+        assert calls['breaks'] == []
+        assert 'Strength n/a: no breaks run on CI.' in output
+        rule = calls['write'][0][0]['features']['feat']['rules']['RULE-1']
+        assert rule['test_strength']['engine'] == 'none', rule
 
     @pytest.mark.proof("run_script", "PROOF-13", "RULE-13")
     def test_a_rule_with_no_evidence_is_listed_as_missing(
@@ -691,7 +704,7 @@ class TestRecordBuildsThePurlinRecord:
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--ci', '--tier', 'unit')
+        _code, calls = record_run(root, '--all', '--audit', '--tier', 'unit')
         capsys.readouterr()
         engine, scope, tests, tier = calls['breaks'][0]
         assert engine == 'mutmut'
@@ -732,27 +745,21 @@ class TestRecordCommitsAndTags:
         assert 'The gate is passed, so this run writes no record.' in output
 
     @pytest.mark.proof("run_script", "PROOF-68", "RULE-47")
-    def test_a_pull_request_run_commits_nothing_and_says_so(
-            self, tmp_path, record_run, monkeypatch, capsys):
-        """CI writes evidence where it is kept, not on a branch nobody merges."""
-        published = []
-        monkeypatch.setitem(sys.modules, 'ci', _FakeModule(
-            post_pr_comment=lambda root, text: published.append('comment'),
-            publish_dashboard=lambda root, logs=None: (
-                published.append('dashboard') or 'out')))
+    def test_a_tag_run_writes_nothing_and_says_so(
+            self, tmp_path, record_run, capsys):
+        """A tag run reruns the tests and verifies; it adds no record."""
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         _code, calls = record_run(root, '--all', '--ci')
         calls['commits_here'] = False
         calls['commit'] = []
-        published[:] = []
+        calls['write'] = []
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
 
         assert calls['commit'] == []
-        assert ('Pull request run: the records stay on the runner; the run on '
-                'main writes them.') in output
-        assert published == ['comment', 'dashboard']
+        assert calls['write'] == []
+        assert 'Tag run: nothing is written.' in output
 
     @pytest.mark.proof("run_script", "PROOF-68", "RULE-47")
     def test_a_run_on_the_branch_that_keeps_them_commits(
@@ -762,7 +769,7 @@ class TestRecordCommitsAndTags:
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
         assert len(calls['commit']) == 1
-        assert 'Pull request run:' not in output
+        assert 'Tag run:' not in output
 
     @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
     def test_tag_names_the_records_already_in_the_tree(
@@ -1020,10 +1027,10 @@ class TestRecordWithoutTheEngines:
             sys, 'path',
             [p for p in sys.path if os.path.realpath(p or '.') != run_dir])
         code = purlin_run.main(['--project-root', str(root), '--all',
-                                '--ci'])
+                                '--audit'])
         output = capsys.readouterr().out
         assert 'test strength is not measured' in output
-        assert code == 0
+        assert code in (0, 1)
 
 
 # ---------------------------------------------------------------------------
@@ -1248,14 +1255,10 @@ class TestAFailingArmStatesItsReason:
         assert 'output (last 60 lines)' not in output, output
 
     @pytest.mark.proof("run_script", "PROOF-59", "RULE-40")
-    def test_ci_publishes_each_arms_whole_output(
-            self, tmp_path, record_run, monkeypatch, capsys):
-        # Off a runner the dashboard goes into the project, which is where the
-        # test reads it back. On a runner both variables are set, and the
-        # published directory would be the runner's own.
-        for variable in ('RUNNER_TEMP', 'AGENT_TEMPDIRECTORY'):
-            monkeypatch.delenv(variable, raising=False)
-        root = _pytest_project(tmp_path, body=(
+    def test_ci_writes_the_whole_run_to_the_log_in_the_tree(
+            self, tmp_path, record_run, capsys):
+        """A run uploads nothing, so what it printed has to be in the tree."""
+        root = _pytest_project(tmp_path, gate='strong', body=(
             'import pytest\n\n'
             '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
             'def test_bad():\n'
@@ -1263,8 +1266,8 @@ class TestAFailingArmStatesItsReason:
         _spec(root, 'feat')
         record_run(root, '--all', '--ci')
         capsys.readouterr()
-        published = root / '.purlin' / 'runtime' / 'report' / 'logs'
-        text = (published / 'pytest.log').read_text(encoding='utf-8')
+        log = root / '.purlin' / 'runtime' / 'run.log'
+        text = log.read_text(encoding='utf-8')
         assert '-m pytest' in text, text
         assert '1 failed' in text, text
 

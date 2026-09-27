@@ -47,6 +47,7 @@
       },
       "rules": [
         {
+          "audit_hash": "982cc3f0f167264619ffe8b967431700bb24bccd6c585842e728bc38d9ccc6e2",
           "bar": "strong",
           "bar_from": "tag",
           "blocked_by": "strong",
@@ -63,7 +64,6 @@
             },
             "strong": {
               "brief": ".purlin/briefs/ci/login/RULE-1.1a2b3c4d.brief.json",
-              "findings": [],
               "observations": [
                 "The test reads the status code and the cookie name; the proof also names a session cookie, and no assertion reads its expiry."
               ],
@@ -97,7 +97,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-1",
               "tests": [
                 {
@@ -117,6 +116,7 @@
           "text": "A person signs in with an email address and a password."
         },
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "strong",
           "bar_from": "gate",
           "blocked_by": null,
@@ -133,7 +133,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [],
               "settled": null,
@@ -163,7 +162,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-2",
               "tests": [
                 {
@@ -183,6 +181,7 @@
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "passed",
           "bar_from": "tag",
           "blocked_by": null,
@@ -199,7 +198,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [],
               "settled": null,
@@ -229,9 +227,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [
-                "happy_path_only"
-              ],
               "id": "PROOF-3",
               "tests": [
                 {
@@ -306,6 +301,7 @@
       },
       "rules": [
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "strong",
           "bar_from": "gate",
           "blocked_by": "strong",
@@ -322,7 +318,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [
                 "strength 48% under 70%"
@@ -354,7 +349,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-1",
               "tests": [
                 {
@@ -374,6 +368,7 @@
           "text": "An invoice totals its lines to the cent."
         },
         {
+          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bar": "strong",
           "bar_from": "gate",
           "blocked_by": "passed",
@@ -390,7 +385,6 @@
             },
             "strong": {
               "brief": null,
-              "findings": [],
               "observations": [],
               "reasons": [
                 "not passed"
@@ -422,9 +416,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [
-                "happy_path_only"
-              ],
               "id": "PROOF-2",
               "tests": [],
               "text": "Build an invoice with zero lines and read the total 0.00.",
@@ -492,6 +483,7 @@
       },
       "rules": [
         {
+          "audit_hash": "f0771b5320b78e2385b46a63525e71a6e30975d1adfb8712011dc997da5493c4",
           "bar": "strong",
           "bar_from": "gate",
           "blocked_by": null,
@@ -514,7 +506,6 @@
             },
             "strong": {
               "brief": ".purlin/briefs/local/checkout_design/RULE-1.9c0d1e2f.brief.json",
-              "findings": [],
               "observations": [],
               "reasons": [],
               "settled": true,
@@ -544,7 +535,6 @@
           "proofs": [
             {
               "env": null,
-              "findings": [],
               "id": "PROOF-1",
               "tests": [
                 {
@@ -581,11 +571,11 @@
     "gate": "strong",
     "min_strength": 70,
     "mutation_engine": "auto",
-    "pre_push": "off",
     "sign_at": null,
     "signers": [],
     "sql_engine": null,
-    "test_framework": "pytest"
+    "test_framework": "pytest",
+    "trust": "local"
   },
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
@@ -642,7 +632,7 @@
       ]
     }
   ],
-  "schema_version": 7,
+  "schema_version": 8,
   "sign_list": [],
   "summary": {
     "failing": 0,

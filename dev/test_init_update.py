@@ -361,7 +361,7 @@ def test_the_config_is_the_gate_shape(tmp_path, layout):
     assert config['mutation_engine'] == 'auto'
     assert config['sql_engine'] is None
     assert config['ci'] == 'github'
-    assert config['pre_push'] in ('on', 'off')
+    assert config['trust'] in ('local', 'remote')
 
 
 @pytest.mark.proof("update", "PROOF-10", "RULE-10")
@@ -707,25 +707,22 @@ def test_a_foreign_delegator_is_left_alone(tmp_path):
 
 
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
-def test_the_pre_push_shim_is_repointed(tmp_path):
+def test_the_pre_push_shim_goes_too(tmp_path):
+    """Nothing runs at push time, so the shim is removed rather than moved."""
     root = _with_hooks(tmp_path)
     shim = '.purlin/hooks/pre-push'
     assert shim in [item['files'] for item in update.pending(root)
                     if item['id'] == 'hooks'][0]
     _apply(root)
-    after = _read(root, shim)
-    assert 'PURLIN_SCRIPT="scripts/hooks/pre-push.sh"' in after
-    assert 'pre_push_hook.py' not in after
-    assert 'purlin_interpreter()' in after   # the rest of the shim is untouched
+    assert not os.path.exists(os.path.join(root, *shim.split('/')))
+    assert shim not in _tracked(root)
 
 
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
-def test_a_shim_already_pointing_here_is_left_alone(tmp_path):
+def test_a_project_with_the_hooks_gone_needs_the_migration_once(tmp_path):
     root = _with_hooks(tmp_path)
     _apply(root)
-    before = _read(root, '.purlin/hooks/pre-push')
-    _apply(root)
-    assert _read(root, '.purlin/hooks/pre-push') == before
+    assert 'hooks' not in _ids(root)
 
 
 @pytest.mark.proof("update", "PROOF-2", "RULE-2")
@@ -762,9 +759,10 @@ def test_purlin_yml_carries_this_releases_triggers_and_gate_check(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
     text = _read(root, '.github/workflows/purlin.yml')
-    assert "branches: [main, 'run/**']" in text
+    assert "branches: ['run/**']" in text
+    assert "tags: ['signed/**']" in text
     assert 'name: Check the gate' in text
-    assert 'scripts/ci/gate_check.py" --check' in text
+    assert 'scripts/ci/gate_check.py" --check --verify' in text
 
 
 @pytest.mark.proof("update", "PROOF-15", "RULE-15")
@@ -779,8 +777,9 @@ def test_a_purlin_yml_without_the_gate_check_is_rendered_again(tmp_path):
                    if item['id'] == 'workflows'][0]
     _apply(root)
     text = _read(root, rel)
-    assert "branches: [main, 'run/**']" in text
-    assert 'scripts/ci/gate_check.py" --check' in text
+    assert "branches: ['run/**']" in text
+    assert "tags: ['signed/**']" in text
+    assert 'scripts/ci/gate_check.py" --check --verify' in text
     assert 'workflows' not in _ids(root)
 
 

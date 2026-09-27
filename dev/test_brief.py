@@ -37,6 +37,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import brief as brief_module  # noqa: E402
+from purlin import checks  # noqa: E402
 from test_signatures import (REVIEW_GATE, SIGNING_GATE, SPEC,  # noqa: E402
                              TEST_FILE,
                              Project, commit_as_ci, write)
@@ -116,19 +117,21 @@ class TestTheLayers:
 # The findings
 # ---------------------------------------------------------------------------
 
-class TestTheFindings:
+class TestTheHints:
 
     @pytest.mark.proof("brief", "PROOF-6", "RULE-5", tier="integration")
-    def test_the_proof_text_findings_reach_the_brief(self):
+    def test_the_proof_text_hints_reach_the_brief(self):
         made = Project(spec=SPEC.replace(
             'POST /login with the password "secret"; verify 200 and a token '
             '@integration',
             'The login works correctly @integration'))
         try:
             made.proofs()
-            found = build(made, 'RULE-1')['proofs'][0]['findings']
-            assert 'no_expected_value' in found
-            assert 'vague_verb' in found
+            found = build(made, 'RULE-1')['proofs'][0]['hints']
+            assert checks.NO_EXPECTED_VALUE in found
+            assert checks.VAGUE_VERB in found
+            for hint in found:
+                assert '_' not in hint, hint
         finally:
             made.close()
 
@@ -146,19 +149,19 @@ class TestTheFindings:
             made = Project(spec=SPEC.replace(original, text))
             try:
                 made.proofs()
-                found = build(made, 'RULE-1')['proofs'][0]['findings']
-                assert ('implementation_coupling' in found) is coupled, (
-                    text, found)
+                found = build(made, 'RULE-1')['proofs'][0]['hints']
+                assert (checks.COUPLING in found) is coupled, (text, found)
             finally:
                 made.close()
 
     @pytest.mark.proof("brief", "PROOF-7", "RULE-6", tier="integration")
-    def test_the_test_body_findings_reach_the_brief(self, proved):
+    def test_the_test_body_hints_reach_the_brief(self, proved):
         proved.edit_test(TEST_FILE.replace(
             'assert login("ada", "secret") == 200', 'login("ada", "secret")'))
         test = build(proved, 'RULE-1')['tests'][0]
-        assert test['findings'] == ['no_assertion'], test
-        assert test['reasons'], 'a finding names what a reader should look at'
+        assert test['hints'], test
+        for hint in test['hints']:
+            assert ' ' in hint and '_' not in hint, hint
 
     @pytest.mark.proof("brief", "PROOF-8", "RULE-7", tier="integration")
     def test_the_test_body_is_shown_beside_the_rule(self, proved):
@@ -175,7 +178,10 @@ class TestTheFindings:
         try:
             test = build(made, 'RULE-1')['tests'][0]
             assert test['file'] is None
-            assert test['findings'] == ['manual']
+            assert test['manual'] is True
+            assert test['hints'] == [
+                "The evidence for a manual proof is the signer's note, not a "
+                'test.'], test
         finally:
             made.close()
 
@@ -188,7 +194,7 @@ class TestTheFindings:
             'design_hash', 'triple_hash', 'layers', 'tests', 'test_strength',
             'min_strength', 'record', 'design', 'ai_review', 'observations',
             'settled', 'generated_at'}, sorted(built)
-        assert built['schema'] == 'purlin-brief/3'
+        assert built['schema'] == 'purlin-brief/4'
         assert built['observations'] == []
 
 
@@ -387,7 +393,7 @@ class TestWriting:
         assert os.path.isfile(text)
         with open(os.path.join(proved.root, *path.split('/')),
                   encoding='utf-8') as handle:
-            assert json.load(handle)['schema'] == 'purlin-brief/3'
+            assert json.load(handle)['schema'] == 'purlin-brief/4'
 
     @pytest.mark.proof("brief", "PROOF-28", "RULE-19", tier="integration")
     def test_a_brief_is_found_again_only_while_the_text_stands(self, proved):
@@ -418,10 +424,20 @@ class TestWriting:
             made.close()
 
     @pytest.mark.proof("brief", "PROOF-45", "RULE-21", tier="integration")
-    def test_a_rule_with_no_counting_pass_gets_no_brief(self, at_signed):
-        assert brief_module.write_briefs(at_signed.root) == [], (
-            'a local record does not count under signed, so there is no '
-            'test result to set the proof against')
+    def test_a_local_record_is_a_counting_pass_at_signed_too(self, at_signed):
+        written = brief_module.write_briefs(at_signed.root)
+        assert [path.rsplit('/', 1)[1].split('.')[0] for path in written] \
+            == ['RULE-2'], written
+
+    @pytest.mark.proof("brief", "PROOF-45", "RULE-21", tier="integration")
+    def test_a_rule_with_no_run_at_all_gets_no_brief(self):
+        made = Project(gate=REVIEW_GATE)
+        try:
+            assert brief_module.write_briefs(made.root) == [], (
+                'nothing has run, so there is no test result to set the '
+                'proof against')
+        finally:
+            made.close()
 
     @pytest.mark.proof("brief", "PROOF-30", "RULE-21", tier="integration")
     def test_write_briefs_takes_a_narrower_list(self, proved):

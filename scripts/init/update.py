@@ -79,7 +79,7 @@ WORKFLOW_DIR = '.github/workflows'
 # gate check run with `--verify`, and a trigger on the signing tag. A
 # purlin.yml without both was written before CI stopped running on a pull
 # request, so it is rendered again or removed.
-GATE_STEP_MARKER = 'gate_check.py --check --verify'
+GATE_STEP_MARKER = '--check --verify'
 TAG_TRIGGER_MARKER = "tags: ['signed/**']"
 PURLIN_WORKFLOW_NAMES = ('purlin.yml', 'purlin.yaml')
 OS_NAMES = ('linux', 'macos', 'windows')

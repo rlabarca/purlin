@@ -85,13 +85,12 @@ class TestEachTestShowsItsOwnSource:
         assert 'def test_valid_credentials_return_200' not in second, second
 
     @pytest.mark.proof("brief", "PROOF-39", "RULE-26", tier="integration")
-    def test_a_finding_stays_with_the_test_it_was_found_in(self, project):
+    def test_a_hint_stays_with_the_test_it_was_found_in(self, project):
         _two_tests(project, second=NO_ASSERTION)
         tests = _tests_by_name(project)
-        assert 'no_assertion' in tests['test_a_token_comes_back']['findings'], \
+        assert tests['test_a_token_comes_back']['hints'], \
             tests['test_a_token_comes_back']
-        assert 'no_assertion' not in \
-            tests['test_valid_credentials_return_200']['findings'], \
+        assert tests['test_valid_credentials_return_200']['hints'] == [], \
             tests['test_valid_credentials_return_200']
 
     @pytest.mark.proof("brief", "PROOF-40", "RULE-26", tier="integration")

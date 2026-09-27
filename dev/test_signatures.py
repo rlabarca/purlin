@@ -483,8 +483,8 @@ class TestTheFile:
         assert data['schema'] == 'purlin-signature/1'
         assert set(data) == {
             'schema', 'feature', 'rule', 'triple', 'rule_hash', 'proof_hash',
-            'test_hash', 'test_hash_kind', 'design_hash', 'bar', 'signer',
-            'note', 'timestamp', 'gate', 'brief', 'record'}
+            'test_hash', 'test_hash_kind', 'design_hash', 'audit_hash', 'bar',
+            'signer', 'note', 'timestamp', 'gate', 'brief', 'record'}
         assert data['feature'] == 'login' and data['rule'] == 'RULE-1'
         assert data['triple'] == sign_module.triple_for(
             proved.rule('RULE-1'))[:16]

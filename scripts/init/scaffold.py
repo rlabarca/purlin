@@ -55,6 +55,7 @@ from mutation import mutmut                                   # noqa: E402
 from purlin import (console as console_module,                # noqa: E402
                     frameworks as frameworks_module,
                     gate as gate_module, records as records_module,
+                    results as results_module,
                     specs as specs_module, status as status_module)
 
 EXIT_OK = 0
@@ -516,10 +517,10 @@ def write_workflow(plan, root, purlin_ref, upstream_check):
     missing: a workflow file is no use without the remote that holds it, a
     host that runs it and the branch its triggers name.
 
-    The triggers name the project's own default branch as the protected one,
-    read from the tree here rather than guessed at on the runner: a
-    repository whose branch is `master` would otherwise get a workflow that
-    starts on a branch it does not have.
+    The protected branch is read from the tree so the prerequisite check can
+    say whether it is on the remote: a signature counts under `signed` only
+    on a commit that reaches it. The triggers name no branch of the
+    project's own.
     """
     protected = records_module.default_branch(root)
     ok, host, lines = workflow_module.prerequisites(root, protected)
@@ -531,13 +532,12 @@ def write_workflow(plan, root, purlin_ref, upstream_check):
     name = workflow_module.workflow_filename(host)
     rel = name if host == 'azure' else '.github/workflows/%s' % name
     plan.write(rel, workflow_module.render_workflow(
-        host, env_tags, purlin_ref, upstream_check=upstream_check,
-        protected=protected), own=True)
+        host, env_tags, purlin_ref, upstream_check=upstream_check), own=True)
     plan.note('  the matrix is %s: ubuntu-latest always, then the @env tags '
               'in specs/.'
               % ', '.join(workflow_module.runners_for(env_tags)))
-    plan.note('  it runs on a pull request, on a push to %s and on a push to '
-              'a run/* branch, and ends with the gate check.' % protected)
+    plan.note('  it runs on a push to a run/* branch and on a push of a '
+              'signed/* tag, and ends with the gate check.')
     return host
 
 
@@ -719,10 +719,9 @@ def main(argv=None):
                        if part.strip()]
         sign_at = ask_sign_at(console)
 
-    trust = ask_trust(console, existing)
-
     selected, framework, dropped = resolve_frameworks(
         root, console, existing, args.add)
+    trust = ask_trust(console, existing)
     host = git_host(root)
 
     if not in_git:

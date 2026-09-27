@@ -5,15 +5,17 @@ here and nowhere else. A skill, a doc or a script that needs it links to this pa
 restating it, because three copies of this answer drifted into three different answers once
 already.
 
-**A gate is three things**, and all three must exist for it to mean anything:
+**A gate is two things**, and both must exist for it to mean anything:
 
-1. A CI job where the evidence is decided: on a pull request, on the protected branch and on
-   a run branch. It runs the tagged tests, then at `strong` and above the audit and the
-   record. Every run ends with `gate_check.py --check` and fails when the gate is not met.
-2. A branch rule on the protected branch that blocks a merge unless that job passes.
-3. The setting saying what "passes" means.
+1. The setting saying what has to be true of every rule.
+2. A marker that says one commit met it, which anyone can check. That marker is the tag:
+   `purlin:sign` writes the annotated tag `signed/<version>` when every rule meets the gate,
+   and no tag is written while one falls short.
 
-Setting one without the other two is a preference, not a gate.
+Setting the first without the second is a preference, not a gate. Where a project has a
+remote runner, the push of that tag starts a run that reruns the tagged tests on a clean
+machine and checks every committed record, brief and signature against the tagged code, so
+the tag is a claim someone else can test rather than one you have to take on trust.
 
 ## The three levels
 
@@ -24,8 +26,8 @@ what must be true before CI lets a change merge?
 
 | Gate | Who it fits | Cells that exist | What CI requires before merge |
 |------|-------------|------------------|-------------------------------|
-| `passed` | One person working alone | spec, passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from any source counts |
-| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose bar is `strong` has a strong cell that is met: an audit wrote a record, the test strength at or above `min_strength`, no finding, nothing unsettled, no hold. A record from either source counts |
+| `passed` | One person working alone | spec, passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from either source counts |
+| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose bar is `strong` has a strong cell that is met: an audit wrote a record, the test strength at or above `min_strength`, nothing unsettled, no hold. A record from either source counts |
 | `signed` | The same team under GxP | + signed | Every rule that needs a signature has one, and the signer list is set |
 
 Each level derives defaults you can override:
@@ -42,7 +44,10 @@ Each level derives defaults you can override:
 before each write. Lowering it deletes nothing.
 
 Under `passed` no strength is measured, no bar is read, no list exists and no signature is
-asked for. Raising the gate to `strong` turns the breaks on, locally and in CI.
+asked for. Raising the gate to `strong` turns the breaks on. The breaks run on a person's
+machine and nowhere else: CI reruns the tests and verifies, and a record either source wrote
+counts, so measuring the same breaks twice would cost a runner an hour and write the same
+number.
 
 ## The bar
 
@@ -74,7 +79,7 @@ person's own identity. A teammate reads them on the git host without running any
 **At `strong` and above the evidence is the record, and an audit writes it.** `purlin:audit`
 runs the tests and the breaks, writes one record per feature under
 `.purlin/records/local/<feature>/` with its briefs beside it, and commits both under your own
-identity. It never pushes. The CI job does the same under `.purlin/records/ci/`.
+identity. It never pushes. A remote run writes the same files under `.purlin/records/ci/`.
 
 **The folder is the source.** A record's own `source` field must say the same word as the
 folder it sits in, and a file where the two disagree is ignored with one warning naming it.
@@ -84,73 +89,56 @@ may write.
 | Source | The folder | Counts under |
 |--------|------------|--------------|
 | `ci` | `.purlin/records/ci/<feature>/`, written by the CI identity through the git host's API | `passed`, `strong`, `signed` |
-| `local` | `.purlin/records/local/<feature>/`, written by `purlin:audit` on anyone's machine, and the test results `purlin:test` commits | `passed`, `strong` |
+| `local` | `.purlin/records/local/<feature>/`, written by `purlin:audit` on anyone's machine, and the test results `purlin:test` commits | `passed`, `strong`, `signed` |
 
-**Only `signed` requires CI, and there it requires it for the tests and the audit both.** The
-run on the protected branch after the merge is what a signature attaches to; a local run there
-is a preview, and `purlin:audit` says so on its last line.
+**Both sources count at every gate.** What a signature locks is the evidence, not the machine
+that produced it: the tests a person ran are the tests CI runs, and the breaks they measured
+are the breaks CI would measure. A project that wants CI's word before a signature says so
+once, by answering no to init's trust question, and then `purlin:sign` refuses a rule whose
+tests have no `ci` record for the commit being signed.
 
 A record describes the checkout while its commit is HEAD or its scope tree still hashes the
 same. A CI pass that is no longer current makes the passed cell read `code changed`, and CI
 clears it on the next run.
 
-## Where CI runs and what it writes
+## Where CI runs, and when a project has a runner at all
 
-The workflow `purlin:init` writes triggers on three things and nothing else: a pull request, a
-push to the protected branch, and a push to a `run/*` branch, which is the branch
-`purlin:test --remote` creates and deletes around one run. A push to any other branch starts
-nothing.
+**A project has a remote runner for two reasons and no others.** A proof in `specs/` is
+tagged `@env` for an operating system your machine is not, so only a runner can prove it.
+Or you answered no to init's trust question, so the tests a signature rests on run on a
+clean machine. A project with neither gets no workflow: `purlin:sign` writes the tag, you
+push it, and nothing runs remotely.
 
-What a run writes depends on the gate and on where it runs. At `passed` it runs the tagged
-tests, posts the comment, uploads the dashboard and writes no record. At `strong` and above it
-audits what it ran and writes one record per feature plus the briefs. A pull request run
-commits nothing either way: a record on a branch nobody merges from is evidence of a branch
-that will not exist. It prints `Pull request run: the records stay on the runner; the run on
-<protected> writes them.` A run on the protected branch, or on a run branch, commits its
-records and briefs there.
+Where a workflow exists it triggers on two things and nothing else: a push to a `run/*`
+branch, which is the branch `purlin:test --remote` creates and deletes around one run, and
+a push of a `signed/*` tag, which is what `purlin:sign` writes. A push to any other branch
+starts nothing, and a pull request starts nothing.
 
-Every run ends with `scripts/ci/gate_check.py --check`, and the job fails when the gate is not
-met. That is what makes the required check mean the gate held.
+| The run | What starts it | What it writes |
+|---------|----------------|----------------|
+| A remote run | `purlin:test --remote` pushes `run/<branch>-<sha7>` | the tagged tests, and at `strong` and above one record per feature under `.purlin/records/ci/` with the briefs beside it, committed on that branch. `purlin:test --remote` pulls them home and deletes the branch |
+| A tag run | a person pushes `signed/<version>` | nothing. It reruns the tagged tests on a clean machine and ends with `gate_check.py --check --verify` |
 
-**CI publishes its own evidence; a person pushes theirs.** A push is a person's act:
-`purlin:test` commits the results and stops, no skill opens a pull request, and the pre-push
-hook refuses a push made from an agent session unless `PURLIN_REMOTE_RUN=1` marks it as the
-remote run. `purlin:test --remote` is the one push Purlin makes, and it pushes a run branch
-rather than the branch you are on.
+**What the tag run verifies.** Every signature and every hold must still bind the rule,
+proof, test, bar and audit it names, so a tag cannot stand over code that changed after it
+was signed. Every file under `.purlin/records/ci/**` and `.purlin/briefs/ci/**` must have
+been committed by the runner's own identity, read off the commit that added it, so a person
+cannot write a record as CI's. A file that fails either is named under `Evidence` and the
+job fails.
 
-A pull request from a fork gets no record commit. The run still happens and the comment still
-posts; the job says in one line that nothing was written.
+No breaks run on CI. Test strength is what `purlin:audit` measures on a person's machine,
+and a record either source wrote counts at every gate.
 
-## The remote runner
+**A push is free.** Nothing runs at push time and no hook stands in front of it: a push is
+a person's act, to any branch, and the tag is what says a commit met the gate.
+`purlin:test --remote` is the one push Purlin makes, and it pushes a run branch rather than
+the branch you are on. No skill opens a pull request.
 
-`purlin:init` explains a remote runner in three reasons and no others: your tests need another
-operating system; proof from a clean machine that ran exactly the pushed code; no merge while
-red. Teammates see your results without one, from the test results `purlin:test` commits. At
-`passed` init asks `Run the tests on a remote runner too? [y/n]` and writes the workflow on a
-yes; at `strong` and above it always writes it, and the three reasons are the explanation.
+## Branch rules
 
-Before any workflow is written init checks the prerequisites: a remote exists, its URL names
-GitHub or Azure DevOps, and the protected branch is on that remote. The first that fails is
-named in one line with what to do, and no workflow is written. The host CLI, `gh` or `az`, is
-reported as present or absent either way.
-
-## Branch rules the git host enforces
-
-`purlin:init` prints these; you apply them once. On GitHub, three rulesets, so that the bypass
-stays narrow:
-
-1. Require a pull request, and require the `purlin` workflow's checks, with the Actions app as
-   the only bypass actor. Every run ends with the gate check, so a green check means the gate
-   held.
-2. Restrict file paths on `.purlin/records/ci/**` and `.purlin/briefs/ci/**`, with the Actions
-   app as the only bypass actor, so a person cannot push a record or a brief as CI's. The
-   `local/` folders beside them are anyone's.
-3. Block force pushes and restrict deletions, with no bypass at all.
-
-Under `passed`, only the third is suggested.
-
-On Azure DevOps: the build service alone holds Contribute on those two paths through branch
-security, plus no force push and no delete. Same effect, through that host's own mechanism.
+None. An earlier release printed three rulesets, because the gate was a required check on a
+pull request; the gate is the tag now, and a tag is a marker rather than a barrier. Apply
+whatever your organisation asks of any repository.
 
 ## The signer list
 
@@ -163,8 +151,15 @@ clears is a question the machine could not settle, a committed signature from an
 - The commit that added the signature file is signed and the signature verifies.
 - The author's email is on `signers` as of that commit.
 - That author is not the author of the commit that last touched the test file.
-- The signature's bound hashes still match the current rule text, proof text and test body.
+- The signature's bound hashes still match the current rule text, proof text, test body and
+  what the audit found.
 - Under `signed`, the commit is on the protected branch.
+
+**Trust.** `purlin:init` asks `Do you trust your own machine for the tests and the signing?
+[y/n]` and writes `trust: local` or `trust: remote`. Under `local`, the default, your own run
+is the evidence and `purlin:sign` signs what you ran. Under `remote`, `purlin:sign` refuses a
+rule whose tests have no `ci` record for the commit being signed and says to run
+`purlin:test --remote` first. `purlin:init --update` asks again.
 
 `purlin:init --gate signed` asks for the emails and prints the one-time signing setup for each
 person. Under `signed` with no list, `sync_status` and `scripts/ci/gate_check.py --check` both
@@ -179,9 +174,9 @@ level whichever way that cell reads.
 
 ## CI writes no signature file
 
-CI runs the tests and the breaks, measures the strength, runs the free checks, runs the AI
-audit on every rule whose bar is `strong`, and writes the record and the briefs. It signs
-nothing. A signature directory holds only files a person wrote.
+CI runs the tagged tests and, on a run branch, writes the record and the briefs. It signs
+nothing. A signature directory holds only files a person wrote, and the tag run checks that
+every `ci/` file was committed by the runner itself.
 
 What CI cannot settle it says out loud. A `@manual` proof makes the strong cell read `manual
 test`, and an AI audit that could not tell whether the test observes what the proof names
@@ -199,19 +194,21 @@ purlin:sign <feature> RULE-N --hold "<the missing case>"
 ```
 
 That commits one file bound to the rule's hashes. While the hold is current both the strong
-cell and the signed cell read `held`, whatever the bar, so the rule does not meet the gate at
-`strong` or `signed`. A signature by a person for the current hashes outranks
-the hold. Changing the rule, the proof or the test ends the hold, as it stales a signature.
+cell and the signed cell read `held`, whatever the bar and whatever the tests are doing, so the
+rule does not meet the gate at `strong` or `signed` and it is on the Review list. A failing
+test is work in front of the hold, not instead of it. A signature by a person for the current
+hashes outranks the hold. Changing the rule, the proof or the test ends the hold, as it stales
+a signature.
 
 ## What is not a gate
 
 - Writing code without invoking a skill.
 - Writing a test with no proof marker. It runs; `sync_status` does not count it.
 - Committing without running an audit.
-- A rule whose passed cell reads `code changed`. Only the code changed; CI clears it on the next
-  run.
+- A rule whose passed cell reads `code changed`. Only the code changed; the next run clears it.
 - A proof tagged `@env` for an operating system this host is not. It is listed as
-  `<os>: no record yet`, and CI's matrix proves it.
+  `<os>: no record yet`, and a remote run's matrix proves it.
+- Pushing a branch. A push is free.
 
 ## Platforms
 
@@ -223,24 +220,16 @@ failed, `partial` is not met, and it blocks the gate exactly as a failure does. 
 one platform that has not run there still reads `not run`. Test strength is platform independent,
 because the breaks are measured once per feature.
 
-## The pre-push hook is optional and gates nothing
+## Nothing runs at push time
 
-A project may install a pre-push hook. It runs `purlin:test`: the tagged tests only, no
-breaks and no audit, so a push is never held up by an audit. It prints what it found, and it
-writes and commits the test results as any `purlin:test` run does. It lets the push through in
-every case but one: with `pre_push` set to `on` in `.purlin/config.json` and a tagged test
-failing, it blocks and names the failure. At the default, `off`, a failing test is printed and
-the push goes ahead. `git push --no-verify` skips the hook. What a change must clear before it
-merges is the gate, and the gate is the git host's; this is a convenience in front of it, not a
-control.
+No hook is installed, at push time or at commit time. A push is a person's act, free, to any
+branch, and Purlin stands nowhere in front of it. `purlin:init --update` removes the pre-push
+hook an earlier release installed and says so.
 
-The hook refuses one push outright, which is the one thing in it that is not a convenience: a
-push from an agent session. With `CLAUDE_CODE_SESSION_ID` in the environment and
-`PURLIN_REMOTE_RUN` unset it prints `purlin: an agent does not push. A person runs git push.`
-and exits 1, before it runs anything. `--no-verify` is a person's override, not an agent's.
-
-**Nothing in a Claude Code hook gates anything.** The plugin registers no `PreToolUse`, no
-`PermissionRequest` and no `UserPromptSubmit` handler, which are the events through which a hook
-could stop or steer a turn. Every NEVER in `agents/purlin.md` is an instruction to the agent,
-not a mechanism that stops it. What survives an agent ignoring an instruction runs outside the
-agent's turn: the CI job, and the branch rule that makes it required.
+**Nothing in a Claude Code hook gates anything either.** The plugin registers no `PreToolUse`,
+no `PermissionRequest` and no `UserPromptSubmit` handler, which are the events through which a
+hook could stop or steer a turn. Every NEVER in `agents/purlin.md`, the rule that an agent does
+not push among them, is an instruction to the agent and not a mechanism that stops it. What
+survives an agent ignoring an instruction runs outside the agent's turn: the tag run, which
+reruns the tests on a clean machine and verifies the committed evidence against the tagged
+code.

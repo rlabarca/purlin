@@ -219,8 +219,8 @@ def summary_paths(output):
 class TestTheOneQuestion:
 
     @pytest.mark.proof("scaffold", "PROOF-1", "RULE-1")
-    def test_a_project_with_code_is_asked_the_gate_and_nothing_else(self):
-        """The gate question is the only prompt a detectable project sees."""
+    def test_a_project_with_code_is_asked_two_questions_and_no_others(self):
+        """The gate and trust are the only prompts a detectable project sees."""
         made = Project('pytest')
         try:
             done = subprocess.run(
@@ -229,9 +229,11 @@ class TestTheOneQuestion:
                 timeout=300)
             assert done.returncode == 0, done.stdout + done.stderr
             assert scaffold_module.GATE_QUESTION in done.stdout
+            assert scaffold_module.TRUST_QUESTION in done.stdout
             assert scaffold_module.LANGUAGE_QUESTION not in done.stdout
             assert scaffold_module.SIGNER_QUESTION not in done.stdout
             assert made.config()['gate'] == 'strong'
+            assert made.config()['trust'] == 'local'
         finally:
             made.close()
 
@@ -274,7 +276,7 @@ class TestTheOneQuestion:
         config = project.config()
         assert sorted(config) == ['ci', 'gate', 'min_strength',
                                   'mutation_engine', 'sql_engine',
-                                  'test_framework', 'version']
+                                  'test_framework', 'trust', 'version']
         assert config['version'] == read(os.path.join(ROOT, 'VERSION')).strip()
 
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
@@ -286,7 +288,8 @@ class TestTheOneQuestion:
             inline_out = inline.run('--gate', 'strong')
             assert sorted(child.config()) == ['ci', 'gate', 'min_strength',
                                               'mutation_engine', 'sql_engine',
-                                              'test_framework', 'version']
+                                              'test_framework', 'trust',
+                                              'version']
             assert child.config() == inline.config()
             assert summary_paths(child_out) == summary_paths(inline_out)
             assert (child_out.replace(child.root, '<root>')
@@ -300,7 +303,7 @@ class TestTheOneQuestion:
         template = json.loads(read(TEMPLATE_CONFIG))
         assert sorted(template) == ['ci', 'gate', 'min_strength',
                                     'mutation_engine', 'sql_engine',
-                                    'test_framework', 'version']
+                                    'test_framework', 'trust', 'version']
         assert template['version'] == read(
             os.path.join(ROOT, 'VERSION')).strip()
 
@@ -496,15 +499,20 @@ class TestTheSignerQuestion:
 class TestTheGateTransitions:
 
     @pytest.mark.proof("scaffold", "PROOF-12", "RULE-12")
-    def test_raising_to_strong_adds_the_workflow(self, project):
+    def test_raising_the_gate_writes_the_setting_and_no_workflow(self,
+                                                                 project):
+        """The gate no longer decides whether a project has a runner."""
         project.run('--gate', 'passed')
         assert not project.has('.github/workflows/purlin.yml')
         project.run('--gate', 'strong')
-        assert project.has('.github/workflows/purlin.yml')
+        assert not project.has('.github/workflows/purlin.yml')
         assert project.config()['gate'] == 'strong'
 
     @pytest.mark.proof("scaffold", "PROOF-12", "RULE-12")
-    def test_raising_to_signed_keeps_what_strong_wrote(self, project):
+    def test_raising_to_signed_keeps_the_workflow_trust_asked_for(self,
+                                                                  project):
+        write(project.path('.purlin/config.json'),
+              json.dumps({'trust': 'remote'}) + '\n')
         project.run('--gate', 'strong')
         before = read(project.path('.github/workflows/purlin.yml'))
         output = project.run('--gate', 'signed')
@@ -513,6 +521,8 @@ class TestTheGateTransitions:
 
     @pytest.mark.proof("scaffold", "PROOF-12", "RULE-12")
     def test_lowering_writes_the_setting_and_deletes_nothing(self, project):
+        write(project.path('.purlin/config.json'),
+              json.dumps({'trust': 'remote'}) + '\n')
         project.run('--gate', 'signed')
         project.run('--gate', 'passed')
         assert project.config()['gate'] == 'passed'
@@ -548,58 +558,63 @@ class TestTheGateTransitions:
 # ---------------------------------------------------------------------------
 
 class TestTheWorkflow:
+    """A workflow is written for two reasons and no others."""
+
+    @staticmethod
+    def _trust_remote(made):
+        """Answer the trust question `no` before the run, through the config."""
+        write(made.path('.purlin/config.json'),
+              json.dumps({'trust': 'remote'}) + '\n')
+
+    @staticmethod
+    def _foreign_env(made):
+        """A spec naming the two operating systems this machine is not."""
+        host = scaffold_module.results_module.host_os()
+        other = [name for name in ('linux', 'macos', 'windows')
+                 if name != host]
+        write(made.path('specs/core/login.md'),
+              SPEC.replace('@unit', '@unit @env(%s)' % other[0]))
+        return other[0]
 
     @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
-    def test_passed_explains_the_three_reasons_and_asks(self, project):
-        output = project.run('--gate', 'passed')
-        assert scaffold_module.REMOTE_INTRO in output
-        for reason in scaffold_module.REMOTE_REASONS:
-            assert reason in output, output
-        assert scaffold_module.REMOTE_WITHOUT in output
-        assert scaffold_module.REMOTE_QUESTION in output
-        # `--yes` takes the default, which is no.
+    def test_a_trusted_project_with_no_foreign_proof_gets_no_workflow(
+            self, project):
+        output = project.run('--gate', 'strong')
         assert not project.has('.github/workflows/purlin.yml')
-        assert 'you answered no' in output
+        assert scaffold_module.workflow_module.NO_REASON in output, output
 
     @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
-    def test_a_yes_at_passed_writes_the_workflow(self):
-        made = Project('pytest')
-        try:
-            done = subprocess.run(
-                [sys.executable, SCAFFOLD, '--project-root', made.root,
-                 '--gate', 'passed'],
-                input='y\n', capture_output=True, encoding='utf-8',
-                timeout=300)
-            assert done.returncode == 0, done.stdout + done.stderr
-            assert scaffold_module.REMOTE_QUESTION in done.stdout
-            assert made.has('.github/workflows/purlin.yml'), done.stdout
-        finally:
-            made.close()
+    def test_a_proof_this_machine_cannot_prove_writes_one(self, project):
+        named = self._foreign_env(project)
+        output = project.run('--gate', 'passed')
+        assert project.has('.github/workflows/purlin.yml'), output
+        assert scaffold_module.REMOTE_INTRO in output
+        assert named in output, output
 
     @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
-    def test_with_no_remote_at_passed_nothing_is_asked(self):
+    def test_answering_no_to_trust_writes_one(self, project):
+        self._trust_remote(project)
+        output = project.run('--gate', 'passed')
+        assert project.has('.github/workflows/purlin.yml'), output
+        assert project.config()['trust'] == 'remote'
+        assert 'signing' in output, output
+
+    @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
+    def test_with_no_remote_nothing_is_written(self):
         made = Project('pytest', host=None)
         try:
-            output = made.run('--gate', 'passed')
-            assert scaffold_module.REMOTE_QUESTION not in output
+            self._trust_remote(made)
+            output = made.run('--gate', 'strong')
             assert not made.has('.github/workflows/purlin.yml')
             assert 'there is no git remote' in output
         finally:
             made.close()
 
-    @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
-    def test_strong_writes_it_and_the_reasons_are_the_explanation(self,
-                                                                  project):
-        output = project.run('--gate', 'strong')
-        assert scaffold_module.REMOTE_QUESTION not in output
-        for reason in scaffold_module.REMOTE_REASONS:
-            assert reason in output, output
-        assert project.has('.github/workflows/purlin.yml')
-
     @pytest.mark.proof("scaffold", "PROOF-44", "RULE-44")
     def test_a_missing_prerequisite_is_named_and_nothing_is_written(self):
         made = Project('pytest', remote='https://example.invalid/x.git')
         try:
+            self._trust_remote(made)
             output = made.run('--gate', 'strong')
             assert 'neither GitHub nor Azure DevOps' in output, output
             assert not made.has('.github/workflows/purlin.yml')
@@ -610,6 +625,7 @@ class TestTheWorkflow:
     def test_a_branch_the_remote_does_not_have_stops_the_write(self):
         made = Project('pytest', host=None)
         try:
+            self._trust_remote(made)
             bare = os.path.realpath(
                 tempfile.mkdtemp(prefix='purlin-empty-remote-'))
             url = os.path.join(bare, 'github-origin.git')
@@ -625,6 +641,7 @@ class TestTheWorkflow:
 
     @pytest.mark.proof("scaffold", "PROOF-44", "RULE-44")
     def test_the_host_cli_is_reported_either_way(self, project):
+        self._trust_remote(project)
         output = project.run('--gate', 'strong')
         assert ('gh is installed' in output
                 or 'gh is not installed' in output), output
@@ -633,6 +650,7 @@ class TestTheWorkflow:
     def test_the_host_is_read_from_the_remote(self):
         made = Project('pytest', remote='https://github.com/acme/demo.git')
         try:
+            self._trust_remote(made)
             made.run('--gate', 'strong')
             assert made.config()['ci'] == 'github'
             assert made.has('.github/workflows/purlin.yml')
@@ -644,24 +662,26 @@ class TestTheWorkflow:
         made = Project('pytest',
                        remote='https://dev.azure.com/acme/demo/_git/demo')
         try:
+            self._trust_remote(made)
             output = made.run('--gate', 'strong')
             assert made.config()['ci'] == 'azure'
-            assert made.has('purlin.azure-pipelines.yml')
-            assert 'Azure DevOps' in output
+            assert made.has('purlin.azure-pipelines.yml'), output
         finally:
             made.close()
 
     @pytest.mark.proof("scaffold", "PROOF-15", "RULE-15")
     def test_the_matrix_is_rendered_from_the_env_tags(self, project):
-        write(project.path('specs/core/login.md'),
-              SPEC.replace('@unit', '@unit @env(windows)'))
+        named = self._foreign_env(project)
         output = project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
-        assert 'windows-latest' in workflow
-        assert 'windows-latest' in output
+        assert '%s-latest' % ('ubuntu' if named == 'linux' else named) \
+            in workflow
+        assert 'ubuntu-latest' in workflow
+        assert 'ubuntu-latest' in output
 
     @pytest.mark.proof("scaffold", "PROOF-15", "RULE-15")
     def test_no_env_tag_means_one_linux_job(self, project):
+        self._trust_remote(project)
         project.spec()
         project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
@@ -670,6 +690,7 @@ class TestTheWorkflow:
 
     @pytest.mark.proof("scaffold", "PROOF-15", "RULE-15")
     def test_the_purlin_release_is_pinned(self, project):
+        self._trust_remote(project)
         project.run('--gate', 'strong')
         version = read(os.path.join(ROOT, 'VERSION')).strip()
         assert 'v%s' % version in read(
@@ -677,6 +698,7 @@ class TestTheWorkflow:
 
     @pytest.mark.proof("scaffold", "PROOF-16", "RULE-16")
     def test_upstream_check_adds_the_scheduled_job(self, project):
+        self._trust_remote(project)
         project.run('--gate', 'strong', '--upstream-check')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         assert 'upstream-check:' in workflow
@@ -684,68 +706,53 @@ class TestTheWorkflow:
 
     @pytest.mark.proof("scaffold", "PROOF-16", "RULE-16")
     def test_without_it_the_scheduled_job_is_absent(self, project):
+        self._trust_remote(project)
         project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         assert 'upstream-check:' not in workflow
 
     @pytest.mark.proof("scaffold", "PROOF-17", "RULE-17")
-    def test_the_branch_rules_are_printed(self, project):
-        output = project.run('--gate', 'strong')
-        assert '.purlin/records/ci/**' in output
-        assert '.purlin/briefs/ci/**' in output
-        assert 'force push' in output.lower()
-        assert 'gate check' in output
+    def test_no_branch_rule_is_printed(self, project):
+        """The gate is the tag now, so there is no rule to apply."""
+        for gate in ('passed', 'strong', 'signed'):
+            output = project.run('--gate', gate)
+            assert 'Branch rule' not in output, output
+            assert 'force push' not in output.lower(), output
 
     @pytest.mark.proof("scaffold", "PROOF-42", "RULE-42")
-    def test_the_triggers_are_the_three_the_release_runs_on(self, project):
-        git(project.root, 'symbolic-ref', 'HEAD', 'refs/heads/main')
+    def test_the_triggers_are_a_run_branch_and_the_signing_tag(self, project):
+        self._trust_remote(project)
         project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         block = workflow.split('\non:\n', 1)[1].split('\npermissions:', 1)[0]
-        assert block == "  pull_request:\n  push:\n    branches: [main, 'run/**']\n"
+        assert block == ("  push:\n    branches: ['run/**']\n"
+                         "    tags: ['signed/**']\n")
 
     @pytest.mark.proof("scaffold", "PROOF-42", "RULE-42")
-    def test_the_triggers_name_the_projects_own_default_branch(self):
-        made = Project('pytest', branch='trunk')
-        try:
-            made.run('--gate', 'strong')
-            workflow = read(made.path('.github/workflows/purlin.yml'))
-            assert "branches: [trunk, 'run/**']" in workflow
-            assert "branches: [main," not in workflow
-        finally:
-            made.close()
-
-    @pytest.mark.proof("scaffold", "PROOF-42", "RULE-42")
-    def test_the_last_step_checks_the_gate(self, project):
+    def test_the_last_step_checks_the_gate_and_verifies(self, project):
+        self._trust_remote(project)
         project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         assert 'name: Check the gate' in workflow
-        assert 'scripts/ci/gate_check.py" --check' in workflow
-        # After the upload, so the dashboard is attached before the job fails.
-        assert (workflow.index('actions/upload-artifact@v4')
-                < workflow.index('name: Check the gate'))
-        assert workflow.rstrip().endswith('--check')
+        assert 'scripts/ci/gate_check.py" --check --verify' in workflow
+        assert 'actions/upload-artifact@v4' not in workflow
+        assert workflow.rstrip().endswith('--check --verify')
 
     @pytest.mark.proof("scaffold", "PROOF-42", "RULE-42")
     def test_the_azure_pipeline_carries_the_same_two(self):
         made = Project('pytest',
                        remote='https://dev.azure.com/acme/demo/_git/demo')
         try:
-            git(made.root, 'symbolic-ref', 'HEAD', 'refs/heads/main')
+            TestTheWorkflow._trust_remote(made)
             made.run('--gate', 'strong')
             pipeline = read(made.path('purlin.azure-pipelines.yml'))
-            assert '      - main\n      - run/*\n' in pipeline
-            assert 'pr:\n' in pipeline
+            assert '      - run/*\n' in pipeline
+            assert '      - signed/*\n' in pipeline
+            assert 'pr: none\n' in pipeline
             assert 'displayName: Check the gate' in pipeline
-            assert 'scripts/ci/gate_check.py" --check' in pipeline
+            assert 'scripts/ci/gate_check.py" --check --verify' in pipeline
         finally:
             made.close()
-
-    @pytest.mark.proof("scaffold", "PROOF-17", "RULE-17")
-    def test_passed_prints_only_the_force_push_rule(self, project):
-        output = project.run('--gate', 'passed')
-        assert 'force push' in output.lower()
-        assert '.purlin/records/ci/**' not in output
 
 
 # ---------------------------------------------------------------------------
@@ -762,8 +769,7 @@ class TestWhatInitWrites:
                     '.purlin/plugins/pytest_purlin.py', 'conftest.py',
                     '.gitignore', 'designs', 'designs/README.md',
                     '.purlin/records', '.purlin/records/README.md',
-                    'purlin-report.html', '.purlin/hooks/pre-push',
-                    '.github/workflows/purlin.yml'):
+                    'purlin-report.html'):
             assert rel in named, output
             assert project.has(rel), rel
 
@@ -855,44 +861,27 @@ class TestWhatInitWrites:
         assert all(ord(ch) < 0x1F000 for ch in output)
 
 
-class TestTheHook:
+class TestNoHookIsInstalled:
+    """Nothing runs at commit time and nothing runs at push time."""
 
     @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
-    def test_the_shim_and_the_delegator_are_written(self, project):
+    def test_no_git_hook_is_written_at_all(self, project):
         project.run('--gate', 'passed')
-        shim = read(project.path('.purlin/hooks/pre-push'))
-        assert 'scripts/hooks/pre-push.sh' in shim
-        assert os.access(project.path('.purlin/hooks/pre-push'), os.X_OK)
-        delegator = read(project.path('.git/hooks/pre-push'))
-        assert '.purlin/hooks/pre-push' in delegator
+        for rel in ('.purlin/hooks/pre-push', '.git/hooks/pre-push',
+                    '.purlin/hooks/pre-commit', '.git/hooks/pre-commit'):
+            assert not project.has(rel), rel
 
     @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
-    def test_no_pre_commit_hook_is_installed(self, project):
-        project.run('--gate', 'passed')
-        assert not project.has('.purlin/hooks/pre-commit')
-        assert not project.has('.git/hooks/pre-commit')
-
-    @pytest.mark.proof("scaffold", "PROOF-25", "RULE-25")
-    def test_the_shim_names_no_machine(self, project):
-        project.run('--gate', 'passed')
-        shim = read(project.path('.purlin/hooks/pre-push'))
-        assert ROOT not in shim
-        assert project.root not in shim
-
-    @pytest.mark.proof("scaffold", "PROOF-26", "RULE-26")
-    def test_a_hook_someone_else_wrote_is_kept(self, project):
+    def test_a_hook_someone_else_wrote_is_left_alone(self, project):
         write(project.path('.git/hooks/pre-push'), '#!/bin/sh\necho mine\n')
-        output = project.run('--gate', 'passed')
+        project.run('--gate', 'passed')
         assert read(project.path('.git/hooks/pre-push')) == \
             '#!/bin/sh\necho mine\n'
-        assert 'add this line to it' in output
 
-    @pytest.mark.proof("scaffold", "PROOF-26", "RULE-26")
-    def test_a_hook_manager_is_named_rather_than_written_over(self, project):
-        write(project.path('.pre-commit-config.yaml'), 'repos: []\n')
-        output = project.run('--gate', 'passed')
-        assert 'pre-commit framework' in output
-        assert not project.has('.git/hooks/pre-push')
+    @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
+    def test_the_plugin_ships_no_hook_script(self):
+        assert not os.path.exists(
+            os.path.join(ROOT, 'scripts', 'hooks', 'pre-push.sh'))
 
     @pytest.mark.proof("scaffold", "PROOF-21", "RULE-21")
     def test_the_plugin_root_file_points_at_this_checkout(self, project):
@@ -1057,12 +1046,14 @@ class TestTheMarketplacePath:
         cache, installed = self.copy_plugin()
         made = Project('pytest')
         try:
+            write(made.path('.purlin/config.json'),
+                  json.dumps({'trust': 'remote'}) + '\n')
             output = made.run('--gate', 'strong',
                               script=os.path.join(installed, 'scripts', 'init',
                                                   'scaffold.py'),
                               env={'CLAUDE_PLUGIN_ROOT': installed})
             assert made.has('.purlin/plugins/pytest_purlin.py')
-            assert made.has('.github/workflows/purlin.yml')
+            assert made.has('.github/workflows/purlin.yml'), output
             assert '.purlin/config.json' in summary_paths(output)
         finally:
             made.close()

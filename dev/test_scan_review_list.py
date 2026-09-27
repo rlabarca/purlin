@@ -41,24 +41,24 @@ def test_the_lists_are_one_line_per_rule_in_their_own_order():
         sign=[('auth', 'RULE-1', 'strong', 'signed', 'unsigned')])
     lines = scan_module.review_list_text(payload).splitlines()
 
-    assert lines[0] == 'Review list: 3 rules need a person.'
-    assert lines[1] == 'Review: 2'
+    assert lines[0] == '3 rules need a person.'
+    assert lines[1] == 'Review list: 2'
     assert lines[2].split()[:4] == ['strong', 'login', 'RULE-10', 'strong']
     assert lines[2].endswith('unsettled'), lines[2]
     assert lines[3].split()[:4] == ['passed', 'billing', 'RULE-2', 'strong']
     assert lines[3].endswith('held'), lines[3]
-    assert lines[4] == 'Sign: 1'
+    assert lines[4] == 'Sign list: 1'
     assert lines[5].split()[:4] == ['strong', 'auth', 'RULE-1', 'signed']
     assert lines[5].endswith('unsigned'), lines[5]
     assert scan_module.review_list_text(_payload()) == \
-        'Review list: no rule needs a person.'
+        'No rule needs a person.'
 
 
 @pytest.mark.proof("records", "PROOF-28", "RULE-25")
 def test_one_rule_reads_in_the_singular():
     text = scan_module.review_list_text(
         _payload(review=[('login', 'RULE-3', 'strong', 'strong', 'held')]))
-    assert text.splitlines()[0] == 'Review list: 1 rule needs a person.'
+    assert text.splitlines()[0] == '1 rule needs a person.'
 
 
 @pytest.mark.proof("records", "PROOF-29", "RULE-25", tier="integration")

@@ -581,7 +581,6 @@ class TestDriftRuleDetails:
                '- PROOF-1 (RULE-1): Post once and verify 2 rows\n'
                '- PROOF-2 (RULE-2): Post twice and verify 2 identifiers\n'
                '- PROOF-3 (RULE-3): Post twice and verify the first 8 bytes hold\n'
-               '- PROOF-4 (RULE-4): Post an unbalanced entry and verify refusal\n'
                % _LEDGER_LONG_RULE)
         _proof_file(root, 'ledger', ['RULE-1', 'RULE-2', 'RULE-3'])
 
@@ -653,8 +652,8 @@ class TestDriftRuleDetails:
             "one payload counts" % ledger['total_rules'])
 
         # One id per rule worth naming, and nothing for the other six.
-        # `RULE-4` is the one rule whose proof text raises a blocking free
-        # check, so it is the one rule whose spec status reads `drafted`.
+        # `RULE-4` is the one rule no proof line names, so it is the one rule
+        # whose spec status reads `drafted`.
         assert ledger['unproved'] == ['RULE-4'], ledger['unproved']
         assert ledger['met'] == ledger['total_rules'] - 1, ledger['met']
         assert ledger['spec_path'] == 'specs/ledger/ledger.md', ledger['spec_path']
