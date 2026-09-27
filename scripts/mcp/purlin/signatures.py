@@ -48,7 +48,7 @@ honest answer: there is evidence now that there was not before.
 
 A signature **counts** under the `signed` gate when the commit that added it
 is signed and the signature verifies (`%G?` is `G`), and its hashes are
-current. Who signed is recorded, not policed: the file names the signer and
+current. Who signed is logged, not policed: the file names the signer and
 git names the commit's author, and neither is compared with anything. Below
 `signed` a committed signature counts.
 

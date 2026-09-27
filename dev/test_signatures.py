@@ -597,7 +597,7 @@ class TestTheSignedCommit:
     def test_what_a_counting_signature_is_at_each_gate(self, at_strong):
         signing_key(at_strong.root)
         # The signer is the last person to touch the test, and that is
-        # recorded, not policed: git names both authors.
+        # logged, not policed: git names both authors.
         at_strong.edit_test(TEST_FILE + '\n')
         assert git(at_strong.root, 'log', '-1', '--format=%ae', '--',
                    'tests/test_login.py').stdout.strip() == 'jane@acme.com'

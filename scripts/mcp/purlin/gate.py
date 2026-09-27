@@ -12,7 +12,7 @@ before it is proven, and every level above it is not asked for at all:
           holding the rule
 `signed`  every rule that needs a signature has a counting one: a person
           signed the rule, proof, test, bar and audit hashes in a signed
-          commit. Who signed is recorded, not policed
+          commit. Who signed is logged, not policed
 
 One setting is not derived from the gate: `trust`, which `purlin:init` asks
 for once. `local`, the default, is a project that trusts this machine for

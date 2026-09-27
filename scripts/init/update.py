@@ -62,7 +62,7 @@ GATE_RENAMES = {'tested': 'passed', 'recorded': 'strong',  # retired
                 'approved': 'signed'}                      # retired
 SIGNER_KEY = 'signers'                                     # retired
 SIGNER_KEY_DROPPED = ('dropped signers from .purlin/config.json: a '  # retired
-                      'signature is recorded, and no list says who may '
+                      'signature names its signer, and no list says who may '
                       'sign')
 PRE_PUSH_SHIM = '.purlin/hooks/pre-push'                   # retired
 PRE_PUSH_DELEGATOR = '.git/hooks/pre-push'                 # retired

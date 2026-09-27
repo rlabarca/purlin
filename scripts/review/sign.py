@@ -50,7 +50,7 @@ hold.json`, a person's statement that the test does not prove the proof as
 written, with the missing case as its reason. It is committed signed, like a
 signature.
 
-**Who signs is recorded, not policed.** The signature names the signer and
+**Who signs is logged, not policed.** The signature names the signer and
 git names the commit's author; no list says who may sign, and nothing
 compares the signer with whoever last touched the test.
 
