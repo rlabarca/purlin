@@ -67,8 +67,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <bran
 
 **What you work.** The Review and Sign tabs, never the whole rule list. A rule reaches them only when the
 cell that blocks it is one a person answers: a strong cell reading `manual test`,
-`unsettled` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A rule with no test, a failing rule and a weak rule
-are build work and stay on the board. A rule whose passed cell reads `code changed` is not on
+`unsettled` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A rule with no
+test, a failing rule, a weak rule and a rule reading `not audited` are all work for the machine
+or the build, and they stay on the board. A rule whose passed cell reads `code changed` is not on
 the list either: only the code moved, the signature stands, and CI clears it on the next run.
 
 Adding a case is plain language. Say "it should also reject an expired token" and the proof
@@ -133,7 +134,7 @@ A rule that came from a pinned anchor belongs to the anchor repository, whoever 
 |------|-----------------|
 | `pm` | Criteria with no rule carrying them, `origin: pm` rules whose text changed, rules an engineer added, pins behind |
 | `design` | Design files that changed, and `origin: design` rules whose signature went stale because a mock was re-exported |
-| `qa` | Signatures gone stale, how long the Review and Sign lists are, how many rules need a person, rules whose every proof asserts a success path |
+| `qa` | Signatures gone stale, how long the Review and Sign lists are, the rules reading `manual test`, `unsettled` and `not audited`, rules whose every proof asserts a success path |
 | `eng` | Files touched and the rules behind them, rules with no test, origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` |
 
 Run it at four moments: at the start of a session, after an anchor pin or a design export

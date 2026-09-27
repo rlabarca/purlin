@@ -46,10 +46,10 @@ The Board is where every rule stands. Its headline is two lines:
 
 The first line is what the board is mainly about: whether the rules pass their tests. The
 second names the gate, in the sentence `purlin:status` opens its own summary on, so the board
-and the table lead with the same words. At `passed` and `strong` a rule meets the gate when
-every cell up to the gate's level is met; at `signed` it meets the gate when it has cleared its
-bar and, where it needs a signature, that signature counts. The gate decides how many cells a
-rule has, so it also decides how much of this page exists.
+and the table lead with the same words. A rule meets the gate when nothing up to the gate's
+level blocks it: its tests pass, its bar is cleared, no hold is current, and where a signature
+is required it counts. The gate decides how many cells a rule has, so it also decides how much
+of this page exists.
 
 ![The Board at the passed gate: the Untested, Failing, Partial and Passing tiles, and two specs with their rules, proofs and tests](images/dashboard-solo.png)
 
@@ -87,10 +87,10 @@ only at `signed` is CI's the one that counts.
 At `signed` each rule gains a signed cell. A `Signed` tile joins the five, two flag cards sit
 beside the tiles, and two columns join the five.
 
-`Signable` reads `3 of 4`: how many of the spec's rules have cleared their bar, signed or not,
-so the column says how much of the spec is ready for a person rather than how much work is
-left. Its hover names the rules still to sign. `Signed` reads `1 of 4`, and its hover names
-each signer with the date of their newest signature and then how many signatures stopped
+`Signable` reads `1 of 4`: how many of the spec's rules a signer can act on now. A rule counts
+there when it has cleared its bar, it needs a signature, and none counts for it yet, which is
+the same rule the Sign tab lists. Its hover names them. `Signed` reads `1 of 4`, and its hover
+names each signer with the date of their newest signature and then how many signatures stopped
 matching.
 
 The `To sign` card carries how many rules across the project are waiting for a signature, with
@@ -223,9 +223,10 @@ The Sign tab is the rules that have cleared their bar and are waiting for a sign
 exists at `signed` and nowhere else.
 
 A rule has **cleared its bar** when its bar is `passed` and its tests pass, or its bar is
-`strong` and the audit proved it strong. That is what `signable` means, and it is what the
-`Signable` column counts. The tab lists the signable rules that no counting signature covers
-yet, so a rule leaves it the moment someone signs it.
+`strong` and the audit proved it strong. A rule that has cleared its bar, needs a signature
+and has none that counts is **signable**: the `Signable` column counts those, the `To sign`
+card counts them for the project, and this tab lists them. A rule leaves it the moment someone
+signs it.
 
 ![The Sign tab: the header and one row with its spec, rule id, text, bar, signed word and the command that signs it](images/dashboard-sign.png)
 
@@ -253,8 +254,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <bran
 
 It reads `specs/`, `.purlin/tests/` and `.purlin/records/` by sparse fetch and prints the headline, one line per
 bucket, and the flags beside them, then how far the ref has moved past the newest record, then
-the review list, one line per rule with its bar, the rule, the cell that blocks it and why a
-person is needed. `--repo` also takes a local path. CI posts the same rollup as a pull request
+Review and Sign under one count, one line per rule with its bar, the rule, the cell that
+blocks it and the word that cell reads. `--repo` also takes a local path. CI posts the same rollup as a pull request
 comment, so a reviewer reads one answer whether they are on the pull request, in a checkout, or
 looking at the page.
 

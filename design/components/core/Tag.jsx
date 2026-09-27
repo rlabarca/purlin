@@ -2,7 +2,7 @@ import React from 'react';
 
 const hues = { accent: 'var(--accent)', pass: 'var(--state-pass)', warn: 'var(--state-warn)', fail: 'var(--state-fail)', neutral: 'var(--state-neutral)', muted: 'var(--text-muted)' };
 
-/** Mono chip for machine strings: agent names, gates, risk levels, commit shas. */
+/** Mono chip for machine strings: agent names, gates, bars, commit shas. */
 export function Tag({ children, tone = 'accent', style, ...rest }) {
   return (
     <span

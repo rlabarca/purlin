@@ -64,8 +64,9 @@ all.
 **To `signed`.** On top of that: the signer emails, which init asks for with `Who may sign a
 rule?` and writes to `signers` in `.purlin/config.json`; the commit-signing setup printed once
 per signer; the question `Which rules need a signature?`, whose answers are `strong`, the
-rules whose bar is `strong`, and `all`, every rule; and a list of every rule that still
-carries no origin tag, which `purlin:spec <feature>` tags in one pass.
+rules whose bar is strong and the rest meeting the gate on their tests, and `all`, every rule
+whatever its bar; and a list of every rule that still carries no origin tag, which
+`purlin:spec <feature>` tags in one pass.
 
 The derived defaults move too: `min_strength` becomes 80, and `sign_at` takes the answer you
 gave, `strong` by default. A rule whose bar is `passed` under `sign_at: strong` needs no
@@ -176,8 +177,16 @@ with the same three answers a new project is asked:
 ```
 What must be true before CI lets a change merge?
   passed  every rule has a passing tagged test, from any source
-  strong  CI writes a record at this commit, at or above the minimum strength
-  signed  strong, plus a signature on every rule whose bar is strong
+  strong  every rule has a record CI wrote, at the minimum test strength
+  signed  strong, plus a signature from a person on the rule
+```
+
+Under `signed` a second question follows:
+
+```
+Which rules need a signature?
+  strong  the rules whose bar is strong; the rest meet the gate on their tests
+  all     every rule, whatever its bar
 ```
 
 The `config` migration also drops the settings that named the old gate values and the old list

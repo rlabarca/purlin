@@ -6,7 +6,8 @@ const map = {
   failed: { label: 'FAILED', hue: 'var(--state-fail)', solid: false },
   weak: { label: 'WEAK', hue: 'var(--state-warn)', solid: false },
   stale: { label: 'STALE', hue: 'var(--state-fail)', solid: false },
-  'not required': { label: 'NOT REQUIRED', hue: 'var(--state-idle)', solid: false },
+  'not audited': { label: 'NOT AUDITED', hue: 'var(--state-idle)', solid: false },
+  unsettled: { label: 'UNSETTLED', hue: 'var(--state-warn)', solid: false },
   drafted: { label: 'DRAFTED', hue: 'var(--state-idle)', solid: false },
 };
 

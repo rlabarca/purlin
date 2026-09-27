@@ -38,9 +38,10 @@ list or a signature.
 
 Every rule also has a **bar**, `passed` or `strong`: the evidence that rule must have before it
 can be signed. A rule says its own with the tag `[bar: passed]` or `[bar: strong]`, and a rule
-with no tag takes the project's gate as its bar. At `passed` and `strong` a rule **meets the
-gate** when every cell up to the gate's level is met. At `signed` it meets the gate when it has
-cleared its bar and, where it needs a signature, that signature counts.
+with no tag takes the project's gate as its bar. A rule **meets the gate** when nothing up to
+the gate's level blocks it: its tests pass, its bar is cleared, no hold is current, and where a
+signature is required it counts. A rule whose bar is `passed` is therefore not held to the
+strong cell even at the `strong` gate.
 [references/hard_gates.md](../references/hard_gates.md) is the one definition.
 
 ## Five words
@@ -136,8 +137,8 @@ have before anyone can sign it, whether the AI audit runs on it, and whether it 
 signature at all. The AI audit runs on every rule whose bar is `strong` and on no other, so a
 rule whose bar is `passed` never reads `not audited` or `unsettled`. Under `signed` a rule
 needs a signature when the project's `sign_at` is `all`, or when its own bar is `strong`. A
-rule that has cleared its bar is **signable**, which is what the board's `Signable` column
-counts and what the Sign tab lists.
+A rule that has cleared its bar and is still waiting for a signature is **signable**, which
+is what the board's `Signable` column counts and what the Sign tab lists.
 
 **What is the difference between `not audited` and `unsettled`?** `not audited` means the
 rule's bar is `strong` and no audit has run on this code yet: it waits for `purlin:audit`, not

@@ -157,9 +157,10 @@ The bar decides three things:
 | `passed` | the rule's tagged tests pass on every platform a counting run covered | no | only when `sign_at` is `all` |
 | `strong` | all of that, an audit, the strength floor, a clear set of free checks, no hold | yes | yes |
 
-A rule that has met its bar has **cleared** it, and a rule that has cleared its bar is
-**signable**: the board's `Signable` column counts it and the Sign tab lists it until someone
-signs it. A rule meets the gate `signed` when it has cleared its bar and, where it needs a
+A rule that has met its bar has **cleared** it. A rule that has cleared its bar, needs a
+signature and has none that counts is **signable**: the board's `Signable` column counts it,
+the `To sign` card counts it for the project, and the Sign tab lists it until someone signs
+it. A rule meets the gate `signed` when it has cleared its bar and, where it needs a
 signature, that signature counts.
 
 `sign_at` says which rules need a signature at all. `strong`, the default, asks for one on the

@@ -63,16 +63,7 @@ EXCLUDED = (
 # Paths a later phase of dev/plans/three-levels.md still rewrites, grouped by
 # the lane that owns them. A lane deletes its entries in the commit that
 # rewrites the files; the tuple is empty at closeout.
-PENDING_REWRITE = (
-    # lane 12B: the dashboard, the docs pages and the deck still name the tag
-    # the bar replaced and the words it retired.
-    "scripts/report/purlin-report.html",
-    "scripts/report/src/",
-    "docs/",
-    "design/",
-    "dev/test_purlin_report.py",
-    "specs/dashboard/purlin_report.md",
-)
+PENDING_REWRITE = ()
 
 # Phase 7 deletes every signature directory of the old layout; until then the
 # files inside carry the old words.

@@ -20,8 +20,8 @@ with no tag takes the project's gate as its bar. The bar decides three things:
 - **whether it needs a signature.** Under `signed`, a rule needs one when the project's
   `sign_at` is `all`, or when its own bar is `strong`.
 
-A rule that has met its bar has **cleared** it, and a rule that has cleared its bar is
-**signable**. That is the whole of what `signable` means.
+A rule that has met its bar has **cleared** it, and a rule that has cleared its bar and is
+still waiting for a signature is **signable**. That is the whole of what `signable` means.
 
 ## Review
 
@@ -29,8 +29,8 @@ A rule that has met its bar has **cleared** it, and a rule that has cleared its 
 purlin:sign
 ```
 
-No arguments and no prior reading. The skill asks for the two lists, prints their counts and
-the first few rows, then starts the walk with Review.
+No arguments and no prior reading. The skill asks for the two lists, prints each one's count
+and its first five rows, then starts the walk with Review.
 
 ```
 Review: 7 rules need a person, across 3 features
@@ -105,7 +105,7 @@ it out of every commit.
 |-------|---------------|---------|
 | The free checks on the proof text | the proof description and its tier tag alone | every bar |
 | The free checks on the test body | the marked test body, no execution | every bar |
-| Test strength | `test_strength` from the newest counting record, against `min_strength` | bar `strong` |
+| Test strength | `test_strength` from the newest counting record, against `min_strength` | every bar |
 | The model review | the criteria plus this rule's evidence | bar `strong` |
 
 The first two layers are free in both senses: nothing runs and nothing is charged. They read a
@@ -136,7 +136,9 @@ the review criteria verbatim plus this rule's evidence, so it observes by the sa
 you read. It is asked to state what the test observes against what the proof names, and to say
 when it cannot tell. When it cannot tell, the strong cell reads `unsettled`, and the rule waits
 for you rather than for another run. Until the audit has run at all, the cell reads
-`not audited`, and the rule waits for `purlin:audit`.
+`not audited`, and the rule waits for `purlin:audit`. Where no model could be reached at all
+the brief says so and settles nothing: the other layers answer, and the cell does not read
+`unsettled` for a question nobody asked.
 
 For a rule tagged `origin: design`, the brief shows the pinned mock from `designs/<feature>/`
 beside the screenshot the test captured under `.purlin/runtime/attachments/`. Judge what a
