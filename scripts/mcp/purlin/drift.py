@@ -29,8 +29,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import (checks, payload as payload_module,
-                    specs as specs_module, states)
+from purlin import payload as payload_module, specs as specs_module, states
 
 ROLES = ('pm', 'design', 'qa', 'eng')
 
@@ -489,11 +488,6 @@ def _role_views(report, data, file_entries):
         'not_audited': ['%s/%s' % (feature['name'], rule['id'])
                         for feature, rule in rules
                         if rule['flags'].get('not_audited')],
-        'rules_without_a_negative_case': [
-            '%s/%s' % (feature['name'], rule['id'])
-            for feature, rule in rules
-            if rule['proofs'] and not checks.names_a_negative_case(
-                [p.get('text') for p in rule['proofs']])],
     }
     eng = {
         'files_touched': [e['path'] for e in file_entries

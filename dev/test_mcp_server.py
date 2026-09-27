@@ -1871,9 +1871,8 @@ class TestDriftRoles:
                                                role='qa'))
         assert report['role'] == 'qa'
         assert sorted(report['view']) == [
-            'manual', 'not_audited', 'review_list_size', 'rules_without_a_'
-            'negative_case', 'sign_list_size', 'signatures_stale',
-            'unsettled']
+            'manual', 'not_audited', 'review_list_size', 'sign_list_size',
+            'signatures_stale', 'unsettled']
 
     @pytest.mark.proof("drift", "PROOF-2", "RULE-1", tier="integration")
     def test_a_hostile_since_never_reaches_git(self, project):

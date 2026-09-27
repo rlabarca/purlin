@@ -107,7 +107,7 @@ drift qa: Review is 9 rules and Sign is 3
 
   login RULE-3               signature stale: the rule text changed after it
   billing RULE-2             unsettled: the AI audit could not settle
-  export RULE-1              weak: no proof of this rule names a rejection or a boundary
+  export RULE-1              not audited: no audit has run on this code
 ```
 
 ## Step 4: what drift never does
@@ -126,5 +126,5 @@ line rather than listing those rules one by one.
 | An origin tag missing under a gate that needs it | `→ Run: purlin:spec <feature>` |
 | An anchor pin behind | `→ Run: purlin:anchor sync <name>` |
 | Rules waiting on a person | `→ Run: purlin:sign` |
-| Only `code changed` | `→ Next: run purlin:test --remote; the next CI run clears it.` |
+| Only `code changed` | `→ Next: run purlin:test; the next run clears it.` |
 | Nothing at all | `→ Nothing has drifted.` |
