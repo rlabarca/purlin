@@ -81,7 +81,7 @@ the bar as they followed the old tag.
 | Flag | What it does |
 |------|--------------|
 | `--gate <level>` | sets the gate, at setup or later |
-| `--upstream-check` | adds a scheduled job that opens a pull request or an issue when an anchor pin falls behind |
+| `--upstream-check` | adds a scheduled job that opens an issue when an anchor pin falls behind |
 | `--add <language>` | wires a second language: its test framework, its proof plugin, its break engine |
 | `--update` | brings a project set up by an older Purlin onto the installed one |
 | `--dry-run` | prints the plan and writes nothing |
@@ -109,8 +109,8 @@ the team in the same message:
 2. Apply the branch rules init printed. Purlin never changes a repository's settings, so until
    someone applies them the gate is a preference rather than a control.
 3. The status table and the board grow a column, a tile and a filter per level, so nobody
-   configures a view. `Strength` joins the status table and `Strong` joins the board at this
-   gate; `Signed` appears at the next.
+   configures a view. The table and the board carry the same columns, so `Strong` joins both at
+   this gate, and `Signable` and `Signed` join both at the next.
 
 At `signed`, add two more: only CI's tests and CI's audit count there, so a local record
 becomes a preview, and signing commits reach the default branch by pull request like any other

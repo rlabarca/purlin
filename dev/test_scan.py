@@ -153,7 +153,7 @@ def test_the_rollup_names_the_project_the_gate_and_the_buckets(remote):
     text = scan_module.scan(bare, 'main')
 
     assert 'gate strong' in text
-    assert '1 features, 2 rules, 2 proof lines · 2 without a test.' in text
+    assert '1 feature, 2 rules, 2 proof lines · 2 without a test.' in text
     assert 'Untested' in text, 'no bucket was counted'
     assert 'Partial' in text, 'the sixth bucket was not counted'
     assert 'No record has been committed yet.' in text
@@ -189,7 +189,7 @@ def test_every_bucket_the_package_names_can_be_printed():
     for bucket in buckets:
         label = board_module.bucket_label(bucket)
         assert label in text, '%s was not printed' % label
-    assert '1 signatures stale' in text
+    assert '1 signature stale' in text
     assert '1 rules have a manual test' in text
     assert '2 rules are unsettled' in text
     assert '1 rules are not audited' in text
@@ -253,8 +253,8 @@ def test_a_tag_is_read_rather_than_the_default_branch(remote):
     git(source, 'commit', '--quiet', '-m', 'a third rule')
     git(source, 'push', '--quiet')
 
-    assert '1 features, 2 rules,' in scan_module.scan(bare, 'v1.0')
-    assert '1 features, 3 rules,' in scan_module.scan(bare, 'main')
+    assert '1 feature, 2 rules,' in scan_module.scan(bare, 'v1.0')
+    assert '1 feature, 3 rules,' in scan_module.scan(bare, 'main')
 
 
 @pytest.mark.proof("records", "PROOF-16", "RULE-16")

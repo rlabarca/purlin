@@ -26,7 +26,8 @@ purlin:test --remote            Let the git host's runner do the run
 ```
 
 The run writes proof files into `.purlin/runtime/proofs/` and prints one line per rule, reading
-that rule's passed cell: `passed`, `failed`, `partial`, `no test` or `not run`. That directory
+that rule's passed cell: `passed`, `failed`, `partial`, `no test`, `not run` or `code
+changed`. That directory
 is generated and never committed, so two test runs never conflict with each other.
 
 It then writes what it saw into two tracked files and commits them itself:
@@ -205,7 +206,7 @@ A SQL project has no break engine, but it does choose the binary its tests run a
 
 A record is one audit run's observations for one feature, written into the tree and committed
 there by whichever hand ran it. The git history of `.purlin/records/` is the log of what was
-proven and when. Its full field list, at format version 2, is in the
+proven and when. Its full field list, at schema version 3, is in the
 record format reference that ships with the plugin,
 [references/formats/record_format.md](../references/formats/record_format.md). The test results
 `purlin:test` commits are a different file in a different directory, described in
@@ -235,7 +236,7 @@ Eight fields are required, and every other one is optional:
 
 | Field | What it holds |
 |---|---|
-| `schema_version` | `2` for this format |
+| `schema_version` | `3` for this format |
 | `feature` | the spec this run observed |
 | `commit` | the full sha of the commit the run observed |
 | `timestamp` | ISO 8601 UTC, matching the file name |
@@ -287,8 +288,9 @@ committer is the build service and no signature exists, which is what Azure DevO
 
 ### Retention and record tags
 
-A feature keeps the newest three records per operating system. The CI run prunes the rest as
-it writes, so a matrix of three operating systems keeps nine records per feature and no more.
+A feature keeps the newest three records per operating system per source, and the run that
+writes one prunes the rest, whether it is CI's or yours. A matrix of three operating systems
+therefore keeps nine CI records per feature, and your own audits keep three more per system.
 
 `purlin:audit --tag 1.0` writes an annotated tag `record/1.0` over the records in the tree,
 under both folders, whose message lists the record paths it vouches for, one per line.
@@ -449,7 +451,7 @@ delete command.
 
 ## Next
 
-- [how-purlin-works.md](how-purlin-works.md): the chain, the four words, and who writes each file.
+- [how-purlin-works.md](how-purlin-works.md): the chain, the five words, and who writes each file.
 - [dashboard.md](dashboard.md): the same data as a page, locally and as a CI artifact.
 - [team-workflow.md](team-workflow.md): what the `strong` gate asks of a team.
 - [regulated-workflow.md](regulated-workflow.md): signatures on top of records.

@@ -168,21 +168,25 @@ commits them itself as `purlin: record for <sha7>`, and ends with `gate strong: 
 ## Read the table
 
 ```
-Feature  Rules  Spec                 Tests                             Run
-──────────────────────────────────────────────────────────────────────────
-login        3  3 ready · 0 drafted  3 passed · 0 failing · 0 no test  local
+Spec   Rules  Proofs  Tests
+───────────────────────────
+login      3  3       3 of 3
 
 3 of 3 rules meet the gate passed.
+Untested 0 · Failing 0 · Partial 0 · Passing 3.
+1 feature, 3 proof lines.
 → Next: nothing is outstanding at gate passed.
 ```
 
 `purlin:status` prints that table any time, one row per feature and per anchor, sorted so the
-rows needing the most work come first. `Spec` counts the rules a proof names against the rules
-still drafted; `Tests` counts passed, failing and no test; `Run` names the source of the newest
-evidence, `ci` or `local`, and the operating system when the run was one job of a matrix. A column exists only
-when the cell behind it does, so a project at the `passed` gate has no `Strength`, `Strong` or
-`Signed` column. The gate is what adds them: `purlin:init --gate strong` adds the first two,
-`--gate signed` adds the third.
+rows needing the most work come first. `Rules` counts the rules the spec must prove; `Proofs`
+counts its proof lines and adds `· <k> without a test` when a proof has none; `Tests` reads
+`<passed> of <rules>` and adds `· <k> partial` and `· <k> failing` when either is above zero.
+When a run happened, on which operating system and from which source is in the cell's hover on
+the dashboard, and on the rule screen in full. A column exists only when the cell behind it
+does, so a project at the `passed` gate has no `Strong`, `Signable` or `Signed` column. The
+gate is what adds them: `purlin:init --gate strong` adds the first, `--gate signed` adds the
+other two.
 
 Every command ends with one `→ Next:` line naming the step to take, computed from the cell that
 blocks the rules: `purlin:spec` when a rule has no proof that clears the free checks,

@@ -115,8 +115,9 @@ def rollup_text(project_root, payload):
     gate = payload['gate']['gate']
     lines = ['Purlin: %s, gate %s' % (payload['project'], gate), '']
     lines.append(board_module.headline(summary, gate))
-    lines.append('%d features, %d rules, %s.'
-                 % (summary['features'], summary['rules'],
+    lines.append('%s, %s, %s.'
+                 % (board_module.count_of(summary['features'], 'feature'),
+                    board_module.count_of(summary['rules'], 'rule'),
                     board_module.proofs_summary(summary)))
     lines.append('')
 
@@ -126,8 +127,8 @@ def rollup_text(project_root, payload):
         lines.append('  %-9s %d' % (label, count))
 
     if summary.get('stale'):
-        lines.append('%d signatures stale: the hashes changed after signing.'
-                     % summary['stale'])
+        lines.append('%s stale: the hashes changed after signing.'
+                     % board_module.count_of(summary['stale'], 'signature'))
     if summary.get('partial'):
         lines.append('%d rules are partial: their tests pass on one operating '
                      'system and not on another.' % summary['partial'])

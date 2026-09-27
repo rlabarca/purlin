@@ -177,6 +177,17 @@ def headline(summary, gate):
         summary.get('met') or 0, summary.get('rules') or 0, gate)
 
 
+def count_of(count, word, plural=None):
+    """`<n> <word>`, with the plural only where the count asks for one.
+
+    One feature is a feature and one signature is a signature, and a table a
+    person reads on their first day should not say `1 features`.
+    """
+    if count == 1:
+        return '1 %s' % word
+    return '%d %s' % (count, plural or word + 's')
+
+
 def needs_a_person(count):
     """`<n> rules need a person`: the one sentence that says a person is owed.
 

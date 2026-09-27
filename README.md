@@ -68,7 +68,8 @@ claude --plugin-dir /path/to/purlin
 ```
 
 A consumer project carries no copy of Purlin, so CI clones Purlin at a pinned tag and runs the
-audit from that checkout.
+same run script from that checkout. Set the `PURLIN_REF` repository variable to move that pin
+without editing the workflow.
 
 ## Your first session
 

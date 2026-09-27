@@ -21,7 +21,7 @@ comment proposing the change instead.
 and their agent runs `purlin:spec`. You review that pull request like any other.
 
 **What you see.** After CI runs, the pull request carries a comment with the state of every
-rule and a link to the `purlin-dashboard` build artifact. Tag each rule with the id of the
+rule and a link to the `purlin-dashboard-<os>` build artifact, one per job in the matrix. Tag each rule with the id of the
 criterion it came from, `[criterion: US-12]`, and `purlin:drift pm` tells you which criteria
 still have no rule:
 
@@ -56,7 +56,7 @@ captured. The whole flow is in [design-in-specs.md](design-in-specs.md).
   case in plain language, hold or skip.
 - **An assistant with the repository connected.** It reads the same rollup, opens pull
   requests carrying proof edits, and batches signatures into one commit.
-- **No AI at all.** Open the `purlin-dashboard` artifact from the pull request and review the
+- **No AI at all.** Open the `purlin-dashboard-<os>` artifact from the pull request and review the
   diff by hand.
 
 Anyone with the repository URL can print the same rollup without cloning it whole:

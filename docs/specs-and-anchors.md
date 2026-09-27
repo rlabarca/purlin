@@ -8,7 +8,8 @@ observed. A **test** is the executable form of a proof, tagged with its rule. Th
 are the whole model, and everything else Purlin does reads them.
 
 The format is versioned. `references/formats/spec_format.md` inside the plugin is the
-contract, at Format-Version 11; this page explains it and that file settles it.
+contract, and its `> Format-Version:` line says which version this release ships; this page
+explains the format and that file settles it.
 
 ## The file
 
@@ -74,7 +75,7 @@ One claim per line, in the present tense, saying what the software does rather t
 ```
 
 Tags sit at the end of the line and are read off it, so the text that remains is the claim
-alone. Re-tagging a rule never stales a signature, so add a missing tag freely.
+alone. Re-tagging `origin` or `criterion` never stales a signature, so add a missing one freely; the bar is bound into a signature, so re-tagging that one does stale it.
 
 | Tag | Values | Default | What it decides |
 |-----|--------|---------|-----------------|

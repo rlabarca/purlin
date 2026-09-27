@@ -136,9 +136,9 @@ rule applied it stops the merge until the list is dealt with.
 have before anyone can sign it, whether the AI audit runs on it, and whether it needs a
 signature at all. The AI audit runs on every rule whose bar is `strong` and on no other, so a
 rule whose bar is `passed` never reads `not audited` or `unsettled`. Under `signed` a rule
-needs a signature when the project's `sign_at` is `all`, or when its own bar is `strong`. A
+needs a signature when the project's `sign_at` is `all`, or when its own bar is `strong`.
 A rule that has cleared its bar and is still waiting for a signature is **signable**, which
-is what the board's `Signable` column counts and what the Sign tab lists.
+is what the board's `Signable` column counts and what the Sign list holds.
 
 **What is the difference between `not audited` and `unsettled`?** `not audited` means the
 rule's bar is `strong` and no audit has run on this code yet: it waits for `purlin:audit`, not

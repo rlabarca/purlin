@@ -58,9 +58,9 @@ Every rule carries `[origin: eng]` and `[bar: passed]`:
 ```
 
 `eng` is correct because an engineer derived the rule and no PM asked for it: `purlin:drift
-pm` then shows these as engineer-added rather than as requirements out of nowhere. `low` is
-correct because nobody has judged the cost of getting it wrong yet. Both are re-tagged later,
-in one pass, and re-tagging never stales a signature.
+pm` then shows these as engineer-added rather than as requirements out of nowhere. `passed`
+is correct because nobody has judged yet whether the rule is worth an audit and a signature. Both are re-tagged later,
+in one pass, and re-tagging `origin` or `criterion` never stales a signature, though re-tagging the bar does.
 
 Where a test already exercises the behaviour, the proof says so, and `purlin:build` adds the
 marker to that test instead of writing a new one:

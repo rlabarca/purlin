@@ -14,7 +14,7 @@ One setting, the **gate**, decides how much of that chain a project asks for.
 
 | Gate | What CI requires before merge | Where the counting record comes from |
 |------|-------------------------------|--------------------------------------|
-| `passed` | every rule's passed cell is met | your machine's test results, which `purlin:test` commits |
+| `passed` | every rule's passed cell is met | your machine's test results, which `purlin:test` commits; a pass from any source counts |
 | `strong` | every rule's strong cell is met too | your own `purlin:audit`, or CI: both count here |
 | `signed` | every rule has cleared its bar, and every rule that needs a signature has a current one | CI alone, on the protected branch or on a remote run's run branch, plus a person's signature |
 
@@ -60,7 +60,7 @@ can be signed. A rule says its own with a tag; a rule with no tag takes the proj
 | [Glossary](../references/glossary.md) | The word this project uses for each concept, and the retired spellings |
 | [Spec format](../references/formats/spec_format.md) | The 2-section spec, field by field |
 | [Test results format](../references/formats/tests_format.md) | The two files `purlin:test` writes and commits |
-| [Record format](../references/formats/record_format.md) | The record a CI run writes |
+| [Record format](../references/formats/record_format.md) | The record an audit writes, yours or CI's |
 | [Signature format](../references/formats/signature_format.md) | The signature file and what it binds |
 | [Spec quality](../references/spec_quality_guide.md) | Writing a rule worth having, and diagnosing a failure |
 | [Supported frameworks](../references/supported_frameworks.md) | How each test framework is detected and wired |

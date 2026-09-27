@@ -50,7 +50,7 @@ list back to the person before running it for real on a project that already has
 |------|--------------|
 | `--gate <level>` | Sets the gate, at setup or later. Raising adds what is missing and asks before each write. Lowering changes the setting and deletes nothing |
 | `--update` | Brings a project set up by an older Purlin to the installed one. See below |
-| `--upstream-check` | Adds a scheduled job that opens a pull request or an issue when an anchor pin falls behind |
+| `--upstream-check` | Adds a scheduled job that opens an issue when an anchor pin falls behind |
 | `--add <language>` | Adds a second language: its test framework, its proof plugin, its breaks engine |
 | `--dry-run` | Prints the plan and writes nothing |
 

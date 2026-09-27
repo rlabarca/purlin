@@ -141,7 +141,7 @@ def _summary(data):
     gate = cfg['gate']
     lines = [board_module.headline(summary, gate),
              board_module.bucket_line(summary, gate) + '.']
-    second = ['%d features' % summary['features'],
+    second = [board_module.count_of(summary['features'], 'feature'),
               board_module.proofs_summary(summary)]
     if gate != 'passed':
         if cfg.get('min_strength') is not None:
@@ -159,7 +159,9 @@ def _summary(data):
                       % ('every rule' if cfg.get('sign_at') == 'all'
                          else 'every rule whose bar is strong'))
         if summary.get('stale'):
-            second.append('%d signatures stale' % summary['stale'])
+            second.append('%s stale'
+                          % board_module.count_of(summary['stale'],
+                                                  'signature'))
     lines.append(', '.join(second) + '.')
     lines.extend(_list_lines(data, gate))
     return lines

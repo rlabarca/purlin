@@ -84,10 +84,11 @@ inside the hashes a signature binds.
 | The signing commit an ancestor of the protected branch | it merges by pull request like any change |
 
 The CI check, `scripts/ci/gate_check.py --check`, is the last step of every run. It prints
-four sections, `Not passed (n)`, `Weak (n)`, `Waiting on a person (n)` and `Not signed (n)`,
-with each rule under the cell that blocks it and the reason that cell carries; it names the
-first twenty in a section and counts the rest. Every line it prints opens with `gate:`. It
-writes nothing, exits 0 when the gate is met and 1 when it is not, and exits 2 when it cannot
+one section per kind of work, `Not passed (n)`, `Partial (n)`, `Weak (n)`, `Not audited (n)`,
+`To review (n)` and `To sign (n)`, each naming the rules the cell that blocks them puts there
+and the reason that cell carries; it names the first twenty in a section and counts the rest.
+Its own lines, the gate, the counts and the last word on whether the gate held, open with
+`gate:`; the rules under a section heading are indented instead. It writes nothing, exits 0 when the gate is met and 1 when it is not, and exits 2 when it cannot
 read the evidence, so an unreadable checkout never passes the branch. `purlin:status` reads the
 same cells and ends with one `→ Next:` line naming the step that clears the most rules.
 
