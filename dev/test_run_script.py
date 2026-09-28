@@ -12,6 +12,7 @@ the script called them with.
 """
 
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -777,27 +778,49 @@ class TestWhereEachArmCommits:
         assert not list(root.glob('specs/**/*.signatures'))
         assert not (root / '.purlin' / 'evidence' / 'ci').exists()
 
+    @staticmethod
+    def _on_ref(monkeypatch, ref):
+        """The real host's reading of the ref a GitHub runner was started
+        for; only the commit through the git host's API stays faked."""
+        _load_run_script()
+        loaded = importlib.util.spec_from_file_location(
+            'real_host', os.path.join(REPO, 'scripts', 'run', 'host.py'))
+        real = importlib.util.module_from_spec(loaded)
+        loaded.loader.exec_module(real)
+        monkeypatch.setitem(sys.modules, 'host', _FakeModule(
+            commit_files=sys.modules['host'].commit_files,
+            commits_here=real.commits_here, no_commit_line=real.no_commit_line))
+        monkeypatch.setenv('GITHUB_REPOSITORY', 'owner/project')
+        monkeypatch.setenv('GITHUB_REF', ref)
+        monkeypatch.setenv('GITHUB_REF_NAME', ref.split('/', 2)[2])
+
     # purlin: run_script PROOF-68
     def test_a_tag_run_writes_nothing_and_says_so(
-            self, tmp_path, evidence_run, capsys):
+            self, tmp_path, evidence_run, capsys, monkeypatch):
         """A tag run reruns the tests and verifies; it adds no evidence."""
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         purlin_run = _load_run_script()
-        calls = evidence_run(root, '--all', '--test')[1]
-        calls['commits_here'] = False
+        evidence_run(root, '--all', '--test')
+        local = _file(root, '.purlin/evidence/local/feat.json')
+        self._on_ref(monkeypatch, 'refs/tags/signed/0.10.0')
         _code, calls = evidence_run(root, '--all', '--ci')
         output = capsys.readouterr().out
         assert calls['commit'] == []
         assert not (root / '.purlin' / 'evidence' / 'ci').exists()
-        assert 'Tag run: nothing is written.' in output
+        assert ('Tag run: nothing is written. This run reruns the tests and '
+                'checks the evidence already committed to signed/0.10.0.'
+                in output.splitlines()), output
+        assert not (root / '.purlin' / 'runtime' / 'run.log').exists()
+        assert _file(root, '.purlin/evidence/local/feat.json') == local
         assert purlin_run.host_os()
 
     # purlin: run_script PROOF-68
     def test_a_run_on_the_branch_that_keeps_it_commits(
-            self, tmp_path, evidence_run, capsys):
+            self, tmp_path, evidence_run, capsys, monkeypatch):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
+        self._on_ref(monkeypatch, 'refs/heads/run/main-4f1c2ab')
         _code, calls = evidence_run(root, '--all', '--ci')
         output = capsys.readouterr().out
         assert len(calls['commit']) == 1
@@ -811,6 +834,8 @@ class TestTheGateDecidesTheBreaks:
     def test_under_passed_no_break_runs_and_the_strength_is_not_measured(
             self, tmp_path, evidence_run, capsys):
         root = _pytest_project(tmp_path, gate='passed')
+        # Mutation testing is on, so the gate alone keeps the breaks off.
+        _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         _code, calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
@@ -836,11 +861,13 @@ class TestTheGateDecidesTheBreaks:
         cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
         assert (cell['word'], cell['reasons']) == ('strong', []), cell
 
+    @pytest.mark.parametrize('gate', ['passed', 'strong', 'signed'])
     # purlin: run_script PROOF-66
     def test_a_ci_run_measures_nothing_and_audits_nothing(
-            self, tmp_path, evidence_run, claude, capsys):
+            self, tmp_path, evidence_run, claude, capsys, gate):
         _install, directory = claude
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate=gate)
+        _config(root, mutation_engine='auto')
         _spec(root, 'feat', level='strong')
         _code, calls = evidence_run(root, '--all', '--ci')
         capsys.readouterr()
@@ -974,6 +1001,8 @@ class TestTheAuditCallsTheModel:
     # purlin: run_script PROOF-71
     def test_a_setting_out_of_range_is_read_as_four_with_one_warning(
             self, tmp_path, evidence_run, claude, capsys):
+        install, directory = claude
+        install(sleep=0.4)
         root = _many(tmp_path, 5)
         _config(root, audit_parallel=40)
         evidence_run(root, '--all', '--audit')
@@ -984,6 +1013,25 @@ class TestTheAuditCallsTheModel:
             '"audit_parallel" is 40, which is not a whole number from 1 to '
             '16; reading it as 4'), output
         assert 'AI audit: 5 rules to read, 4 at a time.' in output, output
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 5 and fake_claude.most_at_once(calls) == 4, calls
+        # The edges: 16 is taken as it is, and 17, 0, a fraction and a word
+        # each read as 4 with the warning naming the value.
+        install()
+        for value, shown, at_a_time in ((16, None, 5), (17, '17', 4),
+                                        (0, '0', 4), (2.5, '2.5', 4),
+                                        ('four', "'four'", 4)):
+            _config(root, audit_parallel=value)
+            evidence_run(root, '--all', '--audit')
+            output = capsys.readouterr().out
+            warning = ('"audit_parallel" is %s, which is not a whole number '
+                       'from 1 to 16; reading it as 4' % shown)
+            if shown is None:
+                assert 'audit_parallel' not in output, output
+            else:
+                assert output.splitlines()[0] == warning, output
+            assert 'AI audit: 5 rules to read, %d at a time.' % at_a_time \
+                in output, output
 
     # purlin: run_script PROOF-72
     def test_the_line_is_printed_before_the_first_call(
@@ -1114,6 +1162,37 @@ class TestWhichRulesTheAuditReads:
         assert sorted(_audited(root, 'feat')) == ['RULE-1']
         assert sorted(_audited(root, 'other')) == ['RULE-1']
 
+    # purlin: run_script PROOF-78
+    def test_a_rule_taken_from_an_anchor_is_read_only_as_the_anchors(
+            self, tmp_path, evidence_run, claude, capsys):
+        _install, directory = claude
+        root = _pytest_project(tmp_path, gate='strong', body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_ok():\n'
+            '    assert 1 + 1 == 2\n\n'
+            '# purlin: shared PROOF-1\n'
+            'def test_json():\n'
+            '    assert 2 + 2 == 4\n'))
+        (root / 'specs' / '_anchors').mkdir()
+        (root / 'specs' / '_anchors' / 'shared.md').write_text(
+            '# Anchor: shared\n\n## Rules\n\n- RULE-1: every answer is JSON\n'
+            '\n## Proof\n\n- PROOF-1 (RULE-1): an answer parses as JSON\n',
+            encoding='utf-8')
+        _spec(root, 'feat', requires='shared')
+        code, _calls = evidence_run(root, '--audit')
+        output = capsys.readouterr().out
+        assert code == 0, output
+        prompts = [call['prompt'] for call in fake_claude.calls(directory)]
+        # One call for feat's own rule and one for the anchor's, under the
+        # anchor: the rule feat takes from it is not read again as feat's.
+        anchor = [prompt for prompt in prompts
+                  if 'every answer is JSON' in prompt]
+        assert len(prompts) == 2 and len(anchor) == 1, prompts
+        assert 'shared RULE-1 (' in anchor[0], anchor[0]
+        assert sorted(_audited(root, 'feat')) == ['RULE-1']
+        assert sorted(_audited(root, 'shared')) == ['RULE-1']
+
 
 class TestWhenTheModelCannotBeReached:
 
@@ -1144,11 +1223,42 @@ class TestWhenTheModelCannotBeReached:
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert _audited(root) == {}, _audited(root)
-        cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
-        assert cell['word'] == 'not audited', cell
-        assert cell['reasons'] == ['the AI audit could not run: %s' % why]
+        for rule_id in ('RULE-1', 'RULE-2'):
+            cell = _rule(root, 'feat', rule_id)['cells']['strong']
+            assert cell['word'] == 'not audited', cell
+            assert cell['reasons'] == ['the AI audit could not run: %s' % why]
         assert '2 rules could not be audited: %s. %s' % (why, then) in \
             output, output
+        assert code == 1, output
+
+    # purlin: run_script PROOF-82
+    def test_two_causes_in_one_run_print_one_line_each(
+            self, tmp_path, evidence_run, claude, capsys):
+        install, directory = claude
+        install()
+        # A model that exits 1 for RULE-1 and answers RULE-2 with no settled
+        # line; the fake's own launcher stays, only what it runs is replaced.
+        (directory / 'claude').write_text(
+            '#!%s\nimport json, sys\n'
+            'if "feat RULE-1 (" in sys.stdin.read():\n    sys.exit(1)\n'
+            'print(json.dumps({"type": "result", "result": "It looks fine."}))'
+            '\n' % sys.executable, encoding='utf-8')
+        root = _many(tmp_path, 2)
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert _audited(root) == {}, _audited(root)
+        for rule_id, why in (('RULE-1', 'claude exited with an error'),
+                             ('RULE-2', 'claude answered without a settled '
+                                        'line')):
+            cell = _rule(root, 'feat', rule_id)['cells']['strong']
+            assert (cell['word'], cell['reasons']) == (
+                'not audited', ['the AI audit could not run: %s' % why]), cell
+        assert [line for line in output.splitlines()
+                if 'could not be audited' in line] == [
+            '1 rule could not be audited: claude answered without a settled '
+            'line. Run purlin:audit again.',
+            '1 rule could not be audited: claude exited with an error. Run '
+            'purlin:audit again.'], output
         assert code == 1, output
 
     # purlin: run_script PROOF-83
@@ -1266,6 +1376,40 @@ class TestTheLastLines:
         assert lines[-len(order):] == order, lines
         assert code == 1
 
+    # purlin: run_script PROOF-86
+    def test_the_skipped_rules_and_the_stale_line_take_their_places(
+            self, tmp_path, evidence_run, claude, capsys):
+        install, _directory = claude
+        loose = 'It looks fine to me.'
+        # The first audit settles RULE-2 alone: RULE-1 and RULE-3 get no
+        # settled line, each asked twice.
+        install(answers=[loose, loose, 'settled: yes', loose])
+        root = _many(tmp_path, 3, gate='signed')
+        _config(root, audit_parallel=1, mutation_engine='auto')
+        _git_repo(root)
+        evidence_run(root, '--all', '--audit', '--commit')
+        # RULE-1 is signed while no audit stands; the next audit's finding
+        # changes what the signature was locked to.
+        TestAFreshAuditStalesASignature._sign(root, 'RULE-1')
+        capsys.readouterr()
+        install(answers=['settled: yes\n- PROOF-1 reads the value alone.',
+                         loose])
+        code, _calls = evidence_run(root, '--audit', '--commit')
+        lines = capsys.readouterr().out.strip().splitlines()
+        order = ['AI audit: 1 rule read, 0 strong, 1 weak. 1 rule skipped; '
+                 'its text, proof and test match its last audit. '
+                 'purlin:audit --all reads them again.',
+                 'Test strength: feat 80% (minimum 80%).',
+                 '1 rule could not be audited: claude answered without a '
+                 'settled line. Run purlin:audit again.',
+                 '1 signature went stale: its audit findings changed.',
+                 'Evidence written to .purlin/evidence/local/feat.json.',
+                 'Evidence committed.',
+                 'Audit: 1 strong, 1 weak.',
+                 'gate signed not met: 0 of 3 rules meet it']
+        assert lines[-len(order):] == order, lines
+        assert code == 1
+
 
 class TestTheAuditGateLine:
     """Above `passed` the audit answers level 2; at `passed` it blocks nothing."""
@@ -1278,15 +1422,34 @@ class TestTheAuditGateLine:
         root = _many(tmp_path, 1)
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
-        assert output.strip().splitlines()[-1] == 'gate strong not met: 0 of 1 rule meets it', \
-            output
+        assert output.strip().splitlines()[-2:] == [
+            'Audit: 0 strong, 1 weak.',
+            'gate strong not met: 0 of 1 rule meets it'], output
         assert code == 1, output
         install()
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
-        assert output.strip().splitlines()[-1] == 'gate strong met: 1 of 1 rule', \
-            output
+        assert output.strip().splitlines()[-2:] == [
+            'Audit: 1 strong, 0 weak.', 'gate strong met: 1 of 1 rule'], output
         assert code == 0, output
+
+    # purlin: run_script PROOF-69
+    def test_a_failing_test_blocks_at_strong(self, tmp_path, evidence_run,
+                                             claude, capsys):
+        _install, directory = claude
+        root = _pytest_project(tmp_path, gate='strong', body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_bad():\n'
+            '    assert 1 == 2\n'))
+        _spec(root, 'feat')
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert fake_claude.calls(directory) == []
+        assert output.strip().splitlines()[-2:] == [
+            'Audit: 0 strong, 0 weak.',
+            'gate strong not met: 0 of 1 rule meets it'], output
+        assert code == 1, output
 
     # purlin: run_script PROOF-69
     def test_a_passed_level_meets_the_strong_line_on_its_tests(
@@ -1799,16 +1962,18 @@ class TestARunCoversWhatTheChangeTouched:
         assert _selection(output) is None, output
         assert {name: _file(root, '.purlin/evidence/local/%s.json' % name)
                 for name in ('login', 'export')} == before
-        assert [line for line in output.splitlines() if line.strip()][-1] == \
-            'gate passed met: 2 of 2 rules', output
+        assert [line for line in output.splitlines() if line.strip()][-2:] == [
+            'Tests: 2 of 2 rules pass.', 'gate passed met: 2 of 2 rules'], \
+            output
 
     # purlin: run_script PROOF-95
     def test_nothing_changed_over_a_failing_test_exits_one(self, tmp_path):
         root, _sha = _touched_project(tmp_path, failing=('export',))
         code, output = _run(root, '--test')
         assert 'Nothing to run' in output, output
-        assert [line for line in output.splitlines() if line.strip()][-1] == \
-            'gate passed not met: 1 of 2 rules meet it', output
+        assert [line for line in output.splitlines() if line.strip()][-2:] == [
+            'Tests: 1 of 2 rules pass.',
+            'gate passed not met: 1 of 2 rules meet it'], output
         assert code == 1, output
 
     # purlin: run_script PROOF-96
@@ -1843,6 +2008,24 @@ class TestARunCoversWhatTheChangeTouched:
         assert code == 0, output
         assert sorted((root / 'ran.txt').read_text(
             encoding='utf-8').split()) == ['export', 'login', 'login'], output
+
+    # purlin: run_script PROOF-97
+    def test_a_suite_with_none_of_the_features_tests_is_not_started(
+            self, tmp_path):
+        root = _project(tmp_path, tests=[
+            suites.shell_suite(files=('login/*.test.sh',), name='logins'),
+            suites.shell_suite(files=('export/*.test.sh',), name='exports')])
+        for name in ('login', 'export'):
+            _spec(root, name)
+            (root / name).mkdir()
+            (root / name / ('%s.test.sh' % name)).write_text(
+                '# purlin: %s PROOF-1\necho %s >> ran.txt\n' % (name, name),
+                encoding='utf-8')
+        _code, output = _run(root, '--feature', 'login', '--test')
+        assert 'Running the logins suite.' in output.splitlines(), output
+        assert 'Running the exports suite.' not in output, output
+        assert (root / 'ran.txt').read_text(encoding='utf-8').split() == [
+            'login'], output
 
     # purlin: run_script PROOF-98
     def test_all_runs_every_feature_when_nothing_changed(self, tmp_path):
