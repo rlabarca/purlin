@@ -187,10 +187,12 @@
               "env": null,
               "id": "PROOF-1",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_login.py",
-                  "name": "test_sign_in"
+                  "name": "test_sign_in",
+                  "result": "pass"
                 }
               ],
               "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie."
@@ -276,10 +278,12 @@
               "env": null,
               "id": "PROOF-2",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_login.py",
-                  "name": "test_lockout"
+                  "name": "test_lockout",
+                  "result": "pass"
                 }
               ],
               "text": "POST /session five times with a wrong password, then once more with the right one, and read 423."
@@ -369,10 +373,12 @@
               "env": null,
               "id": "PROOF-3",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_login.py",
-                  "name": "test_notice"
+                  "name": "test_notice",
+                  "result": "pass"
                 }
               ],
               "text": "Lock an account and read 1 message in the outbox."
@@ -453,10 +459,12 @@
               "env": "windows",
               "id": "PROOF-4",
               "manual": false,
+              "result": "failed",
               "tests": [
                 {
                   "file": "tests/test_login.py",
-                  "name": "test_no_cookie"
+                  "name": "test_no_cookie",
+                  "result": "fail"
                 }
               ],
               "text": "On Windows, open http://localhost/session and read that no cookie is set."
@@ -465,10 +473,12 @@
               "env": null,
               "id": "PROOF-5",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_login.py",
-                  "name": "test_secure_flag"
+                  "name": "test_secure_flag",
+                  "result": "pass"
                 }
               ],
               "text": "Read the Set-Cookie header of a 200 response and verify it carries Secure."
@@ -618,10 +628,12 @@
               "env": null,
               "id": "PROOF-1",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
-                  "name": "test_total"
+                  "name": "test_total",
+                  "result": "pass"
                 }
               ],
               "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97."
@@ -712,10 +724,12 @@
               "env": null,
               "id": "PROOF-2",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
-                  "name": "test_empty"
+                  "name": "test_empty",
+                  "result": "pass"
                 }
               ],
               "text": "Build an invoice with zero lines and read the total 0.00."
@@ -783,6 +797,7 @@
               "env": null,
               "id": "PROOF-4",
               "manual": true,
+              "result": "hand check",
               "tests": [],
               "text": "Raise a credit note against a paid invoice and read the printed note: it names the original invoice number and the reason"
             }
@@ -922,10 +937,12 @@
               "env": null,
               "id": "PROOF-1",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_cart.py",
-                  "name": "test_total_above"
+                  "name": "test_total_above",
+                  "result": "pass"
                 }
               ],
               "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\"."
@@ -1048,10 +1065,12 @@
               "env": null,
               "id": "PROOF-1",
               "manual": false,
+              "result": "not run",
               "tests": [
                 {
                   "file": "tests/test_export.py",
-                  "name": "test_month_order"
+                  "name": "test_month_order",
+                  "result": "not run"
                 }
               ],
               "text": "Export September with 3 invoices dated the 3rd, the 1st and the 9th and read them in the order 1st, 3rd, 9th."
@@ -1124,10 +1143,12 @@
               "env": null,
               "id": "PROOF-2",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_export.py",
-                  "name": "test_csv_header"
+                  "name": "test_csv_header",
+                  "result": "pass"
                 }
               ],
               "text": "Export one invoice and read the header row `date,number,total` before the first line."

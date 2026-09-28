@@ -46,7 +46,10 @@ they all read instead.
             "blocked_by": null, "flags": {...},
             "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
             "proofs": [{"id": "PROOF-1", "manual": false, "env": null,
-                        "text": "...", "tests": [...]}],
+                        "text": "...", "result": "passed",
+                        "tests": [{"file": "tests/test_login.py",
+                                   "name": "test_sign_in",
+                                   "result": "pass"}]}],
             "tests": []}
          ]}
       ],
@@ -68,6 +71,11 @@ a rule with no proof names its tests: `[{"file": "tests/test_login.py",
 "name": "test_locks", "result": "pass"}]`, where `result` is `pass`, `fail`,
 `missing` or `not run`. A rule whose tests carry its proofs' ids lists them
 under each proof and an empty `tests`.
+
+Each proof carries its own `result`, `passed`, `failed`, `not run`, `no test`
+or `hand check`, as `states.proof_result` reads it, and each of its tests the
+`result` a current run gave it, `pass` or `fail`, or `not run` where no
+current run lists it.
 
 A cell above the project's gate is absent, not empty: a `passed` project
 carries one cell per rule, a `signed` project carries three.
@@ -457,14 +465,18 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
     proof_dicts = []
     for proof_id in proof_ids:
         proof = owner_info['proofs'][proof_id]
-        proof_dicts.append({
+        ran = _current_results(sections, proof_id, proof['env'])
+        entry = {
             'id': proof_id,
             'manual': proof['manual'],
             'env': proof['env'],
             'text': proof['text'],
-            'tests': [{'file': f, 'name': n}
+            'tests': [{'file': f, 'name': n,
+                       'result': ran.get((f, n), 'not run')}
                       for f, n in _backing_tests(sections, proof_id)],
-        })
+        }
+        entry['result'] = states.proof_result(entry, sections, marked)
+        proof_dicts.append(entry)
 
     rule_hash = specs_module.rule_text_hash(text)
     proof_hash = specs_module.proof_text_hash(
@@ -601,6 +613,31 @@ def _backing_tests(sections, proof_id):
         if observed:
             return observed
     return []
+
+
+def _current_results(sections, proof_id, env=None):
+    """`{(file, name): result}` for one proof's tests, over current sections.
+
+    A proof's test reads what a current run found, `fail` where either source
+    failed it and `pass` where one passed it, so a test and the proof above it
+    never disagree. A test no current section lists is not in the map, and
+    reads `not run`. A proof that names an operating system is read from that
+    system's sections alone, as its own result is.
+    """
+    results = {}
+    for entry in sections or ():
+        if not entry.get('current') or (env and entry.get('os') != env):
+            continue
+        for item in (entry['section'].get('proofs') or ()):
+            if not isinstance(item, dict) or item.get('id') != proof_id:
+                continue
+            path, _, name = (item.get('test') or '').partition('::')
+            result = item.get('result')
+            if not path or result not in ('pass', 'fail'):
+                continue
+            if results.get((path, name)) != 'fail':
+                results[(path, name)] = result
+    return results
 
 
 def _rule_tests(sections, rule_id):

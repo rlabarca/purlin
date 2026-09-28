@@ -217,6 +217,7 @@ function featureRow(feature, columns) {
     }).join('') + '</div>';
   if (!open) { return row; }
   return row + visibleRules(feature).map(function (rule) {
+    var shown = !!VIEW.proofs[rule.feature + ' ' + rule.id];
     return '<div class="rule" data-act="rule" data-feature="'
       + esc(feature.name) + '" data-rule="' + esc(rule.id) + '">'
       + '<span class="rid">' + esc(rule.id) + '</span>'
@@ -224,8 +225,57 @@ function featureRow(feature, columns) {
       + '<span class="rp">' + GATE_LEVELS.map(function (name) {
         var cell = cellOf(rule, name);
         return cell ? pill(cell.word) : '';
-      }).join('') + '</span></div>';
+      }).join('') + '</span>'
+      + '<span class="rm">' + proofsToggle(rule, shown) + '</span></div>'
+      + (shown ? proofsUnder(rule) : '');
   }).join('');
+}
+
+/* The control that opens a rule's proofs beneath its row. Closed, it says
+   how many proofs the rule has, `2 proofs`, in the warn tone when one of
+   them reads `failed` or `no test`, and `no proof` where it has none. A
+   project at `passed` that writes no proof line is told nothing about
+   proofs: the control opens the tests marked with the rule's own id,
+   `1 test`, and is absent where there are none. */
+function proofsToggle(rule, shown) {
+  var proofs = rule.proofs || [];
+  var tests = rule.tests || [];
+  var label;
+  var warn = false;
+  if (showsProofs()) {
+    label = proofs.length ? proofs.length + (proofs.length === 1 ? ' proof'
+      : ' proofs') : 'no proof';
+    warn = proofs.some(function (proof) {
+      var word = proofWord(proof);
+      return word === 'failed' || word === 'no test';
+    });
+  } else if (tests.length) {
+    label = tests.length + (tests.length === 1 ? ' test' : ' tests');
+    warn = tests.some(function (t) { return t.result === 'fail'; });
+  } else {
+    return '';
+  }
+  return '<button class="more" data-act="proofs" data-feature="'
+    + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '" aria-expanded="'
+    + (shown ? 'true' : 'false') + '"><span class="caret" aria-hidden="true">'
+    + (shown ? '▼' : '▶') + '</span><span'
+    + (warn ? ' style="color:var(--state-warn)"' : '') + '>' + esc(label)
+    + '</span></button>';
+}
+
+/* A rule's proofs, open beneath its row: each proof as the rule screen
+   draws it. A rule with no proof shows the tests marked with its own id the
+   same way, and one with neither says no proof is written. */
+function proofsUnder(rule) {
+  var proofs = rule.proofs || [];
+  var body = proofs.length ? proofs.map(function (proof) {
+    return '<div class="proof">' + proofDetail(proof) + '</div>';
+  }).join('')
+    : (rule.tests || []).length ? '<div class="proof"><dl class="kv">'
+      + '<dt>Tests</dt><dd class="ptests">' + testLines(rule.tests)
+      + '</dd></dl></div>'
+    : '<p class="sec">No proof written.</p>';
+  return '<div class="rule-proofs">' + body + '</div>';
 }
 
 /* The band over a category's specs, and what its two numbers are. `MCP (6) 5

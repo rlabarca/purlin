@@ -129,25 +129,49 @@ function signPanel(feature, rule) {
         + 'shows it once it is committed.') + '</p></div>';
 }
 
-function proofPanel(proof) {
-  var tests = (proof.tests || []).map(function (t) {
-    return esc(t.file) + ' :: ' + esc(t.name);
-  }).join('\n') || 'no test yet';
-  var tags = (proof.manual ? ['@manual'] : [])
-    .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
-  return '<div class="panel"><dl class="kv">'
-    + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
-    + (tags.length ? '<dt>Tags</dt><dd>' + tag(tags.join(' '), true) + '</dd>'
-      : '')
-    + '<dt>Tests</dt><dd><pre class="code">' + tests + '</pre></dd>'
-    + '</dl></div>';
-}
-
-/* The word a test marked with the rule's own id reads: the evidence writes
-   `pass`, `fail`, `missing` or `not run`, and the page shows the cell word
-   the run gave the rule for each, so a test and its rule never disagree. */
+/* The word a test reads: the evidence writes `pass`, `fail`, `missing` or
+   `not run`, and the page shows the cell word the run gave the rule for
+   each, so a test and its rule never disagree. */
 var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
   'not run': 'not run'};
+
+/* A proof's own word, as the payload wrote it. At the gate `passed` a
+   `@manual` proof reads `manual`, because that project is shown no word of
+   a higher level. */
+function proofWord(proof) {
+  var word = proof.result || 'not run';
+  return word === 'hand check' && !level('strong') ? 'manual' : word;
+}
+
+/* Tests, one line each, `file :: name` and the word its run gave it. */
+function testLines(tests) {
+  return (tests || []).map(function (t) {
+    return '<p><span class="mono">' + esc(t.file) + ' :: ' + esc(t.name)
+      + '</span> ' + pill(TEST_WORDS[t.result] || 'not run') + '</p>';
+  }).join('');
+}
+
+/* One proof: its id and words, its own result, its `@manual` and `@env`
+   tags, which name the operating system it asks for, and its tests with
+   what each found. The board draws it under a rule and the rule screen in
+   its Proofs section, from this one function, so the two never disagree. */
+function proofDetail(proof) {
+  var tags = (proof.manual ? ['@manual'] : [])
+    .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
+  var tests = testLines(proof.tests) || '<p class="sec">'
+    + (proofWord(proof) === 'not run' ? 'No run has listed its tests yet.'
+      : 'No test yet.') + '</p>';
+  return '<dl class="kv">'
+    + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
+    + '<dt>Result</dt><dd>' + pill(proofWord(proof)) + '</dd>'
+    + (tags.length ? '<dt>Tags</dt><dd>' + tag(tags.join(' '), true) + '</dd>'
+      : '')
+    + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';
+}
+
+function proofPanel(proof) {
+  return '<div class="panel">' + proofDetail(proof) + '</div>';
+}
 
 /* The tests marked with the rule's own id, one line each with its result.
    Shown wherever a rule lists any, and always where the page shows no
@@ -155,10 +179,7 @@ var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
 function testsSection(rule) {
   var tests = rule.tests || [];
   if (!tests.length && showsProofs()) { return ''; }
-  var lines = tests.map(function (t) {
-    return '<p><span class="mono">' + esc(t.file) + ' :: ' + esc(t.name)
-      + '</span> ' + pill(TEST_WORDS[t.result] || 'not run') + '</p>';
-  }).join('') || '<p class="sec">No test yet.</p>';
+  var lines = testLines(tests) || '<p class="sec">No test yet.</p>';
   return '<section><p class="eyebrow">Tests</p><div class="panel tests">'
     + lines + '</div></section>';
 }

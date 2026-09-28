@@ -1455,7 +1455,13 @@ def test_neutral_text_measures_7_to_1_in_both_themes(browser, tmp_path):
             for screen in ('board', 'queue', 'rule'):
                 page = open_in_theme(browser, tmp_path / process, payload,
                                      theme)
-                if screen == 'queue':
+                if screen == 'board':
+                    # The first spec open, with its first rule's proofs
+                    # open beneath it, so what they draw is measured too.
+                    page.click('.tr')
+                    page.click('[data-act="proofs"]')
+                    assert page.query_selector('.rule-proofs'), process
+                elif screen == 'queue':
                     if page.query_selector('[data-screen="queue"]') is None:
                         page.close()
                         continue
@@ -1500,4 +1506,147 @@ def test_the_untested_tile_says_which_have_no_test_and_which_have_not_run(
     assert title.split('\n') == [
         'No test, no current run, or no proof written.',
         'no test \u00b7 1', 'not run \u00b7 1', 'out of date \u00b7 1'], title
+    page.close()
+
+
+# ---------------------------------------------------------------------------
+# A rule's proofs, under its row
+# ---------------------------------------------------------------------------
+
+# Each proofs button on the board: the rule it belongs to, the glyph, the
+# count it reads, whether a screen reader is told it is open, and the colour
+# the count is drawn in.
+TOGGLES = """() => Array.from(document.querySelectorAll('[data-act="proofs"]')).map(
+  b => ({rule: b.getAttribute('data-rule'), tag: b.tagName,
+         glyph: b.firstChild.textContent,
+         label: b.lastChild.textContent,
+         open: b.getAttribute('aria-expanded'),
+         colour: getComputedStyle(b.lastChild).color}))"""
+
+
+def toggles(page):
+    return {item['rule']: item for item in page.evaluate(TOGGLES)}
+
+
+def resolved(page, token):
+    """The computed colour a token resolves to on this page."""
+    return page.evaluate(
+        "n => { const s = document.createElement('span');"
+        " s.style.color = getComputedStyle(document.documentElement)"
+        ".getPropertyValue(n).trim(); document.body.appendChild(s);"
+        " const v = getComputedStyle(s).color; s.remove(); return v; }", token)
+
+
+def proof_lines(page, selector='.rule-proofs'):
+    """What the open proofs beneath the rows read, one line per row."""
+    return page.eval_on_selector_all(
+        selector + ' .kv > *',
+        r'els => els.map(e => e.textContent.trim().replace(/\s+/g, " "))')
+
+
+def toggle_for(feature, rule):
+    return '[data-act="proofs"][data-feature="%s"][data-rule="%s"]' % (
+        feature, rule)
+
+
+# purlin: purlin_report PROOF-68
+def test_a_rules_proofs_open_beneath_its_row(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-act="feature"][data-feature="login"]')
+    found = toggles(page)
+    assert [found[r]['label'] for r in ('RULE-1', 'RULE-2', 'RULE-3',
+                                        'RULE-4')] == [
+        '1 proof', '1 proof', '1 proof', '2 proofs'], found
+    assert all(item['tag'] == 'BUTTON' and item['open'] == 'false'
+               and item['glyph'] == '▶' for item in found.values())
+    warn = resolved(page, '--state-warn')
+    assert found['RULE-4']['colour'] == warn
+    assert found['RULE-1']['colour'] != warn
+    assert 'no cookie is set' not in page.inner_text('.wrap')
+
+    page.focus(toggle_for('login', 'RULE-4'))
+    page.keyboard.press('Enter')
+    found = toggles(page)
+    assert found['RULE-4']['open'] == 'true', found['RULE-4']
+    assert found['RULE-4']['glyph'] == '▼'
+    assert found['RULE-1']['open'] == 'false'
+    assert page.query_selector('h1') is None, 'the board is still showing'
+    assert proof_lines(page) == [
+        'PROOF-4',
+        'On Windows, open http://localhost/session and read that no cookie '
+        'is set.',
+        'Result', 'FAILED', 'Tags', '@env(windows)',
+        'Tests', 'tests/test_login.py :: test_no_cookie FAILED',
+        'PROOF-5',
+        'Read the Set-Cookie header of a 200 response and verify it carries '
+        'Secure.',
+        'Result', 'PASSED',
+        'Tests', 'tests/test_login.py :: test_secure_flag PASSED']
+    # The keyboard keeps its place on the button it pressed.
+    assert page.evaluate(
+        "document.activeElement.getAttribute('data-rule')") == 'RULE-4'
+    page.keyboard.press('Enter')
+    assert proof_lines(page) == []
+
+    page.click(toggle_for('login', 'RULE-4'))
+    assert proof_lines(page) != []
+    page.click('[data-act="feature"][data-feature="login"]')
+    page.click('[data-act="feature"][data-feature="login"]')
+    assert proof_lines(page) == []
+    assert toggles(page)['RULE-4']['open'] == 'false'
+    page.close()
+
+
+# purlin: purlin_report PROOF-69
+def test_a_rule_with_no_test_or_no_proof_says_so_under_its_row(browser,
+                                                               tmp_path):
+    payload = payload_named('solo')
+    login = payload['features'][0]
+    login['rules'][2]['tests'] = [{'file': 'tests/test_login.py',
+                                   'name': 'test_locks', 'result': 'pass'}]
+    page = open_board(browser, tmp_path / 'solo', payload)
+    page.click('[data-act="feature"][data-feature="login"]')
+    found = toggles(page)
+    assert found['RULE-2']['label'] == '1 proof'
+    assert found['RULE-2']['colour'] == resolved(page, '--state-warn')
+    assert found['RULE-3']['label'] == 'no proof'
+    page.click(toggle_for('login', 'RULE-2'))
+    assert proof_lines(page) == [
+        'PROOF-2', login['rules'][1]['proofs'][0]['text'], 'Result',
+        'NO TEST', 'Tests', 'No test yet.']
+    page.click(toggle_for('login', 'RULE-2'))
+    page.click(toggle_for('login', 'RULE-3'))
+    assert proof_lines(page) == [
+        'Tests', 'tests/test_login.py :: test_locks PASSED']
+    page.close()
+
+    bare = open_board(browser, tmp_path / 'bare',
+                      without_proof_lines(payload_named('solo')))
+    bare.click('[data-act="feature"][data-feature="login"]')
+    found = toggles(bare)
+    assert not [item for item in found.values() if 'proof' in item['label']]
+    assert found['RULE-1']['label'] == '1 test'
+    assert 'RULE-3' not in found
+    bare.close()
+
+
+# purlin: purlin_report PROOF-70
+def test_a_filter_hides_a_rules_proofs_and_the_rule_screen_agrees(browser,
+                                                                   tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-act="feature"][data-feature="login"]')
+    page.click(toggle_for('login', 'RULE-4'))
+    board = proof_lines(page)
+    page.click(chip_for('Partial'))
+    assert 'PROOF-4' in proof_lines(page)
+    page.click(chip_for('Partial'))
+    page.click(chip_for('Stale'))
+    assert rule_ids(page) == ['RULE-2']
+    assert proof_lines(page) == []
+    page.click(chip_for('Stale'))
+    page.click('.rule[data-feature="login"][data-rule="RULE-4"]')
+    screen = page.eval_on_selector_all(
+        'section .stack .panel .kv > *',
+        r'els => els.map(e => e.textContent.trim().replace(/\s+/g, " "))')
+    assert screen == board, (screen, board)
     page.close()

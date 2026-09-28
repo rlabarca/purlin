@@ -115,10 +115,12 @@
               "env": null,
               "id": "PROOF-1",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_login.py",
-                  "name": "test_sign_in"
+                  "name": "test_sign_in",
+                  "result": "pass"
                 }
               ],
               "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie."
@@ -167,6 +169,7 @@
               "env": null,
               "id": "PROOF-2",
               "manual": false,
+              "result": "no test",
               "tests": [],
               "text": "POST /session five times with a wrong password, then once more with the right one, and read 423."
             }
@@ -315,10 +318,12 @@
               "env": null,
               "id": "PROOF-1",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
-                  "name": "test_total"
+                  "name": "test_total",
+                  "result": "pass"
                 }
               ],
               "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97."
@@ -373,10 +378,12 @@
               "env": null,
               "id": "PROOF-2",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
-                  "name": "test_empty"
+                  "name": "test_empty",
+                  "result": "pass"
                 }
               ],
               "text": "Build an invoice with zero lines and read the total 0.00."

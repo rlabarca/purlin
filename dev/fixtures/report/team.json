@@ -146,10 +146,12 @@
               "env": null,
               "id": "PROOF-1",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_login.py",
-                  "name": "test_sign_in"
+                  "name": "test_sign_in",
+                  "result": "pass"
                 }
               ],
               "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie."
@@ -219,10 +221,12 @@
               "env": null,
               "id": "PROOF-2",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_login.py",
-                  "name": "test_lockout"
+                  "name": "test_lockout",
+                  "result": "pass"
                 }
               ],
               "text": "POST /session five times with a wrong password, then once more with the right one, and read 423."
@@ -292,10 +296,12 @@
               "env": null,
               "id": "PROOF-3",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_login.py",
-                  "name": "test_notice"
+                  "name": "test_notice",
+                  "result": "pass"
                 }
               ],
               "text": "Lock an account and read 1 message in the outbox."
@@ -424,10 +430,12 @@
               "env": null,
               "id": "PROOF-1",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
-                  "name": "test_total"
+                  "name": "test_total",
+                  "result": "pass"
                 }
               ],
               "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97."
@@ -485,6 +493,7 @@
               "env": null,
               "id": "PROOF-2",
               "manual": false,
+              "result": "no test",
               "tests": [],
               "text": "Build an invoice with zero lines and read the total 0.00."
             }
@@ -606,10 +615,12 @@
               "env": null,
               "id": "PROOF-1",
               "manual": false,
+              "result": "passed",
               "tests": [
                 {
                   "file": "tests/test_cart.py",
-                  "name": "test_total_above"
+                  "name": "test_total_above",
+                  "result": "pass"
                 }
               ],
               "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\"."

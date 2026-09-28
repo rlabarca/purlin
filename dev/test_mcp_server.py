@@ -1803,6 +1803,37 @@ class TestTheFixturesAreTheContract:
             assert fixture['summary']['queue'] == len(fixture['queue']), name
 
 
+class TestProofResult:
+
+    @staticmethod
+    def _proofs(project):
+        rules = next(f for f in project.payload()['features']
+                     if f['name'] == 'login')['rules']
+        return {proof['id']: proof for rule in rules for proof in rule['proofs']}
+
+    # purlin: states PROOF-85
+    def test_each_proof_carries_its_own_result_and_its_tests(self, project):
+        _commit_tests(project, 'PROOF-1')
+        proofs = self._proofs(project)
+        assert proofs['PROOF-1']['result'] == 'not run', proofs['PROOF-1']
+        assert proofs['PROOF-1']['tests'] == []
+        assert proofs['PROOF-2']['result'] == 'no test', proofs['PROOF-2']
+
+        project.evidence([_entry('PROOF-1', 'RULE-1'),
+                          _entry('PROOF-2', 'RULE-2', status='fail')])
+        proofs = self._proofs(project)
+        assert proofs['PROOF-1']['result'] == 'passed', proofs['PROOF-1']
+        assert proofs['PROOF-1']['tests'] == [
+            {'file': 'tests/test_login.py', 'name': 'test_proof_1',
+             'result': 'pass'}], proofs['PROOF-1']['tests']
+        assert proofs['PROOF-2']['result'] == 'failed', proofs['PROOF-2']
+        assert [test['result'] for test in proofs['PROOF-2']['tests']] == [
+            'fail'], proofs['PROOF-2']['tests']
+
+        project.spec(SPEC.replace('body "denied"\n', 'body "denied" @manual\n'))
+        assert self._proofs(project)['PROOF-2']['result'] == 'hand check'
+
+
 # ---------------------------------------------------------------------------
 # The status table
 # ---------------------------------------------------------------------------

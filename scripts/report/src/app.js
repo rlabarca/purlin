@@ -9,7 +9,7 @@
 
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
-            features: {}, groups: {}, filters: {}};
+            features: {}, groups: {}, filters: {}, proofs: {}};
 var SCHEMA = 9;
 /* The data file is rewritten when `purlin:status`, `purlin:test`,
    `purlin:audit` or `purlin:sign` finishes, and a tab left open would never
@@ -246,6 +246,7 @@ function hover(lines) { return ' title="' + esc(lines.join('\n')) + '"'; }
 function ownRules(feature) {
   return (feature.rules || []).filter(function (r) { return r.label === 'own'; });
 }
+
 
 /* The whole project as one feature, so a tile's hover is its column's hover
    read over every spec rather than a second set of sums. */
@@ -569,6 +570,22 @@ function onClick(event) {
   } else if (act === 'feature') {
     var name = node.getAttribute('data-feature');
     VIEW.features[name] = !VIEW.features[name];
+    /* A spec opens with every rule's proofs closed. */
+    Object.keys(VIEW.proofs).forEach(function (key) {
+      if (key.indexOf(name + ' ') === 0) { delete VIEW.proofs[key]; }
+    });
+  } else if (act === 'proofs') {
+    var key = node.getAttribute('data-feature') + ' '
+      + node.getAttribute('data-rule');
+    VIEW.proofs[key] = !VIEW.proofs[key];
+    render();
+    /* The page is drawn again, so the button a keyboard pressed takes the
+       focus back rather than dropping it on the page. */
+    var again = document.querySelector('[data-act="proofs"][data-feature="'
+      + CSS.escape(node.getAttribute('data-feature')) + '"][data-rule="'
+      + CSS.escape(node.getAttribute('data-rule')) + '"]');
+    if (again) { again.focus(); }
+    return;
   } else if (act === 'rule') {
     VIEW.from = VIEW.screen === 'queue' ? 'queue' : 'board';
     VIEW.feature = node.getAttribute('data-feature');
@@ -591,6 +608,8 @@ function restoreView() {
     var value = JSON.parse(saved);
     if (value && typeof value === 'object') { VIEW = value; }
   } catch (e) {}
+  /* Every rule's proofs are closed when the page loads. */
+  VIEW.proofs = {};
 }
 
 function reloadPage() {

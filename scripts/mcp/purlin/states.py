@@ -327,6 +327,29 @@ def _passed_cell(inp, cfg):
     return cell
 
 
+def proof_result(proof, sections, marked=()):
+    """One proof's own word, read the way the passed cell reads the rule.
+
+    `hand check` for a `@manual` proof, which no test answers. Otherwise the
+    current sections from the operating system the proof names, or from every
+    system where it names none: `failed` where one of them failed it and
+    `passed` where one passed it. With no current answer it reads `not run`
+    where a marker in the test files ties it to a test, and `no test` where
+    none does, which is how the rollup counts a proof with no test.
+    """
+    if proof.get('manual'):
+        return HAND_CHECK
+    env = proof.get('env')
+    seen = [evidence_module.proof_results(entry['section']).get(proof.get('id'))
+            for entry in sections or ()
+            if entry.get('current') and (not env or entry.get('os') == env)]
+    if 'fail' in seen:
+        return 'failed'
+    if 'pass' in seen:
+        return 'passed'
+    return 'not run' if proof.get('id') in (marked or ()) else 'no test'
+
+
 def _rule_marked(sections, rule_id):
     """True when an evidence section lists a test marked with the rule's id."""
     for entry in sections or ():
