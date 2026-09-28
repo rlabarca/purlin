@@ -59,7 +59,7 @@ def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1,
           level=None, scope='src/', requires=None):
     """A two-section spec. Each proof is `(id, rule, tag_suffix)`.
 
-    `level` marks every rule, which is what decides whether a brief is owed.
+    `level` marks every rule with that `[level: ...]` tag.
     `scope` is the `> Scope:` line's value, None for no line at all, and
     `requires` the `> Requires:` line's.
     """
@@ -1183,7 +1183,7 @@ class TestTheAuditGateLine:
 # ---------------------------------------------------------------------------
 
 class TestTheEvidenceMeetsThePassedCell:
-    """The walk the design traces, run for real against a git checkout.
+    """The walk from a test run to the gate, run for real against a git checkout.
 
     The evidence a run wrote meets the passed cell while its fingerprint is
     the one taken now. A person's own run is read like any other: it goes

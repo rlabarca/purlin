@@ -181,9 +181,8 @@ class TestProjectConfigVersionMatchesVersionFile:
 
         Purlin develops itself, so the repo is also a Purlin project. Its
         config.json carries the framework version that initialized it, and the
-        dashboard reports that field. It drifted to 0.9.2 while VERSION,
-        templates/config.json and plugin.json all read 0.10.0, and the three
-        existing rules could not see it.
+        dashboard reports that field, so it is held to the VERSION file like
+        the other derived locations.
         """
         with open(VERSION_FILE, encoding='utf-8') as f:
             file_version = f.read().strip()
@@ -326,8 +325,7 @@ class TestDocsCiteVersionFileInsteadOfALiteral:
         """The one config-field table must name the VERSION file, not a
         number, and no second copy of the row may exist.
 
-        The table sat in two files at `"0.9.0"`, two releases stale, because a
-        literal in prose has nothing keeping it honest.
+        A literal in prose has nothing keeping it current.
         """
         semver_literal = re.compile(r'`?"?\d+\.\d+\.\d+"?`?')
         path = os.path.join(PROJECT_ROOT, self.OWNER)

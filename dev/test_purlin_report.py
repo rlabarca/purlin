@@ -7,7 +7,7 @@ it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
 The fixtures under `dev/fixtures/report/` are payloads at schema 9, one for
-each of the three processes: solo at the `passed` gate with no record at all,
+each of the three processes: solo at the `passed` gate with no evidence at all,
 team at `strong` with strength and one rule the AI audit could not decide,
 regulated at `signed` with signatures, a stale rule, a rule whose audit found
 a gap, a rule no audit has run on, and a rule that passed on one platform and failed on
@@ -329,9 +329,8 @@ def test_the_columns_scale_with_the_gate(browser, tmp_path):
 def test_the_rule_screen_says_what_each_platform_found(browser, tmp_path):
     """A rule can pass on one operating system and fail on another.
 
-    The board used to spend a whole column on three boxes and a source word.
-    The boxes are the rule's business, so they live on its screen, drawn from
-    the platforms its passed cell carries rather than from the records.
+    The platforms are the rule's business, so they live on its screen, drawn
+    from the platforms its passed cell carries.
     """
     page = open_board(browser, tmp_path, payload_named('regulated'))
     assert page.query_selector_all('.tr .os') == []

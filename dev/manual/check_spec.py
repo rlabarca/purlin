@@ -7,8 +7,8 @@ fixture's. One prompt per run, one hard timeout, one transcript on disk.
 
 The project is a fresh git repository set up through
 `scripts/init/scaffold.py --gate passed --yes`, which is what `purlin:init`
-answers `passed` runs. The prompt is the sentence from the design's solo start,
-and the checks read the spec the model wrote.
+answers `passed` runs. The prompt is two sentences of requirements, and the
+checks read the spec the model wrote.
 
 Exit codes: 0 the CLI ran and every check passed, 1 a check failed, 2 `claude`
 is not on PATH.
@@ -23,14 +23,13 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(HERE))
-TMP_BASE = os.environ.get(
-    'PURLIN_MANUAL_TMP',
-    '/private/tmp/claude-501/-Users-richlabarca-LocalCode-purlin'
-    '/bdea5a4d-f9c8-4410-904f-32e75781c94b/scratchpad/lane-9H')
+TMP_BASE = os.environ.get('PURLIN_MANUAL_TMP',
+                          os.path.join(tempfile.gettempdir(), 'purlin-manual'))
 
 SENTENCE = ('Users sign in with email and password. After five failed attempts '
             'the account is locked for fifteen minutes.')

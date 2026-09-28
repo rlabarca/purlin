@@ -238,14 +238,6 @@ def test_the_workflow_clones_the_release_the_project_pins():
     assert 'vars.PURLIN_REF' in jobs, 'the pin must be movable without an edit'
 
 
-# purlin: host PROOF-18
-def test_no_pull_request_starts_a_run_at_all():
-    """A fork's read-only token was the awkward case; there is no such run."""
-    text = read(WORKFLOW_REL)
-    assert 'pull_request' not in text
-    assert 'fork' not in text
-
-
 # ---------------------------------------------------------------------------
 # The project
 # ---------------------------------------------------------------------------

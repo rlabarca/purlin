@@ -388,19 +388,19 @@ class TestSpecParsing:
             '- PROOF-1 (RULE-1): Lock a file; verify 1 open fails '
             '@windows\n')
         project.spec(
-            '# Feature: legacy\n\n> Visual-Reference: ./mock.png\n\n'
+            '# Feature: mockup\n\n> Visual-Reference: ./mock.png\n\n'
             '## Rules\n\n- RULE-1: It renders\n\n'
             '## Proof\n\n- PROOF-1 (RULE-1): Look at it @manual(a@b.c, '
-            '2026-03-31, abc1234)\n', name='legacy')
+            '2026-03-31, abc1234)\n', name='mockup')
         features = purlin_specs.scan_specs(project.root)
         assert features['login']['proofs']['PROOF-1']['env'] is None
         assert features['login']['unknown_tags'] == ['@windows']
-        assert features['legacy']['proofs']['PROOF-1']['manual'] is True
-        assert set(features['legacy']['unknown_tags']) == {
+        assert features['mockup']['proofs']['PROOF-1']['manual'] is True
+        assert set(features['mockup']['unknown_tags']) == {
             '@manual(...)', '> Visual-Reference:'}
         warning = purlin_specs.unknown_tag_warning(features)
         assert warning and 'specs/auth/login.md' in warning, warning
-        assert 'specs/auth/legacy.md' in warning, warning
+        assert 'specs/auth/mockup.md' in warning, warning
         # One line, naming the files: not one warning per proof line.
         assert warning.count('\n') == 0, warning
         # A scan whose specs carry no such tag warns about nothing at all.
@@ -922,8 +922,8 @@ class TestTheStrongCell:
             cell = made.cell('RULE-2', 'strong')
             assert cell['word'] == 'strong', cell
             assert cell['reasons'] == ['no mutation score measured'], cell
-            # A proof a scan would flag no longer holds the rule anywhere:
-            # the strong cell is the audit's.
+            # A loosely worded proof decides nothing by its wording: the
+            # strong cell is the audit's.
             made.spec(SPEC.replace(
                 '401 and the body "denied"\n\n',
                 '401 and the body "denied" [level: passed]\n\n').replace(

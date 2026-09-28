@@ -89,7 +89,7 @@ FONT_SIZES = """() => Array.from(document.querySelectorAll('#app *'))
 
 # purlin: purlin_report PROOF-41
 def test_no_text_on_the_board_is_set_under_thirteen_pixels(browser, tmp_path):  # noqa: F811
-    """The dark theme's smallest text was 11 pixels and unreadable."""
+    """Text under 13 pixels is unreadable in the dark theme."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
     assert page.get_attribute('html', 'data-theme') == 'dark'
     page.click('.tr')
