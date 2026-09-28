@@ -162,14 +162,17 @@ flowchart TD
 A test framework that runs nothing says nothing about it, so the run script checks two things
 the frameworks cannot check themselves.
 
-- **A: a suite ran and left no report to read.** The command exited, and nothing is at the
-  report path. Purlin deletes a report before each run, so an old one is never read instead.
+- **A: a suite ran and left no report Purlin can read.** The command exited or timed out, and
+  the report path holds nothing, or a file that cannot be read. Purlin deletes a report before
+  each run, so an old one is never read instead.
 - **B: a marker of a feature the run covers has no passing or failing result.** Its test was
   skipped, the report does not hold it, or no test follows the marker. The message names the
   first five by file and line and counts the rest.
 
-Both print as `Evidence is missing: ...` and both make the run exit 1. Neither is a test
-failure; both mean the run cannot tell you what it proved.
+Both print as `Evidence is missing: ...` and both make the run exit 1; both mean the run cannot
+tell you what it proved. A failing test prints neither: its result is in the report, the
+evidence records it as `fail`, and the run prints the last 60 lines of the suite's own output
+under `--- <suite> output (last 60 lines) ---` before the status table, then exits 1.
 
 ### Exit codes
 

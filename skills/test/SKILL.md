@@ -75,8 +75,10 @@ a passed cell can read:
 | `not run` | A test carries the marker and no counting run reached it |
 | `out of date` | The spec, the code or the tests changed since the run; the reason names which |
 
-Loud failures come first: `Evidence is missing: <what>.` means a suite left no report, or a
-marker has no pass or fail: its test was skipped, the report lacks it, or no test follows it.
+Loud failures come first: `Evidence is missing: <what>.` means a suite left no report the run
+can read, or a marker has no pass or fail: its test was skipped, the report lacks it, or no test
+follows it. A failing test is a result, not missing evidence: the run prints the last 60 lines
+of the suite's output under `--- <suite> output (last 60 lines) ---` and exits 1.
 
 ## Step 4: what the gate changes
 
