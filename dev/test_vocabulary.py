@@ -1,8 +1,9 @@
-"""Fail when a retired term appears in a tracked file.
+"""Fail when a machine spelling this release removed appears in a tracked file.
 
-The retired spellings and what replaced each one are listed in
-`references/glossary.md`; that table is the one place in the repository where
-they may still be written.
+The list holds the spellings of commands, flags, keys, files, tags and states
+that are gone, so none of them comes back into the code, the specs or the
+docs. A plain English word is never on it: prose is held to the writing
+style by review, and a word like `tested` or `hold` is honest English.
 """
 
 import re
@@ -11,151 +12,62 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Whole words, case-insensitive. `Untested` and `test_` never match `tested`
-# because the match is bounded on both sides.
-# `platform` is not here. It was retired with the platform registry and came
-# back in 0.10.0 meaning one thing: an operating system a counting run
-# covered, which the passed cell lists under `platforms`. The registry's own
-# spellings stay retired, in LITERALS below.
-WORDS = ("gauge", "HOLLOW", "PROVABLE", "receipt", "mutation score",
-         "caught score", "records branch", "forge", "CODEOWNERS", "approver rule",
-         # the 0.10.0 three-level model
-         "tested", "recorded", "approved", "approve", "approval", "approver", "approvers",
-         "verified", "verdict", "reviewed", "re-verify",
-         # a rule's level, `[level: ...]`, says what a rule asks for
-         "risk", "risks",
-         # decision 33: nothing scans a proof or a test before the AI audit
-         "free scan", "free scans", "hint", "hints",
-         # decision 35: an AI audit that cannot decide is build work, and
-         # reads `weak` with its own sentence
-         "unsettled")
-LITERALS = ("@on(",                     # not a word: the retired scope tag
-            "platform registry", "--platform",
-            "Proof ready", "lowest state", "seven states", "auto-approval", "review queue",
-            "purlin:verify", "purlin:review", "purlin:approve", "verify_gate", "verify-gate:",
-            "validated/",
-            "needs a person", "needs_person", "needs-a-person",
-            # the source a person's own run once had, and the flag that went
-            # with it. `developer` as a plain English word stays legal, so
-            # only the machine spellings are retired.
-            "`developer`", "'developer'", '"developer"',
-            "purlin:audit --remote",
-            # the bar retired these three in one move
-            "manual audit", "not required", "ai_review_at",
-            # signing is logged, not policed: no list says who may sign,
-            # no branch has to carry the signature, and nothing compares the
-            # signer with the test's author. The plain word `signers` stays
-            # legal; only the config key's spellings are retired.
-            "signer list", "Signer list", "`signers`", "'signers'", '"signers"',
-            "protected branch", "Protected branch", "is_ancestor",
-            "self-signing", "Self-signing",
-            # decision 34: the arm `purlin:test` runs is named for what it
-            # does, and the old spelling is an unknown flag
-            "--quick",
-            # decision 41: the periphery is removed. One settings file,
-            # committed.
-            "config.local.json",
-            "anchor propose", "upstream-check",
-            "tools/PM", "tools/QA", "pack_tools", "scan.py",
-            "purlin:find", "purlin:rename", "--resolve",
-            # decision 38: a proof says less. No kind of test on a proof
-            # line, and no flag or variable that filtered by one
-            "@integration", "@e2e", "@unit", "--tier", "PURLIN_PROOF_TIER",
-            # and no design is tied to a spec
-            "designs/", "design_hash", "CHANGED_DESIGNS",
-            # and a rule names no owner and no upstream criterion
-            "[origin:", "[criterion:",
-            # decision 40: one evidence file per feature. `record` and
-            # `brief` stay plain English words; the files, their folders,
-            # their schemas, their formats, their commit subjects and the
-            # code that wrote and read them are retired by name.
-            ".purlin/records", ".purlin/briefs", ".purlin/tests/",
-            "purlin-record/", "purlin-tests/", "purlin-brief/",
-            "record_format", "tests_format", "test_results.md",
-            "brief.json", "brief.txt",
-            "purlin: record for", "purlin: tests at",
-            "Record committed", "Record unchanged",
-            "Test results committed", "Test results unchanged",
-            "write_record", "load_records", "record_label", "latest_record",
-            "results_reader", "write_brief", "find_brief", "briefs_dir",
-            "scripts/run/records.py", "scripts/run/results.py",
-            "purlin/records.py", "purlin/results.py",
-            # decision 36: a rule's level uses the gate's three words. The
-            # rule tag, its payload field and the setting it replaced are
-            # retired by their machine spellings.
-            "[bar:", "bar_from", "sign_at",
-            # decision 37: one queue, and no holds. The flag, the two lists
-            # and the payload field they fed are retired by their machine
-            # spellings; hold and review stay plain English words.
-            "--hold", "review_list", "sign_list", "signable",
-            # decision 35: `purlin:audit` calls the model itself. The flag
-            # that once asked for it and the builder of the file it fed are
-            # retired by their machine spellings.
-            re.compile(r"--ai\b"), "build_brief",
-            # decision 51: a marker is one comment, and no plugin is
-            # installed in a project's tests. The markers the plugins read,
-            # the folder their copies sat in and the format of the files they
-            # wrote are retired by their machine spellings; the 0.9.5
-            # upgrade and its tests are the one place they are written.
-            "pytest.mark.proof", "purlin_proof", "[proof:", "PurlinProof",
-            "-- @purlin", ".purlin/plugins", "proofs_format")
+LITERALS = (
+    # tags, flags and commands
+    "@on(", "@integration", "@e2e", "@unit", "[origin:", "[criterion:",
+    "[bar:", "--platform", "--quick", "--tier", "--hold", "--resolve",
+    re.compile(r"--ai\b"),
+    "purlin:verify", "purlin:review", "purlin:approve", "purlin:find",
+    "purlin:rename", "purlin:audit --remote", "anchor propose",
+    "upstream-check", "validated/",
+    # keys, fields and variables
+    "needs_person", "needs-a-person", "ai_review_at", "bar_from", "sign_at",
+    "review_list", "sign_list", "signable", "design_hash", "CHANGED_DESIGNS",
+    "PURLIN_PROOF_TIER", "is_ancestor", "build_brief",
+    "`developer`", "'developer'", '"developer"',
+    "`signers`", "'signers'", '"signers"',
+    # files, folders and scripts
+    "verify_gate", "verify-gate:", "config.local.json", "tools/PM",
+    "tools/QA", "pack_tools", "scan.py", "designs/", "test_run.json",
+    "last_sweep.json", ".purlin/plugin-root", ".purlin/hooks",
+    "report-stamp.js",
+    # the files a run once wrote beside the evidence, and their readers
+    ".purlin/records", ".purlin/briefs", ".purlin/tests/",
+    "purlin-record/", "purlin-tests/", "purlin-brief/",
+    "record_format", "tests_format", "test_results.md",
+    "brief.json", "brief.txt",
+    "purlin: record for", "purlin: tests at",
+    "Record committed", "Record unchanged",
+    "Test results committed", "Test results unchanged",
+    "write_record", "load_records", "record_label", "latest_record",
+    "results_reader", "write_brief", "find_brief", "briefs_dir",
+    "scripts/run/records.py", "scripts/run/results.py",
+    "purlin/records.py", "purlin/results.py",
+    # the markers the proof plugins read, their folder and their format
+    "pytest.mark.proof", "purlin_proof", "[proof:", "PurlinProof",
+    "-- @purlin", ".purlin/plugins", "proofs_format")
 
-# The queue is the one place a person is needed, and its header is the
-# one sentence that may still say so. A line is stepped over only when every
-# hit on it falls inside one of these phrases.
-# `verdict` stays retired in prose. It came back in 0.10.0 as one field name,
-# the audit's answer per rule in `references/formats/evidence_format.md`, so
-# its machine spellings are stepped over.
-# `mutation score` stays retired too, except in the one reason the strong
-# cell gives where no score was measured, which decision 35 wrote verbatim.
-# `approval` stays retired as a Purlin concept. The evidence package names
-# the regulated system's approval, which Purlin does not give, in one phrase:
-# a package is, or is not, for approval.
-ALLOWED_PHRASES = ("rules need a person", "rule needs a person",
-                   "`verdict`", '"verdict"', "'verdict'",
-                   "no mutation score measured", "for approval")
-CASED = (re.compile(r"\bPages\b"),)     # capitalised only; "pages" of a document is fine
-MD_ONLY = (re.compile(r"\bmode\b", re.I),)  # "mode" is only retired in prose
-
-PATTERNS = [re.compile(r"\b" + re.escape(w) + r"\b", re.I) for w in WORDS]
+# Spellings that are only machine text in capitals: the two state badges and
+# the file a git host reads owners from. `hollow` in a sentence is fine.
+CASED = (re.compile(r"\bHOLLOW\b"), re.compile(r"\bPROVABLE\b"),
+         re.compile(r"\bCODEOWNERS\b"), re.compile(r"\bPages\b"))
 
 EXCLUDED = (
-    "references/glossary.md",   # the retired table itself
     "design/tokens/",           # an external design system's tokens, copied in verbatim
-    "dev/fixtures/upgrade-0.9.5/",  # an old project layout, kept wrong on purpose
-    "dev/plans/",               # the plan names what it retires
-    "dev/test_vocabulary.py",   # this file lists the terms
-    "RELEASE_NOTES.md",         # historical entries record what shipped, under
-                                # the names it shipped under; the 0.10.0 section
-                                # is held to this vocabulary by review
+    "dev/fixtures/upgrade-0.9.5/",  # a 0.9.5 project, kept as 0.9.5 left it
+    "dev/plans/",               # the plan names what it removes
+    "dev/test_vocabulary.py",   # this file lists the spellings
+    "RELEASE_NOTES.md",         # the one place history is kept
     ".purlin/",                 # the evidence is machine output
 )
 
-# Paths a later phase of dev/plans/three-levels.md still rewrites, grouped by
-# the lane that owns them. A lane deletes its entries in the commit that
-# rewrites the files; the tuple is empty at closeout.
-PENDING_REWRITE = ()
-
-# Phase 7 deletes every signature directory of the old layout; until then the
-# files inside carry the old words.
-PENDING_DELETE = (".approvals/",)
-
-SKIP = EXCLUDED + PENDING_REWRITE
-
-# A migration or a parser has to name what it detects, and a test has to write
-# the spelling it feeds the parser. Those lines end with the marker for their
-# file type, and this proof steps over exactly those lines in exactly these
-# files. Everything else in the file is held to the vocabulary.
+# The upgrade from 0.9.5 has to name what it rewrites, and its tests have to
+# write the spellings they feed it. Those lines end with the marker for their
+# file type, and the check steps over exactly those lines in exactly these
+# files. Everything else in the file is held to the list.
 MARKED = {
     "scripts/init/update.py": "# retired",
-    "scripts/mcp/purlin/gate.py": "# retired",
-    "scripts/mcp/purlin/specs.py": "# retired",
-    "references/formats/spec_format.md": "<!-- retired -->",
-    "dev/test_mcp_server.py": "# retired",
-    # the 0.9.5 upgrade drops the kind of test, so its test writes one
     "dev/test_init_update.py": "# retired",
-    "dev/test_schema_spec_format.py": "# retired",
-    "dev/test_run_script.py": "# retired",
 }
 
 
@@ -163,19 +75,7 @@ def _tracked():
     out = subprocess.run(["git", "-C", str(ROOT), "ls-files"],
                          capture_output=True, text=True, check=True).stdout
     return [p for p in out.splitlines()
-            if p and not p.startswith(SKIP)
-            and not any(d in p for d in PENDING_DELETE)]
-
-
-def _allowed_spans(probe):
-    """Where the phrases the queue's header may use sit in one line."""
-    spans = []
-    for phrase in ALLOWED_PHRASES:
-        start = probe.find(phrase)
-        while start >= 0:
-            spans.append((start, start + len(phrase)))
-            start = probe.find(phrase, start + 1)
-    return spans
+            if p and not p.startswith(EXCLUDED)]
 
 
 def _spans_of(check, probe):
@@ -222,17 +122,14 @@ def _collapsed_findings(rel, text, checks):
     """The hits only the collapsed text shows, as `<path>:<line>: <term>`.
 
     A hit whose text the collapsing did not change sits on one line, and the
-    pass over lines already holds it with its `MARKED` and `ALLOWED_PHRASES`
-    logic, so it is not reported twice. The line reported is the line the
+    pass over lines already holds it with its `MARKED` logic, so it is not
+    reported twice. The line reported is the line the
     hit's first character is on.
     """
     findings = []
     probe, offsets = _collapsed(text)
-    spans = _allowed_spans(probe)
     for check in checks:
         for start, end in _spans_of(check, probe):
-            if any(s <= start and end <= e for s, e in spans):
-                continue
             if text[offsets[start]:offsets[end]] == probe[start:end]:
                 continue
             term = check if isinstance(check, str) else check.pattern
@@ -242,7 +139,7 @@ def _collapsed_findings(rel, text, checks):
     return findings
 
 
-def test_no_retired_terms():
+def test_no_removed_spelling_comes_back():
     findings = []
     for rel in _tracked():
         path = ROOT / rel
@@ -250,40 +147,28 @@ def test_no_retired_terms():
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue  # a binary file carries no prose
-        checks = PATTERNS + list(LITERALS) + list(CASED)
-        if rel.endswith(".md"):
-            checks = checks + list(MD_ONLY)
+        checks = list(LITERALS) + list(CASED)
         marker = MARKED.get(rel)
         for lineno, line in enumerate(text.splitlines(), 1):
             if marker and line.rstrip().endswith(marker):
                 continue
-            probe = line
-            spans = _allowed_spans(probe)
             for check in checks:
-                for start, end in _spans_of(check, probe):
-                    if any(s <= start and end <= e for s, e in spans):
-                        continue
+                for start, end in _spans_of(check, line):
                     term = check if isinstance(check, str) else check.pattern
                     findings.append("%s:%d: %s" % (rel, lineno, term))
                     break
         findings.extend(_collapsed_findings(rel, text, checks))
-    assert not findings, "retired terms found:\n" + "\n".join(findings)
+    assert not findings, "removed spellings found:\n" + "\n".join(findings)
 
 
-def test_a_retired_phrase_split_by_a_line_break_is_caught():
-    """The pass over lines cannot see `needs a person` wrapped onto two lines."""
-    fixture = "The board says this one needs a\nperson before it merges.\n"
+def test_a_spelling_split_by_a_line_break_is_caught():
+    """The pass over lines cannot see a spelling wrapped onto two lines."""
+    fixture = "Run purlin:audit\n--remote to send it away.\n"
     findings = _collapsed_findings("fixture.md", fixture, list(LITERALS))
-    assert findings == ["fixture.md:1: needs a person"], findings
-
-
-def test_the_queue_header_may_wrap():
-    """The one sentence that may say so is allowed across a line break too."""
-    fixture = "The header reads `4 rules need a\nperson` and nothing else does.\n"
-    assert _collapsed_findings("fixture.md", fixture, list(LITERALS)) == []
+    assert findings == ["fixture.md:1: purlin:audit --remote"], findings
 
 
 def test_one_line_hits_are_left_to_the_pass_over_lines():
     """A hit the collapsing did not change is not reported twice."""
-    fixture = "This one needs a person.\n"
+    fixture = "Run purlin:audit --remote to send it away.\n"
     assert _collapsed_findings("fixture.md", fixture, list(LITERALS)) == []

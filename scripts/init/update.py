@@ -40,52 +40,53 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import console as console_module                  # noqa: E402
-# --- the migration table: the one place a retired spelling is written -------
-# Each line ends with a `# retired` comment, which is what the vocabulary
-# proof reads to step over exactly these lines and no others.
+# --- what 0.9.5 wrote, which the upgrade finds and rewrites --------------
+# A line naming a spelling this release removed ends with a `# retired`
+# comment, so the check that keeps removed spellings out of the tree steps
+# over exactly those lines and no others.
 
-PROOF_FILE_GLOB = '*.proofs-*.json'                        # retired
-RUN_FILE_GLOB = '*.recei[p]t.json'                         # retired
-DASHBOARD_DATA = '.purlin/report-data.js'                  # retired
-CACHE_DIR = '.purlin/cache'                                # retired
-WINDOWS_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')  # retired
-KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'  # retired
+PROOF_FILE_GLOB = '*.proofs-*.json'
+RUN_FILE_GLOB = '*.receipt.json'
+DASHBOARD_DATA = '.purlin/report-data.js'
+CACHE_DIR = '.purlin/cache'
+WINDOWS_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')
+KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'
                          r'(?=(?:[ \t]+@env\([a-z]+\))?[ \t]*$)')
-WORKFLOW_MARKER = '.proofs-'                               # retired
-PRE_PUSH_HOOK = '.git/hooks/pre-push'                      # retired
-PRE_PUSH_KEY = 'pre_push'                                  # retired
-DESIGN_FIELD_RE = re.compile(r'^>\s*(Visual-Reference|Visual-Hash):')  # retired
-FIGMA_SOURCE_RE = re.compile(r'^>\s*Source:.*figma', re.I)  # retired
-PINNED_RE = re.compile(r'^>\s*Pinned:')                    # retired
+WORKFLOW_MARKER = '.proofs-'
+PRE_PUSH_HOOK = '.git/hooks/pre-push'
+PRE_PUSH_KEY = 'pre_push'
+DESIGN_FIELD_RE = re.compile(r'^>\s*(Visual-Reference|Visual-Hash):')
+FIGMA_SOURCE_RE = re.compile(r'^>\s*Source:.*figma', re.I)
+PINNED_RE = re.compile(r'^>\s*Pinned:')
 # The markers v0.9.5's proof plugins read, one per framework, and the files
 # its init copied and wired. The upgrade rewrites the first and removes the
 # second; nothing else in this release reads either.
-PYTEST_MARK_RE = re.compile(r'^([ \t]*)@pytest\.mark\.proof\(')  # retired
+PYTEST_MARK_RE = re.compile(r'^([ \t]*)@pytest\.mark\.proof\(')
 PYTEST_ARGS_RE = re.compile(r"""\(\s*["'](\w+)["']\s*,\s*["'](PROOF-\d+)["']""")
-PYTESTMARK_RE = re.compile(r'pytest\.mark\.proof\(')            # retired
+PYTESTMARK_RE = re.compile(r'pytest\.mark\.proof\(')
 TITLE_TAG_RE = re.compile(r' ?\[proof:(\w+):(PROOF-\d+):RULE-\d+(?::\w+)?\]')  # retired
 TRAIT_RE = re.compile(r'(\[\s*)?,?\s*Trait\s*\(\s*"PurlinProof"\s*,\s*'  # retired
                       r'"(\w+):(PROOF-\d+):RULE-\d+(?::\w+)?"\s*\)(\s*\])?')
 SHELL_CALL_RE = re.compile(r'^([ \t]*)purlin_proof\s+["\']?(\w+)["\']?\s+'  # retired
                            r'["\']?(PROOF-\d+)["\']?.*$')
-SHELL_HARNESS_RE = re.compile(r'^([ \t]*)(?:source|\.)\s+\S*(?:purlin-proof|'  # retired
+SHELL_HARNESS_RE = re.compile(r'^([ \t]*)(?:source|\.)\s+\S*(?:purlin-proof|'
                               r'shell_purlin)\.sh\S*\s*$')
 SHELL_FINISH_RE = re.compile(r'^([ \t]*)purlin_proof_finish\b.*$')  # retired
-SQL_MARK_RE = re.compile(r'^--[ \t]*@purlin[ \t]+(\w+)[ \t]+(PROOF-\d+)'  # retired
+SQL_MARK_RE = re.compile(r'^--[ \t]*@purlin[ \t]+(\w+)[ \t]+(PROOF-\d+)'
                          r'[ \t]+RULE-\d+(?:[ \t]+\w+)?[ \t]*$')
 PLUGIN_DIR = '.purlin/plugins'                             # retired
-CONFTEST_PLUGIN_RE = re.compile(                           # retired
+CONFTEST_PLUGIN_RE = re.compile(
     r"""["']\.purlin\.plugins\.pytest_purlin["']\s*,?\s*""")
-REPORTER_RE = re.compile(                                  # retired
+REPORTER_RE = re.compile(
     r"""\s*,?\s*["'][^"']*(?:jest|vitest)_purlin\.[jt]s["']""")
-XUNIT_LOGGER = 'xunit_purlin'                              # retired
+XUNIT_LOGGER = 'xunit_purlin'
 # The files v0.9.5's init copied into the plugin folder, under the names it
 # gave them. A file of any other name there is the project's own and stays.
-PLUGIN_COPIES = ('pytest_purlin.py', 'jest_purlin.js',          # retired
-                 'vitest_purlin.ts', 'purlin-proof.sh',          # retired
-                 'shell_purlin.sh', 'sql_purlin.sh',             # retired
-                 'xunit_purlin.cs', 'c_purlin.h',                # retired
-                 'c_purlin_emit.py', 'phpunit_purlin.php', '.keep')  # retired
+PLUGIN_COPIES = ('pytest_purlin.py', 'jest_purlin.js',
+                 'vitest_purlin.ts', 'purlin-proof.sh',
+                 'shell_purlin.sh', 'sql_purlin.sh',
+                 'xunit_purlin.cs', 'c_purlin.h',
+                 'c_purlin_emit.py', 'phpunit_purlin.php', '.keep')
 
 # The old framework names and the suite each becomes.
 OLD_FRAMEWORKS = {'pytest': 'pytest', 'jest': 'jest', 'vitest': 'vitest',
@@ -424,7 +425,7 @@ def _tests_setting(root, old):
     if isinstance(old.get('tests'), list):
         return old['tests'], []
     detected = frameworks.detect_frameworks(root)
-    raw = str(old.get('test_framework') or '')                    # retired
+    raw = str(old.get('test_framework') or '')
     names = [part.strip() for part in raw.split(',') if part.strip()]
     if not names or 'auto' in names:
         return frameworks.entries_for(detected), []
@@ -802,7 +803,7 @@ def _marked_old(root):
                                                '[proof:',            # retired
                                                'PurlinProof',        # retired
                                                'purlin_proof',       # retired
-                                               '@purlin')):          # retired
+                                               '@purlin')):
             continue
         ext = os.path.splitext(rel)[1].lower()
         new, count, left = rewrite_markers(text, ext)

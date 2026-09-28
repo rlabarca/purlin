@@ -80,7 +80,7 @@ DEFAULT_TRUST = 'local'
 
 RETIRED_KEYS = (
     'spec_dir', 'audit_criteria',
-    'pre_push',                                                   # retired
+    'pre_push',
 )
 
 

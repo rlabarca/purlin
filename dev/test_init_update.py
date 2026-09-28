@@ -6,12 +6,9 @@ script would do, so the script and these proofs cannot drift apart. The fixture
 itself is frozen: each test copies it into a temporary directory and runs
 `git init` there, then writes by hand whatever that layout does not carry.
 
-One convention runs through this file. The spellings this release retired are
-never written out: the verification file name carries a character class
-(`recei[p]t`), and a spec is found by searching for its text rather than by
-naming a path that carries a retired word.
-`dev/test_vocabulary.py` reads this file with no exception for it, so a fixture
-spelled out in full would fail that proof.
+A line that writes a spelling `dev/test_vocabulary.py` lists, because the
+upgrade has to be fed it, ends with a `# retired` comment, and that check steps
+over exactly those lines.
 
 What each group proves:
 
@@ -58,8 +55,8 @@ from purlin import status as status_module  # noqa: E402
 V095 = 'upgrade-0.9.5'
 LAYOUTS = (V095,)
 
-# The retired spellings, never written out. See the module docstring.
-LEFTOVER = ('*.proofs-*.json', '*.recei[p]t.json')
+# The files 0.9.5 committed beside a spec, which the upgrade removes.
+LEFTOVER = ('*.proofs-*.json', '*.receipt.json')
 
 # The pre-commit and pre-push hooks v0.9.5 installed under `.git/hooks/`, as
 # its `scripts/hooks/` copies open. A fixture carries no `.git/`, so a hooks
@@ -440,7 +437,7 @@ def test_a_framework_the_tree_cannot_run_is_dropped(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
     before = json.loads(_read(root, '.purlin/config.json'))
-    assert before['test_framework'] == 'pytest,jest,shell,vitest'  # retired
+    assert before['test_framework'] == 'pytest,jest,shell,vitest'
     _apply(root)
     printed = capsys.readouterr().out
     written = json.loads(_read(root, '.purlin/config.json'))
@@ -585,7 +582,7 @@ def test_a_marker_it_cannot_place_is_named_and_left(tmp_path, capsys):
 
 # --- the plugins and their wiring ----------------------------------------------
 
-OLD_CONFTEST = 'pytest_plugins = [".purlin.plugins.pytest_purlin"]\n'  # retired
+OLD_CONFTEST = 'pytest_plugins = [".purlin.plugins.pytest_purlin"]\n'
 OLD_JEST_CONFIG = ('module.exports = {\n'
                    '  "reporters": ["default", ".purlin/plugins/jest_purlin.js"]\n'  # retired
                    '};\n')
@@ -628,7 +625,7 @@ def test_the_wiring_0_9_5_wrote_goes(tmp_path, capsys):
     _write(root, 'vitest.config.ts', OLD_VITEST_CONFIG)
     _write(root, 'App.Tests/App.Tests.csproj',
            '<Project><ItemGroup><Compile Include="../.purlin/plugins/'  # retired
-           'xunit_purlin.cs" /></ItemGroup></Project>\n')  # retired
+           'xunit_purlin.cs" /></ItemGroup></Project>\n')
     _apply(root)
     printed = capsys.readouterr().out
     assert not os.path.exists(os.path.join(root, 'conftest.py'))
@@ -923,7 +920,7 @@ def test_the_kind_of_test_is_dropped_from_every_proof_line(tmp_path):
              if line.startswith('- PROOF-')]
     assert len(after) == len(before)
     for line in after:
-        assert not re.search(r'@(unit|integration|e2e)\s*$', line), line  # retired
+        assert not re.search(r'@(unit|integration|e2e)\s*$', line), line
     assert after[0].endswith('written to `specs/hooks/`'), after[0]
 
     path = os.path.join(root, rel)

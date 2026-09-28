@@ -608,7 +608,7 @@ class TestGate:
         assert any('trust' in w for w in cfg.warnings), cfg.warnings
 
     def test_the_hook_setting_is_a_key_this_release_does_not_read(self):
-        cfg = purlin_gate.resolve_gate({'pre_push': 'on'})   # retired
+        cfg = purlin_gate.resolve_gate({'pre_push': 'on'})
         assert any('purlin:init --update' in w for w in cfg.warnings), \
             cfg.warnings
 
