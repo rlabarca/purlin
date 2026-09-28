@@ -29,7 +29,7 @@ OFFSETS = """() => {
 }"""
 
 
-@pytest.mark.proof("purlin_report", "PROOF-33", "RULE-33")
+# purlin: purlin_report PROOF-33
 def test_every_heading_starts_where_its_cells_start(browser, tmp_path):  # noqa: F811
     for width in WIDTHS:
         page = open_board(browser, tmp_path / str(width),
@@ -42,7 +42,7 @@ def test_every_heading_starts_where_its_cells_start(browser, tmp_path):  # noqa:
         page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-34", "RULE-32")
+# purlin: purlin_report PROOF-34
 def test_the_stale_card_carries_the_count(browser, tmp_path):  # noqa: F811
     payload = payload_named('regulated')
     payload['summary']['stale'] = 3
@@ -87,7 +87,7 @@ FONT_SIZES = """() => Array.from(document.querySelectorAll('#app *'))
   }))"""
 
 
-@pytest.mark.proof("purlin_report", "PROOF-41", "RULE-34")
+# purlin: purlin_report PROOF-41
 def test_no_text_on_the_board_is_set_under_thirteen_pixels(browser, tmp_path):  # noqa: F811
     """The dark theme's smallest text was 11 pixels and unreadable."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -128,7 +128,7 @@ RIGHT_ALIGNED = """() => Array.from(document.querySelectorAll('.tbl *')).filter(
   el => getComputedStyle(el).textAlign === 'right').length"""
 
 
-@pytest.mark.proof("purlin_report", "PROOF-42", "RULE-35")
+# purlin: purlin_report PROOF-42
 def test_a_column_keeps_its_floor_and_the_table_scrolls_instead(browser,  # noqa: F811
                                                                 tmp_path):
     """`SIGNED` sat off the right of a 1024-wide window with eight columns."""

@@ -192,7 +192,7 @@ def gate(made, as_json=False):
 
 class TestTheIdsAgree:
 
-    @pytest.mark.proof("gate_check", "PROOF-39", "RULE-17")
+    # purlin: gate_check PROOF-39
     def test_a_commit_the_run_pushed_passes(self, project, runner, fake):
         sha = head(project)
         opener = fake(commits={sha: pushed(BUILD)})
@@ -204,7 +204,7 @@ class TestTheIdsAgree:
             'commits/%s?api-version=7.0' % sha]
         assert all(entry['method'] == 'GET' for entry in opener.requests)
 
-    @pytest.mark.proof("gate_check", "PROOF-39", "RULE-17")
+    # purlin: gate_check PROOF-39
     def test_the_gate_passes_when_the_run_pushed_it(self, project, runner,
                                                     fake):
         fake(commits={head(project): pushed(BUILD)})
@@ -212,7 +212,7 @@ class TestTheIdsAgree:
         assert code == 0, printed
         assert 'Evidence' not in printed, printed
 
-    @pytest.mark.proof("gate_check", "PROOF-39", "RULE-17")
+    # purlin: gate_check PROOF-39
     def test_the_build_service_name_is_not_read(self, project, runner, fake):
         sha = commit_ci_file(project, 'typed by hand',
                              name='Project Collection Build Service')
@@ -223,7 +223,7 @@ class TestTheIdsAgree:
         assert [rel for rel, _reason in problems] == [CI_FILE]
         assert not_checked == [] and notice is None
 
-    @pytest.mark.proof("gate_check", "PROOF-40", "RULE-17")
+    # purlin: gate_check PROOF-40
     def test_only_the_last_commit_counts(self, project, runner, fake):
         first = commit_ci_file(project, 'one')
         second = commit_ci_file(project, 'two')
@@ -233,7 +233,7 @@ class TestTheIdsAgree:
         assert second[:7] in problems[0][1]
         assert opener.commit_shas() == [second]
 
-    @pytest.mark.proof("gate_check", "PROOF-40", "RULE-17")
+    # purlin: gate_check PROOF-40
     def test_a_last_commit_the_run_pushed_passes_over_an_earlier_one(
             self, project, runner, fake):
         first = commit_ci_file(project, 'one')
@@ -249,7 +249,7 @@ class TestTheIdsAgree:
 
 class TestItFailsClosed:
 
-    @pytest.mark.proof("gate_check", "PROOF-41", "RULE-18")
+    # purlin: gate_check PROOF-41
     def test_a_commit_someone_else_pushed_fails_the_gate(self, project,
                                                          runner, fake):
         sha = head(project)
@@ -260,7 +260,7 @@ class TestItFailsClosed:
         assert ('%s: commit %s was pushed by jane@acme.com, not by the '
                 'identity this run holds' % (CI_FILE, sha[:7])) in printed
 
-    @pytest.mark.proof("gate_check", "PROOF-42", "RULE-18")
+    # purlin: gate_check PROOF-42
     def test_a_commit_with_no_push_is_named(self, project, runner, fake):
         sha = head(project)
         fake(commits={sha: {'commitId': sha, 'committer': {
@@ -271,7 +271,7 @@ class TestItFailsClosed:
         code, printed = gate(project)
         assert code == 1 and 'names no push' in printed, printed
 
-    @pytest.mark.proof("gate_check", "PROOF-43", "RULE-18")
+    # purlin: gate_check PROOF-43
     @pytest.mark.parametrize('status', [401, 403])
     def test_a_refused_commit_request_is_named(self, project, runner, fake,
                                                status):
@@ -285,7 +285,7 @@ class TestItFailsClosed:
         assert code == 1, printed
         assert 'refused the token with HTTP %d' % status in printed
 
-    @pytest.mark.proof("gate_check", "PROOF-43", "RULE-18")
+    # purlin: gate_check PROOF-43
     def test_a_refused_identity_names_every_file(self, project, runner,
                                                  fake):
         other = '.purlin/evidence/ci/extra.json'
@@ -300,7 +300,7 @@ class TestItFailsClosed:
                    for _rel, reason in problems)
         assert opener.commit_shas() == []
 
-    @pytest.mark.proof("gate_check", "PROOF-44", "RULE-18")
+    # purlin: gate_check PROOF-44
     @pytest.mark.parametrize('error', [
         socket.timeout('timed out'),
         urllib.error.URLError(socket.timeout('timed out'))])
@@ -312,7 +312,7 @@ class TestItFailsClosed:
         code, printed = gate(project)
         assert code == 1, printed
 
-    @pytest.mark.proof("gate_check", "PROOF-44", "RULE-18")
+    # purlin: gate_check PROOF-44
     def test_a_file_no_commit_changed_is_named(self, project, runner, fake):
         other = '.purlin/evidence/ci/extra.json'
         write(os.path.join(project.root, *other.split('/')), '{}\n')
@@ -322,7 +322,7 @@ class TestItFailsClosed:
         assert problems == [(other, 'no commit has changed it')]
         assert opener.commit_shas() == []
 
-    @pytest.mark.proof("gate_check", "PROOF-45", "RULE-18")
+    # purlin: gate_check PROOF-45
     def test_a_run_with_no_token_names_every_file(self, project, runner,
                                                   fake):
         runner.delenv('SYSTEM_ACCESSTOKEN')
@@ -343,7 +343,7 @@ class TestItFailsClosed:
 
 class TestOffARunner:
 
-    @pytest.mark.proof("gate_check", "PROOF-46", "RULE-19")
+    # purlin: gate_check PROOF-46
     def test_an_azure_project_off_a_runner_is_not_checked(self, project,
                                                           clean_env, fake):
         other = '.purlin/evidence/ci/extra.json'
@@ -364,7 +364,7 @@ class TestOffARunner:
         assert result['evidence'] == []
         assert opener.requests == []
 
-    @pytest.mark.proof("gate_check", "PROOF-46", "RULE-19")
+    # purlin: gate_check PROOF-46
     def test_the_check_off_a_runner_passes_and_fails_nothing(self, project,
                                                              clean_env, fake):
         opener = fake()
@@ -378,7 +378,7 @@ class TestOffARunner:
 
 class TestTheToken:
 
-    @pytest.mark.proof("gate_check", "PROOF-47", "RULE-20")
+    # purlin: gate_check PROOF-47
     @pytest.mark.parametrize('answer', [
         pushed(BUILD), pushed(JANE), refused(401),
         socket.timeout('timed out')])
@@ -401,7 +401,7 @@ class TestTheToken:
 
 class TestThePipeline:
 
-    @pytest.mark.proof("gate_check", "PROOF-48", "RULE-21")
+    # purlin: gate_check PROOF-48
     def test_the_gate_step_carries_the_token(self):
         text = workflow.render_workflow('azure', [], 'v1.0.0')
         steps = text.split('\n      - ')

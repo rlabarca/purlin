@@ -26,7 +26,7 @@ def project():
     made.close()
 
 
-@pytest.mark.proof("states", "PROOF-11", "RULE-9")
+# purlin: states PROOF-11
 def test_a_failing_test_is_named_where_it_failed(project):
     here = purlin_evidence.host_os()
     project.proofs()

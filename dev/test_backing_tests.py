@@ -43,7 +43,7 @@ def _runtime(project, proof_one_names):
 
 class TestTheEvidenceNamesTheTests:
 
-    @pytest.mark.proof("states", "PROOF-40", "RULE-35")
+    # purlin: states PROOF-40
     def test_what_this_checkout_ran_does_not_move_the_hash(self, project):
         project.proofs()
         project.evidence()
@@ -55,7 +55,7 @@ class TestTheEvidenceNamesTheTests:
         assert project.rule('RULE-1')['test_hash'] == first, \
             'a test this checkout could not run moved the hash'
 
-    @pytest.mark.proof("states", "PROOF-41", "RULE-35")
+    # purlin: states PROOF-41
     def test_a_code_change_does_not_move_the_hash_and_a_new_run_can(
             self, project):
         project.evidence()
@@ -70,7 +70,7 @@ class TestTheEvidenceNamesTheTests:
                          at='2026-09-14T12:00:00Z')
         assert project.rule('RULE-1')['test_hash'] != first
 
-    @pytest.mark.proof("states", "PROOF-42", "RULE-35")
+    # purlin: states PROOF-42
     def test_every_operating_system_s_section_counts(self, project):
         project.evidence(os_name='linux', runner='ci', source='ci')
         project.evidence(os_name='windows', runner='ci', source='ci',

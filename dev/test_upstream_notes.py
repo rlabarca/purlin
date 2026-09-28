@@ -19,7 +19,7 @@ from test_upstream import (_add, _advance, _copy_text, upstream,  # noqa: E402,F
 NOTES = ('run the setup script first', 'the pin moves on each release')
 
 
-@pytest.mark.proof("upstream", "PROOF-23", "RULE-23")
+# purlin: upstream PROOF-23
 def test_a_sync_keeps_the_notes(workspace):  # noqa: F811
     _add(workspace)
     path = upstream.anchor_path(workspace.root, 'no_eval')

@@ -162,7 +162,7 @@ def tagged():
 
 class TestTheFile:
 
-    @pytest.mark.proof("package", "PROOF-1", "RULE-1")
+    # purlin: package PROOF-1
     def test_it_writes_the_version_file_prints_the_state_and_commits_nothing(
             self, signed):
         head = signed.head()
@@ -178,7 +178,7 @@ class TestTheFile:
         assert len(git(signed.root, 'worktree', 'list').stdout
                    .splitlines()) == 1
 
-    @pytest.mark.proof("package", "PROOF-2", "RULE-2")
+    # purlin: package PROOF-2
     def test_release_names_the_version_the_file_and_the_tag(self, signed):
         code, lines = export(signed.root, '--release', 'beta')
         assert code == 0, lines
@@ -189,7 +189,7 @@ class TestTheFile:
         assert not os.path.exists(os.path.join(
             signed.root, '.purlin', 'evidence', 'package', '2.1.0.json'))
 
-    @pytest.mark.proof("package", "PROOF-3", "RULE-3")
+    # purlin: package PROOF-3
     def test_the_top_level_keys_come_in_the_format_order(self, signed):
         export(signed.root)
         package = read_package(signed.root)
@@ -201,7 +201,7 @@ class TestTheFile:
                     'proj', 'signed', 'local', 'auto', 50)
         assert package['commit'] == signed.head()
 
-    @pytest.mark.proof("package", "PROOF-10", "RULE-10")
+    # purlin: package PROOF-10
     def test_commit_commits_the_file_as_evidence_and_once(self, signed):
         head = signed.head()
         code, lines = export(signed.root, '--commit')
@@ -221,7 +221,7 @@ class TestTheFile:
 
 class TestTheState:
 
-    @pytest.mark.proof("package", "PROOF-4", "RULE-4")
+    # purlin: package PROOF-4
     def test_a_project_with_no_evidence_is_work_in_progress(self):
         made = Project()
         try:
@@ -244,7 +244,7 @@ class TestTheState:
         finally:
             made.close()
 
-    @pytest.mark.proof("package", "PROOF-5", "RULE-4")
+    # purlin: package PROOF-5
     def test_a_rule_with_no_test_holds_the_state(self):
         made = signed_project(spec=SPEC_WITH_A_THIRD_RULE)
         try:
@@ -261,7 +261,7 @@ class TestTheState:
         finally:
             made.close()
 
-    @pytest.mark.proof("package", "PROOF-6", "RULE-4")
+    # purlin: package PROOF-6
     def test_a_rule_with_no_audit_holds_the_state(self):
         made = Project(gate='strong')
         try:
@@ -278,7 +278,7 @@ class TestTheState:
         finally:
             made.close()
 
-    @pytest.mark.proof("package", "PROOF-7", "RULE-4")
+    # purlin: package PROOF-7
     def test_an_unsigned_rule_holds_the_state(self, signed):
         export(signed.root)
         package = read_package(signed.root)
@@ -288,7 +288,7 @@ class TestTheState:
         assert (package['state'], package['rules_meeting_gate'],
                 package['rules_short_of_gate']) == ('work in progress', 1, 1)
 
-    @pytest.mark.proof("package", "PROOF-8", "RULE-5")
+    # purlin: package PROOF-8
     def test_a_met_gate_without_the_tag_is_still_not_for_approval(self):
         made = Project()
         try:
@@ -320,7 +320,7 @@ class TestTheState:
 
 class TestTheContent:
 
-    @pytest.mark.proof("package", "PROOF-9", "RULE-6")
+    # purlin: package PROOF-9
     def test_one_rule_carries_its_words_proofs_tests_results_audit_and_signature(
             self, tagged):
         package = read_package(tagged.root)
@@ -361,7 +361,7 @@ class TestTheContent:
                                               'reasons': ['by jane@acme.com']}
         assert rule['meets_gate'] is True
 
-    @pytest.mark.proof("package", "PROOF-11", "RULE-6")
+    # purlin: package PROOF-11
     def test_nothing_names_who_last_changed_a_test(self, tagged):
         # The test file was committed by dev@example.com, and nothing in the
         # package names that person or asks who changed the test last.
@@ -377,7 +377,7 @@ class TestTheContent:
 
 class TestWhatGitHolds:
 
-    @pytest.mark.proof("package", "PROOF-12", "RULE-7")
+    # purlin: package PROOF-12
     def test_evidence_not_committed_is_left_out_and_named(self, signed):
         sign_the_queue(signed)
         signed.evidence(strength=90, runner='ci', source='ci',
@@ -410,7 +410,7 @@ def _clone_at_the_tag(made):
 
 class TestTheBytes:
 
-    @pytest.mark.proof("package", "PROOF-13", "RULE-8")
+    # purlin: package PROOF-13
     def test_exporting_twice_gives_the_same_bytes(self, signed):
         export(signed.root)
         first = read_bytes(signed.root, '.purlin/evidence/package/2.1.0.json')
@@ -419,7 +419,7 @@ class TestTheBytes:
         assert first == second
         assert first.endswith(b'}\n') and b'\r' not in first
 
-    @pytest.mark.proof("package", "PROOF-14", "RULE-8")
+    # purlin: package PROOF-14
     def test_a_second_clone_at_the_tag_gives_the_committed_bytes(self, tagged):
         committed = git(tagged.root, 'show',
                         'signed/2.1.0:.purlin/evidence/package/2.1.0.json')
@@ -435,7 +435,7 @@ class TestTheBytes:
         finally:
             shutil.rmtree(parent, ignore_errors=True)
 
-    @pytest.mark.proof("package", "PROOF-15", "RULE-8")
+    # purlin: package PROOF-15
     def test_every_time_is_utc(self, tagged):
         package = read_package(tagged.root)
         times = []
@@ -460,7 +460,7 @@ class TestTheBytes:
 
 class TestTheFingerprint:
 
-    @pytest.mark.proof("package", "PROOF-16", "RULE-9")
+    # purlin: package PROOF-16
     def test_check_passes_a_package_as_written(self, signed):
         export(signed.root)
         path = os.path.join(signed.root, '.purlin', 'evidence', 'package',
@@ -470,7 +470,7 @@ class TestTheFingerprint:
         assert re.match(r'^[0-9a-f]{64}$', read_package(signed.root)[
             'fingerprint'])
 
-    @pytest.mark.proof("package", "PROOF-17", "RULE-9")
+    # purlin: package PROOF-17
     def test_check_names_an_edit_made_after(self, signed):
         export(signed.root)
         path = os.path.join(signed.root, '.purlin', 'evidence', 'package',
@@ -497,7 +497,7 @@ class TestTheFingerprint:
 
 class TestTheTag:
 
-    @pytest.mark.proof("signatures", "PROOF-78", "RULE-53")
+    # purlin: signatures PROOF-78
     def test_sign_commits_the_package_and_tags_that_commit(self, tagged):
         root = tagged.root
         tag_commit = git(root, 'rev-parse', 'signed/2.1.0^{commit}').stdout \
@@ -521,7 +521,7 @@ class TestTheTag:
                 '.purlin/evidence/package/2.1.0.json.') in tagged.tag_output
         assert status(root) == ''
 
-    @pytest.mark.proof("signatures", "PROOF-79", "RULE-53")
+    # purlin: signatures PROOF-79
     def test_no_tag_when_the_package_cannot_be_written(self, signed):
         sign_the_queue(signed)
         write(os.path.join(signed.root, '.purlin', 'evidence', 'package'),

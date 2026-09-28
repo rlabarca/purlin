@@ -11,7 +11,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 MCP_DIR="$PLUGIN_ROOT/scripts/mcp"
 RUN="$PLUGIN_ROOT/scripts/run/purlin_run.py"
-HARNESS="$PLUGIN_ROOT/scripts/proof/shell_purlin.sh"
 
 echo "=== e2e_required_rules ==="
 
@@ -37,7 +36,7 @@ mkdir -p "$TMPDIR_E2E/.purlin" "$TMPDIR_E2E/specs/schema" \
          "$TMPDIR_E2E/specs/_anchors" "$TMPDIR_E2E/specs/auth" \
          "$TMPDIR_E2E/src/auth"
 
-echo '{"gate":"passed","test_framework":"shell","project_name":"e2e"}' \
+echo '{"gate":"passed","project_name":"e2e","tests":[{"name":"shell","run":"bash {files}","report":null,"format":"exit","files":["tests/*.test.sh"]}]}' \
   > "$TMPDIR_E2E/.purlin/config.json"
 echo '.purlin/runtime/' > "$TMPDIR_E2E/.gitignore"
 
@@ -129,19 +128,17 @@ PY
 }
 
 write_test() {
-  # write_test <name> <feature> <PROOF-ID:RULE-ID> ...
-  # One shell test under tests/ that passes a proof per pair, through the
-  # shell harness the plugin ships.
+  # write_test <name> <feature> <PROOF-ID> ...
+  # One shell test under tests/ that carries one marker per proof at its top
+  # and exits 0, so every proof it names passes.
   local name="$1" feature="$2"; shift 2
   mkdir -p "$TMPDIR_E2E/tests"
   {
     printf '#!/usr/bin/env bash\n'
-    printf '. "%s"\n' "$HARNESS"
-    for pair in "$@"; do
-      printf 'purlin_proof "%s" "%s" "%s" pass "%s"\n' \
-        "$feature" "${pair%%:*}" "${pair##*:}" "${pair%%:*}"
+    for proof in "$@"; do
+      printf '# purlin: %s %s\n' "$feature" "$proof"
     done
-    printf 'purlin_proof_finish\n'
+    printf 'exit 0\n'
   } > "$TMPDIR_E2E/tests/$name.test.sh"
 }
 
@@ -182,7 +179,7 @@ check "the feature counts five untested rules" "5" \
 
 # ── phase D: partial, then complete ───────────────────────────────────
 echo "  --- phase D: the feature's own tests run ---"
-write_test login login PROOF-1:RULE-1 PROOF-2:RULE-2
+write_test login login PROOF-1 PROOF-2
 run_tests
 check "the run wrote login's evidence" "yes" \
   "$([ -f "$TMPDIR_E2E/.purlin/evidence/local/login.json" ] && echo yes || echo no)"
@@ -191,8 +188,8 @@ check "three rules are still untested" "3" \
   "$(query "print(feature['rollup']['untested'])")"
 
 echo "  --- phase E: the required and global tests run too ---"
-write_test api api_conventions PROOF-1:RULE-1 PROOF-2:RULE-2
-write_test security security_no_eval PROOF-1:RULE-1
+write_test api api_conventions PROOF-1 PROOF-2
+write_test security security_no_eval PROOF-1
 run_tests
 check "the run wrote each anchor's own evidence" "yes yes" \
   "$(for name in api_conventions security_no_eval; do [ -f "$TMPDIR_E2E/.purlin/evidence/local/$name.json" ] && printf yes || printf no; printf ' '; done | sed 's/ $//')"

@@ -93,7 +93,7 @@ def _rows(payload, need=None):
             if need is None or row['need'] == need}
 
 
-@pytest.mark.proof("states", "PROOF-33", "RULE-29")
+# purlin: states PROOF-33
 def test_a_hand_check_is_a_manual_test_whose_level_asks_for_more(queued):
     payload = queued.payload()
     rows = _rows(payload, 'hand check')
@@ -108,7 +108,7 @@ def test_a_hand_check_is_a_manual_test_whose_level_asks_for_more(queued):
         'not audited')
 
 
-@pytest.mark.proof("states", "PROOF-33", "RULE-29")
+# purlin: states PROOF-33
 def test_the_queue_is_empty_under_the_passed_gate(queued):
     queued.config_value('gate', 'passed')
     payload = queued.payload()
@@ -117,7 +117,7 @@ def test_the_queue_is_empty_under_the_passed_gate(queued):
     assert 'strong' not in payload['features'][0]['rules'][0]['cells']
 
 
-@pytest.mark.proof("states", "PROOF-63", "RULE-54")
+# purlin: states PROOF-63
 def test_a_signature_row_is_a_rule_that_met_its_tests_and_audit(queued):
     payload = queued.payload()
     rows = _rows(payload, 'signature')
@@ -130,7 +130,7 @@ def test_a_signature_row_is_a_rule_that_met_its_tests_and_audit(queued):
     assert _rows(queued.payload(), 'signature') == {}
 
 
-@pytest.mark.proof("states", "PROOF-34", "RULE-30")
+# purlin: states PROOF-34
 def test_each_row_says_what_it_needs_and_the_command_that_answers(queued):
     rows = _rows(queued.payload())
     for row in rows.values():
@@ -153,13 +153,13 @@ def test_each_row_says_what_it_needs_and_the_command_that_answers(queued):
         'hashes changed after the signature'], rows['RULE-1']
 
 
-@pytest.mark.proof("states", "PROOF-35", "RULE-31")
+# purlin: states PROOF-35
 def test_the_queue_reads_by_feature_then_rule_number(queued):
     assert [row['rule'] for row in queued.payload()['queue']] == [
         'RULE-1', 'RULE-3', 'RULE-5']
 
 
-@pytest.mark.proof("states", "PROOF-35", "RULE-31")
+# purlin: states PROOF-35
 def test_a_feature_named_first_in_the_alphabet_reads_first():
     made = Project(gate='strong', spec=None)
     try:
@@ -179,7 +179,7 @@ def test_a_feature_named_first_in_the_alphabet_reads_first():
         made.close()
 
 
-@pytest.mark.proof("states", "PROOF-36", "RULE-31")
+# purlin: states PROOF-36
 def test_a_global_anchor_rule_is_named_once():
     made = Project(gate='strong')
     try:
@@ -203,7 +203,7 @@ def test_a_global_anchor_rule_is_named_once():
         made.close()
 
 
-@pytest.mark.proof("states", "PROOF-62", "RULE-53")
+# purlin: states PROOF-62
 def test_the_rollup_and_the_summary_count_the_queue(queued):
     payload = queued.payload()
     rollup = payload['features'][0]['rollup']
@@ -215,7 +215,7 @@ def test_the_rollup_and_the_summary_count_the_queue(queued):
     assert (summary['queue'], summary['hand_checks']) == (1, 1), summary
 
 
-@pytest.mark.proof("states", "PROOF-64", "RULE-55")
+# purlin: states PROOF-64
 def test_the_status_report_counts_the_queue_in_one_line(queued):
     lines = purlin_status.sync_status(queued.root).splitlines()
     assert 'Queue: 3 rules. 1 hand check, 2 signatures.' in lines, lines

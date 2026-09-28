@@ -226,7 +226,7 @@ def panel_lines(page, head):
 # The built file
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("purlin_report", "PROOF-1", "RULE-1")
+# purlin: purlin_report PROOF-1
 def test_the_build_is_reproducible():
     """Two builds of the same parts give the same bytes."""
     first = build_page()
@@ -234,14 +234,14 @@ def test_the_build_is_reproducible():
     assert first == second
 
 
-@pytest.mark.proof("purlin_report", "PROOF-2", "RULE-2")
+# purlin: purlin_report PROOF-2
 def test_the_page_is_one_file_under_the_line_budget(page_text):
     assert len(page_text.splitlines()) <= 1200
     assert os.path.isfile(os.path.join(ROOT, 'purlin-report.html'))
     assert read(os.path.join(ROOT, 'purlin-report.html')) == page_text
 
 
-@pytest.mark.proof("purlin_report", "PROOF-3", "RULE-3")
+# purlin: purlin_report PROOF-3
 def test_every_colour_is_a_token(page_text):
     """The only place a colour is written is the inlined token block."""
     inside, outside = token_block(page_text)
@@ -251,8 +251,8 @@ def test_every_colour_is_a_token(page_text):
     assert written == [], written
 
 
-@pytest.mark.proof("purlin_report", "PROOF-4", "RULE-4")
-@pytest.mark.proof("purlin_report", "PROOF-5", "RULE-5")
+# purlin: purlin_report PROOF-4
+# purlin: purlin_report PROOF-5
 def test_no_shadow_no_gradient_no_emoji_and_no_outside_request(page_text):
     """The page opens from a disk with no network behind it."""
     inside, outside = token_block(page_text)
@@ -267,7 +267,7 @@ def test_no_shadow_no_gradient_no_emoji_and_no_outside_request(page_text):
     assert not re.search(r'(?:src|href)\s*=\s*"https?:', page_text)
 
 
-@pytest.mark.proof("purlin_report", "PROOF-6", "RULE-6")
+# purlin: purlin_report PROOF-6
 def test_affordances_are_unicode_glyphs_not_an_icon_set(page_text):
     """The system ships no icon set, so the page draws none."""
     for glyph in (u'▶', u'▼', u'←'):
@@ -281,7 +281,7 @@ def test_affordances_are_unicode_glyphs_not_an_icon_set(page_text):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize('process', PROCESSES)
-@pytest.mark.proof("purlin_report", "PROOF-7", "RULE-7")
+# purlin: purlin_report PROOF-7
 def test_the_board_renders_for_each_process(browser, tmp_path, process):
     payload = payload_named(process)
     summary = payload['summary']
@@ -308,7 +308,7 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
 BASE_COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests']
 
 
-@pytest.mark.proof("purlin_report", "PROOF-9", "RULE-9")
+# purlin: purlin_report PROOF-9
 def test_the_columns_scale_with_the_gate(browser, tmp_path):
     """A gate asks for what it asks for, and the board asks no more."""
     solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
@@ -325,7 +325,7 @@ def test_the_columns_scale_with_the_gate(browser, tmp_path):
     reg.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-32", "RULE-31")
+# purlin: purlin_report PROOF-32
 def test_the_rule_screen_says_what_each_platform_found(browser, tmp_path):
     """A rule can pass on one operating system and fail on another.
 
@@ -361,7 +361,7 @@ def test_the_rule_screen_says_what_each_platform_found(browser, tmp_path):
 
 
 @pytest.mark.parametrize('process', PROCESSES)
-@pytest.mark.proof("purlin_report", "PROOF-12", "RULE-12")
+# purlin: purlin_report PROOF-12
 def test_both_themes_render_through_the_tokens(browser, tmp_path, process):
     page = open_board(browser, tmp_path, payload_named(process))
     dark = page.evaluate(
@@ -396,7 +396,7 @@ RESOLVE_TOKEN = """(name) => {
 }"""
 
 
-@pytest.mark.proof("purlin_report", "PROOF-30", "RULE-12")
+# purlin: purlin_report PROOF-30
 def test_the_board_sits_on_the_brand_navy(browser, tmp_path, page_text):
     """No surface override, so the ground is the brand's own navy."""
     assert 'data-surface' not in page_text
@@ -411,7 +411,7 @@ BUCKETS = ('untested', 'failing', 'partial', 'passed', 'strong',
            'signed')
 
 
-@pytest.mark.proof("purlin_report", "PROOF-8", "RULE-8")
+# purlin: purlin_report PROOF-8
 def test_the_tiles_scale_with_the_gate(browser, tmp_path):
     solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
     assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Partial',
@@ -462,7 +462,7 @@ def count_cells(page):
             for row in page.eval_on_selector_all('.tr', COUNT_CELLS)}
 
 
-@pytest.mark.proof("purlin_report", "PROOF-40", "RULE-9")
+# purlin: purlin_report PROOF-40
 def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     """`24 \u00b7 0 \u00b7 0` left the reader to work out which number was which."""
     payload = payload_named('regulated')
@@ -494,7 +494,7 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     team.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-44", "RULE-37")
+# purlin: purlin_report PROOF-44
 def test_every_cell_of_a_spec_row_carries_its_hover(browser, tmp_path):
     """The columns the board dropped became the hovers the cells carry."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -530,7 +530,7 @@ def test_every_cell_of_a_spec_row_carries_its_hover(browser, tmp_path):
     team.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-49", "RULE-32")
+# purlin: purlin_report PROOF-49
 def test_the_queue_card_counts_the_rules_waiting_for_a_person(browser,
                                                               tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -551,7 +551,7 @@ def test_the_queue_card_counts_the_rules_waiting_for_a_person(browser,
     none.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-45", "RULE-37")
+# purlin: purlin_report PROOF-45
 def test_every_tile_carries_its_hover(browser, tmp_path):
     """A tile says for the project what its column says for one spec."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -568,7 +568,7 @@ def test_every_tile_carries_its_hover(browser, tmp_path):
 
 # The band over each category: its name, how many specs it holds, and how many
 # of their rules pass their tests.
-@pytest.mark.proof("purlin_report", "PROOF-43", "RULE-36")
+# purlin: purlin_report PROOF-43
 def test_the_group_band_says_what_its_numbers_are(browser, tmp_path):
     """`AUTH (1) 3 of 4` named neither number."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -581,7 +581,7 @@ def test_the_group_band_says_what_its_numbers_are(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-10", "RULE-10")
+# purlin: purlin_report PROOF-10
 def test_a_feature_row_expands_to_its_rules(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     assert rule_ids(page) == []
@@ -608,7 +608,7 @@ FILTER_CASES = [
 
 
 @pytest.mark.parametrize('filter_id,features,login_rules', FILTER_CASES)
-@pytest.mark.proof("purlin_report", "PROOF-13", "RULE-13")
+# purlin: purlin_report PROOF-13
 def test_each_filter_narrows_the_board(browser, tmp_path, filter_id,
                                        features, login_rules):
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -622,7 +622,7 @@ def test_each_filter_narrows_the_board(browser, tmp_path, filter_id,
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-14", "RULE-14")
+# purlin: purlin_report PROOF-14
 def test_filters_compose_and_clear(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click('[data-filter="stale"]')
@@ -635,7 +635,7 @@ def test_filters_compose_and_clear(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-35", "RULE-13")
+# purlin: purlin_report PROOF-35
 def test_a_filter_above_the_gate_is_not_offered(browser, tmp_path):
     """A project at `passed` is never asked about strength or signatures."""
     solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
@@ -656,7 +656,7 @@ def test_a_filter_above_the_gate_is_not_offered(browser, tmp_path):
 
 
 @pytest.mark.parametrize('process', PROCESSES)
-@pytest.mark.proof("purlin_report", "PROOF-46", "RULE-13")
+# purlin: purlin_report PROOF-46
 def test_a_filter_pill_counts_what_it_leaves(browser, tmp_path, process):
     """A pill that said nothing left the reader to press it to find out.
 
@@ -677,7 +677,7 @@ def test_a_filter_pill_counts_what_it_leaves(browser, tmp_path, process):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-15", "RULE-15")
+# purlin: purlin_report PROOF-15
 def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click('[data-act="feature"][data-feature="login"]')
@@ -714,7 +714,7 @@ KV_ROWS = r"""() => {
 }"""
 
 
-@pytest.mark.proof("purlin_report", "PROOF-53", "RULE-15")
+# purlin: purlin_report PROOF-53
 def test_the_rule_screen_names_the_level_and_where_it_came_from(browser,
                                                                 tmp_path):
     """A rule has a level, from its own tag or from the project's gate."""
@@ -742,7 +742,7 @@ def test_the_rule_screen_names_the_level_and_where_it_came_from(browser,
     solo.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-16", "RULE-16")
+# purlin: purlin_report PROOF-16
 def test_the_rule_screen_links_to_the_git_host(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click('[data-act="feature"][data-feature="login"]')
@@ -753,7 +753,7 @@ def test_the_rule_screen_links_to_the_git_host(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-16", "RULE-16")
+# purlin: purlin_report PROOF-16
 def test_a_rule_with_no_remote_has_no_links(browser, tmp_path):
     """The solo fixture names no remote, so paths stay plain text."""
     page = open_board(browser, tmp_path, payload_named('solo'))
@@ -764,7 +764,7 @@ def test_a_rule_with_no_remote_has_no_links(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-17", "RULE-17")
+# purlin: purlin_report PROOF-17
 def test_a_rule_waiting_on_an_operating_system_says_so(browser, tmp_path):
     """The fixture's RULE-4 ran on Windows and failed; this one never ran."""
     payload = payload_named('regulated')
@@ -782,7 +782,7 @@ def test_a_rule_waiting_on_an_operating_system_says_so(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-18", "RULE-18")
+# purlin: purlin_report PROOF-18
 def test_the_queue_tab_lists_what_each_rule_needs(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     assert 'Queue (2)' in page.inner_text('.tabs')
@@ -801,7 +801,7 @@ def test_the_queue_tab_lists_what_each_rule_needs(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-36", "RULE-18")
+# purlin: purlin_report PROOF-36
 def test_the_queue_tab_names_its_six_columns(browser, tmp_path):
     """A row of six cells with no headings left the reader to guess them."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -811,7 +811,7 @@ def test_the_queue_tab_names_its_six_columns(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-37", "RULE-18")
+# purlin: purlin_report PROOF-37
 def test_a_tab_above_the_gate_is_not_offered(browser, tmp_path):
     """Nothing asks a person under `passed`."""
     solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
@@ -827,7 +827,7 @@ def test_a_tab_above_the_gate_is_not_offered(browser, tmp_path):
 NEED_HOVERS = """els => els.map(e => e.children[4].getAttribute('title'))"""
 
 
-@pytest.mark.proof("purlin_report", "PROOF-31", "RULE-30")
+# purlin: purlin_report PROOF-31
 def test_a_queue_row_states_the_level_the_need_and_the_command(browser,
                                                                tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -846,7 +846,7 @@ def test_a_queue_row_states_the_level_the_need_and_the_command(browser,
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-19", "RULE-19")
+# purlin: purlin_report PROOF-19
 def test_an_empty_queue_tab_says_what_puts_a_rule_on_it(browser, tmp_path):
     """What arrives on the tab depends on the gate the project has."""
     expected = {
@@ -864,7 +864,7 @@ def test_an_empty_queue_tab_says_what_puts_a_rule_on_it(browser, tmp_path):
         page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-20", "RULE-20")
+# purlin: purlin_report PROOF-20
 def test_an_older_payload_shows_one_notice_and_nothing_else(browser,
                                                             tmp_path):
     payload = payload_named('team')
@@ -879,7 +879,7 @@ def test_an_older_payload_shows_one_notice_and_nothing_else(browser,
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-21", "RULE-21")
+# purlin: purlin_report PROOF-21
 def test_no_data_at_all_names_the_command_that_writes_it(browser, tmp_path):
     root = str(tmp_path)
     shutil.copyfile(PAGE, os.path.join(root, 'purlin-report.html'))
@@ -890,7 +890,7 @@ def test_no_data_at_all_names_the_command_that_writes_it(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-22", "RULE-22")
+# purlin: purlin_report PROOF-22
 def test_the_working_tree_notice_only_shows_on_the_board(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     assert len(page.query_selector_all('.notice')) == 2
@@ -899,7 +899,7 @@ def test_the_working_tree_notice_only_shows_on_the_board(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-24", "RULE-24")
+# purlin: purlin_report PROOF-24
 def test_the_open_rule_is_the_last_tab(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     assert texts(page, '.tabs button') == ['Board', 'Queue (2)']
@@ -913,7 +913,7 @@ def test_the_open_rule_is_the_last_tab(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-25", "RULE-25")
+# purlin: purlin_report PROOF-25
 def test_the_link_back_closes_the_rule_where_it_was_opened(browser, tmp_path):
     """One rule, opened twice, closes back to the screen it came from."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -933,7 +933,7 @@ def test_the_link_back_closes_the_rule_where_it_was_opened(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-26", "RULE-26")
+# purlin: purlin_report PROOF-26
 def test_the_rule_screen_names_the_sign_command(browser, tmp_path):
     """The page cannot sign a commit, so it names the command that does."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -962,7 +962,7 @@ def test_the_rule_screen_names_the_sign_command(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-52", "RULE-26")
+# purlin: purlin_report PROOF-52
 def test_a_rule_that_needs_no_signature_says_why(browser, tmp_path):
     """Invoice RULE-1 is marked `[level: passed]`, so it asks for none."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -974,7 +974,7 @@ def test_a_rule_that_needs_no_signature_says_why(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-39", "RULE-26")
+# purlin: purlin_report PROOF-39
 def test_the_sign_panel_is_absent_below_the_signed_gate(browser, tmp_path):
     """Under `strong` no signature is read, so none is asked for."""
     page = open_board(browser, tmp_path, payload_named('team'))
@@ -986,7 +986,7 @@ def test_the_sign_panel_is_absent_below_the_signed_gate(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-27", "RULE-27")
+# purlin: purlin_report PROOF-27
 def test_coming_back_to_an_old_tab_reloads_it(browser, tmp_path):
     """A mark on the window survives a render and not a reload."""
     payload = payload_named('regulated')
@@ -1003,7 +1003,7 @@ def test_coming_back_to_an_old_tab_reloads_it(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-28", "RULE-28")
+# purlin: purlin_report PROOF-28
 def test_the_freshness_line_is_a_button_that_reloads(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     node = page.query_selector('.topbar [data-act="reload"]')
@@ -1022,7 +1022,7 @@ def test_the_freshness_line_is_a_button_that_reloads(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-29", "RULE-29")
+# purlin: purlin_report PROOF-29
 def test_the_age_recomputes_every_minute_from_the_same_payload(browser,
                                                                tmp_path):
     """The stamp does not move; the clock does, and the top bar follows."""
@@ -1041,7 +1041,7 @@ def test_the_age_recomputes_every_minute_from_the_same_payload(browser,
 # The screenshots the docs embed
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("purlin_report", "PROOF-23", "RULE-23")
+# purlin: purlin_report PROOF-23
 def test_the_docs_screenshots_come_from_the_fixtures():
     """Three images, each from a fixture payload, written to docs/images/.
 
@@ -1070,7 +1070,7 @@ def test_the_docs_screenshots_come_from_the_fixtures():
         name for name, _fixture, _clicks in capture.SHOTS)
 
 
-@pytest.mark.proof("purlin_report", "PROOF-54", "RULE-39")
+# purlin: purlin_report PROOF-54
 def test_the_audit_panel_reads_what_the_audit_found(browser, tmp_path):
     """The answer, each finding on its own line, the strength, the model."""
     page = open_board(browser, tmp_path / 'reg', payload_named('regulated'))
@@ -1112,7 +1112,7 @@ def test_the_audit_panel_reads_what_the_audit_found(browser, tmp_path):
     team.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-55", "RULE-40")
+# purlin: purlin_report PROOF-55
 def test_the_top_bar_states_the_signed_tag(browser, tmp_path):
     """The payload names the tag on HEAD, or names none."""
     payload = payload_named('regulated')
@@ -1131,7 +1131,7 @@ def test_the_top_bar_states_the_signed_tag(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-62", "RULE-43")
+# purlin: purlin_report PROOF-62
 def test_a_spec_that_names_no_files_says_so(browser, tmp_path):
     """The team fixture's invoice spec has no `> Scope:` line."""
     page = open_board(browser, tmp_path, payload_named('team'))
@@ -1145,7 +1145,7 @@ def test_a_spec_that_names_no_files_says_so(browser, tmp_path):
     page.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-64", "RULE-15")
+# purlin: purlin_report PROOF-64
 def test_no_proof_and_out_of_date_read_their_reasons(browser, tmp_path):
     solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
     solo.click('[data-act="feature"][data-feature="login"]')
@@ -1208,7 +1208,7 @@ def _walk_everything(page):
 
 @pytest.mark.parametrize('word', (None, 'failed', 'partial', 'not run',
                                   'out of date'))
-@pytest.mark.proof("purlin_report", "PROOF-63", "RULE-44")
+# purlin: purlin_report PROOF-63
 def test_the_passed_gate_shows_no_word_of_a_higher_level(browser, tmp_path,
                                                          word):
     payload = payload_named('solo')

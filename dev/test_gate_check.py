@@ -100,7 +100,7 @@ def signed_project(signer='jane@acme.com', strength=90, config=None,
 
 class TestThePassedGate:
 
-    @pytest.mark.proof("gate_check", "PROOF-1", "RULE-2")
+    # purlin: gate_check PROOF-1
     def test_a_persons_evidence_is_enough(self):
         made = project_at('passed', by_ci=False, audits=())
         try:
@@ -111,7 +111,7 @@ class TestThePassedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-2", "RULE-3")
+    # purlin: gate_check PROOF-2
     def test_a_rule_with_no_evidence_is_not_passed(self):
         made = Project(gate='passed')
         try:
@@ -124,7 +124,7 @@ class TestThePassedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-3", "RULE-3")
+    # purlin: gate_check PROOF-3
     def test_a_failing_proof_is_named_with_its_reason(self):
         made = Project(gate='passed')
         try:
@@ -137,7 +137,7 @@ class TestThePassedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-4", "RULE-3")
+    # purlin: gate_check PROOF-4
     def test_a_rule_no_proof_names_reads_no_test_and_says_so(self):
         made = Project(spec=SPEC.replace(
             '- PROOF-1 (RULE-1): POST /login with the password "secret"; '
@@ -152,7 +152,7 @@ class TestThePassedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-5", "RULE-6")
+    # purlin: gate_check PROOF-5
     def test_no_minimum_test_strength_is_printed_under_passed(self):
         made = project_at('passed', strength=10, by_ci=False, audits=(),
                           config={'min_strength': 80})
@@ -171,7 +171,7 @@ class TestThePassedGate:
 
 class TestTheStrongGate:
 
-    @pytest.mark.proof("gate_check", "PROOF-6", "RULE-2")
+    # purlin: gate_check PROOF-6
     def test_ci_evidence_with_a_settled_audit_passes(self):
         made = project_at('strong')
         try:
@@ -182,7 +182,7 @@ class TestTheStrongGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-7", "RULE-3")
+    # purlin: gate_check PROOF-7
     def test_local_evidence_counts_under_strong(self):
         """An audit a person ran measures the same breaks CI measures."""
         made = project_at('strong', by_ci=False)
@@ -193,7 +193,7 @@ class TestTheStrongGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-7", "RULE-3")
+    # purlin: gate_check PROOF-7
     def test_local_evidence_counts_under_signed_too(self):
         made = project_at('signed', by_ci=False)
         try:
@@ -206,7 +206,7 @@ class TestTheStrongGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-33", "RULE-3")
+    # purlin: gate_check PROOF-33
     def test_a_partial_rule_has_its_own_section(self):
         """Green on one operating system, red on another, is neither."""
         made = Project(gate='strong', config={'min_strength': 50})
@@ -228,7 +228,7 @@ class TestTheStrongGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-8", "RULE-4")
+    # purlin: gate_check PROOF-8
     def test_below_the_minimum_test_strength_is_weak(self):
         made = project_at('strong', strength=40, config={'min_strength': 70})
         try:
@@ -241,7 +241,7 @@ class TestTheStrongGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-9", "RULE-4")
+    # purlin: gate_check PROOF-9
     def test_a_rule_with_no_audit_entry_is_not_audited(self):
         made = project_at('strong', audits=())
         try:
@@ -253,7 +253,7 @@ class TestTheStrongGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-9", "RULE-4")
+    # purlin: gate_check PROOF-9
     def test_an_undecided_audit_is_weak_and_a_manual_proof_is_queued(self):
         made = project_at('strong', audits=())
         try:
@@ -274,7 +274,7 @@ class TestTheStrongGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-10", "RULE-4")
+    # purlin: gate_check PROOF-10
     def test_an_observation_the_model_made_stands_against_the_rule(self):
         made = project_at('strong', audits=())
         try:
@@ -297,7 +297,7 @@ class TestTheStrongGate:
 
 class TestTheSignedGate:
 
-    @pytest.mark.proof("gate_check", "PROOF-11", "RULE-5")
+    # purlin: gate_check PROOF-11
     def test_a_current_signature_by_a_signer_passes_its_rule(self):
         made = signed_project()
         try:
@@ -309,7 +309,7 @@ class TestTheSignedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-12", "RULE-5")
+    # purlin: gate_check PROOF-12
     def test_a_rule_marked_below_signed_needs_no_signature(self):
         made = signed_project()
         try:
@@ -321,7 +321,7 @@ class TestTheSignedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-13", "RULE-5")
+    # purlin: gate_check PROOF-13
     def test_a_rule_with_no_signature_is_not_signed(self):
         made = signed_project()
         try:
@@ -332,7 +332,7 @@ class TestTheSignedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-14", "RULE-5")
+    # purlin: gate_check PROOF-14
     def test_an_unsigned_commit_does_not_carry_a_signature(self):
         made = signed_project()
         try:
@@ -349,7 +349,7 @@ class TestTheSignedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-15", "RULE-5")
+    # purlin: gate_check PROOF-15
     def test_the_author_of_the_test_may_sign_it(self):
         made = signed_project(signer='dev@example.com')
         try:
@@ -364,7 +364,7 @@ class TestTheSignedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-16", "RULE-5")
+    # purlin: gate_check PROOF-16
     def test_a_signature_the_text_moved_under_reads_stale(self):
         made = signed_project(every_rule=True)
         try:
@@ -384,7 +384,7 @@ class TestTheSignedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-17", "RULE-5")
+    # purlin: gate_check PROOF-17
     def test_a_signature_only_on_a_side_branch_counts_there(self):
         made = signed_project()
         try:
@@ -404,7 +404,7 @@ class TestTheSignedGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-18", "RULE-8")
+    # purlin: gate_check PROOF-18
     def test_the_gate_grades_every_rule_with_nobody_named(self):
         made = signed_project()
         try:
@@ -427,7 +427,7 @@ class TestTheSignedGate:
 
 class TestTheSections:
 
-    @pytest.mark.proof("gate_check", "PROOF-19", "RULE-7")
+    # purlin: gate_check PROOF-19
     def test_a_section_names_twenty_rules_and_counts_the_rest(self):
         rules = ''.join('- RULE-%d: Something is true about %d [level: passed]\n'
                         % (n, n) for n in range(1, 31))
@@ -442,7 +442,7 @@ class TestTheSections:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-20", "RULE-2")
+    # purlin: gate_check PROOF-20
     def test_a_required_rule_is_counted_once_under_its_owner(self):
         anchor = ('# Feature: policy\n\n'
                   '> Description: The house rules.\n'
@@ -471,7 +471,7 @@ class TestTheSections:
 
 class TestExitCodes:
 
-    @pytest.mark.proof("gate_check", "PROOF-21", "RULE-9")
+    # purlin: gate_check PROOF-21
     def test_zero_one_and_two(self, tmp_path):
         passing = project_at('passed', by_ci=False, audits=())
         failing = Project(gate='passed')
@@ -485,20 +485,20 @@ class TestExitCodes:
         assert gate_check.check(str(tmp_path), out=out) == 2
         assert 'failing closed' in out.getvalue()
 
-    @pytest.mark.proof("gate_check", "PROOF-22", "RULE-9")
+    # purlin: gate_check PROOF-22
     def test_a_directory_that_is_not_a_project_never_passes(self, tmp_path):
         out = io.StringIO()
         code = gate_check.check(str(tmp_path / 'nothing here'), out=out)
         assert code == 2
         assert 'cannot read a Purlin project' in out.getvalue()
 
-    @pytest.mark.proof("gate_check", "PROOF-23", "RULE-10")
+    # purlin: gate_check PROOF-23
     def test_check_is_required_and_a_missing_directory_is_two(self):
         assert gate_check.main([]) == 2
         assert gate_check.main(['--check', '--project-root',
                                 '/no/such/directory']) == 2
 
-    @pytest.mark.proof("gate_check", "PROOF-24", "RULE-13")
+    # purlin: gate_check PROOF-24
     def test_the_script_runs_as_a_command(self):
         made = project_at('passed', by_ci=False, audits=())
         try:
@@ -517,7 +517,7 @@ class TestExitCodes:
 
 class TestTheJsonResult:
 
-    @pytest.mark.proof("gate_check", "PROOF-25", "RULE-11")
+    # purlin: gate_check PROOF-25
     def test_it_carries_the_result_and_every_rule_that_fell_short(self):
         made = Project(gate='passed')
         try:
@@ -535,7 +535,7 @@ class TestTheJsonResult:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-26", "RULE-11")
+    # purlin: gate_check PROOF-26
     def test_a_passing_project_says_pass(self):
         made = project_at('passed', by_ci=False, audits=())
         try:
@@ -547,7 +547,7 @@ class TestTheJsonResult:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-27", "RULE-11")
+    # purlin: gate_check PROOF-27
     def test_a_weak_rule_lands_in_the_weak_list(self):
         made = project_at('strong', strength=40, config={'min_strength': 70})
         try:
@@ -559,7 +559,7 @@ class TestTheJsonResult:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-28", "RULE-8")
+    # purlin: gate_check PROOF-28
     def test_the_json_grades_the_rules_with_nobody_named(self):
         made = project_at('signed', config={'min_strength': 80})
         try:
@@ -578,7 +578,7 @@ class TestTheJsonResult:
 
 class TestTheGateNeverWrites:
 
-    @pytest.mark.proof("gate_check", "PROOF-29", "RULE-12")
+    # purlin: gate_check PROOF-29
     def test_no_file_is_created_or_changed_at_any_level(self):
         for gate in ('passed', 'strong', 'signed'):
             made = project_at(gate)
@@ -610,7 +610,7 @@ def _tree(root):
 
 class TestWhatTheGateReads:
 
-    @pytest.mark.proof("gate_check", "PROOF-30", "RULE-1")
+    # purlin: gate_check PROOF-30
     def test_it_reads_the_payload_and_not_a_rendered_table(self):
         with open(GATE_PY, encoding='utf-8') as handle:
             source = handle.read()
@@ -621,7 +621,7 @@ class TestWhatTheGateReads:
                 'a gate that parsed a rendered table would move with the '
                 'dashboard')
 
-    @pytest.mark.proof("gate_check", "PROOF-31", "RULE-1")
+    # purlin: gate_check PROOF-31
     def test_a_caller_may_hand_over_the_payload_it_already_built(self):
         made = project_at('passed', by_ci=False, audits=())
         try:
@@ -632,7 +632,7 @@ class TestWhatTheGateReads:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-32", "RULE-13")
+    # purlin: gate_check PROOF-32
     def test_every_line_it_prints_carries_the_prefix_or_is_a_finding(self):
         made = Project(gate='passed')
         try:
@@ -650,7 +650,7 @@ class TestWhatTheGateReads:
 # The six sections
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("gate_check", "PROOF-34", "RULE-14")
+# purlin: gate_check PROOF-34
 def test_the_report_carries_its_six_sections_in_order():
     """One rule short at each section, and the six headings in the chain's
     own order."""
@@ -682,7 +682,7 @@ NO_SCOPE = SPEC.replace('> Scope: src/login.py\n', '')
 
 class TestASpecThatNamesNoFiles:
 
-    @pytest.mark.proof("gate_check", "PROOF-49", "RULE-22")
+    # purlin: gate_check PROOF-49
     def test_at_signed_it_is_listed_under_incomplete_and_fails(self):
         made = project_at('signed', config={'min_strength': 80}, spec=NO_SCOPE)
         try:
@@ -699,7 +699,7 @@ class TestASpecThatNamesNoFiles:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-49", "RULE-22")
+    # purlin: gate_check PROOF-49
     def test_below_signed_it_blocks_nothing(self):
         made = project_at('strong', spec=NO_SCOPE)
         try:

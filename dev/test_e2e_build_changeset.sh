@@ -15,12 +15,9 @@
 # Exit 0 when every check holds, 1 otherwise.
 #
 # This suite is the evidence for skill_build PROOF-5 (RULE-5). It carries no
-# purlin_proof call of its own: the shell runner arm of scripts/run/purlin_run.py
-# executes `*.test.sh` in the project root and nothing else, so a marker in this
-# directory could never produce a proof entry and every run would report the
-# evidence as missing. dev/test_skills.py runs this script from the repository
-# root under that proof marker instead, and asserts both the exit status and the
-# `ok:` line below.
+# marker of its own: dev/test_skills.py runs this script from the repository
+# root under that proof's marker, and asserts both the exit status and the
+# `ok:` line below, so the one proof is tied to one test.
 
 set -euo pipefail
 

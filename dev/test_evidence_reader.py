@@ -76,7 +76,7 @@ def _put(root, source, data):
     _write(root, '.purlin/evidence/%s/login.json' % source, text)
 
 
-@pytest.mark.proof("evidence", "PROOF-17", "RULE-11")
+# purlin: evidence PROOF-17
 def test_a_source_with_no_file_reads_as_no_evidence(root):
     _put(root, 'ci', _file('ci', {'linux': _section()}))
     loaded = evidence.load(root, 'login')
@@ -87,7 +87,7 @@ def test_a_source_with_no_file_reads_as_no_evidence(root):
     assert loaded['warnings'] == []
 
 
-@pytest.mark.proof("evidence", "PROOF-18", "RULE-12")
+# purlin: evidence PROOF-18
 @pytest.mark.parametrize('content', [
     '{not json',
     '[1, 2]',
@@ -102,7 +102,7 @@ def test_a_malformed_file_or_another_schema_is_ignored_with_one_warning(
     assert '.purlin/evidence/local/login.json' in loaded['warnings'][0]
 
 
-@pytest.mark.proof("evidence", "PROOF-19", "RULE-13")
+# purlin: evidence PROOF-19
 def test_a_source_that_disagrees_with_its_folder_is_ignored(root):
     _put(root, 'ci', _file('local', {'linux': _section()}))
     loaded = evidence.load(root, 'login')
@@ -113,7 +113,7 @@ def test_a_source_that_disagrees_with_its_folder_is_ignored(root):
     assert '"local"' in warning and 'ci/' in warning
 
 
-@pytest.mark.proof("evidence", "PROOF-20", "RULE-14")
+# purlin: evidence PROOF-20
 def test_two_operating_systems_in_one_file_are_two_sections(root):
     _put(root, 'local', _file('local', {'linux': _section(),
                                         'macos': _section(),
@@ -125,7 +125,7 @@ def test_two_operating_systems_in_one_file_are_two_sections(root):
                       ('ci', 'windows')]
 
 
-@pytest.mark.proof("evidence", "PROOF-21", "RULE-15")
+# purlin: evidence PROOF-21
 def test_a_section_is_current_until_a_part_changes(root):
     now = fingerprint.fingerprint(root, 'login')
     _put(root, 'local', _file('local', {'macos': _section(fp=dict(now))}))
@@ -153,7 +153,7 @@ def _audit(at, commit='b' * 40, test_hash='t'):
         'verdict': 'strong', 'findings': [], 'at': at, 'commit': commit}}}
 
 
-@pytest.mark.proof("evidence", "PROOF-22", "RULE-16")
+# purlin: evidence PROOF-22
 def test_an_audit_entry_answers_only_while_its_three_hashes_match(root):
     _put(root, 'local', _file('local', audit=_audit('2026-09-01T00:00:00Z')))
     loaded = evidence.load(root, 'login')
@@ -168,7 +168,7 @@ def test_an_audit_entry_answers_only_while_its_three_hashes_match(root):
     assert entry['path'] == '.purlin/evidence/ci/login.json'
 
 
-@pytest.mark.proof("evidence", "PROOF-23", "RULE-17")
+# purlin: evidence PROOF-23
 def test_the_newest_section_across_both_sources(root):
     assert evidence.newest(evidence.load(root, 'login')) is None
     _put(root, 'local', _file('local', {
@@ -192,7 +192,7 @@ def _snapshot(root):
     return found
 
 
-@pytest.mark.proof("evidence", "PROOF-24", "RULE-18")
+# purlin: evidence PROOF-24
 def test_reading_evidence_writes_nothing(root):
     _put(root, 'local', _file('local', {'macos': _section()},
                               audit=_audit('2026-09-01T00:00:00Z')))

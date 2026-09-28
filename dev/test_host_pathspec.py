@@ -34,7 +34,7 @@ def _write(root, rel, text='{}\n'):
         handle.write(text)
 
 
-@pytest.mark.proof("host", "PROOF-26", "RULE-24")
+# purlin: host PROOF-26
 def test_git_is_handed_a_forward_slash_pathspec(tmp_path, monkeypatch):
     root = str(tmp_path)
     calls = []
@@ -83,7 +83,7 @@ class _Host(object):
         return _Answer()
 
 
-@pytest.mark.proof("host", "PROOF-27", "RULE-24")
+# purlin: host PROOF-27
 def test_the_commit_carries_the_new_file_and_the_deletion(tmp_path,
                                                           monkeypatch):
     """The tree the CI commit builds adds the file it was handed and drops

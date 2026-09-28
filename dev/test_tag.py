@@ -96,7 +96,7 @@ def _sign_every_rule(made):
 
 class TestTheTag:
 
-    @pytest.mark.proof("signatures", "PROOF-67", "RULE-45")
+    # purlin: signatures PROOF-67
     def test_a_walk_with_nothing_left_writes_the_tag(self):
         made = _signed_project()
         try:
@@ -121,7 +121,7 @@ class TestTheTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-74", "RULE-49")
+    # purlin: signatures PROOF-74
     def test_no_tag_over_evidence_that_is_not_committed(self):
         made = _signed_project()
         try:
@@ -142,7 +142,7 @@ class TestTheTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-67", "RULE-45")
+    # purlin: signatures PROOF-67
     def test_the_version_comes_from_the_config_with_no_version_file(self):
         made = _signed_project()
         try:
@@ -152,7 +152,7 @@ class TestTheTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-68", "RULE-46")
+    # purlin: signatures PROOF-68
     def test_no_tag_while_a_rule_falls_short(self):
         made = _signed_project()
         try:
@@ -165,7 +165,7 @@ class TestTheTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-68", "RULE-46")
+    # purlin: signatures PROOF-68
     def test_release_names_another_tag_and_a_second_one_is_refused(self):
         made = _signed_project()
         try:
@@ -180,7 +180,7 @@ class TestTheTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-67", "RULE-45")
+    # purlin: signatures PROOF-67
     def test_the_tag_is_written_and_nothing_is_pushed(self):
         """The last line names the push; the command makes none."""
         made = _signed_project()
@@ -202,7 +202,7 @@ class TestTheTag:
 
 class TestTrust:
 
-    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
+    # purlin: signatures PROOF-69
     def test_remote_refuses_a_rule_with_no_ci_run_for_this_code(self, capsys):
         made = Project(gate=SIGNING_GATE,
                        config={'min_strength': 50, 'trust': 'remote'})
@@ -221,7 +221,7 @@ class TestTrust:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
+    # purlin: signatures PROOF-69
     def test_a_ci_run_out_of_date_for_this_code_is_refused_too(self):
         made = _signed_project(trust='remote', key=False)
         try:
@@ -233,7 +233,7 @@ class TestTrust:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
+    # purlin: signatures PROOF-69
     def test_a_rule_whose_proofs_are_all_manual_is_not_refused(self):
         spec = _read_spec().replace('verify 401 and the body "denied"',
                                     'verify 401 and the body "denied" @manual')
@@ -249,7 +249,7 @@ class TestTrust:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
+    # purlin: signatures PROOF-69
     def test_a_ci_run_for_this_commit_is_enough(self):
         made = _signed_project(trust='remote', key=False)
         try:
@@ -258,7 +258,7 @@ class TestTrust:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
+    # purlin: signatures PROOF-69
     def test_local_asks_nothing_of_the_source(self):
         made = Project(gate=SIGNING_GATE,
                        config={'trust': 'local'})
@@ -277,7 +277,7 @@ class TestTrust:
 
 class TestTheAuditHash:
 
-    @pytest.mark.proof("signatures", "PROOF-64", "RULE-43")
+    # purlin: signatures PROOF-64
     def test_it_reads_the_evidence_and_nothing_that_moves_on_its_own(self):
         one = {'verdict': 'strong', 'findings': [], 'rule_hash': 'r',
                'at': '2026-09-13T12:00:00Z', 'commit': 'a' * 40,
@@ -300,20 +300,20 @@ class TestTheAuditHash:
         assert purlin_signatures.audit_hash(one, 70) != \
             purlin_signatures.audit_hash(one, 90)
 
-    @pytest.mark.proof("signatures", "PROOF-64", "RULE-43")
+    # purlin: signatures PROOF-64
     def test_no_entry_hashes_the_empty_string(self):
         import hashlib
         assert purlin_signatures.audit_hash(None) == \
             hashlib.sha256(b'').hexdigest()
 
-    @pytest.mark.proof("signatures", "PROOF-64", "RULE-43")
+    # purlin: signatures PROOF-64
     def test_the_order_of_the_findings_does_not_move_it(self):
         one = {'verdict': 'weak', 'findings': ['b.', 'a.']}
         other = {'verdict': 'weak', 'findings': ['a.', 'b.']}
         assert purlin_signatures.audit_hash(one) == \
             purlin_signatures.audit_hash(other)
 
-    @pytest.mark.proof("signatures", "PROOF-65", "RULE-43")
+    # purlin: signatures PROOF-65
     def test_a_re_audit_that_observes_something_stales_the_signature(self):
         made = _signed_project()
         try:
@@ -338,7 +338,7 @@ def _gate(root, verify=True):
 
 class TestVerify:
 
-    @pytest.mark.proof("gate_check", "PROOF-35", "RULE-15")
+    # purlin: gate_check PROOF-35
     def test_a_signature_the_code_moved_under_is_named(self):
         made = _signed_project()
         try:
@@ -355,7 +355,7 @@ class TestVerify:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-35", "RULE-15")
+    # purlin: gate_check PROOF-35
     def test_without_verify_the_section_is_not_printed(self):
         made = _signed_project()
         try:
@@ -368,7 +368,7 @@ class TestVerify:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-36", "RULE-15")
+    # purlin: gate_check PROOF-36
     def test_a_signature_naming_a_rule_that_is_gone_is_named(self):
         made = _signed_project()
         try:
@@ -383,7 +383,7 @@ class TestVerify:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-38", "RULE-16")
+    # purlin: gate_check PROOF-38
     def test_a_ci_file_a_person_committed_is_named(self):
         made = _signed_project()
         try:
@@ -396,7 +396,7 @@ class TestVerify:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-38", "RULE-16")
+    # purlin: gate_check PROOF-38
     def test_a_ci_file_the_runner_committed_is_not_named(self):
         made = _signed_project()
         try:
@@ -432,7 +432,7 @@ def _unscoped_project(gate):
 
 class TestWhatHoldsTheTagBack:
 
-    @pytest.mark.proof("signatures", "PROOF-76", "RULE-51")
+    # purlin: signatures PROOF-76
     def test_at_signed_a_spec_that_names_no_files_is_refused(self, capsys):
         made = _unscoped_project('signed')
         try:
@@ -456,7 +456,7 @@ class TestWhatHoldsTheTagBack:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-76", "RULE-51")
+    # purlin: signatures PROOF-76
     def test_at_strong_it_is_signed_like_any_other(self, capsys):
         made = _unscoped_project('strong')
         try:
@@ -469,7 +469,7 @@ class TestWhatHoldsTheTagBack:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-77", "RULE-52")
+    # purlin: signatures PROOF-77
     def test_the_refusal_names_a_feature_whose_evidence_is_out_of_date(self):
         made = _signed_project()
         try:

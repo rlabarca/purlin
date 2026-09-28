@@ -4,8 +4,26 @@
   "min_strength": 80,
   "mutation_engine": "auto",
   "audit_parallel": 4,
-  "sql_engine": null,
   "ci": "github",
-  "test_framework": "pytest,shell",
-  "trust": "local"
+  "trust": "local",
+  "tests": [
+    {
+      "name": "pytest",
+      "run": "python3 -m pytest -q -p no:cacheprovider --ignore=mutants {files} --junitxml={report}",
+      "report": ".purlin/runtime/reports/pytest.xml",
+      "format": "junit",
+      "files": [
+        "dev/test_*.py"
+      ]
+    },
+    {
+      "name": "shell",
+      "run": "bash {files}",
+      "report": null,
+      "format": "exit",
+      "files": [
+        "dev/test_*.sh"
+      ]
+    }
+  ]
 }

@@ -50,7 +50,7 @@ def _stamp(root):
         return handle.read(), os.stat(path).st_mtime_ns
 
 
-@pytest.mark.proof("purlin_report", "PROOF-56", "RULE-41")
+# purlin: purlin_report PROOF-56
 def test_status_writes_the_data_file():
     made = Project(gate='passed')
     try:
@@ -64,7 +64,7 @@ def test_status_writes_the_data_file():
         made.close()
 
 
-@pytest.mark.proof("purlin_report", "PROOF-57", "RULE-41")
+# purlin: purlin_report PROOF-57
 def test_a_test_run_writes_the_data_file(tmp_path):
     root = _pytest_project(tmp_path)
     _spec(root, 'feat')
@@ -76,7 +76,7 @@ def test_a_test_run_writes_the_data_file(tmp_path):
     assert _rule(data, 'feat', 'RULE-1')['cells']['passed']['word'] == 'passed'
 
 
-@pytest.mark.proof("purlin_report", "PROOF-58", "RULE-41")
+# purlin: purlin_report PROOF-58
 def test_an_audit_writes_the_data_file(tmp_path, claude):  # noqa: F811
     root = _pytest_project(tmp_path)
     _spec(root, 'feat')
@@ -91,7 +91,7 @@ def test_an_audit_writes_the_data_file(tmp_path, claude):  # noqa: F811
     assert audit and audit['verdict'] == 'strong', audit
 
 
-@pytest.mark.proof("purlin_report", "PROOF-59", "RULE-41")
+# purlin: purlin_report PROOF-59
 def test_a_signature_writes_the_data_file(capsys):
     made = signing_project(every_rule=False)
     try:
@@ -112,7 +112,7 @@ EXTRA_RULE = ('- RULE-3: A locked account reads 423 until fifteen minutes '
               'pass\n')
 
 
-@pytest.mark.proof("purlin_report", "PROOF-60", "RULE-42")
+# purlin: purlin_report PROOF-60
 def test_an_edit_with_no_command_leaves_the_data_file_alone():
     made = Project(gate='passed')
     try:
@@ -144,7 +144,7 @@ def _rule_ids(data):
             for rule in feature['rules']]
 
 
-@pytest.mark.proof("purlin_report", "PROOF-61", "RULE-42")
+# purlin: purlin_report PROOF-61
 def test_a_directory_with_no_settings_file_gets_no_data_file(tmp_path):
     os.makedirs(os.path.join(str(tmp_path), 'specs', 'auth'))
     with open(os.path.join(str(tmp_path), 'specs', 'auth', 'login.md'), 'w',

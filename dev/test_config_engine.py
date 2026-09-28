@@ -37,7 +37,7 @@ class TestFindProjectRoot:
         else:
             os.environ['PURLIN_PROJECT_ROOT'] = self._old_env
 
-    @pytest.mark.proof("config_engine", "PROOF-1", "RULE-1")
+    # purlin: config_engine PROOF-1
     def test_env_var_takes_precedence_only_when_the_directory_exists(self):
         os.makedirs(os.path.join(self.tmpdir, '.purlin'))
         os.environ['PURLIN_PROJECT_ROOT'] = self.tmpdir
@@ -57,7 +57,7 @@ class TestFindProjectRoot:
             "PURLIN_PROJECT_ROOT names a directory that does not exist; "
             "find_project_root must fall through to the .purlin climb")
 
-    @pytest.mark.proof("config_engine", "PROOF-2", "RULE-2")
+    # purlin: config_engine PROOF-2
     def test_climbs_to_purlin_marker(self):
         root = os.path.join(self.tmpdir, 'a')
         os.makedirs(os.path.join(root, '.purlin'))
@@ -66,14 +66,14 @@ class TestFindProjectRoot:
         result = find_project_root(start_dir=deep)
         assert result == root
 
-    @pytest.mark.proof("config_engine", "PROOF-3", "RULE-3")
+    # purlin: config_engine PROOF-3
     def test_falls_back_to_cwd(self):
         bare = os.path.join(self.tmpdir, 'no_marker')
         os.makedirs(bare)
         result = find_project_root(start_dir=bare)
         assert result == os.path.abspath(os.getcwd())
 
-    @pytest.mark.proof("config_engine", "PROOF-15", "RULE-13")
+    # purlin: config_engine PROOF-15
     def test_resolve_project_root_names_how_it_resolved(self):
         project = os.path.join(self.tmpdir, 'project')
         deep = os.path.join(project, 'src')
@@ -136,13 +136,13 @@ class TestResolveConfig:
                   encoding='utf-8') as f:
             json.dump(data, f)
 
-    @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
+    # purlin: config_engine PROOF-4
     def test_the_config_is_config_json_whole(self):
         self._write_shared({"team": "default", "shared": "base"})
         assert resolve_config(self.project_root) == {
             "team": "default", "shared": "base"}
 
-    @pytest.mark.proof("config_engine", "PROOF-7", "RULE-7")
+    # purlin: config_engine PROOF-7
     def test_no_config_returns_empty(self):
         result = resolve_config(self.project_root)
         assert result == {}
@@ -167,27 +167,27 @@ class TestUpdateConfig:
         with open(self.path, encoding='utf-8') as f:
             return json.load(f)
 
-    @pytest.mark.proof("config_engine", "PROOF-8", "RULE-8")
+    # purlin: config_engine PROOF-8
     def test_a_write_reaches_config_json(self):
         self._write({"team": "v1"})
         update_config(self.project_root, "user_pref", "dark")
         assert self._read() == {"team": "v1", "user_pref": "dark"}
         assert os.listdir(self.purlin_dir) == ['config.json']
 
-    @pytest.mark.proof("config_engine", "PROOF-8", "RULE-8")
+    # purlin: config_engine PROOF-8
     def test_a_write_creates_config_json_when_absent(self):
         assert not os.path.exists(self.path)
         update_config(self.project_root, "new", True)
         assert self._read() == {"new": True}
 
-    @pytest.mark.proof("config_engine", "PROOF-12", "RULE-8")
+    # purlin: config_engine PROOF-12
     def test_the_written_value_is_what_the_resolver_reads(self):
         self._write({"trust": "local", "version": "0.9.0"})
         update_config(self.project_root, "trust", "remote")
         assert resolve_config(self.project_root) == {
             "trust": "remote", "version": "0.9.0"}
 
-    @pytest.mark.proof("config_engine", "PROOF-9", "RULE-9")
+    # purlin: config_engine PROOF-9
     def test_a_write_preserves_every_other_key(self):
         self._write({"existing": "keep", "shade": "old"})
         update_config(self.project_root, "added", "new")
@@ -195,7 +195,7 @@ class TestUpdateConfig:
         assert self._read() == {"existing": "keep", "shade": "new",
                                 "added": "new"}
 
-    @pytest.mark.proof("config_engine", "PROOF-10", "RULE-10")
+    # purlin: config_engine PROOF-10
     def test_atomic_replacement(self):
         # Behavioral proof of the atomic mechanism: the durable file is produced
         # by renaming a .tmp via os.replace, never by an in-place write.
@@ -246,7 +246,7 @@ class TestCLI:
                   encoding='utf-8') as f:
             json.dump(data, f)
 
-    @pytest.mark.proof("config_engine", "PROOF-5", "RULE-5")
+    # purlin: config_engine PROOF-5
     def test_cli_key(self):
         self._write({"version": "0.9.0"})
         script = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp', 'config_engine.py')
@@ -278,14 +278,14 @@ class TestCLI:
                 code = stop.code if isinstance(stop.code, int) else 1
         return code, out.getvalue()
 
-    @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
+    # purlin: config_engine PROOF-4
     def test_dump_in_process_prints_the_config(self):
         self._write({"team": "default", "shared": "base"})
         code, out = self._main('--dump')
         assert code == 0
         assert json.loads(out) == {"team": "default", "shared": "base"}
 
-    @pytest.mark.proof("config_engine", "PROOF-5", "RULE-5")
+    # purlin: config_engine PROOF-5
     def test_key_in_process_prints_the_value(self):
         self._write({"version": "0.9.0"})
         code, out = self._main('--key', 'version')

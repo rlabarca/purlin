@@ -38,7 +38,7 @@ BASH = bash_command()
 
 class TestVersionFileSemver:
 
-    @pytest.mark.proof("purlin_version", "PROOF-1", "RULE-1")
+    # purlin: purlin_version PROOF-1
     def test_version_file_exists_and_is_valid_semver(self):
         """VERSION file must exist and contain a valid semver string (X.Y.Z)."""
         assert os.path.isfile(VERSION_FILE), \
@@ -53,7 +53,7 @@ class TestVersionFileSemver:
 
 class TestServerReadsVersionFromFile:
 
-    @pytest.mark.proof("purlin_version", "PROOF-2", "RULE-2")
+    # purlin: purlin_version PROOF-2
     def test_the_package_reads_the_version_from_the_file(self, tmp_path):
         """A copy of the package beside a VERSION of 9.8.7 reports 9.8.7.
 
@@ -88,7 +88,7 @@ class TestServerReadsVersionFromFile:
 
 class TestTemplateVersionMatchesVersionFile:
 
-    @pytest.mark.proof("purlin_version", "PROOF-3", "RULE-3")
+    # purlin: purlin_version PROOF-3
     def test_template_config_version_matches_version_file(self):
         """templates/config.json version field must match VERSION file content."""
         with open(VERSION_FILE) as f:
@@ -108,7 +108,7 @@ class TestTemplateVersionMatchesVersionFile:
 
 class TestPluginManifestVersionMatchesVersionFile:
 
-    @pytest.mark.proof("purlin_version", "PROOF-5", "RULE-5")
+    # purlin: purlin_version PROOF-5
     def test_plugin_manifest_version_matches_version_file(self):
         """.claude-plugin/plugin.json version field must match VERSION file content.
 
@@ -133,7 +133,7 @@ class TestPluginManifestVersionMatchesVersionFile:
 
 class TestNoHardcodedVersionInServer:
 
-    @pytest.mark.proof("purlin_version", "PROOF-4", "RULE-4")
+    # purlin: purlin_version PROOF-4
     def test_no_hardcoded_version_strings_in_the_package(self):
         """No module of the package may carry a version literal like
         '0.9.0' or any X.Y.Z pattern outside its comments."""
@@ -168,7 +168,7 @@ class TestNoHardcodedVersionInServer:
 
 class TestProjectConfigVersionMatchesVersionFile:
 
-    @pytest.mark.proof("purlin_version", "PROOF-6", "RULE-6")
+    # purlin: purlin_version PROOF-6
     def test_project_config_version_matches_version_file(self):
         """This repo's own .purlin/config.json version must match VERSION.
 
@@ -223,7 +223,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
         with open(os.path.join(root, rel), encoding='utf-8') as f:
             return json.load(f)['version']
 
-    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7")
+    # purlin: purlin_version PROOF-7
     def test_bump_propagates_everywhere_and_check_reports_drift(self, tmp_path):
         """bump_version.sh <semver> writes VERSION and every derived location;
         --check exits 1 naming the drifted file, and 0 on a matching tree."""
@@ -275,7 +275,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
         assert 'templates/config.json' in bad.stdout
         assert '.claude-plugin/plugin.json' in bad.stdout
 
-    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7")
+    # purlin: purlin_version PROOF-7
     def test_bump_rejects_non_semver_and_tolerates_absent_optional_file(self, tmp_path):
         """A non-semver argument is refused before anything is written, and an
         absent .purlin/config.json is skipped rather than failing the run."""
@@ -314,7 +314,7 @@ class TestDocsCiteVersionFileInsteadOfALiteral:
     OWNER = os.path.join('references', 'drift_criteria.md')
     MARKER = '| `version` |'
 
-    @pytest.mark.proof("purlin_version", "PROOF-8", "RULE-8")
+    # purlin: purlin_version PROOF-8
     def test_config_version_field_docs_carry_no_semver_literal(self):
         """The one config-field table must name the VERSION file, not a
         number, and no second copy of the row may exist.
@@ -382,7 +382,7 @@ class TestTheSweepRecordsItself:
     plugin rewrites as it finishes. The record is runtime state a reader can
     open; nothing compares `RELEASE_NOTES.md` against it."""
 
-    @pytest.mark.proof("purlin_version", "PROOF-10", "RULE-10")
+    # purlin: purlin_version PROOF-10
     def test_sweep_exit_trap_writes_its_own_sweep_record(self, tmp_path):
         """Drive the sweep's real writer and verify it writes last_sweep.json,
         unmerged, beside the shared test_run.json."""

@@ -155,7 +155,7 @@ def azure_host():
 # The remote URL
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("host", "PROOF-36", "RULE-30")
+# purlin: host PROOF-36
 @pytest.mark.parametrize('url', [
     'https://dev.azure.com/acme/widgets/_git/shop',
     'git@ssh.dev.azure.com:v3/acme/widgets/shop',
@@ -166,7 +166,7 @@ def test_each_remote_form_names_the_organisation_project_and_repository(url):
     assert remote_module.parse_azure_remote(url) == ('acme', 'widgets', 'shop')
 
 
-@pytest.mark.proof("host", "PROOF-36", "RULE-30")
+# purlin: host PROOF-36
 @pytest.mark.parametrize('url', [
     'https://dev.azure.com/acme/My%20Widgets/_git/shop',
     'git@ssh.dev.azure.com:v3/acme/My%20Widgets/shop',
@@ -176,7 +176,7 @@ def test_a_percent_encoded_project_is_decoded(url):
         'acme', 'My Widgets', 'shop')
 
 
-@pytest.mark.proof("host", "PROOF-36", "RULE-30")
+# purlin: host PROOF-36
 @pytest.mark.parametrize('url', [
     'https://github.com/acme/widgets.git',
     'https://dev.azure.com/acme/widgets',
@@ -186,7 +186,7 @@ def test_a_url_in_no_azure_form_reads_none(url):
     assert remote_module.parse_azure_remote(url) is None
 
 
-@pytest.mark.proof("host", "PROOF-36", "RULE-30")
+# purlin: host PROOF-36
 def test_a_remote_in_no_azure_form_is_refused_before_the_push(azure_run,
                                                               capsys):
     fake, _clock = azure_run(origin='https://github.com/acme/widgets.git')
@@ -204,7 +204,7 @@ def test_a_remote_in_no_azure_form_is_refused_before_the_push(azure_run,
 # The wait
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("host", "PROOF-37", "RULE-31")
+# purlin: host PROOF-37
 def test_the_lookup_and_the_poll_name_the_organisation_and_the_project(
         azure_run):
     fake, _clock = azure_run()
@@ -213,7 +213,7 @@ def test_the_lookup_and_the_poll_name_the_organisation_and_the_project(
     assert fake.az_calls() == [LIST, SHOW]
 
 
-@pytest.mark.proof("host", "PROOF-37", "RULE-31")
+# purlin: host PROOF-37
 def test_a_run_not_registered_at_first_is_asked_for_again(azure_run):
     fake, clock = azure_run(lookups=('', '', '42'))
 
@@ -222,7 +222,7 @@ def test_a_run_not_registered_at_first_is_asked_for_again(azure_run):
     assert clock.slept == [3, 3]
 
 
-@pytest.mark.proof("host", "PROOF-37", "RULE-31")
+# purlin: host PROOF-37
 @pytest.mark.parametrize('result, code', [
     ('succeeded', 0),
     ('failed', 1),
@@ -244,7 +244,7 @@ def test_a_completed_run_is_brought_home_whatever_its_result(azure_run, capsys,
     assert printed.rstrip().endswith('the status table')
 
 
-@pytest.mark.proof("host", "PROOF-37", "RULE-31")
+# purlin: host PROOF-37
 def test_no_run_within_the_find_limit_deletes_the_branch_and_fails(
         azure_run, monkeypatch, capsys):
     monkeypatch.setattr(remote_module, 'FIND_SECONDS', 9)
@@ -260,7 +260,7 @@ def test_no_run_within_the_find_limit_deletes_the_branch_and_fails(
     assert 'the status table' not in printed
 
 
-@pytest.mark.proof("host", "PROOF-37", "RULE-31")
+# purlin: host PROOF-37
 def test_a_run_past_the_poll_limit_is_left_for_the_person(azure_run,
                                                            monkeypatch,
                                                            capsys):
@@ -279,7 +279,7 @@ def test_a_run_past_the_poll_limit_is_left_for_the_person(azure_run,
     assert 'the status table' not in printed
 
 
-@pytest.mark.proof("host", "PROOF-37", "RULE-31")
+# purlin: host PROOF-37
 def test_without_az_the_run_is_neither_found_nor_pulled(azure_run, capsys):
     fake, _clock = azure_run(az=False)
 
@@ -292,7 +292,7 @@ def test_without_az_the_run_is_neither_found_nor_pulled(azure_run, capsys):
     assert 'the status table' not in printed
 
 
-@pytest.mark.proof("host", "PROOF-37", "RULE-31")
+# purlin: host PROOF-37
 def test_no_process_can_wait_forever_or_prompt(azure_run):
     fake, _clock = azure_run(lookups=('', '42'),
                              polls=('inProgress\t', 'completed\tfailed'))
@@ -307,7 +307,7 @@ def test_no_process_can_wait_forever_or_prompt(azure_run):
             argv
 
 
-@pytest.mark.proof("host", "PROOF-37", "RULE-31")
+# purlin: host PROOF-37
 def test_the_intervals_and_limits_are_the_modules_own():
     assert remote_module.FIND_EVERY == 3
     assert remote_module.FIND_SECONDS == 60

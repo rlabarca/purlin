@@ -98,7 +98,7 @@ _SYSTEM_CALL_BY_EXT = {
 
 class TestSecurityPatterns:
 
-    @pytest.mark.proof("security_no_dangerous_patterns", "PROOF-1", "RULE-1")
+    # purlin: security_no_dangerous_patterns PROOF-1
     def test_no_dynamic_code_execution(self):
         for path in _all_script_files():
             ext = _ext(path)
@@ -107,7 +107,7 @@ class TestSecurityPatterns:
                 assert not re.search(pattern, content, re.MULTILINE), \
                     f"Found dynamic-code pattern {pattern!r} in {path}"
 
-    @pytest.mark.proof("security_no_dangerous_patterns", "PROOF-2", "RULE-2")
+    # purlin: security_no_dangerous_patterns PROOF-2
     def test_no_shell_true(self):
         for path in _all_script_files():
             ext = _ext(path)
@@ -116,7 +116,7 @@ class TestSecurityPatterns:
                 assert not re.search(pattern, content), \
                     f"Found shell opt-in {pattern!r} in {path}"
 
-    @pytest.mark.proof("security_no_dangerous_patterns", "PROOF-3", "RULE-3")
+    # purlin: security_no_dangerous_patterns PROOF-3
     def test_no_os_system(self):
         for path in _all_script_files():
             ext = _ext(path)
@@ -125,7 +125,7 @@ class TestSecurityPatterns:
                 assert not re.search(pattern, content), \
                     f"Found shell-command builtin {pattern!r} in {path}"
 
-    @pytest.mark.proof("security_no_dangerous_patterns", "PROOF-4", "RULE-4")
+    # purlin: security_no_dangerous_patterns PROOF-4
     def test_no_hardcoded_credentials(self):
         cred_pattern = re.compile(
             r'(password|secret|api_key|token)\s*=\s*["\'][^"\']+["\']',
@@ -140,7 +140,7 @@ class TestSecurityPatterns:
             assert not matches, \
                 f"Found hardcoded credential in {path}: {matches}"
 
-    @pytest.mark.proof("security_no_dangerous_patterns", "PROOF-5", "RULE-5")
+    # purlin: security_no_dangerous_patterns PROOF-5
     def test_subprocess_uses_list_args(self):
         py_call = re.compile(r'subprocess\.(run|call|check_call|check_output)\s*\(')
         py_string_arg = re.compile(
@@ -224,7 +224,7 @@ def _write_anchor(anchors_dir, name, source, pinned):
 class TestGitArgvHardening:
     """RULE-6: nothing repository-supplied reaches git in option position."""
 
-    @pytest.mark.proof("security_no_dangerous_patterns", "PROOF-6", "RULE-6")
+    # purlin: security_no_dangerous_patterns PROOF-6
     def test_source_url_never_reaches_git_in_option_position(self, tmp_path,
                                                              monkeypatch):
         project = tmp_path / 'project'
