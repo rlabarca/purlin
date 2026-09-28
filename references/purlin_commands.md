@@ -96,7 +96,7 @@ Purlin
 |---------|--------|
 | `purlin:spec`, `purlin:spec-from-code` | `specs/<category>/<name>.md` |
 | `purlin:build` | Code, test files, and the commit carrying the changeset |
-| `purlin:test` | `.purlin/runtime/proofs/`, which is not committed, and `.purlin/tests/<feature>.json` and `.purlin/tests.md`, which it commits itself as `purlin: tests at <sha7>` and never pushes. `--remote` pushes the run branch `run/<branch>-<sha7>`, pulls the runner's own results home under `.purlin/tests/ci/<feature>.json`, and deletes the branch |
+| `purlin:test` | `.purlin/runtime/proofs/`, which is not committed, and `.purlin/tests/<feature>.json` and `.purlin/tests.md`, which it commits itself as `purlin: tests at <sha7>` and never pushes. `--remote` pushes the run branch `run/<branch>-<sha7>`, waits for the git host's run through `gh` on GitHub or `az` on Azure DevOps, pulls the runner's own results home under `.purlin/tests/ci/<feature>.json`, and deletes the branch |
 | `purlin:audit` | One record per feature under `.purlin/records/local/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and its briefs under `.purlin/briefs/local/<feature>/<RULE-N>.<hash8>.brief.json`, committed as `purlin: record for <sha7>` and never pushed. A remote run writes the same files under `ci/` |
 | `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case. The annotated tag `signed/<version>` when the walk closes with every rule meeting the gate, which a person pushes |
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when a proof names another operating system or the trust answer was no |

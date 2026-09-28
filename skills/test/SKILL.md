@@ -37,6 +37,12 @@ host's runner instead, on a run branch it creates, waits on and deletes; at `str
 the runner audits what it ran and commits the record, and the run pulls that commit back. Use
 it for two reasons and no other: a proof is tagged `@env` for an operating system this machine
 is not, or `trust` is `remote`, so a signature rests on a run this machine did not make.
+It waits through the git host's CLI: `gh` on GitHub, and on Azure DevOps `az` with its
+`azure-devops` extension, polled every 15 seconds for up to 90 minutes. A red run is pulled
+home too and exits 1; with no CLI, no run registered or the limit reached it says so in one
+line and exits 1. The Azure DevOps half is proven against a stand-in `az`; its behaviour
+against the live service is confirmed by a hand-run check on a machine with Azure DevOps
+access.
 
 Exit codes: `0` the tests ran and the level is met, `1` a test failed or it is not, `2` the invocation was wrong.
 

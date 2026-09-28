@@ -431,10 +431,28 @@ It pushes a branch of its own rather than the branch you are on:
    run/<branch>-<sha7>` brings that commit onto your branch as one fast-forward, then it
    deletes the run branch from `origin` and prints the table. That is how a proof tagged
    `@env(windows)` stops reading `not run` on a Mac: the runner's results come home, and the
-   rule's passed cell reads `passed` with `windows · ci` beside it. Without the `gh` CLI installed it
-   says so and tells you which branch to open and which pull command to run.
-5. On Azure DevOps it prints the pipeline URL and the two commands to run when the pipeline
-   finishes, and returns.
+   rule's passed cell reads `passed` with `windows · ci` beside it. A red run is pulled home
+   too, and the command exits 1. Without the `gh` CLI installed it says so and tells you which
+   branch to open and which pull command to run.
+5. On Azure DevOps it reads the organisation, project and repository from `origin`, in any of
+   `https://dev.azure.com/<org>/<project>/_git/<repo>`,
+   `git@ssh.dev.azure.com:v3/<org>/<project>/<repo>` and
+   `https://<org>.visualstudio.com/<project>/_git/<repo>`, before it pushes anything. It finds
+   the run with `az pipelines runs list --branch refs/heads/run/<branch>-<sha7>`, asking every
+   3 seconds for up to 60, then asks `az pipelines runs show` for the run's status every 15
+   seconds for up to 90 minutes. When the status is `completed`, the result `succeeded` exits
+   0 and `failed`, `canceled` and `partiallySucceeded` exit 1; either way it pulls, deletes
+   the run branch and prints the table, as on GitHub. It needs the Azure CLI `az` with its
+   `azure-devops` extension, signed in with `az login`. Without `az`, with no run registered
+   within 60 seconds, or with the run still going after 90 minutes, it says so in one line
+   naming the pull command to run, and exits 1.
+
+Purlin's own tests prove the Azure DevOps steps against a stand-in for `az`. How the real
+service answers, and how long a run takes to register there, is confirmed by a hand-run check
+on a machine with Azure DevOps access.
+
+No command here prompts: a push or a pull that needs a credential fails rather than asks, and
+`az` reports a missing extension rather than offering to install it.
 
 If the run branch is still on `origin` when the command ends, it says so and gives you the
 delete command.
