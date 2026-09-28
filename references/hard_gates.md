@@ -209,6 +209,8 @@ one. `trust: remote` is not part of the definition: it is read
 when a rule is signed, and by no cell and not by the tag. `purlin:sign` writes the tag only
 when every rule meets the gate and every feature's evidence is committed, as a signed tag, and
 never over a tag that is already there; a person pushes it.
+The tagged commit carries the evidence package, `.purlin/evidence/package/<version>.json`,
+written from the evidence below it (`references/formats/package_format.md`).
 Where a project has a remote runner, the push starts a run that checks the same thing against
 the tagged code on a clean machine.
 

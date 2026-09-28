@@ -37,6 +37,12 @@ gate. No tag is written while any rule falls short, and none is written over
 a tag that is already there. Nothing is pushed: the last line names the push
 for a person to run.
 
+**The tag carries the evidence package.** Before it writes the tag it writes
+`.purlin/evidence/package/<version>.json` from the committed evidence, with
+the state `signed`, commits it as a signed commit, and tags that commit. If
+the package cannot be written or committed, no tag is written and the line
+says why.
+
 **Evidence is committed before anything is signed over it.** A rule whose
 feature has evidence that is written and not committed is refused, and so is
 the tag while any feature has such evidence, with one line per feature:
@@ -130,6 +136,8 @@ NAMES_NO_FILES = ('sign: %s names no files in > Scope:, so a signature cannot '
 NO_TAG_NO_FILES = ('No tag: %s names no files in > Scope:, so a signature '
                    'cannot be tied to the code it governs.')
 NO_TAG_OUT_OF_DATE = 'No tag: %s is out of date (%s).'
+NO_TAG_PACKAGE = 'No tag: the evidence package was not committed: %s.'
+PACKAGE_COMMITTED = 'Evidence package committed: %s.'
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
@@ -521,6 +529,15 @@ def short_of_the_gate(payload):
     return short, total
 
 
+def _package_module():
+    """`scripts/export/package.py`, imported when the tag is about to be written."""
+    folder = os.path.join(os.path.dirname(_HERE), 'export')
+    if folder not in sys.path:
+        sys.path.insert(0, folder)
+    import package
+    return package
+
+
 def tag_if_met(project_root, out=None, release=None, payload=None):
     """Write `signed/<version>` when every rule meets the gate. The tag name.
 
@@ -529,7 +546,8 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
     the tag says so about one commit. It is a signed tag, made with the key
     the signer signs commits with, so git can show who wrote it as surely as
     it shows who signed. It is written after the walk's own commits, so the payload is
-    read again rather than reused. Nothing is pushed.
+    read again rather than reused. The evidence package is committed first
+    and the tag names that commit. Nothing is pushed.
     """
     out = sys.stdout if out is None else out
     payload = load_payload(project_root, payload)
@@ -557,14 +575,23 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
     if tag_exists(project_root, name):
         print(NO_TAG_EXISTS % name, file=out)
         return None
+    # The package goes into the commit the tag names, so the tagged code
+    # carries the evidence that describes it. The evidence commit is the one
+    # below it, which is the commit the tag's message names.
     commit = payload.get('commit') or ''
+    rel, why = _package_module().write_for_tag(project_root, release)
+    if rel is None:
+        print(NO_TAG_PACKAGE % why, file=out)
+        return None
+    print(PACKAGE_COMMITTED % rel, file=out)
     written = subprocess.run(
         ['git', 'tag', '-s', name, '-m', tag_message(commit, gate)],
         capture_output=True, text=True, cwd=project_root, timeout=30)
     if written.returncode != 0:
         print(NO_TAG_EXISTS % name, file=out)
         return None
-    print(TAGGED % (name, commit[:7] or 'HEAD', gate), file=out)
+    tagged = payload_module.head_sha(project_root) or commit
+    print(TAGGED % (name, tagged[:7] or 'HEAD', gate), file=out)
     print('%s %s' % (ARROW, PUSH_THE_TAG % name), file=out)
     return name
 

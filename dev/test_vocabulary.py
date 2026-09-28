@@ -101,9 +101,12 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
 # its machine spellings are stepped over.
 # `mutation score` stays retired too, except in the one reason the strong
 # cell gives where no score was measured, which decision 35 wrote verbatim.
+# `approval` stays retired as a Purlin concept. The evidence package names
+# the regulated system's approval, which Purlin does not give, in one phrase:
+# a package is, or is not, for approval.
 ALLOWED_PHRASES = ("rules need a person", "rule needs a person",
                    "`verdict`", '"verdict"', "'verdict'",
-                   "no mutation score measured")
+                   "no mutation score measured", "for approval")
 CASED = (re.compile(r"\bPages\b"),)     # capitalised only; "pages" of a document is fine
 MD_ONLY = (re.compile(r"\bmode\b", re.I),)  # "mode" is only retired in prose
 

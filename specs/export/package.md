@@ -1,0 +1,43 @@
+# Feature: package
+
+> Description: The evidence package `purlin:export` writes: one data file for one version,
+>   holding every rule's words, proofs, tests, results, audit, signatures and statuses, for a
+>   reviewer who cannot open the repository. It is built from what git holds, says first
+>   whether the version is signed or work in progress, gives the same bytes for the same tag,
+>   and carries a fingerprint of itself. It is evidence handed to a regulated system of
+>   record; Purlin makes no claim of compliance.
+> Scope: scripts/export/package.py
+> Stack: python/stdlib (json, hashlib, subprocess), git worktree
+
+## Rules
+
+- RULE-1: Run with no argument, the command writes `.purlin/evidence/package/<version>.json`, taking the version from the `VERSION` file, prints `Evidence package written to <path>. State: <state>, <m> of <n> rules meet the gate <gate>.` followed by `Not for approval.` for every state but `signed`, commits nothing and leaves no checkout behind
+- RULE-2: `--release <name>` names the version, the file and the tag the package names in place of the `VERSION` file's value
+- RULE-3: The package's top-level keys are, in this order, `schema` (`purlin-package/1`), `state`, `not_for_approval`, `rules_meeting_gate`, `rules_short_of_gate`, `purlin_version`, `project`, `version`, `tag`, `commit`, `gate`, `trust`, `mutation_engine`, `min_strength`, `features`, `warnings` and `fingerprint`, and `commit` is the commit the evidence was taken at
+- RULE-4: While any rule does not meet the gate the state is `work in progress`, `not_for_approval` is true and the two counts say how many rules do and do not meet it; a project with no evidence, a rule with no test, a rule no audit has read and an unsigned rule at the gate `signed` each hold it there
+- RULE-5: When every rule meets the gate and the version is not signed and tagged, the state is `gate <gate> met` and `not_for_approval` is still true
+- RULE-6: Each rule carries its words exactly as the spec has them, its level and whether it was marked, its proofs, its tests, each result with its operating system, source, time, commit and runner, what the audit found with the model and the fingerprint of its instructions, each current signature with its signer, time, machine, operating system, note, whether its commit verifies and the hashes it locked, its three statuses and whether it meets the gate; nothing names who last changed a test
+- RULE-7: Evidence written and not committed is left out of the package and named, one line per file, in its `warnings` and on the terminal as `<path> is written and not committed; the package leaves it out.`
+- RULE-8: The same commit gives the same bytes: exporting twice, or from a second clone at the tag, writes identical files, with `\n` line ends, a trailing newline, and every time in UTC ending in `Z`
+- RULE-9: `fingerprint` is the sha256 of the package's canonical bytes with that field empty; `--check <file>` prints `The package matches its fingerprint.` and exits 0 for a package as written, and for one edited afterwards names the mismatch and exits 1
+- RULE-10: `--commit` commits the package alone with the subject `purlin: evidence at <sha7>`, naming the commit the evidence was taken at, and a second `--commit` over the same evidence prints `Package unchanged.` and leaves that commit named
+
+## Proof
+
+- PROOF-1 (RULE-1): In a project at the gate `signed` whose `VERSION` reads `2.1.0` and whose one rule needing a signature has none, run the command; verify the first line is `Evidence package written to .purlin/evidence/package/2.1.0.json. State: work in progress, 1 of 2 rules meet the gate signed. Not for approval.`, that `HEAD` has not moved, that `git status` lists only that file as untracked, and that `git worktree list` shows one worktree
+- PROOF-2 (RULE-2): Run the command with `--release beta`; verify it writes `.purlin/evidence/package/beta.json` whose `version` is `beta` and `tag` is `signed/beta`, and that no `2.1.0.json` is written
+- PROOF-3 (RULE-3): Export a project whose config names the project `proj` at the gate `signed` with a minimum strength of 50; verify the keys in file order equal the seventeen named, that `schema` is `purlin-package/1`, `purlin_version` is the plugin's version, `project`, `gate`, `trust`, `mutation_engine` and `min_strength` read `proj`, `signed`, `local`, `auto` and 50, and `commit` is the full sha of `HEAD`
+- PROOF-4 (RULE-4): Export a project at the gate `passed` with a `VERSION` of `1.0.0` and no evidence at all; verify the first line ends `State: work in progress, 0 of 2 rules meet the gate passed. Not for approval.`, the package reads `work in progress`, true, 0 and 2, and `RULE-1` has no results and a passed status of `no test`
+- PROOF-5 (RULE-4): Add a third rule reading `A locked account returns 423 (URS-042)` with no proof, sign the rest and export; verify that rule's words are exactly that, its proofs and tests are empty, its one result reads `no test`, it does not meet the gate, and the state is `work in progress` with 1 rule short
+- PROOF-6 (RULE-4): At the gate `strong`, export a project whose tests pass and no audit has read `RULE-2`; verify `RULE-2`'s audit is null, its strong status is not `strong`, it does not meet the gate, and the state is `work in progress` with `not_for_approval` true
+- PROOF-7 (RULE-4): At the gate `signed`, export before `RULE-2` is signed; verify its signatures are empty, its signed status is `unsigned`, and the package reads `work in progress` with 1 rule meeting the gate and 1 short
+- PROOF-8 (RULE-5): Export a project at the gate `passed` whose two rules pass; verify the first line ends `State: gate passed met, 2 of 2 rules meet the gate passed. Not for approval.` Sign every rule of a project at the gate `signed` and export with no tag written; verify the state is `gate signed met` and `not_for_approval` is true
+- PROOF-9 (RULE-6): Tag a signed project and read `RULE-2` of the package; verify its words, level `signed` unmarked (and `RULE-1` `passed` marked), its one proof with `manual` false and no operating system, its one test, one result from `ci` reading `passed` with the runner, the time `2026-09-13T12:00:00Z` and a 40-character commit, an audit reading `strong` with no findings, strength 90, the model's name, the instructions' fingerprint and the time `2026-09-13T12:05:00Z`, one signature by `jane@acme.com` whose commit verifies with no note, an operating system, a machine and the six locked hashes, a signed status reading `signed` by `jane@acme.com`, and that it meets the gate
+- PROOF-10 (RULE-10): Export with `--commit`; verify the last line is `Package committed.`, the newest commit's subject is `purlin: evidence at <sha7>` of the commit before it, and `git status` is clean. Export with `--commit` again; verify the last line is `Package unchanged.` and the package still names that same commit
+- PROOF-11 (RULE-6): Tag a signed project whose test file was committed by `dev@example.com`; verify the package text carries neither that address nor the word `author`
+- PROOF-12 (RULE-7): Sign every rule, write the `ci` evidence again with a later time and commit nothing, then export; verify the terminal and `warnings` both carry `.purlin/evidence/ci/login.json is written and not committed; the package leaves it out.` and that `RULE-2`'s one result still reads the committed time `2026-09-13T12:00:00Z`
+- PROOF-13 (RULE-8): Export twice with nothing changed; verify the two files are byte for byte the same, end in `}` and a newline, and hold no carriage return
+- PROOF-14 (RULE-8): Clone a tagged project into a second folder, check out `signed/2.1.0` and export there; verify it exits 0, prints `State: signed, 2 of 2 rules meet the gate signed.` and writes exactly the bytes `git show signed/2.1.0:.purlin/evidence/package/2.1.0.json` prints
+- PROOF-15 (RULE-8): Read every `at` and `committed_at` in a tagged project's package; verify there are at least four and each matches `YYYY-MM-DDTHH:MM:SSZ`
+- PROOF-16 (RULE-9): Export, then run `--check` on the file; verify it exits 0 and prints only `The package matches its fingerprint.`, and that `fingerprint` is 64 hexadecimal characters
+- PROOF-17 (RULE-9): Replace the first `"unsigned"` in an exported package with `"signed"` and run `--check`; verify it exits 1 and the line begins `The package does not match its fingerprint: the package records the fingerprint`. Rewrite the original with carriage returns before each newline; verify it exits 1 and names `not in the canonical form`

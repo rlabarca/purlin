@@ -47,6 +47,7 @@ Do not bump for clarified wording, a new example or a typo.
 | `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
 | `proofs_format.md` | The proof files the test plugins emit, read by `sync_status` |
 | `signature_format.md` | The signature and the hold `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
+| `package_format.md` | The evidence package `purlin:export` and `purlin:sign` write, read by the system of record it is handed to |
 | `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a remote run, read by `sync_status` and `scripts/ci/gate_check.py` |
 
 ## Skill and reference deduplication

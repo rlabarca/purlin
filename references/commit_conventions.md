@@ -10,7 +10,7 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `feat(<name>):` | Implementing a feature, with the changeset in the body | `purlin:build` |
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
-| `purlin: evidence at <commit7>` | The evidence of one run: `.purlin/evidence/` and `.purlin/tests.md` | `purlin:test --commit`, `purlin:audit --commit`, and a remote runner |
+| `purlin: evidence at <commit7>` | The evidence of one run: `.purlin/evidence/` and `.purlin/tests.md` | `purlin:test --commit`, `purlin:audit --commit`, `purlin:export --commit`, `purlin:sign` for the package the tag carries, and a remote runner |
 | `sign(<name>): RULE-N ...` | Signatures, signed | `purlin:sign` |
 | `sign(batch): <feature> RULE-N, ...` | One signed commit covering more than one feature | `purlin:sign --batch` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
