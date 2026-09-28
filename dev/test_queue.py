@@ -35,7 +35,9 @@ SPEC = (
     '- RULE-3: A rule a person has to read carries no automated proof\n'
     '- RULE-4: A rule with no test is build work, not a person\'s\n'
     '- RULE-5: An unsigned rule is strong and waiting for a signature\n'
-    '- RULE-6: An unaudited rule waits for the audit, not for a person\n\n'
+    '- RULE-6: An unaudited rule waits for the audit, not for a person\n'
+    '- RULE-7: A rule the audit found weak is build work, not a person\'s\n'
+    '- RULE-8: A rule whose test fails waits for its tests, not a person\n\n'
     '## Proof\n\n'
     '- PROOF-1 (RULE-1): POST /session with the password "secret"; verify 200 '
     'and 401 for a wrong one\n'
@@ -48,6 +50,8 @@ SPEC = (
     '- PROOF-5 (RULE-5): DELETE /session twice; verify 204 and then 404\n'
     '- PROOF-6 (RULE-6): GET /session with an expired cookie; verify 401 and '
     'an empty body\n'
+    '- PROOF-7 (RULE-7): PUT /session with a stale token; verify 401\n'
+    '- PROOF-8 (RULE-8): PATCH /session; verify 405\n'
 )
 
 REWORDED = SPEC.replace(
@@ -56,7 +60,9 @@ REWORDED = SPEC.replace(
 
 RESULTS = [{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
            {'id': 'PROOF-5', 'rule': 'RULE-5', 'status': 'pass'},
-           {'id': 'PROOF-6', 'rule': 'RULE-6', 'status': 'pass'}]
+           {'id': 'PROOF-6', 'rule': 'RULE-6', 'status': 'pass'},
+           {'id': 'PROOF-7', 'rule': 'RULE-7', 'status': 'pass'},
+           {'id': 'PROOF-8', 'rule': 'RULE-8', 'status': 'fail'}]
 
 
 def _project():
@@ -78,6 +84,10 @@ def _project():
     made.spec(REWORDED, name='review', category='core')
     made.evidence(RESULTS, feature='review', ci=True, strength=90)
     made.audit('RULE-1', feature='review')
+    # RULE-7's audit found its proof weak, and RULE-8's test fails, so its
+    # strong cell reads `waiting`: neither is a row.
+    made.audit('RULE-7', feature='review',
+               observations=('PROOF-7 reads 401 alone.',))
     return made
 
 
@@ -108,6 +118,9 @@ def test_a_hand_check_is_a_manual_test_whose_level_asks_for_more(queued):
     assert 'RULE-6' not in everything, 'a rule waiting for the audit'
     assert queued.rule('RULE-6', 'review')['cells']['strong']['word'] == (
         'not audited')
+    for rule, word in (('RULE-7', 'weak'), ('RULE-8', 'waiting')):
+        assert queued.rule(rule, 'review')['cells']['strong']['word'] == word
+        assert rule not in everything, 'a rule whose strong cell is ' + word
 
 
 # purlin: states PROOF-33
@@ -128,6 +141,7 @@ def test_a_signature_row_is_a_rule_that_met_its_tests_and_audit(queued):
     assert rows['RULE-5']['word'] == 'unsigned'
     # RULE-3 needs a signature too, and it is one row, a hand check.
     assert [row['rule'] for row in payload['queue']].count('RULE-3') == 1
+    assert _rows(payload)['RULE-3']['need'] == 'hand check'
     queued.config_value('gate', 'strong')
     assert _rows(queued.payload(), 'signature') == {}
 
