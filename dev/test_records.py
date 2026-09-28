@@ -1047,19 +1047,6 @@ def test_the_git_host_is_read_from_the_remote(project):
 
 
 @pytest.mark.proof("records", "PROOF-12", "RULE-12")
-def test_the_azure_branch_prints_the_pipeline_and_returns(project, capsys):
-    url = 'https://dev.azure.com/acme/widgets/_git/widgets'
-    git(project, 'remote', 'add', 'origin', url)
-
-    assert remote_module._azure(project, 'main', 'run/main-4f1c2ab') == 0
-    printed = capsys.readouterr().out
-    assert 'Azure DevOps runs the pipeline for run/main-4f1c2ab' in printed
-    assert url in printed
-    assert 'git pull --ff-only origin run/main-4f1c2ab' in printed
-    assert 'git push origin --delete run/main-4f1c2ab' in printed
-
-
-@pytest.mark.proof("records", "PROOF-12", "RULE-12")
 def test_a_detached_head_has_nothing_to_push(project, capsys):
     head = git(project, 'rev-parse', 'HEAD').stdout.strip()
     git(project, 'checkout', '--quiet', head)
@@ -1090,13 +1077,6 @@ def test_the_run_branch_names_the_branch_and_the_commit(project):
     assert name == 'run/feature-x-%s' % head[:7]
 
 
-@pytest.mark.proof("records", "PROOF-12", "RULE-12")
-def test_the_follow_up_for_azure_is_marked_in_the_source():
-    with open(os.path.join(ROOT, 'scripts', 'run', 'remote.py'),
-              encoding='utf-8') as handle:
-        assert 'TODO(ado-remote)' in handle.read()
-
-
 class FakeProcesses(object):
     """`subprocess.run` for `remote.py`: git and gh answer, and nothing runs.
 
@@ -1116,7 +1096,7 @@ class FakeProcesses(object):
             '[{"databaseId": %s}]' % run_id if run_id else '[]')
 
     def __call__(self, argv, cwd=None, capture_output=False, text=False,
-                 timeout=None, env=None):
+                 timeout=None, env=None, stdin=None):
         argv = list(argv)
         if argv[:3] == ['git', 'rev-parse', '--abbrev-ref']:
             return subprocess.CompletedProcess(argv, 0, 'feature-x\n', '')

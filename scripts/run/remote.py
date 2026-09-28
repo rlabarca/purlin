@@ -21,19 +21,27 @@ A detached head has no branch to name and a dirty tree would run the workflow
 against something other than what is on disk, so both are refused before
 anything is pushed.
 
-On GitHub the run is found by the branch it was started for, because `gh run
-watch` with no id prompts for one and errors where there is no terminal. The
-lookup is retried while the run registers, which takes a few seconds, and
-then that one run is watched. On Azure DevOps the pipeline URL is printed and
-the command returns: watching an Azure DevOps run needs the Azure CLI's
-pipelines extension, which is the work-machine follow-up marked below.
+On both git hosts the run is found by the branch it was started for, retried
+while the run registers, which takes a few seconds, and then that one run is
+waited on. On GitHub `gh run watch <id>` waits; the id is named because `gh
+run watch` with no id prompts for one and errors where there is no terminal.
+On Azure DevOps the Azure CLI's
+`azure-devops` extension finds the run and `az pipelines runs show` is asked
+for its status until it completes. Either way the run ends the same: pull the
+runner's commit, delete the run branch, print the table.
+
+No process started here asks for anything: stdin is closed, git is told not
+to prompt for a credential, and the Azure CLI is told not to offer to install
+its extension. A missing credential is a failed command, not a question.
 """
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
+import urllib.parse
 
 _RUN_DIR = os.path.dirname(os.path.abspath(__file__))
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(_RUN_DIR))
@@ -53,6 +61,33 @@ FIND_SECONDS = 60
 FIND_EVERY = 3
 NO_RUN_FOUND = ('No run registered for %s within %d seconds. Open it on the '
                 'git host, then run: git pull --ff-only %s %s')
+
+# How long to wait for an Azure DevOps run once it is found, and how often to
+# ask. A run of the whole suite on a hosted agent takes minutes; ninety of
+# them is the limit past which the command stops waiting and says how to
+# finish by hand.
+POLL_SECONDS = 90 * 60
+POLL_EVERY = 15
+# The results `az pipelines runs show` reports for a completed run. Only
+# `succeeded` is green.
+GREEN = 'succeeded'
+# How long one git or az command may take before it is abandoned.
+COMMAND_SECONDS = 300
+
+NO_AZ = ('The Azure CLI `az` is not on PATH, so the run on %s cannot be '
+         'watched: install it with its azure-devops extension and run '
+         'purlin:test --remote again, or open the run at %s and when it '
+         'finishes run: git pull --ff-only %s %s')
+NO_AZURE_REMOTE = ('The remote %s is not an Azure DevOps repository URL, so '
+                   'nothing was pushed: set %s to the URL Azure DevOps shows '
+                   'under Clone and run purlin:test --remote again.')
+NO_AZURE_RUN = ('No run registered for %s within %d seconds: check that `az` '
+                'has the azure-devops extension and is signed in, then open '
+                'the run at %s and when it finishes run: git pull --ff-only '
+                '%s %s')
+AZURE_TIMEOUT = ('Run %s on %s has not completed after %d minutes: open it at '
+                 '%s and when it finishes run: git pull --ff-only %s %s, then '
+                 'git push %s --delete %s')
 
 
 def run_branch_name(project_root, branch):
@@ -79,13 +114,22 @@ def run_remote(project_root, args=None, cfg=None):
         return 1
 
     run_branch = run_branch_name(project_root, branch)
+    where = None
+    if host == 'azure':
+        # Read before the push, so a remote in no Azure DevOps form leaves
+        # nothing behind on it.
+        remote = _remote_url(project_root)
+        where = parse_azure_remote(remote)
+        if where is None:
+            print(NO_AZURE_REMOTE % (remote or '(none)', REMOTE))
+            return 1
     print('Pushing %s as %s.' % (branch, run_branch))
     if _push(project_root, run_branch) != 0:
         print('The push failed, so no run was started.')
         return 1
 
     if host == 'azure':
-        return _azure(project_root, branch, run_branch)
+        return _azure(project_root, run_branch, where)
     return _github(project_root, run_branch)
 
 
@@ -102,8 +146,18 @@ def _github(project_root, run_branch):
         _delete(project_root, run_branch)
         return 1
     watched = _run(project_root,
-                   ['gh', 'run', 'watch', run_id, '--exit-status'])
-    if watched != 0:
+                   ['gh', 'run', 'watch', run_id, '--exit-status'],
+                   timeout=None)
+    return _bring_back(project_root, run_branch, watched)
+
+
+def _bring_back(project_root, run_branch, code):
+    """Pull the runner's commit, delete the run branch, print the table.
+
+    The same for both git hosts and for a green or a red run: a red run's
+    results are evidence too. Answers `code`, the run's own exit code.
+    """
+    if code != 0:
         print('The run finished red. The table below is what came back.')
     # The run branch is this branch plus the one commit the runner made, so a
     # fast-forward is the whole of it: at `strong` and above that commit is
@@ -111,7 +165,7 @@ def _github(project_root, run_branch):
     _run(project_root, ['git', 'pull', '--ff-only', REMOTE, run_branch])
     _delete(project_root, run_branch)
     print(_table(project_root))
-    return watched
+    return code
 
 
 def find_run(project_root, run_branch, seconds=FIND_SECONDS):
@@ -139,18 +193,132 @@ def find_run(project_root, run_branch, seconds=FIND_SECONDS):
         time.sleep(FIND_EVERY)
 
 
-def _azure(project_root, branch, run_branch):
-    # TODO(ado-remote): watch the Azure DevOps run and pull its records the way
-    # the GitHub branch does. It needs the Azure CLI's pipelines extension and
-    # an organisation to try it against, so it is a work-machine follow-up.
-    url = _pipeline_url(project_root)
-    print('Azure DevOps runs the pipeline for %s. Open it at:' % run_branch)
-    print('  %s' % (url or '<the project\'s Pipelines list>'))
-    print('When it finishes, run: git pull --ff-only %s %s'
-          % (REMOTE, run_branch))
-    print('Then delete the run branch: git push %s --delete %s'
-          % (REMOTE, run_branch))
-    return 0
+def _azure(project_root, run_branch, where):
+    """Find the Azure DevOps run on `run_branch`, wait for it, bring it back.
+
+    `where` is `(organization, project, repository)` from the remote.
+    """
+    organization, project, _repository = where
+    runs_url = _runs_url(organization, project)
+    az = shutil.which('az')
+    if not az:
+        print(NO_AZ % (run_branch, runs_url, REMOTE, run_branch))
+        return 1
+    print('Waiting for the Azure DevOps pipeline on %s.' % run_branch)
+    run_id = find_azure_run(project_root, az, organization, project,
+                            run_branch)
+    if not run_id:
+        print(NO_AZURE_RUN % (run_branch, FIND_SECONDS, runs_url, REMOTE,
+                              run_branch))
+        _delete(project_root, run_branch)
+        return 1
+    result = wait_azure_run(project_root, az, organization, project, run_id)
+    if result is None:
+        # The run is still going and will commit onto the run branch, so the
+        # branch stays for the person to pull and delete when it is done.
+        print(AZURE_TIMEOUT % (run_id, run_branch, POLL_SECONDS // 60,
+                               runs_url, REMOTE, run_branch, REMOTE,
+                               run_branch))
+        return 1
+    print('Run %s completed: %s.' % (run_id, result))
+    return _bring_back(project_root, run_branch, 0 if result == GREEN else 1)
+
+
+def parse_azure_remote(url):
+    """`(organization, project, repository)` from an Azure DevOps remote.
+
+    Three forms: `https://dev.azure.com/<org>/<project>/_git/<repo>`,
+    `git@ssh.dev.azure.com:v3/<org>/<project>/<repo>` and
+    `https://<org>.visualstudio.com/<project>/_git/<repo>`. A user part
+    before the host is ignored and percent-encoded characters are decoded,
+    so `My%20Project` is the project `My Project`. Anything else is `None`.
+    """
+    url = (url or '').strip()
+    if url.startswith('git@ssh.dev.azure.com:'):
+        parts = url.split(':', 1)[1].strip('/').split('/')
+        if len(parts) == 4 and parts[0] == 'v3':
+            return _decoded(parts[1], parts[2], parts[3])
+        return None
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in ('https', 'http'):
+        return None
+    host = (parsed.hostname or '').lower()
+    parts = [part for part in parsed.path.split('/') if part]
+    if host == 'dev.azure.com':
+        if len(parts) == 4 and parts[2] == '_git':
+            return _decoded(parts[0], parts[1], parts[3])
+        return None
+    if host.endswith('.visualstudio.com'):
+        organization = host[:-len('.visualstudio.com')]
+        if organization and len(parts) == 3 and parts[1] == '_git':
+            return _decoded(organization, parts[0], parts[2])
+    return None
+
+
+def _decoded(*parts):
+    return tuple(urllib.parse.unquote(part) for part in parts)
+
+
+def _organization_url(organization):
+    return 'https://dev.azure.com/%s' % organization
+
+
+def _runs_url(organization, project):
+    return '%s/%s/_build' % (_organization_url(organization),
+                             urllib.parse.quote(project))
+
+
+def azure_list_command(az, organization, project, run_branch):
+    """The `az` command that names the newest run on `run_branch`."""
+    return [az, 'pipelines', 'runs', 'list',
+            '--organization', _organization_url(organization),
+            '--project', project,
+            '--branch', 'refs/heads/%s' % run_branch,
+            '--top', '1', '--query', '[0].id', '--output', 'tsv']
+
+
+def azure_show_command(az, organization, project, run_id):
+    """The `az` command that reports one run's status and result."""
+    return [az, 'pipelines', 'runs', 'show', '--id', str(run_id),
+            '--organization', _organization_url(organization),
+            '--project', project,
+            '--query', '[status,result]', '--output', 'tsv']
+
+
+def find_azure_run(project_root, az, organization, project, run_branch,
+                   seconds=None):
+    """The id of the run this push started, or `''` when none registered.
+
+    Asked every `FIND_EVERY` seconds for up to `FIND_SECONDS`, because a run
+    takes a few seconds to appear after the push.
+    """
+    seconds = FIND_SECONDS if seconds is None else seconds
+    deadline = time.time() + max(0, seconds)
+    command = azure_list_command(az, organization, project, run_branch)
+    while True:
+        listed = (_capture(project_root, command) or '').strip()
+        if listed and listed != 'None':
+            return listed.split()[0]
+        if time.time() >= deadline:
+            return ''
+        time.sleep(FIND_EVERY)
+
+
+def wait_azure_run(project_root, az, organization, project, run_id):
+    """The run's result once its status is `completed`, or `None` at the limit.
+
+    Asked every `POLL_EVERY` seconds for up to `POLL_SECONDS`. An answer that
+    cannot be read counts as not completed yet.
+    """
+    deadline = time.time() + max(0, POLL_SECONDS)
+    command = azure_show_command(az, organization, project, run_id)
+    while True:
+        words = (_capture(project_root, command) or '').split()
+        if words and words[0] == 'completed':
+            return words[1] if len(words) > 1 else ''
+        if time.time() >= deadline:
+            return None
+        time.sleep(POLL_EVERY)
 
 
 def _push(project_root, run_branch):
@@ -176,14 +344,9 @@ def _dirty(project_root):
     return bool((status or '').strip())
 
 
-def _pipeline_url(project_root):
-    remote = _capture(project_root, ['git', 'remote', 'get-url', REMOTE])
-    remote = (remote or '').strip()
-    if not remote:
-        return ''
-    if remote.startswith('git@ssh.dev.azure.com:'):
-        return 'https://dev.azure.com/' + remote.split(':', 1)[-1].lstrip('v/')
-    return remote
+def _remote_url(project_root):
+    return (_capture(project_root, ['git', 'remote', 'get-url', REMOTE])
+            or '').strip()
 
 
 def _table(project_root):
@@ -195,8 +358,7 @@ def _host(project_root, args):
     named = getattr(args, 'host', None) if args is not None else None
     if named:
         return 'azure' if str(named).lower().startswith(('a', 'ado')) else 'github'
-    remote = (_capture(project_root, ['git', 'remote', 'get-url', REMOTE])
-              or '').lower()
+    remote = _remote_url(project_root).lower()
     if 'dev.azure.com' in remote or 'visualstudio.com' in remote:
         return 'azure'
     return 'github'
@@ -214,10 +376,28 @@ def _have(binary):
     return False
 
 
-def _run(project_root, argv):
-    """Run one command in the project and answer its exit code."""
+def _environment():
+    """This process's environment, with every prompt turned off.
+
+    `GIT_TERMINAL_PROMPT=0` makes a push or a pull that lacks a credential
+    fail rather than ask for one; `AZURE_EXTENSION_USE_DYNAMIC_INSTALL=no`
+    makes `az` report a missing extension rather than offer to install it.
+    """
+    env = dict(os.environ)
+    env['GIT_TERMINAL_PROMPT'] = '0'
+    env['AZURE_EXTENSION_USE_DYNAMIC_INSTALL'] = 'no'
+    return env
+
+
+def _run(project_root, argv, timeout=COMMAND_SECONDS):
+    """Run one command in the project and answer its exit code.
+
+    `timeout=None` is for `gh run watch` alone, which ends when the run does.
+    """
     try:
-        return subprocess.run([*argv], cwd=project_root).returncode
+        return subprocess.run([*argv], cwd=project_root,
+                              stdin=subprocess.DEVNULL, env=_environment(),
+                              timeout=timeout).returncode
     except (subprocess.SubprocessError, OSError) as error:
         print('%s failed: %s' % (argv[0], error))
         return 1
@@ -226,6 +406,7 @@ def _run(project_root, argv):
 def _capture(project_root, argv):
     try:
         result = subprocess.run([*argv], cwd=project_root,
+                                stdin=subprocess.DEVNULL, env=_environment(),
                                 capture_output=True, text=True, timeout=30)
     except (subprocess.SubprocessError, OSError):
         return ''
