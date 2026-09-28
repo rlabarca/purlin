@@ -13,8 +13,5 @@
 # The text rendering of a brief, a local view of the committed JSON beside it
 .purlin/briefs/**/*.brief.txt
 
-# Where this machine keeps the installed plugin (read by .purlin/hooks/)
-.purlin/plugin-root
-
 # Plugin copies the update backed up before refreshing them
 .purlin/plugins/*.local-*.bak

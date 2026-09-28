@@ -730,7 +730,7 @@ class TestWhatInitWrites:
     def test_the_summary_names_every_write(self, project):
         output = project.run('--gate', 'strong')
         named = summary_paths(output)
-        for rel in ('.purlin/config.json', '.purlin/plugin-root',
+        for rel in ('.purlin/config.json',
                     '.purlin/plugins/pytest_purlin.py', 'conftest.py',
                     '.gitignore', 'designs', 'designs/README.md',
                     '.purlin/records', '.purlin/records/README.md',
@@ -754,7 +754,7 @@ class TestWhatInitWrites:
         assert read(project.path('.gitignore')) == first
         assert first.startswith('node_modules/\n')
         assert '.purlin/runtime/' in first
-        assert first.count('.purlin/plugin-root') == 1
+        assert first.count('.purlin/report-data.js') == 1
 
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")
     def test_the_engine_block_names_the_source_and_the_tests(self, project):
@@ -847,11 +847,6 @@ class TestNoHookIsInstalled:
     def test_the_plugin_ships_no_hook_script(self):
         assert not os.path.exists(
             os.path.join(ROOT, 'scripts', 'hooks', 'pre-push.sh'))
-
-    @pytest.mark.proof("scaffold", "PROOF-21", "RULE-21")
-    def test_the_plugin_root_file_points_at_this_checkout(self, project):
-        project.run('--gate', 'passed')
-        assert read(project.path('.purlin/plugin-root')).strip() == ROOT
 
 
 # ---------------------------------------------------------------------------
@@ -1025,21 +1020,7 @@ class TestTheMarketplacePath:
             shutil.rmtree(cache, ignore_errors=True)
 
     @pytest.mark.proof("scaffold", "PROOF-21", "RULE-21")
-    def test_the_plugin_root_file_names_the_install(self):
-        cache, installed = self.copy_plugin()
-        made = Project('pytest')
-        try:
-            made.run('--gate', 'passed',
-                     script=os.path.join(installed, 'scripts', 'init',
-                                         'scaffold.py'),
-                     env={'CLAUDE_PLUGIN_ROOT': installed})
-            assert read(made.path('.purlin/plugin-root')).strip() == installed
-        finally:
-            made.close()
-            shutil.rmtree(cache, ignore_errors=True)
-
-    @pytest.mark.proof("scaffold", "PROOF-21", "RULE-21")
-    def test_nothing_a_project_holds_names_the_plugin_but_that_one_file(self):
+    def test_nothing_a_project_holds_names_the_plugin(self):
         cache, installed = self.copy_plugin()
         made = Project('pytest')
         try:
@@ -1052,12 +1033,6 @@ class TestTheMarketplacePath:
                     continue
                 for name in names:
                     path = os.path.join(base, name)
-                    # The one file that is meant to name the install.
-                    # The walk spells its path the local way, so the
-                    # comparison spells it the same way.
-                    if os.path.relpath(path, made.root) == os.path.join(
-                            '.purlin', 'plugin-root'):
-                        continue
                     try:
                         text = read(path)
                     except (UnicodeDecodeError, OSError):

@@ -52,6 +52,3 @@ tmp/
 dist/
 build/
 .playwright-mcp/
-
-# Where this machine keeps the installed plugin (read by .purlin/hooks/)
-.purlin/plugin-root

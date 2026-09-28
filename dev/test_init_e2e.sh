@@ -519,13 +519,11 @@ walk_marketplace() {
   CLAUDE_PLUGIN_ROOT="$installed" python3 "$installed/scripts/init/scaffold.py" \
     --project-root "$dir" --gate passed --yes > "$dir/.purlin-init.log" 2>&1
   expect_file "marketplace: the config is written" "$dir/.purlin/config.json"
-  expect_in "marketplace: the pinned root is the install" \
-    "$installed" "$dir/.purlin/plugin-root"
   if grep -rl "$installed" "$dir" --exclude-dir=.git 2>/dev/null \
-      | grep -v 'plugin-root' | grep -q .; then
-    bad "marketplace: only .purlin/plugin-root names the install"
+      | grep -q .; then
+    bad "marketplace: no file names the install"
   else
-    pass "marketplace: only .purlin/plugin-root names the install"
+    pass "marketplace: no file names the install"
   fi
   wire_since_mark
 }

@@ -17,7 +17,7 @@ detect is asked which framework its tests use, and `signed` is asked which
 rules need a signature.
 
 It then writes, in this order and naming every one in the summary: the config,
-the plugin copies and `.purlin/plugin-root`, the runner's wiring, the engine's
+the plugin copies, the runner's wiring, the engine's
 config block, the `.gitignore` entries, `designs/` and `.purlin/records/` with
 their READMEs, the dashboard, and, where one is wanted, the workflow CI runs.
 It ends with the next step computed from the state.
@@ -209,19 +209,6 @@ def is_repository(root):
     """
     ok, top = _git(root, 'rev-parse', '--show-toplevel')
     return bool(ok and top)
-
-
-def installed_plugin_root():
-    """The plugin directory `.purlin/plugin-root` names, which the shim reads.
-
-    `CLAUDE_PLUGIN_ROOT` when set and carrying this script, which is the
-    marketplace install; else this checkout, which `--plugin-dir` loads.
-    """
-    named = os.environ.get('CLAUDE_PLUGIN_ROOT') or ''
-    if named and os.path.isfile(os.path.join(named, 'scripts', 'init',
-                                             'scaffold.py')):
-        return os.path.abspath(named)
-    return PLUGIN_ROOT
 
 
 def plugin_files(plugin_root):
@@ -717,7 +704,6 @@ def main(argv=None):
     config = write_config(plan, plugin_root, existing, gate, host, framework,
                           sign_at, trust)
     install_plugins(plan, plugin_root, selected)
-    plan.write('.purlin/plugin-root', installed_plugin_root() + '\n', own=True)
     write_wiring(plan, selected)
     write_engine(plan, root, selected)
     write_gitignore(plan, plugin_root)
