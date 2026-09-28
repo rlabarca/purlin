@@ -588,3 +588,13 @@ From the stale inventory's open points, also closed by the owner:
 - The vocabulary guard under `dev/` still forbids `queue` and, in prose, `verdict`. The
   queue is the owner's word (decision 37): piece P4 removes it from the guard's list. The
   audit's field is `verdict` in machine text; in prose the pages say what the audit found.
+- Decisions 51 to 53 add three pieces after S1 and S2 and amend two:
+  - **P5 (the audit)** also records, per finding, `model` (name and version as the model
+    CLI reports them) and `criteria` (sha256 of `references/review_criteria.md` as sent).
+    The audit hash a signature locks does not include either.
+  - **P4 (the queue)** also writes `signed/<version>` as a signed tag (`git tag -s`).
+  - **P9: proofs and the marker comment, no plugins** (decision 51).
+  - **P10: the evidence package**, `purlin:export` (decision 52).
+  - **S2 (prose)** carries decision 53 and the rewrite of `docs/regulated-workflow.md` and
+    the README's statement of intended use (decision 52); where P9 and P10 land after it,
+    each of them updates the pages it changes.

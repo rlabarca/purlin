@@ -466,6 +466,39 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       proofs rewritten to the guideline as the examples the docs show.
     - **Order**: after the scheduled pieces, and not before the owner has talked through the
       GxP complaints of the same sanity check.
+52. **Purlin produces evidence for a regulated system; it does not make software
+    compliant** (added 2026-09-27, from the first sanity check, the GxP half). A regulated
+    document and sign-off system such as Veeva holds the controlled document, the authority
+    to approve and the signature that counts under the regulation. Purlin sits upstream of
+    it and hands it evidence. `purlin:sign` stays what it is: the formal lock on all the
+    evidence together.
+    - **The evidence package.** `purlin:export` produces one data file for a version,
+      holding everything a reviewer needs: the version, the commit and the tag; each rule's
+      words, its proofs and its tests; each result with when, where and on which operating
+      system; what the audit found per rule, with the model that found it; who signed each
+      rule, when and on which machine; the Purlin version that produced it; and a
+      fingerprint of the package itself. Every time is UTC. The same tag always gives the
+      same bytes.
+    - **Any time, and it says where things stand.** Its first field says whether this
+      version is fully signed and tagged, or is work in progress and not for approval.
+    - **A requirement's number is a note in the rule's own words**, such as `(URS-042)` at
+      the end of the sentence. Purlin does nothing with it; it reaches the package because
+      the rule's words do.
+    - **The audit names its model.** Every finding records the model's name and version and
+      a fingerprint of the instructions it was given.
+    - **The tag is signed.** `purlin:sign` writes `signed/<version>` as a cryptographically
+      signed tag, with the key the signer already signs commits with.
+    - **Nothing about who last changed the test** is put in the evidence.
+    - **The pages say what Purlin is.** The README states its intended use in one paragraph
+      and drops "the same team under GxP". `docs/regulated-workflow.md` spells out Purlin's
+      role: what it produces, what it hands over, what the regulated system does, and that
+      Purlin makes no claim of compliance.
+53. **The docs speak to a developer who wants to be left alone** (added 2026-09-27). The
+    README and the first pages a developer meets lead with how little Purlin touches: a
+    settings file and the specs you write, one comment above a test, your own test command,
+    nothing committed unless you ask, nothing running unless you ran it, nothing installed
+    in your test suite, and markers that are comments if you leave. The ten-minute path
+    (install, three rules, one comment per test, one command) is the first thing shown.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
