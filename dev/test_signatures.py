@@ -978,6 +978,36 @@ class TestTheWalk:
 
 class TestWhatItRestsOn:
 
+    @pytest.mark.proof("signatures", "PROOF-73", "RULE-49")
+    def test_evidence_that_is_not_committed_is_signed_over_by_nobody(
+            self, capsys):
+        made = signing_project(every_rule=False)
+        try:
+            made.evidence(runner='ci', commit_it=False, source='ci',
+                          at='2026-09-14T12:00:00Z')
+            for argv in (['login', 'RULE-2'], ['--batch']):
+                code = sign_module.main(argv + ['--project-root', made.root])
+                output = capsys.readouterr().out
+                assert code == 1, (argv, output)
+                assert ('sign: login has evidence that is not committed. '
+                        'Run: purlin:test --commit') in output, output
+                assert made.signatures() == [], (argv, made.signatures())
+            given = sign_module.walk(made.root,
+                                     answer=lambda _entry, _text: 'sign')
+            output = capsys.readouterr().out
+            assert given['signed'] == [] and made.signatures() == [], given
+            assert 'login has evidence that is not committed' in output
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
+            code = sign_module.main(['login', 'RULE-2', '--project-root',
+                                     made.root])
+            output = capsys.readouterr().out
+            assert code == 0, output
+            assert 'not committed' not in output, output
+            assert len(made.signatures()) == 1
+        finally:
+            made.close()
+
     @pytest.mark.proof("signatures", "PROOF-75", "RULE-50")
     def test_a_signature_names_the_machine_and_its_system_and_hashes_neither(
             self, capsys):

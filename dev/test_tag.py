@@ -115,6 +115,27 @@ class TestTheTag:
         finally:
             made.close()
 
+    @pytest.mark.proof("signatures", "PROOF-74", "RULE-49")
+    def test_no_tag_over_evidence_that_is_not_committed(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            made.evidence(strength=90, runner='ci', source='ci',
+                          commit_it=False, at='2026-09-14T12:00:00Z')
+            out = _Out()
+            assert sign_module.tag_if_met(made.root, out) is None
+            assert out.text().splitlines() == [
+                'sign: login has evidence that is not committed. Run: '
+                'purlin:test --commit'], out.text()
+            assert git(made.root, 'tag', '-l').stdout.strip() == ''
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
+            again = _Out()
+            assert sign_module.tag_if_met(made.root, again) == 'signed/2.1.0', \
+                again.text()
+        finally:
+            made.close()
+
     @pytest.mark.proof("signatures", "PROOF-67", "RULE-45")
     def test_the_version_comes_from_the_config_with_no_version_file(self):
         made = _signed_project()

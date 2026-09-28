@@ -36,6 +36,12 @@ gate. No tag is written while any rule falls short, and none is written over
 a tag that is already there. Nothing is pushed: the last line names the push
 for a person to run.
 
+**Evidence is committed before anything is signed over it.** A rule whose
+feature has evidence that is written and not committed is refused, and so is
+the tag while any feature has such evidence, with one line per feature:
+`sign: <feature> has evidence that is not committed. Run: purlin:test
+--commit`.
+
 **Trust.** With `trust: remote` in `.purlin/config.json` a rule with a proof
 that has a test, whose feature has no current section in its `ci` evidence,
 is refused, and the line says to run `purlin:test --remote` first. A rule
@@ -102,6 +108,8 @@ PUSH_THE_TAG = 'Run: git push origin %s'
 NO_CI_RUN = ('sign: %s %s has no ci test run for this code; run '
              'purlin:test --remote first')
 MARKED_BELOW = 'sign: %s %s is marked [level: %s]; it asks for no signature.'
+NOT_COMMITTED = ('sign: %s has evidence that is not committed. Run: '
+                 'purlin:test --commit')
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
@@ -334,6 +342,41 @@ def _allowed(payload, targets, out=None):
     return [pair for pair in targets if pair not in refused]
 
 
+# ---------------------------------------------------------------------------
+# Evidence that is not committed
+# ---------------------------------------------------------------------------
+
+def uncommitted(payload, features=None):
+    """The features, sorted, whose evidence is written and not committed.
+
+    `features` narrows the question to the ones a signature reads; None asks
+    it of every feature, which is what the tag reads. A feature with no
+    evidence file has nothing to commit and is not named.
+    """
+    found = []
+    for entry in (payload or {}).get('features') or ():
+        name = entry.get('name')
+        if features is not None and name not in features:
+            continue
+        for source in (entry.get('evidence') or {}).values():
+            if source and not source.get('committed', True):
+                found.append(name)
+                break
+    return sorted(set(found))
+
+
+def _committed_only(payload, targets, out=None):
+    """The targets whose feature's evidence is committed, printing the rest.
+
+    One line per feature, so a batch of ten rules over one uncommitted file
+    says it once.
+    """
+    refused = uncommitted(payload, {feature for feature, _rule in targets})
+    for feature in refused:
+        print(NOT_COMMITTED % feature, file=out or sys.stdout)
+    return [pair for pair in targets if pair[0] not in refused]
+
+
 def marked_below(payload, targets):
     """`[(feature, rule, level)]` whose `[level: ...]` tag asks for no signature.
 
@@ -427,6 +470,11 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
     short, total = short_of_the_gate(payload)
     if short:
         print(NO_TAG_SHORT % (short, total, gate), file=out)
+        return None
+    refused = uncommitted(payload)
+    if refused:
+        for feature in refused:
+            print(NOT_COMMITTED % feature, file=out)
         return None
     name = tag_name(project_root, release)
     if tag_exists(project_root, name):
@@ -647,7 +695,8 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
             result['skipped'].append(pair)
 
     if result['signed']:
-        allowed = _allowed(payload, result['signed'], out)
+        allowed = _committed_only(payload, _allowed(payload, result['signed'],
+                                                    out), out)
         result['skipped'].extend(pair for pair in result['signed']
                                  if pair not in allowed)
         result['signed'] = allowed
@@ -838,7 +887,7 @@ def main(argv=None):
     if gate == 'strong' and len(in_queue(payload, targets)) < len(targets):
         print('sign: a signature is required only under the gate signed. '
               'Writing it anyway.')
-    targets = _allowed(payload, targets)
+    targets = _committed_only(payload, _allowed(payload, targets))
     if not targets:
         print('sign: nothing here needs a signature. Run purlin:status to see '
               'what blocks the gate.')

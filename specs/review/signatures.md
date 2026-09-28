@@ -8,7 +8,8 @@
 >   every one of them, as one signed commit; CI writes none, and each names
 >   the machine it was made on. With no argument the command walks the queue
 >   one rule at a time and, when every rule meets the gate, writes the
->   tag that marks the commit. What it may do at all scales with the project's gate: nothing
+>   tag that marks the commit. It signs nothing over evidence that is not
+>   committed. What it may do at all scales with the project's gate: nothing
 >   under `passed`, the walk under `strong`, a counting signature under
 >   `signed`.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
@@ -45,6 +46,7 @@
 - RULE-45: When the walk closes and every rule meets the gate the command writes the annotated tag `signed/<version>`, taking the version from the `VERSION` file at the project root and falling back to the config's, with a message naming the commit and the gate, and prints `Run: git push origin signed/<version>`; it pushes nothing
 - RULE-46: No tag is written while any rule falls short of the gate, and the command says how many of how many; no tag is written over one that is already there, and `--release <name>` names another
 - RULE-48: Under the gate `signed`, naming a rule whose `[level: ...]` tag is `passed` or `strong` refuses it with `sign: <feature> <RULE-N> is marked [level: <level>]; it asks for no signature.` and writes no signature for it; with nothing else named, the command exits 1
+- RULE-49: The command signs no rule whose feature has evidence that is written and not committed, and writes no tag while any feature has such evidence; each such feature is named once, as `sign: <feature> has evidence that is not committed. Run: purlin:test --commit`
 - RULE-50: A signature records `machine`, the host's name as its operating system reports it, and `os`, `windows`, `macos` or `linux`, beside the signer and the time; neither is hashed or compared, so a signature reads the same whichever machine made it
 - RULE-47: With `trust: remote` the command refuses a rule with a proof that has a test when its feature's `ci` evidence holds no section current for this code, printing `sign: <feature> RULE-N has no ci test run for this code; run purlin:test --remote first`; a rule whose proofs are all `@manual` is not refused, and with `trust: local`, the default, it signs what this machine ran
 
@@ -92,4 +94,6 @@
 - PROOF-70 (RULE-12): At gate `strong`, write an audit entry for `login RULE-2` that did not settle so it is in the queue, then run `--batch` with signing configured; verify it exits 0, prints `Signed 1 rule in`, writes a signature for `RULE-2` alone and never prints `required only`. Do the same with a bare `login` in a fresh project; verify the same
 - PROOF-71 (RULE-15): At gate `strong`, with `login RULE-2` in the queue, run `login RULE-2`; verify it exits 0, writes exactly 1 signature and never prints `required only under the gate signed`
 - PROOF-72 (RULE-48): At gate `signed` with signing configured, run `login RULE-1` on the `[level: passed]` rule; verify it exits 1, prints `sign: login RULE-1 is marked [level: passed]; it asks for no signature.` and writes no signature. Mark it `[level: strong]` and verify the line names `[level: strong]`; run `login RULE-1 RULE-2` and verify only `RULE-2` is signed
+- PROOF-73 (RULE-49): At gate `signed`, write the feature's evidence again and commit nothing; run `login RULE-2`, then `--batch`, then the walk answering `sign`; verify the first two exit 1, each prints `sign: login has evidence that is not committed. Run: purlin:test --commit`, and no signature is written by any of the three. Commit the evidence and run `login RULE-2` again; verify it exits 0, writes 1 signature and prints no such line
+- PROOF-74 (RULE-49): With every rule signed, write the feature's evidence again and commit nothing, then ask for the tag; verify no tag is written and the only line printed is `sign: login has evidence that is not committed. Run: purlin:test --commit`; commit it and verify `signed/2.1.0` is written
 - PROOF-75 (RULE-50): Sign `login RULE-2` and read the file; verify `machine` equals the host's name as the operating system reports it and `os` is this machine's `windows`, `macos` or `linux`. Rewrite them as `another-machine` and `windows`, commit, and verify the signed cell still reads `signed`
