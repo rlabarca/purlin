@@ -81,9 +81,8 @@ The next step is the Step 4 line for the lowest cell this spec's rules leave unm
 
 ## Step 4: name the next step
 
-Print the `→` lines the tool returned and add none of your own. There is one `→ Next:` line,
-computed from the lowest cell that blocks the gate, one more line when the queue is not empty,
-and `→ Run: purlin:init --update` first while a migration is pending:
+Print the tool's `→` lines, adding none: one `→ Next:`, one step and one reason from the first
+row that applies; `→ Queue:` for a queue; `→ Run: purlin:init --update` for a migration.
 
 | What blocks the gate | The line the tool prints |
 |----------------------|--------------------------|
@@ -91,9 +90,10 @@ and `→ Run: purlin:init --update` first while a migration is pending:
 | A rule has a failing test | `→ Next: run purlin:build.` with the count |
 | A rule's tests pass on one operating system and not another | `→ Next: run purlin:build.` with the `partial` count |
 | A rule has a proof and no passing test | `→ Next: run purlin:build.` with the count |
-| A rule reads `not run` or `out of date` | `→ Next: run purlin:test --remote.` under `trust: remote`, `→ Next: run purlin:audit.` at `strong` and `signed`, `→ Next: run purlin:test.` at `passed`, with the count |
-| No audit has read a rule | `→ Next: run purlin:audit.` with the count |
-| A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
+| A rule reads `out of date`, or `not run` on this machine's system | `→ Next: run purlin:test.` with the count; `purlin:test --remote` under `trust: remote` |
+| A rule's proofs need a system this machine is not | `→ Next: run purlin:test --remote. <n> rules need <os>, which this machine is not.` |
+| No rule waits on a test run, and no audit has read one | `→ Next: run purlin:audit. <n> rules are not audited.` |
+| A rule is weak | `→ Next: run purlin:build. <n> rules are weak.` |
 | A rule is in the queue: it reads `manual test`, or waits for a signature | `→ Next: run purlin:sign.` with the count |
 | At `signed`, a spec names no files in `> Scope:` | `→ Next: run purlin:spec <name>.` |
 | Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |

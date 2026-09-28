@@ -2031,16 +2031,22 @@ class TestStatusTable:
             made.close()
 
     # purlin: states PROOF-67
-    def test_the_next_step_names_the_command_this_gate_would_write_with(self):
-        """An audit you run counts at every gate, and it runs the tests too.
+    def test_a_rule_waiting_on_a_run_is_sent_to_the_tests(self):
+        """A rule whose run is out of date waits on a test run, at every gate.
 
-        Only `trust: remote` sends a reader to the runner, because that is
-        the one setting that asks for a `ci` run before a signature.
+        The audit is never the step while a test run is: only `trust: remote`
+        sends the run to the runner.
         """
-        for gate, trust, named, unnamed in (
-                ('strong', 'local', 'purlin:audit', 'purlin:test --remote'),
-                ('signed', 'local', 'purlin:audit', 'purlin:test --remote'),
-                ('signed', 'remote', 'purlin:test --remote', 'purlin:audit')):
+        for gate, trust, said in (
+                ('passed', 'local',
+                 '→ Next: run purlin:test. 2 rules are out of date.'),
+                ('strong', 'local',
+                 '→ Next: run purlin:test. 2 rules are out of date.'),
+                ('signed', 'local',
+                 '→ Next: run purlin:test. 2 rules are out of date.'),
+                ('signed', 'remote',
+                 '→ Next: run purlin:test --remote. 2 rules have no current '
+                 'run.')):
             made = Project(gate=gate, extra_config={'trust': trust})
             try:
                 made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
@@ -2053,14 +2059,61 @@ class TestStatusTable:
                 step = [line for line in
                         purlin_status.sync_status(made.root).splitlines()
                         if line.startswith('→ Next:')]
-                assert len(step) == 1, step
-                assert named in step[0], (gate, trust, step[0])
-                assert unnamed not in step[0], (gate, trust, step[0])
+                assert step == [said], (gate, trust, step)
             finally:
                 made.close()
         assert purlin_board.needs_a_person(1) == '1 rule needs a person'
         assert purlin_board.needs_a_person(3) == '3 rules need a person'
         assert purlin_board.needs_a_person(0) == 'no rule needs a person'
+
+    # purlin: states PROOF-87
+    def test_a_rule_tagged_for_another_system_is_sent_to_the_runner(self):
+        here = purlin_evidence.host_os()
+        other = 'windows' if here == 'linux' else 'linux'
+        for tag, said in (
+                (other, '→ Next: run purlin:test --remote. 2 rules need %s, '
+                        'which this machine is not.' % other),
+                (here, '→ Next: run purlin:test. 2 rules have no run to '
+                       'read.')):
+            made = Project(spec=SPEC.replace('token\n', 'token @env(%s)\n'
+                                             % tag).replace(
+                'denied"\n', 'denied" @env(%s)\n' % tag))
+            try:
+                made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                                'status': 'pass'},
+                               {'id': 'PROOF-2', 'rule': 'RULE-2',
+                                'status': 'pass'}],
+                              os_name='macos' if here != 'macos'
+                              else 'windows')
+                step = [line for line in
+                        purlin_status.sync_status(made.root).splitlines()
+                        if line.startswith('→ Next:')]
+                assert step == [said], (tag, step)
+            finally:
+                made.close()
+
+    # purlin: states PROOF-88
+    def test_the_audit_is_the_step_only_when_no_rule_waits_on_a_run(self):
+        made = Project(gate='strong')
+        try:
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'},
+                           {'id': 'PROOF-2', 'rule': 'RULE-2',
+                            'status': 'pass'}])
+            step = [line for line in
+                    purlin_status.sync_status(made.root).splitlines()
+                    if line.startswith('→ Next:')]
+            assert step == ['→ Next: run purlin:audit. 2 rules are not '
+                            'audited.'], step
+            made.audit('RULE-2', observations=['PROOF-2 reads the code '
+                                               'alone.'])
+            made.audit('RULE-1')
+            step = [line for line in
+                    purlin_status.sync_status(made.root).splitlines()
+                    if line.startswith('→ Next:')]
+            assert step == ['→ Next: run purlin:build. 1 rule is weak.'], step
+        finally:
+            made.close()
 
     # purlin: states PROOF-48
     def test_retired_config_keys_print_the_update_directive(self):

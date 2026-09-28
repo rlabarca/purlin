@@ -26,8 +26,9 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import (board as board_module, drift as drift_module,
-                    gate as gate_module, payload as payload_module,
-                    report_data, specs as specs_module, states)
+                    evidence as evidence_module, gate as gate_module,
+                    payload as payload_module, report_data,
+                    specs as specs_module, states)
 
 ARROW = '→'
 DOT = board_module.DOT
@@ -237,9 +238,10 @@ def _blocking(data):
     Only a rule's own entry is counted, so a global anchor's rule is counted
     once however many features have to prove it.
     """
-    found = {'no_proof': 0}
+    found = {'no_proof': 0, 'elsewhere': 0, 'systems': set()}
     for name in states.CELLS:
         found[name] = {}
+    here = evidence_module.host_os()
     for feature in data['features']:
         for rule in feature.get('rules') or ():
             if rule.get('label') != 'own' or rule.get('meets_gate'):
@@ -258,29 +260,40 @@ def _blocking(data):
                 # build work like any other.
                 found['no_proof'] += 1
             elif blocked in found:
-                word = ((rule.get('cells') or {}).get(blocked) or {}).get('word')
+                cell = (rule.get('cells') or {}).get(blocked) or {}
+                word = cell.get('word')
+                missing = cell.get('missing_env') or ()
+                if (blocked == 'passed' and word == 'not run' and missing
+                        and here not in missing):
+                    # Its proofs are tagged for an operating system this
+                    # machine is not: no run here can clear it.
+                    found['elsewhere'] += 1
+                    found['systems'].update(missing)
+                    continue
                 found[blocked][word] = found[blocked].get(word, 0) + 1
     return found
 
 
 def _unaudited(data):
-    """How many rules no audit has measured yet.
-
-    A weak rule is build work, and that is what the next step says, unless
-    nothing has run the breaks over it at all: then the work is the audit,
-    not the build, and telling a reader to build would send them at the
-    wrong thing.
-    """
+    """How many rules no audit has measured yet."""
     return (data.get('summary') or {}).get('not_audited') or 0
 
 
-def _directives(data, project_root):
-    """The next step, computed from the blocking cell, plus anything to fix first."""
-    lines = []
-    if (any('purlin:init --update' in warning for warning in data['warnings'])
-            or _update_pending(project_root)):
-        lines.append('%s Run: purlin:init --update' % ARROW)
+def _said(count, one, many):
+    """`1 rule <one>` or `<n> rules <many>`."""
+    return ('1 rule %s' % one) if count == 1 else ('%d rules %s'
+                                                   % (count, many))
 
+
+def next_step(data):
+    """`→ Next: run <command>. <reason>`: the first step that applies.
+
+    One step and one reason that is true of it, in the order the work runs:
+    a proof or a test to write, a failing or partial test to fix, a test run
+    to take, here or on the remote runner, the audit, a weak rule, a person,
+    and a spec to tie to its files. A rule waiting on a test run is never
+    sent to the audit: the audit is the step only when no rule waits on one.
+    """
     gate = data['gate']['gate']
     trust = data['gate'].get('trust')
     blocked = _blocking(data)
@@ -292,90 +305,75 @@ def _directives(data, project_root):
     partial = passed.get('partial', 0)
     not_run = passed.get('not run', 0)
     out_of_date = passed.get(states.OUT_OF_DATE, 0)
-    waiting = not_run + out_of_date
+    elsewhere = blocked['elsewhere']
     weak = strong.get('weak', 0)
     unaudited = _unaudited(data)
     person = len(data.get('queue') or ())
 
-    def next_step(command, count, one, many):
-        """`→ Next: run <command>. <n> rules <many>`, singular for one rule."""
-        said = ('1 rule %s' % one) if count == 1 else ('%d rules %s'
-                                                        % (count, many))
-        return '%s Next: run %s. %s' % (ARROW, command, said)
+    def step(command, reason):
+        return '%s Next: run %s. %s' % (ARROW, command, reason)
 
     if blocked['no_proof'] and gate == 'passed':
         # Proofs are optional at `passed`, so what such a rule waits for
         # there is a test marked with its own id.
-        lines.append(next_step('purlin:build', blocked['no_proof'],
-                               'has no test.', 'have no test.'))
-    elif blocked['no_proof']:
-        lines.append(next_step('purlin:spec', blocked['no_proof'],
-                               'has no proof line naming it.',
-                               'have no proof line naming them.'))
-    elif failing:
-        lines.append(next_step('purlin:build', failing,
-                               'has a failing test.', 'have a failing test.'))
-    elif partial:
-        lines.append(next_step(
-            'purlin:build', partial,
-            'is partial; its tests pass on one operating system and not on '
-            'another.',
-            'are partial; their tests pass on one operating system and not '
-            'on another.'))
-    elif no_test:
-        lines.append(next_step('purlin:build', no_test,
-                               'has a proof and no passing test.',
-                               'have a proof and no passing test.'))
-    elif waiting and trust == 'remote':
-        # This project said it does not trust this machine for the tests a
-        # signature rests on, so the run that clears these rules is the
-        # runner's. It is the only case in which a person is sent there.
-        lines.append(next_step(
-            'purlin:test --remote', waiting,
-            'is waiting for a run from the remote runner, which is what this '
-            'project signs on.',
-            'are waiting for a run from the remote runner, which is what '
-            'this project signs on.'))
-    elif waiting and gate != 'passed':
-        # Evidence either source wrote counts at every gate, so the shortest
-        # way to it is the audit on this machine, which runs the tests too.
-        lines.append(next_step(
-            'purlin:audit', waiting,
-            'has no current run to read, and an audit you run counts at gate '
-            '%s.' % gate,
-            'have no current run to read, and an audit you run counts at '
-            'gate %s.' % gate))
-    elif out_of_date:
-        lines.append(next_step('purlin:test', out_of_date, 'is out of date.',
-                               'are out of date.'))
-    elif not_run:
-        lines.append(next_step('purlin:test', not_run,
-                               'has no run to read.', 'have no run to read.'))
-    elif unaudited:
-        lines.append(next_step(
-            'purlin:audit', unaudited,
-            'has no audit, so nothing has measured how good its tests are.',
-            'have no audit, so nothing has measured how good their tests '
-            'are.'))
-    elif weak:
-        lines.append(next_step(
-            'purlin:build', weak,
-            'is weak; the strong cell names what it is short of.',
-            'are weak; the strong cell names what each one is short of.'))
-    elif person:
-        lines.append(next_step('purlin:sign', person,
-                               'is waiting for a person.',
-                               'are waiting for a person.'))
-    elif gate == 'signed' and incomplete_names(data):
+        return step('purlin:build', _said(blocked['no_proof'], 'has no test.',
+                                          'have no test.'))
+    if blocked['no_proof']:
+        return step('purlin:spec', _said(
+            blocked['no_proof'], 'has no proof line naming it.',
+            'have no proof line naming them.'))
+    if failing:
+        return step('purlin:build', _said(failing, 'has a failing test.',
+                                          'have a failing test.'))
+    if partial:
+        return step('purlin:build', _said(
+            partial, 'passes on one operating system and fails on another.',
+            'pass on one operating system and fail on another.'))
+    if no_test:
+        return step('purlin:build', _said(
+            no_test, 'has a proof and no passing test.',
+            'have a proof and no passing test.'))
+    if trust == 'remote' and (not_run or out_of_date or elsewhere):
+        # This project runs the tests its rules wait on through the runner.
+        return step('purlin:test --remote', _said(
+            not_run + out_of_date + elsewhere, 'has no current run.',
+            'have no current run.'))
+    if out_of_date:
+        return step('purlin:test', _said(out_of_date, 'is out of date.',
+                                         'are out of date.'))
+    if not_run:
+        return step('purlin:test', _said(not_run, 'has no run to read.',
+                                         'have no run to read.'))
+    if elsewhere:
+        systems = ' or '.join(sorted(blocked['systems']))
+        return step('purlin:test --remote', _said(
+            elsewhere, 'needs %s, which this machine is not.' % systems,
+            'need %s, which this machine is not.' % systems))
+    if unaudited:
+        return step('purlin:audit', _said(unaudited, 'is not audited.',
+                                          'are not audited.'))
+    if weak:
+        return step('purlin:build', _said(weak, 'is weak.', 'are weak.'))
+    if person:
+        return step('purlin:sign', _said(person, 'is waiting for a person.',
+                                         'are waiting for a person.'))
+    if gate == 'signed' and incomplete_names(data):
         # A signature needs a spec tied to its files, so what the rest of
         # the gate waits on is the `> Scope:` line.
-        name = incomplete_names(data)[0]
-        lines.append('%s Next: run purlin:spec %s. It names no files in '
-                     '> Scope:, so its rules cannot be signed.'
-                     % (ARROW, name))
-    else:
-        lines.append('%s Next: nothing is outstanding at gate %s.' % (ARROW, gate))
+        return ('%s Next: run purlin:spec %s. It names no files in > Scope:, '
+                'so its rules cannot be signed.'
+                % (ARROW, incomplete_names(data)[0]))
+    return '%s Next: nothing is outstanding at gate %s.' % (ARROW, gate)
 
+
+def _directives(data, project_root):
+    """The next step, computed from the blocking cell, plus anything to fix first."""
+    lines = []
+    if (any('purlin:init --update' in warning for warning in data['warnings'])
+            or _update_pending(project_root)):
+        lines.append('%s Run: purlin:init --update' % ARROW)
+    lines.append(next_step(data))
+    person = len(data.get('queue') or ())
     if person:
         lines.append('%s Queue: %s. Run purlin:sign.'
                      % (ARROW, board_module.needs_a_person(person)))
