@@ -447,21 +447,6 @@ class TestNobodyIsNamed:
             finally:
                 made.close()
 
-    @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
-    def test_rules_without_an_origin_tag_are_listed(self, project):
-        project.spec()
-        output = project.run('--gate', 'signed')
-        assert 'login RULE-1' in output
-        assert 'no origin tag' in output
-
-    @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
-    def test_a_tagged_rule_is_not_listed(self, project):
-        write(project.path('specs/core/login.md'),
-              SPEC.replace('and a password',
-                           'and a password [bar: strong] [origin: pm]'))
-        output = project.run('--gate', 'signed')
-        assert 'login RULE-1' not in output
-
     @pytest.mark.proof("scaffold", "PROOF-45", "RULE-45")
     def test_signed_asks_which_rules_need_a_signature(self):
         for answer, written in (('all', 'all'), ('strong', 'strong'),
@@ -1100,12 +1085,6 @@ class TestThePieces:
             assert scaffold_module.git_remote(made.root) is False
         finally:
             made.close()
-
-    @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
-    def test_untagged_rules_names_the_feature_and_the_rule(self, project):
-        project.spec()
-        assert scaffold_module.untagged_rules(project.root) == [
-            ('login', 'RULE-1')]
 
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")
     def test_the_source_paths_prefer_src(self, project):

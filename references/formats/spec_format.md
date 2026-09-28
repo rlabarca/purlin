@@ -1,4 +1,4 @@
-> Format-Version: 14
+> Format-Version: 15
 
 # Spec format
 
@@ -24,7 +24,7 @@ specs/<category>/<name>.md
 
 ## Rules
 
-- RULE-1: <Testable constraint> [bar: strong] [origin: pm] [criterion: US-12]
+- RULE-1: <Testable constraint> [bar: strong]
 - RULE-2: <Another testable constraint>
 
 ## Proof
@@ -75,7 +75,7 @@ ignored and the file is named once in the run's warnings.
 ## Rules format
 
 ```
-- RULE-N: <description> [bar: <level>] [origin: <role>] [criterion: <id>]
+- RULE-N: <description> [bar: <level>]
 ```
 
 Rule ids are assigned in increasing order and never reused. A retired rule
@@ -84,26 +84,20 @@ so a gap in the sequence is legal and the parser reports nothing for it.
 Renumbering would silently repoint every test marker and every signature that
 already names the old id. Unnumbered lines under `## Rules` are reported.
 
-### Rule tags
+### The rule tag
 
-Tags sit at the end of the line and are read off it, so the text that remains
-is the claim alone: reflowing the whitespace or changing the `origin` or
-`criterion` tag leaves the rule text hash the same. The bar is the exception,
-because it decides what evidence the rule must have: it is bound into a
+The one tag sits at the end of the line and is read off it, so the text that
+remains is the claim alone: reflowing the whitespace leaves the rule text hash
+the same. The bar decides what evidence the rule must have: it is bound into a
 signature, so a bar re-tag stales that signature.
 
 | Tag | Values | Default | Meaning |
 |-----|--------|---------|---------|
 | `[bar: ...]` | `passed`, `strong` | the project's gate: `passed` at the gate `passed`, `strong` at `strong` and at `signed` | The evidence the rule must have before it can be signed. A rule whose bar is `strong` is the one the AI audit runs on, and the one that needs a signature under `sign_at: strong` |
-| `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. Drift routes a change by origin |
-| `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 
-Under the `signed` gate, origin is required and a rule without it is
-reported. The bar is not: a rule that names none takes the project's gate,
-which is an answer rather than a gap.
-
-Tags are read from the end with `\s*\[(bar|origin|criterion):\s*([^\]]+)\]\s*$`,
-one at a time, in any order.
+A rule that names no bar takes the project's gate, which is an answer rather
+than a gap. Any other bracketed text at the end of the line is not a tag: it
+stays in the claim.
 
 ### Good rules
 

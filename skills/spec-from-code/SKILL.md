@@ -43,7 +43,7 @@ this skill writes specs and nothing can read them until the project is set up.
 
 ## What the rules look like
 
-Every rule this skill writes carries `[origin: eng]` and `[bar: passed]`:
+Every rule this skill writes carries `[bar: passed]`:
 
 ```markdown
 # Feature: rate_limit
@@ -53,8 +53,8 @@ Every rule this skill writes carries `[origin: eng]` and `[bar: passed]`:
 
 ## Rules
 
-- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [origin: eng] [bar: passed]
-- RULE-2: Include a Retry-After header on every 429 response [origin: eng] [bar: passed]
+- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [bar: passed]
+- RULE-2: Include a Retry-After header on every 429 response [bar: passed]
 
 ## Proof
 
@@ -62,10 +62,8 @@ Every rule this skill writes carries `[origin: eng]` and `[bar: passed]`:
 - PROOF-2 (RULE-2): Read the 429 response headers; verify Retry-After is present and is a positive integer
 ```
 
-`eng` is correct because you derived the rule, not a PM: `purlin:drift pm` then shows these as
-engineer-added rules rather than as requirements nobody asked for. `passed` is correct because
-nobody has judged yet whether the rule is worth an audit and a signature. Both are re-tagged
-later, in one pass; re-tagging `origin` never stales a signature, and re-tagging the bar does.
+`passed` is correct because nobody has judged yet whether the rule is worth an audit and a
+signature. The bar is re-tagged later, in one pass, and re-tagging it stales a signature.
 
 For the rule and proof grammar read `references/formats/spec_format.md`; for what makes a rule
 worth keeping read `references/spec_quality_guide.md`.
@@ -91,7 +89,6 @@ and note the behaviour in `> Description:`.
   module can see.
 - Do not copy an implementation into a rule. "Uses a Redis sorted set" is not a claim about
   the software's behaviour; "rejects the 61st request in a minute" is.
-- Do not tag anything `[origin: pm]`. No PM said any of this.
 - Do not write `[bar: strong]`. That judgment belongs to the people who own the product.
 - Do not write signatures or records. Those come from `purlin:audit` and `purlin:sign`.
 

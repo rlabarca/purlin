@@ -76,7 +76,6 @@
             }
           },
           "cleared": false,
-          "criterion": null,
           "feature": "login",
           "flags": {
             "code_changed": false,
@@ -91,7 +90,6 @@
           "id": "RULE-1",
           "label": "own",
           "meets_gate": false,
-          "origin": "pm",
           "proof_hash": "prule1log",
           "proofs": [
             {
@@ -140,7 +138,6 @@
             }
           },
           "cleared": true,
-          "criterion": null,
           "feature": "login",
           "flags": {
             "code_changed": false,
@@ -155,7 +152,6 @@
           "id": "RULE-2",
           "label": "own",
           "meets_gate": true,
-          "origin": "qa",
           "proof_hash": "prule2log",
           "proofs": [
             {
@@ -204,7 +200,6 @@
             }
           },
           "cleared": true,
-          "criterion": null,
           "feature": "login",
           "flags": {
             "code_changed": false,
@@ -219,7 +214,6 @@
           "id": "RULE-3",
           "label": "own",
           "meets_gate": true,
-          "origin": "eng",
           "proof_hash": "prule3log",
           "proofs": [
             {
@@ -324,7 +318,6 @@
             }
           },
           "cleared": false,
-          "criterion": null,
           "feature": "invoice",
           "flags": {
             "code_changed": false,
@@ -339,7 +332,6 @@
           "id": "RULE-1",
           "label": "own",
           "meets_gate": false,
-          "origin": "eng",
           "proof_hash": "prule1inv",
           "proofs": [
             {
@@ -390,7 +382,6 @@
             }
           },
           "cleared": false,
-          "criterion": null,
           "feature": "invoice",
           "flags": {
             "code_changed": false,
@@ -405,7 +396,6 @@
           "id": "RULE-2",
           "label": "own",
           "meets_gate": false,
-          "origin": "eng",
           "proof_hash": "prule2inv",
           "proofs": [
             {
@@ -507,7 +497,6 @@
             }
           },
           "cleared": true,
-          "criterion": "AC-14",
           "feature": "checkout_design",
           "flags": {
             "code_changed": false,
@@ -522,7 +511,6 @@
           "id": "RULE-1",
           "label": "own",
           "meets_gate": true,
-          "origin": "design",
           "proof_hash": "prule1che",
           "proofs": [
             {

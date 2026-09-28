@@ -11,17 +11,17 @@
 
 ## Rules
 
-- RULE-1: A spec carries two sections, `## Rules` and `## Proof`, and the format names no third; a spec carrying a heading the format does not name still parses, its rules are still read, and nothing is reported about the extra heading [bar: strong] [origin: eng]
-- RULE-2: Rule ids read `RULE-N`, are assigned in increasing order and are never reused, so a retired rule leaves its number vacant and a gap in the sequence is reported as nothing; a line under `## Rules` carrying no id is reported as a warning saying it is not numbered [bar: strong] [origin: eng]
-- RULE-3: A proof line reads `PROOF-N (RULE-N)`, and names several rules as `PROOF-N (RULE-A, RULE-B)` when one flow drives all of them [bar: strong] [origin: eng]
-- RULE-4: A rule that no proof line names has the spec status `drafted` and carries an empty proof list, so a spec cannot claim evidence it does not have [bar: strong] [origin: eng]
-- RULE-5: `> Requires:` is a comma-separated list of spec names whose rules are counted with this spec's own and carry the label `required` [bar: strong] [origin: eng]
-- RULE-6: `> Scope:` is a comma-separated list of file paths, parsed into a list in the order written, because a record hashes exactly those files to tell a code change from a rule change [bar: strong] [origin: eng]
-- RULE-7: A first-level heading reads `# Feature: <name>` for a feature spec and `# Anchor: <name>` for an anchor [bar: passed] [origin: eng]
-- RULE-8: `> Description:` takes continuation lines that begin with `>` and are not themselves a `> Field:` line, so the next field's value never reaches the description [bar: passed] [origin: eng]
-- RULE-9: A proof line carries at most one `@manual` tag and at most one `@env` tag, in either order, read off the end of the line; any other trailing at-word is not a tag and stops the reading, and a tag that follows a list connector (a comma, `and`, `or`) is not a tag either, so a description whose prose ends in an at-word is left whole [bar: strong] [origin: eng]
-- RULE-10: `@env` takes `windows`, `macos` or `linux` and nothing else; any other value, and any tag this release stopped reading, is returned in the unknown list and sets no environment, so a proof is never treated as owned by an operating system the release cannot name [bar: strong] [origin: eng]
-- RULE-11: `> Note:` is free text addressed to whoever reads the spec; the parser ignores it, it never reaches the description or displaces `> Source:`, and a spec may carry more than one [bar: passed] [origin: eng]
+- RULE-1: A spec carries two sections, `## Rules` and `## Proof`, and the format names no third; a spec carrying a heading the format does not name still parses, its rules are still read, and nothing is reported about the extra heading [bar: strong]
+- RULE-2: Rule ids read `RULE-N`, are assigned in increasing order and are never reused, so a retired rule leaves its number vacant and a gap in the sequence is reported as nothing; a line under `## Rules` carrying no id is reported as a warning saying it is not numbered [bar: strong]
+- RULE-3: A proof line reads `PROOF-N (RULE-N)`, and names several rules as `PROOF-N (RULE-A, RULE-B)` when one flow drives all of them [bar: strong]
+- RULE-4: A rule that no proof line names has the spec status `drafted` and carries an empty proof list, so a spec cannot claim evidence it does not have [bar: strong]
+- RULE-5: `> Requires:` is a comma-separated list of spec names whose rules are counted with this spec's own and carry the label `required` [bar: strong]
+- RULE-6: `> Scope:` is a comma-separated list of file paths, parsed into a list in the order written, because a record hashes exactly those files to tell a code change from a rule change [bar: strong]
+- RULE-7: A first-level heading reads `# Feature: <name>` for a feature spec and `# Anchor: <name>` for an anchor [bar: passed]
+- RULE-8: `> Description:` takes continuation lines that begin with `>` and are not themselves a `> Field:` line, so the next field's value never reaches the description [bar: passed]
+- RULE-9: A proof line carries at most one `@manual` tag and at most one `@env` tag, in either order, read off the end of the line; any other trailing at-word is not a tag and stops the reading, and a tag that follows a list connector (a comma, `and`, `or`) is not a tag either, so a description whose prose ends in an at-word is left whole [bar: strong]
+- RULE-10: `@env` takes `windows`, `macos` or `linux` and nothing else; any other value, and any tag this release stopped reading, is returned in the unknown list and sets no environment, so a proof is never treated as owned by an operating system the release cannot name [bar: strong]
+- RULE-11: `> Note:` is free text addressed to whoever reads the spec; the parser ignores it, it never reaches the description or displaces `> Source:`, and a spec may carry more than one [bar: passed]
 
 ## Proof
 

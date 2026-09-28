@@ -142,20 +142,18 @@ counts.
 ## One sprint, traced
 
 **The PM opens the work.** The PM needs no checkout. With Claude Code on the repository, they
-describe the feature; the agent drafts a spec, tags
-its rules `origin: pm`, and opens a pull request. Without an assistant, the PM writes the
-criteria anywhere and hands them over; the engineer's agent runs `purlin:spec` and the PM
-reviews that pull request instead. Either way the rules land in `specs/` by pull request.
+describe the feature; the agent drafts a spec and opens a pull request. Without an assistant,
+the PM writes the criteria anywhere and hands them over; the engineer's agent runs
+`purlin:spec` and the PM reviews that pull request instead. Either way the rules land in `specs/` by pull request.
 
 **The designer hands over the mocks.** They export from whatever tool they use and hand the
 files to `purlin:spec`, which reads the images and drafts rules about what a person would see.
 
 **The engineer builds.** `purlin:drift eng` at the start of the session says what moved:
-files touched and the rules behind them, rules with no test, tags the gate wants, anchor pins
-behind their source. Then `purlin:anchor sync` if a pin is behind, `purlin:spec` if a rule is
+files touched and the rules behind them, rules with no test, anchor pins behind their
+source. Then `purlin:anchor sync` if a pin is behind, `purlin:spec` if a rule is
 wrong, `purlin:build`, `purlin:test` while working, and `purlin:audit` before pushing, which
-is what writes the record the strong cell reads. Rules the engineer adds are tagged
-`origin: eng`, and the PM sees them in `purlin:drift pm` as derived.
+is what writes the record the strong cell reads.
 
 **The audit proves it.** `purlin:audit` runs the tests, the breaks, and the AI audit on every
 rule whose bar is `strong`. It writes one record per feature and one brief per rule it reached,

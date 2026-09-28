@@ -67,8 +67,8 @@ SPEC = (
     '> Description: Signing in with an email and a password.\n'
     '> Scope: src/login.py\n\n'
     '## Rules\n\n'
-    '- RULE-1: Valid credentials return 200 with a session token [bar: strong] '
-    '[origin: pm] [criterion: US-12]\n'
+    '- RULE-1: Valid credentials return 200 with a session token '
+    '[bar: strong]\n'
     '- RULE-2: Invalid credentials return 401 and the body "denied"\n\n'
     '## Proof\n\n'
     '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200 and a '
@@ -277,19 +277,16 @@ class TestSpecParsing:
         info = purlin_specs.scan_specs(project.root)['login']
         assert info['rules']['RULE-1'] == (
             'Valid credentials return 200 with a session token'), info['rules']
-        assert info['rule_meta']['RULE-1'] == {
-            'bar': 'strong', 'origin': 'pm', 'criterion': 'US-12'}
-        # The defaults, for a rule that names none of them.
-        assert info['rule_meta']['RULE-2'] == {'origin': 'eng'}
+        assert info['rule_meta']['RULE-1'] == {'bar': 'strong'}
+        # A rule that names no tag carries no metadata at all.
+        assert info['rule_meta']['RULE-2'] == {}
 
     @pytest.mark.proof("specs", "PROOF-2", "RULE-1")
-    def test_tag_order_does_not_matter(self):
-        first, meta = purlin_specs.split_rule_tags(
-            'Tokens expire [origin: qa] [bar: strong]')
-        second, other = purlin_specs.split_rule_tags(
-            'Tokens expire [bar: strong] [origin: qa]')
-        assert first == second == 'Tokens expire'
-        assert meta == other == {'bar': 'strong', 'origin': 'qa'}
+    def test_bracketed_text_that_is_not_a_tag_stays_in_the_claim(self):
+        text, meta = purlin_specs.split_rule_tags(
+            'Tokens expire [owner: qa] [bar: strong]')
+        assert text == 'Tokens expire [owner: qa]'
+        assert meta == {'bar': 'strong'}
 
     @pytest.mark.proof("specs", "PROOF-4", "RULE-3")
     def test_the_hash_ignores_the_tags_and_the_whitespace(self):
@@ -1375,8 +1372,8 @@ class TestPayload:
         assert feature['category'] == 'auth'
         assert feature['signatures'] == []
         rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')
-        assert (rule['bar'], rule['bar_from'], rule['origin'],
-                rule['criterion']) == ('strong', 'tag', 'pm', 'US-12')
+        assert (rule['bar'], rule['bar_from']) == ('strong', 'tag')
+        assert 'origin' not in rule and 'criterion' not in rule
         assert rule['proofs'][0]['manual'] is False
         assert rule['proofs'][0]['env'] is None
 

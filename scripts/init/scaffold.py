@@ -219,24 +219,6 @@ def plugin_files(plugin_root):
     return rows
 
 
-def untagged_rules(root):
-    """`[(feature, RULE-N)]` for every rule that names no origin.
-
-    Read off the rule line: in the parsed metadata an untagged rule and one
-    tagged `eng` are the same thing. The bar is not read here, because a rule
-    that names none takes the project's gate and is tagged by that.
-    """
-    found = []
-    for path in specs_module.spec_files(root):
-        name = os.path.splitext(os.path.basename(path))[0]
-        section = specs_module.extract_section(_read(path), '## Rules') or ''
-        for line in section.splitlines():
-            line = line.strip()
-            if line.startswith('- RULE-') and '[origin:' not in line:
-                found.append((name, line[2:].split(':', 1)[0]))
-    return found
-
-
 def _is_test_file(name):
     return name.endswith('.py') and (name.startswith('test_')
                                      or name.endswith('_test.py'))
@@ -627,18 +609,12 @@ def signing_setup():
 
 
 def print_signed(root):
-    """What `signed` needs beyond the config: signed commits, and the origin."""
+    """What `signed` needs beyond the config: signed commits."""
     print('')
     print('Each signer runs this once, then uploads the public key to the git '
           'host:')
     for command in signing_setup():
         print('  %s' % command)
-    untagged = untagged_rules(root)
-    if untagged:
-        print('%s %d rules carry no origin tag, and signed requires one. Run '
-              'purlin:spec to tag them:' % (ARROW, len(untagged)))
-        for feature, rule in untagged[:20]:
-            print('  %s %s' % (feature, rule))
 
 
 def main(argv=None):

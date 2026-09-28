@@ -9,16 +9,16 @@
 
 ## Rules
 
-- RULE-1: The project root is the `PURLIN_PROJECT_ROOT` environment variable when it names a directory that exists [bar: strong] [origin: eng]
-- RULE-2: Failing that, the root is found by climbing from the start directory to the nearest ancestor holding a `.purlin/` marker directory [bar: strong] [origin: eng]
-- RULE-3: Failing both, the root is the working directory [bar: strong] [origin: eng]
-- RULE-4: The config is `.purlin/config.json` read whole, the one settings file a project has [bar: strong] [origin: eng]
-- RULE-5: The command line prints the whole config as JSON with `--dump` and one key's value with `--key <name>` [bar: strong] [origin: eng]
-- RULE-7: With no `config.json` on disk the config is empty [bar: strong] [origin: eng]
-- RULE-8: A write sets one top-level key in `.purlin/config.json`, the committed file, creating it when it is absent [bar: strong] [origin: eng]
-- RULE-9: A write preserves every other key `config.json` already held [bar: strong] [origin: eng]
-- RULE-10: A write is atomic: the whole file is written beside the target and then moved onto it, so an interrupted write leaves the previous contents and no temporary file behind [bar: strong] [origin: eng]
-- RULE-13: `resolve_project_root` returns the root together with the name of how it was found, and is the one implementation of the precedence RULE-1 to RULE-3 describe: the three names are `env`, `climb` and `cwd`, each mapped to the sentence a report prints for it, so the last case is named as the guess it is rather than handed back as a path indistinguishable from a marker that was found. `find_project_root` is the same answer with the name dropped, and nothing recomputes the precedence for itself [bar: strong] [origin: eng]
+- RULE-1: The project root is the `PURLIN_PROJECT_ROOT` environment variable when it names a directory that exists [bar: strong]
+- RULE-2: Failing that, the root is found by climbing from the start directory to the nearest ancestor holding a `.purlin/` marker directory [bar: strong]
+- RULE-3: Failing both, the root is the working directory [bar: strong]
+- RULE-4: The config is `.purlin/config.json` read whole, the one settings file a project has [bar: strong]
+- RULE-5: The command line prints the whole config as JSON with `--dump` and one key's value with `--key <name>` [bar: strong]
+- RULE-7: With no `config.json` on disk the config is empty [bar: strong]
+- RULE-8: A write sets one top-level key in `.purlin/config.json`, the committed file, creating it when it is absent [bar: strong]
+- RULE-9: A write preserves every other key `config.json` already held [bar: strong]
+- RULE-10: A write is atomic: the whole file is written beside the target and then moved onto it, so an interrupted write leaves the previous contents and no temporary file behind [bar: strong]
+- RULE-13: `resolve_project_root` returns the root together with the name of how it was found, and is the one implementation of the precedence RULE-1 to RULE-3 describe: the three names are `env`, `climb` and `cwd`, each mapped to the sentence a report prints for it, so the last case is named as the guess it is rather than handed back as a path indistinguishable from a marker that was found. `find_project_root` is the same answer with the name dropped, and nothing recomputes the precedence for itself [bar: strong]
 
 ## Proof
 

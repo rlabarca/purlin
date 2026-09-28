@@ -154,11 +154,11 @@ and the tile or the cell it mirrors state the same number before anything is pre
 
 Pressing a rule opens it.
 
-![The rule screen for login RULE-1: the spec status and the three cell rows with the bar, origin, spec, last run and signature file, then the brief panel, the sign panel and the proofs](images/dashboard-rule.png)
+![The rule screen for login RULE-1: the spec status and the three cell rows with the bar, spec, last run and signature file, then the brief panel, the sign panel and the proofs](images/dashboard-rule.png)
 
 The screen opens with the feature, the rule id and the rule's text, then one panel of facts:
 the spec status, `ready` or `drafted`, then one row per cell that exists, then the bar at
-`strong` and above, the origin, the spec's path, the last run and the signature files that bind
+`strong` and above, the spec's path, the last run and the signature files that bind
 the rule. The bar row reads `strong from the tag` or `strong from the gate`, so you can see at
 once whether the rule asked for that bar itself or took the project's. Each cell row carries
 the cell's word as a pill and the reasons it carries:

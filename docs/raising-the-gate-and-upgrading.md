@@ -52,8 +52,7 @@ audit writes one record per feature and the briefs beside them, and commits them
 **To `signed`.** On top of that: the commit-signing setup printed once, for each person who
 signs; the question `Which rules need a signature?`, whose answers are `strong`, the
 rules whose bar is strong and the rest meeting the gate on their tests, and `all`, every rule
-whatever its bar; and a list of every rule that still carries no origin tag, which
-`purlin:spec <feature>` tags in one pass. From here `purlin:sign` closes its walk by writing
+whatever its bar. From here `purlin:sign` closes its walk by writing
 the tag `signed/<version>` whenever every rule meets the gate.
 
 The derived defaults move too: `min_strength` becomes 80, and `sign_at` takes the answer you

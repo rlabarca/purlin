@@ -38,7 +38,7 @@ skill says so when it hands the result over.
 
 ## What it writes
 
-Every rule carries `[origin: eng]` and `[bar: passed]`:
+Every rule carries `[bar: passed]`:
 
 ```markdown
 # Feature: rate_limit
@@ -48,8 +48,8 @@ Every rule carries `[origin: eng]` and `[bar: passed]`:
 
 ## Rules
 
-- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [origin: eng] [bar: passed]
-- RULE-2: Include a Retry-After header on every 429 response [origin: eng] [bar: passed]
+- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [bar: passed]
+- RULE-2: Include a Retry-After header on every 429 response [bar: passed]
 
 ## Proof
 
@@ -57,10 +57,8 @@ Every rule carries `[origin: eng]` and `[bar: passed]`:
 - PROOF-2 (RULE-2): Read the 429 response headers; verify Retry-After is present and is a positive integer
 ```
 
-`eng` is correct because an engineer derived the rule and no PM asked for it: `purlin:drift
-pm` then shows these as engineer-added rather than as requirements out of nowhere. `passed`
-is correct because nobody has judged yet whether the rule is worth an audit and a signature. Both are re-tagged later,
-in one pass, and re-tagging `origin` or `criterion` never stales a signature, though re-tagging the bar does.
+`passed` is correct because nobody has judged yet whether the rule is worth an audit and a
+signature. The bar is re-tagged later, in one pass, and re-tagging it stales a signature.
 
 Where a test already exercises the behaviour, the proof says so, and `purlin:build` adds the
 marker to that test instead of writing a new one:
@@ -77,7 +75,6 @@ and `purlin:build` writes the test on the next pass.
 - No rule for a private helper. Rules describe behaviour someone outside the module can see.
 - No implementation in a rule. "Uses a sorted set in the cache" is not a claim about
   behaviour; "rejects the 61st request in a minute" is.
-- Nothing tagged `[origin: pm]`. No PM said any of this.
 - No bar above `passed`. That judgment belongs to the people who own the product.
 - No test results, no records and no signatures. Those come from `purlin:test`, `purlin:audit` and `purlin:sign`.
 - No rule for behaviour that could not be stated as an observable. The behaviour is noted in
@@ -93,8 +90,8 @@ The skill names the next step from what it found:
 | Rules with no test at all | `purlin:build <name>` on the feature with the most of them |
 | Everything drafted, and the team wants the paper trail | `purlin:init --gate strong` |
 
-Then read the drafts. Retag the bar and the origin of anything a PM or a designer actually
-owns, and delete the rules that turned out to describe a bug.
+Then read the drafts. Retag the bar of anything a PM or a designer actually asked for, and
+delete the rules that turned out to describe a bug.
 
 ## Next
 

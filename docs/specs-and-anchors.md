@@ -27,9 +27,9 @@ specs/<category>/<name>.md
 
 ## Rules
 
-- RULE-1: Return 200 and a session cookie for a correct email and password [bar: strong] [origin: pm] [criterion: US-12]
-- RULE-2: Return 401 for a wrong password [bar: strong] [origin: pm]
-- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [bar: strong] [origin: pm]
+- RULE-1: Return 200 and a session cookie for a correct email and password [bar: strong]
+- RULE-2: Return 401 for a wrong password [bar: strong]
+- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [bar: strong]
 
 ## Proof
 
@@ -71,19 +71,17 @@ every file under `src/api/` without listing them.
 One claim per line, in the present tense, saying what the software does rather than how.
 
 ```
-- RULE-N: <claim> [bar: <level>] [origin: <role>] [criterion: <id>]
+- RULE-N: <claim> [bar: <level>]
 ```
 
-Tags sit at the end of the line and are read off it, so the text that remains is the claim
-alone. Re-tagging `origin` or `criterion` never stales a signature, so add a missing one freely; the bar is bound into a signature, so re-tagging that one does stale it.
+The one tag sits at the end of the line and is read off it, so the text that remains is the
+claim alone. The bar is bound into a signature, so re-tagging it stales that signature.
 
 | Tag | Values | Default | What it decides |
 |-----|--------|---------|-----------------|
 | `[bar: ...]` | `passed`, `strong` | the project's gate | The evidence the rule must have before it can be signed. A bar of `strong` is also what turns the AI audit on for that rule, and under `signed` with `sign_at: strong` what asks for a signature |
-| `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. `purlin:drift` routes a change by it |
-| `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 
-Under the `signed` gate an origin is required and an untagged rule is reported. A bar tag is never required: a rule without one takes the project's gate, and at the `passed` gate `purlin:spec` writes none at all, because the bar is not read there.
+A bar tag is never required: a rule without one takes the project's gate, and at the `passed` gate `purlin:spec` writes none at all, because the bar is not read there.
 
 Ids are assigned in increasing order and never reused. A retired rule leaves its number
 vacant and every other rule keeps the number it had; a gap in the sequence is legal and

@@ -89,9 +89,6 @@ in the shipped prose where a retired spelling may still be written.
 - **`sign_at`**: which rules need a signature at the gate `signed`. `strong`, the default,
   asks for one on every rule whose bar is `strong`; `all` asks for one on every rule.
   `purlin:init` sets it.
-- **origin**: tag on every rule naming its owner: `pm`, `design`, `qa`, `eng`. Default `eng`;
-  required under `signed`. Drift routes changes by origin.
-- **criterion**: optional tag linking a rule to an upstream acceptance-criterion id.
 - **rollup**: rules meeting the gate out of rules total, plus one count per bucket.
 - **anchor**: a spec for something shared across features. **local anchor**: in the project.
   **anchor repo**: an optional separate repository holding anchors for one or more projects. **pinned anchor**: the project's local copy of an anchor from an anchor repo,

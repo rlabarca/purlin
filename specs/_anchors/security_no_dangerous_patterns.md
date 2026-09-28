@@ -16,12 +16,12 @@
 
 ## Rules
 
-- RULE-1: No file under `scripts/` executes a string as code or as a command line, in the form its language spells it: `eval(` and `exec(` in Python; `eval` and backtick substitution in shell; `eval(`, `new Function(`, `execSync(` and `child_process.exec(` in JS and TS; `eval(`, `exec(`, `shell_exec(`, `system(`, `passthru(` and backticks in PHP; `Process.Start(` given a command string in C# [bar: strong] [origin: eng]
-- RULE-2: No file under `scripts/` opts a subprocess into a shell: no `shell=True` in Python, no `shell: true` in JS or TS, no `UseShellExecute = true` in C# [bar: strong] [origin: eng]
-- RULE-3: No file under `scripts/` calls the builtin that hands a whole command line to the operating system shell: no `os.system(` in Python, no `system(` or `passthru(` in PHP [bar: strong] [origin: eng]
-- RULE-4: No file under `scripts/` assigns a credential literal: no quoted value assigned to a name containing `password`, `secret`, `api_key` or `token`, in any casing, outside a test file [bar: strong] [origin: eng]
-- RULE-5: Every subprocess launch passes an argument vector rather than a command string: a list in Python, an array in PHP `proc_open`, an args array for JS and TS `spawn` and `execFile`, and `ArgumentList` rather than an `Arguments` string in C# [bar: strong] [origin: eng]
-- RULE-6: No repository-supplied string reaches git in option position: `--end-of-options` precedes every revision argument, `--` precedes every path argument, and a `> Source:` value that begins with `-` or names an `ext::` or `fd::` transport is refused before any subprocess starts, with the status line saying which [bar: strong] [origin: eng]
+- RULE-1: No file under `scripts/` executes a string as code or as a command line, in the form its language spells it: `eval(` and `exec(` in Python; `eval` and backtick substitution in shell; `eval(`, `new Function(`, `execSync(` and `child_process.exec(` in JS and TS; `eval(`, `exec(`, `shell_exec(`, `system(`, `passthru(` and backticks in PHP; `Process.Start(` given a command string in C# [bar: strong]
+- RULE-2: No file under `scripts/` opts a subprocess into a shell: no `shell=True` in Python, no `shell: true` in JS or TS, no `UseShellExecute = true` in C# [bar: strong]
+- RULE-3: No file under `scripts/` calls the builtin that hands a whole command line to the operating system shell: no `os.system(` in Python, no `system(` or `passthru(` in PHP [bar: strong]
+- RULE-4: No file under `scripts/` assigns a credential literal: no quoted value assigned to a name containing `password`, `secret`, `api_key` or `token`, in any casing, outside a test file [bar: strong]
+- RULE-5: Every subprocess launch passes an argument vector rather than a command string: a list in Python, an array in PHP `proc_open`, an args array for JS and TS `spawn` and `execFile`, and `ArgumentList` rather than an `Arguments` string in C# [bar: strong]
+- RULE-6: No repository-supplied string reaches git in option position: `--end-of-options` precedes every revision argument, `--` precedes every path argument, and a `> Source:` value that begins with `-` or names an `ext::` or `fd::` transport is refused before any subprocess starts, with the status line saying which [bar: strong]
 
 ## Proof
 

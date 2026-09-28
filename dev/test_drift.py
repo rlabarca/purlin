@@ -663,8 +663,8 @@ class TestDriftRuleDetails:
             'RULE-1', 'RULE-2', 'RULE-3', 'RULE-4'], ledger['rules']
         assert len(ledger['rules']) == 4, ledger['rules']
         for rule in ledger['rules']:
-            assert set(rule) == {'rule_id', 'description', 'bucket', 'bar',
-                                 'origin'}, sorted(rule)
+            assert set(rule) == {'rule_id', 'description', 'bucket',
+                                 'bar'}, sorted(rule)
 
         # The long description is cut on a word boundary and says it was cut;
         # the short ones come back whole.

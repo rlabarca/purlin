@@ -280,13 +280,10 @@ def spec_from_code_tag_problems():
     if not examples:
         problems.append('%s shows no example rule' % rel)
     for line in examples:
-        for tag in ('[origin: eng]', '[bar: passed]'):
-            if tag not in line:
-                problems.append('%s example rule carries no %s: %s'
-                                % (rel, tag, line))
-    problems.extend(carries(rel, [
-        'Do not tag anything `[origin: pm]`',
-        'Do not write `[bar: strong]`']))
+        if '[bar: passed]' not in line:
+            problems.append('%s example rule carries no [bar: passed]: %s'
+                            % (rel, line))
+    problems.extend(carries(rel, ['Do not write `[bar: strong]`']))
     return problems
 
 
@@ -673,7 +670,7 @@ class TestPurlinAgent:
         assert core_loop_problems() == []
 
     @pytest.mark.proof("purlin_agent", "PROOF-3", "RULE-3")
-    def test_there_are_five_nevers(self):
+    def test_there_are_four_nevers(self):
         assert never_problems() == []
 
     @pytest.mark.proof("purlin_agent", "PROOF-4", "RULE-4")
@@ -749,10 +746,10 @@ def never_problems():
         return ['%s has no section of NEVERs' % AGENT]
     items = re.findall(r'^\d+\. ', body, re.M)
     problems = []
-    if len(items) != 5:
-        problems.append('%s carries %d NEVERs, expected 5' % (AGENT, len(items)))
+    if len(items) != 4:
+        problems.append('%s carries %d NEVERs, expected 4' % (AGENT, len(items)))
     flattened = flat(body)
-    for needle in ('origin', 'proof file', 'record', 'signature',
+    for needle in ('proof file', 'record', 'signature',
                    "sign on a person's behalf", 'Never push',
                    'pull request', 'remote branch', 'purlin:test --remote',
                    'retired term'):

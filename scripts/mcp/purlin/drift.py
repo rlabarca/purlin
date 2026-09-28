@@ -8,13 +8,12 @@ about the cells, the signatures and the pins.
 Three role views come out of the same data, because three people ask
 different questions of it:
 
-`pm`      acceptance criteria with no rule, pm-owned rules that changed,
-          rules an engineer added, pins behind their source
+`pm`      pins behind their source
 `qa`      signatures gone stale, how long the Review and Sign lists are, the
           rules whose strong cell reads `manual test` or `unsettled`, rules no
           proof of which names a rejection or a boundary
-`eng`     files touched and the rules they affect, rules with no test, rules
-          with no bar or origin tag, pins behind, rules whose code changed
+`eng`     files touched and the rules they affect, rules with no test, pins
+          behind, rules whose code changed
 """
 
 import json
@@ -410,8 +409,7 @@ def compute_drift(project_root, since=None, network=True, data=None):
             'unproved': [r['id'] for r in feature['rules']
                          if r['spec'] == states.DRAFTED],
             'rules': [{'rule_id': r['id'], 'description': _cap(r['text']),
-                       'bucket': r['bucket'], 'bar': r['bar'],
-                       'origin': r['origin']}
+                       'bucket': r['bucket'], 'bar': r['bar']}
                       for r in feature['rules'] if r['label'] == 'own'],
         }
 
@@ -435,23 +433,9 @@ def _role_views(report, data, file_entries):
     rules = [(feature, rule) for feature in data.get('features', [])
              for rule in feature.get('rules', []) if rule['label'] == 'own']
 
-    changed_specs = {e['spec'] for e in file_entries
-                     if e['category'] == 'CHANGED_SPECS' and e.get('spec')}
     pins_behind = [p for p in report['pins'] if p['status'] != 'current']
 
     pm = {
-        'criteria_without_rules': sorted(
-            {rule['criterion'] for _f, rule in rules if rule.get('criterion')}
-            - {rule['criterion'] for _f, rule in rules
-               if rule.get('criterion') and rule['proofs']}),
-        'pm_rules_changed': ['%s/%s' % (feature['name'], rule['id'])
-                             for feature, rule in rules
-                             if rule['origin'] == 'pm'
-                             and feature['name'] in changed_specs],
-        'engineer_added_rules': ['%s/%s' % (feature['name'], rule['id'])
-                                 for feature, rule in rules
-                                 if rule['origin'] == 'eng'
-                                 and feature['name'] in changed_specs],
         'pins_behind': pins_behind,
     }
     qa = {
@@ -478,10 +462,6 @@ def _role_views(report, data, file_entries):
         'tests_missing': ['%s/%s' % (feature['name'], rule['id'])
                           for feature, rule in rules
                           if not any(p['tests'] for p in rule['proofs'])],
-        'tags_missing': ['%s/%s' % (feature['name'], rule['id'])
-                         for feature, rule in rules
-                         if rule['bar_from'] == 'gate'
-                         and rule['origin'] == specs_module.DEFAULT_ORIGIN],
         'pins_behind': pins_behind,
         'code_changed': ['%s/%s' % (feature['name'], rule['id'])
                          for feature, rule in rules

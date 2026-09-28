@@ -64,9 +64,6 @@ and not a build problem. Call `purlin:spec <name>`, fix the rule text in place, 
 and come back. Changing rule text stales any signature bound to that rule, which is correct: a
 person has to look again.
 
-A rule tagged `[origin: pm]`, `[origin: design]` or `[origin: qa]` is not yours to change.
-Leave it, build against it as written, and put the proposal in the pull request.
-
 ## Running them
 
 ```bash

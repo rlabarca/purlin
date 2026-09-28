@@ -8,11 +8,11 @@
 
 ## Rules
 
-- RULE-1: `skills/build/SKILL.md` opens with a frontmatter block whose `name` is `build` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:build` [bar: strong] [origin: eng]
-- RULE-2: The skill chooses what to build from `sync_status` and runs the tests through `purlin:test`, never through the test framework directly [bar: strong] [origin: eng]
-- RULE-3: The last section of `skills/build/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong] [origin: eng]
-- RULE-4: The whole of `skills/build/SKILL.md` is at most 130 lines [bar: passed] [origin: eng]
-- RULE-5: The commit the skill makes carries the `feat(<name>):` subject prefix and a body whose Changeset section maps every rule the build addressed as `RULE-N → file:line`, with Decisions and Review omitted when they are empty and Changeset never omitted, as `references/commit_conventions.md` renders it [bar: strong] [origin: eng]
+- RULE-1: `skills/build/SKILL.md` opens with a frontmatter block whose `name` is `build` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:build` [bar: strong]
+- RULE-2: The skill chooses what to build from `sync_status` and runs the tests through `purlin:test`, never through the test framework directly [bar: strong]
+- RULE-3: The last section of `skills/build/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong]
+- RULE-4: The whole of `skills/build/SKILL.md` is at most 130 lines [bar: passed]
+- RULE-5: The commit the skill makes carries the `feat(<name>):` subject prefix and a body whose Changeset section maps every rule the build addressed as `RULE-N → file:line`, with Decisions and Review omitted when they are empty and Changeset never omitted, as `references/commit_conventions.md` renders it [bar: strong]
 
 ## Proof
 

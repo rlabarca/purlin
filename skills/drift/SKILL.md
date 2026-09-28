@@ -17,8 +17,8 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 
 ```
 purlin:drift                    The view for your role, inferred from what you touched
-purlin:drift eng                Files touched, tests missing, tags missing, pins, code changed
-purlin:drift pm                 Criteria, pm-owned rules, rules engineers added, pins
+purlin:drift eng                Files touched, tests missing, pins, code changed
+purlin:drift pm                 Anchor pins behind their source
 purlin:drift qa                 Signatures stale, how long Review and Sign are, rules needing a person
 purlin:drift --since <N>        The last N commits instead of since the last record
 purlin:drift --since <date>     Since a date, YYYY-MM-DD
@@ -74,7 +74,6 @@ drift eng: 14 files since the last record (a1b2c3d)
   src/auth/login.js          RULE-2, RULE-5 behind this change
   src/auth/mfa.js            no spec covers this file
   login RULE-7               no test carries PROOF-7
-  billing RULE-3             no origin tag; the gate needs one
   design_tokens (anchor)     pinned 4 commits behind
   export                     code changed: the code moved, the signatures stand
 ```
@@ -82,11 +81,8 @@ drift eng: 14 files since the last record (a1b2c3d)
 **pm.** What happened to what you asked for.
 
 ```
-drift pm: 3 things to look at
+drift pm: 1 thing to look at
 
-  criterion ACC-14           no rule carries it
-  login RULE-3 (origin: pm)  text changed on this branch; signature stale
-  login RULE-9               added by an engineer, origin: eng, derived from RULE-3
   design_tokens (anchor)     pinned 4 commits behind its source
 ```
 
@@ -113,7 +109,6 @@ line rather than listing those rules one by one.
 | A file no spec covers | `→ Run: purlin:spec-from-code <path>` |
 | A rule behind a changed file | `→ Run: purlin:spec <feature>` |
 | A rule with no test | `→ Run: purlin:build <feature>` |
-| An origin tag missing under a gate that needs it | `→ Run: purlin:spec <feature>` |
 | An anchor pin behind | `→ Run: purlin:anchor sync <name>` |
 | Rules waiting on a person | `→ Run: purlin:sign` |
 | Only `code changed` | `→ Next: run purlin:test; the next run clears it.` |

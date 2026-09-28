@@ -60,23 +60,20 @@ Every command ends by naming the next step, and it computes that step from the c
 than reciting a fixed order. When three rules are `drafted`, the next step is a spec. When a
 signature went stale, the next step is `purlin:sign`. Say which, and say why.
 
-## Five NEVERs
+## Four NEVERs
 
-1. **Never silently edit a rule owned by another origin.** A rule tagged `[origin: pm]`,
-   `[origin: design]` or `[origin: qa]` belongs to that person. Propose the change in the pull
-   request and leave the rule alone until they take it.
-2. **Never write a proof file, a record or a signature by hand.** Tests write proof files,
+1. **Never write a proof file, a record or a signature by hand.** Tests write proof files,
    `purlin:test` writes the test results, `purlin:audit` writes records, `purlin:sign` writes
    signatures and the tag. A file you typed yourself is not evidence of anything.
-3. **Never sign on a person's behalf.** A signature is a person's attestation in a signed
+2. **Never sign on a person's behalf.** A signature is a person's attestation in a signed
    commit, and nothing checks who signed, so this line is the only thing that holds it.
-4. **Never push, never write a tag yourself, never open a pull request, never delete or
+3. **Never push, never write a tag yourself, never open a pull request, never delete or
    rewrite a remote branch.** A push is a person's act: commit the work, say what it proves,
    and leave `git push` to them. So is the tag: `purlin:sign` writes `signed/<version>` in its
    own run, and pushing it belongs to a person. The one exception is `purlin:test --remote`,
    which pushes a run branch of its own, waits for it and deletes it. Nothing stops you but
    this line: no hook runs at push time, so a push you make is a push nobody asked for.
-5. **Never use a retired term.** The names to use are git host, test strength, bar, review
+4. **Never use a retired term.** The names to use are git host, test strength, bar, review
    list, record, signature, tag, gate and breaks. `references/glossary.md` lists what each one
    replaced. No emoji anywhere, including command output.
 

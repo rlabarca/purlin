@@ -4,33 +4,28 @@ For a team where more than one person decides what the software must do: PMs, de
 and engineers.
 
 Purlin holds one artifact everyone shares, the spec, and gives each person a way into it that
-matches how much git they want to touch. Every rule carries an `[origin: ...]` tag naming its
-owner, and that tag is what keeps four people editing one file without stepping on each other.
+matches how much git they want to touch. Every change to it arrives as a pull request, so git
+says who wrote each line.
 
 ## The PM
 
 **What you need.** Nothing installed and no checkout. Requirements reach a spec two ways.
 
 **With an assistant** that can read the repository and open a pull request, such as Claude
-Desktop with the git host connected: describe the feature, and it drafts or edits the spec,
-tags the rules `[origin: pm]`, and opens the pull request. You read the rendered diff and
-merge. It never silently rewrites a rule owned by an engineer or QA; it leaves a pull request
-comment proposing the change instead.
+Desktop with the git host connected: describe the feature, and it drafts or edits the spec
+and opens the pull request. You read the rendered diff and merge.
 
 **Without one**: write the criteria wherever you already write them, hand them to an engineer,
 and their agent runs `purlin:spec`. You review that pull request like any other.
 
 **What you see.** The state of every rule. With a checkout, the dashboard's **rollup** says how
 many rules meet the gate out of how many there are, plus one count per bucket; without one,
-`.purlin/tests.md` on the git host carries the latest test results. Tag each rule with the id of the criterion it came from, `[criterion: US-12]`, and
-`purlin:drift pm` tells you which criteria still have no rule:
+`.purlin/tests.md` on the git host carries the latest test results. `purlin:drift pm` tells
+you which anchor pins are behind their source:
 
 ```
-drift pm: 3 things to look at
+drift pm: 1 thing to look at
 
-  criterion ACC-14           no rule carries it
-  login RULE-3 (origin: pm)  text changed on this branch; signature stale
-  login RULE-9               added by an engineer, origin: eng, derived from RULE-3
   design_tokens (anchor)     pinned 4 commits behind its source
 ```
 
@@ -85,8 +80,7 @@ purlin:test                 seconds, tests only, and it commits the results
 purlin:audit                tests, breaks, and what it observed
 ```
 
-Then push, which is free and starts nothing. Rules you add are tagged `[origin: eng]`, and the
-PM sees them as derived rather than as requirements nobody asked for.
+Then push, which is free and starts nothing.
 
 **What you see.**
 
@@ -96,7 +90,6 @@ drift eng: 14 files since the last record (a1b2c3d)
   src/auth/login.js          RULE-2, RULE-5 behind this change
   src/auth/mfa.js            no spec covers this file
   login RULE-7               no test carries PROOF-7
-  billing RULE-3             no origin tag; the gate needs one
   design_tokens (anchor)     pinned 4 commits behind
   export                     code changed: the code moved, the signatures stand
 ```
@@ -104,15 +97,7 @@ drift eng: 14 files since the last record (a1b2c3d)
 You may also be the person who signs, at either gate. Signing is logged, not policed: the
 signature names you, git names whoever wrote the test, and Purlin decides neither.
 
-## The owner rule
-
-A rule tagged `[origin: pm]`, `[origin: design]` or `[origin: qa]` belongs to that person.
-Anyone may add a rule beside it, tagged with their own origin, and say in the pull request why
-the neighbouring rule looks wrong. Nobody rewrites or deletes someone else's rule. The
-proposal goes in a pull request comment naming the rule id and the replacement text, and the
-owner takes it or leaves it.
-
-A rule tagged `[origin: eng]`, or carrying no origin at all, is the engineer's to edit.
+## A rule from a pinned anchor
 
 A rule that came from a pinned anchor belongs to the anchor repository, whoever wrote it.
 A change to it is a pull request against that repository, and `purlin:anchor sync` brings it
@@ -124,13 +109,13 @@ back once it merges.
 
 | Role | What it reports |
 |------|-----------------|
-| `pm` | Criteria with no rule carrying them, `origin: pm` rules whose text changed, rules an engineer added, pins behind |
+| `pm` | Pins behind their source |
 | `qa` | Signatures gone stale, how long the Review and Sign lists are, the rules reading `manual test`, `unsettled` and `not audited`, rules whose every proof asserts a success path |
-| `eng` | Files touched and the rules behind them, rules with no test, origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` |
+| `eng` | Files touched and the rules behind them, rules with no test, pins behind, rules whose passed cell reads `code changed` |
 
 Run it at four moments: at the start of a session, after an anchor pin moved, before QA walks
-the Review list, and before a release. Those are the four times the
-tree has moved ahead of the specs without anyone being told.
+the Review list, and before a release. Those are the four times the tree has moved ahead of
+the specs without anyone being told.
 
 With no role named, `purlin:drift` infers one from the files the session touched and says
 which it chose in the first line. `--since <N>` or `--since <YYYY-MM-DD>` reads a window other

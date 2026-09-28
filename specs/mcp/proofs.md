@@ -10,11 +10,11 @@
 
 ## Rules
 
-- RULE-1: The proof files a test run writes live under `.purlin/runtime/proofs/`, one per feature, named `<feature>.json` [bar: strong] [origin: eng]
-- RULE-3: Entries come back grouped by the `feature` field each one carries, and a project whose proof directory does not exist reads as an empty result rather than an error [bar: strong] [origin: eng]
-- RULE-5: A file that is not JSON, whose top level is not an object, or whose name does not end `.json` is skipped, and every other file in the directory still loads [bar: strong] [origin: eng]
-- RULE-6: A proof has one status per run and `fail` wins: a proof some test claiming it failed on is not proved, whatever another test reported [bar: strong] [origin: eng]
-- RULE-7: The tests backing a proof are named once each, so a file run twice does not report the same test twice [bar: passed] [origin: eng]
+- RULE-1: The proof files a test run writes live under `.purlin/runtime/proofs/`, one per feature, named `<feature>.json` [bar: strong]
+- RULE-3: Entries come back grouped by the `feature` field each one carries, and a project whose proof directory does not exist reads as an empty result rather than an error [bar: strong]
+- RULE-5: A file that is not JSON, whose top level is not an object, or whose name does not end `.json` is skipped, and every other file in the directory still loads [bar: strong]
+- RULE-6: A proof has one status per run and `fail` wins: a proof some test claiming it failed on is not proved, whatever another test reported [bar: strong]
+- RULE-7: The tests backing a proof are named once each, so a file run twice does not report the same test twice [bar: passed]
 
 ## Proof
 

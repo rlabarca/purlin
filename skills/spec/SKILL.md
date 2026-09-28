@@ -30,9 +30,9 @@ read `references/spec_quality_guide.md`. Neither is restated here.
 |--------------------|-------------|
 | One sentence | Split it into the claims it actually makes. "Users sign in with email and password, and five failures lock the account for fifteen minutes" is two rules, not one |
 | A product brief or a ticket | Read it whole, then write only the claims a test could settle. Leave the background in `> Description:` |
-| Pasted acceptance criteria | One rule per criterion, each tagged `[criterion: <id>]` so the author can find their own line again |
+| Pasted acceptance criteria | One rule per criterion |
 | Screens or mocks | Read the images. Write rules about what a person would see on the screen |
-| An existing spec plus a change | Edit in place. Never renumber. See "Whose rule is it" below |
+| An existing spec plus a change | Edit in place. Never renumber |
 
 Ask at most one round of questions, and only where a claim no test could settle as written.
 "Fast" and "secure" always need a number; most other gaps can wait for the build.
@@ -67,9 +67,9 @@ the first two here. The third is a person's decision, so name the rules and leav
 
 ## Rules
 
-- RULE-1: Return 200 and a session cookie for a correct email and password [bar: strong] [origin: pm] [criterion: US-12]
-- RULE-2: Return 401 for a wrong password [bar: strong] [origin: pm]
-- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [bar: strong] [origin: pm] [criterion: US-13]
+- RULE-1: Return 200 and a session cookie for a correct email and password [bar: strong]
+- RULE-2: Return 401 for a wrong password [bar: strong]
+- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [bar: strong]
 
 ## Proof
 
@@ -85,18 +85,15 @@ person must look). A spec with no `> Scope:` cannot make that distinction.
 
 ## Rules
 
-One claim per line, in the present tense, saying what the software does rather than how. Three
-tags sit at the end of the line and are read off it, so the claim text stays clean:
+One claim per line, in the present tense, saying what the software does rather than how. One
+tag sits at the end of the line and is read off it, so the claim text stays clean:
 
 | Tag | Values | Default | What it decides |
 |-----|--------|---------|-----------------|
 | `[bar: ...]` | `passed`, `strong` | the project's gate | The evidence the rule must have before it can be signed. Read only at `strong` and above: it decides whether the AI audit runs on the rule, and under `signed` whether the rule needs a signature |
-| `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. `purlin:drift` routes a change by it |
-| `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 
-Under the `signed` gate, origin is required and a rule without it is reported. The bar is
-not: a rule with no tag takes the project's gate, so leave it off unless the rule needs a
-different answer from the rest.
+A rule with no tag takes the project's gate, so leave it off unless the rule needs a different
+answer from the rest.
 
 **Write no bar tag at the gate `passed`.** Nothing reads one there, and a tag a reader cannot
 act on is a tag they have to ask about. At `strong` and above write the gate's own bar on
@@ -140,16 +137,6 @@ Ids are never reused. A retired rule leaves its number vacant and every other ru
 number it had. Renumbering would silently repoint every test marker and every signature that
 already names the old id, so do not do it by hand.
 
-## Whose rule is it
-
-A rule tagged `[origin: pm]`, `[origin: design]` or `[origin: qa]` belongs to that person. You
-may add a rule beside it, tag yours `[origin: eng]`, and say in the pull request why the
-neighbouring rule looks wrong. You may not rewrite theirs and you may not delete it. Leave the
-proposal as a pull request comment naming the rule id and the replacement text, and let the
-owner take it or leave it.
-
-A rule tagged `[origin: eng]`, or carrying no origin at all, is yours to edit.
-
 ## Editing a rule during a build
 
 `purlin:build` calls this skill when a rule turns out to be wrong while the code is being
@@ -176,6 +163,4 @@ Spec created: <name>. Build it now?
 ```
 
 When you edited an existing spec rather than creating one, say what moved before the offer:
-which rules were added, which text changed, and which signatures that stales. When the gate is
-`signed` and a rule still has no origin tag, name those rules first: the gate cannot be met
-until they are tagged.
+which rules were added, which text changed, and which signatures that stales.

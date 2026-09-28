@@ -148,10 +148,6 @@ function renderRule() {
     rows.push('<dt>Bar</dt><dd>' + barTag(rule) + ' <span class="sec">'
       + esc(barSource(rule)) + '</span></dd>');
   }
-  rows.push('<dt>Origin</dt><dd>' + tag(rule.origin, true) + '</dd>');
-  if (rule.criterion) {
-    rows.push('<dt>Criterion</dt><dd>' + tag(rule.criterion, true) + '</dd>');
-  }
   rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
     + '</dd>');
   rows.push('<dt>Last run</dt><dd>' + recordLine(feature) + '</dd>');

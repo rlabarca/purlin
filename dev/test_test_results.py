@@ -60,8 +60,8 @@ def _spec(root, name='feat', rules=1, proofs=(('PROOF-1', 'RULE-1', ''),)):
              '> Scope: src/feat.py',
              '> Stack: python', '', '## Rules', '']
     for index in range(1, rules + 1):
-        lines.append('- RULE-%d: The thing works, case %d [bar: passed] '
-                     '[origin: eng]' % (index, index))
+        lines.append('- RULE-%d: The thing works, case %d [bar: passed]'
+                     % (index, index))
     lines.extend(['', '## Proof', ''])
     for proof_id, rule_id, tail in proofs:
         lines.append('- %s (%s): Call it with 2; verify it answers 4%s'

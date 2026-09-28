@@ -24,9 +24,8 @@ proven?** There are three answers, one per evidence level. That answer is the **
 | `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose bar is `strong`: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding, no hold | none required; anyone may sign to clear a rule reading `manual test`, `unsettled` or `held` |
 | `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit | required on the rules `sign_at` names; the signature names who signed |
 
-The answer sets four defaults, each changeable afterwards: `min_strength` unused, 70, 80; the
-default bar `passed`, `strong`, `strong`; `sign_at` unset, unset, `strong`; origin tags
-optional, optional, required.
+The answer sets three defaults, each changeable afterwards: `min_strength` unused, 70, 80; the
+default bar `passed`, `strong`, `strong`; `sign_at` unset, unset, `strong`.
 
 `purlin:sign` is what says a version met the gate: it walks the two lists and writes the
 annotated tag `signed/<version>`, which a person pushes. The gate is the standard that tag
@@ -61,7 +60,7 @@ list back to the person before running it for real on a project that already has
 
 Raising the gate is additive. `--gate strong` on a project set up as `passed` turns the
 breaks on; it asks before each write and touches nothing else. `--gate signed` on top of that
-asks which rules need a signature and lists the rules with no origin tag. Lowering the gate rewrites the setting and
+asks which rules need a signature. Lowering the gate rewrites the setting and
 deletes nothing: the workflow, the records and the signatures stay where they are.
 
 Raising the gate writes no workflow. A runner is added for its own two reasons, below, and not
@@ -164,17 +163,15 @@ same checks run under `--update`.
 
 ## What each gate brings
 
-Under every gate, init creates the records folder and its retention rule, and leaves the bar,
-origin and criterion tags optional. Under `strong` and `signed`, init also turns the breaks
-on. Where a workflow is called for, and `specs/` carries `@env(windows)`
+Under every gate, init creates the records folder and its retention rule, and leaves the bar
+tag optional. Under `strong` and `signed`, init also turns the breaks on. Where a workflow is called for, and `specs/` carries `@env(windows)`
 or `@env(macos)` proofs, it gets a matrix: a Linux job always, plus one job per other operating
 system named, each running the same tests and writing its own record. With no such proof there
 is one Linux job.
 
 Under `signed`, init asks `Which rules need a signature?` and writes the answer to `sign_at`:
 `strong`, the rules whose bar is strong, the rest meeting the gate on their tests; or `all`,
-every rule whatever its bar. It prints the commit-signing setup and lists every rule with no
-origin tag so `purlin:spec <name>` can tag them in one pass. It asks for no names: signing is
+every rule whatever its bar. It prints the commit-signing setup. It asks for no names: signing is
 logged, not policed, and a signature names its signer.
 
 Anchor pins are added on demand. When something is missing later the tool that needs it says

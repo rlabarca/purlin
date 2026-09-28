@@ -40,7 +40,6 @@ Each level derives defaults you can override:
 | The default bar | `passed` | `strong` | `strong` |
 | `sign_at` | n/a | n/a | `strong`, asked by init |
 | The breaks | off | on | on |
-| Origin tags | optional | optional | required |
 
 `purlin:init --gate <level>` changes the level later. Raising it adds what is missing and asks
 before each write. Lowering it deletes nothing.

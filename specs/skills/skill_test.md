@@ -8,11 +8,11 @@
 
 ## Rules
 
-- RULE-1: `skills/test/SKILL.md` opens with a frontmatter block whose `name` is `test` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:test` [bar: strong] [origin: eng]
-- RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--test`, and states its three exit codes: 0 everything passed, 1 a test failed or the passed level is not met, 2 the invocation was wrong [bar: strong] [origin: eng]
-- RULE-3: The last section of `skills/test/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong] [origin: eng]
-- RULE-4: The whole of `skills/test/SKILL.md` is at most 120 lines [bar: passed] [origin: eng]
-- RULE-5: The skill names the two files the run writes, `.purlin/tests/<feature>.json` and `.purlin/tests.md`, the commit subject `purlin: tests at <sha7>` and that the run never pushes, and it names the gate line `gate passed: <n> of <rules>` as the last line of the run [bar: strong] [origin: eng]
+- RULE-1: `skills/test/SKILL.md` opens with a frontmatter block whose `name` is `test` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:test` [bar: strong]
+- RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--test`, and states its three exit codes: 0 everything passed, 1 a test failed or the passed level is not met, 2 the invocation was wrong [bar: strong]
+- RULE-3: The last section of `skills/test/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong]
+- RULE-4: The whole of `skills/test/SKILL.md` is at most 120 lines [bar: passed]
+- RULE-5: The skill names the two files the run writes, `.purlin/tests/<feature>.json` and `.purlin/tests.md`, the commit subject `purlin: tests at <sha7>` and that the run never pushes, and it names the gate line `gate passed: <n> of <rules>` as the last line of the run [bar: strong]
 
 ## Proof
 

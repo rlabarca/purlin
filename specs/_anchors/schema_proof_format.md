@@ -10,13 +10,13 @@
 
 ## Rules
 
-- RULE-1: A proof file lives at `.purlin/runtime/proofs/<feature>.json`, and a passing entry there is what makes a rule's passed cell read `passed` under the gate `passed`; a rule whose proof has no entry reads `no test` [bar: strong] [origin: eng]
-- RULE-2: An entry carries the six fields `feature`, `id`, `rule`, `test_file`, `test_name` and `status`, and the file carries a `proofs` array and nothing else; no entry names the runner or the operating system, because a record says where a run happened once per run [bar: strong] [origin: eng]
-- RULE-3: `status` is `pass` or `fail` and nothing else counts as proved: an entry carrying any other value, or none at all, holds its rule's passed cell short of `passed` while a passing entry beside it still counts for its own rule [bar: strong] [origin: eng]
-- RULE-4: A proof claimed by two entries is proved only when both passed, so one failing test naming a proof id holds that rule's passed cell back even though another test naming the same id passed [bar: strong] [origin: eng]
-- RULE-5: A proof directory that does not exist, and one that exists and is empty, both read as no proofs rather than as an error, so a project that has never run its tests still reports [bar: passed] [origin: eng]
-- RULE-7: `.purlin/runtime/` is gitignored and the proof directory sits under it, so a proof file never reaches a commit, two runs on two branches never conflict, and a test run can never produce a merge conflict [bar: strong] [origin: eng]
-- RULE-8: The spec format documents the `@manual` tag and the environment tag a proof line may carry, and names the retired scope tag only under its retired heading, so a reader of the format cannot pick up a tag this release refuses [bar: passed] [origin: eng]
+- RULE-1: A proof file lives at `.purlin/runtime/proofs/<feature>.json`, and a passing entry there is what makes a rule's passed cell read `passed` under the gate `passed`; a rule whose proof has no entry reads `no test` [bar: strong]
+- RULE-2: An entry carries the six fields `feature`, `id`, `rule`, `test_file`, `test_name` and `status`, and the file carries a `proofs` array and nothing else; no entry names the runner or the operating system, because a record says where a run happened once per run [bar: strong]
+- RULE-3: `status` is `pass` or `fail` and nothing else counts as proved: an entry carrying any other value, or none at all, holds its rule's passed cell short of `passed` while a passing entry beside it still counts for its own rule [bar: strong]
+- RULE-4: A proof claimed by two entries is proved only when both passed, so one failing test naming a proof id holds that rule's passed cell back even though another test naming the same id passed [bar: strong]
+- RULE-5: A proof directory that does not exist, and one that exists and is empty, both read as no proofs rather than as an error, so a project that has never run its tests still reports [bar: passed]
+- RULE-7: `.purlin/runtime/` is gitignored and the proof directory sits under it, so a proof file never reaches a commit, two runs on two branches never conflict, and a test run can never produce a merge conflict [bar: strong]
+- RULE-8: The spec format documents the `@manual` tag and the environment tag a proof line may carry, and names the retired scope tag only under its retired heading, so a reader of the format cannot pick up a tag this release refuses [bar: passed]
 
 ## Proof
 

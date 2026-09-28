@@ -77,25 +77,17 @@ Then the supporting dimensions: each distinct error response, boundary condition
 as maximum lengths and retry limits, performance constraints, and what happens when a
 dependency fails.
 
-### Rule tags
+### The rule tag
 
-Three tags go at the end of a rule line: `[bar: passed|strong]`,
-`[origin: pm|design|qa|eng]` and `[criterion: <id>]`.
+One tag goes at the end of a rule line: `[bar: passed|strong]`. It says what evidence the
+rule must have before it can be signed. It is read at the `strong` gate and above: under
+`passed` it is never asked for and changes nothing. A rule with no tag takes the project's
+gate as its bar, so `strong` at `strong` and at `signed`. Tag `[bar: passed]` where a
+passing test is the whole of what the rule needs, and leave the tag off, or write
+`[bar: strong]`, where the AI audit should read the rule and a person should sign it.
 
-- **`bar`** says what evidence the rule must have before it can be signed. It is read at
-  the `strong` gate and above: under `passed` it is never asked for and changes nothing.
-  A rule with no tag takes the project's gate as its bar, so `strong` at `strong` and at
-  `signed`. Tag `[bar: passed]` where a passing test is the whole of what the rule needs,
-  and leave the tag off, or write `[bar: strong]`, where the AI audit should read the
-  rule and a person should sign it.
-- **`origin`** says who owns the rule. It defaults to `eng`. Drift routes a change by
-  origin, so a PM sees their own rules move and an engineer sees theirs.
-- **`criterion`** links the rule to an upstream acceptance criterion id. It has no
-  default and nothing requires it; it exists so a PM can find the rule from the ticket.
-
-Under the `signed` gate, `origin` is required on every rule. Tag rules as you write
-them: retagging a spec later is a separate pass over every line, and a bar re-tag stales
-the rule's signature.
+Tag rules as you write them: retagging a spec later is a separate pass over every line,
+and a bar re-tag stales the rule's signature.
 
 ## Writing proofs
 

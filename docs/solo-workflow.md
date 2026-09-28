@@ -45,7 +45,7 @@ no cell.
 ```
 
 `purlin:init` writes that into `.purlin/config.json` when you answer the one question with
-`passed`. `min_strength` is unused at this gate, and origin tags stay optional. Every rule's
+`passed`. `min_strength` is unused at this gate. Every rule's
 bar defaults to `passed` here: a rule clears its bar when its tagged tests pass, which is the
 only evidence this gate asks for. Read
 and change the file with the `purlin_config` tool rather than by hand, so a key the installed

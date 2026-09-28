@@ -349,16 +349,17 @@ class TestTheTriple:
             proved.root, 'login', 'RULE-99') == (None, None, None, None)
 
     @pytest.mark.proof("signatures", "PROOF-3", "RULE-3")
-    def test_reflowing_a_rule_and_adding_a_tag_keep_the_triple(self, proved):
+    def test_reflowing_a_rule_and_changing_its_bar_keep_the_triple(self,
+                                                                   proved):
         before = sign_module.triple_for(proved.rule('RULE-1'))
         proved.spec(SPEC.replace(
             '- RULE-1: Valid credentials return 200 with a session token '
             '[bar: passed]',
             '- RULE-1: Valid   credentials  return 200  with a session token '
-            '[origin: pm] [bar: passed]'))
+            '[bar: strong]'))
         after = sign_module.triple_for(proved.rule('RULE-1'))
         assert after == before, (
-            'the triple binds the rule text with its tags stripped')
+            'the triple binds the rule text with its tag stripped')
 
     @pytest.mark.proof("signatures", "PROOF-4", "RULE-4")
     def test_editing_the_rule_the_proof_or_the_test_moves_the_triple(

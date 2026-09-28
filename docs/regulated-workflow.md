@@ -77,7 +77,6 @@ inside the hashes a signature binds.
 | Every operating system the rule's proofs name covered by a passing run | this machine, plus a runner for any `@env` it is not. A rule that passed on some and not others reads `partial`, which is not met |
 | Test strength at or above `min_strength` | default 80 at this gate |
 | A current signature on every rule that needs one | `purlin:sign` |
-| Every rule tagged with a bar and an origin | the bar defaults to the gate; the origin is required at this gate |
 | The signing commit signed, and the signature verifies | the signer's own key, set up once with the three commands below |
 | The tag `signed/<version>` on the commit | `purlin:sign` writes it once every rule meets the gate, and a person pushes it |
 
@@ -161,7 +160,7 @@ needs pinning of its own.
 A tag of that name that already exists is not moved: `No tag: signed/1.4.0 is already written.
 Name another with --release <name>.` A released version's marker stays where it was put.
 
-## The bar, origin and `sign_at`
+## The bar and `sign_at`
 
 Every rule has a **bar**, `passed` or `strong`: the evidence that rule must have before anyone
 can sign it. A rule says its own with the tag `[bar: passed]` or `[bar: strong]`; a rule with
@@ -185,9 +184,6 @@ signature, that signature counts.
 `sign_at` says which rules need a signature at all. `strong`, the default, asks for one on the
 rules whose bar is `strong`; `all` asks for one on every rule. `purlin:init --gate signed`
 asks which you want, and `--update` asks again.
-
-Origin is `pm`, `design`, `qa` or `eng`. `purlin:init --gate signed` lists every rule that
-carries no origin when you raise the gate, and `purlin:spec <feature>` tags them in one pass.
 
 ## What a machine writes, and what it never writes
 

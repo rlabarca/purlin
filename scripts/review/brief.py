@@ -140,7 +140,6 @@ def build_brief(project_root, payload, feature, rule, ai=False):
         'feature': feature,
         'rule': rule,
         'bar': bar,
-        'origin': entry.get('origin'),
         'rule_text': entry.get('text'),
         'proofs': proofs,
         'rule_hash': entry.get('rule_hash'),
@@ -269,9 +268,8 @@ def model_prompt(project_root, brief):
     parts.extend(INSTRUCTION)
     parts.extend([
         '',
-        '%s %s (bar %s, origin %s)'
-        % (brief.get('feature'), brief.get('rule'), brief.get('bar'),
-           brief.get('origin')),
+        '%s %s (bar %s)'
+        % (brief.get('feature'), brief.get('rule'), brief.get('bar')),
         'Rule: %s' % (brief.get('rule_text') or '')])
     for proof in brief.get('proofs') or ():
         parts.append('%s%s: %s' % (proof.get('id'), _proof_tags(proof),
@@ -448,9 +446,8 @@ def write_briefs(project_root, payload=None, rules=None, ai=False,
 def render_brief(brief):
     """The brief as text: the rule, the proof, the test, and what it found."""
     lines = []
-    lines.append('%s %s   bar %s   origin %s'
-                 % (brief.get('feature'), brief.get('rule'),
-                    brief.get('bar'), brief.get('origin')))
+    lines.append('%s %s   bar %s'
+                 % (brief.get('feature'), brief.get('rule'), brief.get('bar')))
     lines.append('')
     lines.append('Rule')
     lines.append('  %s' % (brief.get('rule_text') or ''))

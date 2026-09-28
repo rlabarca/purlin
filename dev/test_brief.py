@@ -139,7 +139,7 @@ class TestTheTests:
     def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):
         built = build(proved, 'RULE-1')
         assert set(built) == {
-            'schema', 'feature', 'rule', 'bar', 'origin', 'rule_text',
+            'schema', 'feature', 'rule', 'bar', 'rule_text',
             'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',
             'triple_hash', 'layers', 'tests', 'test_strength', 'min_strength',
             'record', 'ai_review', 'observations', 'settled',

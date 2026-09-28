@@ -221,7 +221,7 @@ spec_file() {  # dir feature scope
 
 ## Rules
 
-- RULE-1: \`greet(name)\` returns \`Hello, <name>!\` [bar: strong] [origin: eng]
+- RULE-1: \`greet(name)\` returns \`Hello, <name>!\` [bar: strong]
 
 ## Proof
 

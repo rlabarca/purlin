@@ -10,28 +10,28 @@
 
 ## Rules
 
-- RULE-1: A rule line's `[bar: passed]`, `[origin: ...]` and `[criterion: ...]` tags are read off the end of the line one at a time in any order, and the text that remains is the claim alone [bar: strong] [origin: eng]
-- RULE-2: A rule naming no tag takes `origin` `eng`, and carries neither a `bar` nor a `criterion` key at all [bar: strong] [origin: eng]
-- RULE-3: The rule and proof text hashes normalise runs of whitespace to one space, so reflowing or retagging a line returns the hash it already had [bar: strong] [origin: eng]
-- RULE-4: A proof line's trailing `@manual` marks a proof no test settles; any other trailing `@<name>` that is not `@env` is not a tag, so reading stops there and the word stays in the proof text [bar: strong] [origin: eng]
-- RULE-5: `@env` takes `windows`, `macos` and `linux` and nothing else; any other value is read as no operating system at all and is listed as an unknown tag [bar: strong] [origin: eng]
-- RULE-6: At most one `@env` per proof: the trailing one is the one read and the earlier one is listed as an unknown tag rather than merged with it [bar: strong] [origin: eng]
-- RULE-7: Tags this release does not read (the retired operating-system tag `@env` replaced, a bare `@windows`, a stamped `@manual(...)` carrying an email, a date and a sha) and the retired fields `> Visual-Reference:` and `> Visual-Hash:` are ignored rather than refused, and every spec carrying one lists it under `unknown_tags` [bar: strong] [origin: eng]
-- RULE-8: The unknown-tag warning is one line naming at most five carrying files and counting the rest, and is absent when no spec carries such a tag [bar: passed] [origin: eng]
-- RULE-9: A `> Source:` value is read two ways: a git URL followed by a path in that repository gives the two separately, and anything else comes back whole as the source rather than split on its first word [bar: strong] [origin: eng]
-- RULE-10: A `> Path:` line supplies the path in the source repository when `> Source:` carries the URL alone [bar: passed] [origin: eng]
-- RULE-11: A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha [bar: strong] [origin: eng]
-- RULE-12: The scope tree is a sha256 over each scoped file's git blob id written beside its path in sorted order; a scope entry naming a directory expands to the files git tracks under it, so an untracked file left there changes nothing, and to a walk of the disk only when git cannot answer; a path git cannot hash contributes an empty id instead of raising [bar: strong] [origin: eng]
-- RULE-13: A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`; an anchor proves its own rules and nothing else [bar: strong] [origin: eng]
-- RULE-14: Every spec is keyed by its filename stem, and a file that cannot be read or decoded is skipped while the rest of the scan still answers [bar: strong] [origin: eng]
-- RULE-15: The `[bar: ...]` tag is read off the end of a rule line as `passed` or `strong`, stripped from the text the rule text hash is taken over, and carried in the rule's metadata under `bar` [bar: strong] [origin: eng]
-- RULE-16: A rule line carrying the tag the bar replaced is parsed all the same: the two levels that asked for a person read as `bar` `strong` and the one that did not as `bar` `passed`, and a `[bar: ...]` tag on the same line wins over it [bar: strong] [origin: eng]
+- RULE-1: A rule line's one tag is `[bar: ...]`, read off the end of the line; any other bracketed text at the end is not a tag and stays in the claim [bar: strong]
+- RULE-2: A rule naming no tag carries empty metadata, with no `bar` key at all [bar: strong]
+- RULE-3: The rule and proof text hashes normalise runs of whitespace to one space, so reflowing a line or changing its tag returns the hash it already had [bar: strong]
+- RULE-4: A proof line's trailing `@manual` marks a proof no test settles; any other trailing `@<name>` that is not `@env` is not a tag, so reading stops there and the word stays in the proof text [bar: strong]
+- RULE-5: `@env` takes `windows`, `macos` and `linux` and nothing else; any other value is read as no operating system at all and is listed as an unknown tag [bar: strong]
+- RULE-6: At most one `@env` per proof: the trailing one is the one read and the earlier one is listed as an unknown tag rather than merged with it [bar: strong]
+- RULE-7: Tags this release does not read (the retired operating-system tag `@env` replaced, a bare `@windows`, a stamped `@manual(...)` carrying an email, a date and a sha) and the retired fields `> Visual-Reference:` and `> Visual-Hash:` are ignored rather than refused, and every spec carrying one lists it under `unknown_tags` [bar: strong]
+- RULE-8: The unknown-tag warning is one line naming at most five carrying files and counting the rest, and is absent when no spec carries such a tag [bar: passed]
+- RULE-9: A `> Source:` value is read two ways: a git URL followed by a path in that repository gives the two separately, and anything else comes back whole as the source rather than split on its first word [bar: strong]
+- RULE-10: A `> Path:` line supplies the path in the source repository when `> Source:` carries the URL alone [bar: passed]
+- RULE-11: A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha [bar: strong]
+- RULE-12: The scope tree is a sha256 over each scoped file's git blob id written beside its path in sorted order; a scope entry naming a directory expands to the files git tracks under it, so an untracked file left there changes nothing, and to a walk of the disk only when git cannot answer; a path git cannot hash contributes an empty id instead of raising [bar: strong]
+- RULE-13: A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`; an anchor proves its own rules and nothing else [bar: strong]
+- RULE-14: Every spec is keyed by its filename stem, and a file that cannot be read or decoded is skipped while the rest of the scan still answers [bar: strong]
+- RULE-15: The `[bar: ...]` tag is read off the end of a rule line as `passed` or `strong`, stripped from the text the rule text hash is taken over, and carried in the rule's metadata under `bar` [bar: strong]
+- RULE-16: A rule line carrying the tag the bar replaced is parsed all the same: the two levels that asked for a person read as `bar` `strong` and the one that did not as `bar` `passed`, and a `[bar: ...]` tag on the same line wins over it [bar: strong]
 
 ## Proof
 
-- PROOF-1 (RULE-1): Parse a spec whose RULE-1 line ends `[bar: strong] [origin: pm] [criterion: US-12]`; verify the parsed text is exactly `Valid credentials return 200 with a session token` with no bracket left in it, and that the rule's metadata is exactly `{"bar": "strong", "origin": "pm", "criterion": "US-12"}` [origin: pm] [criterion: US-12]
-- PROOF-2 (RULE-1): Call the rule tag splitter on `Tokens expire [origin: qa] [bar: strong]` and `Tokens expire [bar: strong] [origin: qa]`; verify both return the text `Tokens expire` and the same metadata, so the order the tags are written in changes nothing
-- PROOF-3 (RULE-2): Parse a rule line carrying no tag; verify its metadata is exactly `{"origin": "eng"}` and that no `bar` or `criterion` key is present
+- PROOF-1 (RULE-1): Parse a spec whose RULE-1 line ends `[bar: strong]`; verify the parsed text is exactly `Valid credentials return 200 with a session token` with no bracket left in it, and that the rule's metadata is exactly `{"bar": "strong"}`
+- PROOF-2 (RULE-1): Call the rule tag splitter on `Tokens expire [owner: qa] [bar: strong]`; verify the bar is `strong` and the text is `Tokens expire [owner: qa]`, so bracketed text that is not a tag stays in the claim
+- PROOF-3 (RULE-2): Parse a rule line carrying no tag; verify its metadata is exactly `{}`
 - PROOF-4 (RULE-3): Call the rule text hash on `Tokens expire after 24 hours`, then call it on the text left by splitting `Tokens  expire   after 24 hours [bar: strong]`; verify the two hashes are equal, so neither a doubled space nor a tag changes the rule text hash a signature binds
 - PROOF-5 (RULE-4): Parse a proof line ending `@manual @env(windows)`; verify it reads manual with the operating system `windows`; split a description carrying no tag and verify it comes back whole and not manual; split one ending `@smoke` and verify that word stays in the text and the proof is not manual
 - PROOF-6 (RULE-5): Call the proof tag splitter on `x @env(windows)`, `x @env(macos)` and `x @env(linux)` and verify each returns its own value; then call it on `x @env(bsd)` and verify the operating system is none and the unknown tags are exactly `["@env(bsd)"]`

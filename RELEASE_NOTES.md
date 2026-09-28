@@ -265,6 +265,10 @@ Also gone, each without a replacement:
   flag of `purlin_run.py`, the `tier` field of a proof file and `PURLIN_PROOF_TIER`.
   `purlin:test` runs every tagged test of the features it runs, each plugin writes one proof
   file per feature, and `purlin:init --update` drops the tag from a 0.9.5 proof line.
+- A rule names no owner and no upstream criterion: `[origin: ...]` and `[criterion: ...]` are
+  no longer tags, the payload and the brief carry neither, init stops listing rules without an
+  owner at `signed`, and `purlin:drift` loses `criteria_without_rules`, `pm_rules_changed`,
+  `engineer_added_rules` and `tags_missing`.
 - The tie between a design and a spec is gone: the `designs/` folder and README init wrote, the
   design anchor and its `> Source:` of local file globs, `design_hash` in a signature, the
   design layer of the brief, the `CHANGED_DESIGNS` kind and the `design` view of

@@ -14,22 +14,22 @@
 
 ## Rules
 
-- RULE-1: The gate reads the structured payload and never a rendered table, and a caller may hand it a payload it already built [bar: strong] [origin: eng]
-- RULE-2: A rule is counted once, under the feature that owns it, and it is met when the payload reads `meets_gate` true [bar: strong] [origin: eng]
-- RULE-3: A rule blocked at the spec status or at the passed cell is named under `Not passed` with the blocking word and its reasons, the spec status reading `no proof names this rule`, except where the passed cell's word is `partial`, which has its own section between `Not passed` and `Weak` [bar: strong] [origin: eng]
-- RULE-4: A rule blocked at the strong cell is named with the cell's word and its reasons, under `Weak` where that word is `weak`, under `Not audited` where it is `not audited` and under `To review` where it is `manual test`, `unsettled` or `held`, because no build moves those three [bar: strong] [origin: eng]
-- RULE-5: A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons [bar: strong] [origin: eng]
-- RULE-6: Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists [bar: strong] [origin: eng]
-- RULE-7: A section names at most 20 rules and counts the rest, pointing at `--json` for every one [bar: passed] [origin: eng]
-- RULE-8: Under `signed` the gate grades every rule whether or not the config names anyone, because no list says who may sign [bar: strong] [origin: eng]
-- RULE-9: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes [bar: strong] [origin: eng]
-- RULE-10: `gate_check.py` needs `--check` and a directory that exists; either missing exits 2 [bar: passed] [origin: eng]
-- RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, every section under its own key, the result and the exit code [bar: strong] [origin: eng]
-- RULE-12: The gate creates and changes no file at any gate value [bar: strong] [origin: eng]
-- RULE-13: Every line the gate prints either carries the `gate:` prefix or is an indented finding under a section heading [bar: passed] [origin: eng]
-- RULE-14: The report's sections are `Not passed`, `Partial`, `Weak`, `Not audited`, `To review`, `To sign` and `Evidence`, in that order, and a section with no line in it is not printed [bar: strong] [origin: eng]
-- RULE-15: `--verify` names under `Evidence` every signature and every hold that no longer binds the rule, proof, test, bar and audit it names, so a tag cannot stand over code that changed after it was signed, and a file naming a rule the project no longer declares is named too [bar: strong] [origin: eng]
-- RULE-16: `--verify` names under `Evidence` every file under `.purlin/records/ci/` or `.purlin/briefs/ci/` whose commit is not the runner's own, and without `--verify` neither check runs at all [bar: strong] [origin: eng]
+- RULE-1: The gate reads the structured payload and never a rendered table, and a caller may hand it a payload it already built [bar: strong]
+- RULE-2: A rule is counted once, under the feature that owns it, and it is met when the payload reads `meets_gate` true [bar: strong]
+- RULE-3: A rule blocked at the spec status or at the passed cell is named under `Not passed` with the blocking word and its reasons, the spec status reading `no proof names this rule`, except where the passed cell's word is `partial`, which has its own section between `Not passed` and `Weak` [bar: strong]
+- RULE-4: A rule blocked at the strong cell is named with the cell's word and its reasons, under `Weak` where that word is `weak`, under `Not audited` where it is `not audited` and under `To review` where it is `manual test`, `unsettled` or `held`, because no build moves those three [bar: strong]
+- RULE-5: A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons [bar: strong]
+- RULE-6: Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists [bar: strong]
+- RULE-7: A section names at most 20 rules and counts the rest, pointing at `--json` for every one [bar: passed]
+- RULE-8: Under `signed` the gate grades every rule whether or not the config names anyone, because no list says who may sign [bar: strong]
+- RULE-9: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes [bar: strong]
+- RULE-10: `gate_check.py` needs `--check` and a directory that exists; either missing exits 2 [bar: passed]
+- RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, every section under its own key, the result and the exit code [bar: strong]
+- RULE-12: The gate creates and changes no file at any gate value [bar: strong]
+- RULE-13: Every line the gate prints either carries the `gate:` prefix or is an indented finding under a section heading [bar: passed]
+- RULE-14: The report's sections are `Not passed`, `Partial`, `Weak`, `Not audited`, `To review`, `To sign` and `Evidence`, in that order, and a section with no line in it is not printed [bar: strong]
+- RULE-15: `--verify` names under `Evidence` every signature and every hold that no longer binds the rule, proof, test, bar and audit it names, so a tag cannot stand over code that changed after it was signed, and a file naming a rule the project no longer declares is named too [bar: strong]
+- RULE-16: `--verify` names under `Evidence` every file under `.purlin/records/ci/` or `.purlin/briefs/ci/` whose commit is not the runner's own, and without `--verify` neither check runs at all [bar: strong]
 
 ## Proof
 

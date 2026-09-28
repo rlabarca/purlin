@@ -100,9 +100,9 @@ Each view is a filter over the same data, not a different computation.
 
 | Role | What it reports | Signal |
 |------|-----------------|--------|
-| `pm` | Criteria with no rule carrying them, rules tagged `origin: pm` whose text changed, rules an engineer added, pins behind | `criteria_without_rules`, `pm_rules_changed`, `engineer_added_rules`, `pins_behind` |
+| `pm` | Pins behind their source | `pins_behind` |
 | `qa` | Signatures gone stale, how long the Review and Sign lists are, the rules reading `manual test`, the rules reading `unsettled`, the rules reading `not audited` | `signatures_stale`, `review_list_size`, `sign_list_size`, `manual`, `unsettled`, `not_audited` |
-| `eng` | Files touched and the rules behind them, rules with no test, rules the gate wants tagged and the spec leaves untagged, pins behind, rules whose passed cell reads `code changed` | `files_touched`, `rules_affected`, `tests_missing`, `tags_missing`, `pins_behind`, `code_changed` |
+| `eng` | Files touched and the rules behind them, rules with no test, pins behind, rules whose passed cell reads `code changed` | `files_touched`, `rules_affected`, `tests_missing`, `pins_behind`, `code_changed` |
 
 `code_changed` appears in the `eng` view as information and never in the `qa` view: only the
 code changed, the signature stands, and the next run clears it.

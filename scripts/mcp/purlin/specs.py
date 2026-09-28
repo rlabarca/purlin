@@ -8,10 +8,10 @@ a markdown file with two sections, `## Rules` and `## Proof`, and a block of
 
 Rule lines carry their tags at the end:
 
-    - RULE-3: Expired tokens are rejected with 401 [bar: strong] [origin: pm] [criterion: US-12]
+    - RULE-3: Expired tokens are rejected with 401 [bar: strong]
 
-The tags are read off the end and stripped, so `rule_text_hash` sees the claim
-alone and re-tagging a rule never stales a signature.
+The tag is read off the end and stripped, so `rule_text_hash` sees the claim
+alone.
 
 Proof lines carry at most one operating system, and `@manual` where no test
 can settle the rule:
@@ -44,13 +44,10 @@ _RULE_RE = re.compile(r'^-\s+(RULE-\d+):\s*(.+)', re.MULTILINE)
 _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)')
 
-# Rule tags, read off the end one at a time so the order they are written in
-# does not matter and the text that remains is the claim alone.
-_RULE_TAG_RE = re.compile(
-    r'\s*\[(bar|origin|criterion):\s*([^\]]+)\]\s*$')
+# The rule tag, read off the end so the text that remains is the claim alone.
+_RULE_TAG_RE = re.compile(r'\s*\[(bar):\s*([^\]]+)\]\s*$')
 
 BARS = ('passed', 'strong')
-DEFAULT_ORIGIN = 'eng'
 
 # A trailing tag is metadata appended after the description: ` @manual`,
 # ` @env(linux)`. It must not match a description whose prose merely ends in
@@ -84,12 +81,12 @@ _RETIRED_FIELD_RE = re.compile(
 def split_rule_tags(text):
     """`(clean_text, meta)` for one rule line's description.
 
-    `meta` always carries `origin` (default `eng`) and carries `bar` only
-    where the line named one, because the bar a rule that names none takes is
-    the project's gate and this module does not read the gate. `criterion` is
-    carried only where the line named one. An unrecognised value for the bar
-    or the origin is kept as written: the reader is better served by seeing
-    what the spec says than by a silent correction.
+    `meta` carries `bar` only where the line named one, because the bar a
+    rule that names none takes is the project's gate and this module does not
+    read the gate. An unrecognised value for the bar is kept as written: the
+    reader is better served by seeing what the spec says than by a silent
+    correction. Any other bracketed text at the end of the line is not a tag
+    and stays in the text.
     """
     meta = {}
     text = text.rstrip()
@@ -100,7 +97,6 @@ def split_rule_tags(text):
         name, value = m.group(1), m.group(2).strip()
         meta.setdefault(name, value)
         text = text[:m.start()].rstrip()
-    meta.setdefault('origin', DEFAULT_ORIGIN)
     return text, meta
 
 
@@ -347,7 +343,7 @@ def scan_specs(project_root):
     `spec_path` (relative, `/` separated), `category` (the directory under
     `specs/`), `name`, `is_anchor`, `is_global`, `description`, `stack`,
     `requires`, `scope`, `rules` (`{RULE-N: text}` with tags stripped),
-    `rule_meta` (`{RULE-N: {bar, origin, criterion}}`), `rule_order`,
+    `rule_meta` (`{RULE-N: {bar}}`), `rule_order`,
     `proofs` (`{PROOF-N: {rules, text, manual, env}}`), `proof_env`,
     `proofs_by_rule`, `source`, `source_path`, `pinned`,
     `has_rules_section`, `unnumbered_lines` and `unknown_tags`.
