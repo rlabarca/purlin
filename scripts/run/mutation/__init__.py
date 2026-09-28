@@ -66,16 +66,17 @@ def select_engine(config, frameworks):
     """The engine name for a project, one of `ENGINES`.
 
     `config` is the project's `.purlin/config.json` dict, where
-    `mutation_engine` is `auto` or an engine name. A name outside `ENGINES` is
-    read as `none` rather than guessed at: a typo must not silently run an
-    engine nobody asked for.
+    `mutation_engine` is `none`, `auto` or an engine name, and a missing key
+    reads as `none`: mutation testing is off until a project turns it on. A
+    name outside `ENGINES` is read as `none` rather than guessed at: a typo
+    must not silently run an engine nobody asked for.
 
     Under `auto` the frameworks decide, in the order they were detected, so a
     project carrying pytest for the server and jest for the client runs the
     engine of whichever was detected first.
     """
-    raw = (config or {}).get('mutation_engine', 'auto')
-    name = str(raw or 'auto').strip().lower()
+    raw = (config or {}).get('mutation_engine') or 'none'
+    name = str(raw).strip().lower()
     if name and name != 'auto':
         return name if name in ENGINES else 'none'
     for framework in frameworks or ():

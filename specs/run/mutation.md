@@ -14,7 +14,7 @@
 ## Rules
 
 - RULE-1: With `mutation_engine` set to `auto`, jest and vitest select `stryker`, dotnet selects `stryker_net`, pytest selects `mutmut`, and go, shell and sql select `none`; the first detected framework that has an engine decides, and a project with no framework selects `none`
-- RULE-2: A `mutation_engine` naming an engine wins over the detected frameworks, a name outside the four shipped engines reads as `none` rather than being guessed at, and a missing key reads as `auto`
+- RULE-2: A `mutation_engine` naming an engine wins over the detected frameworks, a name outside the four shipped engines reads as `none` rather than being guessed at, and a missing key reads as `none`, so mutation testing is off until a project turns it on
 - RULE-3: Test strength is `killed / (killed + survived)` as an integer percent rounded half up, and is None when no break ran at all
 - RULE-4: The rules of a feature are reported in rule-number order, so `RULE-2` comes before `RULE-10` [level: passed]
 - RULE-5: Stryker runs once per feature against that feature's scope files alone, under a generated config naming `coverageAnalysis: "perTest"`, `disableBail: true`, the `json` reporter and the report path
@@ -39,7 +39,7 @@
 ## Proof
 
 - PROOF-1 (RULE-1): Call `select_engine({}, [framework])` for each of jest, vitest, dotnet, go, pytest, shell and sql; verify `stryker`, `stryker`, `stryker_net`, `none`, `mutmut`, `none`, `none`. Call it with `["pytest", "jest"]`; verify `mutmut`, the first with an engine. Call it with `["shell", "jest"]`; verify `stryker`, so a framework with no engine is skipped rather than deciding. Call it with `[]`; verify `none`
-- PROOF-2 (RULE-2): Call `select_engine({"mutation_engine": "stryker"}, ["pytest"])`; verify `stryker`. Call it with `"nosuchengine"`; verify `none`. Call it with no key at all and `["pytest"]`; verify `mutmut`, the answer `auto` gives
+- PROOF-2 (RULE-2): Call `select_engine({"mutation_engine": "stryker"}, ["pytest"])`; verify `stryker`. Call it with `"nosuchengine"`; verify `none`. Call it with no key at all and `["pytest"]`; verify `none`, and with `auto` and `["pytest"]` verify `mutmut`
 - PROOF-3 (RULE-3): Call `score_percent()` with (0, 0), (1, 1), (2, 1), (3, 0) and (0, 4); verify None, 50, 67, 100 and 0
 - PROOF-4 (RULE-4): Call `rules_by_feature()` with the keys `("f", "RULE-10")`, `("f", "RULE-2")` and `("f", "RULE-1")`; verify the list is `["RULE-1", "RULE-2", "RULE-10"]`
 - PROOF-5 (RULE-5): Call `build_config(["src/login.js"], "jest", "/tmp/r.json")`; verify `mutate` is exactly `["src/login.js"]`, `coverageAnalysis` is `perTest`, `disableBail` is true, `reporters` is `["json"]` and `jsonReporter.fileName` is the report path. Run the engine with the binary standing in; verify the config file it wrote holds those values and that the report it read is the one the config named

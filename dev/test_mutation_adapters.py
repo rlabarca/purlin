@@ -105,9 +105,11 @@ def test_an_engine_name_nobody_ships_reads_as_none():
 
 
 # purlin: mutation PROOF-2
-def test_a_missing_key_is_read_as_auto():
-    assert mutation.select_engine({}, ['pytest']) == 'mutmut'
-    assert mutation.select_engine(None, ['jest']) == 'stryker'
+def test_a_missing_key_is_read_as_none():
+    assert mutation.select_engine({}, ['pytest']) == 'none'
+    assert mutation.select_engine(None, ['jest']) == 'none'
+    assert mutation.select_engine({'mutation_engine': 'auto'},
+                                  ['pytest']) == 'mutmut'
 
 
 # ---------------------------------------------------------------------------

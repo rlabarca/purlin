@@ -198,7 +198,7 @@ class TestTheFile:
         assert package['purlin_version'] == PURLIN_VERSION
         assert (package['project'], package['gate'], package['trust'],
                 package['mutation_engine'], package['min_strength']) == (
-                    'proj', 'signed', 'local', 'auto', 50)
+                    'proj', 'signed', 'local', 'none', 50)
         assert package['commit'] == signed.head()
 
     # purlin: package PROOF-10

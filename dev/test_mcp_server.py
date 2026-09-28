@@ -555,9 +555,16 @@ class TestGate:
                 ('passed', None, False),
                 ('strong', 70, True),
                 ('signed', 80, True)):
-            cfg = purlin_gate.resolve_gate({'gate': gate})
+            cfg = purlin_gate.resolve_gate({'gate': gate,
+                                            'mutation_engine': 'auto'})
             assert (cfg.gate, cfg.min_strength, cfg.breaks) == (
                 gate, strength, breaks)
+
+    def test_a_config_that_names_no_engine_runs_no_breaks(self):
+        for gate in ('passed', 'strong', 'signed'):
+            cfg = purlin_gate.resolve_gate({'gate': gate})
+            assert cfg.mutation_engine == 'none', gate
+            assert cfg.breaks is False, gate
 
     def test_the_settings_written_out_are_the_ones_a_project_can_name(self):
         written = purlin_gate.resolve_gate({'gate': 'signed'}).as_dict()
@@ -891,7 +898,7 @@ class TestTheStrongCell:
 
     # purlin: states PROOF-14
     def test_a_strength_under_the_minimum_is_weak_and_says_so(self):
-        made = Project(gate='strong')
+        made = Project(gate='strong', extra_config={'mutation_engine': 'auto'})
         try:
             made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
                             'status': 'pass'},
@@ -985,7 +992,7 @@ class TestTheStrongCell:
 
     # purlin: states PROOF-23
     def test_a_strong_cell_with_an_engine_carries_no_reasons(self):
-        made = Project(gate='strong')
+        made = Project(gate='strong', extra_config={'mutation_engine': 'auto'})
         try:
             made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
                             'status': 'pass'}], ci=True, strength=90)

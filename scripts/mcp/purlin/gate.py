@@ -26,7 +26,7 @@ code being signed.
 Everything else has a default, and every default can be overridden by naming
 the key:
 
-    {"gate": "strong", "min_strength": 70, "mutation_engine": "auto",
+    {"gate": "strong", "min_strength": 70, "mutation_engine": "none",
      "audit_parallel": 4, "ci": "github", "trust": "local"}
 
 The test suites, under `tests`, are read where the tests run, by
@@ -35,7 +35,8 @@ The test suites, under `tests`, are read where the tests run, by
 Mutation testing is optional. `mutation_engine` set to `none` turns it off:
 no breaks run and `min_strength` is not applied, so the AI audit alone
 decides the strong cell. `auto` or an engine's name turns it on, and a key
-that is absent reads as `auto`. Under the gate `passed` nothing compares a
+that is absent reads as `none`, since mutation testing is off until a
+project turns it on. Under the gate `passed` nothing compares a
 strength, so no breaks run there either.
 `audit_parallel` is how many model calls `purlin:audit` makes at once, an
 integer from 1 to 16; any other value is read as 4 with one warning.
@@ -64,8 +65,9 @@ _DERIVED = {
     'signed': 80,
 }
 
-# What an absent `mutation_engine` reads as. `none` turns mutation testing off.
-DEFAULT_MUTATION_ENGINE = 'auto'
+# What an absent `mutation_engine` reads as: mutation testing is off until a
+# project turns it on.
+DEFAULT_MUTATION_ENGINE = 'none'
 
 # How many model calls the audit makes at once, and the range it may take.
 DEFAULT_AUDIT_PARALLEL = 4

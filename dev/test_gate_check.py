@@ -61,8 +61,12 @@ def run(project, as_json=False):
 
 def project_at(gate, strength=90, by_ci=True, config=None, audits=('RULE-2',),
                spec=SPEC):
-    """A project whose rules have evidence and an audit entry, at the gate named."""
-    settings = {'min_strength': 50}
+    """A project whose rules have evidence and an audit entry, at the gate named.
+
+    Mutation testing is on, so the test strength in the evidence is compared
+    with the minimum.
+    """
+    settings = {'min_strength': 50, 'mutation_engine': 'auto'}
     settings.update(config or {})
     made = Project(gate=gate, config=settings, spec=spec)
     made.proofs()

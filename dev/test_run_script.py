@@ -42,8 +42,8 @@ def _project(tmp_path, tests=None, gate='passed'):
 
     `tests` is the `tests` setting, one pytest suite by default. `passed` is
     the default gate because it is the gate a new project is set up at. A
-    test that needs the breaks to run asks for `strong`, which is the lowest
-    gate that turns them on.
+    test that needs the breaks to run asks for `strong`, the lowest gate
+    that runs them, and sets `mutation_engine`, which is off until named.
     """
     root = tmp_path / 'project'
     (root / 'specs' / 'a').mkdir(parents=True)
@@ -601,6 +601,7 @@ class TestTheBreaks:
     def test_the_breaks_are_asked_for_the_scope_and_the_tests(
             self, tmp_path, evidence_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
+        _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         _code, calls = evidence_run(root, '--all', '--audit')
         capsys.readouterr()
@@ -674,6 +675,7 @@ class TestTheGateDecidesTheBreaks:
     def test_under_strong_the_audit_measures_and_writes_the_score(
             self, tmp_path, evidence_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
+        _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         _code, calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
@@ -718,7 +720,7 @@ class TestTheGateDecidesTheBreaks:
     def test_with_mutation_on_a_score_under_the_minimum_is_weak(
             self, tmp_path, evidence_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
-        _config(root, min_strength=90)
+        _config(root, min_strength=90, mutation_engine='auto')
         _spec(root, 'feat')
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
@@ -739,6 +741,7 @@ class TestTheGateDecidesTheBreaks:
             '# purlin: other PROOF-1\n'
             'def test_other():\n'
             '    assert 2 + 2 == 4\n'))
+        _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         _spec(root, 'other')
         _code, calls = evidence_run(root, '--all', '--audit')
@@ -1099,7 +1102,7 @@ class TestTheLastLines:
         install(answers=['settled: yes\n- PROOF-1 reads the value alone.',
                          'It looks fine to me.'])
         root = _many(tmp_path, 2)
-        _config(root, audit_parallel=1)
+        _config(root, audit_parallel=1, mutation_engine='auto')
         _git_repo(root)
         code, _calls = evidence_run(root, '--all', '--audit', '--commit')
         lines = capsys.readouterr().out.strip().splitlines()
