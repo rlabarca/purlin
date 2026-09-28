@@ -151,7 +151,7 @@ rule whose tests have no current `ci` run for this code, so `purlin:test --remot
 A remote runner is written for two reasons and no others, and init prints the ones that hold:
 
 ```
-A remote runner is written for two reasons:
+A remote runner is written because:
   A proof in specs/ is tagged @env for windows, which this machine is not, so only a runner can prove it.
   You chose not to trust this machine for signing, so the tests a signature rests on run on a clean one.
 ```

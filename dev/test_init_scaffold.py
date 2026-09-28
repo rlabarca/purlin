@@ -698,6 +698,30 @@ class TestTheWorkflow:
                 'tests a signature rests on run on a clean one.'
                 in output.splitlines()), output
 
+    # purlin: scaffold PROOF-51
+    @pytest.mark.parametrize('foreign', (False, True))
+    def test_the_heading_is_true_for_any_count_of_reasons(self, project,
+                                                          foreign):
+        self._trust_remote(project)
+        named = self._foreign_env(project) if foreign else None
+        output = project.run('--gate', 'strong')
+        lines = output.splitlines()
+        start = lines.index('A remote runner is written because:')
+        reasons = []
+        for line in lines[start + 1:]:
+            if not line.startswith('  '):
+                break
+            reasons.append(line)
+        signing = ('  You chose not to trust this machine for signing, so '
+                   'the tests a signature rests on run on a clean one.')
+        if foreign:
+            assert len(reasons) == 2, reasons
+            assert named in reasons[0], reasons
+            assert reasons[1] == signing, reasons
+        else:
+            assert reasons == [signing], reasons
+        assert 'two reasons' not in output, output
+
     # purlin: scaffold PROOF-50
     @pytest.mark.parametrize('gate', ('passed', 'strong'))
     def test_the_trust_reason_names_the_tests_at_passed(self, project, gate):

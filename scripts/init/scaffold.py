@@ -104,7 +104,7 @@ TRUST_REMOTE = ('Trust remote: purlin:sign refuses a rule whose tests have no '
                 'run from the remote runner for this commit, so '
                 'purlin:test --remote runs first.')
 
-REMOTE_INTRO = 'A remote runner is written for two reasons:'
+REMOTE_INTRO = 'A remote runner is written because:'
 REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
                     'it')
 
