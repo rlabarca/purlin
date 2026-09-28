@@ -66,7 +66,8 @@ claim of compliance: it hands evidence to a system of record.
    does, in the words of `references/writing_style.md`. It covers: what Purlin needs installed
    (git, Python and its lowest version, Claude Code), checked and not copied; the findings of
    `dev/plans/sanity-2-new-user.md` sections 2 and 3; the sentence `N of M rules meet the gate`,
-   which leaves every page; the queue's words. The three screenshots in `docs/images/` are
+   which leaves every page; the queue's words; the ten-minute path, which writes its first
+   rules with `purlin:spec` and marks its tests with `purlin:build`, as the slides do. The three screenshots in `docs/images/` are
    retaken last with `dev/capture_doc_screenshots.py`, from the rebuilt dashboard, and looked
    at before they are committed.
 6. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/getting-started.md`,

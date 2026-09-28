@@ -2,7 +2,10 @@ import json, os
 # DECK_ROOT names the folder the deck's files are written under; the default sits beside this script.
 ROOT = os.environ.get('DECK_ROOT') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deck', 'project')
 MONO = "font-family:'Courier New', monospace"
+# A command or a file name inside a sentence: the viewer keeps the colour and drops the face.
 def m(text):
+    return '<span style="%s; color:#E6BEB0">%s</span>' % (MONO, text)
+def mt(text):
     return '<span style="%s">%s</span>' % (MONO, text)
 SECTION = ('<section id="%s" data-transition="fade" style="background:#0C3444; color:#E4DDD4; '
            'font-family:Arial, sans-serif; padding:96px 128px 160px; display:flex; '
@@ -52,13 +55,13 @@ slide('start', 'Getting started', 'Start in under ten minutes', [
     ('Install the plugin', 'Inside Claude Code: %s.' % m('/plugin install purlin@purlin')),
     ('`purlin:init`', 'Sets the project up. It asks how far every rule must go; answer %s.' % m('passed')),
     ('`purlin:spec`', 'Say in your own words what must be true. It writes the rules for you, one line each.'),
-    ('Add three comments', 'One above each test, naming the rule it shows: %s.' % m('# purlin: cart RULE-1')),
+    ('`purlin:build`', 'Writes the code and its tests, or finds the tests you have. It adds one comment above each: %s.' % m('# purlin: cart RULE-1')),
     ('`purlin:test`', 'Runs your tests and prints %s' % m('Tests: 3 of 3 rules pass.')),
 ], '',
  'You need git, Python 3.9 or later and Claude Code. The marketplace is added once per project with '
  'claude plugin marketplace add. Setup reads the test framework from the project; where it finds '
  'none it asks for the command that runs the tests.', pad=16)
-slide('passed', 'The first gate', 'Gate %s: only check that rules pass their tests' % m('passed'), [
+slide('passed', 'The first gate', 'Gate %s: only check that rules pass their tests' % mt('passed'), [
     ('`purlin:spec`', 'You say what must be true. It is written down as rules.'),
     ('`purlin:build`', 'The code and its tests are written. One comment above each test names the rule it shows.'),
     ('`purlin:test`', 'Runs the tests and reports each rule: passed, failed, no test, or out of date, which means something changed since its test ran.'),
@@ -67,7 +70,7 @@ slide('passed', 'The first gate', 'Gate %s: only check that rules pass their tes
  'the test changed after the last run. purlin:test runs only what your change touched, writes the '
  'evidence, and commits it only when you pass --commit.',
  lead='A gate is how far every rule must go before a version counts as proven. You choose one of three.')
-slide('strong', 'The second gate', 'Gate %s: also check that the tests are good enough' % m('strong'), [
+slide('strong', 'The second gate', 'Gate %s: also check that the tests are good enough' % mt('strong'), [
     ('`spec, build, test`', 'As before. Every rule also gets a proof: one plain sentence saying how the rule is shown to hold.'),
     ('`purlin:audit`', 'An AI model reads each test against its proof and reports any test that shows less than its proof says.', [
         ('Mutation testing', 'Optional. The code is broken on purpose to see whether the tests notice.'),
@@ -77,7 +80,7 @@ slide('strong', 'The second gate', 'Gate %s: also check that the tests are good 
  'them. The audit reads one rule per call, several at once, says how many it will read before it '
  'starts, and names the model on every finding. A rule whose text, proof and test have not changed '
  'is not read again.')
-slide('signed', 'The third gate', 'Gate %s: also have a person sign every rule' % m('signed'), [
+slide('signed', 'The third gate', 'Gate %s: also have a person sign every rule' % mt('signed'), [
     ('`test, audit`', 'As before. Every rule passes its tests and its audit.'),
     ('`purlin:sign`', 'Shows you each rule with its proof, its tests and what the audit found. You sign it.', [
         ('The signature', 'One file per rule, in a signed commit. It records who signed and when.'),
