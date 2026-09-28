@@ -25,7 +25,10 @@ WORDS = ("gauge", "HOLLOW", "PROVABLE", "receipt", "mutation score",
          # a rule's level, `[level: ...]`, says what a rule asks for
          "risk", "risks",
          # decision 33: nothing scans a proof or a test before the AI audit
-         "free scan", "free scans", "hint", "hints")
+         "free scan", "free scans", "hint", "hints",
+         # decision 35: an AI audit that cannot decide is build work, and
+         # reads `weak` with its own sentence
+         "unsettled")
 LITERALS = ("@on(",                     # not a word: the retired scope tag
             "platform registry", "--platform",
             "Proof ready", "lowest state", "seven states", "auto-approval", "review queue",
@@ -84,7 +87,11 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             # decision 37: one queue, and no holds. The flag, the two lists
             # and the payload field they fed are retired by their machine
             # spellings; hold and review stay plain English words.
-            "--hold", "review_list", "sign_list", "signable")
+            "--hold", "review_list", "sign_list", "signable",
+            # decision 35: `purlin:audit` calls the model itself. The flag
+            # that once asked for it and the builder of the file it fed are
+            # retired by their machine spellings.
+            re.compile(r"--ai\b"), "build_brief")
 
 # The queue is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
@@ -92,8 +99,11 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
 # `verdict` stays retired in prose. It came back in 0.10.0 as one field name,
 # the audit's answer per rule in `references/formats/evidence_format.md`, so
 # its machine spellings are stepped over.
+# `mutation score` stays retired too, except in the one reason the strong
+# cell gives where no score was measured, which decision 35 wrote verbatim.
 ALLOWED_PHRASES = ("rules need a person", "rule needs a person",
-                   "`verdict`", '"verdict"', "'verdict'")
+                   "`verdict`", '"verdict"', "'verdict'",
+                   "no mutation score measured")
 CASED = (re.compile(r"\bPages\b"),)     # capitalised only; "pages" of a document is fine
 MD_ONLY = (re.compile(r"\bmode\b", re.I),)  # "mode" is only retired in prose
 
