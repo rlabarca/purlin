@@ -597,6 +597,36 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     default. The same check runs `purlin:spec-from-code` for real on three small real
     projects, at each gate, and holds the result to three measures: most rules already
     pass, the rules and proofs meet the quality guide, every file and function is covered.
+65. **Nine places where the product did not do what its rule says** (added 2026-09-28), found
+    by the tests written to close the proof gaps. Each is settled:
+    - **The old cache folder.** `purlin:init --update` deletes it outright. The rule changes:
+      it no longer says the folder is left on disk and named in `.gitignore`.
+    - **The run branch on Azure DevOps.** The remote run reads the full branch name first.
+      Fixed on this machine against a stand-in, confirmed on the work machine.
+    - **A proof another operating system owns**, whose test is skipped here, is recorded in the
+      evidence as `not run`, never `missing`.
+    - **A system that is not Windows or macOS** is treated as `linux`. The word typed in a
+      spec and the name results are filed under stay `linux`; screens, the dashboard and the
+      docs show it as `Linux/Unix`.
+    - **A git host that is neither GitHub nor Azure DevOps.** Setup's line says what still
+      works: everything on the user's own machine works on any host, and only a remote run
+      needs one of the two.
+    - **Every ending of a command names a command to run next**, also where the work is
+      complete. The build skill's 3 endings and the anchor skill's 2 endings that name none
+      get one, and the test checks every ending.
+    - **No name containing `token`.** The one line that stores a setting's name under such a
+      name is renamed. The rule stays as written and the test checks it in full.
+    - **The guard before a revision handed to git** is required where the revision comes from
+      outside Purlin. The rule is narrowed to say so; the five places that hand git the fixed
+      word `HEAD` stay as they are.
+66. **What starting from existing code must give** (added 2026-09-28), the measures of sanity
+    check 3. Every source file belongs to some feature's rules. Rules say what a user or a
+    caller can see; an internal helper is covered by the rule of the behaviour it serves and
+    gets no rule of its own. Every test the project already had is tied to a rule, unless the
+    report says why not. On the three trial projects, which are chosen to be well tested, at
+    least 7 in 10 rules pass on the first run. A test that was failing before is never made
+    to pass by writing the rule to fit it: the rule says what the code should do, and the
+    test stays failing until the code is fixed.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
