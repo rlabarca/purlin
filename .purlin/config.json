@@ -1,11 +1,9 @@
 {
   "version": "0.10.0",
   "gate": "signed",
-  "min_strength": 80,
   "mutation_engine": "auto",
+  "min_strength": 80,
   "audit_parallel": 4,
-  "ci": "github",
-  "trust": "local",
   "tests": [
     {
       "name": "pytest",
@@ -25,5 +23,7 @@
         "dev/test_*.sh"
       ]
     }
-  ]
+  ],
+  "ci": "github",
+  "trust": "local"
 }
