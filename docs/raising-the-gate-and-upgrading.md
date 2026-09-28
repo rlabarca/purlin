@@ -134,7 +134,8 @@ rendered from them:
 | `hooks` | removes the git hooks 0.9.5 installed |
 | `config` | writes `.purlin/config.json` at this release's shape, asks the gate, mutation and trust questions, and names every key it drops |
 | `evidence` | creates `.purlin/evidence/` with one README saying what it holds |
-| `workflows` | removes the workflows 0.9.5 wrote, and writes `purlin.yml` only where the project has a reason for a runner |
+| `dashboard` | replaces `purlin-report.html` at the project root, the link 0.9.5 left or a copy that differs, with the page `purlin:init` copies; a project with no page there is left without one |
+| `workflows` | removes the workflows 0.9.5 wrote, and writes the runner file where `purlin:init` writes it, `.github/workflows/purlin.yml` on GitHub or `purlin.azure-pipelines.yml` at the root on Azure DevOps, only where the project has a reason for a runner |
 | `markers` | rewrites each 0.9.5 marker in the project's tests as one comment above the same test |
 | `plugins` | removes the test plugins 0.9.5 copied into the project and the wiring that loaded them |
 

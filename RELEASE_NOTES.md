@@ -141,27 +141,30 @@ prints the pending list and writes nothing. Until the update runs, `purlin:statu
    (`xunit` becomes `dotnet`), naming any it drops; asks the mutation question where an engine
    exists, defaulting to no; and asks the trust question, defaulting to yes.
 8. `evidence`: writes `.purlin/evidence/README.md`.
-9. `workflows`: removes a workflow that committed proof files, and writes one under
-   `.github/workflows/` only for the two reasons a runner exists, after asking.
-10. `markers`: rewrites each 0.9.5 marker as a comment above the same test, one line per file.
+9. `dashboard`: replaces `purlin-report.html` at the project root, the link 0.9.5 left into its
+   own plugin folder or a copy that differs, with the 0.10.0 page, the bytes `purlin:init`
+   copies. A project with no page there is left without one.
+10. `workflows`: removes a workflow that committed proof files, and writes the runner file where
+    `purlin:init` writes it, `.github/workflows/purlin.yml` on GitHub or
+    `purlin.azure-pipelines.yml` at the root on Azure DevOps, only for the two reasons a runner
+    exists, after asking.
+11. `markers`: rewrites each 0.9.5 marker as a comment above the same test, one line per file.
     A shell or SQL test file becomes one test that passes when it exits 0. A marker it cannot
     place, such as a module-wide `pytestmark`, is named by file and line and left for you.
-11. `plugins`: removes the plugin copies under `.purlin/plugins/`, the `pytest_plugins` entry
+12. `plugins`: removes the plugin copies under `.purlin/plugins/`, the `pytest_plugins` entry
     in `conftest.py` (the file too, when it held nothing else) and the reporter entry in the
     Jest or Vitest configuration or `package.json`, and names a `.csproj` that compiles the
     xUnit logger for you to edit by hand.
-12. It commits everything it changed in one commit,
+13. It commits everything it changed in one commit,
     `chore(update): migrate to 0.10.0 (<ids>)`.
-13. It names each spec with no `> Scope:` line, `2 specs have no > Scope: line: a, b. Run
+14. It names each spec with no `> Scope:` line, `2 specs have no > Scope: line: a, b. Run
     purlin:spec <name> to add one. The line is optional below the gate signed and required at
     signed.`, and changes none.
-14. It ends with `→ Next: run purlin:status to see where every rule stands.`
+15. It ends with `→ Next: run purlin:status to see where every rule stands.`
 
 After it, run `purlin:test`. The receipts and `@manual` stamps 0.9.5 wrote do not carry
 forward: nothing in 0.9.5 bound what 0.10.0 signs, so at `strong` and above the queue lists
-every rule that waits on a person. The update leaves `purlin-report.html` at the project root as
-0.9.5 made it, a link into the 0.9.5 plugin; delete it and run `purlin:init` to copy the
-0.10.0 page.
+every rule that waits on a person.
 
 ### Words from 0.9.5, and what to say now
 
