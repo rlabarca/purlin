@@ -305,6 +305,17 @@ the same line with `every proof` in place of `every test`. Where one is called f
 `.github/workflows/purlin.yml` on GitHub, or `purlin.azure-pipelines.yml` at the project root
 on Azure DevOps. The job is named `purlin`.
 
+Where one exists, `purlin:test --remote` hands this commit to it and brings back what it wrote:
+
+```mermaid
+flowchart TD
+    Y["you run<br>purlin:test --remote"] --> P["Purlin pushes this commit<br>to run/#lt;branch#gt;-#lt;sha7#gt;"]
+    P --> R["the git host's runner<br>runs the marked tests<br>on Linux and on each<br>operating system<br>an @env proof names"]
+    R --> C["the runner commits<br>.purlin/evidence/ci/<br>onto the run branch"]
+    C -->|"Purlin waits for<br>the run to finish"| H["Purlin pulls the<br>evidence home with<br>git pull --ff-only"]
+    H --> D["Purlin deletes<br>the run branch"]
+```
+
 ### What starts a run
 
 ```yaml
