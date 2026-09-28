@@ -198,6 +198,12 @@ def test_the_workflow_names_the_test_step_and_uploads_nothing():
 def test_the_job_is_named_purlin():
     jobs = parse_blocks(read(WORKFLOW_REL))['jobs']
     assert jobs[0].strip() == 'purlin:', jobs[0]
+    job_keys = [line.strip() for line in jobs
+                if len(line) - len(line.lstrip(' ')) == 2]
+    assert job_keys == ['purlin:'], 'the workflow has one job: %s' % job_keys
+    for word in ('pull_request', 'fork'):
+        assert word not in read(WORKFLOW_REL), (
+            '%r appears in the workflow; it runs on a push alone' % word)
 
 
 # purlin: host PROOF-19
@@ -300,3 +306,38 @@ def test_the_fixtures_tests_pass_against_its_own_module():
     assert greeting.greet('Ada') == 'Hello, Ada!'
     assert greeting.greet('') == 'Hello, world!'
     assert isinstance(greeting.os_tag(), str)
+
+
+# purlin: host PROOF-20
+def test_the_fixtures_own_test_file_runs_and_names_nothing_of_purlin(tmp_path):
+    """The fixture's tests, run by themselves; the Linux one passes on Linux alone."""
+    test_file = 'tests/test_greeting.py'
+    imported = set()
+    for line in read(test_file).splitlines():
+        words = line.split()
+        if words[:1] in (['import'], ['from']):
+            imported.add(words[1].split('.')[0])
+    assert imported == {'os', 'sys', 'greeting'}, imported
+    assert 'scripts' not in read(test_file) and 'dev/' not in read(test_file)
+
+    ini = tmp_path / 'pytest.ini'
+    ini.write_text('[pytest]\n', encoding='utf-8')
+    report = tmp_path / 'report.xml'
+    ran = subprocess.run(
+        [sys.executable, '-m', 'pytest', test_file, '-q', '-p', 'no:cacheprovider',
+         '-c', str(ini), '--rootdir', FIXTURE, '--junitxml', str(report)],
+        cwd=FIXTURE, capture_output=True, text=True,
+        env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'))
+    xml = report.read_text(encoding='utf-8')
+    outcomes = {}
+    for case in xml.split('<testcase ')[1:]:
+        name = case.split(' name="', 1)[1].split('"', 1)[0]
+        body = case.split('</testcase>')[0]
+        outcomes[name] = ('failed' if '<failure' in body or '<error' in body
+                          else 'skipped' if '<skipped' in body else 'passed')
+    on_linux = sys.platform.startswith('linux')
+    assert outcomes == {
+        'test_greet_names_and_empty': 'passed',
+        'test_os_tag_is_linux': 'passed' if on_linux else 'failed',
+    }, ran.stdout + ran.stderr
+    assert ran.returncode == (0 if on_linux else 1), ran.stdout + ran.stderr
