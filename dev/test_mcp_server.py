@@ -338,6 +338,9 @@ class TestSpecParsing:
 
     # purlin: specs PROOF-2
     def test_bracketed_text_that_is_not_a_tag_stays_in_the_claim(self):
+        # At the very end of the line, alone, it is still not a tag.
+        assert purlin_specs.split_rule_tags('Tokens expire [owner: qa]') == (
+            'Tokens expire [owner: qa]', {})
         text, meta = purlin_specs.split_rule_tags(
             'Tokens expire [owner: qa] [level: strong]')
         assert text == 'Tokens expire [owner: qa]'
@@ -350,6 +353,17 @@ class TestSpecParsing:
             'Tokens  expire   after 24 hours [level: strong]')
         assert purlin_specs.rule_text_hash(tagged) == plain, (
             're-tagging or reflowing a rule must not change its rule text hash')
+        # A rule broken across a line break is the same rule.
+        assert purlin_specs.rule_text_hash(
+            'Tokens expire\n  after 24 hours') == plain
+        # A changed word is a changed rule.
+        assert purlin_specs.rule_text_hash(
+            'Tokens expire after 12 hours') != plain
+        # The proof text hash normalises whitespace the same way.
+        proof = purlin_specs.proof_text_hash('Wait 24 hours; verify 401')
+        assert purlin_specs.proof_text_hash(
+            'Wait  24\n hours;   verify 401') == proof
+        assert purlin_specs.proof_text_hash('Wait 12 hours; verify 401') != proof
 
     # purlin: specs PROOF-17
     def test_the_level_tag_takes_the_gates_three_words(self):
@@ -366,6 +380,18 @@ class TestSpecParsing:
     # purlin: specs PROOF-5
     # purlin: specs PROOF-6
     def test_env_is_parsed_and_bounded_to_three_values(self, project):
+        # Reading stops at a word that is not a tag, so a tag before it is
+        # not read either.
+        assert purlin_specs.split_proof_tags('x @manual @smoke') == (
+            'x @manual @smoke', False, None, [])
+        project.spec(
+            '# Feature: bsd_lock\n\n## Rules\n\n- RULE-1: Files lock\n\n'
+            '## Proof\n\n'
+            '- PROOF-1 (RULE-1): Lock a file; verify a second open fails '
+            '@env(bsd)\n', name='bsd_lock')
+        bsd = purlin_specs.scan_specs(project.root)['bsd_lock']
+        assert bsd['proofs']['PROOF-1']['env'] is None, bsd['proofs']
+        assert bsd['unknown_tags'] == ['@env(bsd)'], bsd['unknown_tags']
         project.spec(
             '# Feature: login\n\n## Rules\n\n- RULE-1: Files lock\n\n'
             '## Proof\n\n'
@@ -424,6 +450,15 @@ class TestSpecParsing:
         clean = {name: dict(info, unknown_tags=[])
                  for name, info in features.items()}
         assert purlin_specs.unknown_tag_warning(clean) is None
+        # The other retired field, `> Visual-Hash:`, is ignored the same way.
+        project.spec(
+            '# Feature: swatch\n\n> Visual-Hash: 9f86d081\n\n'
+            '## Rules\n\n- RULE-1: It renders\n\n'
+            '## Proof\n\n- PROOF-1 (RULE-1): Open it; verify 1 swatch\n',
+            name='swatch')
+        swatch = purlin_specs.scan_specs(project.root)['swatch']
+        assert swatch['rules'] == {'RULE-1': 'It renders'}, swatch['rules']
+        assert swatch['unknown_tags'] == ['> Visual-Hash:'], swatch
 
     # purlin: specs PROOF-10
     def test_a_source_is_a_git_url_plus_a_path_or_whole(self):
@@ -435,6 +470,11 @@ class TestSpecParsing:
         # value that has to be refused is refused whole.
         assert purlin_specs.parse_source('--upload-pack=/bin/echo') == (
             '--upload-pack=/bin/echo', None)
+        # A value with a space whose first word is not a git URL is not split.
+        assert purlin_specs.parse_source('./policies specs/no_eval.md') == (
+            './policies specs/no_eval.md', None)
+        assert purlin_specs.parse_source('--upload-pack=touch x specs/a.md') == (
+            '--upload-pack=touch x specs/a.md', None)
 
     # purlin: specs PROOF-11
     def test_a_path_field_supplies_the_path_for_a_bare_source_url(self, project):
@@ -464,6 +504,15 @@ class TestSpecParsing:
         assert info['source'] == 'https://github.com/acme/p.git'
         assert info['source_path'] == 'specs/no_eval.md'
         assert info['pinned'] == 'abc1234def'
+        # Either condition alone makes an anchor; neither makes a feature.
+        project.spec('# Feature: ruleset\n\n## Rules\n\n- RULE-1: A\n',
+                     name='ruleset', category='_anchors')
+        project.spec('# Anchor: shared\n\n## Rules\n\n- RULE-1: A\n',
+                     name='shared', category='schema')
+        features = purlin_specs.scan_specs(project.root)
+        assert features['ruleset']['is_anchor'] is True
+        assert features['shared']['is_anchor'] is True
+        assert features['login']['is_anchor'] is False
 
     # purlin: specs PROOF-14
     def test_requires_and_global_pull_rules_into_a_feature(self, project):
@@ -487,6 +536,22 @@ class TestSpecParsing:
         # An anchor proves its own rules and nothing else.
         assert purlin_specs.rule_refs('security', features) == [
             ('security', 'RULE-1', 'own')]
+        # Two levels down: `api` now requires `base`, so `login` owes `base`
+        # too, while `api`, an anchor, still owes only its own rule.
+        project.spec(
+            '# Feature: base\n\n## Rules\n\n- RULE-1: Requests carry an id\n',
+            name='base', category='core')
+        project.spec(
+            '# Anchor: api\n\n> Requires: base\n\n'
+            '## Rules\n\n- RULE-1: Responses carry a type\n',
+            name='api', category='schema')
+        features = purlin_specs.scan_specs(project.root)
+        assert purlin_specs.rule_refs('login', features) == [
+            ('login', 'RULE-1', 'own'), ('login', 'RULE-2', 'own'),
+            ('api', 'RULE-1', 'required'), ('base', 'RULE-1', 'required'),
+            ('security', 'RULE-1', 'global')]
+        assert purlin_specs.rule_refs('api', features) == [
+            ('api', 'RULE-1', 'own')]
 
     # purlin: specs PROOF-15
     def test_every_spec_is_keyed_by_its_filename_stem(self, project):
@@ -505,6 +570,19 @@ class TestSpecParsing:
             assert purlin_specs.scan_specs(empty) == {}
         finally:
             shutil.rmtree(empty, ignore_errors=True)
+
+    # purlin: specs PROOF-15
+    @pytest.mark.skipif(not hasattr(os, 'geteuid') or os.geteuid() == 0,
+                        reason='file modes do not refuse a read here')
+    def test_a_spec_that_cannot_be_read_is_skipped(self, project):
+        locked = os.path.join(project.root, 'specs', 'auth', 'locked.md')
+        _write(locked, SPEC.replace('login', 'locked'))
+        os.chmod(locked, 0)
+        try:
+            features = purlin_specs.scan_specs(project.root)
+        finally:
+            os.chmod(locked, 0o644)
+        assert sorted(features) == ['login'], sorted(features)
 
 
 # ---------------------------------------------------------------------------
@@ -2807,8 +2885,17 @@ class TestTransport:
         assert result['serverInfo']['name'] == 'purlin'
         with open(os.path.join(PROJECT_ROOT, 'VERSION'),
                   encoding='utf-8') as handle:
-            assert result['serverInfo']['version'] == handle.read().strip()
+            version = handle.read().strip()
+        assert result['serverInfo']['version'] == version
+        # A client discovers the tools through this capability.
+        assert 'tools' in result['capabilities'], result['capabilities']
         assert 'Purlin MCP server' in stderr
+        # The startup line names the version and the root it resolved.
+        started = re.search(r'Purlin MCP server v(\S+) started \(root: (.+?), ',
+                            stderr)
+        assert started and started.group(1) == version, stderr
+        assert os.path.realpath(started.group(2)) == os.path.realpath(
+            project.root), stderr
 
     # purlin: server PROOF-2
     def test_tools_list_names_the_three_tools(self, project):
@@ -2839,7 +2926,10 @@ class TestTransport:
                                       'value': 'strong'}}},
             {'jsonrpc': '2.0', 'id': 3, 'method': 'tools/call',
              'params': {'name': 'purlin_config',
-                        'arguments': {'action': 'read', 'key': 'gate'}}})
+                        'arguments': {'action': 'read', 'key': 'gate'}}},
+            {'jsonrpc': '2.0', 'id': 4, 'method': 'tools/call',
+             'params': {'name': 'purlin_config',
+                        'arguments': {'action': 'read'}}})
         assert json.loads(responses[0]['result']['content'][0]['text']) == {
             'gate': 'passed'}
         assert json.loads(responses[2]['result']['content'][0]['text']) == {
@@ -2847,7 +2937,12 @@ class TestTransport:
         # The write lands in the one settings file.
         with open(os.path.join(project.root, '.purlin', 'config.json'),
                   encoding='utf-8') as handle:
-            assert json.load(handle)['gate'] == 'strong'
+            on_disk = json.load(handle)
+        assert on_disk['gate'] == 'strong'
+        # A read naming no key answers the whole file, every key it holds.
+        whole = json.loads(responses[3]['result']['content'][0]['text'])
+        assert whole == on_disk, whole
+        assert sorted(whole) == ['gate', 'project_name', 'tests'], whole
 
     def test_drift_answers_json(self, project):
         responses, _stderr = _rpc(project.root, {
@@ -2859,12 +2954,22 @@ class TestTransport:
 
     # purlin: server PROOF-7
     def test_a_root_with_no_workspace_says_so_rather_than_reporting_nothing(
-            self, tmp_path):
+            self, tmp_path, monkeypatch):
+        monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
         responses, _stderr = _rpc(str(tmp_path), {
             'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',
             'params': {'name': 'sync_status', 'arguments': {}}})
         text = responses[0]['result']['content'][0]['text']
         assert 'No Purlin workspace' in text and 'purlin:init' in text
+        # It names the root, and that the root is the working directory
+        # because no .purlin/ marker was found; it carries no status table and
+        # no report of an empty project.
+        assert 'No Purlin workspace at %s:' % os.path.realpath(
+            str(tmp_path)) in text, text
+        assert 'That root came from the working directory, with no .purlin/ ' \
+            'marker in it or above it.' in text, text
+        assert 'Tests' not in text and 'Rules' not in text, text
+        assert 'No specs found' not in text, text
 
     # purlin: server PROOF-3
     def test_a_notification_gets_no_response_and_bad_json_gets_a_parse_error(
@@ -2896,8 +3001,14 @@ class TestTransport:
         responses, _stderr = _rpc(str(tmp_path), {
             'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',
             'params': {'name': 'sync_status',
-                       'arguments': {'project_root': project.root}}})
+                       'arguments': {'project_root': project.root}}}, {
+            'jsonrpc': '2.0', 'id': 2, 'method': 'tools/call',
+            'params': {'name': 'sync_status', 'arguments': {}}})
         assert 'login' in responses[0]['result']['content'][0]['text']
+        # The named root was for that call alone: the next call in the same
+        # session, naming none, answers for the empty startup folder.
+        again = responses[1]['result']['content'][0]['text']
+        assert again.startswith('No Purlin workspace'), again
 
     # purlin: server PROOF-8
     def test_a_tool_that_raises_answers_rather_than_crashing(self, project,
@@ -2917,6 +3028,24 @@ class TestTransport:
         again = purlin_srv.handle_request(
             request, project.root)['result']['content'][0]['text']
         assert 'Tests' in again, again
+        # Through one running session: the call that fails and the call
+        # after it each get an answer, so the session stayed open.
+        real, calls = purlin_srv.status_module.sync_status, []
+
+        def fails_once(root):
+            calls.append(root)
+            if len(calls) == 1:
+                raise RuntimeError('boom')
+            return real(root)
+
+        monkeypatch.setattr(purlin_srv.status_module, 'sync_status',
+                            fails_once)
+        responses, _stderr = _rpc(project.root, request,
+                                  dict(request, id=2))
+        texts = [r['result']['content'][0]['text'] for r in responses]
+        assert [r['id'] for r in responses] == [1, 2], responses
+        assert texts[0].startswith('Error running sync_status'), texts
+        assert 'boom' in texts[0] and 'Tests' in texts[1], texts
 
     # purlin: server PROOF-10
     def test_a_write_with_no_key_and_an_unknown_action_are_refused(self,
