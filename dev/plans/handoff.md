@@ -59,9 +59,19 @@ claim of compliance: it hands evidence to a system of record.
 4. **More sanity checks**, each its own fresh agent, in the order the owner picks: a QA person
    writes proofs; an upgrade from a real 0.9.5 project; a hostile reviewer who tries to make an
    unproven rule read as proven.
-5. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/getting-started.md`,
+5. **Every page is read again against the code**, which the owner asked for on 2026-09-28. It
+   comes after every decision from the sanity checks and the dashboard is applied, since each
+   of those changes what a page must say. One agent per page of `README.md` and `docs/`, each
+   checking every sentence, command, sample of output and file name against what the product
+   does, in the words of `references/writing_style.md`. It covers: what Purlin needs installed
+   (git, Python and its lowest version, Claude Code), checked and not copied; the findings of
+   `dev/plans/sanity-2-new-user.md` sections 2 and 3; the sentence `N of M rules meet the gate`,
+   which leaves every page; the queue's words. The three screenshots in `docs/images/` are
+   retaken last with `dev/capture_doc_screenshots.py`, from the rebuilt dashboard, and looked
+   at before they are committed.
+6. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/getting-started.md`,
    `docs/regulated-workflow.md`, the rest of `docs/`, the slides, the diagrams.
-6. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
+7. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
    push the work as a branch; on the work machine run `dev/manual/check_azure_remote.py` and
    `dev/manual/check_azure_provenance.py` against a real Azure DevOps project, then
    `purlin:audit`, `purlin:sign`, the push of the tag, the release.
