@@ -46,7 +46,8 @@ they all read instead.
             "blocked_by": null, "flags": {...},
             "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
             "proofs": [{"id": "PROOF-1", "manual": false, "env": null,
-                        "text": "...", "tests": [...]}]}
+                        "text": "...", "tests": [...]}],
+            "tests": []}
          ]}
       ],
       "queue": [{"feature": "login", "owner": "login", "rule": "RULE-3",
@@ -61,6 +62,12 @@ they all read instead.
       "remote_url": "https://github.com/acme/ledger.git",
       "warnings": ["..."]
     }
+
+`rules[].tests` lists the tests marked with the rule's own id, which is how
+a rule with no proof names its tests: `[{"file": "tests/test_login.py",
+"name": "test_locks", "result": "pass"}]`, where `result` is `pass`, `fail`,
+`missing` or `not run`. A rule whose tests carry its proofs' ids lists them
+under each proof and an empty `tests`.
 
 A cell above the project's gate is absent, not empty: a `passed` project
 carries one cell per rule, a `signed` project carries three.
@@ -514,6 +521,7 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'blocked_by': result['blocked_by'],
         'flags': result['flags'],
         'proofs': proof_dicts,
+        'tests': _rule_tests(sections, rule_id),
     }
 
 
@@ -579,6 +587,39 @@ def _backing_tests(sections, proof_id):
                     observed.append(pair)
         if observed:
             return observed
+    return []
+
+
+def _rule_tests(sections, rule_id):
+    """`[{file, name, result}]` for the tests marked with the rule's own id.
+
+    Read from the same sections as `_backing_tests`, current ones first. A
+    test two sections list reads `fail` where either failed, then `pass`
+    where either passed, and otherwise the first word a section wrote.
+    """
+    for wanted in (True, False):
+        order = []
+        results = {}
+        for entry in sections or ():
+            if wanted and not entry.get('current'):
+                continue
+            for item in (entry['section'].get('proofs') or ()):
+                if not isinstance(item, dict) or item.get('id') != rule_id:
+                    continue
+                path, _, name = (item.get('test') or '').partition('::')
+                if not path:
+                    continue
+                key = (path, name)
+                result = item.get('result')
+                if key not in results:
+                    order.append(key)
+                    results[key] = result
+                elif result == 'fail' or (result == 'pass'
+                                          and results[key] != 'fail'):
+                    results[key] = result
+        if order:
+            return [{'file': path, 'name': name, 'result': results[(path, name)]}
+                    for path, name in order]
     return []
 
 

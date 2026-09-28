@@ -330,7 +330,10 @@ def _rule(tree, rule, loaded, sections, signatures):
                     'env': proof.get('env')} for proof in proofs],
         'tests': [{'proof': proof.get('id'), 'file': test.get('file'),
                    'name': test.get('name')}
-                  for proof in proofs for test in proof.get('tests') or ()],
+                  for proof in proofs for test in proof.get('tests') or ()]
+                 + [{'proof': rule_id, 'file': test.get('file'),
+                     'name': test.get('name')}
+                    for test in rule.get('tests') or ()],
         'results': _results(rule_id, proofs, sections),
         'audit': _audit(rule, loaded),
         'signatures': _signatures(tree, rule, signatures),

@@ -199,6 +199,7 @@
           "rule_hash": "rrule1log",
           "test_hash": "trule1log",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "A person signs in with an email address and a password."
         },
         {
@@ -287,6 +288,7 @@
           "rule_hash": "rrule2log",
           "test_hash": "trule2log",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
@@ -379,6 +381,7 @@
           "rule_hash": "rrule3log",
           "test_hash": "trule3log",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "A locked account sends one notification email."
         },
         {
@@ -474,6 +477,7 @@
           "rule_hash": "rrule4log",
           "test_hash": "trule4log",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "The session cookie is refused over an unencrypted connection."
         }
       ],
@@ -626,6 +630,7 @@
           "rule_hash": "rrule1inv",
           "test_hash": "trule1inv",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "An invoice totals its lines to the cent."
         },
         {
@@ -719,6 +724,7 @@
           "rule_hash": "rrule2inv",
           "test_hash": "trule2inv",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "An invoice with no lines totals zero."
         },
         {
@@ -784,6 +790,7 @@
           "rule_hash": "c3d4e5f6aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "test_hash": null,
           "test_hash_kind": "manual",
+          "tests": [],
           "text": "A credit note prints the original invoice number and the reason the credit was raised"
         }
       ],
@@ -927,6 +934,7 @@
           "rule_hash": "rrule1che",
           "test_hash": "trule1che",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "The cart page shows the order total above the pay button."
         }
       ],
@@ -1052,6 +1060,7 @@
           "rule_hash": "rrule1exp",
           "test_hash": "trule1exp",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "A statement export lists every invoice of the month in date order."
         },
         {
@@ -1127,6 +1136,7 @@
           "rule_hash": "rrule2exp",
           "test_hash": "trule2exp",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "A statement export opens with a header row naming every column."
         }
       ],

@@ -519,6 +519,18 @@ function proofPanel(proof) {
     + '<dt>Tests</dt><dd><pre class="code">' + tests + '</pre></dd>'
     + '</dl></div>';
 }
+var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
+  'not run': 'not run'};
+function testsSection(rule) {
+  var tests = rule.tests || [];
+  if (!tests.length && showsProofs()) { return ''; }
+  var lines = tests.map(function (t) {
+    return '<p><span class="mono">' + esc(t.file) + ' :: ' + esc(t.name)
+      + '</span> ' + pill(TEST_WORDS[t.result] || 'not run') + '</p>';
+  }).join('') || '<p class="sec">No test yet.</p>';
+  return '<section><p class="eyebrow">Tests</p><div class="panel tests">'
+    + lines + '</div></section>';
+}
 function backLink() {
   var from = VIEW.from === 'queue' && level('strong') ? 'queue' : 'board';
   var label = {queue: 'Queue', board: 'Board'}[from];
@@ -560,7 +572,8 @@ function renderRule() {
       + '<div class="stack">' + ((rule.proofs || []).length
         ? rule.proofs.map(proofPanel).join('')
         : '<div class="panel sec">No proof written.</div>')
-      + '</div></section>' : '');
+      + '</div></section>' : '')
+    + testsSection(rule);
 }
 var ARRIVES = {
   strong: 'A rule arrives here when its level is strong and its proof is '

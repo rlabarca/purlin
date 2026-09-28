@@ -39,8 +39,8 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'export'))
 import package as package_module                              # noqa: E402
 import sign as sign_module                                    # noqa: E402
 from purlin import PURLIN_VERSION                             # noqa: E402
-from test_signatures import (SIGNING_GATE, SPEC, Project,     # noqa: E402
-                             commit_as_ci, git, signing_key, write)
+from test_signatures import (SIGNING_GATE, SPEC, TEST_FILE,   # noqa: E402
+                             Project, commit_as_ci, git, signing_key, write)
 
 PACKAGE_PY = os.path.join(ROOT, 'scripts', 'export', 'package.py')
 
@@ -360,6 +360,43 @@ class TestTheContent:
         assert rule['statuses']['signed'] == {'word': 'signed',
                                               'reasons': ['by jane@acme.com']}
         assert rule['meets_gate'] is True
+
+    # purlin: package PROOF-18
+    def test_a_rule_with_no_proof_carries_the_tests_marked_with_its_id(self):
+        made = Project(spec=SPEC_WITH_A_THIRD_RULE, gate='passed')
+        try:
+            made.edit_test(TEST_FILE + (
+                '\n\n# purlin: login RULE-3\n'
+                'def test_a_locked_account_returns_423():\n'
+                '    assert True\n'))
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'test: the locked account')
+            made.proofs()
+            rel = made.evidence(commit_it=False)
+            path = os.path.join(made.root, *rel.split('/'))
+            with open(path, encoding='utf-8') as handle:
+                data = json.load(handle)
+            for section in data['platforms'].values():
+                section['rules']['RULE-3'] = 'passed'
+                section['proofs'].append({
+                    'id': 'RULE-3', 'rule': 'RULE-3', 'result': 'pass',
+                    'env': None, 'manual': False,
+                    'test': 'tests/test_login.py::'
+                            'test_a_locked_account_returns_423'})
+            write(path, json.dumps(data, indent=2, sort_keys=True))
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
+            export(made.root)
+            third = rule_of(read_package(made.root, 'unversioned'), 'RULE-3')
+            assert third['proofs'] == []
+            assert third['tests'] == [{
+                'proof': 'RULE-3', 'file': 'tests/test_login.py',
+                'name': 'test_a_locked_account_returns_423'}]
+            assert [r['result'] for r in third['results']] == ['passed']
+            second = rule_of(read_package(made.root, 'unversioned'), 'RULE-2')
+            assert [t['proof'] for t in second['tests']] == ['PROOF-2']
+        finally:
+            made.close()
 
     # purlin: package PROOF-11
     def test_nothing_names_who_last_changed_a_test(self, tagged):

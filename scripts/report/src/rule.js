@@ -1,6 +1,6 @@
 /* The Rule screen: one rule, its level and the cells the gate reaches,
-   what the audit found, the signature, and the proofs that stand for it with
-   the tests that carry them. */
+   what the audit found, the signature, the proofs that stand for it with
+   the tests that carry them, and the tests marked with the rule's own id. */
 
 function ruleInView() {
   var feature = featureNamed(VIEW.feature);
@@ -143,6 +143,26 @@ function proofPanel(proof) {
     + '</dl></div>';
 }
 
+/* The word a test marked with the rule's own id reads: the evidence writes
+   `pass`, `fail`, `missing` or `not run`, and the page shows the cell word
+   the run gave the rule for each, so a test and its rule never disagree. */
+var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
+  'not run': 'not run'};
+
+/* The tests marked with the rule's own id, one line each with its result.
+   Shown wherever a rule lists any, and always where the page shows no
+   proofs, so a rule at the gate `passed` shows the tests behind it. */
+function testsSection(rule) {
+  var tests = rule.tests || [];
+  if (!tests.length && showsProofs()) { return ''; }
+  var lines = tests.map(function (t) {
+    return '<p><span class="mono">' + esc(t.file) + ' :: ' + esc(t.name)
+      + '</span> ' + pill(TEST_WORDS[t.result] || 'not run') + '</p>';
+  }).join('') || '<p class="sec">No test yet.</p>';
+  return '<section><p class="eyebrow">Tests</p><div class="panel tests">'
+    + lines + '</div></section>';
+}
+
 /* The link back closes the rule rather than leaving it open behind another
    screen, and it returns to the screen the rule was opened from. */
 function backLink() {
@@ -187,5 +207,6 @@ function renderRule() {
       + '<div class="stack">' + ((rule.proofs || []).length
         ? rule.proofs.map(proofPanel).join('')
         : '<div class="panel sec">No proof written.</div>')
-      + '</div></section>' : '');
+      + '</div></section>' : '')
+    + testsSection(rule);
 }

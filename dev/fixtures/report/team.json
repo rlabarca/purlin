@@ -158,6 +158,7 @@
           "rule_hash": "rrule1log",
           "test_hash": "trule1log",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "A person signs in with an email address and a password."
         },
         {
@@ -230,6 +231,7 @@
           "rule_hash": "rrule2log",
           "test_hash": "trule2log",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
@@ -302,6 +304,7 @@
           "rule_hash": "rrule3log",
           "test_hash": "trule3log",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "A locked account sends one notification email."
         }
       ],
@@ -433,6 +436,7 @@
           "rule_hash": "rrule1inv",
           "test_hash": "trule1inv",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "An invoice totals its lines to the cent."
         },
         {
@@ -488,6 +492,7 @@
           "rule_hash": "rrule2inv",
           "test_hash": "trule2inv",
           "test_hash_kind": "none",
+          "tests": [],
           "text": "An invoice with no lines totals zero."
         }
       ],
@@ -613,6 +618,7 @@
           "rule_hash": "rrule1che",
           "test_hash": "trule1che",
           "test_hash_kind": "file",
+          "tests": [],
           "text": "The cart page shows the order total above the pay button."
         }
       ],

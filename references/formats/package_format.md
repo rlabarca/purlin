@@ -109,7 +109,7 @@ The state is the first thing a reader sees after the schema.
 | `level` | string | `passed`, `strong` or `signed` |
 | `level_marked` | bool | whether the spec marks the level with `[level: ...]`; false means the rule takes the gate |
 | `proofs` | array | `{id, text, manual, env}` per proof: `manual` is whether the proof is a hand check (`@manual`), `env` the operating system its `@env` names, or null |
-| `tests` | array | `{proof, file, name}` per test backing a proof |
+| `tests` | array | `{proof, file, name}` per test backing a proof, then per test marked with the rule's own id, whose `proof` is then the `RULE-N` |
 | `results` | array | one entry per evidence section, ordered by operating system then source. See below |
 | `audit` | object or null | what the audit found for the rule's current words, proof and test. Null where no audit has |
 | `signatures` | array | every signature whose hashes still match the rule, ordered by `at`. A stale signature is not listed; the signed status names it |

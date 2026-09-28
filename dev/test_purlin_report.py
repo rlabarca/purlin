@@ -71,6 +71,8 @@ def without_proof_lines(payload):
         for rule in feature['rules']:
             proofs = rule['proofs']
             rule['proofs'] = []
+            rule['tests'] = [dict(test, result='pass') for proof in proofs
+                             for test in proof['tests']]
             rule['flags']['no_proof'] = True
             if proofs and not any(proof['tests'] for proof in proofs):
                 rule['cells']['passed'].update(
@@ -1273,3 +1275,70 @@ def test_the_passed_gate_shows_no_word_of_a_higher_level(browser, tmp_path,
     assert all(status in STATUSES for status in statuses), statuses
     if word:
         assert statuses[0] == word, statuses
+
+
+def _marked_project(root, passing):
+    """A project at the gate `passed`: one rule, no proof line, one pytest
+    test marked with the rule's own id, passing or failing as asked."""
+    import suites
+    (root / 'specs' / 'a').mkdir(parents=True)
+    (root / 'tests').mkdir()
+    (root / '.purlin').mkdir()
+    (root / '.purlin' / 'config.json').write_text(json.dumps(
+        {'gate': 'passed', 'tests': [suites.pytest_suite()]}),
+        encoding='utf-8')
+    (root / 'specs' / 'a' / 'lock.md').write_text(
+        '# lock\n\n> Scope: tests/\n\n## Rules\n\n'
+        '- RULE-1: A wrong password five times locks the account\n',
+        encoding='utf-8')
+    (root / 'tests' / 'test_lock.py').write_text(
+        '# purlin: lock RULE-1\n'
+        'def test_five_wrong_passwords_lock():\n'
+        '    assert %s\n' % ('True' if passing else 'False'),
+        encoding='utf-8')
+
+
+def _run_and_read(root):
+    """Run the tests as `purlin:test` does, refresh the dashboard data as it
+    does when it finishes, and return the payload the page would load."""
+    result = subprocess.run(
+        [sys.executable, os.path.join(ROOT, 'scripts', 'run', 'purlin_run.py'),
+         '--test', '--project-root', str(root)],
+        capture_output=True, encoding='utf-8', cwd=str(root))
+    assert 'Markers: 1 tied to a test, 0 not tied.' in result.stdout, (
+        result.stdout + result.stderr)
+    sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
+    from purlin import report_data
+    path = report_data.refresh(str(root))
+    assert path, 'no dashboard data was written'
+    text = read(os.path.join(str(root), '.purlin', 'report-data.js'))
+    return json.loads(text[len('const PURLIN_DATA = '):].rstrip().rstrip(';'))
+
+
+@pytest.mark.parametrize('passing', (True, False))
+# purlin: purlin_report PROOF-65
+def test_a_rule_with_no_proof_shows_the_tests_marked_with_its_id(
+        browser, tmp_path, passing):
+    root = tmp_path / 'project'
+    root.mkdir()
+    _marked_project(root, passing)
+    payload = _run_and_read(root)
+    rule = payload['features'][0]['rules'][0]
+    assert rule['proofs'] == []
+    result = 'pass' if passing else 'fail'
+    assert rule['tests'] == [{'file': 'tests/test_lock.py',
+                              'name': 'test_five_wrong_passwords_lock',
+                              'result': result}], rule['tests']
+
+    page = open_board(browser, tmp_path / 'page', payload)
+    page.click('[data-act="feature"][data-feature="lock"]')
+    page.click('.rule[data-feature="lock"][data-rule="RULE-1"]')
+    lines = texts(page, '.tests p')
+    seen = list(page.evaluate(SEEN))
+    page.close()
+    word = 'PASSED' if passing else 'FAILED'
+    assert lines == ['tests/test_lock.py :: test_five_wrong_passwords_lock '
+                     + word], lines
+    found = sorted({match.group(0) for text in seen if text
+                    for match in HIGHER_WORDS_NO_PROOFS.finditer(text)})
+    assert found == [], found
