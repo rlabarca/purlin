@@ -163,7 +163,7 @@ def chip_counts(page):
 
 
 def chip_for(label):
-    return '.chip[data-filter="%s"]' % label.lower()
+    return '.chip[data-filter="%s"]' % label.lower().replace(' ', '-')
 
 
 def head_labels(page):
@@ -644,11 +644,12 @@ FILTER_CASES = [
     ('untested', ['export'], []),
     ('failing', [], []),
     ('partial', ['login'], ['RULE-4']),
-    # `weak` is the audit's own two words: measured and not proved, or not
-    # measured yet. checkout_design's audit could not decide, which is build
-    # work and reads `weak`. The rules that wait for a person are `queue`.
+    # A pill counts the rules whose strong cell reads its word.
+    # checkout_design's audit could not decide, which is build work and reads
+    # `weak`. The rules that wait for a person are `queue`.
     ('weak', ['login', 'invoice', 'export', 'checkout_design'],
-     ['RULE-3', 'RULE-4']),  # 7 rules
+     ['RULE-3', 'RULE-4']),  # 6 rules
+    ('not-audited', ['export'], []),
     ('queue', ['login', 'invoice'], ['RULE-2']),
     ('stale', ['login'], ['RULE-2']),
 ]
@@ -691,14 +692,15 @@ def test_a_filter_above_the_gate_is_not_offered(browser, tmp_path):
 
     team = open_board(browser, tmp_path / 'team', payload_named('team'))
     assert chip_labels(team) == ['Untested', 'Failing', 'Partial', 'Weak',
-                                 'Queue']
+                                 'Not audited', 'Queue']
     team.close()
 
     reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))
     assert chip_labels(reg) == ['Untested', 'Failing', 'Partial', 'Weak',
-                                'Queue', 'Stale']
+                                'Not audited', 'Queue', 'Stale']
     assert chip_counts(reg) == {'Untested': 1, 'Failing': 0, 'Partial': 1,
-                                'Weak': 7, 'Queue': 2, 'Stale': 1}
+                                'Weak': 6, 'Not audited': 1, 'Queue': 2,
+                                'Stale': 1}
     reg.close()
 
 

@@ -14,20 +14,25 @@ function bucketFilter(bucket) {
     test: function (rule) { return rule.bucket === bucket; }};
 }
 
+/* One pill per word the strong cell reads, shown at `strong` and above. */
+function strongFilter(id, label) {
+  var word = label.toLowerCase();
+  return {id: id, label: label, level: 'strong', test: function (rule) {
+    return cellWord(rule, 'strong') === word;
+  }};
+}
+
 /* Built on each render rather than declared once, so the labels can read the
    tile labels the shell declares after this file. */
 function allFilters() {
   return [bucketFilter('untested'), bucketFilter('failing'),
           bucketFilter('partial'),
-    /* The two words the audit itself leaves on a rule: `weak`, which it
-       measured and did not prove, and `not audited`, which it has not run on
-       yet. Both are work for whoever writes the tests, which is the one
-       question this pill asks; the rules that wait for a person are the next
-       pill's. */
-    {id: 'weak', label: 'Weak', level: 'strong', test: function (rule) {
-      var word = cellWord(rule, 'strong');
-      return word === 'weak' || word === 'not audited';
-    }},
+    /* A pill counts the rules whose status is the word on it: `Weak` the
+       rules whose strong cell reads `weak`, `Not audited` those whose strong
+       cell reads `not audited`. The rules that wait for a person are the
+       queue pill's. */
+    strongFilter('weak', 'Weak'),
+    strongFilter('not-audited', 'Not audited'),
     /* The rules the Queue tab holds: a hand check or a signature, so the
        next step is a person's. */
     {id: 'queue', label: 'Queue', level: 'strong', test: function (rule) {

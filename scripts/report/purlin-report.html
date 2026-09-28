@@ -161,13 +161,17 @@ function bucketFilter(bucket) {
   return {id: bucket, label: BUCKET_LABELS[bucket], level: 'passed',
     test: function (rule) { return rule.bucket === bucket; }};
 }
+function strongFilter(id, label) {
+  var word = label.toLowerCase();
+  return {id: id, label: label, level: 'strong', test: function (rule) {
+    return cellWord(rule, 'strong') === word;
+  }};
+}
 function allFilters() {
   return [bucketFilter('untested'), bucketFilter('failing'),
           bucketFilter('partial'),
-    {id: 'weak', label: 'Weak', level: 'strong', test: function (rule) {
-      var word = cellWord(rule, 'strong');
-      return word === 'weak' || word === 'not audited';
-    }},
+    strongFilter('weak', 'Weak'),
+    strongFilter('not-audited', 'Not audited'),
     {id: 'queue', label: 'Queue', level: 'strong', test: function (rule) {
       return inQueue(rule);
     }},

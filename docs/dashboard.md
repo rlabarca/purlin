@@ -114,11 +114,12 @@ a rule shows when every pressed filter accepts it, and a spec shows when one of 
 | `Untested` | rules in the `Untested` tile: no proof written, no test, or no current run | every gate |
 | `Failing` | rules in the `Failing` tile: every platform that ran the tests found a failure | every gate |
 | `Partial` | rules in the `Partial` tile: passed on one platform, failed or did not run on another | every gate |
-| `Weak` | rules whose strong cell reads `weak` or `not audited` | `strong` and above |
+| `Weak` | rules whose strong cell reads `weak` | `strong` and above |
+| `Not audited` | rules whose strong cell reads `not audited` | `strong` and above |
 | `Queue` | the rules on the Queue tab | `strong` and above |
 | `Stale` | rules whose signature does not match | `signed` |
 
-`Weak` is build work and `Queue` is a person's. With nothing left the table reads `No rule
+`Weak` is build work, `Not audited` waits on `purlin:audit`, and `Queue` is a person's. With nothing left the table reads `No rule
 matches every filter you set.`
 
 ## Rule
