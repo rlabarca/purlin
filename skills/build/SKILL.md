@@ -1,6 +1,6 @@
 ---
 name: build
-description: Load a spec's rules, write the code and the tagged tests, commit the changeset
+description: Load a spec's rules, write the code and the marked tests, commit the changeset
 ---
 
 # purlin:build
@@ -95,9 +95,9 @@ purlin:test <name>
 Never run the test framework directly. `purlin:test` runs the project's own test command, ties
 each result to the marker above its test, writes the evidence and prints the state of each
 rule. It names every marker it could not tie to exactly one test, by file and
-line; fix each before going on. Iterate until every rule the feature owns has a passing test. A proof tagged `@env` for an operating system that
-is not this one is skipped and listed as `needs <os>`; that is expected locally and CI proves
-it on the matching runner.
+line; fix each before going on. Iterate until every rule the feature owns has a passing test.
+A proof tagged `@env` for another operating system is not run here, and the run says it
+`needs <os>`; `purlin:test --remote` runs it on a runner of that system.
 
 Never write evidence or a signature by hand. `purlin:test` and `purlin:audit` write the
 evidence, `purlin:sign` writes signatures and the tag.
@@ -107,7 +107,7 @@ evidence, `purlin:sign` writes signatures and the tag.
 One commit per build, with the `feat(<name>):` prefix and the changeset body described in
 `references/commit_conventions.md`. The body has three sections: **Changeset**, a
 `RULE-N → file:line` line for every rule the build addressed; **Decisions**, the judgment calls
-you made between real alternatives; and **Review**, the places an engineer should look hardest.
+you made between real alternatives; and **Review**, the places a developer should look hardest.
 Omit Decisions when every rule had one obvious implementation, and omit Review when nothing
 needs a second pair of eyes. Changeset is never omitted. `references/commit_conventions.md`
 carries the exact rendering; follow it rather than inventing one.
@@ -122,8 +122,8 @@ rewrite the line in the same commit as the code. Commit the code and the tests t
 Print the state table from `sync_status` for the feature, then name the next step:
 
 - Every rule has a passing test, gate `passed`: `→ Run: git push`
-- Every rule has a passing test, gate `strong` or `signed`: `→ Next: purlin:audit`, which breaks
-  the code on purpose and measures the test strength.
+- Every rule has a passing test, gate `strong` or `signed`: `→ Next: purlin:audit`, which has a
+  model read each rule, proof and test, and breaks the code where mutation testing is on.
 - Some rules still have no test: name them and say what is missing.
 - A rule has a `@manual` proof: say that its evidence is a signature with a one-line note, and
   point at `purlin:sign`.

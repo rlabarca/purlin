@@ -105,9 +105,9 @@ can ask for less with `[level: passed]`; the gate is the ceiling.
 | `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies |
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset |
 | `purlin:test [feature]` | Run the marked tests and print each rule's passed cell |
-| `purlin:audit [feature]` | Run the tests and the AI audit, then write what it found into the evidence |
+| `purlin:audit [feature]` | Run the tests, the breaks where mutation testing is on, and the AI audit, then write what it found into the evidence |
 | `purlin:sign [feature] [RULE-N]` | Walk the queue, or sign a rule, a feature or a batch as a signed commit |
-| `purlin:export` | Write the evidence package for a version |
+| `purlin:export` | Write the evidence package for a version, the data file a regulated system of record reviews |
 | `purlin:status [name]` | Show every rule's cells and what blocks the gate |
 | `purlin:drift [role]` | Report what changed since your last pull, by role |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current |

@@ -378,8 +378,8 @@ def _write_marker_function_text():
 
 class TestTheSweepRecordsItself:
     """RULE-10 - the sweep writes its own whole record of what ran to
-    .purlin/runtime/last_sweep.json, beside the shared test_run.json a proof
-    plugin rewrites as it finishes. The record is runtime state a reader can
+    .purlin/runtime/last_sweep.json, beside the shared test_run.json it merges
+    into. The record is runtime state a reader can
     open; nothing compares `RELEASE_NOTES.md` against it."""
 
     # purlin: purlin_version PROOF-10
@@ -405,7 +405,7 @@ class TestTheSweepRecordsItself:
             'PYTEST_LOG=' + shlex.quote(str(tmp_path / 'pytest.log')),
             # The pytest pool counts as one suite in PASS; its 11 tests are
             # counted individually, so the record must report 11 + 1 = 12.
-            "SUITES=$'Proof Plugins (Shell)\\nAll Pytest Tests\\n'",
+            "SUITES=$'Shell Suites\\nAll Pytest Tests\\n'",
             "TEST_FILES=$'dev/test_purlin_version.py\\n'",
             'PASS=2',
             'FAIL=0',
@@ -429,8 +429,8 @@ class TestTheSweepRecordsItself:
         assert record.is_file(), (
             f"the sweep's exit trap wrote no last_sweep.json at {record}: the "
             f"dev sweep must record its own counts in last_sweep.json beside "
-            f"test_run.json, because the shared marker is rewritten by every "
-            f"proof plugin as it finishes\n"
+            f"test_run.json, because the shared marker is merged with what "
+            f"other writers put there\n"
             f"stdout:{run.stdout}\nstderr:{run.stderr}")
 
         sweep = json.loads(record.read_text(encoding='utf-8'))
@@ -442,7 +442,7 @@ class TestTheSweepRecordsItself:
             f"last_sweep.json skipped is {sweep.get('skipped')!r}, expected 3"
         assert sweep.get('ok') is True, \
             f"last_sweep.json ok is {sweep.get('ok')!r}, expected True"
-        assert sweep.get('suites') == ['Proof Plugins (Shell)',
+        assert sweep.get('suites') == ['Shell Suites',
                                        'All Pytest Tests'], \
             f"last_sweep.json suites is {sweep.get('suites')!r}"
         assert sweep.get('commit') == head, \
@@ -450,7 +450,7 @@ class TestTheSweepRecordsItself:
         assert sweep.get('at'), "last_sweep.json carries no `at` timestamp"
         assert 'runs' not in sweep, (
             f"last_sweep.json is the sweep's own record and is never merged "
-            f"with the plugin runs, so it must carry no `runs` key; it has "
+            f"with other runs, so it must carry no `runs` key; it has "
             f"{sweep.get('runs')!r}")
 
         shared = json.loads(marker.read_text(encoding='utf-8'))

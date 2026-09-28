@@ -1,8 +1,8 @@
 # Feature: skill_build
 
 > Description: What `skills/build/SKILL.md` must say. The build skill loads the rules a feature is
->   bound by, writes the code and the tagged tests, and commits the changeset, so its
->   text decides what a commit records about which rule each change serves.
+>   bound by, writes the code and the marked tests, and commits the changeset, so its
+>   text decides what a commit says about which rule each change serves.
 > Scope: skills/build/SKILL.md
 > Stack: markdown, Claude Code skill definition
 

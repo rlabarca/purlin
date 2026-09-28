@@ -40,6 +40,9 @@ COMMANDS = sorted(CEILINGS)
 
 AGENT = 'agents/purlin.md'
 
+# The three roles, and no others, in the words the routing table uses.
+ROLES = ('Product', 'Developer', 'QA')
+
 
 # ---------------------------------------------------------------------------
 # Reading
@@ -341,7 +344,7 @@ class TestSkillSpecFromCode:
         assert skill_ceiling_problems('spec-from-code') == []
 
     # purlin: skill_spec_from_code PROOF-5
-    def test_every_rule_it_writes_is_engineer_owned_at_the_passed_level(self):
+    def test_every_rule_it_writes_is_at_the_passed_level(self):
         assert spec_from_code_tag_problems() == []
 
     # purlin: skill_spec_from_code PROOF-6
@@ -571,11 +574,11 @@ class TestSkillAudit:
         assert skill_ceiling_problems('audit') == []
 
     # purlin: skill_audit PROOF-5
-    def test_it_says_which_record_counts_under_which_gate(self):
-        assert record_source_problems() == []
+    def test_it_says_which_evidence_counts_under_which_gate(self):
+        assert evidence_source_problems() == []
 
     # purlin: skill_audit PROOF-6
-    def test_the_gate_decides_the_breaks_and_the_audit_writes_the_record(self):
+    def test_the_gate_decides_the_breaks_and_the_audit_writes_the_evidence(self):
         assert audit_gate_problems() == []
 
     # purlin: skill_audit PROOF-7
@@ -586,13 +589,11 @@ class TestSkillAudit:
             'purlin:test --remote']) == []
 
 
-# Every flag `scripts/init/scaffold.py` takes, and the one retired flag the
-# skill must not name again: `--ci` went when init started asking at `passed`
-# whether to add a remote runner, so a skill that still printed it would hand
-# a person an invocation the script exits 2 on.
+# Every flag `scripts/init/scaffold.py` takes a person may type. A flag the
+# skill hands a person that the script does not take is an invocation the
+# script exits 2 on.
 SCAFFOLD_FLAGS = ('--project-root', '--gate', '--mutation', '--yes',
                   '--update', '--add', '--dry-run')
-SCAFFOLD_RETIRED = ('--ci',)
 
 
 def scaffold_flag_problems():
@@ -601,21 +602,28 @@ def scaffold_flag_problems():
         '"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py"'] +
         list(SCAFFOLD_FLAGS))
     text = read(rel)
-    for flag in SCAFFOLD_RETIRED:
-        if re.search(re.escape(flag) + r'\b', text):
-            problems.append('%s names %s, which scaffold.py does not take'
-                            % (rel, flag))
+    # The flags a person is handed for scaffold.py: every one on a line that
+    # runs the script, and the first cell of each row of the flag table.
+    handed = []
+    for line in text.splitlines():
+        if 'scripts/init/scaffold.py' in line:
+            handed.extend(re.findall(r'(?<![\w-])--[a-z][a-z-]*', line))
+    for cells in table_rows(text, '| Flag |'):
+        handed.extend(re.findall(r'(?<![\w-])--[a-z][a-z-]*', cells[0]))
+    for flag in sorted(set(handed) - set(SCAFFOLD_FLAGS)):
+        problems.append('%s names %s, which scaffold.py does not take'
+                        % (rel, flag))
     return problems
 
 
-def record_source_problems():
+def evidence_source_problems():
     rel = skill_path('audit')
     rows = {cells[0]: cells[-1]
             for cells in table_rows(read(rel), '| Source |')}
     problems = []
     for source in ('ci', 'local'):
         if source not in rows:
-            problems.append('%s record table has no %r row' % (rel, source))
+            problems.append('%s source table has no %r row' % (rel, source))
     if problems:
         return problems
     for gate in ('passed', 'strong', 'signed'):
@@ -664,7 +672,7 @@ class TestSkillSign:
         assert frontmatter_problems('sign') == []
 
     # purlin: skill_sign PROOF-2
-    def test_it_shows_the_brief_before_it_writes_the_signature(self):
+    def test_it_shows_what_the_audit_found_before_it_writes_the_signature(self):
         rel = skill_path('sign')
         assert (carries(rel, ['payload.queue'])
                 + in_order(rel, [
@@ -696,6 +704,26 @@ class TestSkillSign:
     # purlin: skill_sign PROOF-7
     def test_it_says_what_each_gate_leaves_it_able_to_do(self):
         assert sign_gate_problems() == []
+
+    # purlin: skill_sign PROOF-8
+    def test_the_tag_carries_the_evidence_package_and_nothing_is_pushed(self):
+        rel = skill_path('sign')
+        body = section(read(rel), r'the tag')
+        assert body is not None, '%s has no section on the tag' % rel
+        problems = ['%s tag section does not carry %r' % (rel, needle)
+                    for needle in ('.purlin/evidence/package/<version>.json',
+                                   'this skill never pushes')
+                    if needle not in flat(body)]
+        package = 'Evidence package committed: .purlin/evidence/package/1.4.0.json.'
+        tagged = 'Tagged signed/1.4.0 at a1b2c3d: every rule meets the gate signed.'
+        lines = body.splitlines()
+        if package not in lines or tagged not in lines:
+            problems.append('%s tag section does not print %r above %r'
+                            % (rel, package, tagged))
+        elif lines.index(package) > lines.index(tagged):
+            problems.append('%s tag section prints the tag line before the '
+                            'package line' % rel)
+        assert problems == []
 
 
 def sign_answer_problems():
@@ -844,7 +872,7 @@ class TestPurlinAgent:
         assert never_problems() == []
 
     # purlin: purlin_agent PROOF-4
-    def test_the_routing_table_covers_the_four_roles(self):
+    def test_the_routing_table_covers_the_three_roles(self):
         assert routing_problems() == []
 
     # purlin: purlin_agent PROOF-5
@@ -921,7 +949,7 @@ def never_problems():
     for needle in ('evidence', 'signature',
                    "sign on a person's behalf", 'Never push',
                    'pull request', 'remote branch', 'purlin:test --remote',
-                   'retired term'):
+                   'references/glossary.md'):
         if needle not in flattened:
             problems.append('%s NEVERs do not name %r' % (AGENT, needle))
     return problems
@@ -933,9 +961,12 @@ def routing_problems():
     if not rows:
         return ['%s has no routing table' % AGENT]
     roles = {cells[0] for cells in rows}
-    for role in ('PM', 'Designer', 'Engineer', 'QA'):
+    for role in ROLES:
         if role not in roles:
             problems.append('%s routing table has no %r row' % (AGENT, role))
+    for role in sorted(roles - set(ROLES)):
+        problems.append('%s routing table has a row for %r, which is not one '
+                        'of the three roles' % (AGENT, role))
     named = set(re.findall(r'purlin:([a-z-]+)',
                            '\n'.join('|'.join(cells) for cells in rows)))
     for command in sorted(named - set(COMMANDS)):

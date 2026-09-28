@@ -1,12 +1,11 @@
 ---
 name: test
-description: Run the tagged tests and print each rule's passed cell
+description: Run the marked tests and print each rule's passed cell
 ---
 
 Run the project's own test suites, tie each result to the marker comment above its test,
 write what they saw into `.purlin/evidence/local/` and `.purlin/tests.md`, and print the passed
-cell of every rule. This is level 1 and it takes
-seconds: no breaks, no audit, no signature. `purlin:audit` adds the audit.
+cell of every rule. This is level 1: no breaks, no audit, no signature.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -42,10 +41,11 @@ prints `Nothing to run: every feature's spec, code and tests match its evidence.
 script too. `--remote` hands the run to the git host's runner on a run branch it creates, waits
 on and deletes; the runner commits its section under `.purlin/evidence/ci/` and the run pulls it
 back. Use it when a proof is tagged `@env` for another operating system, or `trust` is `remote`.
-It waits through `gh` on GitHub and `az` with `azure-devops` on Azure DevOps; a red run, no CLI,
-no run found or the wait over exits 1. A hand-run check confirms the live Azure DevOps path.
+It refuses a detached head and a tree with changes that are not committed, and pushes nothing
+then. It waits through `gh` on GitHub and `az` with `azure-devops` on Azure DevOps; a red run,
+no CLI, no run found or the wait over exits 1.
 
-Exit codes: `0` the tests ran and the level is met, `1` a test failed or it is not, `2` the invocation was wrong.
+Exit codes: `0` the tests ran and the gate is met, `1` a test failed, evidence is missing or the gate is not met, `2` the invocation was wrong.
 
 ## Step 2: the evidence, written and committed when asked
 
@@ -53,23 +53,24 @@ The run writes this operating system's section of `.purlin/evidence/local/<featu
 (the commit, the time, the fingerprint of the spec, code and tests it saw, each rule's word,
 each proof's result and test) and `.purlin/tests.md`, one table for the whole project:
 `Feature`, `Rules`, `Passed`, `Failing`, `No test`, `Last run`. It prints `Evidence written to
-.purlin/evidence/local/<feature>.json.` and commits nothing. With `--commit` it commits both
+.purlin/evidence/local/<feature>.json.`, or the folder and a count for several features, and
+commits nothing. With `--commit` it commits both
 under your own git identity, with the subject `purlin: evidence at <sha7>`, and prints
 `Evidence committed.`, or `Evidence unchanged.` when nothing new was seen. It never pushes. A
 run writes the features it ran and leaves the rest of the table as it was. The folder is
 the source: yours are `local`, and a remote run's, under `.purlin/evidence/ci/`, are `ci`.
-`references/formats/evidence_format.md` is the contract, and its `> Format-Version:` line says
-which version this release ships.
+`references/formats/evidence_format.md` is the contract.
 
 ## Step 3: read the table
 
-The run prints `Ran <suite> on <n> feature(s).` and `Markers: <n> tied to a test, <k> not
-tied.`, then the status table `purlin:status` builds. The `Tests` column counts the words a passed cell can read:
+The run prints `Markers: <n> tied to a test, <k> not tied.` and `Ran <suite> on <n>
+feature(s).`, then the status table `purlin:status` builds. The `Tests` column counts the words
+a passed cell can read:
 
 | Word | What it means |
 |------|---------------|
-| `passed` | A test tagged with the rule's proof ran here and passed |
-| `failed` | A tagged test ran and failed; the script names the test and the assertion |
+| `passed` | A test marked with the rule's proof ran here and passed |
+| `failed` | A marked test ran and failed; the run prints the suite's own output and the reason names the test |
 | `no test` | No test carries the proof's marker, or, with the reason `no proof written`, the rule has neither a proof nor a test marked with its id |
 | `not run` | A test carries the marker and no counting run reached it |
 | `out of date` | The spec, the code or the tests changed since the run; the reason names which |
@@ -79,11 +80,10 @@ marker has no pass or fail: its test was skipped, the report lacks it, or no tes
 
 ## Step 4: what the gate changes
 
-This is the pattern every Purlin skill follows. Under `passed` the whole project is this one
-cell: no strength, no level, no queue, no signature. Under `strong` the strong cell and the
-test strength appear beside it; under `signed` the signed cell appears too. Evidence from
-either source counts at every gate; `trust: remote` makes `purlin:sign` ask for a `ci` run. Read the gate from `.purlin/config.json` and print
-only what exists; `references/hard_gates.md` defines the three gates once.
+Under `passed` the whole project is this one cell: no strength, no level, no queue, no
+signature. Under `strong` the strong cell and the test strength appear beside it; under
+`signed` the signed cell appears too. Evidence from either source counts at every gate. Print
+only what the gate creates; `references/hard_gates.md` defines the three gates once.
 
 ## Step 5: operating systems
 
@@ -113,8 +113,8 @@ End with one line, computed from the table:
 | A rule reads `partial` | `→ Run: purlin:build <feature>` (the cell names the platform that failed) |
 | A rule reads `no test` | `→ Run: purlin:build <feature>` |
 | A rule reads `no test` with the reason `no proof written` | `→ Run: purlin:spec <feature>` |
-| Every rule reads `passed`, gate `passed` | `→ Push.` |
+| Every rule reads `passed`, gate `passed` | `→ Run: git push` |
 | Every rule reads `passed`, gate `strong` or `signed` | `→ Run: purlin:audit` |
-| Only `needs <os>` proofs remain | `→ Run: purlin:test --remote` |
+| A rule reads `not run` with the reason `<os>: no run yet` | `→ Run: purlin:test --remote` |
 
 Diagnose a failure first: `references/spec_quality_guide.md` says which part is at fault.

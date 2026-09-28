@@ -1,7 +1,7 @@
 # Feature: skill_test
 
-> Description: What `skills/test/SKILL.md` must say. The test skill is the one an engineer runs
->   constantly: it runs the tagged tests, writes the evidence and commits it when asked,
+> Description: What `skills/test/SKILL.md` must say. The test skill is the one a developer runs
+>   constantly: it runs the marked tests, writes the evidence and commits it when asked,
 >   prints the passed cell of every rule and ends with the gate line.
 > Scope: skills/test/SKILL.md
 > Stack: markdown, Claude Code skill definition
@@ -9,7 +9,7 @@
 ## Rules
 
 - RULE-1: `skills/test/SKILL.md` opens with a frontmatter block whose `name` is `test` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:test`
-- RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--test`, and states its three exit codes: 0 everything passed, 1 a test failed or the passed level is not met, 2 the invocation was wrong
+- RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--test`, and states its three exit codes: 0 the tests ran and the gate is met, 1 a test failed, evidence is missing or the gate is not met, 2 the invocation was wrong
 - RULE-3: The last section of `skills/test/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome
 - RULE-4: The whole of `skills/test/SKILL.md` is at most 120 lines [level: passed]
 - RULE-5: The skill names the two files the run writes, `.purlin/evidence/local/<feature>.json` and `.purlin/tests.md`, the flag `--commit`, the commit subject `purlin: evidence at <sha7>` and that the run never pushes, and it names the gate line `gate passed: <n> of <rules>` as the last line of the run

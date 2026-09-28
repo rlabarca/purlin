@@ -15,8 +15,8 @@ through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them. For the format,
 
 ## One repository is the default
 
-Most projects need nothing but `specs/_anchors/`. A PM, a designer or QA opens a pull request
-against that folder like anyone else, and nothing is pinned or synced. Reach for an anchor
+Most projects need nothing but `specs/_anchors/`. Product, a developer or QA changes a file in
+that folder like any other spec, and nothing is pinned or synced. Reach for an anchor
 repository only when two or more projects must share the same rules, and say so plainly when
 someone asks: a second repository is a cost, and one project does not need it.
 
@@ -52,8 +52,9 @@ Fetches the anchor from another repository and writes the local copy under
 **A pin is always a commit, never a branch.** A branch moves, and an anchor whose rules
 changed under a project with no diff to read is exactly what pinning exists to prevent.
 
-When the source file is free text rather than rules, draft the rules from it and say so in the
-local copy's `> Description:`, so nobody mistakes your reading for the author's words.
+When the source file is free text rather than rules, the script writes the text and says the
+rules are still to be written. Write them from it and say so in the local copy's
+`> Description:`, so nobody mistakes your reading for the author's words.
 
 ## sync
 
@@ -61,14 +62,16 @@ local copy's `> Description:`, so nobody mistakes your reading for the author's 
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" sync [<name> | --all] [--check] [--json]
 ```
 
-`--check` reports without writing: `anchor security_baseline is 4 commits behind its pin:
-RULE-3 changed, RULE-6 added`. `purlin:drift` runs the same check, one cached lookup per pin
-per run, so an engineer sees a stale pin at the start of a session without asking for it.
+`--check` reports without writing, one line per anchor: `security_baseline: the pin abc1234
+is behind its source, now 9f8e7d6. Run purlin:anchor sync security_baseline.` It exits 1 when a
+pin is behind and 2 when a source could not be read. `purlin:drift` runs the same check, one
+cached lookup per source per run, so a developer sees a stale pin at the start of a session
+without asking for it.
 
-Without `--check`, sync shows the delta, updates the local copy and advances the pin. All of
-that lands in one commit with the `anchor(<name>):` prefix, so the diff shows exactly which
-rules moved. At `strong` and above that commit reaches the default branch by pull request
-like any other change, and a rule whose text moved stales its signature.
+Without `--check`, sync rewrites the local copy, advances the pin and prints what moved:
+`security_baseline: RULE-3 changed, RULE-6 added. Pin advanced from abc1234 to 9f8e7d6.` It
+commits nothing: commit the copy in one commit with the `anchor(<name>):` prefix, so the diff
+shows exactly which rules moved. A rule whose text moved stales its signature.
 
 ## Changing a pinned rule
 
@@ -86,6 +89,6 @@ Name the next step from the state:
 
 - Anchor created, no feature requires it yet: name the features that should and offer to add
   `> Requires:` to each.
-- Anchor added or synced, rules changed: `→ Next: purlin:audit`, then `purlin:sign` for the
-  signatures the change staled.
+- Anchor added or synced, rules changed: `→ Next: purlin:test`, then, as the gate asks,
+  `purlin:audit` and `purlin:sign` for the signatures the change staled.
 - Pin current and nothing moved: say so in one line and stop.

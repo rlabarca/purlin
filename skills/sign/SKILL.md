@@ -37,7 +37,7 @@ argument never adds a rule the full walk would skip.
 | `strong` | The walk and `--note` work. A bare feature and `--batch` sign every hand check in the queue; a named rule that is not in it is told a signature is required only under `signed`, then written anyway |
 | `signed` | Every form works; a bare feature and `--batch` read the queue, hand checks and signatures alike. Every rule whose level is `signed` has to carry a signature before it meets the gate; a named rule marked `[level: passed]` or `[level: strong]` is refused, because it asks for none |
 
-## Step 1: the queue, and the brief behind each rule
+## Step 1: the queue, and what the audit found for each rule
 
 ```
 sync_status()
@@ -59,7 +59,7 @@ opens with one line holding the counts:
 Queue: 5 rules. 2 hand checks, 3 signatures.
 ```
 
-Read the brief for a rule before anything is written:
+Read what the audit read and found for a rule before anything is written:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py" --feature <feature> --rule RULE-N
@@ -94,16 +94,16 @@ written and not committed is refused, and so is the tag, with
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py" <feature> RULE-N [RULE-M ...]
 ```
 
-Add `--note "<text>"` when the proof is `@manual`, so the note is the evidence, or when the
-audit could not settle the question and you settled it yourself.
+Add `--note "<text>"` when the rule reads `manual test`, so the note is the evidence. A rule
+the audit could not decide reads `weak`: that is build work, not a signature.
 
 **Add a case.** The person says in plain language what is missing: "it should also reject an
 expired token". Write it into the spec as a new proof line with the next free proof id, leave
 the test for the next `purlin:build`, and move on. This skill writes specs and signatures,
 never code.
 
-A reviewer who finds the test does not prove the proof adds the missing case, or changes the
-proof, alone or with AI help.
+QA, finding that the test does not show what the proof says, adds the missing case or changes
+the proof, alone or with AI help.
 
 **Skip.** Move to the next rule and leave the cells alone. A skipped rule is in the queue again
 next time, which is the intended behaviour: nothing is marked as seen by being seen.
@@ -135,28 +135,32 @@ not restate them elsewhere.
 A signature locks one rule. The tag locks the version: it is the marker that every rule met the
 gate at this commit, and the one thing a person pushes to say so.
 
-When the walk leaves every rule meeting the gate, the script writes a signed tag (`git tag -s`,
-with the key you sign commits with) over the current commit, named `signed/<version>` from the `VERSION` file at the project root, or the
+When the walk leaves every rule meeting the gate, the script writes the evidence package
+`.purlin/evidence/package/<version>.json` with the state `signed`, commits it as a signed
+commit, and writes a signed tag (`git tag -s`, with the key you sign commits with) on that
+commit. The tag is `signed/<version>` from the `VERSION` file at the project root, or the
 config's `version` where there is no such file, or `signed/unversioned` where neither names
-one; `--release <name>` overrides the name. The message names the commit and the gate. Then it
-prints:
+one; `--release <name>` overrides the name. The
+message names the commit and the gate. Then it prints:
 
 ```
+Evidence package committed: .purlin/evidence/package/1.4.0.json.
 Tagged signed/1.4.0 at a1b2c3d: every rule meets the gate signed.
 → Run: git push origin signed/1.4.0
 ```
 
 While any rule falls short it writes no tag and prints
-`No tag: <n> of <m> rules do not meet the gate <gate>.` A tag of that name that already exists
-is not moved: it prints `No tag: signed/1.4.0 is already written. Name another with --release
-<name>.`, so a released version's marker cannot be pointed somewhere else. Pushing the tag is a
-person's act; this skill never pushes.
+`No tag: <n> of <m> rules do not meet the gate <gate>.`, after one line per feature whose
+evidence is out of date, `No tag: login is out of date (code changed since a1b2c3d).`, and one
+per feature spec that names no files in `> Scope:`. A tag of that name that already exists is
+not moved: it prints `No tag: signed/1.4.0 is already written. Name another with --release
+<name>.` Pushing the tag is a person's act; this skill never pushes.
 
 `trust` in `.purlin/config.json` is `local` or `remote`, and `purlin:init` asks for it. Under
 `local`, the default, this machine's runs are the evidence: sign, tag, push, and a project
 needs no runner at all. Under `remote` a signature rests on a run this machine did not make,
-so the script refuses a rule whose passed cell holds no `ci` entry for the current commit:
-`sign: <feature> RULE-N has no ci test run for this commit; run purlin:test --remote first`.
+so the script refuses a rule with a proof that has a test, whose feature has no current `ci`
+section: `sign: <feature> RULE-N has no ci test run for this code; run purlin:test --remote first`.
 
 ## Step 6: close the walk and name the next step
 

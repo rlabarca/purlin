@@ -69,7 +69,7 @@ Since your last merge, 2 hours ago (9f8e7d6..4f5e6a7, 4 commits).
 4 files changed under login's scope: RULE-1, RULE-2, RULE-5 are behind them.
 2 changed files are under no spec's scope: src/x.py, src/y.py.
 5 rules have no test: login RULE-6; export RULE-1, RULE-2, RULE-3, RULE-4.
-anchor proof_common is behind its source (now 3c4d5e6). Run: purlin:anchor sync proof_common.
+anchor proof_common is behind its source (now 3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d). Run: purlin:anchor sync proof_common.
 3 features are out of date: login, export, cart.
 ```
 

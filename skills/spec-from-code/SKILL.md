@@ -35,7 +35,7 @@ this skill writes specs and nothing can read them until the project is set up.
 4. **Order by dependency.** Write the shared and lower-level features first, so a later spec
    can say `> Requires: <name>` instead of repeating their rules.
 5. **Write one spec at a time**, in that order, committing each on its own with the
-   `spec(<name>):` prefix from `references/commit_conventions.md`. Record the position in
+   `spec(<name>):` prefix from `references/commit_conventions.md`. Write the position to
    `.purlin/runtime/spec-from-code.json` after each commit, so a session that ends halfway
    resumes at the next feature instead of starting over.
 6. **Report.** Print the count of features, the count of rules, how many rules already
@@ -91,7 +91,8 @@ and note the behaviour in `> Description:`.
   the software's behaviour; "rejects the 61st request in a minute" is.
 - Do not write `[level: strong]` or `[level: signed]`. That judgment belongs to the people
   who own the product.
-- Do not write signatures or records. Those come from `purlin:audit` and `purlin:sign`.
+- Do not write evidence or signatures. `purlin:test` and `purlin:audit` write the evidence,
+  and `purlin:sign` writes signatures.
 
 ## When you are done
 

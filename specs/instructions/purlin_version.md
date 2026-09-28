@@ -5,10 +5,9 @@
 >   `dev/bump_version.sh`, and `bash dev/bump_version.sh --check` is the check
 >   that fails when a derived location disagrees. Nobody edits a version
 >   literal by hand, and a document that describes the version field names the
->   file rather than restating a number, so no table can go stale. The one
->   count a release also states, the test totals in the notes, is held against
->   the counts of the sweep that is running, by that sweep's own last suite.
-> Scope: VERSION, templates/config.json, .claude-plugin/plugin.json, .purlin/config.json, scripts/mcp/purlin/__init__.py, scripts/mcp/purlin/server.py, dev/bump_version.sh, dev/run_tests.sh, references/drift_criteria.md, skills/init/SKILL.md, RELEASE_NOTES.md
+>   file rather than restating a number, so no table can go stale. The dev
+>   sweep writes its own count of what ran, for a reader to open.
+> Scope: VERSION, templates/config.json, .claude-plugin/plugin.json, .purlin/config.json, scripts/mcp/purlin/__init__.py, scripts/mcp/purlin/server.py, dev/bump_version.sh, dev/run_tests.sh, references/drift_criteria.md, skills/init/SKILL.md
 > Stack: python/stdlib for the reader, bash for the propagation script, json for the derived locations
 
 ## Rules
@@ -21,7 +20,7 @@
 - RULE-6: Where `.purlin/config.json` exists, because the repository is itself a Purlin project, its `version` field equals the `VERSION` file: the project's own stamp never lags the framework it ships [level: passed]
 - RULE-7: `dev/bump_version.sh <semver>` is the one propagation entry point: it writes the `VERSION` file and sets the version field in every derived location, it refuses an argument that is not semver before writing anything, and `dev/bump_version.sh --check` exits non-zero naming each location that disagrees while still reporting the ones that match
 - RULE-8: The one table that describes the config `version` field, in `references/drift_criteria.md`, states the `VERSION` file as its source rather than restating a release number, and no second copy of that row lives anywhere under `skills/` or `references/` [level: passed]
-- RULE-10: `dev/run_tests.sh` writes its own whole record of what ran to `.purlin/runtime/last_sweep.json` on exit, beside the shared `test_run.json` each proof plugin rewrites as it finishes: the record carries `passed`, `failed`, `skipped`, `ok`, the suite names, the head sha and a timestamp, and never the merged `runs` list [level: passed]
+- RULE-10: `dev/run_tests.sh` writes its own whole record of what ran to `.purlin/runtime/last_sweep.json` on exit, beside the shared marker `test_run.json`, which it merges into rather than replaces: the record carries `passed`, `failed`, `skipped`, `ok`, the suite names, the head sha and a timestamp, and never the merged `runs` list [level: passed]
 
 ## Proof
 
@@ -33,4 +32,4 @@
 - PROOF-6 (RULE-6): Read the `VERSION` file and parse this repository's own `.purlin/config.json`; verify it carries a `version` key equal to the `VERSION` string, so a stamp left at `0.9.2` while the file reads `0.10.0` fails naming both
 - PROOF-7 (RULE-7): Build a temporary project holding a `VERSION` file and all three derived JSON files at `1.2.3`, plus a copy of the script; run it with `9.8.7` and verify the `VERSION` file and each JSON file read `9.8.7`; run `--check` and verify exit 0; hand-edit `.purlin/config.json` back to `1.2.3` and verify `--check` exits 1, printing `DRIFT` and naming `.purlin/config.json` while still listing `templates/config.json` and `.claude-plugin/plugin.json`. Then run the script with `not-a-version` and verify exit 2 with the `VERSION` file still reading `1.2.3`; delete `.purlin/config.json`, verify a bump exits 0 and still writes `templates/config.json`, and that `--check` exits 0 reporting that location as `absent`
 - PROOF-8 (RULE-8): Read `references/drift_criteria.md`, take every table row whose first cell is `version`, and verify at least one exists, that none carries a quoted semver literal, and that each names the `VERSION` file. Then read every `.md` file under `skills/` and `references/` other than that one and verify none carries such a row, so restoring a `version` row at `0.9.0` to `skills/init/SKILL.md` fails naming that file
-- PROOF-10 (RULE-10): Cut the marker-writing function out of `dev/run_tests.sh`, run that text in a shell whose working directory is a temporary repository, with the counts `PASS=2`, `FAIL=0`, `PYTEST_PASSED=11`, `PYTEST_FAILED=0`, `PYTEST_SKIPPED=3` and the two suite names `Proof Plugins (Shell)` and `All Pytest Tests`; verify it exits 0 and writes `last_sweep.json` beside `test_run.json`, that the record reads `passed` 12, `failed` 0, `skipped` 3, `ok` true, those two suite names, the temporary repository's own head sha, a timestamp, and no `runs` key, while the shared marker written by the same call names the sweep and does carry `runs`
+- PROOF-10 (RULE-10): Cut the marker-writing function out of `dev/run_tests.sh`, run that text in a shell whose working directory is a temporary repository, with the counts `PASS=2`, `FAIL=0`, `PYTEST_PASSED=11`, `PYTEST_FAILED=0`, `PYTEST_SKIPPED=3` and the two suite names `Shell Suites` and `All Pytest Tests`; verify it exits 0 and writes `last_sweep.json` beside `test_run.json`, that the record reads `passed` 12, `failed` 0, `skipped` 3, `ok` true, those two suite names, the temporary repository's own head sha, a timestamp, and no `runs` key, while the shared marker written by the same call names the sweep and does carry `runs`

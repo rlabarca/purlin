@@ -6,8 +6,9 @@ description: Turn a requirement in any form into rules and proofs
 # purlin:spec
 
 Turn what someone wants into rules and proofs. The person describes the software; you write
-the spec. Nothing here needs a particular input format: a sentence in chat, a product brief, a
-ticket, a block of pasted acceptance criteria and a folder of mocks all reach this skill.
+the spec. Nothing here needs a particular input format: a sentence in chat, a product
+description, a ticket, a block of pasted acceptance criteria and a screenshot all reach this
+skill.
 
 **Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
 through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them.
@@ -32,9 +33,9 @@ read `references/spec_quality_guide.md`. Neither is restated here.
 | What you are given | What you do |
 |--------------------|-------------|
 | One sentence | Split it into the claims it actually makes. "Users sign in with email and password, and five failures lock the account for fifteen minutes" is two rules, not one |
-| A product brief or a ticket | Read it whole, then write only the claims a test could settle. Leave the background in `> Description:` |
+| A product description or a ticket | Read it whole, then write only the claims a test could settle. Leave the background in `> Description:` |
 | Pasted acceptance criteria | One rule per criterion |
-| Screens or mocks | Read the images. Write rules about what a person would see on the screen |
+| A screenshot | Read the image. Write rules about what a person would see on the screen |
 | An existing spec plus a change | Edit in place. Never renumber |
 
 Ask at most one round of questions, and only where a claim no test could settle as written.
@@ -54,7 +55,7 @@ rule covering all three would pass while two thirds of the behaviour was missing
 When rules arrive from more than one direction, run this skill on the feature with no new
 input. It reads the spec as it now stands, lists what changed since the last time it was
 written, and reports three things: rules that lost their proof, proofs that name a rule id
-that no longer exists, and rules whose text changed since a signature was bound to them. Fix
+that does not exist, and rules whose text changed since a signature was bound to them. Fix
 the first two here. The third is a person's decision, so name the rules and leave them for
 `purlin:sign`.
 
@@ -115,16 +116,19 @@ absence. There is no separate syntax for it.
 Draft every proof against `references/spec_quality_guide.md`, "Writing proofs", the one home
 of what a good proof is: what is done, what is observed, the expected value, at least one
 failure case, and no file path or function name, so a person who cannot read code can judge
-it. Write at least one proof for every rule. Several proofs may name one
+it. QA reads every proof you draft. Write at least one proof for every rule: the gate
+`passed` lets a rule go without one, and from `strong` up a rule without one does not meet the
+gate. Several proofs may name one
 rule, and one proof may name several rules when it drives a flow through all of them:
 `- PROOF-7 (RULE-2, RULE-3, RULE-4): ...`.
 
-Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has no test: its rule reads `manual test` until a signature
-carrying a one-line note settles it, and that note is always written by a person.
+Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has no test: at
+`strong` and above its rule reads `manual test` until a signature carrying a one-line note
+settles it, and that note is always written by a person.
 
 Add `@env(windows)`, `@env(macos)` or `@env(linux)` when the claim can only be proved on one
 operating system. Those three are the whole vocabulary. A proof with no `@env` is satisfied by
-a record from any system; a proof with one has its passed cell met only when a record from
+a run on any operating system; a proof with one has its passed cell met only when a run on
 that system passes it.
 
 ## Ids
@@ -137,7 +141,7 @@ in either copy of the spec:
 git show origin/main:specs/auth/login.md | grep -o 'RULE-[0-9]*' | sort -t- -k2 -n | tail -1
 ```
 
-Ids are never reused. A retired rule leaves its number vacant and every other rule keeps the
+Ids are never reused. A deleted rule leaves its number vacant and every other rule keeps the
 number it had. Renumbering would silently repoint every test marker and every signature that
 already names the old id, so do not do it by hand.
 

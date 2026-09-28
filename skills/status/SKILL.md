@@ -32,7 +32,7 @@ Every spec and every anchor gets a row, sorted attention first: the most rules s
 gate at the top. Anchors carry `(anchor)` after the name. Columns exist only when the gate
 creates the cell behind them, so a project at `passed` has no strong and no signed column.
 
-The table is the dashboard's board, rendered as text: the same six columns, the same text in
+The table is the dashboard's board, rendered as text: the same columns, the same text in
 each cell. A reader who has learned one has learned the other.
 
 ```
@@ -42,8 +42,8 @@ each cell. A reader who has learned one has learned the other.
   login (anchor)     8  8                      8 of 8
 ```
 
-`Proofs` counts every proof line and appends `· <k> without a test` when a proof has nothing
-tagged against it. `Tests` is `<passed> of <rules>`, then `· <k> partial` and `· <k> failing`
+`Proofs` counts every proof line and appends `· <k> without a test` when no test carries a
+proof's marker. `Tests` is `<passed> of <rules>`, then `· <k> partial` and `· <k> failing`
 when either is not zero; `partial` means the tests pass on one operating system and not on
 another. Under `strong` a `Strong` column follows, `<n> of <rules> · <strength>`; under
 `signed` a `Signed` column follows that, `<n> of <rules>`.
@@ -71,8 +71,8 @@ header, and one line per rule with the cells the gate creates and the proof line
 
 ```
 specs/auth/login.md: 8 rules, 6 meet the gate signed
-  RULE-1  ready  passed  strong  signed      PROOF-1  tests/test_login.py::test_rejects_bad_password
-  RULE-3  ready  no test                     PROOF-3  no test carries this marker
+  RULE-1  passed  strong  signed      PROOF-1  tests/test_login.py::test_rejects_bad_password
+  RULE-3  no test                     PROOF-3  no test carries this marker
 ```
 
 The next step is the Step 4 line for the lowest cell this spec's rules leave unmet.
@@ -80,18 +80,19 @@ The next step is the Step 4 line for the lowest cell this spec's rules leave unm
 ## Step 4: name the next step
 
 Print the `→` lines the tool returned and add none of your own. There is one `→ Next:` line,
-computed from the lowest cell that blocks the gate, and one more line when either list is not
-empty. `list` is the word for what `purlin:sign` walks; `tab` belongs to the dashboard:
+computed from the lowest cell that blocks the gate, one more line when the queue is not empty,
+and `→ Run: purlin:init --update` first while a migration is pending:
 
 | What blocks the gate | The line the tool prints |
 |----------------------|--------------------------|
-| A rule reads `no test` because no proof is written | `→ Next: run purlin:spec.` with the count |
+| A rule waits for a proof: no proof line names it | `→ Next: run purlin:spec.` with the count |
 | A rule has a failing test | `→ Next: run purlin:build.` with the count |
 | A rule's tests pass on one operating system and not another | `→ Next: run purlin:build.` with the `partial` count |
-| A rule has no test | `→ Next: run purlin:build.` with the count |
-| A rule is waiting for a run | `→ Next: run purlin:test.`, or `→ Next: run purlin:test --remote.` where the proof names an operating system this machine is not |
-| No audit has measured a rule | `→ Next: run purlin:audit.` with the count |
+| A rule has a proof and no passing test | `→ Next: run purlin:build.` with the count |
+| A rule reads `not run` or `out of date` | `→ Next: run purlin:test --remote.` under `trust: remote`, `→ Next: run purlin:audit.` at `strong` and `signed`, `→ Next: run purlin:test.` at `passed`, with the count |
+| No audit has read a rule | `→ Next: run purlin:audit.` with the count |
 | A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
 | A rule is in the queue: it reads `manual test`, or waits for a signature | `→ Next: run purlin:sign.` with the count |
+| At `signed`, a spec names no files in `> Scope:` | `→ Next: run purlin:spec <name>.` |
 | Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |
 | The queue is not empty | `→ Queue: <n> rules need a person. Run purlin:sign.` |
