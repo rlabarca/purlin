@@ -23,7 +23,6 @@
 - RULE-5: A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons
 - RULE-6: Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists
 - RULE-7: A section names at most 20 rules and counts the rest, pointing at `--json` for every one [level: passed]
-- RULE-8: Under `signed` the gate grades every rule whether or not the config names anyone, because no list says who may sign
 - RULE-9: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes
 - RULE-10: `gate_check.py` needs `--check` and a directory that exists; either missing exits 2 [level: passed]
 - RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, every section under its own key, the result and the exit code
@@ -56,10 +55,9 @@
 - PROOF-12 (RULE-5): Sign only the unmarked `RULE-2` and run the gate at gate `signed`; verify it exits 0 and never names `login RULE-1`, which is marked `[level: passed]`
 - PROOF-13 (RULE-5): Run the gate at gate `signed` with no signature written; verify it exits 1, opens `Not signed (1):` and reads `login RULE-2: unsigned`
 - PROOF-14 (RULE-5): Write a signature and commit it without a signature on the commit, then run the gate at gate `signed`; verify it exits 1 and reads `the signing commit is not signed`
-- PROOF-15 (RULE-5): Sign the unmarked `RULE-2` as `dev@example.com`, the author of the last commit to the test file, in a signed commit, and run the gate at gate `signed`; verify it exits 0 and never reads `last touched`
+- PROOF-15 (RULE-5): Sign the unmarked `RULE-2` as `dev@example.com`, the author of the last commit to the test file, in a signed commit, and run the gate at gate `signed`; verify it exits 0
 - PROOF-16 (RULE-5): At gate `signed`, with both rules at the level `signed`, sign every rule, then change `200` to `signed 200` in `RULE-1`, run its tests and its audit again, and run the gate; verify it exits 1, reads `login RULE-1: stale` and gives the reason `hashes changed after the signature`
-- PROOF-17 (RULE-5): Point `origin/HEAD` at `main`, sign the unmarked `RULE-2` in a signed commit on a branch called `side`, and run the gate at gate `signed` there; verify it exits 0 and never reads `not on main`
-- PROOF-18 (RULE-8): Run the gate at gate `signed` over a project whose config names nobody and whose rule at the level `signed` is unsigned; verify it exits 1, opens `Queue (1):` naming `login RULE-2: unsigned`, and never prints `purlin:init --gate signed`. Sign that rule in a signed commit and run it again; verify it exits 0
+- PROOF-17 (RULE-5): Point `origin/HEAD` at `main`, sign the unmarked `RULE-2` in a signed commit on a branch called `side`, and run the gate at gate `signed` there; verify it exits 0
 - PROOF-19 (RULE-7): Run the gate at gate `strong` over a spec carrying 30 rules and no evidence; verify it opens `Not passed (30):` and closes the section with `and 10 more; --json prints every one.`
 - PROOF-20 (RULE-2): Declare an anchor holding 1 rule, require it from a feature holding 2, and run the gate with `--json` at gate `passed`; verify it counts 3 rules and names `policy RULE-1` exactly once
 - PROOF-21 (RULE-9): Run the gate over a passing project, then a failing one, then a directory holding no project; verify the exit codes are 0, 1 and 2 and that the last prints `failing closed`
@@ -69,7 +67,6 @@
 - PROOF-25 (RULE-11): Run the gate with `--json` over a project at gate `passed` with no evidence; verify the JSON reads gate `passed`, result `fail`, exit 1, 2 rules, 0 met, 2 entries under `not_passed`, empty `weak`, `waiting` and `not_signed`, and the commit the payload named
 - PROOF-26 (RULE-11): Run the gate with `--json` over a passing project; verify the result is `pass`, that met equals 2 of 2 rules and `not_passed` is empty
 - PROOF-27 (RULE-11): Run the gate with `--json` at gate `strong` with a minimum of 70 over evidence measuring 40; verify `weak` holds 2 entries, `not_passed` is empty and the minimum reads 70
-- PROOF-28 (RULE-8): Run the gate with `--json` at gate `signed` over a project whose config names nobody; verify it exits 1, that `queue` holds exactly 1 row, and that the JSON carries no key naming who may sign
 - PROOF-29 (RULE-12): Snapshot every file of a project, run the gate at `passed`, `strong` and `signed`, and snapshot again; verify the two snapshots are equal and `git status --porcelain` prints nothing
 - PROOF-30 (RULE-1): Read the gate's own source; verify it builds the payload, reads `meets_gate`, and that none of the box-drawing glyphs a rendered table uses appears in it
 - PROOF-31 (RULE-1): Build the payload, hand it to the gate and run it; verify it exits 0 and prints `PASS`

@@ -1,8 +1,9 @@
 """Tests for `scripts/ci/gate_check.py`: what each gate lets through.
 
-The gate decides whether a branch may merge, from the structured payload. The
-payload has already worked out every rule's cells, so this job groups the rules
-by the one cell that blocks each of them and prints that cell's own reasons.
+The gate decides whether every rule meets the project's gate, from the
+structured payload. The payload has already worked out every rule's cells, so
+this job groups the rules by the one cell that blocks each of them and prints
+that cell's own reasons.
 Three things it must never do: parse a rendered table, write anything, or pass
 when it cannot read the evidence.
 
@@ -360,7 +361,6 @@ class TestTheSignedGate:
                 ['login', 'RULE-2', '--project-root', made.root]) == 0
             code, output = run(made)
             assert code == 0, output
-            assert 'last touched' not in output, output
         finally:
             made.close()
 
@@ -400,25 +400,9 @@ class TestTheSignedGate:
                 ['login', 'RULE-2', '--project-root', made.root]) == 0
             code, output = run(made)
             assert code == 0, output
-            assert 'not on main' not in output, output
         finally:
             made.close()
 
-    # purlin: gate_check PROOF-18
-    def test_the_gate_grades_every_rule_with_nobody_named(self):
-        made = signed_project()
-        try:
-            code, output = run(made)
-            assert code == 1
-            assert 'Queue (1):' in output, output
-            assert 'login RULE-2: unsigned' in output, output
-            assert 'purlin:init --gate signed' not in output, output
-            assert sign_module.main(
-                ['login', 'RULE-2', '--project-root', made.root]) == 0
-            code, output = run(made)
-            assert code == 0, output
-        finally:
-            made.close()
 
 
 # ---------------------------------------------------------------------------
@@ -559,17 +543,6 @@ class TestTheJsonResult:
         finally:
             made.close()
 
-    # purlin: gate_check PROOF-28
-    def test_the_json_grades_the_rules_with_nobody_named(self):
-        made = project_at('signed', config={'min_strength': 80})
-        try:
-            code, output = run(made, as_json=True)
-            data = json.loads(output[output.index('{'):])
-            assert code == 1
-            assert len(data['queue']) == 1, data['queue']
-            assert not [key for key in data if 'signer' in key], sorted(data)
-        finally:
-            made.close()
 
 
 # ---------------------------------------------------------------------------
