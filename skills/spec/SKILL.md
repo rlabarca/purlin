@@ -73,9 +73,9 @@ the first two here. The third is a person's decision, so name the rules and leav
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /login with a known user; verify 200 and a Set-Cookie header
-- PROOF-2 (RULE-2): POST /login with the wrong password; verify 401 and no cookie
-- PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423
+- PROOF-1 (RULE-1): A known user signs in with the right password; the answer is 200 and it sets a session cookie
+- PROOF-2 (RULE-2): A known user signs in with a wrong password; the answer is 401 and it sets no cookie
+- PROOF-3 (RULE-3): After 5 wrong passwords in a row, the right password is refused with 423
 ```
 
 `> Scope:` earns its place: a record carries the git tree hash of those files, which is what
@@ -107,9 +107,9 @@ absence. There is no separate syntax for it.
 
 ## Proofs
 
-A proof says what a test asserts, not how the test is written. Name a route, an input, and the
-observable that settles the claim. Every rule needs at least one proof. Several proofs may
-name one rule, and one proof may name several rules when it drives a flow through all of them:
+Write every proof to `references/spec_quality_guide.md`, "Writing proofs", the one home of
+what a good proof is. Write at least one proof for every rule. Several proofs may name one
+rule, and one proof may name several rules when it drives a flow through all of them:
 `- PROOF-7 (RULE-2, RULE-3, RULE-4): ...`.
 
 Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has no test: its rule reads `manual test` until a signature
@@ -119,9 +119,6 @@ Add `@env(windows)`, `@env(macos)` or `@env(linux)` when the claim can only be p
 operating system. Those three are the whole vocabulary. A proof with no `@env` is satisfied by
 a record from any system; a proof with one has its passed cell met only when a record from
 that system passes it.
-
-A proof about what a person sees is an end-to-end observable: a route, a state, visible text,
-presence. Never a selector, never a pixel comparison.
 
 ## Ids
 

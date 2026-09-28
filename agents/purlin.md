@@ -12,10 +12,11 @@ Purlin cannot prove the code is right. It gives the team a paper trail.
 ## The words
 
 A **rule** is one line saying what the software must do. A **proof** says how that claim is
-observed. A **test** is the executable form of a proof, tagged with its rule. The
-**evidence** is what a run saw, one file per feature: `purlin:test` writes each proof's result,
-`purlin:audit` adds what the audit found, and `--commit` commits it; nobody signs it. Its
-**source** is the folder it sits in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`, and
+observed, written to `references/spec_quality_guide.md`, "Writing proofs". A **test** is the
+executable form of a proof, tagged with its rule. The **evidence** is what a run saw, one file
+per feature: `purlin:test` writes each proof's result, `purlin:audit` adds what the audit
+found, and `--commit` commits it; nobody signs it. Its **source** is the folder it sits in,
+`.purlin/evidence/ci/` or `.purlin/evidence/local/`, and
 both count at every gate. A **brief** is the machine's report on one rule, and it recommends
 nothing. A **signature** is a named person's attestation that a rule, a proof and a test
 belong together, also committed. The **tag** `signed/<version>` is the marker that every rule

@@ -38,8 +38,8 @@ this skill writes specs and nothing can read them until the project is set up.
    `spec(<name>):` prefix from `references/commit_conventions.md`. Record the position in
    `.purlin/runtime/spec-from-code.json` after each commit, so a session that ends halfway
    resumes at the next feature instead of starting over.
-6. **Report.** Print the count of features, the count of rules, and how many rules already
-   have a passing test.
+6. **Report.** Print the count of features, the count of rules, how many rules already
+   have a passing test, and each proof an existing test already shows, beside that test.
 
 ## What the rules look like
 
@@ -58,8 +58,8 @@ Every rule this skill writes carries `[bar: passed]`:
 
 ## Proof
 
-- PROOF-1 (RULE-1): Send 61 requests in one minute from one client; verify the 61st returns 429
-- PROOF-2 (RULE-2): Read the 429 response headers; verify Retry-After is present and is a positive integer
+- PROOF-1 (RULE-1): One client sends 61 requests within one minute; the first 60 return 200 and the 61st returns 429
+- PROOF-2 (RULE-2): The 429 answer to a 61st request carries a `Retry-After` header holding a whole number of seconds above 0
 ```
 
 `passed` is correct because nobody has judged yet whether the rule is worth an audit and a
@@ -70,12 +70,10 @@ worth keeping read `references/spec_quality_guide.md`.
 
 ## Where the proofs come from
 
-When a test already exercises the behaviour, write the proof to describe what that test
-asserts and say so, so `purlin:build` can add the marker instead of writing a new test:
-
-```
-- PROOF-4 (RULE-4): tests/test_rate_limit.py::test_burst already asserts this
-```
+Write every proof to `references/spec_quality_guide.md`, "Writing proofs". When a test
+already exercises the behaviour, the proof says what that test shows, in the same words it
+would use if no test existed, and never names the test. The report lists that test beside its
+proof, so `purlin:build` can add the marker instead of writing a new test.
 
 When nothing tests it, write the proof as if the test existed. The rule then lands in the
 Drafted state and `purlin:build` writes the test on the next pass.
