@@ -68,8 +68,9 @@ function briefPanel(feature, rule) {
     lines.push('<p class="sec">The AI audit could not settle the question, '
       + 'so a person states what they see.</p>');
   }
-  if (cell.brief) {
-    lines.push('<p class="sec">' + hostLink(cell.brief, cell.brief) + '</p>');
+  if (cell.evidence) {
+    lines.push('<p class="sec">' + hostLink(cell.evidence, cell.evidence)
+      + '</p>');
   }
   return '<div class="panel"><h2>Brief</h2>' + lines.join('') + '</div>';
 }

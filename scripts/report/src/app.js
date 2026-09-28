@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
             features: {}, groups: {}, filters: {}};
-var SCHEMA = 8;
+var SCHEMA = 9;
 /* The data file is rewritten seconds after a tool call changed a spec, a
    record or a signature, and a tab left open would never notice. Coming back
    to the tab reloads it when what it holds is older than this. */
@@ -62,7 +62,7 @@ var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
    screen and a row on the Review tab agree. */
 var CELL_TONES = {'ready': 'pass', 'drafted': 'idle', 'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
-  'code changed': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
+  'out of date': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
   'manual test': 'warn', 'not audited': 'idle', 'unsettled': 'warn',
   'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail'};
 
@@ -255,18 +255,35 @@ function ownRules(feature) {
    read over every spec rather than a second set of sums. */
 function wholeProject() {
   var rules = [];
-  var rollup = {latest_record: null};
+  var rollup = {};
+  var latest = null;
   Object.keys(DATA.summary || {}).forEach(function (key) {
     rollup[key] = DATA.summary[key];
   });
   (DATA.features || []).forEach(function (feature) {
     ownRules(feature).forEach(function (rule) { rules.push(rule); });
-    var found = (feature.rollup || {}).latest_record;
-    if (found && newer(found.timestamp, (rollup.latest_record || {}).timestamp)) {
-      rollup.latest_record = found;
-    }
+    var found = newestRun(feature);
+    if (found && (!latest || newer(found.at, latest.at))) { latest = found; }
   });
-  return {rules: rules, rollup: rollup};
+  return {rules: rules, rollup: rollup, newest: latest};
+}
+
+/* The newest section of a spec's evidence in either source: where it sits,
+   whose run it was and when, or null where nothing has run. */
+function newestRun(feature) {
+  if (feature.newest !== undefined) { return feature.newest; }
+  var best = null;
+  ['local', 'ci'].forEach(function (source) {
+    var file = (feature.evidence || {})[source];
+    if (!file) { return; }
+    Object.keys(file.platforms || {}).forEach(function (os) {
+      var section = file.platforms[os];
+      if (!best || newer(section.at, best.at)) {
+        best = {path: file.path, source: source, at: section.at};
+      }
+    });
+  });
+  return best;
 }
 
 /* One ISO stamp against another, either of which may be missing. */
@@ -301,13 +318,12 @@ function platformLines(feature) {
     });
 }
 
-/* Where the newest audit came from, how old it is, and the strength this
+/* Where the newest run came from, how old it is, and the strength this
    gate asks for. The strength itself is in the cell beside it. */
 function auditLines(feature) {
-  var record = (feature.rollup || {}).latest_record;
-  return [record ? 'audit' + DOT + (record.label || 'local') + DOT
-      + ageText(record.timestamp).text
-    : 'No audit has written a record here.',
+  var run = newestRun(feature);
+  return [run ? 'run' + DOT + run.source + DOT + ageText(run.at).text
+    : 'No run has written evidence here.',
     'minimum strength ' + minStrength() + '%'];
 }
 
@@ -330,13 +346,12 @@ function signerLines(feature) {
   return out;
 }
 
-/* The newest record this spec has, linked to the file on the git host. Which
-   platform found what is on the passed cell row above it. */
+/* The evidence file of this spec's newest run, linked to the file on the
+   git host. Which platform found what is on the passed cell row above it. */
 function recordLine(feature) {
-  var record = (feature.rollup || {}).latest_record || feature.latest_record;
-  if (!record) { return '<span class="mono muted">\u2014</span>'; }
-  return hostLink(record.path, (record.label || 'local') + DOT
-    + ageText(record.timestamp).text);
+  var run = newestRun(feature);
+  if (!run) { return '<span class="mono muted">\u2014</span>'; }
+  return hostLink(run.path, run.source + DOT + ageText(run.at).text);
 }
 
 /* A link to the file on the git host, when the payload names a remote this
