@@ -532,6 +532,22 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       tag below `signed`.
     - **The remote runner gets a diagram**, in the section of `docs/running-and-evidence.md`
       that describes the two cases. That page then holds two diagrams, one per section.
+57. **The dashboard, from the owner's first look** (added 2026-09-28).
+    - The two headline lines above the tiles go.
+    - `without a test` reads `no test`.
+    - Every neutral text colour measures at least 7 to 1 against the ground and the card it
+      is drawn on, in both themes; state colours and the accent are left alone.
+    - Whether a proof has a test is read from the markers in the source, not from the
+      evidence; a proof whose test exists and has not run reads `not run`.
+    - **Proofs show under each rule on the board, contracted by default.** A rule's row
+      carries a control that opens its proofs beneath it, each with its words and its own
+      result (`passed`, `failed`, `no test`, `not run`) and its tests. Closed, the row shows
+      how many proofs the rule has, in the warn tone when one has no test or is failing.
+    - **A shared spec's rules are shown once.** Rules that reach a feature from an anchor
+      it requires, or from a global anchor, still count toward that feature. The board
+      lists them once, under the anchor that owns them, and a feature's row reads
+      `<n> rules, plus <k> shared`, with the hover naming the anchors. A rule is always
+      addressed by its owner and its id, so opening a rule opens that rule.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
