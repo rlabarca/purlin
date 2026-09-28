@@ -534,7 +534,8 @@ def _apply_workflows(root, files, args, out):
     from purlin import evidence as evidence_module
     tags = flow.env_tags_in_specs(root)
     write_one, reasons = flow.wanted(tags, _config(root).get('trust'),
-                                     evidence_module.host_os())
+                                     evidence_module.host_os(),
+                                     _config(root).get('gate'))
     if not write_one:
         out.say('wrote no workflow: %s'
                 % flow.no_reason(_config(root).get('gate')))

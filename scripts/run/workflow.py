@@ -122,6 +122,10 @@ FOREIGN_OS_REASON = ('A proof in specs/ is tagged @env for %s, which this '
                      'machine is not, so only a runner can prove it.')
 TRUST_REASON = ('You chose not to trust this machine for signing, so the '
                 'tests a signature rests on run on a clean one.')
+# The trust reason at the gate `passed`, which signs nothing and asks
+# whether this machine is trusted for the tests.
+TRUST_REASON_AT_PASSED = ('You chose not to trust this machine for the tests, '
+                          'so they run on a clean one.')
 NO_REASON = ('every proof runs on this operating system and you trust this '
              'machine, so nothing has to run remotely')
 # The same at the gate `passed`, whose words are rules and tests.
@@ -134,8 +138,13 @@ def no_reason(gate):
     return NO_REASON_AT_PASSED if gate == 'passed' else NO_REASON
 
 
-def wanted(env_tags, trust, host_os):
-    """`(write one, the reasons)` for a project's workflow.
+def trust_reason(gate):
+    """The trust reason in the words the gate uses."""
+    return TRUST_REASON_AT_PASSED if gate == 'passed' else TRUST_REASON
+
+
+def wanted(env_tags, trust, host_os, gate=None):
+    """`(write one, the reasons)` for a project's workflow, in the gate's words.
 
     Two reasons and no others. A proof tagged `@env` for another operating
     system cannot be proven here, and a project that answered no to init's
@@ -149,7 +158,7 @@ def wanted(env_tags, trust, host_os):
     if foreign:
         reasons.append(FOREIGN_OS_REASON % ', '.join(foreign))
     if str(trust or '') == 'remote':
-        reasons.append(TRUST_REASON)
+        reasons.append(trust_reason(gate))
     return bool(reasons), reasons
 
 

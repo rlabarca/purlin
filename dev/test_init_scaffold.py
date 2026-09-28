@@ -691,10 +691,39 @@ class TestTheWorkflow:
     # purlin: scaffold PROOF-13
     def test_answering_no_to_trust_writes_one(self, project):
         self._trust_remote(project)
-        output = project.run('--gate', 'passed')
+        output = project.run('--gate', 'strong')
         assert project.has('.github/workflows/purlin.yml'), output
         assert project.config()['trust'] == 'remote'
-        assert 'signing' in output, output
+        assert ('  You chose not to trust this machine for signing, so the '
+                'tests a signature rests on run on a clean one.'
+                in output.splitlines()), output
+
+    # purlin: scaffold PROOF-50
+    @pytest.mark.parametrize('gate', ('passed', 'strong'))
+    def test_the_trust_reason_names_the_tests_at_passed(self, project, gate):
+        self._trust_remote(project)
+        output = project.run('--gate', gate)
+        assert project.has('.github/workflows/purlin.yml'), output
+        at_passed = ('  You chose not to trust this machine for the tests, '
+                     'so they run on a clean one.')
+        signing = ('  You chose not to trust this machine for signing, so '
+                   'the tests a signature rests on run on a clean one.')
+        lines = output.splitlines()
+        if gate == 'passed':
+            assert at_passed in lines, output
+            assert signing not in lines, output
+            start = next(i for i, line in enumerate(lines)
+                         if line.startswith('A remote runner is written'))
+            reasons = []
+            for line in lines[start + 1:]:
+                if not line.startswith('  '):
+                    break
+                reasons.append(line)
+            assert reasons == [at_passed], reasons
+            assert not any('sign' in line for line in reasons), reasons
+        else:
+            assert signing in lines, output
+            assert at_passed not in lines, output
 
     # purlin: scaffold PROOF-13
     def test_with_no_remote_nothing_is_written(self):

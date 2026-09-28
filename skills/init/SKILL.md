@@ -156,10 +156,10 @@ A remote runner is written for two reasons:
   You chose not to trust this machine for signing, so the tests a signature rests on run on a clean one.
 ```
 
-With neither, no workflow is written at any gate and init prints `No remote runner: every
-test runs on this operating system and you trust this machine, so nothing has to run
-remotely.` at `passed`, and the same line with `every proof` from `strong` up. Teammates see
-your results from the evidence `purlin:test --commit` commits.
+At `passed` the second reads `You chose not to trust this machine for the tests, so they run on a
+clean one.` With neither, init writes no workflow and prints `No remote runner: every test runs on
+this operating system and you trust this machine, so nothing has to run remotely.`, with `every
+proof` from `strong` up. Teammates read the evidence `purlin:test --commit` commits.
 
 Before a workflow is written init checks two prerequisites: a remote exists, and its URL names
 GitHub or Azure DevOps. The first that fails is printed in one line naming what to do, and no

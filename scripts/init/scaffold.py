@@ -714,7 +714,7 @@ def main(argv=None):
     # for signing. A project with neither runs nothing remotely.
     tags = workflow_module.env_tags_in_specs(root)
     wanted, reasons = workflow_module.wanted(
-        tags, trust, evidence_module.host_os())
+        tags, trust, evidence_module.host_os(), gate)
     print_remote_reasons(reasons, gate)
     if wanted and not git_remote(root):
         wanted = False
