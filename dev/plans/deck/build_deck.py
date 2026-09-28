@@ -48,6 +48,17 @@ def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=
     with open(os.path.join(ROOT, 'slides', sid + '.html'), 'w', encoding='utf-8') as h:
         h.write('\n'.join(out))
 os.makedirs(os.path.join(ROOT, 'slides'), exist_ok=True)
+slide('why', 'What Purlin is for', 'Why use Purlin?', [
+    ('Tests pass. Do they cover what was asked?', 'You write each requirement as a rule. Purlin ties every rule to the tests that show it, and names every rule with no test.'),
+    ('AI writes tests fast. Are they any good?', 'An AI audit reads each test against what it claims to show, and names the tests that show too little.'),
+    ('Something changed. Is the result still true?', 'A result stops counting when the rule, the test or the code changes, until the tests are run again.'),
+    ('Someone has to sign it off.', 'A person signs each rule, and the version gets a signed tag. The evidence is one file you hand over.'),
+], '',
+ 'Purlin is a Claude Code plugin for spec-driven development. Its intended use is to produce '
+ 'evidence, in the repository, for the people who build the software and for whoever must sign it '
+ 'off. A team chooses how far to go: tests only, an audit too, or a signature too. Purlin cannot '
+ 'prove your code is correct, and it makes no claim of compliance.',
+ lead='Purlin shows, rule by rule, that your software does what you said it must.', width=700)
 slide('touches', 'Your project and your workflow', 'How little does Purlin change your project?', [
     ('A settings file', '%s, a folder for evidence, and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
     ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),
@@ -119,8 +130,8 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
  'The same tag always gives the same package, byte for byte.')
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin gate workflows",
-        "order": ["touches", "start", "passed", "strong", "signed", "remote", "regulated"],
-        "sections": {"s1": {"description": "How little Purlin changes in a project and a workflow, and how to start in under ten minutes", "start": "touches"},
+        "order": ["why", "touches", "start", "passed", "strong", "signed", "remote", "regulated"],
+        "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes", "start": "why"},
                      "s2": {"description": "One slide per gate: what the gate checks, what you run, and when the gate is met", "start": "passed"},
                      "s3": {"description": "The two cases where Purlin uses a remote runner, and where Purlin stops in regulated work", "start": "remote"}},
         "faces": {}, "designSystems": []}
