@@ -114,7 +114,6 @@ from purlin import (console as console_module,                # noqa: E402
 import evidence as evidence_writer                             # noqa: E402
 import reports as reports_module                               # noqa: E402
 
-ARROW = '→'
 LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
 USAGE = (
@@ -1166,13 +1165,8 @@ def _run_breaks(project_root, args, features, selected):
     `selected` is the features with a rule the audit reads: a score is
     measured for a feature only then.
     """
-    try:
-        import mutation as mutation_module
-        from mutation import select_engine, run_breaks
-    except ImportError:
-        print('purlin: the break engines are not available; test strength is '
-              'not measured for this run.')
-        return {'engine': None, 'available': False, 'features': {}}
+    import mutation as mutation_module
+    from mutation import select_engine, run_breaks
     config = resolve_config(project_root)
     # The suites the settings name, then what detection finds: a suite named
     # for its framework picks that framework's engine first.
@@ -1239,12 +1233,7 @@ def _remote(project_root, args, cfg=None):
     operating system's section of each feature's `ci/` evidence, and commits
     it on the run branch; the run pulls that commit back.
     """
-    try:
-        from remote import run_remote
-    except ImportError:
-        print('purlin: --remote is not available in this checkout.',
-              file=sys.stderr)
-        return 1
+    from remote import run_remote
     return run_remote(project_root, args, cfg)
 
 

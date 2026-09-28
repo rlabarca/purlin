@@ -79,9 +79,9 @@ def sync_status(project_root):
 def _update_pending(project_root):
     """True while `purlin:init --update` still has migrations to apply.
 
-    Imported here rather than at the top: a project that is already on this
-    release pays nothing for the question, and a checkout without the init
-    scripts still prints a table.
+    Imported here rather than at the top, so a project that is already on
+    this release pays nothing for the question. Whatever goes wrong while
+    asking it, the table is still printed.
     """
     import importlib
     init_dir = os.path.join(os.path.dirname(_MCP_DIR), 'init')

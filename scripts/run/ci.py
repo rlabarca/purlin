@@ -16,9 +16,6 @@ asked, and `scripts/run/host.py` asks it before every API commit.
 
 import os
 
-_RUN_DIR = os.path.dirname(os.path.abspath(__file__))
-PLUGIN_ROOT = os.path.dirname(os.path.dirname(_RUN_DIR))
-
 # What each git host calls the directory the job checked the repository out
 # into. A run against any other directory is a run against something else.
 _WORKSPACE_VARIABLES = ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY')

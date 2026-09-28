@@ -62,10 +62,6 @@ TABLE_NOTE = ('Each row is the newest run of that feature, whoever made it; '
               'the source in the last column says whose run it was.')
 TABLE_EMPTY = 'No feature has been run yet.'
 
-# The words a section's `rules` holds, which are the passed cell's own.
-WORDS = ('passed', 'failed', 'no test', 'not run')
-
-
 def now_iso():
     """The current time, ISO 8601 UTC with `Z`."""
     return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')

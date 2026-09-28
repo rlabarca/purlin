@@ -1173,34 +1173,6 @@ class TestTheAuditGateLine:
         assert code == 1, out
 
 
-class TestTheAuditWithoutTheEngines:
-    """`--audit` still writes its evidence where the break engines are absent."""
-
-    # purlin: run_script PROOF-18
-    def test_missing_break_engines_are_reported_and_the_run_continues(
-            self, tmp_path, monkeypatch, capsys):
-        root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat')
-        purlin_run = _load_run_script()
-        # The break engines are taken off the path, which is the state a
-        # checkout is in before they are installed: `--audit` must still
-        # write its evidence and say what it could not measure.
-        # Compared through realpath, not abspath: a checkout reached along a
-        # symlink (a clone under /tmp on macOS) puts both spellings of this
-        # one directory on the path, and abspath leaves the second in place.
-        run_dir = os.path.realpath(os.path.join(REPO, 'scripts', 'run'))
-        monkeypatch.delitem(sys.modules, 'mutation', raising=False)
-        monkeypatch.setattr(
-            sys, 'path',
-            [p for p in sys.path if os.path.realpath(p or '.') != run_dir])
-        code = purlin_run.main(['--project-root', str(root), '--all',
-                                '--audit'])
-        output = capsys.readouterr().out
-        assert 'test strength is not measured' in output
-        assert code in (0, 1)
-        assert (root / '.purlin' / 'evidence' / 'local' / 'feat.json').exists()
-
-
 # ---------------------------------------------------------------------------
 # The pieces the run script owns, read directly
 # ---------------------------------------------------------------------------

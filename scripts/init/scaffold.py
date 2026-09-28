@@ -66,7 +66,6 @@ from purlin import (console as console_module,                # noqa: E402
                     specs as specs_module, status as status_module)
 
 EXIT_OK = 0
-EXIT_NOTHING = 1
 EXIT_BAD_INVOCATION = 2
 
 ARROW = '→'
@@ -531,10 +530,6 @@ def parse_args(argv):
 
 def delegate_update(args):
     """`--update` belongs to scripts/init/update.py, which owns the upgrade."""
-    if not os.path.isfile(os.path.join(_HERE, 'update.py')):
-        print('The upgrade path lives in scripts/init/update.py, which this '
-              'plugin does not carry yet.')
-        return EXIT_NOTHING
     if _HERE not in sys.path:
         sys.path.insert(0, _HERE)
     import update                                              # noqa: PLC0415
