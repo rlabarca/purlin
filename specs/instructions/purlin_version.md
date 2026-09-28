@@ -5,8 +5,7 @@
 >   `dev/bump_version.sh`, and `bash dev/bump_version.sh --check` is the check
 >   that fails when a derived location disagrees. Nobody edits a version
 >   literal by hand, and a document that describes the version field names the
->   file rather than restating a number, so no table can go stale. The dev
->   sweep writes its own count of what ran, for a reader to open.
+>   file rather than restating a number, so no table can go stale.
 > Scope: VERSION, templates/config.json, .claude-plugin/plugin.json, .purlin/config.json, scripts/mcp/purlin/__init__.py, scripts/mcp/purlin/server.py, dev/bump_version.sh, references/drift_criteria.md, skills/init/SKILL.md
 > Stack: python/stdlib for the reader, bash for the propagation script, json for the derived locations
 
