@@ -6,28 +6,23 @@ shortest description of the whole thing: one rule, three questions, and who answ
 A **rule** is one line in a spec saying what the software must do. A **proof** says in plain
 language how that is shown. A **test** is any test in your own suite that carries a marker, one
 comment above it naming the proof: `# purlin: login PROOF-4`. Every rule answers the same three
-questions, top to bottom.
+questions, top to bottom, and its level says how far down it must go.
 
 ```mermaid
 flowchart TD
-    Q1["passed<br>did every marked test pass?<br>purlin:test, from the evidence"]
-    Q2["strong<br>are those tests worth trusting?<br>purlin:audit, from the evidence"]
-    Q3["signed<br>did a person say the three belong together?<br>purlin:sign, from the signature file"]
-    Lvl{"what is its level?<br>level passed, strong or signed"}
-    Sig{"is its level signed?"}
-    Met(["the rule meets the gate"])
-    Stop(["blocked here; the cell carries the reason"])
-
-    Q1 -->|passed| Lvl
-    Lvl -->|"level passed"| Met
-    Lvl -->|"level strong or signed"| Q2
-    Q2 -->|strong| Sig
-    Sig -->|"level strong"| Met
-    Sig -->|"level signed"| Q3
-    Q3 -->|signed| Met
-    Q1 -->|"failed, partial, no test, not run, out of date"| Stop
-    Q2 -->|"weak, not audited, manual test, no proof"| Stop
-    Q3 -->|"unsigned, stale"| Stop
+    T{"purlin:test<br>passed?"}
+    A{"purlin:audit<br>strong?"}
+    S{"purlin:sign<br>signed?"}
+    M(["meets the gate"])
+    B(["short of the gate;<br>the cell says why"])
+    T -->|"yes, level passed"| M
+    T -->|"yes, level strong or signed"| A
+    A -->|"yes, level strong"| M
+    A -->|"yes, level signed"| S
+    S -->|yes| M
+    T -->|no| B
+    A -->|no| B
+    S -->|no| B
 ```
 
 The **gate**, the one setting in `.purlin/config.json`, says how many of the three levels a
