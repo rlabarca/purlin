@@ -14,13 +14,12 @@ decides how many rows exist: a cell above the gate is absent, not empty.
             not run on others. `partial` is not met.
 
     strong  Met when the tests are worth trusting: test strength at or above
-            the project minimum, a settled AI audit that observed nothing
-            where the rule's level asks for one, and nobody holding the rule.
-            `strong`, `weak`, `not audited`, `unsettled`, `manual test`,
-            `held`.
+            the project minimum and a settled AI audit that observed nothing
+            where the rule's level asks for one. `strong`, `weak`,
+            `not audited`, `unsettled`, `manual test`.
 
     signed  Met when a named person signed the rule, proof, test and audit
-            hashes. `signed`, `unsigned`, `stale`, `held`.
+            hashes. `signed`, `unsigned`, `stale`.
 
 Every rule has a **level**, `passed`, `strong` or `signed`, meaning what the
 gate means: tests; tests and audit; tests, audit and signature. A rule tagged
@@ -38,17 +37,24 @@ returns:
 
     {'cells': {'passed': {...}, 'strong': {...}},
      'level': 'strong',
-     'signable': False,
+     'need': None,
      'bucket': 'strong',
      'meets_gate': True,
      'blocked_by': None,
      'flags': {'failing': False, 'partial': False, 'stale': False,
-               'held': False, 'manual': False, 'unsettled': False,
+               'manual': False, 'unsettled': False,
                'not_audited': False, 'out_of_date': False,
                'no_proof': False}}
 
-A rule's **bucket** is the one tile it is counted in, and the two flags
-`stale` and `held` are counted beside the buckets, never instead of them.
+A rule's **bucket** is the one tile it is counted in, and the flag `stale` is
+counted beside the buckets, never instead of them.
+
+A rule's **need** is what it waits on a person for, which puts it in the
+queue: `hand check` where its level is `strong` or `signed` and its strong
+cell reads `manual test` or `unsettled`, `signature` where its level is
+`signed`, its passed and strong cells are met and its signed cell is not, and
+None otherwise. A rule that needs both is one `hand check`: the note a person
+signs it with, in a signed commit, meets the signed cell too.
 """
 
 import os
@@ -70,14 +76,19 @@ BUCKETS = ('untested', 'failing', 'partial', 'passed', 'strong', 'signed')
 # The flags a rule carries. `manual`, `unsettled` and `not_audited` are the
 # three strong-cell words the machine cannot move on its own, and `no_proof`
 # is a rule no proof line names.
-FLAGS = ('failing', 'partial', 'stale', 'held', 'manual', 'unsettled',
+FLAGS = ('failing', 'partial', 'stale', 'manual', 'unsettled',
          'not_audited', 'out_of_date', 'no_proof')
 
-# The strong cell's words that put a rule in front of a person, and the one
-# that waits for the audit instead. `not audited` is on no list: running
-# `purlin:audit` settles it.
-REVIEW_WORDS = ('manual test', 'unsettled', 'held')
+# The strong cell's words that put a rule in the queue as a hand check, and
+# the one that waits for the audit instead. `not audited` is never in the
+# queue: running `purlin:audit` settles it.
+HAND_CHECK_WORDS = ('manual test', 'unsettled')
 NOT_AUDITED = 'not audited'
+
+# What a queue row says it needs, the two reasons a rule waits on a person.
+HAND_CHECK = 'hand check'
+SIGNATURE = 'signature'
+NEEDS = (HAND_CHECK, SIGNATURE)
 
 # What a brief writes under `ai_review` when no model could be reached. The
 # audit records that as a rule it read and found nothing against, so the
@@ -86,7 +97,7 @@ NOT_AUDITED = 'not audited'
 NO_MODEL = 'not available'
 
 # The flags a rollup counts, beside the buckets and never instead of them.
-COUNTED_FLAGS = ('stale', 'held', 'manual', 'unsettled', 'not_audited')
+COUNTED_FLAGS = ('stale', 'manual', 'unsettled', 'not_audited')
 
 # Where a pass came from, most trusted first. An evidence file's source is
 # the folder it sits in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`.
@@ -126,7 +137,6 @@ def rule_cells(inp, cfg):
                     `evidence.checked_sections` gives them
     `signatures`    every signature file for this rule, each carrying `counts`
                     and `count_reason` from `signatures.counts`
-    `holds`         every hold a person committed for this rule
     `rule_hash`, `proof_hash`, `test_hash`
     `level_marked`  the rule's `[level: ...]` tag, or None
     `audit_hash`    the hash of what the audit found, which a signature binds
@@ -141,14 +151,13 @@ def rule_cells(inp, cfg):
     proofs = inp.get('proofs') or []
 
     audit = inp.get('audit_hash')
-    holds = [hold for hold in inp.get('holds') or () if _binds(hold, inp)]
     signatures = list(inp.get('signatures') or ())
     current = [sig for sig in signatures if _binds(sig, inp, audit)]
     counting = [sig for sig in current if sig.get('counts')]
 
     passed = _passed_cell(inp, cfg)
-    strong = _strong_cell(inp, cfg, level, passed, holds, counting)
-    signed = _signed_cell(holds, signatures, current, counting)
+    strong = _strong_cell(inp, cfg, level, passed, counting)
+    signed = _signed_cell(signatures, current, counting)
 
     cells = {}
     for name, cell in (('passed', passed), ('strong', strong),
@@ -160,11 +169,10 @@ def rule_cells(inp, cfg):
         'failing': passed['word'] == 'failed',
         'partial': passed['word'] == 'partial',
         'out_of_date': passed['word'] == OUT_OF_DATE,
-        # A hold and a signature are facts about committed files, so they are
-        # read the same at every gate. `manual test`, `unsettled` and
-        # `not audited` are the strong cell's own words, and that cell does
-        # not exist under `passed`.
-        'held': bool(holds) and not counting,
+        # A signature is a fact about committed files, so it is read the
+        # same at every gate. `manual test`, `unsettled` and `not audited`
+        # are the strong cell's own words, and that cell does not exist under
+        # `passed`.
         'stale': bool(signatures) and not current,
         'manual': gate != 'passed' and strong['word'] == 'manual test',
         'unsettled': gate != 'passed' and strong['word'] == 'unsettled',
@@ -175,12 +183,7 @@ def rule_cells(inp, cfg):
     blocked = _blocked_by(cells, gate, level)
     return {
         'level': level,
-        # A rule a person can sign now: its level asks for a signature, its
-        # tests pass, its audit is met, and no counting signature is there.
-        'signable': bool(level == 'signed'
-                         and cell_is_met('passed', passed)
-                         and cell_is_met('strong', strong)
-                         and signed['word'] != 'signed'),
+        'need': _need(gate, level, passed, strong, signed),
         'cells': cells,
         'bucket': _bucket(cells, gate, passed, strong, signed),
         'meets_gate': blocked is None,
@@ -311,8 +314,8 @@ def _platforms(proofs, current):
         if word is None:
             continue
         at = entry['section'].get('at')
-        held = platforms.get(entry['os'])
-        if held is None or str(at or '') > str(held.get('at') or ''):
+        known = platforms.get(entry['os'])
+        if known is None or str(at or '') > str(known.get('at') or ''):
             platforms[entry['os']] = {'word': word, 'source': entry['source'],
                                       'at': at}
     for proof in proofs:
@@ -434,23 +437,12 @@ def _section_passes(proofs, current):
 # The strong cell
 # ---------------------------------------------------------------------------
 
-def _strong_cell(inp, cfg, level, passed, holds, counting_signatures):
+def _strong_cell(inp, cfg, level, passed, counting_signatures):
     """Level 2: whether the tests behind a met passed cell are worth trusting."""
     strength = inp.get('test_strength')
     cell = {'word': 'weak', 'strength': strength,
             'observations': [], 'evidence': None, 'settled': None,
             'reasons': []}
-
-    # A hold wins. A person read the brief and said the test does not prove
-    # the proof, and that answer stands whatever the tests are doing: a
-    # failing test is work in front of the hold, not instead of it. Reading
-    # anything else here would leave a held rule off the Review list, which
-    # is the one place the hold is meant to appear. A signature for the
-    # current hashes outranks it.
-    if holds and not counting_signatures:
-        cell['word'] = 'held'
-        cell['reasons'] = _hold_reasons(holds)
-        return cell
 
     if passed['word'] != 'passed':
         cell['reasons'] = ['not passed']
@@ -490,8 +482,8 @@ def _strong_cell(inp, cfg, level, passed, holds, counting_signatures):
         cell['word'] = 'strong'
     # A review that settled and still observed something answered the
     # question: the test does not read what the proof names, which is build
-    # work, so the observation lands in the weak cell rather than on a
-    # person's list.
+    # work, so the observation lands in the weak cell rather than in the
+    # queue.
     observed = cell['observations'] if cell['settled'] is True else []
     if observed:
         cell['word'] = 'weak'
@@ -504,14 +496,6 @@ def _strong_cell(inp, cfg, level, passed, holds, counting_signatures):
     # from the word: nothing at all where an engine measured the strength.
     cell['reasons'] = list(person) + list(notes) + list(observed)
     return cell
-
-
-def _hold_reasons(holds):
-    """One reason per current hold: who wrote it and the case they named."""
-    return ['held by %s: %s'
-            % (hold.get('signer') or hold.get('holder') or 'a person',
-               hold.get('reason') or '')
-            for hold in holds or ()]
 
 
 def settled_of(audit):
@@ -531,9 +515,8 @@ def _outstanding(inp, level, audit, counting_signatures):
     Each word names the work that is outstanding. `manual test` is a proof no
     test can back, `unsettled` is an AI audit that ran and could not tell,
     and `not audited` is a rule the audit has not reached: that one waits for
-    `purlin:audit` rather than for a person, which is why it is on no list. A
-    hold is read before any of these, in `_strong_cell`. A signature for the
-    current hashes outranks them: under `strong` a signature from anyone
+    `purlin:audit` rather than for a person, which is why it is never in the
+    queue. A signature for the current hashes outranks them: under `strong` a signature from anyone
     counts, because what it clears there is a question the machine could not
     settle. The word is None when nothing is outstanding.
     """
@@ -562,11 +545,11 @@ def _signature_at(signature):
     return signature.get('committed_at') or signature.get('timestamp')
 
 
-def _signed_cell(holds, signatures, current, counting):
+def _signed_cell(signatures, current, counting):
     """Level 3: what the signature files say, whatever the cells below read.
 
     A signature is a fact about committed files. This cell is computed from
-    those files alone and reads `signed`, `unsigned`, `stale` or `held`. A
+    those files alone and reads `signed`, `unsigned` or `stale`. A
     rule whose level is below `signed` still says whether anyone signed it,
     and the cell does not block it.
     """
@@ -580,13 +563,6 @@ def _signed_cell(holds, signatures, current, counting):
         cell['at'] = _signature_at(signature)
         cell['path'] = signature.get('path')
         cell['reasons'] = ['by %s' % signature.get('signer')]
-        return cell
-
-    if holds:
-        hold = holds[0]
-        cell['word'] = 'held'
-        cell['path'] = hold.get('path')
-        cell['reasons'] = _hold_reasons([hold])
         return cell
 
     if current:
@@ -611,13 +587,8 @@ def _signed_cell(holds, signatures, current, counting):
     return cell
 
 
-def _binds(signature, inp, audit=None):
-    """True when a signature or a hold still binds the rule's current evidence.
-
-    `audit` is passed for a signature and left out for a hold: a hold says
-    the test does not prove the proof, which is a statement about the rule,
-    the proof and the test, and a re-audit does not answer it.
-    """
+def _binds(signature, inp, audit):
+    """True when a signature still binds the rule's current evidence."""
     from purlin import signatures as signatures_module
     return signatures_module.is_current(
         signature, inp.get('rule_hash'), inp.get('proof_hash'),
@@ -640,15 +611,34 @@ def _cell_blocks(name, cell, level):
 
     The passed cell blocks every rule. The strong cell blocks a rule whose
     level is `strong` or `signed`, and the signed cell a rule whose level is
-    `signed`; a cell above the rule's level is shown and does not block. A
-    hold blocks whatever the level: it is a person saying the test does not
-    prove the proof.
+    `signed`; a cell above the rule's level is shown and does not block.
     """
-    if (cell or {}).get('word') == 'held':
-        return True
     if cell_is_met(name, cell):
         return False
     return CELLS.index(name) <= CELLS.index(level)
+
+
+def _need(gate, level, passed, strong, signed):
+    """`hand check`, `signature` or None: what the rule waits on a person for.
+
+    The queue exists at the gate `strong` and above, and holds only a rule
+    whose level asks for more than its tests: a rule whose level is `passed`
+    meets the gate on its tests, so nothing about it waits. A hand check is a
+    strong cell reading `manual test`, or `unsettled` until the audit stops
+    writing that word. A signature is a rule whose level is `signed` whose
+    passed and strong cells are met and whose signed cell is not. A rule that
+    needs both is one hand check, because the note it is signed with meets
+    the signed cell as well.
+    """
+    if gate == 'passed' or level == 'passed':
+        return None
+    if strong['word'] in HAND_CHECK_WORDS:
+        return HAND_CHECK
+    if (level == 'signed' and cell_is_met('passed', passed)
+            and cell_is_met('strong', strong)
+            and not cell_is_met('signed', signed)):
+        return SIGNATURE
+    return None
 
 
 def _blocked_by(cells, gate, level):
@@ -682,14 +672,15 @@ def feature_rollup(rule_results, gate='passed', test_strength=None):
     """One feature's rollup over `{rule_ref: rule_cells result}`.
 
     Carries how many rules the feature has, how many meet the gate, one count
-    per bucket the gate reaches, the stale, held, manual, unsettled and
-    not-audited counts, how many rules are signable, and the test strength.
+    per bucket the gate reaches, the stale, manual, unsettled and not-audited
+    counts, how many rules are in the queue and how many of those are hand
+    checks, and the test strength.
     """
     keys = bucket_keys(gate)
     counts = {key: 0 for key in keys}
     met = 0
     flagged = {name: 0 for name in COUNTED_FLAGS}
-    signable = 0
+    queue = hand_checks = 0
     for result in rule_results.values():
         bucket = result.get('bucket') or 'untested'
         if bucket not in counts:
@@ -699,15 +690,19 @@ def feature_rollup(rule_results, gate='passed', test_strength=None):
         counts[bucket] += 1
         if result.get('meets_gate'):
             met += 1
-        if result.get('signable'):
-            signable += 1
+        need = result.get('need')
+        if need:
+            queue += 1
+        if need == HAND_CHECK:
+            hand_checks += 1
         flags = result.get('flags') or {}
         for name in COUNTED_FLAGS:
             flagged[name] += 1 if flags.get(name) else 0
     rollup = {'rules': len(rule_results), 'met': met}
     rollup.update(counts)
     rollup.update(flagged)
-    rollup.update({'signable': signable, 'test_strength': test_strength})
+    rollup.update({'queue': queue, 'hand_checks': hand_checks,
+                   'test_strength': test_strength})
     return rollup
 
 
@@ -715,13 +710,13 @@ def project_rollup(feature_rollups, gate='passed'):
     """The project's summary: the same counts, plus how many features there are."""
     keys = bucket_keys(gate)
     summary = {'features': len(feature_rollups), 'rules': 0, 'met': 0,
-               'signable': 0}
+               'queue': 0, 'hand_checks': 0}
     for key in keys:
         summary[key] = 0
     for name in COUNTED_FLAGS:
         summary[name] = 0
     for rollup in feature_rollups.values():
-        for key in ('rules', 'met', 'signable') + COUNTED_FLAGS:
+        for key in ('rules', 'met', 'queue', 'hand_checks') + COUNTED_FLAGS:
             summary[key] += rollup.get(key, 0)
         for key in keys:
             summary[key] += rollup.get(key, 0)

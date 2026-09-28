@@ -6,8 +6,7 @@ because a reader who learns one should not have to learn the other:
 `purlin:purlin.board` renders both. A row says how many rules the spec has,
 how many proofs it writes and how many of those have no test, and how many
 rules pass their tests. At `strong` the row adds how many rules are strong
-and the test strength; at `signed` it adds how many are signable and how many
-are signed. The table scales with the gate: a `passed` project is never shown
+and the test strength; at `signed` it adds how many are signed. The table scales with the gate: a `passed` project is never shown
 a strength, a level or a signature it did not ask for.
 
 Copy follows `references/writing_style.md`: sentence case, second person for what you
@@ -153,8 +152,6 @@ def _summary(data):
             second.append('%d rules unsettled' % summary['unsettled'])
         if summary.get('not_audited'):
             second.append('%d rules not audited' % summary['not_audited'])
-        if summary.get('held'):
-            second.append('%d rules held' % summary['held'])
     if gate == 'signed':
         second.append('a signature on every rule whose level is signed')
         if summary.get('stale'):
@@ -162,7 +159,8 @@ def _summary(data):
                           % board_module.count_of(summary['stale'],
                                                   'signature'))
     lines.append(', '.join(second) + '.')
-    lines.extend(_list_lines(data, gate))
+    if gate != 'passed':
+        lines.append(board_module.queue_line(summary))
     above = marked_above_the_gate(data)
     if above:
         lines.append(above_the_gate_line(above, gate))
@@ -195,19 +193,6 @@ def above_the_gate_line(count, gate):
         return '1 rule is marked above the gate and is read as %s.' % gate
     return ('%d rules are marked above the gate and are read as %s.'
             % (count, gate))
-
-
-def _list_lines(data, gate):
-    """The two counts a person acts on: the Review list, then the Sign list."""
-    lines = []
-    if gate == 'passed':
-        return lines
-    review = len(data.get('review_list') or ())
-    lines.append('%d rule%s to review.' % (review, '' if review == 1 else 's'))
-    if gate == 'signed':
-        sign = len(data.get('sign_list') or ())
-        lines.append('%d rule%s to sign.' % (sign, '' if sign == 1 else 's'))
-    return lines
 
 
 def _blocking(data):
@@ -264,8 +249,7 @@ def _directives(data, project_root):
     waiting = passed.get('not run', 0) + passed.get('out of date', 0)
     weak = strong.get('weak', 0)
     unaudited = _unaudited(data)
-    person = len(data.get('review_list') or ()) + len(
-        data.get('sign_list') or ())
+    person = len(data.get('queue') or ())
 
     if blocked['no_proof']:
         lines.append('%s Next: run purlin:spec. %d rules have no proof line '
@@ -309,12 +293,9 @@ def _directives(data, project_root):
     else:
         lines.append('%s Next: nothing is outstanding at gate %s.' % (ARROW, gate))
 
-    review = len(data.get('review_list') or ())
-    sign = len(data.get('sign_list') or ())
-    if review or sign:
-        lines.append('%s Review list %d, Sign list %d: %s. Run purlin:sign.'
-                     % (ARROW, review, sign,
-                        board_module.needs_a_person(review + sign)))
+    if person:
+        lines.append('%s Queue: %s. Run purlin:sign.'
+                     % (ARROW, board_module.needs_a_person(person)))
     return lines
 
 

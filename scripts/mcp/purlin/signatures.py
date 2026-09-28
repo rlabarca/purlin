@@ -1,4 +1,4 @@
-"""Read the signatures and the holds a person committed.
+"""Read the signatures a person committed.
 
 One signature is one file, so two signatures never conflict:
 
@@ -23,6 +23,8 @@ The file, field by field in `references/formats/signature_format.md`:
       "audit_hash": "<sha256 of what the audit found>",
       "level": "signed",
       "signer": "jane@acme.com",
+      "machine": "jane-laptop",
+      "os": "macos",
       "note": null,
       "timestamp": "2026-09-13T12:00:00Z",
       "gate": "signed",
@@ -32,7 +34,9 @@ The file, field by field in `references/formats/signature_format.md`:
 A signature is **current** when the hashes it binds still equal the
 recomputed ones. Anything else is a signature stale, and a person has to
 look. `level` logs the rule's level when it was signed; it is logged, not
-compared, so marking a rule differently stales nothing.
+compared, so marking a rule differently stales nothing. `machine` and `os`
+log where it was made, the host's name and `windows`, `macos` or `linux`;
+neither is hashed or compared.
 
 `audit_hash` is what locks the audit in beside the rule, the proof and the
 test. It is taken over what the audit found: the test strength, the audit
@@ -49,15 +53,6 @@ is signed and the signature verifies (`%G?` is `G`), and its hashes are
 current. Who signed is logged, not policed: the file names the signer and
 git names the commit's author, and neither is compared with anything. Below
 `signed` a committed signature counts.
-
-A **hold** is the opposite attestation, from a person who read the rule and
-found the test does not prove the proof as written:
-
-    specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json
-
-It binds the same hashes and carries the missing case as `reason`. While it is
-current the rule's strong and signed cells read `held`, and a signature for the
-same hashes outranks it.
 """
 
 import hashlib
@@ -72,10 +67,6 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 SIGNATURE_NAME_RE = re.compile(r'^(RULE-\d+)\.([0-9a-f]{8})\.([a-z0-9-]+)\.json$')
-
-# A hold carries a fourth part, so the signature pattern never reads one.
-HOLD_NAME_RE = re.compile(
-    r'^(RULE-\d+)\.([0-9a-f]{8})\.([a-z0-9-]+)\.hold\.json$')
 
 # What the T of the triple was taken from, in the order one wins over another.
 TEST_HASH_KINDS = ('file', 'manual', 'none')
@@ -152,22 +143,13 @@ def load_signatures(project_root, features):
 
     Each signature dict carries the file's keys plus `path`, project-relative.
     """
-    return _load_named(project_root, features, SIGNATURE_NAME_RE)
-
-
-def load_holds(project_root, features):
-    """`{(feature, rule_id): [hold, ...]}` for every spec, shaped the same way."""
-    return _load_named(project_root, features, HOLD_NAME_RE)
-
-
-def _load_named(project_root, features, name_re):
     found = {}
     for name, info in (features or {}).items():
         directory = signatures_dir(project_root, info)
         if not directory or not os.path.isdir(directory):
             continue
         for basename in sorted(os.listdir(directory)):
-            m = name_re.match(basename)
+            m = SIGNATURE_NAME_RE.match(basename)
             if not m:
                 continue
             path = os.path.join(directory, basename)

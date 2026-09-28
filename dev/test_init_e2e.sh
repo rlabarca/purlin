@@ -324,7 +324,7 @@ gate_walk() {  # dir language
   expect_not_in "$language: local evidence is not refused at signed" \
     'Not passed' "$dir/.purlin-local.log"
   expect_in "$language: what is left at signed is the signature" \
-    'To sign' "$dir/.purlin-local.log"
+    'Queue (1):' "$dir/.purlin-local.log"
   mv "$dir/.purlin/evidence-ci-aside" "$dir/.purlin/evidence/ci"
 
   expect_exit "$language: signed refuses a rule that needs a signature" 1 \
@@ -346,8 +346,8 @@ gate_walk() {  # dir language
   # rule meets the gate. Nothing is pushed: the last line names the push.
   python3 "$SIGN" --project-root "$dir" < /dev/null \
     > "$dir/.purlin-walk.log" 2>&1
-  expect_in "$language: the walk opens with the two lists" \
-    'Review: 0 rules. Sign: 0 rules.' "$dir/.purlin-walk.log"
+  expect_in "$language: the walk opens with the queue" \
+    'Queue: 0 rules. 0 hand checks, 0 signatures.' "$dir/.purlin-walk.log"
   if git -C "$dir" tag -l | grep -q '^signed/'; then
     pass "$language: the walk wrote the signed tag"
   else

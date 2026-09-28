@@ -11,8 +11,7 @@ One project setting decides what this job requires. The gate is read from
             source, on every operating system a counting run covered
     strong  every rule whose level is `strong` or `signed` has a strong cell
             that is met: an audit in the evidence, from either source, test
-            strength at or above the project minimum, nothing unsettled and
-            nobody holding the rule
+            strength at or above the project minimum and nothing unsettled
     signed  every rule whose level is `signed` has a counting signature: a
             person signed the rule, proof, test and audit hashes in a signed
             commit
@@ -21,8 +20,7 @@ A rule's level is its `[level: ...]` tag, or the gate where it has none, and
 never more than the gate.
 
 `--verify` is what the tag run adds, and it asks two more questions of the
-evidence already in the tree. Every signature and every hold must still bind
-the rule, proof, test and audit it names, so a tag cannot stand over code
+evidence already in the tree. Every signature must still bind the rule, proof, test and audit it names, so a tag cannot stand over code
 that changed after it was signed. Every file under `.purlin/evidence/ci/`
 must have been committed by the runner's own identity, read off the commit
 that last changed it, so a person cannot write evidence as CI's: on GitHub
@@ -83,13 +81,13 @@ _ENFORCEMENT_NOTE = (
 # cell fills two sections, because a rule that passes on one operating system
 # and not on another is a different piece of work from one that passes
 # nowhere. The strong cell fills three, because `weak` is build work, `not
-# audited` is a run and the review words are a person's.
+# audited` is a run and a hand check is a person's. A hand check and a
+# missing signature are both the queue, the one list a person works from.
 _SECTIONS = (('not_passed', 'Not passed', ('passed',)),
              ('partial', 'Partial', ()),
              ('weak', 'Weak', ('strong',)),
              ('not_audited', 'Not audited', ()),
-             ('to_review', 'To review', ()),
-             ('to_sign', 'To sign', ('signed',)),
+             ('queue', 'Queue', ('signed',)),
              ('evidence', 'Evidence', ()))
 
 
@@ -105,8 +103,8 @@ def _package():
 def verify(project_root, payload):
     """`(problems, not_checked, notice)` for the evidence already in the tree.
 
-    Two questions. Does every signature and hold still bind the rule, proof,
-    test and audit it names? And was every file under the `ci/` folders
+    Two questions. Does every signature still bind the rule, proof, test and
+    audit it names? And was every file under the `ci/` folders
     committed by the runner itself? Each answer that is no is one line naming
     the file, and any line at all fails the job. `not_checked` lists the
     `ci/` files this machine could not ask about and `notice` says why.
@@ -120,27 +118,19 @@ def verify(project_root, payload):
 
     problems = []
     features = specs_module.scan_specs(project_root)
-    bound = [(key, files, True) for key, files
-             in sorted(signatures_module.load_signatures(
-                 project_root, features).items())]
-    bound += [(key, files, False) for key, files
-              in sorted(signatures_module.load_holds(
-                  project_root, features).items())]
-    for key, files, is_signature in bound:
+    for key, files in sorted(signatures_module.load_signatures(
+            project_root, features).items()):
         entry = by_rule.get(key)
-        for attestation in files:
-            path = attestation.get('path') or '%s %s' % key
+        for signature in files:
+            path = signature.get('path') or '%s %s' % key
             if entry is None:
                 problems.append('%s: no rule %s %s is in this project'
                                 % (path, key[0], key[1]))
                 continue
-            # A hold says the test does not prove the proof, which is a
-            # statement about the rule, the proof and the test; a re-audit
-            # does not answer it, so the audit hash is not bound into one.
-            audit = entry.get('audit_hash') if is_signature else None
             if not signatures_module.is_current(
-                    attestation, entry.get('rule_hash'),
-                    entry.get('proof_hash'), entry.get('test_hash'), audit):
+                    signature, entry.get('rule_hash'),
+                    entry.get('proof_hash'), entry.get('test_hash'),
+                    entry.get('audit_hash')):
                 problems.append('%s: what it binds is not this code' % path)
     found, not_checked, notice = _provenance(project_root)
     return problems + found, not_checked, notice
@@ -222,8 +212,7 @@ def check(project_root, payload=None, out=None, as_json=False,
         'partial': [],
         'weak': [],
         'not_audited': [],
-        'to_review': [],
-        'to_sign': [],
+        'queue': [],
         'evidence': [],
         'not_checked': [],
         'result': 'pass',
@@ -297,10 +286,10 @@ def _collect(payload, result):
                 key = 'not_passed'
             elif key == 'not_passed' and _cell_word(entry, 'passed') == 'partial':
                 key = 'partial'
-            elif key == 'weak' and word in states.REVIEW_WORDS:
-                # Work only a person can do. A rule blocked on one of these
-                # is not weak: nothing a build would change moves it.
-                key = 'to_review'
+            elif key == 'weak' and word in states.HAND_CHECK_WORDS:
+                # A hand check, which only a person can do. A rule blocked on
+                # one is not weak: nothing a build would change moves it.
+                key = 'queue'
             elif key == 'weak' and word == states.NOT_AUDITED:
                 # Not weak and not a person's either: running `purlin:audit`
                 # settles it, so it gets a section naming that one command.

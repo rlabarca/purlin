@@ -92,17 +92,17 @@
       "requires": [],
       "rollup": {
         "failing": 0,
-        "held": 1,
+        "hand_checks": 0,
         "manual": 0,
-        "met": 1,
+        "met": 2,
         "not_audited": 0,
         "partial": 1,
         "passed": 1,
         "proofs": 5,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
+        "queue": 1,
         "rules": 4,
-        "signable": 1,
         "signed": 1,
         "stale": 1,
         "strong": 1,
@@ -157,7 +157,6 @@
           "feature": "login",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -187,7 +186,6 @@
             }
           ],
           "rule_hash": "rrule1log",
-          "signable": false,
           "test_hash": "trule1log",
           "test_hash_kind": "file",
           "text": "A person signs in with an email address and a password."
@@ -238,7 +236,6 @@
           "feature": "login",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -268,14 +265,13 @@
             }
           ],
           "rule_hash": "rrule2log",
-          "signable": true,
           "test_hash": "trule2log",
           "test_hash_kind": "file",
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": "strong",
+          "blocked_by": null,
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -300,28 +296,27 @@
             },
             "signed": {
               "at": null,
-              "path": "specs/auth/login.signatures/RULE-3.9c0d1e2f.sam-acme.hold.json",
-              "reasons": [
-                "held by sam@acme.com: the lock expiry is never read"
-              ],
+              "path": null,
+              "reasons": [],
               "signer": null,
-              "word": "held"
+              "word": "unsigned"
             },
             "strong": {
-              "evidence": null,
-              "observations": [],
-              "reasons": [
-                "held by sam@acme.com: the lock expiry is never read"
+              "evidence": ".purlin/evidence/ci/login.json",
+              "observations": [
+                "PROOF-3 reads the status code alone; no test reads when the lock expires."
               ],
-              "settled": null,
+              "reasons": [
+                "PROOF-3 reads the status code alone; no test reads when the lock expires."
+              ],
+              "settled": true,
               "strength": 86,
-              "word": "held"
+              "word": "weak"
             }
           },
           "feature": "login",
           "flags": {
             "failing": false,
-            "held": true,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -334,7 +329,7 @@
           "label": "own",
           "level": "passed",
           "level_marked": "passed",
-          "meets_gate": false,
+          "meets_gate": true,
           "proof_hash": "prule3log",
           "proofs": [
             {
@@ -351,7 +346,6 @@
             }
           ],
           "rule_hash": "rrule3log",
-          "signable": false,
           "test_hash": "trule3log",
           "test_hash_kind": "file",
           "text": "A locked account sends one notification email."
@@ -405,7 +399,6 @@
           "feature": "login",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -447,7 +440,6 @@
             }
           ],
           "rule_hash": "rrule4log",
-          "signable": false,
           "test_hash": "trule4log",
           "test_hash_kind": "file",
           "text": "The session cookie is refused over an unencrypted connection."
@@ -456,8 +448,7 @@
       "scope": [],
       "signatures": [
         "specs/auth/login.signatures/RULE-1.1a2b3c4d.jane-doe.json",
-        "specs/auth/login.signatures/RULE-2.5e6f7a8b.sam-acme.json",
-        "specs/auth/login.signatures/RULE-3.9c0d1e2f.sam-acme.hold.json"
+        "specs/auth/login.signatures/RULE-2.5e6f7a8b.sam-acme.json"
       ],
       "source": null,
       "source_path": null,
@@ -494,7 +485,7 @@
       "requires": [],
       "rollup": {
         "failing": 0,
-        "held": 0,
+        "hand_checks": 1,
         "manual": 1,
         "met": 2,
         "not_audited": 0,
@@ -503,8 +494,8 @@
         "proofs": 3,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
+        "queue": 1,
         "rules": 3,
-        "signable": 0,
         "signed": 0,
         "stale": 0,
         "strong": 0,
@@ -559,7 +550,6 @@
           "feature": "invoice",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -589,7 +579,6 @@
             }
           ],
           "rule_hash": "rrule1inv",
-          "signable": false,
           "test_hash": "trule1inv",
           "test_hash_kind": "file",
           "text": "An invoice totals its lines to the cent."
@@ -643,7 +632,6 @@
           "feature": "invoice",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -673,7 +661,6 @@
             }
           ],
           "rule_hash": "rrule2inv",
-          "signable": false,
           "test_hash": "trule2inv",
           "test_hash_kind": "file",
           "text": "An invoice with no lines totals zero."
@@ -714,7 +701,6 @@
           "feature": "invoice",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": true,
             "no_proof": false,
             "not_audited": false,
@@ -739,7 +725,6 @@
             }
           ],
           "rule_hash": "c3d4e5f6aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-          "signable": false,
           "test_hash": null,
           "test_hash_kind": "manual",
           "text": "A credit note prints the original invoice number and the reason the credit was raised"
@@ -777,7 +762,7 @@
       "requires": [],
       "rollup": {
         "failing": 0,
-        "held": 0,
+        "hand_checks": 1,
         "manual": 0,
         "met": 0,
         "not_audited": 0,
@@ -786,8 +771,8 @@
         "proofs": 1,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
+        "queue": 1,
         "rules": 1,
-        "signable": 0,
         "signed": 0,
         "stale": 0,
         "strong": 0,
@@ -839,7 +824,6 @@
           "feature": "checkout_design",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -869,7 +853,6 @@
             }
           ],
           "rule_hash": "rrule1che",
-          "signable": false,
           "test_hash": "trule1che",
           "test_hash_kind": "file",
           "text": "The cart page shows the order total above the pay button."
@@ -907,7 +890,7 @@
       "requires": [],
       "rollup": {
         "failing": 0,
-        "held": 0,
+        "hand_checks": 0,
         "manual": 0,
         "met": 0,
         "not_audited": 1,
@@ -916,8 +899,8 @@
         "proofs": 2,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
+        "queue": 0,
         "rules": 2,
-        "signable": 0,
         "signed": 0,
         "stale": 0,
         "strong": 0,
@@ -963,7 +946,6 @@
           "feature": "export",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -993,7 +975,6 @@
             }
           ],
           "rule_hash": "rrule1exp",
-          "signable": false,
           "test_hash": "trule1exp",
           "test_hash_kind": "file",
           "text": "A statement export lists every invoice of the month in date order."
@@ -1039,7 +1020,6 @@
           "feature": "export",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": true,
@@ -1069,7 +1049,6 @@
             }
           ],
           "rule_hash": "rrule2exp",
-          "signable": false,
           "test_hash": "trule2exp",
           "test_hash_kind": "file",
           "text": "A statement export opens with a header row naming every column."
@@ -1095,70 +1074,64 @@
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
   "project": "ledger",
-  "remote_url": "https://github.com/acme/ledger.git",
-  "review_list": [
+  "queue": [
     {
-      "cell": "strong",
+      "command": "purlin:sign checkout_design RULE-1 --note \"<what you saw>\"",
       "feature": "checkout_design",
-      "kind": "unsettled",
       "level": "signed",
+      "need": "hand check",
       "owner": "checkout_design",
+      "reasons": [
+        "the AI audit could not settle"
+      ],
       "rule": "RULE-1",
-      "why": [
-        "unsettled"
-      ]
+      "text": "The cart page shows the order total above the pay button.",
+      "word": "unsettled"
     },
     {
-      "cell": "strong",
+      "command": "purlin:sign invoice RULE-3 --note \"<what you saw>\"",
       "feature": "invoice",
-      "kind": "manual test",
       "level": "signed",
+      "need": "hand check",
       "owner": "invoice",
+      "reasons": [
+        "manual proof",
+        "strength 64% under 80%"
+      ],
       "rule": "RULE-3",
-      "why": [
-        "manual test"
-      ]
+      "text": "A credit note prints the original invoice number and the reason the credit was raised",
+      "word": "manual test"
     },
     {
-      "cell": "strong",
+      "command": "purlin:sign login RULE-2",
       "feature": "login",
-      "kind": "held",
-      "level": "passed",
-      "owner": "login",
-      "rule": "RULE-3",
-      "why": [
-        "held"
-      ]
-    }
-  ],
-  "schema_version": 9,
-  "sign_list": [
-    {
-      "cell": "signed",
-      "feature": "login",
-      "kind": "stale",
       "level": "signed",
+      "need": "signature",
       "owner": "login",
+      "reasons": [
+        "hashes changed after the signature"
+      ],
       "rule": "RULE-2",
-      "why": [
-        "stale"
-      ]
+      "text": "Five failed attempts lock the account for fifteen minutes.",
+      "word": "stale"
     }
   ],
+  "remote_url": "https://github.com/acme/ledger.git",
+  "schema_version": 9,
   "summary": {
     "failing": 0,
     "features": 4,
-    "held": 1,
+    "hand_checks": 2,
     "manual": 1,
-    "met": 3,
+    "met": 4,
     "not_audited": 1,
     "partial": 1,
     "passed": 6,
     "proofs": 11,
     "proofs_without_test": 0,
     "proofs_without_test_ids": [],
+    "queue": 3,
     "rules": 10,
-    "signable": 1,
     "signed": 1,
     "stale": 1,
     "strong": 1,

@@ -51,7 +51,7 @@
       "requires": [],
       "rollup": {
         "failing": 0,
-        "held": 0,
+        "hand_checks": 0,
         "manual": 0,
         "met": 1,
         "not_audited": 0,
@@ -62,8 +62,8 @@
         "proofs_without_test_ids": [
           "PROOF-2"
         ],
+        "queue": 0,
         "rules": 3,
-        "signable": 0,
         "stale": 0,
         "test_strength": null,
         "unsettled": 0,
@@ -94,7 +94,6 @@
           "feature": "login",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -124,7 +123,6 @@
             }
           ],
           "rule_hash": "rrule1log",
-          "signable": false,
           "test_hash": "trule1log",
           "test_hash_kind": "file",
           "text": "A person signs in with an email address and a password."
@@ -147,7 +145,6 @@
           "feature": "login",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -172,7 +169,6 @@
             }
           ],
           "rule_hash": "rrule2log",
-          "signable": false,
           "test_hash": "trule2log",
           "test_hash_kind": "none",
           "text": "Five failed attempts lock the account for fifteen minutes."
@@ -197,7 +193,6 @@
           "feature": "login",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": true,
             "not_audited": false,
@@ -214,7 +209,6 @@
           "proof_hash": "prule3log",
           "proofs": [],
           "rule_hash": "rrule3log",
-          "signable": false,
           "test_hash": "trule3log",
           "test_hash_kind": "none",
           "text": "A locked account sends one notification email."
@@ -252,7 +246,7 @@
       "requires": [],
       "rollup": {
         "failing": 0,
-        "held": 0,
+        "hand_checks": 0,
         "manual": 0,
         "met": 2,
         "not_audited": 0,
@@ -261,8 +255,8 @@
         "proofs": 2,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
+        "queue": 0,
         "rules": 2,
-        "signable": 0,
         "stale": 0,
         "test_strength": null,
         "unsettled": 0,
@@ -293,7 +287,6 @@
           "feature": "invoice",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -323,7 +316,6 @@
             }
           ],
           "rule_hash": "rrule1inv",
-          "signable": false,
           "test_hash": "trule1inv",
           "test_hash_kind": "file",
           "text": "An invoice totals its lines to the cent."
@@ -352,7 +344,6 @@
           "feature": "invoice",
           "flags": {
             "failing": false,
-            "held": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
@@ -382,7 +373,6 @@
             }
           ],
           "rule_hash": "rrule2inv",
-          "signable": false,
           "test_hash": "trule2inv",
           "test_hash_kind": "file",
           "text": "An invoice with no lines totals zero."
@@ -408,14 +398,13 @@
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
   "project": "ledger",
+  "queue": [],
   "remote_url": null,
-  "review_list": [],
   "schema_version": 9,
-  "sign_list": [],
   "summary": {
     "failing": 0,
     "features": 2,
-    "held": 0,
+    "hand_checks": 0,
     "manual": 0,
     "met": 3,
     "not_audited": 0,
@@ -426,8 +415,8 @@
     "proofs_without_test_ids": [
       "PROOF-2"
     ],
+    "queue": 0,
     "rules": 5,
-    "signable": 0,
     "stale": 0,
     "unsettled": 0,
     "untested": 2

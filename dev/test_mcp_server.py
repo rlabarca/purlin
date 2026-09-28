@@ -168,19 +168,6 @@ class Project(object):
     def signature(self, rule_id, feature='login', category='auth',
                   signer='jane@acme.com', commit_it=True, **overrides):
         """Write one signature file for a rule's current hashes."""
-        return self._attestation(rule_id, feature, category, signer, '',
-                                 commit_it, overrides)
-
-    def hold(self, rule_id, reason, feature='login', category='auth',
-             signer='jane@acme.com', commit_it=True, **overrides):
-        """Write one hold file naming the case the test does not prove."""
-        overrides = dict(overrides)
-        overrides['reason'] = reason
-        return self._attestation(rule_id, feature, category, signer, '.hold',
-                                 commit_it, overrides)
-
-    def _attestation(self, rule_id, feature, category, signer, suffix,
-                     commit_it, overrides):
         rule = self.rule(rule_id, feature)
         data = {
             'schema': 'purlin-signature/1', 'feature': feature,
@@ -199,7 +186,7 @@ class Project(object):
             rule['rule_hash'], rule['proof_hash'], rule['test_hash'])[:8]
         directory = os.path.join(self.root, 'specs', category,
                                  feature + '.signatures')
-        name = '%s.%s.%s%s.json' % (rule_id, hash8, slug, suffix)
+        name = '%s.%s.%s.json' % (rule_id, hash8, slug)
         _write(os.path.join(directory, name), json.dumps(data))
         if commit_it:
             _git(self.root, 'add', '-A')
@@ -1005,50 +992,23 @@ class TestHoldsAndSignatures:
         made.audit('RULE-2')
         return made
 
-    @pytest.mark.proof("states", "PROOF-20", "RULE-17")
-    def test_a_current_hold_puts_the_rule_in_front_of_a_person(self):
-        made = self._signed_project()
-        try:
-            made.hold('RULE-2', 'no case for an expired token')
-            rule = made.rule('RULE-2')
-            assert rule['cells']['strong']['word'] == 'held'
-            assert rule['cells']['strong']['reasons'] == [
-                'held by jane@acme.com: no case for an expired token'], rule
-            assert rule['cells']['signed']['word'] == 'held'
-            assert rule['flags']['held'] is True
-            assert rule['flags']['manual'] is False
-            assert rule['flags']['unsettled'] is False
-            assert rule['flags']['not_audited'] is False
-            assert rule['meets_gate'] is False
-        finally:
-            made.close()
-
-    @pytest.mark.proof("states", "PROOF-21", "RULE-17")
-    def test_a_hold_bound_to_other_hashes_does_nothing(self):
-        made = self._signed_project()
-        try:
-            made.hold('RULE-2', 'no case for an expired token',
-                      test_hash='0' * 64)
-            rule = made.rule('RULE-2')
-            assert rule['cells']['strong']['word'] == 'strong', rule
-            assert rule['flags']['held'] is False
-            assert not any('held by' in reason for reason
-                           in rule['cells']['strong']['reasons'])
-        finally:
-            made.close()
-
     @pytest.mark.proof("states", "PROOF-22", "RULE-18")
-    def test_a_signature_for_the_same_hashes_outranks_the_hold(self):
-        made = self._signed_project()
-        try:
-            made.hold('RULE-2', 'no case for an expired token')
-            made.sign_commits()
-            made.signature('RULE-2')
-            rule = made.rule('RULE-2')
-            assert rule['cells']['strong']['word'] == 'strong', rule
-            assert rule['cells']['signed']['word'] == 'signed', rule
-        finally:
-            made.close()
+    def test_a_signature_for_the_current_hashes_clears_the_hand_check(self):
+        cfg = purlin_gate.resolve_gate({'gate': 'signed'})
+        manual = [{'id': 'PROOF-1', 'manual': True, 'env': None, 'text': 'x',
+                   'tests': []}]
+        inp = dict(STRONG_INPUT, proofs=manual, audit_hash='a' * 64)
+        before = purlin_states.rule_cells(inp, cfg)
+        assert before['cells']['strong']['word'] == 'manual test', before
+        assert before['need'] == 'hand check', before
+        signature = {'rule_hash': None, 'proof_hash': None, 'test_hash': None,
+                     'audit_hash': 'a' * 64, 'counts': True,
+                     'signer': 'jane@acme.com', 'path': 'x.json'}
+        after = purlin_states.rule_cells(dict(inp, signatures=[signature]),
+                                         cfg)
+        assert after['cells']['strong']['word'] == 'strong', after
+        assert after['cells']['signed']['word'] == 'signed', after
+        assert after['need'] is None, after
 
     @pytest.mark.proof("states", "PROOF-24", "RULE-20")
     def test_a_signature_is_read_until_the_hashes_move_under_it(self):
@@ -1120,7 +1080,7 @@ FIVE = (
     '## Rules\n\n'
     '- RULE-1: A rule with no proof names none [level: passed]\n'
     '- RULE-2: A failing rule has a test that fails [level: passed]\n'
-    '- RULE-3: A passed rule is held by a person [level: passed]\n'
+    '- RULE-3: A passed rule has no audit yet\n'
     '- RULE-4: A strong rule has no signature yet\n'
     '- RULE-5: A signed rule carries one\n\n'
     '## Proof\n\n'
@@ -1145,10 +1105,8 @@ def _five_bucket_project():
                    {'id': 'PROOF-4', 'rule': 'RULE-4', 'status': 'pass'},
                    {'id': 'PROOF-5', 'rule': 'RULE-5', 'status': 'pass'}],
                   feature='ledger', ci=True, strength=90)
-    made.hold('RULE-3', 'the lock expiry is never read', feature='ledger',
-              category='core')
-    # The two rules whose level is `signed` are the ones the AI audit is owed
-    # on, so each carries an audit entry that settled.
+    # RULE-3 is left without an audit entry, so it has only passed. The two
+    # rules after it carry an audit entry that settled.
     made.audit('RULE-4', feature='ledger')
     made.audit('RULE-5', feature='ledger')
     made.sign_commits()
@@ -1412,7 +1370,7 @@ class TestPayload:
         assert data["schema_version"] == 9
         for key in ('generated_at', 'generated_by', 'project', 'version',
                     'commit', 'dirty', 'gate', 'summary', 'features',
-                    'review_list', 'sign_list', 'evidence', 'tag',
+                    'queue', 'evidence', 'tag',
                     'remote_url', 'warnings'):
             assert key in data, key
         assert data['gate']['gate'] == 'passed'
@@ -1477,8 +1435,8 @@ class TestPayload:
         rollup = feature['rollup']
         assert sorted(rollup) == sorted([
             'rules', 'met', 'untested', 'failing', 'partial', 'passed',
-            'stale', 'held', 'manual', 'unsettled', 'not_audited',
-            'signable', 'test_strength', 'proofs',
+            'stale', 'manual', 'unsettled', 'not_audited',
+            'queue', 'hand_checks', 'test_strength', 'proofs',
             'proofs_without_test', 'proofs_without_test_ids']), rollup
         assert (rollup['rules'], rollup['met']) == (2, 1)
         assert (rollup['passed'], rollup['untested']) == (1, 1), rollup
@@ -1634,18 +1592,19 @@ class TestTheFixturesAreTheContract:
         assert tag['commit'] == self._fixture('regulated')['commit']
 
     @pytest.mark.proof("states", "PROOF-34", "RULE-30")
-    def test_every_fixture_review_row_uses_the_closed_set(self):
-        at_strong = {'manual test', 'unsettled', 'held'}
-        at_signed = {'unsigned', 'stale', 'held'}
-        keys = ['cell', 'feature', 'kind', 'level', 'owner', 'rule', 'why']
+    def test_every_fixture_queue_row_uses_the_closed_set(self):
+        words = {'hand check': {'manual test', 'unsettled'},
+                 'signature': {'unsigned', 'stale'}}
+        keys = ['command', 'feature', 'level', 'need', 'owner', 'reasons',
+                'rule', 'text', 'word']
         for name in ('solo', 'team', 'regulated'):
             fixture = self._fixture(name)
-            for key, allowed in (('review_list', at_strong),
-                                 ('sign_list', at_signed)):
-                for row in fixture[key]:
-                    assert sorted(row) == keys, row
-                    assert row['kind'] in allowed, row
-                    assert row['why'] == [row['kind']], row
+            for row in fixture['queue']:
+                assert sorted(row) == keys, row
+                assert row['word'] in words[row['need']], row
+                assert row['command'].startswith(
+                    'purlin:sign %s %s' % (row['owner'], row['rule'])), row
+            assert fixture['summary']['queue'] == len(fixture['queue']), name
 
 
 # ---------------------------------------------------------------------------
@@ -1675,11 +1634,9 @@ class TestStatusTable:
         cells = {f['name']: purlin_board.row_cells(
             f['name'], f['rollup'], 'signed') for f in fixture['features']}
         assert cells['login'] == ('login', '4', '5', '3 of 4 · 1 partial',
-                                  '2 of 4 · 86%', '1 of 4',
-                                  '1 of 4'), cells['login']
+                                  '2 of 4 · 86%', '1 of 4'), cells['login']
         assert cells['invoice'] == ('invoice', '3', '3', '3 of 3',
-                                    '0 of 3 · 64%', '0 of 3',
-                                    '0 of 3'), cells['invoice']
+                                    '0 of 3 · 64%', '0 of 3'), cells['invoice']
         team = TestTheFixturesAreTheContract._fixture('team')
         rows = {f['name']: purlin_board.row_cells(
             f['name'], f['rollup'], 'strong') for f in team['features']}
@@ -1701,7 +1658,7 @@ class TestStatusTable:
         assert '2 · 1 without a test' in row, row
 
         for gate, expected in (('strong', ('Strong',)),
-                               ('signed', ('Strong', 'Signable', 'Signed'))):
+                               ('signed', ('Strong', 'Signed'))):
             made = Project(gate=gate)
             try:
                 text = purlin_status.sync_status(made.root)
@@ -1843,7 +1800,7 @@ class TestDriftRoles:
                                                role='qa'))
         assert report['role'] == 'qa'
         assert sorted(report['view']) == [
-            'manual', 'not_audited', 'review_list_size', 'sign_list_size',
+            'manual', 'not_audited', 'queue_size',
             'signatures_stale', 'unsettled']
 
     @pytest.mark.proof("drift", "PROOF-2", "RULE-1")

@@ -877,7 +877,7 @@ class TestDriftReportShape:
         data = json.loads(purlin_drift.drift(root, since='1'))
         assert sorted(data) == sorted([
             'since', 'commits', 'files', 'spec_changes', 'broken_scopes',
-            'pins', 'rule_details', 'summary', 'review_list',
+            'pins', 'rule_details', 'summary', 'queue',
             'roles']), sorted(data)
         assert data['broken_scopes'] == [
             {'spec': 'thing', 'missing_paths': ['src/gone.py']}], \

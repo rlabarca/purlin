@@ -9,7 +9,7 @@ Three role views come out of the same data, because three people ask
 different questions of it:
 
 `pm`      pins behind their source
-`qa`      signatures gone stale, how long the Review and Sign lists are, the
+`qa`      signatures gone stale, how long the queue is, the
           rules whose strong cell reads `manual test` or `unsettled`, rules no
           proof of which names a rejection or a boundary
 `eng`     files touched and the rules they affect, rules with no test, pins
@@ -423,7 +423,7 @@ def compute_drift(project_root, since=None, network=True, data=None):
         'pins': pins,
         'rule_details': rule_details,
         'summary': data.get('summary', {}),
-        'review_list': data.get('review_list', []),
+        'queue': data.get('queue', []),
     }
     report['roles'] = _role_views(report, data, file_entries)
     return report
@@ -443,8 +443,7 @@ def _role_views(report, data, file_entries):
         'signatures_stale': ['%s/%s' % (feature['name'], rule['id'])
                              for feature, rule in rules
                              if rule['flags'].get('stale')],
-        'review_list_size': len(data.get('review_list', [])),
-        'sign_list_size': len(data.get('sign_list', [])),
+        'queue_size': len(data.get('queue', [])),
         'manual': ['%s/%s' % (feature['name'], rule['id'])
                    for feature, rule in rules
                    if rule['flags'].get('manual')],

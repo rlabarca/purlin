@@ -202,7 +202,7 @@ class TestTheStrongGate:
             assert 'Not passed' not in output, output
             # The tests passed in a local section, so what is left is the
             # signature nobody has written.
-            assert 'To sign (1):' in output, output
+            assert 'Queue (1):' in output, output
         finally:
             made.close()
 
@@ -254,14 +254,14 @@ class TestTheStrongGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-9", "RULE-4")
-    def test_an_unsettled_audit_lands_a_rule_on_the_review_section(self):
+    def test_an_unsettled_audit_lands_a_rule_in_the_queue_section(self):
         made = project_at('strong', audits=())
         try:
             made.audit('RULE-2', settled=False)
             commit_as_ci(made.root, 'purlin: evidence at abc1234')
             code, output = run(made)
             assert code == 1
-            assert 'To review (1):' in output, output
+            assert 'Queue (1):' in output, output
             assert 'login RULE-2: unsettled' in output, output
             assert 'the AI audit could not settle' in output
         finally:
@@ -320,7 +320,7 @@ class TestTheSignedGate:
         try:
             code, output = run(made)
             assert code == 1
-            assert 'To sign (1):' in output
+            assert 'Queue (1):' in output
             assert 'login RULE-2: unsigned' in output, output
         finally:
             made.close()
@@ -403,7 +403,7 @@ class TestTheSignedGate:
         try:
             code, output = run(made)
             assert code == 1
-            assert 'To sign (1):' in output, output
+            assert 'Queue (1):' in output, output
             assert 'login RULE-2: unsigned' in output, output
             assert 'purlin:init --gate signed' not in output, output
             assert sign_module.main(
@@ -522,8 +522,8 @@ class TestTheJsonResult:
             assert data['exit'] == 1
             assert data['rules'] == 2 and data['met'] == 0
             assert len(data['not_passed']) == 2
-            assert data['weak'] == [] and data['to_sign'] == []
-            assert data['to_review'] == [] and data['not_audited'] == []
+            assert data['weak'] == [] and data['queue'] == []
+            assert data['not_audited'] == []
             assert data['commit'] == made.head()
         finally:
             made.close()
@@ -559,7 +559,7 @@ class TestTheJsonResult:
             code, output = run(made, as_json=True)
             data = json.loads(output[output.index('{'):])
             assert code == 1
-            assert len(data['to_sign']) == 1, data['to_sign']
+            assert len(data['queue']) == 1, data['queue']
             assert not [key for key in data if 'signer' in key], sorted(data)
         finally:
             made.close()
@@ -644,8 +644,8 @@ class TestWhatTheGateReads:
 # ---------------------------------------------------------------------------
 
 @pytest.mark.proof("gate_check", "PROOF-34", "RULE-14")
-def test_the_report_carries_its_seven_sections_in_order():
-    """One rule short at each section, and the seven headings in the chain's
+def test_the_report_carries_its_six_sections_in_order():
+    """One rule short at each section, and the six headings in the chain's
     own order."""
     made = project_at('signed', audits=(),
                       config={'min_strength': 80})
@@ -654,11 +654,11 @@ def test_the_report_carries_its_seven_sections_in_order():
         assert code == 1
         data = json.loads(output[output.index('{'):])
         for key in ('not_passed', 'partial', 'weak', 'not_audited',
-                    'to_review', 'to_sign', 'evidence'):
+                    'queue', 'evidence'):
             assert key in data, sorted(data)
         titles = [title for _key, title, _cells in gate_check._SECTIONS]
         assert titles == ['Not passed', 'Partial', 'Weak', 'Not audited',
-                          'To review', 'To sign', 'Evidence']
+                          'Queue', 'Evidence']
         printed = [line for line in output.splitlines()
                    if any(line.startswith(title + ' (') for title in titles)]
         assert printed == ['Not audited (1):'], output

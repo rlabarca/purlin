@@ -101,13 +101,13 @@ Each view is a filter over the same data, not a different computation.
 | Role | What it reports | Signal |
 |------|-----------------|--------|
 | `pm` | Pins behind their source | `pins_behind` |
-| `qa` | Signatures gone stale, how long the Review and Sign lists are, the rules reading `manual test`, the rules reading `unsettled`, the rules reading `not audited` | `signatures_stale`, `review_list_size`, `sign_list_size`, `manual`, `unsettled`, `not_audited` |
+| `qa` | Signatures gone stale, how long the queue is, the rules reading `manual test`, the rules reading `unsettled`, the rules reading `not audited` | `signatures_stale`, `queue_size`, `manual`, `unsettled`, `not_audited` |
 | `eng` | Files touched and the rules behind them, rules with no test, pins behind, rules whose passed cell reads `out of date` | `files_touched`, `rules_affected`, `tests_missing`, `pins_behind`, `code_changed` |
 
 `code_changed` appears in the `eng` view as information and never in the `qa` view: the
 evidence is out of date, the signature stands, and the next run clears it.
 
-The `qa` view exists at `strong` and above. Under `passed` there is no `Review` list, no
+The `qa` view exists at `strong` and above. Under `passed` there is no queue, no
 strength and no signature, so `purlin:drift qa` says the gate is `passed` and names what
 `purlin:init --gate strong` would add.
 

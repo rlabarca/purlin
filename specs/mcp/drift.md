@@ -17,7 +17,7 @@
 - RULE-4: A changed file under `skills/`, `agents/` or `.claude/agents/` that no spec scopes is NEW_BEHAVIOR and never NO_IMPACT: those directories hold behaviour even though the files are markdown
 - RULE-5: A `> Scope:` entry ending in `/` matches every file under that directory
 - RULE-6: Every changed file's line count is read from a single numbered-stat diff taken over the whole range, so the number of git calls does not grow with the number of files
-- RULE-7: The report carries `since`, `commits`, `files`, `spec_changes`, `broken_scopes`, `pins`, `rule_details`, `summary`, `review_list` and `roles`
+- RULE-7: The report carries `since`, `commits`, `files`, `spec_changes`, `broken_scopes`, `pins`, `rule_details`, `summary`, `queue` and `roles`
 - RULE-8: `broken_scopes` names every spec whose `> Scope:` points at a path that is no longer on disk, and the paths that are gone
 - RULE-9: `spec_changes` names, per changed spec, the rule ids the range added and the rule ids it removed
 - RULE-10: A pinned anchor whose source has moved past the pin is reported `behind` with the remote's short sha; an anchor naming a source and no pin is `unpinned`; a source that cannot be read is `error` with the reason; an anchor still at its pin is not reported at all
@@ -38,7 +38,7 @@
 - PROOF-5 (RULE-4): One commit adds `skills/build/SKILL.md`, `agents/reviewer.md` and `.claude/agents/helper.md`, which no spec covers; the report files all 3 as `NEW_BEHAVIOR` and none as `NO_IMPACT`
 - PROOF-6 (RULE-5): A spec covers the folder `src/api/`, and a commit changes `src/api/login.js`; the report files that file as `CHANGED_BEHAVIOR` under that spec
 - PROOF-7 (RULE-6): One commit adds 12 files of different lengths; the report gives each of the 12 its lines added and removed in the form `+N -M`, each equal to what git reports for that file on its own, and git was asked for line counts once, not 12 times
-- PROOF-8 (RULE-7): After one committed change, the report carries exactly the 10 keys `since`, `commits`, `files`, `spec_changes`, `broken_scopes`, `pins`, `rule_details`, `summary`, `review_list` and `roles`
+- PROOF-8 (RULE-7): After one committed change, the report carries exactly the 10 keys `since`, `commits`, `files`, `spec_changes`, `broken_scopes`, `pins`, `rule_details`, `summary`, `queue` and `roles`
 - PROOF-9 (RULE-8): A spec covers `src/thing.py` and `src/gone.py`, and `src/gone.py` is not on disk; `broken_scopes` holds exactly one entry, naming that spec and the missing path `src/gone.py`
 - PROOF-10 (RULE-9): A committed change adds `RULE-2` to an anchor; `spec_changes` holds exactly one entry for that anchor, and its added rules include `RULE-2`
 - PROOF-11 (RULE-10): An anchor is pinned to its source's first commit, and the source then gains a second commit; `pins` holds exactly one row for that anchor reading `behind`, with a `remote_sha` of 7 characters that is the start of the new commit's sha
@@ -47,7 +47,7 @@
 - PROOF-14 (RULE-12): The same pinned source is checked 3 times in one run; the remote is listed once
 - PROOF-15 (RULE-13): The anchor `local_security`, copied from the file `constraints.md` in another repository, falls behind its source; the row reading `behind` names `local_security`, and names neither that repository's path nor `constraints.md`
 - PROOF-16 (RULE-14): A commit changes `src/login.py`, which the spec `login` covers; the report's roles are exactly `eng`, `pm` and `qa`, the engineer's files touched include `src/login.py`, and its missing tests read exactly `login/RULE-1` and `login/RULE-2`
-- PROOF-17 (RULE-15): Drift is asked for the `qa` view; the answer's role reads `qa` and its view carries exactly `manual`, `not_audited`, `review_list_size`, `sign_list_size`, `signatures_stale` and `unsettled`
+- PROOF-17 (RULE-15): Drift is asked for the `qa` view; the answer's role reads `qa` and its view carries exactly `manual`, `not_audited`, `queue_size`, `signatures_stale` and `unsettled`
 - PROOF-18 (RULE-16): The feature `ledger` has 4 rules of its own, one of them 600 characters long and named by no proof, and requires an anchor of 3 rules; the other 3 own rules and all 3 anchor rules pass, and a commit changes every file the features cover. The `ledger` entry of `rule_details` reads 7 rules in total, 6 meeting the gate, `RULE-4` the only rule no proof names, and the spec path `specs/ledger/ledger.md`; it lists exactly its own 4 rules in rule-number order, the 600-character rule comes back as its first 200 characters followed by ` ...`, 204 characters in all, and two further runs in fresh processes give byte-identical details
 - PROOF-19 (RULE-17): After one committed change, the report text holds no line break followed by two spaces and no colon followed by a space, reads back as a report carrying `since`, `commits`, `files`, `spec_changes`, `pins`, `rule_details` and `roles`, and is shorter than the same report laid out with an indent of 2
 - PROOF-20 (RULE-10): An anchor that names a source and no pin reads `unpinned` with no remote sha; one whose source is a path where no repository exists reads `error` with a reason; one whose source has not moved past its pin gets no row at all

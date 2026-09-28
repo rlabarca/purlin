@@ -15,8 +15,6 @@ The columns, left to right:
     Proofs   how many proof lines it writes, and how many have no test
     Tests    how many rules pass, and how many are partial or failing
     Strong   how many rules are strong, and the test strength, at `strong`
-    Signable how many rules have passed their tests and their audit and wait
-             for a signature their level asks for, at `signed`
     Signed   how many rules are signed, at `signed`
 
 Every when, who and platform detail lives in a hover on the dashboard and on
@@ -25,10 +23,10 @@ the rule screen; a cell here carries counts and nothing else.
 
 DOT = ' · '
 
-# The seven columns, and which gate each one appears at.
-COLUMNS = ('Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signable', 'Signed')
+# The six columns, and which gate each one appears at.
+COLUMNS = ('Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed')
 STRONG_COLUMNS = ('Strong',)
-SIGNED_COLUMNS = ('Signable', 'Signed')
+SIGNED_COLUMNS = ('Signed',)
 
 # The one tile a rule is counted in, and the word every surface prints for it.
 # The bucket key `passed` reads `Passing` on a tile, because the tile counts
@@ -80,11 +78,6 @@ def signed_met(rollup):
     return rollup.get('signed') or 0
 
 
-def signable(rollup):
-    """How many of a spec's rules are signable: tests and audit met, unsigned."""
-    return rollup.get('signable') or 0
-
-
 def strength_text(strength):
     """A test strength as a percentage, or `n/a` where nothing measured one."""
     return 'n/a' if strength is None else '%d%%' % int(strength)
@@ -120,11 +113,6 @@ def strong_cell(rollup):
                              DOT, strength_text(rollup.get('test_strength')))
 
 
-def signable_cell(rollup):
-    """`<n> of <rules>`: the rules a signer can act on now."""
-    return '%d of %d' % (signable(rollup), rollup.get('rules') or 0)
-
-
 def signed_cell(rollup):
     """`<n> of <rules>`."""
     return '%d of %d' % (signed_met(rollup), rollup.get('rules') or 0)
@@ -137,7 +125,6 @@ def row_cells(name, rollup, gate):
     if gate in ('strong', 'signed'):
         cells.append(strong_cell(rollup))
     if gate == 'signed':
-        cells.append(signable_cell(rollup))
         cells.append(signed_cell(rollup))
     return tuple(cells)
 
@@ -186,11 +173,24 @@ def count_of(count, word, plural=None):
     return '%d %s' % (count, plural or word + 's')
 
 
+def queue_line(summary):
+    """`Queue: <n> rules. <h> hand checks, <s> signatures.`
+
+    The one line that counts the queue, which `purlin:status` prints and
+    `purlin:sign` opens its walk on.
+    """
+    total = summary.get('queue') or 0
+    hand = summary.get('hand_checks') or 0
+    return 'Queue: %s. %s, %s.' % (
+        count_of(total, 'rule'), count_of(hand, 'hand check'),
+        count_of(total - hand, 'signature'))
+
+
 def needs_a_person(count):
     """`<n> rules need a person`: the one sentence that says a person is owed.
 
-    The Review and Sign lists are the one place a person is named, and this
-    is the sentence every surface says it in, so the table and the
+    The queue is the one place a person is named, and this is the sentence
+    every surface says it in, so the table and the
     dashboard's heading never disagree about the wording or about how one
     rule reads.
     """

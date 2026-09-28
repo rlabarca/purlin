@@ -3,8 +3,7 @@
 
     sign.py [--release NAME] [--project-root DIR]
     sign.py <feature> [RULE-N ...] [--batch] [--project-root DIR]
-    sign.py <feature> RULE-N [RULE-N ...] --note "<what you checked>"
-    sign.py <feature> RULE-N [RULE-N ...] --hold "<the missing case>"
+    sign.py <feature> RULE-N [RULE-N ...] --note "<what you saw>"
 
 A signature is one named person's attestation that a rule, its proof and its
 test belong together. It is one file, so two signatures never conflict:
@@ -16,28 +15,26 @@ the slug is the signer's email local part, lowercased, with every character
 that is not a letter or a digit replaced by `-`. Every file here is a person's:
 CI writes no signature, ever.
 
-With no argument this walks two lists one brief at a time, Review first and
-then Sign. Review holds the rules whose strong cell reads `manual test`,
-`unsettled` or `held`; Sign holds the signable rules, the ones whose level
-is `signed`, whose tests and audit are met and that have no counting
-signature. At each stop the
-answer is one of four: sign the rule, add a case (a proof line to write into
-the spec), hold the rule, or skip it. The walk writes nothing until it
-closes, and then it makes one signed commit for the signatures and one per
-feature for the holds.
+With no argument this walks the queue one rule at a time: the payload's one
+list of the rules that wait on a person, each saying what it needs. A `hand
+check` is a rule whose strong cell reads `manual test` or `unsettled`; a
+`signature` is a rule whose level is `signed`, whose tests and audit are met
+and that has no counting signature. At each stop the answer is one of three:
+sign the rule, add a case (a proof line to write into the spec), or skip it.
+Signing a hand check asks for one line saying what the person saw, which the
+signature carries as its note. The walk writes nothing until it closes, and
+then it makes one signed commit for the signatures.
 
-A bare feature signs every rule of that feature on the lists, and `--batch`
-every rule of the project, in one signed commit and with no stop: at the
-gate `strong` that is the Review list, and at `signed` the Review list and
-then the Sign list, the order the walk reads them in.
+A bare feature signs every rule of that feature in the queue, and `--batch`
+every rule in the queue, in one signed commit and with no stop.
 
 **The tag is the marker of proven code.** When the walk closes and every rule
 meets the gate, it writes the annotated tag `signed/<version>`, where the
 version is the `VERSION` file at the project root or the one in
-`.purlin/config.json`; `--release <name>` names another. The tag's message
-names the commit and the gate. No tag is written while any rule falls short,
-and none is written over a tag that is already there. Nothing is pushed: the
-last line names the push for a person to run.
+`.purlin/config.json`; `--release <name>` names another. The tag's message names the commit and the
+gate. No tag is written while any rule falls short, and none is written over
+a tag that is already there. Nothing is pushed: the last line names the push
+for a person to run.
 
 **Trust.** With `trust: remote` in `.purlin/config.json` a rule with a proof
 that has a test, whose feature has no current section in its `ci` evidence,
@@ -46,19 +43,18 @@ whose proofs are all `@manual` has no test for a runner to run, so it is not
 refused. With `trust: local`, the default, your own run is the evidence.
 
 `--note` carries the one line a signer writes where the machine could not
-settle the question: a rule reading `manual test` or `unsettled`.
-`--hold` writes the opposite attestation, `<RULE-N>.<hash8>.<holder-slug>.
-hold.json`, a person's statement that the test does not prove the proof as
-written, with the missing case as its reason. It is committed signed, like a
-signature.
+settle the question: a rule reading `manual test` or `unsettled`. A reviewer
+who finds the test does not prove the proof adds the missing case as a proof
+line instead, which is the walk's `case`.
 
 **A rule marked below `signed` asks for no signature.** Under the gate
 `signed`, a rule whose `[level: ...]` tag names `passed` or `strong` has that
 level, and naming it is refused with one line saying so; nothing is written
 for it.
 
-**Who signs is logged, not policed.** The signature names the signer and
-git names the commit's author; no list says who may sign, and nothing
+**Who signs is logged, not policed.** The signature names the signer, the
+machine it was made on and that machine's operating system, and git names
+the commit's author; no list says who may sign, and nothing
 compares the signer with whoever last committed to the test file.
 
 `references/formats/signature_format.md` holds the file shape field by field.
@@ -72,6 +68,7 @@ asks for no signature.
 
 import json
 import os
+import platform
 import subprocess
 import sys
 
@@ -81,16 +78,18 @@ for _path in (_MCP_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-from purlin import (console as console_module,                 # noqa: E402
+from purlin import (board as board_module,                     # noqa: E402
+                    console as console_module,
+                    evidence as evidence_module,
                     gate as gate_module,
                     payload as payload_module,
                     signatures as signatures_module,
-                    specs as specs_module)
+                    specs as specs_module,
+                    states)
 
 SCHEMA = 'purlin-signature/1'
-HOLD_SCHEMA = 'purlin-hold/1'
 USAGE = ('Usage: sign.py [<feature> [RULE-N ...]] [--batch] [--note TEXT] '
-         '[--hold CASE] [--release NAME] [--project-root DIR]')
+         '[--release NAME] [--project-root DIR]')
 
 # The tag `purlin:sign` writes when every rule meets the gate, and the one
 # ref besides a run branch that starts a CI run.
@@ -115,8 +114,8 @@ SIGNING_SETUP = (
     'git config commit.gpgsign true',
 )
 
-# The four answers the walk takes, and the letters that reach each one.
-ANSWERS = ('sign', 'case', 'hold', 'skip')
+# The three answers the walk takes, and the letters that reach each one.
+ANSWERS = ('sign', 'case', 'skip')
 
 ARROW = '→'
 
@@ -206,6 +205,8 @@ def write_signature(project_root, feature, rule, signer_email, evidence_path,
         'audit_hash': entry.get('audit_hash'),
         'level': level if level is not None else entry.get('level'),
         'signer': str(signer_email),
+        'machine': machine_name(),
+        'os': evidence_module.host_os(),
         'note': str(note).strip() if str(note or '').strip() else None,
         'timestamp': payload_module.now_iso(),
         'gate': gate,
@@ -213,6 +214,11 @@ def write_signature(project_root, feature, rule, signer_email, evidence_path,
     }
     _write_json(path, body)
     return os.path.relpath(path, project_root).replace(os.sep, '/')
+
+
+def machine_name():
+    """The host's name as the operating system reports it, or `unknown`."""
+    return platform.node() or 'unknown'
 
 
 def evidence_for(payload, feature):
@@ -231,46 +237,6 @@ def evidence_for(payload, feature):
     return None
 
 
-def hold_path(project_root, feature, rule, triple, holder_slug):
-    """Where a hold on one rule goes, beside the signatures."""
-    path = signature_path(project_root, feature, rule, triple, holder_slug)
-    return path[:-len('.json')] + '.hold.json' if path else None
-
-
-def write_hold(project_root, feature, rule, holder_email, reason, payload=None,
-               entry=None):
-    """Write one hold and return its project-relative path, or None.
-
-    A hold binds the same hashes a signature does, so it stops standing the
-    moment the rule, the proof or the test changes.
-    """
-    entry = entry or rule_entry(load_payload(project_root, payload), feature,
-                                rule)
-    if entry is None or not str(reason or '').strip():
-        return None
-    triple = triple_for(entry)
-    path = hold_path(project_root, feature, rule, triple,
-                     signatures_module.signer_slug(holder_email))
-    if not path:
-        return None
-    body = {
-        'schema': HOLD_SCHEMA,
-        'feature': feature,
-        'rule': rule,
-        'triple': triple[:16],
-        'rule_hash': entry.get('rule_hash'),
-        'proof_hash': entry.get('proof_hash'),
-        'test_hash': entry.get('test_hash'),
-        'test_hash_kind': entry.get('test_hash_kind'),
-        'holder': str(holder_email),
-        'reason': str(reason).strip(),
-        'timestamp': payload_module.now_iso(),
-        'evidence': evidence_for(payload, feature),
-    }
-    _write_json(path, body)
-    return os.path.relpath(path, project_root).replace(os.sep, '/')
-
-
 def _write_json(path, body):
     directory = os.path.dirname(path)
     if not os.path.isdir(directory):
@@ -284,25 +250,17 @@ def _write_json(path, body):
 # What a person may sign now
 # ---------------------------------------------------------------------------
 
-def signable(payload, feature=None, rules=None):
+def queued(payload, feature=None, rules=None):
     """Every `(feature, rule)` a bare feature or `--batch` signs, in order.
 
-    The payload works out both lists, so this reads what it wrote rather
-    than asking the question again. At the gate `strong` that is the Review
-    list: the rules reading `manual test`, `unsettled` or `held`, which a
-    signature clears. At `signed` it is the Review list and then the Sign
-    list, the order the walk reads them in; the Sign list holds the rules
-    whose level is `signed`, whose tests and audit are met and that have no
-    counting signature.
-    Everything else is build work and stays on the board.
+    The payload works out the queue, so this reads what it wrote rather than
+    asking the question again: the hand checks, rules reading `manual test`
+    or `unsettled`, and the signatures, rules whose level is `signed`, whose
+    tests and audit are met and that have no counting signature. Everything
+    else is build work and stays on the board.
     """
-    payload = payload or {}
-    gate = (payload.get('gate') or {}).get('gate')
-    rows = list(payload.get('review_list') or ())
-    if gate == gate_module.GATES[-1]:
-        rows += list(payload.get('sign_list') or ())
     found = []
-    for row in rows:
+    for row in (payload or {}).get('queue') or ():
         name, rule = row.get('owner'), row.get('rule')
         if feature and name != feature:
             continue
@@ -313,11 +271,11 @@ def signable(payload, feature=None, rules=None):
     return found
 
 
-def on_review(payload, targets):
-    """The targets the Review list holds, which a signature clears at `strong`."""
-    review = {(row.get('owner'), row.get('rule'))
-              for row in (payload or {}).get('review_list') or ()}
-    return [pair for pair in targets or () if pair in review]
+def in_queue(payload, targets):
+    """The targets the queue carries, which a signature clears at `strong`."""
+    rows = {(row.get('owner'), row.get('rule'))
+            for row in (payload or {}).get('queue') or ()}
+    return [pair for pair in targets or () if pair in rows]
 
 
 def _rule_number(rule_id):
@@ -459,8 +417,9 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
 
     This is the marker of proven code: the rule, the proof, the test and the
     audit are locked into a signature for every rule that asks for one, and
-    the tag says so about one commit. It is written after the walk's own commits, so
-    the payload is read again rather than reused. Nothing is pushed.
+    the tag says so about one commit. It is written after the walk's own
+    commits, so the payload is read again rather than reused. Nothing is
+    pushed.
     """
     out = sys.stdout if out is None else out
     payload = load_payload(project_root, payload)
@@ -519,11 +478,6 @@ def commit_message(targets):
     return _subject('sign', targets)
 
 
-def hold_message(targets):
-    """The subject for one hold commit, from `commit_conventions.md`."""
-    return _subject('hold', targets)
-
-
 def _subject(prefix, targets):
     features = []
     for feature, _rule in targets:
@@ -540,13 +494,16 @@ def _subject(prefix, targets):
 
 
 def sign_and_commit(project_root, targets, signer_email, note=None,
-                    payload=None):
+                    payload=None, notes=None):
     """Write every signature in `targets` and commit them once, signed.
 
     `targets` is `[(feature, rule), ...]`. One invocation is one commit
-    whether it carries one rule or forty. Returns the commit sha, or None when
-    nothing was written.
+    whether it carries one rule or forty. `note` is the one line every
+    signature carries, and `notes` maps a `(feature, rule)` to a line of its
+    own, which is how the walk records what a person saw at each hand check.
+    Returns the commit sha, or None when nothing was written.
     """
+    notes = notes or {}
     payload = load_payload(project_root, payload)
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
     paths = []
@@ -558,29 +515,13 @@ def sign_and_commit(project_root, targets, signer_email, note=None,
         path = write_signature(
             project_root, feature, rule, signer_email,
             evidence_for(payload, feature), gate, entry.get('level'),
-            entry=entry, note=note)
+            entry=entry, note=notes.get((feature, rule), note))
         if path:
             paths.append(path)
             written.append((feature, rule))
     if not paths:
         return None
     return _commit(project_root, paths, commit_message(written))
-
-
-def hold_and_commit(project_root, targets, holder_email, reason, payload=None):
-    """Write every hold in `targets` and commit them once, signed."""
-    payload = load_payload(project_root, payload)
-    paths = []
-    written = []
-    for feature, rule in targets:
-        path = write_hold(project_root, feature, rule, holder_email, reason,
-                          payload=payload)
-        if path:
-            paths.append(path)
-            written.append((feature, rule))
-    if not paths:
-        return None
-    return _commit(project_root, paths, hold_message(written))
 
 
 def _commit(project_root, paths, message):
@@ -609,69 +550,99 @@ def _count(number, word):
 
 
 def opening_line(payload):
-    """What the walk prints before the first brief: how long each list is."""
-    return 'Review: %s. Sign: %s.' % (
-        _count(len(payload.get('review_list') or ()), 'rule'),
-        _count(len(payload.get('sign_list') or ()), 'rule'))
+    """What the walk prints before the first rule: how long the queue is."""
+    return board_module.queue_line((payload or {}).get('summary') or {})
+
+
+def _proof_tags(proof):
+    """` (@manual)`, ` (@env(windows))`, both, or '' for a proof with neither."""
+    tags = []
+    if proof.get('manual'):
+        tags.append('@manual')
+    if proof.get('env'):
+        tags.append('@env(%s)' % proof['env'])
+    return ' (%s)' % ' '.join(tags) if tags else ''
+
+
+def audit_lines(entry):
+    """What the audit found for one rule, as the walk prints it.
+
+    Read off the rule's own strong cell, so the walk says what the board
+    says: `Strong. It found nothing.`, `Weak.` with each finding, or that no
+    audit has read the rule yet.
+    """
+    cell = (entry.get('cells') or {}).get('strong') or {}
+    findings = [str(line) for line in cell.get('observations') or ()]
+    if cell.get('settled') is True and findings:
+        return ['  Weak. %s' % findings[0]] + ['  %s' % line
+                                               for line in findings[1:]]
+    if cell.get('settled') is True:
+        return ['  Strong. It found nothing.']
+    if cell.get('settled') is False:
+        return ['  Undecided. The AI audit could not settle.']
+    return ["  Nothing yet: no audit has read this rule's text, proof and test."]
+
+
+def render_row(row, entry):
+    """One stop of the walk: the rule, its proofs and what the audit found."""
+    head = '%s %s   level %s   %s' % (row.get('owner'), row.get('rule'),
+                                      row.get('level'), row.get('need'))
+    if row.get('need') == states.SIGNATURE and row.get('word') == 'stale':
+        head += '   stale: %s' % '; '.join(row.get('reasons') or ())
+    lines = [head, 'Rule', '  %s' % (entry.get('text') or '')]
+    lines.append('Proof')
+    for proof in entry.get('proofs') or ():
+        lines.append('  %s%s: %s' % (proof.get('id'), _proof_tags(proof),
+                                     proof.get('text')))
+    lines.append('What the audit found')
+    lines.extend(audit_lines(entry))
+    return '\n'.join(lines)
 
 
 def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
          release=None):
-    """Walk Review, then Sign, one brief at a time. Returns what happened.
+    """Walk the queue, one rule at a time. Returns what happened.
 
-    `answer` is called once per stop with the rule entry and the rendered
-    brief, and returns one of `sign`, `case`, `hold` or `skip`, optionally as
-    `(answer, text)` where the text is the case a reviewer wrote or the
-    missing case a hold names. The default reads a line from stdin.
+    `answer` is called once per stop with the rule entry, carrying the
+    row's `need`, and the rendered row, and returns one of `sign`, `case` or `skip`, optionally as
+    `(answer, text)`: the text is what the person saw, for a hand check they
+    sign, or the case a reviewer wrote. The default reads a line from stdin.
 
-    Nothing is written until the walk closes: one signed commit carries the
-    signatures, and one more per feature carries the holds. A skipped rule is
-    on the list again next time, which is the intended behaviour: nothing is
-    marked as seen by being seen.
+    Nothing is written until the walk closes, and then one signed commit
+    carries the signatures. A skipped rule is in the queue again next time,
+    which is the intended behaviour: nothing is marked as seen by being seen.
     """
     out = sys.stdout if out is None else out
     payload = load_payload(project_root, payload)
     answer = _prompt if answer is None else answer
     email = (signer_email or _config(project_root, 'user.email')).lower()
 
-    seen = set()
-    entries = []
-    for row in (list(payload.get('review_list') or ())
-                + list(payload.get('sign_list') or ())):
-        key = (row.get('owner'), row.get('rule'))
-        if key in seen:
-            continue
-        seen.add(key)
+    rows = []
+    for row in payload.get('queue') or ():
         entry = rule_entry(payload, row.get('owner'), row.get('rule'))
         if entry is not None:
-            entries.append(entry)
-    result = {'rules': len(entries), 'signed': [], 'cases': [], 'held': [],
-              'skipped': [], 'commits': [], 'tag': None}
+            rows.append((row, entry))
+    result = {'rules': len(rows), 'signed': [], 'cases': [], 'skipped': [],
+              'notes': {}, 'commits': [], 'tag': None}
     print(opening_line(payload), file=out)
-    if not entries:
+    if not rows:
         print('Nothing is waiting for a person.', file=out)
         result['tag'] = tag_if_met(project_root, out, release, payload)
         return result
 
-    import brief as brief_module                               # noqa: PLC0415
-    holds = {}
-    for entry in entries:
-        built = brief_module.build_brief(project_root, payload,
-                                         entry['feature'], entry['id'])
-        rendered = (brief_module.render_brief(built) if built
-                    else '%s %s   is not in this project.'
-                    % (entry['feature'], entry['id']))
+    for row, entry in rows:
+        rendered = render_row(row, entry)
         print('', file=out)
         print(rendered, file=out)
-        given, text = _one_answer(answer, entry, rendered)
+        given, text = _one_answer(answer, dict(entry, need=row.get('need')),
+                                  rendered)
         pair = (entry['feature'], entry['id'])
         if given == 'sign':
             result['signed'].append(pair)
+            if str(text or '').strip():
+                result['notes'][pair] = str(text).strip()
         elif given == 'case':
             result['cases'].append((pair, text))
-        elif given == 'hold' and str(text or '').strip():
-            holds.setdefault(str(text).strip(), []).append(pair)
-            result['held'].append(pair)
         else:
             result['skipped'].append(pair)
 
@@ -682,12 +653,7 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
         result['signed'] = allowed
     if result['signed']:
         sha = sign_and_commit(project_root, result['signed'], email,
-                              payload=payload)
-        if sha:
-            result['commits'].append(sha)
-    for reason, targets in sorted(holds.items()):
-        sha = hold_and_commit(project_root, targets, email, reason,
-                              payload=payload)
+                              payload=payload, notes=result['notes'])
         if sha:
             result['commits'].append(sha)
 
@@ -709,28 +675,37 @@ def _one_answer(answer, entry, rendered):
 
 
 def _prompt(entry, _rendered):
-    """Read one answer from the person running the walk."""
+    """Read one answer from the person running the walk.
+
+    Signing a hand check asks what the person saw, which the signature
+    carries as its note; adding a case asks for the case.
+    """
     try:
-        given = input('%s %s   sign / case / hold / skip: '
+        given = input('%s %s   sign / case / skip: '
                       % (entry['feature'], entry['id']))
     except (EOFError, KeyboardInterrupt):
         return 'skip'
     given = given.strip().lower()
-    if given.startswith('h') or given.startswith('c'):
-        try:
-            return given, input('  in one line: ')
-        except (EOFError, KeyboardInterrupt):
-            return 'skip', None
-    return given, None
+    if given.startswith('s') and not given.startswith('sk') and (
+            entry.get('need') == states.HAND_CHECK):
+        question = 'What did you see, in one line: '
+    elif given.startswith('c'):
+        question = '  in one line: '
+    else:
+        return given, None
+    try:
+        return given, input(question)
+    except (EOFError, KeyboardInterrupt):
+        return 'skip', None
 
 
 def _close(out, result):
     print('', file=out)
-    print('Walked %d rule%s: %d signed, %d case%s added, %d held, %d skipped.'
+    print('Walked %d rule%s: %d signed, %d case%s added, %d skipped.'
           % (result['rules'], '' if result['rules'] == 1 else 's',
              len(result['signed']), len(result['cases']),
              '' if len(result['cases']) == 1 else 's',
-             len(result['held']), len(result['skipped'])), file=out)
+             len(result['skipped'])), file=out)
     for (feature, rule), text in result['cases']:
         print('  %s %s   add this proof line: %s'
               % (feature, rule, text or 'the reviewer named no case'), file=out)
@@ -750,14 +725,13 @@ def _close(out, result):
 class _Args(object):
     """One parsed invocation, or the reason it could not be parsed."""
 
-    __slots__ = ('feature', 'rules', 'batch', 'hold', 'note', 'release',
+    __slots__ = ('feature', 'rules', 'batch', 'note', 'release',
                  'project_root', 'error', 'help')
 
     def __init__(self):
         self.feature = None
         self.rules = []
         self.batch = False
-        self.hold = None
         self.note = None
         self.release = None
         self.project_root = '.'
@@ -776,13 +750,11 @@ def _parse(argv):
             return args
         if item == '--batch':
             args.batch = True
-        elif item in ('--hold', '--note'):
-            need = ('the missing case, in words' if item == '--hold'
-                    else 'the line you want on the signature')
+        elif item == '--note':
             if not rest or not rest[0].strip() or rest[0].startswith('--'):
-                args.error = '%s needs %s.' % (item, need)
+                args.error = '--note needs the line you want on the signature.'
                 return args
-            setattr(args, item[2:], rest.pop(0))
+            args.note = rest.pop(0)
         elif item == '--release':
             if not rest or not rest[0].strip() or rest[0].startswith('--'):
                 args.error = '--release needs the name to tag.'
@@ -803,43 +775,16 @@ def _parse(argv):
         else:
             args.error = 'unexpected argument %s' % item
             return args
-    for option, value in (('--hold', args.hold), ('--note', args.note)):
-        if value is not None and (args.batch or not args.rules):
-            args.error = '%s names a feature and the rules it carries.' % option
+    if args.note is not None and (args.batch or not args.rules):
+        args.error = '--note names a feature and the rules it carries.'
     return args
-
-
-def _hold_main(project_root, payload, args):
-    """Write and commit the holds one invocation names."""
-    email = _config(project_root, 'user.email').lower()
-    targets = [(args.feature, rule) for rule in args.rules
-               if rule_entry(payload, args.feature, rule) is not None]
-    if not targets:
-        print('sign: no rule named is in %s.' % args.feature)
-        return EXIT_NOTHING
-    if not signing_configured(project_root):
-        for line in signing_help():
-            print(line)
-        return EXIT_NOTHING
-    sha = hold_and_commit(project_root, targets, email, args.hold,
-                          payload=payload)
-    if not sha:
-        print('sign: the hold commit was not made. Check that signing works '
-              'and that the files are not already committed.')
-        return EXIT_NOTHING
-    print('Held %d rule%s in %s: %s'
-          % (len(targets), '' if len(targets) == 1 else 's', sha[:7],
-             args.hold.strip()))
-    for name, rule in targets:
-        print('  %s %s' % (name, rule))
-    return EXIT_OK
 
 
 def _gate_is_too_low(gate):
     """The two lines `passed` prints in place of writing a signature."""
     return ['sign: the gate is %s, which asks for no signature.' % gate,
             'sign: purlin:init --gate strong adds the test strength, the AI '
-            'audit and the review list.']
+            'audit and the queue.']
 
 
 def main(argv=None):
@@ -865,9 +810,6 @@ def main(argv=None):
             print(line)
         return EXIT_BAD_INVOCATION
 
-    if args.hold is not None:
-        return _hold_main(project_root, payload, args)
-
     email = _config(project_root, 'user.email').lower()
 
     if not signing_configured(project_root):
@@ -890,10 +832,10 @@ def main(argv=None):
         if lowered and not targets:
             return EXIT_NOTHING
     else:
-        targets = signable(payload, args.feature, None)
-    # A rule on the Review list is what a signature clears at `strong`, so
-    # only a named rule off that list is told it needs none.
-    if gate == 'strong' and len(on_review(payload, targets)) < len(targets):
+        targets = queued(payload, args.feature, None)
+    # A rule in the queue is what a signature clears at `strong`, so only a
+    # named rule outside it is told it needs none.
+    if gate == 'strong' and len(in_queue(payload, targets)) < len(targets):
         print('sign: a signature is required only under the gate signed. '
               'Writing it anyway.')
     targets = _allowed(payload, targets)

@@ -80,9 +80,9 @@ def _signed_project(version='2.1.0', trust='local', key=True):
 
 
 def _sign_every_rule(made):
-    """Sign whatever the sign list holds, as the listed signer, and commit."""
+    """Sign whatever the queue holds, as the signer, and commit."""
     payload = made.payload()
-    targets = sign_module.signable(payload)
+    targets = sign_module.queued(payload)
     if targets:
         sign_module.sign_and_commit(made.root, targets, 'jane@acme.com',
                                     payload=payload)
@@ -104,7 +104,8 @@ class TestTheTag:
             result = sign_module.walk(made.root, out=out,
                                       signer_email='jane@acme.com')
             printed = out.text()
-            assert 'Review: 0 rules. Sign: 0 rules.' in printed, printed
+            assert ('Queue: 0 rules. 0 hand checks, 0 signatures.'
+                    in printed), printed
             assert result['tag'] == 'signed/2.1.0', printed
             message = git(made.root, 'tag', '-n99', '-l',
                           'signed/2.1.0').stdout
@@ -296,19 +297,6 @@ class TestTheAuditHash:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-66", "RULE-44")
-    def test_a_hold_is_not_bound_to_the_audit(self):
-        made = _signed_project()
-        try:
-            sign_module.hold_and_commit(made.root, [('login', 'RULE-2')],
-                                        'jane@acme.com', 'no expired token')
-            assert made.rule('RULE-2')['cells']['strong']['word'] == 'held'
-            made.audit('RULE-2', findings=['PROOF-2 reads the status alone.'])
-            cell = made.rule('RULE-2')['cells']['strong']
-            assert cell['word'] == 'held', cell
-        finally:
-            made.close()
-
 
 # ---------------------------------------------------------------------------
 # The evidence check a tag run makes
@@ -353,11 +341,10 @@ class TestVerify:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-36", "RULE-15")
-    def test_a_hold_naming_a_rule_that_is_gone_is_named(self):
+    def test_a_signature_naming_a_rule_that_is_gone_is_named(self):
         made = _signed_project()
         try:
-            sign_module.hold_and_commit(made.root, [('login', 'RULE-2')],
-                                        'jane@acme.com', 'no expired token')
+            _sign_every_rule(made)
             spec = _read(made.root, 'specs/auth/login.md')
             lines = [line for line in spec.splitlines(True)
                      if 'RULE-2' not in line]

@@ -1,4 +1,4 @@
-> Format-Version: 9
+> Format-Version: 10
 
 # Signature Format
 
@@ -11,7 +11,6 @@ file in the directory was written by a person.
 
 ```
 specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json
-specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json
 ```
 
 | Part | What it is |
@@ -20,7 +19,6 @@ specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json
 | `<RULE-N>` | the rule the signature is for |
 | `<hash8>` | the first eight characters of the triple the signature binds |
 | `<signer-slug>` | the signer's email local part, lowercased, every non-alphanumeric character replaced by `-` |
-| `<holder-slug>` | the same slug for the person who wrote a hold |
 
 One signature is one file, so two signatures never conflict and a batch of
 forty adds forty files in one commit.
@@ -37,7 +35,7 @@ What a signature binds is hashes, not the files they came from:
 | A | what the audit found: the feature's test strength from `audit.mutation`, the `verdict` of the audit entry for the rule's current R, P and T, and its `findings` sorted. `sha256` of the empty string where no such entry exists |
 
 The triple hash is `sha256` over R, P and T, one per line, and the first eight
-characters of it name the file. A is held and compared beside the triple
+characters of it name the file. A is kept and compared beside the triple
 rather than folded into it, because a rule no audit has reached has no audit
 entry to take A from.
 
@@ -67,6 +65,8 @@ with nothing behind it yet.
   "audit_hash": "e3b0c442...",
   "level": "signed",
   "signer": "jane@acme.com",
+  "machine": "jane-laptop",
+  "os": "macos",
   "note": null,
   "timestamp": "2026-09-13T12:00:00Z",
   "gate": "signed",
@@ -91,6 +91,8 @@ is OPTIONAL.
 | `audit_hash` | string | A, the hash of what the audit found |
 | `level` | string | `passed`, `strong` or `signed`, the rule's level when it was signed. Logged, not compared |
 | `signer` | string | the signer's email |
+| `machine` | string | the name of the host the signature was made on, as its operating system reports it. Logged, not hashed and not compared |
+| `os` | string | `windows`, `macos` or `linux`, the operating system of that host. Logged, not hashed and not compared |
 | `note` | string or null | the one line `purlin:sign --note` writes for a `@manual` proof or an AI audit that could not settle; null otherwise |
 | `timestamp` | string | ISO 8601 UTC with `Z` |
 | `gate` | string | the gate in force when the signature was written: `passed`, `strong` or `signed` |
@@ -102,6 +104,10 @@ A signature is **current** when the three hashes it binds still equal the
 recomputed ones and the audit hash still matches. Anything else is a
 signature stale and a person has to look.
 
+`machine` and `os` say where the signature was made, beside `signer` and
+`timestamp`, and like them are not hashed: a signature means the same whichever
+machine made it.
+
 The level is logged, not locked: `level` says what the rule asked for when it
 was signed, and marking the rule differently afterwards leaves the signature
 current. A re-audit that finds something different stales it: the strength
@@ -109,10 +115,6 @@ moved, or the AI audit found something it did not find before, or settled
 where it had not. A rule whose first audit writes an
 entry where there was none goes stale for the same reason, which is the
 honest answer: there is evidence now that there was not before.
-
-A hold binds the triple, and not the audit. A hold is a person saying the
-test does not prove the proof, which is a statement about the rule, the proof
-and the test; a re-audit does not answer it.
 
 Changing the code alone stales nothing. The evidence carries the fingerprint
 of the spec's `> Scope:` files, not the signature, so a code change leaves the
@@ -150,37 +152,3 @@ the evidence.
 A rule needs a signature exactly when its level is `signed`. A rule whose
 level is lower still shows its signed cell, and that cell does not keep it
 from meeting the gate. `references/hard_gates.md` holds the gate levels and what the tag `signed/<version>` means.
-
-## Holds
-
-A hold is a person's statement that the test does not prove the proof as
-written. `purlin:sign <feature> RULE-N --hold "<the missing case>"` writes it
-and commits it signed as `hold(<feature>): RULE-N`. It is named and bound like
-a signature, with a fourth part in the name:
-
-```json
-{
-  "schema": "purlin-hold/1",
-  "feature": "host",
-  "rule": "RULE-12",
-  "triple": "9f2c7a1e5b8d4c6f",
-  "rule_hash": "4b1f...",
-  "proof_hash": "c07a...",
-  "test_hash": "1d93...",
-  "test_hash_kind": "file",
-  "holder": "jane@acme.com",
-  "reason": "the tests call _azure and _host apart; none calls run_remote()",
-  "timestamp": "2026-09-16T12:00:00Z",
-  "evidence": ".purlin/evidence/local/host.json"
-}
-```
-
-REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
-`test_hash`, `holder`, `reason`, `timestamp`. The hashes and `evidence` mean
-what they mean in a signature; `holder` is the person's email and
-`reason` the missing case, in words.
-
-A hold is current under the same test as a signature. While it is current the
-rule's strong cell and its signed cell both read `held`, each with the reason
-`held by <holder>: <reason>`. A current signature for the
-same hashes outranks it. A hold is committed signed, like a signature.

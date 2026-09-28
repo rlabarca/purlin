@@ -44,7 +44,7 @@ from purlin import specs as purlin_specs  # noqa: E402
 SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'sign.py')
 
 # The three gates by position: the one a project sits at by default, the one
-# that turns the breaks and the review list on, and the one that asks for a
+# that turns the breaks and the queue on, and the one that asks for a
 # signature.
 FIRST_GATE = purlin_gate.GATES[0]
 REVIEW_GATE = purlin_gate.GATES[1]
@@ -501,7 +501,8 @@ class TestTheFile:
         assert set(data) == {
             'schema', 'feature', 'rule', 'triple', 'rule_hash', 'proof_hash',
             'test_hash', 'test_hash_kind', 'audit_hash', 'level',
-            'signer', 'note', 'timestamp', 'gate', 'evidence'}
+            'signer', 'machine', 'os', 'note', 'timestamp', 'gate',
+            'evidence'}
         assert data['feature'] == 'login' and data['rule'] == 'RULE-1'
         assert data['triple'] == sign_module.triple_for(
             proved.rule('RULE-1'))[:16]
@@ -539,7 +540,7 @@ class TestTheFile:
 
 @pytest.fixture
 def at_strong():
-    """The same project at the gate that turns the review list on."""
+    """The same project at the gate that turns the queue on."""
     made = Project(gate=REVIEW_GATE)
     made.proofs()
     made.evidence()
@@ -659,7 +660,7 @@ class TestTheSignedCommit:
             made.close()
 
     @pytest.mark.proof("signatures", "PROOF-15", "RULE-12")
-    def test_a_batch_signs_everything_signable(self, capsys):
+    def test_a_batch_signs_everything_in_the_queue(self, capsys):
         made = signing_project(every_rule=False)
         try:
             code = sign_module.main(['--batch', '--project-root', made.root])
@@ -726,7 +727,7 @@ class TestTheGateScales:
 
 
 def unsettled_at_strong():
-    """A project at `strong` whose unmarked rule is on the Review list."""
+    """A project at `strong` whose unmarked rule is a hand check in the queue."""
     made = Project(gate=REVIEW_GATE)
     made.proofs()
     made.evidence()
@@ -737,14 +738,14 @@ def unsettled_at_strong():
     return made
 
 
-class TestTheReviewListAtStrong:
+class TestTheQueueAtStrong:
 
     @pytest.mark.proof("signatures", "PROOF-70", "RULE-12")
-    def test_a_batch_and_a_bare_feature_sign_the_review_list(self, capsys):
+    def test_a_batch_and_a_bare_feature_sign_the_queue(self, capsys):
         for argv in (['--batch'], ['login']):
             made = unsettled_at_strong()
             try:
-                assert [row['rule'] for row in made.payload()['review_list']] \
+                assert [row['rule'] for row in made.payload()['queue']] \
                     == ['RULE-2']
                 code = sign_module.main(argv + ['--project-root', made.root])
                 output = capsys.readouterr().out
@@ -758,7 +759,7 @@ class TestTheReviewListAtStrong:
                 made.close()
 
     @pytest.mark.proof("signatures", "PROOF-71", "RULE-15")
-    def test_a_named_rule_on_the_review_list_is_not_told_it_needs_none(
+    def test_a_named_rule_in_the_queue_is_not_told_it_needs_none(
             self, capsys):
         made = unsettled_at_strong()
         try:
@@ -776,42 +777,41 @@ class TestTheReviewListAtStrong:
 # What a person may sign now
 # ---------------------------------------------------------------------------
 
-class TestWhatIsSignable:
+class TestWhatIsQueued:
 
     @pytest.mark.proof("signatures", "PROOF-20", "RULE-16")
-    def test_it_is_the_sign_list_the_payload_wrote(self):
+    def test_it_is_the_queue_the_payload_wrote(self):
         made = signing_project(every_rule=False)
         try:
-            assert sign_module.signable(made.payload()) == [
+            assert sign_module.queued(made.payload()) == [
                 ('login', 'RULE-2')], (
                 'only the rule whose level is signed needs a signature')
             sign_module.main(['login', 'RULE-2', '--project-root', made.root])
-            assert sign_module.signable(made.payload()) == []
+            assert sign_module.queued(made.payload()) == []
             made.spec(SPEC.replace('return 401 and the body "denied"',
                                    'return 403 and the body "denied"'))
             made.evidence(runner='ci', commit_it=False, source='ci')
             made.audit('RULE-2')
-            assert sign_module.signable(made.payload()) == [
-                ('login', 'RULE-2')], 'a stale signature is signable again'
+            assert sign_module.queued(made.payload()) == [
+                ('login', 'RULE-2')], 'a stale signature is queued again'
         finally:
             made.close()
 
     @pytest.mark.proof("signatures", "PROOF-30", "RULE-16")
-    def test_the_walk_reads_review_before_sign(self):
+    def test_a_rule_that_needs_both_is_one_hand_check(self):
         made = signing_project(every_rule=False, audits=False)
         try:
             payload = made.payload()
-            assert [row['rule'] for row in payload['review_list']] == []
-            assert sign_module.signable(payload) == [], (
+            assert payload['queue'] == []
+            assert sign_module.queued(payload) == [], (
                 'the rule whose level is signed has no audit entry, so its '
                 'strong cell is not met')
             made.audit('RULE-2', settled=False)
             payload = made.payload()
-            assert [row['rule'] for row in payload['review_list']] == [
-                'RULE-2'], payload['review_list']
-            assert payload['sign_list'] == []
-            assert sign_module.signable(payload) == [('login', 'RULE-2')], (
-                'a rule on the review list is what a batch signs first')
+            assert [(row['rule'], row['need']) for row in payload['queue']] \
+                == [('RULE-2', 'hand check')], payload['queue']
+            assert sign_module.queued(payload) == [('login', 'RULE-2')], (
+                'the queue is what a batch signs')
         finally:
             made.close()
 
@@ -877,36 +877,81 @@ class TestTheLevel:
 class TestTheWalk:
 
     @pytest.mark.proof("signatures", "PROOF-31", "RULE-11")
-    def test_the_four_answers_each_do_their_own_thing(self, capsys):
-        made = signing_project()
+    def test_the_walk_opens_on_the_queue_and_signs_with_a_note(self, capsys):
+        made = signing_project(every_rule=False)
         try:
-            answers = {'RULE-2': ('hold', 'no case for an expired token'),
-                       'RULE-1': 'sign'}
-            given = sign_module.walk(
-                made.root, answer=lambda entry, _text: answers[entry['id']])
+            made.spec(SPEC.replace('verify 401 and the body "denied"\n',
+                                   'verify 401 and the body "denied" '
+                                   '@manual\n'))
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'docs: a proof by hand')
+            seen = []
+
+            def answer(entry, rendered):
+                seen.append((entry['id'], entry['need'], rendered))
+                return ('sign', 'The lockout page read 401 and "denied".')
+
+            given = sign_module.walk(made.root, answer=answer)
+            output = capsys.readouterr().out
+            assert output.startswith(
+                'Queue: 1 rule. 1 hand check, 0 signatures.'), output
+            assert [(rule, need) for rule, need, _text in seen] == [
+                ('RULE-2', 'hand check')], seen
+            rendered = seen[0][2].splitlines()
+            assert rendered[0] == 'login RULE-2   level signed   hand check'
+            assert rendered[1:3] == [
+                'Rule', '  Invalid credentials return 401 and the body '
+                '"denied"'], rendered
+            assert '  PROOF-2 (@manual): POST /login with a bad password; '\
+                'verify 401 and the body "denied"' in rendered, rendered
+            assert 'What the audit found' in rendered, rendered
+            assert given['signed'] == [('login', 'RULE-2')], given
+            assert len(given['commits']) == 1, given
+            path = made.load()[('login', 'RULE-2')][0]['path']
+            with open(os.path.join(made.root, path), encoding='utf-8') as f:
+                assert json.load(f)['note'] == (
+                    'The lockout page read 401 and "denied".')
+            assert ('Walked 1 rule: 1 signed, 0 cases added, 0 skipped.'
+                    in output), output
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-31", "RULE-11")
+    def test_a_signature_row_names_what_went_stale(self, capsys):
+        made = signing_project(every_rule=False)
+        try:
+            sign_module.main(['login', 'RULE-2', '--project-root', made.root])
+            made.spec(SPEC.replace('return 401 and the body "denied"',
+                                   'return 403 and the body "denied"'))
+            made.evidence(runner='ci', commit_it=False, source='ci')
+            made.audit('RULE-2')
+            commit_as_ci(made.root)
             capsys.readouterr()
-            assert given['signed'] == [('login', 'RULE-1')]
-            assert given['held'] == [('login', 'RULE-2')]
-            assert len(given['commits']) == 2, given
-            names = made.signatures()
-            assert any(name.startswith('RULE-1.') and not
-                       name.endswith('.hold.json') for name in names), names
-            assert any(name.endswith('.hold.json') for name in names), names
+            seen = []
+            sign_module.walk(made.root, answer=lambda entry, text: (
+                seen.append(text) or 'skip'))
+            assert seen[0].splitlines()[0] == (
+                'login RULE-2   level signed   signature   stale: hashes '
+                'changed after the signature'), seen
+            assert '  Strong. It found nothing.' in seen[0].splitlines(), seen
         finally:
             made.close()
 
     @pytest.mark.proof("signatures", "PROOF-32", "RULE-11")
-    def test_a_skipped_rule_is_written_nothing_and_stays_on_the_list(
+    def test_a_skipped_rule_is_written_nothing_and_stays_in_the_queue(
             self, capsys):
         made = signing_project()
         try:
             given = sign_module.walk(made.root,
                                      answer=lambda _entry, _text: 'skip')
             output = capsys.readouterr().out
-            assert given['signed'] == [] and given['held'] == []
+            assert given['signed'] == []
             assert len(given['skipped']) == 2
             assert made.signatures() == []
+            assert 'Walked 2 rules: 0 signed, 0 cases added, 2 skipped.' in \
+                output, output
             assert 'Run: purlin:sign' in output, output
+            assert len(made.payload()['queue']) == 2
         finally:
             made.close()
 
@@ -923,6 +968,38 @@ class TestTheWalk:
             assert made.signatures() == []
             assert 'it should also reject an expired token' in output
             assert 'Run: purlin:build' in output, output
+        finally:
+            made.close()
+
+
+# ---------------------------------------------------------------------------
+# What a signature rests on, and where it was made
+# ---------------------------------------------------------------------------
+
+class TestWhatItRestsOn:
+
+    @pytest.mark.proof("signatures", "PROOF-75", "RULE-50")
+    def test_a_signature_names_the_machine_and_its_system_and_hashes_neither(
+            self, capsys):
+        import platform
+        made = signing_project(every_rule=False)
+        try:
+            code = sign_module.main(['login', 'RULE-2', '--project-root',
+                                     made.root])
+            capsys.readouterr()
+            assert code == 0
+            path = os.path.join(
+                made.root, made.load()[('login', 'RULE-2')][0]['path'])
+            with open(path, encoding='utf-8') as handle:
+                data = json.load(handle)
+            assert data['machine'] == platform.node(), data
+            assert data['os'] == purlin_evidence.host_os(), data
+            assert data['os'] in ('windows', 'macos', 'linux'), data
+            data.update(machine='another-machine', os='windows')
+            write(path, json.dumps(data))
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'sign(login): RULE-2')
+            assert made.rule('RULE-2')['cells']['signed']['word'] == 'signed'
         finally:
             made.close()
 

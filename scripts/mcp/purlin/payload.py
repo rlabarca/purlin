@@ -17,8 +17,8 @@ they all read instead.
       "gate": {"gate": "strong", "min_strength": 70, "trust": "local", ...},
       "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 4, "strong": 1,
-                  "signed": 1, "stale": 1, "held": 1, "manual": 0,
-                  "unsettled": 1, "not_audited": 0, "signable": 2},
+                  "signed": 1, "stale": 1, "manual": 0, "unsettled": 1,
+                  "not_audited": 0, "queue": 2, "hand_checks": 1},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "requires": [], "source": null, "pinned": null,
@@ -36,18 +36,17 @@ they all read instead.
            {"id": "RULE-1", "feature": "login", "label": "own",
             "text": "...", "level": "signed", "level_marked": null,
             "audit_hash": "<sha256>",
-            "bucket": "signed", "meets_gate": true, "signable": false,
+            "bucket": "signed", "meets_gate": true,
             "blocked_by": null, "flags": {...},
             "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
             "proofs": [{"id": "PROOF-1", "manual": false, "env": null,
                         "text": "...", "tests": [...]}]}
          ]}
       ],
-      "review_list": [{"feature": ..., "owner": ..., "rule": ..., "level": ...,
-                       "cell": "strong", "kind": "unsettled",
-                       "why": ["unsettled"]}],
-      "sign_list": [{"feature": ..., "owner": ..., "rule": ..., "level": ...,
-                     "cell": "signed", "kind": "stale", "why": ["stale"]}],
+      "queue": [{"feature": "login", "owner": "login", "rule": "RULE-3",
+                 "text": "...", "level": "signed", "need": "hand check",
+                 "word": "manual test", "reasons": ["manual proof"],
+                 "command": "purlin:sign login RULE-3 --note \"<what you saw>\""}],
       "evidence": {"login": {"local": {"macos": {"commit": ..., "at": ...,
                                                  "result": "pass",
                                                  "current": true,
@@ -118,14 +117,12 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     # here rather than once per rule.
     evidence = _read_evidence(project_root, features, warnings)
     all_signatures = signatures_module.load_signatures(project_root, features)
-    all_holds = signatures_module.load_holds(project_root, features)
     head = head_sha(project_root)
 
     blob_cache = {}
     counted_cache = {}
     feature_entries = []
-    review_list = []
-    sign_list = []
+    queue = []
     rollups = {}
     # The project summary counts each rule once, under the feature that owns
     # it. A feature's own rollup counts what that feature must prove, which
@@ -137,8 +134,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         info = features[name]
         entry, rollup = _feature_entry(
             project_root, name, info, features, evidence, all_signatures,
-            cfg, blob_cache, review_list, own_results, all_holds,
-            counted_cache, sign_list)
+            cfg, blob_cache, queue, own_results, counted_cache)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -164,8 +160,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'gate': cfg.as_dict(),
         'summary': summary,
         'features': feature_entries,
-        'review_list': _sorted_list(review_list),
-        'sign_list': _sorted_list(sign_list),
+        'queue': _sorted_queue(queue),
         'evidence': _evidence_map(evidence),
         'tag': signed_tag(project_root, head),
         'remote_url': _remote_url(project_root),
@@ -205,16 +200,10 @@ def proof_counts(rule_entries):
             'proofs_without_test_ids': without}
 
 
-# The one order both lists are read in: the rules whose level asks the most
-# first, then the feature that owns them, then the rule number.
-_LEVEL_ORDER = {'signed': 0, 'strong': 1, 'passed': 2}
-
-
-def _sorted_list(entries):
-    def key(entry):
-        return (_LEVEL_ORDER.get(entry['level'], 3), entry['owner'],
-                _rule_number(entry['rule']))
-    return sorted(entries, key=key)
+def _sorted_queue(rows):
+    """The queue in the one order it is read in: by feature, then rule number."""
+    return sorted(rows, key=lambda row: (row['owner'],
+                                         _rule_number(row['rule'])))
 
 
 def _rule_number(rule_id):
@@ -223,9 +212,8 @@ def _rule_number(rule_id):
 
 
 def _feature_entry(project_root, name, info, features, evidence,
-                   all_signatures, cfg, blob_cache, review_list,
-                   own_results=None, all_holds=None, counted_cache=None,
-                   sign_list=None):
+                   all_signatures, cfg, blob_cache, queue,
+                   own_results=None, counted_cache=None):
     own = evidence.get(name) or _no_evidence(name)
     mutation = evidence_module.mutation(own['loaded'])
     test_strength = mutation.get('score') if mutation else None
@@ -242,25 +230,20 @@ def _feature_entry(project_root, name, info, features, evidence,
             project_root, owner, owner_info, rule_id, label, owner_evidence,
             all_signatures, cfg, blob_cache,
             owner_mutation.get('score') if owner_mutation else None,
-            all_holds, counted_cache)
+            counted_cache)
+        need = result.pop('need')
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
-                   'meets_gate': result['meets_gate'],
-                   'signable': result['signable'], 'level': result['level']}
+                   'meets_gate': result['meets_gate'], 'need': need,
+                   'level': result['level']}
         rule_results[(owner, rule_id)] = summary
         if label == 'own' and own_results is not None:
             own_results[(owner, rule_id)] = summary
-        # Each list names a rule once, under its owner, as the summary counts
+        # The queue names a rule once, under its owner, as the summary counts
         # it; a required or global rule is read where it is written, not once
         # per feature that proves it.
-        if label != 'own':
-            continue
-        entry = _review_entry(name, owner, result, cfg)
-        if entry is not None:
-            review_list.append(entry)
-        entry = _sign_entry(name, owner, result, cfg)
-        if entry is not None and sign_list is not None:
-            sign_list.append(entry)
+        if label == 'own' and need:
+            queue.append(queue_row(name, owner, result, need))
 
     rollup = states.feature_rollup(rule_results, cfg.gate,
                                    test_strength=test_strength)
@@ -402,44 +385,27 @@ def _evidence_map(evidence):
     return out
 
 
-def _review_entry(feature, owner, rule, cfg):
-    """One Review row for a rule the machine could not settle, or None.
+def queue_row(feature, owner, rule, need):
+    """One queue row: the rule, what it needs, and the command that answers it.
 
-    The Review list holds exactly the rules whose strong cell reads `manual
-    test`, `unsettled` or `held`: the three words that name work only a
-    person can do. `not audited` is not among them, because what that rule
-    waits for is `purlin:audit`, not a reader. The list exists at `strong`
-    and above.
+    A hand check reads the strong cell's word and reasons, and its command
+    asks for the note a person writes about what they saw; a signature reads
+    the signed cell's, and its command names the rule alone.
     """
-    if cfg.gate == 'passed':
-        return None
-    word = ((rule.get('cells') or {}).get('strong') or {}).get('word')
-    if word not in states.REVIEW_WORDS:
-        return None
+    cell_name = 'strong' if need == states.HAND_CHECK else 'signed'
+    cell = (rule.get('cells') or {}).get(cell_name) or {}
+    command = 'purlin:sign %s %s' % (owner, rule['id'])
+    if need == states.HAND_CHECK:
+        command += ' --note "<what you saw>"'
     return {'feature': feature, 'owner': owner, 'rule': rule['id'],
-            'level': rule['level'], 'cell': 'strong', 'kind': word,
-            'why': [word]}
-
-
-def _sign_entry(feature, owner, rule, cfg):
-    """One Sign row for a signable rule, or None.
-
-    A rule is signable when its level is `signed`, its passed and strong
-    cells are met and it does not have a counting signature, so the Sign
-    list is the rules a signer can act on now. It exists at the gate
-    `signed`.
-    """
-    if cfg.gate != 'signed' or not rule.get('signable'):
-        return None
-    word = ((rule.get('cells') or {}).get('signed') or {}).get('word')
-    return {'feature': feature, 'owner': owner, 'rule': rule['id'],
-            'level': rule['level'], 'cell': 'signed', 'kind': word,
-            'why': [word]}
+            'text': rule.get('text') or '', 'level': rule['level'],
+            'need': need, 'word': cell.get('word'),
+            'reasons': list(cell.get('reasons') or ()), 'command': command}
 
 
 def _rule_entry(project_root, owner, owner_info, rule_id, label,
                 owner_evidence, all_signatures, cfg, blob_cache,
-                test_strength=None, all_holds=None, counted_cache=None):
+                test_strength=None, counted_cache=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -488,7 +454,6 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         # so rather than passing the rule on nothing at all.
         'audited': evidence_module.audited(owner_evidence['loaded']),
         'signatures': signatures,
-        'holds': (all_holds or {}).get((owner, rule_id), []),
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
@@ -515,7 +480,7 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'cells': result['cells'],
         'bucket': result['bucket'],
         'meets_gate': result['meets_gate'],
-        'signable': result['signable'],
+        'need': result['need'],
         'blocked_by': result['blocked_by'],
         'flags': result['flags'],
         'proofs': proof_dicts,
