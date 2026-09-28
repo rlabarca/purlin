@@ -48,7 +48,13 @@ underneath: the docs name the commands as `purlin:init`, `purlin:test` and so on
 the docs alone how a person runs them, and note it if the docs never say.
 
 Walk these paths, each in its own fresh scratch project, following the docs to the letter and
-doing nothing the docs do not tell you to do:
+doing nothing the docs do not tell you to do. **Run the seven paths at the same time**, one
+fresh Opus agent per path, each in its own scratch folder, each given the section "What you
+may read, and what you may not" and "What to write down" word for word, and nothing about what
+the other paths found. They share no files, so nothing limits how many run at once. Path 4
+needs the project path 1 builds, so its agent builds its own copy by following path 1 first.
+You write the report from what they bring back; where two paths contradict each other, say so
+and do not reconcile them.
 
 1. **The ten-minute path**, exactly as the README gives it, in a small Python project with
    pytest. Time it. Note every moment you had to guess.
@@ -159,27 +165,61 @@ real behaviour and not a stand-in for the code under test, and raise the proof t
 Where closing a gap would need more than a few lines of test, leave it on the list for me with
 what it would take.
 
-## How to work
+## How to work: in parallel, in three stages
 
-As `dev/plans/handoff.md` says: Opus agents, each in its own worktree under
-`/Users/richlabarca/LocalCode/purlin-wt/<name>`, merged into `main` by fast-forward, two
-writing at once at most and only where their files do not overlap. One agent per spec for the
-six largest; group the smaller specs by folder. Give each agent the guideline, the three
-example specs, and this section, word for word.
+I want this highly parallel. For this task the limit in `dev/plans/handoff.md` of two agents
+writing at once does not apply. What makes it safe is that the stages below are cut so that
+no two agents running at the same time ever write the same file. You may use a workflow to
+fan the agents out; every agent is Opus.
 
-Each agent's acceptance: `bash dev/run_tests.sh` passes with 0 failed; this repository run
-through its own tool (`python3 scripts/run/purlin_run.py --all --test`, with the PATH the
-handoff gives) ties every marker and every rule passes its tests; the evidence that run writes
-is removed and not committed; no rule's words changed (`git diff` of each spec shows changes
-on proof lines only, which the agent confirms and reports); `git status` is clean. Never
-weaken an assertion to make it pass, and never edit a count to make a sweep green.
+**Stage A: rewrite the words. One agent per spec, all 30 at once.**
+- Each agent has its own worktree under `/Users/richlabarca/LocalCode/purlin-wt/<spec>`, on
+  its own branch cut from `main`, and writes **one file only**: its spec. It reads the tests
+  and changes none. It does steps 1 to 5 above and brings back its list of gaps.
+- Give each agent the guideline, the three example specs, the section "How each proof is
+  rewritten" word for word, and the name of its one spec.
+- An agent's acceptance is quick, because only proof words changed: `git diff` shows changes
+  on proof lines of its one spec and nowhere else, no proof id or rule line changed, and
+  these pass, run whole: `dev/test_vocabulary.py`, `dev/test_schema_spec_format.py`, and any
+  test file that reads that spec's text (grep `dev/` for the spec's path). It does **not** run
+  the full sweep; thirty sweeps at once would fight over the machine.
+- A large spec may be cut between several agents by ranges of proof ids (`states`, with 84,
+  into three), but then those agents work one after another in the same worktree, since they
+  write the same file.
+- Merge each branch into `main` by fast-forward as it finishes, rebasing it first; the
+  branches touch different files, so every rebase is clean. If one is not, stop that branch
+  and tell me.
+- When all thirty are in: one full sweep, `bash dev/run_tests.sh`, and one run of this
+  repository through its own tool. Both must pass before stage B starts.
 
-Rewriting a proof puts its feature's evidence out of date, because the spec changed. When
-every spec is done and merged, run this repository through its own tool once with `--commit`,
-so the committed evidence is current again.
+**Stage B: close the gaps. One agent per test file, all at once.**
+- Gaps are closed in test files, and one test file often carries the markers of several
+  specs: `dev/test_skills.py` carries 13, `dev/test_reports.py` 6, `dev/test_mcp_server.py`
+  and `dev/test_run_script.py` 4 each. So stage B is cut by **test file**, not by spec.
+  Gather every gap from stage A, sort them by the test file that holds the test, and give
+  each test file to one agent with all of that file's gaps.
+- Each agent writes its one test file, and the proof lines of the specs those gaps belong
+  to. Two agents may need the same spec: to keep them apart, a stage B agent does not edit
+  the spec. It writes the assertion, and brings back the words each proof should now read.
+- An agent's acceptance: its test file passes, run whole, with the new assertions; each new
+  assertion fails when the behaviour it checks is broken on purpose, which the agent tries
+  and reports; `git diff` shows its one test file and nothing else.
+- Merge as they finish, by fast-forward, each rebased first.
 
-Do not run `purlin:audit` and do not sign anything. I will run the audit myself when the
-sanity checks are done. Push nothing.
+**Stage C: raise the proofs, then prove the whole.** One agent, alone.
+- It takes the proof words stage B brought back and writes them into the specs, in one
+  commit per spec.
+- Then: `bash dev/run_tests.sh` with 0 failed; this repository run through its own tool with
+  every marker tied and every rule passing its tests; then the same run once more with
+  `--commit`, so the committed evidence is current again, since every rewritten proof put its
+  feature's evidence out of date.
+
+Throughout: never weaken an assertion to make it pass; never edit a count to make a sweep
+green; change no rule's words. Do not run `purlin:audit` and do not sign anything. I will run
+the audit myself when the sanity checks are done. Push nothing.
+
+If an agent fails its acceptance twice, leave its branch unmerged, carry on with the rest,
+and list it for me with what it printed.
 
 ## What to give me at the end of Part 2
 

@@ -42,7 +42,11 @@ claim of compliance: it hands evidence to a system of record.
    docs in hand, changes nothing here, and ends in a report. Part 2 rewrites the 558 proofs on
    rules whose level asks for the audit, across 30 specs, to
    `references/spec_quality_guide.md`, "Writing proofs", keeping every id, rule and marker,
-   and closes the test gaps that exposes.
+   and closes the test gaps that exposes. Both parts are run highly parallel, which the
+   owner asked for: the seven paths of the check at once, then one agent per spec for the
+   rewrite, all thirty at once, then one agent per test file for the gaps. The prompt cuts
+   the stages so that no two agents running together write the same file; for this task the
+   limit of two writers below does not apply.
 2. **Put its findings to the owner as questions**, in plain words, most basic first, then
    apply the answers: one Opus agent per closed decision, in its own worktree under
    `/Users/richlabarca/LocalCode/purlin-wt/<name>`, merged by fast-forward.
