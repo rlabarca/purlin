@@ -5,14 +5,19 @@ audited, signed, tagged or pushed. `main` is local only.
 
 ## Where things stand
 
+As of the morning of 2026-09-28, after the owner's first look at the dashboard.
+
 - Every piece is merged into `main` by fast-forward. The full sweep on `main` after the last
-  of them: **1036 passed across 7 suites, 0 failed.**
-- This repository's own tests run through the new path tie **947 of 947** markers, and **553 of
-  555** rules meet the gate. The two that do not are tagged for Linux and this machine is a Mac.
-- The repository holds 374 tracked files, down from 1,350.
+  of them: **1070 passed across 7 suites, 0 failed.**
+- This repository's own tests, run through Purlin: **972 of 972** markers tied to a test,
+  **560 of 562** rules pass their tests, and **91 of 562** meet the gate `signed`. The two that
+  do not pass are tagged for Linux and this machine is a Mac. The 91 are the rules marked
+  `[level: passed]`; the rest wait for an audit and a signature, which have not been run.
+- The evidence of that run is on disk and **not committed**: `.purlin/evidence/local/` and
+  `.purlin/tests.md` show as untracked. Open `purlin-report.html` at the root to see the board.
+- The repository holds 376 tracked files, down from 1,350.
 - `purlin:init --update` found one thing here, an old git hook, and removed it with a backup.
-  Plain `purlin:init` then replaced this repository's runner file and rewrote the settings file
-  in its own key order, with no value changed.
+  Plain `purlin:init` then replaced this repository's runner file.
 
 ## What to review, in this order
 
@@ -25,18 +30,32 @@ audited, signed, tagged or pushed. `main` is local only.
 4. **The rest of the docs**, from `docs/index.md`.
 5. **The slides**: https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is, six of them. Pictures of
    each are in `dev/plans/deck/`, with the script that builds them.
-6. **The diagrams**: four, in light and dark, in `dev/plans/diagrams/`.
+6. **The diagrams**: five, in light and dark, in `dev/plans/diagrams/`, with a picture of
+   this repository's own board, `board-with-proofs.png`.
 7. **The proof guideline**: `references/spec_quality_guide.md`, "Writing proofs", and the three
    specs rewritten to it: `specs/mcp/drift.md`, `specs/anchor/upstream.md`,
    `specs/mcp/config_engine.md`.
 
 ## Decided on the morning of 2026-09-28
 
-Six choices were put to you; decision 56 records the answers. Two stay as they were (a hand
-check without a note; a spec that names no files at `signed`). Four change, and one more piece
-applies them: a merge with conflicts counts for drift; a marker that names nothing fails the
-run; the tag and its package are written only at the gate `signed`; the remote runner gets a
-diagram.
+Decision 56, six choices from the overnight run: a hand check without a note is accepted; a
+spec that names no files stops a release at `signed`; a merge with conflicts counts for drift;
+a marker that names nothing fails the run; the tag and its package are written only at the
+gate `signed`; the remote runner has a diagram. All applied.
+
+Decision 57, the dashboard: the headline is gone; `without a test` reads `no test`; every
+neutral text colour measures at least 7 to 1 in both themes; whether a proof has a test is
+read from the source; proofs open under each rule on the board; a shared spec's rules are
+shown once. All applied.
+
+## One question still open
+
+**A rule marked `[level: passed]` shows `WEAK` in the Strong column.** Such a rule needs only
+its tests, and the audit never reads it, yet the page draws a `weak` pill for it, with the
+reason that no audit has run. On this repository that is 91 rules, so the `Weak` filter reads
+93 when no rule has a finding against it. The pill blocks nothing. The choice is what that
+column should read for a rule the audit is never going to read: nothing at all, or a plain
+word such as `not asked`.
 
 ## What is not proven here
 
@@ -108,6 +127,10 @@ On the remote, none touched: `origin/lane/*` (13), `origin/three-levels`,
 | The clean-release sweep, with 16 code fixes | 44, 50 | merged | 964 passed, 0 failed |
 | The follow-up: pages re-quoted, the board at passed | 50, 51 | merged | 964 passed, 0 failed |
 | Setup applied to this repository | 49 | committed | full sweep 1036 passed, 0 failed |
+| Three gaps at the gate passed | 50, 51 | merged | full sweep 1043 passed, 0 failed |
+| Decision 56, with four dashboard changes | 56, 57 | merged | full sweep 1057 passed, 0 failed |
+| Proofs on the board, shared rules once | 57 | merged | full sweep 1064 passed, 0 failed |
+| Six wording fixes | 50 | merged | full sweep 1070 passed, 0 failed |
 
 The count falls where tests of removed things were deleted and rises where new tests were
 added. No count was edited.
@@ -278,4 +301,19 @@ One line each, with the piece that made it. Each took the smaller option.
 - At `passed` with no proofs, the rule screen drops its proofs section.
 - The test of the five words builds its own sample without proofs and leaves the shared
   sample as it was.
+
+### The later pieces
+
+- Text inside a solid coloured badge, such as `SIGNED` on green, is left out of the contrast
+  floor: reaching 7 to 1 there means changing the state colours.
+- The evidence package's own `tag` field still names `signed/<version>` at every gate; its
+  `state` says whether the version is signed.
+- A proof whose evidence is out of date reads `not run` on the board.
+- The `Tests` cell of a feature counts every rule the feature proves, shared ones included, so
+  `ai_audit` reads `21 of 21` beside `15 · plus 6 shared`.
+- `purlin:test` exits on the tests alone: 0 when none failed and no marker is wrong, whatever
+  the gate line says.
+- At `passed`, `trust: remote` refuses nothing, since nothing is signed there; its line says so.
+- The `Weak` filter counts the word `weak` as the page shows it, which is the open question
+  above.
 
