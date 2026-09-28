@@ -2,13 +2,13 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "f74efd79af7d8913ad7022437ecfde5e9505c6a717a7516b642d4d9bce541a83",
-        "spec": "cac190fb639e582175e61e6073403bc606793d506859c0b3addf6b4ad603b13a",
-        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+        "spec": "8d81239e0c8b9566382a8e878ccc0a64b94133088b23855c2aa7974baa6997cd",
+        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
       },
       "proofs": [
         {
@@ -21,11 +21,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillBuild::test_a_broken_frontmatter_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_skills.py::TestSkillBuild::test_it_reads_the_state_and_runs_the_tests_through_the_test_skill"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillBuild::test_a_test_framework_run_directly_is_refused"
         },
         {
           "env": null,
@@ -53,6 +69,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillBuild::test_changeset_is_never_left_out"
+        },
+        {
+          "env": null,
           "id": "PROOF-6",
           "manual": false,
           "result": "pass",
@@ -66,6 +90,14 @@
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_skills.py::TestSkillBuild::test_it_looks_for_an_existing_test_before_it_writes_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skills.py::TestSkillBuild::test_writing_before_looking_is_refused"
         }
       ],
       "rules": {

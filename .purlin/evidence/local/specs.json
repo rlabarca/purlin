@@ -2,13 +2,13 @@
   "feature": "specs",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T16:56:16Z",
-      "commit": "98fc3cbed94727792e632ba854fcb13ef4e6ed6d",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "fd506747ba51a8b4f48153ce5e286a86a8001d73503c7b55b63147d36ac24524",
-        "spec": "403cca704b1bac525243ba66e2be9446c72fb8a45fddc96da1c603d84cc72a35",
-        "tests": "722c7b77e572a05ee31f31818e1b44d7eba42ddeb025090538402bdb698b0a3c"
+        "spec": "5d78e40474c1db8d7db5800e05a312e97abef3d24a4f3046b9c640c244c5eb1a",
+        "tests": "b18705dc1ecc31d73b82a1295d0097eee7873d6e3fdec26eee665c116a25a5e6"
       },
       "proofs": [
         {
@@ -122,6 +122,14 @@
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_mcp_server.py::TestSpecParsing::test_every_spec_is_keyed_by_its_filename_stem"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_mcp_server.py::TestSpecParsing::test_a_spec_that_cannot_be_read_is_skipped"
         },
         {
           "env": null,

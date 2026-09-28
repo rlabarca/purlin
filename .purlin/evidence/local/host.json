@@ -2,13 +2,13 @@
   "feature": "host",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T13:54:07Z",
-      "commit": "301c107c556d161347b536a595c984fd6d159174",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "6ce6e9b5b71f1139cf426f325ea36dba278a5d442c194f64eafa426b2c1933ce",
-        "spec": "5272e091d538a321b774366b67515f2836543adf78322511fc57a89e236b2ef3",
-        "tests": "dce77a88e3285bc1fbef39c9ff3432c5c2ff4ab1c279bd137b791a340e12b0ed"
+        "spec": "0c4f79ceb2c1ca0527e29d23f8e586e60725e39b8dee08589da594db78a13797",
+        "tests": "c5380130d943f31cc2d20e868a335d96a942afac260f13838078f6f784869992"
       },
       "proofs": [
         {
@@ -181,6 +181,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_host.py::test_the_web_flow_committer_with_a_bad_signature_is_local"
+        },
+        {
+          "env": null,
           "id": "PROOF-12",
           "manual": false,
           "result": "pass",
@@ -258,6 +266,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_host.py::test_the_run_is_looked_up_by_its_branch_before_it_is_watched"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_host.py::test_the_lookup_is_asked_again_while_the_run_registers"
         },
         {
           "env": null,
@@ -485,6 +501,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_consumer_ci.py::test_the_fixtures_own_test_file_runs_and_names_nothing_of_purlin"
+        },
+        {
+          "env": null,
           "id": "PROOF-21",
           "manual": false,
           "result": "pass",
@@ -565,6 +589,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_host_pathspec.py::test_a_run_that_spells_paths_the_windows_way_finds_the_removal"
+        },
+        {
+          "env": null,
           "id": "PROOF-27",
           "manual": false,
           "result": "pass",
@@ -586,6 +618,14 @@
           "result": "pass",
           "rule": "RULE-27",
           "test": "dev/test_host.py::test_a_project_that_is_not_the_workspace_commits_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_host.py::test_an_azure_project_that_is_not_the_workspace_commits_nothing"
         },
         {
           "env": null,

@@ -2,13 +2,13 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "0ed942a37fd2f4bb72ca31a68241b19d9e10c47e519919431d3dd84747803627",
-        "spec": "a87bbdbe02954720a4faed438405d3ea215dc3f7850c50223a2011d71e8c31ed",
-        "tests": "07e8a2229114d7e9b1a88f7e9f8ec22475ff378603c53ad5c352924dbc2717ef"
+        "spec": "3b5e153be66a7855c4ebdbc1e519d39b7638ff5ab2e8390c790963f189ae380a",
+        "tests": "6189fc1bad6b0eba2f091e6ab5b363b36e0d7c3974ed51bc6991463f16950f86"
       },
       "proofs": [
         {
@@ -18,6 +18,22 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_run_script.py::TestTheCommandLine::test_bad_invocation_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_audit_remote_names_the_test_command"
+        },
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_the_allowed_shapes_are_accepted"
         },
         {
           "env": null,
@@ -90,6 +106,14 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_run_script.py::TestLoudFailureB::test_the_list_is_bounded_and_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_run_script.py::TestLoudFailureB::test_a_test_the_report_omits_and_a_marker_with_no_test_are_named"
         },
         {
           "env": null,
@@ -181,11 +205,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_run_script.py::TestTheLog::test_the_audit_writes_the_log_too"
+        },
+        {
+          "env": null,
           "id": "PROOF-16",
           "manual": false,
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_run_script.py::TestTheBreaks::test_the_breaks_are_asked_for_the_scope_and_the_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_run_script.py::TestTheBreaks::test_each_rule_is_asked_with_its_own_test_file"
         },
         {
           "env": null,
@@ -245,6 +285,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_run_script.py::TestHostOs::test_each_platform_reads_its_env_name"
+        },
+        {
+          "env": null,
           "id": "PROOF-22",
           "manual": false,
           "result": "pass",
@@ -273,6 +321,22 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-40",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_only_the_last_60_lines_are_printed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_a_killed_suite_prints_its_tail"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
           "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_an_arm_that_passed_prints_no_tail"
         },
         {
@@ -282,6 +346,14 @@
           "result": "pass",
           "rule": "RULE-40",
           "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_ci_writes_the_whole_run_to_the_log_in_the_tree"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_the_log_keeps_every_line_past_sixty"
         },
         {
           "env": null,
@@ -361,6 +433,14 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-48",
+          "test": "dev/test_run_script.py::TestTheAuditGateLine::test_a_failing_test_blocks_at_strong"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
           "test": "dev/test_run_script.py::TestTheAuditGateLine::test_a_passed_level_meets_the_strong_line_on_its_tests"
         },
         {
@@ -429,6 +509,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_run_script.py::TestWhichRulesTheAuditReads::test_a_rule_taken_from_an_anchor_is_read_only_as_the_anchors"
+        },
+        {
+          "env": null,
           "id": "PROOF-72",
           "manual": false,
           "result": "pass",
@@ -474,6 +562,14 @@
           "result": "pass",
           "rule": "RULE-52",
           "test": "dev/test_run_script.py::TestWhenTheModelCannotBeReached::test_nothing_is_written_and_the_cell_says_why"
+        },
+        {
+          "env": null,
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_run_script.py::TestWhenTheModelCannotBeReached::test_two_causes_in_one_run_print_one_line_each"
         },
         {
           "env": null,
@@ -605,6 +701,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-97",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_suite_with_none_of_the_features_tests_is_not_started"
+        },
+        {
+          "env": null,
           "id": "PROOF-98",
           "manual": false,
           "result": "pass",
@@ -634,6 +738,14 @@
           "result": "pass",
           "rule": "RULE-54",
           "test": "dev/test_run_script.py::TestTheLastLines::test_the_audit_ends_in_the_order_the_design_gives"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_run_script.py::TestTheLastLines::test_the_skipped_rules_and_the_stale_line_take_their_places"
         }
       ],
       "rules": {

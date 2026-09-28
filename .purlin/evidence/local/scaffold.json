@@ -2,13 +2,13 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T16:56:15Z",
-      "commit": "98fc3cbed94727792e632ba854fcb13ef4e6ed6d",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "f5d91588fb6a3373d02a316e01d016d6ddab18f4aa250d546c2581fee47841ce",
-        "spec": "68e8bc2d41c87f93b2f3c25044cf372b4179382699835df33b45a39e77e94769",
-        "tests": "47bec503cacaa8097f7a3137521acb5d409d9cce5967885df85de2628a8243c9"
+        "spec": "c881443826f30f70d3a5556b8435a98a17b1b6d6f108779b62b919665a8920a5",
+        "tests": "4782ff338f602057ad3cc847ffe0645b54ff982d76359622103b1bbf421cf360"
       },
       "proofs": [
         {
@@ -106,6 +106,14 @@
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_init_scaffold.py::TestTheTwoQuestions::test_the_command_and_the_report_are_the_suite_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_init_scaffold.py::TestTheTwoQuestions::test_a_trx_report_and_a_dash_name_their_formats"
         },
         {
           "env": null,
@@ -274,6 +282,14 @@
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_matrix_is_rendered_from_the_env_tags"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_windows_and_macos_tags_each_add_their_runner"
         },
         {
           "env": null,
@@ -453,6 +469,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_gh_present_or_absent_is_named_and_the_workflow_written"
+        },
+        {
+          "env": null,
           "id": "PROOF-30",
           "manual": false,
           "result": "pass",
@@ -514,6 +538,14 @@
           "result": "pass",
           "rule": "RULE-33",
           "test": "dev/test_init_scaffold.py::TestTheFlags::test_update_with_dry_run_asks_the_upgrade_what_is_pending"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_init_scaffold.py::TestTheFlags::test_update_with_dry_run_lists_what_an_older_project_needs"
         },
         {
           "env": null,

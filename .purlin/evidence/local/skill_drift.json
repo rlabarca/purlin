@@ -2,13 +2,13 @@
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "4bbdcddb59ea6e6b53aa887d2f1594141c4c1c907602b8f9682b7afc46569a63",
-        "spec": "4fd6a93a6a2baf299cd8e796c7a9ff86f6e821126e8ce48ff076a75514149ac1",
-        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+        "spec": "0e1a2a7a7be1b99de60465307a853a55dcf7c74ad710c801ba093311e07254c8",
+        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
       },
       "proofs": [
         {
@@ -21,6 +21,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillDrift::test_a_broken_frontmatter_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
@@ -29,11 +37,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillDrift::test_a_restated_criterion_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_skills.py::TestSkillDrift::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillDrift::test_a_broken_closing_section_is_refused"
         },
         {
           "env": null,

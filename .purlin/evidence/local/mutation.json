@@ -2,13 +2,13 @@
   "feature": "mutation",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T12:46:49Z",
-      "commit": "4c194737a6f77be2dfaac725b89389a1302537a2",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "bd7bb2b47c3b3530c756d050c9eb9bb21c41315a5e3127960b1cee8228b5dd33",
-        "spec": "ddaaa4535e7dc51f54eef1b2c0dc557f6dfd79362e645563be7ed7766f343233",
-        "tests": "71e6cf36974e162521dafd241f339b47cd4f1e12aa4288582f322ae1d4c30b8d"
+        "spec": "0989e7a1e75a4b327ca4a84a5c984e7cf28c7601de47b279634a69bb6dfe20f9",
+        "tests": "a5b7b1799284e853c93c09b4090f7fcdf93e8a9d068e52612786da10a4acc8bf"
       },
       "proofs": [
         {
@@ -98,6 +98,14 @@
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_mutation_adapters.py::test_a_run_writes_the_scoped_config_and_reads_the_report"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_mutation_adapters.py::test_a_run_over_two_features_starts_stryker_once_for_each"
         },
         {
           "env": null,
@@ -197,6 +205,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_mutation_adapters.py::test_titles_written_with_a_separator_match_titles_joined_by_spaces"
+        },
+        {
+          "env": null,
           "id": "PROOF-11",
           "manual": false,
           "result": "pass",
@@ -241,6 +257,14 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
+          "test": "dev/test_mutation_adapters.py::test_a_run_whose_report_cannot_be_read_measures_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
           "test": "dev/test_mutation_adapters.py::test_a_run_that_wrote_no_report_says_so"
         },
         {
@@ -258,6 +282,14 @@
           "result": "pass",
           "rule": "RULE-13",
           "test": "dev/test_mutation_adapters.py::test_the_report_is_found_under_the_output_directory"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_mutation_adapters.py::test_a_report_several_folders_down_is_found"
         },
         {
           "env": null,
@@ -349,6 +381,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_mutation_adapters.py::test_a_project_with_no_block_in_setup_cfg_is_not_broken"
+        },
+        {
+          "env": null,
           "id": "PROOF-16",
           "manual": false,
           "result": "pass",
@@ -362,6 +402,14 @@
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_mutation_adapters.py::test_the_noise_around_the_results_is_not_a_break"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_mutation_adapters.py::test_the_listing_read_is_what_mutmut_results_all_prints"
         },
         {
           "env": null,
@@ -482,6 +530,14 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_mutation_adapters.py::test_a_mutmut_run_that_timed_out_measures_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_mutation_adapters.py::test_arm_timeout_on_the_command_line_stops_a_running_engine"
         },
         {
           "env": null,

@@ -2,13 +2,13 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "dd7bed4c5a79fde93a28109a8b9b872e450350a83d6901e6eaefc5c37bf2cef1",
-        "spec": "716a3acb91ebbca92c4c266d4db4adf18d9062b899a4b64bdc4ade00d300fa95",
-        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+        "spec": "8028dfd5d5cb46a283ce5fa8e701b45342edcc9501338d5c19788d6ebc0688fc",
+        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
       },
       "proofs": [
         {
@@ -21,6 +21,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillInit::test_a_broken_frontmatter_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
@@ -29,11 +37,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillInit::test_a_flag_missing_or_foreign_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_skills.py::TestSkillInit::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillInit::test_a_broken_closing_section_is_refused"
         },
         {
           "env": null,
@@ -53,6 +77,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillInit::test_a_fifth_question_or_a_missing_gate_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-6",
           "manual": false,
           "result": "pass",
@@ -61,11 +93,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skills.py::TestSkillInit::test_a_ninth_key_or_a_stray_sentence_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-7",
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_skills.py::TestSkillInit::test_it_writes_the_tests_setting_and_installs_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skills.py::TestSkillInit::test_a_missing_jest_sentence_is_refused"
         }
       ],
       "rules": {

@@ -2,13 +2,13 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "8668932275b069f0b6a928c66a08680e0347e5d70e9a5e7aaa10ac7b6a8c0c1a",
-        "spec": "2218a96d9024bf019f47c2124fb87d03939be007501e93d28ff389e3f68d65d0",
-        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+        "spec": "d4b3dc4f35dcba524b963982453342b8498681b6b57258f58cd548648497363b",
+        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
       },
       "proofs": [
         {
@@ -21,6 +21,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillSign::test_a_broken_frontmatter_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
@@ -29,11 +37,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillSign::test_a_signature_before_the_audit_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_skills.py::TestSkillSign::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillSign::test_a_broken_closing_section_is_refused"
         },
         {
           "env": null,
@@ -53,6 +77,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillSign::test_a_missing_condition_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-6",
           "manual": false,
           "result": "pass",
@@ -69,11 +101,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skills.py::TestSkillSign::test_a_gate_row_broken_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-8",
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_skills.py::TestSkillSign::test_the_tag_carries_the_evidence_package_and_nothing_is_pushed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_skills.py::TestSkillSign::test_a_broken_tag_section_is_refused"
         }
       ],
       "rules": {

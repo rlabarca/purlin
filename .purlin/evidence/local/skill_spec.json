@@ -2,13 +2,13 @@
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "a051fd432625679b5433e6d1a782a55b47a0bc1dab331d8c635ea4ccd2e7ceae",
-        "spec": "a7de664881f128bcfce3915134c37b0566eef8967d55d4e6fc5c0e0d8296eb56",
-        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+        "spec": "9f96292d713e51d87b1df76c3e26cc52c642e0a6dcf3968b8dca516525f81e11",
+        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
       },
       "proofs": [
         {
@@ -21,6 +21,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillSpec::test_a_broken_frontmatter_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
@@ -29,11 +37,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillSpec::test_a_missing_id_command_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_skills.py::TestSkillSpec::test_it_closes_by_naming_the_build"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillSpec::test_a_broken_offer_is_refused"
         },
         {
           "env": null,
@@ -53,11 +77,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillSpec::test_a_missing_scope_sentence_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-6",
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_skills.py::TestSkillSpec::test_it_prints_the_proofs_and_asks_before_it_saves"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skills.py::TestSkillSpec::test_a_missing_or_late_print_step_is_refused"
         }
       ],
       "rules": {

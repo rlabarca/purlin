@@ -2,13 +2,13 @@
   "feature": "skill_export",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "c0410f614710009befff30f22fae5fb992734efef1995852262b77c1e876d604",
-        "spec": "5bc59a4846d01ebabcf139fad0fc284d5835ee79d76591727e65e6280e61dcb8",
-        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+        "spec": "e6508ab014c62e080e22965e3198f37f0e44a70f1611509f1535bcce96f9925a",
+        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
       },
       "proofs": [
         {
@@ -21,11 +21,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillExport::test_a_broken_frontmatter_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_skills.py::TestSkillExport::test_it_runs_the_script_in_each_form"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillExport::test_a_missing_form_or_run_line_is_refused"
         },
         {
           "env": null,
@@ -45,11 +61,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skills.py::TestSkillExport::test_another_state_for_the_signer_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-5",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_skills.py::TestSkillExport::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillExport::test_a_broken_closing_section_is_refused"
         },
         {
           "env": null,

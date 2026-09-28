@@ -2,13 +2,13 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T12:46:50Z",
-      "commit": "4c194737a6f77be2dfaac725b89389a1302537a2",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "47687342a29c6a1b9b0b94ac6cca4ee3e6107922f5836555c6b7e2794e70ea6b",
-        "spec": "c079c4e39728eb211637e1af240fc528702c9118441485e01f7db67a965f66bb",
-        "tests": "b18065136908c6cf1c612970554a861afb0c6576300cdc82d28a787e74c58e2c"
+        "spec": "82d2f34056f5193100dfffb835126e156ee9ce4fa1517a78dee9a55da5624342",
+        "tests": "866d607abe104146914c5cea4bbb8a678938b7ec3b9c14a399c44715e7773723"
       },
       "proofs": [
         {
@@ -193,6 +193,14 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
+          "test": "dev/test_init_update.py::test_hooks_another_tool_wrote_are_left_byte_for_byte"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
           "test": "dev/test_init_update.py::test_the_pre_push_hook_goes_too"
         },
         {
@@ -217,6 +225,14 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
+          "test": "dev/test_init_update.py::test_the_config_is_the_gate_shape_at_every_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
           "test": "dev/test_init_update.py::test_retired_keys_are_gone"
         },
         {
@@ -226,6 +242,14 @@
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_init_update.py::test_no_key_nothing_reads_is_written_back"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_init_update.py::test_a_dashboard_switch_set_off_is_not_written_back_either"
         },
         {
           "env": null,
@@ -250,6 +274,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_init_update.py::test_the_gate_question_takes_the_answer_you_type"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_init_update.py::test_the_gate_the_project_named_is_the_default"
         },
         {
           "env": null,
@@ -306,6 +338,22 @@
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_init_update.py::test_declining_the_workflow_leaves_it_unwritten"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_init_update.py::test_a_project_with_no_remote_gets_no_workflow"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_init_update.py::test_a_host_init_writes_no_workflow_for_gets_none"
         },
         {
           "env": null,
@@ -437,6 +485,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_init_update.py::test_xunit_is_read_as_dotnet"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_init_update.py::test_auto_or_no_value_writes_what_detection_finds"
+        },
+        {
+          "env": null,
           "id": "PROOF-23",
           "manual": false,
           "result": "pass",
@@ -474,6 +538,14 @@
           "result": "pass",
           "rule": "RULE-25",
           "test": "dev/test_init_update.py::test_every_dropped_key_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_init_update.py::test_a_config_with_no_key_to_drop_prints_no_dropped_line"
         },
         {
           "env": null,
@@ -525,6 +597,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_init_update.py::test_a_readme_already_there_is_left_alone"
+        },
+        {
+          "env": null,
           "id": "PROOF-29",
           "manual": false,
           "result": "pass",
@@ -554,6 +634,14 @@
           "result": "pass",
           "rule": "RULE-31",
           "test": "dev/test_init_update.py::test_the_page_linked_into_the_old_plugin_is_replaced"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_init_update.py::test_a_project_with_no_page_is_left_without_one"
         }
       ],
       "rules": {

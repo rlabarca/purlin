@@ -2,13 +2,13 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "b844c3501ce840380cf8a2d57f973387b9f6ca265a9b594ca374250f0625f5bd",
-        "spec": "07f4704603aeb5401f88c12e3c493c0c4e65bbf8366827d326ac1bfccf38bf5f",
-        "tests": "8d95cd012800d34a7b5c29c657da8fbc098a728bacd4514996c3863996b98a80"
+        "spec": "874f739d89718eadb0eab06dbf6e2459485d92c8896721a24e9de0bd38ecc93f",
+        "tests": "46591fdbcc5065594dac6673d829d635c45e322737ce9b5e193d510b53da2ffe"
       },
       "proofs": [
         {
@@ -50,6 +50,14 @@
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_signatures.py::TestTheTriple::test_a_manual_proof_says_so_instead_of_naming_a_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_signatures.py::TestTheTriple::test_a_manual_proof_beside_a_tested_one_reads_file"
         },
         {
           "env": null,
@@ -101,6 +109,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_signatures.py::TestStale::test_a_stale_signature_reads_stale_in_the_signed_cell"
+        },
+        {
+          "env": null,
           "id": "PROOF-12",
           "manual": false,
           "result": "pass",
@@ -137,6 +153,14 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-11",
+          "test": "dev/test_signatures.py::TestTheWalk::test_the_walk_writes_nothing_until_it_closes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
           "test": "dev/test_signatures.py::TestTheWalk::test_a_signature_row_names_what_went_stale"
         },
         {
@@ -165,6 +189,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_signatures.py::TestTheSignedCommit::test_a_batch_signs_a_queue_across_two_features_in_one_commit"
+        },
+        {
+          "env": null,
           "id": "PROOF-70",
           "manual": false,
           "result": "pass",
@@ -186,6 +218,14 @@
           "result": "pass",
           "rule": "RULE-13",
           "test": "dev/test_signatures.py::TestTheSignedCommit::test_a_note_needs_a_rule_and_a_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_signatures.py::TestTheSignedCommit::test_a_refused_note_says_why_and_writes_nothing"
         },
         {
           "env": null,
@@ -218,6 +258,14 @@
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_signatures.py::TestWhatIsQueued::test_it_is_the_queue_the_payload_wrote"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_signatures.py::TestWhatIsQueued::test_a_batch_signs_in_the_order_the_walk_shows"
         },
         {
           "env": null,
@@ -277,6 +325,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_signatures.py::TestTheSignedCommit::test_a_second_person_signs_whatever_the_settings_name"
+        },
+        {
+          "env": null,
           "id": "PROOF-28",
           "manual": false,
           "result": "pass",
@@ -306,6 +362,14 @@
           "result": "pass",
           "rule": "RULE-42",
           "test": "dev/test_signatures.py::TestTheFile::test_the_evidence_it_names_is_the_file_the_run_wrote"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_signatures.py::TestTheFile::test_a_written_signature_names_the_ci_file_or_none"
         },
         {
           "env": null,
@@ -365,6 +429,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_tag.py::TestTheTag::test_a_remote_is_left_as_it_was"
+        },
+        {
+          "env": null,
           "id": "PROOF-81",
           "manual": false,
           "result": "pass",
@@ -389,6 +461,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_tag.py::TestTheTag::test_the_release_option_names_the_tag"
+        },
+        {
+          "env": null,
           "id": "PROOF-72",
           "manual": false,
           "result": "pass",
@@ -402,6 +482,14 @@
           "result": "pass",
           "rule": "RULE-49",
           "test": "dev/test_signatures.py::TestWhatItRestsOn::test_evidence_that_is_not_committed_is_signed_over_by_nobody"
+        },
+        {
+          "env": null,
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_signatures.py::TestWhatItRestsOn::test_a_feature_with_evidence_not_committed_is_named_once"
         },
         {
           "env": null,

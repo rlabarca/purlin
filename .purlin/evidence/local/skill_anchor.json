@@ -2,13 +2,13 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "64c0cd3bb8087c3ebc04122deb555d36e2632c3da654f215c662c37c385fb024",
-        "spec": "7c65dea63f61f9cd0a1f152ebaf2d399662bed45d62cfa08bb751287fdd47103",
-        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+        "spec": "1e58258cb6d7a12de08aed20132b1195fb02511353f8cca902214e3739c80d60",
+        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
       },
       "proofs": [
         {
@@ -21,11 +21,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillAnchor::test_a_broken_frontmatter_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_skills.py::TestSkillAnchor::test_it_runs_the_upstream_script_for_two_subcommands"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillAnchor::test_a_broken_command_or_check_sentence_is_refused"
         },
         {
           "env": null,
@@ -50,6 +66,14 @@
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_skills.py::TestSkillAnchor::test_a_pin_is_a_commit_and_a_pinned_rule_is_never_edited"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillAnchor::test_a_local_anchor_that_requires_nothing_is_refused"
         }
       ],
       "rules": {

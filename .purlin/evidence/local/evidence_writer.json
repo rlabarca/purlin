@@ -2,13 +2,13 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T12:46:49Z",
-      "commit": "4c194737a6f77be2dfaac725b89389a1302537a2",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "889c7e6f21f2ee0e14e66b1536dba8a48c101e3616f70b292e54c1c34ca21e36",
-        "spec": "77de4fad9b2aab6047db1050678798ab867754e14ed88b58637d3694050f9048",
-        "tests": "2d9d7cb486f518dd108e055d51667898c91e015b6d1693eb550f58b767067900"
+        "spec": "c3fb6b95a9fce59d5b4a6515c4df804038f4260bb23178c10883957cf39b1c0a",
+        "tests": "c153d643b6ceed8ccac96eecb71721fe0ddd98bce762371c2170849cb8ff384f"
       },
       "proofs": [
         {
@@ -61,6 +61,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_evidence_writer.py::test_a_feature_run_and_an_audit_run_remove_it_too"
+        },
+        {
+          "env": null,
           "id": "PROOF-7",
           "manual": false,
           "result": "pass",
@@ -97,6 +105,14 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
+          "test": "dev/test_evidence_writer.py::test_an_audit_run_writes_and_does_not_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
           "test": "dev/test_evidence_writer.py::test_several_features_name_the_folder"
         },
         {
@@ -106,6 +122,14 @@
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_evidence_writer.py::test_commit_commits_the_evidence_and_the_table_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_evidence_writer.py::test_commit_carries_the_removal_and_pushes_nothing"
         },
         {
           "env": null,
@@ -138,6 +162,14 @@
           "result": "pass",
           "rule": "RULE-13",
           "test": "dev/test_evidence_writer.py::test_neither_the_evidence_nor_the_table_is_ignored"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_evidence_writer.py::test_git_ignores_neither_file_after_init"
         },
         {
           "env": null,

@@ -2,13 +2,13 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T16:56:16Z",
-      "commit": "98fc3cbed94727792e632ba854fcb13ef4e6ed6d",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "93dc0a102112b8de18d2ca908ac21b8986765ecb55f96c9384230738c2504f31",
-        "spec": "0c1efda69eb10e42115fa119fc33f6c4256bda0613d6224327dad92326607aa8",
-        "tests": "5df0fae3f30979aa89ffd22ca066aff1fe7e74552494735e24e04bcb9350e1e8"
+        "spec": "acc3a9c5eec380a407cba09ca4058cfeb8ab257e2addec7d97bcb246723c41ac",
+        "tests": "7d0ddce826ceba21031105f494281acad1b2cae309de39239615a611cf7a5b72"
       },
       "proofs": [
         {
@@ -165,6 +165,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_failing.py::test_an_env_proof_is_read_only_from_its_own_system"
+        },
+        {
+          "env": null,
           "id": "PROOF-12",
           "manual": false,
           "result": "pass",
@@ -229,11 +237,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_an_entry_for_other_hashes_is_not_read"
+        },
+        {
+          "env": null,
           "id": "PROOF-17",
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_mcp_server.py::TestTheStrongCell::test_the_audit_entry_settles_level_two_where_the_level_asks"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_an_undecided_rule_is_never_in_the_queue"
         },
         {
           "env": null,
@@ -525,6 +549,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_backing_tests.py::TestTheEvidenceNamesTheTests::test_both_sources_make_up_the_hash"
+        },
+        {
+          "env": null,
           "id": "PROOF-43",
           "manual": false,
           "result": "pass",
@@ -581,11 +613,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_summary_counts_manual_tests_and_stale_signatures"
+        },
+        {
+          "env": null,
           "id": "PROOF-45",
           "manual": false,
           "result": "pass",
           "rule": "RULE-38",
           "test": "dev/test_mcp_server.py::TestStatusTable::test_the_table_ends_with_one_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_step_follows_the_lowest_cell_that_blocks"
         },
         {
           "env": null,

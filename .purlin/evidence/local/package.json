@@ -2,13 +2,13 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "f39abc4e71da1fb7dc56aa6dad30b697896861cb03369d69f487748a60ef0db2",
-        "spec": "7aead4cce7dfdd65089326a8601c4b3af0684ae827626b7775449d4f35f51eaa",
-        "tests": "70bb3f2dd56cfb23a529d7355f820d14928bb26e2c1c06b17349f6ed2fe8d074"
+        "spec": "40f88bf7a3b1d62351e24801cbaca3504242df33a143dc2e9e9bf1c1c8e13ac3",
+        "tests": "b48771ffa167e4fc13e37efe68d72984217b13f2dcfd98b57c1120e40b1bb084"
       },
       "proofs": [
         {
@@ -170,6 +170,14 @@
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_export.py::TestTheFile::test_commit_commits_the_file_as_evidence_and_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_export.py::TestTheFile::test_commit_leaves_a_change_staged_elsewhere_out"
         }
       ],
       "rules": {

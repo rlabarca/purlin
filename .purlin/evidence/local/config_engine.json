@@ -2,12 +2,12 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T12:46:49Z",
-      "commit": "4c194737a6f77be2dfaac725b89389a1302537a2",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "d6a9ff8a0990ffae6f54ff4d0c9f5a55f932bce0dbca276bee593fe14edbd07c",
-        "spec": "e5b8f38871633fe0cba8e714c8350a360f3473e09271e8d20429ea7c3fce114c",
+        "spec": "e5f309b92463dcc2295593aa1ab7f2dc8a65c89e2581cf97fe23e8c6f890c435",
         "tests": "ef7feaf9d215521732122ae11a7ec0fc9e356b99e3b583005e13baf9553ccd28"
       },
       "proofs": [

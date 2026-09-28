@@ -2,13 +2,13 @@
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T15:34:43Z",
-      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "at": "2026-09-28T19:11:32Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "26adc8a959505e7cd87ae64fc98f909d4830377dda529287f835976c5e5fd35c",
-        "spec": "a147aecaa2dfe2a8738a288077efa2dc1d7a17ff911ae2b0ccd56ed24607524f",
-        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+        "spec": "649730bb265c87f105eca9a82d7b566ee3b99dfb34b00f8af8c065d2fa7d2fb4",
+        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
       },
       "proofs": [
         {
@@ -21,6 +21,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillStatus::test_a_broken_frontmatter_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
@@ -29,11 +37,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillStatus::test_a_recount_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_skills.py::TestSkillStatus::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillStatus::test_a_broken_closing_section_is_refused"
         },
         {
           "env": null,
@@ -50,6 +74,14 @@
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_skills.py::TestSkillStatus::test_naming_a_spec_shows_its_rules"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillStatus::test_a_name_that_matches_several_or_none_is_refused_as_unhandled"
         }
       ],
       "rules": {

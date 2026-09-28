@@ -2,13 +2,13 @@
   "feature": "gate_check",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T12:46:49Z",
-      "commit": "4c194737a6f77be2dfaac725b89389a1302537a2",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "ea60918e26fc6761ace3126cfd7dd4777933fc28e833a945d4a73f57522c3e39",
-        "spec": "df7dafdef02a80963a696c77f1695ef0300a3b049137235b397628cf2c6449bd",
-        "tests": "ef7b8c7b1aae59f56cc04f9395346ceca1a4d884ec4638d20dd10fbf7019f7b4"
+        "spec": "8f28126d2a75f126558db553da8b562e5e61955604e99e776bf22a7bc97badcb",
+        "tests": "a0bfd48045d58c4f9a7ddfef06a3fd73e1c2577a1fde4aaff4b3fb29a44c479b"
       },
       "proofs": [
         {
@@ -18,6 +18,14 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_gate_check.py::TestWhatTheGateReads::test_it_reads_the_payload_and_not_a_rendered_table"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_gate_check.py::TestWhatTheGateReads::test_the_verdict_follows_meets_gate"
         },
         {
           "env": null,
@@ -106,6 +114,14 @@
           "result": "pass",
           "rule": "RULE-4",
           "test": "dev/test_gate_check.py::TestTheStrongGate::test_below_the_minimum_test_strength_is_weak"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_gate_check.py::TestTheStrongGate::test_a_strength_at_the_minimum_is_not_weak"
         },
         {
           "env": null,
@@ -261,6 +277,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_gate_check.py::TestTheGateNeverWrites::test_a_folder_it_cannot_read_is_left_as_it_was"
+        },
+        {
+          "env": null,
           "id": "PROOF-24",
           "manual": false,
           "result": "pass",
@@ -285,6 +309,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_gate_check.py::test_rules_short_in_five_sections_print_them_in_the_chain_order"
+        },
+        {
+          "env": null,
           "id": "PROOF-35",
           "manual": false,
           "result": "pass",
@@ -298,6 +330,22 @@
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_tag.py::TestVerify::test_without_verify_the_section_is_not_printed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_tag.py::TestVerify::test_a_signature_over_a_reworded_proof_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_tag.py::TestVerify::test_a_signature_over_a_changed_test_is_named"
         },
         {
           "env": null,
@@ -405,6 +453,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_provenance.py::TestItFailsClosed::test_any_other_refusal_is_named"
+        },
+        {
+          "env": null,
           "id": "PROOF-44",
           "manual": false,
           "result": "pass",
@@ -418,6 +474,14 @@
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_provenance.py::TestItFailsClosed::test_a_file_no_commit_changed_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_provenance.py::TestItFailsClosed::test_no_answer_to_the_identity_names_every_file"
         },
         {
           "env": null,

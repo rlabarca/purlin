@@ -2,13 +2,13 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T16:56:15Z",
-      "commit": "98fc3cbed94727792e632ba854fcb13ef4e6ed6d",
+      "at": "2026-09-28T19:11:31Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "59c903e8f0bef93f7b83cd862be6ed325a6c7431351cee195a7177bdfe048d2d",
-        "spec": "db95783d4b7cd465f0d92a92dd981ffebae4f9589a45eae7efbfaa06654e9de7",
-        "tests": "f182a2444c307b5a585ec83467b5bbbd89ee09f4c9917c0a0ae8d41da4bdf509"
+        "spec": "e6f41645e69964ff0b02494ded9de4466a89014f8b94a85df7ad535d83276453",
+        "tests": "4c434aa38b2216c54101b1ced36f2947e09fc42e13a6d929090d9da5d47cc5e4"
       },
       "proofs": [
         {
@@ -37,6 +37,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatConventions::test_a_proof_line_names_one_rule_or_several"
+        },
+        {
+          "env": null,
           "id": "PROOF-4",
           "manual": false,
           "result": "pass",
@@ -58,6 +66,14 @@
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_scope_metadata_parsed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_the_fingerprint_hashes_exactly_the_scoped_files"
         },
         {
           "env": null,

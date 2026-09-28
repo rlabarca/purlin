@@ -2,13 +2,13 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T12:46:49Z",
-      "commit": "4c194737a6f77be2dfaac725b89389a1302537a2",
+      "at": "2026-09-28T19:11:30Z",
+      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
       "dirty": false,
       "fingerprint": {
         "code": "c2ac416fd11fee9b42390b6f96a2de3462f24b0c97ad4087e484d696bbe16765",
-        "spec": "599dad05c45aba4d58b97172afb9a50024a2b59e7273410efd1d16544afa9b76",
-        "tests": "ff20b018eddbc70a26e03d247b127f2a828c07cd1bc4ebfbb09bd3a1f9c3afb7"
+        "spec": "fed06f0fb0b8f3f6c95680251c812361077b5e0e4f6e3b225cadc3af546d7159",
+        "tests": "82ffa8f37505e36b4ad8b026c1daa7571adae67a26035839cf2c6c512ec13e58"
       },
       "proofs": [
         {
@@ -42,6 +42,14 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_an_entry_for_the_current_hashes_is_skipped_unless_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_an_entry_for_earlier_text_does_not_stop_a_reading"
         },
         {
           "env": null,
@@ -82,6 +90,14 @@
           "result": "pass",
           "rule": "RULE-4",
           "test": "dev/test_ai_audit.py::TestTheCall::test_one_call_per_rule_and_four_at_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_ai_audit.py::TestTheCall::test_six_rules_six_calls_each_answer_beside_its_rule"
         },
         {
           "env": null,
