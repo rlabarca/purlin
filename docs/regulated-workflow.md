@@ -24,9 +24,9 @@ A rule carries a spec status and one cell per level, and the gate says how many 
 | strong | are those tests worth trusting? | `purlin:audit` |
 | signed | did a person say the rule, the proof and the test belong together? | `purlin:sign` |
 
-Which machine ran them does not change at this gate. A record your own `purlin:audit`
-committed counts here exactly as it does at `strong`, under `.purlin/records/local/` with its
-briefs beside it. What decides whether that is enough is the trust setting: answer `y` to
+Which machine ran them does not change at this gate. The evidence your own `purlin:audit`
+wrote and `--commit` committed counts here exactly as it does at `strong`, under
+`.purlin/evidence/local/`. What decides whether that is enough is the trust setting: answer `y` to
 `Do you trust your own machine for the tests and the signing?` and it is, answer `n` and
 `purlin:sign` asks for a `ci` run at this commit before it signs anything.
 
@@ -41,8 +41,8 @@ sequenceDiagram
     actor Signer
     participant Origin as origin
     Engineer->>Tree: purlin:spec, purlin:build, purlin:test
-    Engineer->>Tree: purlin:audit
-    Tree->>Tree: purlin: record for sha7, with the briefs beside it
+    Engineer->>Tree: purlin:audit --commit
+    Tree->>Tree: purlin: evidence at sha7, the audit in each feature's file
     Signer->>Tree: purlin:sign walks Review, then Sign, one brief at a time
     Tree->>Tree: git commit -S writes RULE-4.hash8.slug.json
     Tree->>Tree: every rule meets the gate, so the tag signed/1.4.0 is written
@@ -60,10 +60,10 @@ observes something new, because the signature binds what the audit saw as well. 
 signature for the new evidence exists, `purlin:sign` writes no tag and the gate check says
 `To sign`.
 
-Stale and `code changed` are the two answers to "something changed", and the difference is what
-changed. A record carries `scope_tree`, the git tree hash of the files the spec's `> Scope:`
-line names. When the code under that scope changed and the rule, proof and test text did not,
-the signature stands and the passed cell reads `code changed`; the next run clears it and
+Stale and `out of date` are the two answers to "something changed", and the difference is what
+changed. The evidence carries a fingerprint of the spec, of the files the spec's `> Scope:`
+line names and of the tests. When the code under that scope changed and the rule, proof and
+test text did not, the signature stands and the passed cell reads `out of date`; the next run clears it and
 nobody is asked to look. When the rule text, the proof text, the test body or the rule's bar
 changed, the signature is stale, because the attestation was given about text that no longer
 exists. Raising a rule's bar changes what signing it meant, which is why the bar sits
@@ -187,13 +187,11 @@ asks which you want, and `--update` asks again.
 
 ## What a machine writes, and what it never writes
 
-`purlin:audit` writes two kinds of file and commits them as `purlin: record for <commit7>`:
+`purlin:audit` writes one kind of file, `.purlin/evidence/local/<feature>.json`, holding the
+test section for this operating system and, per rule the audit reached, what it found;
+`--commit` commits it as `purlin: evidence at <commit7>`.
 
-- **the records**, under `.purlin/records/local/<feature>/`, one per feature per run;
-- **the briefs**, under `.purlin/briefs/local/<feature>/<RULE-N>.<hash8>.brief.json`, one per
-  rule the audit reached.
-
-A remote runner writes the same two under `ci/`. **No machine writes a signature file, ever.** A
+A remote runner writes only its own test section, under `.purlin/evidence/ci/`. **No machine writes a signature file, ever.** A
 signature directory holds only files a person wrote. That is the whole of what makes the trail
 worth reading: the machine's evidence and a person's attestation are written by different
 hands, into different paths.
@@ -247,16 +245,14 @@ hashes it binds no longer match. A signature by a person for the current hashes 
 Everything an inspection asks for is already in git, in four places, and nobody assembles it by
 hand:
 
-- **`.purlin/records/`.** One file per audit run per feature, each naming the commit it
-  observed, the operating system, the gate in force, the test strength and every proof's
-  result. The folder it sits in is its source, `local/` or `ci/`, and the git history of both
-  is the log of what was proven and when.
-- **`.purlin/briefs/`.** One file per rule per set of hashes: the strength beside the minimum
-  and what the audit observed, in the sentences the audit wrote. It is what a signer was shown,
-  and the signature binds it.
+- **`.purlin/evidence/`.** One file per feature per source, each section naming the commit it
+  observed, the operating system and every proof's result, with the test strength and what the
+  audit found per rule, in the sentences the audit wrote. The folder it sits in is its source,
+  `local/` or `ci/`, and the git history of both is the log of what was proven and when. It is
+  what a signer was shown, and the signature binds what the audit found.
 - **`specs/<category>/<feature>.signatures/`.** One file per signature, binding the hashes of
   the rule, the proof and the test, the bar at the time, what the audit observed, the signer's
-  email, the brief they read and the record they rested on. The commit that added it is signed
+  email and the evidence file they rested on. The commit that added it is signed
   by a person.
 - **`refs/tags/signed/*`.** The annotated tag on each version that met the gate. A tag holds
   the whole tree, so one name reaches the code and every file above.

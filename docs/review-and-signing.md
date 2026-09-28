@@ -53,8 +53,8 @@ only a person can do:
 Nothing else reaches it. A rule whose strong cell reads `not audited` waits for `purlin:audit`
 rather than for you: its bar is `strong` and no audit has run on this code yet. A drafted rule,
 a rule with no test, a failing rule and a weak rule are all build work, and they stay on the
-board where `purlin:build` finds them. A rule whose passed cell reads `code changed` is on
-neither list: only the code moved, the signature stands, and the next run clears the cell.
+board where `purlin:build` finds them. A rule whose passed cell reads `out of date` is on
+neither list: the signature stands, and the next run clears the cell.
 
 Rows come bar `strong` first, then by feature and rule id. Arguments narrow the walk and never
 widen it: `purlin:sign <feature>`, `purlin:sign <feature> RULE-N`. Plain language reaches the
@@ -93,12 +93,12 @@ reports three things:
 do. It says what was measured and what was seen, and you decide. That is the whole division of
 labour: the machine observes, the person attests.
 
-The brief is written under `.purlin/briefs/<source>/<feature>/<RULE-N>.<hash8>.brief.json` and
-committed beside the records. That file is evidence: your signature names it and binds what it
-said, so what you were shown is recoverable afterwards and a later audit that saw something
-else stales the signature. Reading the brief again for the same hashes leaves the file as it was
-unless what it found changed. The `.brief.txt` beside it is a local view, and `.gitignore` keeps
-it out of every commit.
+The brief writes no file. What the audit found is written into the feature's evidence,
+`.purlin/evidence/local/<feature>.json`, as the rule's audit entry for its current hashes.
+Your signature names that file and binds what the audit found, so what you were shown is
+recoverable afterwards and a later audit that found something else stales the signature.
+Reading the rule again for the same hashes leaves the entry as it was unless what it found
+changed.
 
 | Layer | What it reads | Runs at |
 |-------|---------------|---------|
@@ -244,7 +244,7 @@ different: a new strength, a new observation sentence, or a question it could se
 cannot now. Each of those changes what the signature was given about, so the signed cell reads
 `stale`, the rule returns to the Sign list, and a person looks again.
 
-Changing the code alone stales nothing. The passed cell reads `code changed` until the next run
+Changing the code alone stales nothing. The passed cell reads `out of date` until the next run
 clears it, and no person is asked to look.
 
 Read next: [team-workflow.md](team-workflow.md) for where the Review list comes from,

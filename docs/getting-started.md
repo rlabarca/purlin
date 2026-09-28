@@ -68,8 +68,7 @@ runs here, with no CI anywhere. Everything else it reads from the tree and from 
 remote.
 
 It writes `.purlin/config.json` with the gate, the trust answer and the derived defaults,
-`specs/` for the specs, and `.purlin/records/` with a README naming what writes the files in
-it. It installs the proof plugin for the detected framework and the breaks engine for the
+and `specs/` for the specs. It installs the proof plugin for the detected framework and the breaks engine for the
 language, adds a `.gitignore` block for `.purlin/runtime/`, and copies the dashboard page so it
 opens from disk. It installs no git hook and asks nothing of your git host. It ends by
 printing every file it wrote or edited, one per line. `purlin:init --dry-run` prints that list and writes
@@ -141,9 +140,11 @@ purlin:test login
 
 `purlin:test` runs the tagged tests, writes proof files into `.purlin/runtime/proofs/`, which is
 not committed, and prints the passed cell of every rule. It takes seconds: no breaks, no record.
-It then writes `.purlin/tests/login.json` and `.purlin/tests.md`, commits both itself as
-`purlin: tests at <sha7>`, and ends with `gate passed: 3 of 3`. Those two files are tracked, so
-a teammate reads your run on the git host without running anything.
+It then writes `.purlin/evidence/local/login.json` and `.purlin/tests.md`, prints `Evidence
+written to .purlin/evidence/local/login.json.`, and ends with `gate passed: 3 of 3`. It commits
+nothing; `purlin:test --commit` commits both as `purlin: evidence at <sha7>`. Those two files
+are tracked, so once committed a teammate reads your run on the git host without running
+anything.
 
 At `passed` that is the whole loop: spec, build, test, then `git push`. No record, no
 signature, and no script for you to run. The push is free: nothing runs when you make one.
@@ -170,9 +171,9 @@ purlin:audit
 Run the audit when you want to know how good those tests are. It runs them again, and from
 `strong` upward breaks the code on purpose and measures the share of the breaks the tests
 caught: that share is the **test strength**. It prints what it observed. At `passed` that is
-all it does; from `strong` up it also writes one record per feature and the briefs beside them,
-commits them itself as `purlin: record for <sha7>`, and ends with `gate strong: <n> of
-<rules>`. It runs on this machine, and its record counts.
+all it does; from `strong` up it also writes what it found into each feature's evidence file,
+and ends with `gate strong: <n> of <rules>`. `purlin:audit --commit` commits it as
+`purlin: evidence at <sha7>`. It runs on this machine, and its evidence counts.
 
 ## Read the table
 

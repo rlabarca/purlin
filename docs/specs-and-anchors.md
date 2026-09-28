@@ -57,9 +57,9 @@ Every metadata line starts with `>` and every one is optional.
 | `> Scope:` | The files this feature touches |
 | `> Stack:` | Language, framework and the libraries that matter |
 
-`> Scope:` earns its place. A record carries the git tree hash of those files, and that hash
+`> Scope:` earns its place. The evidence carries a fingerprint of those files, and that hash
 is what tells a code change from a rule change. Code changed and the rule, proof and test
-text did not: the signature stands and the rule's passed cell reads `code changed` until the
+text did not: the signature stands and the rule's passed cell reads `out of date` until the
 next run clears it. Rule, proof or test text changed: the signature goes stale and a person looks. A
 spec with no `> Scope:` cannot make that distinction.
 

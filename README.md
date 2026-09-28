@@ -31,7 +31,7 @@ One setting, the **gate**, says what must be true of every rule before a version
 
 | Gate | Who it fits | What every rule must have | Where the evidence comes from |
 |------|-------------|---------------------------|-------------------------------|
-| `passed` | One person working alone | A tagged test for every proof, passing | the test results `purlin:test` commits; a pass from any source counts |
+| `passed` | One person working alone | A tagged test for every proof, passing | the evidence `purlin:test --commit` commits; a pass from any source counts |
 | `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength`, nothing outstanding the audit observed, and no hold | `purlin:audit`, run by anyone; its record counts |
 | `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit | the same, plus a person's signature and the tag |
 
@@ -108,18 +108,19 @@ prints every rule's cells.
 purlin:test
 ```
 
-The tests run, and the results go into `.purlin/tests/login.json` and `.purlin/tests.md`, which
-the run commits itself as `purlin: tests at <sha7>`. It ends with `gate passed: <n> of
-<rules>`. At `passed` that line is the whole answer.
+The tests run, and what they saw goes into `.purlin/evidence/local/login.json` and
+`.purlin/tests.md`. The run commits nothing; `purlin:test --commit` commits both as
+`purlin: evidence at <sha7>`. It ends with `gate passed: <n> of <rules>`. At `passed` that
+line is the whole answer.
 
 ```
 purlin:audit
 ```
 
 The audit runs the tests, then breaks the code on purpose to measure how much the tests catch,
-and prints the strength beside the minimum with everything it observed. From the `strong` gate
-up it writes one record per feature and the briefs beside them and commits them itself as
-`purlin: record for <sha7>`. The push is yours, it is free, and nothing runs when you make one:
+and prints the strength beside the minimum with everything it observed. It writes that into
+the same evidence file, and `purlin:audit --commit` commits it as `purlin: evidence at <sha7>`.
+The push is yours, it is free, and nothing runs when you make one:
 nothing in Purlin pushes except `purlin:test --remote`, which pushes a run branch of its own.
 
 Every command ends by naming the next step, computed from the cells it found.
@@ -131,7 +132,7 @@ Every command ends by naming the next step, computed from the cells it found.
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs |
 | `purlin:build [name]` | Load a spec's rules, write the code and the tagged tests, commit the changeset |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell |
-| `purlin:audit [feature]` | Run the tests and the breaks, then write the record |
+| `purlin:audit [feature]` | Run the tests and the breaks, then write the audit into the evidence |
 | `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit |
 | `purlin:drift [role]` | Report what changed since the last record, by role |
 | `purlin:init` | Set a project up for Purlin, and change the gate later |

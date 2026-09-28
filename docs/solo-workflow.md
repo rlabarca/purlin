@@ -21,19 +21,19 @@ sequenceDiagram
     participant Origin as origin
     loop until every rule's passed cell reads passed
         You->>Tree: purlin:spec, purlin:build
-        You->>Tree: purlin:test
-        Tree->>Tree: purlin: tests at sha7, committed under your identity
+        You->>Tree: purlin:test --commit
+        Tree->>Tree: purlin: evidence at sha7, committed under your identity
         Tree-->>You: the table, then gate passed: n of n
     end
     You->>Origin: git push
 ```
 
-Every step of that happens in your checkout. `purlin:test` commits the test results and stops;
+Every step of that happens in your checkout. `purlin:test --commit` commits the evidence and stops;
 the push is yours to type, it is free, and nothing runs when you make one.
 
 `purlin:audit` is available at this gate and counts for nothing here: the strong cell does not
-exist at `passed`, so it runs the tests, reports what it observed, writes no record and moves
-no cell.
+exist at `passed`, so it runs the tests, reports what it observed, writes it into the evidence
+and moves no cell.
 
 ## The setting
 
@@ -74,45 +74,46 @@ Spec when a requirement is new or a rule turns out to be wrong; build to write t
 tagged tests; test to run them. `purlin:test` takes seconds and is the one you run constantly.
 Loop between build and test until every rule the feature owns has a passing test, then push.
 
-## The test results
+## The evidence
 
-`purlin:test` writes what the run saw into two tracked files and commits them itself:
+`purlin:test` writes what the run saw into two tracked files:
 
 ```
-.purlin/tests/<feature>.json
+.purlin/evidence/local/<feature>.json
 .purlin/tests.md
 ```
 
-The JSON file per feature carries the commit, the time, the operating system, each rule's word
-and each proof's result and test. `.purlin/tests.md` is one table for the whole project, so a
+The JSON file per feature carries one section per operating system: the commit, the time, the
+fingerprint of the spec, code and tests it saw, each rule's word and each proof's result and
+test. `.purlin/tests.md` is one table for the whole project, so a
 `--feature` run leaves the rows it did not run exactly as they were:
 
 ```
-# Test results at 4f1c2ab
+# Tests at 4f1c2ab
 
 | Feature | Rules | Passed | Failing | No test | Last run |
 |---|---|---|---|---|---|
-| login | 3 | 3 | 0 | 0 | 4f1c2ab · 2026-09-26T12:00:00Z · macos |
+| login | 3 | 3 | 0 | 0 | 4f1c2ab · 2026-09-26T12:00:00Z · macos · local |
 ```
 
-The commit subject is `purlin: tests at <sha7>` and it is made under your own git identity. The
-run prints `Test results committed.`, or `Test results unchanged.` when it saw the same thing
-about the same code, and it never pushes.
-[references/formats/tests_format.md](../references/formats/tests_format.md) is the contract both
-files are written to.
+The run prints `Evidence written to .purlin/evidence/local/<feature>.json.` and commits
+nothing. `purlin:test --commit` commits both under your own git identity with the subject
+`purlin: evidence at <sha7>`, and prints `Evidence committed.`, or `Evidence unchanged.` when
+it saw the same thing over the same code. It never pushes.
+[references/formats/evidence_format.md](../references/formats/evidence_format.md) is the
+contract both files are written to, and its `> Format-Version:` line says which version this
+release ships.
 
 Because both files are tracked, a teammate reading the repository on the git host sees your
-run without running anything and without a remote runner. They are a `local` source, and a
-`local` source counts at every gate. A remote run writes the same files under
-`.purlin/tests/ci/` and `purlin:test --remote` pulls them home, so the folder says which hand
-wrote them. `references/formats/tests_format.md` is the contract for both, and its
-`> Format-Version:` line says which version this release ships; the folder, `source` and
-`scope_tree` arrived with the current one.
+committed run without running anything and without a remote runner. They are a `local` source,
+and a `local` source counts at every gate. A remote run writes its own section under
+`.purlin/evidence/ci/` and `purlin:test --remote` pulls it home, so the folder says which hand
+wrote it.
 
 | Source | Where it sits | Counts under |
 |--------|---------------|--------------|
-| `ci` | `.purlin/records/ci/`, written by a remote runner through the git host's API | `passed`, `strong`, `signed` |
-| `local` | this checkout's own run, the test results you committed, and `.purlin/records/local/` | `passed`, `strong`, `signed` |
+| `ci` | `.purlin/evidence/ci/`, written by a remote runner through the git host's API | `passed`, `strong`, `signed` |
+| `local` | `.purlin/evidence/local/`, written by your own runs | `passed`, `strong`, `signed` |
 
 ## The gate line
 
@@ -145,12 +146,12 @@ in full.
 ## Test strength
 
 At `passed` the strong cell does not exist, so no strength is measured and nothing asks for
-one. `purlin:audit` still runs here: it runs the tagged tests and reports what it observed. It
-writes no record at this gate, and nothing it prints moves a cell.
+one. `purlin:audit` still runs here: it runs the tagged tests and reports what it observed.
+Nothing it writes at this gate moves a cell.
 
 Raise the gate to `strong` to turn the breaks on and see a real number: of the deliberate
-breaks the audit makes to your code, the share your tests caught. From that gate up the audit
-writes a record of its own and commits it, and the record counts.
+breaks the audit makes to your code, the share your tests caught. From that gate up what the
+audit writes into the evidence counts, and `purlin:audit --commit` commits it.
 
 ## The one time a runner joins in
 
@@ -171,12 +172,12 @@ login PROOF-4 needs windows; this machine is macos. A remote runner runs it: pur
 The rule reads `not run` until that system runs it. With a workflow in place,
 `purlin:test --remote` hands the commit to the runner on a run branch of its own,
 `run/<branch>-<sha7>`, which it creates, waits on, pulls back from and deletes. The runner
-commits its test results under `.purlin/tests/ci/<feature>.json` and the pull brings them into
+commits its section of `.purlin/evidence/ci/<feature>.json` and the pull brings it into
 your tree, so the rule stops reading `not run` and its passed cell reads `passed` with
 `windows · ci` beside it.
 [running-and-records.md](running-and-records.md#purlintest---remote) is the whole of it.
 
-Teammates do not need a runner to see your results: `purlin:test` commits them, so they are in
+Teammates do not need a runner to see your results: `purlin:test --commit` commits them, so they are in
 the repository, readable on the git host and on the board after a pull.
 
 ## When to raise the gate
@@ -197,8 +198,8 @@ purlin:init --gate strong
 
 Raising is additive. It turns the breaks on, and asks before each write. It changes no rule, deletes no file and writes no workflow: a runner is
 added for its own two reasons, not because the gate moved. From that point the evidence that
-counts is a record, the one your own `purlin:audit` commits under `.purlin/records/local/`.
-The test results stay where they are as the fast answer you read while you work.
+counts includes the audit your own `purlin:audit` writes into `.purlin/evidence/local/`.
+The test sections stay where they are as the fast answer you read while you work.
 
 [team-workflow.md](team-workflow.md) is the guide for the gate you land on.
 [raising-the-gate-and-upgrading.md](raising-the-gate-and-upgrading.md) covers the move itself,

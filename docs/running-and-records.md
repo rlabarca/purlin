@@ -4,15 +4,15 @@ For the engineer who runs Purlin, and for anyone who has to read the evidence af
 
 Two commands run your tests. `purlin:test` is the fast one you run constantly, and it writes
 the evidence you keep at `passed`. `purlin:audit` is the slow one that measures how good those
-tests are, and from `strong` up it writes the record. Both call the same run script, so there
+tests are, and it writes what it found into the same evidence. Both call the same run script, so there
 is one answer to how a test is run. Both run on your machine, and neither pushes.
 
 | | `purlin:test` | `purlin:audit` |
 |---|---|---|
 | Runs the tagged tests | yes | yes |
 | Breaks the code to measure test strength | no | at `strong` and above |
-| Writes the test results, and commits them | yes | no |
-| Writes a record and the briefs, and commits them | no | at `strong` and above |
+| Writes the evidence, and commits it with `--commit` | yes | yes |
+| Writes what the audit found into the evidence | no | yes |
 | Takes | seconds | as long as the breaks take |
 | The level it answers | passed | strong |
 
@@ -25,23 +25,27 @@ purlin:test --remote            Let the git host's runner do the run
 ```
 
 The run writes proof files into `.purlin/runtime/proofs/` and prints one line per rule, reading
-that rule's passed cell: `passed`, `failed`, `partial`, `no test`, `not run` or `code
-changed`. That directory
+that rule's passed cell: `passed`, `failed`, `partial`, `no test`, `not run` or `out of
+date`. That directory
 is generated and never committed, so two test runs never conflict with each other.
 
-It then writes what it saw into two tracked files and commits them itself:
+It then writes what it saw into two tracked files and prints `Evidence written to
+.purlin/evidence/local/<feature>.json.`:
 
 ```
-.purlin/tests/<feature>.json    the commit, the time, the operating system,
-                                each rule's word, each proof's result and test
-.purlin/tests.md                one table for the whole project
+.purlin/evidence/local/<feature>.json   this operating system's section: the commit, the
+                                        time, the fingerprint, each rule's word, each
+                                        proof's result and test
+.purlin/tests.md                        one table for the whole project, rendered from
+                                        every evidence file
 ```
 
-The commit subject is `purlin: tests at <sha7>`, made under your own git identity, and the run
-prints `Test results committed.` A run that saw the same thing about the same code prints
-`Test results unchanged.` and commits nothing. A `--feature` run replaces the files of the
-features it ran and leaves the rest of the table as it was. Nothing here pushes.
-[references/formats/tests_format.md](../references/formats/tests_format.md) is the contract.
+It commits nothing. `purlin:test --commit` commits both under your own git identity with the
+subject `purlin: evidence at <sha7>`, and prints `Evidence committed.`, or `Evidence
+unchanged.` when the run saw the same thing over the same code. A `--feature` run replaces the
+sections of the features it ran and leaves the rest of the table as it was. Nothing here
+pushes. [references/formats/evidence_format.md](../references/formats/evidence_format.md) is
+the contract.
 
 The last line is `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`, counted over
 every rule under `specs/` rather than over the features this run covered, and the run exits 1
@@ -80,20 +84,19 @@ The AI audit reads each proof beside the source of its test and writes what it o
 own words, rather than a list of check names. An audit that settled and still observed something
 proves the rule `weak`, with that sentence as the reason.
 
-From `strong` up it writes one record per feature it audited and one brief per rule it
-reached, into `.purlin/records/local/<feature>/` and `.purlin/briefs/local/<feature>/`, and
-commits both itself as `purlin: record for <sha7>` under your own git identity. It never
-pushes. Its last line is `gate strong: <n> of <rules>` or `gate not met: <n> of <rules>`, the
+It writes the test section, the test strength and what it found per rule into
+`.purlin/evidence/local/<feature>.json`, and commits nothing; `purlin:audit --commit` commits
+it as `purlin: evidence at <sha7>` under your own git identity. It never pushes. Its last line is `gate strong: <n> of <rules>` or `gate not met: <n> of <rules>`, the
 same shape as `purlin:test`'s, and it exits 1 on the second.
 
 Under the `passed` gate there is nothing to measure and no strong cell to move, so the audit
-runs the tests alone and writes no record. Raising the gate to `strong` turns the breaks on,
-on your machine, and turns the record on with them. No breaks ever run on a remote runner.
+runs the tests and no breaks. Raising the gate to `strong` turns the breaks on, on your
+machine. No breaks and no AI audit ever run on a remote runner.
 
-Your own record counts at every gate, `signed` included: the strong cell reads the newest
-audit, yours or a runner's. What changes at `signed` is only what `trust` says. Under
-`trust: local`, the default, this machine's runs are the evidence from end to end. Under
-`trust: remote`, `purlin:sign` refuses a rule whose tests have no `ci` record at this commit.
+Your own evidence counts at every gate, `signed` included. What changes at `signed` is only
+what `trust` says. Under `trust: local`, the default, this machine's runs are the evidence from
+end to end. Under `trust: remote`, `purlin:sign` refuses a rule with a test whose feature has
+no current `ci` section.
 
 There is no `--remote` here. A remote runner runs the tests, so that flag belongs to
 `purlin:test`.
@@ -108,12 +111,12 @@ flowchart TD
   C --> D[Loud failure A: an arm ran and its plugin wrote no entry]
   D --> E[Loud failure B: a marker in a test source produced no entry]
   E --> F{"which arm: purlin:test, purlin:audit, or a runner's"}
-  F -- "purlin:test" --> T1["Write .purlin/tests/ and .purlin/tests.md, commit them as you, never push"]
+  F -- "purlin:test" --> T1["Write .purlin/evidence/local/ and .purlin/tests.md; commit them as you with --commit; never push"]
   F -- "purlin:audit" --> A1["Break the code where the gate asks, print the strength and what the audit observed"]
-  A1 --> A2["At strong and above, write the record and the briefs into .purlin/records/local/ and .purlin/briefs/local/, commit them as you, never push"]
-  F -- "the runner's arm" --> H["Run the tests, and at strong and above audit what ran"]
+  A1 --> A2["Write the audit into .purlin/evidence/local/; commit it as you with --commit; never push"]
+  F -- "the runner's arm" --> H["Run the tests"]
   H --> Ci{"what the run is on"}
-  Ci -->|"a run/* branch"| I2["Commit the records and briefs into .purlin/records/ci/ and .purlin/briefs/ci/ through the git host API"]
+  Ci -->|"a run/* branch"| I2["Commit its own section of .purlin/evidence/ci/ through the git host API"]
   Ci -->|"a signed/** tag"| I3["Check every signature and hold, and who committed each ci/ file. Commit nothing"]
   T1 --> G["Print each rule's cells"]
   A2 --> G
@@ -191,9 +194,9 @@ a partial run's number would read as a measurement it is not. mutmut breaks the 
 one run, so a timeout there leaves every feature unmeasured; Stryker and Stryker.NET run once per
 feature, so only the feature that ran out of time is.
 
-mutmut names a break after the file it changed, `scripts/run/records.py` as
-`scripts.run.records`, and switches a break on only in a function whose module carries that
-name. Tests that import the file as `records`, through a `sys.path` entry, never switch a break
+mutmut names a break after the file it changed, `scripts/run/host.py` as
+`scripts.run.host`, and switches a break on only in a function whose module carries that
+name. Tests that import the file as `host`, through a `sys.path` entry, never switch a break
 on, and mutmut stops before running one. Import by the full dotted path, or rename the modules
 while mutmut runs, as this repository's root `conftest.py` does. mutmut runs on Linux and macOS,
 not on Windows. A test that reads git state or the source text sees the copy mutmut makes under
@@ -204,80 +207,58 @@ not on Windows. A test that reads git state or the source text sees the copy mut
 A SQL project has no break engine, but it does choose the binary its tests run against.
 `sql_engine` in `.purlin/config.json` names it; `sqlite3` is the default when the key is null.
 
-## Records
+## The evidence
 
-A record is one audit run's observations for one feature, written into the tree and committed
-there by whichever hand ran it. The git history of `.purlin/records/` is the log of what was
-proven and when. Its full field list, at schema version 3, is in the
-record format reference that ships with the plugin,
-[references/formats/record_format.md](../references/formats/record_format.md). The test results
-`purlin:test` commits are a different file in a different directory, described in
-[references/formats/tests_format.md](../references/formats/tests_format.md).
+The evidence is what runs saw, one file per feature per source, written into the tree and
+committed when you ask. The git history of `.purlin/evidence/` is the log of what was proven
+and when. Its full field list is in the evidence format reference that ships with the plugin,
+[references/formats/evidence_format.md](../references/formats/evidence_format.md).
 
 ### The file name
 
 ```
-.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
+.purlin/evidence/<source>/<feature>.json
 ```
 
 | Part | What it is |
 |---|---|
 | `<source>` | `ci` or `local`: the folder is what says which, and a tag run checks that every file under `ci/` came from the runner |
 | `<feature>` | the spec's name |
-| `<timestamp>` | ISO 8601 UTC without separators, `20260913T120000Z` |
-| `<commit7>` | the first seven characters of the commit the run observed |
-| `<runner>` | `ci`, or the git email local part of whoever ran it, lowercased |
-| `<os>` | `windows`, `macos` or `linux` when the run was one job of a matrix, absent otherwise |
 
-One run writes one file per feature. Adding a file never conflicts, so two runs never collide
-and one matrix job never overwrites another's observations.
+One file holds one section per operating system that ran the feature, and once an audit has
+read the feature, one audit entry per rule. A run reads the file and replaces only its own
+operating system's section, so one matrix job never overwrites another's observations.
 
 ### What is in it
 
-Eight fields are required, and every other one is optional:
+Each section carries the commit the run started on, whether the tree was dirty, the time, the
+runner, a fingerprint over the spec, the covered code and the tests, each rule's word and one
+entry per proof and test. The `audit` object carries the test strength under `mutation` and,
+per rule, the hashes the audit read, its `verdict` and its findings.
 
-| Field | What it holds |
-|---|---|
-| `schema_version` | `3` for this format |
-| `feature` | the spec this run observed |
-| `commit` | the full sha of the commit the run observed |
-| `timestamp` | ISO 8601 UTC, matching the file name |
-| `runner` | `ci` or the slug of whoever ran it, matching the file name |
-| `gate` | the gate in force when the run happened: `passed`, `strong` or `signed` |
-| `source` | `ci` or `local`, and it must match the folder the file sits in |
-| `proofs` | one entry per proof: its rule, `pass` or `fail`, its `@env`, and the test that ran it. A test the run skipped writes no entry at all |
-| `os` | the operating system of this matrix job, or null |
-| `test_strength` | the percentage of the deliberate breaks the tests caught, or null |
-| `scope_tree` | the git tree hash of the spec's `> Scope:` files |
-| `environment` | the operating system, the machine's shape, the CI job and the engines used |
-
-Under the `passed` gate no breaks run and no record is written at all. A run at `strong` and
-above also writes the detail it gathered on the way - `features`, `plugins`, `missing`, `log`
-and `dirty` - and no reader depends on any of it.
-
-`scope_tree` is what separates two kinds of change. The code changed and the rule, proof and
-test text did not: the signature stands and the passed cell reads `code changed` until the
-next audit runs. The rule, proof or test text changed: the signed cell reads `stale` and a
-person looks.
+The fingerprint is what separates two kinds of change. The code changed and the rule, proof and
+test text did not: the signature stands and the passed cell reads `out of date` until the
+next run. The rule, proof or test text changed: the signed cell reads `stale` and a person
+looks.
 
 ### The source is the folder
 
-A file can claim anything, so the folder decides. A record under `.purlin/records/ci/` is a
-remote runner's; a record under `.purlin/records/local/` is anyone's, written by a
-`purlin:audit` on somebody's machine. Nothing stops a person writing into `ci/` by hand, and
-nothing needs to: a tag run reads the commit that added each file there and fails the job
-unless the runner's own identity made it. A file whose own `source` field disagrees with its folder
-is ignored, and the run says so in a warning rather than reading a file that contradicts
-itself.
+A file can claim anything, so the folder decides. A file under `.purlin/evidence/ci/` is a
+remote runner's; a file under `.purlin/evidence/local/` is anyone's, written by `purlin:test`
+or `purlin:audit` on somebody's machine. Nothing stops a person writing into `ci/` by hand,
+and nothing needs to: a tag run reads the commit that last changed each file there and fails
+the job unless the runner's own identity made it. A file whose own `source` field disagrees
+with its folder is ignored, and the run says so in a warning rather than reading a file that
+contradicts itself.
 
 | Source | Where it sits | Counts under |
 |---|---|---|
-| `ci` | `.purlin/records/ci/`, committed by a remote runner through the git host's API | `passed`, `strong`, `signed` |
-| `local` | `.purlin/records/local/`, plus this checkout's own run and the test results | `passed`, `strong`, `signed` |
+| `ci` | `.purlin/evidence/ci/`, committed by a remote runner through the git host's API | `passed`, `strong`, `signed` |
+| `local` | `.purlin/evidence/local/`, written by your own runs | `passed`, `strong`, `signed` |
 
-Both count at every gate. The cell reads the newest counting record, whoever wrote it. What
-`trust: remote` changes is not which records count but what `purlin:sign` asks for before it
-signs: a `ci` record at this commit.
+Both count at every gate, whoever wrote them, as long as the section is current. What
+`trust: remote` changes is not which evidence counts but what `purlin:sign` asks for before it
+signs: a current `ci` section.
 
 On GitHub a commit made through the Git Data API with the Actions token and no author or
 committer field carries `GitHub <noreply@github.com>` as its committer and
@@ -290,12 +271,11 @@ committer is the build service and no signature exists, which is what Azure DevO
 
 ### Retention
 
-A feature keeps the newest three records per operating system per source, and the run that
-writes one prunes the rest, whoever ran it. A matrix of three operating systems therefore keeps
-nine `ci` records per feature, and your own audits keep three more per system.
+A file keeps the newest section per operating system and the newest audit entry per rule;
+the history is the file's `git log`. A run deletes the evidence of a feature no spec defines.
 
-Nothing pins a record. `purlin:sign` tags the commit, `signed/<version>`, and a tag holds the
-whole tree at that commit: the code, every record and every brief in it. One name reaches all
+Nothing pins the evidence. `purlin:sign` tags the commit, `signed/<version>`, and a tag holds
+the whole tree at that commit: the code and every evidence file in it. One name reaches all
 of it, however many runs follow.
 
 ## When a project has a runner
@@ -309,7 +289,7 @@ for two reasons and no other:
   `partial`.
 - **You chose not to trust this machine for signing**, so the tests a signature rests on run on
   a clean one. You answered no to `Do you trust your own machine for the tests and the
-  signing?`, and `purlin:sign` asks for a `ci` record at the commit it is signing.
+  signing?`, and `purlin:sign` asks for a current `ci` section of the code it is signing.
 
 Where one is called for, `purlin:init` writes `.github/workflows/purlin.yml` on GitHub, or
 `purlin.azure-pipelines.yml` at the project root on Azure DevOps. The job is named `purlin`.
@@ -332,14 +312,14 @@ minutes at all.
 
 | The run | What it does | Commits |
 |---|---|---|
-| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks that every signature and every hold still binds the rule, the proof, the test, the bar and the audit it names, checks that every record and brief under `ci/` was committed by the runner's own identity, then runs the gate check | nothing |
-| a `run/*` branch | Runs the tagged tests, and at `strong` and above audits what it ran | at every gate the test results, under `.purlin/tests/ci/`; at `strong` and above the records and the briefs under `ci/` too, all onto that branch |
+| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks that every signature and every hold still binds the rule, the proof, the test, the bar and the audit it names, checks that every file under `.purlin/evidence/ci/` was committed by the runner's own identity, then runs the gate check | nothing |
+| a `run/*` branch | Runs the tagged tests | its own section of each feature's `.purlin/evidence/ci/<feature>.json`, at every gate, onto that branch |
 
 The tag run is a verification, not a fresh judgment: the evidence is already in the tree and
 the run says whether it still matches the code the tag points at. An attestation that no longer
 binds this code fails the job, and so does a file under `ci/` that a person committed; both
-land in the gate check's `Evidence` section. No breaks run on the runner: the strength in a
-record was measured where the audit ran.
+land in the gate check's `Evidence` section. No breaks and no AI audit run on the runner: the
+strength in the evidence was measured where the audit ran.
 
 The runner posts no comment and uploads no artifact. The dashboard is the page that opens from
 disk beside your editor.
@@ -372,24 +352,24 @@ not on the runner at all; the job clones Purlin at the tag the project pins. Set
 
 `purlin:init` writes `ubuntu-latest` first, then one job per operating system the `@env` tags
 in `specs/` name; a project that tags nothing runs on `ubuntu-latest` alone. Each job runs the
-same script and writes its own record, so the file names never collide. A rule whose proofs
-name two operating systems needs a passing record from both: with neither run the passed cell
-reads `not run` and carries `windows: no record yet`, and with one of the two passing it reads
+same script and writes its own section, so no job overwrites another's. A rule whose proofs
+name two operating systems needs a passing section from both: with neither run the passed cell
+reads `not run` and carries `windows: no run yet`, and with one of the two passing it reads
 `partial`, rather than inventing an answer for the system nothing ran on.
 
 ### The commit a run branch makes
 
-A run branch's job creates one commit. At `passed` it is `purlin: tests at <sha7>`, holding
-the test results under `.purlin/tests/ci/`; at `strong` and above it is
-`purlin: record for <commit7>`, holding the records and the briefs it wrote under
-`.purlin/records/ci/` and `.purlin/briefs/ci/`. Either way it holds nothing else, and it
-writes no signature file, ever: a signature directory holds only files a person wrote. The
+A run branch's job creates one commit, `purlin: evidence at <sha7>`, holding its own section
+of each feature's file under `.purlin/evidence/ci/`, at every gate. It holds nothing else, and
+it writes no signature file, ever: a signature directory holds only files a person wrote. The
 commit goes through the git host's REST API as one tree request carrying the text of every one
 of those files, then a commit with no author or committer field, then a ref update, retrying on
-a non-fast-forward. That is what makes the commit signed by the host and its records count as
-`ci`, which the tag run checks.
+a non-fast-forward. On every attempt each file is read again at the branch's head and this
+runner's section is merged into it, so two matrix jobs never overwrite each other. On Azure
+DevOps a file the branch already holds is sent as an edit and a new one as an add. That is what
+makes the commit the host's and its files count as `ci`, which the tag run checks.
 
-One run can write several hundred briefs, and a git host limits how many requests that create
+One run can write several hundred files, and a git host limits how many requests that create
 content one token may make in a short span. Sending each file on its own would spend one of
 those requests per file and be refused part way through, so the whole commit is one request.
 If the git host asks for a pause anyway, answering 403 or 429 with `Retry-After` or
@@ -400,9 +380,9 @@ line, and sends the request again, up to 3 times before it gives up.
 
 A push is `git push`, typed by a person, and it is free: any branch, any time, and nothing runs
 when you make one. No skill, no agent and no hook pushes, and none opens a pull request.
-`purlin:test` commits the test results and stops. `purlin:audit` commits its record and its
-briefs and stops. `purlin:sign` makes its signed commit, writes the tag and stops. A run
-branch's record commit is not a push made on your behalf: it is the remote runner publishing
+`purlin:test` and `purlin:audit` write the evidence, commit it when you pass `--commit`, and
+stop. `purlin:sign` makes its signed commit, writes the tag and stops. A run branch's evidence
+commit is not a push made on your behalf: it is the remote runner publishing
 its own evidence through the git host's API.
 
 Purlin installs no git hook. The rule that an agent does not push is an instruction in
@@ -412,8 +392,8 @@ instruction says it plainly.
 ## purlin:test --remote
 
 Use it for the two reasons a runner exists at all: a proof is tagged `@env` for an operating
-system your machine is not, or `trust` is `remote` and a signature needs a `ci` record at this
-commit. It is the one case in which Purlin pushes.
+system your machine is not, or `trust` is `remote` and a signature needs a current `ci`
+section. It is the one case in which Purlin pushes.
 
 It pushes a branch of its own rather than the branch you are on:
 
@@ -422,9 +402,8 @@ It pushes a branch of its own rather than the branch you are on:
 2. It pushes this commit to `run/<branch>-<sha7>` on `origin`, creating that branch there and
    nothing locally. The commit's own short sha is in the name, so two runs of the same branch
    never share one.
-3. The push to `run/**` starts the workflow, which commits what it wrote onto that branch: the
-   test results under `.purlin/tests/ci/<feature>.json` at every gate, and at `strong` and
-   above the records and the briefs beside them.
+3. The push to `run/**` starts the workflow, which commits what it wrote onto that branch: its
+   own section of `.purlin/evidence/ci/<feature>.json`, at every gate.
 4. On GitHub it finds the run by that branch, `gh run list --branch run/<branch>-<sha7>`,
    retrying for a short while because a run takes a moment to register, then waits on that run
    by id with `gh run watch --exit-status`. Then `git pull --ff-only origin

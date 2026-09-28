@@ -4,7 +4,7 @@ For anyone who wants to see where every rule stands without reading a spec file.
 
 The dashboard is one HTML file with no server, no build step and no dependencies. It opens from
 disk beside your editor. Anyone without a checkout reads `.purlin/tests.md` on the git host,
-the table of test results `purlin:test` commits.
+the table `purlin:test --commit` commits.
 
 ## Opening it
 
@@ -123,7 +123,7 @@ is the whole of it.
 Pressing a spec expands its rules. Each row carries the rule id, the rule text, and one pill per
 cell that exists, so a rule at `signed` shows three pills and the same rule at `passed` shows
 one. A pill reads the cell's word: `passed`, `partial`, `failed`, `no test`, `not run` or
-`code changed` at level 1; `strong`, `weak`, `not audited`, `unsettled`, `manual test` or
+`out of date` at level 1; `strong`, `weak`, `not audited`, `unsettled`, `manual test` or
 `held` at level 2; `signed`, `unsigned`, `stale` or `held` at level 3.
 
 ## Filters
@@ -162,7 +162,7 @@ the spec status, `ready` or `drafted`, then one row per cell that exists, then t
 the rule. The bar row reads `strong from the tag` or `strong from the gate`, so you can see at
 once whether the rule asked for that bar itself or took the project's. Each cell row carries
 the cell's word as a pill and the reasons it carries:
-`failing: tests/test_login.py`, `windows: no record yet`, `code changed since 9f8e7d6`,
+`failing: tests/test_login.py`, `windows: no run yet`, `code changed since 9f8e7d6`,
 `strength 64% under 80%`, `manual proof`, `held by sam@acme.com: the lock expiry is never
 read`, `by jane@acme.com`. A cell with nothing to add carries no reason.
 

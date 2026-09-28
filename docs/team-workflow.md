@@ -20,7 +20,7 @@ up yet, read [getting-started.md](getting-started.md) first. If it is set up at 
 Two things, and nothing on the git host:
 
 1. The setting `gate` in `.purlin/config.json`, here set to `strong`.
-2. A record at the commit under review for every rule, which `purlin:audit` writes and commits.
+2. A record at the commit under review for every rule, which `purlin:audit` writes and `--commit` commits.
 
 `strong` derives two defaults, each of which you can change: `min_strength` 70, and origin
 tags optional. Every rule's bar defaults to `strong` here, so the AI audit runs on every rule
@@ -40,31 +40,29 @@ sequenceDiagram
     actor QA
     loop until every rule's passed cell reads passed
         You->>Tree: purlin:spec, purlin:build, purlin:test
-        Tree->>Tree: purlin: tests at sha7
+        Tree->>Tree: the evidence, into .purlin/evidence/local/
     end
-    You->>Tree: purlin:audit
+    You->>Tree: purlin:audit --commit
     Tree->>Tree: the breaks, then the AI audit on every rule whose bar is strong
-    Tree->>Tree: purlin: record for sha7, into .purlin/records/local/
+    Tree->>Tree: purlin: evidence at sha7, from .purlin/evidence/local/
     Tree-->>You: the strength beside the minimum, then gate strong: n of n
     You->>Origin: git push
     QA->>QA: purlin:sign walks what the machine could not settle
 ```
 
-Every step of that is on your machine. `purlin:test` commits the test results and
-`purlin:audit` commits the record and the briefs beside it; neither pushes, and the push is
-yours to type. A push is free, and nothing runs when you make one.
+Every step of that is on your machine. `purlin:test` and `purlin:audit` write the evidence,
+`--commit` on either commits it, and neither pushes: the push is yours to type. A push is free, and nothing runs when you make one.
 
 `purlin:audit` prints each feature's test strength beside the minimum and everything the audit
-observed, writes one record per feature it audited and the briefs beside them, and commits both
-as `purlin: record for <sha7>`. Its last line is `gate strong: <n> of <rules>` or
+observed, and writes it into each feature's `.purlin/evidence/local/<feature>.json`, which
+`--commit` commits as `purlin: evidence at <sha7>`. Its last line is `gate strong: <n> of <rules>` or
 `gate not met: <n> of <rules>`, and it exits 1 on the second.
 
-A record's source is the folder it sits in, not a claim inside the file.
-`.purlin/records/local/<feature>/` is what a run on somebody's machine wrote;
-`.purlin/records/ci/<feature>/` is what a remote runner wrote, where the project has one. A
-file whose own `source` field disagrees with its folder is ignored and the run says so in a
-warning. Both sources count at every gate: the strong cell reads the newest audit, whoever ran
-it.
+An evidence file's source is the folder it sits in, not a claim inside the file.
+`.purlin/evidence/local/<feature>.json` is what a run on somebody's machine wrote;
+`.purlin/evidence/ci/<feature>.json` is what a remote runner wrote, where the project has one.
+A file whose own `source` field disagrees with its folder is ignored and the run says so in a
+warning. Both sources count at every gate.
 
 ### When a runner joins in
 
@@ -74,8 +72,8 @@ so only a runner can prove it, or you chose not to trust this machine for signin
 a signature rests on run on a clean one. Where one
 exists, `purlin:test --remote` asks for a single run of it on a branch of its own,
 `run/<branch>-<sha7>`, created from this commit, watched, pulled back with one fast-forward and
-then deleted. What comes back is what the runner committed: its test results under
-`.purlin/tests/ci/`, and at this gate the record and the briefs beside them. The branch you are
+then deleted. What comes back is what the runner committed: its own section under
+`.purlin/evidence/ci/`, at every gate. The branch you are
 working on never leaves the machine.
 [running-and-records.md](running-and-records.md#purlintest---remote) is the whole of it.
 
@@ -91,16 +89,14 @@ while working on Purlin itself.
 
 | Artifact | Where it goes | Who reads it |
 |----------|---------------|--------------|
-| The test results | `.purlin/tests/<feature>.json` and `.purlin/tests.md`, committed; a remote run's under `.purlin/tests/ci/` | a teammate on the git host, the board |
-| One record per feature | `.purlin/records/local/<feature>/`, committed | the gate, `purlin:status`, the dashboard |
-| One brief per rule the audit reached | `.purlin/briefs/local/<feature>/`, committed | QA, at the next `purlin:sign` |
+| One evidence file per feature, with the tests and the audit | `.purlin/evidence/local/<feature>.json` and `.purlin/tests.md`, committed with `--commit`; a remote run's under `.purlin/evidence/ci/` | a teammate on the git host, the gate, `purlin:status`, the dashboard, QA at the next `purlin:sign` |
 
-A remote runner writes the same two kinds of file under `ci/`, and it writes no signature file,
+A remote runner writes only its own test section under `ci/`, and it writes no signature file,
 ever. The machine's evidence and a person's attestation are written by different hands, into
 different paths.
 
 The dashboard is the page that opens from disk beside your editor, and a reviewer with no clone
-reads `.purlin/tests.md`, the test results `purlin:test` commits, on the git host.
+reads `.purlin/tests.md`, the table `purlin:test --commit` commits, on the git host.
 [dashboard.md](dashboard.md)
 describes the four screens and the filters.
 

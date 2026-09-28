@@ -52,8 +52,8 @@ what a person would see.
 only when the cell that blocks it is one a person answers: a strong cell reading `manual test`,
 `unsettled` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A rule with no
 test, a failing rule, a weak rule and a rule reading `not audited` are all work for the machine
-or the build, and they stay on the board. A rule whose passed cell reads `code changed` is not
-on either list: only the code moved, the signature stands, and the next run clears the cell.
+or the build, and they stay on the board. A rule whose passed cell reads `out of date` is not
+on either list: the signature stands, and the next run clears the cell.
 
 When the two lists are empty and every rule meets the gate, `purlin:sign` writes the tag
 `signed/<version>` and you push it. That tag is the whole claim: this version is proven, as
@@ -91,7 +91,7 @@ drift eng: 14 files since the last record (a1b2c3d)
   src/auth/mfa.js            no spec covers this file
   login RULE-7               no test carries PROOF-7
   design_tokens (anchor)     pinned 4 commits behind
-  export                     code changed: the code moved, the signatures stand
+  export                     out of date: the code moved, the signatures stand
 ```
 
 You may also be the person who signs, at either gate. Signing is logged, not policed: the
@@ -111,7 +111,7 @@ back once it merges.
 |------|-----------------|
 | `pm` | Pins behind their source |
 | `qa` | Signatures gone stale, how long the Review and Sign lists are, the rules reading `manual test`, `unsettled` and `not audited`, rules whose every proof asserts a success path |
-| `eng` | Files touched and the rules behind them, rules with no test, pins behind, rules whose passed cell reads `code changed` |
+| `eng` | Files touched and the rules behind them, rules with no test, pins behind, rules whose passed cell reads `out of date` |
 
 Run it at four moments: at the start of a session, after an anchor pin moved, before QA walks
 the Review list, and before a release. Those are the four times the tree has moved ahead of

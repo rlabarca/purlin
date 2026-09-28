@@ -26,7 +26,7 @@ flowchart TD
     Q2 -->|strong| Q3
     Q3 -->|signed| Met
     Q0 -->|drafted| Stop
-    Q1 -->|"failed, partial, no test, not run, code changed"| Stop
+    Q1 -->|"failed, partial, no test, not run, out of date"| Stop
     Q2 -->|"weak, not audited, unsettled, manual test, held"| Stop
     Q3 -->|"unsigned, stale, held"| Stop
 ```
@@ -66,28 +66,28 @@ request. A command commits, prints `Run: git push` and stops.
 gate, `purlin:sign` writes the annotated tag `signed/<version>` over the commit, and a person
 pushes it. No tag is written while any rule falls short; what the tag means is defined once, in
 [hard_gates.md](../references/hard_gates.md). A tag holds the whole tree at that
-commit, so the code, every record, every brief and every signature are pinned together by one
+commit, so the code, every evidence file and every signature are pinned together by one
 name.
 
-**The test results are what a run of the tagged tests saw**: one
-`.purlin/tests/<feature>.json` per feature and one `.purlin/tests.md` table for the whole
-project. `purlin:test` writes both and commits them itself as `purlin: tests at <sha7>`, so a
-teammate reads your run on the git host without running anything. The folder is the source
-here too: yours sit in `.purlin/tests/` and a remote run's in `.purlin/tests/ci/`, which
-`purlin:test --remote` pulls home. Both count at every gate.
+**The evidence is what runs saw**: one `.purlin/evidence/<source>/<feature>.json` per feature
+per source, with one section per operating system, and one `.purlin/tests.md` table for the
+whole project, rendered from every evidence file. `purlin:test` writes both and commits
+nothing; `purlin:test --commit` commits them as `purlin: evidence at <sha7>`, so a teammate
+reads your run on the git host without running anything. The folder is the source: yours sit
+in `.purlin/evidence/local/` and a remote run's in `.purlin/evidence/ci/`, which the runner
+always commits and `purlin:test --remote` pulls home. Both count at every gate.
 
 **A brief is the machine's report on one rule**: the test strength beside the minimum, what
 the audit observed, and whether it could settle the question. It recommends nothing, and a
 signature binds it, so what a signer was shown is recoverable afterwards.
 
-**A record is the machine's evidence of one audit run**: which commit, which operating system,
-every proof's result, and the test strength. `purlin:audit` writes one per feature it audited
-and commits it as `purlin: record for <sha7>`; where a project has a runner, the runner writes
-the same files. Which hand wrote it is the record's **source**, and the folder it sits in is
-the answer: `.purlin/records/ci/<feature>/` holds what a runner wrote,
-`.purlin/records/local/<feature>/` holds what a run on somebody's machine wrote. A file whose
-own `source` field disagrees with its folder is ignored, with a warning. Both count at every
-gate: the strong cell reads the newest audit, yours or a runner's.
+**An audit writes into the same evidence**: the test strength and, per rule, what the AI audit
+found. `purlin:audit` writes it into `.purlin/evidence/local/<feature>.json` and
+`purlin:audit --commit` commits it as `purlin: evidence at <sha7>`; a runner writes only its
+own section and no audit. Which hand wrote a file is its **source**, and the folder it sits in
+is the answer: `.purlin/evidence/ci/` holds what a runner wrote, `.purlin/evidence/local/`
+holds what a run on somebody's machine wrote. A file whose own `source` field disagrees with
+its folder is ignored, with a warning. Both count at every gate.
 
 **A signature is a named person's attestation** that a rule, its proof and its test belong
 together, bound to the hashes of all three, to the rule's bar, and to what the audit observed.
@@ -99,9 +99,7 @@ new.
 
 | File | Written by | Where it lands | Who may write it |
 |------|-----------|----------------|------------------|
-| test results | `purlin:test`, and a remote runner | `.purlin/tests/<feature>.json`, or `.purlin/tests/ci/<feature>.json`, and `.purlin/tests.md` | you, into `.purlin/tests/`; a runner, into `ci/`. Both count at every gate |
-| record | `purlin:audit`, and a remote runner | `.purlin/records/local/<feature>/`, or `.purlin/records/ci/<feature>/` | anyone, into `local/`; a runner, into `ci/`, through the git host's API |
-| brief | `purlin:audit`, and a remote runner | `.purlin/briefs/local/<feature>/`, or `.purlin/briefs/ci/<feature>/` | the same two hands, into the same two folders |
+| evidence | `purlin:test`, `purlin:audit`, and a remote runner | `.purlin/evidence/local/<feature>.json`, or `.purlin/evidence/ci/<feature>.json`, and `.purlin/tests.md` | anyone, into `local/`; a runner, into `ci/`, through the git host's API. Both count at every gate |
 | signature | `purlin:sign <feature> RULE-N` | `specs/<category>/<feature>.signatures/` | a person, in a signed commit; the file names who signed |
 | hold | `purlin:sign <feature> RULE-N --hold "<case>"` | the same directory, `.hold.json` | any person, in a signed commit |
 

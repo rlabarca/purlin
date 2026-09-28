@@ -40,7 +40,7 @@ line names the rule and `ready` when one does, and nothing more. Then:
 
 | Level | The question | Words the cell can read |
 |-------|--------------|-------------------------|
-| passed | did every tagged test for this rule pass? | `passed`, `partial`, `failed`, `no test`, `not run`, `code changed` |
+| passed | did every tagged test for this rule pass? | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
 | strong | are those tests worth trusting? | `strong`, `weak`, `not audited`, `unsettled`, `manual test`, `held` |
 | signed | did a person say the rule, the proof and the test belong together? | `signed`, `unsigned`, `stale`, `held` |
 
@@ -57,11 +57,11 @@ nothing.
 
 **The whole loop runs on one machine.** `purlin:spec`, `purlin:build`, `purlin:test`,
 `purlin:audit`, `purlin:sign`, `git push`. A project at `signed` on one laptop with no CI
-anywhere is the ordinary case, at every gate. A record counts whoever wrote it.
+anywhere is the ordinary case, at every gate. Evidence counts whoever wrote it.
 
-**Three commands, one per level.** `purlin:test` runs the tagged tests, writes the test results
-and commits them. `purlin:audit` runs the tests and the breaks, then the AI audit on every rule
-whose bar is `strong`, and writes the record and the briefs. `purlin:sign` walks the Review list
+**Three commands, one per level.** `purlin:test` runs the tagged tests and writes the evidence.
+`purlin:audit` runs the tests and the breaks, then the AI audit on every rule whose bar is
+`strong`, and writes what it found into the same evidence. `purlin:sign` walks the Review list
 and then the Sign list one brief at a time when given no rule, signs, holds or notes a rule when
 given one, and closes by writing the tag. `purlin:verify`, `purlin:review` and `purlin:approve`
 are gone, not aliased.
@@ -70,8 +70,8 @@ are gone, not aliased.
 `signed/<version>` over the commit, taking the name from the `VERSION` file or from
 `--release <name>`, and prints `Run: git push origin signed/<version>`. No tag is written while
 any rule falls short, so the tag is the claim. A tag holds the whole tree, so the code, every
-record, every brief and every signature are pinned together under one name. `purlin:audit --tag`
-and the `record/<name>` tags are gone with it, and nothing else pins a record.
+evidence file and every signature are pinned together under one name. `purlin:audit --tag`
+and the `record/<name>` tags are gone with it, and nothing else pins the evidence.
 
 **A push is free.** Any branch, any time, and nothing runs when you make one. The pre-push hook
 is removed and `purlin:init` installs no git hook; the rule that an agent never pushes is an
@@ -79,37 +79,45 @@ instruction in `agents/purlin.md`. No branch rule is printed and none is asked f
 
 **Trust.** `purlin:init` asks `Do you trust your own machine for the tests and the signing?
 [y/n]` and writes `trust: local` or `trust: remote`. Under `local`, the default, this machine's
-runs are the evidence from end to end. Under `remote`, `purlin:sign` refuses a rule whose tests
-have no `ci` record for the current commit, so `purlin:test --remote` runs first.
+runs are the evidence from end to end. Under `remote`, `purlin:sign` refuses a rule with a test
+whose feature has no current `ci` section, so `purlin:test --remote` runs first.
 
 **A remote runner exists for two reasons and no other**: a proof is tagged `@env` for an
 operating system this machine is not, or trust is `remote`. With neither, `purlin:init` writes
 no workflow at any gate. Where one exists, it starts on a push of a `signed/**` tag and on a
 push to a `run/*` branch, and on nothing else: no pull request run, no run on a branch, no
 comment and no dashboard artifact. The job is named `purlin`. The tag run reruns the tagged
-tests on a clean machine, recomputes every committed record, brief and signature against the
-tagged code, checks that every file under `ci/` was committed by the runner's own identity, and
-ends with the gate check. No breaks run on a runner.
+tests on a clean machine, recomputes every committed signature against the tagged code, checks
+that every file under `.purlin/evidence/ci/` was committed by the runner's own identity, and
+ends with the gate check. No breaks and no AI audit run on a runner.
 
-**Records.** Evidence lives in the tree, as
-`.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`, one file per
-audit run, committed by whoever ran it. The folder is the source: `.purlin/records/local/` is
-anyone's, `.purlin/records/ci/` is a remote runner's, and a file whose own `source` field
-disagrees with its folder is ignored with a warning. Both count at every gate. A feature keeps
-the newest three records per operating system per source and the rest are pruned.
+**Evidence.** Every run writes `.purlin/evidence/<source>/<feature>.json`, one file per
+feature per source: one section per operating system with each proof's result, the commit, the
+time and a fingerprint of the spec, the covered code and the tests, and once audited, the test
+strength and what the audit found per rule. The folder is the source:
+`.purlin/evidence/local/` is anyone's, `.purlin/evidence/ci/` is a remote runner's, and a file
+whose own `source` field disagrees with its folder is ignored with a warning. Both count at
+every gate.
 
-**Test results.** `purlin:test` writes `.purlin/tests/<feature>.json` per feature and one
-`.purlin/tests.md` table for the project, and commits them as `purlin: tests at <sha7>`, so a
-teammate reads your run on the git host without running anything.
+**The table.** Every run renders `.purlin/tests.md` again from every evidence file, one row per
+feature, so a teammate reads your run on the git host without running anything.
+
+**Written, and committed when you ask.** `purlin:test` and `purlin:audit` write the evidence
+and the table and commit nothing. `purlin:test --commit` and `purlin:audit --commit` commit them
+as `purlin: evidence at <sha7>`, and neither ever pushes. A remote runner always commits its own
+operating system's section, because its evidence exists nowhere else.
+
+**Out of date.** A pass counts only while the section's fingerprint matches the tree. When the
+spec, the covered code or the tests change, the passed cell reads `out of date`, naming what
+changed, whoever made the run and whether or not it was committed; the next run clears it.
 
 **Platforms.** A rule's passed cell carries one entry per operating system a counting run
 covered. The cell reads `partial` when the tests passed on some and failed or did not run on
 others, which is not met, and `partial` has its own tile and filter at every gate. Test strength
 is platform independent.
 
-**Briefs.** One file per rule per set of hashes,
-`.purlin/briefs/<source>/<feature>/<RULE-N>.<hash8>.brief.json`, committed beside the records. A
-brief reports three things: the test strength beside the minimum, what the audit observed as the
+**Briefs.** A brief is the machine's report on one rule, written into the feature's evidence as
+that rule's audit entry rather than as a file of its own. A brief reports three things: the test strength beside the minimum, what the audit observed as the
 sentences the audit wrote, and whether it could settle the question. **It recommends nothing.**
 The four verdict words are retired with it.
 
@@ -117,8 +125,8 @@ The four verdict words are retired with it.
 proof text or the test body before the audit. `references/review_criteria.md` lists what the AI
 audit looks for when it reads each proof beside the source of its test, and the audit writes what
 it observed in plain sentences; an audit that settled and still observed a gap proves the rule
-`weak` with that sentence as the reason. The brief's layers are `test strength` and `AI audit`,
-and its schema is `purlin-brief/5`. At `passed` nothing reads test quality at all. `ready` means
+`weak` with that sentence as the reason. The brief's layers are `test strength` and `AI audit`.
+At `passed` nothing reads test quality at all. `ready` means
 the rule has a proof, nothing more.
 
 **The bar replaces risk.** Every rule has a bar, `passed` or `strong`, tagged `[bar: passed]` or
@@ -162,17 +170,17 @@ strength reads `n/a` and the strong cell rests on what the audit observed.
 **`@env`.** A proof that can only be proved on one operating system carries `@env(windows)`,
 `@env(macos)` or `@env(linux)`. Those three are the whole vocabulary. Where a project has a
 runner, `purlin:init` reads the tags and writes a matrix to match. On a host that does not match,
-the test is skipped and the passed cell reads `not run` with `<os>: no record yet`;
+the test is skipped and the passed cell reads `not run` with `<os>: no run yet`;
 `purlin:test --remote` pushes a run branch, finds the run by that branch, waits on it and pulls
-the records back.
+the evidence back.
 
 **The dashboard.** One HTML page on the design tokens, with no framework and no build step. Its
 tiles, columns and filters scale with the gate, and its top bar carries the gate, the signed tag
 this commit holds and how old the data is. It opens from disk; nothing is published and no
 artifact is uploaded.
 
-**Formats.** The spec, proofs and anchor formats change wording only. The record format, the
-signature format (from `approval_format.md`), the new test results format, the payload schema and
+**Formats.** The spec, proofs and anchor formats change wording only. The evidence format, the
+signature format (from `approval_format.md`), the payload schema and
 `references/drift_criteria.md` each carry a `> Format-Version:` line; a tool that parses any of
 them should read that line rather than a number written in prose.
 
@@ -191,7 +199,7 @@ output, in any casing:
 | `verified`, `verify` as a command name | the cell's own word; `purlin:audit` for the run |
 | `verdict`, the four verdicts | what the brief reports: the strength, the observations, settled |
 | `Reviewed`, the state | the strong cell's word |
-| `re-verify pending` | the passed cell reading `code changed` |
+| `re-verify pending` | the passed cell reading `out of date` |
 | `Proof ready` | the spec status `ready` |
 | `lowest state`, `seven states` | the spec status and the three cells |
 | `auto-approval` | nothing: no machine writes a signature file |
@@ -220,7 +228,7 @@ weak. The grading scores the earlier `purlin:audit` produced stay retired.
 
 Gone in 0.10.0: the two LLM grading scores and the skill and agent that produced them; the
 runner registry and its per-runner proof files, replaced by `@env` and the runner matrix; the
-committed evidence files, replaced by records; the committed proof files, which are now runtime
+committed evidence files, replaced by `.purlin/evidence/`; the committed proof files, which are now runtime
 state under `.purlin/runtime/` and are not committed at all; the committed dashboard data; the
 pre-push hook and every branch rule Purlin used to print; the pull request comment and the
 dashboard artifact; the design-tool importer, the visual hash and the live design-tool
@@ -279,7 +287,7 @@ Also gone, each without a replacement:
 An earlier 0.10.0 development line added two LLM grading scores, one for proof descriptions and
 one for test bodies, together with a skill and an agent to produce them. A later one added a
 seven-state ladder. Neither was released, and 0.10.0 as it ships has neither. What a person needs
-before signing a rule is a brief: the test strength from the newest record, and what the AI audit
+before signing a rule is a brief: the test strength from the evidence, and what the AI audit
 observed where the rule's bar asks for one. `references/review_criteria.md` holds those criteria.
 
 ## 0.9.5 — Windows-scoped proof checks & C# support

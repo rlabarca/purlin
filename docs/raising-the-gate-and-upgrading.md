@@ -39,8 +39,7 @@ code.
 Init starts from what the project already has, so a raise writes only the missing half.
 
 **To `passed`.** The setting alone, plus what every project gets: `.purlin/config.json` with
-the gate and the trust answer, `specs/`, `.purlin/records/` with a README naming what writes
-the files in it and saying that nobody edits one by hand, the proof plugin for the detected
+the gate and the trust answer, `specs/`, the proof plugin for the detected
 test framework, the break engine for the language, a `.gitignore` block for `.purlin/runtime/`,
 the dashboard page copied so it opens from disk, and the Claude Code hook that refreshes the
 local dashboard data. Nothing to apply on the git host, and no git hook.
@@ -89,11 +88,11 @@ from the state of the project.
 Three things are true the moment the gate reaches `strong`, and it is worth saying them to
 the team in the same message:
 
-1. A record is now the evidence. `purlin:audit` writes one record per feature it audited and
-   the briefs beside them into `.purlin/records/local/` and `.purlin/briefs/local/` and commits
-   them itself, on this machine, and it counts. A remote runner writes the same files into the
-   `ci/` folders where the project has one, and those count too. `purlin:test` still commits
-   the test results, and they still count towards the passed cell.
+1. An audit is now part of the evidence. `purlin:audit` writes what it found into each
+   feature's `.purlin/evidence/local/<feature>.json` on this machine, `--commit` commits it,
+   and it counts. A remote runner writes only its own test section, into
+   `.purlin/evidence/ci/`, where the project has one. `purlin:test` still writes the test
+   sections, and they still count towards the passed cell.
 2. `purlin:audit` is now part of the loop. Run it before you push, the way you run
    `purlin:test` while you work: a rule with no record reads `not audited` and does not meet
    the gate.
@@ -147,7 +146,6 @@ is rendered from them:
 | `config` | writes `.purlin/config.json` at the current shape and sets the gate |
 | `workflows` | replaces the workflow that committed proof files |
 | `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |
-| `records` | creates `.purlin/records/` for the records an audit commits |
 
 The `workflows` migration reads each file under `.github/workflows/`. A workflow that committed
 proof files back beside the specs is removed, and where the project has a reason for a runner
@@ -213,11 +211,10 @@ before you run it:
 - The grading scores and the reviewer agent that produced them are gone. `purlin:sign` is where
   a person now looks at a rule, and [review-and-signing.md](review-and-signing.md) describes
   what it shows.
-- Evidence moved from files written beside the specs to the test results under
-  `.purlin/tests/`, which `purlin:test` commits, and the records under `.purlin/records/`, one
-  per audit run, filed under `ci/` or `local/` by source, with the briefs beside them under
-  `.purlin/briefs/`.
-  [running-and-records.md](running-and-records.md) has both shapes.
+- Evidence moved from files written beside the specs to one file per feature per source,
+  `.purlin/evidence/<source>/<feature>.json`, which `purlin:test` and `purlin:audit` write and
+  `--commit` commits, filed under `ci/` or `local/` by source.
+  [running-and-records.md](running-and-records.md) has the shape.
 - Operating-system scoping is now `@env(windows|macos|linux)` and a CI matrix, with no registry
   to maintain and no per-system evidence file.
 - The dashboard is a page that opens from disk, with no data file in the tree. See
