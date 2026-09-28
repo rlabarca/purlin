@@ -472,10 +472,10 @@
               "evidence": null,
               "findings": [],
               "reasons": [
-                "not passed"
+                "waiting for its tests to pass"
               ],
               "strength": 48,
-              "word": "weak"
+              "word": "waiting"
             }
           },
           "feature": "invoice",

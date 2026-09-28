@@ -53,6 +53,9 @@ other page points here rather than defining it again.
   the rule, its proofs and its tests against `references/review_criteria.md`. Each answer names
   the model that gave it. **finding**: one sentence the AI audit wrote about a gap. A finding
   makes the rule `weak`, and from the gate `strong` up a weak rule does not meet the gate.
+  **waiting**: the word a cell reads while the cell below it is not met, and the neutral one
+  on every surface: the strong cell `waiting for its tests to pass`, and the signed cell
+  `waiting for the audit`. It is never met, it is not `weak`, and it is not in the queue.
 - **mutation testing**, **the breaks**: deliberate changes to the code, to see whether the tests
   catch them. Optional, off by default, set by `mutation_engine`. **test strength**: the share
   of the breaks the tests caught, as a percentage, compared with `min_strength`.
@@ -106,8 +109,8 @@ For one rule, top to bottom. Each row is a cell; the gate decides how many rows 
 | Level | Met when | Words the cell can read |
 |-------|----------|-------------------------|
 | passed | every proof of the rule, or the rule itself where it has no proof, has a passing test in a current section, on every platform a current section covers | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
-| strong | passed, and where the level is `strong` or `signed` an AI audit of the current rule, proof and test that found nothing, with the test strength at or above `min_strength` where mutation testing is on | `strong`, `weak`, `not audited`, `manual test`, `no proof` |
-| signed | a counting signature for the current rule, proof, test and audit | `signed`, `unsigned`, `stale` |
+| strong | passed, and where the level is `strong` or `signed` an AI audit of the current rule, proof and test that found nothing, with the test strength at or above `min_strength` where mutation testing is on | `strong`, `weak`, `waiting`, `not audited`, `manual test`, `no proof` |
+| signed | a counting signature for the current rule, proof, test and audit | `signed`, `unsigned`, `waiting`, `stale` |
 
 A rule with neither a proof nor a marked test reads `no test` with the reason
 `no proof written`. From `strong` up, a rule with a test and no proof reads `no proof`.

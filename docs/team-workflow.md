@@ -72,12 +72,13 @@ the whole of it, including how the runner finds Purlin.
 
 ## What the strong cell can read
 
-Level 2 has five words, and each one names who moves it next.
+Level 2 has six words, and each one names who moves it next.
 
 | Word | What it means | What moves it |
 |------|---------------|---------------|
 | `strong` | the passed cell is met, the AI audit read the current rule, proof and test and found nothing, and, where mutation testing is on, the strength is at or above `min_strength` | nothing; the rule meets the gate |
-| `weak` | the passed cell is not met, the audit found a gap or could not decide, or the strength is under the minimum | build work: `purlin:build` |
+| `weak` | the audit found a gap or could not decide, or the strength is under the minimum | build work: `purlin:build` |
+| `waiting` | the passed cell is not met, so there is no passing test for the audit to read: `waiting for its tests to pass` | whatever moves the passed cell: a test, a fix or a run |
 | `not audited` | no audit has run on this code yet | `purlin:audit`; no person is waiting |
 | `no proof` | the tests pass and the rule has no proof | `purlin:spec` |
 | `manual test` | a proof of the rule is tagged `@manual`, so no test can be written for it | a person runs the check and signs with `purlin:sign <feature> RULE-N --note "<what you saw>"` |
@@ -87,8 +88,8 @@ With mutation testing off, or where nothing measured a score, a `strong` cell ca
 
 At `strong` the queue holds exactly the rules whose level is `strong` and whose strong cell
 reads `manual test`, each a `hand check` row. Its header says so: `<n> rules need a person`. A
-`weak` rule is never in it, because a build moves it, and neither is a `not audited` rule: it
-waits for `purlin:audit`. A committed signature for the current hashes turns `manual test` into
+`weak` rule is never in it, because a build moves it, nor a `waiting` one, and neither is a
+`not audited` rule: it waits for `purlin:audit`. A committed signature for the current hashes turns `manual test` into
 `strong`.
 
 ## One sprint, traced

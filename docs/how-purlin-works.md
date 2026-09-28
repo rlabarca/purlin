@@ -148,7 +148,8 @@ has no proof reads `no proof` in its strong cell.
 level is `strong` or `signed` and no audit has run on this code yet: it waits for
 `purlin:audit`, not for you. `weak` means the AI audit did run and found a gap, or could not
 decide whether the test shows what the proof says, and names why in its reason. Both are build
-work, and neither is in the queue.
+work, and neither is in the queue. A rule whose tests have not passed reads neither: its strong
+cell reads `waiting`, with the reason `waiting for its tests to pass`.
 
 **When do I say which operating system a test needs?** On the proof line, with `@env(windows)`,
 `@env(macos)` or `@env(linux)`. A proof with no `@env` runs anywhere, and a pass on any

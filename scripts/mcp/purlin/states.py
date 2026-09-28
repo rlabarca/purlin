@@ -22,9 +22,14 @@ too.
             project minimum. `strong`, `weak`, `not audited`, `manual test`,
             and `no proof` for a rule whose passing test answers no proof:
             proofs are optional at the gate `passed` and required above it.
+            `waiting` while the passed cell is not met, because the audit
+            reads a test that passes; `weak` means only that the audit found
+            fault or a measured strength fell under the minimum.
 
     signed  Met when a named person signed the rule, proof, test and audit
-            hashes. `signed`, `unsigned`, `stale`. At the gate `signed` a
+            hashes. `signed`, `unsigned`, `stale`, and `waiting` where no
+            signature is there and the strong cell is not met, other than
+            by a hand check, which a person signs. At the gate `signed` a
             rule whose spec names no files in `> Scope:` reads `unsigned`
             whatever was signed, because a signature cannot be tied to the
             code it governs.
@@ -106,6 +111,13 @@ HASHES_MOVED = 'hashes changed after the signature'
 SOURCES = ('ci', 'local')
 
 OUT_OF_DATE = 'out of date'
+
+# The word a cell reads while the cell below it is not met: the strong cell
+# while the tests have not passed, the signed cell while the audit has not
+# cleared the rule. It is never met and never in the queue.
+WAITING = 'waiting'
+WAITING_FOR_TESTS = 'waiting for its tests to pass'
+WAITING_FOR_AUDIT = 'waiting for the audit'
 
 # The reason the passed cell gives for a rule no proof line names and no
 # test marked with the rule's own id answers.
@@ -189,6 +201,14 @@ def rule_cells(inp, cfg):
     passed = _passed_cell(inp, cfg)
     strong = _strong_cell(inp, cfg, level, passed, counting)
     signed = _signed_cell(signatures, current, counting, inp)
+    if (signed['word'] == 'unsigned' and not current
+            and not cell_is_met('strong', strong)
+            and strong['word'] not in HAND_CHECK_WORDS):
+        # A signature binds what the audit found, so a rule the audit has
+        # not cleared has nothing to sign yet. A stale signature and a
+        # counting one still say what the files say; a hand check is signed
+        # with its note, so it waits on a person and not on the audit.
+        signed = dict(signed, word=WAITING, reasons=[WAITING_FOR_AUDIT])
     incomplete = bool(inp.get('incomplete')) and gate == CELLS[-1]
     if incomplete and signed['word'] != 'stale':
         # A stale signature already says it does not count, and why; any
@@ -534,7 +554,11 @@ def _strong_cell(inp, cfg, level, passed, counting_signatures):
             'evidence': None, 'reasons': []}
 
     if passed['word'] != 'passed':
-        cell['reasons'] = ['not passed']
+        # The audit reads a test that passes, so until the tests pass there
+        # is nothing for it to find fault with: the cell waits, and is not
+        # weak.
+        cell['word'] = WAITING
+        cell['reasons'] = [WAITING_FOR_TESTS]
         return cell
 
     if not inp.get('proofs'):

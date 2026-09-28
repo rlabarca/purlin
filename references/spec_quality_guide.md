@@ -258,7 +258,8 @@ stale and someone must look again.
 
 Find the rule in the status table, read the cell that blocks it, then read the row. The
 gate decides how many cells exist: under `passed` only the first, under `strong` the first
-two, under `signed` all three. A rule's level decides which of them block it.
+two, under `signed` all three. A rule's level decides which of them block it. A cell reading
+`waiting` is never the one that blocks: the cell below it is, and its row says what moves both.
 
 | Cell | Word | What it means | What moves it |
 |---|---|---|---|

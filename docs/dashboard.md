@@ -98,12 +98,14 @@ reading the cell's word, and a button that opens the rule's proofs:
 | Cell | Words |
 |---|---|
 | passed | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
-| strong | `strong`, `weak`, `not audited`, `manual test`, `no proof` |
-| signed | `signed`, `unsigned`, `stale` |
+| strong | `strong`, `weak`, `waiting`, `not audited`, `manual test`, `no proof` |
+| signed | `signed`, `unsigned`, `waiting`, `stale` |
 
 A rule has the cells its level asks for: one whose level is `passed` carries one pill, and one
 whose level is `strong` carries two. The `Strong` and `Signed` tiles and the `Weak` and `Not
-audited` filters count only the rules whose level asks for that cell.
+audited` filters count only the rules whose level asks for that cell. A cell reads `waiting`, in
+the neutral colour, while the cell below it is not met: the strong cell `waiting for its tests to
+pass`, the signed cell `waiting for the audit`. No filter counts it.
 
 **Proofs under a rule.** The button reads `▶ 2 proofs` while closed, in the warn tone when one
 of the proofs reads `failed` or `no test`, and `no proof` where the rule has none. Pressing it,
@@ -127,7 +129,7 @@ a rule shows when every pressed filter accepts it, and a spec shows when one of 
 | `Untested` | rules in the `Untested` tile: no proof written, no test, or no current run | every gate |
 | `Failing` | rules in the `Failing` tile: every platform that ran the tests found a failure | every gate |
 | `Partial` | rules in the `Partial` tile: passed on one platform, failed or did not run on another | every gate |
-| `Weak` | rules whose strong cell reads `weak` | `strong` and above |
+| `Weak` | rules whose strong cell reads `weak`: the audit found fault, or the strength is under the minimum | `strong` and above |
 | `Not audited` | rules whose strong cell reads `not audited` | `strong` and above |
 | `Queue` | the rules on the Queue tab | `strong` and above |
 | `Stale` | rules whose signature does not match | `signed` |

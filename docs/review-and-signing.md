@@ -42,12 +42,13 @@ and above, and its `signature` rows only at `signed`. Rows come by feature, then
 | The word the signed cell reads | What happened |
 |---|---|
 | `unsigned` | the rule needs a signature and none binds its current hashes |
+| `waiting` | no signature binds its current hashes and its strong cell is not met: `waiting for the audit` |
 | `stale` | a signature exists and the hashes it bound do not match |
 
 Nothing else reaches the queue. A rule reading `not audited` waits for `purlin:audit`. A rule
 with no proof, no test, a failing test or a `weak` strong cell is build work, and it stays on
 the board where `purlin:build` finds it. A rule whose passed cell reads `out of date` waits for
-the next `purlin:test`.
+the next `purlin:test`. A cell reading `waiting` waits for the cells below it.
 
 Under `passed` there is no queue. `purlin:sign` prints `sign: the gate is passed, which asks for
 no signature.` and `sign: purlin:init --gate strong adds the test strength, the AI audit and the

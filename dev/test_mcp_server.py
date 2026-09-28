@@ -899,14 +899,14 @@ class TestTheStrongCell:
                 made.close()
 
     # purlin: states PROOF-13
-    def test_a_rule_that_did_not_pass_is_weak_for_that_one_reason(self):
+    def test_a_rule_that_did_not_pass_waits_for_its_tests(self):
         made = Project(gate='strong')
         try:
             made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
                             'status': 'pass'}], ci=True, strength=48)
             cell = made.cell('RULE-2', 'strong')
-            assert cell['word'] == 'weak'
-            assert cell['reasons'] == ['not passed'], cell
+            assert cell['word'] == 'waiting', cell
+            assert cell['reasons'] == ['waiting for its tests to pass'], cell
             assert cell['strength'] == 48, cell
         finally:
             made.close()
@@ -1606,9 +1606,62 @@ class TestALevelAsksItsOwnQuestions:
             assert (lower['bucket'], lower['blocked_by']) == (
                 'failing', 'passed'), lower
             middle = made.rule('RULE-5')
-            assert middle['cells']['strong']['word'] == 'weak', middle
-            assert middle['cells']['strong']['reasons'] == ['not passed'], (
-                middle)
+            assert middle['cells']['strong']['word'] == 'waiting', middle
+            assert middle['cells']['strong']['reasons'] == [
+                'waiting for its tests to pass'], middle
+        finally:
+            made.close()
+
+    # purlin: states PROOF-93
+    def test_a_signature_waits_for_the_audit(self):
+        made = Project(gate='signed')
+        try:
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'fail'}], ci=True)
+            rule = made.rule('RULE-1')
+            assert rule['level'] == 'signed', rule
+            assert rule['cells']['strong']['word'] == 'waiting', rule
+            assert rule['cells']['signed']['word'] == 'waiting', rule
+            assert rule['cells']['signed']['reasons'] == [
+                'waiting for the audit'], rule
+            assert made.payload()['queue'] == [], made.payload()['queue']
+
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'}], ci=True)
+            rule = made.rule('RULE-1')
+            assert rule['cells']['strong']['word'] == 'not audited', rule
+            assert rule['cells']['signed']['word'] == 'waiting', rule
+            assert rule['cells']['signed']['reasons'] == [
+                'waiting for the audit'], rule
+
+            made.audit('RULE-1')
+            rule = made.rule('RULE-1')
+            assert rule['cells']['strong']['word'] == 'strong', rule
+            assert rule['cells']['signed']['word'] == 'unsigned', rule
+            rows = [(row['rule'], row['need'])
+                    for row in made.payload()['queue']]
+            assert rows == [('RULE-1', 'signature')], rows
+        finally:
+            made.close()
+
+    # purlin: states PROOF-94
+    def test_a_stale_signature_reads_stale_while_the_tests_wait(self):
+        made = Project(gate='signed')
+        try:
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'}], ci=True)
+            made.audit('RULE-1')
+            made.sign_commits()
+            made.signature('RULE-1')
+            assert made.cell('RULE-1', 'signed')['word'] == 'signed'
+            made.spec(SPEC.replace('return 200 with a session token',
+                                   'return 201 with a session token'))
+            rule = made.rule('RULE-1')
+            assert rule['cells']['passed']['word'] == 'out of date', rule
+            assert rule['cells']['strong']['word'] == 'waiting', rule
+            assert rule['cells']['signed']['word'] == 'stale', rule
+            assert rule['cells']['signed']['reasons'] == [
+                'hashes changed after the signature'], rule
         finally:
             made.close()
 

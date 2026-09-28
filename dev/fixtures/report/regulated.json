@@ -406,18 +406,20 @@
               "machine": null,
               "os": null,
               "path": null,
-              "reasons": [],
+              "reasons": [
+                "waiting for the audit"
+              ],
               "signer": null,
-              "word": "unsigned"
+              "word": "waiting"
             },
             "strong": {
               "evidence": null,
               "findings": [],
               "reasons": [
-                "not passed"
+                "waiting for its tests to pass"
               ],
               "strength": 86,
-              "word": "weak"
+              "word": "waiting"
             }
           },
           "feature": "login",
@@ -652,9 +654,11 @@
               "machine": null,
               "os": null,
               "path": null,
-              "reasons": [],
+              "reasons": [
+                "waiting for the audit"
+              ],
               "signer": null,
-              "word": "unsigned"
+              "word": "waiting"
             },
             "strong": {
               "evidence": ".purlin/evidence/ci/invoice.json",
@@ -868,9 +872,11 @@
               "machine": null,
               "os": null,
               "path": null,
-              "reasons": [],
+              "reasons": [
+                "waiting for the audit"
+              ],
               "signer": null,
-              "word": "unsigned"
+              "word": "waiting"
             },
             "strong": {
               "evidence": ".purlin/evidence/ci/checkout_design.json",
@@ -1000,18 +1006,20 @@
               "machine": null,
               "os": null,
               "path": null,
-              "reasons": [],
+              "reasons": [
+                "waiting for the audit"
+              ],
               "signer": null,
-              "word": "unsigned"
+              "word": "waiting"
             },
             "strong": {
               "evidence": null,
               "findings": [],
               "reasons": [
-                "not passed"
+                "waiting for its tests to pass"
               ],
               "strength": 82,
-              "word": "weak"
+              "word": "waiting"
             }
           },
           "feature": "export",
@@ -1078,9 +1086,11 @@
               "machine": null,
               "os": null,
               "path": null,
-              "reasons": [],
+              "reasons": [
+                "waiting for the audit"
+              ],
               "signer": null,
-              "word": "unsigned"
+              "word": "waiting"
             },
             "strong": {
               "evidence": null,

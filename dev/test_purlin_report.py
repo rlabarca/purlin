@@ -699,10 +699,11 @@ FILTER_CASES = [
     ('partial', ['login'], ['RULE-4']),
     # A pill counts the rules whose strong cell reads its word.
     # checkout_design's audit could not decide, which is build work and reads
-    # `weak`. The rules that wait for a person are `queue`. login's RULE-3 is
-    # marked `[level: passed]`, so it has no strong cell to read.
-    ('weak', ['login', 'invoice', 'export', 'checkout_design'],
-     ['RULE-4']),  # 4 rules
+    # `weak`. login's RULE-4 and export's RULE-1 have tests that have not
+    # passed, so they read `waiting` and are not weak; login's RULE-3 is
+    # marked `[level: passed]`, so it has no strong cell to read. The rules
+    # that wait for a person are `queue`.
+    ('weak', ['invoice', 'checkout_design'], []),  # 2 rules
     ('not-audited', ['export'], []),
     ('queue', ['login', 'invoice'], ['RULE-2']),
     ('stale', ['login'], ['RULE-2']),
@@ -753,7 +754,7 @@ def test_a_filter_above_the_gate_is_not_offered(browser, tmp_path):
     assert chip_labels(reg) == ['Untested', 'Failing', 'Partial', 'Weak',
                                 'Not audited', 'Queue', 'Stale']
     assert chip_counts(reg) == {'Untested': 1, 'Failing': 0, 'Partial': 1,
-                                'Weak': 4, 'Not audited': 1, 'Queue': 2,
+                                'Weak': 2, 'Not audited': 1, 'Queue': 2,
                                 'Stale': 1}
     reg.close()
 
@@ -1851,7 +1852,7 @@ def test_a_rule_row_draws_only_the_badges_its_level_asks_for(browser,
     assert (cells['notes']['Strong'], cells['notes']['Signed']) == (
         '', ''), cells['notes']
     counts = chip_counts(page)
-    assert (counts['Weak'], counts['Not audited']) == (1, 0), counts
+    assert (counts['Weak'], counts['Not audited']) == (0, 0), counts
     tiles = dict(zip(texts(page, '.tile-l'), texts(page, '.tile-v')))
     assert (tiles['Strong'], tiles['Signed']) == ('2', '0'), tiles
     page.click('[data-act="feature"][data-feature="login"]')
@@ -1860,7 +1861,7 @@ def test_a_rule_row_draws_only_the_badges_its_level_asks_for(browser,
                      'RULE-2': ['PASSED', 'STRONG'],
                      'RULE-3': ['PASSED', 'STRONG', 'UNSIGNED'],
                      'RULE-4': ['FAILED'],
-                     'RULE-5': ['FAILED', 'WEAK']}, pills
+                     'RULE-5': ['FAILED', 'WAITING']}, pills
     page.close()
 
 
@@ -1908,4 +1909,24 @@ def test_the_gate_and_its_count_are_two_chips(browser, tmp_path):
     one['summary'].update(met=1, rules=1)
     page = open_board(browser, tmp_path / 'one', one)
     assert page.evaluate(CHIPS)[1][0] == '1 of 1 rule meets the gate'
+    page.close()
+
+
+# purlin: purlin_report PROOF-79
+def test_a_waiting_cell_is_neutral_and_says_what_it_waits_for(browser,
+                                                              tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-act="feature"][data-feature="login"]')
+    pills = page.eval_on_selector_all(
+        '.rule[data-rule="RULE-4"] .rp .pill',
+        'els => els.map(e => [e.innerText.trim(), getComputedStyle(e).color])')
+    assert [text for text, _ in pills] == ['PARTIAL', 'WAITING', 'WAITING']
+    neutral = resolved(page, '--state-neutral')
+    assert neutral != resolved(page, '--state-warn')
+    assert [colour for _, colour in pills[1:]] == [neutral, neutral], pills
+    page.click('.rule[data-rule="RULE-4"]')
+    rows = page.eval_on_selector_all(
+        '.kv dd', r'els => els.map(e => e.innerText.trim().replace(/\s+/g, " "))')
+    assert 'WAITING waiting for its tests to pass' in rows, rows
+    assert 'WAITING waiting for the audit' in rows, rows
     page.close()
