@@ -263,21 +263,65 @@ def test_add_reports_a_path_that_is_not_in_the_source(workspace):
     assert not os.path.isfile(upstream.anchor_path(workspace.root, 'no_eval'))
 
 
+@pytest.fixture
+def started(monkeypatch):
+    """Every process this test starts, each as the list of its arguments.
+
+    `subprocess.run` starts its process through `subprocess.Popen`, so one
+    recorder on the class sees both.
+    """
+    seen = []
+    real = subprocess.Popen
+
+    class Recorded(real):
+        def __init__(self, args, *rest, **kwargs):
+            seen.append(list(args) if isinstance(args, (list, tuple))
+                        else [args])
+            super(Recorded, self).__init__(args, *rest, **kwargs)
+
+    monkeypatch.setattr(subprocess, 'Popen', Recorded)
+    return seen
+
+
+def _anchors_held(workspace):
+    return sorted(os.listdir(os.path.join(workspace.root, 'specs', '_anchors')))
+
+
 # purlin: upstream PROOF-6
-def test_add_refuses_a_source_that_begins_with_a_dash(workspace):
-    result = upstream.add(workspace.root, '--upload-pack=/bin/echo',
+def test_add_refuses_a_source_that_begins_with_a_dash(workspace, started,
+                                                      tmp_path):
+    marker = str(tmp_path / 'ran')
+    result = upstream.add(workspace.root, '--upload-pack=touch %s' % marker,
                           path='a.md', name='hostile')
     assert result['status'] == 'error'
     assert 'begins with "-"' in result['error']
     assert not os.path.isfile(upstream.anchor_path(workspace.root, 'hostile'))
+    assert _anchors_held(workspace) == []
+    assert not os.path.exists(marker)
+    assert started == [], started
 
 
 # purlin: upstream PROOF-6
-def test_add_refuses_an_ext_transport(workspace):
-    result = upstream.add(workspace.root, 'ext::sh -c touch', path='a.md',
-                          name='hostile')
+def test_add_refuses_an_ext_transport(workspace, started, tmp_path):
+    marker = str(tmp_path / 'ran')
+    result = upstream.add(workspace.root, 'ext::sh -c touch%% %s' % marker,
+                          path='a.md', name='hostile')
     assert result['status'] == 'error'
     assert 'ext:: transport' in result['error']
+    assert not os.path.isfile(upstream.anchor_path(workspace.root, 'hostile'))
+    assert _anchors_held(workspace) == []
+    assert not os.path.exists(marker)
+    assert started == [], started
+
+
+# purlin: upstream PROOF-6
+def test_a_source_that_is_a_repository_starts_git(workspace, started):
+    """The other side of the two refusals: the same recorder does see git
+    start for a source that is allowed, so an empty record above means no
+    process started rather than a recorder that sees nothing."""
+    assert _add(workspace)['status'] == 'added'
+    assert any(args[:1] == ['git'] for args in started), started
+    assert _anchors_held(workspace) == ['no_eval.md']
 
 
 # ---------------------------------------------------------------------------
@@ -295,9 +339,24 @@ def test_add_of_free_text_writes_a_note_and_no_rules(workspace):
     assert upstream.FREE_TEXT_NOTE in text
     assert '## Rules' in text and '## Proof' in text
     assert 'RULE-' not in text
-    # The pin is the hash of the text, so a reworded source stales the copy.
-    assert result['pinned'] == upstream.add(
-        workspace.root, source, name='refunds')['pinned']
+
+
+# purlin: upstream PROOF-24
+def test_rewording_free_text_moves_the_pin(workspace):
+    source = os.path.join(workspace.root, 'policy.txt')
+    _write(source, 'Every refund is countersigned by a second person.\n')
+    first = upstream.add(workspace.root, source, name='refunds')['pinned']
+    assert upstream.add(workspace.root, source, name='refunds')[
+        'pinned'] == first
+    _write(source, 'Every refund over 100.00 is countersigned by a second '
+                   'person.\n')
+    moved = upstream.add(workspace.root, source, name='refunds')
+    assert moved['pinned'] != first
+    lines = _copy_text(workspace, 'refunds').splitlines()
+    assert '> Pinned: %s' % moved['pinned'] in lines, lines
+    assert '> Pinned: %s' % first not in lines, lines
+    assert ('Every refund over 100.00 is countersigned by a second person.'
+            in lines), lines
 
 
 # purlin: upstream PROOF-7
