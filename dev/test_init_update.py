@@ -34,6 +34,7 @@ What each group proves:
 """
 
 import fnmatch
+import hashlib
 import json
 import os
 import re
@@ -182,6 +183,10 @@ def test_check_on_the_v095_layout_names_every_migration(tmp_path, capsys):
     for migration_id in _ids(root):
         assert migration_id in printed
     assert 'Run: purlin:init --update' in printed
+    _apply(root)
+    capsys.readouterr()
+    assert update.main(['--check', '--project-root', root]) == 0
+    assert capsys.readouterr().out.startswith('Nothing is pending')
 
 
 # purlin: update PROOF-2
@@ -191,6 +196,8 @@ def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
     for expected in ('design-refs', 'os-tags', 'untracked-files', 'config',
                      'evidence', 'workflows', 'plugins'):
         assert expected in found, found
+    assert found == ['design-refs', 'os-tags', 'kind-tags', 'untracked-files',
+                     'config', 'evidence', 'workflows', 'plugins']
 
 
 # purlin: update PROOF-2
@@ -230,7 +237,10 @@ def test_every_pending_entry_says_what_it_does_and_to_which_files(tmp_path):
     for item in found:
         assert sorted(item) == ['description', 'files', 'id'], item
         assert item['description']
+        assert '\n' not in item['description'], item
         assert item['files']
+    ids = [item['id'] for item in found]
+    assert len(ids) == len(set(ids)), ids
 
 
 # purlin: update PROOF-4
@@ -279,11 +289,17 @@ def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,
 def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
     before = _ids(root)
-    _answers(monkeypatch, default='n')
+    tree = _git(root, 'status', '--porcelain').stdout
+    asked = _answers(monkeypatch, default='n')
     assert _apply(root, argv=()) == 0
     printed = capsys.readouterr().out
     assert 'skipped config' in printed
     assert _ids(root) == before
+    assert [prompt.split(',')[0] for prompt in asked] == [
+        'Apply %s' % migration_id for migration_id in before]
+    for migration_id in before:
+        assert '  skipped %s\n' % migration_id in printed, migration_id
+    assert _git(root, 'status', '--porcelain').stdout == tree
 
 
 # purlin: update PROOF-6
@@ -362,6 +378,21 @@ def test_the_config_is_the_gate_shape(tmp_path, layout):
     assert config['trust'] in ('local', 'remote')
 
 
+@pytest.mark.parametrize('gate', ('strong', 'signed'))
+# purlin: update PROOF-10
+def test_the_config_is_the_gate_shape_at_every_gate(tmp_path, capsys,
+                                                    monkeypatch, gate):
+    root = _project(tmp_path, V095)
+    _answers(monkeypatch, [('Gate [', gate)])
+    _apply(root, argv=())
+    capsys.readouterr()
+    config = json.loads(_read(root, '.purlin/config.json'))
+    assert config['gate'] == gate
+    assert config['audit_parallel'] == 4
+    assert sorted(config) == ['audit_parallel', 'ci', 'gate', 'min_strength',
+                              'mutation_engine', 'tests', 'trust', 'version']
+
+
 @pytest.mark.parametrize('layout', LAYOUTS)
 # purlin: update PROOF-10
 def test_retired_keys_are_gone(tmp_path, layout):
@@ -400,8 +431,25 @@ def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
     _apply(root, argv=())
     capsys.readouterr()
     assert any('Gate [' in prompt for prompt in asked)
+    assert len([prompt for prompt in asked if 'Gate [' in prompt]) == 1
     written = json.loads(_read(root, '.purlin/config.json'))
     assert written['gate'] == 'signed'
+
+
+# purlin: update PROOF-12
+def test_the_gate_the_project_named_is_the_default(tmp_path, capsys,
+                                                   monkeypatch):
+    root = _project(tmp_path, V095)
+    config = json.loads(_read(root, '.purlin/config.json'))
+    config['gate'] = 'signed'
+    assert config['pre_push'] == 'off'
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    asked = _answers(monkeypatch, [('Gate [', '')])
+    _apply(root, argv=())
+    capsys.readouterr()
+    assert [prompt for prompt in asked if 'Gate [' in prompt] == [
+        'Gate [signed]: ']
+    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'signed'
 
 
 # purlin: update PROOF-12
@@ -429,6 +477,17 @@ def test_no_key_nothing_reads_is_written_back(tmp_path, layout):
     assert 'report' not in written, written
     source = _read(ROOT, 'scripts/init/update.py')
     assert "'report'" not in source, 'the update writes a key nothing reads'
+
+
+# purlin: update PROOF-11
+def test_a_dashboard_switch_set_off_is_not_written_back_either(tmp_path):
+    root = _project(tmp_path, V095)
+    config = json.loads(_read(root, '.purlin/config.json'))
+    config['report'] = False
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    _apply(root)
+    written = json.loads(_read(root, '.purlin/config.json'))
+    assert 'report' not in written, written
 
 
 # purlin: update PROOF-21
@@ -461,6 +520,43 @@ def test_a_framework_the_tree_carries_is_kept(tmp_path, capsys):
     written = json.loads(_read(root, '.purlin/config.json'))
     assert [suite['name'] for suite in written['tests']] == [
         'pytest', 'jest', 'shell', 'vitest']
+    assert 'from the tests' not in printed
+
+
+# purlin: update PROOF-21
+def test_xunit_is_read_as_dotnet(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _write(root, 'App.Tests/App.Tests.csproj',
+           '<Project><ItemGroup><PackageReference Include="xunit" '
+           'Version="2.9.0" /></ItemGroup></Project>\n')
+    config = json.loads(_read(root, '.purlin/config.json'))
+    config['test_framework'] = 'xunit'
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    _apply(root)
+    printed = capsys.readouterr().out
+    from purlin import frameworks
+    written = json.loads(_read(root, '.purlin/config.json'))
+    assert written['tests'] == [frameworks.entry_for('dotnet')]
+    assert 'wrote the tests setting: dotnet' in printed
+    assert 'from the tests' not in printed
+
+
+@pytest.mark.parametrize('named', ('auto', None))
+# purlin: update PROOF-21
+def test_auto_or_no_value_writes_what_detection_finds(tmp_path, capsys, named):
+    root = _project(tmp_path, V095)
+    _write(root, 'conftest.py', '')
+    _write(root, 'tests/login.test.sh', 'exit 0\n')
+    config = json.loads(_read(root, '.purlin/config.json'))
+    if named is None:
+        del config['test_framework']
+    else:
+        config['test_framework'] = named
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    _apply(root)
+    printed = capsys.readouterr().out
+    written = json.loads(_read(root, '.purlin/config.json'))
+    assert [suite['name'] for suite in written['tests']] == ['pytest', 'shell']
     assert 'from the tests' not in printed
 
 
@@ -549,6 +645,8 @@ def test_each_old_marker_becomes_a_comment_above_its_test(tmp_path, capsys):
     assert 'rewrote 2 markers in tests/test_login.py as comments' in printed
     assert ('rewrote 1 marker in tests/login.test.sh as comments; the file '
             'is one test now, and passes when it exits 0') in printed
+    assert ('rewrote 1 marker in tests/test_login.sql as comments; the file '
+            'is one test now, and passes when it exits 0') in printed
     assert 'markers' not in _ids(root)
 
 
@@ -578,6 +676,7 @@ def test_a_marker_it_cannot_place_is_named_and_left(tmp_path, capsys):
     assert '# purlin: login PROOF-1\ndef test_a' in text
     assert ('left tests/test_module.py:3 as it was: write the marker as a '
             'comment above each test by hand') in printed
+    assert text.splitlines()[2] == module.splitlines()[2]
 
 
 # --- the plugins and their wiring ----------------------------------------------
@@ -623,11 +722,23 @@ def test_the_wiring_0_9_5_wrote_goes(tmp_path, capsys):
     _write(root, 'conftest.py', OLD_CONFTEST)
     _write(root, 'jest.config.js', OLD_JEST_CONFIG)
     _write(root, 'vitest.config.ts', OLD_VITEST_CONFIG)
-    _write(root, 'App.Tests/App.Tests.csproj',
-           '<Project><ItemGroup><Compile Include="../.purlin/plugins/'  # retired
-           'xunit_purlin.cs" /></ItemGroup></Project>\n')
+    _write(root, 'package.json', json.dumps({'jest': {'reporters': [
+        'default', '.purlin/plugins/jest_purlin.js']}}) + '\n')  # retired
+    csproj = ('<Project><ItemGroup><Compile Include="../.purlin/plugins/'  # retired
+              'xunit_purlin.cs" /></ItemGroup></Project>\n')
+    _write(root, 'App.Tests/App.Tests.csproj', csproj)
+    wiring = {rel: _read(root, rel) for rel in (
+        'conftest.py', 'jest.config.js', 'vitest.config.ts', 'package.json')}
     _apply(root)
     printed = capsys.readouterr().out
+    for rel, text in wiring.items():
+        (backup,) = [name for name in os.listdir(root)
+                     if name.startswith(rel + '.local-')]
+        assert _read(root, backup) == text, rel
+    assert json.loads(_read(root, 'package.json')) == {
+        'jest': {'reporters': ['default']}}
+    assert "removed the plugin's wiring from package.json" in printed
+    assert _read(root, 'App.Tests/App.Tests.csproj') == csproj
     assert not os.path.exists(os.path.join(root, 'conftest.py'))
     assert "removed conftest.py: it held only the plugin's wiring" in printed
     assert _read(root, 'jest.config.js') == (
@@ -763,6 +874,17 @@ def test_every_dropped_key_is_named(tmp_path, capsys):
         assert key not in written, key
 
 
+# purlin: update PROOF-25
+def test_a_config_with_no_key_to_drop_prints_no_dropped_line(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _write(root, '.purlin/config.json', json.dumps(
+        {'version': '0.9.2', 'test_framework': 'pytest'}, indent=2))
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert '  set the gate to passed\n' in printed, printed
+    assert 'this release does not read' not in printed, printed
+
+
 # --- the mutation question ----------------------------------------------------
 
 MUTATION = 'Measure test strength by breaking the code on purpose?'
@@ -850,6 +972,9 @@ def test_a_spec_with_no_scope_is_named_and_left_alone(tmp_path, capsys):
     assert ('1 spec has no > Scope: line: nowhere. Run purlin:spec <name> to '
             'add one.') in printed, printed
     assert 'required at signed' in printed
+    assert ('1 spec has no > Scope: line: nowhere. Run purlin:spec <name> to '
+            'add one. The line is optional below the gate signed and required '
+            'at signed.\n') in printed, printed
     assert 'unscoped_anchor' not in printed.split('Scope: line:')[1]
     assert _read(root, 'specs/core/nowhere.md') == UNSCOPED
     assert update.pending(root) == []
@@ -873,6 +998,17 @@ def test_the_evidence_folder_gets_its_readme(tmp_path):
     assert '.purlin/evidence/README.md' in _tracked(root)
     assert _walk(root, LEFTOVER) == []
     assert 'evidence' not in _ids(root)
+
+
+# purlin: update PROOF-28
+def test_a_readme_already_there_is_left_alone(tmp_path):
+    root = _project(tmp_path, V095)
+    ours = '# Our evidence\n\nWritten by hand.\n'
+    _write(root, '.purlin/evidence/README.md', ours)
+    assert 'evidence' not in _ids(root)
+    _apply(root)
+    assert _read(root, '.purlin/evidence/README.md') == ours
+    assert _walk(root, LEFTOVER) == []
 
 
 # --- operating-system tags ---------------------------------------------------
@@ -978,6 +1114,22 @@ def test_a_foreign_hook_is_left_alone(tmp_path):
 
 
 # purlin: update PROOF-9
+def test_hooks_another_tool_wrote_are_left_byte_for_byte(tmp_path):
+    root = _project(tmp_path, V095)
+    foreign = {'pre-commit': '#!/bin/sh\nexec ./node_modules/.bin/lint-staged\n',
+               'pre-push': '#!/bin/sh\nexec ./node_modules/.bin/husky-run\n'}
+    for name, text in foreign.items():
+        _write(root, '.git/hooks/' + name, text)
+    folder = os.path.join(root, '.git', 'hooks')
+    before = sorted(os.listdir(folder))
+    assert 'hooks' not in _ids(root)
+    _apply(root)
+    assert sorted(os.listdir(folder)) == before
+    for name, text in foreign.items():
+        assert _read(folder, name) == text, name
+
+
+# purlin: update PROOF-9
 def test_the_pre_push_hook_goes_too(tmp_path):
     """Nothing runs at push time, so the hook is removed rather than moved."""
     root = _with_hooks(tmp_path)
@@ -1044,6 +1196,33 @@ def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
         os.path.join(root, '.github', 'workflows', 'purlin.yml'))
     assert 'run purlin:init again to add it later' in printed
     assert 'workflows' not in _ids(root)
+    assert [rel for rel in _walk(root, ('*.yml',))
+            if rel.startswith('.github/')] == []
+
+
+# purlin: update PROOF-15
+def test_a_project_with_no_remote_gets_no_workflow(tmp_path, capsys):
+    root = _project(tmp_path, V095, remote=False)
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert [rel for rel in _walk(root, ('*.yml',))
+            if rel.startswith('.github/')] == []
+    assert not os.path.exists(os.path.join(root, 'purlin.azure-pipelines.yml'))
+    assert 'No git remote, so there is no runner to read this workflow' in printed
+    assert 'left the workflow unwritten; a prerequisite is missing' in printed
+
+
+# purlin: update PROOF-15
+def test_a_host_init_writes_no_workflow_for_gets_none(tmp_path, capsys):
+    root = _project(tmp_path, V095, remote=False)
+    _git(root, 'remote', 'add', 'origin', 'https://gitlab.com/acme/demo.git')
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert [rel for rel in _walk(root, ('*.yml',))
+            if rel.startswith('.github/')] == []
+    assert not os.path.exists(os.path.join(root, 'purlin.azure-pipelines.yml'))
+    assert 'remote is neither GitHub nor Azure DevOps' in printed
+    assert 'left the workflow unwritten; a prerequisite is missing' in printed
 
 
 # purlin: update PROOF-32
@@ -1085,18 +1264,46 @@ def test_the_page_linked_into_the_old_plugin_is_replaced(tmp_path):
     assert 'dashboard' not in _ids(root)
 
 
+# purlin: update PROOF-31
+def test_a_project_with_no_page_is_left_without_one(tmp_path):
+    root = _project(tmp_path, V095)
+    page = os.path.join(root, 'purlin-report.html')
+    assert not os.path.lexists(page)
+    assert 'dashboard' not in _ids(root)
+    _apply(root)
+    assert not os.path.lexists(page)
+
+
 # --- backups -----------------------------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
 # purlin: update PROOF-7
 def test_every_rewritten_file_leaves_its_previous_bytes(tmp_path, layout):
     root = _project(tmp_path, layout)
+    before = {}
+    for rel in _walk(root, ('*',)):
+        with open(os.path.join(root, rel), 'rb') as handle:
+            before[rel] = handle.read()
     _apply(root)
     backups = _walk(root, ('*.bak',), skip_backups=False)
     names = ' '.join(backups)
     assert '.purlin/config.json.local-' in names
     assert '.gitignore.local-' in names
     assert any(rel.startswith('specs/') for rel in backups)
+    # A file two migrations rewrite has two copies, each holding the bytes
+    # it had before that migration; one of them holds its bytes from before
+    # the run, and each is named for the bytes it holds.
+    held = {}
+    for rel in backups:
+        named = re.match(r'^(.+)\.local-([0-9a-f]{8})\.bak$', rel)
+        assert named, rel
+        assert named.group(1) in before, rel
+        with open(os.path.join(root, rel), 'rb') as handle:
+            data = handle.read()
+        assert hashlib.sha256(data).hexdigest()[:8] == named.group(2), rel
+        held.setdefault(named.group(1), []).append(data)
+    for rel, copies in held.items():
+        assert before[rel] in copies, rel
 
 
 # purlin: update PROOF-7
