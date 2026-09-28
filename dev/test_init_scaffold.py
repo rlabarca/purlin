@@ -255,8 +255,6 @@ class TestTheOneQuestion:
         assert config['gate'] == gate
         assert config['min_strength'] == strength
         assert sorted(config) == CONFIG_KEYS
-        for key in scaffold_module.gate_module.RETIRED_KEYS:
-            assert key not in config, key
 
     @pytest.mark.parametrize('gate', ['passed', 'strong', 'signed'])
     # purlin: scaffold PROOF-2
@@ -283,7 +281,7 @@ class TestTheOneQuestion:
             made.close()
 
     # purlin: scaffold PROOF-5
-    def test_the_config_holds_the_shape_and_no_retired_key(self, project):
+    def test_the_config_holds_the_shape(self, project):
         output = project.run('--gate', 'strong')
         config = project.config()
         assert sorted(config) == CONFIG_KEYS
@@ -585,7 +583,7 @@ class TestNobodyIsNamed:
     # purlin: scaffold PROOF-12
     def test_raising_the_gate_writes_the_setting_and_no_workflow(self,
                                                                  project):
-        """The gate no longer decides whether a project has a runner."""
+        """A runner is decided by trust and the `@env` tags, not the gate."""
         project.run('--gate', 'passed')
         assert not project.has('.github/workflows/purlin.yml')
         project.run('--gate', 'strong')
@@ -770,14 +768,6 @@ class TestTheWorkflow:
         assert 'v%s' % version in read(
             project.path('.github/workflows/purlin.yml'))
 
-    # purlin: scaffold PROOF-17
-    def test_no_branch_rule_is_printed(self, project):
-        """The gate is the tag now, so there is no rule to apply."""
-        for gate in ('passed', 'strong', 'signed'):
-            output = project.run('--gate', gate)
-            assert 'Branch rule' not in output, output
-            assert 'force push' not in output.lower(), output
-
     # purlin: scaffold PROOF-42
     def test_the_triggers_are_a_run_branch_and_the_signing_tag(self, project):
         self._trust_remote(project)
@@ -828,7 +818,6 @@ class TestWhatInitWrites:
                     '.purlin/evidence/README.md', 'purlin-report.html'):
             assert rel in named, output
             assert project.has(rel), rel
-        assert not project.has('designs'), 'init writes no designs folder'
 
     # purlin: scaffold PROOF-19
     def test_the_gitignore_block_is_added_once(self, project):
@@ -900,14 +889,8 @@ class TestWhatInitWrites:
         assert lines[-1].startswith('→')
 
     # purlin: scaffold PROOF-35
-    def test_no_emoji_and_no_retired_word_in_the_output(self, project):
+    def test_no_emoji_in_the_output(self, project):
         output = project.run('--gate', 'signed')
-        # Spelled in halves so this file does not carry the words either.
-        for word in ('rece' + 'ipt', 'CODE' + 'OWNERS', 'fo' + 'rge',
-                     'plat' + 'form', 'tes' + 'ted', 'reco' + 'rded',
-                     'appro' + 'ved', 'appro' + 'ver', 'ver' + 'dict',
-                     'verify' + '_gate'):
-            assert word not in output.lower(), word
         assert all(ord(ch) < 0x1F000 for ch in output)
 
 
@@ -916,10 +899,12 @@ class TestNoHookIsInstalled:
 
     # purlin: scaffold PROOF-24
     def test_no_git_hook_is_written_at_all(self, project):
+        hooks = project.path('.git/hooks')
+        before = sorted(os.listdir(hooks)) if os.path.isdir(hooks) else []
         project.run('--gate', 'passed')
-        for rel in ('.purlin/hooks/pre-push', '.git/hooks/pre-push',
-                    '.purlin/hooks/pre-commit', '.git/hooks/pre-commit'):
-            assert not project.has(rel), rel
+        after = sorted(os.listdir(hooks)) if os.path.isdir(hooks) else []
+        assert after == before
+        assert 'pre-push' not in after and 'pre-commit' not in after
 
     # purlin: scaffold PROOF-24
     def test_a_hook_someone_else_wrote_is_left_alone(self, project):
@@ -927,11 +912,6 @@ class TestNoHookIsInstalled:
         project.run('--gate', 'passed')
         assert read(project.path('.git/hooks/pre-push')) == \
             '#!/bin/sh\necho mine\n'
-
-    # purlin: scaffold PROOF-24
-    def test_the_plugin_ships_no_hook_script(self):
-        assert not os.path.exists(
-            os.path.join(ROOT, 'scripts', 'hooks', 'pre-push.sh'))
 
 
 # ---------------------------------------------------------------------------

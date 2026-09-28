@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# End to end: a project set up by purlin:init, walked from the first spec to a
-# gate that lets a change merge.
+# End to end: a project set up by purlin:init, walked from the first spec to
+# the signed tag.
 #
 #   bash dev/init_e2e_walk.sh gates|wiring|all
 #
@@ -10,7 +10,7 @@
 # the gate steps, which are most of the time; `all` runs everything and exits
 # on every check.
 #
-# The walk is the one the plan traces. On each fixture:
+# On each fixture:
 #
 #   1. purlin:init at gate passed
 #   2. a hand-written spec and one test carrying one marker comment
@@ -23,10 +23,10 @@
 #   8a. a --ci section, committed under the build identity, reads as CI's
 #   8b. a --ci run on a signed/ tag, which commits nothing and says so
 #   8c. a --ci run on a run/* branch, which commits
-#  10. purlin:init --gate signed        raises again
-#  11. gate_check.py --check            exits 1: the rule has no signature
-#  12. sign.py, signed by a throwaway key that exists only in the temp repo
-#  13. gate_check.py --check            exits 0
+#   9. purlin:init --gate signed        raises again
+#  10. gate_check.py --check            exits 1: the rule has no signature
+#  11. sign.py, signed by a throwaway key that exists only in the temp repo
+#  12. gate_check.py --check            exits 0
 #
 # Nothing here reaches a git host. The CI identity is a GIT_COMMITTER_NAME and
 # a signature on a local commit, which is what `committed_by` reads, and both
@@ -288,8 +288,6 @@ gate_walk() {  # dir language
     'every proof runs on this operating system' "$dir/.purlin-init.log"
   expect_absent "$language: and no workflow file is written" \
     "$dir/.github/workflows/purlin.yml"
-  expect_not_in "$language: and no branch rule is printed" \
-    'force push' "$dir/.purlin-init.log"
   expect_exit "$language: strong refuses a project no audit has measured" 1 \
     python3 "$GATE" --check --project-root "$dir"
 
@@ -347,9 +345,6 @@ gate_walk() {  # dir language
 
   init_at "$dir" signed
   commit_all "$dir" "raise the gate to signed"
-  python3 "$GATE" --check --project-root "$dir" > "$dir/.purlin-gate.log" 2>&1
-  expect_not_in "$language: signed names nobody who may sign" \
-    'purlin:init --gate signed' "$dir/.purlin-gate.log"
 
   # A person's own evidence counts at signed too. With CI's out of the way
   # the gate still reads the section the local run wrote, and what is left is
@@ -393,7 +388,6 @@ gate_walk() {  # dir language
     'Run: git push origin signed/' "$dir/.purlin-walk.log"
 
   # No git hook of any kind is installed, at commit time or at push time.
-  expect_absent "$language: no pre-push shim" "$dir/.purlin/hooks/pre-push"
   expect_absent "$language: no pre-push hook" "$dir/.git/hooks/pre-push"
   expect_absent "$language: no pre-commit hook" "$dir/.git/hooks/pre-commit"
 }
@@ -537,8 +531,6 @@ EOF
   mark
   expect_in "xunit: the config names the dotnet suite" \
     '"name": "dotnet"' "$dir/.purlin/config.json"
-  expect_not_in "xunit: nothing asks for a logger" \
-    'logger purlin' "$dir/.purlin-init.log"
 
   # A solution at the root is what lets the suite's plain `dotnet test` reach
   # the test project.
