@@ -38,7 +38,7 @@ var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
    three above them carry the project's own platform, audit and signer lines
    instead, which are the column hovers read over every spec. */
 var TILE_HOVER = {
-  untested: 'No test, no current run, or a spec line still drafted.',
+  untested: 'No test, no current run, or no proof written.',
   failing: 'Every platform that ran the tests found a failure.',
   partial: 'Passed on one platform, failed or did not run on another.'};
 
@@ -60,7 +60,7 @@ var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
    screen and a row on the Review tab agree. */
-var CELL_TONES = {'ready': 'pass', 'drafted': 'idle', 'passed': 'pass',
+var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
   'manual test': 'warn', 'not audited': 'idle', 'unsettled': 'warn',
@@ -170,19 +170,22 @@ function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
 }
 
-/* A rule's bar: the evidence it must have before it can be signed, `passed`
-   or `strong`. A bar of `strong` is the higher one, so it carries the accent
-   border the tag already has and a bar of `passed` reads muted. */
-function barTag(rule) {
-  var bar = (rule || {}).bar === 'strong' ? 'strong' : 'passed';
-  return '<span class="tag' + (bar === 'strong' ? '' : ' plain') + '">'
-    + esc(bar) + '</span>';
+/* A rule's level: `passed`, `strong` or `signed`, the gate's own words. A
+   level above `passed` asks for more than the tests, so it carries the accent
+   border the tag already has and a level of `passed` reads muted. */
+function levelTag(rule) {
+  var level = (rule || {}).level || 'passed';
+  return '<span class="tag' + (level === 'passed' ? ' plain' : '') + '">'
+    + esc(level) + '</span>';
 }
 
-/* Where a rule's bar came from: the rule's own tag, or the project's gate
-   where the rule carries no tag. */
-function barSource(rule) {
-  return (rule || {}).bar_from === 'gate' ? 'from the gate' : 'from the tag';
+/* Where a rule's level came from: the rule's own tag, or the project's gate
+   where the rule carries no tag. A tag above the gate is read as the gate. */
+function levelSource(rule) {
+  var marked = (rule || {}).level_marked;
+  if (!marked) { return '(the gate)'; }
+  if (marked === rule.level) { return '(marked)'; }
+  return '(marked ' + marked + '; the gate is the ceiling)';
 }
 
 /* Every rule the project holds, each paired with the feature that owns it. */

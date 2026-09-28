@@ -1,4 +1,4 @@
-> Format-Version: 8
+> Format-Version: 9
 
 # Signature Format
 
@@ -65,7 +65,7 @@ with nothing behind it yet.
   "test_hash": "1d93...",
   "test_hash_kind": "file",
   "audit_hash": "e3b0c442...",
-  "bar": "strong",
+  "level": "signed",
   "signer": "jane@acme.com",
   "note": null,
   "timestamp": "2026-09-13T12:00:00Z",
@@ -75,8 +75,8 @@ with nothing behind it yet.
 ```
 
 REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
-`test_hash`, `audit_hash`, `bar`, `signer`, `timestamp`. Every other field is
-OPTIONAL.
+`test_hash`, `audit_hash`, `level`, `signer`, `timestamp`. Every other field
+is OPTIONAL.
 
 | Field | Type | What it holds |
 |---|---|---|
@@ -89,7 +89,7 @@ OPTIONAL.
 | `test_hash` | string | T |
 | `test_hash_kind` | string | `file`, `manual` or `none` |
 | `audit_hash` | string | A, the hash of what the audit found |
-| `bar` | string | `passed` or `strong`, the bar the rule carried when it was signed |
+| `level` | string | `passed`, `strong` or `signed`, the rule's level when it was signed. Logged, not compared |
 | `signer` | string | the signer's email |
 | `note` | string or null | the one line `purlin:sign --note` writes for a `@manual` proof or an AI audit that could not settle; null otherwise |
 | `timestamp` | string | ISO 8601 UTC with `Z` |
@@ -99,21 +99,20 @@ OPTIONAL.
 ## Current, and stale
 
 A signature is **current** when the three hashes it binds still equal the
-recomputed ones, the audit hash still matches, and the bar it names still
-matches the rule's. Anything else is a signature
-stale and a person has to look.
+recomputed ones and the audit hash still matches. Anything else is a
+signature stale and a person has to look.
 
-Changing the bar stales the signature on purpose: raising a rule from
-`passed` to `strong` changes what signing it meant, and the old attestation
-was given under the old bar. So does a re-audit that finds something
-different: the strength moved, or the AI audit found something it did not
-find before, or settled where it had not. A rule whose first audit writes an
+The level is logged, not locked: `level` says what the rule asked for when it
+was signed, and marking the rule differently afterwards leaves the signature
+current. A re-audit that finds something different stales it: the strength
+moved, or the AI audit found something it did not find before, or settled
+where it had not. A rule whose first audit writes an
 entry where there was none goes stale for the same reason, which is the
 honest answer: there is evidence now that there was not before.
 
-A hold binds the triple and the bar, and not the audit. A hold is
-a person saying the test does not prove the proof, which is a statement about
-the rule, the proof and the test; a re-audit does not answer it.
+A hold binds the triple, and not the audit. A hold is a person saying the
+test does not prove the proof, which is a statement about the rule, the proof
+and the test; a re-audit does not answer it.
 
 Changing the code alone stales nothing. The evidence carries the fingerprint
 of the spec's `> Scope:` files, not the signature, so a code change leaves the
@@ -134,7 +133,7 @@ Under `signed` a signature counts when two things hold:
 | Condition | How it is read | The reason when it fails |
 |---|---|---|
 | The commit that added the file is signed and verifies | `git log -1 --format=%G?` prints `G` | `the signing commit is not signed` |
-| Its hashes are current | the rule, proof, test, bar and audit hashes, as above | `hashes changed after the signature` (the cell reads `stale`) |
+| Its hashes are current | the rule, proof, test and audit hashes, as above | `hashes changed after the signature` (the cell reads `stale`) |
 
 Nothing else is read. Signing is logged, not policed: the file names the
 signer and git names the commit's author, and neither is compared with a list
@@ -148,11 +147,9 @@ code, and says to run `purlin:test --remote` first. A rule whose proofs are
 all `@manual` is not refused. At the default, `trust: local`, your own run is
 the evidence.
 
-`sign_at` in `.purlin/config.json` says which rules need a signature:
-`strong`, the default, asks for one on every rule whose bar is `strong`, and
-`all` asks for one on every rule. A rule that needs none carries `required`
-false on its signed cell and meets the level whichever way that cell reads.
-`references/hard_gates.md` holds the gate levels and what the tag `signed/<version>` means.
+A rule needs a signature exactly when its level is `signed`. A rule whose
+level is lower still shows its signed cell, and that cell does not keep it
+from meeting the gate. `references/hard_gates.md` holds the gate levels and what the tag `signed/<version>` means.
 
 ## Holds
 
@@ -171,7 +168,6 @@ a signature, with a fourth part in the name:
   "proof_hash": "c07a...",
   "test_hash": "1d93...",
   "test_hash_kind": "file",
-  "bar": "passed",
   "holder": "jane@acme.com",
   "reason": "the tests call _azure and _host apart; none calls run_remote()",
   "timestamp": "2026-09-16T12:00:00Z",
@@ -180,8 +176,8 @@ a signature, with a fourth part in the name:
 ```
 
 REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
-`test_hash`, `bar`, `holder`, `reason`, `timestamp`. The hashes, `bar` and
-`evidence` mean what they mean in a signature; `holder` is the person's email and
+`test_hash`, `holder`, `reason`, `timestamp`. The hashes and `evidence` mean
+what they mean in a signature; `holder` is the person's email and
 `reason` the missing case, in words.
 
 A hold is current under the same test as a signature. While it is current the

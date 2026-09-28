@@ -12,7 +12,7 @@ and shows one project's names to every reader.
     dashboard-regulated.png    the board at signed, with the Signed column
     dashboard-rule.png         one rule, its cells, its brief, its proofs
     dashboard-review-list.png  the rules whose next step is a person
-    dashboard-sign.png         the rules that have cleared their bar, waiting to be signed
+    dashboard-sign.png         the rules whose tests and audit are met, waiting to be signed
 
 Each is the dark theme at 1440 wide, captured at 2x so the type stays crisp.
 Uses dev/browser_launch.py, so it drives an installed Google Chrome when the

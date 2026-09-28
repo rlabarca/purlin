@@ -1,4 +1,4 @@
-/* The Rule screen: one rule, the spec status and the cells the gate reaches,
+/* The Rule screen: one rule, its level and the cells the gate reaches,
    the brief the machine wrote, and the proofs that stand for it. */
 
 function ruleInView() {
@@ -103,10 +103,9 @@ function signPanel(feature, rule) {
   return '<div class="panel"><h2>To sign</h2>'
     + '<p><span class="cmd">purlin:sign ' + esc(feature.name) + ' '
     + esc(rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
-    + '<p class="sec">' + (cell.required === false
-      ? 'This project signs the rules whose bar is strong, and this rule’s '
-        + 'bar is passed, so no signature is required; one written anyway '
-        + 'still counts.'
+    + '<p class="sec">' + (rule.level !== 'signed'
+      ? 'This rule’s level is ' + esc(rule.level) + ', so it asks for no '
+        + 'signature; one written anyway still counts.'
       : 'A signature is a signed commit that names its signer; the page '
         + 'shows it once it is committed.') + '</p></div>';
 }
@@ -143,11 +142,11 @@ function renderRule() {
   }
   var feature = found.feature;
   var rule = found.rule;
-  var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted') + '</dd>'];
+  var rows = [];
   GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
   if (level('strong')) {
-    rows.push('<dt>Bar</dt><dd>' + barTag(rule) + ' <span class="sec">'
-      + esc(barSource(rule)) + '</span></dd>');
+    rows.push('<dt>Level</dt><dd>' + levelTag(rule) + ' <span class="sec">'
+      + esc(levelSource(rule)) + '</span></dd>');
   }
   rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
     + '</dd>');

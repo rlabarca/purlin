@@ -15,8 +15,8 @@ The columns, left to right:
     Proofs   how many proof lines it writes, and how many have no test
     Tests    how many rules pass, and how many are partial or failing
     Strong   how many rules are strong, and the test strength, at `strong`
-    Signable how many rules have cleared their bar and need a signature, at
-             `signed`
+    Signable how many rules have passed their tests and their audit and wait
+             for a signature their level asks for, at `signed`
     Signed   how many rules are signed, at `signed`
 
 Every when, who and platform detail lives in a hover on the dashboard and on
@@ -61,8 +61,7 @@ def passing(rollup):
     """How many of a spec's rules pass their tests.
 
     A rule is counted in exactly one bucket, so the rules that pass are the
-    ones left after the three that do not: drafted or unrun, failing, and
-    partial. Reading it this way means the six counts always add up to the
+    ones left after the three that do not: untested, failing, and partial. Reading it this way means the six counts always add up to the
     rule total, whatever the gate.
     """
     total = rollup.get('rules') or 0
@@ -82,7 +81,7 @@ def signed_met(rollup):
 
 
 def signable(rollup):
-    """How many of a spec's rules are signable: cleared their bar, unsigned."""
+    """How many of a spec's rules are signable: tests and audit met, unsigned."""
     return rollup.get('signable') or 0
 
 

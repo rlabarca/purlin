@@ -819,7 +819,7 @@ def _audit(project_root, args, features, selected, log, cfg):
 def _audit_report(project_root, features, selected, break_features, commit):
     """One block per feature: the strength, then each rule's observations.
 
-    Each rule whose bar asks for the AI audit is read, and what the audit
+    Each rule whose level asks for the AI audit is read, and what the audit
     found goes into the feature's evidence as that rule's entry.
     """
     try:

@@ -8,7 +8,7 @@ a markdown file with two sections, `## Rules` and `## Proof`, and a block of
 
 Rule lines carry their tags at the end:
 
-    - RULE-3: Expired tokens are rejected with 401 [bar: strong]
+    - RULE-3: Expired tokens are rejected with 401 [level: passed]
 
 The tag is read off the end and stripped, so `rule_text_hash` sees the claim
 alone.
@@ -44,9 +44,7 @@ _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)')
 
 # The rule tag, read off the end so the text that remains is the claim alone.
-_RULE_TAG_RE = re.compile(r'\s*\[(bar):\s*([^\]]+)\]\s*$')
-
-BARS = ('passed', 'strong')
+_RULE_TAG_RE = re.compile(r'\s*\[(level):\s*([^\]]+)\]\s*$')
 
 # A trailing tag is metadata appended after the description: ` @manual`,
 # ` @env(linux)`. It must not match a description whose prose merely ends in
@@ -80,12 +78,13 @@ _RETIRED_FIELD_RE = re.compile(
 def split_rule_tags(text):
     """`(clean_text, meta)` for one rule line's description.
 
-    `meta` carries `bar` only where the line named one, because the bar a
-    rule that names none takes is the project's gate and this module does not
-    read the gate. An unrecognised value for the bar is kept as written: the
-    reader is better served by seeing what the spec says than by a silent
-    correction. Any other bracketed text at the end of the line is not a tag
-    and stays in the text.
+    `meta` carries `level` only where the line named one, because the level
+    a rule that names none takes is the project's gate and this module does
+    not read the gate. An unrecognised value is kept as written: the reader
+    is better served by seeing what the spec says than by a silent
+    correction, and the payload reads such a rule as unmarked. Any other
+    bracketed text at the end of the line is not a tag and stays in the
+    text.
     """
     meta = {}
     text = text.rstrip()
@@ -261,7 +260,7 @@ def scan_specs(project_root):
     `spec_path` (relative, `/` separated), `category` (the directory under
     `specs/`), `name`, `is_anchor`, `is_global`, `description`, `stack`,
     `requires`, `scope`, `rules` (`{RULE-N: text}` with tags stripped),
-    `rule_meta` (`{RULE-N: {bar}}`), `rule_order`,
+    `rule_meta` (`{RULE-N: {level}}`), `rule_order`,
     `proofs` (`{PROOF-N: {rules, text, manual, env}}`), `proof_env`,
     `proofs_by_rule`, `source`, `source_path`, `pinned`,
     `has_rules_section`, `unnumbered_lines` and `unknown_tags`.

@@ -55,13 +55,13 @@ def _project(tmp_path, frameworks='pytest', gate='passed'):
 
 
 def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1,
-          bar=None):
+          level=None):
     """A two-section spec. Each proof is `(id, rule, tag_suffix)`.
 
-    `bar` tags every rule, which is what decides whether a brief is owed.
+    `level` marks every rule, which is what decides whether a brief is owed.
     """
     lines = ['# %s' % feature, '', '> Scope: src/', '', '## Rules', '']
-    tag = ' [bar: %s]' % bar if bar else ''
+    tag = ' [level: %s]' % level if level else ''
     for index in range(1, rules + 1):
         lines.append('- RULE-%d: the software does thing %d%s'
                      % (index, index, tag))
@@ -698,7 +698,7 @@ class TestTheGateDecidesTheBreaks:
     def test_a_ci_run_measures_nothing_and_audits_nothing(
             self, tmp_path, evidence_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat', bar='strong')
+        _spec(root, 'feat', level='strong')
         _code, calls = evidence_run(root, '--all', '--ci')
         capsys.readouterr()
         assert calls['breaks'] == []
@@ -773,10 +773,10 @@ class TestTheMarkerScanReadsEveryFrameworkSMarker:
 class TestTheAuditGateLine:
     """The audit answers level 2, so its last line names the strong cell."""
 
-    # The bar is `passed`, so the AI audit is not owed on the rule and the
+    # The level is `passed`, so the AI audit is not owed on the rule and the
     # strength is the whole of level 2.
     SPEC = ('# Feature: feat\n\n> Scope: src/feat.py\n\n## Rules\n\n'
-            '- RULE-1: The value is 2 [bar: passed]\n\n## Proof\n\n'
+            '- RULE-1: The value is 2 [level: passed]\n\n## Proof\n\n'
             '- PROOF-1 (RULE-1): Import feat and read VALUE; verify it is '
             'exactly 2\n')
 

@@ -8,7 +8,7 @@ how many proofs it writes and how many of those have no test, and how many
 rules pass their tests. At `strong` the row adds how many rules are strong
 and the test strength; at `signed` it adds how many are signable and how many
 are signed. The table scales with the gate: a `passed` project is never shown
-a strength, a bar or a signature it did not ask for.
+a strength, a level or a signature it did not ask for.
 
 Copy follows `references/writing_style.md`: sentence case, second person for what you
 do, third person for what Purlin does, exact numbers, and the only glyphs are
@@ -24,7 +24,8 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import (board as board_module, drift as drift_module,
-                    payload as payload_module, specs as specs_module, states)
+                    gate as gate_module, payload as payload_module,
+                    specs as specs_module, states)
 
 ARROW = '→'
 DOT = board_module.DOT
@@ -155,16 +156,45 @@ def _summary(data):
         if summary.get('held'):
             second.append('%d rules held' % summary['held'])
     if gate == 'signed':
-        second.append('a signature on %s'
-                      % ('every rule' if cfg.get('sign_at') == 'all'
-                         else 'every rule whose bar is strong'))
+        second.append('a signature on every rule whose level is signed')
         if summary.get('stale'):
             second.append('%s stale'
                           % board_module.count_of(summary['stale'],
                                                   'signature'))
     lines.append(', '.join(second) + '.')
     lines.extend(_list_lines(data, gate))
+    above = marked_above_the_gate(data)
+    if above:
+        lines.append(above_the_gate_line(above, gate))
     return lines
+
+
+def marked_above_the_gate(data):
+    """How many rules carry a `[level: ...]` tag above the project's gate.
+
+    The gate is the ceiling, so such a rule is read as the gate. Each rule is
+    counted once, under the feature that owns it.
+    """
+    gate = data['gate']['gate']
+    ceiling = gate_module.GATES.index(gate)
+    count = 0
+    for feature in data['features']:
+        for rule in feature.get('rules') or ():
+            if rule.get('label') != 'own':
+                continue
+            marked = rule.get('level_marked')
+            if marked in gate_module.GATES and (
+                    gate_module.GATES.index(marked) > ceiling):
+                count += 1
+    return count
+
+
+def above_the_gate_line(count, gate):
+    """`<n> rules are marked above the gate and are read as <gate>.`"""
+    if count == 1:
+        return '1 rule is marked above the gate and is read as %s.' % gate
+    return ('%d rules are marked above the gate and are read as %s.'
+            % (count, gate))
 
 
 def _list_lines(data, gate):
@@ -186,7 +216,7 @@ def _blocking(data):
     Only a rule's own entry is counted, so a global anchor's rule is counted
     once however many features have to prove it.
     """
-    found = {'spec': 0}
+    found = {'no_proof': 0}
     for name in states.CELLS:
         found[name] = {}
     for feature in data['features']:
@@ -194,8 +224,10 @@ def _blocking(data):
             if rule.get('label') != 'own' or rule.get('meets_gate'):
                 continue
             blocked = rule.get('blocked_by')
-            if blocked == 'spec':
-                found['spec'] += 1
+            if (rule.get('flags') or {}).get('no_proof'):
+                # A rule no proof line names reads `no test` in its passed
+                # cell, and what it waits for is a proof, not a build.
+                found['no_proof'] += 1
             elif blocked in found:
                 word = ((rule.get('cells') or {}).get(blocked) or {}).get('word')
                 found[blocked][word] = found[blocked].get(word, 0) + 1
@@ -235,9 +267,9 @@ def _directives(data, project_root):
     person = len(data.get('review_list') or ()) + len(
         data.get('sign_list') or ())
 
-    if blocked['spec']:
+    if blocked['no_proof']:
         lines.append('%s Next: run purlin:spec. %d rules have no proof line '
-                     'naming them.' % (ARROW, blocked['spec']))
+                     'naming them.' % (ARROW, blocked['no_proof']))
     elif failing:
         lines.append('%s Next: run purlin:build. %d rules have a failing test.'
                      % (ARROW, failing))

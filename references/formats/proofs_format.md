@@ -312,7 +312,7 @@ results in-process, with no `.trx` post-parse.
 A rule that no test can settle carries `@manual` on its proof line. No test is written and no proof
 entry is ever produced for it, so the rule's strong cell reads `manual test`. The evidence is
 a signature file carrying a one-line note, always written by a person. CI writes no signature
-file, at any bar and under any gate.
+file, at any level and under any gate.
 
 ## Proof quality guidance
 

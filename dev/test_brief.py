@@ -8,12 +8,13 @@ reaches a service.
 
 What each group holds:
 
-*layers*        which layers run at which bar, cheapest first
+*layers*        which layers run at which level, cheapest first
 *tests*         the source of each test backing a proof stands beside it
 *strength*      the test strength comes off the evidence, and reads `n/a`
                 when no engine measured one
 *model*         the prompt is the criteria file verbatim, the AI audit runs
-                only for a rule whose bar is `strong` and only with `--ai`
+                only for a rule whose level is `strong` or `signed` and only
+                with `--ai`
 *observations*  the answer becomes one observation per sentence, and whether
                 it settled stands beside them
 *writing*       building and printing a brief writes no file
@@ -57,7 +58,7 @@ def proved():
 
 @pytest.fixture
 def at_strong():
-    """The same project at `strong`, where a strong-bar rule asks for a model."""
+    """The same project at `strong`, where an unmarked rule asks for a model."""
     made = Project(gate=REVIEW_GATE)
     made.proofs()
     made.evidence()
@@ -87,17 +88,18 @@ class TestTheLayers:
 
     @pytest.mark.proof("brief", "PROOF-1", "RULE-1")
     @pytest.mark.proof("brief", "PROOF-3", "RULE-2")
-    def test_a_passed_bar_stops_after_the_test_strength(self, proved):
+    def test_a_passed_level_stops_after_the_test_strength(self, proved,
+                                                          at_strong):
         assert build(proved, 'RULE-1')['layers'] == ['test strength']
-        assert build(proved, 'RULE-2')['layers'][-1] == 'AI audit'
+        assert build(at_strong, 'RULE-2')['layers'][-1] == 'AI audit'
 
     @pytest.mark.proof("brief", "PROOF-4", "RULE-3")
-    def test_a_strong_bar_runs_every_layer(self, proved):
-        assert build(proved, 'RULE-2')['layers'] == [
+    def test_a_strong_level_runs_every_layer(self, at_strong):
+        assert build(at_strong, 'RULE-2')['layers'] == [
             'test strength', 'AI audit']
 
     @pytest.mark.proof("brief", "PROOF-2", "RULE-1")
-    def test_a_passed_bar_asks_for_no_model(self, proved):
+    def test_a_passed_level_asks_for_no_model(self, proved):
         built = build(proved, 'RULE-1')
         assert 'AI audit' not in built['layers']
         assert built['ai_review'] is None
@@ -137,7 +139,7 @@ class TestTheTests:
     def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):
         built = build(proved, 'RULE-1')
         assert set(built) == {
-            'feature', 'rule', 'bar', 'rule_text',
+            'feature', 'rule', 'level', 'rule_text',
             'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',
             'triple_hash', 'layers', 'tests', 'test_strength', 'min_strength',
             'ai_review', 'observations', 'settled',
@@ -225,9 +227,9 @@ class TestTheTestStrength:
         assert build(at_strong, 'RULE-2')['min_strength'] == 70
 
     @pytest.mark.proof("brief", "PROOF-10", "RULE-9")
-    def test_a_passed_bar_still_reads_the_strength(self, proved):
+    def test_a_passed_level_still_reads_the_strength(self, proved):
         assert build(proved, 'RULE-1')['test_strength'] == 90, (
-            'the strength layer runs at either bar')
+            'the strength layer runs at every level')
 
     @pytest.mark.proof("brief", "PROOF-11", "RULE-9")
     def test_no_engine_reads_as_n_a(self):
@@ -284,10 +286,10 @@ class TestTheModelReview:
             'not available')
 
     @pytest.mark.proof("brief", "PROOF-22", "RULE-16")
-    def test_a_rule_whose_bar_is_passed_never_calls_a_model(
+    def test_a_rule_whose_level_is_passed_never_calls_a_model(
             self, at_strong, monkeypatch):
         def fail(*args, **kwargs):
-            raise AssertionError('a rule whose bar is passed calls no model')
+            raise AssertionError('a rule whose level is passed calls no model')
 
         monkeypatch.setattr(brief_module.shutil, 'which', fail)
         built = build(at_strong, 'RULE-1', ai=True)

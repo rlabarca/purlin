@@ -211,13 +211,13 @@ spec_file() {  # dir feature scope
 # Feature: $2
 
 > Scope: $3
-> Description: One rule at the strong bar: the machine settles it at strong
->   on the test strength, because no model is reachable here, and the signed
->   gate asks a person because sign_at is strong.
+> Description: One rule that takes the gate's level: the machine settles it
+>   at strong on the test strength, because no model is reachable here, and
+>   the signed gate asks a person because the rule's level is signed there.
 
 ## Rules
 
-- RULE-1: \`greet(name)\` returns \`Hello, <name>!\` [bar: strong]
+- RULE-1: \`greet(name)\` returns \`Hello, <name>!\`
 
 ## Proof
 

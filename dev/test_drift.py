@@ -670,7 +670,7 @@ class TestDriftRuleDetails:
 
         # One id per rule worth naming, and nothing for the other six.
         # `RULE-4` is the one rule no proof line names, so it is the one rule
-        # whose spec status reads `drafted`.
+        # whose passed cell reads `no proof written`.
         assert ledger['unproved'] == ['RULE-4'], ledger['unproved']
         assert ledger['met'] == ledger['total_rules'] - 1, ledger['met']
         assert ledger['spec_path'] == 'specs/ledger/ledger.md', ledger['spec_path']
@@ -681,7 +681,7 @@ class TestDriftRuleDetails:
         assert len(ledger['rules']) == 4, ledger['rules']
         for rule in ledger['rules']:
             assert set(rule) == {'rule_id', 'description', 'bucket',
-                                 'bar'}, sorted(rule)
+                                 'level'}, sorted(rule)
 
         # The long description is cut on a word boundary and says it was cut;
         # the short ones come back whole.

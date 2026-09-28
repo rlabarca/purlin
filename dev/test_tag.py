@@ -1,8 +1,8 @@
 """The tag `purlin:sign` writes, and the evidence check the tag run makes.
 
-The tag is the marker of proven code: the rule, the proof, the test, the bar
-and the audit are locked into a signature for every rule, and one annotated
-tag says so about one commit. Nothing here pushes, and nothing here writes a
+The tag is the marker of proven code: the rule, the proof, the test and the
+audit are locked into a signature for every rule whose level asks for one,
+and one annotated tag says so about one commit. Nothing here pushes, and nothing here writes a
 tag outside the temporary project the test made.
 
 What each group holds:
@@ -68,8 +68,7 @@ def _signed_project(version='2.1.0', trust='local', key=True):
     `ssh-keygen` stop for an overwrite nobody is there to answer.
     """
     made = Project(gate=SIGNING_GATE,
-                   config={'sign_at': 'strong', 'min_strength': 50,
-                           'trust': trust})
+                   config={'min_strength': 50, 'trust': trust})
     made.proofs()
     made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
     made.audit('RULE-2')

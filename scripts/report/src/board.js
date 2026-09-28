@@ -160,8 +160,9 @@ function strongCell(feature) {
     + '</span>';
 }
 
-/* How many of this spec's rules a signer can act on now: they have cleared
-   their bar, they need a signature, and none counts for them yet. It is the
+/* How many of this spec's rules a signer can act on now: their level is
+   `signed`, their tests and audit are met, and no signature counts for them
+   yet. It is the
    rollup's own `signable`, which is `board.signable_cell`, so the column, the
    `To sign` card and the Sign tab all count the same rules. The hover names
    them, because a share alone does not say which. */

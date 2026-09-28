@@ -39,7 +39,7 @@ CLOSING = 'Build it now?'
 
 RULE_LINE = re.compile(r'^-\s+(RULE-\d+):')
 PROOF_LINE = re.compile(r'^-\s+(PROOF-\d+)\s*\(([^)]*)\):')
-TAG = re.compile(r'\[(bar|origin|criterion):\s*([^\]]+)\]')
+TAG = re.compile(r'\[(level|origin|criterion):\s*([^\]]+)\]')
 
 SEED = {
     'pyproject.toml': '[tool.pytest.ini_options]\ntestpaths = ["tests"]\n',
@@ -155,7 +155,7 @@ def main(argv=None):
                 tags.setdefault(key, []).append(value.strip())
     unproved = [r for r in rules if r not in proved]
     tag_detail = ', '.join('%s on %d of %d' % (k, len(tags.get(k, [])), len(rules))
-                           for k in ('bar', 'origin', 'criterion')) or 'none'
+                           for k in ('level', 'origin', 'criterion')) or 'none'
 
     code = report([
         ('a spec file was written', rel is not None, rel or 'nothing under specs/'),

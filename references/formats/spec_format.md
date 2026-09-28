@@ -1,4 +1,4 @@
-> Format-Version: 15
+> Format-Version: 16
 
 # Spec format
 
@@ -24,7 +24,7 @@ specs/<category>/<name>.md
 
 ## Rules
 
-- RULE-1: <Testable constraint> [bar: strong]
+- RULE-1: <Testable constraint> [level: passed]
 - RULE-2: <Another testable constraint>
 
 ## Proof
@@ -75,7 +75,7 @@ ignored and the file is named once in the run's warnings.
 ## Rules format
 
 ```
-- RULE-N: <description> [bar: <level>]
+- RULE-N: <description> [level: <level>]
 ```
 
 Rule ids are assigned in increasing order and never reused. A retired rule
@@ -88,16 +88,24 @@ already names the old id. Unnumbered lines under `## Rules` are reported.
 
 The one tag sits at the end of the line and is read off it, so the text that
 remains is the claim alone: reflowing the whitespace leaves the rule text hash
-the same. The bar decides what evidence the rule must have: it is bound into a
-signature, so a bar re-tag stales that signature.
+the same. The level uses the gate's three words and means what the gate means:
+tests; tests and audit; tests, audit and signature. A signature records the
+level the rule had when it was signed and does not lock it, so re-marking a
+rule stales no signature.
 
 | Tag | Values | Default | Meaning |
 |-----|--------|---------|---------|
-| `[bar: ...]` | `passed`, `strong` | the project's gate: `passed` at the gate `passed`, `strong` at `strong` and at `signed` | The evidence the rule must have before it can be signed. A rule whose bar is `strong` is the one the AI audit runs on, and the one that needs a signature under `sign_at: strong` |
+| `[level: ...]` | `passed`, `strong`, `signed` | the project's gate | The evidence the rule must have to meet the gate. `passed` asks for passing tests; `strong` for passing tests and an audit that found them sound; `signed` for both and a signature |
 
-A rule that names no bar takes the project's gate, which is an answer rather
-than a gap. Any other bracketed text at the end of the line is not a tag: it
-stays in the claim.
+A rule that names no level takes the project's gate, which is an answer
+rather than a gap. The gate is the ceiling: a rule's level is the lower of its
+tag and the gate, so a tag above the gate is read as the gate and
+`purlin:status` says how many rules are marked above it. A value that is not
+one of the three words is read as no tag. Any other bracketed text at the end
+of the line is not a tag: it stays in the claim.
+
+A rule no proof line names reads `no test` in its passed cell, with the reason
+`no proof written`.
 
 ### Good rules
 

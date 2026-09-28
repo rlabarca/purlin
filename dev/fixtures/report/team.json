@@ -82,8 +82,6 @@
       "rules": [
         {
           "audit_hash": "982cc3f0f167264619ffe8b967431700bb24bccd6c585842e728bc38d9ccc6e2",
-          "bar": "strong",
-          "bar_from": "tag",
           "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
@@ -115,12 +113,12 @@
               "word": "unsettled"
             }
           },
-          "cleared": false,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -129,6 +127,8 @@
           },
           "id": "RULE-1",
           "label": "own",
+          "level": "strong",
+          "level_marked": "strong",
           "meets_gate": false,
           "proof_hash": "prule1log",
           "proofs": [
@@ -147,15 +147,12 @@
           ],
           "rule_hash": "rrule1log",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule1log",
           "test_hash_kind": "file",
           "text": "A person signs in with an email address and a password."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "strong",
-          "bar_from": "gate",
           "blocked_by": null,
           "bucket": "strong",
           "cells": {
@@ -183,12 +180,12 @@
               "word": "strong"
             }
           },
-          "cleared": true,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -197,6 +194,8 @@
           },
           "id": "RULE-2",
           "label": "own",
+          "level": "strong",
+          "level_marked": null,
           "meets_gate": true,
           "proof_hash": "prule2log",
           "proofs": [
@@ -215,15 +214,12 @@
           ],
           "rule_hash": "rrule2log",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule2log",
           "test_hash_kind": "file",
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "passed",
-          "bar_from": "tag",
           "blocked_by": null,
           "bucket": "strong",
           "cells": {
@@ -251,12 +247,12 @@
               "word": "strong"
             }
           },
-          "cleared": true,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -265,6 +261,8 @@
           },
           "id": "RULE-3",
           "label": "own",
+          "level": "passed",
+          "level_marked": "passed",
           "meets_gate": true,
           "proof_hash": "prule3log",
           "proofs": [
@@ -283,7 +281,6 @@
           ],
           "rule_hash": "rrule3log",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule3log",
           "test_hash_kind": "file",
           "text": "A locked account sends one notification email."
@@ -343,8 +340,6 @@
       "rules": [
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "strong",
-          "bar_from": "gate",
           "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
@@ -374,12 +369,12 @@
               "word": "weak"
             }
           },
-          "cleared": false,
           "feature": "invoice",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -388,6 +383,8 @@
           },
           "id": "RULE-1",
           "label": "own",
+          "level": "strong",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "prule1inv",
           "proofs": [
@@ -406,15 +403,12 @@
           ],
           "rule_hash": "rrule1inv",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule1inv",
           "test_hash_kind": "file",
           "text": "An invoice totals its lines to the cent."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "strong",
-          "bar_from": "gate",
           "blocked_by": "passed",
           "bucket": "untested",
           "cells": {
@@ -438,12 +432,12 @@
               "word": "weak"
             }
           },
-          "cleared": false,
           "feature": "invoice",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -452,6 +446,8 @@
           },
           "id": "RULE-2",
           "label": "own",
+          "level": "strong",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "prule2inv",
           "proofs": [
@@ -465,7 +461,6 @@
           ],
           "rule_hash": "rrule2inv",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule2inv",
           "test_hash_kind": "none",
           "text": "An invoice with no lines totals zero."
@@ -523,8 +518,6 @@
       "rules": [
         {
           "audit_hash": "f0771b5320b78e2385b46a63525e71a6e30975d1adfb8712011dc997da5493c4",
-          "bar": "strong",
-          "bar_from": "gate",
           "blocked_by": null,
           "bucket": "strong",
           "cells": {
@@ -552,12 +545,12 @@
               "word": "strong"
             }
           },
-          "cleared": true,
           "feature": "checkout_design",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -566,6 +559,8 @@
           },
           "id": "RULE-1",
           "label": "own",
+          "level": "strong",
+          "level_marked": null,
           "meets_gate": true,
           "proof_hash": "prule1che",
           "proofs": [
@@ -584,7 +579,6 @@
           ],
           "rule_hash": "rrule1che",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule1che",
           "test_hash_kind": "file",
           "text": "The cart page shows the order total above the pay button."
@@ -603,7 +597,6 @@
     "gate": "strong",
     "min_strength": 70,
     "mutation_engine": "auto",
-    "sign_at": null,
     "sql_engine": null,
     "test_framework": "pytest",
     "trust": "local"
@@ -614,10 +607,10 @@
   "remote_url": "https://github.com/acme/ledger.git",
   "review_list": [
     {
-      "bar": "strong",
       "cell": "strong",
       "feature": "login",
       "kind": "unsettled",
+      "level": "strong",
       "owner": "login",
       "rule": "RULE-1",
       "why": [

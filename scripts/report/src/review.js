@@ -1,11 +1,11 @@
 /* The two tabs that hold a person's work: Review, the rules the machine
-   could not finish, and Sign, the rules that have cleared their bar and are
-   waiting for a signature. `purlin:sign` walks them in that order, so the
+   could not finish, and Sign, the rules whose level is `signed`, whose tests
+   and audit are met, and that are waiting for a signature. `purlin:sign` walks them in that order, so the
    page reads them in that order too.
 
    A row on either tab reads the rule it points at rather than the list
    entry: the entry names the feature and the rule, and everything shown —
-   the text, the bar, the cell's word and its reasons — is the rule's own, so
+   the text, the level, the cell's word and its reasons — is the rule's own, so
    the page and the rule screen can never disagree. */
 
 /* Long enough to read the claim, short enough that a list of two hundred rows
@@ -49,7 +49,7 @@ function listRow(entry, rule, rest) {
     + '<span>' + esc(entry.feature) + '</span>'
     + '<span class="mono">' + esc(entry.rule) + '</span>'
     + '<span>' + esc(rule ? shortText(rule.text) : '') + '</span>'
-    + barTag(rule) + rest + '</div>';
+    + levelTag(rule) + rest + '</div>';
 }
 
 function reviewRow(entry) {
@@ -76,8 +76,8 @@ function listHead(labels) {
   }).join('') + '</div>';
 }
 
-/* A rule whose bar is `strong` is the one a project asked the most of, so it
-   is read first inside its group; the payload already orders the list that
+/* A rule whose level is highest is the one a project asked the most of, so
+   it is read first inside its group; the payload already orders the list that
    way and the page keeps that order. */
 function ofKind(entries, word) {
   return entries.filter(function (entry) {
@@ -108,7 +108,7 @@ function renderReview() {
       + group.map(reviewRow).join('');
   }).join('');
   return head + '<section><div class="tbl">'
-    + listHead(['Spec', 'Rule', 'What it claims', 'Bar', 'Reads', 'Why'])
+    + listHead(['Spec', 'Rule', 'What it claims', 'Level', 'Reads', 'Why'])
     + body + '</div></section>';
 }
 
@@ -116,16 +116,16 @@ function renderSign() {
   var entries = DATA.sign_list || [];
   if (!entries.length) {
     return '<section><p class="eyebrow">Sign</p><div class="panel empty">'
-      + 'No rule is waiting for a signature. A rule arrives here once it has '
-      + 'cleared its bar and needs a signature nobody has written for the '
-      + 'text it carries now.</div></section>';
+      + 'No rule is waiting for a signature. A rule arrives here once its '
+      + 'level is signed, it has passed its tests and its audit, and nobody '
+      + 'has signed the text it carries now.</div></section>';
   }
   var head = '<section><p class="eyebrow">Sign</p><h1>' + entries.length
     + (entries.length === 1 ? ' rule to sign' : ' rules to sign')
-    + '</h1><p class="line">Each of these has cleared its bar, so the '
-    + 'evidence its project asks for is in. A signature is a signed commit '
+    + '</h1><p class="line">Each of these has passed its tests and its '
+    + 'audit, so the evidence its level asks for is in. A signature is a signed commit '
     + 'that names its signer.</p></section>';
   return head + '<section><div class="tbl">'
-    + listHead(['Spec', 'Rule', 'What it claims', 'Bar', 'Signed', 'Command'])
+    + listHead(['Spec', 'Rule', 'What it claims', 'Level', 'Signed', 'Command'])
     + entries.map(signRow).join('') + '</div></section>';
 }

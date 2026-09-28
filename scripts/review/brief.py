@@ -5,7 +5,7 @@
 
 The brief reports; it recommends nothing. It sets the rule, its proofs and
 the source of each test that backs them beside the evidence, in two layers,
-and stops when it has enough for the rule's bar:
+and stops when it has enough for the rule's level:
 
     passed  the test strength the evidence holds
     strong  plus the AI audit, which reads the rule, the proofs and the
@@ -57,12 +57,13 @@ EXIT_BAD_INVOCATION = 2
 
 CRITERIA = os.path.join('references', 'review_criteria.md')
 
-# The layers, cheapest first, and the bar each set is built for. The AI audit
-# runs on the rules whose bar is `strong` and on no other.
+# The layers, cheapest first, and the level each set is built for. The AI
+# audit runs on the rules whose level is `strong` or `signed`.
 LAYERS = ('test strength', 'AI audit')
-_LAYERS_BY_BAR = {
+_LAYERS_BY_LEVEL = {
     'passed': LAYERS[:1],
     'strong': LAYERS,
+    'signed': LAYERS,
 }
 
 # What the brief writes where no model could be reached. The strong cell
@@ -108,8 +109,8 @@ def build_brief(project_root, payload, feature, rule, ai=False):
     if entry is None:
         return None
 
-    bar = entry.get('bar') or 'passed'
-    layers = _LAYERS_BY_BAR.get(bar, _LAYERS_BY_BAR['passed'])
+    level = entry.get('level') or 'passed'
+    layers = _LAYERS_BY_LEVEL.get(level, _LAYERS_BY_LEVEL['passed'])
     gate = payload.get('gate') or {}
     min_strength = gate.get('min_strength') or 0
     feature_entry = _feature_entry(payload, feature)
@@ -121,7 +122,7 @@ def build_brief(project_root, payload, feature, rule, ai=False):
     brief = {
         'feature': feature,
         'rule': rule,
-        'bar': bar,
+        'level': level,
         'rule_text': entry.get('text'),
         'proofs': proofs,
         'rule_hash': entry.get('rule_hash'),
@@ -152,12 +153,12 @@ def build_brief(project_root, payload, feature, rule, ai=False):
 
 
 def asks_for_a_review(entry):
-    """True when the AI audit runs on a rule: its bar is `strong`.
+    """True when the AI audit runs on a rule: its level is `strong` or `signed`.
 
     The strong cell asks the same question when it decides whether a brief
     was owed, so the answer is computed from the one place that knows it.
     """
-    return (entry or {}).get('bar') == 'strong'
+    return (entry or {}).get('level') in ('strong', 'signed')
 
 
 def _feature_entry(payload, feature):
@@ -249,8 +250,8 @@ def model_prompt(project_root, brief):
     parts.extend(INSTRUCTION)
     parts.extend([
         '',
-        '%s %s (bar %s)'
-        % (brief.get('feature'), brief.get('rule'), brief.get('bar')),
+        '%s %s (level %s)'
+        % (brief.get('feature'), brief.get('rule'), brief.get('level')),
         'Rule: %s' % (brief.get('rule_text') or '')])
     for proof in brief.get('proofs') or ():
         parts.append('%s%s: %s' % (proof.get('id'), _proof_tags(proof),
@@ -317,8 +318,8 @@ def model_observations(answer):
 def render_brief(brief):
     """The brief as text: the rule, the proof, the test, and what it found."""
     lines = []
-    lines.append('%s %s   bar %s'
-                 % (brief.get('feature'), brief.get('rule'), brief.get('bar')))
+    lines.append('%s %s   level %s'
+                 % (brief.get('feature'), brief.get('rule'), brief.get('level')))
     lines.append('')
     lines.append('Rule')
     lines.append('  %s' % (brief.get('rule_text') or ''))
@@ -346,7 +347,7 @@ def render_brief(brief):
                      % ('n/a' if strength is None else '%d percent' % strength,
                         brief.get('min_strength')))
     # The AI audit is printed only where one was asked for, so a brief for
-    # a rule whose bar is `passed` says nothing about an audit that was
+    # a rule whose level is `passed` says nothing about an audit that was
     # never owed.
     if brief.get('ai_review') is not None:
         if brief['ai_review'] != NOT_AVAILABLE:

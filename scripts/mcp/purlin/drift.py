@@ -26,7 +26,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import payload as payload_module, specs as specs_module, states
+from purlin import payload as payload_module, specs as specs_module
 
 ROLES = ('pm', 'qa', 'eng')
 
@@ -408,9 +408,9 @@ def compute_drift(project_root, since=None, network=True, data=None):
             'total_rules': len(feature['rules']),
             'met': feature['rollup']['met'],
             'unproved': [r['id'] for r in feature['rules']
-                         if r['spec'] == states.DRAFTED],
+                         if (r.get('flags') or {}).get('no_proof')],
             'rules': [{'rule_id': r['id'], 'description': _cap(r['text']),
-                       'bucket': r['bucket'], 'bar': r['bar']}
+                       'bucket': r['bucket'], 'level': r['level']}
                       for r in feature['rules'] if r['label'] == 'own'],
         }
 

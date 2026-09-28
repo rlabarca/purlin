@@ -216,9 +216,9 @@ def rule_line(spec_path, rule_id, text, meta):
     This is the one place that decides what of a rule the fingerprint reads.
     """
     line = '%s %s %s' % (spec_path, rule_id, _normalise(text))
-    bar = (meta or {}).get('bar')
-    if bar:
-        line += ' [bar: %s]' % bar
+    level = (meta or {}).get('level')
+    if level:
+        line += ' [level: %s]' % level
     return line
 
 

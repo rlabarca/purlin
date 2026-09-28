@@ -72,8 +72,6 @@
       "rules": [
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "passed",
-          "bar_from": "gate",
           "blocked_by": null,
           "bucket": "passed",
           "cells": {
@@ -93,12 +91,12 @@
               "word": "passed"
             }
           },
-          "cleared": true,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -107,6 +105,8 @@
           },
           "id": "RULE-1",
           "label": "own",
+          "level": "passed",
+          "level_marked": null,
           "meets_gate": true,
           "proof_hash": "prule1log",
           "proofs": [
@@ -125,15 +125,12 @@
           ],
           "rule_hash": "rrule1log",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule1log",
           "test_hash_kind": "file",
           "text": "A person signs in with an email address and a password."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "passed",
-          "bar_from": "gate",
           "blocked_by": "passed",
           "bucket": "untested",
           "cells": {
@@ -147,12 +144,12 @@
               "word": "no test"
             }
           },
-          "cleared": false,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -161,6 +158,8 @@
           },
           "id": "RULE-2",
           "label": "own",
+          "level": "passed",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "prule2log",
           "proofs": [
@@ -174,16 +173,13 @@
           ],
           "rule_hash": "rrule2log",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule2log",
           "test_hash_kind": "none",
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "passed",
-          "bar_from": "gate",
-          "blocked_by": "spec",
+          "blocked_by": "passed",
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -191,17 +187,19 @@
               "current": false,
               "missing_env": [],
               "platforms": {},
-              "reasons": [],
+              "reasons": [
+                "no proof written"
+              ],
               "source": null,
               "word": "no test"
             }
           },
-          "cleared": false,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": true,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -210,12 +208,13 @@
           },
           "id": "RULE-3",
           "label": "own",
+          "level": "passed",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "prule3log",
           "proofs": [],
           "rule_hash": "rrule3log",
           "signable": false,
-          "spec": "drafted",
           "test_hash": "trule3log",
           "test_hash_kind": "none",
           "text": "A locked account sends one notification email."
@@ -272,8 +271,6 @@
       "rules": [
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "passed",
-          "bar_from": "gate",
           "blocked_by": null,
           "bucket": "passed",
           "cells": {
@@ -293,12 +290,12 @@
               "word": "passed"
             }
           },
-          "cleared": true,
           "feature": "invoice",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -307,6 +304,8 @@
           },
           "id": "RULE-1",
           "label": "own",
+          "level": "passed",
+          "level_marked": null,
           "meets_gate": true,
           "proof_hash": "prule1inv",
           "proofs": [
@@ -325,15 +324,12 @@
           ],
           "rule_hash": "rrule1inv",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule1inv",
           "test_hash_kind": "file",
           "text": "An invoice totals its lines to the cent."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "passed",
-          "bar_from": "gate",
           "blocked_by": null,
           "bucket": "passed",
           "cells": {
@@ -353,12 +349,12 @@
               "word": "passed"
             }
           },
-          "cleared": true,
           "feature": "invoice",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -367,6 +363,8 @@
           },
           "id": "RULE-2",
           "label": "own",
+          "level": "passed",
+          "level_marked": null,
           "meets_gate": true,
           "proof_hash": "prule2inv",
           "proofs": [
@@ -385,7 +383,6 @@
           ],
           "rule_hash": "rrule2inv",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule2inv",
           "test_hash_kind": "file",
           "text": "An invoice with no lines totals zero."
@@ -404,7 +401,6 @@
     "gate": "passed",
     "min_strength": null,
     "mutation_engine": "auto",
-    "sign_at": null,
     "sql_engine": null,
     "test_framework": "pytest",
     "trust": "local"

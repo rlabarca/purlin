@@ -8,11 +8,14 @@ before it is proven, and every level above it is not asked for at all:
           source
 `strong`  every rule's strong cell is met too: an audit in the evidence
           of either source, test strength at or above the project
-          minimum, a settled AI audit where the bar asks for one, and nobody
-          holding the rule
-`signed`  every rule that needs a signature has a counting one: a person
-          signed the rule, proof, test, bar and audit hashes in a signed
-          commit. Who signed is logged, not policed
+          minimum, a settled AI audit, and nobody holding the rule
+`signed`  every rule has a counting signature too: a person signed the
+          rule, proof, test and audit hashes in a signed commit. Who signed
+          is logged, not policed
+
+A rule may ask for less than the gate with a `[level: ...]` tag, which takes
+the gate's own three words. The gate is the ceiling: a rule's level is the
+lower of its tag and the gate, and a rule with no tag takes the gate.
 
 One setting is not derived from the gate: `trust`, which `purlin:init` asks
 for once. `local`, the default, is a project that trusts this machine for
@@ -40,24 +43,14 @@ if _MCP_DIR not in sys.path:
 GATES = ('passed', 'strong', 'signed')
 DEFAULT_GATE = 'passed'
 
-# The two bars a rule can carry, weakest first. A bar is the evidence a rule
-# must have before it can be signed, and a rule that names none takes the
-# project's gate as its bar.
-BARS = ('passed', 'strong')
-
-# The two values `sign_at` takes: a signature on the rules whose bar is
-# `strong`, or a signature on every rule.
-SIGN_AT_VALUES = ('strong', 'all')
-DEFAULT_SIGN_AT = 'strong'
-
-# gate -> (min_strength, sign_at, breaks)
+# gate -> (min_strength, breaks)
 #
 # `min_strength` is None under `passed`: nothing measures test strength there,
 # so there is no number to compare and the audit reads `n/a`.
 _DERIVED = {
-    'passed': (None, None, False),
-    'strong': (70, None, True),
-    'signed': (80, DEFAULT_SIGN_AT, True),
+    'passed': (None, False),
+    'strong': (70, True),
+    'signed': (80, True),
 }
 
 # Whether a project trusts this machine for the tests and the signing.
@@ -74,7 +67,7 @@ RETIRED_KEYS = (
 class GateConfig(object):
     """The resolved settings one run reads, plus the warnings resolving raised."""
 
-    __slots__ = ('gate', 'min_strength', 'sign_at', 'breaks',
+    __slots__ = ('gate', 'min_strength', 'breaks',
                  'mutation_engine', 'sql_engine', 'ci',
                  'test_framework', 'trust', 'warnings')
 
@@ -111,10 +104,8 @@ def resolve_gate(config):
                 % (gate, ', '.join(GATES), DEFAULT_GATE))
         gate = DEFAULT_GATE
 
-    min_strength, sign_at, breaks = _DERIVED[gate]
+    min_strength, breaks = _DERIVED[gate]
 
-    if 'sign_at' in config:
-        sign_at = _read_sign_at(config['sign_at'], sign_at, warnings)
     if 'min_strength' in config:
         try:
             min_strength = int(config['min_strength'])
@@ -139,7 +130,6 @@ def resolve_gate(config):
     resolved = GateConfig(
         gate=gate,
         min_strength=min_strength,
-        sign_at=sign_at,
         breaks=breaks,
         mutation_engine=config.get('mutation_engine', 'auto'),
         sql_engine=config.get('sql_engine'),
@@ -151,38 +141,14 @@ def resolve_gate(config):
     return resolved
 
 
-def _read_sign_at(value, derived, warnings):
-    """`sign_at` as the config named it, or the derived value with a warning."""
-    if value is None:
-        return derived
-    named = str(value).strip().lower()
-    if named in SIGN_AT_VALUES:
-        return named
-    warnings.append(
-        '"sign_at" is %r, which is not one of %s; reading it as %r'
-        % (value, ', '.join(SIGN_AT_VALUES), derived))
-    return derived
+def level_of(marked, gate):
+    """A rule's level: the lower of its `[level: ...]` tag and the gate.
 
-
-def default_bar(gate):
-    """The bar a rule that names none takes: the project's own gate.
-
-    `passed` at the gate `passed`, `strong` at `strong` and at `signed`, so a
-    project that asks for strong evidence asks for it on every rule until a
-    rule says otherwise.
+    A rule with no tag, or with a value that is not one of the three words,
+    takes the gate. The gate is the ceiling, so a tag above it is read as
+    the gate.
     """
-    return 'passed' if gate == GATES[0] else 'strong'
-
-
-def needs_signature(gate, sign_at, bar):
-    """True when a rule with this bar has to carry a signature.
-
-    Only the `signed` gate asks for one at all. There `sign_at: all` asks on
-    every rule and `sign_at: strong` asks on the rules whose bar is `strong`.
-    """
-    if gate != 'signed':
-        return False
-    if str(sign_at or DEFAULT_SIGN_AT) == 'all':
-        return True
-    return str(bar or 'passed') == 'strong'
-
+    gate = gate if gate in GATES else DEFAULT_GATE
+    if marked not in GATES:
+        return gate
+    return GATES[min(GATES.index(marked), GATES.index(gate))]

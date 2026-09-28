@@ -113,8 +113,6 @@
       "rules": [
         {
           "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
-          "bar": "strong",
-          "bar_from": "tag",
           "blocked_by": null,
           "bucket": "signed",
           "cells": {
@@ -144,7 +142,6 @@
               "reasons": [
                 "by jane@acme.com"
               ],
-              "required": true,
               "signer": "jane@acme.com",
               "word": "signed"
             },
@@ -157,12 +154,12 @@
               "word": "strong"
             }
           },
-          "cleared": true,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -171,6 +168,8 @@
           },
           "id": "RULE-1",
           "label": "own",
+          "level": "signed",
+          "level_marked": null,
           "meets_gate": true,
           "proof_hash": "prule1log",
           "proofs": [
@@ -189,15 +188,12 @@
           ],
           "rule_hash": "rrule1log",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule1log",
           "test_hash_kind": "file",
           "text": "A person signs in with an email address and a password."
         },
         {
           "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
-          "bar": "strong",
-          "bar_from": "gate",
           "blocked_by": "signed",
           "bucket": "strong",
           "cells": {
@@ -227,7 +223,6 @@
               "reasons": [
                 "hashes changed after the signature"
               ],
-              "required": true,
               "signer": "sam@acme.com",
               "word": "stale"
             },
@@ -240,12 +235,12 @@
               "word": "strong"
             }
           },
-          "cleared": true,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -254,6 +249,8 @@
           },
           "id": "RULE-2",
           "label": "own",
+          "level": "signed",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "prule2log",
           "proofs": [
@@ -272,15 +269,12 @@
           ],
           "rule_hash": "rrule2log",
           "signable": true,
-          "spec": "ready",
           "test_hash": "trule2log",
           "test_hash_kind": "file",
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "passed",
-          "bar_from": "tag",
           "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
@@ -310,7 +304,6 @@
               "reasons": [
                 "held by sam@acme.com: the lock expiry is never read"
               ],
-              "required": false,
               "signer": null,
               "word": "held"
             },
@@ -325,12 +318,12 @@
               "word": "held"
             }
           },
-          "cleared": true,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": true,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -339,6 +332,8 @@
           },
           "id": "RULE-3",
           "label": "own",
+          "level": "passed",
+          "level_marked": "passed",
           "meets_gate": false,
           "proof_hash": "prule3log",
           "proofs": [
@@ -357,15 +352,12 @@
           ],
           "rule_hash": "rrule3log",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule3log",
           "test_hash_kind": "file",
           "text": "A locked account sends one notification email."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "strong",
-          "bar_from": "tag",
           "blocked_by": "passed",
           "bucket": "partial",
           "cells": {
@@ -396,7 +388,6 @@
               "at": null,
               "path": null,
               "reasons": [],
-              "required": true,
               "signer": null,
               "word": "unsigned"
             },
@@ -411,12 +402,12 @@
               "word": "weak"
             }
           },
-          "cleared": false,
           "feature": "login",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": true,
@@ -425,6 +416,8 @@
           },
           "id": "RULE-4",
           "label": "own",
+          "level": "signed",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "prule4log",
           "proofs": [
@@ -455,7 +448,6 @@
           ],
           "rule_hash": "rrule4log",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule4log",
           "test_hash_kind": "file",
           "text": "The session cookie is refused over an unencrypted connection."
@@ -523,8 +515,6 @@
       "rules": [
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "passed",
-          "bar_from": "tag",
           "blocked_by": null,
           "bucket": "passed",
           "cells": {
@@ -552,7 +542,6 @@
               "at": null,
               "path": null,
               "reasons": [],
-              "required": false,
               "signer": null,
               "word": "unsigned"
             },
@@ -567,12 +556,12 @@
               "word": "weak"
             }
           },
-          "cleared": true,
           "feature": "invoice",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -581,6 +570,8 @@
           },
           "id": "RULE-1",
           "label": "own",
+          "level": "passed",
+          "level_marked": "passed",
           "meets_gate": true,
           "proof_hash": "prule1inv",
           "proofs": [
@@ -599,15 +590,12 @@
           ],
           "rule_hash": "rrule1inv",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule1inv",
           "test_hash_kind": "file",
           "text": "An invoice totals its lines to the cent."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "passed",
-          "bar_from": "tag",
           "blocked_by": null,
           "bucket": "passed",
           "cells": {
@@ -635,7 +623,6 @@
               "at": null,
               "path": null,
               "reasons": [],
-              "required": false,
               "signer": null,
               "word": "unsigned"
             },
@@ -653,12 +640,12 @@
               "word": "weak"
             }
           },
-          "cleared": true,
           "feature": "invoice",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -667,6 +654,8 @@
           },
           "id": "RULE-2",
           "label": "own",
+          "level": "passed",
+          "level_marked": "passed",
           "meets_gate": true,
           "proof_hash": "prule2inv",
           "proofs": [
@@ -685,15 +674,12 @@
           ],
           "rule_hash": "rrule2inv",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule2inv",
           "test_hash_kind": "file",
           "text": "An invoice with no lines totals zero."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "strong",
-          "bar_from": "gate",
           "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
@@ -710,7 +696,6 @@
               "at": null,
               "path": null,
               "reasons": [],
-              "required": true,
               "signer": null,
               "word": "unsigned"
             },
@@ -726,12 +711,12 @@
               "word": "manual test"
             }
           },
-          "cleared": false,
           "feature": "invoice",
           "flags": {
             "failing": false,
             "held": false,
             "manual": true,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -740,6 +725,8 @@
           },
           "id": "RULE-3",
           "label": "own",
+          "level": "signed",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "d4e5f6a7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "proofs": [
@@ -753,7 +740,6 @@
           ],
           "rule_hash": "c3d4e5f6aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "signable": false,
-          "spec": "ready",
           "test_hash": null,
           "test_hash_kind": "manual",
           "text": "A credit note prints the original invoice number and the reason the credit was raised"
@@ -812,8 +798,6 @@
       "rules": [
         {
           "audit_hash": "9e0234b91cb67b7cc732ed426155abfcd337d8b475526678af23259ba26330d9",
-          "bar": "strong",
-          "bar_from": "gate",
           "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
@@ -836,7 +820,6 @@
               "at": null,
               "path": null,
               "reasons": [],
-              "required": true,
               "signer": null,
               "word": "unsigned"
             },
@@ -853,12 +836,12 @@
               "word": "unsettled"
             }
           },
-          "cleared": false,
           "feature": "checkout_design",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
@@ -867,6 +850,8 @@
           },
           "id": "RULE-1",
           "label": "own",
+          "level": "signed",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "prule1che",
           "proofs": [
@@ -885,7 +870,6 @@
           ],
           "rule_hash": "rrule1che",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule1che",
           "test_hash_kind": "file",
           "text": "The cart page shows the order total above the pay button."
@@ -944,8 +928,6 @@
       "rules": [
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "strong",
-          "bar_from": "gate",
           "blocked_by": "passed",
           "bucket": "untested",
           "cells": {
@@ -964,7 +946,6 @@
               "at": null,
               "path": null,
               "reasons": [],
-              "required": true,
               "signer": null,
               "word": "unsigned"
             },
@@ -979,12 +960,12 @@
               "word": "weak"
             }
           },
-          "cleared": false,
           "feature": "export",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": false,
             "out_of_date": true,
             "partial": false,
@@ -993,6 +974,8 @@
           },
           "id": "RULE-1",
           "label": "own",
+          "level": "signed",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "prule1exp",
           "proofs": [
@@ -1011,15 +994,12 @@
           ],
           "rule_hash": "rrule1exp",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule1exp",
           "test_hash_kind": "file",
           "text": "A statement export lists every invoice of the month in date order."
         },
         {
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "bar": "strong",
-          "bar_from": "gate",
           "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
@@ -1042,7 +1022,6 @@
               "at": null,
               "path": null,
               "reasons": [],
-              "required": true,
               "signer": null,
               "word": "unsigned"
             },
@@ -1057,12 +1036,12 @@
               "word": "not audited"
             }
           },
-          "cleared": false,
           "feature": "export",
           "flags": {
             "failing": false,
             "held": false,
             "manual": false,
+            "no_proof": false,
             "not_audited": true,
             "out_of_date": false,
             "partial": false,
@@ -1071,6 +1050,8 @@
           },
           "id": "RULE-2",
           "label": "own",
+          "level": "signed",
+          "level_marked": null,
           "meets_gate": false,
           "proof_hash": "prule2exp",
           "proofs": [
@@ -1089,7 +1070,6 @@
           ],
           "rule_hash": "rrule2exp",
           "signable": false,
-          "spec": "ready",
           "test_hash": "trule2exp",
           "test_hash_kind": "file",
           "text": "A statement export opens with a header row naming every column."
@@ -1108,7 +1088,6 @@
     "gate": "signed",
     "min_strength": 80,
     "mutation_engine": "auto",
-    "sign_at": "strong",
     "sql_engine": null,
     "test_framework": "pytest",
     "trust": "local"
@@ -1119,10 +1098,10 @@
   "remote_url": "https://github.com/acme/ledger.git",
   "review_list": [
     {
-      "bar": "strong",
       "cell": "strong",
       "feature": "checkout_design",
       "kind": "unsettled",
+      "level": "signed",
       "owner": "checkout_design",
       "rule": "RULE-1",
       "why": [
@@ -1130,10 +1109,10 @@
       ]
     },
     {
-      "bar": "strong",
       "cell": "strong",
       "feature": "invoice",
       "kind": "manual test",
+      "level": "signed",
       "owner": "invoice",
       "rule": "RULE-3",
       "why": [
@@ -1141,10 +1120,10 @@
       ]
     },
     {
-      "bar": "passed",
       "cell": "strong",
       "feature": "login",
       "kind": "held",
+      "level": "passed",
       "owner": "login",
       "rule": "RULE-3",
       "why": [
@@ -1155,10 +1134,10 @@
   "schema_version": 9,
   "sign_list": [
     {
-      "bar": "strong",
       "cell": "signed",
       "feature": "login",
       "kind": "stale",
+      "level": "signed",
       "owner": "login",
       "rule": "RULE-2",
       "why": [

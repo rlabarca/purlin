@@ -49,8 +49,8 @@ PUBLISHED_V1='# Anchor: ext_security
 
 ## Rules
 
-- RULE-1: Every request carries an authenticated principal [bar: strong]
-- RULE-2: Secrets are read from the environment, never from a file [bar: strong]
+- RULE-1: Every request carries an authenticated principal
+- RULE-2: Secrets are read from the environment, never from a file
 
 ## Proof
 
@@ -65,9 +65,9 @@ PUBLISHED_V2='# Anchor: ext_security
 
 ## Rules
 
-- RULE-1: Every request carries an authenticated principal [bar: strong]
-- RULE-2: Secrets are read from the environment alone [bar: strong]
-- RULE-3: Every failed sign-in is written to the log [bar: strong]
+- RULE-1: Every request carries an authenticated principal
+- RULE-2: Secrets are read from the environment alone
+- RULE-3: Every failed sign-in is written to the log
 
 ## Proof
 
@@ -83,7 +83,7 @@ LOCAL_ANCHOR='# Anchor: local_security
 
 ## Rules
 
-- RULE-1: Every input is sanitised before it reaches the database [bar: strong]
+- RULE-1: Every input is sanitised before it reaches the database
 
 ## Proof
 
@@ -220,7 +220,7 @@ with open(path, encoding='utf-8') as handle:
     text = handle.read()
 text = text.replace(
     '## Proof',
-    '- RULE-2: Every response carries a request id [bar: passed]\n\n## Proof')
+    '- RULE-2: Every response carries a request id [level: passed]\n\n## Proof')
 text += '- PROOF-2 (RULE-2): Read the response headers; verify X-Request-Id\n'
 with open(path, 'w', encoding='utf-8') as handle:
     handle.write(text)
@@ -260,7 +260,7 @@ with open(path, encoding='utf-8') as handle:
     text = handle.read()
 text = text.replace(
     '## Proof',
-    '- RULE-2: Spacing uses the four pixel grid [bar: passed]\n\n## Proof')
+    '- RULE-2: Spacing uses the four pixel grid [level: passed]\n\n## Proof')
 text += '- PROOF-2 (RULE-2): Measure the gutters; verify each is a multiple of four\n'
 with open(path, 'w', encoding='utf-8') as handle:
     handle.write(text)
@@ -292,7 +292,7 @@ with open(path, encoding='utf-8') as handle:
     text = handle.read()
 text = text.replace(
     '## Proof',
-    '- RULE-9: This project alone requires two-person review [bar: passed]\n\n## Proof')
+    '- RULE-9: This project alone requires two-person review [level: passed]\n\n## Proof')
 with open(path, 'w', encoding='utf-8') as handle:
     handle.write(text)
 PY

@@ -62,7 +62,7 @@ cat > "$TMPDIR_E2E/specs/_anchors/security_no_eval.md" << 'SPEC'
 
 ## Rules
 
-- RULE-1: No eval() call in any source file [bar: strong]
+- RULE-1: No eval() call in any source file
 
 ## Proof
 
@@ -77,7 +77,7 @@ cat > "$TMPDIR_E2E/specs/auth/login.md" << 'SPEC'
 
 ## Rules
 
-- RULE-1: Valid credentials return 200 with a session token [bar: strong]
+- RULE-1: Valid credentials return 200 with a session token [level: signed]
 - RULE-2: Invalid credentials return 401 and the body "denied"
 
 ## Proof
@@ -113,8 +113,8 @@ def own(rule_id):
     return [r for r in rules if r['id'] == rule_id and r['label'] == 'own'][0]
 
 
-def spec(status):
-    return len([r for r in rules if r['spec'] == status])
+def proved():
+    return len([r for r in rules if not r['flags']['no_proof']])
 
 
 def count(word):
@@ -157,16 +157,16 @@ check "the global rule names its owner" "security_no_eval" \
 
 # ── phase B: the tags ─────────────────────────────────────────────────
 echo "  --- phase B: the rule tags ---"
-check "RULE-1 carries the strong bar from its tag" "strong tag" \
-  "$(query "print(own('RULE-1')['bar'], own('RULE-1')['bar_from'])")"
-check "RULE-2 takes the gate's bar" "passed gate" \
-  "$(query "print(own('RULE-2')['bar'], own('RULE-2')['bar_from'])")"
+check "RULE-1 is marked signed and read as the gate passed" "passed signed" \
+  "$(query "print(own('RULE-1')['level'], own('RULE-1')['level_marked'])")"
+check "RULE-2 takes the gate's level" "passed None" \
+  "$(query "print(own('RULE-2')['level'], own('RULE-2')['level_marked'])")"
 check "the tag is stripped from the text" "Valid credentials return 200 with a session token" \
   "$(query "print(own('RULE-1')['text'])")"
 
 # ── phase C: nothing proved yet ───────────────────────────────────────
 echo "  --- phase C: with no test run ---"
-check "every rule's spec status is ready" "5" "$(query "print(spec('ready'))")"
+check "every rule has a proof line" "5" "$(query "print(proved())")"
 check "every rule's passed cell reads no test" "5" \
   "$(query "print(count('no test'))")"
 check "the feature counts five untested rules" "5" \

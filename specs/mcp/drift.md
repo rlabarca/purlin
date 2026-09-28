@@ -26,7 +26,7 @@
 - RULE-13: A pin row names the anchor's own spec name, never the repository path and never the file inside it [bar: strong]
 - RULE-14: The three role views `pm`, `qa` and `eng` are present on every report, each carrying its own keys: pins behind for the PM; signatures stale, the length of the review list, the length of the sign list, the rules with a manual test, the rules reading `unsettled` and the rules reading `not audited` for QA; files touched, rules affected, tests missing, pins behind and the rules whose evidence is out of date for the engineer [bar: strong]
 - RULE-15: A role argument narrows the answer to `since`, `role`, `view` and `commits`, and nothing else [bar: strong]
-- RULE-16: `rule_details` carries, per spec with a changed scope file, the spec path, the changed files, the total rule count, how many meet the gate, the ids whose spec status is `drafted` and the rules in rule-number order, each description cut to 200 characters on a word boundary and suffixed with an ellipsis when cut [bar: strong]
+- RULE-16: `rule_details` carries, per spec with a changed scope file, the spec path, the changed files, the total rule count, how many meet the gate, the ids no proof line names and the rules in rule-number order, each description cut to 200 characters on a word boundary and suffixed with an ellipsis when cut [bar: strong]
 - RULE-17: The report is serialized with no indentation and no space after a separator, because its only reader is a model paying by the token [bar: strong]
 
 ## Proof

@@ -18,8 +18,9 @@ CI writes no signature, ever.
 
 With no argument this walks two lists one brief at a time, Review first and
 then Sign. Review holds the rules whose strong cell reads `manual test`,
-`unsettled` or `held`; Sign holds the signable rules, the ones that have
-cleared their bar and need a signature they do not have. At each stop the
+`unsettled` or `held`; Sign holds the signable rules, the ones whose level
+is `signed`, whose tests and audit are met and that have no counting
+signature. At each stop the
 answer is one of four: sign the rule, add a case (a proof line to write into
 the spec), hold the rule, or skip it. The walk writes nothing until it
 closes, and then it makes one signed commit for the signatures and one per
@@ -50,6 +51,11 @@ settle the question: a rule reading `manual test` or `unsettled`.
 hold.json`, a person's statement that the test does not prove the proof as
 written, with the missing case as its reason. It is committed signed, like a
 signature.
+
+**A rule marked below `signed` asks for no signature.** Under the gate
+`signed`, a rule whose `[level: ...]` tag names `passed` or `strong` has that
+level, and naming it is refused with one line saying so; nothing is written
+for it.
 
 **Who signs is logged, not policed.** The signature names the signer and
 git names the commit's author; no list says who may sign, and nothing
@@ -96,6 +102,7 @@ TAGGED = 'Tagged %s at %s: every rule meets the gate %s.'
 PUSH_THE_TAG = 'Run: git push origin %s'
 NO_CI_RUN = ('sign: %s %s has no ci test run for this code; run '
              'purlin:test --remote first')
+MARKED_BELOW = 'sign: %s %s is marked [level: %s]; it asks for no signature.'
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
@@ -175,7 +182,7 @@ def signature_path(project_root, feature, rule, triple, signer_slug):
 
 
 def write_signature(project_root, feature, rule, signer_email, evidence_path,
-                    gate, bar, payload=None, entry=None, note=None):
+                    gate, level, payload=None, entry=None, note=None):
     """Write one signature file and return its project-relative path."""
     entry = entry or rule_entry(load_payload(project_root, payload), feature,
                                 rule)
@@ -197,7 +204,7 @@ def write_signature(project_root, feature, rule, signer_email, evidence_path,
         'test_hash': entry.get('test_hash'),
         'test_hash_kind': entry.get('test_hash_kind'),
         'audit_hash': entry.get('audit_hash'),
-        'bar': bar if bar is not None else entry.get('bar'),
+        'level': level if level is not None else entry.get('level'),
         'signer': str(signer_email),
         'note': str(note).strip() if str(note or '').strip() else None,
         'timestamp': payload_module.now_iso(),
@@ -255,7 +262,6 @@ def write_hold(project_root, feature, rule, holder_email, reason, payload=None,
         'proof_hash': entry.get('proof_hash'),
         'test_hash': entry.get('test_hash'),
         'test_hash_kind': entry.get('test_hash_kind'),
-        'bar': entry.get('bar'),
         'holder': str(holder_email),
         'reason': str(reason).strip(),
         'timestamp': payload_module.now_iso(),
@@ -286,7 +292,8 @@ def signable(payload, feature=None, rules=None):
     list: the rules reading `manual test`, `unsettled` or `held`, which a
     signature clears. At `signed` it is the Review list and then the Sign
     list, the order the walk reads them in; the Sign list holds the rules
-    that have cleared their bar, need a signature and have no counting one.
+    whose level is `signed`, whose tests and audit are met and that have no
+    counting signature.
     Everything else is build work and stays on the board.
     """
     payload = payload or {}
@@ -369,6 +376,24 @@ def _allowed(payload, targets, out=None):
     return [pair for pair in targets if pair not in refused]
 
 
+def marked_below(payload, targets):
+    """`[(feature, rule, level)]` whose `[level: ...]` tag asks for no signature.
+
+    Only the gate `signed` asks for a signature, so this is empty below it.
+    There a rule's level is `signed` unless its tag names `passed` or
+    `strong`, and such a rule meets the gate without a signature.
+    """
+    if (payload.get('gate') or {}).get('gate') != gate_module.GATES[-1]:
+        return []
+    found = []
+    for feature, rule in targets or ():
+        entry = rule_entry(payload, feature, rule) or {}
+        marked = entry.get('level_marked')
+        if marked in gate_module.GATES[:-1]:
+            found.append((feature, rule, marked))
+    return found
+
+
 # ---------------------------------------------------------------------------
 # The tag
 # ---------------------------------------------------------------------------
@@ -432,9 +457,9 @@ def short_of_the_gate(payload):
 def tag_if_met(project_root, out=None, release=None, payload=None):
     """Write `signed/<version>` when every rule meets the gate. The tag name.
 
-    This is the marker of proven code: the rule, the proof, the test, the bar
-    and the audit are locked into a signature for every rule, and the tag
-    says so about one commit. It is written after the walk's own commits, so
+    This is the marker of proven code: the rule, the proof, the test and the
+    audit are locked into a signature for every rule that asks for one, and
+    the tag says so about one commit. It is written after the walk's own commits, so
     the payload is read again rather than reused. Nothing is pushed.
     """
     out = sys.stdout if out is None else out
@@ -532,7 +557,7 @@ def sign_and_commit(project_root, targets, signer_email, note=None,
             continue
         path = write_signature(
             project_root, feature, rule, signer_email,
-            evidence_for(payload, feature), gate, entry.get('bar'),
+            evidence_for(payload, feature), gate, entry.get('level'),
             entry=entry, note=note)
         if path:
             paths.append(path)
@@ -857,6 +882,13 @@ def main(argv=None):
     if args.feature and args.rules:
         targets = [(args.feature, rule) for rule in args.rules
                    if rule_entry(payload, args.feature, rule) is not None]
+        lowered = marked_below(payload, targets)
+        for feature, rule, marked in lowered:
+            print(MARKED_BELOW % (feature, rule, marked))
+        targets = [pair for pair in targets
+                   if pair not in [(f, r) for f, r, _level in lowered]]
+        if lowered and not targets:
+            return EXIT_NOTHING
     else:
         targets = signable(payload, args.feature, None)
     # A rule on the Review list is what a signature clears at `strong`, so

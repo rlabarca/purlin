@@ -139,7 +139,7 @@ class TestSpecFormatEnforcement:
             f"{[r['id'] for r in feature['rules']]}")
 
     @pytest.mark.proof("schema_spec_format", "PROOF-4", "RULE-4")
-    def test_a_rule_with_no_proof_line_is_drafted(self):
+    def test_a_rule_with_no_proof_line_reads_no_proof_written(self):
         self._write_spec('test_feat', (
             '# Feature: test_feat\n\n'
             '## What it does\nTesting.\n\n'
@@ -150,8 +150,9 @@ class TestSpecFormatEnforcement:
         feature = next(f for f in data['features'] if f['name'] == 'test_feat')
         rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')
         assert rule['proofs'] == [], f"RULE-1 has no proof line: {rule}"
-        assert rule['spec'] == 'drafted', (
-            f"a rule with no proof is drafted, got {rule['spec']!r}")
+        cell = rule['cells']['passed']
+        assert (cell['word'], cell['reasons']) == (
+            'no test', ['no proof written']), cell
 
     @pytest.mark.proof("schema_spec_format", "PROOF-5", "RULE-5")
     def test_requires_includes_referenced_rules(self):

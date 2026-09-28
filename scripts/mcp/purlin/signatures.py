@@ -21,7 +21,7 @@ The file, field by field in `references/formats/signature_format.md`:
       "test_hash": "<sha256 of the test bodies>",
       "test_hash_kind": "file",
       "audit_hash": "<sha256 of what the audit found>",
-      "bar": "strong",
+      "level": "signed",
       "signer": "jane@acme.com",
       "note": null,
       "timestamp": "2026-09-13T12:00:00Z",
@@ -30,8 +30,9 @@ The file, field by field in `references/formats/signature_format.md`:
     }
 
 A signature is **current** when the hashes it binds still equal the
-recomputed ones and the bar it names still matches the rule's. Anything else
-is a signature stale, and a person has to look.
+recomputed ones. Anything else is a signature stale, and a person has to
+look. `level` logs the rule's level when it was signed; it is logged, not
+compared, so marking a rule differently stales nothing.
 
 `audit_hash` is what locks the audit in beside the rule, the proof and the
 test. It is taken over what the audit found: the test strength, the audit
@@ -185,19 +186,16 @@ def _load_named(project_root, features, name_re):
     return found
 
 
-def is_current(signature, rule_hash, proof_hash, test_hash, bar, audit=None):
+def is_current(signature, rule_hash, proof_hash, test_hash, audit=None):
     """True when a signature still binds what it was given for.
 
     Every part of the triple is compared, so changing a rule, rewording a
-    proof or editing a test all stale the signature. The bar is compared too,
-    because raising a rule from `passed` to `strong` is a change in what
-    signing it meant, and so is the audit's own evidence: a re-audit that
-    observes something different is a new answer to the question the signer
-    was answering.
+    proof or editing a test all stale the signature. So is the audit's own
+    evidence: a re-audit that observes something different is a new answer
+    to the question the signer was answering. The level the signature logs
+    is not compared.
     """
     if not signature:
-        return False
-    if str(signature.get('bar', '')) != str(bar):
         return False
     for key, value in (('rule_hash', rule_hash), ('proof_hash', proof_hash),
                        ('test_hash', test_hash)):

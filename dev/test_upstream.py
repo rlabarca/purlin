@@ -44,8 +44,8 @@ ANCHOR_V1 = """# Anchor: no_eval
 
 ## Rules
 
-- RULE-1: No eval() in source files [bar: strong]
-- RULE-2: No exec() in source files [bar: strong]
+- RULE-1: No eval() in source files
+- RULE-2: No exec() in source files
 
 ## Proof
 
@@ -60,9 +60,9 @@ ANCHOR_V2 = """# Anchor: no_eval
 
 ## Rules
 
-- RULE-1: No eval() in source files [bar: strong]
-- RULE-2: No exec() anywhere in the tree [bar: strong]
-- RULE-3: No compile() in source files [bar: strong]
+- RULE-1: No eval() in source files
+- RULE-2: No exec() anywhere in the tree
+- RULE-3: No compile() in source files
 
 ## Proof
 
@@ -75,7 +75,7 @@ SECOND_ANCHOR = """# Anchor: no_secrets
 
 ## Rules
 
-- RULE-1: No credential literals in source files [bar: strong]
+- RULE-1: No credential literals in source files
 
 ## Proof
 
@@ -217,7 +217,7 @@ def test_add_writes_the_copy_with_source_and_pin(workspace):
     assert '> Pinned: %s' % workspace.first_sha in text
     # The author's body survives whole, and the tracking fields sit under the
     # title rather than replacing anything the author wrote.
-    assert '- RULE-1: No eval() in source files [bar: strong]' in text
+    assert '- RULE-1: No eval() in source files' in text
     assert text.startswith('# Anchor: no_eval\n')
     assert result['rules'] == ['RULE-1', 'RULE-2']
 
@@ -424,7 +424,7 @@ def test_sync_advances_the_pin_and_names_the_rule_delta(workspace):
 
     text = _copy_text(workspace)
     assert '> Pinned: %s' % new_sha in text
-    assert '- RULE-3: No compile() in source files [bar: strong]' in text
+    assert '- RULE-3: No compile() in source files' in text
     assert 'No exec() anywhere in the tree' in text
 
 
@@ -432,7 +432,7 @@ def test_sync_advances_the_pin_and_names_the_rule_delta(workspace):
 def test_sync_reports_a_removed_rule(workspace):
     _add(workspace)
     _advance(workspace, ANCHOR_V1.replace(
-        '- RULE-2: No exec() in source files [bar: strong]\n', ''))
+        '- RULE-2: No exec() in source files\n', ''))
     row = upstream.sync(workspace.root, names=['no_eval'])['anchors'][0]
     assert row['rule_changes']['removed'] == ['RULE-2']
     assert row['summary'] == 'RULE-2 removed'

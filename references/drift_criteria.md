@@ -67,7 +67,7 @@ each spec with a missing path in `broken_scopes`. Whether it was renamed or dele
 
 For every spec with changed behaviour files, the tool returns `rule_details`: `spec_path`,
 `changed_files`, `total_rules`, `met`, `unproved`, and one entry per own rule carrying
-`rule_id`, `description`, `bucket`, `bar` and `origin`. The skill reads the diff against those
+`rule_id`, `description`, `bucket` and `level`. The skill reads the diff against those
 rule descriptions and sorts each rule into one of four:
 
 - **Covered**: the rule describes behaviour that did not change, or changed compatibly.

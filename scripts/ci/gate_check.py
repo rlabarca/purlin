@@ -9,18 +9,20 @@ One project setting decides what this job requires. The gate is read from
 
     passed  every rule's passed cell is met: the tagged tests pass, from any
             source, on every operating system a counting run covered
-    strong  every rule whose bar is `strong` has a strong cell that is met:
-            an audit in the evidence, from either source, test strength at or
-            above the project minimum, nothing unsettled and nobody holding
-            the rule
-    signed  every rule that needs a signature has a counting one: a person
-            signed the rule, proof, test, bar and audit hashes in a signed
-            commit. `sign_at` says which rules need one, `strong` (the rules
-            whose bar is `strong`) or `all`
+    strong  every rule whose level is `strong` or `signed` has a strong cell
+            that is met: an audit in the evidence, from either source, test
+            strength at or above the project minimum, nothing unsettled and
+            nobody holding the rule
+    signed  every rule whose level is `signed` has a counting signature: a
+            person signed the rule, proof, test and audit hashes in a signed
+            commit
+
+A rule's level is its `[level: ...]` tag, or the gate where it has none, and
+never more than the gate.
 
 `--verify` is what the tag run adds, and it asks two more questions of the
 evidence already in the tree. Every signature and every hold must still bind
-the rule, proof, test, bar and audit it names, so a tag cannot stand over code
+the rule, proof, test and audit it names, so a tag cannot stand over code
 that changed after it was signed. Every file under `.purlin/evidence/ci/`
 must have been committed by the runner's own identity, read off the commit
 that last changed it, so a person cannot write evidence as CI's: on GitHub
@@ -77,14 +79,12 @@ _ENFORCEMENT_NOTE = (
     'only when every rule meets the gate, and this run checks the evidence '
     'against the tagged code.')
 
-# One section per kind of work, in the order the chain reads it. The spec
-# status blocks before the passed cell does, and both mean the same thing to
-# a branch: the rule is not passed. The passed cell fills two sections,
-# because a rule that passes on one operating system and not on another is a
-# different piece of work from one that passes nowhere. The strong cell fills
-# three, because `weak` is build work, `not audited` is a run and the review
-# words are a person's.
-_SECTIONS = (('not_passed', 'Not passed', ('spec', 'passed')),
+# One section per kind of work, in the order the chain reads it. The passed
+# cell fills two sections, because a rule that passes on one operating system
+# and not on another is a different piece of work from one that passes
+# nowhere. The strong cell fills three, because `weak` is build work, `not
+# audited` is a run and the review words are a person's.
+_SECTIONS = (('not_passed', 'Not passed', ('passed',)),
              ('partial', 'Partial', ()),
              ('weak', 'Weak', ('strong',)),
              ('not_audited', 'Not audited', ()),
@@ -106,7 +106,7 @@ def verify(project_root, payload):
     """`(problems, not_checked, notice)` for the evidence already in the tree.
 
     Two questions. Does every signature and hold still bind the rule, proof,
-    test, bar and audit it names? And was every file under the `ci/` folders
+    test and audit it names? And was every file under the `ci/` folders
     committed by the runner itself? Each answer that is no is one line naming
     the file, and any line at all fails the job. `not_checked` lists the
     `ci/` files this machine could not ask about and `notice` says why.
@@ -140,8 +140,7 @@ def verify(project_root, payload):
             audit = entry.get('audit_hash') if is_signature else None
             if not signatures_module.is_current(
                     attestation, entry.get('rule_hash'),
-                    entry.get('proof_hash'), entry.get('test_hash'),
-                    entry.get('bar'), audit):
+                    entry.get('proof_hash'), entry.get('test_hash'), audit):
                 problems.append('%s: what it binds is not this code' % path)
     found, not_checked, notice = _provenance(project_root)
     return problems + found, not_checked, notice
@@ -318,14 +317,9 @@ def _cell_word(entry, name):
 
 def _why(entry):
     """The blocking cell's word and its reasons, as one clause."""
-    blocked = entry.get('blocked_by')
-    if blocked == 'spec':
-        word = entry.get('spec') or 'drafted'
-        reasons = ['no proof names this rule']
-    else:
-        cell = (entry.get('cells') or {}).get(blocked) or {}
-        word = cell.get('word') or 'not met'
-        reasons = list(cell.get('reasons') or ())
+    cell = (entry.get('cells') or {}).get(entry.get('blocked_by')) or {}
+    word = cell.get('word') or 'not met'
+    reasons = list(cell.get('reasons') or ())
     if not reasons:
         return word
     return '%s (%s)' % (word, '; '.join(reasons))

@@ -1,7 +1,6 @@
 {
   "version": "0.10.0",
   "gate": "signed",
-  "sign_at": "strong",
   "min_strength": 80,
   "mutation_engine": "auto",
   "sql_engine": null,

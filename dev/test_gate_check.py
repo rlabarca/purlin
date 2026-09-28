@@ -15,7 +15,7 @@ What each group holds:
 
 *passed*    a passing tagged test in a section a person or CI wrote
 *strong*    an audit in the evidence, the test strength at or above the
-            minimum, and an audit entry that settled where the bar asks
+            minimum, and an audit entry that settled where the level asks
 *signed*    a current signature in a signed commit, whoever wrote it and on
             whatever branch carries it
 *sections*  one section per cell a rule can be blocked at, capped at 20 rules
@@ -41,8 +41,8 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import gate_check  # noqa: E402
 import sign as sign_module  # noqa: E402
-from test_signatures import (SPEC, Project, commit_as_ci,  # noqa: E402
-                             git, signing_key)
+from test_signatures import (EVERY_RULE_SIGNED, SPEC,  # noqa: E402
+                             Project, commit_as_ci, git, signing_key)
 
 GATE_PY = os.path.join(ROOT, 'scripts', 'ci', 'gate_check.py')
 
@@ -58,11 +58,12 @@ def run(project, as_json=False):
     return code, out.getvalue()
 
 
-def project_at(gate, strength=90, by_ci=True, config=None, audits=('RULE-2',)):
+def project_at(gate, strength=90, by_ci=True, config=None, audits=('RULE-2',),
+               spec=SPEC):
     """A project whose rules have evidence and an audit entry, at the gate named."""
     settings = {'min_strength': 50}
     settings.update(config or {})
-    made = Project(gate=gate, config=settings)
+    made = Project(gate=gate, config=settings, spec=spec)
     made.proofs()
     made.evidence(strength=strength, runner='ci' if by_ci else 'ada',
                 commit_it=False, source='ci' if by_ci else 'local')
@@ -76,11 +77,19 @@ def project_at(gate, strength=90, by_ci=True, config=None, audits=('RULE-2',)):
     return made
 
 
-def signed_project(signer='jane@acme.com', strength=90, config=None):
-    """A project at `signed` whose one unsigned rule is the strong-bar one."""
+def signed_project(signer='jane@acme.com', strength=90, config=None,
+                   every_rule=False):
+    """A project at `signed` whose one unsigned rule is the one at `signed`.
+
+    `RULE-1` is marked `[level: passed]` and asks for no signature, unless
+    `every_rule` takes the mark away and both rules are at `signed`.
+    """
     settings = {'min_strength': 80}
     settings.update(config or {})
-    made = project_at('signed', strength=strength, config=settings)
+    made = project_at('signed', strength=strength, config=settings,
+                      spec=EVERY_RULE_SIGNED if every_rule else SPEC,
+                      audits=('RULE-1', 'RULE-2') if every_rule
+                      else ('RULE-2',))
     signing_key(made.root, signer)
     return made
 
@@ -129,7 +138,7 @@ class TestThePassedGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-4", "RULE-3")
-    def test_a_rule_no_proof_names_is_drafted_and_says_so(self):
+    def test_a_rule_no_proof_names_reads_no_test_and_says_so(self):
         made = Project(spec=SPEC.replace(
             '- PROOF-1 (RULE-1): POST /login with the password "secret"; '
             'verify 200 and a token\n', ''), gate='passed')
@@ -138,8 +147,8 @@ class TestThePassedGate:
             made.evidence()
             code, output = run(made)
             assert code == 1
-            assert 'login RULE-1: drafted' in output, output
-            assert 'no proof names this rule' in output, output
+            assert 'Not passed (1):' in output, output
+            assert 'login RULE-1: no test (no proof written)' in output, output
         finally:
             made.close()
 
@@ -225,7 +234,7 @@ class TestTheStrongGate:
         try:
             code, output = run(made)
             assert code == 1
-            # RULE-1's bar is `passed`, so its strong cell does not block.
+            # RULE-1's level is `passed`, so its strong cell does not block.
             assert 'Weak (1):' in output, output
             assert 'login RULE-2: weak' in output, output
             assert 'strength 40% under 70%' in output, output
@@ -294,14 +303,14 @@ class TestTheSignedGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-12", "RULE-5")
-    def test_a_rule_below_sign_at_needs_no_signature(self):
+    def test_a_rule_marked_below_signed_needs_no_signature(self):
         made = signed_project()
         try:
             sign_module.main(['login', 'RULE-2', '--project-root', made.root])
             code, output = run(made)
             assert code == 0, output
             assert 'login RULE-1' not in output, (
-                'its bar is passed, so it needs no signature')
+                'its level is passed, so it needs no signature')
         finally:
             made.close()
 
@@ -323,7 +332,7 @@ class TestTheSignedGate:
             entry = made.rule('RULE-2')
             sign_module.write_signature(
                 made.root, 'login', 'RULE-2', 'jane@acme.com', None,
-                'signed', 'strong', entry=entry)
+                'signed', 'signed', entry=entry)
             git(made.root, 'add', '-A')
             git(made.root, '-c', 'commit.gpgsign=false', 'commit', '-q', '-m',
                 'chore: a signature nobody signed')
@@ -350,15 +359,17 @@ class TestTheSignedGate:
 
     @pytest.mark.proof("gate_check", "PROOF-16", "RULE-5")
     def test_a_signature_the_text_moved_under_reads_stale(self):
-        made = signed_project(config={'sign_at': 'all'})
+        made = signed_project(every_rule=True)
         try:
             assert sign_module.main(
                 ['login', '--project-root', made.root]) == 0
-            made.spec(SPEC.replace('return 200 with a session token',
-                                   'return 200 with a signed session token'))
-            # The spec moved, so the tests run again over it; what is left
-            # is the signature the new text no longer matches.
+            made.spec(EVERY_RULE_SIGNED.replace(
+                'return 200 with a session token',
+                'return 200 with a signed session token'))
+            # The spec moved, so the tests and the audit run again over it;
+            # what is left is the signature the new text no longer matches.
             made.evidence(runner='ci', source='ci', commit_it=False)
+            made.audit('RULE-1')
             code, output = run(made)
             assert code == 1
             assert 'login RULE-1: stale' in output, output
@@ -411,7 +422,7 @@ class TestTheSections:
 
     @pytest.mark.proof("gate_check", "PROOF-19", "RULE-7")
     def test_a_section_names_twenty_rules_and_counts_the_rest(self):
-        rules = ''.join('- RULE-%d: Something is true about %d [bar: passed]\n'
+        rules = ''.join('- RULE-%d: Something is true about %d [level: passed]\n'
                         % (n, n) for n in range(1, 31))
         spec = ('# Feature: login\n\n> Description: Many rules.\n\n'
                 '## Rules\n\n' + rules + '\n## Proof\n\n')
@@ -431,7 +442,7 @@ class TestTheSections:
                   '> Scope: src/login.py\n\n'
                   '## Rules\n\n'
                   '- RULE-1: Every session token is 32 characters '
-                  '[bar: passed]\n\n'
+                  '[level: passed]\n\n'
                   '## Proof\n\n')
         made = Project(gate='passed')
         try:

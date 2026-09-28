@@ -34,7 +34,7 @@ function allFilters() {
      test: function (rule) {
        return REVIEW_KINDS.indexOf(cellWord(rule, 'strong')) >= 0;
      }},
-    /* The rules the Sign tab holds: they have cleared their bar, they need a
+    /* The rules the Sign tab holds: their level is `signed`, they need a
        signature, and no signature counts for them yet. */
     {id: 'to-sign', label: 'To sign', level: 'signed', test: function (rule) {
       return !!rule.signable;

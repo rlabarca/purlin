@@ -485,10 +485,9 @@ function signPanel(feature, rule) {
   return '<div class="panel"><h2>To sign</h2>'
     + '<p><span class="cmd">purlin:sign ' + esc(feature.name) + ' '
     + esc(rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
-    + '<p class="sec">' + (cell.required === false
-      ? 'This project signs the rules whose bar is strong, and this rule’s '
-        + 'bar is passed, so no signature is required; one written anyway '
-        + 'still counts.'
+    + '<p class="sec">' + (rule.level !== 'signed'
+      ? 'This rule’s level is ' + esc(rule.level) + ', so it asks for no '
+        + 'signature; one written anyway still counts.'
       : 'A signature is a signed commit that names its signer; the page '
         + 'shows it once it is committed.') + '</p></div>';
 }
@@ -520,11 +519,11 @@ function renderRule() {
   }
   var feature = found.feature;
   var rule = found.rule;
-  var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted') + '</dd>'];
+  var rows = [];
   GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
   if (level('strong')) {
-    rows.push('<dt>Bar</dt><dd>' + barTag(rule) + ' <span class="sec">'
-      + esc(barSource(rule)) + '</span></dd>');
+    rows.push('<dt>Level</dt><dd>' + levelTag(rule) + ' <span class="sec">'
+      + esc(levelSource(rule)) + '</span></dd>');
   }
   rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
     + '</dd>');
@@ -575,7 +574,7 @@ function listRow(entry, rule, rest) {
     + '<span>' + esc(entry.feature) + '</span>'
     + '<span class="mono">' + esc(entry.rule) + '</span>'
     + '<span>' + esc(rule ? shortText(rule.text) : '') + '</span>'
-    + barTag(rule) + rest + '</div>';
+    + levelTag(rule) + rest + '</div>';
 }
 function reviewRow(entry) {
   var rule = listedRule(entry);
@@ -624,24 +623,24 @@ function renderReview() {
       + group.map(reviewRow).join('');
   }).join('');
   return head + '<section><div class="tbl">'
-    + listHead(['Spec', 'Rule', 'What it claims', 'Bar', 'Reads', 'Why'])
+    + listHead(['Spec', 'Rule', 'What it claims', 'Level', 'Reads', 'Why'])
     + body + '</div></section>';
 }
 function renderSign() {
   var entries = DATA.sign_list || [];
   if (!entries.length) {
     return '<section><p class="eyebrow">Sign</p><div class="panel empty">'
-      + 'No rule is waiting for a signature. A rule arrives here once it has '
-      + 'cleared its bar and needs a signature nobody has written for the '
-      + 'text it carries now.</div></section>';
+      + 'No rule is waiting for a signature. A rule arrives here once its '
+      + 'level is signed, it has passed its tests and its audit, and nobody '
+      + 'has signed the text it carries now.</div></section>';
   }
   var head = '<section><p class="eyebrow">Sign</p><h1>' + entries.length
     + (entries.length === 1 ? ' rule to sign' : ' rules to sign')
-    + '</h1><p class="line">Each of these has cleared its bar, so the '
-    + 'evidence its project asks for is in. A signature is a signed commit '
+    + '</h1><p class="line">Each of these has passed its tests and its '
+    + 'audit, so the evidence its level asks for is in. A signature is a signed commit '
     + 'that names its signer.</p></section>';
   return head + '<section><div class="tbl">'
-    + listHead(['Spec', 'Rule', 'What it claims', 'Bar', 'Signed', 'Command'])
+    + listHead(['Spec', 'Rule', 'What it claims', 'Level', 'Signed', 'Command'])
     + entries.map(signRow).join('') + '</div></section>';
 }
 var DATA = null;
@@ -654,7 +653,7 @@ var BUCKETS = ['untested', 'failing', 'partial', 'passed', 'strong', 'signed'];
 var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
   partial: 'Partial', passed: 'Passing', strong: 'Strong', signed: 'Signed'};
 var TILE_HOVER = {
-  untested: 'No test, no current run, or a spec line still drafted.',
+  untested: 'No test, no current run, or no proof written.',
   failing: 'Every platform that ran the tests found a failure.',
   partial: 'Passed on one platform, failed or did not run on another.'};
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signable',
@@ -663,7 +662,7 @@ var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
              failing: 'failing', stale: 'stale', passed: 'passed',
              failed: 'failed', not_run: 'not run'};
-var CELL_TONES = {'ready': 'pass', 'drafted': 'idle', 'passed': 'pass',
+var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
   'manual test': 'warn', 'not audited': 'idle', 'unsettled': 'warn',
@@ -736,13 +735,16 @@ function headline(summary, gate) {
 function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
 }
-function barTag(rule) {
-  var bar = (rule || {}).bar === 'strong' ? 'strong' : 'passed';
-  return '<span class="tag' + (bar === 'strong' ? '' : ' plain') + '">'
-    + esc(bar) + '</span>';
+function levelTag(rule) {
+  var level = (rule || {}).level || 'passed';
+  return '<span class="tag' + (level === 'passed' ? ' plain' : '') + '">'
+    + esc(level) + '</span>';
 }
-function barSource(rule) {
-  return (rule || {}).bar_from === 'gate' ? 'from the gate' : 'from the tag';
+function levelSource(rule) {
+  var marked = (rule || {}).level_marked;
+  if (!marked) { return '(the gate)'; }
+  if (marked === rule.level) { return '(marked)'; }
+  return '(marked ' + marked + '; the gate is the ceiling)';
 }
 function everyRule() {
   var out = [];

@@ -1,7 +1,7 @@
 """The structured project payload, schema 9.
 
-One reader assembles specs, evidence and signatures into the spec status and
-the cells of every rule, and every surface renders that: the
+One reader assembles specs, evidence and signatures into the level and the
+cells of every rule, and every surface renders that: the
 status table, the dashboard, the gate check and the drift report. A surface
 that parsed the rendered table would be coupled to a layout; this is the shape
 they all read instead.
@@ -14,7 +14,7 @@ they all read instead.
       "version": "<the VERSION file>",
       "commit": "<sha>",
       "dirty": false,
-      "gate": {"gate": "strong", "min_strength": 70, "sign_at": null, ...},
+      "gate": {"gate": "strong", "min_strength": 70, "trust": "local", ...},
       "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 4, "strong": 1,
                   "signed": 1, "stale": 1, "held": 1, "manual": 0,
@@ -34,20 +34,19 @@ they all read instead.
          "signatures": [...],
          "rules": [
            {"id": "RULE-1", "feature": "login", "label": "own",
-            "text": "...", "bar": "strong", "bar_from": "tag",
+            "text": "...", "level": "signed", "level_marked": null,
             "audit_hash": "<sha256>",
-            "spec": "ready", "bucket": "signed", "meets_gate": true,
-            "cleared": true, "signable": false,
+            "bucket": "signed", "meets_gate": true, "signable": false,
             "blocked_by": null, "flags": {...},
             "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
             "proofs": [{"id": "PROOF-1", "manual": false, "env": null,
                         "text": "...", "tests": [...]}]}
          ]}
       ],
-      "review_list": [{"feature": ..., "owner": ..., "rule": ..., "bar": ...,
+      "review_list": [{"feature": ..., "owner": ..., "rule": ..., "level": ...,
                        "cell": "strong", "kind": "unsettled",
                        "why": ["unsettled"]}],
-      "sign_list": [{"feature": ..., "owner": ..., "rule": ..., "bar": ...,
+      "sign_list": [{"feature": ..., "owner": ..., "rule": ..., "level": ...,
                      "cell": "signed", "kind": "stale", "why": ["stale"]}],
       "evidence": {"login": {"local": {"macos": {"commit": ..., "at": ...,
                                                  "result": "pass",
@@ -206,14 +205,14 @@ def proof_counts(rule_entries):
             'proofs_without_test_ids': without}
 
 
-# The one order both lists are read in: the rules whose bar is `strong`
+# The one order both lists are read in: the rules whose level asks the most
 # first, then the feature that owns them, then the rule number.
-_BAR_ORDER = {'strong': 0, 'passed': 1}
+_LEVEL_ORDER = {'signed': 0, 'strong': 1, 'passed': 2}
 
 
 def _sorted_list(entries):
     def key(entry):
-        return (_BAR_ORDER.get(entry['bar'], 2), entry['owner'],
+        return (_LEVEL_ORDER.get(entry['level'], 3), entry['owner'],
                 _rule_number(entry['rule']))
     return sorted(entries, key=key)
 
@@ -247,7 +246,7 @@ def _feature_entry(project_root, name, info, features, evidence,
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
                    'meets_gate': result['meets_gate'],
-                   'signable': result['signable'], 'bar': result['bar']}
+                   'signable': result['signable'], 'level': result['level']}
         rule_results[(owner, rule_id)] = summary
         if label == 'own' and own_results is not None:
             own_results[(owner, rule_id)] = summary
@@ -418,22 +417,23 @@ def _review_entry(feature, owner, rule, cfg):
     if word not in states.REVIEW_WORDS:
         return None
     return {'feature': feature, 'owner': owner, 'rule': rule['id'],
-            'bar': rule['bar'], 'cell': 'strong', 'kind': word,
+            'level': rule['level'], 'cell': 'strong', 'kind': word,
             'why': [word]}
 
 
 def _sign_entry(feature, owner, rule, cfg):
     """One Sign row for a signable rule, or None.
 
-    A rule is signable when it has cleared its bar, needs a signature and
-    does not have a counting one, so the Sign list is the rules a signer can
-    act on now. It exists at the gate `signed`.
+    A rule is signable when its level is `signed`, its passed and strong
+    cells are met and it does not have a counting signature, so the Sign
+    list is the rules a signer can act on now. It exists at the gate
+    `signed`.
     """
     if cfg.gate != 'signed' or not rule.get('signable'):
         return None
     word = ((rule.get('cells') or {}).get('signed') or {}).get('word')
     return {'feature': feature, 'owner': owner, 'rule': rule['id'],
-            'bar': rule['bar'], 'cell': 'signed', 'kind': word,
+            'level': rule['level'], 'cell': 'signed', 'kind': word,
             'why': [word]}
 
 
@@ -462,9 +462,11 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         '\n'.join('%s %s' % (p['id'], p['text']) for p in proof_dicts))
     test_hash = _test_hash(project_root, proof_dicts, blob_cache)
     test_hash_kind = signatures_module.test_hash_kind(proof_dicts)
-    bar = meta.get('bar')
-    bar_from = 'tag' if bar in gate_module.BARS else 'gate'
-    bar = states.bar_of(bar, cfg.gate)
+    # The tag as the spec wrote it, where it is one of the three words. A
+    # rule with no tag, or with a value that is not a level, is unmarked.
+    level_marked = meta.get('level')
+    if level_marked not in gate_module.GATES:
+        level_marked = None
 
     signatures = [_counted(project_root, signature, cfg, counted_cache)
                   for signature in all_signatures.get((owner, rule_id), [])]
@@ -490,7 +492,7 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
-        'bar': bar,
+        'level_marked': level_marked,
         'audit': audit,
         # The feature's strength stands for every rule in it: a break engine
         # measures a scope, not one rule, and the strong cell compares what
@@ -503,18 +505,16 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'feature': owner,
         'label': label,
         'text': text,
-        'bar': bar,
-        'bar_from': bar_from,
+        'level': result['level'],
+        'level_marked': level_marked,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
         'test_hash_kind': test_hash_kind,
         'audit_hash': audit_hash,
-        'spec': result['spec'],
         'cells': result['cells'],
         'bucket': result['bucket'],
         'meets_gate': result['meets_gate'],
-        'cleared': result['cleared'],
         'signable': result['signable'],
         'blocked_by': result['blocked_by'],
         'flags': result['flags'],

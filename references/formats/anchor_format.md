@@ -104,8 +104,8 @@ transport is refused before any process starts, and the status line says
 
 ## Rules
 
-- RULE-1: No eval() in source files [bar: strong]
-- RULE-2: No exec() in source files [bar: strong]
+- RULE-1: No eval() in source files
+- RULE-2: No exec() in source files
 
 ## Proof
 
