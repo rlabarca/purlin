@@ -20,7 +20,7 @@ read `references/spec_quality_guide.md`. Neither is restated here.
 1. Call `sync_status` and read the state of the feature, if it already has one.
 2. Read the input whole before writing anything.
 3. Decide the feature name and the category folder: `specs/<category>/<name>.md`.
-4. Write the metadata, then the rules, then one proof for every rule.
+4. Write the metadata, `> Scope:` included, then the rules, then one proof for every rule.
 5. Allocate ids against `origin/main`, never against the working tree.
 6. Commit the spec on its own, then offer the build.
 
@@ -78,10 +78,12 @@ the first two here. The third is a person's decision, so name the rules and leav
 - PROOF-3 (RULE-3): After 5 wrong passwords in a row, the right password is refused with 423
 ```
 
-`> Scope:` earns its place: a record carries the git tree hash of those files, which is what
-lets Purlin tell a code change (the signature stands and the passed cell reads `code
-changed`, which CI clears on the next run) from a rule change (the signature goes stale and a
-person must look). A spec with no `> Scope:` cannot make that distinction.
+Write `> Scope:` on every spec you create: the files the requirement touches, or the paths
+`purlin:build` will create for it. The evidence carries a fingerprint of those files, so a
+change to one of them reads `out of date` and selects the feature for the next `purlin:test`,
+and a signature is tied to the code it governs. A spec that names no files still has its tests
+run and its rules read, but every run includes it, and at the gate `signed` its rules cannot
+be signed and no tag is written.
 
 ## Rules
 

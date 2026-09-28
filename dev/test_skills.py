@@ -272,6 +272,19 @@ class TestSkillSpec:
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('spec') == []
 
+    @pytest.mark.proof("skill_spec", "PROOF-5", "RULE-5")
+    def test_it_writes_the_scope_on_every_spec(self):
+        rel = skill_path('spec')
+        problems = carries(rel, [
+            'Write `> Scope:` on every spec you create',
+            'the paths `purlin:build` will create', 'every run includes it',
+            'its rules cannot be signed'])
+        step = re.search(r'^\d+\. Write the metadata.*$', read(rel), re.M)
+        if step is None or '`> Scope:`' not in step.group(0):
+            problems.append('%s procedure does not name > Scope: in the '
+                            'metadata step' % rel)
+        assert problems == []
+
 
 def spec_offer_problems():
     rel = skill_path('spec')
@@ -408,6 +421,21 @@ class TestSkillBuild:
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('build') == []
 
+    @pytest.mark.proof("skill_build", "PROOF-6", "RULE-6")
+    def test_it_keeps_the_scope_in_the_commit_with_the_code(self):
+        rel = skill_path('build')
+        body = section(read(rel), r'^committing')
+        assert body is not None, '%s has no Committing section' % rel
+        text = flat(body)
+        missing = [needle for needle in (
+            'compare the files you created, changed or deleted for the '
+            'feature with its `> Scope:`',
+            'add each new file no entry covers',
+            'remove each entry whose file you deleted',
+            'rewrite the line in the same commit as the code')
+            if needle not in text]
+        assert missing == [], missing
+
     @pytest.mark.proof("skill_build", "PROOF-5", "RULE-5")
     def test_the_commit_body_contract_holds(self):
         result = subprocess.run(
@@ -462,6 +490,20 @@ class TestSkillTest:
             '--commit', 'purlin: evidence at <sha7>', 'Evidence committed.',
             'Evidence unchanged.', 'gate passed: <n> of <rules>',
             'It never pushes.']) == []
+
+    @pytest.mark.proof("skill_test", "PROOF-6", "RULE-6")
+    def test_it_says_what_a_run_with_no_feature_named_runs(self):
+        rel = skill_path('test')
+        usage = section(read(rel), r'^usage')
+        problems = [] if usage and 'purlin:test --all' in usage else [
+            '%s usage does not name purlin:test --all' % rel]
+        problems.extend(carries(rel, [
+            'no run on this operating system', 'changed since its evidence',
+            'untracked file', 'names no files', 'runs only the test files',
+            'purlin:test --all runs them too.',
+            "Nothing to run: every feature's spec, code and tests match its "
+            'evidence.']))
+        assert problems == []
 
 
 # ---------------------------------------------------------------------------

@@ -16,31 +16,32 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ## Usage
 
 ```
-purlin:test                     Run every feature's tagged tests
+purlin:test                     Run the features your change touched
+purlin:test --all               Run every feature
 purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the evidence the run wrote
 purlin:test --remote            Let the git host's runner do the run
 ```
 
-Plain language reaches the same place: "run the tests", "do the login tests pass", "test
-everything". The documented syntax is canonical, never required.
-
 ## Step 1: run the tests
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --test
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test
 ```
 
-One feature at a time is `--feature <name>`, repeated for each; `--commit` commits the run.
-The run script owns test execution for the whole plugin: `purlin:build` and `purlin:audit`
-call it too, so there is one answer to how a test is run. `--remote` hands the run to the git
-host's runner instead, on a run branch it creates, waits on and deletes; the runner writes its
-own section under `.purlin/evidence/ci/` and always commits it, and the run pulls it back. Use
-it for two reasons and no other: a proof is tagged `@env` for an operating system this machine
-is not, or `trust` is `remote`, so a signature rests on a run this machine did not make.
-It waits through `gh` on GitHub and through `az` with its `azure-devops` extension on Azure
-DevOps. A red run is pulled home and exits 1; with no CLI, no run found or the wait over, it
-says so and exits 1. The live Azure DevOps behaviour is confirmed by a hand-run check.
+Add `--all` for `purlin:test --all` and `--feature <name>` for each feature named. With neither,
+the run selects each feature with no run on this operating system, whose spec, code or tests
+changed since its evidence, with an untracked file under its `> Scope:` or beside its tests, or
+whose spec names no files, and runs only the test files carrying its markers. It first prints
+`Selected <n> of <m> features: login (code changed since a1b2c3d), ...`, the skipped ones ending
+`purlin:test --all runs them too.`, and a line per untracked file. With nothing selected it
+prints `Nothing to run: every feature's spec, code and tests match its evidence. purlin:test
+--all runs them anyway.` and exits on the gate. `purlin:build` and `purlin:audit` call this
+script too. `--remote` hands the run to the git host's runner on a run branch it creates, waits
+on and deletes; the runner commits its section under `.purlin/evidence/ci/` and the run pulls it
+back. Use it when a proof is tagged `@env` for another operating system, or `trust` is `remote`.
+It waits through `gh` on GitHub and `az` with `azure-devops` on Azure DevOps; a red run, no CLI,
+no run found or the wait over exits 1. A hand-run check confirms the live Azure DevOps path.
 
 Exit codes: `0` the tests ran and the level is met, `1` a test failed or it is not, `2` the invocation was wrong.
 
@@ -53,7 +54,7 @@ each proof's result and test) and `.purlin/tests.md`, one table for the whole pr
 .purlin/evidence/local/<feature>.json.` and commits nothing. With `--commit` it commits both
 under your own git identity, with the subject `purlin: evidence at <sha7>`, and prints
 `Evidence committed.`, or `Evidence unchanged.` when nothing new was seen. It never pushes. A
-`--feature` run writes what it ran and leaves the rest of the table as it was. The folder is
+run writes the features it ran and leaves the rest of the table as it was. The folder is
 the source: yours are `local`, and a remote run's, under `.purlin/evidence/ci/`, are `ci`.
 `references/formats/evidence_format.md` is the contract, and its `> Format-Version:` line says
 which version this release ships.
@@ -71,9 +72,8 @@ The run prints `Ran <framework> on <n> feature(s).`, then the status table
 | `not run` | A test carries the marker and no counting run reached it |
 | `out of date` | The spec, the code or the tests changed since the run; the reason names which |
 
-A rule no proof line names reads `no test` with the reason `no proof written`. Loud failures
-come first: `Evidence is missing: <what>.` means an arm ran and wrote no proof entry,
-or a marker in the tree produced none. Read those before the table.
+Loud failures come first: `Evidence is missing: <what>.` means an arm ran and wrote no proof
+entry, or a marker in the tree produced none. Read those before the table.
 
 ## Step 4: what the gate changes
 

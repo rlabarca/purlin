@@ -34,8 +34,8 @@ named. The rules you must satisfy are the union of all of them, and a rule from 
 binds exactly as tightly as one written in the feature.
 
 Read `> Scope:` and `> Stack:` before you write a line. `> Scope:` is where the code belongs;
-a record carries the git tree hash of those files, so code that lands outside them is code no
-record accounts for.
+the evidence carries a fingerprint of those files, so code that lands outside them is code no
+evidence accounts for, and a change to it selects nothing on the next `purlin:test`.
 
 ## Writing the code and the tests
 
@@ -90,8 +90,10 @@ Omit Decisions when every rule had one obvious implementation, and omit Review w
 needs a second pair of eyes. Changeset is never omitted. `references/commit_conventions.md`
 carries the exact rendering; follow it rather than inventing one.
 
-Commit the code and the tests together. `.purlin/runtime/` is ignored by git, so proof files
-never enter a commit.
+Before you commit, compare the files you created, changed or deleted for the feature with its
+`> Scope:`: add each new file no entry covers, remove each entry whose file you deleted, and
+rewrite the line in the same commit as the code. Commit the code and the tests together.
+`.purlin/runtime/` is ignored by git, so proof files never enter a commit.
 
 ## When you are done
 

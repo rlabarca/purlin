@@ -110,8 +110,8 @@ No rule carries a `[level: ...]` tag here, because at `passed` every rule is rea
 `purlin:spec` marks the exceptions once you raise the gate. A single rule covering all three would
 pass while two thirds of the behaviour was missing. A rule says what the software does; a proof
 says what a test asserts, naming a route, an input and the observable that settles the claim. `> Scope:` names the files the feature lives in, and it
-earns its place: a record carries the git tree hash of those files, which is what lets Purlin
-tell a code change from a rule change later.
+earns its place: the evidence carries a fingerprint of those files, which is what lets Purlin
+tell a code change from a rule change later, and run only the features a change touched.
 
 The skill ends with `Spec created: login. Build it now?`
 

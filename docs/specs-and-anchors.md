@@ -61,7 +61,9 @@ Every metadata line starts with `>` and every one is optional.
 is what tells a code change from a rule change. Code changed and the rule, proof and test
 text did not: the signature stands and the rule's passed cell reads `out of date` until the
 next run clears it. Rule, proof or test text changed: the signature goes stale and a person looks. A
-spec with no `> Scope:` cannot make that distinction.
+spec with no `> Scope:` cannot make that distinction: `purlin:test` runs its tests every time,
+`purlin:status` names it, and at the gate `signed` its rules cannot be signed and no tag is
+written.
 
 A path with a trailing slash scopes the directory beneath it, so `> Scope: src/api/` covers
 every file under `src/api/` without listing them.

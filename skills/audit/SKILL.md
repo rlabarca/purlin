@@ -17,9 +17,9 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ## Usage
 
 ```
-purlin:audit                    Run the tests and the breaks, and write the evidence
+purlin:audit                    Run what the change touched, audit, write the evidence
 purlin:audit <feature> [...]    One feature, or several
-purlin:audit --all              Read every rule again, whatever its last audit found
+purlin:audit --all              Run every feature, and read every rule again
 purlin:audit --commit           Commit the evidence the run wrote
 ```
 
@@ -34,9 +34,9 @@ There is no `--remote` here: a remote runner runs the tests, so that flag is
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --audit
 ```
 
-Add `--all` for `purlin:audit --all` and `--feature <name>` for each feature named.
-`--audit` runs the tests, then the breaks where mutation testing is on, then the AI audit: one
-`claude -p` call per rule whose text, proof or test changed since its last audit,
+Add `--all` for `purlin:audit --all` and `--feature <name>` for each feature named. With neither,
+`--audit` runs the tests `purlin:test` would select, then the breaks where mutation testing is
+on, then the AI audit: one `claude -p` call per rule whose text, proof or test changed since its last audit,
 `audit_parallel` at once, announced by `AI audit: <n> rules to read, <k> at a time.` It
 writes each feature's section and its `audit` into `.purlin/evidence/local/<feature>.json`,
 prints each feature's test strength beside the minimum and each rule's observations, and
