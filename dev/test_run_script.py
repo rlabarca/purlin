@@ -337,7 +337,7 @@ class TestAProjectWithNoMarker:
         # The rule has no test, so the last two lines say it does not pass
         # and the gate is not met; no test failed, so the run exits 0.
         assert output.strip().splitlines()[-2:] == [
-            'Tests: 0 of 1 rule passes.', 'gate not met: 0 of 1'], output
+            'Tests: 0 of 1 rule passes.', 'gate passed not met: 0 of 1 rule meets it'], output
         assert code == 0, output
 
 
@@ -397,7 +397,7 @@ class TestLoudFailureB:
         # `other` was not run, so the project's gate is not met and the gate
         # line says so; nothing about it was reported as missing, and the
         # test the run did run passed, so it exits 0.
-        assert output.strip().splitlines()[-1] == 'gate not met: 1 of 2', \
+        assert output.strip().splitlines()[-1] == 'gate passed not met: 1 of 2 rules meet it', \
             output
         assert code == 0, output
 
@@ -476,7 +476,7 @@ class TestEveryRunEndsWithTheNextStep:
         # tests it ran.
         _spec(root, 'other')
         code, output = _run(root, '--feature', 'feat', '--test')
-        assert output.strip().splitlines()[-1] == 'gate not met: 1 of 2', \
+        assert output.strip().splitlines()[-1] == 'gate passed not met: 1 of 2 rules meet it', \
             output
         assert code == 0, output
 
@@ -490,7 +490,7 @@ class TestEveryRunEndsWithTheNextStep:
         _spec(root, 'feat')
         code, output = _run(root, '--all', '--test')
         assert output.strip().splitlines()[-2:] == [
-            'Tests: 1 of 1 rule passes.', 'gate not met: 0 of 1'], output
+            'Tests: 1 of 1 rule passes.', 'gate strong not met: 0 of 1 rule meets it'], output
         assert code == 0, output
         # A test that fails makes the same run exit 1.
         (root / 'tests' / 'test_feat.py').write_text(
@@ -499,7 +499,7 @@ class TestEveryRunEndsWithTheNextStep:
             '    assert 1 == 2\n', encoding='utf-8')
         code, output = _run(root, '--all', '--test')
         assert output.strip().splitlines()[-2:] == [
-            'Tests: 0 of 1 rule passes.', 'gate not met: 0 of 1'], output
+            'Tests: 0 of 1 rule passes.', 'gate strong not met: 0 of 1 rule meets it'], output
         assert code == 1, output
 
     # purlin: run_script PROOF-101
@@ -509,7 +509,7 @@ class TestEveryRunEndsWithTheNextStep:
               proofs=(('PROOF-1', 'RULE-1', ''),))
         code, output = _run(root, '--all', '--test')
         assert output.strip().splitlines()[-2:] == [
-            'Tests: 1 of 2 rules pass.', 'gate not met: 1 of 2'], output
+            'Tests: 1 of 2 rules pass.', 'gate passed not met: 1 of 2 rules meet it'], output
         assert code == 0, output
 
     # purlin: run_script PROOF-11
@@ -1157,7 +1157,7 @@ class TestTheLastLines:
                  'Evidence written to .purlin/evidence/local/feat.json.',
                  'Evidence committed.',
                  'Audit: 0 strong, 1 weak.',
-                 'gate not met: 0 of 2']
+                 'gate strong not met: 0 of 2 rules meet it']
         assert lines[-len(order):] == order, lines
         assert code == 1
 
@@ -1173,13 +1173,13 @@ class TestTheAuditGateLine:
         root = _many(tmp_path, 1)
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
-        assert output.strip().splitlines()[-1] == 'gate not met: 0 of 1', \
+        assert output.strip().splitlines()[-1] == 'gate strong not met: 0 of 1 rule meets it', \
             output
         assert code == 1, output
         install()
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
-        assert output.strip().splitlines()[-1] == 'gate strong: 1 of 1', \
+        assert output.strip().splitlines()[-1] == 'gate strong met: 1 of 1 rule', \
             output
         assert code == 0, output
 
@@ -1191,7 +1191,7 @@ class TestTheAuditGateLine:
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert fake_claude.calls(directory) == []
-        assert output.strip().splitlines()[-1] == 'gate strong: 1 of 1', \
+        assert output.strip().splitlines()[-1] == 'gate strong met: 1 of 1 rule', \
             output
         assert code == 0, output
 
@@ -1205,7 +1205,7 @@ class TestTheAuditGateLine:
         output = capsys.readouterr().out
         assert output.strip().splitlines()[-2:] == [
             'Audit: 0 strong, 1 weak. Nothing blocks at the gate passed.',
-            'gate passed: 1 of 1'], output
+            'gate passed met: 1 of 1 rule'], output
         assert _audited(root)['RULE-1']['findings'] == [
             'PROOF-1 reads the value alone.']
         assert code == 0, output
@@ -1221,7 +1221,7 @@ class TestTheAuditGateLine:
         # The audit found the rule strong; no one has signed it, so the gate
         # is not met, and an audit cannot write a signature, so it exits 0.
         assert output.strip().splitlines()[-2:] == [
-            'Audit: 1 strong, 0 weak.', 'gate not met: 0 of 1'], output
+            'Audit: 1 strong, 0 weak.', 'gate signed not met: 0 of 1 rule meets it'], output
         assert code == 0, output
 
     # purlin: run_script PROOF-87
@@ -1627,7 +1627,7 @@ class TestARunCoversWhatTheChangeTouched:
         assert {name: _file(root, '.purlin/evidence/local/%s.json' % name)
                 for name in ('login', 'export')} == before
         assert [line for line in output.splitlines() if line.strip()][-1] == \
-            'gate passed: 2 of 2', output
+            'gate passed met: 2 of 2 rules', output
 
     # purlin: run_script PROOF-95
     def test_nothing_changed_over_a_failing_test_exits_one(self, tmp_path):
@@ -1635,7 +1635,7 @@ class TestARunCoversWhatTheChangeTouched:
         code, output = _run(root, '--test')
         assert 'Nothing to run' in output, output
         assert [line for line in output.splitlines() if line.strip()][-1] == \
-            'gate not met: 1 of 2', output
+            'gate passed not met: 1 of 2 rules meet it', output
         assert code == 1, output
 
     # purlin: run_script PROOF-96

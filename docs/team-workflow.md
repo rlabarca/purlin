@@ -57,8 +57,8 @@ feature's `.purlin/evidence/local/<feature>.json`, which `--commit` commits as
 `purlin: evidence at <sha7>`, and prints the status table, then `AI audit: <n> rules read,
 <n> strong, <n> weak.` and the test strength: `Test strength: <feature> <n>%, ... (minimum
 70%).`, or `Test strength: not measured; mutation testing is off.` It ends on
-`Audit: <n> strong, <n> weak.` and `gate strong: <n> of <rules>` or `gate not met: <n> of
-<rules>`, and it exits 1 when a rule is short of its tests or its audit.
+`Audit: <n> strong, <n> weak.` and `gate strong met: <n> of <rules> rules` or `gate strong not
+met: <n> of <rules> rules meet it`, and it exits 1 when a rule is short of its tests or its audit.
 
 ## When a runner joins in
 

@@ -99,9 +99,9 @@ platform beside it rather than `not run`.
 
 ## Step 6: the last two lines
 
-`Tests: <p> of <rules> rules pass.` says what the run found. `gate <gate>: <n> of <rules>`, or
-`gate not met: <n> of <rules>`, counts the rules that meet the gate, the status headline's number.
-At `passed` both carry one number, and `gate passed: <n> of <rules>` is the check.
+`Tests: <p> of <rules> rules pass.` says what the run found. `gate <gate> met: <n> of <rules> rules`, or
+`gate <gate> not met: <n> of <rules> rules meet it`, counts the rules that meet the gate, the status headline's number.
+At `passed` both carry one number, and `gate passed met: <n> of <rules> rules` is the check.
 
 ## Step 7: name the next step
 

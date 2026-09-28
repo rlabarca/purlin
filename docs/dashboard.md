@@ -25,8 +25,9 @@ you reloading anything.
 ## The top bar
 
 Every screen carries the same top bar: the logo; how old the data is, as `Data: 12 minutes
-old`, which is a button that reloads the page; the gate and how many rules meet it, as
-`gate: signed · 4 of 10`; at `signed`, the signed tag this commit carries, as
+old`, which is a button that reloads the page; the gate, `gate: signed`, and beside it how many
+rules meet it, `4 of 10 rules meet the gate`, whose hover says how many of those need their
+tests only, an audit too or a signature too; at `signed`, the signed tag this commit carries, as
 `signed/1.4.0 · a1b2c3d`, or `no signed tag`; the commit the data was built from, as
 `at a1b2c3d`; and the theme toggle. The age recomputes every 60 seconds, and from 90 minutes on
 it adds `— run purlin:status to refresh`.

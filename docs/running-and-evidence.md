@@ -72,7 +72,7 @@ Untested 0 · Failing 0 · Partial 0 · Passing 3.
 → Next: nothing is outstanding at gate passed.
 
 Tests: 3 of 3 rules pass.
-gate passed: 3 of 3
+gate passed met: 3 of 3 rules
 ```
 
 Each rule's passed cell reads one word: `passed`, `failed`, `partial`, `no test`, `not run` or
@@ -93,7 +93,7 @@ that feature's section and leaves the rest as it was.
 
 The run ends on two lines, counted over every rule under `specs/` rather than over the features
 this run covered. `Tests: <p> of <rules> rules pass.` says what the tests found. `gate <gate>:
-<n> of <rules>` or `gate not met: <n> of <rules>` says where the project stands against its
+<n> of <rules>` or `gate <gate> not met: <n> of <rules> rules meet it` says where the project stands against its
 gate, the number the status headline carries. At `passed` the two numbers are the same, and the
 gate line is the check. The exit code follows the tests, whatever the gate line says: 0 when no
 test failed and no marker is wrong, 1 otherwise, because a test run cannot make an audit or a

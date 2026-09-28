@@ -109,7 +109,7 @@ gate. [running-and-evidence.md](running-and-evidence.md) has it in full.
 
 **What is the loop?** `purlin:spec`, `purlin:build`, `purlin:test`, `purlin:audit`,
 `purlin:sign`, `git push`. At `passed` it stops after the test: `purlin:test` prints the table
-and ends with `Tests: <n> of <rules> rules pass.` and `gate passed: <n> of <rules>`, which is
+and ends with `Tests: <n> of <rules> rules pass.` and `gate passed met: <n> of <rules> rules`, which is
 the check. At `strong` the audit follows,
 and at `signed` the signature follows that.
 
@@ -119,9 +119,9 @@ marked tests the change touched, writes what they saw, and the board reads it at
 at every gate. Nothing has to leave the machine for a rule to read `passed`, `strong` or
 `signed`.
 
-**What does `gate not met` mean?** The run's last line is `gate not met: <n> of <rules>`: at
-least one rule does not meet your gate, and the `→ Next:` line above it says what blocks it and
-what to run. `purlin:test` exits 1 only when a test failed or a marker is wrong, because a test
+**What does `gate <gate> not met` mean?** The run's last line is `gate <gate> not met: <n> of
+<rules> rules meet it`: <n> rules meet your gate and at least one does not, and the `→ Next:`
+line above it says what blocks it and what to run. `purlin:test` exits 1 only when a test failed or a marker is wrong, because a test
 run cannot make an audit or a signature appear.
 At `passed` that is a failed test, a rule with no test, a pass that is `out of date`, or a rule
 whose tests passed on one operating system and not on another. At `strong` the tests passed but

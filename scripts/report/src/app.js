@@ -481,13 +481,30 @@ function tagChip() {
     + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
 }
 
-/* The gate, and how many rules meet it, as `gate: signed · 553 of 555`: the
-   one place on the page that says where the project stands against its gate,
-   on every screen. */
-function gateChip(gate) {
+/* The gate and where the project stands against it, as two chips that each
+   say one thing: `gate: signed`, the setting, then `553 of 555 rules meet the
+   gate`, the count with its meaning, because `gate: signed · 91 of 562` read
+   as 91 rules signed. The count chip's hover says how the number is made up,
+   one line per level with rules that meet it; at `passed` every rule needs
+   its tests alone, so it has that one line. */
+function gateChips(gate) {
   var summary = (DATA && DATA.summary) || {};
-  return tag('gate: ' + gate + DOT + (summary.met || 0) + ' of '
-    + (summary.rules || 0), true);
+  var met = summary.met || 0;
+  var total = summary.rules || 0;
+  var byLevel = {passed: 0, strong: 0, signed: 0};
+  everyRule().forEach(function (pair) {
+    if (pair.rule.meets_gate) {
+      byLevel[pair.rule.level || 'passed'] += 1;
+    }
+  });
+  var lines = [byLevel.passed + ' need their tests only, and pass them',
+    byLevel.strong + ' need an audit too, and have one that found nothing',
+    byLevel.signed + ' need a signature too, and have one'].filter(
+    function (line) { return line.charAt(0) !== '0'; });
+  return tag('gate: ' + gate, true) + '<span class="tag plain"'
+    + hover(lines) + '>' + esc(met + ' of ' + total
+      + (total === 1 ? ' rule meets' : ' rules meet') + ' the gate')
+    + '</span>';
 }
 
 function topBar() {
@@ -498,7 +515,7 @@ function topBar() {
     + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? gateChip(gate) : '')
+    + (gate ? gateChips(gate) : '')
     + (level('signed') ? tagChip() : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
@@ -665,15 +682,11 @@ document.getElementById('app').addEventListener('click', onClick);
 /* A band is a control drawn as a row, so Enter and Space press it as they
    press a button, and the focus comes back to it once the page is drawn. */
 document.getElementById('app').addEventListener('keydown', function (event) {
-  var node = event.target;
-  if (!node || node.getAttribute('role') !== 'button'
-      || (event.key !== 'Enter' && event.key !== ' ')) { return; }
+  var group = event.target.getAttribute('data-group');
+  if (!group || (event.key !== 'Enter' && event.key !== ' ')) { return; }
   event.preventDefault();
-  var group = node.getAttribute('data-group');
   onClick(event);
-  var again = group && document.querySelector('[data-act="group"][data-group="'
-    + CSS.escape(group) + '"]');
-  if (again) { again.focus(); }
+  document.querySelector('.group[data-group="' + CSS.escape(group) + '"]').focus();
 });
 loadData(function (payload) {
   DATA = payload;

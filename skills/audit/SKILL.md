@@ -44,7 +44,7 @@ strong, <n> weak.` and a `Test strength:` line, one line per cause for any rule 
 not be reached for, and `Evidence written to .purlin/evidence/local/<feature>.json.`. It commits
 nothing unless you add `--commit`, which commits the evidence under your own identity with the
 subject `purlin: evidence at <sha7>`. It ends on `Audit: <n> strong, <n> weak.` and the gate line
-`purlin:test` ends on, `gate strong: <n> of <rules>` at `strong` or `gate not met: <n> of <rules>`,
+`purlin:test` ends on, `gate strong met: <n> of <rules> rules` at `strong` or `gate <gate> not met: <n> of <rules> rules meet it`,
 counting the rules that meet the gate, and it never pushes.
 
 Exit codes: `0` no test failed and no rule is short of its tests or its audit, `1` a test failed, evidence is missing, a marker names nothing a spec has, a rule could not be audited, or above `passed` a rule is short of its tests or its audit, `2` the command line was wrong. An audit cannot make a signature appear, so a rule waiting on one does not set the code.

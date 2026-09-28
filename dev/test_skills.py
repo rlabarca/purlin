@@ -532,8 +532,8 @@ class TestSkillTest:
             '.purlin/evidence/local/<feature>.json', '.purlin/tests.md',
             '--commit', 'purlin: evidence at <sha7>', 'Evidence committed.',
             'Evidence unchanged.', 'Tests: <p> of <rules> rules pass.',
-            'gate <gate>: <n> of <rules>', 'gate not met: <n> of <rules>',
-            'gate passed: <n> of <rules>', 'It never pushes.']) == []
+            'gate <gate> met: <n> of <rules> rules', 'gate <gate> not met: <n> of <rules> rules meet it',
+            'gate passed met: <n> of <rules> rules', 'It never pushes.']) == []
 
     # purlin: skill_test PROOF-6
     def test_it_says_what_a_run_with_no_feature_named_runs(self):
@@ -659,7 +659,7 @@ def audit_gate_problems():
         if needle not in rows['`strong`']:
             problems.append('%s strong row does not name %r' % (rel, needle))
     for needle in ('counts here too', 'Audit: <n> strong, <n> weak.',
-                   'gate strong: <n> of <rules>',
+                   'gate strong met: <n> of <rules> rules',
                    'cannot make a signature appear',
                    'purlin: evidence at <sha7>'):
         if needle not in flat(read(rel)):

@@ -312,8 +312,9 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
     gate = payload['gate']['gate']
     page = open_board(browser, tmp_path, payload)
     bar = page.inner_text('.topbar')
-    assert 'gate: %s \u00b7 %d of %d' % (
-        gate, summary['met'], summary['rules']) in bar, bar
+    assert texts(page, '.topbar .tag')[:2] == [
+        'gate: %s' % gate,
+        '%d of %d rules meet the gate' % (summary['met'], summary['rules'])], bar
     assert 'Data:' in bar
     assert page.query_selector('.strip') is not None
     first = page.evaluate(
@@ -321,7 +322,7 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
         " const sec = s.closest('section');"
         " return sec.parentElement.querySelector('section') === sec; }")
     assert first, 'the board does not open on the tiles'
-    text = page.inner_text('body')
+    text = page.inner_text('.wrap')
     assert 'rules pass their tests' not in text
     assert 'rules meet the gate' not in text
     assert len(page.query_selector_all('.tile')) == TILES[process]
@@ -329,9 +330,9 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
         f['name'] for f in payload['features'])
     page.close()
     if process == 'regulated':
-        payload['summary']['met'] = 3
+        payload['summary']['met'] = 5
         page = open_board(browser, tmp_path, payload)
-        assert 'gate: signed \u00b7 3 of %d' % summary['rules'] in \
+        assert '5 of %d rules meet the gate' % summary['rules'] in \
             page.inner_text('.topbar')
         page.close()
 
@@ -1880,3 +1881,31 @@ def test_a_rule_screen_shows_only_what_its_level_asks_for(browser, tmp_path):
     assert seen['RULE-3'] == (['Passed', 'Strong', 'Signed'],
                               ['Audit', 'Signature'], True), seen
     assert seen['RULE-4'] == (['Passed', 'Level', 'Spec'], [], False), seen
+
+
+# The top bar's chips: each one's text and its hover.
+CHIPS = """() => Array.from(document.querySelectorAll('.topbar .tag')).map(
+  t => [t.textContent.trim(), t.getAttribute('title')])"""
+
+
+# purlin: purlin_report PROOF-78
+def test_the_gate_and_its_count_are_two_chips(browser, tmp_path):
+    page = open_board(browser, tmp_path / 'levels', _levels_payload())
+    chips = page.evaluate(CHIPS)
+    page.close()
+    assert chips[0][0] == 'gate: signed', chips
+    assert chips[1] == ['2 of 6 rules meet the gate',
+                        '1 need their tests only, and pass them\n'
+                        '1 need an audit too, and have one that found '
+                        'nothing'], chips
+    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
+    chips = solo.evaluate(CHIPS)
+    solo.close()
+    assert chips[0][0] == 'gate: passed', chips
+    assert chips[1] == ['3 of 5 rules meet the gate',
+                        '3 need their tests only, and pass them'], chips
+    one = payload_named('solo')
+    one['summary'].update(met=1, rules=1)
+    page = open_board(browser, tmp_path / 'one', one)
+    assert page.evaluate(CHIPS)[1][0] == '1 of 1 rule meets the gate'
+    page.close()

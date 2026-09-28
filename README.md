@@ -70,11 +70,11 @@ and it makes no claim of compliance.
    → Next: nothing is outstanding at gate passed.
 
    Tests: 3 of 3 rules pass.
-   gate passed: 3 of 3
+   gate passed met: 3 of 3 rules
    ```
 
 5. **Read it.** A failing rule is counted under `Failing`, the last two lines read
-   `Tests: 2 of 3 rules pass.` and `gate not met: 2 of 3`, and the run exits 1. Change
+   `Tests: 2 of 3 rules pass.` and `gate passed not met: 2 of 3 rules meet it`, and the run exits 1. Change
    `src/cart.py` and the rules of `cart` are out of date until the next run, which says why it
    picked them:
    `Selected 1 of 1 feature: cart (code changed since bf3709e).`

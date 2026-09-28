@@ -110,11 +110,11 @@ Untested 0 · Failing 0 · Partial 0 · Passing 3.
 → Next: nothing is outstanding at gate passed.
 
 Tests: 3 of 3 rules pass.
-gate passed: 3 of 3
+gate passed met: 3 of 3 rules
 ```
 
 **5. Read it.** `3 of 3` rules passed. A rule whose test fails is counted under `Failing`, and
-the run ends `Tests: 2 of 3 rules pass.` and `gate not met: 2 of 3` and exits 1. Open
+the run ends `Tests: 2 of 3 rules pass.` and `gate passed not met: 2 of 3 rules meet it` and exits 1. Open
 `purlin-report.html` in a browser to see each rule on its own line.
 
 Now change `src/cart.py` and run `purlin:test` again. Every rule of `cart` is out of date until

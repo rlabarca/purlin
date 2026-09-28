@@ -29,8 +29,9 @@ marker of a feature it runs, and starts no suite that has none.
 operating system's section of `.purlin/evidence/local/<feature>.json` for
 every feature it covered, re-renders `.purlin/tests.md` from every evidence
 file, prints the table and ends on two lines: `Tests: <p> of <rules> rules
-pass.`, what the tests found, then `gate <gate>: <n> of <rules>` or `gate not
-met: <n> of <rules>`, where the project stands against its gate. It exits on
+pass.`, what the tests found, then `gate <gate> met: <rules> of <rules> rules`
+or `gate <gate> not met: <n> of <rules> rules meet it`, where the project
+stands against its gate. It exits on
 the tests, whatever the gate line says: 1 where a test failed, evidence is
 missing or a marker names nothing a spec has, else 0. It writes and does not
 commit. `--commit` commits the evidence and the table under the person's
@@ -636,14 +637,18 @@ def tests_line(passing, rules):
 
 
 def gate_line(met, rules, gate):
-    """`gate <gate>: <n> of <m>`, or `gate not met: <n> of <m>`.
+    """`gate <gate> met: <m> of <m> rules`, or `gate <gate> not met: <n> of <m> rules meet it`.
 
     The number is how many rules meet the project's gate, the one the status
     headline and every other surface count, not how many pass their tests.
+    The line names the gate and says in words what the number counts, so
+    `91 of 562` cannot be read as 91 rules short of it.
     """
+    noun = 'rule' if rules == 1 else 'rules'
     if rules and met == rules:
-        return 'gate %s: %d of %d' % (gate, met, rules)
-    return 'gate not met: %d of %d' % (met, rules)
+        return 'gate %s met: %d of %d %s' % (gate, met, rules, noun)
+    return 'gate %s not met: %d of %d %s %s it' % (
+        gate, met, rules, noun, 'meets' if rules == 1 else 'meet')
 
 
 def project_counts(project_root):

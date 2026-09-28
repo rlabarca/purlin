@@ -131,7 +131,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .rev .cmd{white-space:normal;overflow-wrap:anywhere}
 .rev.th{cursor:default}
 .rev.th:hover{background:none}
-@media (max-width:1023px){.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}.topbar .spacer{flex-basis:100%;height:0}.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}.wrap{padding:var(--space-6) var(--space-5)}.strip,.strip.flagged{grid-template-columns:repeat(4,minmax(0,1fr))}.tiles,.flags{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label],.rev>[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before,.rev>[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;grid-template-areas:"rid rp" "rt rt" "rm rm";gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rid{grid-area:rid;white-space:nowrap}.rule .rp{grid-area:rp;justify-content:flex-start}.rule .rt{grid-area:rt}.rule .rm{grid-area:rm}.rule-proofs{padding:var(--space-4) var(--space-5)}.rev{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.rev.th{display:none}.rev>.claim,.rev>.cmd{flex-basis:100%}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}}
+@media (max-width:1023px){.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}.topbar .spacer{flex-basis:100%;height:0}.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}.wrap{padding:var(--space-6) var(--space-5)}.strip,.strip.flagged{grid-template-columns:repeat(4,minmax(0,1fr))}.tiles,.flags{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label],.rev>[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before,.rev>[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rm{grid-column:1/-1}.rule .rp{justify-content:flex-start}.rule-proofs{padding:var(--space-4) var(--space-5)}.rev{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.rev.th{display:none}.rev>.claim,.rev>.cmd{flex-basis:100%}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}}
 @media (max-width:599px){.strip,.strip.flagged{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:var(--space-5) var(--space-4)}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}}
 </style>
 </head>
@@ -438,14 +438,10 @@ function proofsUnder(rule) {
 }
 function groupBand(name, features, columns) {
   var open = VIEW.groups[name] !== false;
-  var passing = 0;
-  var total = 0;
-  features.forEach(function (feature) {
-    ownRules(feature).forEach(function (rule) {
-      total += 1;
-      passing += cellWord(rule, 'passed') === 'passed' ? 1 : 0;
-    });
-  });
+  var rules = [].concat.apply([], features.map(ownRules));
+  var total = rules.length;
+  var passing = rules.filter(function (rule) {
+    return cellWord(rule, 'passed') === 'passed'; }).length;
   var pct = total ? Math.round((passing / total) * 100) : 0;
   var hue = total && passing === total ? 'pass' : passing ? 'warn' : 'idle';
   return '<div class="group" role="button" tabindex="0" aria-expanded="'
@@ -1022,10 +1018,24 @@ function tagChip() {
       + (found.at ? DOT + found.at : '')]) + '>'
     + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
 }
-function gateChip(gate) {
+function gateChips(gate) {
   var summary = (DATA && DATA.summary) || {};
-  return tag('gate: ' + gate + DOT + (summary.met || 0) + ' of '
-    + (summary.rules || 0), true);
+  var met = summary.met || 0;
+  var total = summary.rules || 0;
+  var byLevel = {passed: 0, strong: 0, signed: 0};
+  everyRule().forEach(function (pair) {
+    if (pair.rule.meets_gate) {
+      byLevel[pair.rule.level || 'passed'] += 1;
+    }
+  });
+  var lines = [byLevel.passed + ' need their tests only, and pass them',
+    byLevel.strong + ' need an audit too, and have one that found nothing',
+    byLevel.signed + ' need a signature too, and have one'].filter(
+    function (line) { return line.charAt(0) !== '0'; });
+  return tag('gate: ' + gate, true) + '<span class="tag plain"'
+    + hover(lines) + '>' + esc(met + ' of ' + total
+      + (total === 1 ? ' rule meets' : ' rules meet') + ' the gate')
+    + '</span>';
 }
 function topBar() {
   var line = ageLine();
@@ -1035,7 +1045,7 @@ function topBar() {
     + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? gateChip(gate) : '')
+    + (gate ? gateChips(gate) : '')
     + (level('signed') ? tagChip() : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
@@ -1172,15 +1182,11 @@ window.addEventListener('focus', refreshIfStale);
 setInterval(tickAge, REFRESH_AFTER * 1000);
 document.getElementById('app').addEventListener('click', onClick);
 document.getElementById('app').addEventListener('keydown', function (event) {
-  var node = event.target;
-  if (!node || node.getAttribute('role') !== 'button'
-      || (event.key !== 'Enter' && event.key !== ' ')) { return; }
+  var group = event.target.getAttribute('data-group');
+  if (!group || (event.key !== 'Enter' && event.key !== ' ')) { return; }
   event.preventDefault();
-  var group = node.getAttribute('data-group');
   onClick(event);
-  var again = group && document.querySelector('[data-act="group"][data-group="'
-    + CSS.escape(group) + '"]');
-  if (again) { again.focus(); }
+  document.querySelector('.group[data-group="' + CSS.escape(group) + '"]').focus();
 });
 loadData(function (payload) {
   DATA = payload;

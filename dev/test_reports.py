@@ -547,7 +547,7 @@ class TestThroughARun:
         assert lines[lines.index(wrong) + 1] == (
             'Remove the comment, or write the proof it names.'), out
         assert 'Evidence is missing' not in out
-        assert 'gate passed: 3 of 3' in out, out
+        assert 'gate passed met: 3 of 3 rules' in out, out
         assert code == 1
 
         _write(root, 'tests/test_login.py', _WELL_FORMED + (

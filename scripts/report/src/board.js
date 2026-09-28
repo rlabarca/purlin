@@ -316,14 +316,10 @@ function proofsUnder(rule) {
    Under 1024 pixels the right end drops beneath the left. */
 function groupBand(name, features, columns) {
   var open = VIEW.groups[name] !== false;
-  var passing = 0;
-  var total = 0;
-  features.forEach(function (feature) {
-    ownRules(feature).forEach(function (rule) {
-      total += 1;
-      passing += cellWord(rule, 'passed') === 'passed' ? 1 : 0;
-    });
-  });
+  var rules = [].concat.apply([], features.map(ownRules));
+  var total = rules.length;
+  var passing = rules.filter(function (rule) {
+    return cellWord(rule, 'passed') === 'passed'; }).length;
   var pct = total ? Math.round((passing / total) * 100) : 0;
   var hue = total && passing === total ? 'pass' : passing ? 'warn' : 'idle';
   return '<div class="group" role="button" tabindex="0" aria-expanded="'

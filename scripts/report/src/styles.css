@@ -145,11 +145,10 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .specs .tr>div:empty{display:none}
 .tr>div[data-label],.rev>[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}
 .tr>div[data-label]::before,.rev>[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
-.rule{grid-template-columns:auto 1fr;grid-template-areas:"rid rp" "rt rt" "rm rm";gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}
-.rule .rid{grid-area:rid;white-space:nowrap}
-.rule .rp{grid-area:rp;justify-content:flex-start}
-.rule .rt{grid-area:rt}
-.rule .rm{grid-area:rm}
+.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}
+.rule .rt{grid-row:2;grid-column:1/-1}
+.rule .rm{grid-column:1/-1}
+.rule .rp{justify-content:flex-start}
 .rule-proofs{padding:var(--space-4) var(--space-5)}
 .rev{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}
 .rev.th{display:none}
