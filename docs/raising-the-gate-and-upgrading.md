@@ -39,12 +39,13 @@ code.
 Init starts from what the project already has, so a raise writes only the missing half.
 
 **To `passed`.** The setting alone, plus what every project gets: `.purlin/config.json` with
-the gate and the trust answer, `specs/`, the proof plugin for the detected
-test framework, the break engine for the language, a `.gitignore` block for `.purlin/runtime/`,
+the gate, the mutation answer and the trust answer, `specs/`, `.purlin/evidence/` with its
+README, the proof plugin for the detected test framework, the break engine for the language
+where mutation testing is on, a `.gitignore` block for `.purlin/runtime/`,
 the dashboard page copied so it opens from disk, and the Claude Code hook that refreshes the
 local dashboard data. Nothing to apply on the git host, and no git hook.
 
-**To `strong`.** On top of that: the breaks, which turn on with this raise. `min_strength` becomes 70. Below it `purlin:audit` runs the
+**To `strong`.** On top of that: `min_strength` becomes 70 where mutation testing is on. Below it `purlin:audit` runs the
 tests alone, nothing measures a strength, and no record is written at all. From here up the
 audit writes one record per feature and the briefs beside them, and commits them.
 
@@ -52,7 +53,7 @@ audit writes one record per feature and the briefs beside them, and commits them
 signs. From here `purlin:sign` closes its walk by writing the tag `signed/<version>` whenever
 every rule meets the gate.
 
-The derived defaults move too: `min_strength` becomes 80. A rule needs a signature exactly when
+The derived defaults move too: `min_strength` becomes 80 where mutation testing is on. A rule needs a signature exactly when
 its level is `signed`. A rule whose level is `passed` or `strong` needs no signature: it meets
 the gate on its lower cells, and a signature written anyway still counts.
 
@@ -62,7 +63,8 @@ gate is also what turns the AI audit on for every unmarked rule.
 | Flag | What it does |
 |------|--------------|
 | `--gate <level>` | sets the gate, at setup or later |
-| `--add <language>` | wires a second language: its test framework, its proof plugin, its break engine |
+| `--mutation` | turns mutation testing on without asking |
+| `--add <language>` | wires a second language: its test framework and its proof plugin |
 | `--update` | brings a project set up by an older Purlin onto the installed one |
 | `--dry-run` | prints the plan and writes nothing |
 
@@ -134,11 +136,13 @@ is rendered from them:
 
 | Migration | What it changes |
 |-----------|-----------------|
+| `design-refs` | deletes each spec's Figma `> Source:` with its `> Pinned:`, and its `> Visual-Reference:` and `> Visual-Hash:` lines, naming each spec |
 | `os-tags` | rewrites the retired Windows tag in `specs/` to `@env(windows)` |
 | `kind-tags` | drops the tag naming the kind of test from every proof line in `specs/` |
 | `untracked-files` | drops the proof files that used to be committed and untracks the dashboard data |
 | `hooks` | removes the git hooks v0.9.5 installed, and says why |
-| `config` | writes `.purlin/config.json` at the current shape and sets the gate |
+| `config` | writes `.purlin/config.json` at the current shape, sets the gate and names every key it dropped |
+| `evidence` | creates `.purlin/evidence/` with one README saying what it holds |
 | `workflows` | replaces the workflow that committed proof files |
 | `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |
 
@@ -153,19 +157,31 @@ with the same three answers a new project is asked:
 
 ```
 What must be true of every rule before a version is proven?
-  passed  every rule has a passing tagged test, from any source
-  strong  every rule has a record an audit wrote, at the minimum test strength
-  signed  strong, plus a signature from a person on the rule
+  passed  every rule's tagged tests pass
+  strong  tests pass and the audit finds them sound
+  signed  strong, and a person signs each rule
 ```
 
-The trust question follows it:
+The mutation question follows it, where the config names no `mutation_engine` and an engine
+exists for the project's frameworks. The default is no:
+
+```
+Measure test strength by breaking the code on purpose? It needs <engine> and takes minutes to hours per run. [y/N]
+```
+
+The trust question comes last:
 
 ```
 Do you trust your own machine for the tests and the signing? [y/n]
 ```
 
-The `config` migration also drops the settings that named the old gate values and the old list
-of people who could sign, and writes nothing in their place: no key names who may sign.
+The `config` migration also drops every key 0.9.5 wrote that this release does not read, and
+names each one in one line: `spec_dir`, `pre_push`, `report`, `audit_criteria`,
+`audit_criteria_pinned` and whichever else the file carried. No key names who may sign.
+
+A spec with no `> Scope:` line is not a migration. The update names each one and changes
+nothing: `2 specs have no > Scope: line: a, b. Run purlin:spec <name> to add one.` The line is
+optional below `signed` and required at `signed`.
 
 ## What it asks, and what it keeps
 

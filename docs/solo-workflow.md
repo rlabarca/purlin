@@ -40,12 +40,14 @@ and moves no cell.
 ```json
 {
   "gate": "passed",
+  "mutation_engine": "none",
   "min_strength": null
 }
 ```
 
-`purlin:init` writes that into `.purlin/config.json` when you answer the one question with
-`passed`. `min_strength` is unused at this gate. Every rule's
+`purlin:init` writes that into `.purlin/config.json` when you answer the gate question with
+`passed` and the mutation question with its default, no. `min_strength` is unused at this
+gate. Every rule's
 level is read as `passed` here, because the gate is the ceiling: a rule meets the gate when its
 tagged tests pass, which is the only evidence this gate asks for. Read
 and change the file with the `purlin_config` tool rather than by hand, so a key the installed
@@ -149,9 +151,9 @@ At `passed` the strong cell does not exist, so no strength is measured and nothi
 one. `purlin:audit` still runs here: it runs the tagged tests and reports what it observed.
 Nothing it writes at this gate moves a cell.
 
-Raise the gate to `strong` to turn the breaks on and see a real number: of the deliberate
-breaks the audit makes to your code, the share your tests caught. From that gate up what the
-audit writes into the evidence counts, and `purlin:audit --commit` commits it.
+Turn mutation testing on with `purlin:init --mutation` to see a real number: of the deliberate
+breaks the audit makes to your code, the share your tests caught. From the gate `strong` up what
+the audit writes into the evidence counts, and `purlin:audit --commit` commits it.
 
 ## The one time a runner joins in
 
@@ -196,7 +198,7 @@ Raise to `strong` when any one of these becomes true:
 purlin:init --gate strong
 ```
 
-Raising is additive. It turns the breaks on, and asks before each write. It changes no rule, deletes no file and writes no workflow: a runner is
+Raising is additive. It writes the setting, and asks before each write. It changes no rule, deletes no file and writes no workflow: a runner is
 added for its own two reasons, not because the gate moved. From that point the evidence that
 counts includes the audit your own `purlin:audit` writes into `.purlin/evidence/local/`.
 The test sections stay where they are as the fast answer you read while you work.

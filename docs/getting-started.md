@@ -48,9 +48,9 @@ and runs the same script from that checkout.
 purlin:init
 ```
 
-Init asks one question: **what must be true of every rule before a version is proven?** The
-answer is the **gate**, and it is the only setting. Each value names one more level of
-evidence, and the value is the word a rule's last cell reads when it is met.
+Init's first question is **what must be true of every rule before a version is proven?** The
+answer is the **gate**. Each value names one more level of evidence, and the value is the word
+a rule's last cell reads when it is met.
 
 | Gate | Who it fits | What every rule must have |
 |------|-------------|---------------------------|
@@ -61,11 +61,12 @@ evidence, and the value is the word a rule's last cell reads when it is met.
 Answer `passed` for now. You can raise the gate later with `purlin:init --gate strong`, which
 adds what is missing and asks before each write.
 
-Init asks two more things, because no answer to either can be read from anywhere: an empty
-repository is asked which language it will be, and everyone is asked
-`Do you trust your own machine for the tests and the signing?`. Answer `y` and the whole loop
-runs here, with no CI anywhere. Everything else it reads from the tree and from your `origin`
-remote.
+Init asks at most three more things, in this order: an empty repository is asked which
+language it will be; a project whose framework has an engine is asked `Measure test strength by
+breaking the code on purpose?`, where the default is no; and everyone is asked
+`Do you trust your own machine for the tests and the signing?`. Answer `y` to the last and the
+whole loop runs here, with no CI anywhere. Everything else it reads from the tree and from your
+`origin` remote.
 
 It writes `.purlin/config.json` with the gate, the trust answer and the derived defaults,
 and `specs/` for the specs. It installs the proof plugin for the detected framework and the breaks engine for the

@@ -90,8 +90,8 @@ it as `purlin: evidence at <sha7>` under your own git identity. It never pushes.
 same shape as `purlin:test`'s, and it exits 1 on the second.
 
 Under the `passed` gate there is nothing to measure and no strong cell to move, so the audit
-runs the tests and no breaks. Raising the gate to `strong` turns the breaks on, on your
-machine. No breaks and no AI audit ever run on a remote runner.
+runs the tests and no breaks. The breaks run only where you turned mutation testing on,
+on your machine. No breaks and no AI audit ever run on a remote runner.
 
 Your own evidence counts at every gate, `signed` included. What changes at `signed` is only
 what `trust` says. Under `trust: local`, the default, this machine's runs are the evidence from
@@ -164,13 +164,14 @@ counts killed: the test noticed. The technique is mutation testing, and this is 
 in these docs it is named; everywhere else Purlin calls them breaks, because that is what the
 output says.
 
-`min_strength` in `.purlin/config.json` is the floor the gate holds you to: unused under
-`passed`, where no breaks run, 70 under `strong` and 80 under `signed`, each overridable by
-naming the key. The breaks run on your machine and nowhere else: a remote runner never breaks
+`min_strength` in `.purlin/config.json` is the floor the gate holds you to while mutation
+testing is on: unused under `passed`, where no breaks run, 70 under `strong` and 80 under
+`signed`, each overridable by naming the key. With it off, the key is null. The breaks run on your machine and nowhere else: a remote runner never breaks
 the code.
 
 Three engines ship, one per language family, and `mutation_engine` in `.purlin/config.json`
-picks one. Under `auto`, the detected test framework decides.
+picks one: `none` keeps the breaks off, the default, and under `auto` the detected test
+framework decides.
 
 | Engine | Breaks the code behind | Install it with |
 |---|---|---|

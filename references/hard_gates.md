@@ -36,15 +36,15 @@ Each level derives defaults you can override:
 
 | Derived | `passed` | `strong` | `signed` |
 |---------|----------|----------|----------|
-| `min_strength` | unused | 70 | 80 |
+| `min_strength`, with mutation testing on | unused | 70 | 80 |
 | The level of an unmarked rule | `passed` | `strong` | `signed` |
-| The breaks | off | on | on |
 
 `purlin:init --gate <level>` changes the level later. Raising it adds what is missing and asks
 before each write. Lowering it deletes nothing.
 
 Under `passed` no strength is measured, no level above `passed` is read, no list exists and no
-signature is asked for. Raising the gate to `strong` turns the breaks on. The breaks run on a
+signature is asked for. Mutation testing is a question of its own, off by default, and no gate
+turns it on. The breaks run on a
 person's machine and nowhere else: CI reruns the tests and verifies, and evidence either source wrote
 counts, so measuring the same breaks twice would cost a runner an hour and write the same
 number.

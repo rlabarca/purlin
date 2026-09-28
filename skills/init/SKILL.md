@@ -13,32 +13,38 @@ plugin and is reached through `${CLAUDE_PLUGIN_ROOT}`; a project carries none of
 `python3` is not on PATH, run `sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" <script>
 [args]`, which resolves the interpreter and execs it.
 
-## The one question
+## The questions
 
-Ask one question and nothing else: **what must be true of every rule before a version is
-proven?** There are three answers, one per evidence level. That answer is the **gate**.
+Init asks these, in this order, and nothing else. Everything else it reads from the tree: the
+language and the test framework from detection, the git host from the remote URL.
 
-| Gate | Who it fits | What every rule must have | Signatures |
-|------|-------------|---------------------------|------------|
-| `passed` | one person working alone | a passing tagged test for every proof, from any source | none |
-| `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose level is `strong` or above: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding | none required; anyone may sign to clear a rule reading `manual test` |
-| `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit | required on every rule whose level is `signed`; the signature names who signed |
+1. **The gate**, always: `What must be true of every rule before a version is proven?`
+2. **The test framework**, only in an empty repository, where there is nothing to detect.
+   The default is `shell`.
+3. **Mutation testing**, only where an engine exists for a detected framework: `Measure test
+   strength by breaking the code on purpose? It needs <engine> and takes minutes to hours per
+   run. [y/N]`. The default is no.
+4. **Trust**, always: whether this machine is trusted for the tests and the signing.
 
-The answer sets three defaults, each changeable afterwards: `min_strength` unused, 70, 80; the
-level of an unmarked rule `passed`, `strong`, `signed`: an unmarked rule takes the gate.
+The first answer is the **gate**, one of three:
 
-`purlin:sign` is what says a version met the gate: it walks the two lists and writes the
-annotated tag `signed/<version>`, which a person pushes. The gate is the standard that tag
-stands for; `references/hard_gates.md` defines what it means.
+| Gate | What every rule must have | Signatures |
+|------|---------------------------|------------|
+| `passed` | a passing tagged test for every proof, from any source | none |
+| `strong` | that, and a strong cell met on every rule whose level is `strong` or above: an audit of its text, proof and test that found nothing outstanding, and, with mutation testing on, test strength at or above `min_strength` | none required |
+| `signed` | everything `strong` requires, plus a current signature on every rule whose level is `signed`, in a signed commit | the signature names who signed |
 
-## The two honest exceptions
+An unmarked rule takes the gate as its level. `purlin:sign` is what says a version met the
+gate: it walks the queue and writes the annotated tag `signed/<version>`, which a person pushes.
+`references/hard_gates.md` defines what the tag means.
 
-Init asks nothing else. It reads the language and the test framework from the tree and the git
-host from the remote URL. Two questions remain because no answer can be read from anywhere:
-
-1. An empty repository has nothing to detect, so init asks which language the project will be.
-2. Whether this machine is trusted for the tests and the signing is a judgment, not a fact in
-   the tree, so init asks it.
+A yes to the mutation question writes `mutation_engine: auto` and `min_strength` (null at
+`passed`, 70 at `strong`, 80 at `signed`) and wires the engine: `[tool.mutmut]` into
+`pyproject.toml` when that file exists and `[mutmut]` into `setup.cfg` otherwise, or a line
+naming Stryker for a node or .NET project. A no writes `mutation_engine: none` and `min_strength:
+null` and wires nothing; the AI audit alone judges test strength. Where no engine exists init
+asks nothing, writes `none` and prints one line saying so. `--yes` takes every default, so
+mutation testing stays off; `--mutation` turns it on without the question.
 
 ## Run it
 
@@ -52,34 +58,34 @@ list back to the person before running it for real on a project that already has
 | Flag | What it does |
 |------|--------------|
 | `--gate <level>` | Sets the gate, at setup or later. Raising adds what is missing and asks before each write. Lowering changes the setting and deletes nothing |
+| `--mutation` | Turns mutation testing on without asking |
+| `--yes` | Takes the default answer to every question |
 | `--update` | Brings a project set up by an older Purlin to the installed one. See below |
-| `--add <language>` | Adds a second language: its test framework, its proof plugin, its breaks engine |
+| `--add <language>` | Adds a second language: its test framework and its proof plugin |
 | `--dry-run` | Prints the plan and writes nothing |
 
-Raising the gate is additive. `--gate strong` on a project set up as `passed` turns the
-breaks on; it asks before each write and touches nothing else. `--gate signed` on top of that
-asks which rules need a signature. Lowering the gate rewrites the setting and
-deletes nothing: the workflow, the evidence and the signatures stay where they are.
+Raising the gate is additive: it writes the setting, and the gate's `min_strength` where
+mutation testing is on, asks before each write and touches nothing else. Lowering the gate
+rewrites the setting and deletes nothing: the workflow, the evidence and the signatures stay
+where they are.
 
 Raising the gate writes no workflow. A runner is added for its own two reasons, below, and not
 because the gate moved.
 
 `--add <language>` is for a repository with, say, a Python service and a TypeScript client:
-init detects the second framework, installs its proof plugin beside the first, adds its breaks
-engine, and writes both into `.purlin/config.json`. One `purlin:test` then runs both.
+init detects the second framework, installs its proof plugin beside the first, and writes both
+into `.purlin/config.json`. One `purlin:test` then runs both.
 
 ## What init writes
 
-It writes `.purlin/config.json` with the gate, the trust answer, the git host, the test
-framework, the breaks engine and the derived defaults; and `specs/` for the two-section specs.
-It installs the proof plugin for the detected
-framework and the breaks engine for the language, writing `[tool.mutmut]` into `pyproject.toml`
-when that file exists and `[mutmut]` into `setup.cfg` otherwise. It adds a `.gitignore` block
-for `.purlin/runtime/`, where test runs put their proof files, and copies the dashboard page so
-it opens from disk. It installs no git hook at all: nothing runs at commit time and nothing
-runs at push time. It installs the Claude Code hook that refreshes the local dashboard data. It
-leaves `.purlin/evidence/` and `.purlin/tests.md` tracked, then prints every file it wrote or
-edited, one per line.
+It writes `.purlin/config.json` with the answers and what they derive; `specs/` for the
+two-section specs; and `.purlin/evidence/` with one README saying what the folder holds. It
+installs the proof plugin for the detected framework, and the engine only when mutation testing
+is on. It adds a `.gitignore` block for `.purlin/runtime/`, where test runs put their proof
+files, and copies the dashboard page so it opens from disk. It installs no git hook at all:
+nothing runs at commit time and nothing runs at push time. It installs the Claude Code hook
+that refreshes the local dashboard data. It leaves `.purlin/evidence/` and `.purlin/tests.md`
+tracked, then prints every file it wrote or edited, one per line.
 
 That Claude Code hook is the only hook init installs. It writes no git hook at all: nothing
 runs at push time, and a push is free, to any branch, for anyone.
@@ -93,19 +99,20 @@ under `.purlin/evidence/ci/` was committed by the runner's own identity, and end
 `scripts/ci/gate_check.py --check --verify`, which fails the job when the gate is not met or
 the evidence does not hold. No breaks run on the runner.
 
-The config it writes looks like this, and every key after `gate` has a default the gate
-implies:
+The config it writes carries these nine keys and no other. `audit_parallel`, how many AI audit
+calls run at once, is 4 and is not asked; change it in the file, from 1 to 16.
 
 ```json
 {
   "version": "0.10.0",
   "gate": "strong",
-  "trust": "local",
-  "min_strength": 70,
-  "mutation_engine": "mutmut",
+  "mutation_engine": "none",
+  "min_strength": null,
+  "audit_parallel": 4,
+  "test_framework": "auto",
   "sql_engine": null,
   "ci": "github",
-  "test_framework": "pytest"
+  "trust": "local"
 }
 ```
 
@@ -161,7 +168,8 @@ same checks run under `--update`.
 
 ## What each gate brings
 
-Under every gate, init leaves the level tag optional. Under `strong` and `signed`, init also turns the breaks on. Where a workflow is called for, and `specs/` carries `@env(windows)`
+Under every gate, init leaves the level tag optional, and mutation testing is the answer to its
+own question, not the gate's. Where a workflow is called for, and `specs/` carries `@env(windows)`
 or `@env(macos)` proofs, it gets a matrix: a Linux job always, plus one job per other operating
 system named, each running the same tests and writing its own section. With no such proof there
 is one Linux job.
@@ -171,8 +179,8 @@ about it. It prints the commit-signing setup. It asks for no names: signing is
 logged, not policed, and a signature names its signer.
 
 Anchor pins are added on demand. When something is missing later the tool that needs it says
-so: `purlin:drift` reports a pin behind, and `purlin:audit` says the breaks engine is
-unavailable.
+so: `purlin:drift` reports a pin behind, and `purlin:audit` says when the engine is not
+installed.
 
 ## Branch rules
 
@@ -216,13 +224,17 @@ dashboard is the page that opens from disk.
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root .
 ```
 
-`--update` detects the older layout and offers each change separately. It untracks and deletes
-the proof files and the evidence files that used to be committed, untracks the committed
-dashboard data, removes the git hooks an older Purlin installed and says why, retires the config
-keys that no longer exist, asks the gate question and the trust question once each, rewrites
-the Windows tag to `@env(windows)` and drops the kind of test from every proof line. Every
-write asks first, every file it replaces is backed up beside the original, and while the
-update is pending `sync_status` opens with `→ Run: purlin:init --update`.
+`--update` detects the layout 0.9.5 left and offers each change separately. It removes a
+spec's Figma source, its pinned timestamp, its `> Visual-Reference:` and its `> Visual-Hash:`
+lines and names each spec; untracks and deletes the proof files and the run files 0.9.5
+committed beside the specs; untracks the committed dashboard data; removes the git hooks 0.9.5
+installed and says why; drops every config key this release does not read and names each one;
+asks the gate, mutation and trust questions once each; creates `.purlin/evidence/` with its
+README; rewrites the Windows tag to `@env(windows)` and drops the kind of test from every proof
+line. It changes no spec that has no `> Scope:` line and names each one instead: the line is
+optional below `signed` and required at `signed`. Every write asks first, every file it replaces
+is backed up beside the original, and while the update is pending `sync_status` opens with
+`→ Run: purlin:init --update`.
 
 ## When you are done
 

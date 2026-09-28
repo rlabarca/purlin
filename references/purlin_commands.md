@@ -39,7 +39,7 @@ before a signature is `trust: remote`.
 
 | Command | Purpose | Who runs it, and when |
 |---------|---------|------------------------|
-| `purlin:init` | Set a project up for Purlin, and change the gate later | An engineer, once. One question |
+| `purlin:init` | Set a project up for Purlin, and change the gate later | An engineer, once. Four questions at most |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current | An engineer, or a PM in Claude Code |
 | `purlin:status [name]` | Show every rule's cells and what blocks the gate | Anyone with a checkout, any time; with a name, to see one spec's rules |
 | `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies | An engineer, once, on a codebase that predates Purlin |
@@ -82,7 +82,7 @@ Purlin
 
   Project
   ──────
-  purlin:init                     One question: what a version must reach
+  purlin:init                     The gate, mutation testing and trust
   purlin:init --gate <level>      passed, strong or signed, afterwards
   purlin:init --add <language>    Wire another language's test framework
   purlin:init --update            Bring the project up to the installed plugin

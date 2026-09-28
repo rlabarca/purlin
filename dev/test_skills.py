@@ -11,6 +11,7 @@ A needle that must sit on one line of the source, such as a fenced command,
 goes through `same_line()` instead.
 """
 
+import json
 import re
 import subprocess
 import sys
@@ -173,25 +174,78 @@ def table_rows(text, header):
     return rows
 
 
+# The four questions init asks, in order, each by the words the skill uses.
+INIT_QUESTIONS = (
+    'What must be true of every rule before a version is proven?',
+    'empty repository',
+    'Measure test strength by breaking the code on purpose?',
+    'trusted',
+)
+
+
 def init_question_problems():
     rel = skill_path('init')
     text = read(rel)
-    problems = carries(rel, [
-        'what must be true of every rule before a version is proven',
-        '`passed`', '`strong`', '`signed`'])
-    body = section(text, r'exception')
+    problems = carries(rel, ['`passed`', '`strong`', '`signed`'])
+    body = section(text, r'^The questions$')
     if body is None:
-        problems.append('%s has no section naming the further questions' % rel)
+        problems.append('%s has no section headed The questions' % rel)
         return problems
-    items = re.findall(r'^\d+\. ', body, re.M)
-    if len(items) != 2:
-        problems.append('%s names %d further questions, expected 2'
-                        % (rel, len(items)))
-    flattened = flat(body)
-    for needle in ('empty repository', 'trusted'):
-        if needle not in flattened:
-            problems.append('%s exceptions do not name %r' % (rel, needle))
+    items = re.split(r'^\d+\. ', body, flags=re.M)[1:]
+    if len(items) != len(INIT_QUESTIONS):
+        problems.append('%s names %d questions, expected %d'
+                        % (rel, len(items), len(INIT_QUESTIONS)))
+        return problems
+    for item, needle in zip(items, INIT_QUESTIONS):
+        if needle not in flat(item):
+            problems.append('%s question %r does not carry %r'
+                            % (rel, flat(item)[:40], needle))
+    if 'The default is no' not in flat(items[2]):
+        problems.append('%s does not say the mutation default is no' % rel)
     return problems
+
+
+def init_config_problems():
+    rel = skill_path('init')
+    text = read(rel)
+    blocks = re.findall(r'```json\n(.*?)```', text, re.S)
+    if not blocks:
+        return ['%s shows no settings file' % rel]
+    shown = sorted(json.loads(blocks[0]))
+    template = sorted(json.loads(read('templates/config.json')))
+    problems = []
+    if shown != template:
+        problems.append('%s shows the keys %s, the template carries %s'
+                        % (rel, shown, template))
+    return problems + carries(rel, ['is not asked', '`.purlin/evidence/`',
+                                    'one README'])
+
+
+class TestSkillInit:
+
+    @pytest.mark.proof("skill_init", "PROOF-1", "RULE-1")
+    def test_the_frontmatter_names_the_skill(self):
+        assert frontmatter_problems('init') == []
+
+    @pytest.mark.proof("skill_init", "PROOF-2", "RULE-2")
+    def test_it_runs_the_scaffold_script(self):
+        assert scaffold_flag_problems() == []
+
+    @pytest.mark.proof("skill_init", "PROOF-3", "RULE-3")
+    def test_it_closes_by_naming_the_next_step(self):
+        assert next_step_problems('init') == []
+
+    @pytest.mark.proof("skill_init", "PROOF-4", "RULE-4")
+    def test_it_stays_under_its_ceiling(self):
+        assert skill_ceiling_problems('init') == []
+
+    @pytest.mark.proof("skill_init", "PROOF-5", "RULE-5")
+    def test_it_names_the_four_questions_in_order(self):
+        assert init_question_problems() == []
+
+    @pytest.mark.proof("skill_init", "PROOF-6", "RULE-6")
+    def test_it_shows_the_nine_settings(self):
+        assert init_config_problems() == []
 
 
 # ---------------------------------------------------------------------------
@@ -457,8 +511,8 @@ class TestSkillAudit:
 # skill must not name again: `--ci` went when init started asking at `passed`
 # whether to add a remote runner, so a skill that still printed it would hand
 # a person an invocation the script exits 2 on.
-SCAFFOLD_FLAGS = ('--project-root', '--gate', '--update', '--add',
-                  '--dry-run')
+SCAFFOLD_FLAGS = ('--project-root', '--gate', '--mutation', '--yes',
+                  '--update', '--add', '--dry-run')
 SCAFFOLD_RETIRED = ('--ci',)
 
 

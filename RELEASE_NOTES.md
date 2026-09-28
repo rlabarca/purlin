@@ -17,14 +17,48 @@ purlin:init --update
 ```
 
 The update reads what the project actually contains rather than its `version` field, shows the
-delta, and asks before each write. It untracks and deletes the evidence files and the proof
-files that used to be committed, untracks the committed dashboard data, removes the git hooks an
-older Purlin installed, retires the config keys that no longer exist, asks the gate question and
-the trust question once each, and rewrites the Windows tier tag to `@unit @env(windows)`. Every
-file it
-replaces is backed up beside the original. `purlin:init --update --check` prints the pending
-list and writes nothing, which is what a preflight runs. Until the update runs, every
-skill opens with `→ Run: purlin:init --update`.
+list of changes, and asks before each one. Every file it rewrites is backed up beside the
+original as `<name>.local-<sha8>.bak`, and one commit carries the whole run.
+`purlin:init --update --check` prints the pending list and writes nothing, which is what a
+preflight runs. Until the update runs, every skill opens with `→ Run: purlin:init --update`.
+
+What it does to a 0.9.5 project, step by step:
+
+- **Design references.** 0.9.5 let a spec point at a Figma file and carry a picture's
+  fingerprint. The update deletes each spec's `> Visual-Reference:` and `> Visual-Hash:` lines,
+  a `> Source:` that names Figma and the `> Pinned:` timestamp that goes with it, and prints one
+  line per spec naming what it removed. A git `> Source:` and its `> Pinned:` stay.
+- **Tags on proof lines.** A trailing `@windows` becomes `@env(windows)`, and the kind of test
+  (`@unit`, `@integration`, `@e2e`) is dropped: `purlin:test` runs every tagged test.
+- **Files beside the specs.** The run files and the proof files 0.9.5 committed beside each spec
+  are untracked and deleted. The committed dashboard data and the cache are untracked, left on
+  disk and added to `.gitignore`.
+- **Git hooks.** The pre-commit and pre-push hooks 0.9.5 installed are removed. Nothing runs at
+  commit time or at push time. A hook another tool wrote is left alone.
+- **Settings.** `.purlin/config.json` is rewritten with `version`, `gate`, `mutation_engine`,
+  `min_strength`, `audit_parallel` (4), `test_framework`, `sql_engine`, `ci` and `trust`. Every
+  key 0.9.5 wrote that this release does not read is dropped and named in one line:
+  `spec_dir`, `pre_push`, `report`, `audit_criteria`, `audit_criteria_pinned`, `audit_llm` and
+  `audit_llm_name`, whichever the file carried. A `test_framework` name the tree cannot run is
+  dropped and named.
+- **Three questions.** The gate question, defaulting to `strong` where `pre_push` was `strict`
+  and to `passed` otherwise. The mutation question, `Measure test strength by breaking the code
+  on purpose?`, asked only where an engine exists for the project's frameworks, defaulting to
+  no: 0.9.5 had no such setting. A yes writes `mutation_engine: auto` and the gate's
+  `min_strength` and says to run `purlin:init` to wire the engine. The trust question,
+  defaulting to yes.
+- **The evidence folder.** `.purlin/evidence/` is created with one README saying what the
+  folder holds. Every run writes its evidence there from now on.
+- **Workflows.** The workflow that committed Windows proof files is removed. One `purlin.yml`
+  is offered in its place only where a spec names another operating system or you answered no
+  to the trust question.
+- **Plugin copies.** Every copy under `.purlin/plugins/` is refreshed to the plugin this
+  release ships, keeping the name the project gave it.
+- **Specs with no `> Scope:` line** are named, `2 specs have no > Scope: line: a, b. Run
+  purlin:spec <name> to add one.`, and changed by nothing. The line is optional below `signed`
+  and required at `signed`.
+
+Nothing about a level tag, a signature or the queue is migrated: 0.9.5 had none.
 
 The evidence a person wrote under 0.9.5 does not carry forward. Those files bound hashes this
 release computes differently, so the update drops them rather than converting them into
@@ -48,9 +82,10 @@ is why raising the gate is what makes a column, a tile or a filter appear.
 
 **The gate.** One project setting, `gate` in `.purlin/config.json`, with three values named for
 the word the last cell reads when it is met: `passed`, `strong` and `signed`. `purlin:init` asks
-one question, **what must be true of every rule before a version is proven?**, and derives the
-rest: `min_strength` unused, 70 and 80; the level of an unmarked rule `passed`, `strong` and
-`signed`; the breaks off under `passed` and on above it.
+one question about it, **what must be true of every rule before a version is proven?**, and an
+unmarked rule takes the gate as its level. Mutation testing is a question of its own, asked only
+where an engine exists and off by default; with it on, `min_strength` is null, 70 and 80 at the
+three gates.
 `purlin:init --gate <value>` changes it later; raising adds what is missing, lowering deletes
 nothing.
 

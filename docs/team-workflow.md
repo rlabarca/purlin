@@ -22,8 +22,8 @@ Two things, and nothing on the git host:
 1. The setting `gate` in `.purlin/config.json`, here set to `strong`.
 2. A record at the commit under review for every rule, which `purlin:audit` writes and `--commit` commits.
 
-`strong` derives two defaults, each of which you can change: `min_strength` 70, and origin
-tags optional. Every unmarked rule's level is `strong` here, so the AI audit runs on every
+`strong` derives one default you can change: `min_strength` 70, where mutation testing is
+on. Every unmarked rule's level is `strong` here, so the AI audit runs on every
 rule that carries no `[level: passed]` tag. Signatures are advisory at this gate and no rule has a
 signed cell. What a signature still does here is clear a strong cell reading `manual test`:
 `purlin:sign <feature>` and `purlin:sign --batch` sign every row in the queue, and
