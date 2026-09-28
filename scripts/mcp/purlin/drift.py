@@ -566,9 +566,6 @@ def _qa_view(project_root, rng, changed, data, raw_features, markers):
         'tests_changed': {'files': test_files, 'features': covered},
         'signatures_stale': stale,
         'queue': queue,
-        'unsettled': ['%s/%s' % (feature['name'], rule['id'])
-                      for feature, rule in rules
-                      if rule['flags'].get('unsettled')],
         'not_audited': ['%s/%s' % (feature['name'], rule['id'])
                         for feature, rule in rules
                         if rule['flags'].get('not_audited')],

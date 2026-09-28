@@ -815,7 +815,7 @@ class TestReportShape:
             'rules_without_test', 'specs_uncommitted', 'unscoped']
         assert sorted(report['roles']['qa']) == [
             'lines', 'not_audited', 'queue', 'signatures_stale',
-            'specs_uncommitted', 'tests_changed', 'unsettled']
+            'specs_uncommitted', 'tests_changed']
 
         narrowed = json.loads(purlin_drift.drift(checkout, role='qa'))
         assert sorted(narrowed) == ['role', 'since', 'view'], sorted(narrowed)
