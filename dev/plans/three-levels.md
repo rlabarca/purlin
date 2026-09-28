@@ -409,6 +409,14 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     is what makes the signer provable; and `trust: remote` stays as a project's own setting.
     New: every signature records the machine's name and its operating system beside the
     signer and the time. `signature_format.md` bumps. Piece P4 of the design owns it.
+49. **This repository is brought up to its own spec** (added 2026-09-27). After the last
+    piece lands, `purlin:init --update` runs here, so this project carries what a project
+    set up by 0.10.0 carries: the settings file, the plugin copies, the ignore entries, the
+    runner file. Because the upgrade reads only what released 0.9.5 wrote, each piece
+    rewrites this repository's own files for the layout it changes, and the run of
+    `--update` is the check that nothing was missed: whatever it still offers to change is
+    a gap, fixed in the piece that owns it. No audit and no signing follow until the owner
+    says the sanity checks are done.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
