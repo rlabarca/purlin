@@ -36,9 +36,13 @@ claim of compliance: it hands evidence to a system of record.
 
 ## What is left, in order
 
-1. **Sanity check 2: a new user follows the docs.** A fresh agent with fresh context, given
-   only the README and the docs. The prompt is `dev/plans/next-agent-prompt.md`. It changes
-   nothing in this repository and reports what it found.
+1. **Sanity check 2: a new user follows the docs**, then **every required proof is rewritten
+   to the guideline.** A fresh agent with fresh context; the prompt is
+   `dev/plans/next-agent-prompt.md`. Part 1, the check, is done with only the README and the
+   docs in hand, changes nothing here, and ends in a report. Part 2 rewrites the 558 proofs on
+   rules whose level asks for the audit, across 30 specs, to
+   `references/spec_quality_guide.md`, "Writing proofs", keeping every id, rule and marker,
+   and closes the test gaps that exposes.
 2. **Put its findings to the owner as questions**, in plain words, most basic first, then
    apply the answers: one Opus agent per closed decision, in its own worktree under
    `/Users/richlabarca/LocalCode/purlin-wt/<name>`, merged by fast-forward.
@@ -65,7 +69,7 @@ claim of compliance: it hands evidence to a system of record.
 - The rule's own screen still shows the `purlin:sign` panel for a rule whose signed column
   reads `waiting`.
 - Proofs outside `drift`, `upstream` and `config_engine` are still written in the test's own
-  words. An audit will find fault with many of them.
+  words. Part 2 of the next session rewrites the required ones.
 - Vitest 4 would not install on this machine; version 3 is proven.
 - Text on a solid coloured badge measures under 7 to 1. The owner chose to leave it.
 - A hand check may be signed without a note. The owner chose to leave it.

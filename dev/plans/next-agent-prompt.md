@@ -1,4 +1,4 @@
-# Prompt for the next session: a new user follows the docs
+# Prompt for the next session: a new user follows the docs, then the proofs are rewritten
 
 Paste everything below the line into a new session opened in
 `/Users/richlabarca/LocalCode/purlin`.
@@ -6,7 +6,14 @@ Paste everything below the line into a new session opened in
 ---
 
 You are running a sanity check on Purlin 0.10.0, a Claude Code plugin for spec-driven
-development, before its release. This is the second of several checks. The first asked, as a
+development, before its release. You have two jobs, in this order: **Part 1**, a sanity
+check, and **Part 2**, rewriting this repository's required proofs to the proof guideline. Do
+not start Part 2 until the Part 1 report is written, because Part 2 needs you to read what
+Part 1 forbids.
+
+# Part 1: the sanity check
+
+This is the second of several checks. The first asked, as a
 skeptical developer, why anyone needs Purlin. This one asks: **can a person who has never seen
 Purlin get from nothing to a proven rule using only what the docs say?**
 
@@ -98,5 +105,94 @@ Only after the report is written, read the code and the plans to tell me, for ea
 whether it is a fault in the docs or a fault in the product. Add that as a last section and do
 not change the findings above it.
 
-Then stop and put the questions to me with the question UI. Change nothing until I have
-answered.
+Put the questions to me with the question UI when Part 2 is done as well, so that I answer
+once. Change nothing on account of Part 1's findings until I have answered.
+
+# Part 2: every required proof is rewritten to the guideline
+
+## Why
+
+A proof says, in plain language, how a rule is shown to be true. I want QA to write and review
+proofs beside product, so a proof has to be something a person who cannot read code can judge.
+The guideline is `references/spec_quality_guide.md`, the section "Writing proofs". Three of
+this repository's specs were rewritten to it as examples: `specs/mcp/drift.md`,
+`specs/anchor/upstream.md` and `specs/mcp/config_engine.md`. Read the guideline and those
+three before you begin; they are the standard.
+
+The rest of this repository's proofs were written by an agent in the test's own words ("Wrap
+the move in a recording spy and verify the spy saw at least 1 call..."). When `purlin:audit`
+runs, the model reads each test against its proof and against the guideline, and it will find
+fault with proofs written that way.
+
+## What is required
+
+A proof is **required** where its rule's level asks for the audit: the rule is unmarked, or
+marked `[level: strong]` or `[level: signed]`. This repository's gate is `signed`, so an
+unmarked rule takes it. A rule marked `[level: passed]` needs no proof, and its proofs are out
+of scope: leave them as they are. That leaves 558 proofs to rewrite, across 30 specs. The
+largest are `states` (84), `run_script` (55), `signatures` (48), `gate_check` (44),
+`scaffold` (37) and `ai_audit` (30). Count them yourself before you start and tell me if your
+count differs.
+
+## How each proof is rewritten
+
+For each required proof, in this order:
+
+1. Read the rule it serves, the proof as it stands, and the test or tests that carry its
+   marker.
+2. Rewrite the proof's words to the guideline: what is done, what is observed, the expected
+   value; at least one failure case or boundary where the rule refuses, limits or expires
+   something; no file path of the source, no function name, no class, no test framework's
+   name; what a user or a caller of the system would see. A path or a line the software
+   itself writes, reads or prints is output a caller sees, and a proof may name it.
+3. **Keep the proof's id, the rule it serves, and every marker.** Change no rule's words and
+   no test's code in this step.
+4. **The proof claims only what the test shows.** Read the test and confirm it carries out
+   the rewritten proof. Where the test shows less than a good proof would claim, make the
+   proof claim what the test shows, and add the gap to a list: the spec, the proof, and what
+   a good proof would also claim.
+5. Where one proof really holds several separate things, leave it as one proof and say so in
+   the list. Splitting a proof changes ids and markers, which is a decision for me.
+
+Then close the gaps you listed: for each, write the missing assertion in the test, against
+real behaviour and not a stand-in for the code under test, and raise the proof to claim it.
+Where closing a gap would need more than a few lines of test, leave it on the list for me with
+what it would take.
+
+## How to work
+
+As `dev/plans/handoff.md` says: Opus agents, each in its own worktree under
+`/Users/richlabarca/LocalCode/purlin-wt/<name>`, merged into `main` by fast-forward, two
+writing at once at most and only where their files do not overlap. One agent per spec for the
+six largest; group the smaller specs by folder. Give each agent the guideline, the three
+example specs, and this section, word for word.
+
+Each agent's acceptance: `bash dev/run_tests.sh` passes with 0 failed; this repository run
+through its own tool (`python3 scripts/run/purlin_run.py --all --test`, with the PATH the
+handoff gives) ties every marker and every rule passes its tests; the evidence that run writes
+is removed and not committed; no rule's words changed (`git diff` of each spec shows changes
+on proof lines only, which the agent confirms and reports); `git status` is clean. Never
+weaken an assertion to make it pass, and never edit a count to make a sweep green.
+
+Rewriting a proof puts its feature's evidence out of date, because the spec changed. When
+every spec is done and merged, run this repository through its own tool once with `--commit`,
+so the committed evidence is current again.
+
+Do not run `purlin:audit` and do not sign anything. I will run the audit myself when the
+sanity checks are done. Push nothing.
+
+## What to give me at the end of Part 2
+
+Add to your reply, and save as `dev/plans/proofs-rewritten.md`:
+
+1. **The counts**: proofs rewritten, per spec; proofs left alone because their rule is marked
+   `[level: passed]`; the full sweep's result; markers tied; rules passing.
+2. **Ten before-and-after pairs**, quoted in full, chosen to show the range: the easiest, the
+   hardest, and the ones you are least sure of.
+3. **The gaps**: each one closed, with the assertion added; each one left, with what it would
+   take.
+4. **Proofs that hold several things**, which I may want split.
+5. **Rules you think are wrong or unclear**, found while reading them against their tests.
+   You changed none; list them.
+6. **Questions for me**, in the same form as Part 1's, put to me with the question UI
+   together with Part 1's.
