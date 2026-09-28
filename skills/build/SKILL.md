@@ -39,18 +39,40 @@ evidence accounts for, and a change to it selects nothing on the next `purlin:te
 
 ## Writing the code and the tests
 
-Write the smallest change that satisfies the rules, then one test per proof. Every test
-carries a marker naming the feature, the proof and the rule, which is what lets Purlin tell
-which rule a passing test actually proves:
+Build from the proofs that exist. Write the smallest change that satisfies the rules, then, for
+each proof with no test marked for it:
+
+1. **Look first for a test that already shows it.** Search the project's existing tests for one
+   that does what the proof says: the same input, the same observable, the same expected
+   value. Where one does, offer to add the marker above it and write nothing new. A test that
+   shows part of it is not that test.
+2. **Otherwise write an ordinary test** in the project's own framework, in the folder and the
+   style its other tests use, with the marker above it.
+
+The marker is one comment, in the language's own comment syntax, on the line above the test:
 
 ```python
-@pytest.mark.proof("login", "PROOF-1", "RULE-1")
+# purlin: login PROOF-1
 def test_valid_credentials_return_200():
     assert authenticate("user@test.com", "secret") == 200
 ```
 
-The marker for every other framework is in `references/formats/proofs_format.md`. A test with
-no marker proves nothing as far as Purlin is concerned, however good it is.
+```typescript
+// purlin: login PROOF-1
+it('returns 200 for valid credentials', () => {
+  expect(authenticate('user@test.com', 'secret')).toBe(200);
+});
+```
+
+It names the feature and the proof; the spec already says which rule the proof serves. Where a
+rule has no proof, which the gate `passed` allows, it names the rule: `purlin: login RULE-2`. A
+test may carry several markers, one line each, and decorators may sit between marker and test.
+`references/formats/marker_format.md` is the contract. A test Purlin wrote and a test a
+developer wrote differ in nothing but who typed them; a test with no marker is not evidence.
+
+A test must sit where a suite of the `tests` setting in `.purlin/config.json` reaches it, under
+one of its `files` globs; a marker in a file no suite names is never read. `purlin:init` writes
+that setting, and `references/supported_frameworks.md` shows what it writes for each framework.
 
 A test asserts the observable the proof names, against the real behaviour. A test that asserts
 a stub returns what the stub was told to return is worse than no test: it reports a rule as
@@ -70,15 +92,15 @@ person has to look again.
 purlin:test <name>
 ```
 
-Never run the test framework directly. `purlin:test` runs the tagged tests, writes the proof
-files into `.purlin/runtime/proofs/`, and prints the state of each rule. Iterate until every
-rule the feature owns has a passing test. A proof tagged `@env` for an operating system that
+Never run the test framework directly. `purlin:test` runs the project's own test command, ties
+each result to the marker above its test, writes the evidence and prints the state of each
+rule. It names every marker it could not tie to exactly one test, by file and
+line; fix each before going on. Iterate until every rule the feature owns has a passing test. A proof tagged `@env` for an operating system that
 is not this one is skipped and listed as `needs <os>`; that is expected locally and CI proves
 it on the matching runner.
 
-Never write a proof file, a record or a signature by hand. Tests write proof files,
-`purlin:test` writes the test results, `purlin:audit` writes records, `purlin:sign` writes
-signatures and the tag.
+Never write evidence or a signature by hand. `purlin:test` and `purlin:audit` write the
+evidence, `purlin:sign` writes signatures and the tag.
 
 ## Committing
 
@@ -93,7 +115,7 @@ carries the exact rendering; follow it rather than inventing one.
 Before you commit, compare the files you created, changed or deleted for the feature with its
 `> Scope:`: add each new file no entry covers, remove each entry whose file you deleted, and
 rewrite the line in the same commit as the code. Commit the code and the tests together.
-`.purlin/runtime/` is ignored by git, so proof files never enter a commit.
+`.purlin/runtime/` is ignored by git, so the reports a run reads never enter a commit.
 
 ## When you are done
 

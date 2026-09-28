@@ -22,7 +22,10 @@ read `references/spec_quality_guide.md`. Neither is restated here.
 3. Decide the feature name and the category folder: `specs/<category>/<name>.md`.
 4. Write the metadata, `> Scope:` included, then the rules, then one proof for every rule.
 5. Allocate ids against `origin/main`, never against the working tree.
-6. Commit the spec on its own, then offer the build.
+6. Print each rule with its proofs under it and ask whether to change any. Change what the
+   person asks and print them again.
+7. Save the spec when the person is satisfied, commit it on its own, and name `purlin:build`
+   as the next step. This skill never starts building.
 
 ## Intake
 
@@ -109,8 +112,10 @@ absence. There is no separate syntax for it.
 
 ## Proofs
 
-Write every proof to `references/spec_quality_guide.md`, "Writing proofs", the one home of
-what a good proof is. Write at least one proof for every rule. Several proofs may name one
+Draft every proof against `references/spec_quality_guide.md`, "Writing proofs", the one home
+of what a good proof is: what is done, what is observed, the expected value, at least one
+failure case, and no file path or function name, so a person who cannot read code can judge
+it. Write at least one proof for every rule. Several proofs may name one
 rule, and one proof may name several rules when it drives a flow through all of them:
 `- PROOF-7 (RULE-2, RULE-3, RULE-4): ...`.
 
@@ -154,12 +159,15 @@ Two branches that advanced the same anchor pin resolve to the newer sha.
 
 ## When you are done
 
-Write the file, commit it with the `spec(<name>):` prefix from
-`references/commit_conventions.md`, then end with exactly this and nothing after it:
+Once the person is satisfied with the rules and proofs you printed, write the file, commit it
+with the `spec(<name>):` prefix from `references/commit_conventions.md`, then end with exactly
+this and nothing after it:
 
 ```
-Spec created: <name>. Build it now?
+Spec saved: <name>. Next: purlin:build <name>
 ```
+
+Never start the build yourself: the person runs `purlin:build` when they choose to.
 
 When you edited an existing spec rather than creating one, say what moved before the offer:
 which rules were added, which text changed, and which signatures that stales.

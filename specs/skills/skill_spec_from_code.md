@@ -13,6 +13,7 @@
 - RULE-3: The last section of `skills/spec-from-code/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome
 - RULE-4: The whole of `skills/spec-from-code/SKILL.md` is at most 130 lines [level: passed]
 - RULE-5: Every rule the skill writes carries `[level: passed]`, and the skill forbids `[level: strong]` and `[level: signed]`
+- RULE-6: Where an existing test already shows what a proof the skill writes asks, the skill offers to add the marker comment `purlin: <feature> PROOF-<n>` above that test and writes no new test, and a test that shows only part of it is left unmarked
 
 ## Proof
 
@@ -21,3 +22,4 @@
 - PROOF-3 (RULE-3): Read `skills/spec-from-code/SKILL.md` and split it on its `## ` headings; verify the last heading matches `next step` or `when you are done` case-insensitively, that the text under it names at least two outcomes as list items or table rows, and that at least one of its lines carries `→`. Deleting the closing section fails naming the heading it found instead
 - PROOF-4 (RULE-4): Read `skills/spec-from-code/SKILL.md` and count its lines; verify the count is at most 130. Appending prose until the file passes 130 lines fails, and the failure reports the count it found beside the ceiling
 - PROOF-5 (RULE-5): Read `skills/spec-from-code/SKILL.md`; verify every line that opens `- RULE-` carries `[level: passed]`, and that the file carries the prohibition "Do not write `[level: strong]` or `[level: signed]`". Changing one example rule to `[level: strong]` fails, printing that line
+- PROOF-6 (RULE-6): Read `skills/spec-from-code/SKILL.md` with its line wrapping collapsed; verify it carries `offer to add the marker comment above that test`, `purlin: <feature> PROOF-<n>`, `write no new test` and `is not that test`. Deleting the sentence that offers the marker fails naming it

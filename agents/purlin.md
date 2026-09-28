@@ -64,9 +64,9 @@ signature went stale, the next step is `purlin:sign`. Say which, and say why.
 
 ## Four NEVERs
 
-1. **Never write a proof file, a record or a signature by hand.** Tests write proof files,
-   `purlin:test` writes the test results, `purlin:audit` writes records, `purlin:sign` writes
-   signatures and the tag. A file you typed yourself is not evidence of anything.
+1. **Never write evidence or a signature by hand.** `purlin:test` and `purlin:audit` write the
+   evidence from what the project's own tests reported, `purlin:sign` writes signatures and
+   the tag. A file you typed yourself is not evidence of anything.
 2. **Never sign on a person's behalf.** A signature is a person's attestation in a signed
    commit, and nothing checks who signed, so this line is the only thing that holds it.
 3. **Never push, never write a tag yourself, never open a pull request, never delete or
@@ -115,8 +115,9 @@ build.
 
 A feature's name is carried in five places, and a rename moves them together in one commit: the
 spec file `specs/<category>/<name>.md` and its `# Feature:` line; every `> Requires:` entry
-naming it, matched whole so `login` leaves `login_oauth` alone; every proof marker in test
-code, in each form `references/formats/proofs_format.md` lists under the feature-name token;
+naming it, matched whole so `login` leaves `login_oauth` alone; every marker comment in test
+code naming it, `purlin: <name> PROOF-<n>` or `purlin: <name> RULE-<n>`, as
+`references/formats/marker_format.md` spells it;
 the directory `specs/<category>/<name>.signatures/`; and the evidence files
 `.purlin/evidence/<source>/<name>.json`. Move files with `git mv`, then call `sync_status`:
 a reference it cannot resolve is one the rename missed.

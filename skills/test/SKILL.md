@@ -3,8 +3,9 @@ name: test
 description: Run the tagged tests and print each rule's passed cell
 ---
 
-Run the tests that carry proof markers, write what they saw into `.purlin/evidence/local/`
-and `.purlin/tests.md`, and print the passed cell of every rule. This is level 1 and it takes
+Run the project's own test suites, tie each result to the marker comment above its test,
+write what they saw into `.purlin/evidence/local/` and `.purlin/tests.md`, and print the passed
+cell of every rule. This is level 1 and it takes
 seconds: no breaks, no audit, no signature. `purlin:audit` adds the audit.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
@@ -32,7 +33,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test
 Add `--all` for `purlin:test --all` and `--feature <name>` for each feature named. With neither,
 the run selects each feature with no run on this operating system, whose spec, code or tests
 changed since its evidence, with an untracked file under its `> Scope:` or beside its tests, or
-whose spec names no files, and runs only the test files carrying its markers. It first prints
+whose spec names no files, and runs only the test files carrying its markers: each suite of
+the `tests` setting gets them as its `{files}`. It first prints
 `Selected <n> of <m> features: login (code changed since a1b2c3d), ...`, the skipped ones ending
 `purlin:test --all runs them too.`, and a line per untracked file. With nothing selected it
 prints `Nothing to run: every feature's spec, code and tests match its evidence. purlin:test
@@ -61,26 +63,26 @@ which version this release ships.
 
 ## Step 3: read the table
 
-The run prints `Ran <framework> on <n> feature(s).`, then the status table
-`purlin:status` builds. The `Tests` column counts the words a passed cell can read:
+The run prints `Ran <suite> on <n> feature(s).` and `Markers: <n> tied to a test, <k> not
+tied.`, then the status table `purlin:status` builds. The `Tests` column counts the words a passed cell can read:
 
 | Word | What it means |
 |------|---------------|
 | `passed` | A test tagged with the rule's proof ran here and passed |
 | `failed` | A tagged test ran and failed; the script names the test and the assertion |
-| `no test` | No test carries the proof's marker, or, with the reason `no proof written`, no proof line names the rule |
+| `no test` | No test carries the proof's marker, or, with the reason `no proof written`, the rule has neither a proof nor a test marked with its id |
 | `not run` | A test carries the marker and no counting run reached it |
 | `out of date` | The spec, the code or the tests changed since the run; the reason names which |
 
-Loud failures come first: `Evidence is missing: <what>.` means an arm ran and wrote no proof
-entry, or a marker in the tree produced none. Read those before the table.
+Loud failures come first: `Evidence is missing: <what>.` means a suite left no report, or a
+marker has no pass or fail: its test was skipped, the report lacks it, or no test follows it.
 
 ## Step 4: what the gate changes
 
 This is the pattern every Purlin skill follows. Under `passed` the whole project is this one
-cell: no strength, no level, no queue, no signature. Under `strong` the strong cell and
-the test strength appear beside it; under `signed` the signed cell appears too. Evidence from either source counts at every gate; what `trust: remote` changes is that
-`purlin:sign` asks for a `ci` run first. Read the gate from `.purlin/config.json` and print
+cell: no strength, no level, no queue, no signature. Under `strong` the strong cell and the
+test strength appear beside it; under `signed` the signed cell appears too. Evidence from
+either source counts at every gate; `trust: remote` makes `purlin:sign` ask for a `ci` run. Read the gate from `.purlin/config.json` and print
 only what exists; `references/hard_gates.md` defines the three gates once.
 
 ## Step 5: operating systems
@@ -99,8 +101,7 @@ platform beside it rather than `not run`.
 ## Step 6: the gate line
 
 The last line is `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`, and the run
-exits 1 on the second. At `passed` that line is the check: nobody runs a script.
-`scripts/ci/gate_check.py --check` is the CI step, not yours.
+exits 1 on the second. At `passed` that line is the check; `gate_check.py` is CI's step.
 
 ## Step 7: name the next step
 
@@ -116,5 +117,4 @@ End with one line, computed from the table:
 | Every rule reads `passed`, gate `strong` or `signed` | `→ Run: purlin:audit` |
 | Only `needs <os>` proofs remain | `→ Run: purlin:test --remote` |
 
-Diagnose a failure first: `references/spec_quality_guide.md` says which of the rule, the proof
-and the code is usually at fault.
+Diagnose a failure first: `references/spec_quality_guide.md` says which part is at fault.

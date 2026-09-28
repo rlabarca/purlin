@@ -223,29 +223,37 @@ def init_config_problems():
 
 class TestSkillInit:
 
-    @pytest.mark.proof("skill_init", "PROOF-1", "RULE-1")
+    # purlin: skill_init PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('init') == []
 
-    @pytest.mark.proof("skill_init", "PROOF-2", "RULE-2")
+    # purlin: skill_init PROOF-2
     def test_it_runs_the_scaffold_script(self):
         assert scaffold_flag_problems() == []
 
-    @pytest.mark.proof("skill_init", "PROOF-3", "RULE-3")
+    # purlin: skill_init PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('init') == []
 
-    @pytest.mark.proof("skill_init", "PROOF-4", "RULE-4")
+    # purlin: skill_init PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('init') == []
 
-    @pytest.mark.proof("skill_init", "PROOF-5", "RULE-5")
+    # purlin: skill_init PROOF-5
     def test_it_names_the_four_questions_in_order(self):
         assert init_question_problems() == []
 
-    @pytest.mark.proof("skill_init", "PROOF-6", "RULE-6")
-    def test_it_shows_the_nine_settings(self):
+    # purlin: skill_init PROOF-6
+    def test_it_shows_the_eight_settings(self):
         assert init_config_problems() == []
+
+    # purlin: skill_init PROOF-7
+    def test_it_writes_the_tests_setting_and_installs_nothing(self):
+        assert carries(skill_path('init'), [
+            "installs nothing in the project's tests",
+            'one entry of the `tests` setting', 'jest-junit',
+            'references/supported_frameworks.md',
+            'references/formats/marker_format.md']) == []
 
 
 # ---------------------------------------------------------------------------
@@ -254,25 +262,32 @@ class TestSkillInit:
 
 class TestSkillSpec:
 
-    @pytest.mark.proof("skill_spec", "PROOF-1", "RULE-1")
+    # purlin: skill_spec PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('spec') == []
 
-    @pytest.mark.proof("skill_spec", "PROOF-2", "RULE-2")
+    # purlin: skill_spec PROOF-2
     def test_it_allocates_ids_against_the_default_branch(self):
         assert carries(skill_path('spec'), [
             'git show origin/main:',
             'allocated against `origin/main`, not against the working tree']) == []
 
-    @pytest.mark.proof("skill_spec", "PROOF-3", "RULE-3")
-    def test_it_closes_with_the_offer_to_build(self):
+    # purlin: skill_spec PROOF-3
+    def test_it_closes_by_naming_the_build(self):
         assert spec_offer_problems() == []
 
-    @pytest.mark.proof("skill_spec", "PROOF-4", "RULE-4")
+    # purlin: skill_spec PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('spec') == []
 
-    @pytest.mark.proof("skill_spec", "PROOF-5", "RULE-5")
+    # purlin: skill_spec PROOF-6
+    def test_it_prints_the_proofs_and_asks_before_it_saves(self):
+        assert carries(skill_path('spec'), [
+            'Print each rule with its proofs under it and ask whether to '
+            'change any', 'Save the spec when the person is satisfied',
+            'Draft every proof against', 'at least one failure case']) == []
+
+    # purlin: skill_spec PROOF-5
     def test_it_writes_the_scope_on_every_spec(self):
         rel = skill_path('spec')
         problems = carries(rel, [
@@ -293,10 +308,13 @@ def spec_offer_problems():
     if not re.search(r'next step|when you are done', heading, re.I):
         problems.append('%s closes with the section %r, which does not name '
                         'the next step' % (rel, heading))
-    offer = 'Spec created: <name>. Build it now?'
+    offer = 'Spec saved: <name>. Next: purlin:build <name>'
     if offer not in body.splitlines():
         problems.append('%s closing section does not carry the line %r on its '
                         'own' % (rel, offer))
+    if 'Never start the build yourself' not in flat(body):
+        problems.append('%s closing section does not say it never starts '
+                        'the build' % rel)
     return problems
 
 
@@ -306,25 +324,32 @@ def spec_offer_problems():
 
 class TestSkillSpecFromCode:
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-1", "RULE-1")
+    # purlin: skill_spec_from_code PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('spec-from-code') == []
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-2", "RULE-2")
+    # purlin: skill_spec_from_code PROOF-2
     def test_it_reads_the_state_before_it_starts(self):
         assert spec_from_code_start_problems() == []
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-3", "RULE-3")
+    # purlin: skill_spec_from_code PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('spec-from-code') == []
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-4", "RULE-4")
+    # purlin: skill_spec_from_code PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('spec-from-code') == []
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-5", "RULE-5")
+    # purlin: skill_spec_from_code PROOF-5
     def test_every_rule_it_writes_is_engineer_owned_at_the_passed_level(self):
         assert spec_from_code_tag_problems() == []
+
+    # purlin: skill_spec_from_code PROOF-6
+    def test_it_ties_an_existing_test_by_its_marker(self):
+        assert carries(skill_path('spec-from-code'), [
+            'offer to add the marker comment above that test',
+            'purlin: <feature> PROOF-<n>', 'write no new test',
+            'is not that test']) == []
 
 
 def spec_from_code_start_problems():
@@ -360,23 +385,23 @@ def spec_from_code_tag_problems():
 
 class TestSkillAnchor:
 
-    @pytest.mark.proof("skill_anchor", "PROOF-1", "RULE-1")
+    # purlin: skill_anchor PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('anchor') == []
 
-    @pytest.mark.proof("skill_anchor", "PROOF-2", "RULE-2")
+    # purlin: skill_anchor PROOF-2
     def test_it_runs_the_upstream_script_for_two_subcommands(self):
         assert anchor_command_problems() == []
 
-    @pytest.mark.proof("skill_anchor", "PROOF-3", "RULE-3")
+    # purlin: skill_anchor PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('anchor') == []
 
-    @pytest.mark.proof("skill_anchor", "PROOF-4", "RULE-4")
+    # purlin: skill_anchor PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('anchor') == []
 
-    @pytest.mark.proof("skill_anchor", "PROOF-5", "RULE-5")
+    # purlin: skill_anchor PROOF-5
     def test_a_pin_is_a_commit_and_a_pinned_rule_is_never_edited(self):
         assert carries(skill_path('anchor'), [
             'A pin is always a commit, never a branch.',
@@ -405,23 +430,35 @@ def anchor_command_problems():
 
 class TestSkillBuild:
 
-    @pytest.mark.proof("skill_build", "PROOF-1", "RULE-1")
+    # purlin: skill_build PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('build') == []
 
-    @pytest.mark.proof("skill_build", "PROOF-2", "RULE-2")
+    # purlin: skill_build PROOF-2
     def test_it_reads_the_state_and_runs_the_tests_through_the_test_skill(self):
         assert build_command_problems() == []
 
-    @pytest.mark.proof("skill_build", "PROOF-3", "RULE-3")
+    # purlin: skill_build PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('build') == []
 
-    @pytest.mark.proof("skill_build", "PROOF-4", "RULE-4")
+    # purlin: skill_build PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('build') == []
 
-    @pytest.mark.proof("skill_build", "PROOF-6", "RULE-6")
+    # purlin: skill_build PROOF-7
+    def test_it_looks_for_an_existing_test_before_it_writes_one(self):
+        rel = skill_path('build')
+        problems = carries(rel, [
+            'Look first for a test that already shows it',
+            'offer to add the marker above it and write nothing new',
+            'in the folder and the style its other tests use',
+            'purlin: login RULE-2'])
+        if '# purlin: login PROOF-1\ndef test_' not in read(rel):
+            problems.append('%s shows no marker above a test' % rel)
+        assert problems == []
+
+    # purlin: skill_build PROOF-6
     def test_it_keeps_the_scope_in_the_commit_with_the_code(self):
         rel = skill_path('build')
         body = section(read(rel), r'^committing')
@@ -436,7 +473,7 @@ class TestSkillBuild:
             if needle not in text]
         assert missing == [], missing
 
-    @pytest.mark.proof("skill_build", "PROOF-5", "RULE-5")
+    # purlin: skill_build PROOF-5
     def test_the_commit_body_contract_holds(self):
         result = subprocess.run(
             [BASH, 'dev/test_e2e_build_changeset.sh'], cwd=str(ROOT),
@@ -463,26 +500,26 @@ def build_command_problems():
 
 class TestSkillTest:
 
-    @pytest.mark.proof("skill_test", "PROOF-1", "RULE-1")
+    # purlin: skill_test PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('test') == []
 
-    @pytest.mark.proof("skill_test", "PROOF-2", "RULE-2")
+    # purlin: skill_test PROOF-2
     def test_it_runs_the_run_script_and_names_its_exit_codes(self):
         rel = skill_path('test')
         assert (same_line(rel, [
             '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"', '--test'])
             + same_line(rel, ['Exit codes:', '`0`', '`1`', '`2`'])) == []
 
-    @pytest.mark.proof("skill_test", "PROOF-3", "RULE-3")
+    # purlin: skill_test PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('test') == []
 
-    @pytest.mark.proof("skill_test", "PROOF-4", "RULE-4")
+    # purlin: skill_test PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('test') == []
 
-    @pytest.mark.proof("skill_test", "PROOF-5", "RULE-5")
+    # purlin: skill_test PROOF-5
     def test_it_names_the_evidence_the_commit_and_the_gate_line(self):
         rel = skill_path('test')
         assert carries(rel, [
@@ -491,7 +528,7 @@ class TestSkillTest:
             'Evidence unchanged.', 'gate passed: <n> of <rules>',
             'It never pushes.']) == []
 
-    @pytest.mark.proof("skill_test", "PROOF-6", "RULE-6")
+    # purlin: skill_test PROOF-6
     def test_it_says_what_a_run_with_no_feature_named_runs(self):
         rel = skill_path('test')
         usage = section(read(rel), r'^usage')
@@ -512,11 +549,11 @@ class TestSkillTest:
 
 class TestSkillAudit:
 
-    @pytest.mark.proof("skill_audit", "PROOF-1", "RULE-1")
+    # purlin: skill_audit PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('audit') == []
 
-    @pytest.mark.proof("skill_audit", "PROOF-2", "RULE-2")
+    # purlin: skill_audit PROOF-2
     def test_it_runs_the_run_script_and_leaves_ci_to_ci(self):
         rel = skill_path('audit')
         assert (same_line(rel, [
@@ -525,23 +562,23 @@ class TestSkillAudit:
                 'A remote runner runs the same script in an arm of its own',
                 'you never run it by hand'])) == []
 
-    @pytest.mark.proof("skill_audit", "PROOF-3", "RULE-3")
+    # purlin: skill_audit PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('audit') == []
 
-    @pytest.mark.proof("skill_audit", "PROOF-4", "RULE-4")
+    # purlin: skill_audit PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('audit') == []
 
-    @pytest.mark.proof("skill_audit", "PROOF-5", "RULE-5")
+    # purlin: skill_audit PROOF-5
     def test_it_says_which_record_counts_under_which_gate(self):
         assert record_source_problems() == []
 
-    @pytest.mark.proof("skill_audit", "PROOF-6", "RULE-6")
+    # purlin: skill_audit PROOF-6
     def test_the_gate_decides_the_breaks_and_the_audit_writes_the_record(self):
         assert audit_gate_problems() == []
 
-    @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7")
+    # purlin: skill_audit PROOF-7
     def test_it_names_the_evidence_and_the_retention(self):
         assert carries(skill_path('audit'), [
             'into `.purlin/evidence/local/<feature>.json`',
@@ -622,11 +659,11 @@ def audit_gate_problems():
 
 class TestSkillSign:
 
-    @pytest.mark.proof("skill_sign", "PROOF-1", "RULE-1")
+    # purlin: skill_sign PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('sign') == []
 
-    @pytest.mark.proof("skill_sign", "PROOF-2", "RULE-2")
+    # purlin: skill_sign PROOF-2
     def test_it_shows_the_brief_before_it_writes_the_signature(self):
         rel = skill_path('sign')
         assert (carries(rel, ['payload.queue'])
@@ -634,15 +671,15 @@ class TestSkillSign:
                     '"${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py"',
                     '"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"'])) == []
 
-    @pytest.mark.proof("skill_sign", "PROOF-3", "RULE-3")
+    # purlin: skill_sign PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('sign') == []
 
-    @pytest.mark.proof("skill_sign", "PROOF-4", "RULE-4")
+    # purlin: skill_sign PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('sign') == []
 
-    @pytest.mark.proof("skill_sign", "PROOF-5", "RULE-5")
+    # purlin: skill_sign PROOF-5
     def test_a_signature_counts_on_a_signed_commit_and_its_hashes(self):
         assert carries(skill_path('sign'), [
             'The commit that added the file is signed and the signature '
@@ -652,11 +689,11 @@ class TestSkillSign:
             'whoever wrote it, whoever last committed to the test file, and on '
             'whatever branch carries it']) == []
 
-    @pytest.mark.proof("skill_sign", "PROOF-6", "RULE-6")
+    # purlin: skill_sign PROOF-6
     def test_the_walk_takes_one_of_three_answers(self):
         assert sign_answer_problems() == []
 
-    @pytest.mark.proof("skill_sign", "PROOF-7", "RULE-7")
+    # purlin: skill_sign PROOF-7
     def test_it_says_what_each_gate_leaves_it_able_to_do(self):
         assert sign_gate_problems() == []
 
@@ -701,25 +738,25 @@ def sign_gate_problems():
 
 class TestSkillStatus:
 
-    @pytest.mark.proof("skill_status", "PROOF-1", "RULE-1")
+    # purlin: skill_status PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('status') == []
 
-    @pytest.mark.proof("skill_status", "PROOF-2", "RULE-2")
+    # purlin: skill_status PROOF-2
     def test_it_prints_the_numbers_the_tool_returned(self):
         assert carries(skill_path('status'), [
             'sync_status', 'Never recount them',
             'one answer from one computation']) == []
 
-    @pytest.mark.proof("skill_status", "PROOF-3", "RULE-3")
+    # purlin: skill_status PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('status') == []
 
-    @pytest.mark.proof("skill_status", "PROOF-4", "RULE-4")
+    # purlin: skill_status PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('status') == []
 
-    @pytest.mark.proof("skill_status", "PROOF-5", "RULE-5")
+    # purlin: skill_status PROOF-5
     def test_naming_a_spec_shows_its_rules(self):
         assert (carries(skill_path('status'), [
             'purlin:status <name>',
@@ -730,22 +767,22 @@ class TestSkillStatus:
 
 class TestSkillDrift:
 
-    @pytest.mark.proof("skill_drift", "PROOF-1", "RULE-1")
+    # purlin: skill_drift PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('drift') == []
 
-    @pytest.mark.proof("skill_drift", "PROOF-2", "RULE-2")
+    # purlin: skill_drift PROOF-2
     def test_it_takes_its_data_from_the_tool(self):
         assert carries(skill_path('drift'), [
             'drift(role="eng")', 'references/drift_criteria.md',
             'do not restate them here and do not invent a line the tool '
             'does not return']) == []
 
-    @pytest.mark.proof("skill_drift", "PROOF-3", "RULE-3")
+    # purlin: skill_drift PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('drift') == []
 
-    @pytest.mark.proof("skill_drift", "PROOF-4", "RULE-4")
+    # purlin: skill_drift PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('drift') == []
 
@@ -756,34 +793,34 @@ class TestSkillDrift:
 
 class TestSkillExport:
 
-    @pytest.mark.proof("skill_export", "PROOF-1", "RULE-1")
+    # purlin: skill_export PROOF-1
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('export') == []
 
-    @pytest.mark.proof("skill_export", "PROOF-2", "RULE-2")
+    # purlin: skill_export PROOF-2
     def test_it_runs_the_script_in_each_form(self):
         assert carries(skill_path('export'), [
             'scripts/export/package.py', 'purlin:export --release <name>',
             'purlin:export --commit', 'purlin:export --check <file>']) == []
 
-    @pytest.mark.proof("skill_export", "PROOF-3", "RULE-3")
+    # purlin: skill_export PROOF-3
     def test_it_makes_no_claim_of_compliance(self):
         assert carries(skill_path('export'), [
             'Purlin makes no claim that the software is compliant.',
             'evidence for review in a regulated document and sign-off '
             'system']) == []
 
-    @pytest.mark.proof("skill_export", "PROOF-4", "RULE-4")
+    # purlin: skill_export PROOF-4
     def test_it_names_the_three_states(self):
         assert carries(skill_path('export'), [
             '`work in progress`', '`gate <gate> met`', '`signed`',
             'Only `purlin:sign` writes a package whose state is']) == []
 
-    @pytest.mark.proof("skill_export", "PROOF-5", "RULE-5")
+    # purlin: skill_export PROOF-5
     def test_it_closes_by_naming_the_next_step(self):
         assert next_step_problems('export') == []
 
-    @pytest.mark.proof("skill_export", "PROOF-6", "RULE-6")
+    # purlin: skill_export PROOF-6
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('export') == []
 
@@ -794,34 +831,34 @@ class TestSkillExport:
 
 class TestPurlinAgent:
 
-    @pytest.mark.proof("purlin_agent", "PROOF-1", "RULE-1")
+    # purlin: purlin_agent PROOF-1
     def test_the_frontmatter_names_the_agent(self):
         assert agent_frontmatter_problems() == []
 
-    @pytest.mark.proof("purlin_agent", "PROOF-2", "RULE-2")
+    # purlin: purlin_agent PROOF-2
     def test_the_core_loop_runs_in_order(self):
         assert core_loop_problems() == []
 
-    @pytest.mark.proof("purlin_agent", "PROOF-3", "RULE-3")
+    # purlin: purlin_agent PROOF-3
     def test_there_are_four_nevers(self):
         assert never_problems() == []
 
-    @pytest.mark.proof("purlin_agent", "PROOF-4", "RULE-4")
+    # purlin: purlin_agent PROOF-4
     def test_the_routing_table_covers_the_four_roles(self):
         assert routing_problems() == []
 
-    @pytest.mark.proof("purlin_agent", "PROOF-5", "RULE-5")
+    # purlin: purlin_agent PROOF-5
     def test_it_reads_the_state_before_it_answers(self):
         assert carries(AGENT, [
             'Call `sync_status` before you answer any question about state.',
             '`no proof written`', '`passed`', '`strong`', '`signed`',
             '`out of date`']) == []
 
-    @pytest.mark.proof("purlin_agent", "PROOF-6", "RULE-6")
+    # purlin: purlin_agent PROOF-6
     def test_it_stays_under_its_ceiling(self):
         assert ceiling_problems(AGENT, 135) == []
 
-    @pytest.mark.proof("purlin_agent", "PROOF-7", "RULE-7")
+    # purlin: purlin_agent PROOF-7
     def test_it_says_what_a_rename_moves(self):
         assert rename_problems() == []
 
@@ -832,7 +869,7 @@ def rename_problems():
         return ['%s has no Renaming a feature section' % AGENT]
     text = flat(body)
     return ['%s rename section does not carry %r' % (AGENT, needle)
-            for needle in ('# Feature:', '> Requires:', 'feature-name token',
+            for needle in ('# Feature:', '> Requires:', 'purlin: <name> PROOF-<n>',
                            '.signatures/',
                            '.purlin/evidence/<source>/<name>.json', 'git mv',
                            'sync_status')
@@ -881,7 +918,7 @@ def never_problems():
     if len(items) != 4:
         problems.append('%s carries %d NEVERs, expected 4' % (AGENT, len(items)))
     flattened = flat(body)
-    for needle in ('proof file', 'record', 'signature',
+    for needle in ('evidence', 'signature',
                    "sign on a person's behalf", 'Never push',
                    'pull request', 'remote branch', 'purlin:test --remote',
                    'retired term'):

@@ -6,9 +6,7 @@ description: Set a project up for Purlin, and change the gate later
 # purlin:init
 
 Set a project up for spec-driven development, and change the one setting later when the team or
-the obligations change.
-
-**Paths.** Every `references/`, `templates/`, `hooks/` and `scripts/` path below is inside the
+the obligations change. **Paths.** Every `references/`, `templates/`, `hooks/` and `scripts/` path below is inside the
 plugin and is reached through `${CLAUDE_PLUGIN_ROOT}`; a project carries none of them. When
 `python3` is not on PATH, run `sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" <script>
 [args]`, which resolves the interpreter and execs it.
@@ -19,8 +17,8 @@ Init asks these, in this order, and nothing else. Everything else it reads from 
 language and the test framework from detection, the git host from the remote URL.
 
 1. **The gate**, always: `What must be true of every rule before a version is proven?`
-2. **The test framework**, only in an empty repository, where there is nothing to detect.
-   The default is `shell`.
+2. **The test command and its report**, only where init detects no framework, as in an empty
+   repository: the command that runs the tests, then where that command writes its report.
 3. **Mutation testing**, only where an engine exists for a detected framework: `Measure test
    strength by breaking the code on purpose? It needs <engine> and takes minutes to hours per
    run. [y/N]`. The default is no.
@@ -61,7 +59,7 @@ list back to the person before running it for real on a project that already has
 | `--mutation` | Turns mutation testing on without asking |
 | `--yes` | Takes the default answer to every question |
 | `--update` | Brings a project set up by an older Purlin to the installed one. See below |
-| `--add <language>` | Adds a second language: its test framework and its proof plugin |
+| `--add <language>` | Adds a second language: one more entry in the `tests` setting |
 | `--dry-run` | Prints the plan and writes nothing |
 
 Raising the gate is additive: it writes the setting, and the gate's `min_strength` where
@@ -69,38 +67,39 @@ mutation testing is on, asks before each write and touches nothing else. Lowerin
 rewrites the setting and deletes nothing: the workflow, the evidence and the signatures stay
 where they are.
 
-Raising the gate writes no workflow. A runner is added for its own two reasons, below, and not
-because the gate moved.
+Raising the gate writes no workflow: a runner is added for its own two reasons, below.
 
 `--add <language>` is for a repository with, say, a Python service and a TypeScript client:
-init detects the second framework, installs its proof plugin beside the first, and writes both
-into `.purlin/config.json`. One `purlin:test` then runs both.
+init appends the second framework's entry to the `tests` setting beside the first. One
+`purlin:test` then runs both.
 
 ## What init writes
 
 It writes `.purlin/config.json` with the answers and what they derive; `specs/` for the
 two-section specs; and `.purlin/evidence/` with one README saying what the folder holds. It
-installs the proof plugin for the detected framework, and the engine only when mutation testing
-is on. It adds a `.gitignore` block for `.purlin/runtime/`, where test runs put their proof
-files, and copies the dashboard page so it opens from disk. It installs no git hook at all:
-nothing runs at commit time and nothing runs at push time. It installs the Claude Code hook
-that refreshes the local dashboard data. It leaves `.purlin/evidence/` and `.purlin/tests.md`
-tracked, then prints every file it wrote or edited, one per line.
-
-That Claude Code hook is the only hook init installs. It writes no git hook at all: nothing
-runs at push time, and a push is free, to any branch, for anyone.
+installs nothing in the project's tests. For each framework it detects it writes one entry of
+the `tests` setting: the framework's own command, with the flag that writes the report Purlin
+reads already in it, where the report lands, its format and the globs its test files live
+under. It says in one line what a framework needs added before it can write that report: Jest
+needs the package `jest-junit`. `references/supported_frameworks.md` shows every entry, and
+`references/formats/marker_format.md` is the contract. It wires the engine only when mutation
+testing is on. It adds a `.gitignore` block for `.purlin/runtime/`, where a run's reports and
+log land, and copies the dashboard page so it opens from disk. It installs no git hook at all:
+nothing runs at commit time and nothing runs at push time. It leaves `.purlin/evidence/` and
+`.purlin/tests.md` tracked, then prints every file it wrote or edited, one per line.
 
 Where a runner is called for, the workflow triggers on two things and nothing else: a push of a
 `signed/**` tag, and a push to a `run/*` branch, the branch `purlin:test --remote` creates and
 deletes around one run. A pull request starts nothing. The job is named `purlin`. The tag run
-reruns the tagged tests on a clean machine, checks that every signature still
-binds the rule, the proof, the test and the audit it names, checks that every file
-under `.purlin/evidence/ci/` was committed by the runner's own identity, and ends with
+reruns the tagged tests on a clean machine, checks that every signature still binds the rule,
+the proof, the test and the audit it names, checks that every file under
+`.purlin/evidence/ci/` was committed by the runner's own identity, and ends with
 `scripts/ci/gate_check.py --check --verify`, which fails the job when the gate is not met or
 the evidence does not hold. No breaks run on the runner.
 
-The config it writes carries these nine keys and no other. `audit_parallel`, how many AI audit
-calls run at once, is 4 and is not asked; change it in the file, from 1 to 16.
+The config it writes carries these eight keys and no other; `tests` below is what a pytest
+project gets. `audit_parallel`, how many AI audit calls run at once, is 4 and is not asked;
+change it in the file, from 1 to 16.
 
 ```json
 {
@@ -109,8 +108,10 @@ calls run at once, is 4 and is not asked; change it in the file, from 1 to 16.
   "mutation_engine": "none",
   "min_strength": null,
   "audit_parallel": 4,
-  "test_framework": "auto",
-  "sql_engine": null,
+  "tests": [{"name": "pytest", "format": "junit",
+             "run": "python3 -m pytest --ignore=mutants {files} --junitxml={report}",
+             "report": ".purlin/runtime/reports/pytest.xml",
+             "files": ["**/test_*.py", "**/*_test.py"]}],
   "ci": "github",
   "trust": "local"
 }
@@ -229,9 +230,11 @@ spec's Figma source, its pinned timestamp, its `> Visual-Reference:` and its `> 
 lines and names each spec; untracks and deletes the proof files and the run files 0.9.5
 committed beside the specs; untracks the committed dashboard data; removes the git hooks 0.9.5
 installed and says why; drops every config key this release does not read and names each one;
-asks the gate, mutation and trust questions once each; creates `.purlin/evidence/` with its
-README; rewrites the Windows tag to `@env(windows)` and drops the kind of test from every proof
-line. It changes no spec that has no `> Scope:` line and names each one instead: the line is
+asks the gate, mutation and trust questions once each; writes the `tests` setting from the
+frameworks the old config named; rewrites each 0.9.5 marker in the project's tests as one
+comment above the same test; removes the plugin copies and the wiring that loaded them;
+creates `.purlin/evidence/` with its README; rewrites the Windows tag to `@env(windows)` and
+drops the kind of test from every proof line. It changes no spec that has no `> Scope:` line and names each one instead: the line is
 optional below `signed` and required at `signed`. Every write asks first, every file it replaces
 is backed up beside the original, and while the update is pending `sync_status` opens with
 `→ Run: purlin:init --update`.

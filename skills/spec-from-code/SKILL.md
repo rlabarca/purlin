@@ -71,9 +71,11 @@ worth keeping read `references/spec_quality_guide.md`.
 ## Where the proofs come from
 
 Write every proof to `references/spec_quality_guide.md`, "Writing proofs". When a test
-already exercises the behaviour, the proof says what that test shows, in the same words it
-would use if no test existed, and never names the test. The report lists that test beside its
-proof, so `purlin:build` can add the marker instead of writing a new test.
+already shows what a proof asks, the proof says what that test shows, in the same words it
+would use if no test existed, and never names the test. Then tie the two: offer to add the
+marker comment above that test, `purlin: <feature> PROOF-<n>` in the file's own comment
+syntax, and write no new test. A test that shows part of what the proof asks is not that
+test; leave it unmarked and let `purlin:build` write one.
 
 When nothing tests it, write the proof as if the test existed. The rule then reads `no test`
 in its passed cell and `purlin:build` writes the test on the next pass.
@@ -95,8 +97,8 @@ and note the behaviour in `> Description:`.
 
 Report the counts, then name the next step from the state:
 
-- Rules whose behaviour a test already exercises: `→ Next: purlin:test`, which tags the
-  existing tests and shows what passes.
+- Rules whose existing tests now carry their markers: `→ Next: purlin:test`, which runs
+  them and shows what passes.
 - Rules with no test at all: `→ Next: purlin:build <name>` on the feature with the most of
   them.
 - Every rule written and the team wants the paper trail:
