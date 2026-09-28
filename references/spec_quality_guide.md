@@ -91,98 +91,143 @@ and a bar re-tag stales the rule's signature.
 
 ## Writing proofs
 
-A proof description tells the agent exactly what to do and what to assert. It should
-read straight into a test without interpretation. Five things make it one:
+A proof is one line saying how a rule will be shown to hold: what is done, what is observed,
+and the value that settles it. It is the plan a test carries out, so it is written before the
+test and in words that a person who cannot read code can judge. QA writes proofs and reads
+them, often from a draft AI wrote; a developer, or `purlin:build`, then writes the test that
+carries each one out. This section is the one home of what a good proof is. The AI audit reads
+every proof against it, with the checks in
+[references/review_criteria.md](review_criteria.md).
 
-1. **A trigger.** Something runs before the assertion: a call, a request, a render, a
-   grep. Without one the proof reads an artifact that exists whether or not the code is
-   right.
-2. **An expected value.** A literal, a number, a status code, a quoted string. Without
-   one, almost any assertion satisfies the proof.
-3. **A negative case.** When the rule says reject, block, limit or expire, one proof
-   exercises the rejection. The accepted case alone proves the rule in one direction.
-4. **`@manual`, when no test can settle it.** See "Manual proofs" below.
-5. **An `@env` tag, when the operating system matters.** `@env(windows)`, `@env(macos)`
-   or `@env(linux)`, at most one per proof. Those three are the whole vocabulary. Use
-   it only when the behaviour genuinely cannot be observed elsewhere: a native file
-   lock, a default console codec, a case-insensitive filesystem. A proof with no `@env`
-   is satisfied by a record from any operating system.
+Proofs are optional at the gate `passed`, where a rule's passing tests are the whole of its
+evidence. From `strong` up every rule needs at least one proof, and a rule without one does
+not meet the gate.
 
-Bad, because none of them names a value or a trigger:
+Each point below carries a pair: a poor proof, and the one that replaces it.
 
-```
-- PROOF-1 (RULE-1): Test the login
-- PROOF-1 (RULE-1): Verify authentication works
-- PROOF-1 (RULE-1): Check error handling
-```
+### What is done, what is observed, the expected value
 
-Good:
+Every proof names three things:
 
-```
-- PROOF-1 (RULE-1): POST {"user": "alice", "pass": "wrong"} to /login; verify 401 with {error: "invalid_credentials"}
-- PROOF-2 (RULE-2): Call resolve_config() with only config.json present; verify the returned dict matches config.json
-- PROOF-3 (RULE-3): Grep src/ for eval(); verify zero matches
-```
+1. **What is done.** The input, the action, and any state set up first. Without it the proof
+   reads something that exists whether or not the software is right.
+2. **What is observed.** Where the result shows: a message on the screen, a response, a line a
+   command prints, a file it writes, an exit code.
+3. **The expected value.** The exact message, number, status or text that settles it. Without
+   it almost any result satisfies the proof.
 
-Include setup when the architecture matters:
+- Poor: "Verify the account lockout works."
+- Good: "A wrong password is entered five times; the sixth attempt is refused with the message
+  `Account locked`, and a correct password is refused too."
 
-```
-- PROOF-4 (RULE-4): With PURLIN_PROJECT_ROOT set to /tmp/test, call find_project_root(); verify it returns /tmp/test without climbing directories
-```
+Name the setup when the outcome depends on it: "With the customer's currency set to USD, an
+invoice raised in EUR shows its total in both currencies."
+
+### At least one failure case or boundary
+
+A rule that refuses, limits, blocks or expires anything is proved in both directions: the case
+that is allowed goes through, and the case that is not is refused. A rule proved in one
+direction only is half proved. Name the exact input at the edge, not only the outcome.
+
+- Poor: "Exports of up to 10,000 rows succeed."
+- Good, as two proofs: "An export of exactly 10,000 rows downloads a file of 10,001 lines, the
+  header and 10,000 rows." and "An export of 10,001 rows is refused with the message `Exports
+  are limited to 10,000 rows`, and no file is downloaded."
+
+### Written for a person who cannot read code
+
+A proof names what a user, or a caller of the system, would see. It carries no source or test
+file path, no function name, no class, no selector and no name of a test framework. A QA lead,
+a product manager or an auditor reads it and can say whether it shows the rule.
+
+- Poor: "Call `InvoiceService.total()` with the fixture in `tests/data/two_lines.json`; assert
+  `result.amount == 11000`."
+- Good: "An invoice with two lines of 50.00 each and 10 percent tax shows a total of 110.00."
+
+Where the thing under test has no screen, such as a file format, an API or a command's output,
+the proof names the observable output in words and values, not the source that produces it. A
+status code, a response field, an exit code, a printed line and a file the software writes are
+all things a caller sees, and so is the path of that file.
+
+- Poor: "Check the header constant in the CSV writer."
+- Good: "The first line of an exported file reads `date,amount,currency`."
+
+When the file is itself the product, such as a configuration template a project copies,
+checking its text is the honest proof; word it as what a reader of that file finds: "A new
+project's settings file carries `gate` set to `passed`", not "search the template for `gate`".
+
+### Written before the test, and not about the test
+
+The proof comes first and the test implements it. The proof does not describe the test's
+mechanics: no call, no assertion, no mock, no fixture, no spy.
+
+- Poor: "Call `parse()` with `invoice 42` and assert the result raises."
+- Good: "An invoice id with a space in it is refused, and the message names the id."
+
+The first is a test. The second is a proof, and any test that shows it will do.
+
+### One proof, one thing shown
+
+Each proof shows one thing, so a failure says which thing broke. Several proofs may serve one
+rule, as the allowed case and the refused case do; one test may carry out several proofs.
+
+- Poor: "Change the password, sign out, sign back in with the new password and check the
+  activity log."
+- Good, as three proofs: "After the password is changed, the old password is refused with
+  `Wrong email or password`.", "After the password is changed, the new password signs in and
+  the home page greets the user by name." and "Changing the password adds one entry to the
+  account's activity page reading `Password changed`."
+
+### Drafted by AI, read by a person
+
+AI may draft a proof. The person whose name goes on the commit has read it against this page,
+and checks three things in particular:
+
+- **It would fail if the rule were broken.** Picture the software doing the wrong thing; the
+  proof must say that something different would be seen.
+- **Its expected value is a real value.** A message, a number, a status, a line of text.
+  "Works correctly", "is handled properly" and "succeeds" are not values.
+- **It does not simply restate the rule.** It adds the input, the action and what is seen.
+
+- Poor, as drafted for the rule "A locked account refuses sign-in": "A locked account refuses
+  sign-in correctly."
+- Good: "An account locked by five wrong passwords is refused when the right password is
+  entered, and the page reads `Account locked. Try again in 15 minutes.`"
 
 ### Proofs about what a person sees
 
-Describe what a person would see, never the DOM. The agent picks the tool.
+Describe what is on the screen, never the markup. The test picks the tool.
 
-Bad: "Count the table rows with class `fr`; verify the count is 8." Good: "Load the
-dashboard with 3 features (3 of 3 strong, 2 of 6 passing, 0 of 4 untested); verify the
-table shows 3 rows, the tiles read Untested 0, Passing 2 and Strong 3, and the first
-row's Tests cell reads `2 of 6`; take a screenshot".
+- Poor: "Count the elements with class `basket-row`; verify the count is 3."
+- Good: "With three different items in the basket, the basket page lists 3 rows and the total
+  reads `42.50`."
 
-No selectors, no class names, no `querySelector`. The proof says what is on screen, so
-it survives a refactor of the markup.
+No selectors, no class names, no element ids. A proof that says what is on the screen survives
+a rewrite of the page.
 
 ### Flow proofs
 
-A proof that drives the running app reads as arrange, act, observe.
+A proof that goes through the running app reads as arrange, act, observe.
 
-- **Arrange:** seed the state a user would meet, navigate to a URL, stub an upstream
-  response.
-- **Act:** do what a person does: click, type, submit. Never "call function X".
-- **Observe:** assert what is visible at a boundary: on-screen text, the outbound
-  request that fired, the storage state after the flow. Never a source constant.
+- **Arrange:** the state a user would meet: an account, a basket, the page to open.
+- **Act:** what a person does: click, type, submit.
+- **Observe:** what shows at a boundary: text on the screen, the request that left the app,
+  what is kept after the flow.
 
-Bad: "Assert `loginRedirect` uses the `access_as_user` scope". That names an internal
-function, so the test imports internals and asserts a declaration, and the AI audit
-observes that a proof about a sign-in flow reads as a function call.
+- Poor: "Assert `loginRedirect` uses the `access_as_user` scope."
+- Good: "Open the app, enter an email and choose Sign in; the redirect to the identity provider
+  asks for the scope `access_as_user`; after signing in with a test account and reopening the
+  app, the email field shows the email entered."
 
-Good: "Open the app, enter an email, click Sign in; observe that the redirect to the
-identity provider carries scope `access_as_user`; complete login with a test account;
-verify `localStorage.loginEmail` equals the entered email."
+A proof about a flow that could hold without the app running does not describe the flow;
+rewrite it. Name the flow, never the tool that drives it.
 
-A proof about a flow that could pass without launching the app does not describe the
-flow; rewrite it. Name the flow, never the runner: the description must be executable by
-whatever browser tooling the project has.
+### The operating system
 
-### Grep proofs
-
-A grep-for-absence proof must be precise enough to miss comments, docstrings and
-variable names that contain the keyword. Target the assignment pattern, not the keyword
-on its own: `password\s*=\s*"[^"]*"` over `src/`, restricted to the source extensions
-and with the test files excluded, rather than a bare search for `password`.
-
-A grep proof of a structural rule is honest about what it checks. A spec where no proof
-observes behaviour at all is the defect: when every proof of a spec is a grep or an
-existence check, say so and offer behavioural rules for that same spec.
-
-### Edge cases name their input
-
-A boundary proof must name the exact input that triggers the edge case, not only the
-expected output.
-
-- Bad: "Verify the id parser rejects a malformed id"
-- Good: "Call parse_id() with `RULE-`, the number missing; verify it raises ValueError
-  naming the input"
+Add `@env(windows)`, `@env(macos)` or `@env(linux)`, at most one per proof, when the behaviour
+can only be observed on one operating system: a file lock the system holds, a console's default
+encoding, a filesystem that ignores case. Those three are the whole vocabulary. A proof with no
+`@env` is satisfied by a run on any operating system.
 
 ## Manual proofs
 
@@ -192,9 +237,8 @@ visual polish, wording or brand voice, is the one case for `@manual`: "Read the 
 messages against the brand voice guide @manual".
 
 Source files under `views/`, `pages/`, `templates/` or `layouts/`, components with
-layout logic, and code producing HTML are a signal that the proofs drive the running app
-or are `@manual`. Do not write an automated proof description for something that cannot
-be automated.
+layout logic, and code producing HTML are a signal that the proofs go through the running app
+or are `@manual`. Where no test could observe what the proof names, the proof is `@manual`.
 
 `@manual` means there is no test, so nothing can run and there is no test body for the AI
 audit to read. The rule's strong cell reads `manual test` with the reason `manual proof`.

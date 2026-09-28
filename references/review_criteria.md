@@ -15,25 +15,31 @@ reading `weak` with its own sentence as the reason. The checks below are what it
 a rule that trips one may still be proved, so each is read against the test, never on the
 proof text alone.
 
-**In the proof description.** The audit checks each of these against the
-test the proof names:
+**In the proof description.** A good proof is defined in
+`references/spec_quality_guide.md`, "Writing proofs", and the reasoning lives there. The audit
+checks each of these against the test the proof names:
 
-- The description names no literal, number, quoted string, backticked token or named
-  constant, so almost any assertion would satisfy it. "Verify the parser handles the id"
-  passes against a test that asserts nothing in particular.
-- The description says "works", "correctly", "properly", "as expected" or "successfully"
-  with no value beside it. A proof should read straight into a test without interpretation.
-- Nothing runs before the assertion, so the proof reads an artifact that exists whether or
-  not the code is right. A proof names the call, the request, the render or the grep that
-  produces what it then asserts on.
+- The proof does not say what is done, what is observed and the expected value. It names no
+  literal, number, quoted string, status or exact message, so almost any result would
+  satisfy it. "Verify the parser handles the id" holds against a test that asserts nothing
+  in particular.
+- The expected value is not a real value: the proof says "works", "correctly", "properly",
+  "as expected" or "successfully" with nothing beside it.
+- Nothing is done before the observation, so the proof reads something that exists whether
+  or not the software is right.
+- No proof of the rule names a failure case or a boundary. A rule that refuses, limits,
+  blocks or expires anything has been proved in one direction only.
+- A person who cannot read code could not judge the proof: it names a source or test file
+  path, a function, a class, a selector or a test framework, where it should name what a
+  user or a caller of the system would see. A path the software itself writes, reads or
+  prints is output a caller sees, and naming it is not a finding.
+- The proof describes the test's mechanics, a call, an assertion, a mock, a fixture or a spy,
+  instead of what is shown.
+- The proof shows more than one thing, so a failure could not say which one broke.
+- The proof would read the same if the rule were broken, or it restates the rule and adds no
+  input, action or value.
 - A proof about a flow through the running app is described as a function call. Such a
-  proof must read as an observable flow: arrange, act, observe, through the real running app.
-- The description names a private symbol, a CSS selector or a source path instead of an
-  observable outcome, so a refactor would break the proof without changing behaviour. A
-  name that opens with an underscore after a `/`, such as `specs/_anchors/` or `/_git/`,
-  is a path segment and not a private symbol.
-- No proof of the rule names a failure or an edge case. A rule that says reject, block,
-  limit or expire has been proved in one direction only.
+  proof must read as arrange, act, observe, through the running app.
 
 **In the marked test body.** The audit reads the source of each marked test and checks:
 
