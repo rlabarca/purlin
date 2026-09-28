@@ -523,10 +523,12 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     # written for it, so the rollup counts no gap and the cell reads the
     # total alone.
     assert cells['invoice']['Proofs'] == '3'
-    assert cells['login']['Strong'] == '2 of 4 \u00b7 86%'
+    # login's RULE-3 and invoice's RULE-1 are marked `[level: passed]`, so
+    # the Strong and Signed shares are read over the other rules alone.
+    assert cells['login']['Strong'] == '2 of 3 \u00b7 86%'
     assert cells['checkout_design']['Strong'] == '0 of 1 \u00b7 90%'
-    assert cells['login']['Signed'] == '1 of 4'
-    assert cells['invoice']['Signed'] == '0 of 3'
+    assert cells['login']['Signed'] == '1 of 3'
+    assert cells['invoice']['Signed'] == '0 of 2'
     page.close()
 
     # The team board is where a proof has no test at all, and the cell names
@@ -646,9 +648,10 @@ FILTER_CASES = [
     ('partial', ['login'], ['RULE-4']),
     # A pill counts the rules whose strong cell reads its word.
     # checkout_design's audit could not decide, which is build work and reads
-    # `weak`. The rules that wait for a person are `queue`.
+    # `weak`. The rules that wait for a person are `queue`. login's RULE-3 is
+    # marked `[level: passed]`, so it has no strong cell to read.
     ('weak', ['login', 'invoice', 'export', 'checkout_design'],
-     ['RULE-3', 'RULE-4']),  # 6 rules
+     ['RULE-4']),  # 4 rules
     ('not-audited', ['export'], []),
     ('queue', ['login', 'invoice'], ['RULE-2']),
     ('stale', ['login'], ['RULE-2']),
@@ -699,7 +702,7 @@ def test_a_filter_above_the_gate_is_not_offered(browser, tmp_path):
     assert chip_labels(reg) == ['Untested', 'Failing', 'Partial', 'Weak',
                                 'Not audited', 'Queue', 'Stale']
     assert chip_counts(reg) == {'Untested': 1, 'Failing': 0, 'Partial': 1,
-                                'Weak': 6, 'Not audited': 1, 'Queue': 2,
+                                'Weak': 4, 'Not audited': 1, 'Queue': 2,
                                 'Stale': 1}
     reg.close()
 
@@ -745,8 +748,11 @@ def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
     page.click('.rule[data-rule="RULE-3"]')
     third = page.inner_text('.wrap')
     assert 'PROOF-3' in third
+    # RULE-3 is marked `[level: passed]`: it is asked for its tests alone,
+    # so its screen reads its passed cell and nothing the audit found.
+    assert list(page.evaluate(KV_ROWS))[:2] == ['Passed', 'Level'], third
     assert ('PROOF-3 reads the status code alone; no test reads when the '
-            'lock expires.') in third
+            'lock expires.') not in third
     page.close()
 
 
@@ -1012,14 +1018,16 @@ def test_the_rule_screen_names_the_sign_command(browser, tmp_path):
 
 
 # purlin: purlin_report PROOF-52
-def test_a_rule_that_needs_no_signature_says_why(browser, tmp_path):
+def test_a_rule_that_needs_no_signature_shows_none(browser, tmp_path):
     """Invoice RULE-1 is marked `[level: passed]`, so it asks for none."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click('[data-act="feature"][data-feature="invoice"]')
     page.click('.rule[data-feature="invoice"][data-rule="RULE-1"]')
     body = page.inner_text('.wrap')
-    assert 'purlin:sign invoice RULE-1' in body
-    assert 'This rule\u2019s level is passed, so it asks for no signature' in body
+    assert 'purlin:sign' not in body, body
+    assert panel_heads(page) == [], panel_heads(page)
+    assert list(page.evaluate(KV_ROWS)) == ['Passed', 'Level', 'Spec',
+                                            'Last run'], body
     page.close()
 
 
@@ -1761,3 +1769,64 @@ def test_a_real_projects_shared_rules_are_listed_once(browser, tmp_path):
     assert 'Security pattern 1 is absent' not in own
     assert 'Security pattern 1 is absent' in shared
     assert 'A wrong password' not in shared
+
+
+# The badges each open rule row draws, keyed by the rule's id.
+ROW_PILLS = """els => Object.fromEntries(els.map(e => [
+  e.querySelector('.rid').textContent.trim(),
+  Array.from(e.querySelectorAll('.rp .pill')).map(p => p.textContent.trim())]))"""
+
+
+def _levels_payload():
+    """A project at the gate `signed` holding a rule at each level, a rule at
+    `passed` and one at `strong` whose tests fail, and a second spec whose one
+    rule is marked `[level: passed]`, as the payload builder writes it."""
+    from test_mcp_server import ONE_PASSED_SPEC, _levels_project
+    made = _levels_project()
+    try:
+        made.spec(ONE_PASSED_SPEC, name='notes', category='notes')
+        return made.payload()
+    finally:
+        made.close()
+
+
+# purlin: purlin_report PROOF-73
+def test_a_rule_row_draws_only_the_badges_its_level_asks_for(browser,
+                                                             tmp_path):
+    page = open_board(browser, tmp_path, _levels_payload())
+    cells = count_cells(page)
+    assert (cells['login']['Strong'], cells['login']['Signed']) == (
+        '2 of 3 · 90%', '0 of 1'), cells['login']
+    assert (cells['notes']['Strong'], cells['notes']['Signed']) == (
+        '', ''), cells['notes']
+    counts = chip_counts(page)
+    assert (counts['Weak'], counts['Not audited']) == (1, 0), counts
+    tiles = dict(zip(texts(page, '.tile-l'), texts(page, '.tile-v')))
+    assert (tiles['Strong'], tiles['Signed']) == ('2', '0'), tiles
+    page.click('[data-act="feature"][data-feature="login"]')
+    pills = page.eval_on_selector_all('.rule', ROW_PILLS)
+    assert pills == {'RULE-1': ['PASSED'],
+                     'RULE-2': ['PASSED', 'STRONG'],
+                     'RULE-3': ['PASSED', 'STRONG', 'UNSIGNED'],
+                     'RULE-4': ['FAILED'],
+                     'RULE-5': ['FAILED', 'WEAK']}, pills
+    page.close()
+
+
+# purlin: purlin_report PROOF-74
+def test_a_rule_screen_shows_only_what_its_level_asks_for(browser, tmp_path):
+    page = open_board(browser, tmp_path, _levels_payload())
+    page.click('[data-act="feature"][data-feature="login"]')
+    seen = {}
+    for rule_id in ('RULE-1', 'RULE-2', 'RULE-3', 'RULE-4'):
+        page.click('.rule[data-feature="login"][data-rule="%s"]' % rule_id)
+        seen[rule_id] = (list(page.evaluate(KV_ROWS))[:3], panel_heads(page),
+                         'purlin:sign' in page.inner_text('.wrap'))
+        page.click('[data-act="close"]')
+    page.close()
+    assert seen['RULE-1'] == (['Passed', 'Level', 'Spec'], [], False), seen
+    assert seen['RULE-2'] == (['Passed', 'Strong', 'Level'], ['Audit'],
+                              False), seen
+    assert seen['RULE-3'] == (['Passed', 'Strong', 'Signed'],
+                              ['Audit', 'Signature'], True), seen
+    assert seen['RULE-4'] == (['Passed', 'Level', 'Spec'], [], False), seen

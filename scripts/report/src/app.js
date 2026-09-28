@@ -438,8 +438,9 @@ function queueRowFor(owner, id) {
   return found;
 }
 
-/* One cell of one rule, or null where the gate puts that level above the
-   project: the key is missing, not empty. */
+/* One cell of one rule, or null where the rule's level does not ask for
+   it, which a gate below that level also means: the key is missing, not
+   empty. */
 function cellOf(rule, name) {
   return (rule.cells || {})[name] || null;
 }

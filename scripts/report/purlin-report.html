@@ -338,18 +338,20 @@ function share(count, total) {
 }
 function strongCell(feature) {
   var rollup = feature.rollup || {};
+  if (!rollup.asks_strong) { return ''; }
   var value = rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
   return '<span' + hover(auditLines(feature)) + '>'
-    + counts([share(reached(rollup, 'strong'), rollup.rules || 0),
+    + counts([share(reached(rollup, 'strong'), rollup.asks_strong),
       [value == null ? 'n/a' : Math.floor(value) + '%', '',
         value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
     + '</span>';
 }
 function signedCell(feature) {
   var rollup = feature.rollup || {};
+  if (!rollup.asks_signed) { return ''; }
   return '<span' + hover(signerLines(feature)) + '>'
-    + counts([share(rollup.signed || 0, rollup.rules || 0)]) + '</span>';
+    + counts([share(rollup.signed || 0, rollup.asks_signed)]) + '</span>';
 }
 function noScope(feature) {
   if (!feature.incomplete) { return ''; }
@@ -541,8 +543,10 @@ function signaturesFor(feature, rule) {
 }
 function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
-  if (!cell) { return ''; }
-  if (cell.word === 'signed') {
+  var row = queueRowFor(feature.name, rule.id);
+  var hand = row && row.need === 'hand check';
+  if (!level('signed') || (!cell && !hand)) { return ''; }
+  if (cell && cell.word === 'signed') {
     var where = cell.machine
       ? ', on ' + cell.machine + (cell.os ? ' (' + cell.os + ')' : '') : '';
     return '<div class="panel"><h2>Signed</h2><p class="sec">'
@@ -552,17 +556,12 @@ function signPanel(feature, rule) {
         + 'spec carries the commit that signed it.')
       + '</p></div>';
   }
-  var row = queueRowFor(feature.name, rule.id);
-  var hand = row && row.need === 'hand check';
   var command = row ? row.command
     : 'purlin:sign ' + feature.name + ' ' + rule.id;
   return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
     + '</h2><p><span class="cmd">' + esc(command) + '</span> '
     + '<span class="sec">from Claude Code</span></p>'
-    + '<p class="sec">' + (rule.level !== 'signed'
-      ? 'This rule\u2019s level is ' + esc(rule.level) + ', so it asks for no '
-        + 'signature; one written anyway still counts.'
-      : hand ? 'A hand check is a signature with a note of what you saw; the '
+    + '<p class="sec">' + (hand ? 'A hand check is a signature with a note of what you saw; the '
         + 'page shows it once it is committed.'
       : 'A signature is a signed commit that names its signer; the page '
         + 'shows it once it is committed.') + '</p></div>';
@@ -625,7 +624,7 @@ function renderRule() {
   rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
     + '</dd>');
   rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
-  var signatures = level('signed') ? signaturesFor(feature, rule) : [];
+  var signatures = cellOf(rule, 'signed') ? signaturesFor(feature, rule) : [];
   if (signatures.length) {
     rows.push('<dt>Signatures</dt><dd>' + signatures.map(function (path) {
       return hostLink(path, path.split('/').pop());

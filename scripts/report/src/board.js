@@ -184,27 +184,33 @@ function share(count, total) {
           total && count === total ? 'pass' : count ? 'warn' : 'idle'];
 }
 
-/* How many of this spec's rules the audit proved strong, and the strength of
-   the newest record beside it. A signed rule is still strong, so the share is
-   read the way the tiles are: this level and every level above it. */
+/* How many of this spec's rules the audit proved strong, of those whose
+   level asks for the audit, and the strength of the newest record beside it.
+   A signed rule is still strong, so the share is read the way the tiles are:
+   this level and every level above it. A rule whose level is `passed` is not
+   asked, so it is in neither number, and a spec with no rule that is asked
+   shows an empty cell, as `board.strong_cell` does. */
 function strongCell(feature) {
   var rollup = feature.rollup || {};
+  if (!rollup.asks_strong) { return ''; }
   var value = rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
   return '<span' + hover(auditLines(feature)) + '>'
-    + counts([share(reached(rollup, 'strong'), rollup.rules || 0),
+    + counts([share(reached(rollup, 'strong'), rollup.asks_strong),
       [value == null ? 'n/a' : Math.floor(value) + '%', '',
         value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
     + '</span>';
 }
 
-/* How many of this spec's rules carry a signature that counts. Who signed
-   them and how many signatures stopped matching are in the hover; the `Stale`
+/* How many of this spec's rules carry a signature that counts, of those
+   whose level is `signed`, and an empty cell where none is. Who signed them
+   and how many signatures stopped matching are in the hover; the `Stale`
    flag card carries the project's stale count. */
 function signedCell(feature) {
   var rollup = feature.rollup || {};
+  if (!rollup.asks_signed) { return ''; }
   return '<span' + hover(signerLines(feature)) + '>'
-    + counts([share(rollup.signed || 0, rollup.rules || 0)]) + '</span>';
+    + counts([share(rollup.signed || 0, rollup.asks_signed)]) + '</span>';
 }
 
 /* A spec that names no files: Purlin cannot tell which code it covers, so a

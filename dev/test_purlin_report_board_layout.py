@@ -68,7 +68,7 @@ def test_the_stale_card_carries_the_count(browser, tmp_path):  # noqa: F811
     # The stale count is the flag card's and the `Signed` hover's; the cell
     # states the share alone.
     signed = count_cells(page)['login']['Signed']
-    assert signed == '1 of 4' and 'stale' not in signed
+    assert signed == '1 of 3' and 'stale' not in signed
     page.close()
 
     payload['summary']['stale'] = 0

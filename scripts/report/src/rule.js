@@ -27,7 +27,8 @@ function platformBoxes(cell) {
   }).join(' ');
 }
 
-/* One row per cell the gate reaches: the word it reads, what the payload
+/* One row per cell the rule has, which is every cell its level asks for:
+   the word it reads, what the payload
    carries beside that word, then the reasons, each already a sentence
    fragment the payload wrote. The passed cell's platforms and the signed
    cell's signer and date are facts the word alone leaves out. */
@@ -47,7 +48,9 @@ function cellRow(rule, name) {
     + '</dd>';
 }
 
-/* What the audit found, and nothing about what to do with it: its answer,
+/* What the audit found, and nothing about what to do with it, drawn only
+   where the rule's level asks for the audit, which is where it has a strong
+   cell: its answer,
    each finding on its own line as the audit wrote it, the test strength
    beside the minimum this gate asks for or `no mutation score measured`,
    then the model that read the rule and when. The audit writes sentences,
@@ -98,11 +101,16 @@ function signaturesFor(feature, rule) {
 /* A signature is a signed commit, so this page cannot write one: it names the
    command that does, and reads back the signature already committed, with
    who signed, when, and on which machine and operating system. The panel is
-   headed with what the queue calls the need, `Hand check` or `Signature`. */
+   headed with what the queue calls the need, `Hand check` or `Signature`,
+   and is drawn at the gate `signed` only, where the rule's level is
+   `signed`, which is where it has a signed cell, or where the queue names it
+   for a hand check. */
 function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
-  if (!cell) { return ''; }
-  if (cell.word === 'signed') {
+  var row = queueRowFor(feature.name, rule.id);
+  var hand = row && row.need === 'hand check';
+  if (!level('signed') || (!cell && !hand)) { return ''; }
+  if (cell && cell.word === 'signed') {
     var where = cell.machine
       ? ', on ' + cell.machine + (cell.os ? ' (' + cell.os + ')' : '') : '';
     return '<div class="panel"><h2>Signed</h2><p class="sec">'
@@ -112,17 +120,12 @@ function signPanel(feature, rule) {
         + 'spec carries the commit that signed it.')
       + '</p></div>';
   }
-  var row = queueRowFor(feature.name, rule.id);
-  var hand = row && row.need === 'hand check';
   var command = row ? row.command
     : 'purlin:sign ' + feature.name + ' ' + rule.id;
   return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
     + '</h2><p><span class="cmd">' + esc(command) + '</span> '
     + '<span class="sec">from Claude Code</span></p>'
-    + '<p class="sec">' + (rule.level !== 'signed'
-      ? 'This rule\u2019s level is ' + esc(rule.level) + ', so it asks for no '
-        + 'signature; one written anyway still counts.'
-      : hand ? 'A hand check is a signature with a note of what you saw; the '
+    + '<p class="sec">' + (hand ? 'A hand check is a signature with a note of what you saw; the '
         + 'page shows it once it is committed.'
       : 'A signature is a signed commit that names its signer; the page '
         + 'shows it once it is committed.') + '</p></div>';
@@ -209,7 +212,7 @@ function renderRule() {
   rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
     + '</dd>');
   rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
-  var signatures = level('signed') ? signaturesFor(feature, rule) : [];
+  var signatures = cellOf(rule, 'signed') ? signaturesFor(feature, rule) : [];
   if (signatures.length) {
     rows.push('<dt>Signatures</dt><dd>' + signatures.map(function (path) {
       return hostLink(path, path.split('/').pop());
