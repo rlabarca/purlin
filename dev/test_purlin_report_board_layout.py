@@ -186,8 +186,9 @@ BROKEN_VALUES = """() => {
   return out;
 }"""
 
-SIDEWAYS = """() => document.documentElement.scrollWidth
-  - document.documentElement.clientWidth"""
+SIDEWAYS = """() => Math.max(document.documentElement.scrollWidth
+  - document.documentElement.clientWidth, ...Array.from(
+    document.querySelectorAll('.tbl')).map(t => t.scrollWidth - t.clientWidth))"""
 
 # How many tiles and flag cards share the first tile's row.
 FIRST_ROW = """() => {
@@ -216,11 +217,15 @@ def _every_screen(page):
 
 # purlin: purlin_report PROOF-75
 def test_every_screen_fits_every_width_and_no_value_breaks(browser, tmp_path):  # noqa: F811
+    # A rule whose words run far past any window, as this repository's own
+    # do, open beneath its spec: it must not widen the table's columns.
+    payload = payload_named('regulated')
+    payload['features'][0]['rules'][3]['text'] += ' ' + ' '.join(
+        ['The cookie carries the Secure flag on every response.'] * 8)
     for width in EVERY_WIDTH:
         for theme in ('dark', 'light'):
             page = open_board(browser, tmp_path / ('%d%s' % (width, theme)),
-                              payload_named('regulated'),
-                              viewport={'width': width, 'height': 900})
+                              payload, viewport={'width': width, 'height': 900})
             if theme == 'light':
                 page.click('[data-act="theme"]')
             assert page.get_attribute('html', 'data-theme') == theme

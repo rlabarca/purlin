@@ -145,10 +145,13 @@ function proofWord(proof) {
   return word === 'hand check' && !level('strong') ? 'manual' : word;
 }
 
-/* Tests, one line each, `file :: name` and the word its run gave it. */
+/* Tests, one line each, `file :: name` and the word its run gave it. A
+   narrow line may break after a `::`, between a test's class and its name,
+   rather than inside either. */
 function testLines(tests) {
   return (tests || []).map(function (t) {
-    return '<p><span class="mono">' + esc(t.file) + ' :: ' + esc(t.name)
+    return '<p><span class="mono">' + esc(t.file) + ' :: '
+      + esc(t.name).split('::').join('::<wbr>')
       + '</span> ' + pill(TEST_WORDS[t.result] || 'not run') + '</p>';
   }).join('');
 }

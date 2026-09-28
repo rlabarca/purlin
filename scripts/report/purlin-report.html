@@ -79,6 +79,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .tbl{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
 .tbl.specs{display:grid;grid-template-columns:calc(var(--space-6) - var(--space-3)) var(--cols) calc(var(--space-6) - var(--space-3));column-gap:var(--space-3)}
 .specs>*{grid-column:1/-1}
+.specs>.group,.specs>.rule,.specs>.rule-proofs{contain:inline-size}
 .th,.tr{display:grid;grid-template-columns:subgrid;align-items:center;padding:var(--space-4) 0;border-bottom:1px solid var(--border-hairline)}
 .th>div:first-child,.tr>div:first-child{grid-column-start:2}
 .th>div,.tr>div{min-width:0;white-space:nowrap}
@@ -131,8 +132,8 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .rev .cmd{white-space:normal;overflow-wrap:anywhere}
 .rev.th{cursor:default}
 .rev.th:hover{background:none}
-@media (max-width:1023px){.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}.topbar .spacer{flex-basis:100%;height:0}.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}.wrap{padding:var(--space-6) var(--space-5)}.strip,.strip.flagged{grid-template-columns:repeat(4,minmax(0,1fr))}.tiles,.flags{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label],.rev>[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before,.rev>[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rm{grid-column:1/-1}.rule .rp{justify-content:flex-start}.rule-proofs{padding:var(--space-4) var(--space-5)}.rev{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.rev.th{display:none}.rev>.claim,.rev>.cmd{flex-basis:100%}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}}
-@media (max-width:599px){.strip,.strip.flagged{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:var(--space-5) var(--space-4)}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}}
+@media (max-width:1023px){.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}.topbar .spacer{flex-basis:100%;height:0}.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}.wrap{padding:var(--space-6) var(--space-5)}.strip,.strip.flagged{grid-template-columns:repeat(4,minmax(0,1fr))}.tiles,.flags{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label],.rev>[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before,.rev>[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rm{grid-column:1/-1}.rule .rp{justify-content:flex-start}.rule-proofs{padding:var(--space-4) var(--space-5)}.rev{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.rev.th{display:none}.rev>.claim,.rev>.cmd{flex-basis:100%}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}}
+@media (max-width:599px){.strip,.strip.flagged{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:var(--space-5) var(--space-4)}}
 </style>
 </head>
 <body>
@@ -586,7 +587,8 @@ function proofWord(proof) {
 }
 function testLines(tests) {
   return (tests || []).map(function (t) {
-    return '<p><span class="mono">' + esc(t.file) + ' :: ' + esc(t.name)
+    return '<p><span class="mono">' + esc(t.file) + ' :: '
+      + esc(t.name).split('::').join('::<wbr>')
       + '</span> ' + pill(TEST_WORDS[t.result] || 'not run') + '</p>';
   }).join('');
 }
