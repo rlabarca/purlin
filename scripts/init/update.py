@@ -48,7 +48,6 @@ PROOF_FILE_GLOB = '*.proofs-*.json'                        # retired
 RUN_FILE_GLOB = '*.recei[p]t.json'                         # retired
 DASHBOARD_DATA = '.purlin/report-data.js'                  # retired
 CACHE_DIR = '.purlin/cache'                                # retired
-OLD_SHELL_PLUGIN = 'purlin-proof.sh'                       # retired
 WINDOWS_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')  # retired
 KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'  # retired
                          r'(?=(?:[ \t]+@env\([a-z]+\))?[ \t]*$)')
@@ -58,6 +57,39 @@ PRE_PUSH_KEY = 'pre_push'                                  # retired
 DESIGN_FIELD_RE = re.compile(r'^>\s*(Visual-Reference|Visual-Hash):')  # retired
 FIGMA_SOURCE_RE = re.compile(r'^>\s*Source:.*figma', re.I)  # retired
 PINNED_RE = re.compile(r'^>\s*Pinned:')                    # retired
+# The markers v0.9.5's proof plugins read, one per framework, and the files
+# its init copied and wired. The upgrade rewrites the first and removes the
+# second; nothing else in this release reads either.
+PYTEST_MARK_RE = re.compile(r'^([ \t]*)@pytest\.mark\.proof\(')  # retired
+PYTEST_ARGS_RE = re.compile(r"""\(\s*["'](\w+)["']\s*,\s*["'](PROOF-\d+)["']""")
+PYTESTMARK_RE = re.compile(r'pytest\.mark\.proof\(')            # retired
+TITLE_TAG_RE = re.compile(r' ?\[proof:(\w+):(PROOF-\d+):RULE-\d+(?::\w+)?\]')  # retired
+TRAIT_RE = re.compile(r'(\[\s*)?,?\s*Trait\s*\(\s*"PurlinProof"\s*,\s*'  # retired
+                      r'"(\w+):(PROOF-\d+):RULE-\d+(?::\w+)?"\s*\)(\s*\])?')
+SHELL_CALL_RE = re.compile(r'^([ \t]*)purlin_proof\s+["\']?(\w+)["\']?\s+'  # retired
+                           r'["\']?(PROOF-\d+)["\']?.*$')
+SHELL_HARNESS_RE = re.compile(r'^([ \t]*)(?:source|\.)\s+\S*(?:purlin-proof|'  # retired
+                              r'shell_purlin)\.sh\S*\s*$')
+SHELL_FINISH_RE = re.compile(r'^([ \t]*)purlin_proof_finish\b.*$')  # retired
+SQL_MARK_RE = re.compile(r'^--[ \t]*@purlin[ \t]+(\w+)[ \t]+(PROOF-\d+)'  # retired
+                         r'[ \t]+RULE-\d+(?:[ \t]+\w+)?[ \t]*$')
+PLUGIN_DIR = '.purlin/plugins'                             # retired
+CONFTEST_PLUGIN_RE = re.compile(                           # retired
+    r"""["']\.purlin\.plugins\.pytest_purlin["']\s*,?\s*""")
+REPORTER_RE = re.compile(                                  # retired
+    r"""\s*,?\s*["'][^"']*(?:jest|vitest)_purlin\.[jt]s["']""")
+XUNIT_LOGGER = 'xunit_purlin'                              # retired
+# The files v0.9.5's init copied into the plugin folder, under the names it
+# gave them. A file of any other name there is the project's own and stays.
+PLUGIN_COPIES = ('pytest_purlin.py', 'jest_purlin.js',          # retired
+                 'vitest_purlin.ts', 'purlin-proof.sh',          # retired
+                 'shell_purlin.sh', 'sql_purlin.sh',             # retired
+                 'xunit_purlin.cs', 'c_purlin.h',                # retired
+                 'c_purlin_emit.py', 'phpunit_purlin.php', '.keep')  # retired
+
+# The old framework names and the suite each becomes.
+OLD_FRAMEWORKS = {'pytest': 'pytest', 'jest': 'jest', 'vitest': 'vitest',
+                  'xunit': 'dotnet', 'sql': 'sql', 'shell': 'shell'}
 
 # --- what this release writes instead --------------------------------------
 IGNORE_LINES = ('.purlin/report-data.js',)
@@ -70,12 +102,11 @@ SCOPE_ADVICE = ('%d spec%s no > Scope: line: %s. Run purlin:spec <name> to '
                 'required at signed.')
 WORKFLOW_DIR = '.github/workflows'
 ARROW = '→'
-DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
-                     'runs it')
+DROPPED_FRAMEWORK = 'dropped %s from the tests: nothing in the tree runs it'
+TEST_EXTENSIONS = ('.py', '.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.cs',
+                   '.sh', '.bash', '.sql')
+SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
 _COMMIT = 'chore(update): migrate to %s (%s)'
-
-# A renamed plugin copy keeps the name the project gave it: its tests name it.
-PLUGIN_SOURCES = {OLD_SHELL_PLUGIN: 'shell_purlin.sh'}
 
 GATE_QUESTION = """
 What must be true of every rule before a version is proven?
@@ -292,6 +323,7 @@ def _detect_config(root):
         return []
     gate = _gate()
     stale = ('gate' not in config
+             or 'tests' not in config
              or 'mutation_engine' not in config
              or 'audit_parallel' not in config
              or config.get('version') != _version()
@@ -341,6 +373,7 @@ def _ask_trust(default, assume_yes):
 
 
 def _ask_mutation(root, framework, assume_yes, out):
+    # `framework` is the list of suite names the update writes.
     """`none` or `auto`: the mutation question init asks, asked on an update.
 
     Released 0.9.5 had no such setting, so the question is new to a project
@@ -348,13 +381,10 @@ def _ask_mutation(root, framework, assume_yes, out):
     project carries, and the default is no.
     """
     init = _init()
-    frameworks = _frameworks()
-    named = (frameworks.detect_frameworks(root)
-             if framework in ('', 'auto')
-             else frameworks.resolve_frameworks(root, framework)[0])
+    named = list(framework)
     engine = init.engine_for(named)
     if engine is None:
-        out.say(init.NO_ENGINE % ', '.join(named))
+        out.say(init.NO_ENGINE % (', '.join(named) or "this project's"))
         return 'none'
     if assume_yes:
         return 'none'
@@ -380,24 +410,33 @@ def _ask_gate(default, assume_yes):
         return default
     return answer if answer in _gate().GATES else default
 
-def _prune_frameworks(root, written):
-    """`(the value to write, the names dropped)` for one project tree.
+def _tests_setting(root, old):
+    """`(the tests setting, the names dropped)` from the config v0.9.5 wrote.
 
-    An older release wrote down every plugin it shipped, so a Python-only tree
-    can carry `pytest,jest,shell,vitest` and print a jest runner exiting
-    non-zero on every run. A name that detection does not find and the tree
-    carries no wiring for is dropped; a name the tree does carry stays even
-    when detection would not have picked it. `auto` is left alone: it names
-    nothing to drop.
+    Each framework `test_framework` named becomes the suite init writes for
+    it, xunit read as dotnet. v0.9.5 wrote down every plugin it shipped, so a
+    Python-only tree can carry `pytest,jest,shell,vitest`: a name detection
+    does not find in the tree is dropped rather than written, because its
+    suite would fail on every run. `auto`, or no value, writes what detection
+    finds. A config that already carries `tests` keeps it.
     """
     frameworks = _frameworks()
-    raw = str(written or '')
-    if not raw.strip() or 'auto' in [part.strip() for part in raw.split(',')]:
-        return raw or 'auto', []
-    named, unknown = frameworks.resolve_frameworks(root, raw)
-    kept, dropped = frameworks.prune_unwired(root, named)
-    value = ','.join(kept + unknown)
-    return value or 'auto', dropped
+    if isinstance(old.get('tests'), list):
+        return old['tests'], []
+    detected = frameworks.detect_frameworks(root)
+    raw = str(old.get('test_framework') or '')                    # retired
+    names = [part.strip() for part in raw.split(',') if part.strip()]
+    if not names or 'auto' in names:
+        return frameworks.entries_for(detected), []
+    wanted, dropped = [], []
+    for name in names:
+        suite = OLD_FRAMEWORKS.get(name)
+        if suite is None or suite not in detected:
+            dropped.append(name)
+        elif suite not in wanted:
+            wanted.append(suite)
+    return frameworks.entries_for(wanted), dropped
+
 
 def _apply_config(root, files, args, out):
     gate = _gate()
@@ -406,28 +445,33 @@ def _apply_config(root, files, args, out):
     out.kept(_back_up_copy(path, '.purlin/config.json'))
     chosen = _ask_gate(_gate_default(old), args.yes)
     resolved = gate.resolve_gate(dict(old, gate=chosen))
-    framework, unwired = _prune_frameworks(root, resolved.test_framework)
+    tests, unwired = _tests_setting(root, old)
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
     init = _init()
+    names = [entry.get('name') for entry in tests if isinstance(entry, dict)]
     mutation = (old['mutation_engine'] if 'mutation_engine' in old
-                else _ask_mutation(root, framework, args.yes, out))
+                else _ask_mutation(root, names, args.yes, out))
     config = {
         'version': _version(), 'gate': chosen, 'mutation_engine': mutation,
         'min_strength': init.min_strength_for(chosen, mutation),
         'audit_parallel': init.audit_parallel(old),
-        'test_framework': framework, 'sql_engine': resolved.sql_engine,
+        'tests': tests,
         'ci': old.get('ci') or _host(root),
         'trust': _ask_trust(resolved.trust, args.yes),
     }
     # Every key the old file carried that this one does not: the retired
-    # ones, and the ones 0.9.5 wrote that nothing here reads.
-    dropped = sorted(key for key in old if key not in config)
+    # ones, and the ones 0.9.5 wrote that nothing here reads. The framework
+    # list is not dropped: it became the tests setting, which says so.
+    dropped = sorted(key for key in old if key not in config
+                     and key != 'test_framework')
     _write(path, json.dumps(config, indent=2) + '\n')
     out.done('.purlin/config.json')
     out.say('set the gate to %s%s' % (chosen, '' if not dropped else
             ' and dropped %d key%s this release does not read: %s'
             % (len(dropped), _s(dropped), ', '.join(dropped))))
+    out.say('wrote the tests setting: %s' % (', '.join(names) or 'no suite; '
+            'add one under "tests" in .purlin/config.json'))
 
 def _detect_os_tags(root):
     return [rel for rel in _files_under(root, 'specs', ('*.md',))
@@ -532,33 +576,320 @@ def _apply_evidence(root, files, args, out):
             'local/ and ci/' % EVIDENCE_README)
 
 
-def _plugin_source(name):
-    source = PLUGIN_SOURCES.get(name, name)
-    path = os.path.join(PLUGIN_ROOT, 'scripts', 'proof', source)
-    return (source, path) if os.path.isfile(path) else (None, None)
+# --- the markers and the plugins -------------------------------------------
 
-def _detect_plugin_copies(root):
-    folder = os.path.join(root, '.purlin', 'plugins')
+def _test_files(root):
+    """Every file under the project a 0.9.5 marker could sit in, sorted."""
     hits = []
-    for name in sorted(os.listdir(folder) if os.path.isdir(folder) else ()):
-        _source, path = _plugin_source(name)
-        if path is None:
-            continue
-        with open(path, 'rb') as new, open(os.path.join(folder, name),
-                                           'rb') as old:
-            if new.read() != old.read():
-                hits.append('.purlin/plugins/%s' % name)
+    for dirpath, dirnames, names in os.walk(root):
+        dirnames[:] = sorted(d for d in dirnames
+                             if not d.startswith('.') and d not in SKIP_DIRS)
+        for name in sorted(names):
+            if name.endswith(TEST_EXTENSIONS):
+                rel = os.path.relpath(os.path.join(dirpath, name), root)
+                hits.append(rel.replace(os.sep, '/'))
     return hits
 
-def _apply_plugin_copies(root, files, args, out):
-    """A copy that predates this release writes proof files nothing reads."""
+
+def _comment(ext, indent, feature, proof):
+    opener = {'.py': '#', '.sh': '#', '.bash': '#', '.sql': '--'}.get(ext,
+                                                                       '//')
+    return '%s%s purlin: %s %s' % (indent, opener, feature, proof)
+
+
+def _closing_line(lines, index, start):
+    """The line the call opened at `lines[index][start]` closes on."""
+    depth = 0
+    for number in range(index, len(lines)):
+        text = lines[number][start:] if number == index else lines[number]
+        for char in text:
+            if char == '(':
+                depth += 1
+            elif char == ')':
+                depth -= 1
+                if depth == 0:
+                    return number
+    return None
+
+
+def _rewrite_python(lines, ext):
+    out, left, count = [], [], 0
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        found = PYTEST_MARK_RE.match(line)
+        if found:
+            end = _closing_line(lines, index, found.end() - 1)
+            args = PYTEST_ARGS_RE.search('\n'.join(
+                lines[index:(end if end is not None else index) + 1]))
+            if end is not None and args:
+                out.append(_comment(ext, found.group(1), args.group(1),
+                                    args.group(2)))
+                count += 1
+                index = end + 1
+                continue
+        if PYTESTMARK_RE.search(line) and not found:
+            left.append(index + 1)
+        elif found:
+            left.append(index + 1)
+        out.append(line)
+        index += 1
+    return out, count, left
+
+
+_CALL_START_RE = re.compile(r'(?<![\w$.])(?:it|test)(?:\s*\.\s*\w+)*\s*\(')
+
+
+def _rewrite_js(lines, ext):
+    out = list(lines)
+    inserts = []
+    count = 0
+    for index, line in enumerate(lines):
+        tags = list(TITLE_TAG_RE.finditer(line))
+        if not tags:
+            continue
+        out[index] = TITLE_TAG_RE.sub('', line)
+        # The call the title belongs to starts on this line or just above it.
+        owner = index
+        for back in range(index, max(-1, index - 3), -1):
+            if _CALL_START_RE.search(lines[back]):
+                owner = back
+                break
+        indent = re.match(r'[ \t]*', lines[owner]).group(0)
+        for tag in tags:
+            inserts.append((owner, _comment(ext, indent, tag.group(1),
+                                            tag.group(2))))
+            count += 1
+    # From the bottom up, so each index still points at its line, and the
+    # tags of one call in the order the title held them.
+    by_owner = {}
+    for owner, comment in inserts:
+        by_owner.setdefault(owner, []).append(comment)
+    for owner in sorted(by_owner, reverse=True):
+        out[owner:owner] = by_owner[owner]
+    return out, count, []
+
+
+def _rewrite_cs(lines, ext):
+    out, count = [], 0
+    for line in lines:
+        found = list(TRAIT_RE.finditer(line))
+        if not found:
+            out.append(line)
+            continue
+        indent = re.match(r'[ \t]*', line).group(0)
+        rest = line
+        comments = []
+        for match in found:
+            comments.append(_comment(ext, indent, match.group(2),
+                                     match.group(3)))
+            count += 1
+            opened, closed = match.group(1), match.group(4)
+            # A trait alone in its brackets goes with them; one in a list of
+            # attributes leaves the others where they are.
+            keep = '[' if opened and not closed else ''
+            keep += ']' if closed and not opened else ''
+            rest = rest.replace(match.group(0), keep, 1)
+        out.extend(comments)
+        rest = re.sub(r'\[\s*,\s*', '[', rest)
+        if rest.strip():
+            out.append(rest)
+    return out, count, []
+
+
+def _rewrite_shell(lines, ext):
+    body, found = [], []
+    for line in lines:
+        call = SHELL_CALL_RE.match(line)
+        if call:
+            if (call.group(2), call.group(3)) not in found:
+                found.append((call.group(2), call.group(3)))
+            body.append(call.group(1) + ':')
+            continue
+        harness = SHELL_HARNESS_RE.match(line) or SHELL_FINISH_RE.match(line)
+        if harness:
+            body.append(harness.group(1) + ':')
+            continue
+        body.append(line)
+    if not found:
+        return lines, 0, []
+    head = 1 if body and body[0].startswith('#!') else 0
+    comments = [_comment(ext, '', feature, proof) for feature, proof in found]
+    return body[:head] + comments + body[head:], len(found), []
+
+
+def _rewrite_sql(lines, ext):
+    out, count = [], 0
+    for line in lines:
+        found = SQL_MARK_RE.match(line)
+        if found:
+            out.append(_comment(ext, '', found.group(1), found.group(2)))
+            count += 1
+        else:
+            out.append(line)
+    return out, count, []
+
+
+_REWRITERS = {'.py': _rewrite_python, '.sh': _rewrite_shell,
+              '.bash': _rewrite_shell, '.sql': _rewrite_sql, '.cs': _rewrite_cs}
+
+
+def rewrite_markers(text, ext):
+    """`(the text with every 0.9.5 marker a comment, how many, lines left)`.
+
+    `lines left` are the line numbers of a marker the upgrade could not
+    place above one test, such as a module-wide `pytestmark`, which it names
+    and leaves as it was.
+    """
+    rewrite = _REWRITERS.get(ext, _rewrite_js)
+    ending = '\n' if text.endswith('\n') else ''
+    lines = text.split('\n')
+    if ending:
+        lines = lines[:-1]
+    out, count, left = rewrite(lines, ext)
+    return '\n'.join(out) + ending, count, left
+
+
+def _marked_old(root):
+    """`{path: (new text, count, lines left)}` for each file with an old marker."""
+    found = {}
+    for rel in _test_files(root):
+        try:
+            text = _read(os.path.join(root, rel))
+        except (IOError, OSError, UnicodeDecodeError):
+            continue
+        if not any(token in text for token in ('pytest.mark.proof',  # retired
+                                               '[proof:',            # retired
+                                               'PurlinProof',        # retired
+                                               'purlin_proof',       # retired
+                                               '@purlin')):          # retired
+            continue
+        ext = os.path.splitext(rel)[1].lower()
+        new, count, left = rewrite_markers(text, ext)
+        if count or left:
+            found[rel] = (new, count, left)
+    return found
+
+
+def _detect_markers(root):
+    return [rel for rel, (_new, count, _left) in _marked_old(root).items()
+            if count]
+
+
+def _apply_markers(root, files, args, out):
+    """Each 0.9.5 marker becomes one comment above the same test."""
+    found = _marked_old(root)
     for rel in files:
-        source, path = _plugin_source(os.path.basename(rel))
-        target = os.path.join(root, rel)
-        out.kept(_back_up_copy(target, rel))
-        shutil.copyfile(path, target)
+        new, count, left = found.get(rel, (None, 0, []))
+        if not count:
+            continue
+        path = os.path.join(root, rel)
+        out.kept(_back_up_copy(path, rel))
+        _write(path, new)
         out.done(rel)
-        out.say('copied scripts/proof/%s over %s' % (source, rel))
+        line = 'rewrote %d marker%s in %s as comments' % (count, _s(range(
+            count)), rel)
+        ext = os.path.splitext(rel)[1].lower()
+        if ext in ('.sh', '.bash', '.sql'):
+            line += ('; the file is one test now, and passes when it exits 0')
+        out.say(line)
+    for rel, (_new, _count, left) in sorted(found.items()):
+        for number in left:
+            out.say('left %s:%d as it was: write the marker as a comment '
+                    'above each test by hand' % (rel, number))
+
+
+def _wiring(root):
+    """`[(path, new text or None)]`: the wiring v0.9.5's init wrote, undone.
+
+    None means the file held nothing else and goes. A `.csproj` compiling the
+    xUnit logger is not rewritten: it is reported, with what to remove.
+    """
+    edits = []
+    for rel in ('conftest.py',):
+        path = os.path.join(root, rel)
+        if not os.path.isfile(path):
+            continue
+        text = _read(path)
+        if not CONFTEST_PLUGIN_RE.search(text):
+            continue
+        new = CONFTEST_PLUGIN_RE.sub('', text)
+        new = re.sub(r'(?m)^[ \t]*pytest_plugins\s*=\s*\[\s*\][ \t]*\n?', '',
+                     new)
+        edits.append((rel, new if new.strip() else None))
+    names = [name for name in sorted(os.listdir(root))
+             if re.match(r'^(?:jest|vitest)\.config\.[cm]?[jt]s$|^jest\.'
+                         r'config\.json$|^package\.json$', name)]
+    for rel in names:
+        text = _read(os.path.join(root, rel))
+        if REPORTER_RE.search(text):
+            new = REPORTER_RE.sub('', text)
+            new = re.sub(r'\[\s*,\s*', '[', new)
+            edits.append((rel, new))
+    return edits
+
+
+def _plugin_copies(root):
+    folder = os.path.join(root, *PLUGIN_DIR.split('/'))
+    if not os.path.isdir(folder):
+        return []
+    return ['%s/%s' % (PLUGIN_DIR, name) for name in sorted(os.listdir(folder))
+            if name in PLUGIN_COPIES]
+
+
+def _logger_projects(root):
+    hits = []
+    for rel in _files_under(root, '.', ('*.csproj',)):
+        rel = rel[2:] if rel.startswith('./') else rel
+        try:
+            if XUNIT_LOGGER in _read(os.path.join(root, rel)):
+                hits.append(rel)
+        except (IOError, OSError, UnicodeDecodeError):
+            continue
+    return hits
+
+
+def _detect_plugins(root):
+    return _plugin_copies(root) + [rel for rel, _new in _wiring(root)]
+
+
+def _apply_plugins(root, files, args, out):
+    """The plugin copies go, and so does the wiring that loaded them."""
+    copies = _plugin_copies(root)
+    for rel in copies:
+        _untrack(root, rel)
+        try:
+            os.remove(os.path.join(root, rel))
+        except OSError:
+            continue
+        out.done(rel)
+    if copies:
+        out.say('removed the %d plugin cop%s under %s/: Purlin reads the '
+                'report your own test command writes'
+                % (len(copies), 'y' if len(copies) == 1 else 'ies',
+                   PLUGIN_DIR))
+    folder = os.path.join(root, *PLUGIN_DIR.split('/'))
+    cache = os.path.join(folder, '__pycache__')
+    if os.path.isdir(cache):
+        shutil.rmtree(cache, ignore_errors=True)
+    if os.path.isdir(folder) and not os.listdir(folder):
+        os.rmdir(folder)
+    for rel, new in _wiring(root):
+        path = os.path.join(root, rel)
+        out.kept(_back_up_copy(path, rel))
+        if new is None:
+            _untrack(root, rel)
+            os.remove(path)
+            out.say('removed %s: it held only the plugin\'s wiring' % rel)
+        else:
+            _write(path, new)
+            out.say('removed the plugin\'s wiring from %s' % rel)
+        out.done(rel)
+    for rel in _logger_projects(root):
+        out.say('%s compiles the xUnit logger v0.9.5 shipped; remove that '
+                'line by hand, since dotnet test --logger trx needs nothing '
+                'added' % rel)
+
 
 # Order matters: the tags are rewritten before the workflow matrix is rendered
 # from them.
@@ -581,8 +912,10 @@ MIGRATIONS = (
     ('workflows', 'remove the retired workflows and write purlin.yml only '
      'where this project has a reason for a runner',
      _detect_workflows, _apply_workflows),
-    ('plugin-copies', 'refresh the proof plugin copies under .purlin/plugins/',
-     _detect_plugin_copies, _apply_plugin_copies),
+    ('markers', 'rewrite each 0.9.5 marker as a comment above its test',
+     _detect_markers, _apply_markers),
+    ('plugins', 'remove the proof plugin copies and the wiring that loaded '
+     'them', _detect_plugins, _apply_plugins),
 )
 
 def pending(project_root):
