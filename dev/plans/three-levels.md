@@ -401,6 +401,14 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     is not pushed from here. Amended the same day: the owner may run `purlin:audit` here for
     most of the code, so the work machine audits only the rules its own changes touch. The
     audit's evidence is committed with source `local` and travels in the branch.
+48. **A signature is evidence, and it belongs to no machine** (added 2026-09-27). A
+    signature is a log entry that ties back to who signed, what they signed, and on what
+    machine. Nothing about a signature depends on which machine made it, and Purlin polices
+    nothing about who or where. Two things stay, each the owner's choice: a signature counts
+    at `signed` only in a commit that is cryptographically signed and verifies, because that
+    is what makes the signer provable; and `trust: remote` stays as a project's own setting.
+    New: every signature records the machine's name and its operating system beside the
+    signer and the time. `signature_format.md` bumps. Piece P4 of the design owns it.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

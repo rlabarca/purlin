@@ -566,3 +566,6 @@ From the stale inventory's open points, also closed by the owner:
 - The end-to-end setup test for a C# project is finished, not removed.
 - Release tags stay; `pre-instruction-optimization` goes on the owner's closeout list.
 - Decision 45 (three roles, the brand kit) and decision 44 (a clean release) bind every piece.
+- Decision 48: a signature records `machine` (the host's name) and `os` beside the signer
+  and the time, neither of them hashed. The signed-commit condition and `trust: remote`
+  stay as they are. Piece P4 adds the two fields and bumps `signature_format.md`.
