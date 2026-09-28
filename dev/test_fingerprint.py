@@ -16,7 +16,7 @@ import pytest
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-from purlin import fingerprint  # noqa: E402
+from purlin import fingerprint, specs  # noqa: E402
 
 EMPTY = hashlib.sha256(b'').hexdigest()
 
@@ -172,6 +172,14 @@ def test_a_global_anchor_rule_edit_reaches_a_feature_that_does_not_name_it(
         'security', ['No exec anywhere'], ['Grep for eval(; verify 0'],
         anchor=True, is_global=True))
     assert _changed(first, project.fp('login')) == ['spec']
+    project.write('specs/_anchors/security.md', _spec(
+        'security', ['No exec anywhere'], ['Grep for eval(; verify 0'],
+        anchor=True))
+    not_global = project.fp('login')
+    project.write('specs/_anchors/security.md', _spec(
+        'security', ['No eval anywhere'], ['Grep for eval(; verify 0'],
+        anchor=True))
+    assert project.fp('login') == not_global
 
 
 # purlin: evidence PROOF-6
@@ -208,6 +216,9 @@ def test_a_glob_scope_changes_when_a_matching_file_changes(tmp_path):
     p.commit()
     files, _unmatched = fingerprint.expand_scope(p.root, ['src/**/*.py'])
     assert files == ['src/deep/token.py', 'src/login.py']
+    for entry in ('src/logi?.py', 'src/[l]ogin.py'):
+        assert fingerprint.expand_scope(p.root, [entry]) == (
+            ['src/login.py'], []), entry
     first = p.fp('login')
     p.write('src/deep/token.py', 'b = 2\n')
     second = p.fp('login')
@@ -228,6 +239,15 @@ def test_a_scope_entry_that_reaches_nothing_is_listed_as_unmatched(project):
     assert files == ['src/login.py']
     assert fingerprint.incomplete_reason(project.root, 'login') is None
     assert len(project.fp('login')['code']) == 64
+    project.write('src/draft.py', 'DRAFT = 1\n')
+    project.write('specs/auth/login.md', _spec(
+        'login', ['Valid credentials return 200'],
+        ['POST /login; verify 200'],
+        scope='src/login.py, src/gone.py, lib/*.rs, src/draft.py'))
+    own_scope = specs.scan_specs(project.root)['login']['scope']
+    files, unmatched = fingerprint.expand_scope(project.root, own_scope)
+    assert unmatched == ['src/gone.py', 'lib/*.rs', 'src/draft.py']
+    assert files == ['src/login.py']
 
 
 # purlin: evidence PROOF-10
@@ -247,6 +267,7 @@ def test_a_marked_test_edit_changes_tests_only(project):
     project.write('tests/test_other.py',
                   '# purlin: billing PROOF-1\n'
                   'def test_bill():\n    pass\n')
+    project.write('scripts/check_login.py', LOGIN_TEST)
     project.commit()
     assert fingerprint.marker_files(project.root, 'login') == [
         'tests/test_login.py']
@@ -255,6 +276,8 @@ def test_a_marked_test_edit_changes_tests_only(project):
     second = project.fp('login')
     assert _changed(first, second) == ['tests']
     project.write('tests/test_other.py', '# rewritten\n')
+    assert project.fp('login') == second
+    project.write('scripts/check_login.py', LOGIN_TEST + '\n# edited\n')
     assert project.fp('login') == second
 
 
@@ -281,6 +304,7 @@ def test_an_untracked_file_is_reported_and_left_out(project):
     project.write('src/new_token.py', 'NEW = 1\n')
     project.write('tests/helper.py', 'HELP = 1\n')
     project.write('src/debug.log', 'noise\n')
+    project.write('docs/notes.md', 'Notes.\n')
     assert project.fp('login') == first
     assert fingerprint.untracked(project.root, 'login') == [
         'src/new_token.py', 'tests/helper.py']
