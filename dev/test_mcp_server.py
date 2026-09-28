@@ -1850,8 +1850,9 @@ class TestStatusTable:
             assert columns == purlin_board.columns_for(gate), name
             for feature in fixture['features']:
                 row = purlin_status._row(feature, gate)
-                board = purlin_board.row_cells(feature['name'],
-                                               feature['rollup'], gate)
+                board = purlin_board.row_cells(
+                    feature['name'], feature['rollup'], gate,
+                    shared=purlin_board.shared_counts(feature['rules']))
                 assert row[1:] == board[1:], (name, feature['name'], row)
                 assert len(row) == len(columns), (name, row)
 
@@ -1869,6 +1870,30 @@ class TestStatusTable:
             f['name'], f['rollup'], 'strong') for f in team['features']}
         assert rows['invoice'] == ('invoice', '2', '2 · 1 no test',
                                    '1 of 2', '0 of 2 · 48%'), rows['invoice']
+
+    # purlin: states PROOF-86
+    def test_the_rules_cell_names_the_shared_rules(self, project):
+        project.spec(
+            '# Anchor: security\n\n> Global: true\n\n'
+            '## Rules\n\n- RULE-1: No eval anywhere\n\n'
+            '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
+            name='security', category='_anchors')
+        lines = purlin_status.sync_status(project.root).splitlines()
+        header = next(line for line in lines if line.startswith('Spec'))
+        login = next(line for line in lines if line.startswith('login '))
+        anchor = next(line for line in lines if line.startswith('security '))
+        column = header.index('Rules')
+        assert login[column:].startswith('2 \u00b7 plus 1 shared'), (header,
+                                                                     login)
+        assert anchor[column:].split('  ')[0] == '1', (header, anchor)
+
+        os.remove(os.path.join(project.root, 'specs', '_anchors',
+                               'security.md'))
+        lines = purlin_status.sync_status(project.root).splitlines()
+        header = next(line for line in lines if line.startswith('Spec'))
+        login = next(line for line in lines if line.startswith('login '))
+        assert login[header.index('Rules'):].split('  ')[0] == '2', login
+        assert not [line for line in lines if 'shared' in line], lines
 
     # purlin: states PROOF-43
     def test_the_columns_scale_with_the_gate(self, project):

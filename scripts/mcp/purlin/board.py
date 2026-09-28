@@ -11,7 +11,8 @@ strings on the dashboard's side; changing one here changes the table.
 The columns, left to right:
 
     Spec     the spec's name
-    Rules    how many rules it must prove
+    Rules    how many rules it owns, then `plus <k> shared` for the rules it
+             proves from an anchor it requires or from a global anchor
     Proofs   how many proof lines it writes, and how many have no test; at
              `passed` only where the project writes a proof line at all
     Tests    how many rules pass, and how many are partial or failing
@@ -97,6 +98,40 @@ def strength_text(strength):
     return 'n/a' if strength is None else '%d%%' % int(strength)
 
 
+def shared_counts(rules):
+    """`[(anchor, count)]` for the rules a feature proves and does not own.
+
+    Read from a feature's `rules` in the payload's order: a rule labelled
+    `required` or `global` names its owner in `feature`, and is counted under
+    that owner.
+    """
+    counts = {}
+    order = []
+    for rule in rules or ():
+        if rule.get('label') == 'own':
+            continue
+        owner = rule.get('feature')
+        if owner not in counts:
+            counts[owner] = 0
+            order.append(owner)
+        counts[owner] += 1
+    return [(owner, counts[owner]) for owner in order]
+
+
+def rules_cell(rollup, shared=()):
+    """`<n>`, or `<own> · plus <k> shared` where the spec proves shared rules.
+
+    The rollup counts every rule the spec must prove, so the rules it owns are
+    that total less the shared ones, which are listed once, under the anchor
+    that owns them, and still count toward the spec.
+    """
+    total = rollup.get('rules') or 0
+    more = sum(count for _owner, count in shared or ())
+    if not more:
+        return '%d' % total
+    return '%d%splus %d shared' % (total - more, DOT, more)
+
+
 def proofs_cell(rollup):
     """`<n>`, and `· <k> no test` when a proof has none.
 
@@ -132,13 +167,13 @@ def signed_cell(rollup):
     return '%d of %d' % (signed_met(rollup), rollup.get('rules') or 0)
 
 
-def row_cells(name, rollup, gate, proofs=1):
+def row_cells(name, rollup, gate, proofs=1, shared=()):
     """One spec's row under `gate`, as the tuple the columns describe.
 
     `proofs` is how many proof lines the project writes, as `columns_for`
-    reads it.
+    reads it; `shared` is `shared_counts` over the spec's rules.
     """
-    cells = [name, str(rollup.get('rules') or 0)]
+    cells = [name, rules_cell(rollup, shared)]
     if shows_proofs(gate, proofs):
         cells.append(proofs_cell(rollup))
     cells.append(tests_cell(rollup))

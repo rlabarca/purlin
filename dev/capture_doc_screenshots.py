@@ -8,7 +8,8 @@ data moves, and shows one project's names to every reader.
     python3 dev/build_report.py && python3 dev/capture_doc_screenshots.py
 
     dashboard-board.png   the board at the signed gate: six tiles, the two
-                          flag cards, every column and the filters
+                          flag cards, every column, the filters, and login
+                          open with one rule's proofs beneath it
     dashboard-queue.png   the Queue tab: a hand check and a signature
     dashboard-rule.png    one signed rule: its cells, its level, what the
                           audit found, its signature and its proofs
@@ -39,7 +40,11 @@ SCALE = 2
 
 # name -> (fixture, the clicks that reach the screen)
 SHOTS = (
-    ('dashboard-board.png', 'regulated', ()),
+    # login open with RULE-4's two proofs beneath it: one failed on windows,
+    # one passed, which is what the closed count's warn tone stands for.
+    ('dashboard-board.png', 'regulated',
+     ('[data-act="feature"][data-feature="login"]',
+      '[data-act="proofs"][data-feature="login"][data-rule="RULE-4"]')),
     ('dashboard-queue.png', 'regulated', ('[data-screen="queue"]',)),
     # RULE-1 is the signed one: its cells show a platform box, what the audit
     # found and a signature, which is the whole chain on one screen.
@@ -85,6 +90,8 @@ def main():
             page.wait_for_selector('.topbar', timeout=10000)
             for selector in clicks:
                 page.click(selector)
+            # The pointer leaves the page, so no row is caught mid-hover.
+            page.mouse.move(0, 0)
             # The coverage bars fill over 420ms; capture them settled.
             page.wait_for_timeout(700)
             page.screenshot(path=os.path.join(IMAGES_DIR, name),

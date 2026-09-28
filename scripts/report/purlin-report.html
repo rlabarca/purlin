@@ -195,8 +195,8 @@ function filterCount(f) {
 }
 function visibleRules(feature) {
   var active = activeFilters();
-  if (!active.length) { return feature.rules || []; }
-  return (feature.rules || []).filter(function (rule) {
+  if (!active.length) { return ownRules(feature); }
+  return ownRules(feature).filter(function (rule) {
     return active.every(function (f) { return f.test(rule, feature); });
   });
 }
@@ -284,12 +284,12 @@ function untestedLines() {
   });
 }
 function boardColumns() {
-  var columns = [{label: COLUMNS[0], width: '2.3fr', floor: 132},
-                 {label: COLUMNS[1], width: '0.7fr', floor: 58}];
+  var columns = [{label: COLUMNS[0], width: '1.7fr', floor: 132},
+                 {label: COLUMNS[1], width: '1.6fr', floor: 144}];
   if (showsProofs()) {
-    columns.push({label: COLUMNS[2], width: '2.15fr', floor: 180});
+    columns.push({label: COLUMNS[2], width: '2fr', floor: 180});
   }
-  columns.push({label: COLUMNS[3], width: '2.15fr', floor: 120});
+  columns.push({label: COLUMNS[3], width: '2fr', floor: 120});
   if (level('strong')) {
     columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
@@ -306,9 +306,19 @@ function proofsCell(feature) {
     + counts([[rollup.proofs || 0, '', ''],
       [rollup.proofs_without_test || 0, WORDS.no_test, 'warn']]) + '</span>';
 }
+function rulesCell(feature) {
+  var shared = sharedBy(feature);
+  var own = ownRules(feature).length;
+  if (!shared.length) { return '<span class="mono">' + own + '</span>'; }
+  var more = shared.reduce(function (sum, pair) { return sum + pair[1]; }, 0);
+  return '<span' + hover(shared.map(function (pair) {
+      return pair[0] + DOT + pair[1];
+    })) + '>' + counts([[own, '', ''], ['plus ' + more + ' shared', '', '']])
+    + '</span>';
+}
 function testsCell(feature) {
   var found = {};
-  var rules = ownRules(feature);
+  var rules = feature.rules || [];
   rules.forEach(function (rule) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
@@ -350,7 +360,7 @@ function featureRow(feature, columns) {
     + (open ? '▼' : '▶') + '</span>'
     + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
     + esc(feature.name) + '</span>' + noScope(feature) + '</span>'];
-  cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');
+  cells.push(rulesCell(feature));
   if (showsProofs()) { cells.push(proofsCell(feature)); }
   cells.push(testsCell(feature));
   if (level('strong')) { cells.push(strongCell(feature)); }
@@ -363,7 +373,7 @@ function featureRow(feature, columns) {
   return row + visibleRules(feature).map(function (rule) {
     var shown = !!VIEW.proofs[rule.feature + ' ' + rule.id];
     return '<div class="rule" data-act="rule" data-feature="'
-      + esc(feature.name) + '" data-rule="' + esc(rule.id) + '">'
+      + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '">'
       + '<span class="rid">' + esc(rule.id) + '</span>'
       + '<span class="rt">' + esc(rule.text) + '</span>'
       + '<span class="rp">' + GATE_LEVELS.map(function (name) {
@@ -458,12 +468,8 @@ function renderBoard() {
 }
 function ruleInView() {
   var feature = featureNamed(VIEW.feature);
-  if (!feature) { return null; }
-  var found = null;
-  (feature.rules || []).forEach(function (r) {
-    if (r.id === VIEW.rule) { found = r; }
-  });
-  return found ? {feature: feature, rule: found} : null;
+  var found = ruleNamed(VIEW.feature, VIEW.rule);
+  return feature && found ? {feature: feature, rule: found} : null;
 }
 function platformBoxes(cell) {
   var platforms = (cell && cell.platforms) || {};
@@ -650,7 +656,8 @@ function shortText(text) {
 function queueRow(entry) {
   var rule = listedRule(entry);
   return '<div class="rev" data-act="rule" data-feature="'
-    + esc(entry.feature) + '" data-rule="' + esc(entry.rule) + '">'
+    + esc(entry.owner || entry.feature) + '" data-rule="' + esc(entry.rule)
+    + '">'
     + '<span>' + esc(entry.feature) + '</span>'
     + '<span class="mono">' + esc(entry.rule) + '</span>'
     + '<span>' + esc(shortText(entry.text || (rule ? rule.text : ''))) + '</span>'
@@ -792,13 +799,16 @@ function everyRule() {
   });
   return out;
 }
-function listedRule(entry) {
-  var feature = featureNamed(entry.feature);
+function ruleNamed(owner, id) {
+  var feature = featureNamed(owner);
   var found = null;
   (feature ? feature.rules || [] : []).forEach(function (r) {
-    if (r.id === entry.rule) { found = r; }
+    if (r.feature === owner && r.id === id) { found = r; }
   });
   return found;
+}
+function listedRule(entry) {
+  return ruleNamed(entry.owner || entry.feature, entry.rule);
 }
 function ratio(count, total, suffix) {
   var pct = total ? Math.round((count / total) * 100) : 0;
@@ -821,6 +831,16 @@ function counts(items) {
 function hover(lines) { return ' title="' + esc(lines.join('\n')) + '"'; }
 function ownRules(feature) {
   return (feature.rules || []).filter(function (r) { return r.label === 'own'; });
+}
+function sharedBy(feature) {
+  var counts = {};
+  var order = [];
+  (feature.rules || []).forEach(function (r) {
+    if (r.label === 'own') { return; }
+    if (!(r.feature in counts)) { counts[r.feature] = 0; order.push(r.feature); }
+    counts[r.feature] += 1;
+  });
+  return order.map(function (name) { return [name, counts[name]]; });
 }
 function wholeProject() {
   var rules = [];

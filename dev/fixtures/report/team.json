@@ -34,6 +34,17 @@
           "result": "pass"
         }
       }
+    },
+    "receipt": {
+      "ci": {
+        "linux": {
+          "at": "2026-09-12T09:14:02Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/ci/receipt.json",
+          "result": "pass"
+        }
+      }
     }
   },
   "features": [
@@ -513,6 +524,213 @@
       "test_strength": 48
     },
     {
+      "category": "billing",
+      "current": true,
+      "description": null,
+      "evidence": {
+        "ci": {
+          "committed": true,
+          "path": ".purlin/evidence/ci/receipt.json",
+          "platforms": {
+            "linux": {
+              "at": "2026-09-12T09:14:02Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        },
+        "local": null
+      },
+      "incomplete": false,
+      "incomplete_reason": null,
+      "is_anchor": false,
+      "is_global": false,
+      "name": "receipt",
+      "pinned": null,
+      "requires": [
+        "checkout_design"
+      ],
+      "rollup": {
+        "failing": 0,
+        "hand_checks": 0,
+        "incomplete": false,
+        "manual": 0,
+        "met": 2,
+        "not_audited": 0,
+        "partial": 0,
+        "passed": 0,
+        "proofs": 2,
+        "proofs_without_test": 0,
+        "proofs_without_test_ids": [],
+        "queue": 0,
+        "rules": 2,
+        "stale": 0,
+        "strong": 2,
+        "test_strength": 75,
+        "untested": 0
+      },
+      "rules": [
+        {
+          "audit": {
+            "at": "2026-09-12T09:14:02Z",
+            "commit": "a1b2c3d",
+            "findings": [],
+            "model": "example-model-1",
+            "path": ".purlin/evidence/ci/receipt.json",
+            "strength": 75,
+            "verdict": "strong"
+          },
+          "audit_hash": "a1f3c9d27e5b40c8a6f2e9d1b7c3a5e8f0d2b4c6a8e1f3d5b7c9a2e4f6d8b0c1",
+          "blocked_by": null,
+          "bucket": "strong",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "strong": {
+              "evidence": ".purlin/evidence/ci/receipt.json",
+              "findings": [],
+              "reasons": [],
+              "strength": 75,
+              "word": "strong"
+            }
+          },
+          "feature": "receipt",
+          "flags": {
+            "failing": false,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": false,
+            "out_of_date": false,
+            "partial": false,
+            "stale": false
+          },
+          "id": "RULE-1",
+          "label": "own",
+          "level": "strong",
+          "level_marked": null,
+          "meets_gate": true,
+          "proof_hash": "prule1rec",
+          "proofs": [
+            {
+              "env": null,
+              "id": "PROOF-1",
+              "manual": false,
+              "result": "passed",
+              "tests": [
+                {
+                  "file": "tests/test_receipt.py",
+                  "name": "test_receipt_names_order",
+                  "result": "pass"
+                }
+              ],
+              "text": "Pay for order 1042 of 59.97 and read `1042` and `59.97` on the receipt."
+            }
+          ],
+          "rule_hash": "rrule1rec",
+          "test_hash": "trule1rec",
+          "test_hash_kind": "file",
+          "tests": [],
+          "text": "A receipt names the order number and the total paid."
+        },
+        {
+          "audit": {
+            "at": "2026-09-12T09:14:02Z",
+            "commit": "a1b2c3d",
+            "findings": [],
+            "model": "example-model-1",
+            "path": ".purlin/evidence/local/checkout_design.json",
+            "strength": 90,
+            "verdict": "strong"
+          },
+          "audit_hash": "f0771b5320b78e2385b46a63525e71a6e30975d1adfb8712011dc997da5493c4",
+          "blocked_by": null,
+          "bucket": "strong",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "local",
+                  "word": "passed"
+                }
+              },
+              "reasons": [],
+              "source": "local",
+              "word": "passed"
+            },
+            "strong": {
+              "evidence": ".purlin/evidence/local/checkout_design.json",
+              "findings": [],
+              "reasons": [],
+              "strength": 90,
+              "word": "strong"
+            }
+          },
+          "feature": "checkout_design",
+          "flags": {
+            "failing": false,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": false,
+            "out_of_date": false,
+            "partial": false,
+            "stale": false
+          },
+          "id": "RULE-1",
+          "label": "required",
+          "level": "strong",
+          "level_marked": null,
+          "meets_gate": true,
+          "proof_hash": "prule1che",
+          "proofs": [
+            {
+              "env": null,
+              "id": "PROOF-1",
+              "manual": false,
+              "result": "passed",
+              "tests": [
+                {
+                  "file": "tests/test_cart.py",
+                  "name": "test_total_above",
+                  "result": "pass"
+                }
+              ],
+              "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\"."
+            }
+          ],
+          "rule_hash": "rrule1che",
+          "test_hash": "trule1che",
+          "test_hash_kind": "file",
+          "tests": [],
+          "text": "The cart page shows the order total above the pay button."
+        }
+      ],
+      "scope": [
+        "src/receipt/"
+      ],
+      "signatures": [],
+      "source": null,
+      "source_path": null,
+      "spec_path": "specs/billing/receipt.md",
+      "test_strength": 75
+    },
+    {
       "category": "_anchors",
       "current": true,
       "description": null,
@@ -657,23 +875,23 @@
   "schema_version": 9,
   "summary": {
     "failing": 0,
-    "features": 3,
+    "features": 4,
     "hand_checks": 0,
     "incomplete": 1,
     "manual": 0,
-    "met": 3,
+    "met": 4,
     "not_audited": 0,
     "partial": 0,
     "passed": 2,
-    "proofs": 6,
+    "proofs": 7,
     "proofs_without_test": 1,
     "proofs_without_test_ids": [
       "PROOF-2"
     ],
     "queue": 0,
-    "rules": 6,
+    "rules": 7,
     "stale": 0,
-    "strong": 3,
+    "strong": 4,
     "untested": 1
   },
   "tag": null,

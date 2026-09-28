@@ -1650,3 +1650,112 @@ def test_a_filter_hides_a_rules_proofs_and_the_rule_screen_agrees(browser,
         r'els => els.map(e => e.textContent.trim().replace(/\s+/g, " "))')
     assert screen == board, (screen, board)
     page.close()
+
+
+# purlin: purlin_report PROOF-71
+def test_a_shared_rule_is_listed_once_under_its_owner(browser, tmp_path):
+    payload = payload_named('team')
+    page = open_board(browser, tmp_path, payload)
+    cells = count_cells(page)
+    assert cells['receipt']['Rules'] == '1 · plus 1 shared'
+    assert cells['login']['Rules'] == '3'
+    assert hovers(page)['receipt']['Rules'] == 'checkout_design · 1'
+    assert '4 of 7' in page.inner_text('.topbar')
+    for name in feature_names(page):
+        page.click('[data-act="feature"][data-feature="%s"]' % name)
+    assert texts(page, '.rule[data-feature="receipt"] .rid') == ['RULE-1']
+    anchor = 'The cart page shows the order total above the pay button.'
+    assert texts(page, '.rule .rt').count(anchor) == 1
+    assert texts(page, '.rule[data-feature="checkout_design"] .rt') == [anchor]
+
+    page.click('.rule[data-feature="receipt"][data-rule="RULE-1"]')
+    assert texts(page, '.tabs button')[-1] == 'receipt RULE-1'
+    assert 'A receipt names the order number and the total paid.' in (
+        page.inner_text('.wrap'))
+    assert anchor not in page.inner_text('.wrap')
+    page.click('[data-act="close"]')
+    page.click('.rule[data-feature="checkout_design"][data-rule="RULE-1"]')
+    assert texts(page, '.tabs button')[-1] == 'checkout_design RULE-1'
+    assert anchor in page.inner_text('.wrap')
+    assert 'A receipt names' not in page.inner_text('.wrap')
+    page.close()
+
+
+def _shared_project(root):
+    """A project at the gate `passed`: a global anchor `security` of six
+    rules and a feature `lock` of two, each rule with one proof and one
+    passing pytest test marked with it."""
+    import suites
+    (root / 'specs' / '_anchors').mkdir(parents=True)
+    (root / 'specs' / 'a').mkdir(parents=True)
+    (root / 'tests').mkdir()
+    (root / '.purlin').mkdir()
+    (root / '.purlin' / 'config.json').write_text(json.dumps(
+        {'gate': 'passed', 'tests': [suites.pytest_suite()]}),
+        encoding='utf-8')
+    (root / 'specs' / '_anchors' / 'security.md').write_text(
+        '# Anchor: security\n\n> Global: true\n\n## Rules\n\n'
+        + ''.join('- RULE-%d: Security pattern %d is absent\n' % (n, n)
+                  for n in range(1, 7))
+        + '\n## Proof\n\n'
+        + ''.join('- PROOF-%d (RULE-%d): Grep for pattern %d; verify 0 '
+                  'matches\n' % (n, n, n) for n in range(1, 7)),
+        encoding='utf-8')
+    (root / 'specs' / 'a' / 'lock.md').write_text(
+        '# Feature: lock\n\n> Scope: tests/\n\n## Rules\n\n'
+        '- RULE-1: A wrong password five times locks the account\n'
+        '- RULE-2: A locked account opens again after fifteen minutes\n\n'
+        '## Proof\n\n'
+        '- PROOF-1 (RULE-1): Sign in wrong five times; verify 423\n'
+        '- PROOF-2 (RULE-2): Wait fifteen minutes; verify 200\n',
+        encoding='utf-8')
+    (root / 'tests' / 'test_shared.py').write_text(
+        ''.join('# purlin: %s PROOF-%d\ndef test_%s_%d():\n    assert True\n\n'
+                % (feature, n, feature, n)
+                for feature, count in (('lock', 2), ('security', 6))
+                for n in range(1, count + 1)),
+        encoding='utf-8')
+
+
+# purlin: purlin_report PROOF-72
+def test_a_real_projects_shared_rules_are_listed_once(browser, tmp_path):
+    root = tmp_path / 'project'
+    root.mkdir()
+    _shared_project(root)
+    result = subprocess.run(
+        [sys.executable, os.path.join(ROOT, 'scripts', 'run', 'purlin_run.py'),
+         '--test', '--project-root', str(root)],
+        capture_output=True, encoding='utf-8', cwd=str(root))
+    assert 'Markers: 8 tied to a test, 0 not tied.' in result.stdout, (
+        result.stdout + result.stderr)
+    sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
+    from purlin import report_data
+    assert report_data.refresh(str(root))
+    text = read(os.path.join(str(root), '.purlin', 'report-data.js'))
+    payload = json.loads(
+        text[len('const PURLIN_DATA = '):].rstrip().rstrip(';'))
+    lock = next(f for f in payload['features'] if f['name'] == 'lock')
+    assert [(r['feature'], r['label']) for r in lock['rules']] == (
+        [('lock', 'own')] * 2 + [('security', 'global')] * 6)
+
+    page = open_board(browser, tmp_path / 'page', payload)
+    assert count_cells(page)['lock']['Rules'] == '2 · plus 6 shared'
+    assert hovers(page)['lock']['Rules'] == 'security · 6'
+    assert 'of 8' in page.inner_text('.topbar')
+    assert sum(int(value) for value in texts(page, '.tile-v')) == 8
+    page.click('[data-act="feature"][data-feature="lock"]')
+    assert rule_ids(page) == ['RULE-1', 'RULE-2']
+    page.click('[data-act="feature"][data-feature="security"]')
+    assert len(rule_ids(page)) == 8
+    assert texts(page, '.rule[data-feature="security"] .rid') == [
+        'RULE-%d' % n for n in range(1, 7)]
+    page.click('.rule[data-feature="lock"][data-rule="RULE-1"]')
+    own = page.inner_text('.wrap')
+    page.click('[data-act="close"]')
+    page.click('.rule[data-feature="security"][data-rule="RULE-1"]')
+    shared = page.inner_text('.wrap')
+    page.close()
+    assert 'A wrong password five times locks the account' in own
+    assert 'Security pattern 1 is absent' not in own
+    assert 'Security pattern 1 is absent' in shared
+    assert 'A wrong password' not in shared

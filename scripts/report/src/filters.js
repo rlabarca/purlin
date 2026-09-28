@@ -64,11 +64,13 @@ function filterCount(f) {
   return found;
 }
 
-/* The rules of one feature that every set filter accepts. */
+/* The rules of one feature that every set filter accepts. A feature lists
+   the rules it owns; a rule it proves from an anchor is listed once, under
+   that anchor. */
 function visibleRules(feature) {
   var active = activeFilters();
-  if (!active.length) { return feature.rules || []; }
-  return (feature.rules || []).filter(function (rule) {
+  if (!active.length) { return ownRules(feature); }
+  return ownRules(feature).filter(function (rule) {
     return active.every(function (f) { return f.test(rule, feature); });
   });
 }

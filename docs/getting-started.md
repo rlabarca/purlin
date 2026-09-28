@@ -100,7 +100,7 @@ Purlin status: my-project, plugin 0.10.0, gate passed
 
 Spec  Rules  Tests
 ───────────────────
-cart      3  3 of 3
+cart  3      3 of 3
 ───────────────────
 
 3 of 3 rules meet the gate passed.

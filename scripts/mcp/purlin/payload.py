@@ -77,6 +77,12 @@ or `hand check`, as `states.proof_result` reads it, and each of its tests the
 `result` a current run gave it, `pass` or `fail`, or `not run` where no
 current run lists it.
 
+A feature's `rules` holds its own rules, `label` `own`, then every rule it
+must prove from an anchor it requires, `required`, or from a global anchor,
+`global`. Each carries `feature`, the name of the spec that owns it, so a
+rule is always addressed by its owner and its id: two features' `RULE-1` are
+two rules.
+
 A cell above the project's gate is absent, not empty: a `passed` project
 carries one cell per rule, a `signed` project carries three.
 

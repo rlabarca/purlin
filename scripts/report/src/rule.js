@@ -2,14 +2,13 @@
    what the audit found, the signature, the proofs that stand for it with
    the tests that carry them, and the tests marked with the rule's own id. */
 
+/* The open rule, by the spec that owns it and its id: opening
+   `ai_audit RULE-1` and `security_no_dangerous_patterns RULE-1` opens two
+   rules, wherever either was clicked. */
 function ruleInView() {
   var feature = featureNamed(VIEW.feature);
-  if (!feature) { return null; }
-  var found = null;
-  (feature.rules || []).forEach(function (r) {
-    if (r.id === VIEW.rule) { found = r; }
-  });
-  return found ? {feature: feature, rule: found} : null;
+  var found = ruleNamed(VIEW.feature, VIEW.rule);
+  return feature && found ? {feature: feature, rule: found} : null;
 }
 
 /* One small box per operating system a counting run covered, in the tone of

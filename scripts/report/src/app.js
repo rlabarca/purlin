@@ -192,14 +192,21 @@ function everyRule() {
   return out;
 }
 
-/* The rule one list entry points at, from the feature entry that owns it. */
-function listedRule(entry) {
-  var feature = featureNamed(entry.feature);
+/* The rule one owner and one id name. A rule is always addressed by the
+   spec that owns it and its id together: a feature that proves an anchor's
+   rules lists them beside its own, and both carry a `RULE-1`. */
+function ruleNamed(owner, id) {
+  var feature = featureNamed(owner);
   var found = null;
   (feature ? feature.rules || [] : []).forEach(function (r) {
-    if (r.id === entry.rule) { found = r; }
+    if (r.feature === owner && r.id === id) { found = r; }
   });
   return found;
+}
+
+/* The rule one list entry points at, under the spec that owns it. */
+function listedRule(entry) {
+  return ruleNamed(entry.owner || entry.feature, entry.rule);
 }
 
 /* `n of m` with a bar beside it. The bar is the share, so a spec of three
@@ -247,6 +254,19 @@ function ownRules(feature) {
   return (feature.rules || []).filter(function (r) { return r.label === 'own'; });
 }
 
+/* The rules a feature proves and does not own, by the anchor that owns
+   them: `[[anchor, count]]` in the order the payload lists them. They count
+   toward the feature and are listed once, under their anchor. */
+function sharedBy(feature) {
+  var counts = {};
+  var order = [];
+  (feature.rules || []).forEach(function (r) {
+    if (r.label === 'own') { return; }
+    if (!(r.feature in counts)) { counts[r.feature] = 0; order.push(r.feature); }
+    counts[r.feature] += 1;
+  });
+  return order.map(function (name) { return [name, counts[name]]; });
+}
 
 /* The whole project as one feature, so a tile's hover is its column's hover
    read over every spec rather than a second set of sums. */

@@ -36,7 +36,7 @@ as `login RULE-1`, when there is one.
 
 ## Board
 
-![The Board at the gate signed: two warnings, six tiles with the Queue and Stale cards, the six filters, and four specs under their categories with all six columns](images/dashboard-board.png)
+![The Board at the gate signed: two warnings, six tiles with the Queue and Stale cards, the six filters, and four specs under their categories with all six columns; login is open, and RULE-4's two proofs are open beneath its row, PROOF-4 failed on windows and PROOF-5 passed](images/dashboard-board.png)
 
 Warnings sit above the tiles, one per line: `The working tree has uncommitted changes, so
 what is on this board is not what a commit would carry.`, and any line the spec parser could
@@ -60,11 +60,15 @@ line, since proofs are optional there. `Strong` joins at `strong` and `Signed` a
 | Column | What it reads | What its hover says |
 |---|---|---|
 | `Spec` | the feature name, under the band that names its category | the spec's path |
-| `Rules` | how many rules the spec holds | none |
+| `Rules` | how many rules the spec owns, then, where it proves rules from an anchor it requires or from a global anchor, `15 · plus 6 shared` | each anchor the shared rules come from and how many, as `security_no_dangerous_patterns · 6`; none where there are no shared rules |
 | `Proofs` | `24 · 3 no test`: how many proof lines the spec holds and how many no marker above a test names, whether or not that test has run. A `@manual` proof counts as no gap | which proofs those are |
 | `Tests` | `21 of 24 · 1 partial · 2 failing`: how many rules passed everywhere they ran, then the two words that say they did not | one line per operating system a current run covered, newest first: `linux · ci · 9 days old · 22 passed · 1 failed · 1 not run` |
 | `Strong` | `18 of 24 · 71%`: how many rules reached `strong`, and the test strength, `n/a` where nothing measured one | where the newest audit came from, how old it is, and `minimum strength 80%` |
 | `Signed` | `1 of 4`: how many rules carry a signature that counts | each signer with the date of their newest signature, then how many are `stale` |
+
+Shared rules count toward every feature that proves them, in `Proofs`, `Tests`, `Strong` and
+`Signed`, so `ai_audit` reads `15 · plus 6 shared` and `0 of 21` beside it. The tiles, the
+filters and the top bar count each rule once, under the spec that owns it.
 
 Every count names the word it counts. The first part is always drawn; a later part is drawn
 only above zero, so a spec with nothing partial and nothing failing reads `24 of 24`. Every
@@ -77,15 +81,28 @@ row reads `<name> · no scope`, and the hover gives the reason. A `purlin:test` 
 named always runs such a spec, and at `signed` none of its rules can be signed.
 
 Specs are grouped by category. The band above each group reads `billing · 2 specs · 4 of 5
-pass` with a bar after it. Pressing a band folds it; pressing a spec expands its rules. Each
-rule row carries the rule id, the rule text, and one pill per cell that exists, reading the
-cell's word:
+pass` with a bar after it. Pressing a band folds it; pressing a spec expands the rules it owns.
+A rule a feature proves from an anchor is listed once, under that anchor, where the board lists
+the anchor. Each rule row carries the rule id, the rule text, one pill per cell that exists,
+reading the cell's word, and a button that opens the rule's proofs:
 
 | Cell | Words |
 |---|---|
 | passed | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
 | strong | `strong`, `weak`, `not audited`, `manual test`, `no proof` |
 | signed | `signed`, `unsigned`, `stale` |
+
+**Proofs under a rule.** The button reads `▶ 2 proofs` while closed, in the warn tone when one
+of the proofs reads `failed` or `no test`, and `no proof` where the rule has none. Pressing it,
+or pressing Enter on it, opens the rule's proofs beneath the row and turns the glyph to `▼`; a
+screen reader hears whether it is open. Each proof reads its id, its words in full, its own
+result (`passed`, `failed`, `no test`, `not run` or `hand check`), its `@manual` and `@env`
+tags, and each of its tests as `tests/test_login.py :: test_no_cookie` with that test's result.
+A rule with no proof shows the tests marked with its own id the same way. Every rule's proofs
+are closed when the page loads and when you open a spec, and opening one rule's leaves the
+others as they were. A filter that hides a rule hides its proofs with it. A project at `passed`
+that writes no proof line is told nothing about proofs: the button reads `1 test` and opens the
+rule's tests, and is absent where the rule has none.
 
 ## Filters
 
@@ -106,7 +123,9 @@ matches every filter you set.`
 
 ## Rule
 
-Pressing a rule opens it.
+Pressing a rule opens it. A rule is named by the spec that owns it and its id together, so
+`ai_audit RULE-1` and `security_no_dangerous_patterns RULE-1` open two different screens, and
+the tab names the owner.
 
 ![The rule screen for login RULE-1 at the gate signed: the Passed, Strong and Signed rows with the lin and win boxes, the Level, Spec, Last run and Signatures rows, then the Audit panel, the Signed panel and PROOF-1 with its test](images/dashboard-rule.png)
 
@@ -136,8 +155,9 @@ panel is headed `Signature` or `Hand check` and names the command to run in Clau
 rule's level is below `signed`, it says the rule asks for no signature and that one written
 anyway still counts.
 
-The **Proofs** are last, each with its `@manual` and `@env` tags and the tests that ran it. A
-project at `passed` that writes no proof line has no proofs here.
+The **Proofs** are last, each drawn exactly as the board draws it under the rule: its words, its
+result, its `@manual` and `@env` tags, and its tests with their results. A project at `passed`
+that writes no proof line has no proofs here.
 `← Board` at the top closes the rule; it reads `← Queue` when the rule was opened from there.
 
 ## Queue

@@ -107,18 +107,19 @@ function untestedLines() {
    `width` is the share of the table the column asks for, and `floor` is the
    width below which it stops being read: a track narrower than its heading
    ran that heading into the next one. Each floor is the heading, or the
-   longest single part of a count cell, whichever is wider. The shares are
-   set so that no floor binds at 1024 and every count cell holds its first
-   two parts on one line at 1280; under the sum of the floors, 554 pixels,
-   which with the four gaps and the padding is 650, the table scrolls
-   sideways rather than squeezing a column past one. */
+   longest single part of a count cell, whichever is wider: `Rules` holds
+   `· plus 18 shared`. The shares are set so that the floors fit a
+   1024-wide window and every count cell holds its first two parts on one
+   line at 1280; under the sum of the floors, 776 pixels, which with the
+   five gaps and the padding is 884, the table scrolls sideways rather than
+   squeezing a column past one. */
 function boardColumns() {
-  var columns = [{label: COLUMNS[0], width: '2.3fr', floor: 132},
-                 {label: COLUMNS[1], width: '0.7fr', floor: 58}];
+  var columns = [{label: COLUMNS[0], width: '1.7fr', floor: 132},
+                 {label: COLUMNS[1], width: '1.6fr', floor: 144}];
   if (showsProofs()) {
-    columns.push({label: COLUMNS[2], width: '2.15fr', floor: 180});
+    columns.push({label: COLUMNS[2], width: '2fr', floor: 180});
   }
-  columns.push({label: COLUMNS[3], width: '2.15fr', floor: 120});
+  columns.push({label: COLUMNS[3], width: '2fr', floor: 120});
   if (level('strong')) {
     columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
@@ -143,12 +144,29 @@ function proofsCell(feature) {
       [rollup.proofs_without_test || 0, WORDS.no_test, 'warn']]) + '</span>';
 }
 
+/* How many rules the spec owns, then how many it proves from an anchor it
+   requires or from a global anchor, as `15 · plus 6 shared`, with the hover
+   naming each anchor and how many rules come from it. Shared rules count
+   toward the spec everywhere, and are listed once, under their anchor. A
+   spec with none reads its own count alone, as `board.rules_cell` does. */
+function rulesCell(feature) {
+  var shared = sharedBy(feature);
+  var own = ownRules(feature).length;
+  if (!shared.length) { return '<span class="mono">' + own + '</span>'; }
+  var more = shared.reduce(function (sum, pair) { return sum + pair[1]; }, 0);
+  return '<span' + hover(shared.map(function (pair) {
+      return pair[0] + DOT + pair[1];
+    })) + '>' + counts([[own, '', ''], ['plus ' + more + ' shared', '', '']])
+    + '</span>';
+}
+
 /* What the marked tests found, as the passed cells read it: how many of the
-   spec's rules passed everywhere they ran, then the two words that say they
-   did not. The hover says which platforms ran and what each found. */
+   rules the spec proves passed everywhere they ran, its own and the shared
+   ones alike, then the two words that say they did not. The hover says
+   which platforms ran and what each found. */
 function testsCell(feature) {
   var found = {};
-  var rules = ownRules(feature);
+  var rules = feature.rules || [];
   rules.forEach(function (rule) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
@@ -206,7 +224,7 @@ function featureRow(feature, columns) {
     + (open ? '▼' : '▶') + '</span>'
     + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
     + esc(feature.name) + '</span>' + noScope(feature) + '</span>'];
-  cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');
+  cells.push(rulesCell(feature));
   if (showsProofs()) { cells.push(proofsCell(feature)); }
   cells.push(testsCell(feature));
   if (level('strong')) { cells.push(strongCell(feature)); }
@@ -219,7 +237,7 @@ function featureRow(feature, columns) {
   return row + visibleRules(feature).map(function (rule) {
     var shown = !!VIEW.proofs[rule.feature + ' ' + rule.id];
     return '<div class="rule" data-act="rule" data-feature="'
-      + esc(feature.name) + '" data-rule="' + esc(rule.id) + '">'
+      + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '">'
       + '<span class="rid">' + esc(rule.id) + '</span>'
       + '<span class="rt">' + esc(rule.text) + '</span>'
       + '<span class="rp">' + GATE_LEVELS.map(function (name) {

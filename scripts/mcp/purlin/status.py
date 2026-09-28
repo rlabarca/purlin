@@ -4,8 +4,9 @@ The table is the dashboard's board, rendered as text. Its columns are the
 board's columns and its cells are the board's cells, character for character,
 because a reader who learns one should not have to learn the other:
 `scripts/mcp/purlin/board.py` renders both. A row says how many rules the
-spec has, how many proofs it writes and how many of those have no test, and
-how many rules pass their tests. At `strong` the row adds how many rules are
+spec owns and how many it proves from an anchor, as `15 · plus 6 shared`, how
+many proofs it writes and how many of those have no test, and how many rules
+pass their tests. At `strong` the row adds how many rules are
 strong and the test strength; at `signed` it adds how many are signed. The
 table scales with the gate: a `passed` project is never shown a strength, a
 level or a signature it did not ask for, and is shown a proof count only
@@ -102,7 +103,9 @@ def _update_pending(project_root):
 def _row(feature, gate, proofs=1):
     """One spec's row, rendered by the module the board renders from."""
     name = feature['name'] + (' (anchor)' if feature['is_anchor'] else '')
-    return board_module.row_cells(name, feature['rollup'], gate, proofs)
+    return board_module.row_cells(
+        name, feature['rollup'], gate, proofs,
+        board_module.shared_counts(feature.get('rules')))
 
 
 def _proof_lines(data):
@@ -130,16 +133,14 @@ def _table(data):
 
 
 def _line(cells, widths, columns):
-    """One table line; the counted columns are right aligned, the rest left."""
-    right = {index for index, name in enumerate(columns)
-             if name in ('Rules',)}
-    out = []
-    for index, cell in enumerate(cells):
-        if index in right:
-            out.append(cell.rjust(widths[index]))
-        else:
-            out.append(cell.ljust(widths[index]))
-    return '  '.join(out).rstrip()
+    """One table line, every cell set from its column's left edge.
+
+    A `Rules` cell reads `15 · plus 6 shared` beside one that reads `6`, and
+    a count and its words line up only from the left, as they do on the
+    board.
+    """
+    return '  '.join(cell.ljust(widths[index])
+                     for index, cell in enumerate(cells)).rstrip()
 
 
 # ---------------------------------------------------------------------------

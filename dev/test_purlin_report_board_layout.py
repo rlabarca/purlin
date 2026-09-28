@@ -147,6 +147,15 @@ def test_a_column_keeps_its_floor_and_the_table_scrolls_instead(browser,  # noqa
         if width >= 1280:
             assert page.evaluate(WRAPPED) == 0, width
         page.close()
+        if width >= 1280:
+            # A spec that proves an anchor's rules reads `1 · plus 1 shared`,
+            # and that cell holds its two parts on one line too.
+            team = open_board(browser, tmp_path / ('team%d' % width),
+                              payload_named('team'),
+                              viewport={'width': width, 'height': 1000})
+            assert 'plus 1 shared' in team.inner_text('.tbl')
+            assert team.evaluate(WRAPPED) == 0, width
+            team.close()
 
     narrow = open_board(browser, tmp_path / 'narrow',
                         payload_named('regulated'),

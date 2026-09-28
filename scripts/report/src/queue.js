@@ -32,7 +32,8 @@ function shortText(text) {
 function queueRow(entry) {
   var rule = listedRule(entry);
   return '<div class="rev" data-act="rule" data-feature="'
-    + esc(entry.feature) + '" data-rule="' + esc(entry.rule) + '">'
+    + esc(entry.owner || entry.feature) + '" data-rule="' + esc(entry.rule)
+    + '">'
     + '<span>' + esc(entry.feature) + '</span>'
     + '<span class="mono">' + esc(entry.rule) + '</span>'
     + '<span>' + esc(shortText(entry.text || (rule ? rule.text : ''))) + '</span>'
