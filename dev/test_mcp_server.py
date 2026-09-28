@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 from purlin import board as purlin_board
 from purlin import signatures as purlin_signatures
 from purlin import drift as purlin_drift
+from purlin import fingerprint as purlin_fingerprint
 from purlin import frameworks as purlin_frameworks
 from purlin import gate as purlin_gate
 from purlin import payload as purlin_payload
@@ -421,28 +422,6 @@ class TestSpecParsing:
         assert purlin_specs.rule_refs('security', features) == [
             ('security', 'RULE-1', 'own')]
 
-    @pytest.mark.proof("specs", "PROOF-13", "RULE-12")
-    def test_the_scope_tree_changes_with_the_scoped_files(self, project):
-        first = purlin_specs.scope_tree(project.root, ['src/login.py'])
-        assert len(first) == 64
-        _write(os.path.join(project.root, 'src', 'login.py'),
-               'def login():\n    return 401\n')
-        assert purlin_specs.scope_tree(project.root, ['src/login.py']) != first
-        # A scope naming nothing still answers, so a spec with no scope is not
-        # an error.
-        assert len(purlin_specs.scope_tree(project.root, [])) == 64
-
-    @pytest.mark.proof("specs", "PROOF-16", "RULE-12")
-    def test_an_untracked_file_under_a_scoped_directory_is_not_read(
-            self, project):
-        """A scoped directory expands to what git tracks, not to the disk."""
-        first = purlin_specs.scope_tree(project.root, ['src'])
-        _write(os.path.join(project.root, 'src', 'scratch.py'), 'x = 1\n')
-        assert purlin_specs.scope_tree(project.root, ['src']) == first
-        _git(project.root, 'add', '-A')
-        _git(project.root, 'commit', '-q', '-m', 'feat: a second source file')
-        assert purlin_specs.scope_tree(project.root, ['src']) != first
-
     @pytest.mark.proof("specs", "PROOF-15", "RULE-14")
     def test_every_spec_is_keyed_by_its_filename_stem(self, project):
         project.spec(SPEC, name='sign_up')
@@ -824,7 +803,7 @@ class TestThePassedCell:
 
     @pytest.mark.proof("states", "PROOF-9", "RULE-7")
     def test_code_changed_when_only_the_code_moved(self, project):
-        tree = purlin_specs.scope_tree(project.root, ['src/login.py'])
+        tree = purlin_fingerprint.code_hash(project.root, ['src/login.py'])
         project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],
                        scope_tree=tree)
         assert project.cell('RULE-1', 'passed')['word'] == 'passed'

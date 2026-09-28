@@ -17,7 +17,7 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-from purlin import specs as purlin_specs  # noqa: E402
+from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 from test_signatures import TEST_NAMES, Project, git, write  # noqa: E402
 
 EXTRA = 'test_only_this_machine_runs'
@@ -61,7 +61,8 @@ def _os_record(project, os_name, stamp, proof_one_names):
                                              stamp[13:15]),
         'runner': 'ci-' + os_name, 'os': os_name,
         'gate': 'passed', 'test_strength': 90,
-        'scope_tree': purlin_specs.scope_tree(project.root, ['src/login.py']),
+        'scope_tree': purlin_fingerprint.code_hash(project.root,
+                                                  ['src/login.py']),
         'proofs': proofs}))
     git(project.root, 'add', '-A')
     git(project.root, 'commit', '-q', '-m', 'purlin: record for abc1234')

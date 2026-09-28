@@ -18,7 +18,7 @@ The file:
       "commit": "<full sha>",
       "at": "2026-09-26T12:00:00Z",
       "os": "macos",
-      "scope_tree": "<sha256 from specs.scope_tree>",
+      "scope_tree": "<sha256 from fingerprint.code_hash>",
       "rules": {"RULE-1": "passed"},
       "proofs": [
         {"id": "PROOF-1", "rule": "RULE-1", "result": "pass", "env": null,

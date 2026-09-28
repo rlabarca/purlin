@@ -18,8 +18,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 HOOK = os.path.join(PROJECT_ROOT, 'scripts', 'hooks', 'refresh_digest.py')
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 from purlin import drift as purlin_drift
+from purlin import fingerprint as purlin_fingerprint
 from purlin import payload as purlin_payload
-from purlin import specs as purlin_specs
 from purlin import server as purlin_srv
 
 STDIN = '{"tool_name": "Write", "tool_input": {"file_path": "specs/app/login.md"}}'
@@ -396,7 +396,7 @@ class TestGenerationContract:
             argvs.append(list(argv))
             return real_run(argv, *a, **kw)
 
-        for watched in (purlin_payload, purlin_drift, purlin_specs):
+        for watched in (purlin_payload, purlin_drift, purlin_fingerprint):
             monkeypatch.setattr(watched.subprocess, 'run', recording)
         _main_in(project, module)
         assert argvs, 'the build shells out to git, so the recorder must have seen something'

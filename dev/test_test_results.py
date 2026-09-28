@@ -108,8 +108,8 @@ def _results(root, feature='feat'):
 
 
 def _scope_tree(root):
-    from purlin import specs as specs_module
-    return specs_module.scope_tree(str(root), ['src/feat.py'])
+    from purlin import fingerprint as fingerprint_module
+    return fingerprint_module.code_hash(str(root), ['src/feat.py'])
 
 
 def _passed_cell(root, rule_id, feature='feat'):

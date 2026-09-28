@@ -2,11 +2,11 @@
 
 > Description: One walk of `specs/` turns every spec file into a feature
 >   dictionary. This is where the rule tags, the `@manual` tag, the `@env`
->   operating system, the anchor source and pin, the two text hashes a
->   signature binds and the scope tree a record carries are all read. Every
->   other surface reads what this module returns rather than the markdown.
+>   operating system, the anchor source and pin, and the two text hashes a
+>   signature binds are all read. Every other surface reads what this module
+>   returns rather than the markdown.
 > Scope: scripts/mcp/purlin/specs.py
-> Stack: python/stdlib, re, hashlib, subprocess (list-only)
+> Stack: python/stdlib, re, hashlib
 
 ## Rules
 
@@ -21,7 +21,6 @@
 - RULE-9: A `> Source:` value is read two ways: a git URL followed by a path in that repository gives the two separately, and anything else comes back whole as the source rather than split on its first word [bar: strong]
 - RULE-10: A `> Path:` line supplies the path in the source repository when `> Source:` carries the URL alone [bar: passed]
 - RULE-11: A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha [bar: strong]
-- RULE-12: The scope tree is a sha256 over each scoped file's git blob id written beside its path in sorted order; a scope entry naming a directory expands to the files git tracks under it, so an untracked file left there changes nothing, and to a walk of the disk only when git cannot answer; a path git cannot hash contributes an empty id instead of raising [bar: strong]
 - RULE-13: A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`; an anchor proves its own rules and nothing else [bar: strong]
 - RULE-14: Every spec is keyed by its filename stem, and a file that cannot be read or decoded is skipped while the rest of the scan still answers [bar: strong]
 - RULE-15: The `[bar: ...]` tag is read off the end of a rule line as `passed` or `strong`, stripped from the text the rule text hash is taken over, and carried in the rule's metadata under `bar` [bar: strong]
@@ -41,9 +40,7 @@
 - PROOF-10 (RULE-9): Parse `https://github.com/acme/p.git specs/no_eval.md` and verify it returns that URL with the path `specs/no_eval.md`; parse `./policies` and verify it comes back whole as the source with no path; parse `--upload-pack=/bin/echo` and verify the whole string comes back as the source with no path, so a value that has to be refused is refused whole
 - PROOF-11 (RULE-10): Write an anchor whose `> Source:` is the URL `https://github.com/acme/p.git` alone and whose `> Path:` reads `specs/no_eval.md`; scan it and verify the parsed path is `specs/no_eval.md` while the source is the URL alone
 - PROOF-12 (RULE-11): Write `specs/_anchors/policy.md` opening `# Anchor: policy` with `> Source: https://github.com/acme/p.git specs/no_eval.md` and `> Pinned: abc1234def`; scan it and verify it is marked an anchor, that the source is that URL, the path `specs/no_eval.md` and the pin `abc1234def`
-- PROOF-13 (RULE-12): Call the scope tree over `src/login.py`; verify it is 64 characters, write that file afresh and verify the tree changes, and call it on an empty scope and verify it is still 64 characters rather than an error
 - PROOF-14 (RULE-13): Write anchor `api` with one rule, global anchor `security` with one rule and feature `login` with two own rules and `> Requires: api`; call the rule reference walk for `login` and verify it returns exactly `login/RULE-1 own`, `login/RULE-2 own`, `api/RULE-1 required` and `security/RULE-1 global` in that order; call it for `security` and verify it returns that anchor's own rule alone
 - PROOF-15 (RULE-14): Write `specs/auth/login.md` and a second file whose bytes are not valid UTF-8; scan the directory and verify the result holds the key `login` and no key for the undecodable file, and that scanning a project with no `specs/` directory returns an empty result rather than raising
-- PROOF-16 (RULE-12): Scope the directory `src`, holding one tracked file; take the scope tree, write a second file under it without adding it to git and verify the tree is the one already taken, then commit that file and verify the tree changes
 - PROOF-17 (RULE-15): Parse a rule line ending `[bar: passed]` and one ending `[bar: strong]`; verify each carries that value under `bar`, that neither bracket is left in the text, and that the two lines' rule text hashes are equal
 - PROOF-18 (RULE-16): Parse three rule lines tagged with each level of the tag the bar replaced; verify the two that asked for a person read `bar` `strong` and the third reads `bar` `passed`, and that a line carrying both that tag and `[bar: passed]` reads `passed`

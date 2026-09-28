@@ -71,6 +71,7 @@ if _MCP_DIR not in sys.path:
 
 from config_engine import resolve_config
 from purlin import (PURLIN_VERSION,
+                    fingerprint as fingerprint_module,
                     gate as gate_module, proofs as proofs_module,
                     records as records_module, results as results_module,
                     signatures as signatures_module,
@@ -369,7 +370,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
     bar = states.bar_of(bar, cfg.gate)
     scope_key = owner
     if scope_key not in scope_cache:
-        scope_cache[scope_key] = specs_module.scope_tree(
+        scope_cache[scope_key] = fingerprint_module.code_hash(
             project_root, owner_info.get('scope', []))
 
     signatures = [_counted(project_root, signature, cfg, counted_cache)
@@ -498,7 +499,8 @@ def _test_hash(project_root, proof_dicts, blob_cache):
         for test in proof['tests']:
             path = test['file']
             if path not in blob_cache:
-                blob_cache[path] = specs_module._blob_id(project_root, path)
+                blob_cache[path] = fingerprint_module.blob_id(
+                    project_root, path)
             parts.append('%s %s %s' % (path, test['name'], blob_cache[path]))
     digest = hashlib.sha256()
     digest.update('\n'.join(sorted(parts)).encode('utf-8'))

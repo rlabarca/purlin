@@ -60,7 +60,6 @@ scope where the gate asks for them, hashes the attachments, builds the
 
 import hashlib
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -74,6 +73,7 @@ for _path in (_MCP_DIR, _REVIEW_DIR, _HERE):
 
 from config_engine import resolve_config                      # noqa: E402
 from purlin import (console as console_module,                # noqa: E402
+                    fingerprint as fingerprint_module,
                     frameworks as frameworks_module,
                     gate as gate_module, payload as payload_module,
                     proofs as proofs_module, records as records_module,
@@ -229,28 +229,10 @@ def foreign_env_proofs(features, selected, os_name):
 # The markers in the test sources
 # ---------------------------------------------------------------------------
 
-# One pattern per framework, reading the same marker its plugin reads, so the
-# run can say that a marked test produced no entry. A pattern that drifted
-# from its plugin would report a missing proof for a test that never had one,
-# which is why each is the plugin's own marker written once.
-_MARKER_PATTERNS = {
-    'pytest': (('.py',), re.compile(
-        r'@pytest\.mark\.proof\(\s*["\'](\w+)["\']\s*,\s*["\'](PROOF-\d+)["\']')),
-    'jest': (('.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx'), re.compile(
-        r'\[proof:(\w+):(PROOF-\d+):')),
-    'vitest': (('.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx'), re.compile(
-        r'\[proof:(\w+):(PROOF-\d+):')),
-    'xunit': (('.cs',), re.compile(
-        r'\[Trait\(\s*"PurlinProof"\s*,\s*"(\w+):(PROOF-\d+):')),
-    'shell': (('.sh',), re.compile(
-        r'purlin_proof\s+"(\w+)"\s+"(PROOF-\d+)"')),
-    'sql': (('.sql',), re.compile(
-        r'^--\s*@purlin\s+(\w+)\s+(PROOF-\d+)\b', re.MULTILINE)),
-}
-
-# `mutants/` is mutmut's copy of the project, tests included: running or
-# scanning it would run every test and read every marker twice.
-_SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
+# The marker patterns and the directories no marker is read from are the
+# fingerprint's, so the run and the fingerprint read the same markers.
+_MARKER_PATTERNS = fingerprint_module.MARKER_PATTERNS
+_SKIP_DIRS = fingerprint_module.SKIP_DIRS
 
 
 def _source_files(project_root, extensions):
@@ -692,7 +674,7 @@ def build_record(project_root, args, features, selected, index, plugins,
             'scope_score': feature_breaks.get('scope_score'),
         }
         if own:
-            record['scope_tree'] = specs_module.scope_tree(
+            record['scope_tree'] = fingerprint_module.code_hash(
                 project_root, info.get('scope', []))
             record['test_strength'] = (
                 feature_breaks.get('scope_score') or {}).get('score')
@@ -917,7 +899,8 @@ def _build_test_results(project_root, features, selected, index, os_name,
                                                   entry.get('test_name', ''))
         paths.append(write_results(project_root, build_results(
             name, info, observed, tests, commit, os_name, when, source,
-            specs_module.scope_tree(project_root, info.get('scope', [])))))
+            fingerprint_module.code_hash(project_root,
+                                         info.get('scope', [])))))
     paths.append(write_table(project_root))
     return paths, commit
 

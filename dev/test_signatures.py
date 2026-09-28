@@ -36,6 +36,7 @@ import sign as sign_module  # noqa: E402
 from purlin import gate as purlin_gate  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
 from purlin import signatures as purlin_signatures  # noqa: E402
+from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 from purlin import specs as purlin_specs  # noqa: E402
 
 SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'sign.py')
@@ -188,7 +189,8 @@ class Project(object):
             'source': source, 'timestamp': iso, 'runner': runner,
             'os': os_name, 'environment': {'os': os_name},
             'gate': FIRST_GATE, 'test_strength': strength,
-            'scope_tree': purlin_specs.scope_tree(self.root, ['src/login.py']),
+            'scope_tree': purlin_fingerprint.code_hash(self.root,
+                                                      ['src/login.py']),
             'proofs': proofs}))
         if commit_it:
             git(self.root, 'add', '-A')
