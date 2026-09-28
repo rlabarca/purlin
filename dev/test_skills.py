@@ -513,15 +513,43 @@ class TestSkillSpec:
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('spec') == []
 
+    # purlin: skill_spec PROOF-1
+    def test_a_broken_frontmatter_is_refused(self, monkeypatch):
+        assert frontmatter_refusals(monkeypatch, 'spec') == []
+
     # purlin: skill_spec PROOF-2
     def test_it_allocates_ids_against_the_default_branch(self):
-        assert carries(skill_path('spec'), [
-            'git show origin/main:',
-            'allocated against `origin/main`, not against the working tree']) == []
+        assert spec_id_problems() == []
+
+    # purlin: skill_spec PROOF-2
+    def test_a_missing_id_command_is_refused(self, monkeypatch):
+        rel = skill_path('spec')
+        assert refusals(monkeypatch, spec_id_problems, [
+            (rel, resub(r'^```bash\ngit show origin/main:.*?^```\n'),
+             "%s does not carry 'git show origin/main:'" % rel),
+        ]) == []
 
     # purlin: skill_spec PROOF-3
     def test_it_closes_by_naming_the_build(self):
         assert spec_offer_problems() == []
+
+    # purlin: skill_spec PROOF-3
+    def test_a_broken_offer_is_refused(self, monkeypatch):
+        rel = skill_path('spec')
+        offer = 'Spec saved: <name>. Next: purlin:build <name>'
+        assert refusals(monkeypatch, spec_offer_problems, [
+            (rel, replace(offer, 'Spec written. Shall I build it?'),
+             '%s closing section does not carry the line %r' % (rel, offer)),
+            (rel, replace('```\n%s\n```' % offer, offer),
+             '%s closing section does not set the line %r in a fenced block'
+             % (rel, offer)),
+            (rel, replace(' and nothing after it'),
+             '%s closing section does not say nothing follows the line'
+             % rel),
+            (rel, replace('Never start the build yourself', 'Then build it'),
+             '%s closing section does not say it never starts the build'
+             % rel),
+        ]) == []
 
     # purlin: skill_spec PROOF-4
     def test_it_stays_under_its_ceiling(self):
@@ -529,23 +557,107 @@ class TestSkillSpec:
 
     # purlin: skill_spec PROOF-6
     def test_it_prints_the_proofs_and_asks_before_it_saves(self):
-        assert carries(skill_path('spec'), [
-            'Print each rule with its proofs under it and ask whether to '
-            'change any', 'Save the spec when the person is satisfied',
-            'Draft every proof against', 'at least one failure case']) == []
+        assert spec_review_problems() == []
+
+    # purlin: skill_spec PROOF-6
+    def test_a_missing_or_late_print_step_is_refused(self, monkeypatch):
+        rel = skill_path('spec')
+        assert refusals(monkeypatch, spec_review_problems, [
+            (rel, resub(r'^6\. Print each rule.*?(?=^7\. )'),
+             "%s does not carry 'Print each rule with its proofs under it "
+             "and ask whether to change any'" % rel),
+            (rel, swap_first(
+                'Print each rule with its proofs under it and ask whether to '
+                'change any. Change what the\n   person asks and print them '
+                'again.',
+                'Save the spec when the person is satisfied, commit it on its '
+                'own, and name `purlin:build`\n   as the next step. This '
+                'skill never starts building.'),
+             '%s procedure saves the spec before it prints the rules' % rel),
+            (rel, replace('`references/spec_quality_guide.md`, "Writing '
+                          'proofs", the one home', 'the guide, the one home'),
+             '%s does not carry \'Draft every proof against' % rel),
+        ]) == []
 
     # purlin: skill_spec PROOF-5
     def test_it_writes_the_scope_on_every_spec(self):
+        assert spec_scope_problems() == []
+
+    # purlin: skill_spec PROOF-5
+    def test_a_missing_scope_sentence_is_refused(self, monkeypatch):
         rel = skill_path('spec')
-        problems = carries(rel, [
-            'Write `> Scope:` on every spec you create',
-            'the paths `purlin:build` will create', 'every run includes it',
-            'its rules cannot be signed'])
-        step = re.search(r'^\d+\. Write the metadata.*$', read(rel), re.M)
-        if step is None or '`> Scope:`' not in step.group(0):
-            problems.append('%s procedure does not name > Scope: in the '
-                            'metadata step' % rel)
-        assert problems == []
+        assert refusals(monkeypatch, spec_scope_problems, [
+            (rel, resub(r'^Write `> Scope:` on every spec you create:.*?'
+                        r'for it\. '),
+             "%s does not carry 'Write `> Scope:` on every spec you create'"
+             % rel),
+            (rel, replace('the files the requirement touches, or '),
+             "%s has no sentence carrying all of 'Write `> Scope:` on every "
+             "spec you create', 'the files the requirement touches'" % rel),
+            (rel, replace('at the gate `signed` its rules', 'its rules'),
+             "%s has no sentence carrying all of 'A spec that names no "
+             "files'" % rel),
+            (rel, replace('4. Write the metadata, `> Scope:` included,',
+                          '4. Write the metadata,'),
+             '%s procedure does not name > Scope: in the metadata step'
+             % rel),
+        ]) == []
+
+
+def resub(pattern, new=''):
+    """An edit that replaces the first match of `pattern`, a line-anchored,
+    dot-matches-newline regular expression."""
+    def edit(text):
+        return re.sub(pattern, new, text, count=1, flags=re.S | re.M)
+    return edit
+
+
+def spec_id_problems():
+    return carries(skill_path('spec'), [
+        'git show origin/main:',
+        'allocated against `origin/main`, not against the working tree'])
+
+
+def spec_scope_problems():
+    rel = skill_path('spec')
+    problems = carries(rel, [
+        'Write `> Scope:` on every spec you create',
+        'the paths `purlin:build` will create', 'every run includes it',
+        'its rules cannot be signed'])
+    problems += sentence_with(rel, [
+        'Write `> Scope:` on every spec you create',
+        'the files the requirement touches',
+        'the paths `purlin:build` will create'])
+    problems += sentence_with(rel, [
+        'A spec that names no files', 'every run includes it',
+        'at the gate `signed` its rules cannot be signed'])
+    step = re.search(r'^\d+\. Write the metadata.*$', read(rel), re.M)
+    if step is None or '`> Scope:`' not in step.group(0):
+        problems.append('%s procedure does not name > Scope: in the '
+                        'metadata step' % rel)
+    return problems
+
+
+def spec_review_problems():
+    rel = skill_path('spec')
+    printing = ('Print each rule with its proofs under it and ask whether to '
+                'change any')
+    saving = 'Save the spec when the person is satisfied'
+    problems = carries(rel, [
+        printing, saving,
+        'Draft every proof against `references/spec_quality_guide.md`, '
+        '"Writing proofs"', 'at least one failure case'])
+    body = section(read(rel), r'^Procedure$') or ''
+    steps = [flat(item) for item in re.split(r'^\d+\. ', body, flags=re.M)[1:]]
+    at = {needle: next((n for n, step in enumerate(steps) if needle in step),
+                       None) for needle in (printing, saving)}
+    if None in at.values():
+        problems.append('%s procedure does not hold both the print step and '
+                        'the save step' % rel)
+    elif at[printing] > at[saving]:
+        problems.append('%s procedure saves the spec before it prints the '
+                        'rules' % rel)
+    return problems
 
 
 def spec_offer_problems():
@@ -559,6 +671,13 @@ def spec_offer_problems():
     if offer not in body.splitlines():
         problems.append('%s closing section does not carry the line %r on its '
                         'own' % (rel, offer))
+    fences = re.findall(r'^```[a-z]*\n(.*?)^```', body, re.S | re.M)
+    if not any(offer in fence.splitlines() for fence in fences):
+        problems.append('%s closing section does not set the line %r in a '
+                        'fenced block' % (rel, offer))
+    if 'end with exactly this and nothing after it' not in flat(body):
+        problems.append('%s closing section does not say nothing follows the '
+                        'line' % rel)
     if 'Never start the build yourself' not in flat(body):
         problems.append('%s closing section does not say it never starts '
                         'the build' % rel)
@@ -836,19 +955,40 @@ class TestSkillTest:
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('test') == []
 
+    # purlin: skill_test PROOF-1
+    def test_a_broken_frontmatter_is_refused(self, monkeypatch):
+        assert frontmatter_refusals(monkeypatch, 'test') == []
+
     # purlin: skill_test PROOF-2
     def test_it_runs_the_run_script_and_names_its_exit_codes(self):
+        assert run_line_problems() == []
+
+    # purlin: skill_test PROOF-2
+    def test_a_broken_exit_code_line_is_refused(self, monkeypatch):
         rel = skill_path('test')
-        assert (same_line(rel, [
-            '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"', '--test'])
-            + same_line(rel, ['Exit codes:', '`0`', '`1`', '`2`',
-                              'whatever the gate line says'])
-            + carries(rel, ['cannot make an audit or a signature appear'])
-            ) == []
+        assert refusals(monkeypatch, run_line_problems, [
+            (rel, replace(', `2` the invocation', ',\n`2` the invocation'),
+             "%s has no single line carrying all of 'Exit codes:'" % rel),
+            (rel, replace('`1` a test failed, evidence is missing or a marker '
+                          'names nothing a spec has', '`1` something failed'),
+             "%s has no single line carrying all of 'Exit codes:'" % rel),
+            (rel, replace('purlin_run.py" --test', 'purlin_run.py"'),
+             '%s has no single line carrying all of '
+             '\'"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"\', '
+             "'--test'" % rel),
+        ]) == []
 
     # purlin: skill_test PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('test') == []
+        assert (next_step_problems('test')
+                + undirected_outcome_problems('test')) == []
+
+    # purlin: skill_test PROOF-3
+    def test_a_broken_closing_section_is_refused(self, monkeypatch):
+        assert next_step_refusals(
+            monkeypatch, 'test', '| A rule reads `partial`',
+            '| A test failed | `→ Run: purlin:build <feature>` (fix the code '
+            'or the test) |') == []
 
     # purlin: skill_test PROOF-4
     def test_it_stays_under_its_ceiling(self):
@@ -856,27 +996,111 @@ class TestSkillTest:
 
     # purlin: skill_test PROOF-5
     def test_it_names_the_evidence_the_commit_and_the_gate_line(self):
+        assert evidence_line_problems() == []
+
+    # purlin: skill_test PROOF-5
+    def test_a_missing_gate_line_form_is_refused(self, monkeypatch):
         rel = skill_path('test')
-        assert carries(rel, [
-            '.purlin/evidence/local/<feature>.json', '.purlin/tests.md',
-            '--commit', 'purlin: evidence at <sha7>', 'Evidence committed.',
-            'Evidence unchanged.', 'Tests: <p> of <rules> rules pass.',
-            'gate <gate> met: <n> of <rules> rules', 'gate <gate> not met: <n> of <rules> rules meet it',
-            'gate passed met: <n> of <rules> rules', 'It never pushes.']) == []
+        assert refusals(monkeypatch, evidence_line_problems, [
+            (rel, replace(', or\n`gate <gate> not met: <n> of <rules> rules '
+                          'meet it`'),
+             "%s does not carry 'gate <gate> not met" % rel),
+            (rel, replace('counts the rules that meet the gate',
+                          'is printed'),
+             "'counts the rules that meet the gate'"),
+            (rel, replace('rules` is the check', 'rules` is printed'),
+             "'`gate passed met: <n> of <rules> rules` is the check'"),
+        ]) == []
 
     # purlin: skill_test PROOF-6
     def test_it_says_what_a_run_with_no_feature_named_runs(self):
+        assert selection_problems() == []
+
+    # purlin: skill_test PROOF-6
+    def test_a_selection_paragraph_broken_is_refused(self, monkeypatch):
         rel = skill_path('test')
-        usage = section(read(rel), r'^usage')
-        problems = [] if usage and 'purlin:test --all' in usage else [
-            '%s usage does not name purlin:test --all' % rel]
-        problems.extend(carries(rel, [
-            'no run on this operating system', 'changed since its evidence',
-            'untracked file', 'names no files', 'runs only the test files',
-            'purlin:test --all runs them too.',
-            "Nothing to run: every feature's spec, code and tests match its "
-            'evidence.']))
-        assert problems == []
+        nothing = ("With nothing selected it prints `Nothing to run: every "
+                   "feature's spec, code and tests match its evidence.`")
+        assert refusals(monkeypatch, selection_problems, [
+            (rel, replace('purlin:test --all               Run every '
+                          'feature\n'),
+             '%s usage does not name purlin:test --all' % rel),
+            (rel, lambda t: resub(r'With nothing selected it prints '
+                                  r'`Nothing to run:.*?anyway\.` ')(t)
+             + '\n' + nothing + '\n',
+             "%s paragraph on a run with no feature named does not carry "
+             "\"Nothing to run" % rel),
+            (rel, replace('under its `> Scope:` or beside its tests',
+                          'in the project'),
+             '%s paragraph on a run with no feature named does not carry '
+             "'with an untracked file under its `> Scope:`" % rel),
+        ]) == []
+
+
+def run_line_problems():
+    rel = skill_path('test')
+    return (same_line(rel, [
+        '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"', '--test'])
+        + same_line(rel, [
+            'Exit codes:', '`0`', '`1`', '`2`', 'whatever the gate line says',
+            '`0` no test failed and no marker is wrong, whatever the gate '
+            'line says',
+            '`1` a test failed, evidence is missing or a marker names nothing '
+            'a spec has',
+            '`2` the invocation was wrong'])
+        + carries(rel, ['cannot make an audit or a signature appear']))
+
+
+def evidence_line_problems():
+    rel = skill_path('test')
+    return (carries(rel, [
+        '.purlin/evidence/local/<feature>.json', '.purlin/tests.md',
+        '--commit', 'purlin: evidence at <sha7>', 'Evidence committed.',
+        'Evidence unchanged.', 'Tests: <p> of <rules> rules pass.',
+        'gate <gate> met: <n> of <rules> rules',
+        'gate <gate> not met: <n> of <rules> rules meet it',
+        'gate passed met: <n> of <rules> rules', 'It never pushes.'])
+        + sentence_with(rel, [
+            '`gate <gate> met: <n> of <rules> rules`',
+            '`gate <gate> not met: <n> of <rules> rules meet it`',
+            'counts the rules that meet the gate'])
+        + sentence_with(rel, [
+            'At `passed`',
+            '`gate passed met: <n> of <rules> rules` is the check']))
+
+
+# The run with no feature named, in the words of the paragraph that says so.
+TEST_SELECTION = (
+    'with no run on this operating system',
+    'whose spec, code or tests changed since its evidence',
+    'with an untracked file under its `> Scope:` or beside its tests',
+    'whose spec names no files', 'runs only the test files',
+    'purlin:test --all runs them too.',
+    "Nothing to run: every feature's spec, code and tests match its "
+    'evidence.',
+)
+
+
+def selection_problems():
+    rel = skill_path('test')
+    text = read(rel)
+    usage = section(text, r'^usage')
+    problems = [] if usage and 'purlin:test --all' in usage else [
+        '%s usage does not name purlin:test --all' % rel]
+    problems.extend(carries(rel, [
+        'no run on this operating system', 'changed since its evidence',
+        'untracked file', 'names no files', 'runs only the test files',
+        'purlin:test --all runs them too.',
+        "Nothing to run: every feature's spec, code and tests match its "
+        'evidence.']))
+    paragraph = next((flat(p) for p in re.split(r'\n\s*\n', text)
+                      if 'With neither, the run selects' in flat(p)), None)
+    if paragraph is None:
+        return problems + ['%s has no paragraph on a run with no feature '
+                           'named' % rel]
+    return problems + ['%s paragraph on a run with no feature named does not '
+                       'carry %r' % (rel, needle)
+                       for needle in TEST_SELECTION if needle not in paragraph]
 
 
 # ---------------------------------------------------------------------------
@@ -913,7 +1137,14 @@ class TestSkillAudit:
 
     # purlin: skill_audit PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('audit') == []
+        assert (next_step_problems('audit')
+                + undirected_outcome_problems('audit')) == []
+
+    # purlin: skill_audit PROOF-3
+    def test_a_broken_closing_section_is_refused(self, monkeypatch):
+        assert next_step_refusals(
+            monkeypatch, 'audit', '| Test strength below',
+            '| A test failed | `→ Run: purlin:build <feature>` |') == []
 
     # purlin: skill_audit PROOF-4
     def test_it_stays_under_its_ceiling(self):
@@ -927,12 +1158,54 @@ class TestSkillAudit:
     def test_the_gate_decides_the_breaks_and_the_audit_writes_the_evidence(self):
         assert audit_gate_problems() == []
 
+    # purlin: skill_audit PROOF-6
+    def test_a_gate_row_or_a_gate_sentence_broken_is_refused(
+            self, monkeypatch):
+        rel = skill_path('audit')
+        assert refusals(monkeypatch, audit_gate_problems, [
+            (rel, replace('not measured; '),
+             "%s passed row does not name 'not measured'" % rel),
+            (rel, replace('Runs the tests and the AI audit, and no breaks',
+                          'Runs the tests, and no breaks'),
+             '%s passed row does not say the run reads the rules with the '
+             'AI audit' % rel),
+            (rel, replace('| The same as `strong`.', '| Runs the tests.'),
+             '%s signed row does not run what the strong row runs' % rel),
+            (rel, replace('`--commit`, which commits', '`--commit`. That '
+                          'commits'),
+             "%s has no sentence carrying all of 'you add `--commit`'" % rel),
+            (rel, replace(', so a rule waiting on one does not set the code.',
+                          '.'),
+             "%s has no sentence carrying all of 'An audit cannot make a "
+             "signature appear'" % rel),
+            (rel, replace('counts here too', 'counts'),
+             "%s does not say 'counts here too'" % rel),
+        ]) == []
+
     # purlin: skill_audit PROOF-7
     def test_it_names_the_evidence_and_the_retention(self):
-        assert carries(skill_path('audit'), [
-            'into `.purlin/evidence/local/<feature>.json`',
-            'the newest section per operating system',
-            'purlin:test --remote']) == []
+        assert audit_evidence_problems() == []
+
+    # purlin: skill_audit PROOF-7
+    def test_a_retention_or_evidence_sentence_broken_is_refused(
+            self, monkeypatch):
+        rel = skill_path('audit')
+        assert refusals(monkeypatch, audit_evidence_problems, [
+            (rel, resub(r'^A file keeps the newest section.*?git log`\. '),
+             "%s does not carry 'the newest section per operating system'"
+             % rel),
+            (rel, replace('into\n`.purlin/evidence/local/', 'into\n'
+                          '`.purlin/evidence/ci/'),
+             "%s does not carry 'into `.purlin/evidence/local/<feature>"
+             ".json`'" % rel),
+            (rel, replace(' and the newest audit entry per rule'),
+             "%s has no sentence carrying all of 'A file keeps the newest "
+             "section per operating system', 'the newest audit entry per "
+             "rule'" % rel),
+            (rel, replace('so `--remote` belongs to', 'so use'),
+             "%s does not carry '`--remote` belongs to `purlin:test "
+             "--remote`'" % rel),
+        ]) == []
 
 
 # Every flag `scripts/init/scaffold.py` takes a person may type. A flag the
@@ -1013,16 +1286,38 @@ def audit_gate_problems():
     for needle in ('not measured', 'Nothing blocks at the gate passed.'):
         if needle not in rows['`passed`']:
             problems.append('%s passed row does not name %r' % (rel, needle))
+    if 'the AI audit' not in rows['`passed`']:
+        problems.append('%s passed row does not say the run reads the rules '
+                        'with the AI audit' % rel)
     for needle in ('breaks', 'minimum'):
         if needle not in rows['`strong`']:
             problems.append('%s strong row does not name %r' % (rel, needle))
+    if 'The same as `strong`' not in rows['`signed`']:
+        problems.append('%s signed row does not run what the strong row runs'
+                        % rel)
     for needle in ('counts here too', 'Audit: <n> strong, <n> weak.',
                    'gate strong met: <n> of <rules> rules',
                    'cannot make a signature appear',
                    'purlin: evidence at <sha7>'):
         if needle not in flat(read(rel)):
             problems.append('%s does not say %r' % (rel, needle))
+    problems += sentence_with(rel, ['you add `--commit`',
+                                    'the subject `purlin: evidence at <sha7>`'])
+    problems += sentence_with(rel, ['An audit cannot make a signature appear',
+                                    'a rule waiting on one does not set the '
+                                    'code'])
     return problems
+
+
+def audit_evidence_problems():
+    rel = skill_path('audit')
+    return (carries(rel, [
+        'into `.purlin/evidence/local/<feature>.json`',
+        'the newest section per operating system', 'purlin:test --remote',
+        '`--remote` belongs to `purlin:test --remote`'])
+        + sentence_with(rel, [
+            'A file keeps the newest section per operating system',
+            'the newest audit entry per rule']))
 
 
 # ---------------------------------------------------------------------------
@@ -1330,6 +1625,10 @@ class TestSkillExport:
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('export') == []
 
+    # purlin: skill_export PROOF-1
+    def test_a_broken_frontmatter_is_refused(self, monkeypatch):
+        assert frontmatter_refusals(monkeypatch, 'export') == []
+
     # purlin: skill_export PROOF-2
     def test_it_runs_the_script_in_each_form(self):
         assert carries(skill_path('export'), [
@@ -1368,24 +1667,122 @@ class TestPurlinAgent:
     def test_the_frontmatter_names_the_agent(self):
         assert agent_frontmatter_problems() == []
 
+    # purlin: purlin_agent PROOF-1
+    def test_a_broken_frontmatter_is_refused(self, monkeypatch):
+        assert refusals(monkeypatch, agent_frontmatter_problems, [
+            (AGENT, replace('effort: high\n'),
+             '%s frontmatter carries no effort' % AGENT),
+            (AGENT, replace('effort: high', 'effort:'),
+             '%s frontmatter carries no effort' % AGENT),
+            (AGENT, replace('name: purlin', 'name: helper'),
+             "%s frontmatter name is 'helper', expected 'purlin'" % AGENT),
+            (AGENT, resub(r'^description: [^\n]*', 'description:'),
+             '%s frontmatter carries no description' % AGENT),
+        ]) == []
+
     # purlin: purlin_agent PROOF-2
     def test_the_core_loop_runs_in_order(self):
         assert core_loop_problems() == []
+
+    # purlin: purlin_agent PROOF-2
+    def test_a_loop_out_of_order_or_stated_twice_is_refused(self, monkeypatch):
+        assert refusals(monkeypatch, core_loop_problems, [
+            (AGENT, replace('purlin:test → purlin:audit',
+                            'purlin:audit → purlin:test'),
+             '%s core loop runs out of order' % AGENT),
+            (AGENT, replace(' → purlin:sign\n```', '\n```'),
+             '%s core loop does not name purlin:sign' % AGENT),
+            (AGENT, replace('## Four NEVERs', '```\npurlin:drift → '
+                            'purlin:build\n```\n\n## Four NEVERs'),
+             '%s states the core loop in 2 fenced blocks, expected 1' % AGENT),
+            (AGENT, replace('Every step runs on', 'The loop is purlin:drift → '
+                            'purlin:build. Every step runs on'),
+             '%s states the core loop 2 times, expected once' % AGENT),
+        ]) == []
 
     # purlin: purlin_agent PROOF-3
     def test_there_are_four_nevers(self):
         assert never_problems() == []
 
+    # purlin: purlin_agent PROOF-3
+    def test_a_never_missing_or_misplaced_is_refused(self, monkeypatch):
+        moved = ('The one exception is `purlin:test --remote`, which pushes a '
+                 'run branch of its own. ')
+        assert refusals(monkeypatch, never_problems, [
+            (AGENT, replace('4. **Never call', '4. **Never guess.**\n'
+                            '5. **Never call'),
+             '%s carries 5 NEVERs, expected 4' % AGENT),
+            (AGENT, resub(r"^2\. \*\*Never sign on.*?(?=^3\. )"),
+             '%s carries 3 NEVERs, expected 4' % AGENT),
+            (AGENT, replace('`references/glossary.md` gives it',
+                            'the style guide gives it'),
+             "%s NEVERs do not name 'references/glossary.md'" % AGENT),
+            (AGENT, replace("**Never sign on a person's behalf.**",
+                            '**Never guess.**'),
+             "%s NEVER 2 does not carry \"Never sign on a person's behalf\""
+             % AGENT),
+            # The exception taken out of the third NEVER and put in the
+            # fourth: every word is still in the section, in the wrong item.
+            (AGENT, lambda t: replace(
+                'The one exception is `purlin:test --remote`,\n   which '
+                'pushes a run branch of its own, waits for it and deletes it. ')(
+                t).replace('No emoji anywhere', moved + 'No emoji anywhere', 1),
+             "%s NEVER 3 does not carry 'The one exception is `purlin:test "
+             "--remote`" % AGENT),
+            (AGENT, replace('Never write evidence or a signature by hand',
+                            'Never write evidence carelessly'),
+             "%s NEVER 1 does not carry 'Never write evidence or a signature "
+             "by hand'" % AGENT),
+        ]) == []
+
     # purlin: purlin_agent PROOF-4
     def test_the_routing_table_covers_the_three_roles(self):
         assert routing_problems() == []
 
+    # purlin: purlin_agent PROOF-4
+    def test_a_foreign_role_or_command_is_refused(self, monkeypatch):
+        export_row = next(line for line in read(COMMAND_REF).splitlines()
+                          if line.startswith('| `purlin:export` |'))
+        assert refusals(monkeypatch, routing_problems, [
+            (AGENT, replace('| QA | "what went stale?"', '| Manager | "how are '
+                            'we doing?" | `purlin:status` |\n| QA | "what '
+                            'went stale?"'),
+             "%s routing table has a row for 'Manager'" % AGENT),
+            (AGENT, replace('system of record?" | `purlin:export`',
+                            'system of record?" | `purlin:release`'),
+             '%s routes to purlin:release, which %s does not list'
+             % (AGENT, COMMAND_REF)),
+            (AGENT, lambda t: t.replace('| QA |', '| Developer |'),
+             "%s routing table has no 'QA' row" % AGENT),
+            # The command reference is the list: drop a command from it and
+            # the agent's row that routes to it is refused.
+            (COMMAND_REF, replace(export_row + '\n'),
+             '%s routes to purlin:export, which %s does not list'
+             % (AGENT, COMMAND_REF)),
+        ]) == []
+
     # purlin: purlin_agent PROOF-5
     def test_it_reads_the_state_before_it_answers(self):
-        assert carries(AGENT, [
-            'Call `sync_status` before you answer any question about state.',
-            '`no proof written`', '`passed`', '`strong`', '`signed`',
-            '`out of date`']) == []
+        assert state_problems() == []
+
+    # purlin: purlin_agent PROOF-5
+    def test_a_state_paragraph_broken_is_refused(self, monkeypatch):
+        assert refusals(monkeypatch, state_problems, [
+            (AGENT, replace('Call `sync_status` before you answer',
+                            'Call `sync_status` when you answer'),
+             "%s does not carry 'Call `sync_status` before you answer any "
+             "question about state.'" % AGENT),
+            # `strong` stays in backticks elsewhere in the file.
+            (AGENT, replace('`passed`, `strong` and `signed` as far',
+                            '`passed` and `signed` as far'),
+             "%s sync_status paragraph does not carry '`passed`, `strong` "
+             "and `signed`'" % AGENT),
+            (AGENT, replace('`out of date` means the spec, the code or the '
+                            'tests moved since the run',
+                            '`out of date` means the run is old'),
+             "%s sync_status paragraph does not carry '`out of date` means "
+             "the spec, the code or the tests moved since the run'" % AGENT),
+        ]) == []
 
     # purlin: purlin_agent PROOF-6
     def test_it_stays_under_its_ceiling(self):
@@ -1395,18 +1792,63 @@ class TestPurlinAgent:
     def test_it_says_what_a_rename_moves(self):
         assert rename_problems() == []
 
+    # purlin: purlin_agent PROOF-7
+    def test_a_rename_section_broken_is_refused(self, monkeypatch):
+        assert refusals(monkeypatch, rename_problems, [
+            (AGENT, replace('every `> Requires:` entry', 'every entry'),
+             "%s rename section does not carry '> Requires:'" % AGENT),
+            (AGENT, replace('## Renaming a feature', '## Moving a feature'),
+             '%s has no Renaming a feature section' % AGENT),
+            (AGENT, replace('`specs/<category>/<name>.md` and its', 'and its'),
+             "%s rename section does not carry 'specs/<category>/<name>.md'"
+             % AGENT),
+            (AGENT, replace(' in one commit'),
+             "%s rename section does not carry 'moves them together in one "
+             "commit'" % AGENT),
+            (AGENT, replace('Move files with `git mv`, then call '
+                            '`sync_status`:', 'Call `sync_status`, then move '
+                            'files with `git mv`:'),
+             '%s rename section calls sync_status before git mv' % AGENT),
+        ]) == []
+
 
 def rename_problems():
     body = section(read(AGENT), r'^Renaming a feature$')
     if body is None:
         return ['%s has no Renaming a feature section' % AGENT]
     text = flat(body)
-    return ['%s rename section does not carry %r' % (AGENT, needle)
-            for needle in ('# Feature:', '> Requires:', 'purlin: <name> PROOF-<n>',
-                           '.signatures/',
-                           '.purlin/evidence/<source>/<name>.json', 'git mv',
-                           'sync_status')
-            if needle not in text]
+    problems = ['%s rename section does not carry %r' % (AGENT, needle)
+                for needle in ('# Feature:', '> Requires:',
+                               'purlin: <name> PROOF-<n>', '.signatures/',
+                               '.purlin/evidence/<source>/<name>.json',
+                               'git mv', 'sync_status',
+                               'specs/<category>/<name>.md',
+                               'moves them together in one commit',
+                               'a reference it cannot resolve is one the '
+                               'rename missed')
+                if needle not in text]
+    if not problems and text.index('sync_status') < text.index('git mv'):
+        problems.append('%s rename section calls sync_status before git mv'
+                        % AGENT)
+    return problems
+
+
+def state_problems():
+    """The sync_status sentence, and what the paragraph holding it names."""
+    sentence = 'Call `sync_status` before you answer any question about state.'
+    problems = carries(AGENT, [sentence, '`no proof written`', '`passed`',
+                               '`strong`', '`signed`', '`out of date`'])
+    paragraph = next((flat(p) for p in re.split(r'\n\s*\n', read(AGENT))
+                      if sentence in flat(p)), None)
+    if paragraph is None:
+        return problems
+    return problems + [
+        '%s sync_status paragraph does not carry %r' % (AGENT, needle)
+        for needle in ('`passed`, `strong` and `signed`',
+                       '`no proof written` means no proof line names the rule',
+                       '`out of date` means the spec, the code or the tests '
+                       'moved since the run')
+        if needle not in paragraph]
 
 
 def agent_frontmatter_problems():
@@ -1439,7 +1881,28 @@ def core_loop_problems():
     if offsets != sorted(offsets):
         return ['%s core loop runs out of order, at offsets %s'
                 % (AGENT, offsets)]
-    return []
+    # Stated once: one fenced block, and the chain written out once.
+    problems = []
+    if len(loop) != 1:
+        problems.append('%s states the core loop in %d fenced blocks, '
+                        'expected 1' % (AGENT, len(loop)))
+    chains = len(re.findall(r'purlin:drift\s*→', read(AGENT)))
+    if chains != 1:
+        problems.append('%s states the core loop %d times, expected once'
+                        % (AGENT, chains))
+    return problems
+
+
+# What each NEVER forbids, in order, in the words of its own item.
+NEVERS = (
+    ('Never write evidence or a signature by hand',),
+    ("Never sign on a person's behalf",),
+    ('Never push', 'never open a pull request', 'rewrite a remote branch',
+     'The one exception is `purlin:test --remote`, which pushes a run branch '
+     'of its own'),
+    ('Never call a thing by a name other than the one '
+     '`references/glossary.md` gives it',),
+)
 
 
 def never_problems():
@@ -1457,6 +1920,11 @@ def never_problems():
                    'references/glossary.md'):
         if needle not in flattened:
             problems.append('%s NEVERs do not name %r' % (AGENT, needle))
+    texts = [flat(item) for item in re.split(r'^\d+\. ', body, flags=re.M)[1:]]
+    for number, needles in enumerate(NEVERS, 1):
+        text = texts[number - 1] if number <= len(texts) else ''
+        problems.extend('%s NEVER %d does not carry %r' % (AGENT, number, n)
+                        for n in needles if n not in text)
     return problems
 
 
@@ -1477,6 +1945,19 @@ def routing_problems():
     for command in sorted(named - set(COMMANDS)):
         problems.append('%s routes to purlin:%s, which is not one of the '
                         'commands' % (AGENT, command))
+    listed = reference_commands()
+    if not listed:
+        problems.append('%s lists no command' % COMMAND_REF)
+    for command in sorted(named - listed):
+        problems.append('%s routes to purlin:%s, which %s does not list'
+                        % (AGENT, command, COMMAND_REF))
     return problems
+
+
+def reference_commands():
+    """Each command the command reference gives a row, by its name alone."""
+    return {match.group(1) for match in
+            (re.match(r'`purlin:([a-z-]+)', cells[0]) for cells in command_rows())
+            if match}
 
 
