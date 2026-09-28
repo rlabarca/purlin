@@ -196,9 +196,10 @@ technique is mutation testing; the output calls them breaks.
 
 `mutation_engine` in `.purlin/config.json` turns it on: `purlin:init` writes `none` unless you
 answer yes to its question or pass `--mutation`, and `auto` lets the detected test framework
-pick the engine. `min_strength` is the floor: 70 under `strong` and 80 under `signed` while
-mutation testing is on, null while it is off, and overridable by naming the key. No breaks run
-under `passed`, and none run on a remote runner.
+pick the engine. A config with no `mutation_engine` is read as `none`, which is off.
+`min_strength` is the floor: 70 under `strong` and 80 under `signed` while mutation testing is
+on, null while it is off, and overridable by naming the key. No breaks run under `passed`, and
+none run on a remote runner.
 
 | Engine | Breaks the code behind | Install it with |
 |---|---|---|

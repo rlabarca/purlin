@@ -46,9 +46,9 @@ A yes to the mutation question writes `mutation_engine: auto` and `min_strength`
 `pyproject.toml` when that file exists and `[mutmut]` into `setup.cfg` otherwise, plus a
 `mutants/` line in `.gitignore`, or a line naming Stryker for a jest, vitest or .NET project. A
 no writes `mutation_engine: none` and `min_strength: null` and wires nothing; the AI audit alone
-judges test strength. Where no engine exists init asks nothing, writes `none` and prints one
-line saying so. `--yes` takes every default, so mutation testing stays off; `--mutation` turns
-it on without the question.
+judges test strength. A config with no `mutation_engine` is read as `none`, which is off. Where
+no engine exists init asks nothing, writes `none` and prints one line saying so. `--yes` takes
+every default, so mutation testing stays off; `--mutation` turns it on without the question.
 
 ## Run it
 
