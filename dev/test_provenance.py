@@ -11,8 +11,8 @@ What each group holds:
 
 *match*      the two ids agree and the file passes, only the last commit
              counts, and the committer's name is never read
-*closed*     a mismatch, no `push`, 401, 403, a timeout, no commit and no
-             token each name the file, and the gate exits 1
+*closed*     a mismatch, no `push`, 401, 403, 500, no connection, a timeout,
+             no commit and no token each name the file, and the gate exits 1
 *off*        a machine with no runner variables asks nothing and counts the
              files as not checked
 *token*      every request carries the timeout and the token in its header,
@@ -222,6 +222,12 @@ class TestTheIdsAgree:
         problems, not_checked, notice = check(project)
         assert [rel for rel, _reason in problems] == [CI_FILE]
         assert not_checked == [] and notice is None
+        # The converse: a person's name as committer, pushed by the run.
+        sha = commit_ci_file(project, 'typed by the run', name='Jane')
+        assert git(project.root, 'log', '-1', '--format=%cn').stdout.strip() \
+            == 'Jane'
+        fake(commits={sha: pushed(BUILD)})
+        assert check(project) == ([], [], None)
 
     # purlin: gate_check PROOF-40
     def test_only_the_last_commit_counts(self, project, runner, fake):
@@ -299,6 +305,32 @@ class TestItFailsClosed:
                    'identity of this run' in reason
                    for _rel, reason in problems)
         assert opener.commit_shas() == []
+        code, printed = gate(project)
+        assert code == 1, printed
+        assert 'Evidence (2):' in printed, printed
+        for rel in (CI_FILE, other):
+            assert ('%s: Azure DevOps refused the token with HTTP 401 when '
+                    'asked for the identity of this run' % rel) in printed
+
+    # purlin: gate_check PROOF-43
+    @pytest.mark.parametrize('asked', ['commit', 'identity'])
+    @pytest.mark.parametrize('error, said', [
+        (refused(500), 'Azure DevOps answered HTTP 500 when asked for %s'),
+        (urllib.error.URLError(ConnectionRefusedError(61, 'refused')),
+         'Azure DevOps could not be reached when asked for %s')])
+    def test_any_other_refusal_is_named(self, project, runner, fake, asked,
+                                        error, said):
+        sha = head(project)
+        if asked == 'commit':
+            fake(commits={sha: error})
+            reason = said % ('commit ' + sha[:7])
+        else:
+            fake(identity=error)
+            reason = said % 'the identity of this run'
+        assert check(project) == ([(CI_FILE, reason)], [], None)
+        code, printed = gate(project)
+        assert code == 1, printed
+        assert '%s: %s' % (CI_FILE, reason) in printed, printed
 
     # purlin: gate_check PROOF-44
     @pytest.mark.parametrize('error', [
@@ -321,10 +353,34 @@ class TestItFailsClosed:
             project.root, [other], 'azure')
         assert problems == [(other, 'no commit has changed it')]
         assert opener.commit_shas() == []
+        code, printed = gate(project)
+        assert code == 1, printed
+        assert 'Evidence (1):' in printed, printed
+        assert '%s: no commit has changed it' % other in printed, printed
+
+    # purlin: gate_check PROOF-44
+    def test_no_answer_to_the_identity_names_every_file(self, project,
+                                                        runner, fake):
+        other = '.purlin/evidence/ci/extra.json'
+        write(os.path.join(project.root, *other.split('/')), '{}\n')
+        commit_as_ci(project.root)
+        opener = fake(identity=socket.timeout('timed out'))
+        reason = ('Azure DevOps did not answer within 30 seconds when asked '
+                  'for the identity of this run')
+        assert provenance.check(project.root, [CI_FILE, other], 'azure') \
+            == ([(CI_FILE, reason), (other, reason)], [], None)
+        assert opener.commit_shas() == []
+        code, printed = gate(project)
+        assert code == 1, printed
+        for rel in (CI_FILE, other):
+            assert '%s: %s' % (rel, reason) in printed, printed
 
     # purlin: gate_check PROOF-45
     def test_a_run_with_no_token_names_every_file(self, project, runner,
                                                   fake):
+        other = '.purlin/evidence/ci/extra.json'
+        write(os.path.join(project.root, *other.split('/')), '{}\n')
+        commit_as_ci(project.root)
         runner.delenv('SYSTEM_ACCESSTOKEN')
         opener = fake()
         problems, not_checked, notice = check(project)
@@ -332,9 +388,17 @@ class TestItFailsClosed:
                                       'who pushed it cannot be read')]
         assert not_checked == [] and notice is None
         assert opener.requests == []
+        reason = ('the run has no SYSTEM_ACCESSTOKEN, so who pushed it '
+                  'cannot be read')
+        assert provenance.check(project.root, [CI_FILE, other], 'azure') \
+            == ([(CI_FILE, reason), (other, reason)], [], None)
         code, printed = gate(project)
         assert code == 1, printed
         assert 'the run has no SYSTEM_ACCESSTOKEN' in printed
+        assert 'Evidence (2):' in printed, printed
+        for rel in (CI_FILE, other):
+            assert '%s: %s' % (rel, reason) in printed, printed
+        assert opener.requests == []
 
 
 # ---------------------------------------------------------------------------
