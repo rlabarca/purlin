@@ -26,6 +26,10 @@ What each group proves:
 *hooks*       the pre-commit and pre-push hooks v0.9.5 installed go
 *workflows*   the retired workflows go and one `purlin.yml` replaces them
 *plugins*     each copy under `.purlin/plugins/` matches the plugin again
+*design*      the Figma source and the picture fingerprint go from each spec
+*mutation*    the mutation question init asks, asked of a config without one
+*scope*       a spec with no `> Scope:` line is named, and changed by nothing
+*evidence*    `.purlin/evidence/` and its README
 *backups*     every rewritten file leaves its previous bytes beside it
 *commit*      one commit, naming the migrations it carries
 *status*      `sync_status` says to run the update while anything is pending
@@ -186,8 +190,8 @@ def test_check_on_the_v095_layout_names_every_migration(tmp_path, capsys):
 def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
     root = _project(tmp_path, V095)
     found = _ids(root)
-    for expected in ('os-tags', 'untracked-files', 'config', 'workflows',
-                     'plugin-copies'):
+    for expected in ('design-refs', 'os-tags', 'untracked-files', 'config',
+                     'evidence', 'workflows', 'plugin-copies'):
         assert expected in found, found
 
 
@@ -352,8 +356,9 @@ def test_the_config_is_the_gate_shape(tmp_path, layout):
     config = json.loads(_read(root, '.purlin/config.json'))
     assert config['version'] == VERSION
     assert config['gate'] == 'passed'
+    assert config['mutation_engine'] == 'none'
     assert config['min_strength'] is None
-    assert config['mutation_engine'] == 'auto'
+    assert config['audit_parallel'] == 4
     assert config['sql_engine'] is None
     assert config['ci'] == 'github'
     assert config['trust'] in ('local', 'remote')
@@ -387,7 +392,6 @@ def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):
     _apply(root)
     written = json.loads(_read(root, '.purlin/config.json'))
     assert written['gate'] == 'strong'
-    assert written['min_strength'] == 70
 
 
 @pytest.mark.proof("update", "PROOF-12", "RULE-12")
@@ -457,6 +461,234 @@ def test_a_framework_the_tree_carries_is_kept(tmp_path, capsys):
     assert json.loads(_read(root, '.purlin/config.json'))['test_framework'] == (
         'pytest,jest,shell,vitest')
     assert 'from test_framework' not in printed
+
+
+# --- design references -------------------------------------------------------
+
+DESIGN_ANCHOR = 'specs/_anchors/checkout_design.md'
+DESIGN_FEATURE = 'specs/workflows/figma_web.md'
+DESIGN_FIELDS = ('> Source:', '> Pinned:', '> Visual-Reference:',
+                 '> Visual-Hash:')
+
+
+def _without(text, prefixes):
+    return [line for line in text.splitlines()
+            if not any(line.startswith(p) for p in prefixes)]
+
+
+@pytest.mark.proof("update", "PROOF-24", "RULE-24")
+def test_every_design_line_0_9_5_wrote_is_removed(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    anchor_before = _read(root, DESIGN_ANCHOR)
+    feature_before = _read(root, DESIGN_FEATURE)
+    for field in DESIGN_FIELDS:
+        assert field in anchor_before, field
+    assert '> Visual-Reference: figma://' in feature_before
+    _apply(root)
+    printed = capsys.readouterr().out
+    anchor_after = _read(root, DESIGN_ANCHOR)
+    for field in DESIGN_FIELDS:
+        assert not [line for line in anchor_after.splitlines()
+                    if line.startswith(field)], field
+    # The kind-of-test migration rewrites the anchor's proof line too, so
+    # the comparison stops short of the proof lines.
+    assert _without(anchor_after, ('- PROOF-',)) == _without(
+        anchor_before, DESIGN_FIELDS + ('- PROOF-',))
+    for kept in ('> Description:', '> Type: design', '- RULE-1:'):
+        assert kept in anchor_after, kept
+    feature_after = _read(root, DESIGN_FEATURE)
+    assert not [line for line in feature_after.splitlines()
+                if line.startswith('> Visual-Reference:')]
+    assert _without(feature_after, ('- PROOF-',)) == _without(
+        feature_before, ('> Visual-Reference:', '- PROOF-'))
+    assert ('removed the design reference from %s: > Source:, > Pinned:, '
+            '> Visual-Reference:, > Visual-Hash:' % DESIGN_ANCHOR) in printed
+    assert ('removed the design reference from %s: > Visual-Reference:'
+            % DESIGN_FEATURE) in printed
+
+
+@pytest.mark.proof("update", "PROOF-24", "RULE-24")
+def test_each_design_rewrite_is_backed_up(tmp_path):
+    root = _project(tmp_path, V095)
+    before = {rel: _read(root, rel) for rel in (DESIGN_ANCHOR, DESIGN_FEATURE)}
+    _apply(root)
+    for rel, text in before.items():
+        folder, name = os.path.split(rel)
+        copies = _walk(os.path.join(root, folder), (name + '.local-*.bak',),
+                       skip_backups=False)
+        assert text in [_read(os.path.join(root, folder), copy)
+                        for copy in copies], (rel, copies)
+
+
+FIGMA_URI_ANCHOR = """# Anchor: modal_design
+
+> Description: A modal drawn in Figma.
+> Source: figma://ABC123/1:2
+> Pinned: 2026-03-31T12:00:00Z
+
+## Rules
+
+- RULE-1: The modal matches the frame
+"""
+
+GIT_ANCHOR = """# Anchor: no_eval
+
+> Description: No eval() calls in production code
+> Source: git@github.com:acme/security-policies.git
+> Path: specs/no_eval.md
+> Pinned: abc1234def5678
+
+## Rules
+
+- RULE-1: No eval() in source files
+"""
+
+
+@pytest.mark.proof("update", "PROOF-24", "RULE-24")
+def test_a_figma_uri_goes_and_a_git_source_stays(tmp_path):
+    root = _project(tmp_path, V095)
+    _write(root, 'specs/_anchors/modal_design.md', FIGMA_URI_ANCHOR)
+    _write(root, 'specs/_anchors/no_eval.md', GIT_ANCHOR)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'two sourced anchors')
+    _apply(root)
+    figma = _read(root, 'specs/_anchors/modal_design.md')
+    assert not [line for line in figma.splitlines()
+                if line.startswith(('> Source:', '> Pinned:'))], figma
+    assert '- RULE-1: The modal matches the frame' in figma
+    assert _read(root, 'specs/_anchors/no_eval.md') == GIT_ANCHOR
+
+
+# --- the keys the config step drops -------------------------------------------
+
+@pytest.mark.proof("update", "PROOF-25", "RULE-25")
+def test_every_dropped_key_is_named(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    config = json.loads(_read(root, '.purlin/config.json'))
+    assert 'report' in config
+    config['audit_criteria'] = 'git@github.com:acme/q.git#criteria.md'
+    config['audit_criteria_pinned'] = 'abc1234'
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert ('dropped 5 keys this release does not read: audit_criteria, '
+            'audit_criteria_pinned, pre_push, report, spec_dir') in printed
+    written = json.loads(_read(root, '.purlin/config.json'))
+    for key in ('audit_criteria', 'audit_criteria_pinned', 'pre_push',
+                'report', 'spec_dir'):
+        assert key not in written, key
+
+
+# --- the mutation question ----------------------------------------------------
+
+MUTATION = 'Measure test strength by breaking the code on purpose?'
+
+
+@pytest.mark.proof("update", "PROOF-26", "RULE-26")
+def test_the_mutation_question_defaults_to_no(tmp_path, capsys, monkeypatch):
+    root = _project(tmp_path, V095)
+    _write(root, 'conftest.py', '')
+    asked = _answers(monkeypatch, [(MUTATION, '')])
+    _apply(root, argv=())
+    capsys.readouterr()
+    assert any(prompt.startswith(MUTATION + ' It needs mutmut')
+               for prompt in asked), asked
+    written = json.loads(_read(root, '.purlin/config.json'))
+    assert written['mutation_engine'] == 'none'
+    assert written['min_strength'] is None
+
+
+@pytest.mark.proof("update", "PROOF-26", "RULE-26")
+def test_yes_turns_it_on_at_the_gate_s_minimum(tmp_path, capsys, monkeypatch):
+    root = _project(tmp_path, V095)
+    _write(root, 'conftest.py', '')
+    _answers(monkeypatch, [('Gate [', 'strong'), (MUTATION, 'y')])
+    _apply(root, argv=())
+    printed = capsys.readouterr().out
+    written = json.loads(_read(root, '.purlin/config.json'))
+    assert written['mutation_engine'] == 'auto'
+    assert written['min_strength'] == 70
+    assert 'run purlin:init to wire mutmut' in printed
+
+
+@pytest.mark.proof("update", "PROOF-26", "RULE-26")
+def test_no_engine_means_no_question(tmp_path, capsys, monkeypatch):
+    root = _project(tmp_path, V095)
+    asked = _answers(monkeypatch)
+    _apply(root, argv=())
+    printed = capsys.readouterr().out
+    assert not [prompt for prompt in asked if MUTATION in prompt], asked
+    assert json.loads(_read(root, '.purlin/config.json'))[
+        'mutation_engine'] == 'none'
+    assert 'no engine breaks shell code' in printed
+
+
+@pytest.mark.proof("update", "PROOF-26", "RULE-26")
+def test_a_mutation_setting_already_written_is_kept(tmp_path, capsys,
+                                                    monkeypatch):
+    root = _project(tmp_path, V095)
+    _write(root, 'conftest.py', '')
+    config = json.loads(_read(root, '.purlin/config.json'))
+    config['mutation_engine'] = 'auto'
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    asked = _answers(monkeypatch)
+    _apply(root, argv=())
+    capsys.readouterr()
+    assert not [prompt for prompt in asked if MUTATION in prompt], asked
+    assert json.loads(_read(root, '.purlin/config.json'))[
+        'mutation_engine'] == 'auto'
+
+
+# --- a spec with no scope -----------------------------------------------------
+
+UNSCOPED = """# Feature: nowhere
+
+## Rules
+
+- RULE-1: A rule whose code is not named
+
+## Proof
+
+- PROOF-1 (RULE-1): Call it and verify it answers
+"""
+
+
+@pytest.mark.proof("update", "PROOF-27", "RULE-27")
+def test_a_spec_with_no_scope_is_named_and_left_alone(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _write(root, 'specs/core/nowhere.md', UNSCOPED)
+    _write(root, 'specs/_anchors/unscoped_anchor.md',
+           UNSCOPED.replace('Feature: nowhere', 'Anchor: unscoped_anchor'))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'a spec with no scope')
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert ('1 spec has no > Scope: line: nowhere. Run purlin:spec <name> to '
+            'add one.') in printed, printed
+    assert 'required at signed' in printed
+    assert 'unscoped_anchor' not in printed.split('Scope: line:')[1]
+    assert _read(root, 'specs/core/nowhere.md') == UNSCOPED
+    assert update.pending(root) == []
+    _apply(root)
+    again = capsys.readouterr().out
+    assert 'Nothing is pending' in again
+    assert '1 spec has no > Scope: line: nowhere.' in again
+
+
+# --- the evidence folder ------------------------------------------------------
+
+@pytest.mark.proof("update", "PROOF-28", "RULE-28")
+def test_the_evidence_folder_gets_its_readme(tmp_path):
+    root = _project(tmp_path, V095)
+    assert 'evidence' in _ids(root)
+    _apply(root)
+    with open(os.path.join(root, '.purlin', 'evidence', 'README.md'),
+              'rb') as got, open(os.path.join(
+                  ROOT, 'templates', 'evidence-readme.md'), 'rb') as want:
+        assert got.read() == want.read()
+    assert '.purlin/evidence/README.md' in _tracked(root)
+    assert _walk(root, LEFTOVER) == []
+    assert 'evidence' not in _ids(root)
 
 
 # --- operating-system tags ---------------------------------------------------

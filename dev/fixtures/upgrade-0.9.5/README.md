@@ -4,7 +4,11 @@ A project as Purlin v0.9.5 left it (tag `v0.9.5`): `.purlin/` with that release'
 a committed cache directory, the plugin copies and a committed dashboard data file (a stub
 here); the v0.9.5 Windows workflow under `.github/workflows/`; and a representative `specs/`
 subset with the committed verification and proof JSON files beside each spec, including the
-`proofs-windows` tier file and a spec carrying a `figma://` source.
+`proofs-windows` tier file. Two specs carry the design reference 0.9.5 could write:
+`specs/workflows/figma_web.md` a `> Visual-Reference: figma://` line, and the anchor
+`specs/_anchors/checkout_design.md`, the Figma-sourced consumer copy from v0.9.5's
+`references/formats/anchor_format.md`, a Figma `> Source:` with its `> Pinned:` timestamp, a
+`> Visual-Reference:` and a `> Visual-Hash:`.
 
 `_gitignore` is the project's `.gitignore`; a test copies the fixture to a temporary directory
 and renames it, so the fixture's own ignore rules never apply to this repository.

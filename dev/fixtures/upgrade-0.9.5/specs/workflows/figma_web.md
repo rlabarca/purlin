@@ -7,6 +7,7 @@
 > Scope: docs/examples/figma-web-app.md, skills/anchor/SKILL.md, skills/build/SKILL.md
 > Stack: python/pytest, playwright, shell/bash
 > Requires: skill_anchor
+> Visual-Reference: figma://TEZI0T6lObCJrC9mkmZT8v/7:81
 
 ## What it does
 

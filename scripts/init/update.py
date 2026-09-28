@@ -55,10 +55,19 @@ KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'  #
 WORKFLOW_MARKER = '.proofs-'                               # retired
 PRE_PUSH_HOOK = '.git/hooks/pre-push'                      # retired
 PRE_PUSH_KEY = 'pre_push'                                  # retired
+DESIGN_FIELD_RE = re.compile(r'^>\s*(Visual-Reference|Visual-Hash):')  # retired
+FIGMA_SOURCE_RE = re.compile(r'^>\s*Source:.*figma', re.I)  # retired
+PINNED_RE = re.compile(r'^>\s*Pinned:')                    # retired
 
 # --- what this release writes instead --------------------------------------
 IGNORE_LINES = ('.purlin/report-data.js',)
 EVIDENCE_DIR = '.purlin/evidence'
+EVIDENCE_README = EVIDENCE_DIR + '/README.md'
+META_RE = re.compile(r'^>\s*[A-Z][A-Za-z-]+:')
+SCOPE_RE = re.compile(r'^>\s*Scope:', re.M)
+SCOPE_ADVICE = ('%d spec%s no > Scope: line: %s. Run purlin:spec <name> to '
+                'add one. The line is optional below the gate signed and '
+                'required at signed.')
 WORKFLOW_DIR = '.github/workflows'
 ARROW = '→'
 DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
@@ -70,9 +79,9 @@ PLUGIN_SOURCES = {OLD_SHELL_PLUGIN: 'shell_purlin.sh'}
 
 GATE_QUESTION = """
 What must be true of every rule before a version is proven?
-  passed  every rule has a passing tagged test, from any source
-  strong  every rule has a record an audit wrote, at the minimum test strength
-  signed  strong, plus a signature from a person on the rule"""
+  passed  every rule's tagged tests pass
+  strong  tests pass and the audit finds them sound
+  signed  strong, and a person signs each rule"""
 
 # --- helpers ---------------------------------------------------------------
 def _read(path):
@@ -149,6 +158,10 @@ def _frameworks():
 def _flow():
     return _plugin_module('run', 'workflow')
 
+def _init():
+    """scaffold.py, the one home of the questions init asks and what they write."""
+    return _plugin_module('init', 'scaffold')
+
 def _confirm(question, assume_yes):
     if assume_yes:
         return True
@@ -168,6 +181,47 @@ def _s(items):
     return '' if len(items) == 1 else 's'
 
 # --- the migrations ---------------------------------------------------------
+def _design_lines(text):
+    """`(the text without its design reference, the fields it removed)`.
+
+    Released 0.9.5 let a spec point at a Figma file and carry a picture's
+    fingerprint. A pinned timestamp belongs to a Figma source and goes with
+    it, and a `>` line continuing a removed field goes with that field.
+    """
+    lines = text.splitlines(True)
+    figma = any(FIGMA_SOURCE_RE.match(line) for line in lines)
+    kept, removed, dropping = [], [], False
+    for line in lines:
+        field = META_RE.match(line)
+        if field:
+            dropping = bool(DESIGN_FIELD_RE.match(line)
+                            or FIGMA_SOURCE_RE.match(line)
+                            or (figma and PINNED_RE.match(line)))
+            if dropping:
+                removed.append(line.split(':', 1)[0].lstrip('> \t') + ':')
+                continue
+        elif dropping and line.startswith('>'):
+            continue
+        else:
+            dropping = False
+        kept.append(line)
+    return ''.join(kept), removed
+
+def _detect_design_refs(root):
+    return [rel for rel in _files_under(root, 'specs', ('*.md',))
+            if _design_lines(_read(os.path.join(root, rel)))[1]]
+
+def _apply_design_refs(root, files, args, out):
+    """No design file is tied to a spec in this release: the lines go."""
+    for rel in files:
+        path = os.path.join(root, rel)
+        out.kept(_back_up_copy(path, rel))
+        text, removed = _design_lines(_read(path))
+        _write(path, text)
+        out.done(rel)
+        out.say('removed the design reference from %s: %s'
+                % (rel, ', '.join('> ' + name for name in removed)))
+
 def _detect_untracked(root):
     hits = _files_under(root, 'specs', (PROOF_FILE_GLOB, RUN_FILE_GLOB))
     ok, tracked = _git(root, 'ls-files')
@@ -238,6 +292,8 @@ def _detect_config(root):
         return []
     gate = _gate()
     stale = ('gate' not in config
+             or 'mutation_engine' not in config
+             or 'audit_parallel' not in config
              or config.get('version') != _version()
              or config.get('trust') not in gate.TRUST_VALUES
              or any(key in config for key in gate.RETIRED_KEYS))
@@ -284,6 +340,35 @@ def _ask_trust(default, assume_yes):
     return default
 
 
+def _ask_mutation(root, framework, assume_yes, out):
+    """`none` or `auto`: the mutation question init asks, asked on an update.
+
+    Released 0.9.5 had no such setting, so the question is new to a project
+    it set up. It is asked only where an engine exists for a framework the
+    project carries, and the default is no.
+    """
+    init = _init()
+    frameworks = _frameworks()
+    named = (frameworks.detect_frameworks(root)
+             if framework in ('', 'auto')
+             else frameworks.resolve_frameworks(root, framework)[0])
+    engine = init.engine_for(named)
+    if engine is None:
+        out.say(init.NO_ENGINE % ', '.join(named))
+        return 'none'
+    if assume_yes:
+        return 'none'
+    try:
+        answer = input('%s ' % (init.MUTATION_QUESTION
+                                % init.ENGINE_NAMES.get(engine, engine)))
+    except (EOFError, KeyboardInterrupt):
+        return 'none'
+    if not answer.strip().lower().startswith('y'):
+        return 'none'
+    out.say('turned mutation testing on; run purlin:init to wire %s into '
+            'the project' % init.ENGINE_NAMES.get(engine, engine))
+    return 'auto'
+
 def _ask_gate(default, assume_yes):
     """The one question init asks, asked once more on an update."""
     if assume_yes:
@@ -322,17 +407,23 @@ def _apply_config(root, files, args, out):
     chosen = _ask_gate(_gate_default(old), args.yes)
     resolved = gate.resolve_gate(dict(old, gate=chosen))
     framework, unwired = _prune_frameworks(root, resolved.test_framework)
-    config = {
-        'version': _version(), 'gate': chosen,
-        'ci': old.get('ci') or _host(root),
-        'min_strength': resolved.min_strength, 'sql_engine': resolved.sql_engine,
-        'mutation_engine': resolved.mutation_engine,
-        'test_framework': framework, 'digest': old.get('digest', 'auto'),
-        'trust': _ask_trust(resolved.trust, args.yes),
-    }
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
-    dropped = sorted(key for key in gate.RETIRED_KEYS if key in old)
+    init = _init()
+    mutation = (old['mutation_engine'] if 'mutation_engine' in old
+                else _ask_mutation(root, framework, args.yes, out))
+    config = {
+        'version': _version(), 'gate': chosen, 'mutation_engine': mutation,
+        'min_strength': init.min_strength_for(chosen, mutation),
+        'audit_parallel': init.audit_parallel(old),
+        'test_framework': framework, 'sql_engine': resolved.sql_engine,
+        'ci': old.get('ci') or _host(root),
+        'digest': old.get('digest', 'auto'),
+        'trust': _ask_trust(resolved.trust, args.yes),
+    }
+    # Every key the old file carried that this one does not: the retired
+    # ones, and the ones 0.9.5 wrote that nothing here reads.
+    dropped = sorted(key for key in old if key not in config)
     _write(path, json.dumps(config, indent=2) + '\n')
     out.done('.purlin/config.json')
     out.say('set the gate to %s%s' % (chosen, '' if not dropped else
@@ -428,6 +519,20 @@ def _apply_workflows(root, files, args, out):
             'tag, and ends with the gate check')
 
 
+def _detect_evidence(root):
+    """A project with no README in its evidence folder: 0.9.5 had no folder."""
+    return ([] if os.path.isfile(os.path.join(root, EVIDENCE_README))
+            else [EVIDENCE_README])
+
+def _apply_evidence(root, files, args, out):
+    """The folder every run writes into, and one README saying what it holds."""
+    _write(os.path.join(root, EVIDENCE_README),
+           _read(os.path.join(PLUGIN_ROOT, _init().EVIDENCE_README)))
+    out.done(EVIDENCE_README)
+    out.say('wrote %s: each feature\'s evidence lands beside it, under '
+            'local/ and ci/' % EVIDENCE_README)
+
+
 def _plugin_source(name):
     source = PLUGIN_SOURCES.get(name, name)
     path = os.path.join(PLUGIN_ROOT, 'scripts', 'proof', source)
@@ -459,6 +564,9 @@ def _apply_plugin_copies(root, files, args, out):
 # Order matters: the tags are rewritten before the workflow matrix is rendered
 # from them.
 MIGRATIONS = (
+    ('design-refs', 'remove the Figma source and the picture fingerprint '
+     'from each spec that carries them',
+     _detect_design_refs, _apply_design_refs),
     ('os-tags', 'rewrite the retired operating-system tag to @env(windows)',
      _detect_os_tags, _apply_os_tags),
     ('kind-tags', 'drop the kind of test from every proof line',
@@ -469,6 +577,8 @@ MIGRATIONS = (
      _detect_hooks, _apply_hooks),
     ('config', 'write .purlin/config.json at this shape and set the gate',
      _detect_config, _apply_config),
+    ('evidence', 'create .purlin/evidence/ with the README that says what '
+     'it holds', _detect_evidence, _apply_evidence),
     ('workflows', 'remove the retired workflows and write purlin.yml only '
      'where this project has a reason for a runner',
      _detect_workflows, _apply_workflows),
@@ -491,6 +601,22 @@ def pending(project_root):
             found.append({'id': name, 'description': description,
                           'files': files})
     return found
+
+def scope_advice(project_root):
+    """The line naming every feature spec with no `> Scope:` line, or None.
+
+    Advice, not a migration: nothing is changed, and nothing stays pending.
+    Anchors are exempt, because their code is the requiring feature's.
+    """
+    root = os.path.abspath(project_root)
+    names = [os.path.basename(rel)[:-len('.md')]
+             for rel in _files_under(root, 'specs', ('*.md',))
+             if not rel.startswith('specs/_anchors/')
+             and not SCOPE_RE.search(_read(os.path.join(root, rel)))]
+    if not names:
+        return None
+    return SCOPE_ADVICE % (len(names), ' has' if len(names) == 1 else 's have',
+                           ', '.join(names))
 
 # --- running ---------------------------------------------------------------
 class _Report(object):
@@ -548,8 +674,11 @@ def main(argv=None):
     if args.json:
         print(json.dumps({'project_root': root, 'pending': items}, indent=2))
         return EXIT_PENDING if (items and args.check) else EXIT_OK
+    advice = scope_advice(root)
     if not items:
         print('Nothing is pending: this project is at %s.' % _version())
+        if advice:
+            print(advice)
         return EXIT_OK
     _print_pending(items, root)
     if args.check:
@@ -571,6 +700,8 @@ def main(argv=None):
     if sha:
         print('  committed %s as %s'
               % (sha, _COMMIT % (_version(), ', '.join(applied))))
+    if advice:
+        print('  %s' % advice)
     left = [item['id'] for item in pending(root)]
     print('%s Next: run %s' % (ARROW, 'purlin:init --update again for %s.'
           % ', '.join(left) if left else
