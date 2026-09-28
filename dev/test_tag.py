@@ -16,8 +16,10 @@ What each group holds:
 
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -80,6 +82,18 @@ def _signed_project(version='2.1.0', trust='local', key=True):
     return made
 
 
+def _audit_again_later(made, rule, at='2026-09-27T09:00:00Z'):
+    """The same audit entry written again, with a new `at` and this `commit`."""
+    rel = made.audit(rule)
+    path = os.path.join(made.root, *rel.split('/'))
+    data = json.loads(_read(made.root, rel))
+    entry = data['audit']['rules'][rule]
+    assert entry['commit'] == made.head() and entry['verdict'] == 'strong'
+    entry['at'] = at
+    write(path, json.dumps(data, indent=2, sort_keys=True))
+    return entry
+
+
 def _sign_every_rule(made):
     """Sign whatever the queue holds, as the signer, and commit."""
     payload = made.payload()
@@ -101,6 +115,7 @@ class TestTheTag:
         made = _signed_project()
         try:
             _sign_every_rule(made)
+            started_at = made.head()
             out = _Out()
             result = sign_module.walk(made.root, out=out,
                                       signer_email='jane@acme.com')
@@ -117,7 +132,19 @@ class TestTheTag:
                           'signed/2.1.0').stdout
             assert 'Every rule meets the gate signed.' in message, message
             assert made.head()[:7] in message or 'Commit:' in message, message
+            # The message names in full the commit the walk began at, which
+            # is the one the tagged commit, carrying the package, sits on.
+            tagged = git(made.root, 'rev-parse',
+                         'signed/2.1.0^{commit}').stdout.strip()
+            assert git(made.root, 'rev-parse',
+                       tagged + '^').stdout.strip() == started_at
+            lines = [line.strip() for line in message.splitlines()]
+            assert 'Commit: %s' % started_at in lines, message
+            assert 'Gate: signed' in lines, message
             assert 'Run: git push origin signed/2.1.0' in printed, printed
+            assert printed.splitlines()[-1] == (
+                '%s Run: git push origin signed/2.1.0'
+                % sign_module.ARROW), printed
         finally:
             made.close()
 
@@ -192,6 +219,51 @@ class TestTheTag:
             # is that the command never reaches for one.
             assert git(made.root, 'remote').stdout.strip() == ''
             assert 'Run: git push origin signed/2.1.0' in out.text()
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-67
+    def test_a_remote_is_left_as_it_was(self):
+        """With an `origin` to push to, the tag is written here alone."""
+        made = _signed_project()
+        remote = tempfile.mkdtemp()
+        try:
+            git(remote, 'init', '-q', '--bare')
+            git(made.root, 'remote', 'add', 'origin', remote)
+            _sign_every_rule(made)
+            assert git(made.root, 'push', '-q', 'origin',
+                       'main').returncode == 0
+            before = git(made.root, 'ls-remote', 'origin').stdout
+            assert 'refs/heads/main' in before, before
+            out = _Out()
+            assert sign_module.tag_if_met(made.root, out) == 'signed/2.1.0', \
+                out.text()
+            assert git(made.root, 'tag', '-l').stdout.split() == [
+                'signed/2.1.0']
+            after = git(made.root, 'ls-remote', 'origin').stdout
+            assert after == before, after
+            assert 'signed/2.1.0' not in after, after
+            assert 'Run: git push origin signed/2.1.0' in out.text()
+        finally:
+            shutil.rmtree(remote, ignore_errors=True)
+            made.close()
+
+    # purlin: signatures PROOF-68
+    def test_the_release_option_names_the_tag(self, capsys):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            argv = ['--release', 'beta', '--project-root', made.root]
+            assert sign_module.main(argv) == sign_module.EXIT_OK
+            printed = capsys.readouterr().out
+            assert git(made.root, 'tag', '-l').stdout.split() == [
+                'signed/beta'], printed
+            assert git(made.root, 'tag', '-v', 'signed/beta').returncode == 0
+            assert sign_module.main(argv) == sign_module.EXIT_OK
+            again = capsys.readouterr().out
+            assert 'No tag: signed/beta is already written.' in again, again
+            assert git(made.root, 'tag', '-l').stdout.split() == [
+                'signed/beta']
         finally:
             made.close()
 
@@ -319,6 +391,11 @@ class TestTheAuditHash:
         try:
             _sign_every_rule(made)
             assert made.rule('RULE-2')['cells']['signed']['word'] == 'signed'
+            # The same audit again, at a later time and over the signature's
+            # own commit: what it observed is unchanged, so nothing stales.
+            _audit_again_later(made, 'RULE-2')
+            cell = made.rule('RULE-2')['cells']['signed']
+            assert cell['word'] == 'signed', cell
             made.audit('RULE-2', findings=['PROOF-2 reads the status alone.'])
             cell = made.rule('RULE-2')['cells']['signed']
             assert cell['word'] == 'stale', cell
@@ -334,6 +411,19 @@ def _gate(root, verify=True):
     out = _Out()
     code = gate_check.check(root, out=out, verify_evidence=verify)
     return code, out.text()
+
+
+def _assert_the_signature_is_named(made):
+    """`--verify` names the one signature, and only `--verify`; the exit."""
+    code, printed = _gate(made.root)
+    assert 'Evidence (1):' in printed, printed
+    named = [line for line in printed.splitlines()
+             if 'login.signatures/RULE-2.' in line]
+    assert len(named) == 1, printed
+    assert named[0].endswith('what it binds is not this code'), printed
+    _code, unverified = _gate(made.root, verify=False)
+    assert 'Evidence' not in unverified, unverified
+    return code
 
 
 class TestVerify:
@@ -368,6 +458,36 @@ class TestVerify:
         finally:
             made.close()
 
+    # purlin: gate_check PROOF-35
+    def test_a_signature_over_a_reworded_proof_is_named(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            made.spec(_read(made.root, 'specs/auth/login.md').replace(
+                'POST /login with a bad password',
+                'POST /login with a wrong password'))
+            # Audited again as it was when signed, so only the proof differs.
+            # The exit is not asserted: the spec edit also puts the evidence
+            # out of date, so the gate exits 1 whatever the signature.
+            made.audit('RULE-2')
+            _assert_the_signature_is_named(made)
+        finally:
+            made.close()
+
+    # purlin: gate_check PROOF-35
+    def test_a_signature_over_a_changed_test_is_named(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            made.edit_test(_read(made.root, 'tests/test_login.py').replace(
+                'login("ada", "wrong")', 'login("bob", "wrong")'))
+            made.audit('RULE-2')
+            # The changed test leaves the evidence current, so the exit is
+            # the stale signature's alone.
+            assert _assert_the_signature_is_named(made) == 1
+        finally:
+            made.close()
+
     # purlin: gate_check PROOF-36
     def test_a_signature_naming_a_rule_that_is_gone_is_named(self):
         made = _signed_project()
@@ -377,7 +497,15 @@ class TestVerify:
             lines = [line for line in spec.splitlines(True)
                      if 'RULE-2' not in line]
             made.spec(''.join(lines))
+            # The exit is 1 here whatever the signature: the edit also puts
+            # RULE-1 out of date, so the exit says nothing about the check.
             _code, printed = _gate(made.root)
+            assert 'Evidence (1):' in printed, printed
+            named = [line for line in printed.splitlines()
+                     if 'login.signatures/RULE-2.' in line]
+            assert len(named) == 1, printed
+            assert named[0].endswith(
+                'no rule login RULE-2 is in this project'), printed
             assert 'no rule login RULE-2 is in this project' in printed, \
                 printed
         finally:
@@ -408,9 +536,20 @@ class TestVerify:
             _sign_every_rule(made)
             rel = made.evidence(strength=90, runner='ada', source='ci',
                                 at='2026-09-14T12:00:00Z', commit_it=True)
-            _code, printed = _gate(made.root)
+            code, printed = _gate(made.root)
+            assert code == 1, printed
+            assert 'Evidence (1):' in printed, printed
+            named = [line for line in printed.splitlines() if rel in line]
+            assert len(named) == 1, printed
+            assert named[0].endswith(
+                "the commit that added it is not the runner's"), printed
             assert rel in printed, printed
             assert "the commit that added it is not the runner's" in printed
+            # Without --verify the same file is not asked about at all.
+            unverified_code, unverified = _gate(made.root, verify=False)
+            assert unverified_code == 0, unverified
+            assert rel not in unverified, unverified
+            assert 'Evidence' not in unverified, unverified
         finally:
             made.close()
 
