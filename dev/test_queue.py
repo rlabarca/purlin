@@ -98,8 +98,10 @@ def test_a_hand_check_is_a_manual_test_whose_level_asks_for_more(queued):
     payload = queued.payload()
     rows = _rows(payload, 'hand check')
     assert sorted(rows) == ['RULE-3'], rows
-    assert queued.rule('RULE-2', 'review')['cells']['strong']['word'] == (
-        'manual test'), 'marked passed, so it reads the word and waits on nobody'
+    lower = queued.rule('RULE-2', 'review')
+    assert sorted(lower['cells']) == ['passed'], (
+        'marked passed, so it is asked for no hand check and waits on nobody')
+    assert lower['flags']['manual'] is False, lower
     everything = _rows(payload)
     assert 'RULE-2' not in everything, 'a rule whose level is passed'
     assert 'RULE-4' not in everything, 'a rule with no test is build work'

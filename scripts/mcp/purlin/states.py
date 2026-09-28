@@ -1,7 +1,9 @@
 """The three evidence levels of a rule.
 
-One rule, read top to bottom. Each row below is a cell, and the project's gate
-decides how many rows exist: a cell above the gate is absent, not empty.
+One rule, read top to bottom. Each row below is a cell, and the rule's level
+decides how many rows exist: a cell above the level is absent, not empty. The
+level is never above the project's gate, so a cell above the gate is absent
+too.
 
     passed  Met when every proof has a passing test in an evidence section
             that is current: its spec, code and tests fingerprint equals the
@@ -33,7 +35,10 @@ gate means: tests; tests and audit; tests, audit and signature. A rule tagged
 The gate is the ceiling, so a tag above it is read as the gate. A rule meets
 the gate when its passed cell is met, its strong cell is met if its level is
 `strong` or `signed`, and its signed cell is met if its level is `signed`.
-Cells above a rule's level are still computed and shown, and do not block.
+A rule is asked only what its level asks: a rule whose level is `passed` has
+no strong cell and no signed cell, and one whose level is `strong` has no
+signed cell. What the rule is not asked is never counted, so its bucket, its
+flags and every rollup read only the cells it has.
 
 Each cell carries its reasons, so a surface never has to work out why a word
 reads the way it does.
@@ -133,6 +138,15 @@ def bucket_keys(gate):
     return keys
 
 
+def asked_keys(gate):
+    """`{rollup key: cell}` for the cells above `passed` the gate reaches.
+
+    Each key counts the rules that are asked that cell's question, the rules
+    whose level reaches it, which is what `<n> of <m>` reads its `<m>` from.
+    """
+    return {'asks_' + name: name for name in cells_for(gate)[1:]}
+
+
 def rule_cells(inp, cfg):
     """The level, the cells, the bucket and the flags of one rule.
 
@@ -181,25 +195,26 @@ def rule_cells(inp, cfg):
         # other reads `unsigned` for the spec's own reason.
         signed = dict(signed, word='unsigned', reasons=[NAMES_NO_FILES])
 
+    # The level names the deepest cell the rule has, and it is never above
+    # the gate, so a cell the gate does not reach is left out with it.
     cells = {}
     for name, cell in (('passed', passed), ('strong', strong),
                        ('signed', signed)):
-        if name in cells_for(gate):
+        if name in cells_for(level):
             cells[name] = cell
 
     flags = {
         'failing': passed['word'] == 'failed',
         'partial': passed['word'] == 'partial',
         'out_of_date': passed['word'] == OUT_OF_DATE,
-        # A signature is a fact about committed files, so it is read the
-        # same at every gate. `manual test` and `not audited` are the strong
-        # cell's own words, and that cell does not exist under `passed`. A
-        # rule whose level is `passed` is never audited under a higher gate,
-        # so its `not audited` is shown and not counted.
+        # A signature is a fact about committed files, a hand check's
+        # included, so `stale` is read the same at every level and every
+        # gate. `manual test` and `not audited` are the strong cell's own
+        # words, so each is raised only where the rule has that cell: a
+        # question the level does not ask is not counted.
         'stale': bool(signatures) and not current,
-        'manual': gate != 'passed' and strong['word'] == 'manual test',
-        'not_audited': (gate != 'passed' and level != 'passed'
-                        and strong['word'] == NOT_AUDITED),
+        'manual': 'strong' in cells and strong['word'] == 'manual test',
+        'not_audited': 'strong' in cells and strong['word'] == NOT_AUDITED,
         'no_proof': not proofs,
     }
 
@@ -209,7 +224,7 @@ def rule_cells(inp, cfg):
         'need': None if incomplete else _need(gate, level, passed, strong,
                                               signed),
         'cells': cells,
-        'bucket': _bucket(cells, gate, passed, strong, signed),
+        'bucket': _bucket(level, passed, strong, signed),
         'meets_gate': blocked is None,
         'blocked_by': blocked,
         'flags': flags,
@@ -550,12 +565,6 @@ def _strong_cell(inp, cfg, level, passed, counting_signatures):
         return cell
 
     if not audit:
-        if level == 'passed':
-            # The audit never reads a rule whose level is `passed` under a
-            # higher gate, so nothing here is outstanding: the cell is
-            # shown and does not block.
-            cell['reasons'] = ['no audit has run']
-            return cell
         cell['word'] = NOT_AUDITED
         why = inp.get('could_not_run')
         cell['reasons'] = [COULD_NOT_RUN % why if why else NOT_AUDITED_REASON]
@@ -601,9 +610,8 @@ def _signed_cell(signatures, current, counting, inp=None):
     A signature is a fact about committed files. This cell is computed from
     those files alone and reads `signed`, `unsigned` or `stale`, and names
     the signer, when, and the machine and operating system the signature
-    file logs, null where it logs none. A
-    rule whose level is below `signed` still says whether anyone signed it,
-    and the cell does not block it.
+    file logs, null where it logs none. Only a rule whose level is `signed`
+    has the cell.
     """
     cell = {'word': 'unsigned', 'signer': None, 'at': None, 'machine': None,
             'os': None, 'path': None, 'reasons': []}
@@ -684,7 +692,7 @@ def _cell_blocks(name, cell, level):
 
     The passed cell blocks every rule. The strong cell blocks a rule whose
     level is `strong` or `signed`, and the signed cell a rule whose level is
-    `signed`; a cell above the rule's level is shown and does not block.
+    `signed`; a rule has no cell above its level, so none blocks it.
     """
     if cell_is_met(name, cell):
         return False
@@ -721,17 +729,17 @@ def _blocked_by(cells, gate, level):
     return None
 
 
-def _bucket(cells, gate, passed, strong, signed):
-    """The one tile a rule is counted in."""
+def _bucket(level, passed, strong, signed):
+    """The one tile a rule is counted in: the deepest cell it met, up to its level."""
     if passed['word'] == 'failed':
         return 'failing'
     if passed['word'] == 'partial':
         return 'partial'
     if not cell_is_met('passed', passed):
         return 'untested'
-    if gate == 'passed' or not cell_is_met('strong', strong):
+    if level == 'passed' or not cell_is_met('strong', strong):
         return 'passed'
-    if gate == 'strong' or not cell_is_met('signed', signed):
+    if level == 'strong' or not cell_is_met('signed', signed):
         return 'strong'
     return 'signed'
 
@@ -744,16 +752,22 @@ def feature_rollup(rule_results, gate='passed', test_strength=None):
     """One feature's rollup over `{rule_ref: rule_cells result}`.
 
     Carries how many rules the feature has, how many meet the gate, one count
-    per bucket the gate reaches, the stale, manual and not-audited
-    counts, how many rules are in the queue and how many of those are hand
-    checks, and the test strength.
+    per bucket the gate reaches, how many rules are asked each cell above
+    `passed` the gate reaches (`asks_strong`, `asks_signed`), the stale,
+    manual and not-audited counts, how many rules are in the queue and how
+    many of those are hand checks, and the test strength.
     """
     keys = bucket_keys(gate)
     counts = {key: 0 for key in keys}
+    asked = {key: 0 for key in asked_keys(gate)}
     met = 0
     flagged = {name: 0 for name in COUNTED_FLAGS}
     queue = hand_checks = 0
     for result in rule_results.values():
+        level = result.get('level') or CELLS[0]
+        for key, cell in asked_keys(gate).items():
+            if level in CELLS and CELLS.index(level) >= CELLS.index(cell):
+                asked[key] += 1
         bucket = result.get('bucket') or 'untested'
         if bucket not in counts:
             # A bucket above the gate cannot be reached, so it is not counted
@@ -772,6 +786,7 @@ def feature_rollup(rule_results, gate='passed', test_strength=None):
             flagged[name] += 1 if flags.get(name) else 0
     rollup = {'rules': len(rule_results), 'met': met}
     rollup.update(counts)
+    rollup.update(asked)
     rollup.update(flagged)
     rollup.update({'queue': queue, 'hand_checks': hand_checks,
                    'test_strength': test_strength})
@@ -783,6 +798,7 @@ def project_rollup(feature_rollups, gate='passed'):
     keys = bucket_keys(gate)
     summary = {'features': len(feature_rollups), 'rules': 0, 'met': 0,
                'queue': 0, 'hand_checks': 0}
+    keys = keys + list(asked_keys(gate))
     for key in keys:
         summary[key] = 0
     for name in COUNTED_FLAGS:

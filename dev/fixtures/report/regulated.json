@@ -93,6 +93,8 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "asks_signed": 3,
+        "asks_strong": 3,
         "failing": 0,
         "hand_checks": 0,
         "incomplete": false,
@@ -330,26 +332,6 @@
               "reasons": [],
               "source": "ci",
               "word": "passed"
-            },
-            "signed": {
-              "at": null,
-              "machine": null,
-              "os": null,
-              "path": null,
-              "reasons": [],
-              "signer": null,
-              "word": "unsigned"
-            },
-            "strong": {
-              "evidence": ".purlin/evidence/ci/login.json",
-              "findings": [
-                "PROOF-3 reads the status code alone; no test reads when the lock expires."
-              ],
-              "reasons": [
-                "PROOF-3 reads the status code alone; no test reads when the lock expires."
-              ],
-              "strength": 86,
-              "word": "weak"
             }
           },
           "feature": "login",
@@ -534,11 +516,13 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "asks_signed": 2,
+        "asks_strong": 2,
         "failing": 0,
         "hand_checks": 1,
         "incomplete": false,
         "manual": 1,
-        "met": 2,
+        "met": 1,
         "not_audited": 0,
         "partial": 0,
         "passed": 3,
@@ -587,24 +571,6 @@
               "reasons": [],
               "source": "ci",
               "word": "passed"
-            },
-            "signed": {
-              "at": null,
-              "machine": null,
-              "os": null,
-              "path": null,
-              "reasons": [],
-              "signer": null,
-              "word": "unsigned"
-            },
-            "strong": {
-              "evidence": ".purlin/evidence/ci/invoice.json",
-              "findings": [],
-              "reasons": [
-                "strength 64% under 80%"
-              ],
-              "strength": 64,
-              "word": "weak"
             }
           },
           "feature": "invoice",
@@ -658,7 +624,7 @@
             "verdict": "weak"
           },
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": null,
+          "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -715,9 +681,9 @@
           },
           "id": "RULE-2",
           "label": "own",
-          "level": "passed",
-          "level_marked": "passed",
-          "meets_gate": true,
+          "level": "signed",
+          "level_marked": null,
+          "meets_gate": false,
           "proof_hash": "prule2inv",
           "proofs": [
             {
@@ -844,6 +810,8 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "asks_signed": 1,
+        "asks_strong": 1,
         "failing": 0,
         "hand_checks": 0,
         "incomplete": false,
@@ -988,6 +956,8 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "asks_signed": 2,
+        "asks_strong": 2,
         "failing": 0,
         "hand_checks": 0,
         "incomplete": false,
@@ -1214,12 +1184,14 @@
   "remote_url": "https://github.com/acme/ledger.git",
   "schema_version": 9,
   "summary": {
+    "asks_signed": 8,
+    "asks_strong": 8,
     "failing": 0,
     "features": 4,
     "hand_checks": 1,
     "incomplete": 0,
     "manual": 1,
-    "met": 4,
+    "met": 3,
     "not_audited": 1,
     "partial": 1,
     "passed": 6,

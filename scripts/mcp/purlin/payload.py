@@ -83,8 +83,12 @@ must prove from an anchor it requires, `required`, or from a global anchor,
 rule is always addressed by its owner and its id: two features' `RULE-1` are
 two rules.
 
-A cell above the project's gate is absent, not empty: a `passed` project
-carries one cell per rule, a `signed` project carries three.
+A rule carries the cells its level asks for and no others: `passed` always,
+`strong` where its level is `strong` or `signed`, `signed` where it is
+`signed`. A cell it is not asked for is absent, not empty, and the level is
+never above the gate, so a `passed` project carries one cell per rule. A
+rollup at `strong` and above carries `asks_strong`, how many of its rules have
+a strong cell, and at `signed` `asks_signed`, how many have a signed cell.
 
 A feature spec that names no files, with no `> Scope:` line or a scope that
 reaches no tracked file, carries `incomplete: true` and `incomplete_reason`

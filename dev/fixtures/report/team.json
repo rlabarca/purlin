@@ -74,6 +74,7 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "asks_strong": 2,
         "failing": 0,
         "hand_checks": 0,
         "incomplete": false,
@@ -81,14 +82,14 @@
         "met": 2,
         "not_audited": 0,
         "partial": 0,
-        "passed": 1,
+        "passed": 2,
         "proofs": 3,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "queue": 0,
         "rules": 3,
         "stale": 0,
-        "strong": 2,
+        "strong": 1,
         "test_strength": 71,
         "untested": 0
       },
@@ -261,7 +262,7 @@
           },
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": null,
-          "bucket": "strong",
+          "bucket": "passed",
           "cells": {
             "passed": {
               "counts": true,
@@ -277,13 +278,6 @@
               "reasons": [],
               "source": "ci",
               "word": "passed"
-            },
-            "strong": {
-              "evidence": ".purlin/evidence/ci/login.json",
-              "findings": [],
-              "reasons": [],
-              "strength": 71,
-              "word": "strong"
             }
           },
           "feature": "login",
@@ -360,6 +354,7 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "asks_strong": 2,
         "failing": 0,
         "hand_checks": 0,
         "incomplete": true,
@@ -551,6 +546,7 @@
         "checkout_design"
       ],
       "rollup": {
+        "asks_strong": 2,
         "failing": 0,
         "hand_checks": 0,
         "incomplete": false,
@@ -756,6 +752,7 @@
       "pinned": null,
       "requires": [],
       "rollup": {
+        "asks_strong": 1,
         "failing": 0,
         "hand_checks": 0,
         "incomplete": false,
@@ -874,6 +871,7 @@
   "remote_url": "https://github.com/acme/ledger.git",
   "schema_version": 9,
   "summary": {
+    "asks_strong": 6,
     "failing": 0,
     "features": 4,
     "hand_checks": 0,
@@ -882,7 +880,7 @@
     "met": 4,
     "not_audited": 0,
     "partial": 0,
-    "passed": 2,
+    "passed": 3,
     "proofs": 7,
     "proofs_without_test": 1,
     "proofs_without_test_ids": [
@@ -891,7 +889,7 @@
     "queue": 0,
     "rules": 7,
     "stale": 0,
-    "strong": 4,
+    "strong": 3,
     "untested": 1
   },
   "tag": null,

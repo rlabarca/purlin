@@ -851,7 +851,14 @@ class TestTheLevel:
             made.evidence(runner='ci', commit_it=False, source='ci')
             rule = made.rule('RULE-2')
             assert rule['level'] == 'strong', rule
+            assert 'signed' not in rule['cells'], rule
+            assert rule['flags']['stale'] is False, rule
+            made.spec(SPEC)
+            made.evidence(runner='ci', commit_it=False, source='ci')
+            rule = made.rule('RULE-2')
+            assert rule['level'] == 'signed', rule
             assert rule['cells']['signed']['word'] == 'signed', rule
+            assert len(made.load()[('login', 'RULE-2')]) == 1
         finally:
             made.close()
 

@@ -754,7 +754,7 @@ class TestARuleWithNoProof:
                 'the rule has a test and no proof']
             assert first['meets_gate'] is False
             second = project.rule('RULE-2')
-            assert second['cells']['strong']['word'] == 'no proof'
+            assert sorted(second['cells']) == ['passed'], second
             assert second['meets_gate'] is True
         finally:
             project.close()
@@ -940,8 +940,6 @@ class TestTheStrongCell:
             # A loosely worded proof decides nothing by its wording: the
             # strong cell is the audit's.
             made.spec(SPEC.replace(
-                '401 and the body "denied"\n\n',
-                '401 and the body "denied" [level: passed]\n\n').replace(
                 'POST /login with a bad password; verify 401 and the '
                 'body "denied"', 'Check that the login handles it properly'))
             made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
@@ -958,7 +956,7 @@ class TestTheStrongCell:
         # a sentence about the test body, is read for its `verdict` and its
         # `findings` alone, so an entry that found nothing leaves the cell
         # strong.
-        cell = _strong(level_marked='passed', audit=_audit(
+        cell = _strong(audit=_audit(
             tests=[{'proof': 'PROOF-1',
                     'notes': ['The marked test body holds no assertion.']}]))
         assert cell['word'] == 'strong', cell
@@ -990,8 +988,7 @@ class TestTheStrongCell:
         cfg = purlin_gate.resolve_gate({'gate': 'strong'})
         lower = purlin_states.rule_cells(
             dict(STRONG_INPUT, level_marked='passed'), cfg)
-        assert lower['cells']['strong']['word'] == 'weak', lower
-        assert lower['cells']['strong']['reasons'] == ['no audit has run']
+        assert sorted(lower['cells']) == ['passed'], lower
         assert lower['flags']['not_audited'] is False, lower
         assert lower['meets_gate'] is True, lower
         assert _strong()['word'] == 'not audited'
@@ -999,7 +996,7 @@ class TestTheStrongCell:
 
     # purlin: states PROOF-19
     def test_a_manual_proof_asks_for_a_manual_test(self):
-        cell = _strong(level_marked='passed', proofs=[
+        cell = _strong(proofs=[
             {'id': 'PROOF-1', 'manual': True, 'env': None, 'text': 'x',
              'findings': [], 'tests': []}])
         assert cell['word'] == 'manual test'
@@ -1175,7 +1172,7 @@ class TestHoldsAndSignatures:
             lower = made.rule('RULE-2')
             assert lower['level'] == 'strong', lower
             assert lower['cells']['strong']['word'] == 'strong', lower
-            assert lower['cells']['signed']['word'] == 'unsigned', lower
+            assert 'signed' not in lower['cells'], lower
             assert (lower['meets_gate'], lower['blocked_by']) == (True, None)
             higher = made.rule('RULE-1')
             assert higher['level'] == 'signed', higher
@@ -1389,15 +1386,26 @@ class TestThePlatformsInThePassedCell:
         assert alone['reasons'] == [], alone
 
     # purlin: states PROOF-55
-    def test_with_no_audit_at_all_the_strong_cell_says_no_audit_has_run(self):
-        cfg = purlin_gate.resolve_gate({'gate': 'strong'})
-        cell = purlin_states.rule_cells({
+    def test_a_passed_level_has_no_strong_cell_whatever_the_audit_found(self):
+        cfg = purlin_gate.resolve_gate({'gate': 'signed'})
+        found = {'verdict': 'weak', 'findings': ['PROOF-1 reads 200 alone.'],
+                 'path': '.purlin/evidence/local/login.json'}
+        for audit in (None, found, dict(found, verdict='strong',
+                                        findings=[])):
+            result = purlin_states.rule_cells({
+                'proofs': STRONG_INPUT['proofs'],
+                'sections': [_section('local', 'macos')],
+                'level_marked': 'passed', 'audit': audit,
+            }, cfg)
+            assert sorted(result['cells']) == ['passed'], (audit, result)
+            assert result['bucket'] == 'passed', (audit, result)
+            assert result['flags']['not_audited'] is False, result
+            assert result['meets_gate'] is True, result
+        unmarked = purlin_states.rule_cells({
             'proofs': STRONG_INPUT['proofs'],
-            'sections': [_section('local', 'macos')],
-            'level_marked': 'passed',
-        }, cfg)['cells']['strong']
-        assert cell['word'] == 'weak', cell
-        assert cell['reasons'] == ['no audit has run'], cell
+            'sections': [_section('local', 'macos')], 'audit': found,
+        }, cfg)
+        assert unmarked['cells']['strong']['word'] == 'weak', unmarked
 
 
 class TestBucketsAndTheGate:
@@ -1465,11 +1473,11 @@ class TestLevels:
         made = Project(gate='signed')
         try:
             rule = retag(made, ' [level: passed]')
-            assert sorted(rule['cells']) == ['passed', 'signed', 'strong']
+            assert sorted(rule['cells']) == ['passed'], rule
             assert rule['cells']['passed']['word'] == 'passed', rule
-            assert rule['cells']['signed']['word'] == 'unsigned', rule
             assert (rule['meets_gate'], rule['blocked_by']) == (True, None)
             rule = retag(made, ' [level: strong]')
+            assert sorted(rule['cells']) == ['passed', 'strong'], rule
             assert rule['cells']['strong']['word'] == 'not audited', rule
             assert (rule['meets_gate'], rule['blocked_by']) == (
                 False, 'strong')
@@ -1481,6 +1489,126 @@ class TestLevels:
             assert rule['level'] == 'signed', rule
             assert (rule['meets_gate'], rule['blocked_by']) == (
                 False, 'signed')
+        finally:
+            made.close()
+
+
+# One spec with a rule at each level under the gate `signed`, and a rule at
+# `passed` and one at `strong` whose tests fail: a rule is asked only what its
+# level asks.
+LEVELS_SPEC = (
+    '# Feature: login\n\n'
+    '> Description: One rule at each level.\n'
+    '> Scope: src/login.py\n\n'
+    '## Rules\n\n'
+    '- RULE-1: Valid credentials return 200 [level: passed]\n'
+    '- RULE-2: Invalid credentials return 401 [level: strong]\n'
+    '- RULE-3: Five failures lock the account\n'
+    '- RULE-4: The page loads in a second [level: passed]\n'
+    '- RULE-5: A locked account returns 423 [level: strong]\n\n'
+    '## Proof\n\n'
+    '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200\n'
+    '- PROOF-2 (RULE-2): POST /login with a bad password; verify 401\n'
+    '- PROOF-3 (RULE-3): POST /login 5 times with a bad password; verify the '
+    'sixth returns 423\n'
+    '- PROOF-4 (RULE-4): GET /; verify the reply arrives within 1000 ms\n'
+    '- PROOF-5 (RULE-5): POST /login to a locked account; verify 423\n'
+)
+
+ONE_PASSED_SPEC = (
+    '# Feature: notes\n\n'
+    '> Description: A spec whose one rule asks for its tests alone.\n'
+    '> Scope: src/login.py\n\n'
+    '## Rules\n\n'
+    '- RULE-1: A note keeps its text [level: passed]\n\n'
+    '## Proof\n\n'
+    '- PROOF-1 (RULE-1): Save the note "hi"; verify it reads "hi"\n'
+)
+
+
+def _levels_project(gate='signed'):
+    """A `signed` project with a rule at each level, three audited strong."""
+    made = Project(spec=LEVELS_SPEC, gate=gate)
+    made.evidence([_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2'),
+                   _entry('PROOF-3', 'RULE-3'),
+                   _entry('PROOF-4', 'RULE-4', status='fail'),
+                   _entry('PROOF-5', 'RULE-5', status='fail')])
+    for rule_id in ('RULE-1', 'RULE-2', 'RULE-3'):
+        made.audit(rule_id)
+    return made
+
+
+class TestALevelAsksItsOwnQuestions:
+
+    # purlin: states PROOF-89
+    def test_a_rule_has_only_the_cells_its_level_asks_for(self):
+        made = _levels_project()
+        try:
+            rules = {n: made.rule('RULE-%d' % n) for n in (1, 2, 3)}
+            assert [rules[n]['level'] for n in (1, 2, 3)] == [
+                'passed', 'strong', 'signed']
+            assert list(rules[1]['cells']) == ['passed'], rules[1]
+            assert sorted(rules[2]['cells']) == ['passed', 'strong'], rules[2]
+            assert sorted(rules[3]['cells']) == [
+                'passed', 'signed', 'strong'], rules[3]
+            for rule in rules.values():
+                assert None not in rule['cells'].values(), rule
+                assert rule['cells']['passed']['word'] == 'passed', rule
+            assert rules[2]['cells']['strong']['word'] == 'strong', rules[2]
+            assert rules[3]['cells']['signed']['word'] == 'unsigned', rules[3]
+            assert [rules[n]['bucket'] for n in (1, 2, 3)] == [
+                'passed', 'strong', 'strong']
+            assert [rules[n]['meets_gate'] for n in (1, 2, 3)] == [
+                True, True, False]
+        finally:
+            made.close()
+
+    # purlin: states PROOF-90
+    def test_the_rollup_counts_the_rules_each_question_is_asked_of(self):
+        made = _levels_project()
+        try:
+            data = made.payload()
+            rollup = data['features'][0]['rollup']
+            for counted in (rollup, data['summary']):
+                assert (counted['asks_strong'], counted['asks_signed']) == (
+                    3, 1), counted
+                assert (counted['strong'], counted['signed']) == (2, 0), counted
+                assert counted['not_audited'] == 0, counted
+            made.config_value('gate', 'strong')
+            rollup = made.payload()['features'][0]['rollup']
+            assert rollup['asks_strong'] == 3, rollup
+            assert 'asks_signed' not in rollup, rollup
+        finally:
+            made.close()
+
+    # purlin: states PROOF-91
+    def test_the_table_counts_strong_and_signed_over_the_rules_asked(self):
+        made = _levels_project()
+        try:
+            data = made.payload()
+            row = purlin_status._row(data['features'][0], 'signed')
+            assert row[-2:] == ('2 of 3 · 90%', '0 of 1'), row
+            made.spec(ONE_PASSED_SPEC, name='notes', category='notes')
+            notes = next(f for f in made.payload()['features']
+                         if f['name'] == 'notes')
+            row = purlin_status._row(notes, 'signed')
+            assert row[-2:] == ('', ''), row
+        finally:
+            made.close()
+
+    # purlin: states PROOF-92
+    def test_a_rule_whose_test_fails_reads_its_passed_cell(self):
+        made = _levels_project()
+        try:
+            lower = made.rule('RULE-4')
+            assert list(lower['cells']) == ['passed'], lower
+            assert lower['cells']['passed']['word'] == 'failed', lower
+            assert (lower['bucket'], lower['blocked_by']) == (
+                'failing', 'passed'), lower
+            middle = made.rule('RULE-5')
+            assert middle['cells']['strong']['word'] == 'weak', middle
+            assert middle['cells']['strong']['reasons'] == ['not passed'], (
+                middle)
         finally:
             made.close()
 
@@ -1861,10 +1989,12 @@ class TestStatusTable:
         fixture = TestTheFixturesAreTheContract._fixture('regulated')
         cells = {f['name']: purlin_board.row_cells(
             f['name'], f['rollup'], 'signed') for f in fixture['features']}
+        # login's RULE-3 and invoice's RULE-1 are marked `[level: passed]`,
+        # so neither is asked the audit's question or a signature's.
         assert cells['login'] == ('login', '4', '5', '3 of 4 · 1 partial',
-                                  '2 of 4 · 86%', '1 of 4'), cells['login']
+                                  '2 of 3 · 86%', '1 of 3'), cells['login']
         assert cells['invoice'] == ('invoice', '3', '3', '3 of 3',
-                                    '0 of 3 · 64%', '0 of 3'), cells['invoice']
+                                    '0 of 2 · 64%', '0 of 2'), cells['invoice']
         team = TestTheFixturesAreTheContract._fixture('team')
         rows = {f['name']: purlin_board.row_cells(
             f['name'], f['rollup'], 'strong') for f in team['features']}
