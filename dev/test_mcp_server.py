@@ -76,6 +76,26 @@ SPEC = (
     'body "denied"\n'
 )
 
+# The same feature with its one rule and no proof line.
+NO_PROOF_SPEC = (
+    '# Feature: login\n\n'
+    '> Scope: src/login.py\n\n'
+    '## Rules\n\n'
+    '- RULE-1: Valid credentials return 200 with a session token\n\n'
+    '## Proof\n'
+)
+
+# The same feature with one rule and its one proof.
+ONE_RULE_SPEC = (
+    '# Feature: login\n\n'
+    '> Scope: src/login.py\n\n'
+    '## Rules\n\n'
+    '- RULE-1: Valid credentials return 200 with a session token\n\n'
+    '## Proof\n\n'
+    '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200 and '
+    'a token\n'
+)
+
 
 class Project(object):
     """A throwaway project root with git, a config and one spec."""
@@ -1773,6 +1793,74 @@ class TestStatusTable:
         second = text.splitlines()[text.splitlines().index(line) + 1]
         assert 'test strength' not in second, second
         assert 'signature' not in second, second
+
+    # purlin: states PROOF-43
+    # purlin: states PROOF-81
+    def test_a_passed_project_with_no_proof_line_is_shown_no_proof_count(
+            self):
+        made = Project(spec=NO_PROOF_SPEC)
+        try:
+            lines = purlin_status.sync_status(made.root).splitlines()
+            header = next(line for line in lines if line.startswith('Spec'))
+            assert header.split() == ['Spec', 'Rules', 'Tests'], header
+            summary = lines[lines.index('0 of 1 rules meet the gate passed.')
+                            + 2]
+            assert summary == '1 feature.', summary
+            assert not [line for line in lines if 'proof' in line], lines
+            assert lines[-1] == '→ Next: run purlin:build. 1 rule has no test.'
+        finally:
+            made.close()
+
+    # purlin: states PROOF-79
+    def test_rules_out_of_date_are_counted_and_sent_to_the_tests(self):
+        moved = {'spec': 's', 'code': 'moved on', 'tests': 't'}
+        for spec, count, said in (
+                (SPEC, '2 rules out of date', '2 rules are out of date.'),
+                (ONE_RULE_SPEC, '1 rule out of date', '1 rule is out of date.')):
+            made = Project(spec=spec)
+            try:
+                made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                                'status': 'pass'},
+                               {'id': 'PROOF-2', 'rule': 'RULE-2',
+                                'status': 'pass'}], fingerprint=moved)
+                lines = purlin_status.sync_status(made.root).splitlines()
+                summary = next(line for line in lines
+                               if line.startswith(('1 feature', '2 feature')))
+                assert summary.rstrip('.').split(', ')[-1] == count, summary
+                step = [line for line in lines if line.startswith('→ Next:')]
+                assert step == ['→ Next: run purlin:test. ' + said], step
+            finally:
+                made.close()
+        made = Project()
+        try:
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'},
+                           {'id': 'PROOF-2', 'rule': 'RULE-2',
+                            'status': 'pass'}])
+            text = purlin_status.sync_status(made.root)
+            assert 'out of date' not in text, text
+        finally:
+            made.close()
+
+    # purlin: states PROOF-80
+    def test_a_count_of_one_rule_reads_singular(self):
+        for spec, said in (
+                (ONE_RULE_SPEC, '→ Next: run purlin:build. 1 rule has a '
+                                'failing test.'),
+                (SPEC, '→ Next: run purlin:build. 2 rules have a failing '
+                       'test.')):
+            made = Project(spec=spec)
+            try:
+                made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                                'status': 'fail'},
+                               {'id': 'PROOF-2', 'rule': 'RULE-2',
+                                'status': 'fail'}])
+                step = [line for line in
+                        purlin_status.sync_status(made.root).splitlines()
+                        if line.startswith('→ Next:')]
+                assert step == [said], step
+            finally:
+                made.close()
 
     # purlin: states PROOF-45
     def test_the_table_ends_with_one_next_step(self, project):

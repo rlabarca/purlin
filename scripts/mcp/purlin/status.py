@@ -3,11 +3,13 @@
 The table is the dashboard's board, rendered as text. Its columns are the
 board's columns and its cells are the board's cells, character for character,
 because a reader who learns one should not have to learn the other:
-`purlin:purlin.board` renders both. A row says how many rules the spec has,
-how many proofs it writes and how many of those have no test, and how many
-rules pass their tests. At `strong` the row adds how many rules are strong
-and the test strength; at `signed` it adds how many are signed. The table scales with the gate: a `passed` project is never shown
-a strength, a level or a signature it did not ask for.
+`scripts/mcp/purlin/board.py` renders both. A row says how many rules the
+spec has, how many proofs it writes and how many of those have no test, and
+how many rules pass their tests. At `strong` the row adds how many rules are
+strong and the test strength; at `signed` it adds how many are signed. The
+table scales with the gate: a `passed` project is never shown a strength, a
+level or a signature it did not ask for, and is shown a proof count only
+where it writes a proof line.
 
 Copy follows `references/writing_style.md`: sentence case, second person for what you
 do, third person for what Purlin does, exact numbers, and the only glyphs are
@@ -34,9 +36,9 @@ NO_SPECS = ('No specs found under specs/.\n'
             'write the first one.' % ARROW)
 
 
-def columns_for(gate):
+def columns_for(gate, proofs=1):
     """The table's columns under `gate`, left to right: the board's own."""
-    return board_module.columns_for(gate)
+    return board_module.columns_for(gate, proofs)
 
 
 def sync_status(project_root):
@@ -97,21 +99,27 @@ def _update_pending(project_root):
 # The table
 # ---------------------------------------------------------------------------
 
-def _row(feature, gate):
+def _row(feature, gate, proofs=1):
     """One spec's row, rendered by the module the board renders from."""
     name = feature['name'] + (' (anchor)' if feature['is_anchor'] else '')
-    return board_module.row_cells(name, feature['rollup'], gate)
+    return board_module.row_cells(name, feature['rollup'], gate, proofs)
+
+
+def _proof_lines(data):
+    """How many proof lines the project writes."""
+    return (data.get('summary') or {}).get('proofs') or 0
 
 
 def _table(data):
     gate = data['gate']['gate']
-    columns = columns_for(gate)
+    proofs = _proof_lines(data)
+    columns = columns_for(gate, proofs)
     # The feature with the most rules short of the gate reads first: the table
     # opens on the work rather than on the alphabet.
     features = sorted(data['features'],
                       key=lambda f: (f['rollup']['met'] - f['rollup']['rules'],
                                      f['name']))
-    rows = [_row(feature, gate) for feature in features]
+    rows = [_row(feature, gate, proofs) for feature in features]
     widths = [max(len(columns[i]), max((len(r[i]) for r in rows), default=0))
               for i in range(len(columns))]
     rule = '─' * (sum(widths) + 2 * (len(widths) - 1))
@@ -144,15 +152,23 @@ def _summary(data):
     gate = cfg['gate']
     lines = [board_module.headline(summary, gate),
              board_module.bucket_line(summary, gate) + '.']
-    second = [board_module.count_of(summary['features'], 'feature'),
-              board_module.proofs_summary(summary)]
+    second = [board_module.count_of(summary['features'], 'feature')]
+    if board_module.shows_proofs(gate, _proof_lines(data)):
+        second.append(board_module.proofs_summary(summary))
+    out_of_date = _blocking(data)['passed'].get(states.OUT_OF_DATE, 0)
+    if out_of_date:
+        second.append('%s out of date'
+                      % board_module.count_of(out_of_date, 'rule'))
     if gate != 'passed':
         if cfg.get('min_strength') is not None:
             second.append('minimum test strength %d%%' % cfg['min_strength'])
         if summary.get('manual'):
-            second.append('%d rules with a manual test' % summary['manual'])
+            second.append('%s with a manual test'
+                          % board_module.count_of(summary['manual'], 'rule'))
         if summary.get('not_audited'):
-            second.append('%d rules not audited' % summary['not_audited'])
+            second.append('%s not audited'
+                          % board_module.count_of(summary['not_audited'],
+                                                  'rule'))
     if gate == 'signed':
         second.append('a signature on every rule whose level is signed')
         if summary.get('stale'):
@@ -273,50 +289,82 @@ def _directives(data, project_root):
     no_test = passed.get('no test', 0)
     failing = passed.get('failed', 0)
     partial = passed.get('partial', 0)
-    waiting = passed.get('not run', 0) + passed.get('out of date', 0)
+    not_run = passed.get('not run', 0)
+    out_of_date = passed.get(states.OUT_OF_DATE, 0)
+    waiting = not_run + out_of_date
     weak = strong.get('weak', 0)
     unaudited = _unaudited(data)
     person = len(data.get('queue') or ())
 
-    if blocked['no_proof']:
-        lines.append('%s Next: run purlin:spec. %d rules have no proof line '
-                     'naming them.' % (ARROW, blocked['no_proof']))
+    def next_step(command, count, one, many):
+        """`→ Next: run <command>. <n> rules <many>`, singular for one rule."""
+        said = ('1 rule %s' % one) if count == 1 else ('%d rules %s'
+                                                        % (count, many))
+        return '%s Next: run %s. %s' % (ARROW, command, said)
+
+    if blocked['no_proof'] and gate == 'passed':
+        # Proofs are optional at `passed`, so what such a rule waits for
+        # there is a test marked with its own id.
+        lines.append(next_step('purlin:build', blocked['no_proof'],
+                               'has no test.', 'have no test.'))
+    elif blocked['no_proof']:
+        lines.append(next_step('purlin:spec', blocked['no_proof'],
+                               'has no proof line naming it.',
+                               'have no proof line naming them.'))
     elif failing:
-        lines.append('%s Next: run purlin:build. %d rules have a failing test.'
-                     % (ARROW, failing))
+        lines.append(next_step('purlin:build', failing,
+                               'has a failing test.', 'have a failing test.'))
     elif partial:
-        lines.append('%s Next: run purlin:build. %d rules are partial; their '
-                     'tests pass on one operating system and not on another.'
-                     % (ARROW, partial))
+        lines.append(next_step(
+            'purlin:build', partial,
+            'is partial; its tests pass on one operating system and not on '
+            'another.',
+            'are partial; their tests pass on one operating system and not '
+            'on another.'))
     elif no_test:
-        lines.append('%s Next: run purlin:build. %d rules have a proof and no '
-                     'passing test.' % (ARROW, no_test))
+        lines.append(next_step('purlin:build', no_test,
+                               'has a proof and no passing test.',
+                               'have a proof and no passing test.'))
     elif waiting and trust == 'remote':
         # This project said it does not trust this machine for the tests a
         # signature rests on, so the run that clears these rules is the
         # runner's. It is the only case in which a person is sent there.
-        lines.append('%s Next: run purlin:test --remote. %d rules are waiting '
-                     'for a ci run, which is what this project signs on.'
-                     % (ARROW, waiting))
+        lines.append(next_step(
+            'purlin:test --remote', waiting,
+            'is waiting for a run from the remote runner, which is what this '
+            'project signs on.',
+            'are waiting for a run from the remote runner, which is what '
+            'this project signs on.'))
     elif waiting and gate != 'passed':
         # Evidence either source wrote counts at every gate, so the shortest
         # way to it is the audit on this machine, which runs the tests too.
-        lines.append('%s Next: run purlin:audit. %d rules have no current run '
-                     'to read, and an audit you run counts at gate %s.'
-                     % (ARROW, waiting, gate))
-    elif waiting:
-        lines.append('%s Next: run purlin:test. %d rules have no run to read.'
-                     % (ARROW, waiting))
+        lines.append(next_step(
+            'purlin:audit', waiting,
+            'has no current run to read, and an audit you run counts at gate '
+            '%s.' % gate,
+            'have no current run to read, and an audit you run counts at '
+            'gate %s.' % gate))
+    elif out_of_date:
+        lines.append(next_step('purlin:test', out_of_date, 'is out of date.',
+                               'are out of date.'))
+    elif not_run:
+        lines.append(next_step('purlin:test', not_run,
+                               'has no run to read.', 'have no run to read.'))
     elif unaudited:
-        lines.append('%s Next: run purlin:audit. %d rules have no audit, so '
-                     'nothing has measured how good their tests are.'
-                     % (ARROW, unaudited))
+        lines.append(next_step(
+            'purlin:audit', unaudited,
+            'has no audit, so nothing has measured how good its tests are.',
+            'have no audit, so nothing has measured how good their tests '
+            'are.'))
     elif weak:
-        lines.append('%s Next: run purlin:build. %d rules are weak; the strong '
-                     'cell names what each one is short of.' % (ARROW, weak))
+        lines.append(next_step(
+            'purlin:build', weak,
+            'is weak; the strong cell names what it is short of.',
+            'are weak; the strong cell names what each one is short of.'))
     elif person:
-        lines.append('%s Next: run purlin:sign. %d rules are waiting for a '
-                     'person.' % (ARROW, person))
+        lines.append(next_step('purlin:sign', person,
+                               'is waiting for a person.',
+                               'are waiting for a person.'))
     elif gate == 'signed' and incomplete_names(data):
         # A signature needs a spec tied to its files, so what the rest of
         # the gate waits on is the `> Scope:` line.

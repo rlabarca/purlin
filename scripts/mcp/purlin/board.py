@@ -12,7 +12,8 @@ The columns, left to right:
 
     Spec     the spec's name
     Rules    how many rules it must prove
-    Proofs   how many proof lines it writes, and how many have no test
+    Proofs   how many proof lines it writes, and how many have no test; at
+             `passed` only where the project writes a proof line at all
     Tests    how many rules pass, and how many are partial or failing
     Strong   how many rules are strong, and the test strength, at `strong`
     Signed   how many rules are signed, at `signed`
@@ -37,9 +38,22 @@ BUCKET_LABELS = (('untested', 'Untested'), ('failing', 'Failing'),
 
 
 
-def columns_for(gate):
-    """The columns under `gate`, left to right."""
-    columns = list(COLUMNS[:4])
+def shows_proofs(gate, proofs):
+    """Whether the Proofs column and the proof count are shown.
+
+    Proofs are optional at `passed`, so a project there that writes none is
+    shown no count of them; from `strong` up every rule needs one.
+    """
+    return gate != 'passed' or bool(proofs)
+
+
+def columns_for(gate, proofs=1):
+    """The columns under `gate`, left to right.
+
+    `proofs` is how many proof lines the project writes.
+    """
+    columns = [name for name in COLUMNS[:4]
+               if name != 'Proofs' or shows_proofs(gate, proofs)]
     if gate in ('strong', 'signed'):
         columns.extend(STRONG_COLUMNS)
     if gate == 'signed':
@@ -118,10 +132,16 @@ def signed_cell(rollup):
     return '%d of %d' % (signed_met(rollup), rollup.get('rules') or 0)
 
 
-def row_cells(name, rollup, gate):
-    """One spec's row under `gate`, as the tuple the columns describe."""
-    cells = [name, str(rollup.get('rules') or 0), proofs_cell(rollup),
-             tests_cell(rollup)]
+def row_cells(name, rollup, gate, proofs=1):
+    """One spec's row under `gate`, as the tuple the columns describe.
+
+    `proofs` is how many proof lines the project writes, as `columns_for`
+    reads it.
+    """
+    cells = [name, str(rollup.get('rules') or 0)]
+    if shows_proofs(gate, proofs):
+        cells.append(proofs_cell(rollup))
+    cells.append(tests_cell(rollup))
     if gate in ('strong', 'signed'):
         cells.append(strong_cell(rollup))
     if gate == 'signed':
