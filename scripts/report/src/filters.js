@@ -22,26 +22,27 @@ function allFilters() {
     /* The two words the audit itself leaves on a rule: `weak`, which it
        measured and did not prove, and `not audited`, which it has not run on
        yet. Both are work for whoever writes the tests, which is the one
-       question this pill asks; the three words that wait for a person are
-       the next pill's. */
+       question this pill asks; the rules that wait for a person are the next
+       pill's. */
     {id: 'weak', label: 'Weak', level: 'strong', test: function (rule) {
       var word = cellWord(rule, 'strong');
       return word === 'weak' || word === 'not audited';
     }},
-    /* The rules the Review tab holds: the strong cell reads `manual test`,
-       `unsettled` or `held`, so the next step is a person's. */
-    {id: 'to-review', label: 'To review', level: 'strong',
-     test: function (rule) {
-       return REVIEW_KINDS.indexOf(cellWord(rule, 'strong')) >= 0;
-     }},
-    /* The rules the Sign tab holds: their level is `signed`, they need a
-       signature, and no signature counts for them yet. */
-    {id: 'to-sign', label: 'To sign', level: 'signed', test: function (rule) {
-      return !!rule.signable;
+    /* The rules the Queue tab holds: a hand check or a signature, so the
+       next step is a person's. */
+    {id: 'queue', label: 'Queue', level: 'strong', test: function (rule) {
+      return inQueue(rule);
     }},
     {id: 'stale', label: 'Stale', level: 'signed', test: function (rule) {
       return !!(rule.flags || {}).stale;
     }}];
+}
+
+/* Whether the queue names this rule, under the feature that owns it. */
+function inQueue(rule) {
+  return (DATA.queue || []).some(function (entry) {
+    return entry.owner === rule.feature && entry.rule === rule.id;
+  });
 }
 
 function offeredFilters() {

@@ -127,9 +127,8 @@ function proofPanel(proof) {
 /* The link back closes the rule rather than leaving it open behind another
    screen, and it returns to the screen the rule was opened from. */
 function backLink() {
-  var from = VIEW.from === 'review' && level('strong') ? 'review'
-    : VIEW.from === 'sign' && level('signed') ? 'sign' : 'board';
-  var label = {review: 'Review', sign: 'Sign', board: 'Board'}[from];
+  var from = VIEW.from === 'queue' && level('strong') ? 'queue' : 'board';
+  var label = {queue: 'Queue', board: 'Board'}[from];
   return '<button class="btn" data-act="close" data-screen="' + from + '">← '
     + label + '</button>';
 }

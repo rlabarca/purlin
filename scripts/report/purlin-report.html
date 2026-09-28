@@ -161,16 +161,17 @@ function allFilters() {
       var word = cellWord(rule, 'strong');
       return word === 'weak' || word === 'not audited';
     }},
-    {id: 'to-review', label: 'To review', level: 'strong',
-     test: function (rule) {
-       return REVIEW_KINDS.indexOf(cellWord(rule, 'strong')) >= 0;
-     }},
-    {id: 'to-sign', label: 'To sign', level: 'signed', test: function (rule) {
-      return !!rule.signable;
+    {id: 'queue', label: 'Queue', level: 'strong', test: function (rule) {
+      return inQueue(rule);
     }},
     {id: 'stale', label: 'Stale', level: 'signed', test: function (rule) {
       return !!(rule.flags || {}).stale;
     }}];
+}
+function inQueue(rule) {
+  return (DATA.queue || []).some(function (entry) {
+    return entry.owner === rule.feature && entry.rule === rule.id;
+  });
 }
 function offeredFilters() {
   return allFilters().filter(function (f) { return level(f.level); });
@@ -213,7 +214,7 @@ function statStrip() {
   }).join('');
   var flags = level('signed')
     ? '<div class="flags">'
-      + flagCard('To sign', summary.signable || 0, 'warn', signableLines())
+      + flagCard('Queue', summary.queue || 0, 'warn', queueLines())
       + flagCard('Stale', summary.stale || 0, 'fail', staleLines())
       + '</div>' : '';
   return '<div class="strip' + (flags ? ' flagged' : '') + '">'
@@ -224,17 +225,17 @@ function flagCard(label, count, hue, lines) {
     + hover(lines) + '><div class="flag-v">' + count
     + '</div><div class="flag-l">' + esc(label) + '</div></div>';
 }
-function signableLines() {
+function queueLines() {
   var byFeature = {};
   var names = [];
-  ((DATA.sign_list || [])).forEach(function (entry) {
+  ((DATA.queue || [])).forEach(function (entry) {
     if (!byFeature[entry.feature]) {
       byFeature[entry.feature] = 0;
       names.push(entry.feature);
     }
     byFeature[entry.feature] += 1;
   });
-  if (!names.length) { return ['No rule is waiting for a signature.']; }
+  if (!names.length) { return ['No rule is waiting for a person.']; }
   return names.sort().map(function (name) {
     return name + DOT + byFeature[name];
   });
@@ -267,8 +268,7 @@ function boardColumns() {
     columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
   if (level('signed')) {
-    columns.push({label: COLUMNS[5], width: '1.2fr', floor: 108});
-    columns.push({label: COLUMNS[6], width: '1.1fr', floor: 90});
+    columns.push({label: COLUMNS[5], width: '1.1fr', floor: 90});
   }
   return columns;
 }
@@ -306,16 +306,6 @@ function strongCell(feature) {
         value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
     + '</span>';
 }
-function signableCell(feature) {
-  var rollup = feature.rollup || {};
-  var waiting = ownRules(feature).filter(function (rule) {
-    return rule.signable;
-  }).map(function (rule) { return rule.id; });
-  return '<span' + hover([waiting.length ? 'to sign' + DOT + waiting.join(', ')
-      : 'no rule here is waiting for a signature'])
-    + '>' + counts([share(rollup.signable || 0, rollup.rules || 0)])
-    + '</span>';
-}
 function signedCell(feature) {
   var rollup = feature.rollup || {};
   return '<span' + hover(signerLines(feature)) + '>'
@@ -332,10 +322,7 @@ function featureRow(feature, columns) {
   cells.push(proofsCell(feature));
   cells.push(testsCell(feature));
   if (level('strong')) { cells.push(strongCell(feature)); }
-  if (level('signed')) {
-    cells.push(signableCell(feature));
-    cells.push(signedCell(feature));
-  }
+  if (level('signed')) { cells.push(signedCell(feature)); }
   var row = '<div class="tr" data-act="feature" data-feature="'
     + esc(feature.name) + '">' + cells.map(function (cell) {
       return '<div>' + cell + '</div>';
@@ -505,9 +492,8 @@ function proofPanel(proof) {
     + '</dl></div>';
 }
 function backLink() {
-  var from = VIEW.from === 'review' && level('strong') ? 'review'
-    : VIEW.from === 'sign' && level('signed') ? 'sign' : 'board';
-  var label = {review: 'Review', sign: 'Sign', board: 'Board'}[from];
+  var from = VIEW.from === 'queue' && level('strong') ? 'queue' : 'board';
+  var label = {queue: 'Queue', board: 'Board'}[from];
   return '<button class="btn" data-act="close" data-screen="' + from + '">← '
     + label + '</button>';
 }
@@ -549,99 +535,48 @@ function renderRule() {
     + '</div></section>';
 }
 var RULE_TEXT_MAX = 90;
-var KIND_SENTENCES = {
-  'manual test': 'Its proof is @manual, so a person runs the test and states '
-    + 'what they saw.',
-  'unsettled': 'The AI audit could not settle it, so a person judges the '
-    + 'proof against the test.',
-  'held': 'A person holds it: the test does not prove the proof.'};
 function shortText(text) {
   var value = String(text == null ? '' : text);
   return value.length <= RULE_TEXT_MAX ? value
     : value.slice(0, RULE_TEXT_MAX).replace(/\s+\S*$/, '') + '…';
 }
-function kindSentence(word) {
-  return KIND_SENTENCES[word] || 'It is waiting because it reads ' + word + '.';
-}
-function reviewRowReasons(rule) {
-  var cell = cellOf(rule, 'strong') || {};
-  return (cell.reasons || []).length ? cell.reasons.join('; ')
-    : kindSentence(cell.word);
-}
-function listRow(entry, rule, rest) {
+function queueRow(entry) {
+  var rule = listedRule(entry);
   return '<div class="rev" data-act="rule" data-feature="'
     + esc(entry.feature) + '" data-rule="' + esc(entry.rule) + '">'
     + '<span>' + esc(entry.feature) + '</span>'
     + '<span class="mono">' + esc(entry.rule) + '</span>'
-    + '<span>' + esc(rule ? shortText(rule.text) : '') + '</span>'
-    + levelTag(rule) + rest + '</div>';
-}
-function reviewRow(entry) {
-  var rule = listedRule(entry);
-  var cell = rule ? cellOf(rule, 'strong') : null;
-  return listRow(entry, rule, (cell ? pill(cell.word) : '<span></span>')
-    + '<span class="sec">' + esc(rule ? reviewRowReasons(rule) : '')
-    + '</span>');
-}
-function signRow(entry) {
-  var rule = listedRule(entry);
-  var cell = rule ? cellOf(rule, 'signed') : null;
-  return listRow(entry, rule, (cell ? pill(cell.word) : '<span></span>')
-    + '<span class="cmd">purlin:sign ' + esc(entry.feature) + ' '
-    + esc(entry.rule) + '</span>');
+    + '<span>' + esc(shortText(entry.text || (rule ? rule.text : ''))) + '</span>'
+    + levelTag(rule || entry)
+    + '<span' + hover([entry.word + ((entry.reasons || []).length
+        ? DOT + entry.reasons.join('; ') : '')]) + '>' + esc(entry.need)
+    + '</span>'
+    + '<span class="cmd">' + esc(entry.command) + '</span></div>';
 }
 function listHead(labels) {
   return '<div class="rev th">' + labels.map(function (label) {
     return '<span>' + esc(label) + '</span>';
   }).join('') + '</div>';
 }
-function ofKind(entries, word) {
-  return entries.filter(function (entry) {
-    var rule = listedRule(entry);
-    return rule && cellWord(rule, 'strong') === word;
-  });
-}
-function renderReview() {
-  var entries = DATA.review_list || [];
+function renderQueue() {
+  var entries = DATA.queue || [];
   if (!entries.length) {
-    return '<section><p class="eyebrow">Review</p><div class="panel empty">'
+    return '<section><p class="eyebrow">Queue</p><div class="panel empty">'
       + 'No rule is waiting for a person. A rule arrives here when its proof '
-      + 'is @manual, when the AI audit could not settle it, or when someone '
-      + 'holds it.</div></section>';
+      + 'is @manual, or when its level is signed and it has passed its tests '
+      + 'and its audit.</div></section>';
   }
-  var head = '<section><p class="eyebrow">Review</p><h1>'
+  var hand = entries.filter(function (entry) {
+    return entry.need === 'hand check';
+  }).length;
+  var head = '<section><p class="eyebrow">Queue</p><h1>'
     + entries.length + (entries.length === 1 ? ' rule needs' : ' rules need')
-    + ' a person</h1><p class="line">Each of these is work only a person can '
-    + 'do. Sign one with <span class="cmd">purlin:sign &lt;feature&gt; '
-    + '&lt;RULE-N&gt;</span>, or hold it with the case the test misses.'
-    + '</p></section>';
-  var body = REVIEW_KINDS.map(function (word) {
-    var group = ofKind(entries, word);
-    if (!group.length) { return ''; }
-    return '<div class="group"><span class="gt">' + esc(word)
-      + '</span><span class="muted">(' + group.length + ')</span></div>'
-      + group.map(reviewRow).join('');
-  }).join('');
+    + ' a person</h1><p class="line">Hand checks ' + hand + DOT
+    + 'Signatures ' + (entries.length - hand) + '</p></section>';
   return head + '<section><div class="tbl">'
-    + listHead(['Spec', 'Rule', 'What it claims', 'Level', 'Reads', 'Why'])
-    + body + '</div></section>';
-}
-function renderSign() {
-  var entries = DATA.sign_list || [];
-  if (!entries.length) {
-    return '<section><p class="eyebrow">Sign</p><div class="panel empty">'
-      + 'No rule is waiting for a signature. A rule arrives here once its '
-      + 'level is signed, it has passed its tests and its audit, and nobody '
-      + 'has signed the text it carries now.</div></section>';
-  }
-  var head = '<section><p class="eyebrow">Sign</p><h1>' + entries.length
-    + (entries.length === 1 ? ' rule to sign' : ' rules to sign')
-    + '</h1><p class="line">Each of these has passed its tests and its '
-    + 'audit, so the evidence its level asks for is in. A signature is a signed commit '
-    + 'that names its signer.</p></section>';
-  return head + '<section><div class="tbl">'
-    + listHead(['Spec', 'Rule', 'What it claims', 'Level', 'Signed', 'Command'])
-    + entries.map(signRow).join('') + '</div></section>';
+    + listHead(['Spec', 'Rule', 'What it claims', 'Level', 'Needs',
+                'Command'])
+    + entries.map(queueRow).join('') + '</div></section>';
 }
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
@@ -656,19 +591,17 @@ var TILE_HOVER = {
   untested: 'No test, no current run, or no proof written.',
   failing: 'Every platform that ran the tests found a failure.',
   partial: 'Passed on one platform, failed or did not run on another.'};
-var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signable',
-               'Signed'];
+var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
              failing: 'failing', stale: 'stale', passed: 'passed',
              failed: 'failed', not_run: 'not run'};
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
-  'out of date': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
+  'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
   'manual test': 'warn', 'not audited': 'idle', 'unsettled': 'warn',
   'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail'};
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
-var REVIEW_KINDS = ['manual test', 'unsettled', 'held'];
 function loadData(callback) {
   var frame = document.createElement('iframe');
   var done = false;
@@ -951,10 +884,7 @@ function tabs() {
   var open = VIEW.screen;
   var items = [['board', 'Board']];
   if (level('strong')) {
-    items.push(['review', 'Review (' + (DATA.review_list || []).length + ')']);
-  }
-  if (level('signed')) {
-    items.push(['sign', 'Sign (' + (DATA.sign_list || []).length + ')']);
+    items.push(['queue', 'Queue (' + (DATA.queue || []).length + ')']);
   }
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
   return '<nav class="tabs">' + items.map(function (item) {
@@ -988,11 +918,9 @@ function render() {
         + 'write it again.') + '</div></div>';
     return;
   }
-  if (VIEW.screen === 'review' && !level('strong')) { VIEW.screen = 'board'; }
-  if (VIEW.screen === 'sign' && !level('signed')) { VIEW.screen = 'board'; }
+  if (VIEW.screen === 'queue' && !level('strong')) { VIEW.screen = 'board'; }
   var body = VIEW.screen === 'rule' ? renderRule()
-    : VIEW.screen === 'review' ? renderReview()
-    : VIEW.screen === 'sign' ? renderSign()
+    : VIEW.screen === 'queue' ? renderQueue()
     : notices() + renderBoard();
   app.innerHTML = topBar() + tabs() + '<div class="wrap">' + body + '</div>';
 }
@@ -1019,8 +947,7 @@ function onClick(event) {
     var name = node.getAttribute('data-feature');
     VIEW.features[name] = !VIEW.features[name];
   } else if (act === 'rule') {
-    VIEW.from = VIEW.screen === 'review' || VIEW.screen === 'sign'
-      ? VIEW.screen : 'board';
+    VIEW.from = VIEW.screen === 'queue' ? 'queue' : 'board';
     VIEW.feature = node.getAttribute('data-feature');
     VIEW.rule = node.getAttribute('data-rule');
     VIEW.screen = 'rule';

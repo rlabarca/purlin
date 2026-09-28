@@ -3,7 +3,7 @@
 
 /* One tile per level the gate reaches, plus the two below them and `Partial`,
    each counting the rules that got at least that far, and at `signed` two
-   flag cards beside them: the rules waiting for a signature, and the
+   flag cards beside them: the rules waiting for a person, and the
    signatures that no longer match. A flag is counted beside the tiles, never
    instead of one, so it never shares their row. Each tile carries the hover
    its column carries, read over every spec. */
@@ -21,7 +21,7 @@ function statStrip() {
   }).join('');
   var flags = level('signed')
     ? '<div class="flags">'
-      + flagCard('To sign', summary.signable || 0, 'warn', signableLines())
+      + flagCard('Queue', summary.queue || 0, 'warn', queueLines())
       + flagCard('Stale', summary.stale || 0, 'fail', staleLines())
       + '</div>' : '';
   return '<div class="strip' + (flags ? ' flagged' : '') + '">'
@@ -36,19 +36,19 @@ function flagCard(label, count, hue, lines) {
     + '</div><div class="flag-l">' + esc(label) + '</div></div>';
 }
 
-/* How many rules each spec is waiting to have signed, which is what the
-   `To sign` card counts for the project and what the Sign tab lists. */
-function signableLines() {
+/* How many rules of each spec wait on a person, which is what the `Queue`
+   card counts for the project and what the Queue tab lists. */
+function queueLines() {
   var byFeature = {};
   var names = [];
-  ((DATA.sign_list || [])).forEach(function (entry) {
+  ((DATA.queue || [])).forEach(function (entry) {
     if (!byFeature[entry.feature]) {
       byFeature[entry.feature] = 0;
       names.push(entry.feature);
     }
     byFeature[entry.feature] += 1;
   });
-  if (!names.length) { return ['No rule is waiting for a signature.']; }
+  if (!names.length) { return ['No rule is waiting for a person.']; }
   return names.sort().map(function (name) {
     return name + DOT + byFeature[name];
   });
@@ -89,8 +89,8 @@ function tileHover(bucket, project) {
    ran that heading into the next one. Each floor is the heading, or the
    longest single part of a count cell, whichever is wider. The shares are
    set so that no floor binds at 1024 and every count cell holds its first
-   two parts on one line at 1280; under the sum of the floors, 662 pixels,
-   which with the five gaps and the padding is 770, the table scrolls
+   two parts on one line at 1280; under the sum of the floors, 554 pixels,
+   which with the four gaps and the padding is 650, the table scrolls
    sideways rather than squeezing a column past one. */
 function boardColumns() {
   var columns = [{label: COLUMNS[0], width: '2.3fr', floor: 132},
@@ -101,8 +101,7 @@ function boardColumns() {
     columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
   if (level('signed')) {
-    columns.push({label: COLUMNS[5], width: '1.2fr', floor: 108});
-    columns.push({label: COLUMNS[6], width: '1.1fr', floor: 90});
+    columns.push({label: COLUMNS[5], width: '1.1fr', floor: 90});
   }
   return columns;
 }
@@ -160,23 +159,6 @@ function strongCell(feature) {
     + '</span>';
 }
 
-/* How many of this spec's rules a signer can act on now: their level is
-   `signed`, their tests and audit are met, and no signature counts for them
-   yet. It is the
-   rollup's own `signable`, which is `board.signable_cell`, so the column, the
-   `To sign` card and the Sign tab all count the same rules. The hover names
-   them, because a share alone does not say which. */
-function signableCell(feature) {
-  var rollup = feature.rollup || {};
-  var waiting = ownRules(feature).filter(function (rule) {
-    return rule.signable;
-  }).map(function (rule) { return rule.id; });
-  return '<span' + hover([waiting.length ? 'to sign' + DOT + waiting.join(', ')
-      : 'no rule here is waiting for a signature'])
-    + '>' + counts([share(rollup.signable || 0, rollup.rules || 0)])
-    + '</span>';
-}
-
 /* How many of this spec's rules carry a signature that counts. Who signed
    them and how many signatures stopped matching are in the hover; the `Stale`
    flag card carries the project's stale count. */
@@ -197,10 +179,7 @@ function featureRow(feature, columns) {
   cells.push(proofsCell(feature));
   cells.push(testsCell(feature));
   if (level('strong')) { cells.push(strongCell(feature)); }
-  if (level('signed')) {
-    cells.push(signableCell(feature));
-    cells.push(signedCell(feature));
-  }
+  if (level('signed')) { cells.push(signedCell(feature)); }
   var row = '<div class="tr" data-act="feature" data-feature="'
     + esc(feature.name) + '">' + cells.map(function (cell) {
       return '<div>' + cell + '</div>';

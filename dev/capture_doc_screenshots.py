@@ -47,8 +47,8 @@ SHOTS = (
      ('[data-act="feature"][data-feature="login"]', '.rule[data-rule="RULE-1"]')),
     # RULE-1 is the signed one: its cells show a platform box, a brief and a
     # signature, which is the whole chain on one screen.
-    ('dashboard-review-list.png', 'regulated', ('[data-screen="review"]',)),
-    ('dashboard-sign.png', 'regulated', ('[data-screen="sign"]',)),
+    ('dashboard-review-list.png', 'regulated', ('[data-screen="queue"]',)),
+    ('dashboard-sign.png', 'regulated', ('[data-screen="queue"]',)),
 )
 
 

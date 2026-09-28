@@ -59,7 +59,7 @@ TOKEN_FILES = ('palette.css', 'theme-dark.css', 'theme-light.css',
 
 # app.js last: it is the only one that runs anything, and by then every
 # function the screens declare has been hoisted.
-SCRIPT_FILES = ('theme.js', 'filters.js', 'board.js', 'rule.js', 'review.js',
+SCRIPT_FILES = ('theme.js', 'filters.js', 'board.js', 'rule.js', 'queue.js',
                 'app.js')
 
 # The two colours that separate the cream-on-navy mark from the navy-on-paper

@@ -25,8 +25,8 @@ var GATE_LEVELS = ['passed', 'strong', 'signed'];
 /* The tiles, lowest level first. `Untested`, `Failing` and `Partial` count
    the rules that are not passing on every platform they ran on. The three
    above them are cumulative, not exclusive: a signed rule is still passing
-   and still strong, so it is counted in all three. `stale` and `held` are
-   flags counted beside the tiles, never instead of one. The keys and the
+   and still strong, so it is counted in all three. `stale` is a flag
+   counted beside the tiles, never instead of one. The keys and the
    labels are `board.BUCKET_LABELS`: the bucket `passed` reads `Passing` on a
    tile, because the tile counts rules whose tests pass now rather than a
    state they were once put in. */
@@ -42,13 +42,12 @@ var TILE_HOVER = {
   failing: 'Every platform that ran the tests found a failure.',
   partial: 'Passed on one platform, failed or did not run on another.'};
 
-/* The board's seven column headings and the words its cells append, in one
-   place. `scripts/mcp/purlin/board.py` renders the same seven columns for
+/* The board's six column headings and the words its cells append, in one
+   place. `scripts/mcp/purlin/board.py` renders the same six columns for
    `purlin:status`, so these are its
    `COLUMNS` and its cell words: a string changed there is changed here in
    the same commit. */
-var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signable',
-               'Signed'];
+var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 
 /* The one separator every cell, hover and line puts between two parts, which
    is `board.DOT`. */
@@ -59,19 +58,15 @@ var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
 
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
-   screen and a row on the Review tab agree. */
+   screen and a row on the Queue tab agree. */
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
-  'out of date': 'warn', 'strong': 'pass', 'weak': 'warn', 'held': 'warn',
+  'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
   'manual test': 'warn', 'not audited': 'idle', 'unsettled': 'warn',
   'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail'};
 
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
 
-/* The three words the strong cell reads when the work left is a person's,
-   which is what the Review tab holds and what it groups its rows by. `not
-   audited` is not among them: it waits for `purlin:audit`, not for anyone. */
-var REVIEW_KINDS = ['manual test', 'unsettled', 'held'];
 
 function loadData(callback) {
   var frame = document.createElement('iframe');
@@ -464,18 +459,13 @@ function topBar() {
     + themeButton() + '</header>';
 }
 
-/* The two lists are questions for a person, and under `passed` nothing asks
-   one, so the tab is absent rather than empty. Review comes first because
-   `purlin:sign` walks it first: a rule a person has not judged is not a rule
-   to sign. */
+/* The queue is the one list of questions for a person, and under `passed`
+   nothing asks one, so the tab is absent rather than empty. */
 function tabs() {
   var open = VIEW.screen;
   var items = [['board', 'Board']];
   if (level('strong')) {
-    items.push(['review', 'Review (' + (DATA.review_list || []).length + ')']);
-  }
-  if (level('signed')) {
-    items.push(['sign', 'Sign (' + (DATA.sign_list || []).length + ')']);
+    items.push(['queue', 'Queue (' + (DATA.queue || []).length + ')']);
   }
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
   return '<nav class="tabs">' + items.map(function (item) {
@@ -511,13 +501,11 @@ function render() {
         + 'write it again.') + '</div></div>';
     return;
   }
-  if (VIEW.screen === 'review' && !level('strong')) { VIEW.screen = 'board'; }
-  if (VIEW.screen === 'sign' && !level('signed')) { VIEW.screen = 'board'; }
+  if (VIEW.screen === 'queue' && !level('strong')) { VIEW.screen = 'board'; }
   /* The notices are about the tree the whole payload came from, so the board
      carries them once rather than every screen repeating them. */
   var body = VIEW.screen === 'rule' ? renderRule()
-    : VIEW.screen === 'review' ? renderReview()
-    : VIEW.screen === 'sign' ? renderSign()
+    : VIEW.screen === 'queue' ? renderQueue()
     : notices() + renderBoard();
   app.innerHTML = topBar() + tabs() + '<div class="wrap">' + body + '</div>';
 }
@@ -545,8 +533,7 @@ function onClick(event) {
     var name = node.getAttribute('data-feature');
     VIEW.features[name] = !VIEW.features[name];
   } else if (act === 'rule') {
-    VIEW.from = VIEW.screen === 'review' || VIEW.screen === 'sign'
-      ? VIEW.screen : 'board';
+    VIEW.from = VIEW.screen === 'queue' ? 'queue' : 'board';
     VIEW.feature = node.getAttribute('data-feature');
     VIEW.rule = node.getAttribute('data-rule');
     VIEW.screen = 'rule';
