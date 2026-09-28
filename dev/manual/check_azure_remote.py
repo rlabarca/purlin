@@ -5,7 +5,7 @@ For the machine with Azure DevOps access. This machine has none, so the part
 of `purlin:test --remote` that talks to Azure DevOps is proven here only
 against a stand-in `az` (`dev/test_remote.py`). This check asks the real
 service the same questions, with the same commands `scripts/run/remote.py`
-builds, and prints each command, its raw output and a one-line verdict.
+builds, and prints each command, its raw output and a one-line ok or FAIL.
 
 What it confirms:
 
@@ -31,7 +31,7 @@ is `purlin.azure-pipelines.yml`, signed in with `az login`:
     python3 /path/to/purlin/dev/manual/check_azure_remote.py [--repo .]
         [--poll-minutes 90]
 
-Exit codes: 0 every verdict passed, 1 a verdict failed, 2 `origin` is not an
+Exit codes: 0 every check passed, 1 a check failed, 2 `origin` is not an
 Azure DevOps URL or `az` is not on PATH.
 """
 
@@ -72,7 +72,7 @@ def show(argv, root, timeout=remote.COMMAND_SECONDS):
     return done.returncode, done.stdout
 
 
-def verdict(ok, text):
+def check(ok, text):
     print('%s %s' % ('ok  ' if ok else 'FAIL', text))
     print()
     if not ok:
@@ -94,27 +94,27 @@ def main(argv=None):
 
     code, url = show(['git', 'remote', 'get-url', remote.REMOTE], root)
     where = remote.parse_azure_remote(url.strip())
-    if not verdict(where is not None,
+    if not check(where is not None,
                    'origin parses as (organisation, project, repository) = %r'
                    % (where,)):
         return 2
     organization, project, _repository = where
 
     az = shutil.which('az')
-    if not verdict(bool(az), '`az` is on PATH at %s' % az):
+    if not check(bool(az), '`az` is on PATH at %s' % az):
         return 2
     code, _out = show([az, 'extension', 'show', '--name', 'azure-devops',
                        '--query', 'version', '--output', 'tsv'], root)
-    verdict(code == 0, 'the azure-devops extension is installed')
+    check(code == 0, 'the azure-devops extension is installed')
     code, _out = show([az, 'account', 'show', '--query', 'user.name',
                        '--output', 'tsv'], root)
-    verdict(code == 0, '`az` is signed in')
+    check(code == 0, '`az` is signed in')
 
     code, sha = show(['git', 'rev-parse', 'HEAD'], root)
     branch = BRANCH_PREFIX + sha.strip()[:7]
     code, _out = show(['git', 'push', remote.REMOTE,
                        'HEAD:refs/heads/%s' % branch], root)
-    if not verdict(code == 0, 'pushed HEAD as %s' % branch):
+    if not check(code == 0, 'pushed HEAD as %s' % branch):
         return 1
     try:
         _find_and_wait(root, az, organization, project, branch,
@@ -122,9 +122,9 @@ def main(argv=None):
     finally:
         code, _out = show(['git', 'push', remote.REMOTE, '--delete', branch],
                           root)
-        verdict(code == 0, 'deleted %s from %s' % (branch, remote.REMOTE))
-    print('%d verdicts failed.' % len(failures) if failures
-          else 'Every verdict passed.')
+        check(code == 0, 'deleted %s from %s' % (branch, remote.REMOTE))
+    print('%d checks failed.' % len(failures) if failures
+          else 'Every check passed.')
     return 1 if failures else 0
 
 
@@ -138,13 +138,13 @@ def _find_and_wait(root, az, organization, project, branch, poll_seconds):
             run_id = out.strip()
             break
         time.sleep(remote.FIND_EVERY)
-    if not verdict(bool(run_id),
+    if not check(bool(run_id),
                    'the run registered after %d seconds, id %r (limit %d)'
                    % (time.time() - started, run_id, remote.FIND_SECONDS)):
         return
     found = remote.find_azure_run(root, az, organization, project, branch,
                                   seconds=0)
-    verdict(found == run_id.split()[0],
+    check(found == run_id.split()[0],
             'remote.find_azure_run reads the same id: %r' % found)
 
     started = time.time()
@@ -153,21 +153,21 @@ def _find_and_wait(root, az, organization, project, branch, poll_seconds):
     while True:
         code, out = show(command, root)
         words = out.split()
-        verdict(code == 0 and bool(words) and words[0] in STATUSES,
+        check(code == 0 and bool(words) and words[0] in STATUSES,
                 'the answer opens with a status `remote.py` knows: %r'
                 % (words[:1],))
         if words and words[0] == 'completed':
             break
         if time.time() - started >= poll_seconds:
-            verdict(False, 'the run did not complete within %d seconds'
+            check(False, 'the run did not complete within %d seconds'
                     % poll_seconds)
             return
         time.sleep(remote.POLL_EVERY)
-    verdict(len(words) > 1 and words[1] in RESULTS,
+    check(len(words) > 1 and words[1] in RESULTS,
             'the completed run names a result `remote.py` knows: %r'
             % (words[1:],))
     result = remote.wait_azure_run(root, az, organization, project, run_id)
-    verdict(result == words[1] if len(words) > 1 else False,
+    check(result == words[1] if len(words) > 1 else False,
             'remote.wait_azure_run reads the same result: %r' % result)
     print('The run took %d seconds after it registered.'
           % (time.time() - started))
