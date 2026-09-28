@@ -1,7 +1,7 @@
 """The consumer project's one test file: one plain proof, one scoped to Linux.
 
 PROOF-2 is tagged `@env(linux)` in the spec, so it reaches `strong` only when a
-Linux job's record says it passed. The marker above each test names the feature
+Linux job's evidence says it passed. The marker above each test names the feature
 and the proof and nothing else: which rule a proof serves and which operating
 system it needs are the spec's to say, and CI reads them from there.
 """

@@ -2,7 +2,8 @@
   "version": "0.10.0",
   "gate": "strong",
   "mutation_engine": "auto",
-  "ci": "github",
+  "min_strength": 70,
+  "audit_parallel": 4,
   "tests": [
     {
       "name": "pytest",
@@ -14,5 +15,7 @@
         "**/*_test.py"
       ]
     }
-  ]
+  ],
+  "ci": "github",
+  "trust": "local"
 }

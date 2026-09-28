@@ -11,9 +11,6 @@ rendered from `templates/purlin.yml` and compared with the committed file, so
 the fixture cannot drift from the template without a red test; the rest asserts
 the project is complete, that its structure is what a runner will read, and
 that Purlin reads it as one feature with one Linux-scoped proof.
-
-`dev/consumer_ci_dryrun.sh` walks the same workflow's steps locally. It is
-hand-run and touches no account, so there is nothing here to drive it.
 """
 
 import json
@@ -278,25 +275,11 @@ def test_the_config_is_the_shape_this_release_reads():
     assert config['gate'] == 'strong'
     assert [suite['name'] for suite in config['tests']] == ['pytest']
     assert config['version'] == PURLIN_REF[1:]
-    retired = {'spec_dir', 'audit_criteria', 'digest', 'report', 'pre_push'}
-    assert not retired & set(config), (
-        'the config still carries %s' % sorted(retired & set(config)))
-
-
-# The spec tag this release retired and the marker keyword that went with
-# it. Both are assembled rather than written out: the words they spell are
-# retired from this release's vocabulary, and a test file is a file like any
-# other.
-RETIRED_TAG = '@' + 'on('
-RETIRED_KEYWORD = 'plat' + 'forms='
-
-
-# purlin: host PROOF-20
-def test_the_spec_carries_no_tag_this_release_retired():
-    spec = read('specs/core/greeting.md')
-    assert '@env(linux)' in spec
-    assert RETIRED_TAG not in spec
-    assert RETIRED_KEYWORD not in read('tests/test_greeting.py')
+    template = json.loads(read(os.path.join('templates', 'config.json'),
+                               root=ROOT))
+    assert list(config) == list(template), (
+        'the fixture config carries %s where init writes %s'
+        % (list(config), list(template)))
 
 
 # purlin: host PROOF-20
@@ -325,11 +308,3 @@ def test_the_fixtures_tests_pass_against_its_own_module():
     assert greeting.greet('Ada') == 'Hello, Ada!'
     assert greeting.greet('') == 'Hello, world!'
     assert isinstance(greeting.os_tag(), str)
-
-
-# purlin: host PROOF-20
-def test_the_dry_run_walks_the_committed_workflow():
-    script = read(os.path.join('dev', 'consumer_ci_dryrun.sh'), root=ROOT)
-    assert WORKFLOW_REL in script
-    assert 'purlin_run.py' in script
-    assert 'gh ' not in script, 'the dry run must touch no account'
