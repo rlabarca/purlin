@@ -19,9 +19,9 @@ is the authority for its half. They bind the dashboard, the CLI output, the docs
   `theme-light.css`, never a raw palette value. Both themes ship.
 - **Copy voice** follows `references/writing_style.md`: plain and declarative, second person for
   the reader, third person for the system, exact numbers, limits stated, no superlatives.
-- Docs diagrams are mermaid with the init block from `docs/_mermaid.md`; the three
-  screenshots, the board, the queue and one rule, are taken by `dev/capture_doc_screenshots.py`
-  from the rebuilt dashboard and the fixtures; the logo is `design/assets/logo.svg`.
+- Docs diagrams are plain mermaid. The three screenshots, the board, the queue and one rule,
+  are taken by `dev/capture_doc_screenshots.py` from the rebuilt dashboard and the fixtures; the
+  logo is `design/assets/logo.svg`.
 
 ## Format reference versioning
 
@@ -46,8 +46,8 @@ Do not bump for clarified wording, a new example or a typo.
 | `spec_format.md` | The 2-section spec, parsed by `sync_status` |
 | `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
 | `marker_format.md` | The marker comment above a test, the `tests` setting, the four report formats and the tie, read by `purlin_run.py` and `sync_status` |
-| `signature_format.md` | The signature and the hold `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
-| `package_format.md` | The evidence package `purlin:export` and `purlin:sign` write, read by the system of record it is handed to |
+| `signature_format.md` | The signature `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
+| `package_format.md` | The evidence package `purlin:export` and `purlin:sign` write, handed to a regulated sign-off system as evidence |
 | `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a remote run, read by `sync_status` and `scripts/ci/gate_check.py` |
 
 ## Skill and reference deduplication
@@ -64,10 +64,10 @@ concept and consolidate any duplicate in the same commit.
 
 | Reference | What it is the one home of |
 |-----------|---------------------------|
-| `references/glossary.md` | The word this project uses for each concept, the chain, and every retired spelling |
+| `references/glossary.md` | The word this project uses for each concept, its one definition, and the chain |
 | `references/purlin_commands.md` | Every command's syntax, its one purpose sentence, and what it writes |
 | `references/hard_gates.md` | The gate, the three levels, which evidence counts, when a signature counts, what `signed/<version>` means |
-| `references/review_criteria.md` | What the audit looks for, the two lists, the brief's layers, what the brief reports |
+| `references/review_criteria.md` | What the AI audit looks for in a rule, its proof and its test; the instructions the model is sent |
 | `references/spec_quality_guide.md` | Writing a rule, writing a proof, reading the status that blocks it |
 | `references/drift_criteria.md` | File classification, config field ownership, drift by role |
 | `references/commit_conventions.md` | Every commit message prefix and shape |
@@ -99,8 +99,8 @@ plus the script itself.
 ## Tool folder separation
 
 Everything here ships: `.claude-plugin/marketplace.json` declares the plugin source as `./`, so an
-install carries `scripts/`, `dev/`, `specs/`, `references/`, `docs/`, `skills/`, `agents/`
-and `templates/`. The line below is not what ships; it is what a consumer may depend on.
+install carries `scripts/`, `dev/`, `specs/`, `references/`, `docs/`, `skills/`, `agents/`,
+`design/` and `templates/`. The line below is not what ships; it is what a consumer may depend on.
 
 - **`scripts/`** is the consumer-facing surface. A consumer project, a shipped skill, an agent
   definition or a reference may name a path under it, and its layout is held stable across
