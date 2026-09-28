@@ -122,7 +122,7 @@ function proofsCell(feature) {
   return '<span' + hover([ids.length ? 'no test' + DOT + ids.join(', ')
       : 'every proof has a test']) + '>'
     + counts([[rollup.proofs || 0, '', ''],
-      [rollup.proofs_without_test || 0, WORDS.without_test, 'warn']]) + '</span>';
+      [rollup.proofs_without_test || 0, WORDS.no_test, 'warn']]) + '</span>';
 }
 
 /* What the marked tests found, as the passed cells read it: how many of the

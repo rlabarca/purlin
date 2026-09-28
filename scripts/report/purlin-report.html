@@ -282,7 +282,7 @@ function proofsCell(feature) {
   return '<span' + hover([ids.length ? 'no test' + DOT + ids.join(', ')
       : 'every proof has a test']) + '>'
     + counts([[rollup.proofs || 0, '', ''],
-      [rollup.proofs_without_test || 0, WORDS.without_test, 'warn']]) + '</span>';
+      [rollup.proofs_without_test || 0, WORDS.no_test, 'warn']]) + '</span>';
 }
 function testsCell(feature) {
   var found = {};
@@ -629,7 +629,7 @@ var TILE_HOVER = {
   partial: 'Passed on one platform, failed or did not run on another.'};
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 var DOT = ' \u00b7 ';
-var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
+var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
              failing: 'failing', stale: 'stale', passed: 'passed',
              failed: 'failed', not_run: 'not run'};
 var CELL_TONES = {'passed': 'pass',

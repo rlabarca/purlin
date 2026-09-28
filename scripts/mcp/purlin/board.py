@@ -98,7 +98,7 @@ def strength_text(strength):
 
 
 def proofs_cell(rollup):
-    """`<n>`, and `· <k> without a test` when a proof has none.
+    """`<n>`, and `· <k> no test` when a proof has none.
 
     The count calls the gap out because a spec can write ten proofs and have
     two of them observed by nothing, and the rule counts beside it would not
@@ -108,7 +108,7 @@ def proofs_cell(rollup):
     without = rollup.get('proofs_without_test') or 0
     if not without:
         return '%d' % total
-    return '%d%s%d without a test' % (total, DOT, without)
+    return '%d%s%d no test' % (total, DOT, without)
 
 
 def tests_cell(rollup):
@@ -150,7 +150,7 @@ def row_cells(name, rollup, gate, proofs=1):
 
 
 def proofs_summary(summary):
-    """`<n> proof lines`, and `· <k> without a test` when a proof has none.
+    """`<n> proof lines`, and `· <k> no test` when a proof has none.
 
     The cell's own words, read as a sentence rather than as a column, for the
     summary line under the table.
@@ -159,7 +159,7 @@ def proofs_summary(summary):
     text = '%d proof line%s' % (total, '' if total == 1 else 's')
     without = summary.get('proofs_without_test') or 0
     if without:
-        text += '%s%d without a test' % (DOT, without)
+        text += '%s%d no test' % (DOT, without)
     return text
 
 

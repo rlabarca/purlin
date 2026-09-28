@@ -54,7 +54,7 @@ var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 /* The one separator every cell, hover and line puts between two parts, which
    is `board.DOT`. */
 var DOT = ' \u00b7 ';
-var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
+var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
              failing: 'failing', stale: 'stale', passed: 'passed',
              failed: 'failed', not_run: 'not run'};
 

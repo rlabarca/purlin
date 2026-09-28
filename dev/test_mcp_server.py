@@ -1799,7 +1799,7 @@ class TestStatusTable:
         team = TestTheFixturesAreTheContract._fixture('team')
         rows = {f['name']: purlin_board.row_cells(
             f['name'], f['rollup'], 'strong') for f in team['features']}
-        assert rows['invoice'] == ('invoice', '2', '2 · 1 without a test',
+        assert rows['invoice'] == ('invoice', '2', '2 · 1 no test',
                                    '1 of 2', '0 of 2 · 48%'), rows['invoice']
 
     # purlin: states PROOF-43
@@ -1814,7 +1814,7 @@ class TestStatusTable:
         row = next(line for line in text.splitlines()
                    if line.startswith('login '))
         assert '1 of 2' in row, row
-        assert '2 · 1 without a test' in row, row
+        assert '2 · 1 no test' in row, row
 
         for gate, expected in (('strong', ('Strong',)),
                                ('signed', ('Strong', 'Signed'))):

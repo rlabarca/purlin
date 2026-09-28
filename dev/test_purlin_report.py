@@ -533,7 +533,7 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     # the gap in the warn tone beside the total.
     team = open_board(browser, tmp_path / 'team', payload_named('team'))
     assert count_cells(team)['invoice']['Proofs'] == (
-        '2 \u00b7 1 without a test')
+        '2 \u00b7 1 no test')
     team.close()
 
 

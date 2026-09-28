@@ -38,11 +38,11 @@ each cell. A reader who has learned one has learned the other.
 ```
   Spec           Rules  Proofs                 Tests
   ──────────────────────────────────────────────────────────────────────
-  billing           14  16 · 2 without a test  9 of 14 · 1 partial · 1 failing
+  billing           14  16 · 2 no test  9 of 14 · 1 partial · 1 failing
   login (anchor)     8  8                      8 of 8
 ```
 
-`Proofs` counts every proof line and appends `· <k> without a test` when no test carries a
+`Proofs` counts every proof line and appends `· <k> no test` when no test carries a
 proof's marker; at `passed` the column is there only where the project writes a proof line.
 `Tests` is `<passed> of <rules>`, then `· <k> partial` and `· <k> failing` when either is not
 zero; `partial` means the tests pass on one operating system and not on another. Under `strong`

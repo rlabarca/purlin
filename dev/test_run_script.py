@@ -332,7 +332,7 @@ class TestAProjectWithNoMarker:
         code, output = _run(root, '--all', '--test')
         # Nothing was marked, so nothing went missing: the table is what
         # says the rule has no evidence yet.
-        assert '1 · 1 without a test' in output, output
+        assert '1 · 1 no test' in output, output
         assert 'Evidence is missing' not in output, output
         # The rule has no test, so the passed level is not met and the run
         # says so on its last line.
