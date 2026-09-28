@@ -6,7 +6,7 @@ A fingerprint has three parts, each a sha256 hex string:
            rules count inside it: the specs it requires, transitively, and
            every global anchor
     code   the files its `> Scope:` names
-    tests  the files that carry a proof marker for it
+    tests  the test files that carry a marker for it
 
 Every file is read from the working tree through `git hash-object`, so an edit
 counts before it is committed. A file git does not track is left out of every
@@ -25,7 +25,6 @@ feature named runs.
 
 import hashlib
 import os
-import re
 import subprocess
 import sys
 
@@ -33,33 +32,11 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
+from purlin import markers as markers_module                  # noqa: E402
 from purlin import specs as specs_module                      # noqa: E402
 
 # The three parts, in the order a message names them.
 PARTS = ('spec', 'code', 'tests')
-
-# One pattern per framework, reading the same marker its plugin reads. A
-# pattern that drifted from its plugin would report a missing proof for a test
-# that never had one, which is why each is the plugin's own marker written
-# once, here, and `scripts/run/purlin_run.py` reads it from here.
-MARKER_PATTERNS = {
-    'pytest': (('.py',), re.compile(
-        r'@pytest\.mark\.proof\(\s*["\'](\w+)["\']\s*,\s*["\'](PROOF-\d+)["\']')),
-    'jest': (('.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx'), re.compile(
-        r'\[proof:(\w+):(PROOF-\d+):')),
-    'vitest': (('.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx'), re.compile(
-        r'\[proof:(\w+):(PROOF-\d+):')),
-    'xunit': (('.cs',), re.compile(
-        r'\[Trait\(\s*"PurlinProof"\s*,\s*"(\w+):(PROOF-\d+):')),
-    'shell': (('.sh',), re.compile(
-        r'purlin_proof\s+"(\w+)"\s+"(PROOF-\d+)"')),
-    'sql': (('.sql',), re.compile(
-        r'^--\s*@purlin\s+(\w+)\s+(PROOF-\d+)\b', re.MULTILINE)),
-}
-
-# Directories no marker is read from. `mutants/` is mutmut's copy of the
-# project, tests included: reading it would count every marker twice.
-SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
 
 _GLOB_CHARS = ('*', '?', '[')
 
@@ -292,36 +269,14 @@ def spec_hash(feature, features):
 # tests
 # ---------------------------------------------------------------------------
 
-def _skipped(path):
-    return any(part.startswith('.') or part in SKIP_DIRS
-               for part in path.split('/')[:-1])
-
-
 def marker_index(project_root):
-    """`{feature: [paths]}` for every tracked file that carries a marker.
+    """`{feature: [paths]}` for every tracked test file that carries a marker.
 
-    Every framework's pattern is read, whatever the project's framework, so
-    the answer does not depend on the configuration. A tracked file that is
-    no longer on the disk carries no marker.
+    A test file is one a suite of the `tests` setting names; the markers are
+    read as `markers.py` reads them, so the run and the fingerprint read the
+    same markers. A tracked file that is no longer on the disk carries none.
     """
-    index = {}
-    for path in _git_lines(project_root, ['ls-files', '-z']) or []:
-        if _skipped(path):
-            continue
-        patterns = [pattern for extensions, pattern in MARKER_PATTERNS.values()
-                    if path.endswith(extensions)]
-        if not patterns:
-            continue
-        full = os.path.join(project_root, path)
-        try:
-            with open(full, 'r', encoding='utf-8') as handle:
-                text = handle.read()
-        except (IOError, OSError, UnicodeDecodeError):
-            continue
-        for pattern in patterns:
-            for match in pattern.finditer(text):
-                index.setdefault(match.group(1), set()).add(path)
-    return {name: sorted(paths) for name, paths in index.items()}
+    return markers_module.marker_index(project_root)
 
 
 def marker_files(project_root, feature, index=None):

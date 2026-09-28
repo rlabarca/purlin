@@ -104,11 +104,11 @@ class TestWhichRulesAreRead:
         rule.update(overrides)
         return rule
 
-    @pytest.mark.proof("ai_audit", "PROOF-1", "RULE-1")
+    # purlin: ai_audit PROOF-1
     def test_a_passing_rule_with_no_entry_is_read(self):
         assert audit_module.is_read(self._rule(), 'strong') is True
 
-    @pytest.mark.proof("ai_audit", "PROOF-2", "RULE-1")
+    # purlin: ai_audit PROOF-2
     def test_a_rule_that_did_not_pass_or_has_no_test_is_not_read(self):
         assert audit_module.is_read(self._rule(cells={'passed': {
             'word': 'failed'}}), 'strong') is False
@@ -118,14 +118,14 @@ class TestWhichRulesAreRead:
         assert audit_module.is_read(self._rule(label='required'),
                                     'strong') is False
 
-    @pytest.mark.proof("ai_audit", "PROOF-3", "RULE-1")
+    # purlin: ai_audit PROOF-3
     def test_a_passed_level_is_read_only_at_the_gate_passed(self):
         lower = self._rule(level='passed')
         assert audit_module.is_read(lower, 'strong') is False
         assert audit_module.is_read(lower, 'signed') is False
         assert audit_module.is_read(lower, 'passed') is True
 
-    @pytest.mark.proof("ai_audit", "PROOF-4", "RULE-1")
+    # purlin: ai_audit PROOF-4
     def test_an_entry_for_the_current_hashes_is_skipped_unless_again(self):
         audited = self._rule(audit={'verdict': 'strong', 'findings': []})
         assert audit_module.is_read(audited, 'strong') is False
@@ -134,14 +134,14 @@ class TestWhichRulesAreRead:
 
 class TestWhatOneRuleIsReadWith:
 
-    @pytest.mark.proof("ai_audit", "PROOF-5", "RULE-8")
+    # purlin: ai_audit PROOF-5
     def test_the_test_body_is_shown_beside_the_rule(self, proved):
         test = read(proved, 'RULE-1')['tests'][0]
         assert test['file'] == 'tests/test_login.py'
         assert test['name'] == 'test_valid_credentials_return_200'
         assert 'assert login("ada", "secret") == 200' in test['body']
 
-    @pytest.mark.proof("ai_audit", "PROOF-6", "RULE-9")
+    # purlin: ai_audit PROOF-6
     def test_a_manual_proof_has_no_test_where_a_test_would_be(self):
         made = Project(spec=SPEC.replace(
             'verify 200 and a token',
@@ -154,11 +154,11 @@ class TestWhatOneRuleIsReadWith:
         finally:
             made.close()
 
-    @pytest.mark.proof("ai_audit", "PROOF-7", "RULE-15")
+    # purlin: ai_audit PROOF-7
     def test_a_rule_that_is_not_there_is_not_read(self, proved):
         assert read(proved, 'RULE-99') is None
 
-    @pytest.mark.proof("ai_audit", "PROOF-8", "RULE-8")
+    # purlin: ai_audit PROOF-8
     def test_the_strength_comes_off_the_evidence(self, at_strong):
         reading = read(at_strong, 'RULE-2')
         assert (reading['test_strength'], reading['min_strength']) == (90, 70)
@@ -175,22 +175,33 @@ class TestWhatOneRuleIsReadWith:
 class TestTheJavaScriptReader:
 
     @staticmethod
-    def _bodies(feature, text):
-        return {proof: body for proof, _rule, _name, body
-                in marked_tests._iter_js_proof_bodies(text, feature)}
+    def _bodies(feature, text, tmp_path):
+        """`{proof: source}` for every marked test in one TypeScript file."""
+        (tmp_path / 'tests').mkdir(exist_ok=True)
+        (tmp_path / 'tests' / 'rx.test.ts').write_text(text, encoding='utf-8')
+        found = {}
+        for number in range(1, 10):
+            proof = 'PROOF-%d' % number
+            body = marked_tests.source(str(tmp_path), feature, proof,
+                                       'tests/rx.test.ts')
+            if body is not None:
+                found[proof] = body
+        return found
 
-    @pytest.mark.proof("ai_audit", "PROOF-9", "RULE-11")
+    # purlin: ai_audit PROOF-9
     def test_braces_and_apostrophes_do_not_cut_a_body(self, tmp_path):
         text = """import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
 
 describe("repro", () => {
-  it("execSync options trigger early-truncation [proof:demo:PROOF-1:RULE-1]", () => {
+  // purlin: demo PROOF-1
+  it("execSync options trigger early-truncation", () => {
     const out = execSync("ls", { cwd: ".", encoding: "utf8" });
     expect(out).toMatch(/./);
   });
 
-  it("cd's into a sibling [proof:demo:PROOF-2:RULE-2]", () => {
+  // purlin: demo PROOF-2
+  it("cd's into a sibling", () => {
     expect(1).toBe(1);
   });
 });
@@ -205,35 +216,43 @@ describe("repro", () => {
         assert 'expect(out).toMatch' in first, first
         assert 'expect(1).toBe(1)' in second, second
 
-    @pytest.mark.proof("ai_audit", "PROOF-10", "RULE-11")
-    def test_regex_literals_comments_and_division_do_not_cut_a_body(self):
+    # purlin: ai_audit PROOF-10
+    def test_regex_literals_comments_and_division_do_not_cut_a_body(
+            self, tmp_path):
         text = r"""import { it, expect } from "vitest";
 
-it("division across a line [proof:rx:PROOF-1:RULE-1]", () => {
+// purlin: rx PROOF-1
+it("division across a line", () => {
   const s = "a" +
     / 2;
   expect(s).toBe("a");
 });
 
-it("a class holding a brace, a slash and quotes [proof:rx:PROOF-2:RULE-2]", () => {
+// purlin: rx PROOF-2
+it("a class holding a brace, a slash and quotes", () => {
   const re = /[}/"']+/g;
   expect("a}/b".replace(re, "")).toBe("ab");
 });
 
-it("an escaped slash [proof:rx:PROOF-3:RULE-3]", () => {
+// purlin: rx PROOF-3
+it("an escaped slash", () => {
   const re = /\/}/;
   expect("x/}".match(re)[0]).toBe("/}");
 });
 
-it("comments [proof:rx:PROOF-4:RULE-4]", () => {
+// purlin: rx PROOF-4
+it("comments", () => {
   // a } in a line comment
   /* and } in a block one */
   expect(1 + 1).toBe(2);
 });
 
-it("division [proof:rx:PROOF-5:RULE-5]", () => { const q = 4 / 2; expect(q).toBe(2); }); it("division again [proof:rx:PROOF-6:RULE-6]", () => { expect(8 / 4).toBe(2); });
+// purlin: rx PROOF-5
+it("division", () => { const q = 4 / 2; expect(q).toBe(2); });
+// purlin: rx PROOF-6
+it("division again", () => { expect(8 / 4).toBe(2); });
 """
-        bodies = self._bodies('rx', text)
+        bodies = self._bodies('rx', text, tmp_path)
         assert sorted(bodies) == ['PROOF-%d' % n for n in range(1, 7)], (
             'a misread `/` swallowed a test: %s' % sorted(bodies))
         for proof, body in sorted(bodies.items()):
@@ -246,7 +265,7 @@ it("division [proof:rx:PROOF-5:RULE-5]", () => { const q = 4 / 2; expect(q).toBe
 
 class TestThePrompt:
 
-    @pytest.mark.proof("ai_audit", "PROOF-11", "RULE-2")
+    # purlin: ai_audit PROOF-11
     def test_the_prompt_is_the_criteria_file_verbatim(self, at_strong):
         prompt = audit_module.model_prompt(at_strong.root,
                                            read(at_strong, 'RULE-2'))
@@ -256,7 +275,7 @@ class TestThePrompt:
         assert 'test_a_bad_password_is_denied' in prompt
         assert 'Test strength: 90 percent (minimum 70)' in prompt
 
-    @pytest.mark.proof("ai_audit", "PROOF-12", "RULE-2")
+    # purlin: ai_audit PROOF-12
     def test_the_prompt_asks_for_observations_and_bars_a_recommendation(
             self, at_strong):
         prompt = audit_module.model_prompt(at_strong.root,
@@ -273,7 +292,7 @@ class TestThePrompt:
 
 class TestTheCall:
 
-    @pytest.mark.proof("ai_audit", "PROOF-13", "RULE-3")
+    # purlin: ai_audit PROOF-13
     def test_the_prompt_goes_on_stdin_and_never_in_the_arguments(
             self, at_strong, claude):
         _install, directory = claude
@@ -290,7 +309,7 @@ class TestTheCall:
         assert not any('Invalid credentials' in part
                        for part in calls[0]['argv'])
 
-    @pytest.mark.proof("ai_audit", "PROOF-14", "RULE-3")
+    # purlin: ai_audit PROOF-14
     def test_a_call_is_given_300_seconds_and_stdin_closes_after_the_prompt(
             self, at_strong):
         seen = []
@@ -313,7 +332,7 @@ class TestTheCall:
         assert kwargs['input'].startswith('criteria')
         assert 'stdin' not in kwargs
 
-    @pytest.mark.proof("ai_audit", "PROOF-15", "RULE-4")
+    # purlin: ai_audit PROOF-15
     def test_one_call_per_rule_and_four_at_once(self, at_strong, claude):
         install, directory = claude
         install(sleep=0.4)
@@ -324,7 +343,7 @@ class TestTheCall:
         assert [found['verdict'] for found in results] == ['strong'] * 6
         assert fake_claude.most_at_once(calls) == 4, calls
 
-    @pytest.mark.proof("ai_audit", "PROOF-16", "RULE-4")
+    # purlin: ai_audit PROOF-16
     def test_the_number_at_once_is_what_it_is_given(self, at_strong, claude):
         install, directory = claude
         install(sleep=0.4)
@@ -341,7 +360,7 @@ class TestTheCall:
 
 class TestTheAnswer:
 
-    @pytest.mark.proof("ai_audit", "PROOF-17", "RULE-5")
+    # purlin: ai_audit PROOF-17
     def test_settled_with_nothing_found_is_strong(self, at_strong, claude):
         install, _directory = claude
         install(answers=['settled: yes'])
@@ -350,7 +369,7 @@ class TestTheAnswer:
                                        criteria_text())
         assert (found['verdict'], found['findings']) == ('strong', [])
 
-    @pytest.mark.proof("ai_audit", "PROOF-18", "RULE-5")
+    # purlin: ai_audit PROOF-18
     def test_settled_with_a_line_is_weak_and_the_line_is_the_finding(
             self, at_strong, claude):
         install, _directory = claude
@@ -360,7 +379,7 @@ class TestTheAnswer:
                                        criteria_text())
         assert (found['verdict'], found['findings']) == ('weak', [FINDING])
 
-    @pytest.mark.proof("ai_audit", "PROOF-19", "RULE-5")
+    # purlin: ai_audit PROOF-19
     def test_not_settled_is_undecided_with_its_reason(self, at_strong, claude):
         install, _directory = claude
         install(answers=['settled: no\n- The body of PROOF-2 is not shown.'])
@@ -370,7 +389,7 @@ class TestTheAnswer:
         assert (found['verdict'], found['findings']) == (
             'undecided', ['The body of PROOF-2 is not shown.'])
 
-    @pytest.mark.proof("ai_audit", "PROOF-20", "RULE-6")
+    # purlin: ai_audit PROOF-20
     def test_the_answer_names_its_model_and_the_criteria_it_was_sent(
             self, at_strong, claude):
         install, _directory = claude
@@ -387,7 +406,7 @@ class TestTheAnswer:
                                        criteria_text())
         assert found['model'] == 'unknown'
 
-    @pytest.mark.proof("ai_audit", "PROOF-21", "RULE-6")
+    # purlin: ai_audit PROOF-21
     def test_the_model_that_wrote_most_is_the_one_named(self):
         body = {'modelUsage': {'claude-haiku-3-5': {'outputTokens': 12},
                                'claude-opus-4-1': {'outputTokens': 900}}}
@@ -396,7 +415,7 @@ class TestTheAnswer:
             'claude-x-1'
         assert audit_module.model_name({}) == 'unknown'
 
-    @pytest.mark.proof("ai_audit", "PROOF-22", "RULE-5")
+    # purlin: ai_audit PROOF-22
     def test_an_answer_in_no_shape_says_nothing(self):
         assert audit_module.parse_answer('It looks fine to me.') == ([], None)
         assert audit_module.parse_answer('') == ([], None)
@@ -409,7 +428,7 @@ class TestTheAnswer:
 
 class TestWhenTheModelCannotBeReached:
 
-    @pytest.mark.proof("ai_audit", "PROOF-23", "RULE-7")
+    # purlin: ai_audit PROOF-23
     def test_no_claude_on_the_path_calls_nothing(self, at_strong, claude,
                                                  monkeypatch):
         _install, directory = claude
@@ -419,7 +438,7 @@ class TestWhenTheModelCannotBeReached:
         assert results == [{'why': 'claude is not on PATH'}] * 2
         assert fake_claude.calls(directory) == []
 
-    @pytest.mark.proof("ai_audit", "PROOF-24", "RULE-7")
+    # purlin: ai_audit PROOF-24
     def test_a_non_zero_exit_is_named(self, at_strong, claude):
         install, _directory = claude
         install(exit_code=1)
@@ -428,7 +447,7 @@ class TestWhenTheModelCannotBeReached:
                                        criteria_text())
         assert found == {'why': 'claude exited with an error'}
 
-    @pytest.mark.proof("ai_audit", "PROOF-25", "RULE-7")
+    # purlin: ai_audit PROOF-25
     def test_a_call_past_its_limit_is_named(self, at_strong, claude,
                                             monkeypatch):
         install, _directory = claude
@@ -439,7 +458,7 @@ class TestWhenTheModelCannotBeReached:
                                        criteria_text())
         assert found == {'why': 'claude timed out after 1 s'}
 
-    @pytest.mark.proof("ai_audit", "PROOF-26", "RULE-7")
+    # purlin: ai_audit PROOF-26
     def test_an_answer_with_no_settled_line_is_asked_once_more(
             self, at_strong, claude):
         install, directory = claude
@@ -472,7 +491,7 @@ class TestWriting:
             found.extend(os.path.join(current, name) for name in names)
         return sorted(found)
 
-    @pytest.mark.proof("ai_audit", "PROOF-27", "RULE-12")
+    # purlin: ai_audit PROOF-27
     def test_reading_asking_and_printing_write_no_file(self, at_strong,
                                                        claude, capsys):
         before = self._files(at_strong.root)
@@ -484,14 +503,14 @@ class TestWriting:
         capsys.readouterr()
         assert self._files(at_strong.root) == before
 
-    @pytest.mark.proof("ai_audit", "PROOF-28", "RULE-12")
+    # purlin: ai_audit PROOF-28
     def test_the_triple_moves_with_the_text(self, proved):
         first = read(proved, 'RULE-1')
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with a short session token'))
         assert read(proved, 'RULE-1')['triple_hash'] != first['triple_hash']
 
-    @pytest.mark.proof("ai_audit", "PROOF-29", "RULE-14")
+    # purlin: ai_audit PROOF-29
     def test_the_rendering_names_the_rule_and_what_the_audit_found(
             self, at_strong):
         at_strong.audit('RULE-2', findings=[FINDING])
@@ -520,20 +539,20 @@ class TestWriting:
 
 class TestTheCommandLine:
 
-    @pytest.mark.proof("ai_audit", "PROOF-30", "RULE-13")
+    # purlin: ai_audit PROOF-30
     def test_help_exits_zero_and_a_bad_option_exits_two(self):
         assert audit_module.main(['--help']) == 0
         assert audit_module.main(['--nope']) == 2
         assert audit_module.main([]) == 2
 
-    @pytest.mark.proof("ai_audit", "PROOF-31", "RULE-13")
+    # purlin: ai_audit PROOF-31
     def test_an_unknown_feature_exits_one(self, proved, capsys):
         code = audit_module.main(['--feature', 'nothing',
                                   '--project-root', proved.root])
         capsys.readouterr()
         assert code == 1
 
-    @pytest.mark.proof("ai_audit", "PROOF-32", "RULE-14")
+    # purlin: ai_audit PROOF-32
     def test_one_rule_prints_and_a_feature_prints_every_rule(self, proved,
                                                              capsys):
         code = audit_module.main(['--feature', 'login', '--rule', 'RULE-1',
@@ -547,7 +566,7 @@ class TestTheCommandLine:
         assert code == 0
         assert 'login RULE-1' in output and 'login RULE-2' in output
 
-    @pytest.mark.proof("ai_audit", "PROOF-33", "RULE-13")
+    # purlin: ai_audit PROOF-33
     def test_the_script_runs_as_a_command_and_calls_no_model(self, proved,
                                                              claude):
         _install, directory = claude

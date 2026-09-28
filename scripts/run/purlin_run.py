@@ -14,19 +14,26 @@ spec, code or tests, one with an untracked file under its scope or beside
 its tests, and one whose spec names no files. Before anything runs the run
 prints what it selected and why, what it skipped, and each untracked file
 that selected a feature; with nothing selected it says so, runs no test,
-and exits on the gate. Every arm then runs only the test files that carry a
-marker of a feature being run, except xUnit, whose `dotnet test` runs the
-whole suite. `--ci` with no feature named runs every feature.
+and exits on the gate. `--ci` with no feature named runs every feature.
 
-`--test` is what `purlin:test` runs: the plugins run the tagged tests into
-`.purlin/runtime/proofs/`, and the run writes this operating system's section
-of `.purlin/evidence/local/<feature>.json` for every feature it covered,
-re-renders `.purlin/tests.md` from every evidence file, prints the table and
-ends with `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`.
-It writes and does not commit. `--commit` commits the evidence and the table
-under the person's own identity as `purlin: evidence at <sha7>`; nothing here
-ever pushes. `--remote` hands the commit to the git host's runner instead and
-brings back what that runner wrote.
+**How the tests run.** The settings file names the project's own suites
+under `tests`, each with its command, where its report lands, the report's
+format and the globs its test files live under. The run runs each suite's
+own command, reads the report it wrote, and ties every result to the marker
+comments above its test (`scripts/run/reports.py`,
+`references/formats/marker_format.md`). A run over every feature runs every
+suite whole; a narrower run gives `{files}` the test files that carry a
+marker of a feature it runs, and starts no suite that has none.
+
+`--test` is what `purlin:test` runs: the suites run, and the run writes this
+operating system's section of `.purlin/evidence/local/<feature>.json` for
+every feature it covered, re-renders `.purlin/tests.md` from every evidence
+file, prints the table and ends with `gate passed: <n> of <rules>` or
+`gate not met: <n> of <rules>`. It writes and does not commit. `--commit`
+commits the evidence and the table under the person's own identity as
+`purlin: evidence at <sha7>`; nothing here ever pushes. `--remote` hands the
+commit to the git host's runner instead and brings back what that runner
+wrote.
 
 `--audit` is what `purlin:audit` runs: the tests, as `--test` runs them, then
 the breaks where mutation testing is on, then the AI audit, then the evidence
@@ -68,18 +75,19 @@ carries on.
 Exit codes: 0 everything asked for happened, 1 a test failed, evidence is
 missing or the gate is not met, 2 the command line was wrong.
 
-The flow is one pass. Resolve the configuration and the frameworks, scan the
-specs, run one arm per framework, then check two things the arms cannot check
-themselves:
+The flow is one pass. Resolve the configuration and the suites, scan the
+specs and the markers, run each suite, then check two things no test
+framework reports on its own:
 
-  loud failure A  an arm ran and its plugin appended nothing
-  loud failure B  a marker sits in a test source and this run produced no
-                  proof entry for it
+  loud failure A  a suite ran and left no report to read
+  loud failure B  a marker of a feature this run covers has no passing or
+                  failing result: its test was skipped, no case in the report
+                  is its test, or no test follows the marker
 
-Both are silent by default in every test framework there is, and both leave a
-reader looking at a proof file from an earlier run believing it describes this
-one. `references/formats/evidence_format.md` is the shape of what the run
-then writes.
+Both are silent in every test framework there is. A marker that names a
+feature, a proof or a rule no spec has is printed and changes nothing else.
+`references/formats/evidence_format.md` is the shape of what the run then
+writes.
 """
 
 import os
@@ -99,11 +107,12 @@ from purlin import (console as console_module,                # noqa: E402
                     evidence as evidence_reader,
                     fingerprint as fingerprint_module,
                     frameworks as frameworks_module,
-                    gate as gate_module, payload as payload_module,
-                    proofs as proofs_module,
+                    gate as gate_module, markers as markers_module,
+                    payload as payload_module,
                     specs as specs_module, states as states_module,
                     status as status_module)
 import evidence as evidence_writer                             # noqa: E402
+import reports as reports_module                               # noqa: E402
 
 ARROW = '→'
 LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
@@ -138,12 +147,19 @@ ARM_TIMEOUT_DEFAULT = 3600
 # What `_run` returns when it killed the command.
 TIMED_OUT = 124
 
-# How many lines of a failing arm's own output the run prints. Everything an
-# arm prints is captured into the run log, which a job log never shows, so an
-# arm that exits non-zero or is killed would otherwise leave a reader with a
+# How many lines of a failing suite's own output the run prints. Everything a
+# suite prints is captured into the run log, which a job log never shows, so a
+# suite that exits non-zero or is killed would otherwise leave a reader with a
 # failure and no reason. Sixty lines carry the summary and the first failing
-# assertion of every framework this release runs.
+# assertion of every framework init writes a command for.
 ARM_TAIL_LINES = 60
+
+# What the run says when the settings name no suite.
+NO_SUITES = ('No test suite: .purlin/config.json names no tests, so nothing '
+             'ran. purlin:init writes them.')
+
+# What the run says about the markers it read, once per run.
+TIED_LINE = 'Markers: %d tied to a test, %d not tied.'
 
 
 
@@ -253,79 +269,11 @@ def foreign_env_proofs(features, selected, os_name):
 
 
 # ---------------------------------------------------------------------------
-# The markers in the test sources
+# The suites
 # ---------------------------------------------------------------------------
-
-# The marker patterns and the directories no marker is read from are the
-# fingerprint's, so the run and the fingerprint read the same markers.
-_MARKER_PATTERNS = fingerprint_module.MARKER_PATTERNS
-_SKIP_DIRS = fingerprint_module.SKIP_DIRS
-
-
-def _source_files(project_root, extensions):
-    for dirpath, dirnames, filenames in os.walk(project_root):
-        dirnames[:] = sorted(d for d in dirnames
-                             if not d.startswith('.') and d not in _SKIP_DIRS)
-        for name in sorted(filenames):
-            if name.endswith(extensions):
-                yield os.path.join(dirpath, name)
-
-
-def shell_tests(project_root):
-    """Every `*.test.sh` under the project, as sorted `/` relative paths."""
-    return sorted(
-        os.path.relpath(path, project_root).replace(os.sep, '/')
-        for path in _source_files(project_root, ('.test.sh',)))
-
-
-def scan_markers(project_root, framework):
-    """`{(feature, proof_id)}` every marker of one framework's syntax."""
-    return {(feature, proof_id) for feature, proof_id, _path
-            in _marker_hits(project_root, framework)}
-
-
-def marker_paths(project_root, framework, selected):
-    """The `/` relative paths, sorted, of the test files one arm runs.
-
-    A file is run when it carries a marker, in the framework's own syntax,
-    of a feature in `selected`. The files are read from the disk, tracked or
-    not, so a new test is run before anyone has added it.
-    """
-    wanted = set(selected)
-    return sorted({path for feature, _proof, path
-                   in _marker_hits(project_root, framework)
-                   if feature in wanted})
-
-
-def _marker_hits(project_root, framework):
-    extensions, pattern = _MARKER_PATTERNS.get(framework, ((), None))
-    if pattern is None:
-        return
-    for path in _source_files(project_root, extensions):
-        try:
-            with open(path, 'r', encoding='utf-8') as handle:
-                text = handle.read()
-        except (IOError, OSError, UnicodeDecodeError):
-            continue
-        rel = os.path.relpath(path, project_root).replace(os.sep, '/')
-        for match in pattern.finditer(text):
-            yield match.group(1), match.group(2), rel
-
-
-# ---------------------------------------------------------------------------
-# The runner arms
-# ---------------------------------------------------------------------------
-
-def plugin_path(project_root, basename):
-    """The project's copy of a plugin, else the one shipped beside this file."""
-    local = os.path.join(project_root, '.purlin', 'plugins', basename)
-    if os.path.isfile(local):
-        return local
-    return os.path.join(os.path.dirname(_HERE), 'proof', basename)
-
 
 def arm_environment(extra=None):
-    """The environment every arm and every engine is given.
+    """The environment every suite and every engine is given.
 
     `GIT_TERMINAL_PROMPT=0` makes git fail instead of asking for a password.
     A hosted runner is nobody's terminal, so the question would never be
@@ -338,14 +286,14 @@ def arm_environment(extra=None):
 
 
 def bash_command():
-    """The bash that runs a shell test, found rather than taken from PATH.
+    """The bash that runs a suite's command, found rather than taken from PATH.
 
     Everywhere but Windows the answer is `bash` on PATH. On Windows PATH
     normally finds `C:\\Windows\\System32\\bash.exe` first, and that is not a
     shell at all: it is the launcher for the Windows Subsystem for Linux,
     which on a machine with no distribution installed prints "Windows
     Subsystem for Linux has no installed distributions" and exits 1 before it
-    has read the script. Every hosted Windows runner is such a machine.
+    has read the command. Every hosted Windows runner is such a machine.
 
     Git for Windows ships a real bash beside its own git, so the answer there
     is found from git: `<install>/bin/bash.exe`, next to `<install>/cmd/git.exe`
@@ -383,19 +331,24 @@ def bash_path(path):
     return str(path).replace(os.sep, '/')
 
 
-def _run(command, project_root, log, timeout, environment=None):
+def _run(command, project_root, log, timeout, environment=None,
+         keep_stdout=False):
     """Run one command in the project root, echoing it and its output.
 
     The command gets no stdin: a runner is nobody's terminal, and a prompt
     nobody answers is a run that never ends. It gets `timeout` seconds; past
     them it is killed, whatever it printed is kept, and `TIMED_OUT` comes
-    back so the caller names the timeout as missing evidence.
+    back so the caller names the timeout as missing evidence. With
+    `keep_stdout` the answer is `(code, stdout)`, for a suite whose report
+    is its standard output.
     """
     log.append('$ %s' % ' '.join(command))
+    stdout = ''
     try:
         result = subprocess.run([*command], cwd=project_root,
                                 stdin=subprocess.DEVNULL,
                                 capture_output=True, text=True,
+                                encoding='utf-8', errors='replace',
                                 timeout=timeout,
                                 env=environment or arm_environment())
     except subprocess.TimeoutExpired as expired:
@@ -404,134 +357,159 @@ def _run(command, project_root, log, timeout, environment=None):
                 log.append(stream.decode('utf-8', 'replace')
                            if isinstance(stream, bytes) else stream)
         log.append('timed out after %d s' % timeout)
-        return TIMED_OUT
+        return (TIMED_OUT, stdout) if keep_stdout else TIMED_OUT
     except (OSError, subprocess.SubprocessError) as error:
         log.append(str(error))
-        return 127
+        return (127, stdout) if keep_stdout else 127
     for stream in (result.stdout, result.stderr):
         if stream:
             log.append(stream.rstrip('\n'))
+    if keep_stdout:
+        return result.returncode, result.stdout or ''
     return result.returncode
 
 
-def print_arm_output(framework, text):
-    """Print the tail of one arm's captured output, as soon as it failed.
+def print_arm_output(name, text):
+    """Print the tail of one suite's captured output, as soon as it failed.
 
-    The arms write into the run log, which is a file on the runner and never
-    reaches a job log, so an arm that exits non-zero or is killed reads there
-    as a bare exit code. This puts the last `ARM_TAIL_LINES` lines of that
-    arm's own output on stdout, flushed, before the missing-evidence lines,
-    so the reason is in the job log every time.
+    The suites write into the run log, which is a file on the runner and
+    never reaches a job log, so a suite that exits non-zero or is killed
+    reads there as a bare exit code. This puts the last `ARM_TAIL_LINES`
+    lines of that suite's own output on stdout, flushed, before the
+    missing-evidence lines, so the reason is in the job log every time.
     """
     lines = text.splitlines()
-    print('--- %s output (last %d lines) ---' % (framework, ARM_TAIL_LINES))
+    print('--- %s output (last %d lines) ---' % (name, ARM_TAIL_LINES))
     if lines:
         for line in lines[-ARM_TAIL_LINES:]:
             print(line)
     else:
-        print('The %s arm printed nothing.' % framework)
-    print('--- end of %s output ---' % framework)
+        print('The %s suite printed nothing.' % name)
+    print('--- end of %s output ---' % name)
     sys.stdout.flush()
 
 
-def run_framework(project_root, framework, config, log,
-                  timeout=ARM_TIMEOUT_DEFAULT, only=None):
-    """Run one framework's tagged tests. The exit code its runner gave.
+class SuiteRun(object):
+    """What running one suite left: its outcomes, its failures, its log."""
 
-    `only` is the list of test files to run, `marker_paths`' answer, or None
-    to run the framework's whole suite. xUnit runs its whole suite either
-    way: `dotnet test` runs a project, not a file.
+    def __init__(self, suite):
+        self.suite = suite
+        self.outcomes = {}        # (path, test line) -> [outcome]
+        self.file_results = {}    # path -> pass | fail, for an exit suite
+        self.failures = []
+        self.problems = []
+        self.log = ''
 
-    `TIMED_OUT` comes back when the arm ran past `timeout` seconds and was
-    killed. Every command runs without stdin and without a git password
-    prompt, because both are ways for a run on a hosted runner to stop for an
-    answer that never arrives.
+
+def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
+              marked=None):
+    """Run one suite and read what it saw. A `SuiteRun`.
+
+    `files` is the test files to hand `{files}`, or empty for the whole
+    suite. An `exit` suite runs its command once per file, `{files}` being
+    that one file, and every file it matches when `files` is empty; each
+    file passes when the command exits 0. Any other suite runs once and its
+    report is read and tied to the markers in `marked`.
     """
-    files = list(only or ())
-    if framework == 'pytest':
-        # `mutants/` is mutmut's copy of the project, tests included. A test
-        # collected twice under one module name stops pytest before a single
-        # test runs, so the copy is never collected.
-        command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
-                   '--ignore=mutants'] + files
-        code = _run(command, project_root, log, timeout)
-        # pytest exits 5 when it collected nothing. No tests is not a failure
-        # here; the two loud failures below are what report that.
-        return 0 if code == 5 else code
-    if framework == 'jest':
-        return _run(['npx', 'jest', '--passWithNoTests'] + files,
-                    project_root, log, timeout)
-    if framework == 'vitest':
-        return _run(['npx', 'vitest', 'run', '--passWithNoTests'] + files,
-                    project_root, log, timeout)
-    if framework == 'xunit':
-        return _run(['dotnet', 'test', '--logger', 'purlin'], project_root,
-                    log, timeout)
-    if framework == 'shell':
-        # Every `*.test.sh` in the project, the root and each subdirectory
-        # alike, run from the root by its relative path in sorted order.
-        code = 0
-        for path in shell_tests(project_root):
-            if only is not None and path not in files:
+    done = SuiteRun(suite)
+    mark = len(log)
+    if suite.format == 'exit':
+        paths = list(files) or sorted(markers_module.test_files(
+            project_root, [suite]))
+        failed = []
+        for path in paths:
+            command = reports_module.command_for(suite, [path])
+            code = _run([bash_command(), '-c', command], project_root, log,
+                        timeout)
+            if code == TIMED_OUT:
+                done.failures.append('the %s suite timed out after %d s on '
+                                     '%s' % (suite.name, timeout, path))
                 continue
-            code = _run([bash_command(), path], project_root, log, timeout)
+            done.file_results[path] = (reports_module.PASS if code == 0
+                                       else reports_module.FAIL)
             if code != 0:
-                break
-        return code
-    if framework == 'sql':
-        engine = config.get('sql_engine') or 'sqlite3'
-        harness = plugin_path(project_root, 'sql_purlin.sh')
-        tests_dir = os.path.join(project_root, 'tests')
-        code = 0
-        environment = arm_environment({'PURLIN_SQL_ENGINE': engine})
-        for name in sorted(os.listdir(tests_dir)
-                           if os.path.isdir(tests_dir) else []):
-            if not name.endswith('.sql'):
-                continue
-            if only is not None and 'tests/' + name not in files:
-                continue
-            code = _run([bash_command(), bash_path(harness),
-                         os.path.join('tests', name)],
-                        project_root, log, timeout, environment)
-            if code != 0:
-                break
-        return code
-    log.append('purlin: no runner arm for "%s"; its tests were not run.'
-               % framework)
-    return 0
+                failed.append(path)
+        if failed:
+            shown = ', '.join(failed[:5])
+            if len(failed) > 5:
+                shown += ', and %d more' % (len(failed) - 5)
+            done.failures.append('the %s suite had %d failing test file(s): '
+                                 '%s' % (suite.name, len(failed), shown))
+        done.log = '\n'.join(log[mark:])
+        return done
+
+    report = suite.report_path()
+    reports_module.clear_report(project_root, report)
+    command = reports_module.command_for(suite, files, report)
+    code, stdout = _run([bash_command(), '-c', command], project_root, log,
+                        timeout, keep_stdout=True)
+    done.log = '\n'.join(log[mark:])
+    if code == TIMED_OUT:
+        done.failures.append('the %s suite timed out after %d s'
+                             % (suite.name, timeout))
+    elif code != 0:
+        done.failures.append('the %s suite exited %d' % (suite.name, code))
+    cases, problem = reports_module.read_report(suite.format, project_root,
+                                                report, stdout)
+    if problem:
+        # Loud failure A: the suite ran and there is no report to read.
+        done.failures.append('the %s suite %s' % (suite.name, problem))
+        return done
+    here = {path: found for path, found in (marked or {}).items()
+            if markers_module.suite_of(path, [suite]) is suite}
+    done.outcomes, done.problems = reports_module.tie(project_root, suite,
+                                                      cases, here)
+    return done
 
 
-# ---------------------------------------------------------------------------
-# The evidence this run produced
-# ---------------------------------------------------------------------------
+def marker_results(scan, suites, runs):
+    """`{(feature, id): [entry, ...]}` for every marker whose suite ran.
 
-def proof_index(project_root):
-    """`{(feature, proof_id): [entry, ...]}` from the runtime proof files."""
+    Each entry is `{status, test_file, test_name, line}`, `status` being
+    `pass`, `fail` or `not run`. A marker no test follows gets no entry: the
+    run reports it by file and line instead.
+    """
+    by_name = {run.suite.name: run for run in runs}
     index = {}
-    for feature, entries in proofs_module.load_proofs(project_root).items():
-        for entry in entries:
-            index.setdefault((feature, entry.get('id', '')), []).append(entry)
+    for path in sorted(scan):
+        found = scan[path]
+        suite = markers_module.suite_of(path, suites)
+        done = by_name.get(suite.name) if suite else None
+        if done is None:
+            continue
+        if found.whole:
+            status = done.file_results.get(path, reports_module.NOT_RUN)
+            for marker in found.markers:
+                index.setdefault(marker.key(), []).append({
+                    'status': status, 'test_file': path,
+                    'test_name': reports_module.test_name(path, None, 'exit'),
+                    'line': marker.line})
+            continue
+        for test in found.tests:
+            if not test.markers:
+                continue
+            status = reports_module.result_of(
+                done.outcomes.get((path, test.line), []))
+            for marker in test.markers:
+                index.setdefault(marker.key(), []).append({
+                    'status': status, 'test_file': path,
+                    'test_name': reports_module.test_name(path, test,
+                                                          suite.format),
+                    'line': marker.line})
     return index
 
 
-def clear_proofs(project_root):
-    """Empty `.purlin/runtime/proofs/` so this run's evidence is this run's.
+def marked_files(scan, suite, selected):
+    """The `/` relative paths, sorted, of one suite's files a run gives `{files}`.
 
-    Proof files are runtime, so nothing is lost: what a previous run observed
-    is either still true, in which case this run observes it again, or stale,
-    in which case keeping it is what hides the failure.
+    A file is given when it carries a marker of a feature in `selected`. The
+    files are read from the disk, tracked or not, so a new test is run
+    before anyone has added it.
     """
-    directory = proofs_module.proof_dir(project_root)
-    try:
-        names = os.listdir(directory)
-    except OSError:
-        return
-    for name in names:
-        if name.endswith('.json'):
-            try:
-                os.remove(os.path.join(directory, name))
-            except OSError:
-                continue
+    wanted = set(selected)
+    return sorted(path for path, found in scan.items()
+                  if markers_module.suite_of(path, [suite]) is suite
+                  and found.features() & wanted)
 
 
 # ---------------------------------------------------------------------------
@@ -583,19 +561,31 @@ def scope_by_feature(features, selected):
             for name in selected}
 
 
-def tests_by_rule(features, selected, index):
+def tests_by_rule(project_root, selected):
+    """`{(feature, rule): [{file, name}]}`: the tests the evidence ties to each rule.
+
+    Read from the evidence the run has just written, which is where the tie
+    between a result and its marker is kept, so an engine that reports which
+    test caught which break can credit each rule with its own tests.
+    """
+    payload = payload_module.build_payload(project_root, generated_by='run')
     out = {}
-    for name in selected:
-        info = features.get(name) or {}
-        for rule_id, proof_ids in (info.get('proofs_by_rule') or {}).items():
+    wanted = set(selected)
+    for feature in payload.get('features') or ():
+        if feature.get('name') not in wanted:
+            continue
+        for rule in feature.get('rules') or ():
+            if rule.get('feature') != feature.get('name'):
+                continue
             tests = []
-            for proof_id in proof_ids:
-                for entry in index.get((name, proof_id), []):
-                    tests.append({'file': entry.get('test_file', ''),
-                                  'name': entry.get('test_name', ''),
-                                  'plugin': entry.get('plugin', '')})
+            for proof in rule.get('proofs') or ():
+                for test in proof.get('tests') or ():
+                    entry = {'file': test.get('file', ''),
+                             'name': test.get('name', '')}
+                    if entry not in tests:
+                        tests.append(entry)
             if tests:
-                out[(name, rule_id)] = tests
+                out[(feature['name'], rule['id'])] = tests
     return out
 
 
@@ -619,10 +609,15 @@ def write_sections(project_root, args, features, selected, index, os_name,
     for name in selected:
         info = features.get(name) or {}
         entries = {}
-        for proof_id in sorted(info.get('proofs') or {}):
-            found = index.get((name, proof_id), [])
+        by_rule = info.get('proofs_by_rule') or {}
+        # A rule with no proof may be marked by its own id instead.
+        ids = sorted(info.get('proofs') or {}) + [
+            rule_id for rule_id in info.get('rule_order') or ()
+            if not by_rule.get(rule_id)]
+        for marker_id in ids:
+            found = index.get((name, marker_id), [])
             if found:
-                entries[proof_id] = found
+                entries[marker_id] = found
         section = evidence_writer.build_section(
             info, entries, os_name, commit, dirty, runner,
             fingerprint_module.fingerprint(project_root, name, features,
@@ -730,74 +725,81 @@ def main(argv=None):
         if not selected:
             return _nothing_to_run(project_root, args, features, cfg)
 
-    resolved, unknown_frameworks = frameworks_module.resolve_frameworks(
-        project_root, cfg.test_framework)
-    for name in unknown_frameworks:
-        print('purlin: "%s" is not a framework this release ships a plugin '
-              'for; its tests were not run.' % name)
+    suites, suite_problems = markers_module.read_suites(project_root, config)
+    for problem in suite_problems:
+        print('purlin: %s.' % problem)
+    if not suites:
+        print(NO_SUITES)
 
     foreign = foreign_env_proofs(features, selected, os_name)
     foreign_ids = {(feature, proof_id) for feature, proof_id, _env in foreign}
-    # A run over every feature runs every arm whole. A narrower run gives
-    # each arm the files that carry a marker of a feature it runs, and an
-    # arm with none of those is not started.
+    # A run over every feature runs every suite whole. A narrower run gives
+    # each suite the files that carry a marker of a feature it runs, and a
+    # suite with none of those is not started.
     narrow = len(selected) < len(features)
+    scan = markers_module.scan(project_root, suites)
 
     log = []
-    arm_logs = {}
-    clear_proofs(project_root)
     failures = []
-    ran = []
-    for framework in resolved:
-        markers = scan_markers(project_root, framework)
-        markers = {pair for pair in markers if pair[0] in selected}
-        only = None
-        if narrow and framework != 'xunit':
-            only = marker_paths(project_root, framework, selected)
-            if not only:
+    runs = []
+    for suite in suites:
+        files = []
+        if narrow:
+            files = marked_files(scan, suite, selected)
+            if not files:
                 continue
-        before = set(proof_index(project_root))
-        # One line per arm before it starts, so a job log says where a run
+        # One line per suite before it starts, so a job log says where a run
         # is while it is still running.
-        print('Running the %s arm.' % framework)
-        mark = len(log)
-        code = run_framework(project_root, framework, config,
-                             log, args.arm_timeout, only)
-        arm_logs[framework] = '\n'.join(log[mark:])
-        after = set(proof_index(project_root))
-        ran.append(framework)
-        if code == TIMED_OUT:
-            failures.append('the %s runner timed out after %d s'
-                            % (framework, args.arm_timeout))
-            print_arm_output(framework, arm_logs[framework])
-        elif code != 0:
-            failures.append('the %s runner exited %d' % (framework, code))
-            print_arm_output(framework, arm_logs[framework])
-        wanted = {pair for pair in markers if pair not in foreign_ids}
-        if wanted and after == before:
-            # Loud failure A: the arm ran and its plugin appended nothing.
-            failures.append(
-                'the %s arm ran and its plugin wrote no proof entry, though '
-                '%d marked test(s) sit in the tree' % (framework, len(wanted)))
+        print('Running the %s suite.' % suite.name)
+        done = run_suite(project_root, suite, files, log, args.arm_timeout,
+                         scan)
+        runs.append(done)
+        failures.extend(done.failures)
+        if done.failures:
+            print_arm_output(suite.name, done.log)
+        for problem in done.problems:
+            print(problem)
 
-    index = proof_index(project_root)
-    missing_markers = []
-    for framework in resolved:
-        for pair in sorted(scan_markers(project_root, framework)):
-            if pair[0] not in selected or pair in foreign_ids:
+    index = marker_results(scan, suites, runs)
+    ran_suites = {done.suite.name for done in runs}
+    missing = []
+    for (feature, marker_id), entries in sorted(index.items()):
+        if feature not in selected or (feature, marker_id) in foreign_ids:
+            continue
+        for entry in entries:
+            if entry['status'] in (reports_module.PASS, reports_module.FAIL):
                 continue
-            if pair not in index:
-                missing_markers.append('%s %s (%s)'
-                                       % (pair[0], pair[1], framework))
-    if missing_markers:
-        # Loud failure B: a marker in a test source and no entry from this run.
-        # Five are named and the rest counted: a project mid-migration has
-        # hundreds, and a reader acts on the first few either way.
-        shown = ', '.join(missing_markers[:5])
-        more = ('' if len(missing_markers) <= 5
-                else ', and %d more' % (len(missing_markers) - 5))
-        failures.append('%d marker(s) produced no proof entry: %s%s'
-                        % (len(missing_markers), shown, more))
+            missing.append('%s %s at %s:%d' % (feature, marker_id,
+                                               entry['test_file'],
+                                               entry['line']))
+    untied = 0
+    tied = 0
+    for path, found in sorted(scan.items()):
+        suite = markers_module.suite_of(path, suites)
+        tied += len(found.markers) - len(found.untied)
+        untied += len(found.untied)
+        if suite is None or suite.name not in ran_suites:
+            continue
+        for marker in found.untied:
+            if marker.feature in selected:
+                missing.append('%s %s at %s:%d' % (marker.feature, marker.id,
+                                                   path, marker.line))
+    if scan:
+        print('')
+        print(TIED_LINE % (tied, untied))
+        for line in (reports_module.untied_lines(scan)
+                     + reports_module.marker_problems(scan, features)):
+            print(line)
+    if missing:
+        # Loud failure B: a marker of a feature this run covers has no result.
+        # Five are named and the rest counted: a reader acts on the first few
+        # either way.
+        shown = ', '.join(missing[:5])
+        more = ('' if len(missing) <= 5
+                else ', and %d more' % (len(missing) - 5))
+        failures.append('%d marker(s) have no passing or failing result: %s%s'
+                        % (len(missing), shown, more))
+    ran = [done.suite.name for done in runs]
 
     print('Ran %s on %d feature(s).'
           % (', '.join(ran) or 'nothing', len(selected)))
@@ -1183,18 +1185,18 @@ def _run_breaks(project_root, args, features, selected):
               'not measured for this run.')
         return {'engine': None, 'available': False, 'features': {}}
     config = resolve_config(project_root)
-    cfg = gate_module.resolve_gate(config)
-    resolved, _unknown = frameworks_module.resolve_frameworks(
-        project_root, cfg.test_framework)
-    engine = select_engine(config, resolved)
-    index = proof_index(project_root)
+    # The suites the settings name, then what detection finds: a suite named
+    # for its framework picks that framework's engine first.
+    suites, _problems = markers_module.read_suites(project_root, config)
+    engine = select_engine(config, [suite.name for suite in suites]
+                           + frameworks_module.detect_frameworks(project_root))
     # The engine reaches its own subprocesses, so the cap is set on the
     # module rather than passed down through every adapter.
     mutation_module.ARM_TIMEOUT = args.arm_timeout
     print('Measuring the breaks with the %s engine.' % engine)
     answer = run_breaks(project_root, engine,
                         scope_by_feature(features, selected),
-                        tests_by_rule(features, selected, index))
+                        tests_by_rule(project_root, selected))
     # An installed engine answers a reason only when it measured nothing it
     # set out to, a timeout being the one case, so the person sees why the
     # strength reads n/a rather than finding it in the log.

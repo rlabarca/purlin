@@ -30,7 +30,6 @@ from purlin import fingerprint as purlin_fingerprint
 from purlin import frameworks as purlin_frameworks
 from purlin import gate as purlin_gate
 from purlin import payload as purlin_payload
-from purlin import proofs as purlin_proofs
 from purlin import server as purlin_srv
 from purlin import specs as purlin_specs
 from purlin import states as purlin_states
@@ -83,7 +82,10 @@ class Project(object):
 
     def __init__(self, spec=SPEC, gate='passed', extra_config=None):
         self.root = tempfile.mkdtemp()
-        config = {'gate': gate, 'project_name': 'proj'}
+        config = {'gate': gate, 'project_name': 'proj',
+                  'tests': [{'name': 'pytest', 'run': 'pytest {files}',
+                             'report': None, 'format': 'junit',
+                             'files': ['tests/test_*.py']}]}
         config.update(extra_config or {})
         _write(os.path.join(self.root, '.purlin', 'config.json'),
                json.dumps(config))
@@ -105,11 +107,6 @@ class Project(object):
 
     def spec(self, text, name='login', category='auth'):
         _write(os.path.join(self.root, 'specs', category, name + '.md'), text)
-
-    def proofs(self, entries, feature='login'):
-        _write(os.path.join(self.root, '.purlin', 'runtime', 'proofs',
-                            '%s.json' % feature),
-               json.dumps({'proofs': entries}))
 
     def evidence(self, proofs, feature='login', runner='ci', os_name=None,
                  strength=90, commit_it=True, ci=False, source=None,
@@ -292,8 +289,8 @@ def _entry(proof_id, rule_id, status='pass', feature='login',
 
 class TestSpecParsing:
 
-    @pytest.mark.proof("specs", "PROOF-1", "RULE-1")
-    @pytest.mark.proof("specs", "PROOF-3", "RULE-2")
+    # purlin: specs PROOF-1
+    # purlin: specs PROOF-3
     def test_rule_tags_are_read_off_the_end_and_stripped(self, project):
         info = purlin_specs.scan_specs(project.root)['login']
         assert info['rules']['RULE-1'] == (
@@ -302,14 +299,14 @@ class TestSpecParsing:
         # A rule that names no tag carries no metadata at all.
         assert info['rule_meta']['RULE-2'] == {}
 
-    @pytest.mark.proof("specs", "PROOF-2", "RULE-1")
+    # purlin: specs PROOF-2
     def test_bracketed_text_that_is_not_a_tag_stays_in_the_claim(self):
         text, meta = purlin_specs.split_rule_tags(
             'Tokens expire [owner: qa] [level: strong]')
         assert text == 'Tokens expire [owner: qa]'
         assert meta == {'level': 'strong'}
 
-    @pytest.mark.proof("specs", "PROOF-4", "RULE-3")
+    # purlin: specs PROOF-4
     def test_the_hash_ignores_the_tags_and_the_whitespace(self):
         plain = purlin_specs.rule_text_hash('Tokens expire after 24 hours')
         tagged, _meta = purlin_specs.split_rule_tags(
@@ -317,7 +314,7 @@ class TestSpecParsing:
         assert purlin_specs.rule_text_hash(tagged) == plain, (
             're-tagging or reflowing a rule must not change its rule text hash')
 
-    @pytest.mark.proof("specs", "PROOF-17", "RULE-15")
+    # purlin: specs PROOF-17
     def test_the_level_tag_takes_the_gates_three_words(self):
         claim = 'Tokens expire after 24 hours'
         hashes = set()
@@ -329,8 +326,8 @@ class TestSpecParsing:
             hashes.add(purlin_specs.rule_text_hash(text))
         assert len(hashes) == 1, hashes
 
-    @pytest.mark.proof("specs", "PROOF-5", "RULE-4")
-    @pytest.mark.proof("specs", "PROOF-6", "RULE-5")
+    # purlin: specs PROOF-5
+    # purlin: specs PROOF-6
     def test_env_is_parsed_and_bounded_to_three_values(self, project):
         project.spec(
             '# Feature: login\n\n## Rules\n\n- RULE-1: Files lock\n\n'
@@ -354,15 +351,15 @@ class TestSpecParsing:
             'Call login and verify 200 @smoke')[:2] == (
                 'Call login and verify 200 @smoke', False)
 
-    @pytest.mark.proof("specs", "PROOF-7", "RULE-6")
+    # purlin: specs PROOF-7
     def test_a_second_env_tag_is_refused_not_merged(self):
         _clean, _manual, env, unknown = purlin_specs.split_proof_tags(
             'Lock it @env(macos) @env(windows)')
         assert env == 'windows', 'the trailing tag is the one that is read'
         assert unknown == ['@env(macos)'], unknown
 
-    @pytest.mark.proof("specs", "PROOF-8", "RULE-7")
-    @pytest.mark.proof("specs", "PROOF-9", "RULE-8")
+    # purlin: specs PROOF-8
+    # purlin: specs PROOF-9
     def test_unknown_tags_are_ignored_with_one_warning_naming_the_files(self,
                                                                        project):
         project.spec(
@@ -391,7 +388,7 @@ class TestSpecParsing:
                  for name, info in features.items()}
         assert purlin_specs.unknown_tag_warning(clean) is None
 
-    @pytest.mark.proof("specs", "PROOF-10", "RULE-9")
+    # purlin: specs PROOF-10
     def test_a_source_is_a_git_url_plus_a_path_or_whole(self):
         assert purlin_specs.parse_source(
             'https://github.com/acme/p.git specs/no_eval.md') == (
@@ -402,7 +399,7 @@ class TestSpecParsing:
         assert purlin_specs.parse_source('--upload-pack=/bin/echo') == (
             '--upload-pack=/bin/echo', None)
 
-    @pytest.mark.proof("specs", "PROOF-11", "RULE-10")
+    # purlin: specs PROOF-11
     def test_a_path_field_supplies_the_path_for_a_bare_source_url(self, project):
         project.spec(
             '# Anchor: policy\n\n'
@@ -416,7 +413,7 @@ class TestSpecParsing:
         assert info['source'] == 'https://github.com/acme/p.git'
         assert info['source_path'] == 'specs/no_eval.md', info
 
-    @pytest.mark.proof("specs", "PROOF-12", "RULE-11")
+    # purlin: specs PROOF-12
     def test_an_anchor_carries_its_source_and_its_pin(self, project):
         project.spec(
             '# Anchor: policy\n\n'
@@ -431,7 +428,7 @@ class TestSpecParsing:
         assert info['source_path'] == 'specs/no_eval.md'
         assert info['pinned'] == 'abc1234def'
 
-    @pytest.mark.proof("specs", "PROOF-14", "RULE-13")
+    # purlin: specs PROOF-14
     def test_requires_and_global_pull_rules_into_a_feature(self, project):
         project.spec(
             '# Anchor: api\n\n## Rules\n\n- RULE-1: Responses carry a type\n\n'
@@ -454,7 +451,7 @@ class TestSpecParsing:
         assert purlin_specs.rule_refs('security', features) == [
             ('security', 'RULE-1', 'own')]
 
-    @pytest.mark.proof("specs", "PROOF-15", "RULE-14")
+    # purlin: specs PROOF-15
     def test_every_spec_is_keyed_by_its_filename_stem(self, project):
         project.spec(SPEC, name='sign_up')
         undecodable = os.path.join(project.root, 'specs', 'auth', 'broken.md')
@@ -474,68 +471,15 @@ class TestSpecParsing:
 
 
 # ---------------------------------------------------------------------------
-# Runtime proof files
-# ---------------------------------------------------------------------------
-
-class TestProofFiles:
-
-    @pytest.mark.proof("proofs", "PROOF-1", "RULE-1")
-    @pytest.mark.proof("proofs", "PROOF-3", "RULE-3")
-    def test_proofs_are_read_from_the_runtime_directory(self, project):
-        assert purlin_proofs.load_proofs(project.root) == {}
-        project.proofs([_entry('PROOF-1', 'RULE-1')])
-        loaded = purlin_proofs.load_proofs(project.root)
-        assert [e['id'] for e in loaded['login']] == ['PROOF-1']
-        assert purlin_proofs.PROOF_DIR.replace(os.sep, '/') == (
-            '.purlin/runtime/proofs')
-        # Entries are grouped by the feature each one names, not by the file.
-        project.proofs([_entry('PROOF-1', 'RULE-1'),
-                        _entry('PROOF-1', 'RULE-1', feature='signup')],
-                       feature='login')
-        both = purlin_proofs.load_proofs(project.root)
-        assert sorted(both) == ['login', 'signup'], sorted(both)
-        assert [e['feature'] for e in both['signup']] == ['signup']
-
-    @pytest.mark.proof("proofs", "PROOF-5", "RULE-5")
-    def test_a_bad_file_is_skipped(self, project):
-        directory = os.path.join(project.root, '.purlin', 'runtime', 'proofs')
-        _write(os.path.join(directory, 'login.json'),
-               json.dumps({'proofs': [_entry('PROOF-1', 'RULE-1')]}))
-        _write(os.path.join(directory, 'broken.json'), 'not json at all')
-        _write(os.path.join(directory, 'listed.json'), '[]')
-        _write(os.path.join(directory, 'notes.txt'),
-               json.dumps({'proofs': [_entry('PROOF-9', 'RULE-9')]}))
-        after = purlin_proofs.load_proofs(project.root)
-        assert sorted(after) == ['login'], sorted(after)
-        assert len(after['login']) == 1, after['login']
-
-    @pytest.mark.proof("proofs", "PROOF-6", "RULE-6")
-    def test_a_fail_beats_a_pass_for_the_same_proof(self, project):
-        project.proofs([_entry('PROOF-1', 'RULE-1'),
-                        _entry('PROOF-1', 'RULE-1', status='fail',
-                               test_file='tests/other.py')])
-        entries = purlin_proofs.load_proofs(project.root)['login']
-        assert purlin_proofs.status_by_proof(entries) == {
-            ('login', 'PROOF-1'): 'fail'}
-
-    @pytest.mark.proof("proofs", "PROOF-7", "RULE-7")
-    def test_the_tests_backing_a_proof_are_named_once_each(self, project):
-        project.proofs([_entry('PROOF-1', 'RULE-1'),
-                        _entry('PROOF-1', 'RULE-1')])
-        entries = purlin_proofs.load_proofs(project.root)['login']
-        assert purlin_proofs.tests_for(entries, 'PROOF-1') == [
-            ('tests/test_login.py', 'test_proof_1')]
-
-
-# ---------------------------------------------------------------------------
 # Frameworks
 # ---------------------------------------------------------------------------
 
 class TestFrameworks:
 
-    def test_shell_is_the_fallback_and_every_match_is_returned(self, tmp_path):
+    def test_nothing_detected_is_an_empty_answer_and_every_match_is_returned(
+            self, tmp_path):
         root = str(tmp_path)
-        assert purlin_frameworks.detect_frameworks(root) == ['shell']
+        assert purlin_frameworks.detect_frameworks(root) == []
         _write(os.path.join(root, 'conftest.py'), '')
         _write(os.path.join(root, 'package.json'),
                json.dumps({'devDependencies': {'vitest': '^1.0.0'}}))
@@ -549,38 +493,37 @@ class TestFrameworks:
                            'devDependencies': {'vitest': '^1.0.0'}}))
         assert purlin_frameworks.detect_frameworks(root) == ['vitest']
 
-    def test_xunit_is_a_csproj_that_references_the_package(self, tmp_path):
+    def test_dotnet_is_a_csproj_that_references_a_test_framework(self,
+                                                              tmp_path):
         root = str(tmp_path)
         _write(os.path.join(root, 'tests', 'App.Tests.csproj'),
                '<Project><ItemGroup>'
                '<PackageReference Include="xunit" Version="2.6.0" />'
                '</ItemGroup></Project>\n')
-        assert 'xunit' in purlin_frameworks.detect_frameworks(root)
+        assert 'dotnet' in purlin_frameworks.detect_frameworks(root)
         _write(os.path.join(root, 'tests', 'App.Tests.csproj'),
                '<Project><ItemGroup>'
                '<PackageReference Include="Moq" Version="4" />'
                '</ItemGroup></Project>\n')
-        assert 'xunit' not in purlin_frameworks.detect_frameworks(root)
+        assert 'dotnet' not in purlin_frameworks.detect_frameworks(root)
+
+    def test_go_shell_and_sql_are_detected_by_their_test_files(self, tmp_path):
+        root = str(tmp_path)
+        _write(os.path.join(root, 'go.mod'), 'module example.com/x\n')
+        _write(os.path.join(root, 'cart', 'cart_test.go'), 'package cart\n')
+        _write(os.path.join(root, 'tests', 'login.test.sh'), 'exit 0\n')
+        _write(os.path.join(root, 'tests', 'test_users.sql'), 'SELECT 1;\n')
+        assert purlin_frameworks.detect_frameworks(root) == ['go', 'sql',
+                                                             'shell']
 
     def test_c_and_php_are_gone(self, tmp_path):
         root = str(tmp_path)
         _write(os.path.join(root, 'Makefile'), 'all:\n\techo hi\n')
         _write(os.path.join(root, 'main.c'), 'int main(){return 0;}\n')
         _write(os.path.join(root, 'composer.json'), '{}')
-        assert purlin_frameworks.detect_frameworks(root) == ['shell']
+        assert purlin_frameworks.detect_frameworks(root) == []
         assert 'c' not in purlin_frameworks.KNOWN_FRAMEWORKS
         assert 'php' not in purlin_frameworks.KNOWN_FRAMEWORKS
-
-    def test_auto_expands_in_place_and_a_typo_is_reported(self, tmp_path):
-        root = str(tmp_path)
-        _write(os.path.join(root, 'conftest.py'), '')
-        found, unknown = purlin_frameworks.resolve_frameworks(
-            root, 'shell, auto, shell')
-        assert found == ['shell', 'pytest'], found
-        assert unknown == []
-        found, unknown = purlin_frameworks.resolve_frameworks(root, 'pytesst')
-        assert unknown == ['pytesst'], unknown
-        assert found == ['pytest'], 'an unusable value falls back to detection'
 
 
 # ---------------------------------------------------------------------------
@@ -602,7 +545,7 @@ class TestGate:
         written = purlin_gate.resolve_gate({'gate': 'signed'}).as_dict()
         assert sorted(written) == [
             'audit_parallel', 'ci', 'gate', 'min_strength', 'mutation_engine',
-            'sql_engine', 'test_framework', 'trust']
+            'trust']
 
     def test_a_named_key_overrides_the_derived_default(self):
         cfg = purlin_gate.resolve_gate({'gate': 'strong', 'min_strength': 95})
@@ -663,7 +606,7 @@ class TestGate:
 
 class TestTheSources:
 
-    @pytest.mark.proof("states", "PROOF-5", "RULE-4")
+    # purlin: states PROOF-5
     def test_a_current_section_from_either_source_counts_at_every_gate(self):
         for gate in ('passed', 'strong', 'signed'):
             for source in ('ci', 'local'):
@@ -723,7 +666,7 @@ def _strong(cfg=None, **overrides):
 
 class TestARuleWithNoProof:
 
-    @pytest.mark.proof("states", "PROOF-1", "RULE-1")
+    # purlin: states PROOF-1
     def test_no_proof_written_reads_no_test(self, project):
         project.spec('# Feature: login\n\n## Rules\n\n- RULE-1: It works\n'
                      '- RULE-2: It fails\n\n## Proof\n\n'
@@ -736,10 +679,50 @@ class TestARuleWithNoProof:
         assert rule['flags']['no_proof'] is True
         assert project.rule('RULE-2')['flags']['no_proof'] is False
 
+    # purlin: states PROOF-77
+    def test_a_test_marked_with_the_rule_answers_the_passed_cell(self,
+                                                                 project):
+        project.spec('# Feature: login\n\n> Scope: src/login.py\n\n'
+                     '## Rules\n\n- RULE-1: It works\n- RULE-2: It fails\n\n'
+                     '## Proof\n\n')
+        project.evidence([{'id': 'RULE-1', 'rule': 'RULE-1', 'status': 'pass'},
+                          {'id': 'RULE-2', 'rule': 'RULE-2', 'status': 'fail'}],
+                         commit_it=False)
+        assert project.cell('RULE-1', 'passed')['word'] == 'passed'
+        assert project.cell('RULE-2', 'passed')['word'] == 'failed'
+        project.evidence([], commit_it=False)
+        cell = project.cell('RULE-1', 'passed')
+        assert cell['word'] == 'no test', cell
+        assert cell['reasons'] == ['no proof written'], cell
+
+    # purlin: states PROOF-78
+    def test_above_passed_a_rule_with_a_test_and_no_proof_reads_no_proof(
+            self):
+        rule_spec = ('# Feature: login\n\n> Scope: src/login.py\n\n'
+                     '## Rules\n\n- RULE-1: It works\n'
+                     '- RULE-2: It is quick [level: passed]\n\n## Proof\n\n')
+        project = Project(spec=rule_spec, gate='strong')
+        try:
+            project.evidence([{'id': 'RULE-1', 'rule': 'RULE-1',
+                               'status': 'pass'},
+                              {'id': 'RULE-2', 'rule': 'RULE-2',
+                               'status': 'pass'}], commit_it=False)
+            first = project.rule('RULE-1')
+            assert first['cells']['passed']['word'] == 'passed'
+            assert first['cells']['strong']['word'] == 'no proof'
+            assert first['cells']['strong']['reasons'] == [
+                'the rule has a test and no proof']
+            assert first['meets_gate'] is False
+            second = project.rule('RULE-2')
+            assert second['cells']['strong']['word'] == 'no proof'
+            assert second['meets_gate'] is True
+        finally:
+            project.close()
+
 
 class TestThePassedCell:
 
-    @pytest.mark.proof("states", "PROOF-3", "RULE-3")
+    # purlin: states PROOF-3
     def test_a_local_section_meets_level_one_under_the_passed_gate(self,
                                                                   project):
         project.evidence([_entry('PROOF-2', 'RULE-2')], commit_it=False)
@@ -748,7 +731,7 @@ class TestThePassedCell:
         assert (cell['source'], cell['current'], cell['counts']) == (
             'local', True, True)
 
-    @pytest.mark.proof("states", "PROOF-4", "RULE-3")
+    # purlin: states PROOF-4
     def test_a_ci_section_meets_level_one(self, project):
         project.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
                            'status': 'pass'}], ci=True)
@@ -756,7 +739,7 @@ class TestThePassedCell:
         assert cell['word'] == 'passed'
         assert cell['source'] == 'ci'
 
-    @pytest.mark.proof("states", "PROOF-6", "RULE-5")
+    # purlin: states PROOF-6
     def test_a_local_section_counts_under_strong_and_signed(self):
         for gate in ('strong', 'signed'):
             made = Project(gate=gate)
@@ -772,14 +755,17 @@ class TestThePassedCell:
             finally:
                 made.close()
 
-    @pytest.mark.proof("states", "PROOF-7", "RULE-5")
-    def test_an_uncommitted_run_counts_and_a_runtime_file_alone_does_not(
+    # purlin: states PROOF-7
+    def test_an_uncommitted_run_counts_and_a_report_alone_does_not(
             self):
         made = Project(gate='signed')
         try:
-            made.proofs([_entry('PROOF-2', 'RULE-2')])
+            _write(os.path.join(made.root, '.purlin', 'runtime', 'reports',
+                                'pytest.xml'),
+                   '<testsuite><testcase classname="tests.test_login" '
+                   'name="test_proof_2"/></testsuite>')
             assert made.cell('RULE-2', 'passed')['word'] == 'no test', (
-                'the runtime proof files are not evidence')
+                'a report is not evidence')
             made.evidence([_entry('PROOF-2', 'RULE-2')], commit_it=False)
             cell = made.cell('RULE-2', 'passed')
             assert cell['word'] == 'passed', cell
@@ -789,7 +775,7 @@ class TestThePassedCell:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-8", "RULE-6")
+    # purlin: states PROOF-8
     def test_an_env_proof_needs_a_section_from_that_operating_system(
             self, project):
         project.spec(
@@ -808,7 +794,7 @@ class TestThePassedCell:
                          at='2026-09-13T13:00:00Z')
         assert project.cell('RULE-1', 'passed')['word'] == 'passed'
 
-    @pytest.mark.proof("states", "PROOF-9", "RULE-7")
+    # purlin: states PROOF-9
     def test_out_of_date_when_the_code_moved(self, project):
         project.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
                            'status': 'pass'}])
@@ -826,12 +812,12 @@ class TestThePassedCell:
         assert rule['flags']['out_of_date'] is True
         assert rule['meets_gate'] is False
 
-    @pytest.mark.proof("states", "PROOF-9", "RULE-7")
+    # purlin: states PROOF-9
     def test_a_spec_edit_and_a_test_edit_leave_it_out_of_date_too(self,
                                                                   project):
         _write(os.path.join(project.root, 'tests', 'test_login.py'),
-               'import pytest\n\n@pytest.mark.proof("login", "PROOF-1", '
-               '"RULE-1")\ndef test_proof_1():\n    assert True\n')
+               'import pytest\n\n# purlin: login PROOF-1\n'
+               'def test_proof_1():\n    assert True\n')
         _git(project.root, 'add', '-A')
         _git(project.root, 'commit', '-q', '-m', 'test(login): proof 1')
         project.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
@@ -843,13 +829,13 @@ class TestThePassedCell:
         assert cell['reasons'] == ['spec changed since %s' % seen[:7]], cell
         project.spec(SPEC)
         _write(os.path.join(project.root, 'tests', 'test_login.py'),
-               'import pytest\n\n@pytest.mark.proof("login", "PROOF-1", '
-               '"RULE-1")\ndef test_proof_1():\n    assert 1\n')
+               'import pytest\n\n# purlin: login PROOF-1\n'
+               'def test_proof_1():\n    assert 1\n')
         cell = project.cell('RULE-1', 'passed')
         assert cell['word'] == 'out of date', cell
         assert cell['reasons'] == ['tests changed since %s' % seen[:7]], cell
 
-    @pytest.mark.proof("states", "PROOF-10", "RULE-8")
+    # purlin: states PROOF-10
     def test_a_rule_no_test_backs_reads_no_test(self, project):
         cell = project.cell('RULE-2', 'passed')
         assert cell['word'] == 'no test'
@@ -859,7 +845,7 @@ class TestThePassedCell:
 
 class TestTheStrongCell:
 
-    @pytest.mark.proof("states", "PROOF-12", "RULE-10")
+    # purlin: states PROOF-12
     def test_a_cell_above_the_gate_is_absent(self):
         expected = {'passed': ['passed'],
                     'strong': ['passed', 'strong'],
@@ -872,7 +858,7 @@ class TestTheStrongCell:
             finally:
                 made.close()
 
-    @pytest.mark.proof("states", "PROOF-13", "RULE-11")
+    # purlin: states PROOF-13
     def test_a_rule_that_did_not_pass_is_weak_for_that_one_reason(self):
         made = Project(gate='strong')
         try:
@@ -885,7 +871,7 @@ class TestTheStrongCell:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-14", "RULE-12")
+    # purlin: states PROOF-14
     def test_a_strength_under_the_minimum_is_weak_and_says_so(self):
         made = Project(gate='strong')
         try:
@@ -901,7 +887,7 @@ class TestTheStrongCell:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-15", "RULE-13")
+    # purlin: states PROOF-15
     def test_with_no_score_the_cell_says_no_mutation_score_was_measured(self):
         made = Project(gate='strong')
         try:
@@ -926,7 +912,7 @@ class TestTheStrongCell:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-16", "RULE-14")
+    # purlin: states PROOF-16
     def test_a_field_the_format_does_not_name_decides_nothing(self):
         # An entry carrying a field the evidence format does not name, here
         # a sentence about the test body, is read for its `verdict` and its
@@ -944,7 +930,7 @@ class TestTheStrongCell:
         assert found['reasons'] == [
             'The test reads the status code alone.'], found
 
-    @pytest.mark.proof("states", "PROOF-17", "RULE-15")
+    # purlin: states PROOF-17
     def test_the_audit_entry_settles_level_two_where_the_level_asks(self):
         assert _strong()['word'] == 'not audited'
         assert _strong()['reasons'] == ['no audit has run on this code']
@@ -959,7 +945,7 @@ class TestTheStrongCell:
         settled = _strong(audit=_audit('strong'))
         assert settled['word'] == 'strong', settled
 
-    @pytest.mark.proof("states", "PROOF-18", "RULE-15")
+    # purlin: states PROOF-18
     def test_a_passed_level_is_never_owed_an_audit(self):
         cfg = purlin_gate.resolve_gate({'gate': 'strong'})
         lower = purlin_states.rule_cells(
@@ -971,7 +957,7 @@ class TestTheStrongCell:
         assert _strong()['word'] == 'not audited'
         assert _strong(level_marked='signed')['word'] == 'not audited'
 
-    @pytest.mark.proof("states", "PROOF-19", "RULE-16")
+    # purlin: states PROOF-19
     def test_a_manual_proof_asks_for_a_manual_test(self):
         cell = _strong(level_marked='passed', proofs=[
             {'id': 'PROOF-1', 'manual': True, 'env': None, 'text': 'x',
@@ -979,7 +965,7 @@ class TestTheStrongCell:
         assert cell['word'] == 'manual test'
         assert cell['reasons'] == ['manual proof'], cell
 
-    @pytest.mark.proof("states", "PROOF-23", "RULE-19")
+    # purlin: states PROOF-23
     def test_a_strong_cell_with_an_engine_carries_no_reasons(self):
         made = Project(gate='strong')
         try:
@@ -996,7 +982,7 @@ class TestTheStrongCell:
 class TestTheAuditOnTheRule:
     """What the AI audit left decides the strong cell, and every rule shows it."""
 
-    @pytest.mark.proof("states", "PROOF-70", "RULE-13")
+    # purlin: states PROOF-70
     def test_with_mutation_off_a_strength_left_behind_is_not_compared(self):
         made = Project(gate='strong', extra_config={'mutation_engine': 'none'})
         try:
@@ -1009,7 +995,7 @@ class TestTheAuditOnTheRule:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-71", "RULE-15")
+    # purlin: states PROOF-71
     def test_a_rule_the_model_could_not_be_reached_for_says_why(self):
         made = Project(gate='strong')
         try:
@@ -1036,7 +1022,7 @@ class TestTheAuditOnTheRule:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-72", "RULE-20")
+    # purlin: states PROOF-72
     def test_a_fresh_finding_stales_the_signature_and_says_so(self):
         made = Project(gate='signed')
         try:
@@ -1054,7 +1040,7 @@ class TestTheAuditOnTheRule:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-73", "RULE-61")
+    # purlin: states PROOF-73
     def test_every_rule_carries_its_audit_at_every_gate(self):
         for gate in ('passed', 'strong', 'signed'):
             made = Project(gate=gate)
@@ -1093,7 +1079,7 @@ class TestHoldsAndSignatures:
         made.audit('RULE-2')
         return made
 
-    @pytest.mark.proof("states", "PROOF-22", "RULE-18")
+    # purlin: states PROOF-22
     def test_a_signature_for_the_current_hashes_clears_the_hand_check(self):
         cfg = purlin_gate.resolve_gate({'gate': 'signed'})
         manual = [{'id': 'PROOF-1', 'manual': True, 'env': None, 'text': 'x',
@@ -1111,7 +1097,7 @@ class TestHoldsAndSignatures:
         assert after['cells']['signed']['word'] == 'signed', after
         assert after['need'] is None, after
 
-    @pytest.mark.proof("states", "PROOF-24", "RULE-20")
+    # purlin: states PROOF-24
     def test_a_signature_is_read_until_the_hashes_move_under_it(self):
         made = self._signed_project()
         try:
@@ -1130,7 +1116,7 @@ class TestHoldsAndSignatures:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-25", "RULE-21")
+    # purlin: states PROOF-25
     def test_a_signature_is_needed_where_the_level_is_signed(self):
         made = self._signed_project()
         try:
@@ -1159,7 +1145,7 @@ class TestHoldsAndSignatures:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-26", "RULE-22")
+    # purlin: states PROOF-26
     def test_an_unsigned_signing_commit_leaves_the_rule_unsigned(self):
         made = self._signed_project()
         try:
@@ -1236,7 +1222,7 @@ ENV_SPEC = (
 
 class TestThePlatformsInThePassedCell:
 
-    @pytest.mark.proof("states", "PROOF-51", "RULE-43")
+    # purlin: states PROOF-51
     def test_one_entry_per_operating_system_a_current_section_covers(self):
         made = Project(gate='strong')
         try:
@@ -1263,7 +1249,7 @@ class TestThePlatformsInThePassedCell:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-52", "RULE-43")
+    # purlin: states PROOF-52
     def test_a_platform_a_proof_asks_for_and_nothing_ran_on_is_listed(self):
         made = Project(spec=ENV_SPEC, gate='strong')
         try:
@@ -1277,7 +1263,7 @@ class TestThePlatformsInThePassedCell:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-53", "RULE-44")
+    # purlin: states PROOF-53
     def test_platforms_that_disagree_read_partial(self):
         made = Project(spec=ENV_SPEC, gate='strong')
         try:
@@ -1303,7 +1289,7 @@ class TestThePlatformsInThePassedCell:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-54", "RULE-45")
+    # purlin: states PROOF-54
     def test_an_older_section_that_is_out_of_date_is_not_read(self):
         """A failing section two edits old says nothing about this code."""
         cell = purlin_states.rule_cells({
@@ -1318,7 +1304,7 @@ class TestThePlatformsInThePassedCell:
         assert cell['word'] == 'passed', cell
         assert sorted(cell['platforms']) == ['macos'], cell
 
-    @pytest.mark.proof("states", "PROOF-50", "RULE-42")
+    # purlin: states PROOF-50
     def test_a_file_whose_source_field_disagrees_is_left_out(self):
         made = Project(gate='strong')
         try:
@@ -1333,7 +1319,7 @@ class TestThePlatformsInThePassedCell:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-66", "RULE-57")
+    # purlin: states PROOF-66
     def test_a_persons_own_section_answers_for_its_platform_at_every_gate(
             self):
         """A local section is a platform's answer at `signed` as at `strong`.
@@ -1362,7 +1348,7 @@ class TestThePlatformsInThePassedCell:
         assert alone['counts'] is True, alone
         assert alone['reasons'] == [], alone
 
-    @pytest.mark.proof("states", "PROOF-55", "RULE-46")
+    # purlin: states PROOF-55
     def test_with_no_audit_at_all_the_strong_cell_says_no_audit_has_run(self):
         cfg = purlin_gate.resolve_gate({'gate': 'strong'})
         cell = purlin_states.rule_cells({
@@ -1376,7 +1362,7 @@ class TestThePlatformsInThePassedCell:
 
 class TestBucketsAndTheGate:
 
-    @pytest.mark.proof("states", "PROOF-27", "RULE-23")
+    # purlin: states PROOF-27
     def test_one_rule_in_each_of_the_five_buckets(self):
         made = _five_bucket_project()
         try:
@@ -1387,14 +1373,14 @@ class TestBucketsAndTheGate:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-27", "RULE-23")
+    # purlin: states PROOF-27
     def test_partial_sits_between_failing_and_passed(self):
         assert purlin_states.BUCKETS == ('untested', 'failing', 'partial',
                                          'passed', 'strong', 'signed')
         assert purlin_states.bucket_keys('passed') == [
             'untested', 'failing', 'partial', 'passed']
 
-    @pytest.mark.proof("states", "PROOF-28", "RULE-24")
+    # purlin: states PROOF-28
     def test_the_gate_is_met_by_one_of_them_and_blocked_by_name(self):
         made = _five_bucket_project()
         try:
@@ -1409,7 +1395,7 @@ class TestBucketsAndTheGate:
 
 class TestLevels:
 
-    @pytest.mark.proof("states", "PROOF-59", "RULE-50")
+    # purlin: states PROOF-59
     def test_a_level_is_the_tag_under_the_gate_or_the_gate(self):
         spec = SPEC.replace(
             '[level: signed]', '[level: passed]').replace(
@@ -1428,7 +1414,7 @@ class TestLevels:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-61", "RULE-52")
+    # purlin: states PROOF-61
     def test_the_level_decides_which_cells_block(self):
         def retag(made, tag):
             made.spec(SPEC.replace('"denied"\n\n', '"denied"%s\n\n' % tag, 1))
@@ -1465,7 +1451,7 @@ class TestLevels:
 
 class TestPayload:
 
-    @pytest.mark.proof("states", "PROOF-31", "RULE-27")
+    # purlin: states PROOF-31
     def test_schema_nine_carries_the_documented_top_level(self, project):
         data = project.payload()
         assert data["schema_version"] == 9
@@ -1483,7 +1469,7 @@ class TestPayload:
         assert project.payload()['remote_url'] == (
             'https://github.com/acme/ledger.git')
 
-    @pytest.mark.proof("states", "PROOF-32", "RULE-28")
+    # purlin: states PROOF-32
     def test_a_feature_carries_its_rules_with_their_tags_and_proofs(self,
                                                                    project):
         feature = next(f for f in project.payload()['features']
@@ -1501,7 +1487,7 @@ class TestPayload:
         assert feature['current'] is False
         assert feature['evidence'] == {'local': None, 'ci': None}
 
-    @pytest.mark.proof("states", "PROOF-32", "RULE-28")
+    # purlin: states PROOF-32
     def test_a_feature_says_whether_its_evidence_is_current_and_committed(
             self, project):
         project.evidence([_entry('PROOF-2', 'RULE-2')], commit_it=False,
@@ -1528,7 +1514,7 @@ class TestPayload:
         assert feature['evidence']['local']['platforms']['linux'][
             'current'] is False
 
-    @pytest.mark.proof("states", "PROOF-29", "RULE-25")
+    # purlin: states PROOF-29
     def test_the_rollup_counts_the_buckets_the_gate_reaches(self, project):
         project.evidence([_entry('PROOF-2', 'RULE-2')])
         data = project.payload()
@@ -1549,7 +1535,7 @@ class TestPayload:
         assert rollup['proofs_without_test_ids'] == ['PROOF-1'], rollup
         assert data['summary']['features'] == 1
 
-    @pytest.mark.proof("states", "PROOF-57", "RULE-48")
+    # purlin: states PROOF-57
     def test_the_proof_counts_call_out_a_proof_with_no_test(self, project):
         project.spec(
             '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
@@ -1569,7 +1555,7 @@ class TestPayload:
         assert rollup['proofs_without_test'] == 1, rollup
         assert rollup['proofs_without_test_ids'] == ['PROOF-2'], rollup
 
-    @pytest.mark.proof("states", "PROOF-56", "RULE-47")
+    # purlin: states PROOF-56
     def test_the_signed_cell_carries_when_it_was_signed(self):
         made = Project(gate='signed')
         try:
@@ -1586,7 +1572,7 @@ class TestPayload:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-30", "RULE-26")
+    # purlin: states PROOF-30
     def test_global_anchor_rules_are_counted_once_in_the_summary(self, project):
         project.spec(
             '# Anchor: security\n\n> Global: true\n\n'
@@ -1601,7 +1587,7 @@ class TestPayload:
         assert login['rollup']['rules'] == 3, (
             'the feature must prove the global anchor\'s rule too')
 
-    @pytest.mark.proof("states", "PROOF-39", "RULE-34")
+    # purlin: states PROOF-39
     def test_a_section_carries_the_result_of_the_run_it_names(self, project):
         """Two operating systems, one run each: one failed, one passed."""
         project.evidence([{'id': 'PROOF-1', 'status': 'pass'},
@@ -1619,7 +1605,7 @@ class TestPayload:
             assert entry['current'] is True
             assert entry['path'] == '.purlin/evidence/local/login.json'
 
-    @pytest.mark.proof("states", "PROOF-37", "RULE-32")
+    # purlin: states PROOF-37
     def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):
         data = project.payload()
         path = purlin_payload.write_report_data(project.root, data)
@@ -1629,7 +1615,7 @@ class TestPayload:
         assert purlin_payload.read_report_payload(project.root)['commit'] == (
             data['commit'])
 
-    @pytest.mark.proof("states", "PROOF-38", "RULE-33")
+    # purlin: states PROOF-38
     def test_an_unchanged_payload_is_touched_rather_than_rewritten(self,
                                                                   project):
         purlin_payload.write_report_data(project.root, project.payload())
@@ -1659,8 +1645,8 @@ class TestTheFixturesAreTheContract:
                                name + '.json'), encoding='utf-8') as handle:
             return json.load(handle)
 
-    @pytest.mark.proof("states", "PROOF-31", "RULE-27")
-    @pytest.mark.proof("states", "PROOF-29", "RULE-25")
+    # purlin: states PROOF-31
+    # purlin: states PROOF-29
     def test_every_fixture_has_the_key_set_the_builder_writes(self):
         for name, gate in (('solo', 'passed'), ('team', 'strong'),
                            ('regulated', 'signed')):
@@ -1687,7 +1673,7 @@ class TestTheFixturesAreTheContract:
                 assert sorted(cell) == sorted(built_cell), (name, cell_name)
             assert sorted(rule['flags']) == sorted(purlin_states.FLAGS), name
 
-    @pytest.mark.proof("states", "PROOF-68", "RULE-59")
+    # purlin: states PROOF-68
     def test_the_tag_key_is_present_in_every_fixture(self):
         """The board's chip reads this key, so a fixture without it is a lie."""
         for name in ('solo', 'team'):
@@ -1697,7 +1683,7 @@ class TestTheFixturesAreTheContract:
         assert tag['name'].startswith('signed/')
         assert tag['commit'] == self._fixture('regulated')['commit']
 
-    @pytest.mark.proof("states", "PROOF-34", "RULE-30")
+    # purlin: states PROOF-34
     def test_every_fixture_queue_row_uses_the_closed_set(self):
         words = {'hand check': {'manual test'},
                  'signature': {'unsigned', 'stale'}}
@@ -1719,7 +1705,7 @@ class TestTheFixturesAreTheContract:
 
 class TestStatusTable:
 
-    @pytest.mark.proof("states", "PROOF-58", "RULE-49")
+    # purlin: states PROOF-58
     def test_the_table_and_the_board_render_the_same_cells(self):
         """One module renders both, so a cell cannot read two ways."""
         for name, gate in (('solo', 'passed'), ('team', 'strong'),
@@ -1734,7 +1720,7 @@ class TestStatusTable:
                 assert row[1:] == board[1:], (name, feature['name'], row)
                 assert len(row) == len(columns), (name, row)
 
-    @pytest.mark.proof("states", "PROOF-58", "RULE-49")
+    # purlin: states PROOF-58
     def test_the_board_cells_read_the_way_the_fixtures_say(self):
         fixture = TestTheFixturesAreTheContract._fixture('regulated')
         cells = {f['name']: purlin_board.row_cells(
@@ -1749,7 +1735,7 @@ class TestStatusTable:
         assert rows['invoice'] == ('invoice', '2', '2 · 1 without a test',
                                    '1 of 2', '0 of 2 · 48%'), rows['invoice']
 
-    @pytest.mark.proof("states", "PROOF-43", "RULE-36")
+    # purlin: states PROOF-43
     def test_the_columns_scale_with_the_gate(self, project):
         project.evidence([_entry('PROOF-2', 'RULE-2')])
         text = purlin_status.sync_status(project.root)
@@ -1778,7 +1764,7 @@ class TestStatusTable:
             finally:
                 made.close()
 
-    @pytest.mark.proof("states", "PROOF-44", "RULE-37")
+    # purlin: states PROOF-44
     def test_the_summary_counts_the_rules_that_meet_the_gate(self, project):
         project.evidence([_entry('PROOF-2', 'RULE-2')])
         text = purlin_status.sync_status(project.root)
@@ -1789,7 +1775,7 @@ class TestStatusTable:
         assert 'test strength' not in second, second
         assert 'signature' not in second, second
 
-    @pytest.mark.proof("states", "PROOF-45", "RULE-38")
+    # purlin: states PROOF-45
     def test_the_table_ends_with_one_next_step(self, project):
         text = purlin_status.sync_status(project.root)
         directives = [line for line in text.splitlines()
@@ -1797,7 +1783,7 @@ class TestStatusTable:
         assert len(directives) == 1, text
         assert 'purlin:build' in directives[0], directives[0]
 
-    @pytest.mark.proof("states", "PROOF-69", "RULE-60")
+    # purlin: states PROOF-69
     def test_a_rule_marked_above_the_gate_is_named_once(self):
         made = Project(gate='strong')
         try:
@@ -1815,7 +1801,7 @@ class TestStatusTable:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-67", "RULE-58")
+    # purlin: states PROOF-67
     def test_the_next_step_names_the_command_this_gate_would_write_with(self):
         """An audit you run counts at every gate, and it runs the tests too.
 
@@ -1847,7 +1833,7 @@ class TestStatusTable:
         assert purlin_board.needs_a_person(3) == '3 rules need a person'
         assert purlin_board.needs_a_person(0) == 'no rule needs a person'
 
-    @pytest.mark.proof("states", "PROOF-48", "RULE-41")
+    # purlin: states PROOF-48
     def test_retired_config_keys_print_the_update_directive(self):
         made = Project(extra_config={'spec_dir': 'elsewhere'})
         try:
@@ -1856,7 +1842,7 @@ class TestStatusTable:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-46", "RULE-39")
+    # purlin: states PROOF-46
     def test_an_empty_project_says_what_to_run(self):
         made = Project(spec=None)
         try:
@@ -1865,14 +1851,14 @@ class TestStatusTable:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-47", "RULE-40")
+    # purlin: states PROOF-47
     def test_no_emoji_and_only_the_four_glyphs(self, project):
         text = purlin_status.sync_status(project.root)
         allowed = set('→▶▼─')
         for char in text:
             assert ord(char) < 0x2000 or char in allowed, repr(char)
 
-    @pytest.mark.proof("states", "PROOF-49", "RULE-36")
+    # purlin: states PROOF-49
     def test_the_repository_own_specs_print_the_table(self):
         text = purlin_status.sync_status(PROJECT_ROOT)
         header = next(line for line in text.splitlines()
@@ -1918,8 +1904,8 @@ def _rpc(root, *requests, **kwargs):
 
 class TestTransport:
 
-    @pytest.mark.proof("server", "PROOF-1", "RULE-1")
-    @pytest.mark.proof("server", "PROOF-5", "RULE-5")
+    # purlin: server PROOF-1
+    # purlin: server PROOF-5
     def test_initialize_names_the_protocol_and_the_version(self, project):
         responses, stderr = _rpc(project.root, {
             'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',
@@ -1934,7 +1920,7 @@ class TestTransport:
             assert result['serverInfo']['version'] == handle.read().strip()
         assert 'Purlin MCP server' in stderr
 
-    @pytest.mark.proof("server", "PROOF-2", "RULE-2")
+    # purlin: server PROOF-2
     def test_tools_list_names_the_three_tools(self, project):
         responses, _stderr = _rpc(project.root, {
             'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list'})
@@ -1950,7 +1936,7 @@ class TestTransport:
         text = responses[0]['result']['content'][0]['text']
         assert 'Spec' in text and 'Tests' in text and 'login' in text
 
-    @pytest.mark.proof("server", "PROOF-9", "RULE-9")
+    # purlin: server PROOF-9
     def test_purlin_config_reads_and_writes(self, project):
         responses, _stderr = _rpc(
             project.root,
@@ -1981,7 +1967,7 @@ class TestTransport:
         assert sorted(report) == ['roles', 'since'], sorted(report)
         assert sorted(report['roles']) == ['eng', 'pm', 'qa']
 
-    @pytest.mark.proof("server", "PROOF-7", "RULE-7")
+    # purlin: server PROOF-7
     def test_a_root_with_no_workspace_says_so_rather_than_reporting_nothing(
             self, tmp_path):
         responses, _stderr = _rpc(str(tmp_path), {
@@ -1990,7 +1976,7 @@ class TestTransport:
         text = responses[0]['result']['content'][0]['text']
         assert 'No Purlin workspace' in text and 'purlin:init' in text
 
-    @pytest.mark.proof("server", "PROOF-3", "RULE-3")
+    # purlin: server PROOF-3
     def test_a_notification_gets_no_response_and_bad_json_gets_a_parse_error(
             self, project):
         responses, _stderr = _rpc(
@@ -2005,7 +1991,7 @@ class TestTransport:
         parsed = json.loads(result.stdout.strip())
         assert parsed['error']['code'] == -32700
 
-    @pytest.mark.proof("server", "PROOF-4", "RULE-4")
+    # purlin: server PROOF-4
     def test_an_unknown_tool_and_an_unknown_method_are_errors(self, project):
         responses, _stderr = _rpc(
             project.root,
@@ -2015,7 +2001,7 @@ class TestTransport:
         assert responses[0]['error']['code'] == -32601
         assert responses[1]['error']['code'] == -32601
 
-    @pytest.mark.proof("server", "PROOF-6", "RULE-6")
+    # purlin: server PROOF-6
     def test_project_root_can_be_named_per_call(self, project, tmp_path):
         responses, _stderr = _rpc(str(tmp_path), {
             'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',
@@ -2023,7 +2009,7 @@ class TestTransport:
                        'arguments': {'project_root': project.root}}})
         assert 'login' in responses[0]['result']['content'][0]['text']
 
-    @pytest.mark.proof("server", "PROOF-8", "RULE-8")
+    # purlin: server PROOF-8
     def test_a_tool_that_raises_answers_rather_than_crashing(self, project,
                                                              monkeypatch):
         def boom(_root):
@@ -2042,7 +2028,7 @@ class TestTransport:
             request, project.root)['result']['content'][0]['text']
         assert 'Tests' in again, again
 
-    @pytest.mark.proof("server", "PROOF-10", "RULE-10")
+    # purlin: server PROOF-10
     def test_a_write_with_no_key_and_an_unknown_action_are_refused(self,
                                                                    project):
         before = purlin_srv.resolve_config(project.root)
@@ -2096,7 +2082,7 @@ class TestPackageHygiene:
         assert not os.path.exists(
             os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin_srv.py'))
 
-    @pytest.mark.proof("server", "PROOF-22", "RULE-22")
+    # purlin: server PROOF-22
     def test_the_plugin_entry_point_names_the_package(self):
         with open(os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json'),
                   encoding='utf-8') as handle:
@@ -2115,7 +2101,7 @@ class TestPackageHygiene:
 class TestTheSignedTag:
     """The payload names the `signed/*` tag pointing at HEAD, or nothing."""
 
-    @pytest.mark.proof("states", "PROOF-68", "RULE-59")
+    # purlin: states PROOF-68
     def test_no_tag_reads_none_and_a_tag_on_head_reads_its_name(self):
         made = Project()
         try:
@@ -2127,7 +2113,7 @@ class TestTheSignedTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-68", "RULE-59")
+    # purlin: states PROOF-68
     def test_a_tag_that_is_not_on_head_says_nothing_about_this_code(self):
         made = Project()
         try:
@@ -2139,7 +2125,7 @@ class TestTheSignedTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-68", "RULE-59")
+    # purlin: states PROOF-68
     def test_the_newest_version_wins_where_several_point_at_head(self):
         made = Project()
         try:
@@ -2166,7 +2152,7 @@ def _feature(payload, name='login'):
 class TestASpecThatNamesNoFiles:
     """Its tests still run and pass; only a signature needs its files named."""
 
-    @pytest.mark.proof("states", "PROOF-74", "RULE-62")
+    # purlin: states PROOF-74
     def test_the_payload_names_why_it_is_incomplete(self):
         for spec, reason in (
                 (NO_SCOPE_SPEC, 'no > Scope: line'),
@@ -2191,7 +2177,7 @@ class TestASpecThatNamesNoFiles:
             finally:
                 made.close()
 
-    @pytest.mark.proof("states", "PROOF-74", "RULE-62")
+    # purlin: states PROOF-74
     def test_an_anchor_is_never_incomplete(self):
         made = Project()
         try:
@@ -2208,7 +2194,7 @@ class TestASpecThatNamesNoFiles:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-75", "RULE-63")
+    # purlin: states PROOF-75
     def test_at_signed_its_rules_read_unsigned_and_wait_on_nobody(self):
         for spec, word, queued in ((SPEC, 'unsigned', True),
                                    (NO_SCOPE_SPEC, 'unsigned', False)):
@@ -2233,7 +2219,7 @@ class TestASpecThatNamesNoFiles:
             finally:
                 made.close()
 
-    @pytest.mark.proof("states", "PROOF-75", "RULE-63")
+    # purlin: states PROOF-75
     def test_at_signed_a_signature_on_it_does_not_count(self):
         made = Project(spec=NO_SCOPE_SPEC, gate='signed')
         try:
@@ -2249,7 +2235,7 @@ class TestASpecThatNamesNoFiles:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-75", "RULE-63")
+    # purlin: states PROOF-75
     def test_below_signed_it_blocks_nothing(self):
         made = Project(spec=NO_SCOPE_SPEC, gate='strong')
         try:
@@ -2262,7 +2248,7 @@ class TestASpecThatNamesNoFiles:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-76", "RULE-64")
+    # purlin: states PROOF-76
     def test_status_names_it_at_every_gate(self):
         for gate in ('passed', 'strong', 'signed'):
             made = Project(spec=NO_SCOPE_SPEC, gate=gate)
@@ -2288,7 +2274,7 @@ class TestASpecThatNamesNoFiles:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-76", "RULE-64")
+    # purlin: states PROOF-76
     def test_at_signed_with_nothing_else_left_the_next_step_is_the_spec(self):
         made = Project(spec=NO_SCOPE_SPEC.replace(' [level: signed]', ''),
                        gate='signed')

@@ -17,15 +17,15 @@ The report is the schema Stryker writes for every language:
                                              "killedBy"}]}},
      "testFiles": {"test/login.test.js": {"tests": [{"id", "name"}]}}}
 
-A test's `name` is the name the test framework saw, so it carries the proof
-marker the plugin reads. Intersecting the report's `killedBy` and `coveredBy`
-ids with the ids of a rule's own tests is what turns a file total into a
-number beside a rule.
+A test's `name` is the name the test framework saw: its describe titles and
+its own title. The evidence names each rule's tests the same way, the titles
+joined by ` > `, so the two are compared with the separators set aside.
+Intersecting the report's `killedBy` and `coveredBy` ids with the ids of a
+rule's own tests is what turns a file total into a number beside a rule.
 """
 
 import json
 import os
-import re
 import shutil
 import tempfile
 
@@ -40,10 +40,6 @@ from . import (TIMED_OUT, execute, feature_tests, none, result, rule_entry,
 KILLED_STATUSES = ('killed', 'timeout')
 SURVIVED_STATUSES = ('survived', 'nocoverage')
 
-# The proof marker a plugin writes into a test name, e.g.
-# `[proof:login:PROOF-1:RULE-1]`. When both names carry one, the marker is the
-# match, so a test name that is a prefix of another never claims its breaks.
-_MARKER_RE = re.compile(r'\[proof:[^\]]+\]')
 
 
 def binary(project_root):
@@ -90,11 +86,11 @@ def build_config(scope_files, runner, report_path):
 
 
 def _clean_name(text):
-    return ' '.join(str(text or '').split())
+    return ' '.join(str(text or '').replace(' > ', ' ').split())
 
 
 def _same_file(report_path, test_file):
-    """True when the report's test file and the plugin's are the same file."""
+    """True when the report's test file and the evidence's are the same file."""
     if not test_file:
         return True
     left = str(report_path or '').replace('\\', '/').lstrip('./')
@@ -105,15 +101,15 @@ def _same_file(report_path, test_file):
 
 
 def _same_test(report_name, test_name):
-    """True when the report's test and the plugin's test are the same test."""
+    """True when the report's test and the evidence's test are the same test.
+
+    The names are compared whole, the titles joined by single spaces, so a
+    test whose title is a prefix of another's never claims its breaks.
+    """
     left, right = _clean_name(report_name), _clean_name(test_name)
     if not left or not right:
         return False
-    left_marker = _MARKER_RE.search(left)
-    right_marker = _MARKER_RE.search(right)
-    if left_marker and right_marker:
-        return left_marker.group(0) == right_marker.group(0)
-    return left == right or right in left or left in right
+    return left == right
 
 
 def test_ids_by_rule(report, tests_for_feature):

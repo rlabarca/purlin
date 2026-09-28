@@ -1,4 +1,4 @@
-> Format-Version: 2
+> Format-Version: 3
 
 # Evidence format
 
@@ -100,21 +100,25 @@ Each `rules` value:
 
 | Word | What it means |
 |---|---|
-| `passed` | every proof of the rule that could run here has a passing test |
-| `failed` | a test claiming one of the rule's proofs failed |
-| `no test` | no proof names the rule, or nothing observed any of its proofs |
+| `passed` | every proof of the rule that could run here has a passing test; for a rule with no proof, every test marked with the rule's own id passed |
+| `failed` | a test claiming one of the rule's proofs, or marked with the rule's id, failed |
+| `no test` | no proof names the rule and no test is marked with its id, or nothing observed any of its proofs |
 | `not run` | a proof of the rule is tagged `@env` for another operating system, so this machine could not answer |
 
 Each `proofs` entry:
 
 | Field | Type | What it holds |
 |---|---|---|
-| `id` | string | `PROOF-N` |
-| `rule` | string | the `RULE-N` the proof covers |
+| `id` | string | `PROOF-N`, or `RULE-N` for a test marked with the id of a rule that has no proof |
+| `rule` | string | the `RULE-N` the proof covers, the same as `id` for a rule-marked test |
 | `result` | string | `pass`, `fail`, `missing` or `not run` |
 | `env` | string or null | the operating system the proof's `@env` tag names, or null |
 | `manual` | bool | whether the proof is tagged `@manual` |
-| `test` | string | `<file>::<name>` for the test that observed the proof, `""` when nothing did |
+| `test` | string | `<file>::<name>` for the test that observed the proof, `""` when nothing did. The name is the test's own, as the marker format spells it |
+
+A test is tied to its proof by the marker comment above it, as
+`references/formats/marker_format.md` says. A proof whose test was skipped, or
+that no case in the report is, reads `missing` with the test named.
 
 ### The audit
 
@@ -162,7 +166,7 @@ so an edit counts before it is committed.
 |---|---|
 | `spec` | the rule and proof lines of the feature, of every spec it requires, transitively, and of every anchor carrying `> Global: true`. A rule line is `<spec> <RULE-N> <text> <tag>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual` and `@env(<os>)` where the proof carries them. `> Description:` and the other metadata fields are not covered |
 | `code` | the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/` |
-| `tests` | every tracked file carrying a proof marker for the feature, each as `<path> <blob>` |
+| `tests` | every tracked test file carrying a marker for the feature, each as `<path> <blob>`. A test file is one a suite of the `tests` setting names |
 
 A file git does not track is in no part: it would change the fingerprint on
 the one machine that holds it and nowhere else. It joins the fingerprint once

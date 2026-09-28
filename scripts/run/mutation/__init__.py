@@ -51,13 +51,14 @@ TIMED_OUT = 124
 ATTRIBUTIONS = ('per_test', 'per_scope', 'unavailable')
 
 # Which engine breaks the code a framework's tests cover. jest and vitest are
-# both Stryker; xunit is Stryker.NET; pytest is mutmut. shell and sql have no
-# engine, so those rules carry `attribution: unavailable`.
+# both Stryker; dotnet is Stryker.NET; pytest is mutmut. go, shell and sql
+# have no engine, so those rules carry `attribution: unavailable`.
 ENGINE_BY_FRAMEWORK = {
     'jest': 'stryker',
     'vitest': 'stryker',
-    'xunit': 'stryker_net',
+    'dotnet': 'stryker_net',
     'pytest': 'mutmut',
+    'go': 'none',
     'shell': 'none',
     'sql': 'none',
 }
@@ -221,7 +222,8 @@ def run_breaks(project_root, engine, scope_by_feature, tests_by_rule):
     """Break the scope files of every feature and report what the tests caught.
 
     `scope_by_feature` is `{feature: [scope file paths]}` and `tests_by_rule`
-    is `{(feature, "RULE-N"): [{"file", "name", "plugin"}]}`.
+    is `{(feature, "RULE-N"): [{"file", "name"}]}`, the tests the evidence
+    ties to each rule.
 
     An engine name outside `ENGINES`, or a binary that is not installed,
     answers `engine: none` with the reason in words rather than raising.

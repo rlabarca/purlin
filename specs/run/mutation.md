@@ -2,7 +2,7 @@
 
 > Description: Test strength is the share of the deliberate breaks made to the code that the
 >   tests caught, as an integer percent. Four engines make those breaks, one per language
->   family: Stryker for jest and vitest, Stryker.NET for xunit, mutmut for pytest, and the
+>   family: Stryker for jest and vitest, Stryker.NET for dotnet, mutmut for pytest, and the
 >   empty engine for everything else. Selection reads the config and the detected frameworks
 >   alone, so a caller can print the plan before anything runs; the install check happens
 >   when the engine runs, and an engine that is not installed answers with the reason in
@@ -13,7 +13,7 @@
 
 ## Rules
 
-- RULE-1: With `mutation_engine` set to `auto`, jest and vitest select `stryker`, xunit selects `stryker_net`, pytest selects `mutmut`, and shell and sql select `none`; the first detected framework that has an engine decides, and a project with no framework selects `none`
+- RULE-1: With `mutation_engine` set to `auto`, jest and vitest select `stryker`, dotnet selects `stryker_net`, pytest selects `mutmut`, and go, shell and sql select `none`; the first detected framework that has an engine decides, and a project with no framework selects `none`
 - RULE-2: A `mutation_engine` naming an engine wins over the detected frameworks, a name outside the four shipped engines reads as `none` rather than being guessed at, and a missing key reads as `auto`
 - RULE-3: Test strength is `killed / (killed + survived)` as an integer percent rounded half up, and is None when no break ran at all
 - RULE-4: The rules of a feature are reported in rule-number order, so `RULE-2` comes before `RULE-10` [level: passed]
@@ -22,7 +22,7 @@
 - RULE-7: The project's own `node_modules/.bin/stryker` is preferred over one on the PATH, and neither present leaves no engine with a line naming the package to install
 - RULE-8: A break whose status is `killed` or `timeout` counts caught, one whose status is `survived` or `nocoverage` counts missed, and a break that never reached a test counts for neither
 - RULE-9: A rule's number is what its own tests caught: a break only another rule's test caught counts missed for this one, and a rule whose tests the report never lists measures nothing
-- RULE-10: A test in the report is matched to a rule's test by the proof marker in its name when both names carry one, and never across two files of the same name
+- RULE-10: A test in the report is matched to a rule's test by its whole name, its titles joined by single spaces whether the name wrote them with ` > ` or not, so a name that begins another is not that test, and never across two files of the same name
 - RULE-11: Attribution is `per_test` when any break names the test that caught it and `per_scope` when none does, and every rule then carries the feature's scope number
 - RULE-12: A run that wrote no report, or whose report cannot be read, measures nothing for that feature and says so in the log rather than raising
 - RULE-13: Stryker.NET is run as `dotnet stryker` with one `--mutate` per scope file, `--coverage-analysis perTest`, `--disable-bail`, `--reporter json` and `--output`, and its report is found by walking that output directory for `mutation-report.json`
@@ -38,7 +38,7 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Call `select_engine({}, [framework])` for each of jest, vitest, xunit, pytest, shell and sql; verify `stryker`, `stryker`, `stryker_net`, `mutmut`, `none`, `none`. Call it with `["pytest", "jest"]`; verify `mutmut`, the first with an engine. Call it with `["shell", "jest"]`; verify `stryker`, so a framework with no engine is skipped rather than deciding. Call it with `[]`; verify `none`
+- PROOF-1 (RULE-1): Call `select_engine({}, [framework])` for each of jest, vitest, dotnet, go, pytest, shell and sql; verify `stryker`, `stryker`, `stryker_net`, `none`, `mutmut`, `none`, `none`. Call it with `["pytest", "jest"]`; verify `mutmut`, the first with an engine. Call it with `["shell", "jest"]`; verify `stryker`, so a framework with no engine is skipped rather than deciding. Call it with `[]`; verify `none`
 - PROOF-2 (RULE-2): Call `select_engine({"mutation_engine": "stryker"}, ["pytest"])`; verify `stryker`. Call it with `"nosuchengine"`; verify `none`. Call it with no key at all and `["pytest"]`; verify `mutmut`, the answer `auto` gives
 - PROOF-3 (RULE-3): Call `score_percent()` with (0, 0), (1, 1), (2, 1), (3, 0) and (0, 4); verify None, 50, 67, 100 and 0
 - PROOF-4 (RULE-4): Call `rules_by_feature()` with the keys `("f", "RULE-10")`, `("f", "RULE-2")` and `("f", "RULE-1")`; verify the list is `["RULE-1", "RULE-2", "RULE-10"]`
@@ -46,8 +46,8 @@
 - PROOF-6 (RULE-6): Call `test_runner()` on a project whose `package.json` lists vitest under `devDependencies`; verify `vitest`. Call it on a project with no `package.json` and on one listing jest; verify `jest` both times
 - PROOF-7 (RULE-7): Put an executable at `node_modules/.bin/stryker` and put another `stryker` on the PATH; verify `binary()` returns the project's one. Remove both; verify `binary()` is None and that a run answers engine `none` with a reason naming `@stryker-mutator/core`
 - PROOF-8 (RULE-8): Parse a report holding one `Killed`, one `Timeout`, one `Survived`, one `NoCoverage` and one `CompileError` break; verify the scope score counts 2 caught and 2 missed and that the compile error changed neither count
-- PROOF-9 (RULE-9): Parse a report where test `t1` carries RULE-1's marker and `t2` carries RULE-2's; verify RULE-1's entry counts only the breaks `t1` killed or covered, that a break only `t2` killed counts missed for RULE-1, and that a rule whose test the report never lists has a score of None
-- PROOF-10 (RULE-10): Parse a report holding the test names `login [proof:auth:PROOF-1:RULE-1]` and `login extra [proof:auth:PROOF-2:RULE-2]`; verify each rule claims only its own marker's breaks. Parse a report where the same test name appears in `test/other.js`; verify the rule's entry ignores it
+- PROOF-9 (RULE-9): Parse a report where test `t1` is RULE-1's test and `t2` is RULE-2's; verify RULE-1's entry counts only the breaks `t1` killed or covered, that a break only `t2` killed counts missed for RULE-1, and that a rule whose test the report never lists has a score of None
+- PROOF-10 (RULE-10): Parse a report holding the test names `locks` and `locks after five`, the first RULE-1's test and the second RULE-2's; each rule claims only its own test's breaks. Parse a report where the same test name appears in `test/other.js`; verify the rule's entry ignores it
 - PROOF-11 (RULE-11): Parse a report where no break carries `killedBy`; verify every rule carries the feature's scope number with `attribution: "per_scope"`. Parse one where a break names its killer; verify `attribution: "per_test"`
 - PROOF-12 (RULE-12): Point `read_report()` at a path holding invalid JSON and at a path that does not exist; verify None both times. Run the engine with a binary that writes no report; verify the feature's score is None and the log line says the engine wrote no report
 - PROOF-13 (RULE-13): Call `build_command(["dotnet", "stryker"], ["src/A.cs", "src/B.cs"], "/tmp/out")`; verify it carries `--mutate src/A.cs`, `--mutate src/B.cs`, `--coverage-analysis perTest`, `--disable-bail`, `--reporter json` and `--output /tmp/out`. Put `mutation-report.json` two directories below the output directory; verify `find_report()` returns it, and returns None when the directory holds no report

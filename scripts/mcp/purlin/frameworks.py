@@ -1,12 +1,15 @@
-"""Which test frameworks a project uses.
+"""Which test frameworks a project uses, and the `tests` entry each one gets.
 
 Detection answers all the matches, not the first: a project can carry pytest
-for the server and jest for the client, and running only one of them calls a
-suite that never ran green. Shell has no detection heuristic, so it is the
-fallback that keeps a runner always present.
+for the server and vitest for the client. `purlin:init` writes one entry of
+the `tests` setting for each framework it detects, with the report flag
+already in the command, and says in one line what a framework needs added
+before it can write a report. Where it detects nothing it asks for the command
+and where the report lands.
 
-The six frameworks this release ships plugins for are pytest, vitest, jest,
-xunit, sql and shell. C and PHP were dropped.
+Nothing of Purlin is installed in a project's test suite: every entry below
+runs the project's own test command and reads the report that command writes.
+`references/supported_frameworks.md` shows the same entries to a reader.
 """
 
 import json
@@ -18,19 +21,90 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-KNOWN_FRAMEWORKS = ('pytest', 'vitest', 'jest', 'xunit', 'sql', 'shell')
+KNOWN_FRAMEWORKS = ('pytest', 'vitest', 'jest', 'dotnet', 'go', 'sql', 'shell')
+
+REPORTS = '.purlin/runtime/reports'
+
+_JS_TEST_GLOBS = ['**/*.%s.%s' % (kind, ext) for kind in ('test', 'spec')
+                  for ext in ('js', 'jsx', 'mjs', 'cjs', 'ts', 'tsx')]
+
+# The entry of the `tests` setting init writes for each framework, and the
+# one line it prints about what the framework needs added. Each command is
+# the framework's own, with the flag that writes the report Purlin reads.
+ENTRIES = {
+    'pytest': {
+        'run': 'python3 -m pytest --ignore=mutants {files} --junitxml={report}',
+        'report': REPORTS + '/pytest.xml', 'format': 'junit',
+        'files': ['**/test_*.py', '**/*_test.py'],
+    },
+    'vitest': {
+        'run': ('npx vitest run --reporter=default --reporter=junit '
+                '--outputFile.junit={report} {files}'),
+        'report': REPORTS + '/vitest.xml', 'format': 'junit',
+        'files': list(_JS_TEST_GLOBS),
+    },
+    'jest': {
+        'run': ("JEST_JUNIT_OUTPUT_FILE={report} "
+                "JEST_JUNIT_ADD_FILE_ATTRIBUTE=true "
+                "JEST_JUNIT_CLASSNAME='{classname}' "
+                "JEST_JUNIT_TITLE='{title}' "
+                "JEST_JUNIT_ANCESTOR_SEPARATOR=' > ' "
+                "npx jest --ci --reporters=default --reporters=jest-junit "
+                "{files}"),
+        'report': REPORTS + '/jest.xml', 'format': 'junit',
+        'files': list(_JS_TEST_GLOBS),
+    },
+    'dotnet': {
+        'run': 'dotnet test --logger trx --results-directory {report}',
+        'report': REPORTS + '/dotnet', 'format': 'trx',
+        'files': ['**/*.cs'],
+    },
+    'go': {
+        'run': 'go test -json ./...',
+        'report': '-', 'format': 'gotest',
+        'files': ['**/*_test.go'],
+    },
+    'sql': {
+        'run': 'sqlite3 -bail :memory: < {files}',
+        'report': None, 'format': 'exit',
+        'files': ['**/test_*.sql', '**/*_test.sql', '**/*.test.sql'],
+    },
+    'shell': {
+        'run': 'bash {files}',
+        'report': None, 'format': 'exit',
+        'files': ['**/*.test.sh'],
+    },
+}
+
+# What each framework needs added before it can write the report, in one
+# line; None where it needs nothing.
+NEEDS = {
+    'pytest': None,
+    'vitest': None,
+    'jest': 'jest needs the package jest-junit to write its report: run '
+            'npm install --save-dev jest-junit',
+    'dotnet': None,
+    'go': None,
+    'sql': 'sql runs each test file through the sqlite3 command, and a test '
+           'fails by raising an error; change the run command for another '
+           'engine',
+    'shell': None,
+}
 
 # Directory names detection never descends into: dot directories are tool
 # state, and `node_modules` is other people's code, where a vendored package's
 # own fixtures are not this project's frameworks.
-_SKIP_DIRS = ('node_modules',)
+_SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
 
 # A SQL file counts as a test only when its name says so. `tests/fixtures.sql`
 # is seed data, not a test.
 _SQL_TEST_NAME = re.compile(r'^(?:test_.+\.sql|.+_test\.sql|.+\.test\.sql)$')
 
-# An xUnit project is any `*.csproj` that references the xunit package.
-_XUNIT_REF = re.compile(r'Include="xunit(?:\.|")', re.IGNORECASE)
+# A .NET test project is any `*.csproj` that references a test framework or
+# the test SDK.
+_DOTNET_TEST_REF = re.compile(
+    r'Include="(?:xunit|nunit|MSTest|Microsoft\.NET\.Test\.Sdk)(?:\.|")',
+    re.IGNORECASE)
 
 
 def _read(root, rel):
@@ -77,7 +151,7 @@ def _walk(root):
         yield dirpath, filenames
 
 
-def _has_xunit_csproj(root):
+def _has_dotnet_tests(root):
     for dirpath, filenames in _walk(root):
         for name in filenames:
             if not name.endswith('.csproj'):
@@ -88,27 +162,37 @@ def _has_xunit_csproj(root):
                     text = handle.read()
             except (IOError, OSError, UnicodeDecodeError):
                 continue
-            if _XUNIT_REF.search(text):
+            if _DOTNET_TEST_REF.search(text):
                 return True
+    return False
+
+
+def _any_file(root, test):
+    for _dirpath, filenames in _walk(root):
+        if any(test(name) for name in filenames):
+            return True
     return False
 
 
 _DETECTORS = (
     ('pytest', lambda root: (os.path.isfile(os.path.join(root, 'conftest.py'))
+                             or os.path.isfile(os.path.join(root, 'pytest.ini'))
                              or '[tool.pytest' in _read(root, 'pyproject.toml'))),
     ('vitest', lambda root: _npm_package(root, 'vitest')),
     ('jest', lambda root: _npm_package(root, 'jest')),
-    ('xunit', _has_xunit_csproj),
-    ('sql', lambda root: any(_SQL_TEST_NAME.match(n)
-                             for n in _listdir(root, 'tests'))),
+    ('dotnet', _has_dotnet_tests),
+    ('go', lambda root: (os.path.isfile(os.path.join(root, 'go.mod'))
+                         and _any_file(root, lambda n: n.endswith('_test.go')))),
+    ('sql', lambda root: _any_file(root, _SQL_TEST_NAME.match)),
+    ('shell', lambda root: _any_file(root, lambda n: n.endswith('.test.sh'))),
 )
 
 
 def detect_frameworks(project_root):
     """Every framework detected under `project_root`, in registry order.
 
-    Shell is the fallback when nothing else matches, so the answer is never
-    empty and a caller always has a runner to name.
+    Empty when nothing matches: `purlin:init` then asks for the command that
+    runs the tests and where the report lands.
     """
     found = []
     for framework_id, test in _DETECTORS:
@@ -117,94 +201,16 @@ def detect_frameworks(project_root):
                 found.append(framework_id)
         except OSError:
             continue
-    if not found:
-        found.append('shell')
     return found
 
 
-# What a tree must carry for a framework to be runnable at all, checked when a
-# named `test_framework` names something detection did not find. Detection
-# is the stricter question (jest is detected only when `package.json` declares
-# it); this is the looser one, so a project that wires a runner in a way
-# detection does not recognise keeps it.
-_WIRING = {
-    'pytest': lambda root: (os.path.isfile(os.path.join(root, 'conftest.py'))
-                            or os.path.isfile(os.path.join(root, 'pytest.ini'))
-                            or os.path.isfile(os.path.join(root,
-                                                           'pyproject.toml'))),
-    'jest': lambda root: os.path.isfile(os.path.join(root, 'package.json')),
-    'vitest': lambda root: os.path.isfile(os.path.join(root, 'package.json')),
-    'xunit': lambda root: _any_file(root, '.csproj'),
-    'sql': lambda root: _any_file(root, '.sql'),
-}
+def entry_for(framework):
+    """The `tests` entry init writes for one framework, as a new dict."""
+    base = ENTRIES[framework]
+    return {'name': framework, 'run': base['run'], 'report': base['report'],
+            'format': base['format'], 'files': list(base['files'])}
 
 
-def _any_file(root, suffix):
-    for _dirpath, filenames in _walk(root):
-        for name in filenames:
-            if name.endswith(suffix):
-                return True
-    return False
-
-
-def carries_wiring(project_root, name):
-    """True when `project_root` carries anything a `name` runner could run.
-
-    Shell and any name this release does not ship a plugin for answer True:
-    shell needs no wiring, and an unknown name is somebody else's decision.
-    """
-    test = _WIRING.get(name)
-    if test is None:
-        return True
-    try:
-        return bool(test(project_root))
-    except OSError:
-        return True
-
-
-def prune_unwired(project_root, names):
-    """`(kept, dropped)` from a configured `test_framework` list.
-
-    A name detection does not find and the tree carries no wiring for is
-    dropped: running it prints a runner that exited non-zero on every run and
-    proves nothing. A name the tree does carry stays even when detection would
-    not have picked it, so a project that wires a runner its own way keeps it.
-    """
-    detected = detect_frameworks(project_root)
-    kept, dropped = [], []
-    for name in names:
-        if name in detected or carries_wiring(project_root, name):
-            kept.append(name)
-        else:
-            dropped.append(name)
-    return kept, dropped
-
-
-def resolve_frameworks(project_root, raw):
-    """`(frameworks, unknown)` from a `test_framework` config value.
-
-    The value is a comma separated list because `purlin:init` writes one when
-    it detects more than one framework. Order is the order it was written,
-    duplicates collapse, and `auto` expands in place to everything detected.
-    A name outside `KNOWN_FRAMEWORKS` is returned in `unknown` rather than
-    run: a typo must not silently run nothing.
-    """
-    frameworks, unknown = [], []
-    for part in str(raw or '').split(','):
-        name = part.strip()
-        if not name:
-            continue
-        if name == 'auto':
-            for detected in detect_frameworks(project_root):
-                if detected not in frameworks:
-                    frameworks.append(detected)
-        elif name in KNOWN_FRAMEWORKS:
-            if name not in frameworks:
-                frameworks.append(name)
-        else:
-            unknown.append(name)
-    if not frameworks:
-        for detected in detect_frameworks(project_root):
-            if detected not in frameworks:
-                frameworks.append(detected)
-    return frameworks, unknown
+def entries_for(frameworks):
+    """The `tests` setting for a list of frameworks, unknown names left out."""
+    return [entry_for(name) for name in frameworks if name in ENTRIES]

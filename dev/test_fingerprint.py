@@ -6,6 +6,7 @@ in the module under test is replaced.
 """
 
 import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -67,7 +68,7 @@ class Project(object):
 
 
 LOGIN_TEST = ('import pytest\n\n'
-              '@pytest.mark.proof("login", "PROOF-1", "RULE-1")\n'
+              '# purlin: login PROOF-1\n'
               'def test_login():\n    assert True\n')
 
 
@@ -80,6 +81,11 @@ def project(tmp_path):
     p.write('src/login.py', 'def login():\n    return 200\n')
     p.write('src/other.py', 'x = 1\n')
     p.write('tests/test_login.py', LOGIN_TEST)
+    p.write('.purlin/config.json', json.dumps({'tests': [
+        {'name': 'pytest', 'run': 'pytest {files}', 'report': None,
+         'format': 'junit', 'files': ['tests/test_*.py']},
+        {'name': 'jest', 'run': 'jest {files}', 'report': None,
+         'format': 'junit', 'files': ['**/*.test.js']}]}))
     p.commit()
     return p
 
@@ -88,7 +94,7 @@ def _changed(before, after):
     return [part for part in fingerprint.PARTS if before[part] != after[part]]
 
 
-@pytest.mark.proof("evidence", "PROOF-1", "RULE-1")
+# purlin: evidence PROOF-1
 def test_a_fingerprint_is_three_hashes_read_from_the_working_tree(project):
     first = project.fp('login')
     assert sorted(first) == ['code', 'spec', 'tests']
@@ -98,7 +104,7 @@ def test_a_fingerprint_is_three_hashes_read_from_the_working_tree(project):
     assert _changed(first, project.fp('login')) == ['code']
 
 
-@pytest.mark.proof("evidence", "PROOF-2", "RULE-2")
+# purlin: evidence PROOF-2
 def test_a_rule_edit_changes_spec_and_a_description_edit_changes_nothing(
         project):
     first = project.fp('login')
@@ -112,7 +118,7 @@ def test_a_rule_edit_changes_spec_and_a_description_edit_changes_nothing(
     assert project.fp('login') == first
 
 
-@pytest.mark.proof("evidence", "PROOF-3", "RULE-2")
+# purlin: evidence PROOF-3
 def test_a_required_proof_and_a_proof_tag_are_part_of_spec(project):
     project.write('specs/auth/login.md', _spec(
         'login', ['Valid credentials return 200'],
@@ -133,7 +139,7 @@ def test_a_required_proof_and_a_proof_tag_are_part_of_spec(project):
     assert _changed(second, project.fp('login')) == ['spec']
 
 
-@pytest.mark.proof("evidence", "PROOF-4", "RULE-3")
+# purlin: evidence PROOF-4
 def test_an_anchor_rule_edit_reaches_every_feature_that_requires_it(tmp_path):
     p = Project(tmp_path)
     p.write('specs/_anchors/api.md', _spec('api', ['Carry a request id'],
@@ -155,7 +161,7 @@ def test_an_anchor_rule_edit_reaches_every_feature_that_requires_it(tmp_path):
     assert after['billing'] == before['billing']
 
 
-@pytest.mark.proof("evidence", "PROOF-5", "RULE-3")
+# purlin: evidence PROOF-5
 def test_a_global_anchor_rule_edit_reaches_a_feature_that_does_not_name_it(
         project):
     project.write('specs/_anchors/security.md', _spec(
@@ -168,7 +174,7 @@ def test_a_global_anchor_rule_edit_reaches_a_feature_that_does_not_name_it(
     assert _changed(first, project.fp('login')) == ['spec']
 
 
-@pytest.mark.proof("evidence", "PROOF-6", "RULE-4")
+# purlin: evidence PROOF-6
 def test_a_scoped_file_edit_changes_code_only(project):
     first = project.fp('login')
     project.write('src/login.py', 'def login():\n    return 204\n')
@@ -178,7 +184,7 @@ def test_a_scoped_file_edit_changes_code_only(project):
     assert project.fp('login') == second
 
 
-@pytest.mark.proof("evidence", "PROOF-7", "RULE-4")
+# purlin: evidence PROOF-7
 def test_a_scoped_directory_reaches_every_tracked_file_under_it(project):
     project.write('specs/auth/login.md', _spec(
         'login', ['Valid credentials return 200'],
@@ -190,7 +196,7 @@ def test_a_scoped_directory_reaches_every_tracked_file_under_it(project):
     assert _changed(first, project.fp('login')) == ['code']
 
 
-@pytest.mark.proof("evidence", "PROOF-8", "RULE-4")
+# purlin: evidence PROOF-8
 def test_a_glob_scope_changes_when_a_matching_file_changes(tmp_path):
     p = Project(tmp_path)
     p.write('specs/auth/login.md', _spec('login', ['Login works'],
@@ -210,7 +216,7 @@ def test_a_glob_scope_changes_when_a_matching_file_changes(tmp_path):
     assert p.fp('login') == second
 
 
-@pytest.mark.proof("evidence", "PROOF-9", "RULE-5")
+# purlin: evidence PROOF-9
 def test_a_scope_entry_that_reaches_nothing_is_listed_as_unmatched(project):
     project.write('specs/auth/login.md', _spec(
         'login', ['Valid credentials return 200'],
@@ -223,7 +229,7 @@ def test_a_scope_entry_that_reaches_nothing_is_listed_as_unmatched(project):
     assert len(project.fp('login')['code']) == 64
 
 
-@pytest.mark.proof("evidence", "PROOF-10", "RULE-6")
+# purlin: evidence PROOF-10
 def test_a_spec_with_no_scope_names_no_files(project):
     project.write('specs/auth/login.md', _spec(
         'login', ['Valid credentials return 200'],
@@ -236,10 +242,10 @@ def test_a_spec_with_no_scope_names_no_files(project):
     assert len(fp['spec']) == 64 and len(fp['tests']) == 64
 
 
-@pytest.mark.proof("evidence", "PROOF-11", "RULE-7")
+# purlin: evidence PROOF-11
 def test_a_marked_test_edit_changes_tests_only(project):
     project.write('tests/test_other.py',
-                  '@pytest.mark.proof("billing", "PROOF-1", "RULE-1")\n'
+                  '# purlin: billing PROOF-1\n'
                   'def test_bill():\n    pass\n')
     project.commit()
     assert fingerprint.marker_files(project.root, 'login') == [
@@ -252,9 +258,9 @@ def test_a_marked_test_edit_changes_tests_only(project):
     assert project.fp('login') == second
 
 
-@pytest.mark.proof("evidence", "PROOF-12", "RULE-7")
+# purlin: evidence PROOF-12
 def test_markers_of_every_framework_are_read_outside_skipped_folders(project):
-    marked = 'it("works [proof:login:PROOF-2:RULE-2:default]", () => {});\n'
+    marked = '// purlin: login PROOF-2\nit("works", () => {});\n'
     project.write('web/login.test.js', marked)
     project.write('node_modules/pkg/login.test.js', marked)
     project.git('add', '-f', 'web', 'node_modules')
@@ -264,7 +270,7 @@ def test_markers_of_every_framework_are_read_outside_skipped_folders(project):
     assert not [path for path in files if path.startswith('node_modules/')]
 
 
-@pytest.mark.proof("evidence", "PROOF-13", "RULE-8")
+# purlin: evidence PROOF-13
 def test_an_untracked_file_is_reported_and_left_out(project):
     project.write('specs/auth/login.md', _spec(
         'login', ['Valid credentials return 200'],
@@ -280,7 +286,7 @@ def test_an_untracked_file_is_reported_and_left_out(project):
         'src/new_token.py', 'tests/helper.py']
 
 
-@pytest.mark.proof("evidence", "PROOF-14", "RULE-8")
+# purlin: evidence PROOF-14
 def test_an_added_file_joins_the_fingerprint(project):
     project.write('specs/auth/login.md', _spec(
         'login', ['Valid credentials return 200'],
@@ -294,14 +300,14 @@ def test_an_added_file_joins_the_fingerprint(project):
     assert fingerprint.untracked(project.root, 'login') == []
 
 
-@pytest.mark.proof("evidence", "PROOF-15", "RULE-9")
+# purlin: evidence PROOF-15
 def test_a_name_no_spec_defines_raises(project):
     with pytest.raises(KeyError) as caught:
         project.fp('nosuch')
     assert 'nosuch' in str(caught.value)
 
 
-@pytest.mark.proof("evidence", "PROOF-16", "RULE-10")
+# purlin: evidence PROOF-16
 def test_the_compare_names_the_parts_that_differ_in_order():
     now = {'spec': 'a', 'code': 'x', 'tests': 'y'}
     assert fingerprint.differing_parts(

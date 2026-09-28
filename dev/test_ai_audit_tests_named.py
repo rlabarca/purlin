@@ -24,7 +24,7 @@ from test_signatures import TEST_FILE, Project, write  # noqa: E402
 
 SECOND_TEST = (
     '\n\n'
-    '@pytest.mark.proof("login", "PROOF-1", "RULE-1")\n'
+    '# purlin: login PROOF-1\n'
     'def test_a_token_comes_back():\n'
     '    token = session_for("ada", "secret")\n'
     '    assert token.startswith("tok-")\n'
@@ -61,7 +61,7 @@ def project():
 
 class TestEachTestShowsItsOwnSource:
 
-    @pytest.mark.proof("ai_audit", "PROOF-34", "RULE-10")
+    # purlin: ai_audit PROOF-34
     def test_each_name_shows_its_own_body(self, project):
         _two_tests(project)
         tests = _tests_by_name(project)
@@ -75,7 +75,7 @@ class TestEachTestShowsItsOwnSource:
         assert 'token' in second, second
         assert 'def test_valid_credentials_return_200' not in second, second
 
-    @pytest.mark.proof("ai_audit", "PROOF-35", "RULE-10")
+    # purlin: ai_audit PROOF-35
     def test_a_name_the_file_no_longer_holds_shows_no_body(self, project):
         _two_tests(project, names=NAMES + ('test_renamed_away',))
         tests = _tests_by_name(project)
@@ -89,15 +89,14 @@ class TestEachTestShowsItsOwnSource:
 
 class TestANameFromARecordFindsItsSource:
 
-    @pytest.mark.proof("ai_audit", "PROOF-36", "RULE-10")
+    # purlin: ai_audit PROOF-36
     def test_each_runner_name_form_finds_its_own_test(self):
-        names = ['Allowed', 'Denied', 'test_found',
-                 'works [proof:login:PROOF-1:RULE-1]']
+        names = ['Allowed', 'Denied', 'test_found', 'works']
         expected = {
             'Acme.LoginTests.Denied(user: "x")': [1],
-            'test_found[jest-[proof:f:PROOF-1:RULE-1]]': [2],
+            'test_found[jest-case-1]': [2],
             'TestLogin::test_found': [2],
-            'works [proof:login:PROOF-1:RULE-1]': [3],
+            'login > works': [3],
             'test_gone': [],
         }
         for written, indexes in expected.items():

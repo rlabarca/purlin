@@ -95,12 +95,12 @@
       "tests": [
         {
           "id": "T1",
-          "name": "LoginTests.LocksAfterFiveFailures [proof:login:PROOF-1:RULE-1]",
+          "name": "LoginTests.LocksAfterFiveFailures",
           "location": {"start": {"line": 9, "column": 9}}
         },
         {
           "id": "T2",
-          "name": "LoginTests.UnlocksAfterFifteenMinutes [proof:login:PROOF-2:RULE-2]",
+          "name": "LoginTests.UnlocksAfterFifteenMinutes",
           "location": {"start": {"line": 21, "column": 9}}
         }
       ]

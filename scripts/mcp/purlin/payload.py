@@ -474,6 +474,7 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         # so a re-audit that finds something different stales it.
         'audit_hash': audit_hash,
         'proofs': proof_dicts,
+        'rule_id': rule_id,
         'sections': sections,
         'signatures': signatures,
         'rule_hash': rule_hash,

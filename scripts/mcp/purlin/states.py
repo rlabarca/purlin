@@ -7,8 +7,9 @@ decides how many rows exist: a cell above the gate is absent, not empty.
             that is current: its spec, code and tests fingerprint equals the
             one taken now. Only current sections decide the cell.
             `passed`, `partial`, `failed`, `no test`, `not run`,
-            `out of date`. A rule no proof line names reads `no test` with
-            the reason `no proof written`. The cell carries `platforms`, one
+            `out of date`. A rule no proof line names is answered by the
+            tests marked with the rule's own id, and reads `no test` with
+            the reason `no proof written` when there are none. The cell carries `platforms`, one
             entry per operating system a current section covers, and reads
             `partial` when the tests passed on some of them and failed or did
             not run on others. `partial` is not met.
@@ -16,7 +17,9 @@ decides how many rows exist: a cell above the gate is absent, not empty.
     strong  Met when the tests are worth trusting: the AI audit read the
             rule's current text, proof and test and found nothing, and, where
             mutation testing is on and measured a score, the score reaches the
-            project minimum. `strong`, `weak`, `not audited`, `manual test`.
+            project minimum. `strong`, `weak`, `not audited`, `manual test`,
+            and `no proof` for a rule whose passing test answers no proof:
+            proofs are optional at the gate `passed` and required above it.
 
     signed  Met when a named person signed the rule, proof, test and audit
             hashes. `signed`, `unsigned`, `stale`. At the gate `signed` a
@@ -109,8 +112,13 @@ SOURCES = ('ci', 'local')
 
 OUT_OF_DATE = 'out of date'
 
-# The reason the passed cell gives for a rule no proof line names.
+# The reason the passed cell gives for a rule no proof line names and no
+# test marked with the rule's own id answers.
 NO_PROOF_WRITTEN = 'no proof written'
+
+# The strong cell's word for a rule whose tests pass and that has no proof.
+NO_PROOF = 'no proof'
+NO_PROOF_REASON = 'the rule has a test and no proof'
 
 # The reason the signed cell gives, at the gate `signed`, for a rule whose
 # own spec names no files in `> Scope:`.
@@ -141,6 +149,8 @@ def rule_cells(inp, cfg):
     `inp` carries:
 
     `proofs`        `[{'id', 'manual', 'env', 'text', 'tests'}, ...]`
+    `rule_id`       the rule's own id, which a test may be marked with when
+                    the rule has no proof
     `sections`      every evidence section of the rule's own feature, each
                     `{source, os, path, section, current, out_of_date}` as
                     `evidence.checked_sections` gives them
@@ -238,14 +248,20 @@ def _passed_cell(inp, cfg):
     the honest word and a signature with a note is the evidence.
     """
     written = inp.get('proofs') or []
-    proofs = [proof for proof in written if not proof.get('manual')]
     cell = {'word': 'no test', 'source': None, 'current': False,
             'counts': False, 'missing_env': [], 'platforms': {},
             'reasons': []}
 
     if not written:
-        cell['reasons'] = [NO_PROOF_WRITTEN]
-        return cell
+        # A rule with no proof is answered by the tests marked with its own
+        # id, read exactly as a proof's tests are.
+        rule_id = inp.get('rule_id')
+        if not rule_id or not _rule_marked(inp.get('sections'), rule_id):
+            cell['reasons'] = [NO_PROOF_WRITTEN]
+            return cell
+        written = [{'id': rule_id, 'manual': False, 'env': None,
+                    'tests': [rule_id]}]
+    proofs = [proof for proof in written if not proof.get('manual')]
 
     if not proofs:
         cell.update({'word': 'passed', 'current': True, 'counts': True})
@@ -312,6 +328,15 @@ def _passed_cell(inp, cfg):
     if any(proof.get('tests') for proof in proofs):
         cell['word'] = 'not run'
     return cell
+
+
+def _rule_marked(sections, rule_id):
+    """True when an evidence section lists a test marked with the rule's id."""
+    for entry in sections or ():
+        for listed in (entry.get('section') or {}).get('proofs') or ():
+            if isinstance(listed, dict) and listed.get('id') == rule_id:
+                return True
+    return False
 
 
 def _word_of(proofs, entry):
@@ -475,6 +500,14 @@ def _strong_cell(inp, cfg, level, passed, counting_signatures):
 
     if passed['word'] != 'passed':
         cell['reasons'] = ['not passed']
+        return cell
+
+    if not inp.get('proofs'):
+        # Proofs are optional at `passed` and required above it: a passing
+        # test marked with the rule's own id answers no proof, so the audit
+        # has nothing to read it against.
+        cell['word'] = NO_PROOF
+        cell['reasons'] = [NO_PROOF_REASON]
         return cell
 
     audit = inp.get('audit') or None

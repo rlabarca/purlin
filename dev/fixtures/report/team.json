@@ -630,8 +630,6 @@
     "gate": "strong",
     "min_strength": 70,
     "mutation_engine": "auto",
-    "sql_engine": null,
-    "test_framework": "pytest",
     "trust": "local"
   },
   "generated_at": "2026-09-13T08:30:00Z",

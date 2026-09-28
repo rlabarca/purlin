@@ -38,22 +38,16 @@ def read_fixture(name):
 
 CALC_TESTS = {
     'RULE-1': [{'file': 'test/calc.test.js',
-                'name': 'adds two numbers [proof:calc:PROOF-1:RULE-1]',
-                'plugin': 'jest'}],
+                'name': 'adds two numbers'}],
     'RULE-2': [{'file': 'test/calc.test.js',
-                'name': 'leaves small values alone [proof:calc:PROOF-2:RULE-2]',
-                'plugin': 'jest'}],
+                'name': 'leaves small values alone'}],
 }
 
 SESSION_TESTS = {
     'RULE-1': [{'file': 'tests/Login/SessionTests.cs',
-                'name': 'LoginTests.LocksAfterFiveFailures '
-                        '[proof:login:PROOF-1:RULE-1]',
-                'plugin': 'xunit'}],
+                'name': 'LoginTests.LocksAfterFiveFailures'}],
     'RULE-2': [{'file': 'tests/Login/SessionTests.cs',
-                'name': 'LoginTests.UnlocksAfterFifteenMinutes '
-                        '[proof:login:PROOF-2:RULE-2]',
-                'plugin': 'xunit'}],
+                'name': 'LoginTests.UnlocksAfterFifteenMinutes'}],
 }
 
 
@@ -65,17 +59,18 @@ SESSION_TESTS = {
     ('pytest', 'mutmut'),
     ('jest', 'stryker'),
     ('vitest', 'stryker'),
-    ('xunit', 'stryker_net'),
+    ('dotnet', 'stryker_net'),
+    ('go', 'none'),
     ('shell', 'none'),
     ('sql', 'none'),
 ])
-@pytest.mark.proof("mutation", "PROOF-1", "RULE-1")
+# purlin: mutation PROOF-1
 def test_auto_picks_the_engine_for_each_framework(framework, engine):
     assert mutation.select_engine({'mutation_engine': 'auto'},
                                   [framework]) == engine
 
 
-@pytest.mark.proof("mutation", "PROOF-1", "RULE-1")
+# purlin: mutation PROOF-1
 def test_auto_reads_the_first_framework_that_has_an_engine():
     assert mutation.select_engine({'mutation_engine': 'auto'},
                                   ['pytest', 'jest']) == 'mutmut'
@@ -83,19 +78,19 @@ def test_auto_reads_the_first_framework_that_has_an_engine():
                                   ['jest', 'pytest']) == 'stryker'
 
 
-@pytest.mark.proof("mutation", "PROOF-1", "RULE-1")
+# purlin: mutation PROOF-1
 def test_auto_skips_a_framework_with_no_engine():
     assert mutation.select_engine({'mutation_engine': 'auto'},
-                                  ['shell', 'xunit']) == 'stryker_net'
+                                  ['shell', 'dotnet']) == 'stryker_net'
 
 
-@pytest.mark.proof("mutation", "PROOF-1", "RULE-1")
+# purlin: mutation PROOF-1
 def test_no_framework_leaves_no_engine():
     assert mutation.select_engine({'mutation_engine': 'auto'}, []) == 'none'
     assert mutation.select_engine({}, ['shell']) == 'none'
 
 
-@pytest.mark.proof("mutation", "PROOF-2", "RULE-2")
+# purlin: mutation PROOF-2
 def test_a_config_that_names_an_engine_wins_over_the_frameworks():
     assert mutation.select_engine({'mutation_engine': 'mutmut'},
                                   ['jest']) == 'mutmut'
@@ -103,13 +98,13 @@ def test_a_config_that_names_an_engine_wins_over_the_frameworks():
                                   ['pytest']) == 'none'
 
 
-@pytest.mark.proof("mutation", "PROOF-2", "RULE-2")
+# purlin: mutation PROOF-2
 def test_an_engine_name_nobody_ships_reads_as_none():
     assert mutation.select_engine({'mutation_engine': 'cosmic-ray'},
                                   ['pytest']) == 'none'
 
 
-@pytest.mark.proof("mutation", "PROOF-2", "RULE-2")
+# purlin: mutation PROOF-2
 def test_a_missing_key_is_read_as_auto():
     assert mutation.select_engine({}, ['pytest']) == 'mutmut'
     assert mutation.select_engine(None, ['jest']) == 'stryker'
@@ -129,12 +124,12 @@ def test_a_missing_key_is_read_as_auto():
     (5, 2, 71),
     (7, 4, 64),
 ])
-@pytest.mark.proof("mutation", "PROOF-3", "RULE-3")
+# purlin: mutation PROOF-3
 def test_score_is_an_integer_percent(killed, survived, score):
     assert mutation.score_percent(killed, survived) == score
 
 
-@pytest.mark.proof("mutation", "PROOF-4", "RULE-4")
+# purlin: mutation PROOF-4
 def test_rules_are_listed_in_number_order():
     tests_by_rule = {('login', 'RULE-10'): [], ('login', 'RULE-2'): [],
                      ('reports', 'RULE-1'): []}
@@ -146,7 +141,7 @@ def test_rules_are_listed_in_number_order():
 # Stryker: config, binary, runner
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("mutation", "PROOF-5", "RULE-5")
+# purlin: mutation PROOF-5
 def test_the_generated_config_scopes_the_run_to_the_spec_files():
     config = stryker.build_config(['src/calc.js', 'src/util.js'], 'jest',
                                   '/tmp/report.json')
@@ -160,7 +155,7 @@ def test_the_generated_config_scopes_the_run_to_the_spec_files():
     }
 
 
-@pytest.mark.proof("mutation", "PROOF-6", "RULE-6")
+# purlin: mutation PROOF-6
 def test_the_runner_is_vitest_when_the_project_declares_vitest(tmp_path):
     manifest = {'devDependencies': {'vitest': '^2.0.0'}}
     (tmp_path / 'package.json').write_text(json.dumps(manifest),
@@ -168,7 +163,7 @@ def test_the_runner_is_vitest_when_the_project_declares_vitest(tmp_path):
     assert stryker.test_runner(str(tmp_path)) == 'vitest'
 
 
-@pytest.mark.proof("mutation", "PROOF-6", "RULE-6")
+# purlin: mutation PROOF-6
 def test_the_runner_is_jest_for_everything_else(tmp_path):
     manifest = {'devDependencies': {'jest': '^30.0.0'}}
     (tmp_path / 'package.json').write_text(json.dumps(manifest),
@@ -177,7 +172,7 @@ def test_the_runner_is_jest_for_everything_else(tmp_path):
     assert stryker.test_runner(str(tmp_path / 'nothing-here')) == 'jest'
 
 
-@pytest.mark.proof("mutation", "PROOF-7", "RULE-7")
+# purlin: mutation PROOF-7
 def test_the_project_binary_wins_over_one_on_the_path(tmp_path, monkeypatch):
     local = tmp_path / 'node_modules' / '.bin'
     local.mkdir(parents=True)
@@ -186,7 +181,7 @@ def test_the_project_binary_wins_over_one_on_the_path(tmp_path, monkeypatch):
     assert stryker.binary(str(tmp_path)) == [str(local / 'stryker')]
 
 
-@pytest.mark.proof("mutation", "PROOF-7", "RULE-7")
+# purlin: mutation PROOF-7
 def test_the_binary_is_none_when_stryker_is_not_installed(tmp_path, monkeypatch):
     monkeypatch.setattr(stryker.shutil, 'which', lambda name: None)
     assert stryker.binary(str(tmp_path)) is None
@@ -196,14 +191,14 @@ def test_the_binary_is_none_when_stryker_is_not_installed(tmp_path, monkeypatch)
 # Stryker: the report
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("mutation", "PROOF-8", "RULE-8")
+# purlin: mutation PROOF-8
 def test_the_scope_score_counts_timeouts_killed_and_uncovered_survived():
     entry = stryker.parse_report(read_fixture('stryker_report.json'),
                                  CALC_TESTS)
     assert entry['scope_score'] == {'score': 64, 'killed': 7, 'survived': 4}
 
 
-@pytest.mark.proof("mutation", "PROOF-8", "RULE-8")
+# purlin: mutation PROOF-8
 def test_a_break_that_never_reached_a_test_counts_for_neither():
     report = read_fixture('stryker_report.json')
     statuses = [m['status'] for m in report['files']['src/calc.js']['mutants']]
@@ -213,7 +208,7 @@ def test_a_break_that_never_reached_a_test_counts_for_neither():
     assert counted == 11
 
 
-@pytest.mark.proof("mutation", "PROOF-9", "RULE-9")
+# purlin: mutation PROOF-9
 def test_each_rule_carries_what_its_own_tests_caught():
     entry = stryker.parse_report(read_fixture('stryker_report.json'),
                                  CALC_TESTS)
@@ -225,7 +220,7 @@ def test_each_rule_carries_what_its_own_tests_caught():
         'attribution': 'per_test'}
 
 
-@pytest.mark.proof("mutation", "PROOF-9", "RULE-9")
+# purlin: mutation PROOF-9
 def test_a_break_another_rules_test_caught_counts_survived_for_this_one():
     report = read_fixture('stryker_report.json')
     entry = stryker.parse_report(report, {'RULE-2': CALC_TESTS['RULE-2']})
@@ -233,19 +228,18 @@ def test_a_break_another_rules_test_caught_counts_survived_for_this_one():
     assert entry['rules']['RULE-2']['survived'] == 2
 
 
-@pytest.mark.proof("mutation", "PROOF-9", "RULE-9")
+# purlin: mutation PROOF-9
 def test_a_rule_whose_tests_the_report_never_saw_measures_nothing():
     tests = {'RULE-9': [{'file': 'test/other.test.js',
-                         'name': 'unrelated [proof:calc:PROOF-9:RULE-9]',
-                         'plugin': 'jest'}]}
+                         'name': 'unrelated'}]}
     entry = stryker.parse_report(read_fixture('stryker_report.json'), tests)
     assert entry['rules']['RULE-9']['score'] is None
     assert entry['rules']['RULE-9']['killed'] == 0
     assert entry['rules']['RULE-9']['survived'] == 0
 
 
-@pytest.mark.proof("mutation", "PROOF-10", "RULE-10")
-def test_the_proof_marker_keeps_two_similar_test_names_apart():
+# purlin: mutation PROOF-10
+def test_a_name_is_matched_whole_so_two_similar_names_stay_apart():
     report = {
         'files': {'src/a.js': {'mutants': [
             {'id': '1', 'status': 'Killed', 'coveredBy': ['0'],
@@ -254,17 +248,15 @@ def test_the_proof_marker_keeps_two_similar_test_names_apart():
              'killedBy': []},
         ]}},
         'testFiles': {'test/a.test.js': {'tests': [
-            {'id': '0', 'name': 'locks [proof:login:PROOF-1:RULE-1]'},
-            {'id': '1', 'name': 'locks after five [proof:login:PROOF-2:RULE-2]'},
+            {'id': '0', 'name': 'locks'},
+            {'id': '1', 'name': 'locks after five'},
         ]}},
     }
     tests = {
         'RULE-1': [{'file': 'test/a.test.js',
-                    'name': 'locks [proof:login:PROOF-1:RULE-1]',
-                    'plugin': 'jest'}],
+                    'name': 'locks'}],
         'RULE-2': [{'file': 'test/a.test.js',
-                    'name': 'locks after five [proof:login:PROOF-2:RULE-2]',
-                    'plugin': 'jest'}],
+                    'name': 'locks after five'}],
     }
     entry = stryker.parse_report(report, tests)
     assert entry['rules']['RULE-1']['killed'] == 1
@@ -273,7 +265,7 @@ def test_the_proof_marker_keeps_two_similar_test_names_apart():
     assert entry['rules']['RULE-2']['survived'] == 1
 
 
-@pytest.mark.proof("mutation", "PROOF-10", "RULE-10")
+# purlin: mutation PROOF-10
 def test_a_test_in_another_file_of_the_same_name_is_not_this_rules_test():
     report = {
         'files': {'src/a.js': {'mutants': [
@@ -283,12 +275,12 @@ def test_a_test_in_another_file_of_the_same_name_is_not_this_rules_test():
             {'id': '0', 'name': 'locks the account'}]}},
     }
     tests = {'RULE-1': [{'file': 'test/login.test.js',
-                         'name': 'locks the account', 'plugin': 'jest'}]}
+                         'name': 'locks the account'}]}
     entry = stryker.parse_report(report, tests)
     assert entry['rules']['RULE-1']['killed'] == 0
 
 
-@pytest.mark.proof("mutation", "PROOF-11", "RULE-11")
+# purlin: mutation PROOF-11
 def test_a_report_that_names_no_killer_falls_back_to_the_scope_number():
     entry = stryker.parse_report(read_fixture('stryker_net_report.json'),
                                  SESSION_TESTS, engine='stryker_net')
@@ -299,7 +291,7 @@ def test_a_report_that_names_no_killer_falls_back_to_the_scope_number():
             'attribution': 'per_scope'}
 
 
-@pytest.mark.proof("mutation", "PROOF-11", "RULE-11")
+# purlin: mutation PROOF-11
 def test_a_named_killer_gives_stryker_net_per_test_attribution():
     entry = stryker.parse_report(read_fixture('stryker_report.json'),
                                  CALC_TESTS, engine='stryker_net')
@@ -307,7 +299,7 @@ def test_a_named_killer_gives_stryker_net_per_test_attribution():
     assert entry['rules']['RULE-1']['engine'] == 'stryker_net'
 
 
-@pytest.mark.proof("mutation", "PROOF-12", "RULE-12")
+# purlin: mutation PROOF-12
 def test_an_unreadable_report_is_not_a_report(tmp_path):
     path = tmp_path / 'report.json'
     path.write_text('not json', encoding='utf-8')
@@ -337,7 +329,7 @@ def fake_stryker_run(report_name):
     return execute, seen
 
 
-@pytest.mark.proof("mutation", "PROOF-5", "RULE-5")
+# purlin: mutation PROOF-5
 def test_a_run_writes_the_scoped_config_and_reads_the_report(monkeypatch):
     execute, seen = fake_stryker_run('stryker_report.json')
     monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])
@@ -358,7 +350,7 @@ def test_a_run_writes_the_scoped_config_and_reads_the_report(monkeypatch):
     assert 'calc' in answer['log']
 
 
-@pytest.mark.proof("mutation", "PROOF-12", "RULE-12")
+# purlin: mutation PROOF-12
 def test_a_feature_with_no_scope_files_measures_nothing(monkeypatch):
     execute, _ = fake_stryker_run('stryker_report.json')
     monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])
@@ -371,7 +363,7 @@ def test_a_feature_with_no_scope_files_measures_nothing(monkeypatch):
     assert 'no scope files' in answer['log']
 
 
-@pytest.mark.proof("mutation", "PROOF-12", "RULE-12")
+# purlin: mutation PROOF-12
 def test_a_run_that_wrote_no_report_says_so(monkeypatch):
     monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])
     monkeypatch.setattr(stryker, 'test_runner', lambda root: 'jest')
@@ -384,7 +376,7 @@ def test_a_run_that_wrote_no_report_says_so(monkeypatch):
     assert 'boom' in answer['log']
 
 
-@pytest.mark.proof("mutation", "PROOF-7", "RULE-7")
+# purlin: mutation PROOF-7
 def test_a_missing_binary_leaves_no_engine_and_says_what_to_install(monkeypatch):
     monkeypatch.setattr(stryker, 'binary', lambda root: None)
     answer = stryker.run('/project', {'calc': ['src/calc.js']},
@@ -401,7 +393,7 @@ def test_a_missing_binary_leaves_no_engine_and_says_what_to_install(monkeypatch)
 # Stryker.NET
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("mutation", "PROOF-13", "RULE-13")
+# purlin: mutation PROOF-13
 def test_the_dotnet_command_scopes_the_run_and_asks_for_json():
     command = stryker_net.build_command(['dotnet', 'stryker'],
                                         ['src/Login/Session.cs', 'src/Api.cs'],
@@ -413,7 +405,7 @@ def test_the_dotnet_command_scopes_the_run_and_asks_for_json():
                        '--reporter', 'json', '--output', '/tmp/out']
 
 
-@pytest.mark.proof("mutation", "PROOF-14", "RULE-14")
+# purlin: mutation PROOF-14
 def test_no_dotnet_means_no_engine(monkeypatch):
     monkeypatch.setattr(stryker_net.shutil, 'which', lambda name: None)
     installed, reason = stryker_net.available('/project')
@@ -421,7 +413,7 @@ def test_no_dotnet_means_no_engine(monkeypatch):
     assert 'dotnet is not installed' in reason
 
 
-@pytest.mark.proof("mutation", "PROOF-14", "RULE-14")
+# purlin: mutation PROOF-14
 def test_dotnet_without_the_tool_says_how_to_install_it(monkeypatch):
     monkeypatch.setattr(stryker_net.shutil, 'which', lambda name: '/usr/bin/dotnet')
     monkeypatch.setattr(stryker_net, 'execute',
@@ -431,7 +423,7 @@ def test_dotnet_without_the_tool_says_how_to_install_it(monkeypatch):
     assert 'dotnet tool install -g dotnet-stryker' in reason
 
 
-@pytest.mark.proof("mutation", "PROOF-14", "RULE-14")
+# purlin: mutation PROOF-14
 def test_the_tool_answering_its_version_is_the_install_check(monkeypatch):
     seen = {}
 
@@ -445,7 +437,7 @@ def test_the_tool_answering_its_version_is_the_install_check(monkeypatch):
     assert seen['command'] == ['/usr/bin/dotnet', 'stryker', '--version']
 
 
-@pytest.mark.proof("mutation", "PROOF-13", "RULE-13")
+# purlin: mutation PROOF-13
 def test_the_report_is_found_under_the_output_directory(tmp_path):
     reports = tmp_path / 'reports'
     reports.mkdir()
@@ -454,12 +446,12 @@ def test_the_report_is_found_under_the_output_directory(tmp_path):
         reports / 'mutation-report.json')
 
 
-@pytest.mark.proof("mutation", "PROOF-13", "RULE-13")
+# purlin: mutation PROOF-13
 def test_no_report_under_the_output_directory_is_none(tmp_path):
     assert stryker_net.find_report(str(tmp_path)) is None
 
 
-@pytest.mark.proof("mutation", "PROOF-11", "RULE-11")
+# purlin: mutation PROOF-11
 def test_a_dotnet_run_reports_per_scope_when_no_killer_is_named(monkeypatch):
     def execute(command, cwd, report_path=None):
         output_dir = command[command.index('--output') + 1]
@@ -484,7 +476,7 @@ def test_a_dotnet_run_reports_per_scope_when_no_killer_is_named(monkeypatch):
     assert 'attribution per_scope' in answer['log']
 
 
-@pytest.mark.proof("mutation", "PROOF-14", "RULE-14")
+# purlin: mutation PROOF-14
 def test_a_dotnet_run_with_no_tool_installed_leaves_no_engine(monkeypatch):
     monkeypatch.setattr(stryker_net, 'available',
                         lambda root: (False, 'dotnet is not installed'))
@@ -498,7 +490,7 @@ def test_a_dotnet_run_with_no_tool_installed_leaves_no_engine(monkeypatch):
 # mutmut
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("mutation", "PROOF-15", "RULE-15")
+# purlin: mutation PROOF-15
 def test_the_config_block_for_pyproject_is_toml():
     block = mutmut.mutmut_config_block(['src'], ['tests'])
     assert block == ('[tool.mutmut]\n'
@@ -506,7 +498,7 @@ def test_the_config_block_for_pyproject_is_toml():
                      'pytest_add_cli_args_test_selection = ["tests"]\n')
 
 
-@pytest.mark.proof("mutation", "PROOF-15", "RULE-15")
+# purlin: mutation PROOF-15
 def test_the_config_block_for_setup_cfg_is_one_value_a_line():
     block = mutmut.mutmut_config_block(['src', 'lib'], ['tests', '-q'],
                                        style='cfg')
@@ -519,20 +511,20 @@ def test_the_config_block_for_setup_cfg_is_one_value_a_line():
                      '    -q\n')
 
 
-@pytest.mark.proof("mutation", "PROOF-15", "RULE-15")
+# purlin: mutation PROOF-15
 def test_pyproject_holds_the_block_when_it_exists(tmp_path):
     (tmp_path / 'pyproject.toml').write_text('[project]\n', encoding='utf-8')
     assert mutmut.config_target(str(tmp_path)) == (
         'pyproject.toml', 'toml', '[tool.mutmut]')
 
 
-@pytest.mark.proof("mutation", "PROOF-15", "RULE-15")
+# purlin: mutation PROOF-15
 def test_setup_cfg_holds_the_block_when_there_is_no_pyproject(tmp_path):
     assert mutmut.config_target(str(tmp_path)) == (
         'setup.cfg', 'cfg', '[mutmut]')
 
 
-@pytest.mark.proof("mutation", "PROOF-15", "RULE-15")
+# purlin: mutation PROOF-15
 def test_the_block_is_found_once_it_is_written(tmp_path):
     path = tmp_path / 'pyproject.toml'
     path.write_text('[project]\nname = "demo"\n', encoding='utf-8')
@@ -543,7 +535,7 @@ def test_the_block_is_found_once_it_is_written(tmp_path):
     assert mutmut.has_config(str(tmp_path)) is True
 
 
-@pytest.mark.proof("mutation", "PROOF-16", "RULE-16")
+# purlin: mutation PROOF-16
 def test_the_results_of_a_real_run_are_read():
     entries = mutmut.parse_results(read_fixture('mutmut_results_smoke.txt'))
     assert len(entries) == 5
@@ -552,7 +544,7 @@ def test_the_results_of_a_real_run_are_read():
     assert len(killed) == 1
 
 
-@pytest.mark.proof("mutation", "PROOF-16", "RULE-16")
+# purlin: mutation PROOF-16
 def test_the_noise_around_the_results_is_not_a_break():
     text = ('2 files mutated, 0 ignored, 0 unmodified\n'
             '244.79 mutations/second\n'
@@ -563,7 +555,7 @@ def test_the_noise_around_the_results_is_not_a_break():
                         'status': 'killed'}]
 
 
-@pytest.mark.proof("mutation", "PROOF-17", "RULE-17")
+# purlin: mutation PROOF-17
 def test_a_break_is_owned_by_the_scope_entry_that_matches_deepest():
     scope = ['src', 'src/login/session.py']
     assert mutmut.source_file('login.session.x_lock__mutmut_1',
@@ -575,7 +567,7 @@ def test_a_break_is_owned_by_the_scope_entry_that_matches_deepest():
                               ['src/login/session.py']) is None
 
 
-@pytest.mark.proof("mutation", "PROOF-21", "RULE-21")
+# purlin: mutation PROOF-21
 def test_a_break_in_a_package_init_belongs_to_that_init():
     scope = ['scripts/run/mutation/__init__.py',
              'scripts/run/mutation/mutmut.py']
@@ -587,7 +579,7 @@ def test_a_break_in_a_package_init_belongs_to_that_init():
         scope) == 'scripts/run/mutation/mutmut.py'
 
 
-@pytest.mark.proof("mutation", "PROOF-21", "RULE-21")
+# purlin: mutation PROOF-21
 def test_a_glob_scope_entry_covers_the_files_it_matches():
     assert mutmut.source_file('scripts.run.host.x_commit__mutmut_1',
                               ['scripts/**/*.py']) == 'scripts/**/*.py'
@@ -601,7 +593,7 @@ def test_a_glob_scope_entry_covers_the_files_it_matches():
         'scripts/run/host.py'
 
 
-@pytest.mark.proof("mutation", "PROOF-17", "RULE-17")
+# purlin: mutation PROOF-17
 def test_breaks_are_grouped_by_the_file_they_changed():
     entries = mutmut.parse_results(read_fixture('mutmut_results.txt'))
     counts = mutmut.group_by_file(entries, ['src/login/session.py',
@@ -610,7 +602,7 @@ def test_breaks_are_grouped_by_the_file_they_changed():
     assert counts['src/reports/render.py'] == {'killed': 0, 'survived': 1}
 
 
-@pytest.mark.proof("mutation", "PROOF-17", "RULE-17")
+# purlin: mutation PROOF-17
 def test_a_break_outside_every_scope_is_left_out():
     entries = mutmut.parse_results(read_fixture('mutmut_results.txt'))
     counts = mutmut.group_by_file(entries, ['src/login/session.py'])
@@ -619,7 +611,7 @@ def test_a_break_outside_every_scope_is_left_out():
                for pair in counts.values()) == 6
 
 
-@pytest.mark.proof("mutation", "PROOF-17", "RULE-17")
+# purlin: mutation PROOF-17
 def test_each_feature_gets_the_total_for_its_own_files():
     entries = mutmut.parse_results(read_fixture('mutmut_results.txt'))
     totals = mutmut.score_by_feature(entries,
@@ -629,7 +621,7 @@ def test_each_feature_gets_the_total_for_its_own_files():
                       'reports': {'killed': 0, 'survived': 1}}
 
 
-@pytest.mark.proof("mutation", "PROOF-17", "RULE-17")
+# purlin: mutation PROOF-17
 def test_a_mutmut_run_scores_every_rule_of_a_feature_the_same(tmp_path, monkeypatch):
     (tmp_path / 'pyproject.toml').write_text(
         '[project]\n' + mutmut.mutmut_config_block(['src'], ['tests']),
@@ -663,7 +655,7 @@ def test_a_mutmut_run_scores_every_rule_of_a_feature_the_same(tmp_path, monkeypa
     assert answer['features']['reports']['rules']['RULE-1']['score'] == 0
 
 
-@pytest.mark.proof("mutation", "PROOF-18", "RULE-18")
+# purlin: mutation PROOF-18
 def test_mutmut_missing_leaves_no_engine(monkeypatch):
     monkeypatch.setattr(mutmut, 'binary', lambda root=None: None)
     answer = mutmut.run('/project', {'login': ['src/login/session.py']},
@@ -674,7 +666,7 @@ def test_mutmut_missing_leaves_no_engine(monkeypatch):
         'attribution'] == 'unavailable'
 
 
-@pytest.mark.proof("mutation", "PROOF-15", "RULE-15")
+# purlin: mutation PROOF-15
 def test_a_project_with_no_config_block_is_not_broken(tmp_path, monkeypatch):
     (tmp_path / 'pyproject.toml').write_text('[project]\n', encoding='utf-8')
     monkeypatch.setattr(mutmut, 'binary', lambda root=None: '/usr/bin/mutmut')
@@ -693,7 +685,7 @@ def test_a_project_with_no_config_block_is_not_broken(tmp_path, monkeypatch):
 # No engine, and the shape everything answers in
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("mutation", "PROOF-19", "RULE-19")
+# purlin: mutation PROOF-19
 def test_no_engine_measures_nothing_and_says_why():
     answer = none.run('/project', {'deploy': ['deploy.sh']},
                       {('deploy', 'RULE-1'): []})
@@ -722,7 +714,7 @@ def assert_answer_shape(answer, scope_by_feature, tests_by_rule):
         assert rule_score['attribution'] in mutation.ATTRIBUTIONS
 
 
-@pytest.mark.proof("mutation", "PROOF-20", "RULE-20")
+# purlin: mutation PROOF-20
 def test_run_breaks_answers_one_shape_for_no_engine():
     scope = {'deploy': ['deploy.sh']}
     tests = {('deploy', 'RULE-1'): []}
@@ -731,7 +723,7 @@ def test_run_breaks_answers_one_shape_for_no_engine():
     assert answer['engine'] == 'none'
 
 
-@pytest.mark.proof("mutation", "PROOF-20", "RULE-20")
+# purlin: mutation PROOF-20
 def test_run_breaks_answers_one_shape_for_a_real_engine(tmp_path, monkeypatch):
     (tmp_path / 'pyproject.toml').write_text(
         '[project]\n' + mutmut.mutmut_config_block(['src'], ['tests']),
@@ -749,7 +741,7 @@ def test_run_breaks_answers_one_shape_for_a_real_engine(tmp_path, monkeypatch):
     assert answer['features']['login']['rules']['RULE-1']['score'] == 67
 
 
-@pytest.mark.proof("mutation", "PROOF-20", "RULE-20")
+# purlin: mutation PROOF-20
 def test_an_engine_nobody_ships_is_not_run():
     scope = {'login': ['src/login/session.py']}
     tests = {('login', 'RULE-1'): []}
@@ -759,7 +751,7 @@ def test_an_engine_nobody_ships_is_not_run():
     assert 'unknown engine' in answer['reason']
 
 
-@pytest.mark.proof("mutation", "PROOF-20", "RULE-20")
+# purlin: mutation PROOF-20
 def test_a_rule_an_engine_forgot_is_filled_in():
     answer = mutation.normalise(
         {'engine': 'stryker', 'available': True, 'reason': '',
@@ -774,7 +766,7 @@ def test_a_rule_an_engine_forgot_is_filled_in():
     assert answer['features']['calc']['scope_score']['score'] == 75
 
 
-@pytest.mark.proof("mutation", "PROOF-20", "RULE-20")
+# purlin: mutation PROOF-20
 def test_a_feature_an_engine_never_reached_is_still_listed():
     answer = mutation.normalise(
         {'engine': 'mutmut', 'available': True, 'features': {}},
@@ -802,7 +794,7 @@ def assert_unmeasured(entry, engine, rules):
             'attribution': 'unavailable'}
 
 
-@pytest.mark.proof("mutation", "PROOF-22", "RULE-22")
+# purlin: mutation PROOF-22
 def test_a_mutmut_run_that_timed_out_measures_nothing(tmp_path, monkeypatch):
     (tmp_path / 'pyproject.toml').write_text(
         '[project]\n' + mutmut.mutmut_config_block(['src'], ['tests']),
@@ -830,7 +822,7 @@ def test_a_mutmut_run_that_timed_out_measures_nothing(tmp_path, monkeypatch):
     assert_names_the_timeout(answer)
 
 
-@pytest.mark.proof("mutation", "PROOF-22", "RULE-22")
+# purlin: mutation PROOF-22
 def test_a_stryker_feature_that_timed_out_measures_nothing(monkeypatch):
     def execute(command, cwd, report_path=None):
         config_path = command[-1]
@@ -857,7 +849,7 @@ def test_a_stryker_feature_that_timed_out_measures_nothing(monkeypatch):
     assert_names_the_timeout(answer)
 
 
-@pytest.mark.proof("mutation", "PROOF-22", "RULE-22")
+# purlin: mutation PROOF-22
 def test_a_dotnet_feature_that_timed_out_measures_nothing(monkeypatch):
     def execute(command, cwd, report_path=None):
         output_dir = command[command.index('--output') + 1]

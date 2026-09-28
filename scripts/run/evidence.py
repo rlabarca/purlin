@@ -115,31 +115,51 @@ def rule_word(proof_ids, proofs, observed, host_os):
     return 'no test'
 
 
-def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
-                  fingerprint, at=None):
-    """One platform section for one feature this run covered.
-
-    `entries_by_proof` is `{proof_id: [runtime proof entry, ...]}`, what the
-    plugins wrote for this feature in this run. One `proofs` entry is written
-    per (proof, test) pair, and one with an empty `test` for a proof nothing
-    observed.
-    """
-    proofs = info.get('proofs') or {}
-    by_rule = info.get('proofs_by_rule') or {}
+def _observed(entries_by_id):
+    """`{id: 'pass' | 'fail'}`: `fail` wins where two tests claim one id."""
     observed = {}
-    for proof_id, entries in entries_by_proof.items():
+    for marker_id, entries in entries_by_id.items():
         for entry in entries:
             status = entry.get('status')
             if status not in ('pass', 'fail'):
                 continue
-            if observed.get(proof_id) != 'fail':
-                observed[proof_id] = status
+            if observed.get(marker_id) != 'fail':
+                observed[marker_id] = status
+    return observed
+
+
+def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
+                  fingerprint, at=None):
+    """One platform section for one feature this run covered.
+
+    `entries_by_proof` is `{id: [entry, ...]}`, what the run tied to each
+    marker of this feature, where `id` is a `PROOF-N`, or a `RULE-N` for a
+    rule with no proof whose test is marked by the rule's own id. One
+    `proofs` entry is written per (id, test) pair, and one with an empty
+    `test` for a proof nothing observed.
+    """
+    proofs = info.get('proofs') or {}
+    by_rule = info.get('proofs_by_rule') or {}
+    observed = _observed(entries_by_proof)
     rules = {}
     listed = []
     for rule_id in info.get('rule_order') or ():
-        rules[rule_id] = rule_word(by_rule.get(rule_id) or [], proofs,
-                                   observed, host_os)
-        for proof_id in by_rule.get(rule_id) or ():
+        proof_ids = by_rule.get(rule_id) or []
+        if not proof_ids:
+            # No proof: a test marked with the rule's own id answers for it.
+            seen = entries_by_proof.get(rule_id) or []
+            rules[rule_id] = _rule_marked_word(observed.get(rule_id), seen)
+            for entry in seen:
+                status = entry.get('status')
+                listed.append({'id': rule_id, 'rule': rule_id, 'env': None,
+                               'manual': False, 'result': (
+                                   status if status in ('pass', 'fail')
+                                   else 'missing'),
+                               'test': '%s::%s' % (entry.get('test_file', ''),
+                                                   entry.get('test_name', ''))})
+            continue
+        rules[rule_id] = rule_word(proof_ids, proofs, observed, host_os)
+        for proof_id in proof_ids:
             proof = proofs.get(proof_id) or {}
             env = proof.get('env')
             seen = entries_by_proof.get(proof_id) or []
@@ -164,6 +184,18 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
         'rules': rules,
         'proofs': listed,
     }
+
+
+def _rule_marked_word(status, seen):
+    """The word a rule with no proof reads from the tests marked with its id."""
+    if status == 'fail':
+        return 'failed'
+    if status == 'pass' and all(entry.get('status') == 'pass'
+                                for entry in seen):
+        return 'passed'
+    if seen:
+        return 'not run'
+    return 'no test'
 
 
 def _same_observation(one, other):

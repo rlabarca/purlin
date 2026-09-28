@@ -75,8 +75,7 @@ def _commit(root, message, env=None):
 def _repo(root, files=None, gate=None):
     """A git repository made in place, its first commit holding `files`."""
     os.makedirs(root, exist_ok=True)
-    config = {} if gate is None else {'gate': gate}
-    _write(os.path.join(root, '.purlin', 'config.json'), json.dumps(config))
+    _write(os.path.join(root, '.purlin', 'config.json'), _config(gate))
     for path, text in (files or {}).items():
         _write(os.path.join(root, *path.split('/')), text)
     _git(['-c', 'init.defaultBranch=main', 'init', '-q'], root)
@@ -134,13 +133,21 @@ def _spec(name, rules, scope=None, proofs=None, kind='Feature'):
     return '\n'.join(lines) + '\n'
 
 
-# The marker a test file carries, built so this file carries none itself.
-_MARK = '@pytest.mark.' + 'proof'
+# The suite a test project names, so its marked files are read.
+TESTS = [{'name': 'pytest', 'run': 'pytest {files}', 'report': None,
+          'format': 'junit', 'files': ['tests/test_*.py']}]
+
+
+def _config(gate=None):
+    config = {'tests': TESTS}
+    if gate is not None:
+        config['gate'] = gate
+    return json.dumps(config)
 
 
 def _marked(*features):
-    return ''.join('%s("%s", "PROOF-1", "RULE-1")\ndef test_%s():\n    pass\n\n'
-                   % (_MARK, name, index) for index, name in enumerate(features))
+    return ''.join('# purlin: %s PROOF-1\ndef test_%s():\n    pass\n\n'
+                   % (name, index) for index, name in enumerate(features))
 
 
 def _report(root, since=None):
@@ -166,7 +173,7 @@ LOGIN_FILES = {'specs/auth/login.md': LOGIN,
 
 class TestSinceValidation:
 
-    @pytest.mark.proof("drift", "PROOF-1", "RULE-1")
+    # purlin: drift PROOF-1
     def test_hostile_since_is_refused_before_any_subprocess(self, tmp_path,
                                                             monkeypatch):
         root = _repo(str(tmp_path / 'proj'))
@@ -185,7 +192,7 @@ class TestSinceValidation:
         assert 'YYYY-MM-DD' in refused['reason'], refused['reason']
         assert calls == [], calls
 
-    @pytest.mark.proof("drift", "PROOF-2", "RULE-1")
+    # purlin: drift PROOF-2
     def test_a_count_is_accepted_and_reaches_git(self, tmp_path, monkeypatch):
         root = _repo(str(tmp_path / 'proj'))
         for index in range(2):
@@ -210,7 +217,7 @@ class TestSinceValidation:
 
 class TestWhereDriftStarts:
 
-    @pytest.mark.proof("drift", "PROOF-3", "RULE-2")
+    # purlin: drift PROOF-3
     def test_a_pull_is_measured_from_where_head_stood_before_it(self,
                                                                 tmp_path):
         _up, checkout, before = _pulled(
@@ -223,7 +230,7 @@ class TestWhereDriftStarts:
         assert since['to'] == _sha(checkout), since
         assert since['commits'] == 3, since
 
-    @pytest.mark.proof("drift", "PROOF-4", "RULE-2")
+    # purlin: drift PROOF-4
     def test_a_merge_is_measured_from_main_before_it(self, tmp_path):
         root = _repo(str(tmp_path / 'proj'), {'a.txt': '0\n'})
         _git(['checkout', '-q', '-b', 'topic'], root)
@@ -239,7 +246,7 @@ class TestWhereDriftStarts:
         assert since['from'] == before, since
         assert since['commits'] == 3, since
 
-    @pytest.mark.proof("drift", "PROOF-5", "RULE-2")
+    # purlin: drift PROOF-5
     def test_a_rebase_is_measured_from_before_its_first_step(self, tmp_path):
         root = _repo(str(tmp_path / 'proj'), {'a.txt': '0\n'})
         _git(['checkout', '-q', '-b', 'topic'], root)
@@ -259,7 +266,7 @@ class TestWhereDriftStarts:
         assert since['from'] == before, since
         assert since['commits'] == 3, since
 
-    @pytest.mark.proof("drift", "PROOF-6", "RULE-2")
+    # purlin: drift PROOF-6
     def test_a_checkout_is_measured_from_the_branch_it_left(self, tmp_path):
         root = _repo(str(tmp_path / 'proj'), {'a.txt': '0\n'})
         main = _sha(root)
@@ -274,7 +281,7 @@ class TestWhereDriftStarts:
         assert since['from'] == main, since
         assert since['commits'] == 2, since
 
-    @pytest.mark.proof("drift", "PROOF-7", "RULE-2")
+    # purlin: drift PROOF-7
     def test_the_newest_action_wins_and_a_reset_counts(self, tmp_path):
         _up, checkout, _before = _pulled(
             tmp_path, {'a.txt': '0\n'}, [{'a.txt': '1\n'}, {'a.txt': '2\n'}])
@@ -293,7 +300,7 @@ class TestWhereDriftStarts:
 
 class TestTheLastTwentyCommits:
 
-    @pytest.mark.proof("drift", "PROOF-8", "RULE-3")
+    # purlin: drift PROOF-8
     def test_a_clone_or_no_action_measures_the_last_twenty(self, tmp_path):
         made = _repo(str(tmp_path / 'made'), {'a.txt': '0\n'})
         for index in range(24):
@@ -328,7 +335,7 @@ class TestTheLastTwentyCommits:
 
 class TestSinceOverrides:
 
-    @pytest.mark.proof("drift", "PROOF-9", "RULE-4")
+    # purlin: drift PROOF-9
     def test_a_count_wins_over_the_pull(self, tmp_path):
         upstream = _repo(str(tmp_path / 'upstream'), {'a.txt': '0\n'})
         for index in range(3):
@@ -343,7 +350,7 @@ class TestSinceOverrides:
         assert since['from'] == _sha(checkout, 'HEAD~3'), since
         assert since['line'].startswith('The last 3 commits ('), since
 
-    @pytest.mark.proof("drift", "PROOF-10", "RULE-4")
+    # purlin: drift PROOF-10
     def test_a_date_measures_the_commits_made_since(self, tmp_path):
         root = str(tmp_path / 'proj')
         os.makedirs(root)
@@ -371,7 +378,7 @@ class TestSinceOverrides:
 
 class TestTheFirstLine:
 
-    @pytest.mark.proof("drift", "PROOF-11", "RULE-5")
+    # purlin: drift PROOF-11
     def test_every_view_opens_by_naming_the_pull(self, tmp_path):
         _up, checkout, before = _pulled(
             tmp_path, {'a.txt': '0\n'}, [{'a.txt': '1\n'}, {'a.txt': '2\n'}])
@@ -393,7 +400,7 @@ class TestTheFirstLine:
 
 class TestPmView:
 
-    @pytest.mark.proof("drift", "PROOF-12", "RULE-6")
+    # purlin: drift PROOF-12
     def test_rules_added_changed_and_removed(self, tmp_path):
         cart = _spec('cart', {'RULE-1': 'Holds items',
                               'RULE-2': 'Empties on checkout'})
@@ -421,7 +428,7 @@ class TestPmView:
         assert pm['rules_changed'] == {'login': ['RULE-1']}, pm
         assert pm['rules_removed'] == {'cart': ['RULE-2']}, pm
 
-    @pytest.mark.proof("drift", "PROOF-13", "RULE-6")
+    # purlin: drift PROOF-13
     def test_no_rule_moved(self, tmp_path):
         _up, checkout, _before = _pulled(
             tmp_path, LOGIN_FILES,
@@ -462,7 +469,7 @@ def _evidence_file(root, feature, rule_ids):
 
 class TestEngView:
 
-    @pytest.mark.proof("drift", "PROOF-14", "RULE-7")
+    # purlin: drift PROOF-14
     def test_code_changed_under_a_directory_scope(self, tmp_path):
         _up, checkout, _before = _pulled(
             tmp_path, LOGIN_FILES,
@@ -477,13 +484,13 @@ class TestEngView:
              'files': ['src/auth/login.py', 'src/auth/token.py'],
              'rules': ['RULE-1', 'RULE-2']}]
 
-    @pytest.mark.proof("drift", "PROOF-15", "RULE-8")
+    # purlin: drift PROOF-15
     def test_changed_files_under_no_scope(self, tmp_path):
         _up, checkout, _before = _pulled(
             tmp_path, LOGIN_FILES,
             [{'src/x.py': 'x = 1\n', 'src/y.py': 'y = 1\n',
               'specs/auth/login.md': LOGIN + '\n',
-              '.purlin/config.json': '{"gate": "passed"}',
+              '.purlin/config.json': _config('passed'),
               'tests/test_login.py': _marked('login')}])
         report = _report(checkout)
 
@@ -491,7 +498,7 @@ class TestEngView:
                 "src/y.py.") in _lines(report, 'eng'), _lines(report, 'eng')
         assert report['roles']['eng']['unscoped'] == ['src/x.py', 'src/y.py']
 
-    @pytest.mark.proof("drift", "PROOF-16", "RULE-9")
+    # purlin: drift PROOF-16
     def test_rules_with_no_test(self, tmp_path):
         _up, checkout, _before = _pulled(
             tmp_path, LOGIN_FILES, [{'README.md': 'login\n'}])
@@ -507,7 +514,7 @@ class TestEngView:
                     if 'no test' in line], _lines(report, 'eng')
         assert report['roles']['eng']['rules_without_test'] == {}
 
-    @pytest.mark.proof("drift", "PROOF-23", "RULE-14")
+    # purlin: drift PROOF-23
     def test_features_out_of_date(self, tmp_path):
         cart = _spec('cart', {'RULE-1': 'Holds items'}, scope='src/cart.py')
         start = dict(LOGIN_FILES)
@@ -578,7 +585,7 @@ def _anchor_rows(root):
 
 class TestAnchorsBehind:
 
-    @pytest.mark.proof("drift", "PROOF-17", "RULE-10")
+    # purlin: drift PROOF-17
     def test_a_pin_behind_names_the_new_sha(self, tmp_path):
         bare = str(tmp_path / 'anchor.git')
         first = _create_bare_repo(bare, 'spec.md', '# spec v1')
@@ -597,7 +604,7 @@ class TestAnchorsBehind:
                 'purlin:anchor sync external_anchor.' % new_sha[:7]) in \
             _lines(report, 'eng'), _lines(report, 'eng')
 
-    @pytest.mark.proof("drift", "PROOF-18", "RULE-10")
+    # purlin: drift PROOF-18
     def test_an_anchor_with_rules_of_its_own_goes_behind(self, tmp_path):
         bare = str(tmp_path / 'anchor.git')
         first = _create_bare_repo(bare, 'policy.md', '# policy v1')
@@ -611,7 +618,7 @@ class TestAnchorsBehind:
                 and row['status'] == 'behind']
         assert len(rows) == 1, rows
 
-    @pytest.mark.proof("drift", "PROOF-19", "RULE-10")
+    # purlin: drift PROOF-19
     def test_a_pin_is_unpinned_an_error_or_not_reported_at_all(self,
                                                                tmp_path):
         root = _repo(str(tmp_path / 'proj'))
@@ -636,7 +643,7 @@ class TestAnchorsBehind:
         assert purlin_drift.pin_report(root, features) == [], (
             'an anchor still at its pin must not be reported')
 
-    @pytest.mark.proof("drift", "PROOF-20", "RULE-11")
+    # purlin: drift PROOF-20
     def test_a_source_that_is_not_safe_is_refused_before_any_process(
             self, tmp_path, monkeypatch):
         root = _repo(str(tmp_path / 'proj'))
@@ -664,7 +671,7 @@ class TestAnchorsBehind:
         assert purlin_drift.source_url_is_safe(
             'https://github.com/acme/p.git') == (True, '')
 
-    @pytest.mark.proof("drift", "PROOF-21", "RULE-12")
+    # purlin: drift PROOF-21
     def test_one_ls_remote_per_source_per_run(self, tmp_path, monkeypatch):
         root = _repo(str(tmp_path / 'proj'))
         calls = []
@@ -681,7 +688,7 @@ class TestAnchorsBehind:
                                    'abc1234', cache)
         assert len([c for c in calls if 'ls-remote' in c]) == 1, calls
 
-    @pytest.mark.proof("drift", "PROOF-22", "RULE-13")
+    # purlin: drift PROOF-22
     def test_the_row_names_the_spec_not_the_repository(self, tmp_path):
         bare = str(tmp_path / 'anchor.git')
         first = _create_bare_repo(bare, 'constraints.md', '# constraints v1')
@@ -701,7 +708,7 @@ class TestAnchorsBehind:
 
 class TestQaView:
 
-    @pytest.mark.proof("drift", "PROOF-24", "RULE-15")
+    # purlin: drift PROOF-24
     def test_test_files_changed_and_what_they_cover(self, tmp_path):
         _up, checkout, _before = _pulled(
             tmp_path, LOGIN_FILES,
@@ -717,7 +724,7 @@ class TestQaView:
             'files': ['tests/test_both.py', 'tests/test_login.py'],
             'features': ['export', 'login']}
 
-    @pytest.mark.proof("drift", "PROOF-25", "RULE-16")
+    # purlin: drift PROOF-25
     def test_signatures_stale_and_the_queue(self, tmp_path):
         from purlin import payload as purlin_payload
 
@@ -753,7 +760,7 @@ class TestQaView:
                                'signatures': 0}, qa
 
         _write(os.path.join(root, '.purlin', 'config.json'),
-               '{"gate": "passed"}')
+               _config('passed'))
         _commit(root, 'chore: the gate is passed')
         assert _lines(_report(root, since='1'), 'qa') == []
 
@@ -764,7 +771,7 @@ class TestQaView:
 
 class TestSpecsNotCommitted:
 
-    @pytest.mark.proof("drift", "PROOF-26", "RULE-17")
+    # purlin: drift PROOF-26
     def test_every_view_ends_with_the_count(self, tmp_path):
         root = _repo(str(tmp_path / 'proj'), LOGIN_FILES)
         _change(root, {'a.txt': '1\n'})
@@ -796,7 +803,7 @@ class TestSpecsNotCommitted:
 
 class TestReportShape:
 
-    @pytest.mark.proof("drift", "PROOF-27", "RULE-18")
+    # purlin: drift PROOF-27
     def test_the_report_the_views_and_the_narrowed_answer(self, tmp_path,
                                                           monkeypatch):
         _up, checkout, _before = _pulled(
@@ -837,7 +844,7 @@ class TestReportShape:
         assert narrowed['view'] == report['roles']['qa']
         assert narrowed['since'] == report['since']
 
-    @pytest.mark.proof("drift", "PROOF-28", "RULE-19")
+    # purlin: drift PROOF-28
     def test_payload_carries_no_pretty_printing_whitespace(self, tmp_path):
         root = _repo(str(tmp_path / 'proj'), LOGIN_FILES)
         _change(root, {'src/auth/login.py': 'def login():\n    return 2\n'})

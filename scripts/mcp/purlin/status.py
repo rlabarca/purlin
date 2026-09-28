@@ -228,9 +228,17 @@ def _blocking(data):
             if rule.get('label') != 'own' or rule.get('meets_gate'):
                 continue
             blocked = rule.get('blocked_by')
-            if (rule.get('flags') or {}).get('no_proof'):
-                # A rule no proof line names reads `no test` in its passed
-                # cell, and what it waits for is a proof, not a build.
+            cells = rule.get('cells') or {}
+            waits_for_a_proof = (
+                ((cells.get('passed') or {}).get('reasons') or ())
+                == [states.NO_PROOF_WRITTEN]
+                or (cells.get('strong') or {}).get('word') == states.NO_PROOF)
+            if (rule.get('flags') or {}).get('no_proof') and waits_for_a_proof:
+                # A rule with neither a proof nor a test marked with its id
+                # reads `no test`, and one whose test passes above the gate
+                # `passed` reads `no proof`: what either waits for is a
+                # proof, not a build. A rule whose own marked test fails is
+                # build work like any other.
                 found['no_proof'] += 1
             elif blocked in found:
                 word = ((rule.get('cells') or {}).get(blocked) or {}).get('word')

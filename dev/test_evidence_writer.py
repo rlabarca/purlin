@@ -16,10 +16,10 @@ import pytest
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUN_SCRIPT = os.path.join(REPO, 'scripts', 'run', 'purlin_run.py')
-PROOF_DIR = os.path.join(REPO, 'scripts', 'proof')
 
 for _path in (os.path.join(REPO, 'scripts', 'run'),
-              os.path.join(REPO, 'scripts', 'mcp')):
+              os.path.join(REPO, 'scripts', 'mcp'),
+              os.path.join(REPO, 'dev')):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
@@ -27,6 +27,7 @@ import evidence as writer                                     # noqa: E402
 from purlin import evidence as reader                         # noqa: E402
 from purlin import fingerprint as fingerprint_module          # noqa: E402
 from purlin import payload as payload_module                  # noqa: E402
+import suites                                                 # noqa: E402
 
 STAMP = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
 HERE = reader.host_os()
@@ -41,15 +42,10 @@ def _project(tmp_path, gate='passed', name='project'):
     root = tmp_path / name
     (root / '.purlin').mkdir(parents=True)
     (root / '.purlin' / 'config.json').write_text(
-        json.dumps({'gate': gate, 'test_framework': 'pytest',
+        json.dumps({'gate': gate, 'tests': [suites.pytest_suite()],
                     'mutation_engine': 'none'}) + '\n', encoding='utf-8')
     (root / 'src').mkdir()
     (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
-    (root / 'conftest.py').write_text(
-        'import sys\n'
-        'sys.path.insert(0, %r)\n'
-        'from pytest_purlin import pytest_configure  # noqa: F401\n'
-        % PROOF_DIR, encoding='utf-8')
     (root / '.gitignore').write_text('.purlin/runtime/\n__pycache__/\n',
                                      encoding='utf-8')
     (root / 'tests').mkdir()
@@ -78,7 +74,7 @@ def _spec(root, name='feat', rules=1, proofs=(('PROOF-1', 'RULE-1', ''),),
 def _test_file(root, name='test_feat.py', feature='feat'):
     (root / 'tests' / name).write_text(
         'import pytest\n\n'
-        '@pytest.mark.proof("%s", "PROOF-1", "RULE-1")\n'
+        '# purlin: %s PROOF-1\n'
         'def test_ok():\n'
         '    assert 1 + 1 == 2\n' % feature, encoding='utf-8')
 
@@ -140,16 +136,17 @@ def _put(root, data, source='local', feature='feat'):
 
 def _info(rules=('RULE-1',), proofs=None, by_rule=None):
     return {'spec_path': 'specs/a/feat.md', 'rule_order': list(rules),
-            'proofs': proofs or {'PROOF-1': {'manual': False, 'env': None,
-                                             'rules': ['RULE-1']}},
-            'proofs_by_rule': by_rule or {'RULE-1': ['PROOF-1']}}
+            'proofs': proofs if proofs is not None else {
+                'PROOF-1': {'manual': False, 'env': None, 'rules': ['RULE-1']}},
+            'proofs_by_rule': (by_rule if by_rule is not None
+                               else {'RULE-1': ['PROOF-1']})}
 
 
 # ---------------------------------------------------------------------------
 # The section a run writes
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("evidence_writer", "PROOF-1", "RULE-1")
+# purlin: evidence_writer PROOF-1
 def test_a_test_run_writes_the_feature_file_with_one_section(tmp_path):
     root = _project(tmp_path)
     _spec(root)
@@ -177,7 +174,7 @@ def test_a_test_run_writes_the_feature_file_with_one_section(tmp_path):
     assert section['rules'] == {'RULE-1': 'passed'}
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-2", "RULE-2")
+# purlin: evidence_writer PROOF-2
 def test_a_rule_reads_the_word_this_run_saw():
     plain = {'PROOF-1': {}, 'PROOF-2': {}}
     assert writer.rule_word(['PROOF-1'], plain, {'PROOF-1': 'pass'},
@@ -194,7 +191,7 @@ def test_a_rule_reads_the_word_this_run_saw():
                             'linux') == 'passed'
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-3", "RULE-3")
+# purlin: evidence_writer PROOF-3
 def test_one_proof_entry_per_proof_and_test():
     info = _info(rules=('RULE-1', 'RULE-2'),
                  proofs={'PROOF-1': {'manual': False, 'env': None},
@@ -220,11 +217,30 @@ def test_one_proof_entry_per_proof_and_test():
         ('not run', OTHER)]
 
 
+# purlin: evidence_writer PROOF-15
+def test_a_rule_with_no_proof_is_answered_by_its_rule_marked_test():
+    info = _info(rules=('RULE-1', 'RULE-2', 'RULE-3'), proofs={},
+                 by_rule={})
+    seen = {
+        'RULE-1': [{'status': 'pass', 'test_file': 'tests/a.py',
+                    'test_name': 'test_a'}],
+        'RULE-2': [{'status': 'fail', 'test_file': 'tests/b.py',
+                    'test_name': 'test_b'}]}
+    section = writer.build_section(info, seen, HERE, 'a' * 40, False, 'dev',
+                                   {'spec': 's', 'code': 'c', 'tests': 't'})
+    assert section['rules'] == {'RULE-1': 'passed', 'RULE-2': 'failed',
+                                'RULE-3': 'no test'}
+    assert [(e['id'], e['rule'], e['result'], e['test'])
+            for e in section['proofs']] == [
+        ('RULE-1', 'RULE-1', 'pass', 'tests/a.py::test_a'),
+        ('RULE-2', 'RULE-2', 'fail', 'tests/b.py::test_b')]
+
+
 # ---------------------------------------------------------------------------
 # The merge
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("evidence_writer", "PROOF-4", "RULE-4")
+# purlin: evidence_writer PROOF-4
 def test_a_run_replaces_only_its_own_section(tmp_path):
     root = tmp_path
     audit = {'mutation': None, 'rules': {'RULE-1': {
@@ -247,7 +263,7 @@ def test_a_run_replaces_only_its_own_section(tmp_path):
     assert data['platforms']['windows'] == windows
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-5", "RULE-5")
+# purlin: evidence_writer PROOF-5
 def test_a_rule_the_spec_dropped_is_dropped_from_the_file(tmp_path):
     root = tmp_path
     old = _section(rules={'RULE-1': 'passed', 'RULE-9': 'passed'})
@@ -265,7 +281,7 @@ def test_a_rule_the_spec_dropped_is_dropped_from_the_file(tmp_path):
     assert sorted(data['audit']['rules']) == ['RULE-1']
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-6", "RULE-6")
+# purlin: evidence_writer PROOF-6
 def test_a_run_removes_the_evidence_of_a_feature_with_no_spec(tmp_path):
     root = _project(tmp_path)
     _spec(root)
@@ -289,7 +305,7 @@ def test_a_run_removes_the_evidence_of_a_feature_with_no_spec(tmp_path):
             in out)
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-7", "RULE-7")
+# purlin: evidence_writer PROOF-7
 def test_a_run_that_saw_the_same_thing_leaves_the_file_alone(tmp_path):
     root = _project(tmp_path)
     _spec(root)
@@ -313,7 +329,7 @@ def test_a_run_that_saw_the_same_thing_leaves_the_file_alone(tmp_path):
 # The table
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("evidence_writer", "PROOF-8", "RULE-8")
+# purlin: evidence_writer PROOF-8
 def test_the_table_counts_each_features_newest_section(tmp_path):
     root = tmp_path
     three = _section(at='2026-09-03T00:00:00Z', commit='c' * 40,
@@ -339,7 +355,7 @@ def test_the_table_counts_each_features_newest_section(tmp_path):
             '· local |') in lines
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-8", "RULE-8")
+# purlin: evidence_writer PROOF-8
 def test_a_feature_run_leaves_the_other_rows_as_they_were(tmp_path):
     root = _project(tmp_path)
     _spec(root, 'one')
@@ -362,7 +378,7 @@ def test_a_feature_run_leaves_the_other_rows_as_they_were(tmp_path):
 # Written, and committed when asked
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("evidence_writer", "PROOF-9", "RULE-9")
+# purlin: evidence_writer PROOF-9
 def test_a_run_writes_and_does_not_commit(tmp_path):
     root = _project(tmp_path)
     _spec(root)
@@ -379,7 +395,7 @@ def test_a_run_writes_and_does_not_commit(tmp_path):
                                        '--untracked-files=all')
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-9", "RULE-9")
+# purlin: evidence_writer PROOF-9
 def test_several_features_name_the_folder(tmp_path):
     root = _project(tmp_path)
     _spec(root, 'one')
@@ -393,7 +409,7 @@ def test_several_features_name_the_folder(tmp_path):
     assert 'Evidence written to .purlin/evidence/local/ for 2 features.' in out
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-10", "RULE-10")
+# purlin: evidence_writer PROOF-10
 def test_commit_commits_the_evidence_and_the_table_once(tmp_path):
     root = _project(tmp_path)
     _spec(root)
@@ -419,7 +435,7 @@ def test_commit_commits_the_evidence_and_the_table_once(tmp_path):
     assert len(_git(root, 'log', '--format=%s').splitlines()) == 2
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-11", "RULE-11")
+# purlin: evidence_writer PROOF-11
 def test_outside_git_the_files_are_written_and_nothing_is_committed(tmp_path):
     root = _project(tmp_path)
     _spec(root)
@@ -441,7 +457,7 @@ def _entry(word='strong'):
             'verdict': word, 'findings': [], 'at': 'x', 'commit': 'y'}
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-12", "RULE-12")
+# purlin: evidence_writer PROOF-12
 def test_an_audit_replaces_the_entries_it_read_and_no_others(tmp_path):
     root = tmp_path
     info = _info(rules=('RULE-1', 'RULE-2'))
@@ -467,7 +483,7 @@ def test_an_audit_replaces_the_entries_it_read_and_no_others(tmp_path):
     assert _evidence(root, 'fresh')['audit']['mutation'] is None
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-12", "RULE-12")
+# purlin: evidence_writer PROOF-12
 def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
     root = _project(tmp_path, gate='strong')
     _spec(root, level='strong')
@@ -496,7 +512,7 @@ def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
         '.purlin/evidence/local/feat.json'
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-14", "RULE-14")
+# purlin: evidence_writer PROOF-14
 def test_a_repeated_entry_keeps_its_time_and_a_new_model_replaces_it(tmp_path):
     root = tmp_path
     info = _info(rules=('RULE-1',))
@@ -519,7 +535,7 @@ def test_a_repeated_entry_keeps_its_time_and_a_new_model_replaces_it(tmp_path):
     assert (entry['model'], entry['at']) == ('claude-b', 'later'), entry
 
 
-@pytest.mark.proof("evidence_writer", "PROOF-13", "RULE-13")
+# purlin: evidence_writer PROOF-13
 def test_neither_the_evidence_nor_the_table_is_ignored():
     for rel in ('templates/gitignore.purlin', '.gitignore'):
         with open(os.path.join(REPO, rel), encoding='utf-8') as handle:

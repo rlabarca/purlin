@@ -278,7 +278,7 @@
               "line": 2
             }
           },
-          "name": "adds two numbers [proof:calc:PROOF-1:RULE-1]"
+          "name": "adds two numbers"
         },
         {
           "id": "1",
@@ -288,7 +288,7 @@
               "line": 3
             }
           },
-          "name": "leaves small values alone [proof:calc:PROOF-2:RULE-2]"
+          "name": "leaves small values alone"
         }
       ]
     }

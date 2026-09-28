@@ -27,8 +27,10 @@ Everything else has a default, and every default can be overridden by naming
 the key:
 
     {"gate": "strong", "min_strength": 70, "mutation_engine": "auto",
-     "audit_parallel": 4, "sql_engine": null, "ci": "github",
-     "trust": "local"}
+     "audit_parallel": 4, "ci": "github", "trust": "local"}
+
+The test suites, under `tests`, are read where the tests run, by
+`markers.read_suites`, and are not part of the gate.
 
 Mutation testing is optional. `mutation_engine` set to `none` turns it off:
 no breaks run and `min_strength` is not applied, so the AI audit alone
@@ -84,8 +86,8 @@ class GateConfig(object):
     """The resolved settings one run reads, plus the warnings resolving raised."""
 
     __slots__ = ('gate', 'min_strength', 'breaks',
-                 'mutation_engine', 'audit_parallel', 'sql_engine', 'ci',
-                 'test_framework', 'trust', 'warnings')
+                 'mutation_engine', 'audit_parallel', 'ci', 'trust',
+                 'warnings')
 
     # What a surface reads is the settings a project can name. `breaks` is
     # derived from `mutation_engine` and `warnings` from resolving, so
@@ -157,9 +159,7 @@ def resolve_gate(config):
                 and str(mutation_engine).strip().lower() != 'none'),
         mutation_engine=mutation_engine,
         audit_parallel=audit_parallel,
-        sql_engine=config.get('sql_engine'),
         ci=config.get('ci'),
-        test_framework=config.get('test_framework', 'auto'),
         trust=trust,
         warnings=warnings,
     )
