@@ -11,13 +11,11 @@ CARD = ('<div style="display:flex; flex-direction:column; gap:14px; padding:%dpx
         'background:#092936; border-radius:10px">%s</div>')
 LINE = '<div style="display:flex; align-items:center; gap:32px">%s</div>'
 NUM = '<p style="font-size:32px; color:#BFCED5; width:48px">%s</p>'
-# A command is machine text and is monospace; a label in plain words is sans.
 CMD = '<p style="' + MONO + '; font-size:32px; color:#E6BEB0; width:%dpx">%s</p>'
-LABEL = '<p style="font-size:32px; font-weight:600; color:#E6BEB0; width:%dpx">%s</p>'
 WHAT = '<p style="font-size:32px; color:#E4DDD4; flex:1">%s</p>'
 # A part of a step: no number, set in under the step it belongs to.
 PART = ('<div style="display:flex; align-items:center; gap:32px; padding:0 0 0 80px">'
-        '<p style="font-size:28px; color:#BFCED5; width:%dpx">%s</p>'
+        '<p style="' + MONO + '; font-size:28px; color:#BFCED5; width:%dpx">%s</p>'
         '<p style="font-size:28px; color:#BFCED5; flex:1">%s</p></div>')
 def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=20, pad=18):
     out = [SECTION % (sid, gap),
@@ -28,7 +26,7 @@ def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=
     out.append('<div style="flex:1"></div>')
     for i, row in enumerate(rows, 1):
         name, what, parts = row[0], row[1], row[2] if len(row) > 2 else ()
-        head = (CMD if name.startswith('`') else LABEL) % (width, name.strip('`'))
+        head = CMD % (width, name.strip('`'))
         lines = [LINE % (NUM % i + head + WHAT % what)]
         lines += [PART % (width, part, said) for part, said in parts]
         out.append(CARD % (pad, ''.join(lines)))
@@ -97,16 +95,16 @@ slide('remote', 'Remote runners', 'When does Purlin use a remote runner in your 
  'branch purlin:test --remote creates, waits on and deletes. The tag run reruns the tests on a clean '
  'machine, checks every signature against the tagged code, and checks that every file in the ci '
  'folder was committed by the runner itself.',
- lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.', width=560)
+ lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.')
 slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not claim compliance.', [
     ('Purlin produces', 'Evidence for each rule: its tests and their results, what the audit found, and who signed.'),
     ('You hand over', 'The evidence package: one file for the version, made by %s.' % m('purlin:export')),
     ('Your system of record', 'The validated system your company uses for approval. It holds the document, decides who approves, and carries the approval that counts.'),
-], '<b>Purlin makes no claim that software complies with any regulation.</b>',
+], '',
  'The package holds, for each rule: its words, its proofs, its tests, each result with when and '
  'where it ran, what the audit found and which model judged, and who signed, when and on which '
  'machine. A requirement number such as (URS-042) reaches it as a note in the rule\'s own words. '
- 'The same tag always gives the same package, byte for byte.', width=560)
+ 'The same tag always gives the same package, byte for byte.')
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin gate workflows",
         "order": ["touches", "start", "passed", "strong", "signed", "remote", "regulated"],
