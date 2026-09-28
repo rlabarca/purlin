@@ -13,7 +13,7 @@
 
 ## Rules
 
-- RULE-1: `pending()` returns one entry per migration a project still needs, each carrying an id, one line saying what it does and the files it touches; it returns nothing for a root with no `.purlin/`, and `--json` prints that same list
+- RULE-1: `pending()` returns one entry per migration a project still needs, each carrying an id, one line saying what it does and the files it touches; it returns nothing for a root with no `.purlin/`
 - RULE-2: The detectors read the layout v0.9.5 left, and what that layout leaves behind is what they report; a project that carries a hook v0.9.5 installed has the hook migration reported too
 - RULE-3: `--check` prints the pending list with the command that applies it, exits 1 while anything is pending, writes nothing at all, and exits 0 saying nothing is pending once nothing is
 - RULE-4: A project root with no `.purlin/` exits 2 saying there is nothing to update and naming the command that sets a project up [level: passed]
