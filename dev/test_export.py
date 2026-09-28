@@ -19,6 +19,7 @@ What each group holds:
 *the tag*         `purlin:sign` commits the package and tags that commit
 """
 
+import hashlib
 import json
 import os
 import re
@@ -93,6 +94,18 @@ def read_package(root, version='2.1.0'):
         root, '.purlin/evidence/package/%s.json' % version).decode('utf-8'))
 
 
+def fingerprint_by_hand(data):
+    """sha256 of a package's bytes with the top-level `fingerprint` emptied.
+
+    Worked on the file's text, not through the package command: the one
+    top-level `"fingerprint": "<hex>"` becomes `"fingerprint": ""`.
+    """
+    blanked, count = re.subn(rb'\n  "fingerprint": "[0-9a-f]*"\n}\n$',
+                             b'\n  "fingerprint": ""\n}\n', data)
+    assert count == 1, data[-200:]
+    return hashlib.sha256(blanked).hexdigest()
+
+
 def rule_of(package, rule_id, feature='login'):
     entry = next(f for f in package['features'] if f['name'] == feature)
     return next(r for r in entry['rules'] if r['id'] == rule_id)
@@ -121,6 +134,7 @@ def signed_project(spec=SPEC, version='2.1.0', gate=SIGNING_GATE):
     """
     made = Project(spec=spec, gate=gate, config={'min_strength': 50})
     made.proofs()
+    made.tests_ran_at = made.head()
     made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
     made.audit('RULE-2')
     name_the_model(made, 'RULE-2')
@@ -219,9 +233,22 @@ class TestTheFile:
         assert git(signed.root, 'log', '-1', '--format=%s').stdout.strip() == \
             'purlin: evidence at %s' % head[:7]
         assert status(signed.root) == ''
+        committed = signed.head()
         code, lines = export(signed.root, '--commit')
         assert lines[-1] == 'Package unchanged.', lines
+        assert signed.head() == committed
         assert read_package(signed.root)['commit'] == head
+
+    # purlin: package PROOF-10
+    def test_commit_leaves_a_change_staged_elsewhere_out(self, signed):
+        write(os.path.join(signed.root, 'src', 'login.py'), '# edited\n')
+        git(signed.root, 'add', 'src/login.py')
+        code, lines = export(signed.root, '--commit')
+        assert code == 0, lines
+        assert git(signed.root, 'show', '--name-only', '--format=',
+                   'HEAD').stdout.split() == [
+            '.purlin/evidence/package/2.1.0.json']
+        assert status(signed.root) == 'M  src/login.py\n'
 
 
 # ---------------------------------------------------------------------------
@@ -280,7 +307,7 @@ class TestTheState:
             package = read_package(made.root, 'unversioned')
             second = rule_of(package, 'RULE-2')
             assert second['audit'] is None
-            assert second['statuses']['strong']['word'] != 'strong'
+            assert second['statuses']['strong']['word'] == 'not audited'
             assert second['meets_gate'] is False
             assert package['state'] == 'work in progress'
             assert package['not_for_approval'] is True
@@ -338,6 +365,19 @@ class TestTheState:
                 'gate strong met', True)
         finally:
             made.close()
+        made = signed_project(gate='passed')
+        try:
+            git(made.root, 'tag', '-a', 'signed/2.1.0', '-m', 'by hand')
+            code, lines = export(made.root)
+            assert code == 0, lines
+            assert lines[0].endswith('State: gate passed met, 2 of 2 rules '
+                                     'meet the gate passed. '
+                                     'Not for approval.'), lines
+            package = read_package(made.root)
+            assert (package['state'], package['not_for_approval']) == (
+                'gate passed met', True)
+        finally:
+            made.close()
 
 
 # ---------------------------------------------------------------------------
@@ -370,6 +410,7 @@ class TestTheContent:
                     'ci', 'passed', 'ci', '2026-09-13T12:00:00Z', True)
         assert result['os'] in ('windows', 'macos', 'linux')
         assert re.match(r'^[0-9a-f]{40}$', result['commit'])
+        assert result['commit'] == tagged.tests_ran_at
         audit = rule['audit']
         assert (audit['verdict'], audit['findings'], audit['strength'],
                 audit['model'], audit['criteria'], audit['at']) == (
@@ -383,6 +424,12 @@ class TestTheContent:
         assert set(signature['locked']) == {
             'triple', 'rule_hash', 'proof_hash', 'test_hash',
             'test_hash_kind', 'audit_hash'}
+        now = tagged.rule('RULE-2')
+        assert signature['locked'] == dict(
+            {key: now[key] for key in ('rule_hash', 'proof_hash', 'test_hash',
+                                       'test_hash_kind', 'audit_hash')},
+            triple=sign_module.triple_for(now)[:16])
+        assert UTC.match(signature['at']), signature['at']
         assert rule['statuses']['signed'] == {'word': 'signed',
                                               'reasons': ['by jane@acme.com']}
         assert rule['meets_gate'] is True
@@ -554,6 +601,9 @@ class TestTheFingerprint:
         assert (code, lines) == (0, ['The package matches its fingerprint.'])
         assert re.match(r'^[0-9a-f]{64}$', read_package(signed.root)[
             'fingerprint'])
+        assert read_package(signed.root)['fingerprint'] == \
+            fingerprint_by_hand(read_bytes(
+                signed.root, '.purlin/evidence/package/2.1.0.json'))
 
     # purlin: package PROOF-17
     def test_check_names_an_edit_made_after(self, signed):
@@ -562,13 +612,21 @@ class TestTheFingerprint:
                             '2.1.0.json')
         with open(path, 'rb') as handle:
             data = handle.read()
+        edited = data.replace(b'"unsigned"', b'"signed"', 1)
+        assert edited != data
         with open(path, 'wb') as handle:
-            handle.write(data.replace(b'"unsigned"', b'"signed"', 1))
+            handle.write(edited)
         code, lines = export(signed.root, '--check', path)
         assert code == 1
         assert lines[0].startswith('The package does not match its '
                                    'fingerprint: the package records the '
                                    'fingerprint '), lines
+        recorded = json.loads(data.decode('utf-8'))['fingerprint']
+        gives = fingerprint_by_hand(edited)
+        assert recorded != gives
+        assert lines[0] == ('The package does not match its fingerprint: the '
+                            'package records the fingerprint %s and its '
+                            'content gives %s.' % (recorded, gives)), lines
         with open(path, 'wb') as handle:
             handle.write(data.replace(b'\n', b'\r\n'))
         code, lines = export(signed.root, '--check', path)
