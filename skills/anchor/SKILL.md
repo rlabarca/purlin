@@ -52,9 +52,11 @@ Fetches the anchor from another repository and writes the local copy under
 **A pin is always a commit, never a branch.** A branch moves, and an anchor whose rules
 changed under a project with no diff to read is exactly what pinning exists to prevent.
 
-When the source file is free text rather than rules, the script writes the text and says the
-rules are still to be written. Write them from it and say so in the local copy's
-`> Description:`, so nobody mistakes your reading for the author's words.
+When the source file is free text rather than rules, the script writes the text and prints
+`<name>: written to <path>, pinned <sha7>` and then `the source is free text: no rules written
+yet. Run purlin:anchor create <name>.` Write the rules from the text with `purlin:anchor create`
+and say so in the local copy's `> Description:`, so nobody mistakes your reading for the
+author's words.
 
 ## sync
 
