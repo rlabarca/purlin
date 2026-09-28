@@ -1,4 +1,4 @@
-import json, os
+import json, os, re
 # DECK_ROOT names the folder the deck's files are written under; the default sits beside this script.
 ROOT = os.environ.get('DECK_ROOT') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deck', 'project')
 MONO = "font-family:'Courier New', monospace"
@@ -20,6 +20,14 @@ WHAT = '<p style="font-size:32px; color:#E4DDD4; flex:1">%s</p>'
 PART = ('<div style="display:flex; align-items:center; gap:32px; padding:0 0 0 80px">'
         '<p style="' + MONO + '; font-size:28px; color:#BFCED5; width:%dpx">%s</p>'
         '<p style="font-size:28px; color:#BFCED5; flex:1">%s</p></div>')
+# The mark and the name, pinned to the top right of every slide. The mark is
+# design/assets/logo.svg, the one for navy grounds, without its metadata.
+def brand():
+    svg = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'design', 'assets', 'logo.svg'), encoding='utf-8').read()
+    svg = re.sub(r'<metadata>.*?</metadata>', '', svg, flags=re.S).replace(' xmlns:c2pa="http://c2pa.org/manifest"', '')
+    svg = svg.replace('width="670" height="330"', 'aria-label="Purlin" style="width:106px; height:52px"')
+    return ('<div style="position:absolute; right:128px; top:80px; width:260px; display:flex; align-items:center; '
+            'justify-content:flex-end; gap:16px">%s<p style="font-size:36px; font-weight:600; color:#E4DDD4">Purlin</p></div>' % svg)
 def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=20, pad=18):
     out = [SECTION % (sid, gap),
            '<p style="font-size:24px; letter-spacing:3px; text-transform:uppercase; color:#C0793F">%s</p>' % eyebrow,
@@ -36,7 +44,7 @@ def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=
     out.append('<div style="flex:1"></div>')
     if closing:
         out.append('<p style="font-size:32px; color:#E4DDD4">%s</p>' % closing)
-    out += ['<aside>%s</aside>' % notes, '</section>', '']
+    out += [brand(), '<aside>%s</aside>' % notes, '</section>', '']
     with open(os.path.join(ROOT, 'slides', sid + '.html'), 'w', encoding='utf-8') as h:
         h.write('\n'.join(out))
 os.makedirs(os.path.join(ROOT, 'slides'), exist_ok=True)
@@ -86,7 +94,7 @@ slide('signed', 'The third gate', 'Gate %s: a person signs each rule, locked to 
         ('The signature', 'One file per rule, in a signed commit. It records who signed and when.'),
         ('The package and the tag', 'When every rule is signed, the evidence is written as one file and the version is tagged %s.' % m('signed/1.4.0'))]),
     ('`git push origin signed/1.4.0`', 'You publish the tag. It says every rule of this version is signed.'),
-], '<b>The gate is met</b> when every rule has a signature that counts. It counts while the rule, its proof, its test, the code, what the audit found and where the tests ran all match what was signed.',
+], '<b>The gate is met</b> when every rule has a signature. This means the rule, its proof, its test, the code, what the audit found and where the tests ran are all tied together under the signature.',
  'Signing is the formal lock on one exact set: the rule, its proof, its test, the code the rule '
  'covers, what the audit found and the operating systems the tests ran on. Change any of them and '
  'the signature stops counting, and a person signs again. A signature belongs to no machine; it is '
