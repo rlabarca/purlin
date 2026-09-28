@@ -1,17 +1,17 @@
 # Anchor: security_no_dangerous_patterns
 
 > Source: ./dev/external-refs/security-policy.git security_policy.md
-> Pinned: 62a209179ae8e3c033e0a8f970a8c2b0276b77e1
+> Pinned: 15c1fd4904a8ae3e9c8ccedbe3e45596cd757fbc
 > Note: the Source is a local bare repository this checkout creates with `bash dev/setup-external-refs.sh`. Until that script has run the source is unreachable and the status line says so; the script is safe to re-run and prints the sha that belongs on the Pinned line.
 
 > Type: security
+> Global: true
 > Description: The dangerous patterns no executable file under `scripts/` may carry, in
 >   the form each of the six file types the scope names spells them, plus the argv
->   hardening that keeps a repository-supplied string out of git's option position. PHP
->   ships no plugin in this release and the guard stays anyway, because a language the
->   check drops is a language the next file in it enters unwatched. The tree is clean
->   today; this anchor is what keeps it clean. A feature that requires this anchor
->   inherits every rule.
+>   hardening that keeps a repository-supplied string out of git's option position. The
+>   scope names file types `scripts/` does not hold today, so a file in one of them is
+>   watched from the day it arrives. The anchor is global: every feature's code lives
+>   under `scripts/`, so every feature counts these rules.
 > Scope: scripts/**/*.py, scripts/**/*.sh, scripts/**/*.js, scripts/**/*.ts, scripts/**/*.php, scripts/**/*.cs
 
 ## Rules
