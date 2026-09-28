@@ -61,8 +61,8 @@ slide('start', 'Getting started', 'Start in under ten minutes', [
 slide('passed', 'The first gate', 'Gate %s: only check that rules pass their tests' % m('passed'), [
     ('`purlin:spec`', 'You say what must be true. It is written down as rules.'),
     ('`purlin:build`', 'The code and its tests are written. One comment above each test names the rule it shows.'),
-    ('`purlin:test`', 'Runs the tests and reports each rule: passed, failed, no test, or out of date.'),
-], '<b>The gate is met</b> when every rule has a test, and the test passes on the code as it is now.',
+    ('`purlin:test`', 'Runs the tests and reports each rule: passed, failed, no test, or out of date, which means something changed since its test ran.'),
+], '<b>The gate is met</b> when every rule has a test that passed, and nothing has changed since it ran.',
  'At passed a project needs a rule and a test that names it. Out of date means the code, the rule or '
  'the test changed after the last run. purlin:test runs only what your change touched, writes the '
  'evidence, and commits it only when you pass --commit.',
