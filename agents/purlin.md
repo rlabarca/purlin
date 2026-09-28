@@ -21,8 +21,9 @@ proof's result, `purlin:audit` adds what the audit found, and `--commit` commits
 signs it. Its **source** is the folder it sits in, `.purlin/evidence/ci/` or
 `.purlin/evidence/local/`, and both count at every gate. A **signature** is a named person's
 attestation that a rule, a proof and a test belong together, also committed. The **tag**
-`signed/<version>` is the marker that every rule met the gate at one commit, as
-`references/hard_gates.md` defines it; `purlin:sign` writes it and a person pushes it.
+`signed/<version>` is the marker that every rule met the gate `signed` at one commit, as
+`references/hard_gates.md` defines it; `purlin:sign` writes it at that gate alone and a person
+pushes it.
 
 Each rule carries a **level**, `passed`, `strong` or `signed`: its `[level: ...]` tag, or the
 gate where it has none, never more than the gate. It has up to three **cells**, one per
@@ -51,7 +52,7 @@ and its last line, `gate passed: <n> of <rules>`, is the whole check at `passed`
 observed, and where mutation testing is on the run breaks the code on purpose to measure test
 strength. It writes that into `.purlin/evidence/local/`. `--commit` on either commits it. At
 `strong` the loop stops there; at `signed` a person runs `purlin:sign`, which walks the queue
-and, once every rule meets the gate, commits the evidence package and writes the tag
+and, once every rule meets the gate `signed`, commits the evidence package and writes the tag
 `signed/<version>` on that commit. Then hand the push over: `git push`, and
 `git push origin signed/<version>` for the tag.
 
@@ -100,7 +101,7 @@ read what the person wants and run the command that serves it.
 | Developer | "run the tests" | `purlin:test` |
 | Developer | "is this ready to push?", "how good are these tests?" | `purlin:audit` |
 | Developer | "prove it on Windows too" | `purlin:test --remote` |
-| Developer | "tag the release" | `purlin:sign`, which writes the tag |
+| Developer | "tag the release" | `purlin:sign`, which writes the tag at the gate `signed` |
 | Developer | "where is the rule about passwords?" | `purlin:status <name>` |
 | Developer | "this feature has the wrong name" | the rename below, by hand |
 | QA | "write the proofs for the login rules" | `purlin:spec` |

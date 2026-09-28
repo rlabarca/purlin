@@ -171,7 +171,7 @@ From `strong` up each rule also carries a **proof**: a plain sentence saying how
 shown, which QA writes or reviews and the audit checks the test against. The marker then names
 the proof, `# purlin: cart PROOF-2`. `purlin:audit` calls a model on each rule and a finding
 blocks. At `signed` a person signs each rule, and `purlin:sign` writes the signed tag
-`signed/<version>` once every rule meets the gate.
+`signed/<version>` once every rule meets the gate `signed`.
 
 `purlin:init --gate strong` raises the gate and asks before each write; it changes no rule.
 A single rule can stay lower, `[level: passed]` at the end of its line.

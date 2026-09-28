@@ -4,8 +4,9 @@ For QA, or a developer acting as QA, at the `strong` or `signed` gate.
 
 Reviewing is not reading every rule. It is reading the rules whose next step is a person, with
 the evidence already gathered. `purlin:sign` computes one list, the **queue**, and walks it.
-When it leaves every rule meeting the gate it writes the evidence package, commits it, and tags
-that commit `signed/<version>`; you push the tag. This page says what puts a rule in the queue,
+At the gate `signed`, when it leaves every rule meeting the gate, it writes the evidence
+package, commits it, and tags that commit `signed/<version>`; you push the tag. At `strong` it
+clears hand checks and writes no tag and no package. This page says what puts a rule in the queue,
 what the walk shows you, what makes a signature count, and what the tag carries.
 
 ## The level
@@ -113,12 +114,14 @@ The first `→` line appears when a case was added, the second when a rule was s
 
 A signature locks one rule. The tag locks the version.
 
-When the walk leaves every rule meeting the gate, `purlin:sign` writes the evidence package,
-`.purlin/evidence/package/<version>.json`, from the committed evidence, commits it as a signed
-commit, and writes a signed tag on that commit with `git tag -s` and the key you sign commits
-with. The tag is `signed/<version>`, from the `VERSION` file at the project root, or the
-`version` in `.purlin/config.json` where there is none; `purlin:sign --release <name>` names it
-something else. The tag's message names the gate and the evidence commit below the package.
+At the gate `signed`, when the walk leaves every rule meeting it, `purlin:sign` writes the
+evidence package, `.purlin/evidence/package/<version>.json`, from the committed evidence,
+commits it as a signed commit, and writes a signed tag on that commit with `git tag -s` and the
+key you sign commits with. The tag is `signed/<version>`, from the `VERSION` file at the project
+root, or the `version` in `.purlin/config.json` where there is none; `purlin:sign --release
+<name>` names it something else. The tag's message names the gate and the evidence commit below
+the package. Below `signed` it writes no tag and no package: at `strong` the walk ends on its
+closing lines, `Walked <n> rules: ...` and the commits it made, and says nothing about a tag.
 
 ```
 Evidence package committed: .purlin/evidence/package/1.4.0.json.
@@ -157,8 +160,8 @@ Use these when you already know what you are signing; they sign with no stop. Ea
 file per rule, `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, and
 makes one signed commit for all of them, so a batch of forty rules is one commit and forty files
 that cannot conflict with anyone else's. It prints `Signed <n> rules in <sha7>.` and each rule,
-then `→ Run: purlin:sign` once every rule meets the gate, because the walk is what writes the
-tag.
+then, at the gate `signed`, `→ Run: purlin:sign` once every rule meets it, because the walk is
+what writes the tag.
 
 `--note` is the one line a person writes where no test can be read: what they did and saw for a
 `@manual` proof. It lands in the signature file's `note` field.

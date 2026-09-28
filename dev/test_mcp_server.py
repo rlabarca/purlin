@@ -2234,7 +2234,7 @@ class TestTheSignedTag:
 
     # purlin: states PROOF-68
     def test_no_tag_reads_none_and_a_tag_on_head_reads_its_name(self):
-        made = Project()
+        made = Project(gate='signed')
         try:
             assert made.payload()['tag'] is None
             _git(made.root, 'tag', '-a', 'signed/1.2.0', '-m', 'a release')
@@ -2246,7 +2246,7 @@ class TestTheSignedTag:
 
     # purlin: states PROOF-68
     def test_a_tag_that_is_not_on_head_says_nothing_about_this_code(self):
-        made = Project()
+        made = Project(gate='signed')
         try:
             _git(made.root, 'tag', '-a', 'signed/1.2.0', '-m', 'a release')
             _write(os.path.join(made.root, 'src', 'later.py'), 'X = 1\n')
@@ -2258,13 +2258,29 @@ class TestTheSignedTag:
 
     # purlin: states PROOF-68
     def test_the_newest_version_wins_where_several_point_at_head(self):
-        made = Project()
+        made = Project(gate='signed')
         try:
             for name in ('signed/1.9.0', 'signed/1.10.0', 'signed/beta'):
                 _git(made.root, 'tag', '-a', name, '-m', name)
             assert made.payload()['tag']['name'] == 'signed/1.10.0'
         finally:
             made.close()
+
+    # purlin: states PROOF-83
+    def test_below_signed_the_payload_names_no_tag(self):
+        for gate in ('strong', 'passed'):
+            made = Project(gate=gate)
+            try:
+                _git(made.root, 'tag', '-a', 'signed/1.2.0', '-m', 'a release')
+                assert made.payload()['tag'] is None, gate
+                config = os.path.join(made.root, '.purlin', 'config.json')
+                with open(config, encoding='utf-8') as handle:
+                    settings = json.load(handle)
+                settings['gate'] = 'signed'
+                _write(config, json.dumps(settings))
+                assert made.payload()['tag']['name'] == 'signed/1.2.0', gate
+            finally:
+                made.close()
 
 
 # ---------------------------------------------------------------------------

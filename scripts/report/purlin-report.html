@@ -928,8 +928,8 @@ function tagChip() {
   if (!found) {
     return '<span class="tag plain"'
       + hover(['This commit carries no signed tag. purlin:sign writes '
-        + 'signed/<version> once every rule meets the gate, and a person '
-        + 'pushes it.']) + '>no signed tag</span>';
+        + 'signed/<version> once every rule meets the gate signed, and a '
+        + 'person pushes it.']) + '>no signed tag</span>';
   }
   return '<span class="tag"' + hover(['The signed tag on this commit'
       + (found.at ? DOT + found.at : '')]) + '>'
@@ -944,7 +944,7 @@ function topBar() {
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
     + (gate ? tag('gate: ' + gate, true) : '')
-    + (level('strong') ? tagChip() : '')
+    + (level('signed') ? tagChip() : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
          + esc(String(DATA.commit).slice(0, 7)) + '</span>' : '')

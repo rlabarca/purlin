@@ -687,3 +687,26 @@ class TestASpecThatNamesNoFiles:
             assert data['incomplete'] == [], data
         finally:
             made.close()
+
+
+class TestTheTagNote:
+
+    # purlin: gate_check PROOF-50
+    def test_only_the_gate_signed_names_the_tag(self):
+        note = ('gate: the gate is declared in .purlin/config.json, which an '
+                'agent can edit. What stands behind it is the tag: '
+                'purlin:sign writes signed/<version> only at the gate signed '
+                'when every rule meets it, and this run checks the evidence '
+                'against the tagged code.')
+        for gate in ('signed', 'strong', 'passed'):
+            made = project_at(gate)
+            try:
+                _code, output = run(made)
+                assert 'gate: gate = %s' % gate in output, output
+                if gate == 'signed':
+                    assert note in output.splitlines(), output
+                else:
+                    assert 'tag' not in output.lower(), (gate, output)
+                    assert 'signed/' not in output, (gate, output)
+            finally:
+                made.close()

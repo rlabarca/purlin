@@ -91,8 +91,8 @@ The **gate** is how far the project asks every rule to go, and each step up has 
 
 From `strong` up, each rule carries a **proof**, a plain sentence saying how the rule is shown,
 and the marker names it: `# purlin: cart PROOF-2`. `purlin:sign` walks the rules that wait on
-a person and, once every rule meets the gate, writes the evidence package and the signed tag
-`signed/<version>`. The whole loop runs on one machine at every gate. A single rule
+a person and, at the gate `signed` once every rule meets it, writes the evidence package and the
+signed tag `signed/<version>`. The whole loop runs on one machine at every gate. A single rule
 can ask for less with `[level: passed]`; the gate is the ceiling.
 [references/hard_gates.md](references/hard_gates.md) is the one definition.
 

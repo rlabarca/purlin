@@ -42,7 +42,7 @@ flowchart TD
     A -->|weak| B
     A -->|"manual test"| Q["QA: purlin:sign<br>a hand check, with a note"]
     Q -->|"a case: a new proof"| Sp
-    A -->|strong| G["once every rule meets<br>the gate, purlin:sign<br>writes signed/#lt;version#gt;"]
+    A -->|strong| G["the rule meets<br>the gate strong"]
     Q -->|signed| G
 ```
 
@@ -109,10 +109,12 @@ the rules with a `@manual` proof. At each stop QA answers `sign`, `case` or `ski
 note saying what they saw, adds a case in plain language, or skips. A case is a new proof line in
 the spec, and the next `purlin:build` writes its test, which is how QA's judgment reaches the
 code without QA writing it. When the queue is empty and every rule meets the gate, the walk
-writes the tag `signed/<version>`. [review-and-signing.md](review-and-signing.md) is the whole of
-that loop.
+closes on what it did: `Walked <n> rules: ...` and the commits it made. The tag
+`signed/<version>` and the evidence package it carries belong to the gate `signed`,
+[regulated-workflow.md](regulated-workflow.md). [review-and-signing.md](review-and-signing.md)
+is the whole of that loop.
 
-**The change lands.** A person pushes it, and pushes the tag.
+**The change lands.** A person pushes it.
 
 ## Working at the same time
 

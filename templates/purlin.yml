@@ -4,14 +4,15 @@
 # is tagged @env for an operating system your machine is not, or you answered
 # no to init's trust question and the project reads `trust: remote`. A project
 # that trusts its own machine and names no other operating system gets no
-# workflow at all: purlin:sign writes the tag, you push it, and nothing runs
-# remotely.
+# workflow at all: at the gate signed purlin:sign writes the tag, you push it,
+# and nothing runs remotely.
 #
 # Two things start a run and nothing else does: a push to a `run/*` branch,
 # which is the branch purlin:test --remote creates and deletes around one run,
-# and a push of a `signed/*` tag, which is what purlin:sign writes when every
-# rule meets the gate. A push to any other branch starts nothing, and a pull
-# request starts nothing.
+# and a push of a `signed/*` tag, which purlin:sign writes only at the gate
+# signed, when every rule meets it, so only a project at signed starts a tag
+# run. A push to any other branch starts nothing, and a pull request starts
+# nothing.
 #
 # A run branch run runs the marked tests, writes its own operating system's
 # section of .purlin/evidence/ci/<feature>.json for every feature, and commits

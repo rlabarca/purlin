@@ -35,13 +35,15 @@ to the empty string. `--check FILE` recomputes it.
 
 **State.** `signed` when every rule meets the gate `signed` and the package
 is written for the tag, or read at the commit the tag names; `gate <gate> met`
-when every rule meets a gate but the version is not signed and tagged;
+when every rule meets a gate but the version is not signed and tagged: the
+gate is `passed` or `strong`, where no tag is ever written and a tag found on
+the commit changes nothing, or `signed` with no tag on the commit yet;
 `work in progress` otherwise. Every state but `signed` carries
 `not_for_approval: true`.
 
 Run by itself it writes the file and commits nothing; `--commit` commits it
-as `purlin: evidence at <sha7>`. `purlin:sign` writes and commits it before
-it writes the tag. `references/formats/package_format.md` holds every field.
+as `purlin: evidence at <sha7>`. At the gate `signed`, `purlin:sign` writes
+and commits it before it writes the tag; below `signed` it writes neither. `references/formats/package_format.md` holds every field.
 
 Exit codes: 0 written, or the check matched; 1 the check did not match or the
 package could not be written; 2 the command line was wrong.

@@ -8,8 +8,9 @@
 #
 # Two things start a run and nothing else does: a push to a `run/*` branch,
 # which is the branch purlin:test --remote creates and deletes around one run,
-# and a push of a `signed/*` tag, which is what purlin:sign writes when every
-# rule meets the gate. A pull request starts nothing.
+# and a push of a `signed/*` tag, which purlin:sign writes only at the gate
+# signed, when every rule meets it, so only a project at signed starts a tag
+# run. A pull request starts nothing.
 #
 # A run branch run runs the marked tests, writes its own operating system's
 # section of .purlin/evidence/ci/<feature>.json for every feature, and commits

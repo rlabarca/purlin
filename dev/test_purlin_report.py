@@ -1150,21 +1150,29 @@ def test_the_audit_panel_reads_what_the_audit_found(browser, tmp_path):
 
 # purlin: purlin_report PROOF-55
 def test_the_top_bar_states_the_signed_tag(browser, tmp_path):
-    """The payload names the tag on HEAD, or names none."""
+    """At `signed` the payload names the tag on HEAD, or names none; below
+    `signed` the top bar shows no tag at all."""
     payload = payload_named('regulated')
+    assert payload['gate']['gate'] == 'signed'
     page = open_board(browser, tmp_path, payload)
     bar = page.inner_text('.topbar')
     assert payload['tag']['name'] in bar
     assert payload['tag']['commit'][:7] in bar
     assert 'no signed tag' not in bar
     page.close()
-    payload = payload_named('team')
-    assert payload['tag'] is None
+    payload['tag'] = None
     page = open_board(browser, tmp_path, payload)
-    bar = page.inner_text('.topbar')
-    assert 'no signed tag' in bar
-    assert 'signed/' not in bar
+    assert 'no signed tag' in page.inner_text('.topbar')
     page.close()
+    for name, gate in (('team', 'strong'), ('solo', 'passed')):
+        payload = payload_named(name)
+        assert payload['gate']['gate'] == gate
+        page = open_board(browser, tmp_path, payload)
+        bar = page.inner_text('.topbar')
+        assert 'no signed tag' not in bar, (name, bar)
+        assert 'signed/' not in bar, (name, bar)
+        assert 'gate: ' + gate in bar, (name, bar)
+        page.close()
 
 
 # purlin: purlin_report PROOF-62

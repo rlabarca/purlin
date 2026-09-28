@@ -12,8 +12,9 @@ pull request starts nothing.
 `wanted()` is what decides whether a project has a workflow at all. There
 are two reasons for one and no others: a proof in `specs/` is tagged `@env`
 for an operating system this machine is not, and a project that answered no
-to init's trust question. A project with neither gets no file: `purlin:sign`
-writes the tag, a person pushes it, and nothing runs remotely.
+to init's trust question. A project with neither gets no file: at the gate
+`signed` `purlin:sign` writes the tag, a person pushes it, and nothing runs
+remotely.
 
 The matrix always carries Linux, then the operating systems the `@env` tags in
 `specs/` name. A proof tagged `@env(windows)` adds a Windows job to prove it;

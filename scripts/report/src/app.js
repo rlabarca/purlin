@@ -458,11 +458,11 @@ function ageLine() {
 }
 
 /* The tag this commit carries, which is the marker that a version was signed
-   off: `purlin:sign` writes `signed/<version>` once every rule meets the gate,
-   and a person pushes it. Under `passed` nothing is signed and no tag is
-   written, so the top bar names none. The payload's `tag` carries the tag's
-   name and the commit it points at, and is null where this commit carries
-   none. */
+   off: `purlin:sign` writes `signed/<version>` at the gate `signed` once every
+   rule meets it, and a person pushes it. Below `signed` no tag is ever
+   written, so the top bar shows no tag chip at all. The payload's `tag`
+   carries the tag's name and the commit it points at, and is null where this
+   commit carries none. */
 function signedTag() {
   var found = DATA && DATA.tag;
   if (!found || !found.name) { return null; }
@@ -475,8 +475,8 @@ function tagChip() {
   if (!found) {
     return '<span class="tag plain"'
       + hover(['This commit carries no signed tag. purlin:sign writes '
-        + 'signed/<version> once every rule meets the gate, and a person '
-        + 'pushes it.']) + '>no signed tag</span>';
+        + 'signed/<version> once every rule meets the gate signed, and a '
+        + 'person pushes it.']) + '>no signed tag</span>';
   }
   return '<span class="tag"' + hover(['The signed tag on this commit'
       + (found.at ? DOT + found.at : '')]) + '>'
@@ -492,7 +492,7 @@ function topBar() {
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
     + (gate ? tag('gate: ' + gate, true) : '')
-    + (level('strong') ? tagChip() : '')
+    + (level('signed') ? tagChip() : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
          + esc(String(DATA.commit).slice(0, 7)) + '</span>' : '')

@@ -47,12 +47,12 @@ named on a line of its own and in the package's `warnings`.
 | State | What it means |
 |-------|---------------|
 | `work in progress` | At least one rule does not meet the gate. Not for approval |
-| `gate <gate> met` | Every rule meets the gate, and the version is not signed and tagged. Not for approval |
+| `gate <gate> met` | Every rule meets the gate, and the version is not signed and tagged: the gate is `passed` or `strong`, where no tag is written, or `signed` with no tag yet. Not for approval |
 | `signed` | Every rule meets the gate `signed`, and the package is the one the tag carries |
 
-Only `purlin:sign` writes a package whose state is `signed`: when every rule meets the gate it
-writes the package, commits it as a signed commit, and writes the tag on that commit, so the
-tagged code carries the package that describes it.
+Only `purlin:sign` writes a package whose state is `signed`: at the gate `signed`, when every
+rule meets it, it writes the package, commits it as a signed commit, and writes the tag on that
+commit, so the tagged code carries the package that describes it. Below `signed` it writes none.
 
 ## Step 3: commit only when asked
 

@@ -6,9 +6,9 @@ description: Walk the queue, or sign a rule, a feature or a batch as a signed co
 Attest that a rule, its proof and its test belong together. The attestation is a file, and the
 commit that adds it is signed, so who signed what and when is in git history. With no argument
 this skill walks the queue, the one list of the rules that wait on a person, one rule at a time;
-with a feature or a rule it goes straight there. When every rule meets the gate the walk ends by
-writing the signed tag `signed/<version>`, the marker that this version is proven, as
-`references/hard_gates.md` defines it.
+with a feature or a rule it goes straight there. At the gate `signed`, when every rule meets it,
+the walk ends by writing the signed tag `signed/<version>`, the marker that this version is
+proven, as `references/hard_gates.md` defines it. Below `signed` it writes no tag.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -34,7 +34,7 @@ argument never adds a rule the full walk would skip.
 | Gate | What this skill does |
 |------|----------------------|
 | `passed` | Prints that the gate asks for no signature, names what `purlin:init --gate strong` adds — the test strength, the AI audit and the queue — and stops without writing anything |
-| `strong` | The walk and `--note` work. A bare feature and `--batch` sign every hand check in the queue; a named rule that is not in it is told a signature is required only under `signed`, then written anyway |
+| `strong` | The walk and `--note` work. A bare feature and `--batch` sign every hand check in the queue; a named rule that is not in it is told a signature is required only under `signed`, then written anyway. It writes no tag and no evidence package |
 | `signed` | Every form works; a bare feature and `--batch` read the queue, hand checks and signatures alike. Every rule whose level is `signed` has to carry a signature before it meets the gate; a named rule marked `[level: passed]` or `[level: strong]` is refused, because it asks for none |
 
 ## Step 1: the queue, and what the audit found for each rule
@@ -135,13 +135,13 @@ not restate them elsewhere.
 A signature locks one rule. The tag locks the version: it is the marker that every rule met the
 gate at this commit, and the one thing a person pushes to say so.
 
-When the walk leaves every rule meeting the gate, the script writes the evidence package
-`.purlin/evidence/package/<version>.json` with the state `signed`, commits it as a signed
-commit, and writes a signed tag (`git tag -s`, with the key you sign commits with) on that
-commit. The tag is `signed/<version>` from the `VERSION` file at the project root, or the
+At the gate `signed`, when the walk leaves every rule meeting it, the script writes the evidence
+package `.purlin/evidence/package/<version>.json` with the state `signed`, commits it as a
+signed commit, and writes a signed tag (`git tag -s`, with the key you sign commits with) on
+that commit. The tag is `signed/<version>` from the `VERSION` file at the project root, or the
 config's `version` where there is no such file, or `signed/unversioned` where neither names
-one; `--release <name>` overrides the name. The
-message names the commit and the gate. Then it prints:
+one; `--release <name>` overrides the name. The message names the commit and the gate. Then it
+prints:
 
 ```
 Evidence package committed: .purlin/evidence/package/1.4.0.json.
@@ -154,7 +154,8 @@ While any rule falls short it writes no tag and prints
 evidence is out of date, `No tag: login is out of date (code changed since a1b2c3d).`, and one
 per feature spec that names no files in `> Scope:`. A tag of that name that already exists is
 not moved: it prints `No tag: signed/1.4.0 is already written. Name another with --release
-<name>.` Pushing the tag is a person's act; this skill never pushes.
+<name>.` Pushing the tag is a person's act; this skill never pushes. Below `signed` it writes no
+tag and no package, and prints nothing about a tag: at `strong` the walk clears hand checks.
 
 `trust` in `.purlin/config.json` is `local` or `remote`, and `purlin:init` asks for it. Under
 `local`, the default, this machine's runs are the evidence: sign, tag, push, and a project

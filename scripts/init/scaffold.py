@@ -32,7 +32,8 @@ ends with the next step computed from the state.
 A workflow is written for two reasons and no others: a proof in `specs/` is
 tagged `@env` for an operating system this machine is not, or you answered no
 to the trust question. A project with neither gets no workflow and no runner:
-`purlin:sign` writes the tag, you push it, and nothing runs remotely. Where
+at the gate `signed` `purlin:sign` writes the tag, you push it, and nothing
+runs remotely. Where
 one is wanted the prerequisites are checked first, and a missing one is named
 with the command that fixes it; nothing is written then.
 

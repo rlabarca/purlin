@@ -91,7 +91,7 @@ team in the same message:
    view. `Strong` joins both at this gate, and `Signed` joins both at the next.
 
 At `signed`, add one more: `purlin:sign` closes its walk by writing the evidence package and the
-tag `signed/<version>` when every rule meets the gate, and a person pushes the tag.
+tag `signed/<version>` when every rule meets the gate `signed`, and a person pushes the tag.
 [review-and-signing.md](review-and-signing.md#the-tag) has the tag.
 
 [team-workflow.md](team-workflow.md) and [regulated-workflow.md](regulated-workflow.md)

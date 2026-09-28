@@ -10,7 +10,7 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `feat(<name>):` | Implementing a feature, with the changeset in the body | `purlin:build` |
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
-| `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` with `.purlin/tests.md`, or the evidence package | `purlin:test --commit`, `purlin:audit --commit`, `purlin:export --commit`, `purlin:sign` for the package the tag carries, and a remote runner |
+| `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` with `.purlin/tests.md`, or the evidence package | `purlin:test --commit`, `purlin:audit --commit`, `purlin:export --commit`, `purlin:sign` at the gate `signed` for the package the tag carries, and a remote runner |
 | `sign(<name>): RULE-N ...` | Signatures, signed | `purlin:sign` |
 | `sign(batch): <feature> RULE-N, ...` | Signatures, signed, in one commit covering more than one feature | `purlin:sign`, whenever the rules it signs belong to more than one feature |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
@@ -77,10 +77,10 @@ signed/<name>            with --release <name>
 ```
 
 Signed, never lightweight (`git tag -s`, with the key you sign commits with), and written by
-`purlin:sign` when the walk closes with every rule meeting the gate; what that means is defined
-once, in `references/hard_gates.md`. The version is the `VERSION` file at the project root, or
-the config's `version` where there is no such file. The message names the commit and the
-gate:
+`purlin:sign` at the gate `signed` when the walk closes with every rule meeting it, and never
+below `signed`; what that means is defined once, in `references/hard_gates.md`. The version is
+the `VERSION` file at the project root, or the config's `version` where there is no such file.
+The message names the commit and the gate:
 
 ```
 Every rule meets the gate signed.

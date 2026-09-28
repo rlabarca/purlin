@@ -44,8 +44,9 @@ anything in your test suite: a test is any test in your own suite with one comme
   rule, the proof, the test and what the audit found; a change to any of them stales it. It
   records the signer, the time, the machine and its operating system. Under `signed` it counts
   in a commit that is cryptographically signed and verifies.
-- **The signed tag.** When every rule meets the gate, `purlin:sign` writes the evidence
-  package, commits it, and writes the signed tag `signed/<version>` on that commit. You push it.
+- **The signed tag.** At the gate `signed`, when every rule meets it, `purlin:sign` writes the
+  evidence package, commits it, and writes the signed tag `signed/<version>` on that commit.
+  You push it. Below `signed` it writes no tag and no package.
 - **The evidence package.** `purlin:export` writes `.purlin/evidence/package/<version>.json`,
   one data file describing a version for a regulated document and sign-off system: every rule's
   words, proofs, tests, results, what the audit found, who signed, and a fingerprint of the file.

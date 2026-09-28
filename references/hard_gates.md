@@ -4,18 +4,20 @@ The gate is the one project setting: what must be true of every rule before a ve
 proven. It is defined here and nowhere else. A skill, a doc or a script that needs it links to
 this page rather than restating it.
 
-**A gate is two things**, and both must exist for it to mean anything:
+**A gate is a setting, and at `signed` a marker too:**
 
-1. The setting saying what has to be true of every rule.
-2. A marker that says one commit met it, which anyone can check. That marker is the tag:
-   `purlin:sign` writes the signed tag `signed/<version>` when every rule meets the gate, and
-   no tag is written while one falls short. What the tag means, formally, is below under
-   "What `signed/<version>` means".
+1. The setting saying what has to be true of every rule. `purlin:status` and the gate check
+   say whether every rule meets it.
+2. At the gate `signed`, a marker that says one commit met it, which anyone can check. That
+   marker is the tag: `purlin:sign` writes the signed tag `signed/<version>` at the gate
+   `signed` when every rule meets it, and no tag is written while one falls short. Below
+   `signed` no tag is written at all. What the tag means, formally, is below under "What
+   `signed/<version>` means".
 
-Setting the first without the second is a preference, not a gate. Where a project has a
-remote runner, the push of that tag starts a run that reruns the marked tests on a clean
-machine and checks every committed signature and every `ci/` evidence file against the tagged
-code, so the tag is a claim someone else can test rather than one you have to take on trust.
+Where a project at `signed` has a remote runner, the push of that tag starts a run that reruns
+the marked tests on a clean machine and checks every committed signature and every `ci/`
+evidence file against the tagged code, so the tag is a claim someone else can test rather than
+one you have to take on trust.
 
 ## The three levels
 
@@ -107,14 +109,14 @@ passed cell read `out of date`, naming what changed, and the next run clears it.
 **A project has a remote runner for two reasons and no others.** A proof in `specs/` is
 tagged `@env` for an operating system your machine is not, so only a runner can prove it.
 Or you answered no to init's trust question, so the tests a signature rests on run on a
-clean machine. A project with neither gets no workflow: `purlin:sign` writes the tag, you
-push it, and nothing runs remotely.
+clean machine. A project with neither gets no workflow: at the gate `signed`, `purlin:sign`
+writes the tag, you push it, and nothing runs remotely.
 
 Where a workflow exists it triggers on two things: a push to a `run/*` branch, which is the
 branch `purlin:test --remote` creates and deletes around one run, and a push of a
-`signed/<version>` tag, which is what `purlin:sign` writes. `purlin:test --remote` is the one
-push Purlin makes, and it pushes a run branch rather than the branch you are on. Every other
-push is yours.
+`signed/<version>` tag, which `purlin:sign` writes at the gate `signed` alone, so only a project
+at `signed` has a tag run. `purlin:test --remote` is the one push Purlin makes, and it pushes a
+run branch rather than the branch you are on. Every other push is yours.
 
 | The run | What starts it | What it writes |
 |---------|----------------|----------------|
@@ -193,9 +195,10 @@ level asks for are met:
 
 A rule whose level is below `signed` needs no signature and does not hold the tag back for
 one. `trust: remote` is not part of the definition: it is read when a rule is signed, and by no
-cell and not by the tag. `purlin:sign` writes the tag only when every rule meets the gate and
-every feature's evidence is committed, as a signed tag (`git tag -s`), and never over a tag
-that is already there; a person pushes it. The tagged commit carries the evidence package,
+cell and not by the tag. `purlin:sign` writes the tag only at the gate `signed`, when every
+rule meets it and every feature's evidence is committed, as a signed tag (`git tag -s`), and
+never over a tag that is already there; a person pushes it. Below `signed` it writes no tag and
+no package. The tagged commit carries the evidence package,
 `.purlin/evidence/package/<version>.json`, written from the evidence below it
 (`references/formats/package_format.md`). Where a project has a remote runner, the push starts
 a run that checks the same thing against the tagged code on a clean machine.
@@ -242,6 +245,6 @@ measured once per feature.
 `.purlin/config.json` is a file in the repository, and an agent can edit it. Every NEVER in
 `agents/purlin.md`, the rule that an agent does not push among them, is an instruction to the
 agent and not a mechanism that stops it. What stands behind the gate runs outside the agent's
-turn: `purlin:sign` writes `signed/<version>` only when every rule meets the gate, and where a
-project has a remote runner the tag run reruns the tests on a clean machine and checks the
-committed evidence against the tagged code.
+turn: at the gate `signed`, `purlin:sign` writes `signed/<version>` only when every rule meets
+it, and where a project has a remote runner the tag run reruns the tests on a clean machine and
+checks the committed evidence against the tagged code.

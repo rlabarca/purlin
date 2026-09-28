@@ -11,8 +11,9 @@ for a reviewer who cannot open the repository.
 .purlin/evidence/package/<version>.json
 ```
 
-`purlin:export` writes it at any time, and `purlin:sign` writes and commits it
-before it writes the tag `signed/<version>`, so the tagged commit carries the
+`purlin:export` writes it at any time and at any gate, and at the gate
+`signed` `purlin:sign` writes and commits it before it writes the tag
+`signed/<version>`, so the tagged commit carries the
 package that describes it. The file is tracked like the rest of
 `.purlin/evidence/`.
 
@@ -167,7 +168,7 @@ Every time is ISO 8601 UTC with `Z`.
 | State | When |
 |---|---|
 | `signed` | every rule meets the gate `signed`, and the package is written for the tag, or read at the commit the tag `signed/<version>` names |
-| `gate <gate> met` | every rule meets the gate, and the version is not signed and tagged: the gate is `passed` or `strong`, or no tag names this commit yet |
+| `gate <gate> met` | every rule meets the gate, and the version is not signed and tagged: the gate is `passed` or `strong`, where no tag is written and a tag found on the commit changes nothing, or no tag names this commit yet |
 | `work in progress` | at least one rule does not meet the gate |
 
 Only a version that is signed and tagged is put forward for approval, so

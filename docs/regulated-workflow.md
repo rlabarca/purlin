@@ -31,10 +31,10 @@ its operating system, the rule's level, and the hashes of the rule text, the pro
 test body and what the audit found. [signature_format.md](../references/formats/signature_format.md)
 has every field.
 
-**The signed tag.** When every rule meets the gate, `purlin:sign` writes `signed/<version>` with
-`git tag -s`, using the key the signer signs commits with. The version is the `VERSION` file at
-the project root, else `version` in `.purlin/config.json`, or what `--release <name>` names. It
-prints:
+**The signed tag.** At the gate `signed`, when every rule meets it, `purlin:sign` writes
+`signed/<version>` with `git tag -s`, using the key the signer signs commits with. Below
+`signed` it writes no tag. The version is the `VERSION` file at the project root, else
+`version` in `.purlin/config.json`, or what `--release <name>` names. It prints:
 
 ```
 Tagged signed/1.4.0 at a1b2c3d: every rule meets the gate signed.
@@ -47,7 +47,8 @@ the gate signed.`, so the tag's presence is the claim. It never moves a tag that
 **The evidence package.** One JSON file for one version,
 `.purlin/evidence/package/<version>.json`. `purlin:sign` writes it and commits it just before
 the tag, so the tagged commit carries the package that describes it; `purlin:export` writes it
-at any other time. It holds:
+at any other time and at any gate, and below the gate `signed` the package reads
+`work in progress` or `gate <gate> met`. It holds:
 
 - the version, the tag, and the commit the evidence was taken at;
 - its state, the first field after the schema: `signed`, `gate <gate> met` or

@@ -711,7 +711,11 @@ class TestSkillSign:
         body = section(read(rel), r'the tag')
         assert body is not None, '%s has no section on the tag' % rel
         problems = ['%s tag section does not carry %r' % (rel, needle)
-                    for needle in ('.purlin/evidence/package/<version>.json',
+                    for needle in ('At the gate `signed`, when the walk '
+                                   'leaves every rule meeting it',
+                                   '.purlin/evidence/package/<version>.json',
+                                   'Below `signed` it writes no tag and no '
+                                   'package',
                                    'this skill never pushes')
                     if needle not in flat(body)]
         package = 'Evidence package committed: .purlin/evidence/package/1.4.0.json.'

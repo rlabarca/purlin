@@ -69,14 +69,15 @@ other page points here rather than defining it again.
   and verifies and whose hashes still match; below `signed`, any committed one. **stale**: the
   signed cell's word when the hashes it bound do not match what is there now.
 - **tag**: `signed/<version>`, the signed tag `purlin:sign` writes on the commit that carries
-  the evidence package, once every rule meets the gate and every feature's evidence is committed
-  and current. It means that at the tagged commit every rule meets the gate;
-  `references/hard_gates.md` gives it at length. A person pushes it.
+  the evidence package, at the gate `signed` once every rule meets it and every feature's
+  evidence is committed and current. Below `signed` no tag is written. It means that at the
+  tagged commit every rule meets the gate `signed`; `references/hard_gates.md` gives it at
+  length. A person pushes it.
 - **evidence package**: one data file describing one version,
   `.purlin/evidence/package/<version>.json`: every rule's words, proofs, tests, results, what
   the audit found and who signed, with its state and a fingerprint of its own bytes.
-  `purlin:export` writes it, and `purlin:sign` commits it just before the tag. It is what a
-  person hands to a regulated document and sign-off system.
+  `purlin:export` writes it at any gate, and at the gate `signed` `purlin:sign` commits it just
+  before the tag. It is what a person hands to a regulated document and sign-off system.
 - **trust**: the setting `trust`, `local` or `remote`, from init's question `Do you trust your
   own machine for the tests and the signing? [y/n]`. Under `remote`, `purlin:sign` refuses a
   rule whose tests have no current `ci` section.
@@ -85,7 +86,7 @@ other page points here rather than defining it again.
   `@env` for an operating system this machine is not, or `trust: remote`. **remote run**:
   `purlin:test --remote`, which pushes a **run branch**, `run/<branch>-<sha7>`, waits for the
   runner and pulls its evidence back. **tag run**: the run a pushed `signed/*` tag starts,
-  which reruns the tests and ends with the gate check.
+  which reruns the tests and ends with the gate check; only a project at `signed` has one.
 - **gate check**: `scripts/ci/gate_check.py`, which reads the committed evidence and
   signatures, lists every rule short of the gate, and exits 0 when the gate is met.
 - **drift**: `purlin:drift`, the facts your last pull, merge, rebase, checkout, clone or reset

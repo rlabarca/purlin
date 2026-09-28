@@ -189,7 +189,10 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'features': feature_entries,
         'queue': _sorted_queue(queue),
         'evidence': _evidence_map(evidence),
-        'tag': signed_tag(project_root, head),
+        # Only a project at `signed` is ever tagged, so below it the
+        # payload names no tag, even one left from when the gate was higher.
+        'tag': (signed_tag(project_root, head)
+                if cfg.gate == gate_module.GATES[-1] else None),
         'remote_url': _remote_url(project_root),
         'warnings': warnings,
     }
@@ -649,6 +652,8 @@ def _test_hash(project_root, proof_dicts, blob_cache):
 
 def signed_tag(project_root, head=None):
     """`{name, commit}` for the `signed/*` tag on HEAD, or None where there is none.
+
+    The payload asks only at the gate `signed`; below it its `tag` is null.
 
     The tag is the marker of proven code, so a surface that shows one commit's
     standing shows whether that commit carries it. Only a tag pointing at HEAD

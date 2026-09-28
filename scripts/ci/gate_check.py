@@ -35,10 +35,12 @@ is named and the job fails. Off a runner an Azure DevOps project's `ci/`
 files cannot be asked about, so they are counted as not checked.
 
 **The setting is the declaration, not the enforcement.** `.purlin/config.json`
-is a file in the repository that an agent can edit. What enforces it is the
-tag run: `purlin:sign` writes `signed/<version>` only when every rule meets
-the gate, a person pushes the tag, and this job reruns the tests on a clean
-machine and verifies the evidence against the tagged code.
+is a file in the repository that an agent can edit. At the gate `signed` what
+enforces it is the tag run: `purlin:sign` writes `signed/<version>` only at
+that gate and only when every rule meets it, a person pushes the tag, and
+this job reruns the tests on a clean machine and verifies the evidence
+against the tagged code. Below `signed` no tag is ever written, so the job
+names none.
 
 What this job reads is the structured payload, which has already worked out
 every rule's cells. A rule meets the gate when `meets_gate` is true, and
@@ -79,8 +81,8 @@ SHOWN = 20
 _ENFORCEMENT_NOTE = (
     'the gate is declared in .purlin/config.json, which an agent can edit. '
     'What stands behind it is the tag: purlin:sign writes signed/<version> '
-    'only when every rule meets the gate, and this run checks the evidence '
-    'against the tagged code.')
+    'only at the gate signed when every rule meets it, and this run checks '
+    'the evidence against the tagged code.')
 
 # One section per kind of work, in the order the chain reads it. The passed
 # cell fills two sections, because a rule that passes on one operating system
@@ -232,7 +234,10 @@ def check(project_root, payload=None, out=None, as_json=False,
     }
 
     _say(out, 'gate = %s' % gate)
-    _say(out, _ENFORCEMENT_NOTE)
+    # Only a project at `signed` is ever tagged, so only there does the note
+    # name the tag.
+    if gate == package['gate'].GATES[-1]:
+        _say(out, _ENFORCEMENT_NOTE)
 
     _collect(payload, result)
     if verify_evidence:

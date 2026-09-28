@@ -306,7 +306,7 @@ def _apply_hooks(root, files, args, out):
     A push is a person's act and a gate is the git host's, so a hook in front
     of either was a convenience that had to be explained and could be
     skipped. What is left is the tag: `purlin:sign` writes `signed/<version>`
-    when every rule meets the gate, and a person pushes it.
+    at the gate `signed` when every rule meets it, and a person pushes it.
     """
     for rel in files:
         path = os.path.join(root, rel)

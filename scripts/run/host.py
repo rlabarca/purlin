@@ -203,8 +203,8 @@ def ref_branch(project_root):
 def is_a_tag_run():
     """True when this run was started by a tag push rather than a branch push.
 
-    A tag run is the one `purlin:sign` asks for by writing `signed/<version>`
-    and a person pushing it. It writes nothing: what it does is rerun the
+    A tag run is the one `purlin:sign` asks for by writing `signed/<version>`,
+    which it does at the gate `signed` alone, and a person pushing it. It writes nothing: what it does is rerun the
     tests on a clean machine and check that the committed evidence still
     hashes to the tagged code. Only that tag counts: a release tag a project
     pushes for its own reasons is not a ref Purlin reads anything into.

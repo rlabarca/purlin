@@ -274,7 +274,7 @@ A file keeps the newest section per operating system and the newest audit entry 
 history is the file's `git log`. A run deletes the evidence of a feature no spec defines and
 prints `Removed <path>: no spec defines <feature>.`
 
-When every rule meets the gate, `purlin:sign` writes the evidence package,
+At the gate `signed`, when every rule meets it, `purlin:sign` writes the evidence package,
 `.purlin/evidence/package/<version>.json`, commits it and tags that commit `signed/<version>`.
 The tag holds the whole tree: the code, every evidence file, the signatures and the package.
 [review-and-signing.md](review-and-signing.md#the-tag) has the rest.

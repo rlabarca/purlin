@@ -47,20 +47,20 @@ Every step runs on your own machine, at every gate. A project at `signed` on one
 ordinary case: you write the rule, you build it, you run the tests, you audit them, you sign
 them, `purlin:sign` writes the tag, and you push. The gate says how far down the loop you go:
 `passed` stops after the test, `strong` adds the audit, `signed` adds the signature. At `strong`
-and `signed`, `purlin:sign` with no argument walks the queue and writes the tag when every rule
-meets the gate.
+and `signed`, `purlin:sign` with no argument walks the queue; at `signed` it then writes the tag
+when every rule meets the gate.
 
 ## Five words
 
 **A push is `git push`, typed by you.** Any branch, any time. A command writes, commits where
-you asked it to, and stops; `purlin:sign` ends on the line `→ Run: git push origin
-signed/<version>`.
+you asked it to, and stops; at the gate `signed`, `purlin:sign` ends on the line `→ Run: git
+push origin signed/<version>`.
 
-**The tag is the marker that a version is proven.** When every rule meets the gate,
-`purlin:sign` writes the evidence package, `.purlin/evidence/package/<version>.json`, commits
+**The tag is the marker that a version is proven.** At the gate `signed`, when every rule meets
+it, `purlin:sign` writes the evidence package, `.purlin/evidence/package/<version>.json`, commits
 it, and writes the signed tag `signed/<version>` (`git tag -s`) on that commit. It prints
-`Tagged signed/<version> at <sha7>: every rule meets the gate <gate>.` No tag is written while
-any rule falls short. A tag holds the whole tree at that commit, so the code, every evidence
+`Tagged signed/<version> at <sha7>: every rule meets the gate signed.` No tag is written while
+any rule falls short, and none below the gate `signed`. A tag holds the whole tree at that commit, so the code, every evidence
 file and every signature are pinned together by one name. What the tag means is defined once,
 in [hard_gates.md](../references/hard_gates.md).
 
@@ -95,7 +95,8 @@ GitHub or Azure DevOps, for two reasons only: a proof is tagged `@env` for an op
 this machine is not, or you chose not to trust this machine for signing (`trust: remote`). The
 matrix is one Linux job, plus one job per operating system the `@env` tags name.
 
-The workflow runs on a push to a `run/*` branch and on a push of a `signed/*` tag.
+The workflow runs on a push to a `run/*` branch and on a push of a `signed/*` tag, which only a
+project at `signed` writes.
 `purlin:test --remote` creates the run branch, waits for the run, pulls back what the runner
 committed under `.purlin/evidence/ci/`, and deletes the branch. The runner runs the marked tests
 and no audit. The tag run reruns the tests on a clean machine, checks that every signature still
@@ -124,8 +125,8 @@ whose tests passed on one operating system and not on another. At `strong` the t
 a rule's tests are not yet trusted: the audit found a gap, no audit has run on this code, the
 rule has no proof, or a `@manual` proof waits on a person. At `signed` a rule that needs a
 signature has none, or its rule, proof, test or audit changed after it was signed. The push is
-yours either way: `purlin:sign` writes no tag while any rule falls short, so a version that is
-not proven has no marker.
+yours either way: at `signed`, `purlin:sign` writes no tag while any rule falls short, so a
+version that is not proven has no marker.
 
 **What does a level do?** It decides three things: the evidence the rule must have to meet the
 gate, whether the AI audit reads it, and whether it needs a signature. The AI audit reads every

@@ -37,6 +37,7 @@
 - RULE-20: Every request to Azure DevOps carries a 30-second timeout and the token from `SYSTEM_ACCESSTOKEN` in its `Authorization` header and nowhere else, and the token appears in no line the gate prints and in no field of its JSON
 - RULE-21: The rendered Azure DevOps pipeline's `Check the gate` step hands the run's token to the gate as `SYSTEM_ACCESSTOKEN: $(System.AccessToken)`
 - RULE-22: At the gate `signed`, a feature spec that names no files in `> Scope:` is listed under `Incomplete (<n>)` as `<feature>: <why>`, its rules that wait only on a signature are counted short of the gate and are not listed under `Queue`, the JSON carries the same lines under `incomplete`, and the job fails; below `signed` no such section is printed, `incomplete` is empty and the spec blocks nothing
+- RULE-23: At the gate `signed` the gate prints, after `gate = signed`, the line saying that the setting is declared in a file an agent can edit and that the tag `signed/<version>`, written only at the gate `signed`, is what stands behind it; below `signed` no line it prints names a tag
 
 ## Proof
 
@@ -87,3 +88,4 @@
 - PROOF-47 (RULE-20): Run the match, the mismatch, the 401 and the timeout cases through the gate with `--json` and the token `s3cret-token-value`; verify every request carried the timeout 30 and `Authorization: Bearer s3cret-token-value`, and that the token appears nowhere in what the gate printed
 - PROOF-48 (RULE-21): Render the Azure DevOps pipeline; verify the step whose `displayName` is `Check the gate` carries `env:` with `SYSTEM_ACCESSTOKEN: $(System.AccessToken)`
 - PROOF-49 (RULE-22): At the gate `signed`, a spec with no `> Scope:` line whose tests pass and whose rule at `signed` is audited strong fails the gate with `Incomplete (1):` and `  login: no > Scope: line`, no `Queue` section, `gate: FAIL. 1 of 2 rules do not meet signed.`, and the JSON's `incomplete` reading `["login: no > Scope: line"]` and its `queue` empty. At the gate `strong` the same spec passes, prints no `Incomplete` section, and the JSON's `incomplete` is empty
+- PROOF-50 (RULE-23): Run the gate over a project at the gate `signed`; verify a line reads `gate: the gate is declared in .purlin/config.json, which an agent can edit. What stands behind it is the tag: purlin:sign writes signed/<version> only at the gate signed when every rule meets it, and this run checks the evidence against the tagged code.` Run it over the same project at `strong` and at `passed`; verify no line it prints holds `tag` or `signed/`

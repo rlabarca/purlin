@@ -7,8 +7,8 @@
 >   audit found. A person writes
 >   every one of them, as one signed commit; CI writes none, and each names
 >   the machine it was made on. With no argument the command walks the queue
->   one rule at a time and, when every rule meets the gate, writes the signed
->   tag that marks the commit. It signs nothing over evidence that is not
+>   one rule at a time and, at the gate `signed` when every rule meets it,
+>   writes the evidence package and the signed tag that marks the commit. It signs nothing over evidence that is not
 >   committed. What it may do at all scales with the project's gate: nothing
 >   under `passed`, the walk under `strong`, a counting signature under
 >   `signed`.
@@ -43,7 +43,7 @@
 - RULE-41: A signature records under `level` the rule's level when it was signed, and logs it rather than locking it: marking the rule differently afterwards leaves the signed cell reading `signed`
 - RULE-42: The evidence a signature names is the feature's own evidence file, `.purlin/evidence/local/<feature>.json` where it exists and the `ci` one otherwise, and it is null where the feature has none
 - RULE-43: The audit hash a signature binds is taken over the feature's test strength and the `verdict` and sorted `findings` of the audit entry for the rule's current hashes, and over nothing that moves on its own or names the judge, not the `model` nor the `criteria`, so re-running the same audit over the same code stales nothing and an audit that finds something new stales the signature; a rule with no audit entry binds the hash of the empty string
-- RULE-45: When the walk closes and every rule meets the gate the command writes `signed/<version>` as a signed tag, with the key the signer signs commits with, taking the version from the `VERSION` file at the project root and falling back to the config's, with a message naming the commit and the gate, and prints `Run: git push origin signed/<version>`; it pushes nothing
+- RULE-45: At the gate `signed`, when the walk closes and every rule meets the gate the command writes `signed/<version>` as a signed tag, with the key the signer signs commits with, taking the version from the `VERSION` file at the project root and falling back to the config's, with a message naming the commit and the gate, and prints `Run: git push origin signed/<version>`; it pushes nothing
 - RULE-46: No tag is written while any rule falls short of the gate, and the command says how many of how many; no tag is written over one that is already there, and `--release <name>` names another
 - RULE-48: Under the gate `signed`, naming a rule whose `[level: ...]` tag is `passed` or `strong` refuses it with `sign: <feature> <RULE-N> is marked [level: <level>]; it asks for no signature.` and writes no signature for it; with nothing else named, the command exits 1
 - RULE-49: The command signs no rule whose feature has evidence that is written and not committed, and writes no tag while any feature has such evidence; each such feature is named once, as `sign: <feature> has evidence that is not committed. Run: purlin:test --commit`
@@ -52,6 +52,7 @@
 - RULE-52: When rules fall short of the gate, the tag's refusal first names each feature whose evidence is older than its spec, code or tests, `No tag: <feature> is out of date (<what changed>).`, then prints the count of rules short of the gate
 - RULE-47: With `trust: remote` the command refuses a rule with a proof that has a test when its feature's `ci` evidence holds no section current for this code, printing `sign: <feature> RULE-N has no ci test run for this code; run purlin:test --remote first`; a rule whose proofs are all `@manual` is not refused, and with `trust: local`, the default, it signs what this machine ran
 - RULE-53: Before it writes `signed/<version>` the command writes the evidence package for that version from the committed evidence, with the state `signed`, commits it as a signed commit whose subject is `purlin: evidence at <sha7>` of the commit below it, and writes the tag on that commit; when the package cannot be written or committed it writes no tag and prints `No tag: the evidence package was not committed: <why>.`
+- RULE-54: Below the gate `signed` the command writes no tag and no evidence package: at `strong` a walk clears hand checks, and when it closes with every rule meeting the gate it prints what it did and no line about a tag, and leaves no `signed/*` tag and no file under `.purlin/evidence/package/`
 
 ## Proof
 
@@ -104,3 +105,5 @@
 - PROOF-77 (RULE-52): Every rule of a signed project meets the gate; the scoped source file is changed and committed; the tag's refusal reads exactly `No tag: login is out of date (code changed since <sha7>).`, naming the commit the evidence was taken at, then `No tag: 2 of 2 rules do not meet the gate signed.`, and no tag exists
 - PROOF-78 (RULE-53): Sign every rule of a project at the gate `signed` and let the walk write the tag; verify `signed/2.1.0` names `HEAD`, that commit changes only `.purlin/evidence/package/2.1.0.json` under the subject `purlin: evidence at <sha7>` of its parent and reads `G` for its signature, `git show signed/2.1.0:.purlin/evidence/package/2.1.0.json` reads `signed` with `not_for_approval` false and names the parent as its commit, it matches its own fingerprint, the output carries `Evidence package committed: .purlin/evidence/package/2.1.0.json.`, and `git status` is clean
 - PROOF-79 (RULE-53): Sign every rule, put a file where the package folder would go, and ask for the tag; verify the output begins `No tag: the evidence package was not committed: `, no tag exists and `HEAD` has not moved
+- PROOF-80 (RULE-54): A project at the gate `strong` whose two rules pass and whose one rule at `strong` is audited strong, with every file committed, is walked; the walk prints exactly `Queue: 0 rules. 0 hand checks, 0 signatures.` and `Nothing is waiting for a person.`, no line holds the word `tag`, no `signed/*` tag exists, no `.purlin/evidence/package/` folder exists and HEAD has not moved. The same project with a hand check waiting is walked and the hand check signed with a note; the walk prints `Walked 1 rule: 1 signed, 0 cases added, 0 skipped.` and the signature commit, no line holds the word `tag`, and still no tag and no package exist
+- PROOF-81 (RULE-45): The same project at the gate `signed`, its one rule at `signed` signed in the walk, gets the tag `signed/2.1.0`, and the tagged commit carries `.purlin/evidence/package/2.1.0.json` reading the state `signed`

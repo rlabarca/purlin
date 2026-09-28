@@ -40,8 +40,8 @@ reaches it only when the cell that blocks it is one a person answers: a strong c
 
 Adding a case is plain language. Say "it should also reject an expired token" and the proof line
 is written into the spec with the next free proof id; the test arrives on the next
-`purlin:build`. When the queue is empty and every rule meets the gate, `purlin:sign` writes the
-tag `signed/<version>` and you push it. [review-and-signing.md](review-and-signing.md) is the
+`purlin:build`. At the gate `signed`, when the queue is empty and every rule meets it,
+`purlin:sign` writes the tag `signed/<version>` and you push it. [review-and-signing.md](review-and-signing.md) is the
 walk in full.
 
 ## The developer

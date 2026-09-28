@@ -28,14 +28,17 @@ then it makes one signed commit for the signatures.
 A bare feature signs every rule of that feature in the queue, and `--batch`
 every rule in the queue, in one signed commit and with no stop.
 
-**The tag is the marker of proven code.** When the walk closes and every rule
-meets the gate, it writes the signed tag `signed/<version>` with `git tag -s`
+**The tag is the marker of proven code.** At the gate `signed`, when the walk
+closes and every rule meets the gate, it writes the signed tag
+`signed/<version>` with `git tag -s`
 and the key the signer signs commits with, where the version is the
 `VERSION` file at the project root or the one in `.purlin/config.json`;
 `--release <name>` names another. The tag's message names the commit and the
 gate. No tag is written while any rule falls short, and none is written over
 a tag that is already there. Nothing is pushed: the last line names the push
-for a person to run.
+for a person to run. Below `signed` no tag and no package is written, and the
+walk's closing lines say nothing about a tag: at `strong` it clears hand
+checks and stops there.
 
 **The tag carries the evidence package.** Before it writes the tag it writes
 `.purlin/evidence/package/<version>.json` from the committed evidence, with
@@ -118,8 +121,8 @@ SCHEMA = 'purlin-signature/1'
 USAGE = ('Usage: sign.py [<feature> [RULE-N ...]] [--batch] [--note TEXT] '
          '[--release NAME] [--project-root DIR]')
 
-# The tag `purlin:sign` writes when every rule meets the gate, and the one
-# ref besides a run branch that starts a CI run.
+# The tag `purlin:sign` writes at the gate `signed` when every rule meets it,
+# and the one ref besides a run branch that starts a CI run.
 TAG_PREFIX = 'signed/'
 NO_TAG_SHORT = 'No tag: %d of %d rules do not meet the gate %s.'
 NO_TAG_EXISTS = ('No tag: %s is already written. Name another with '
@@ -520,7 +523,11 @@ def _package_module():
 
 
 def tag_if_met(project_root, out=None, release=None, payload=None):
-    """Write `signed/<version>` when every rule meets the gate. The tag name.
+    """Write `signed/<version>` at the gate `signed` when every rule meets it.
+
+    Returns the tag's name, or None. Below `signed` it writes nothing, no tag
+    and no package, and prints nothing: only a project at `signed` is ever
+    tagged.
 
     This is the marker of proven code: the rule, the proof, the test and the
     audit are locked into a signature for every rule that asks for one, and
@@ -533,6 +540,8 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
     out = sys.stdout if out is None else out
     payload = load_payload(project_root, payload)
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
+    if gate != gate_module.GATES[-1]:
+        return None
     short, total = short_of_the_gate(payload)
     stale = out_of_date(payload)
     untied = names_no_files(payload)
@@ -992,12 +1001,12 @@ def main(argv=None):
     print('Signed %s in %s.' % (_count(len(targets), 'rule'), sha[:7]))
     for name, rule in targets:
         print('  %s %s' % (name, rule))
-    # The tag is the no-argument walk's to write. A run that named its rules
-    # says whether the walk would now write one, so the last signature of a
-    # release is not a dead end.
+    # The tag is the no-argument walk's to write, and only at `signed`. A
+    # run there that named its rules says whether the walk would now write
+    # one, so the last signature of a release is not a dead end.
     after = load_payload(project_root)
     report_data.refresh(project_root, after)
-    if not short_of_the_gate(after)[0]:
+    if gate == gate_module.GATES[-1] and not short_of_the_gate(after)[0]:
         print('%s Run: purlin:sign' % ARROW)
     return EXIT_OK
 

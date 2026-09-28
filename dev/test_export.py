@@ -40,7 +40,8 @@ import package as package_module                              # noqa: E402
 import sign as sign_module                                    # noqa: E402
 from purlin import PURLIN_VERSION                             # noqa: E402
 from test_signatures import (SIGNING_GATE, SPEC, TEST_FILE,   # noqa: E402
-                             Project, commit_as_ci, git, signing_key, write)
+                             Project, commit_as_ci, git, manual_at_strong,
+                             signing_key, write)
 
 PACKAGE_PY = os.path.join(ROOT, 'scripts', 'export', 'package.py')
 
@@ -111,13 +112,14 @@ def name_the_model(made, rule):
     write(path, json.dumps(data, indent=2, sort_keys=True))
 
 
-def signed_project(spec=SPEC, version='2.1.0'):
+def signed_project(spec=SPEC, version='2.1.0', gate=SIGNING_GATE):
     """A project at `signed` whose rules pass, one audited strong, both committed.
 
     `RULE-1` is marked `[level: passed]`, so `RULE-2` is the one rule that
-    asks for a signature. The signer's key is set up last.
+    asks for a signature. The signer's key is set up last. With `gate` the
+    same project is made at another gate.
     """
-    made = Project(spec=spec, gate=SIGNING_GATE, config={'min_strength': 50})
+    made = Project(spec=spec, gate=gate, config={'min_strength': 50})
     made.proofs()
     made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
     made.audit('RULE-2')
@@ -154,6 +156,13 @@ def tagged():
     made.tag_output = out.text()
     yield made
     made.close()
+
+
+def no_tag_and_no_package(made):
+    """True when the project holds no `signed/*` tag and no package folder."""
+    tags = git(made.root, 'tag', '-l', 'signed/*').stdout.strip()
+    folder = os.path.join(made.root, '.purlin', 'evidence', 'package')
+    return tags == '' and not os.path.exists(folder)
 
 
 # ---------------------------------------------------------------------------
@@ -310,6 +319,23 @@ class TestTheState:
             package = read_package(made.root)
             assert (package['state'], package['not_for_approval']) == (
                 'gate signed met', True)
+        finally:
+            made.close()
+
+
+    # purlin: package PROOF-19
+    def test_below_signed_a_tag_on_the_commit_never_reads_signed(self):
+        made = signed_project(gate='strong')
+        try:
+            git(made.root, 'tag', '-a', 'signed/2.1.0', '-m', 'by hand')
+            code, lines = export(made.root)
+            assert code == 0, lines
+            assert lines[0].endswith('State: gate strong met, 2 of 2 rules '
+                                     'meet the gate strong. '
+                                     'Not for approval.'), lines
+            package = read_package(made.root)
+            assert (package['state'], package['not_for_approval']) == (
+                'gate strong met', True)
         finally:
             made.close()
 
@@ -570,3 +596,58 @@ class TestTheTag:
                                      'committed: '), out.text()
         assert git(signed.root, 'tag', '-l').stdout.strip() == ''
         assert signed.head() == head
+
+    # purlin: signatures PROOF-80
+    def test_at_strong_the_walk_writes_no_tag_and_no_package(self):
+        made = signed_project(gate='strong')
+        try:
+            assert all(rule['meets_gate'] for feature in made.payload()[
+                'features'] for rule in feature['rules'])
+            head = made.head()
+            out = _Out()
+            result = sign_module.walk(made.root, out=out,
+                                      signer_email='jane@acme.com')
+            printed = out.text().splitlines()
+            assert printed == ['Queue: 0 rules. 0 hand checks, 0 signatures.',
+                               'Nothing is waiting for a person.'], printed
+            assert result['tag'] is None
+            assert no_tag_and_no_package(made)
+            assert made.head() == head
+        finally:
+            made.close()
+
+        made = manual_at_strong()
+        try:
+            out = _Out()
+            result = sign_module.walk(
+                made.root, out=out, signer_email='jane@acme.com',
+                answer=lambda entry, rendered: ('sign', 'saw 401 and denied'))
+            printed = out.text()
+            assert ('Walked 1 rule: 1 signed, 0 cases added, 0 skipped.'
+                    in printed), printed
+            assert result['commits'] and ('Commits: %s'
+                                          % result['commits'][0][:7]
+                                          in printed), printed
+            assert 'tag' not in printed.lower(), printed
+            assert result['tag'] is None
+            assert all(rule['meets_gate'] for feature in made.payload()[
+                'features'] for rule in feature['rules'])
+            assert no_tag_and_no_package(made)
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-81
+    def test_the_same_project_at_signed_gets_the_tag_and_the_package(self):
+        made = signed_project()
+        try:
+            out = _Out()
+            result = sign_module.walk(
+                made.root, out=out, signer_email='jane@acme.com',
+                answer=lambda entry, rendered: 'sign')
+            assert result['signed'] == [('login', 'RULE-2')], out.text()
+            assert result['tag'] == 'signed/2.1.0', out.text()
+            shown = git(made.root, 'show', 'signed/2.1.0:.purlin/evidence/'
+                        'package/2.1.0.json').stdout
+            assert json.loads(shown)['state'] == 'signed'
+        finally:
+            made.close()

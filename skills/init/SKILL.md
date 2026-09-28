@@ -36,8 +36,8 @@ The first answer is the **gate**, one of three:
 | `strong` | that, and a strong cell met on every rule whose level is `strong` or above: an audit of its text, proof and test that found nothing outstanding, and, with mutation testing on, test strength at or above `min_strength` | none required |
 | `signed` | everything `strong` requires, plus a current signature on every rule whose level is `signed`, in a signed commit | the signature names who signed |
 
-An unmarked rule takes the gate as its level. `purlin:sign` is what says a version met the
-gate: it walks the queue, commits the evidence package and writes the signed tag
+An unmarked rule takes the gate as its level. At `signed`, `purlin:sign` is what says a version
+met the gate: it walks the queue, commits the evidence package and writes the signed tag
 `signed/<version>` on that commit, which a person pushes. `references/hard_gates.md` defines
 what the tag means.
 
