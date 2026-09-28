@@ -1,10 +1,11 @@
 # Anchor: schema_spec_format
 
-> Description: The spec format at Format-Version 11: the two sections every spec carries,
->   the rule and proof grammar, the metadata fields, the rule tags, the `@manual` tag and the
->   `@env` tag, and the values this release refuses rather than reads. Every surface that
->   reads a spec reads it through one parser, so a spec means the same thing to the status
->   table, the record and the review brief.
+> Description: The spec format: the two sections every spec carries, the rule and proof
+>   grammar, the metadata fields, the rule tags, the `@manual` tag and the `@env` tag, and
+>   the values this release refuses rather than reads. Every surface that reads a spec
+>   reads it through one parser, so a spec means the same thing to the status table, the
+>   dashboard and the evidence file. The `specs` feature, which is that parser, requires
+>   this anchor.
 > Type: schema
 > Scope: scripts/mcp/purlin/specs.py, references/formats/spec_format.md, references/formats/anchor_format.md
 > Stack: python/stdlib, one regex parser in scripts/mcp/purlin/specs.py
@@ -16,7 +17,7 @@
 - RULE-3: A proof line reads `PROOF-N (RULE-N)`, and names several rules as `PROOF-N (RULE-A, RULE-B)` when one flow drives all of them
 - RULE-4: A rule that no proof line names carries an empty proof list and reads `no test` in its passed cell with the reason `no proof written`, so a spec cannot claim evidence it does not have
 - RULE-5: `> Requires:` is a comma-separated list of spec names whose rules are counted with this spec's own and carry the label `required`
-- RULE-6: `> Scope:` is a comma-separated list of file paths, parsed into a list in the order written, because a record hashes exactly those files to tell a code change from a rule change
+- RULE-6: `> Scope:` is a comma-separated list of file paths, parsed into a list in the order written, because the fingerprint hashes exactly those files to tell a code change from a rule change
 - RULE-7: A first-level heading reads `# Feature: <name>` for a feature spec and `# Anchor: <name>` for an anchor [level: passed]
 - RULE-8: `> Description:` takes continuation lines that begin with `>` and are not themselves a `> Field:` line, so the next field's value never reaches the description [level: passed]
 - RULE-9: A proof line carries at most one `@manual` tag and at most one `@env` tag, in either order, read off the end of the line; any other trailing at-word is not a tag and stops the reading, and a tag that follows a list connector (a comma, `and`, `or`) is not a tag either, so a description whose prose ends in an at-word is left whole

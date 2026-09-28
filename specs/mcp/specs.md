@@ -5,6 +5,7 @@
 >   operating system, the anchor source and pin, and the two text hashes a
 >   signature binds are all read. Every other surface reads what this module
 >   returns rather than the markdown.
+> Requires: schema_spec_format
 > Scope: scripts/mcp/purlin/specs.py
 > Stack: python/stdlib, re, hashlib
 
