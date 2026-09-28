@@ -1049,6 +1049,45 @@ def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
     assert 'run purlin:init again to add it later' in printed
     assert 'workflows' not in _ids(root)
 
+# purlin: update PROOF-32
+def test_an_azure_remote_gets_the_pipeline_where_init_writes_it(tmp_path):
+    root = _project(tmp_path, V095, remote=False)
+    _git(root, 'remote', 'add', 'origin',
+         'https://dev.azure.com/acme/demo/_git/demo')
+    _apply(root)
+    assert [rel for rel in _walk(root, ('*.yml',))
+            if rel.startswith('.github/')] == []
+    text = _read(root, 'purlin.azure-pipelines.yml')
+    assert 'windows-latest' in text
+    assert 'v%s' % VERSION in text
+
+
+# --- the dashboard page ------------------------------------------------------
+
+# purlin: update PROOF-31
+def test_the_page_linked_into_the_old_plugin_is_replaced(tmp_path):
+    root = _project(tmp_path, V095)
+    page = os.path.join(root, 'purlin-report.html')
+    try:
+        os.symlink(os.path.join(str(tmp_path), 'plugins', 'cache', 'purlin',
+                                '0.9.5', 'purlin-report.html'), page)
+    except (OSError, NotImplementedError):
+        pytest.skip('this machine makes no symbolic link')
+    assert 'dashboard' in _ids(root)
+    _apply(root)
+    with open(os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html'),
+              'rb') as handle:
+        shipped = handle.read()
+    assert not os.path.islink(page)
+    with open(page, 'rb') as handle:
+        assert handle.read() == shipped
+    assert 'dashboard' not in _ids(root)
+    _write(root, 'purlin-report.html', '<html>an older copy</html>\n')
+    assert 'dashboard' in _ids(root)
+    os.remove(page)
+    assert 'dashboard' not in _ids(root)
+
+
 
 # --- backups -----------------------------------------------------------------
 

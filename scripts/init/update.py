@@ -95,6 +95,8 @@ OLD_FRAMEWORKS = {'pytest': 'pytest', 'jest': 'jest', 'vitest': 'vitest',
 IGNORE_LINES = ('.purlin/report-data.js',)
 EVIDENCE_DIR = '.purlin/evidence'
 EVIDENCE_README = EVIDENCE_DIR + '/README.md'
+DASHBOARD_PAGE = 'purlin-report.html'
+SHIPPED_PAGE = 'scripts/report/purlin-report.html'
 META_RE = re.compile(r'^>\s*[A-Z][A-Za-z-]+:')
 SCOPE_RE = re.compile(r'^>\s*Scope:', re.M)
 SCOPE_ADVICE = ('%d spec%s no > Scope: line: %s. Run purlin:spec <name> to '
@@ -507,8 +509,9 @@ def _detect_workflows(root):
     """The workflow files this release replaces: any that commit proof files.
 
     A v0.9.5 project ran its Windows proofs in a workflow that committed the
-    proof file back beside the spec. Proof files are runtime now, so that
-    workflow is removed and one `purlin.yml` is offered in its place.
+    proof file back beside the spec. This release writes no proof file, so
+    that workflow is removed and the runner file init writes is offered in
+    its place.
     """
     hits = []
     for rel in _files_under(root, WORKFLOW_DIR, ('*.yml', '*.yaml')):
@@ -521,7 +524,7 @@ def _detect_workflows(root):
     return hits
 
 def _apply_workflows(root, files, args, out):
-    """One workflow runs the same audit a developer runs, one job per OS."""
+    """The runner file init writes for this host, one job per OS."""
     for rel in files:
         out.kept(_back_up_copy(os.path.join(root, rel), rel))
         _untrack(root, rel)
@@ -548,7 +551,7 @@ def _apply_workflows(root, files, args, out):
     if not ok:
         out.say('left the workflow unwritten; a prerequisite is missing')
         return
-    rel = '%s/%s' % (WORKFLOW_DIR, flow.workflow_filename(host))
+    rel = flow.workflow_path(host)
     if not _confirm('Write %s, one job per operating system your specs name?'
                     % rel, args.yes):
         out.say('left %s unwritten; run purlin:init again to add it later'
@@ -575,6 +578,44 @@ def _apply_evidence(root, files, args, out):
     out.done(EVIDENCE_README)
     out.say('wrote %s: each feature\'s evidence lands beside it, under '
             'local/ and ci/' % EVIDENCE_README)
+
+
+def _shipped_page():
+    with open(os.path.join(PLUGIN_ROOT, *SHIPPED_PAGE.split('/')),
+              'rb') as handle:
+        return handle.read()
+
+def _detect_dashboard(root):
+    """The page at the root when it is a link or not the page this release ships.
+
+    v0.9.5 linked the page into the plugin's own folder, so an upgraded plugin
+    leaves the link pointing at the old one. A project with no page is left
+    without one.
+    """
+    path = os.path.join(root, DASHBOARD_PAGE)
+    if not os.path.lexists(path):
+        return []
+    if os.path.islink(path):
+        return [DASHBOARD_PAGE]
+    try:
+        with open(path, 'rb') as handle:
+            current = handle.read()
+    except (IOError, OSError):
+        return [DASHBOARD_PAGE]
+    return [] if current == _shipped_page() else [DASHBOARD_PAGE]
+
+def _apply_dashboard(root, files, args, out):
+    """The page init copies, in place of the link or the older copy."""
+    path = os.path.join(root, DASHBOARD_PAGE)
+    tracked = _git(root, 'ls-files', '--error-unmatch', '--',
+                   DASHBOARD_PAGE)[0]
+    if os.path.lexists(path):
+        os.remove(path)
+    with open(path, 'wb') as handle:
+        handle.write(_shipped_page())
+    if tracked:
+        out.done(DASHBOARD_PAGE)
+    out.say('replaced %s with the page this release ships' % DASHBOARD_PAGE)
 
 
 # --- the markers and the plugins -------------------------------------------
@@ -910,6 +951,8 @@ MIGRATIONS = (
      _detect_config, _apply_config),
     ('evidence', 'create .purlin/evidence/ with the README that says what '
      'it holds', _detect_evidence, _apply_evidence),
+    ('dashboard', 'replace purlin-report.html with the page this release '
+     'ships', _detect_dashboard, _apply_dashboard),
     ('workflows', 'remove the retired workflows and write purlin.yml only '
      'where this project has a reason for a runner',
      _detect_workflows, _apply_workflows),

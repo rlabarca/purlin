@@ -491,8 +491,7 @@ def write_workflow(plan, root, purlin_ref):
     if not ok:
         return plan.skip('the CI workflow', 'a prerequisite is missing')
     env_tags = workflow_module.env_tags_in_specs(root)
-    name = workflow_module.workflow_filename(host)
-    rel = name if host == 'azure' else '.github/workflows/%s' % name
+    rel = workflow_module.workflow_path(host)
     plan.write(rel, workflow_module.render_workflow(
         host, env_tags, purlin_ref), own=True)
     plan.note('  the matrix is %s: ubuntu-latest always, then the @env tags '

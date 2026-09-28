@@ -58,6 +58,18 @@ def workflow_filename(host):
     return TEMPLATES.get(_host(host), TEMPLATES['github'])
 
 
+def workflow_path(host):
+    """Where the runner file goes, relative to the project root.
+
+    GitHub reads workflows under `.github/workflows/`; an Azure DevOps
+    pipeline is created from a file at the root.
+    """
+    name = workflow_filename(host)
+    if _host(host) == 'azure':
+        return name
+    return '.github/workflows/%s' % name
+
+
 def runners_for(env_tags):
     """The runner images for a set of `@env` tags, in a fixed order.
 
