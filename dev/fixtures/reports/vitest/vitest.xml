@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="6" failures="1" errors="0" time="0.004077958">
+    <testsuite name="tests/login.test.ts" timestamp="2026-09-28T07:09:23.601Z" hostname="dev-machine" tests="6" failures="1" errors="0" skipped="1" time="0.004077958">
+        <testcase classname="tests/login.test.ts" name="accepts" time="0.0004995">
+        </testcase>
+        <testcase classname="tests/login.test.ts" name="outer &gt; inner &gt; same name" time="0.000057875">
+        </testcase>
+        <testcase classname="tests/login.test.ts" name="outer &gt; same name" time="0.002963625">
+            <failure message="expected 1 to be 2 // Object.is equality" type="AssertionError">
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ tests/login.test.ts:11:37
+            </failure>
+        </testcase>
+        <testcase classname="tests/login.test.ts" name="outer &gt; skipped" time="0">
+            <skipped/>
+        </testcase>
+        <testcase classname="tests/login.test.ts" name="outer &gt; param 1" time="0.000084583">
+        </testcase>
+        <testcase classname="tests/login.test.ts" name="outer &gt; param 2" time="0.000036083">
+        </testcase>
+    </testsuite>
+</testsuites>

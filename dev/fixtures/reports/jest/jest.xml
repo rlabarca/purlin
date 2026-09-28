@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="6" failures="1" errors="0" time="0.166">
+  <testsuite name="undefined" errors="0" failures="1" skipped="1" timestamp="2026-09-28T07:09:22" time="0.129" tests="6">
+    <testcase classname="" name="accepts" time="0.001" file="tests/login.test.js">
+    </testcase>
+    <testcase classname="outer &gt; inner" name="same name" time="0" file="tests/login.test.js">
+    </testcase>
+    <testcase classname="outer" name="same name" time="0.001" file="tests/login.test.js">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 2
+Received: 1
+    at Object.toBe (/home/dev/project/tests/login.test.js:9:37)
+    at Promise.then.completed (/home/dev/project/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/dev/project/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/dev/project/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at _runTest (/home/dev/project/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/dev/project/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/dev/project/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/dev/project/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/dev/project/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/dev/project/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/dev/project/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/dev/project/node_modules/jest-runner/build/runTest.js:444:34)</failure>
+    </testcase>
+    <testcase classname="outer" name="skipped" time="0" file="tests/login.test.js">
+      <skipped/>
+    </testcase>
+    <testcase classname="outer" name="param 1" time="0" file="tests/login.test.js">
+    </testcase>
+    <testcase classname="outer" name="param 2" time="0" file="tests/login.test.js">
+    </testcase>
+  </testsuite>
+</testsuites>

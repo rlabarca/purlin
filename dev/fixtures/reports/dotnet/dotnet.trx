@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="f72d1610-7d60-43f9-91b5-db1c8df2bda6" name="@dev-machine 2026-09-28 03:09:43" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-28T03:09:43.5914530-04:00" queuing="2026-09-28T03:09:43.5914530-04:00" start="2026-09-28T03:09:43.3032030-04:00" finish="2026-09-28T03:09:43.5945520-04:00" />
+  <TestSettings name="default" id="2cc4a46a-aff7-4756-9d1f-65bce729eda6">
+    <Deployment runDeploymentRoot="_dev-machine_2026-09-28_03_09_43" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="f1050365-ab37-422d-b201-e32a003fc33d" testId="5792c964-9278-595a-d6ac-b736f35b7fbf" testName="App.Tests.GreetingTests.GreetsByName" computerName="dev-machine" duration="00:00:00.0000254" startTime="2026-09-28T03:09:43.5548230-04:00" endTime="2026-09-28T03:09:43.5548230-04:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f1050365-ab37-422d-b201-e32a003fc33d" />
+    <UnitTestResult executionId="69c0492d-3448-4edb-b28b-4370980be686" testId="07c25e13-149e-0bed-b584-fae20a55cf9d" testName="App.Tests.GreetingTests.Param(x: 2)" computerName="dev-machine" duration="00:00:00.0000546" startTime="2026-09-28T03:09:43.5548030-04:00" endTime="2026-09-28T03:09:43.5548030-04:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="69c0492d-3448-4edb-b28b-4370980be686" />
+    <UnitTestResult executionId="4e9727b3-08f6-4a42-9663-1e17c67293cf" testId="e67c542a-6225-55d8-8b8f-90569d990788" testName="App.Tests.GreetingTests.Param(x: 1)" computerName="dev-machine" duration="00:00:00.0024411" startTime="2026-09-28T03:09:43.5543680-04:00" endTime="2026-09-28T03:09:43.5543680-04:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4e9727b3-08f6-4a42-9663-1e17c67293cf">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.True() Failure
+Expected: True
+Actual:   False</Message>
+          <StackTrace>   at App.Tests.GreetingTests.Param(Int32 x) in /home/dev/project/App.Tests/GreetingTests.cs:line 13
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="47d1308d-4145-4685-ad67-03436357baa7" testId="b101a97f-e632-c590-b507-49afab10166a" testName="App.Tests.GreetingTests.Skipped" computerName="dev-machine" duration="00:00:00.0010000" startTime="2026-09-28T03:09:43.5550760-04:00" endTime="2026-09-28T03:09:43.5550760-04:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="NotExecuted" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="47d1308d-4145-4685-ad67-03436357baa7">
+      <Output>
+        <ErrorInfo>
+          <Message>no</Message>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="bb73a45e-fbce-4d89-9a6f-8f5639680655" testId="e9e1b14e-b54e-f368-f283-a2af445c830c" testName="App.Tests.GreetingTests+Nested.Inner" computerName="dev-machine" duration="00:00:00.0037761" startTime="2026-09-28T03:09:43.5508740-04:00" endTime="2026-09-28T03:09:43.5508840-04:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bb73a45e-fbce-4d89-9a6f-8f5639680655" />
+    <UnitTestResult executionId="60067713-464a-4110-ab33-23f5bfe7bb2e" testId="7536a7fa-c104-3172-98c5-d219c6be27cd" testName="Other.Tests.GreetingTests.GreetsByName" computerName="dev-machine" duration="00:00:00.0041618" startTime="2026-09-28T03:09:43.5546580-04:00" endTime="2026-09-28T03:09:43.5546580-04:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="60067713-464a-4110-ab33-23f5bfe7bb2e">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Equal() Failure: Values differ
+Expected: 1
+Actual:   2</Message>
+          <StackTrace>   at Other.Tests.GreetingTests.GreetsByName() in /home/dev/project/App.Tests/OtherGreetingTests.cs:line 8
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="App.Tests.GreetingTests+Nested.Inner" storage="/home/dev/project/app.tests/bin/debug/net8.0/app.tests.dll" id="e9e1b14e-b54e-f368-f283-a2af445c830c">
+      <Execution id="bb73a45e-fbce-4d89-9a6f-8f5639680655" />
+      <TestMethod codeBase="/home/dev/project/App.Tests/bin/Debug/net8.0/App.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="App.Tests.GreetingTests+Nested" name="Inner" />
+    </UnitTest>
+    <UnitTest name="App.Tests.GreetingTests.Skipped" storage="/home/dev/project/app.tests/bin/debug/net8.0/app.tests.dll" id="b101a97f-e632-c590-b507-49afab10166a">
+      <Execution id="47d1308d-4145-4685-ad67-03436357baa7" />
+      <TestMethod codeBase="/home/dev/project/App.Tests/bin/Debug/net8.0/App.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="App.Tests.GreetingTests" name="Skipped" />
+    </UnitTest>
+    <UnitTest name="App.Tests.GreetingTests.GreetsByName" storage="/home/dev/project/app.tests/bin/debug/net8.0/app.tests.dll" id="5792c964-9278-595a-d6ac-b736f35b7fbf">
+      <Execution id="f1050365-ab37-422d-b201-e32a003fc33d" />
+      <TestMethod codeBase="/home/dev/project/App.Tests/bin/Debug/net8.0/App.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="App.Tests.GreetingTests" name="GreetsByName" />
+    </UnitTest>
+    <UnitTest name="App.Tests.GreetingTests.Param(x: 2)" storage="/home/dev/project/app.tests/bin/debug/net8.0/app.tests.dll" id="07c25e13-149e-0bed-b584-fae20a55cf9d">
+      <Execution id="69c0492d-3448-4edb-b28b-4370980be686" />
+      <TestMethod codeBase="/home/dev/project/App.Tests/bin/Debug/net8.0/App.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="App.Tests.GreetingTests" name="Param" />
+    </UnitTest>
+    <UnitTest name="Other.Tests.GreetingTests.GreetsByName" storage="/home/dev/project/app.tests/bin/debug/net8.0/app.tests.dll" id="7536a7fa-c104-3172-98c5-d219c6be27cd">
+      <Execution id="60067713-464a-4110-ab33-23f5bfe7bb2e" />
+      <TestMethod codeBase="/home/dev/project/App.Tests/bin/Debug/net8.0/App.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Other.Tests.GreetingTests" name="GreetsByName" />
+    </UnitTest>
+    <UnitTest name="App.Tests.GreetingTests.Param(x: 1)" storage="/home/dev/project/app.tests/bin/debug/net8.0/app.tests.dll" id="e67c542a-6225-55d8-8b8f-90569d990788">
+      <Execution id="4e9727b3-08f6-4a42-9663-1e17c67293cf" />
+      <TestMethod codeBase="/home/dev/project/App.Tests/bin/Debug/net8.0/App.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="App.Tests.GreetingTests" name="Param" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="5792c964-9278-595a-d6ac-b736f35b7fbf" executionId="f1050365-ab37-422d-b201-e32a003fc33d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="07c25e13-149e-0bed-b584-fae20a55cf9d" executionId="69c0492d-3448-4edb-b28b-4370980be686" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e67c542a-6225-55d8-8b8f-90569d990788" executionId="4e9727b3-08f6-4a42-9663-1e17c67293cf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b101a97f-e632-c590-b507-49afab10166a" executionId="47d1308d-4145-4685-ad67-03436357baa7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e9e1b14e-b54e-f368-f283-a2af445c830c" executionId="bb73a45e-fbce-4d89-9a6f-8f5639680655" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7536a7fa-c104-3172-98c5-d219c6be27cd" executionId="60067713-464a-4110-ab33-23f5bfe7bb2e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="6" executed="5" passed="3" failed="2" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="dev-machine" outcome="Error" timestamp="2026-09-28T03:09:43.5537970-04:00">
+        <Text>[xUnit.net 00:00:00.06]     App.Tests.GreetingTests.Param(x: 1) [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="dev-machine" outcome="Error" timestamp="2026-09-28T03:09:43.5545540-04:00">
+        <Text>[xUnit.net 00:00:00.07]     Other.Tests.GreetingTests.GreetsByName [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="dev-machine" outcome="Warning" timestamp="2026-09-28T03:09:43.5550030-04:00">
+        <Text>[xUnit.net 00:00:00.07]     App.Tests.GreetingTests.Skipped [SKIP]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

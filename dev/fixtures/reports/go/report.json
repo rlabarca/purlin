@@ -1,0 +1,17 @@
+{"Time":"2026-09-28T07:10:00.000000Z","Action":"start","Package":"example.com/shop/cart"}
+{"Time":"2026-09-28T07:10:00.001000Z","Action":"run","Package":"example.com/shop/cart","Test":"TestTotal"}
+{"Time":"2026-09-28T07:10:00.001100Z","Action":"output","Package":"example.com/shop/cart","Test":"TestTotal","Output":"=== RUN   TestTotal\n"}
+{"Time":"2026-09-28T07:10:00.001200Z","Action":"output","Package":"example.com/shop/cart","Test":"TestTotal","Output":"--- PASS: TestTotal (0.00s)\n"}
+{"Time":"2026-09-28T07:10:00.001300Z","Action":"pass","Package":"example.com/shop/cart","Test":"TestTotal","Elapsed":0}
+{"Time":"2026-09-28T07:10:00.001400Z","Action":"run","Package":"example.com/shop/cart","Test":"TestParse"}
+{"Time":"2026-09-28T07:10:00.001500Z","Action":"run","Package":"example.com/shop/cart","Test":"TestParse/empty"}
+{"Time":"2026-09-28T07:10:00.001600Z","Action":"output","Package":"example.com/shop/cart","Test":"TestParse/empty","Output":"    cart_test.go:16: an empty basket parsed\n"}
+{"Time":"2026-09-28T07:10:00.001700Z","Action":"fail","Package":"example.com/shop/cart","Test":"TestParse/empty","Elapsed":0}
+{"Time":"2026-09-28T07:10:00.001800Z","Action":"run","Package":"example.com/shop/cart","Test":"TestParse/one"}
+{"Time":"2026-09-28T07:10:00.001900Z","Action":"pass","Package":"example.com/shop/cart","Test":"TestParse/one","Elapsed":0}
+{"Time":"2026-09-28T07:10:00.002000Z","Action":"fail","Package":"example.com/shop/cart","Test":"TestParse","Elapsed":0}
+{"Time":"2026-09-28T07:10:00.002100Z","Action":"run","Package":"example.com/shop/cart","Test":"TestDiscount"}
+{"Time":"2026-09-28T07:10:00.002200Z","Action":"output","Package":"example.com/shop/cart","Test":"TestDiscount","Output":"    cart_test.go:23: no discounts yet\n"}
+{"Time":"2026-09-28T07:10:00.002300Z","Action":"skip","Package":"example.com/shop/cart","Test":"TestDiscount","Elapsed":0}
+{"Time":"2026-09-28T07:10:00.002400Z","Action":"output","Package":"example.com/shop/cart","Output":"FAIL\n"}
+{"Time":"2026-09-28T07:10:00.002500Z","Action":"fail","Package":"example.com/shop/cart","Elapsed":0.002}
