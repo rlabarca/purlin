@@ -383,6 +383,24 @@ class TestVerify:
         finally:
             made.close()
 
+    # purlin: gate_check PROOF-37
+    def test_a_fresh_audit_that_finds_more_names_the_signature(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            made.audit('RULE-2', findings=[])
+            assert _gate(made.root)[0] == 0, 'the same findings bind the same'
+            made.audit('RULE-2', findings=['PROOF-2 reads the status alone.'])
+            code, printed = _gate(made.root)
+            assert code == 1, printed
+            assert 'Evidence (1):' in printed, printed
+            assert 'login.signatures/RULE-2.' in printed, printed
+            assert 'what it binds is not this code' in printed, printed
+            _code, unverified = _gate(made.root, verify=False)
+            assert 'Evidence' not in unverified, unverified
+        finally:
+            made.close()
+
     # purlin: gate_check PROOF-38
     def test_a_ci_file_a_person_committed_is_named(self):
         made = _signed_project()
