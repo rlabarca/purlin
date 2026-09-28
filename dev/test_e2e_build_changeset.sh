@@ -15,7 +15,7 @@
 # Exit 0 when every check holds, 1 otherwise.
 #
 # This suite is the evidence for skill_build PROOF-5 (RULE-5). It carries no
-# marker of its own: dev/test_skills.py runs this script from the repository
+# marker of its own: dev/test_skill_build.py runs this script from the repository
 # root under that proof's marker, and asserts both the exit status and the
 # `ok:` line below, so the one proof is tied to one test.
 
