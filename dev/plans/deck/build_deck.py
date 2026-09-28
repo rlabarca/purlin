@@ -75,7 +75,7 @@ slide('strong', 'The second gate', 'Gate %s: also check that the tests are good 
     ('`purlin:audit`', 'An AI model reads each test against its proof and reports any test that shows less than its proof says.', [
         ('Mutation testing', 'Optional. The code is broken on purpose to see whether the tests notice.'),
         ('The evidence', 'What ran and what the audit found, one file per feature. Committed when you ask.')]),
-], '<b>The gate is met</b> when the audit finds every rule strong: its test really shows what its proof says.',
+], '<b>The gate is met</b> when the audit finds every rule strong: meaning its test actually shows what its proof says.',
  'A proof says in plain language how a rule is shown; QA writes and reviews them, and AI may draft '
  'them. The audit reads one rule per call, several at once, says how many it will read before it '
  'starts, and names the model on every finding. A rule whose text, proof and test have not changed '
@@ -93,7 +93,7 @@ slide('signed', 'The third gate', 'Gate %s: also have a person sign every rule' 
 slide('remote', 'Remote runners', 'When does Purlin use a remote runner in your repository?', [
     ('A rule must hold on another operating system', 'You work on a Mac and a rule must hold on Windows. %s runs those tests on a runner and brings the results back.' % m('purlin:test --remote')),
     ('You want the tests run on a clean machine', 'You choose at setup that results from a developer\'s machine do not count toward a signature. The tests run on a runner instead.'),
-], 'In every other case Purlin uses no runner and adds no pipeline file to your repository.',
+], 'In every other case Purlin uses no runner and does NOT add a pipeline file to your repository.',
  'Two reasons and no others. Where a runner exists it runs on a pushed signed tag and on the run '
  'branch purlin:test --remote creates, waits on and deletes. The tag run reruns the tests on a clean '
  'machine, checks every signature against the tagged code, and checks that every file in the ci '
