@@ -138,11 +138,14 @@ def frontmatter_problems(name):
     description = field(block, 'description')
     # `>` and `|`, with or without a chomping sign, open a block scalar; an
     # indented next line continues a plain one. Neither is one line.
-    if (not description or re.fullmatch(r'[>|][+-]?', description)
+    # Empty quotes are an empty value too.
+    if (not description or re.fullmatch(r'[>|][+-]?|""|\'\'', description)
             or runs_on(block, 'description')):
         problems.append('%s frontmatter carries no one-line description' % rel)
     command = re.compile(r'`purlin:%s(?: [^`]*)?`$' % re.escape(name))
-    if not any(command.match(cells[0]) for cells in command_rows()):
+    # The row counts only with a purpose sentence in its second cell.
+    if not any(command.match(cells[0]) and len(cells) > 1 and cells[1]
+               for cells in command_rows()):
         problems.append('%s carries no row for purlin:%s' % (COMMAND_REF, name))
     return problems
 
@@ -694,13 +697,43 @@ class TestSkillSpecFromCode:
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('spec-from-code') == []
 
+    # purlin: skill_spec_from_code PROOF-1
+    def test_a_broken_frontmatter_is_refused(self, monkeypatch):
+        assert frontmatter_refusals(monkeypatch, 'spec-from-code') == []
+
     # purlin: skill_spec_from_code PROOF-2
     def test_it_reads_the_state_before_it_starts(self):
         assert spec_from_code_start_problems() == []
 
+    # purlin: skill_spec_from_code PROOF-2
+    def test_a_late_or_unconditional_start_is_refused(self, monkeypatch):
+        rel = skill_path('spec-from-code')
+        start = re.search(r'^## Before you start\n.*?(?=^## )', read(rel),
+                          re.S | re.M).group(0)
+        assert refusals(monkeypatch, spec_from_code_start_problems, [
+            (rel, replace(start),
+             '%s has no section that runs before the survey' % rel),
+            (rel, lambda t: t.replace(start, '').replace(
+                '## What the rules look like', start +
+                '## What the rules look like'),
+             '%s start section comes after the Procedure section' % rel),
+            (rel, replace('When the project has no `.purlin/config.json`, run',
+                          'Read `.purlin/config.json`, then run'),
+             '%s start section does not send the reader to purlin:init '
+             'when .purlin/config.json is missing' % rel),
+        ]) == []
+
     # purlin: skill_spec_from_code PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('spec-from-code') == []
+        assert (next_step_problems('spec-from-code')
+                + undirected_outcome_problems('spec-from-code')) == []
+
+    # purlin: skill_spec_from_code PROOF-3
+    def test_a_broken_closing_section_is_refused(self, monkeypatch):
+        assert next_step_refusals(
+            monkeypatch, 'spec-from-code', '- Rules with no test at all',
+            '- Rules with no test at all: `→ Next: purlin:build <name>` on '
+            'the feature with the most of') == []
 
     # purlin: skill_spec_from_code PROOF-4
     def test_it_stays_under_its_ceiling(self):
@@ -710,12 +743,38 @@ class TestSkillSpecFromCode:
     def test_every_rule_it_writes_is_at_the_passed_level(self):
         assert spec_from_code_tag_problems() == []
 
+    # purlin: skill_spec_from_code PROOF-5
+    def test_a_rule_above_passed_or_no_stated_level_is_refused(
+            self, monkeypatch):
+        rel = skill_path('spec-from-code')
+        assert refusals(monkeypatch, spec_from_code_tag_problems, [
+            (rel, replace('HTTP 429 [level: passed]', 'HTTP 429 [level: strong]'),
+             '%s example rule carries no [level: passed]: - RULE-1' % rel),
+            (rel, resub(r'^- RULE-.*?\n(?=\n)'),
+             '%s shows no example rule' % rel),
+            (rel, replace('Every rule this skill writes carries '
+                          '`[level: passed]`:', 'For example:'),
+             "does not carry 'Every rule this skill writes carries "
+             "`[level: passed]`'"),
+        ]) == []
+
     # purlin: skill_spec_from_code PROOF-6
     def test_it_ties_an_existing_test_by_its_marker(self):
-        assert carries(skill_path('spec-from-code'), [
-            'offer to add the marker comment above that test',
-            'purlin: <feature> PROOF-<n>', 'write no new test',
-            'is not that test']) == []
+        assert spec_from_code_marker_problems() == []
+
+    # purlin: skill_spec_from_code PROOF-6
+    def test_a_partial_test_marked_or_an_untied_offer_is_refused(
+            self, monkeypatch):
+        rel = skill_path('spec-from-code')
+        assert refusals(monkeypatch, spec_from_code_marker_problems, [
+            (rel, replace('test; leave it unmarked and let', 'test; let'),
+             "has no sentence carrying all of 'A test that shows part of "
+             "what the proof asks', 'is not that test', 'leave it unmarked'"),
+            (rel, replace('never names the test. Then tie the two:',
+                          'never names the test.\n\nThen tie the two:'),
+             '%s does not offer the marker, and write no new test, in the '
+             'paragraph on a test that already shows the proof' % rel),
+        ]) == []
 
 
 def spec_from_code_start_problems():
@@ -724,9 +783,41 @@ def spec_from_code_start_problems():
     if body is None:
         return ['%s has no section that runs before the survey' % rel]
     flattened = flat(body)
-    return ['%s start section does not name %r' % (rel, needle)
-            for needle in ('sync_status', '.purlin/config.json', 'purlin:init')
-            if needle not in flattened]
+    problems = ['%s start section does not name %r' % (rel, needle)
+                for needle in ('sync_status', '.purlin/config.json',
+                               'purlin:init')
+                if needle not in flattened]
+    headings = [heading for heading, _ in sections(read(rel))]
+    if 'Procedure' not in headings or \
+            headings.index('Before you start') > headings.index('Procedure'):
+        problems.append('%s start section comes after the Procedure section'
+                        % rel)
+    if ('When the project has no `.purlin/config.json`, run `purlin:init` '
+            'first') not in flattened:
+        problems.append('%s start section does not send the reader to '
+                        'purlin:init when .purlin/config.json is missing'
+                        % rel)
+    return problems
+
+
+def spec_from_code_marker_problems():
+    rel = skill_path('spec-from-code')
+    problems = carries(rel, [
+        'offer to add the marker comment above that test',
+        'purlin: <feature> PROOF-<n>', 'write no new test',
+        'is not that test'])
+    problems += sentence_with(rel, [
+        'A test that shows part of what the proof asks', 'is not that test',
+        'leave it unmarked'])
+    # The offer belongs to the case of a test that already shows the proof.
+    paragraphs = [flat(p) for p in read(rel).split('\n\n')]
+    if not any('already shows what a proof asks' in p
+               and 'offer to add the marker comment above that test' in p
+               and 'write no new test' in p for p in paragraphs):
+        problems.append('%s does not offer the marker, and write no new '
+                        'test, in the paragraph on a test that already shows '
+                        'the proof' % rel)
+    return problems
 
 
 def spec_from_code_tag_problems():
@@ -741,6 +832,7 @@ def spec_from_code_tag_problems():
             problems.append('%s example rule carries no [level: passed]: %s'
                             % (rel, line))
     problems.extend(carries(rel, [
+        'Every rule this skill writes carries `[level: passed]`',
         'Do not write `[level: strong]` or `[level: signed]`']))
     return problems
 
@@ -755,9 +847,30 @@ class TestSkillAnchor:
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('anchor') == []
 
+    # purlin: skill_anchor PROOF-1
+    def test_a_broken_frontmatter_is_refused(self, monkeypatch):
+        assert frontmatter_refusals(monkeypatch, 'anchor') == []
+
     # purlin: skill_anchor PROOF-2
     def test_it_runs_the_upstream_script_for_two_subcommands(self):
         assert anchor_command_problems() == []
+
+    # purlin: skill_anchor PROOF-2
+    def test_a_broken_command_or_check_sentence_is_refused(self, monkeypatch):
+        rel = skill_path('anchor')
+        assert refusals(monkeypatch, anchor_command_problems, [
+            (rel, replace('upstream.py" add <git-url>',
+                          'upstream.py" address <git-url>'),
+             '%s gives the script on no line as the subcommand add' % rel),
+            (rel, replace('`--check` reports without writing',
+                          '`--check` reports and rewrites'),
+             "sync section does not carry '`--check` reports without "
+             "writing'"),
+            (rel, replace('`purlin:drift` runs the same check',
+                          '`purlin:drift` runs its own check'),
+             "sync section does not carry '`purlin:drift` runs the same "
+             "check'"),
+        ]) == []
 
     # purlin: skill_anchor PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
@@ -769,11 +882,35 @@ class TestSkillAnchor:
 
     # purlin: skill_anchor PROOF-5
     def test_a_pin_is_a_commit_and_a_pinned_rule_is_never_edited(self):
-        assert carries(skill_path('anchor'), [
-            'A pin is always a commit, never a branch.',
-            'Never edit a pinned rule in place.',
-            'a pull request against the source repository',
-            '> Requires: <the pinned one>']) == []
+        assert anchor_pin_problems() == []
+
+    # purlin: skill_anchor PROOF-5
+    def test_a_local_anchor_that_requires_nothing_is_refused(
+            self, monkeypatch):
+        rel = skill_path('anchor')
+        assert refusals(monkeypatch, anchor_pin_problems, [
+            (rel, replace('goes in a separate local anchor that says',
+                          'goes in the pinned copy, which says'),
+             "Changing a pinned rule section has no sentence carrying both "
+             "'separate local anchor' and '`> Requires: <the pinned one>`'"),
+        ]) == []
+
+
+def anchor_pin_problems():
+    rel = skill_path('anchor')
+    problems = carries(rel, [
+        'A pin is always a commit, never a branch.',
+        'Never edit a pinned rule in place.',
+        'a pull request against the source repository',
+        '> Requires: <the pinned one>'])
+    body = flat(section(read(rel), r'^Changing a pinned rule$') or '')
+    sentences = re.split(r'(?<=\.)\s+(?=[A-Z`*])', body)
+    if not any('separate local anchor' in s
+               and '`> Requires: <the pinned one>`' in s for s in sentences):
+        problems.append("%s Changing a pinned rule section has no sentence "
+                        "carrying both 'separate local anchor' and "
+                        "'`> Requires: <the pinned one>`'" % rel)
+    return problems
 
 
 def anchor_command_problems():
@@ -786,7 +923,18 @@ def anchor_command_problems():
                         % (rel, script, found))
     for subcommand in ('add', 'sync'):
         problems.extend(same_line(rel, [script, subcommand]))
+        # The subcommand is the word that follows the script, not any
+        # letters on the line.
+        if not re.search(r'^.*%s %s\b' % (re.escape(script), subcommand),
+                         read(rel), re.M):
+            problems.append('%s gives the script on no line as the '
+                            'subcommand %s' % (rel, subcommand))
     problems.extend(carries(rel, ['--check', 'purlin:drift']))
+    body = flat(section(read(rel), r'^sync$') or '')
+    problems.extend('%s sync section does not carry %r' % (rel, needle)
+                    for needle in ('`--check` reports without writing',
+                                   '`purlin:drift` runs the same check')
+                    if needle not in body)
     return problems
 
 
@@ -1570,15 +1718,40 @@ class TestSkillStatus:
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('status') == []
 
+    # purlin: skill_status PROOF-1
+    def test_a_broken_frontmatter_is_refused(self, monkeypatch):
+        rel = skill_path('status')
+        assert frontmatter_refusals(monkeypatch, 'status') == []
+        assert refusals(monkeypatch, lambda: frontmatter_problems('status'), [
+            (rel, resub(r'^description: [^\n]*$', 'description: ""'),
+             '%s frontmatter carries no one-line description' % rel),
+        ]) == []
+
     # purlin: skill_status PROOF-2
     def test_it_prints_the_numbers_the_tool_returned(self):
-        assert carries(skill_path('status'), [
-            'sync_status', 'Never recount them',
-            'one answer from one computation']) == []
+        assert status_number_problems() == []
+
+    # purlin: skill_status PROOF-2
+    def test_a_recount_is_refused(self, monkeypatch):
+        rel = skill_path('status')
+        assert refusals(monkeypatch, status_number_problems, [
+            (rel, replace('Print the numbers `sync_status` returned.',
+                          'Count the rules in the table yourself.'),
+             "does not carry 'Print the numbers `sync_status` returned. "
+             "Never recount them"),
+        ]) == []
 
     # purlin: skill_status PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('status') == []
+        assert (next_step_problems('status')
+                + undirected_outcome_problems('status')) == []
+
+    # purlin: skill_status PROOF-3
+    def test_a_broken_closing_section_is_refused(self, monkeypatch):
+        assert next_step_refusals(
+            monkeypatch, 'status', '| A rule has a failing test',
+            '| A rule is weak | `→ Next: run purlin:build. <n> rules are '
+            'weak.` |') == []
 
     # purlin: skill_status PROOF-4
     def test_it_stays_under_its_ceiling(self):
@@ -1586,11 +1759,50 @@ class TestSkillStatus:
 
     # purlin: skill_status PROOF-5
     def test_naming_a_spec_shows_its_rules(self):
-        assert (carries(skill_path('status'), [
-            'purlin:status <name>',
-            'Naming a spec shows its rules and their standing.'])
-            + carries('references/purlin_commands.md',
-                      ['purlin:status [name]'])) == []
+        assert status_name_problems() == []
+
+    # purlin: skill_status PROOF-5
+    def test_a_name_that_matches_several_or_none_is_refused_as_unhandled(
+            self, monkeypatch):
+        rel = skill_path('status')
+        assert refusals(monkeypatch, status_name_problems, [
+            (rel, replace('list them and ask which one', 'take the first'),
+             "With a name section does not carry 'when several match, list "
+             "them and ask which one'"),
+            (rel, replace('print the whole table', 'print nothing'),
+             "With a name section does not carry 'when none does, print "
+             "the whole table'"),
+            (rel, replace('its path, its\nheader, and one line per rule',
+                          'one line per rule'),
+             "With a name section does not carry 'print its path, its "
+             "header, and one line per rule with the cells the gate "
+             "creates'"),
+        ]) == []
+
+
+def status_number_problems():
+    return carries(skill_path('status'), [
+        'sync_status', 'Never recount them', 'one answer from one computation',
+        'Print the numbers `sync_status` returned. Never recount them: the '
+        'command line and the dashboard must show one answer from one '
+        'computation.'])
+
+
+def status_name_problems():
+    rel = skill_path('status')
+    problems = (carries(rel, [
+        'purlin:status <name>',
+        'Naming a spec shows its rules and their standing.'])
+        + carries('references/purlin_commands.md', ['purlin:status [name]']))
+    body = flat(section(read(rel), r'^With a name$') or '')
+    problems.extend('%s With a name section does not carry %r' % (rel, needle)
+                    for needle in (
+                        'when several match, list them and ask which one',
+                        'when none does, print the whole table',
+                        'print its path, its header, and one line per rule '
+                        'with the cells the gate creates')
+                    if needle not in body)
+    return problems
 
 
 class TestSkillDrift:
@@ -1599,20 +1811,78 @@ class TestSkillDrift:
     def test_the_frontmatter_names_the_skill(self):
         assert frontmatter_problems('drift') == []
 
+    # purlin: skill_drift PROOF-1
+    def test_a_broken_frontmatter_is_refused(self, monkeypatch):
+        rel = skill_path('drift')
+        row = next(line for line in read(COMMAND_REF).splitlines()
+                   if line.startswith('| `purlin:drift [role]` |'))
+        assert frontmatter_refusals(monkeypatch, 'drift') == []
+        assert refusals(monkeypatch, lambda: frontmatter_problems('drift'), [
+            (rel, resub(r'^description: [^\n]*$', 'description: >-'),
+             '%s frontmatter carries no one-line description' % rel),
+            (rel, lambda t: '\n' + t,
+             '%s does not open with a frontmatter block' % rel),
+            (COMMAND_REF, replace(row, '| `purlin:drift [role]` | |'),
+             '%s carries no row for purlin:drift' % COMMAND_REF),
+        ]) == []
+
     # purlin: skill_drift PROOF-2
     def test_it_takes_its_data_from_the_tool(self):
-        assert carries(skill_path('drift'), [
+        assert (carries(skill_path('drift'), [
             'drift(role="eng")', 'references/drift_criteria.md',
             'do not restate them here and do not invent a line the tool '
-            'does not return']) == []
+            'does not return']) + drift_restated_problems()) == []
+
+    # purlin: skill_drift PROOF-2
+    def test_a_restated_criterion_is_refused(self, monkeypatch):
+        rel = skill_path('drift')
+        source = 'Rules whose passed cell reads `no test`'
+        assert refusals(monkeypatch, drift_restated_problems, [
+            (rel, replace('## Step 2: print the view',
+                          'A rule with no test: %s.\n\n## Step 2: print the '
+                          'view' % source),
+             '%s restates what references/drift_criteria.md says a line is '
+             'built from: %r' % (rel, source)),
+        ]) == []
 
     # purlin: skill_drift PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('drift') == []
+        assert (next_step_problems('drift')
+                + undirected_outcome_problems('drift')) == []
+
+    # purlin: skill_drift PROOF-3
+    def test_a_broken_closing_section_is_refused(self, monkeypatch):
+        rel = skill_path('drift')
+        last = read(rel).rindex('\n## ')
+        assert next_step_refusals(
+            monkeypatch, 'drift', '| A rule removed',
+            '| A rule removed | `→ Run: purlin:status <feature>` |') == []
+        # A table with its header and divider and no row lists no outcome.
+        assert refusals(monkeypatch, lambda: next_step_problems('drift'), [
+            (rel, lambda t: t[:t.index('| A rule added', last)],
+             '%s closing section names 0 outcomes, expected at least 2'
+             % rel),
+        ]) == []
 
     # purlin: skill_drift PROOF-4
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('drift') == []
+
+
+def drift_restated_problems():
+    """The skill restates none of the git facts the criteria say each `eng`
+    and `qa` line is built from, the `From` cell of their tables."""
+    rel, criteria = skill_path('drift'), 'references/drift_criteria.md'
+    header = '| Key | From | Line |'
+    sources = [cells[1] for chunk in read(criteria).split(header)[1:]
+               for cells in table_rows(header + chunk, header)]
+    if len(sources) < 2:
+        return ['%s has %d rows naming what a line is built from, expected '
+                'the eng and qa tables' % (criteria, len(sources))]
+    text = flat(read(rel))
+    return ['%s restates what %s says a line is built from: %r'
+            % (rel, criteria, source) for source in sources
+            if flat(source) in text]
 
 
 # ---------------------------------------------------------------------------
@@ -1631,9 +1901,22 @@ class TestSkillExport:
 
     # purlin: skill_export PROOF-2
     def test_it_runs_the_script_in_each_form(self):
-        assert carries(skill_path('export'), [
-            'scripts/export/package.py', 'purlin:export --release <name>',
-            'purlin:export --commit', 'purlin:export --check <file>']) == []
+        assert export_command_problems() == []
+
+    # purlin: skill_export PROOF-2
+    def test_a_missing_form_or_run_line_is_refused(self, monkeypatch):
+        rel = skill_path('export')
+        run = 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/export/package.py"'
+        assert refusals(monkeypatch, export_command_problems, [
+            (rel, resub(r'^purlin:export {2,}.*\n'),
+             '%s has no usage line for the bare form purlin:export' % rel),
+            (rel, replace('purlin:export --check <file>      Check',
+                          'Check'),
+             '%s has no usage line for the form purlin:export --check '
+             '<file>' % rel),
+            (rel, lambda t: t.replace(run, 'Run scripts/export/package.py'),
+             '%s has no line that runs %s' % (rel, run)),
+        ]) == []
 
     # purlin: skill_export PROOF-3
     def test_it_makes_no_claim_of_compliance(self):
@@ -1644,17 +1927,89 @@ class TestSkillExport:
 
     # purlin: skill_export PROOF-4
     def test_it_names_the_three_states(self):
-        assert carries(skill_path('export'), [
-            '`work in progress`', '`gate <gate> met`', '`signed`',
-            'Only `purlin:sign` writes a package whose state is']) == []
+        assert export_state_problems() == []
+
+    # purlin: skill_export PROOF-4
+    def test_another_state_for_the_signer_is_refused(self, monkeypatch):
+        rel = skill_path('export')
+        assert refusals(monkeypatch, export_state_problems, [
+            (rel, replace('whose state is `signed`:',
+                          'whose state is `gate <gate> met`:'),
+             "does not carry 'Only `purlin:sign` writes a package whose "
+             "state is `signed`'"),
+        ]) == []
 
     # purlin: skill_export PROOF-5
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('export') == []
+        assert export_outcome_problems() == []
+
+    # purlin: skill_export PROOF-5
+    def test_a_broken_closing_section_is_refused(self, monkeypatch):
+        rel = skill_path('export')
+        assert next_step_refusals(
+            monkeypatch, 'export', '| `work in progress` | `→ Run',
+            '| `signed` | `→ Hand .purlin/evidence/package/<version>.json '
+            'to the system of record.` |') == []
+        assert refusals(monkeypatch, export_outcome_problems, [
+            (rel, replace('| `--check` named a mismatch | `→ Export the '
+                          'package again at its tag: purlin:export` |\n'),
+             '%s closing section has no row for %r'
+             % (rel, '`--check` named a mismatch')),
+        ]) == []
 
     # purlin: skill_export PROOF-6
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('export') == []
+
+
+def export_command_problems():
+    rel = skill_path('export')
+    text = read(rel)
+    problems = carries(rel, [
+        'scripts/export/package.py', 'purlin:export --release <name>',
+        'purlin:export --commit', 'purlin:export --check <file>'])
+    # Each form opens a usage line of its own, its gloss two spaces on.
+    for form in ('', ' --release <name>', ' --commit', ' --check <file>'):
+        if not re.search(r'^purlin:export%s(?: {2,}\S.*)?$' % re.escape(form),
+                         text, re.M):
+            problems.append('%s has no usage line for the %s' % (
+                rel, 'form purlin:export' + form if form
+                else 'bare form purlin:export'))
+    run = 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/export/package.py"'
+    if not re.search(r'^%s' % re.escape(run), text, re.M):
+        problems.append('%s has no line that runs %s' % (rel, run))
+    return problems
+
+
+def export_state_problems():
+    return carries(skill_path('export'), [
+        '`work in progress`', '`gate <gate> met`', '`signed`',
+        'Only `purlin:sign` writes a package whose state is `signed`'])
+
+
+# Each outcome of the export's closing table, and the directive its row gives.
+EXPORT_OUTCOMES = {
+    'Evidence not committed': '`→ Run: purlin:test --commit`',
+    '`work in progress`': '`→ Run: purlin:status`',
+    '`gate <gate> met` at the gate `signed`': '`→ Run: purlin:sign`',
+    '`signed`': '`→ Hand .purlin/evidence/package/<version>.json to the '
+                'system of record.`',
+    '`--check` named a mismatch': '`→ Export the package again at its tag: '
+                                  'purlin:export`',
+}
+
+
+def export_outcome_problems():
+    rel = skill_path('export')
+    problems = (next_step_problems('export')
+                + undirected_outcome_problems('export'))
+    rows = [[cell.strip() for cell in row.strip('|').split('|')]
+            for row in closing_outcomes(sections(read(rel))[-1][1])]
+    for outcome, directive in EXPORT_OUTCOMES.items():
+        if [outcome, directive] not in rows:
+            problems.append('%s closing section has no row for %r' % (
+                rel, outcome))
+    return problems
 
 
 # ---------------------------------------------------------------------------
