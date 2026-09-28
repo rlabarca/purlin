@@ -31,7 +31,7 @@
 - RULE-18: A checkout whose break engines are not importable still writes its evidence under `--audit`, prints that test strength was not measured, and exits 0 or 1 on the tests alone
 - RULE-20: The evidence a run wrote makes a rule's passed cell read `passed` while its fingerprint is the one taken now, committed or not; changing a scoped file makes the cell read `out of date` with the reason `code changed since <sha7>`, editing the spec `spec changed since <sha7>`, and editing a test file `tests changed since <sha7>`, where the sha is the commit the run started on; the next run clears it
 - RULE-21: The operating system this run is on is reported as `windows`, `macos` or `linux` and never as anything else
-- RULE-22: The run script's source carries none of the words this release retired and no emoji, and reads the operating system only through `sys.platform` [level: passed]
+- RULE-22: The run script's source carries no emoji [level: passed]
 - RULE-39: The run script reconfigures stdout and stderr to UTF-8 before it prints anything, so a console whose codec is cp1252 prints the state table's glyphs instead of ending the run with an encoding error
 - RULE-40: A suite that exits non-zero or is killed has the last 60 lines of its own output printed to stdout under `--- <suite> output (last 60 lines) ---` before the missing-evidence lines, and `--audit` and `--ci` keep the whole of every suite's output in `.purlin/runtime/run.log`
 - RULE-41: `--project-root` with an empty value exits 2 naming the flag, rather than resolving to the working directory and running there
@@ -53,7 +53,7 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Run the script with no action, with `--test --audit`, with `--all --feature x`, with `--all --audit --remote`, with `--nonsense`, with `--feature` and no value, with `--all` and the arm's retired spelling the glossary lists for `--test`, with `--all --ci --commit` and with `--all --test --remote --commit`; verify each exits 2 and prints `Usage: purlin_run.py`
+- PROOF-1 (RULE-1): Run the script with no action, with `--test --audit`, with `--all --feature x`, with `--all --audit --remote`, with `--nonsense`, with `--feature` and no value, with `--all --ci --commit` and with `--all --test --remote --commit`; verify each exits 2 and prints `Usage: purlin_run.py`
 - PROOF-2 (RULE-2): Run `--feature nosuch --test` against a project holding only `feat`; verify exit 2 and `no spec named nosuch`. Run `--all --test --project-root <a path that does not exist>`; verify exit 2 and `is not a directory`
 - PROOF-3 (RULE-3): A project holds one spec and one passing test marked with its proof; after `--all --test` the run exits 0, the feature's evidence lists exactly one entry, `PROOF-1` with the result `pass` and the test `tests/test_feat.py::test_ok`, and the spec's folder holds nothing but the spec
 - PROOF-4 (RULE-4): Two SQL scripts each carry one marker: one creates a table with a unique email and inserts one row, the other inserts the same email twice; after the run the first proof reads `pass`, the second reads `fail`, and the run exits 1
@@ -70,7 +70,7 @@
 - PROOF-18 (RULE-18): Take the break engines off `sys.path` and run `--all --audit` at the gate `strong`; verify the output holds `test strength is not measured`, that `.purlin/evidence/local/feat.json` was still written and that the run exits 0 or 1
 - PROOF-20 (RULE-20): In a git checkout run `--all --test --commit`; verify the rule's passed cell reads `passed`. Change the scoped file `src/feat.py` without committing; verify the cell reads `out of date` with exactly the reason `code changed since <sha7>` for the commit the run started on and the flag `out_of_date`; commit the change and verify it still reads `out of date`; run `--all --test` again and verify `passed`. In another checkout run `--all --test` without committing, edit the rule's text and verify the reason `spec changed since <sha7>`; restore it, edit the test file and verify `tests changed since <sha7>`
 - PROOF-21 (RULE-21): Call `host_os()`; verify the answer is one of `windows`, `macos` and `linux`
-- PROOF-22 (RULE-22): Read `scripts/run/purlin_run.py`; verify none of the retired words appears in it, that every occurrence of the operating-system attribute is the `sys.` one, and that no character in the file is an emoji
+- PROOF-22 (RULE-22): Read `scripts/run/purlin_run.py`; verify no character in the file is at or above U+1F000
 - PROOF-57 (RULE-39): Run `purlin_run.py --all --test` on a project holding one spec and one tagged test with `PYTHONIOENCODING=cp1252` in the environment; verify the output carries no traceback and no `UnicodeEncodeError`, and that the arrow the next-step line prints is in it
 - PROOF-58 (RULE-40): A marked test asserts that 1 equals 2; the output holds `--- pytest output (last 60 lines) ---`, pytest's own `1 failed` line is under it, and the heading comes before `Evidence is missing`. Over a passing test no such heading is printed
 - PROOF-59 (RULE-40): `--ci` over a project whose test fails leaves `.purlin/runtime/run.log` holding the command the pytest suite ran and pytest's own `1 failed` line

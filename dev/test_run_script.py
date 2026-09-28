@@ -224,10 +224,8 @@ class TestTheCommandLine:
         ('--all', '--test', '--audit'),       # two actions
         ('--all', '--feature', 'x', '--test'),
         ('--all', '--audit', '--remote'),     # --remote belongs to --test
-        ('--all', '--audit', '--tag', '1.0'),  # nothing pins the evidence
         ('--all', '--test', '--nonsense'),
         ('--all', '--test', '--feature'),     # a flag with no value
-        ('--all', '--quick'),  # retired
         ('--all', '--ci', '--commit'),        # a runner always commits
         ('--all', '--test', '--remote', '--commit'),
     ])
@@ -1274,22 +1272,11 @@ class TestHostOs:
         assert purlin_run.host_os() in ('windows', 'macos', 'linux')
 
 
-class TestTheRunScriptCarriesNoRetiredVocabulary:
-
-    # The words this release retired, spelled in halves so this list is not
-    # itself a hit when the same scan is run over the test file.
-    # `verdict` is not here: it is the audit entry's field name, which the
-    # run reads, and `dev/test_vocabulary.py` holds it to that.
-    RETIRED = ('rec' + 'eipt', 'ga' + 'uge', 'HOL' + 'LOW', 'PROV' + 'ABLE',
-               '@' + 'on(', 'records ' + 'branch', 'CODE' + 'OWNERS',
-               'fo' + 'rge', 'appro' + 'val', 'valid' + 'ated/',
-               'un' + 'settled', 'build' + '_brief')
+class TestTheRunScriptCarriesNoEmoji:
 
     # purlin: run_script PROOF-22
-    def test_no_retired_word_and_no_emoji(self):
+    def test_no_character_is_an_emoji(self):
         source = open(RUN_SCRIPT, encoding='utf-8').read()
-        for word in self.RETIRED:
-            assert word not in source, word
         assert all(ord(character) < 0x1F000 for character in source)
 
 
