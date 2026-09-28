@@ -20,6 +20,10 @@ One project setting decides what this job requires. The gate is read from
 A rule's level is its `[level: ...]` tag, or the gate where it has none, and
 never more than the gate.
 
+At the gate `signed` a feature spec that names no files in `> Scope:` fails
+the job too, listed under `Incomplete (<n>)` with why: no signature can be
+tied to the code it governs. Below `signed` it blocks nothing here.
+
 `--verify` is what the tag run adds, and it asks two more questions of the
 evidence already in the tree. Every signature must still bind the rule, proof, test and audit it names, so a tag cannot stand over code
 that changed after it was signed. Every file under `.purlin/evidence/ci/`
@@ -90,6 +94,13 @@ _SECTIONS = (('not_passed', 'Not passed', ('passed',)),
              ('not_audited', 'Not audited', ()),
              ('queue', 'Queue', ('signed',)),
              ('evidence', 'Evidence', ()))
+
+# The one section that lists features rather than rules: at the gate
+# `signed`, each feature spec that names no files in `> Scope:`, which no
+# signature can be tied to. Its rules that wait only on a signature are
+# counted short of the gate and listed here, under their feature, instead of
+# in the queue, because no person can sign them.
+_INCOMPLETE = ('incomplete', 'Incomplete')
 
 
 def _package():
@@ -214,6 +225,7 @@ def check(project_root, payload=None, out=None, as_json=False,
         'weak': [],
         'not_audited': [],
         'queue': [],
+        'incomplete': [],
         'evidence': [],
         'not_checked': [],
         'result': 'pass',
@@ -245,8 +257,8 @@ def check(project_root, payload=None, out=None, as_json=False,
 
     _report(out, result)
 
-    short = sum(len(result[key]) for key, _title, _cells in _SECTIONS)
-    if short:
+    short = (result['rules'] - result['met']) + len(result['evidence'])
+    if short or result['incomplete']:
         result['result'] = 'fail'
         _say(out, 'FAIL. %d of %d rules do not meet %s.'
                   % (short, result['rules'], gate))
@@ -270,7 +282,13 @@ def _collect(payload, result):
     from purlin import states
 
     by_cell = {cell: key for key, _title, cells in _SECTIONS for cell in cells}
+    signed = (payload.get('gate') or {}).get('gate') == 'signed'
     for feature in payload.get('features') or ():
+        untied = signed and feature.get('incomplete')
+        if untied:
+            result['incomplete'].append('%s: %s' % (
+                feature.get('name'), feature.get('incomplete_reason')
+                or 'names no files'))
         for entry in feature.get('rules') or ():
             if entry.get('feature') != feature.get('name'):
                 continue
@@ -280,6 +298,10 @@ def _collect(payload, result):
                 continue
             key = by_cell.get(entry.get('blocked_by'))
             word = _cell_word(entry, 'strong')
+            if untied and key == 'queue':
+                # Counted short above, and named under its feature in the
+                # Incomplete section: no signature can be tied to it.
+                continue
             if key is None:
                 # A rule that meets no cell and names none is still short of
                 # the gate, and the passed section is where a reader looks
@@ -316,7 +338,10 @@ def _why(entry):
 
 
 def _report(out, result):
-    for key, title, _cells in _SECTIONS:
+    order = ([(key, title) for key, title, _cells in _SECTIONS[:-1]]
+             + [_INCOMPLETE]
+             + [(key, title) for key, title, _cells in _SECTIONS[-1:]])
+    for key, title in order:
         lines = result[key]
         if not lines:
             continue

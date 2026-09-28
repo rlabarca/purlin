@@ -671,3 +671,42 @@ def test_the_report_carries_its_six_sections_in_order():
         assert printed == ['Not audited (1):'], output
     finally:
         made.close()
+
+
+# ---------------------------------------------------------------------------
+# A spec that names no files
+# ---------------------------------------------------------------------------
+
+NO_SCOPE = SPEC.replace('> Scope: src/login.py\n', '')
+
+
+class TestASpecThatNamesNoFiles:
+
+    @pytest.mark.proof("gate_check", "PROOF-49", "RULE-22")
+    def test_at_signed_it_is_listed_under_incomplete_and_fails(self):
+        made = project_at('signed', config={'min_strength': 80}, spec=NO_SCOPE)
+        try:
+            code, output = run(made, as_json=True)
+            assert code == 1, output
+            lines = output.splitlines()
+            assert 'Incomplete (1):' in lines, output
+            assert '  login: no > Scope: line' in lines, output
+            assert 'Queue (' not in output, output
+            assert 'gate: FAIL. 1 of 2 rules do not meet signed.' in lines
+            data = json.loads(output[output.index('{'):])
+            assert data['incomplete'] == ['login: no > Scope: line'], data
+            assert data['queue'] == [], data
+        finally:
+            made.close()
+
+    @pytest.mark.proof("gate_check", "PROOF-49", "RULE-22")
+    def test_below_signed_it_blocks_nothing(self):
+        made = project_at('strong', spec=NO_SCOPE)
+        try:
+            code, output = run(made, as_json=True)
+            assert code == 0, output
+            assert 'Incomplete' not in output.split('{')[0], output
+            data = json.loads(output[output.index('{'):])
+            assert data['incomplete'] == [], data
+        finally:
+            made.close()
