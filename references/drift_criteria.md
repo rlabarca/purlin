@@ -72,8 +72,9 @@ A file deleted in the range is not on disk and is in neither list.
 | Key | From | Line |
 |-----|------|------|
 | `tests_changed` | The changed test files that carry a marker, and the features those markers name | `6 test files changed, covering export, login.` |
-| `signatures_stale` | Signatures that no longer bind the rule, with which of the rule text, the proofs, the tests or the audit findings changed | `2 signatures are stale: login RULE-2 (audit findings changed), billing RULE-1 (rule text changed).` |
+| `signatures_stale` | Signatures that do not bind the current rule, with which of the rule text, the proofs, the tests or the audit findings changed | `2 signatures are stale: login RULE-2 (audit findings changed), billing RULE-1 (rule text changed).` |
 | `queue` | The queue, counted by what each rule needs | `Queue: 5 rules. 2 hand checks, 3 signatures.` |
+| `not_audited` | Rules whose level is `strong` or `signed` that no audit has read, as `<feature>/<RULE-N>` | No line |
 
 Under the gate `passed` there is no signature and no queue, so the `qa` view prints neither line
 and reports only the tests that changed.
@@ -100,7 +101,7 @@ it is adopted.
 
 | Field | Written by | Read by | Default |
 |-------|-----------|---------|---------|
-| `version` | `purlin:init` | The dashboard header | From the `VERSION` file |
+| `version` | `purlin:init` | The dashboard header; `purlin:sign` and `purlin:export` where the project has no `VERSION` file of its own | From the plugin's `VERSION` file |
 | `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/gate_check.py`, every skill that names a next step | `passed` |
 | `mutation_engine` | `purlin:init`, which asks `Measure test strength by breaking the code on purpose?` where an engine exists | `scripts/run/purlin_run.py`, `sync_status` | `none` from init, and a yes writes `auto`; `auto` where the key is absent. `none` turns mutation testing off, so no breaks run and `min_strength` is not applied |
 | `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` while mutation testing is off; with it on, `null` under `passed`, 70 under `strong`, 80 under `signed` |
@@ -112,7 +113,7 @@ it is adopted.
 `purlin:init` is the only command that writes config unprompted. Every other command reads. A
 field that is absent or set to `auto` leaves the reader to its own fallback. This table must
 name every field `templates/config.json` carries: a field written into new projects but absent
-here has no owner on this page, which is how one went unlisted through four releases.
+here has no owner on this page.
 
 ## Project root ownership
 
@@ -123,5 +124,5 @@ directory would otherwise find. With the variable unset the climb answers, and w
 anywhere above the working directory the working directory itself is returned, which is a guess
 and is reported as one. Set the variable in the project's `.claude/settings.json` under `env`
 when the workspace is not at the repository root; the tools also take a `project_root` argument
-that overrides it for one call. Every tool says which directory it looked at and which of the
-three mechanisms chose it.
+that overrides it for one call. A tool that finds no `.purlin/config.json` at the root it chose
+says which directory it looked at and which mechanism chose it, and names the fix.

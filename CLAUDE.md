@@ -68,8 +68,8 @@ concept and consolidate any duplicate in the same commit.
 | `references/purlin_commands.md` | Every command's syntax, its one purpose sentence, and what it writes |
 | `references/hard_gates.md` | The gate, the three levels, which evidence counts, when a signature counts, what `signed/<version>` means |
 | `references/review_criteria.md` | What the AI audit looks for in a rule, its proof and its test; the instructions the model is sent |
-| `references/spec_quality_guide.md` | Writing a rule, writing a proof, reading the status that blocks it |
-| `references/drift_criteria.md` | File classification, config field ownership, drift by role |
+| `references/spec_quality_guide.md` | Writing a rule, choosing its level, the guideline for a good proof, reading the cell that blocks it |
+| `references/drift_criteria.md` | Drift's range and its three views, config field ownership, project root ownership |
 | `references/commit_conventions.md` | Every commit message prefix and shape |
 | `references/supported_frameworks.md` | Test framework detection, the `tests` entry init writes for each, and what each needs added |
 | `references/rule_examples.md` | Worked rules and proofs |

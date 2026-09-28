@@ -1,10 +1,10 @@
-# Rule Examples from Real Projects
+# Rule examples from real projects
 
-Bad-to-good rule rewrites collected from spec reviews and from what the audit observed. Organized by the five contract categories from the [spec quality guide](spec_quality_guide.md). This file grows over time: when a bad rule is caught and rewritten, add the pair here.
+Bad-to-good rule rewrites collected from spec reviews and from what the audit observed. Organized by the five coverage categories in the [spec quality guide](spec_quality_guide.md), "Coverage". This file grows over time: when a bad rule is caught and rewritten, add the pair here.
 
 ---
 
-## Inbound Contracts
+## Inbound contracts
 
 Rules about data entering the system: API responses, config, props, messages. What goes wrong first: wrong field names mean wrong data on screen or in storage.
 
@@ -21,10 +21,10 @@ Why:  Missing the service path prefix and query params means a rebuild can't eve
 
 Bad:  "Hero calls useProductQuery hook"
 Good: "Hero displays product.address, product.loanAmount, and product.rate from GET /api/products/:id"
-Why:  Hook name is implementation. Data fields are what an engineer needs to wire correctly.
+Why:  Hook name is implementation. Data fields are what a developer needs to wire correctly.
 ```
 
-## Outbound Contracts
+## Outbound contracts
 
 Rules about data leaving the system: analytics events, API calls out, database writes, log entries.
 
@@ -44,7 +44,7 @@ Good: "API fetch failures log {endpoint, statusCode, errorMessage} at warn level
 Why:  Log shape matters for monitoring dashboards. 'Do not surface' is a UX constraint.
 ```
 
-## Transformation Rules
+## Transformations
 
 Rules about logic that converts between inbound and outbound: field mappings, formulas, formatters.
 
@@ -68,7 +68,7 @@ Good: "Monthly payment = principal * (rate/12) / (1 - (1 + rate/12)^-term); disp
 Why:  The formula is the behavior. Getting it wrong means wrong financial numbers shown to users.
 ```
 
-## State Transitions
+## State
 
 Rules about feature lifecycle: valid states, transitions, timeouts.
 
@@ -84,7 +84,7 @@ Good: "Analysis polling: starts on mount at 5s intervals, pauses when tab hidden
 Why:  Tab visibility and cleanup behavior prevent resource leaks and stale data.
 ```
 
-## Access Contracts
+## Access
 
 Rules about who can see or do what: permissions, flags, views.
 
@@ -104,9 +104,9 @@ Good: "Feature flag 'ai_chat_enabled' controls AI chat widget visibility; evalua
 Why:  Flag name and evaluation timing matter: wrong flag name means wrong feature toggling.
 ```
 
-## Implementation Details: NOT Rules
+## Implementation details are not rules
 
-These describe *how* code works, not *what* it does. They fail the rebuild test: an engineer using a different technique would still produce correct behavior.
+These describe *how* code works, not *what* it does. They fail the rebuild test: a developer using a different technique would still produce correct behavior.
 
 ```
 "Uses useMediaQuery hook with 768px breakpoint"     -- names the hook, not the behavior
@@ -118,7 +118,7 @@ These describe *how* code works, not *what* it does. They fail the rebuild test:
 "Has error boundary around chart"                    -- error handling technique, not outcome
 ```
 
-When implementation causes a **behavioral** problem, the problem is a rule: the technique is not:
+When implementation causes a **behavioral** problem, the problem is a rule and the technique is not:
 
 ```
 "Stat cards remain usable (no overlap, no hidden content) on viewports below 768px"  -- rule (behavioral)
@@ -128,4 +128,4 @@ When implementation causes a **behavioral** problem, the problem is a rule: the 
 
 ---
 
-<!-- Add new project examples below. Format: ## project-name: Feature (YYYY-MM) under the relevant contract category -->
+<!-- Add new project examples below. Format: ### project-name: Feature (YYYY-MM) under the relevant category -->

@@ -3,16 +3,17 @@
 How to write a spec worth proving. For spec syntax, section names, id format and
 metadata fields, see [references/formats/spec_format.md](formats/spec_format.md). For
 bad-to-good rewrites taken from real projects, see
-[references/rule_examples.md](rule_examples.md). For what the brief checks, and
-what a signer checks after it, see
-[references/review_criteria.md](review_criteria.md).
+[references/rule_examples.md](rule_examples.md). For what the AI audit checks, and
+what a person checks after it, see
+[references/review_criteria.md](review_criteria.md). For what the gate and each level ask
+of a rule, see [references/hard_gates.md](hard_gates.md).
 
 ## Writing rules
 
 ### One claim, observable
 
 A rule is one line saying what the software has to do. It makes one claim, and that
-claim is observable: someone or something outside the code can watch it hold or fail.
+claim is observable: someone or something outside the code can see whether it is true.
 
 - Bad: "Use bcrypt.compare for password verification"
 - Good: "Return 401 when the password does not match the stored hash"
@@ -22,11 +23,11 @@ it and a refactor cannot break it.
 
 ### The rebuild test
 
-Every rule must pass one question: **if an engineer rebuilt this feature from only this
+Every rule must pass one question: **if a developer rebuilt this feature from only this
 spec, would they get this wrong without this rule?**
 
 If the answer is "no, they would figure it out" or "QA would catch it immediately", it
-is not a rule. Cut it. This question comes before everything else: coverage, tags
+is not a rule. Cut it. This question comes before everything else: coverage, levels
 and proof text are all wasted on a rule that does not earn its line.
 
 Two more questions for every candidate rule:
@@ -41,14 +42,14 @@ Two more questions for every candidate rule:
 
 | What a rebuild gets wrong | What goes wrong | Spec priority |
 |---|---|---|
-| Wrong behaviour | The engineer builds the wrong thing: wrong data source, wrong conditional gate, wrong calculation | Must be a rule. The rebuild produces wrong numbers. |
-| Broken functionality | The feature works, then degrades under real conditions: crashes on missing data, one failure cascades | Must be a rule. An engineer would likely miss it. |
+| Wrong behaviour | The developer builds the wrong thing: wrong data source, wrong conditional gate, wrong calculation | Must be a rule. The rebuild produces wrong numbers. |
+| Broken functionality | The feature works, then degrades under real conditions: crashes on missing data, one failure cascades | Must be a rule. A developer would likely miss it. |
 | Wrong layout | The feature is correct but unusable: content overlaps, controls are hidden | Should be a rule, proved by a flow through the running app or `@manual`. |
 | Visual polish | Spacing, exact pixel values, animation timing, icon sizing | Not a rule. QA catches it. |
 
 ### Too few rules, too many rules
 
-Signs of too few: data source fields unnamed, so the engineer pulls the wrong API
+Signs of too few: data source fields unnamed, so the developer pulls the wrong API
 field; conditional gates missing, so content reaches the wrong user; no graceful
 degradation, so the rebuild crashes on missing data.
 
@@ -59,7 +60,7 @@ or fail together; rules for behaviour that exists only in tests.
 ### Coverage
 
 After the rebuild test, check the feature's contract boundaries. Data crossing a
-boundary is what an engineer gets wrong, and the rule count scales with the feature:
+boundary is what a developer gets wrong, and the rule count scales with the feature:
 there is no target.
 
 - **Inbound:** API response fields by exact name, config and environment values, props
@@ -77,17 +78,21 @@ Then the supporting dimensions: each distinct error response, boundary condition
 as maximum lengths and retry limits, performance constraints, and what happens when a
 dependency fails.
 
-### The rule tag
+### Choosing the level
 
-One tag goes at the end of a rule line: `[level: passed|strong|signed]`. It says what the rule
+One mark goes at the end of a rule line: `[level: passed|strong|signed]`. It says what the rule
 must have to meet the gate, in the gate's own words: tests; tests and the audit; tests, the
 audit and a signature. It is read at the `strong` gate and above: under `passed` it is never
-asked for and changes nothing. A rule with no tag takes the project's gate, and a tag above the
-gate is read as the gate. Tag `[level: passed]` where a passing test is the whole of what the
-rule needs, and leave the tag off where the rule needs everything the gate asks for.
+asked for and changes nothing. A rule with no mark takes the project's gate, and a mark above
+the gate is read as the gate.
 
-Tag rules as you write them: retagging a spec later is a separate pass over every line. A
-signature logs the rule's level and does not lock it, so a re-tag stales no signature.
+Leave the mark off where the rule needs everything the gate asks for. Mark `[level: passed]`
+where a passing test is the whole of what the rule needs: the audit does not read it and no
+one signs it. Under the gate `signed`, mark `[level: strong]` where an audit that found the
+tests sound is enough and no person needs to sign the rule.
+
+Mark rules as you write them: marking a spec later is a separate pass over every line. A
+signature logs the rule's level and does not lock it, so a new mark stales no signature.
 
 ## Writing proofs
 
@@ -100,8 +105,9 @@ every proof against it, with the checks in
 [references/review_criteria.md](review_criteria.md).
 
 Proofs are optional at the gate `passed`, where a rule's passing tests are the whole of its
-evidence. From `strong` up every rule needs at least one proof, and a rule without one does
-not meet the gate.
+evidence: a test marked `purlin: <feature> RULE-<n>` answers a rule that has no proof. From
+`strong` up every rule whose level is `strong` or `signed` needs at least one proof, and one
+whose test passes with no proof reads `no proof` and does not meet the gate.
 
 Each point below carries a pair: a poor proof, and the one that replaces it.
 
@@ -137,8 +143,8 @@ direction only is half proved. Name the exact input at the edge, not only the ou
 ### Written for a person who cannot read code
 
 A proof names what a user, or a caller of the system, would see. It carries no source or test
-file path, no function name, no class, no selector and no name of a test framework. A QA lead,
-a product manager or an auditor reads it and can say whether it shows the rule.
+file path, no function name, no class, no selector and no name of a test framework. Someone
+from product or QA reads it and can say whether it shows the rule.
 
 - Poor: "Call `InvoiceService.total()` with the fixture in `tests/data/two_lines.json`; assert
   `result.amount == 11000`."
@@ -178,10 +184,10 @@ rule, as the allowed case and the refused case do; one test may carry out severa
   the home page greets the user by name." and "Changing the password adds one entry to the
   account's activity page reading `Password changed`."
 
-### Drafted by AI, read by a person
+### Written by AI, read by a person
 
-AI may draft a proof. The person whose name goes on the commit has read it against this page,
-and checks three things in particular:
+AI may draft a proof. QA reads it against this page before it is committed, and checks three
+things in particular:
 
 - **It would fail if the rule were broken.** Picture the software doing the wrong thing; the
   proof must say that something different would be seen.
@@ -189,8 +195,8 @@ and checks three things in particular:
   "Works correctly", "is handled properly" and "succeeds" are not values.
 - **It does not simply restate the rule.** It adds the input, the action and what is seen.
 
-- Poor, as drafted for the rule "A locked account refuses sign-in": "A locked account refuses
-  sign-in correctly."
+- Poor, as AI wrote it for the rule "A locked account refuses sign-in": "A locked account
+  refuses sign-in correctly."
 - Good: "An account locked by five wrong passwords is refused when the right password is
   entered, and the page reads `Account locked. Try again in 15 minutes.`"
 
@@ -231,8 +237,8 @@ encoding, a filesystem that ignores case. Those three are the whole vocabulary. 
 
 ## Manual proofs
 
-A proof carries no tag when a test settles it, whatever that test needs to run:
-`purlin:test` runs every tagged test of the features it runs. Human judgment, such as
+A proof carries no `@manual` when a test settles it, whatever that test needs to run:
+`purlin:test` runs every marked test of the features it runs. Human judgment, such as
 visual polish, wording or brand voice, is the one case for `@manual`: "Read the error
 messages against the brand voice guide @manual".
 
@@ -242,7 +248,7 @@ or are `@manual`. Where no test could observe what the proof names, the proof is
 
 `@manual` means there is no test, so nothing can run and there is no test body for the AI
 audit to read. The rule's strong cell reads `manual test` with the reason `manual proof`.
-A signature file carrying a one-line note clears it, written by a person:
+A signature file carrying a one-line note meets it, written by a person:
 `purlin:sign <feature> RULE-N --note "<what you saw>"`. CI never writes that file, at
 any level and under any gate. Use `@manual` where judgment is the only instrument,
 and keep the rule's `> Scope:` tight: when a scope file changes, the signature goes
@@ -256,15 +262,16 @@ two, under `signed` all three. A rule's level decides which of them block it.
 
 | Cell | Word | What it means | What moves it |
 |---|---|---|---|
-| passed | `no test`, with `no proof written` | No proof line names the rule. What a proof is worth is the audit's question. | Write the proof under `## Proof` so it names a trigger and an expected value a test can reach. `purlin:spec`. |
+| passed | `no test`, with `no proof written` | No proof line names the rule, and no test is marked with the rule's own id. | Write the proof under `## Proof` so it names what is done and an expected value a test can reach. `purlin:spec`. At the gate `passed` a test marked with the rule's id answers it too. |
 | passed | `no test` | A proof names the rule and no test carries its marker comment. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
-| passed | `not run` | Nothing has run the rule's tests yet. | Run `purlin:test`, which counts at every gate. |
-| passed | `not run`, with `<os>: no run yet` | A proof carries `@env` and no current section from that operating system has passed it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any host could prove it. |
-| passed | `partial` | The rule's tests passed on one operating system and failed or did not run on another. `partial` is not met. | Fix the platform that failed, or let the CI matrix run the one that has not. |
+| passed | `not run` | The rule's tests have no result in a current section. | Run `purlin:test`, which counts at every gate. |
+| passed | `not run`, with `<os>: no run yet` | A proof carries `@env` and no current section from that operating system has passed it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any operating system could show it. |
+| passed | `partial` | The rule's tests passed on one operating system and failed or did not run on another. `partial` is not met. | Fix the platform that failed, or run `purlin:test --remote` for the one that has not run. |
 | passed | `out of date` | A pass exists but the spec, the code or the tests moved since; the reason names which. | Run the tests again; the next run clears it. |
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
 | strong | `weak`, with a sentence the model wrote | The AI audit settled the question and observed that the test does not read what the proof names. | Write the assertion the sentence asks for. `purlin:build`, then `purlin:audit`. |
+| strong | `no proof` | The rule's test passes and no proof says what it shows, so the audit has nothing to read the test against. | Write the proof with `purlin:spec`, then `purlin:audit`. |
 | strong | `manual test` | The proof is `@manual`, so no test can be written and a person runs it. | `purlin:sign <feature> RULE-N --note "<what you saw>"`. |
 | strong | `not audited` | The rule's level is `strong` or `signed` and no audit has read this rule, proof and test, so the evidence holds no audit entry for the current hashes. | `purlin:audit`, which writes the entry into the evidence. |
 | strong | `weak`, `the AI audit could not decide: ...` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:build`: make the proof or the test say plainly what is observed; the next `purlin:audit` reads the rule again. |
@@ -279,7 +286,7 @@ There are three diagnoses, and the default assumption is the first.
 |---|---|---|
 | Code bug | The test asserts the correct behaviour and the code does not implement it. | Fix the code. The test is right. |
 | Test bug | The test asserts the wrong thing: wrong status code, wrong field name, bad setup. | Fix the test. The code is right. |
-| Spec drift | The rule no longer matches the intended behaviour. | Update the rule first, then the proof, then the test and the code. |
+| Spec drift | The rule does not match the intended behaviour. | Update the rule first, then the proof, then the test and the code. |
 
 Never weaken an assertion to make a test pass (`assert status == 200` becoming
 `assert status in [200, 401]`), never remove an assertion that was testing the right

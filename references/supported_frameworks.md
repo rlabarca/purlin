@@ -1,8 +1,7 @@
 # Supported test frameworks
 
-Purlin runs your project's own test command and reads the report it writes. Nothing of
-Purlin is installed in your test suite: a test is tied to a proof by one comment above it,
-`purlin: <feature> PROOF-<n>`. `references/formats/marker_format.md` is the contract: the
+Purlin runs your project's own test command and reads the report it writes. A test is tied
+to a proof by one comment above it, `purlin: <feature> PROOF-<n>`. `references/formats/marker_format.md` is the contract: the
 marker, the `tests` setting, the four report formats and how a result is tied to its marker.
 
 `purlin:init` detects every framework below that the project uses and writes one entry of

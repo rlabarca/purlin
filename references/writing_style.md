@@ -18,6 +18,14 @@ its findings for each rule it reached"). First person never appears. The product
 ("PASSED", "STRONG", "SIGNED"). Command names are always lowercase with the colon:
 `purlin:audit`, never `Purlin Audit`.
 
+**What is, not what was.** A page says what the software does now. It does not say what an
+earlier release did, what a thing replaced or what was taken out, and it does not describe a
+missing thing by denying it: say what is there. The history of a release lives in
+`RELEASE_NOTES.md` and nowhere else.
+
+**One word per concept.** The word for each concept is the one `references/glossary.md` gives,
+and the three roles are product, developer and QA.
+
 **Limits stated.** Say what Purlin cannot do as plainly as what it can: "Purlin can't prove code
 is right. It gives you a paper trail." State the gap rather than skip it.
 
@@ -38,5 +46,5 @@ rhetorical questions, and no sentence that describes a benefit without naming th
 ## Sentence shapes
 
 - Definitions: "*Gate*: the one project setting, `passed`, `strong` or `signed`."
-- Consequences: "If any of the three change, it no longer counts."
+- Consequences: "If any of the three change, the signature goes stale."
 - Instructions: "Run it at the start of a session and before a release."

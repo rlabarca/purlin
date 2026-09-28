@@ -1,11 +1,9 @@
 # Review criteria
 
-What the audit reads on one rule before a person does, and what a person reads after. The brief
-sets the rule, its proofs and the source of each test that backs them beside two layers of
-evidence, and stops when it has enough for the rule's level: the test strength from the latest
-record, then the AI audit on every rule whose level is `strong` or `signed`. The brief builds
-that model prompt from this file verbatim, so every sentence here is written to be read by a
-person and by a model.
+What the AI audit reads on one rule, and what a person reads after. `purlin:audit` sets the
+rule, its proofs and the source of each test that backs them beside the test strength from the
+evidence, and sends that to a model, one call per rule. The prompt opens with this file
+verbatim, so every sentence here is written to be read by a person and by a model.
 
 ## What the audit looks for
 
@@ -57,14 +55,16 @@ checks each of these against the test the proof names:
   claims to prove. A test mocks the network, the clock and the filesystem, never the code
   under test.
 
-A rule no proof line names reads `no test` with the reason `no proof written`. Whether a proof
-line is there is all that is read there: what a proof is worth is the audit's question,
-answered by a model that read the test beside it.
+A rule no proof line names, and no test marked with the rule's own id answers, reads
+`no test` with the reason `no proof written`. A rule whose test passes and that has no proof
+reads `no proof` in its strong cell, because there is no proof to read the test against.
+Whether a proof line is there is all that is read there: what a proof is worth is the audit's
+question, answered by a model that read the test beside it.
 
 ## What test strength says
 
 Test strength is the share of deliberate breaks made to the code that the tests
-caught, as an integer percent. It reads `test_strength` from the latest record, is
+caught, as an integer percent. It reads `test_strength` from the evidence, is
 compared against `min_strength` from `.purlin/config.json`, and shows as `n/a` when no
 engine ran.
 
@@ -77,12 +77,13 @@ Read it beside what the audit observed, never instead of it.
 ## The three levels
 
 A rule's **level** is what it must have to meet the gate, in the gate's own words: `passed`,
-`strong` or `signed`. A rule tagged `[level: ...]` asks for what it names; a rule with no tag
-takes the project's gate, and a tag above the gate is read as the gate. The level is read at
+`strong` or `signed`. A rule marked `[level: ...]` asks for what it names; a rule with no mark
+takes the project's gate, and a mark above the gate is read as the gate. The level is read at
 `strong` and above; under `passed` it is never shown and it changes nothing.
 
-**`passed`.** The tests are the evidence. A passing run from either source meets the level,
-and the AI audit does not run on the rule at all. The rule needs no signature, and it meets
+**`passed`.** The tests are the evidence. A passing run from either source meets the level.
+Under a gate above `passed` the AI audit does not read the rule; under the gate `passed` it
+reads every rule and what it finds blocks nothing. The rule needs no signature, and it meets
 the gate on its tests.
 
 **`strong`** and **`signed`.** The strong cell is the evidence. The AI audit must have run on
@@ -112,29 +113,31 @@ it is build work and it stays on the board. A weak rule is build work too, and s
 reading `not audited`, whose next step is `purlin:audit` rather than a reader. A rule whose
 level is `passed` is never in it. The queue reads by feature, then by rule number.
 
-## What the brief reports
+## What the audit reports
 
-The brief reports. It recommends nothing, and it never names a next action. Three things:
+The audit reports. It recommends nothing, and it never names a next action. Three things:
 
 - **The strength, beside the minimum.** `Test strength: 71 percent (minimum 80)`, or
   `Test strength: n/a (minimum 80)` when no break engine ran.
 - **The observations.** What the AI audit saw the test observe, against what the proof
   names, one sentence each. The audit is asked to state what it saw and to say when it
   cannot tell. It is never asked what to do.
-- **Whether it settled.** `Settled: yes` when the audit could tell, `no` when it could not, and
-  `not answered` when no AI audit ran. `no` makes the strong cell read `weak`, with the
-  audit's own sentence as the reason: an audit that cannot decide is build work. `not answered`
-  writes nothing, and the rule reads `not audited`. An audit that settled and still observed
+- **Whether it settled.** `settled: yes` when the audit could tell and `settled: no` when it
+  could not. `no` makes the strong cell read `weak`, with the audit's own sentence as the
+  reason: an audit that cannot decide is build work. Where no model could be reached nothing
+  is written, and the rule reads `not audited`. An audit that settled and still observed
   something is a different answer: it could tell, and what it saw is build work, so the cell
   reads `weak` with each observation sentence among its reasons.
 
-The rule, each proof and the source of each test are printed above the evidence, so a person
-reading the brief sees what the audit read.
+What the audit found is written into the evidence with the name of the model that found it,
+and a person reads it beside the rule, each proof and the source of each test, which is what
+the audit read.
 
 A `@manual` proof has no test, so there is no test body to read and no AI audit is asked
-for. Its strong cell reads `manual test` and its brief says so.
+for. Its strong cell reads `manual test`.
 
-What a person does with the brief is one of three things, and `purlin:sign` takes each:
+What a person does with what the audit found is one of three things, and `purlin:sign` takes
+each:
 
 - **Sign it.** The test proves the proof. `purlin:sign <feature> RULE-N`.
 - **Add a case.** The test is right as far as it goes and a case is missing, usually the

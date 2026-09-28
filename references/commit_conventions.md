@@ -10,9 +10,9 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `feat(<name>):` | Implementing a feature, with the changeset in the body | `purlin:build` |
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
-| `purlin: evidence at <commit7>` | The evidence of one run: `.purlin/evidence/` and `.purlin/tests.md` | `purlin:test --commit`, `purlin:audit --commit`, `purlin:export --commit`, `purlin:sign` for the package the tag carries, and a remote runner |
+| `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` with `.purlin/tests.md`, or the evidence package | `purlin:test --commit`, `purlin:audit --commit`, `purlin:export --commit`, `purlin:sign` for the package the tag carries, and a remote runner |
 | `sign(<name>): RULE-N ...` | Signatures, signed | `purlin:sign` |
-| `sign(batch): <feature> RULE-N, ...` | One signed commit covering more than one feature | `purlin:sign --batch` |
+| `sign(batch): <feature> RULE-N, ...` | Signatures, signed, in one commit covering more than one feature | `purlin:sign`, whenever the rules it signs belong to more than one feature |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
 | `chore(update): migrate to <VERSION> (<ids>)` | Migrating a project to the installed plugin | `purlin:init --update` |
@@ -29,8 +29,8 @@ fix(auth_login): reject a token whose issuer moved
 purlin: evidence at a1b2c3d
 sign(auth_login): RULE-3 RULE-4 RULE-7
 sign(batch): auth_login RULE-9, checkout RULE-2
-anchor(design_tokens): sync (abc1234)
-chore(update): migrate to 0.10.0 (legacy-proof-file, legacy-marker)
+anchor(security_baseline): sync (abc1234)
+chore(update): migrate to 0.10.0 (markers, plugins)
 chore: rename login to authentication
 ```
 
@@ -76,9 +76,11 @@ signed/<version>
 signed/<name>            with --release <name>
 ```
 
-Signed, never lightweight (`git tag -s`, with the key you sign commits with), and written by `purlin:sign` when the walk closes with every rule
-meeting the gate; what that means is defined once, in `references/hard_gates.md`. The version is the `VERSION` file at the project root, or the config's
-`version` where there is no such file. The message names the commit and the gate:
+Signed, never lightweight (`git tag -s`, with the key you sign commits with), and written by
+`purlin:sign` when the walk closes with every rule meeting the gate; what that means is defined
+once, in `references/hard_gates.md`. The version is the `VERSION` file at the project root, or
+the config's `version` where there is no such file. The message names the commit and the
+gate:
 
 ```
 Every rule meets the gate signed.
@@ -88,13 +90,14 @@ Gate: signed
 ```
 
 No tag is written while one rule falls short, and none is written over a tag that is already
-there. Nothing is pushed: the last line is `Run: git push origin signed/<version>`, and pushing
-it is what starts the run that reruns the tests on a clean machine and checks the evidence.
+there. Nothing is pushed: the last line is `Run: git push origin signed/<version>`. Where the
+project has a remote runner, pushing it starts the run that reruns the tests on a clean machine
+and checks the evidence.
 
 ## The build commit body
 
 `purlin:build` puts the changeset in the body: what it built, where, and why. This is the
-engineer's review artefact and it stays in git history.
+developer's review artefact and it stays in git history.
 
 ```
 feat(auth_login): implement RULE-1, RULE-2, RULE-3
@@ -115,7 +118,7 @@ Review:
 |---------|---------------|----------------------|
 | Changeset | Rule to file and line, for every rule the commit addresses | Never |
 | Decisions | Choices the agent made between alternatives | When every rule had one obvious implementation |
-| Review | What the engineer should look at hardest | When nothing needs a second pass |
+| Review | What the developer should look at hardest | When nothing needs a second pass |
 
 ## When to commit
 
@@ -125,7 +128,7 @@ Review:
 | The build is stable | Code, tests, and the changeset in the body | Half a feature is not a milestone |
 | A run you want to keep, with `--commit` | The evidence and the table, alone | It names the commit the tests ran against |
 | A walk of the queue ended | The signatures, signed, in one commit | The batch is one attestation |
-| A pin advanced | The anchor spec and any designs it pulled in | Staleness is read from the committed pin |
+| A pin advanced | The anchor spec | Staleness is read from the committed pin |
 
 Do not commit after each failed test iteration, do not batch two skills' output into one commit,
 and do not commit without reading `sync_status` first.
