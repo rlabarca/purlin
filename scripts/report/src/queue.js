@@ -8,6 +8,14 @@
    queue row for what it needs and the command that answers it, so the page,
    the rule screen and the walk can never disagree. */
 
+/* When a rule arrives on the tab, at each gate that has one. Under `strong`
+   no rule asks for a signature, so a hand check is the one way in. */
+var ARRIVES = {
+  strong: 'A rule arrives here when its level is strong and its proof is '
+    + '@manual.',
+  signed: 'A rule arrives here when its proof is @manual, or when its level '
+    + 'is signed and it has passed its tests and its audit.'};
+
 /* Long enough to read the claim, short enough that a queue of two hundred
    rows stays one column of text. The rest of the rule is on its own screen. */
 var RULE_TEXT_MAX = 90;
@@ -46,9 +54,8 @@ function renderQueue() {
   var entries = DATA.queue || [];
   if (!entries.length) {
     return '<section><p class="eyebrow">Queue</p><div class="panel empty">'
-      + 'No rule is waiting for a person. A rule arrives here when its proof '
-      + 'is @manual, or when its level is signed and it has passed its tests '
-      + 'and its audit.</div></section>';
+      + 'No rule is waiting for a person. ' + ARRIVES[gateName()]
+      + '</div></section>';
   }
   var hand = entries.filter(function (entry) {
     return entry.need === 'hand check';

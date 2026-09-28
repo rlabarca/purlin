@@ -168,13 +168,23 @@ function signedCell(feature) {
     + counts([share(rollup.signed || 0, rollup.rules || 0)]) + '</span>';
 }
 
+/* A spec that names no files: Purlin cannot tell which code it covers, so a
+   default `purlin:test` always runs it and, at `signed`, none of its rules
+   can be signed. The name says so, and the hover says why. */
+function noScope(feature) {
+  if (!feature.incomplete) { return ''; }
+  return '<span class="sec ns"' + hover([feature.incomplete_reason
+      || 'no > Scope: line']) + '>' + esc(DOT.replace(/^ /, '') + 'no scope')
+    + '</span>';
+}
+
 function featureRow(feature, columns) {
   var rollup = feature.rollup || {};
   var open = !!VIEW.features[feature.name];
   var cells = ['<span class="name"><span class="caret">'
     + (open ? '▼' : '▶') + '</span>'
     + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
-    + esc(feature.name) + '</span></span>'];
+    + esc(feature.name) + '</span>' + noScope(feature) + '</span>'];
   cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');
   cells.push(proofsCell(feature));
   cells.push(testsCell(feature));

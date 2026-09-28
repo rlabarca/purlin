@@ -332,8 +332,8 @@
         },
         "local": null
       },
-      "incomplete": false,
-      "incomplete_reason": null,
+      "incomplete": true,
+      "incomplete_reason": "no > Scope: line",
       "is_anchor": false,
       "is_global": false,
       "name": "invoice",
@@ -342,7 +342,7 @@
       "rollup": {
         "failing": 0,
         "hand_checks": 0,
-        "incomplete": false,
+        "incomplete": true,
         "manual": 0,
         "met": 0,
         "not_audited": 0,
@@ -491,9 +491,7 @@
           "text": "An invoice with no lines totals zero."
         }
       ],
-      "scope": [
-        "src/invoice/"
-      ],
+      "scope": [],
       "signatures": [],
       "source": null,
       "source_path": null,
@@ -646,7 +644,7 @@
     "failing": 0,
     "features": 3,
     "hand_checks": 0,
-    "incomplete": 0,
+    "incomplete": 1,
     "manual": 0,
     "met": 3,
     "not_audited": 0,

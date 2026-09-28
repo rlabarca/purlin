@@ -83,6 +83,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .caret{color:var(--text-muted);font-size:var(--ui-sm);flex:none}
 .name{display:flex;align-items:center;gap:var(--space-4);min-width:0}
 .name .n{font-size:var(--ui-base);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.name .ns{flex:none;font-size:var(--ui-base);white-space:nowrap}
 .rule{display:grid;grid-template-columns:96px 1fr auto;gap:var(--space-4);align-items:start;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:pointer;font-size:var(--ui-sm)}
 .rule:hover{background:var(--hover-tint)}
 .rule .rid{font-family:var(--font-mono);color:var(--text-primary)}
@@ -90,7 +91,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .rule .rp{display:inline-flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;justify-content:flex-end}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 
-/* --- rule and review screens ----------------------------------------- */
+/* --- rule and queue screens ------------------------------------------ */
 .kv{display:grid;grid-template-columns:170px 1fr;gap:var(--space-3) var(--space-6);margin:0;font-size:var(--ui-base)}
 .kv dt{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary);padding-top:2px}
 .kv dd{margin:0;color:var(--text-primary);min-width:0;overflow-wrap:anywhere}

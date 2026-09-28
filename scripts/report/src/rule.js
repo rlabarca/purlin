@@ -1,5 +1,6 @@
 /* The Rule screen: one rule, its level and the cells the gate reaches,
-   the brief the machine wrote, and the proofs that stand for it. */
+   what the audit found, the signature, and the proofs that stand for it with
+   the tests that carry them. */
 
 function ruleInView() {
   var feature = featureNamed(VIEW.feature);
@@ -46,35 +47,45 @@ function cellRow(rule, name) {
     + '</dd>';
 }
 
-/* What the audit found, and nothing about what to do with it: the strength
-   beside the minimum this gate asks for, then what the AI audit found, one
-   sentence to a line as it wrote them, then whether it could decide the
-   question. The audit writes sentences, so there is no list of check names
-   to render here. */
-function briefPanel(feature, rule) {
+/* What the audit found, and nothing about what to do with it: its answer,
+   each finding on its own line as the audit wrote it, the test strength
+   beside the minimum this gate asks for or `no mutation score measured`,
+   then the model that read the rule and when. The audit writes sentences,
+   so there is no list of check names to render here. */
+function auditPanel(rule) {
   var cell = cellOf(rule, 'strong');
   if (!cell) { return ''; }
+  var audit = rule.audit;
   var lines = [];
-  lines.push('<p class="sec">' + (cell.strength == null
-    ? 'Test strength is n/a: nothing measured it.'
-    : esc('Test strength ' + Math.round(cell.strength) + '%, against a '
-        + 'minimum of ' + minStrength() + '%.')) + '</p>');
-  (cell.findings || []).forEach(function (text) {
-    lines.push('<p class="sec">' + esc(text) + '</p>');
-  });
-  var answered = (rule.audit || {})['verdict'];
-  if (answered === 'strong' || answered === 'weak') {
-    lines.push('<p class="sec">The AI audit settled the question.</p>');
-  } else if (answered === 'undecided') {
-    lines.push('<p class="sec">The AI audit could not decide the question, '
-      + 'so the rule reads weak until its proof or test changes.</p>');
+  var findings = (audit && audit.findings) || [];
+  var answer = audit ? audit['verdict'] : null;
+  if (!audit) {
+    lines.push(line('No audit has read this rule\u2019s text, proof and '
+      + 'test yet.'));
+  } else if (answer === 'strong' && !findings.length) {
+    lines.push(line('Strong. It found nothing.'));
+  } else if (answer === 'undecided') {
+    lines.push(line('Undecided. The AI audit could not decide, so the rule '
+      + 'reads weak until its proof or test changes.'));
+  } else {
+    lines.push(line(answer === 'strong' ? 'Strong.' : 'Weak.'));
   }
-  if (cell.evidence) {
-    lines.push('<p class="sec">' + hostLink(cell.evidence, cell.evidence)
-      + '</p>');
+  findings.forEach(function (text) { lines.push(line(text)); });
+  lines.push(line(cell.strength == null ? 'no mutation score measured'
+    : 'Test strength ' + Math.round(cell.strength) + '%, against a minimum '
+      + 'of ' + minStrength() + '%.'));
+  if (audit) {
+    lines.push('<p class="sec">Read by <span class="mono">'
+      + esc(audit.model || 'unknown') + '</span> on '
+      + esc(moment(audit.at)) + '</p>');
+    if (audit.path) {
+      lines.push('<p class="sec">' + hostLink(audit.path, audit.path) + '</p>');
+    }
   }
-  return '<div class="panel"><h2>Brief</h2>' + lines.join('') + '</div>';
+  return '<div class="panel"><h2>Audit</h2>' + lines.join('') + '</div>';
 }
+
+function line(text) { return '<p class="sec">' + esc(text) + '</p>'; }
 
 /* The signature files that bind this rule. One is named
    <RULE-N>.<hash8>.<signer-slug>.json, so the third part names who. */
@@ -89,24 +100,35 @@ function signerOf(path) {
 }
 
 /* A signature is a signed commit, so this page cannot write one: it names the
-   command that does, and reads back the signatures already committed. */
+   command that does, and reads back the signature already committed, with
+   who signed, when, and on which machine and operating system. The panel is
+   headed with what the queue calls the need, `Hand check` or `Signature`. */
 function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
   if (!cell) { return ''; }
   if (cell.word === 'signed') {
+    var where = cell.machine
+      ? ', on ' + cell.machine + (cell.os ? ' (' + cell.os + ')' : '') : '';
     return '<div class="panel"><h2>Signed</h2><p class="sec">'
       + esc('Signed by ' + (cell.signer || signerOf(cell.path || '')
-          || 'a person') + ' on ' + when(cell.at)
-        + ', against the rule, proof and test text this screen shows. The '
-        + 'signature file beside the spec carries the commit that signed it.')
+          || 'a person') + ' on ' + moment(cell.at) + where
+        + ', against the rule, its proofs, its tests and what the audit '
+        + 'found as this screen shows them. The signature file beside the '
+        + 'spec carries the commit that signed it.')
       + '</p></div>';
   }
-  return '<div class="panel"><h2>To sign</h2>'
-    + '<p><span class="cmd">purlin:sign ' + esc(feature.name) + ' '
-    + esc(rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
+  var row = queueRowFor(feature.name, rule.id);
+  var hand = row && row.need === 'hand check';
+  var command = row ? row.command
+    : 'purlin:sign ' + feature.name + ' ' + rule.id;
+  return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
+    + '</h2><p><span class="cmd">' + esc(command) + '</span> '
+    + '<span class="sec">from Claude Code</span></p>'
     + '<p class="sec">' + (rule.level !== 'signed'
-      ? 'This rule’s level is ' + esc(rule.level) + ', so it asks for no '
+      ? 'This rule\u2019s level is ' + esc(rule.level) + ', so it asks for no '
         + 'signature; one written anyway still counts.'
+      : hand ? 'A hand check is a signature with a note of what you saw; the '
+        + 'page shows it once it is committed.'
       : 'A signature is a signed commit that names its signer; the page '
         + 'shows it once it is committed.') + '</p></div>';
 }
@@ -150,7 +172,7 @@ function renderRule() {
   }
   rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
     + '</dd>');
-  rows.push('<dt>Last run</dt><dd>' + recordLine(feature) + '</dd>');
+  rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
   var signatures = level('signed') ? signaturesFor(feature, rule) : [];
   if (signatures.length) {
     rows.push('<dt>Signatures</dt><dd>' + signatures.map(function (path) {
@@ -164,10 +186,10 @@ function renderRule() {
     + '<p class="sec">' + esc(rule.text) + '</p></section>'
     + '<section class="stack"><div class="panel"><dl class="kv">'
     + rows.join('') + '</dl></div>'
-    + briefPanel(feature, rule) + signPanel(feature, rule) + '</section>'
+    + auditPanel(rule) + signPanel(feature, rule) + '</section>'
     + '<section><p class="eyebrow">Proofs</p><div class="stack">'
     + ((rule.proofs || []).length
       ? rule.proofs.map(proofPanel).join('')
-      : '<div class="panel sec">This rule has no proof yet.</div>')
+      : '<div class="panel sec">No proof written.</div>')
     + '</div></section>';
 }

@@ -11,9 +11,10 @@ var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
             features: {}, groups: {}, filters: {}};
 var SCHEMA = 9;
-/* The data file is rewritten seconds after a tool call changed a spec, a
-   record or a signature, and a tab left open would never notice. Coming back
-   to the tab reloads it when what it holds is older than this. */
+/* The data file is rewritten when `purlin:status`, `purlin:test`,
+   `purlin:audit` or `purlin:sign` finishes, and a tab left open would never
+   notice. Coming back to the tab reloads it when what it holds is older than
+   this. */
 var REFRESH_AFTER = 60;
 
 /* The three evidence levels, lowest first. The project's gate names the
@@ -360,7 +361,7 @@ function signerLines(feature) {
 
 /* The evidence file of this spec's newest run, linked to the file on the
    git host. Which platform found what is on the passed cell row above it. */
-function recordLine(feature) {
+function runLine(feature) {
   var run = newestRun(feature);
   if (!run) { return '<span class="mono muted">\u2014</span>'; }
   return hostLink(run.path, run.source + DOT + ageText(run.at).text);
@@ -401,6 +402,24 @@ function ageText(iso) {
 /* The date part of an ISO stamp, where a whole day is precise enough. */
 function when(iso) { return String(iso || '').slice(0, 10) || 'date unknown'; }
 
+/* The date and the minute of an ISO stamp, which is UTC wherever it was
+   written: `2026-09-12 10:02 UTC`. */
+function moment(iso) {
+  var text = String(iso || '');
+  return text.length >= 16 ? text.slice(0, 10) + ' ' + text.slice(11, 16)
+    + ' UTC' : when(iso);
+}
+
+/* The queue row that names this rule under the feature that owns it, or
+   null where the rule waits on nobody. */
+function queueRowFor(owner, id) {
+  var found = null;
+  (DATA.queue || []).forEach(function (entry) {
+    if (entry.owner === owner && entry.rule === id) { found = entry; }
+  });
+  return found;
+}
+
 /* One cell of one rule, or null where the gate puts that level above the
    project: the key is missing, not empty. */
 function cellOf(rule, name) {
@@ -431,7 +450,8 @@ function ageLine() {
 
 /* The tag this commit carries, which is the marker that a version was signed
    off: `purlin:sign` writes `signed/<version>` once every rule meets the gate,
-   and a person pushes it. The payload's `tag` is whatever git reported, so it
+   and a person pushes it. Under `passed` nothing is signed and no tag is
+   written, so the top bar names none. The payload's `tag` is whatever git reported, so it
    is read defensively: a string is the tag's own name, an object carries that
    name and the commit it points at, and anything else, a missing key
    included, means this commit carries none. */
@@ -466,7 +486,8 @@ function topBar() {
     + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? tag('gate: ' + gate, true) : '') + tagChip()
+    + (gate ? tag('gate: ' + gate, true) : '')
+    + (level('strong') ? tagChip() : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
          + esc(String(DATA.commit).slice(0, 7)) + '</span>' : '')
