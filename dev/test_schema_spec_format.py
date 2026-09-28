@@ -347,10 +347,10 @@ class TestTagParsing:
             assert env is None, f"{bad!r} must not be read as an environment"
             assert unknown == ['@env(%s)' % bad], unknown
             assert (clean, manual) == ('Lock the file', False)
-        # A retired tag is ignored and named, never read.
-        clean, manual, env, unknown = split('Lock the file @on(windows-2022)')  # retired
+        # The bare tag 0.9.5 wrote is ignored and named, never read.
+        clean, manual, env, unknown = split('Lock the file @windows')
         assert (clean, manual, env) == ('Lock the file', False, None)
-        assert unknown == ['@on(windows-2022)'], unknown  # retired
+        assert unknown == ['@windows'], unknown
 
     # purlin: schema_spec_format PROOF-9
     def test_real_spec_is_parsed_correctly(self):

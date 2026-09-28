@@ -21,9 +21,8 @@ can settle the rule:
 `@env` takes `windows`, `macos` or `linux` and nothing else. A proof with no
 `@env` is satisfied by a run on any operating system.
 
-Tags this release does not know (`@on(...)`, a bare `@windows`, a stamped  # retired
-`@manual(...)`) are ignored, and the file that carried one is named once in
-the run's warnings.
+The tags 0.9.5 wrote, a bare `@windows` and a stamped `@manual(...)`, are
+ignored, and the file that carried one is named once in the run's warnings.
 """
 
 import hashlib
@@ -64,8 +63,9 @@ _DESCRIPTION_RE = re.compile(r'^>\s*Description:\s*(.+)', re.MULTILINE)
 _STACK_RE = re.compile(r'^>\s*Stack:\s*(.+)', re.MULTILINE)
 _META_FIELD_RE = re.compile(r'^>\s*[A-Z][A-Za-z-]+:')
 
-# Fields this release no longer reads. A spec that still carries one parses;
-# the field is ignored and the file is named once in the run's warnings.
+# The fields 0.9.5 wrote that the format does not carry. A spec that still
+# carries one parses; the field is ignored and the file is named once in the
+# run's warnings.
 _RETIRED_FIELDS = ('Visual-Reference', 'Visual-Hash')
 _RETIRED_FIELD_RE = re.compile(
     r'^>\s*(' + '|'.join(_RETIRED_FIELDS) + r'):', re.MULTILINE)
@@ -125,14 +125,11 @@ def split_proof_tags(desc):
                 env = value
             else:
                 unknown.append('@env(%s)' % value)
-        elif name == 'on':
-            # Retired in 0.10.0: `@env(<os>)` replaced it.
-            unknown.append('@on(%s)' % (args or ''))  # retired
         elif name == 'windows':
             unknown.append('@windows')
         elif args:
-            # A tag with arguments that is not @env is a stamp, and stamps
-            # are no longer part of the format.
+            # A tag with arguments that is not @env is a stamp, which the
+            # format does not carry; a stamped `@manual` still reads manual.
             unknown.append('@%s(...)' % name)
             manual = manual or name == 'manual'
         elif name == 'manual':

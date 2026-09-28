@@ -84,7 +84,7 @@ moves, and an anchor whose content changed under a project without a diff is
 what pinning exists to prevent.
 
 `purlin:drift` runs one cached `git ls-remote` per source per run and reports
-`anchor X is behind its pin`. `purlin:anchor sync X` shows the delta, updates
+`anchor X is behind its source`. `purlin:anchor sync X` shows the delta, updates
 the local copy and advances the pin, all in one commit.
 
 A `> Source:` value is repository-supplied text, so it never reaches git in
@@ -141,8 +141,9 @@ An anchor with `> Global: true` applies its rules to every non-anchor feature
 spec. Features do not name it; its rules appear in each feature's count with
 the label `global`.
 
-## Retired
+## Fields 0.9.5 wrote
 
-`figma://` sources, `> Visual-Reference:`, `> Visual-Hash:` and the visual
-hash comparison are retired. An anchor that still carries one of those fields
-parses; the field is ignored and the file is named once in the run's warnings.
+`> Visual-Reference:` and `> Visual-Hash:` are not part of the format. An
+anchor that still carries one parses; the field is ignored and the file is
+named once in the run's warnings. `purlin:init --update` removes them, and a
+`> Source:` naming a `figma://` design together with its `> Pinned:` line.

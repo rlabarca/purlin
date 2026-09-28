@@ -366,7 +366,7 @@ class TestSpecParsing:
             '# Feature: login\n\n## Rules\n\n- RULE-1: Files lock\n\n'
             '## Proof\n\n'
             '- PROOF-1 (RULE-1): Lock a file; verify 1 open fails '
-            '@on(windows-2022)\n')  # retired
+            '@windows\n')
         project.spec(
             '# Feature: legacy\n\n> Visual-Reference: ./mock.png\n\n'
             '## Rules\n\n- RULE-1: It renders\n\n'
@@ -374,7 +374,7 @@ class TestSpecParsing:
             '2026-03-31, abc1234)\n', name='legacy')
         features = purlin_specs.scan_specs(project.root)
         assert features['login']['proofs']['PROOF-1']['env'] is None
-        assert features['login']['unknown_tags'] == ['@on(windows-2022)']  # retired
+        assert features['login']['unknown_tags'] == ['@windows']
         assert features['legacy']['proofs']['PROOF-1']['manual'] is True
         assert set(features['legacy']['unknown_tags']) == {
             '@manual(...)', '> Visual-Reference:'}

@@ -41,8 +41,7 @@ Every spec has these two sections, matched case-insensitively:
 2. `## Proof`: numbered proof blueprints, `PROOF-N (RULE-N): description`
 
 These two are the whole structure. A spec carrying some other heading still
-parses and nothing reads that heading, so a spec written against an older
-format keeps working; new specs should not add one. What the feature does
+parses and nothing reads that heading; new specs should not add one. What the feature does
 belongs in `> Description:`, which the dashboard displays.
 
 ## Metadata fields
@@ -66,11 +65,11 @@ belongs in `> Description:`, which the dashboard displays.
 > Scope: scripts/mcp/config_engine.py
 ```
 
-### Retired fields
+### Fields 0.9.5 wrote
 
-`> Visual-Reference:`, `> Visual-Hash:` and `> Global:`-adjacent visual
-tracking are retired. A spec that still carries one parses; the field is
-ignored and the file is named once in the run's warnings.
+`> Visual-Reference:` and `> Visual-Hash:` are not part of the format. A spec
+that still carries one parses; the field is ignored and the file is named once
+in the run's warnings, and `purlin:init --update` removes it.
 
 ## Rules format
 
@@ -168,12 +167,12 @@ passes it; a rule with proofs on two systems needs both, and the cell reads
 On a machine that is not the named one, the run does not count the proof and
 says which operating system it needs.
 
-### Retired tags
+### Tags 0.9.5 wrote
 
-`@on(<id>)`, a bare `@windows` and a stamped                         <!-- retired -->
-`@manual(<email>, <date>, <sha>)` are retired. A spec that still carries one
-parses; the tag is ignored and the file is named once in the run's warnings.
-Rewrite `@on(windows)` as `@env(windows)`.                          <!-- retired -->
+A bare `@windows` and a stamped `@manual(<email>, <date>, <sha>)` are not part
+of the format. A spec that still carries one parses; the tag is ignored, a
+stamped `@manual` still reads as `@manual`, and the file is named once in the
+run's warnings. `purlin:init --update` rewrites `@windows` as `@env(windows)`.
 
 A tag is recognised only when it does not follow a list connector (`,`, `and`,
 `or`), so a description whose prose ends in `@manual, @env and @word` has no
