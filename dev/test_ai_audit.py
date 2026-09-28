@@ -23,8 +23,10 @@ What each group holds:
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
+import time
 
 import pytest
 
@@ -38,7 +40,7 @@ import ai_audit as audit_module  # noqa: E402
 import fake_claude  # noqa: E402
 import marked_tests  # noqa: E402
 from test_signatures import (REVIEW_GATE, SIGNING_GATE, SPEC,  # noqa: E402
-                             Project)
+                             TEST_FILE, Project)
 
 AI_AUDIT_PY = os.path.join(ROOT, 'scripts', 'review', 'ai_audit.py')
 CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
@@ -130,6 +132,20 @@ class TestWhichRulesAreRead:
         audited = self._rule(audit={'verdict': 'strong', 'findings': []})
         assert audit_module.is_read(audited, 'strong') is False
         assert audit_module.is_read(audited, 'strong', again=True) is True
+
+    # purlin: ai_audit PROOF-4
+    def test_an_entry_for_earlier_text_does_not_stop_a_reading(self,
+                                                               at_strong):
+        assert audit_module.is_read(at_strong.rule('RULE-2'), 'strong')
+        at_strong.audit('RULE-2')
+        assert not audit_module.is_read(at_strong.rule('RULE-2'), 'strong')
+        at_strong.spec(SPEC.replace('return 401 and the body',
+                                    'return 401 with the body'))
+        at_strong.evidence()
+        reworded = at_strong.rule('RULE-2')
+        assert reworded['cells']['passed']['word'] == 'passed', reworded
+        assert not reworded.get('audit'), reworded
+        assert audit_module.is_read(reworded, 'strong') is True
 
 
 class TestWhatOneRuleIsReadWith:
@@ -274,6 +290,10 @@ class TestThePrompt:
         assert 'Invalid credentials return 401' in prompt
         assert 'test_a_bad_password_is_denied' in prompt
         assert 'Test strength: 90 percent (minimum 70)' in prompt
+        after = prompt[len(criteria_text()):]
+        assert ('POST /login with a bad password; verify 401 and the body '
+                '"denied"') in after
+        assert 'assert login("ada", "wrong") == 401' in after
 
     # purlin: ai_audit PROOF-12
     def test_the_prompt_asks_for_observations_and_bars_a_recommendation(
@@ -284,6 +304,7 @@ class TestThePrompt:
         assert 'one line per observation' in prompt
         assert 'Do not recommend a change' in prompt
         assert 'do not grade the rule' in prompt
+        assert 'do not score it' in prompt
 
 
 # ---------------------------------------------------------------------------
@@ -342,6 +363,35 @@ class TestTheCall:
         assert len(calls) == 6, calls
         assert [found['verdict'] for found in results] == ['strong'] * 6
         assert fake_claude.most_at_once(calls) == 4, calls
+
+    # purlin: ai_audit PROOF-15
+    def test_six_rules_six_calls_each_answer_beside_its_rule(self, at_strong,
+                                                             claude):
+        base = read(at_strong, 'RULE-2')
+        readings = [dict(base, rule='RULE-%d' % n,
+                         rule_text='Rule number %d holds' % n)
+                    for n in range(1, 7)]
+        asked = []
+
+        class Done(object):
+            returncode = 0
+
+        def runner(command, **kwargs):
+            rule = re.search(r'^login (RULE-\d) ', kwargs['input'],
+                             re.M).group(1)
+            asked.append(rule)
+            # The later the rule, the sooner it answers.
+            time.sleep(0.05 * (7 - int(rule[5:])))
+            done = Done()
+            done.stdout = json.dumps({'result': 'settled: yes\n- saw %s'
+                                      % rule})
+            return done
+
+        results = audit_module.audit_all(at_strong.root, readings, 4,
+                                         runner=runner)
+        assert sorted(asked) == ['RULE-%d' % n for n in range(1, 7)], asked
+        assert [found['findings'] for found in results] == [
+            ['saw RULE-%d' % n] for n in range(1, 7)], results
 
     # purlin: ai_audit PROOF-16
     def test_the_number_at_once_is_what_it_is_given(self, at_strong, claude):
@@ -411,6 +461,12 @@ class TestTheAnswer:
         body = {'modelUsage': {'claude-haiku-3-5': {'outputTokens': 12},
                                'claude-opus-4-1': {'outputTokens': 900}}}
         assert audit_module.model_name(body) == 'claude-opus-4-1'
+        body = {'modelUsage': {'claude-opus-4-1': {'outputTokens': 900},
+                               'claude-haiku-3-5': {'outputTokens': 12}}}
+        assert audit_module.model_name(body) == 'claude-opus-4-1'
+        body = {'modelUsage': {'claude-opus-4-1': {'outputTokens': 12},
+                               'claude-haiku-3-5': {'outputTokens': 900}}}
+        assert audit_module.model_name(body) == 'claude-haiku-3-5'
         assert audit_module.model_name({'model': 'claude-x-1'}) == \
             'claude-x-1'
         assert audit_module.model_name({}) == 'unknown'
@@ -430,9 +486,11 @@ class TestWhenTheModelCannotBeReached:
 
     # purlin: ai_audit PROOF-23
     def test_no_claude_on_the_path_calls_nothing(self, at_strong, claude,
-                                                 monkeypatch):
+                                                 monkeypatch, tmp_path):
         _install, directory = claude
-        monkeypatch.setattr(audit_module, 'claude_path', lambda: None)
+        empty = tmp_path / 'empty'
+        empty.mkdir()
+        monkeypatch.setenv('PATH', str(empty))
         results = audit_module.audit_all(at_strong.root,
                                          [read(at_strong, 'RULE-2')] * 2, 4)
         assert results == [{'why': 'claude is not on PATH'}] * 2
@@ -486,8 +544,6 @@ class TestWriting:
     def _files(root):
         found = []
         for current, _dirs, names in os.walk(os.path.join(root, '.purlin')):
-            if os.sep + 'runtime' in current:
-                continue
             found.extend(os.path.join(current, name) for name in names)
         return sorted(found)
 
@@ -506,8 +562,17 @@ class TestWriting:
     # purlin: ai_audit PROOF-28
     def test_the_triple_moves_with_the_text(self, proved):
         first = read(proved, 'RULE-1')
+        assert read(proved, 'RULE-1')['triple_hash'] == first['triple_hash']
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with a short session token'))
+        assert read(proved, 'RULE-1')['triple_hash'] != first['triple_hash']
+        proved.spec(SPEC)
+        assert read(proved, 'RULE-1')['triple_hash'] == first['triple_hash']
+        proved.spec(SPEC.replace('verify 200 and a token',
+                                 'verify 200 and a token that expires'))
+        assert read(proved, 'RULE-1')['triple_hash'] != first['triple_hash']
+        proved.spec(SPEC)
+        proved.edit_test(TEST_FILE.replace('== 200', '== 200  # checked'))
         assert read(proved, 'RULE-1')['triple_hash'] != first['triple_hash']
 
     # purlin: ai_audit PROOF-29
