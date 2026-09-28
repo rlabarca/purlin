@@ -209,18 +209,6 @@ function listedRule(entry) {
   return ruleNamed(entry.owner || entry.feature, entry.rule);
 }
 
-/* `n of m` with a bar beside it. The bar is the share, so a spec of three
-   rules and a spec of three hundred read at the same glance. `suffix` says
-   what the share is of, where the column heading is not there to say it. */
-function ratio(count, total, suffix) {
-  var pct = total ? Math.round((count / total) * 100) : 0;
-  return '<span class="cov" style="color:var(--state-'
-    + (total && count === total ? 'pass' : count ? 'warn' : 'idle')
-    + ')"><b>' + count + ' ' + WORDS.of + ' ' + total + '</b>'
-    + (suffix ? '<span class="sec">' + esc(suffix) + '</span>' : '')
-    + '<i><span style="width:' + pct + '%"></span></i></span>';
-}
-
 /* Several counts in one cell, each labelled with the word it counts and set
    in that word's tone. `24 passed · 2 failing` says what a bare `24 · 2 · 0`
    left the reader to work out from the heading. The first part is always
@@ -674,6 +662,19 @@ document.addEventListener('visibilitychange', function () {
 window.addEventListener('focus', refreshIfStale);
 setInterval(tickAge, REFRESH_AFTER * 1000);
 document.getElementById('app').addEventListener('click', onClick);
+/* A band is a control drawn as a row, so Enter and Space press it as they
+   press a button, and the focus comes back to it once the page is drawn. */
+document.getElementById('app').addEventListener('keydown', function (event) {
+  var node = event.target;
+  if (!node || node.getAttribute('role') !== 'button'
+      || (event.key !== 'Enter' && event.key !== ' ')) { return; }
+  event.preventDefault();
+  var group = node.getAttribute('data-group');
+  onClick(event);
+  var again = group && document.querySelector('[data-act="group"][data-group="'
+    + CSS.escape(group) + '"]');
+  if (again) { again.focus(); }
+});
 loadData(function (payload) {
   DATA = payload;
   render();

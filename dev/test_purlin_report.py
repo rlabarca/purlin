@@ -624,10 +624,60 @@ def test_the_group_band_says_what_its_numbers_are(browser, tmp_path):
     bands = page.eval_on_selector_all(
         '.group',
         r'els => els.map(e => e.innerText.replace(/\s+/g, " ").trim())')
-    assert bands == ['\u25bc AUTH \u00b7 1 spec \u00b7 3 of 4 pass',
-                     '\u25bc BILLING \u00b7 2 specs \u00b7 4 of 5 pass',
-                     '\u25bc _ANCHORS \u00b7 1 spec \u00b7 1 of 1 pass']
+    assert bands == ['\u25bc AUTH 1 spec 3 of 4 rules pass',
+                     '\u25bc BILLING 2 specs 4 of 5 rules pass',
+                     '\u25bc _ANCHORS 1 spec 1 of 1 rule passes']
     page.close()
+
+
+# Each band's two ends and its bar: where each sits, and how wide the bar is.
+BAND_ENDS = r"""els => els.map(e => {
+  const l = e.querySelector('.gl').getBoundingClientRect();
+  const r = e.querySelector('.gr').getBoundingClientRect();
+  const bar = e.querySelector('.bar').getBoundingClientRect();
+  const gap = e.querySelector('.gs').getBoundingClientRect().left
+    - e.querySelector('.gt').getBoundingClientRect().right;
+  return {sameLine: Math.abs(l.top - r.top) < 4, rightEdge: r.right,
+          boxRight: e.getBoundingClientRect().right, leftOfRight: r.left,
+          leftOfLeft: l.left, barWidth: bar.width, barRight: bar.right,
+          gap: gap, count: parseInt(e.querySelector('.gc b').textContent
+            .split(' of ')[1], 10)};
+})"""
+
+
+# purlin: purlin_report PROOF-77
+def test_a_band_has_two_ends_and_counts_each_rule_once(browser, tmp_path):
+    for name in ('regulated', 'team'):
+        payload = payload_named(name)
+        page = open_board(browser, tmp_path / name, payload,
+                          viewport={'width': 1500, 'height': 900})
+        ends = page.eval_on_selector_all('.group', BAND_ENDS)
+        assert sum(end['count'] for end in ends) == payload['summary']['rules']
+        assert ('of %d' % payload['summary']['rules']) in page.inner_text(
+            '.topbar')
+        for end in ends:
+            assert end['sameLine'], end
+            assert abs(end['boxRight'] - end['rightEdge']) <= 40, end
+            assert end['gap'] >= 16, end
+            assert end['barWidth'] == ends[0]['barWidth'], ends
+            assert abs(end['barRight'] - ends[0]['barRight']) < 1, ends
+        page.close()
+    narrow = open_board(browser, tmp_path / 'narrow', payload_named('regulated'),
+                        viewport={'width': 390, 'height': 900})
+    for end in narrow.eval_on_selector_all('.group', BAND_ENDS):
+        assert not end['sameLine'], end
+        assert abs(end['leftOfRight'] - end['leftOfLeft']) < 2, end
+    band = '.group[data-group="auth"]'
+    assert narrow.get_attribute(band, 'aria-expanded') == 'true'
+    narrow.focus(band)
+    narrow.keyboard.press('Enter')
+    assert narrow.get_attribute(band, 'aria-expanded') == 'false'
+    assert narrow.evaluate('document.activeElement.getAttribute("data-group")') \
+        == 'auth'
+    assert 'login' not in narrow.inner_text('.tbl')
+    narrow.keyboard.press(' ')
+    assert narrow.get_attribute(band, 'aria-expanded') == 'true'
+    narrow.close()
 
 
 # purlin: purlin_report PROOF-10

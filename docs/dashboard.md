@@ -85,8 +85,11 @@ A spec with no `> Scope:` line names no files, so Purlin cannot tell which code 
 row reads `<name> · no scope`, and the hover gives the reason. A `purlin:test` with no feature
 named always runs such a spec, and at `signed` none of its rules can be signed.
 
-Specs are grouped by category. The band above each group reads `billing · 2 specs · 4 of 5
-pass` with a bar after it. Pressing a band folds it; pressing a spec expands the rules it owns.
+Specs are grouped by category. The band above each group has two ends: the category's name
+and `2 specs` at the left, `4 of 5 rules pass` and a bar at the right, every bar one width so
+they line up down the page. A band counts each rule once, under the spec that owns it, so the
+bands add up to the top bar's total; under 1024 pixels its count sits beneath its name.
+Pressing a band, or Enter or Space on it, folds it; pressing a spec expands the rules it owns.
 A rule a feature proves from an anchor is listed once, under that anchor, where the board lists
 the anchor. Each rule row carries the rule id, the rule text, one pill per cell that exists,
 reading the cell's word, and a button that opens the rule's proofs:
