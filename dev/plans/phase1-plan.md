@@ -902,3 +902,35 @@ Under "one reason", a project whose rules name no other system gets no runner. N
 - /Users/richlabarca/LocalCode/purlin/scripts/run/purlin_run.py
 - /Users/richlabarca/LocalCode/purlin/scripts/review/sign.py
 - /Users/richlabarca/LocalCode/purlin/scripts/mcp/purlin/signatures.py
+
+## 7. The answers to section 5, applied (decision 83)
+
+These replace the defaults and the "subject to open question" notes above. Where this section
+and an earlier one differ, this one holds.
+
+1. **The separate check on the runner goes.** L7 deletes `scripts/ci/gate_check.py`,
+   `specs/ci/gate_check.md` and `dev/test_gate_check.py`, and the workflow templates lose the
+   step. Until L7 merges, P0b keeps `gate_check.py` working against the new interfaces.
+2. **The runner runs only the systems the rules name.** No job of its own on Linux.
+3. **A new system ends no signature.** `signatures.is_current(signature, entry)` is true when
+   the hash recomputed from the entry equals the stored `signed_hash`, where the seventh line,
+   the machines, is taken from the entry's `machines` restricted to the systems the signature's
+   own `machines` names. A system the signature names that the entry no longer has, or has
+   under another machine, makes the hashes differ and ends the signature. A system the entry
+   has and the signature does not is left out of the comparison.
+4. **`stale` goes.** No Stale card, no `stale` count or flag in the payload, no list in drift,
+   no reason on the signed cell: a signature that no longer matches reads `unsigned`, and the
+   rule's kind is `to_sign`.
+5. **The dashboard's Untested, Failing and Partial tiles go**, with their filters. The step
+   boxes, the `No proof` box and `Left to do` remain. The payload keeps each rule's cells.
+6. **The package's `not_for_approval` goes.** The top-level keys are those of section 2.5
+   without it.
+7. **This repository's `.github/workflows/purlin.yml` is deleted** by L7.
+
+Also, from P0a: three test files import helpers from a test file another lane owns
+(`dev/test_init_scaffold.py` from `dev/test_reports.py`, `dev/test_gate_check.py` from
+`dev/test_tag.py`, `dev/test_purlin_report.py` from `dev/test_states.py`). P0b moves each
+helper so imported into a helper module that carries no marker (`dev/mcp_project.py`, or a new
+`dev/run_project.py` and `dev/sign_project.py`), and those modules are frozen for the fan-out
+with `dev/skill_checks.py`. After P0b no test file imports from another test file a different
+lane owns.
