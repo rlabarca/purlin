@@ -22,8 +22,7 @@ WORDS = ("gauge", "HOLLOW", "PROVABLE", "receipt", "mutation score",
          # the 0.10.0 three-level model
          "tested", "recorded", "approved", "approve", "approval", "approver", "approvers",
          "verified", "verdict", "reviewed", "re-verify",
-         # the bar replaced it; the two levels that asked for a person became
-         # `[bar: strong]` and the one that did not became `[bar: passed]`
+         # a rule's level, `[level: ...]`, says what a rule asks for
          "risk", "risks",
          # decision 33: nothing scans a proof or a test before the AI audit
          "free scan", "free scans", "hint", "hints")
@@ -77,7 +76,11 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             "write_record", "load_records", "record_label", "latest_record",
             "results_reader", "write_brief", "find_brief", "briefs_dir",
             "scripts/run/records.py", "scripts/run/results.py",
-            "purlin/records.py", "purlin/results.py")
+            "purlin/records.py", "purlin/results.py",
+            # decision 36: a rule's level uses the gate's three words. The
+            # rule tag, its payload field and the setting it replaced are
+            # retired by their machine spellings.
+            "[bar:", "bar_from", "sign_at")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
