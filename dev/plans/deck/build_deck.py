@@ -86,7 +86,7 @@ slide('signed', 'The third gate', 'Gate %s: also have a person sign every rule' 
         ('The signature', 'One file per rule, in a signed commit. It records who signed and when.'),
         ('The package and the tag', 'When every rule is signed, the evidence is written as one file and the version is tagged %s.' % m('signed/1.4.0'))]),
     ('`git push origin signed/1.4.0`', 'You publish the tag. It says every rule of this version is signed.'),
-], '<b>The gate is met</b> when every rule has a signature. A signature stops counting when its rule, proof or test changes.',
+], '<b>The gate is met</b> when every rule has a signature that counts: the rule, its proof, its test and what the audit found are still the ones that were signed.',
  'Signing is the formal lock on all the evidence together: the rule, its proof, its test and what '
  'the audit found. Change any of them and the signature goes stale. A signature belongs to no '
  'machine; it records where it was made. The tag itself is signed.', pad=16)
