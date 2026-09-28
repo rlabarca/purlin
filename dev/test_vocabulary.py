@@ -67,7 +67,11 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
 # hit on it falls inside one of these phrases.
-ALLOWED_PHRASES = ("rules need a person", "rule needs a person")
+# `verdict` stays retired in prose. It came back in 0.10.0 as one field name,
+# the audit's answer per rule in `references/formats/evidence_format.md`, so
+# its machine spellings are stepped over.
+ALLOWED_PHRASES = ("rules need a person", "rule needs a person",
+                   "`verdict`", '"verdict"', "'verdict'")
 CASED = (re.compile(r"\bPages\b"),)     # capitalised only; "pages" of a document is fine
 MD_ONLY = (re.compile(r"\bmode\b", re.I),)  # "mode" is only retired in prose
 

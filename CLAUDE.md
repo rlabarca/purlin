@@ -48,6 +48,7 @@ Do not bump for clarified wording, a new example or a typo.
 | `tests_format.md` | The test results `purlin:test` writes and commits, read by `sync_status` |
 | `record_format.md` | The record `purlin:audit` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
 | `signature_format.md` | The signature and the hold `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
+| `evidence_format.md` | The evidence file per feature per source and its fingerprint, read by `scripts/mcp/purlin/evidence.py` |
 
 ## Skill and reference deduplication
 

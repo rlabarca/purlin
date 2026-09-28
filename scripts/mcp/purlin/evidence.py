@@ -1,0 +1,169 @@
+"""Read a feature's evidence files.
+
+    .purlin/evidence/local/<feature>.json   written on a person's machine
+    .purlin/evidence/ci/<feature>.json      written by a remote runner
+
+The folder is the source. Each file holds one section per operating system
+that ran the feature's tests, and, once an audit has read the feature, one
+audit entry per rule. `references/formats/evidence_format.md` is the shape.
+
+This module reads and never writes. It answers four questions: which sections
+exist, whether each is current against a fingerprint taken now and which
+parts are out of date, which audit entry answers a rule whose rule, proof and
+test hashes are known, and which section is the newest across both sources.
+
+A file that cannot be read, is not JSON, carries another schema, or names a
+source other than its folder is ignored, and the reader says so once per file
+in `warnings`.
+"""
+
+import json
+import os
+import sys
+
+_MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _MCP_DIR not in sys.path:
+    sys.path.insert(0, _MCP_DIR)
+
+from purlin import fingerprint as fingerprint_module          # noqa: E402
+
+SCHEMA = 'purlin-evidence/1'
+SOURCES = ('local', 'ci')
+PLATFORMS = ('windows', 'macos', 'linux')
+EVIDENCE_DIR = '.purlin/evidence'
+
+
+def evidence_path(source, feature):
+    """`.purlin/evidence/<source>/<feature>.json`, `/` separated."""
+    return '%s/%s/%s.json' % (EVIDENCE_DIR, source, feature)
+
+
+def load(project_root, feature):
+    """Both evidence files of one feature.
+
+    Returns `{feature, files, paths, warnings}`: `files` maps each source to
+    the parsed file, or `None` when there is none or it was ignored; `paths`
+    maps each source to its project-relative path; `warnings` holds one
+    sentence per ignored file.
+    """
+    files = {}
+    paths = {}
+    warnings = []
+    for source in SOURCES:
+        path = evidence_path(source, feature)
+        paths[source] = path
+        files[source] = None
+        full = os.path.join(project_root, *path.split('/'))
+        if not os.path.isfile(full):
+            continue
+        try:
+            with open(full, 'r', encoding='utf-8') as handle:
+                data = json.load(handle)
+        except (IOError, OSError, UnicodeDecodeError, ValueError):
+            warnings.append('%s is not valid JSON; it is ignored.' % path)
+            continue
+        if not isinstance(data, dict):
+            warnings.append('%s is not a JSON object; it is ignored.' % path)
+            continue
+        if data.get('schema') != SCHEMA:
+            warnings.append('%s carries the schema %s, not %s; it is ignored.'
+                            % (path, _shown(data.get('schema')), SCHEMA))
+            continue
+        if data.get('source') != source:
+            warnings.append('%s names the source %s but sits in %s/; it is '
+                            'ignored.' % (path, _shown(data.get('source')),
+                                          source))
+            continue
+        files[source] = data
+    return {'feature': feature, 'files': files, 'paths': paths,
+            'warnings': warnings}
+
+
+def sections(loaded):
+    """Every platform section, `local` first, then by operating system.
+
+    Each entry is `{source, os, path, section}`, where `section` is the
+    object the file holds for that operating system. A key other than
+    `windows`, `macos` or `linux`, or a section that is not an object, is
+    skipped.
+    """
+    out = []
+    for source in SOURCES:
+        data = loaded['files'].get(source)
+        platforms = data.get('platforms') if data else None
+        if not isinstance(platforms, dict):
+            continue
+        for os_name in PLATFORMS:
+            section = platforms.get(os_name)
+            if isinstance(section, dict):
+                out.append({'source': source, 'os': os_name,
+                            'path': loaded['paths'][source],
+                            'section': section})
+    return out
+
+
+def check(section, now):
+    """`{current, out_of_date}` for one section against a fingerprint taken now.
+
+    `out_of_date` lists the parts, of `spec`, `code` and `tests`, whose
+    stored hash differs from `now`; the section is current when it is empty.
+    A section with no fingerprint is out of date on all three.
+    """
+    parts = fingerprint_module.differing_parts(section.get('fingerprint'), now)
+    return {'current': not parts, 'out_of_date': parts}
+
+
+def checked_sections(loaded, now):
+    """`sections(loaded)`, each entry carrying `check`'s two keys as well."""
+    out = []
+    for entry in sections(loaded):
+        entry = dict(entry)
+        entry.update(check(entry['section'], now))
+        out.append(entry)
+    return out
+
+
+def newest(loaded):
+    """The section with the latest `at` across both sources, or `None`.
+
+    Two sections with the same `at` resolve to the first in `sections`
+    order, so `local` wins a tie.
+    """
+    best = None
+    for entry in sections(loaded):
+        at = _text(entry['section'].get('at'))
+        if best is None or at > _text(best['section'].get('at')):
+            best = entry
+    return best
+
+
+def audit_entry(loaded, rule_id, rule_hash, proof_hash, test_hash):
+    """The audit entry for a rule whose three hashes match, or `None`.
+
+    An entry answers only while its `rule_hash`, `proof_hash` and
+    `test_hash` all equal the ones given; its `commit` and `at` do not
+    matter. Where both sources hold a matching entry the later `at` wins.
+    The entry comes back as a copy carrying `source` and `path`.
+    """
+    best = None
+    for source in SOURCES:
+        data = loaded['files'].get(source)
+        audit = data.get('audit') if data else None
+        rules = audit.get('rules') if isinstance(audit, dict) else None
+        entry = rules.get(rule_id) if isinstance(rules, dict) else None
+        if not isinstance(entry, dict):
+            continue
+        if (entry.get('rule_hash'), entry.get('proof_hash'),
+                entry.get('test_hash')) != (rule_hash, proof_hash, test_hash):
+            continue
+        if best is None or _text(entry.get('at')) > _text(best.get('at')):
+            best = dict(entry, source=source, path=loaded['paths'][source])
+    return best
+
+
+def _text(value):
+    return value if isinstance(value, str) else ''
+
+
+def _shown(value):
+    return 'none' if value is None else json.dumps(value)
