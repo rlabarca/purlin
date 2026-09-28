@@ -40,7 +40,7 @@ purlin:init
 ```
 
 Answer `passed` to the first question, `What must be true of every rule before a version is
-proven?`, `y` to `Do you trust your own machine for the tests and the signing?`, and the
+proven?`, `y` to `Do you trust your own machine for the tests?`, and the
 default to anything else it asks. Init reads your test framework from the tree and ends with
 `→ Next: run purlin:spec to write the first spec.`
 
