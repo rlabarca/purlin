@@ -100,6 +100,7 @@ from purlin import (PURLIN_VERSION,
                     evidence as evidence_module,
                     fingerprint as fingerprint_module,
                     gate as gate_module,
+                    markers as markers_module,
                     signatures as signatures_module,
                     specs as specs_module, states)
 
@@ -154,13 +155,16 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     # includes the rules it requires and the global anchors', so summing the
     # feature rollups would count a global anchor's rules once per feature.
     own_results = {}
+    # Which proofs have a test is read from the markers in the test files,
+    # not from the evidence: a marked test that has not run yet is a test.
+    tied = markers_module.tied_ids(project_root)
 
     for name in sorted(features):
         info = features[name]
         entry, rollup = _feature_entry(
             project_root, name, info, features, evidence, all_signatures,
             cfg, blob_cache, queue, own_results, counted_cache, could_not_run,
-            incomplete)
+            incomplete, tied)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -173,7 +177,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     # proofs belong to the anchor.
     summary.update(proof_counts(
         [rule for entry in feature_entries for rule in entry['rules']
-         if rule.get('label') == 'own']))
+         if rule.get('label') == 'own'], tied))
 
     payload = {
         'schema_version': SCHEMA_VERSION,
@@ -199,7 +203,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     return payload
 
 
-def proof_counts(rule_entries):
+def proof_counts(rule_entries, tied=None):
     """`{proofs, proofs_without_test, proofs_without_test_ids}` over some rules.
 
     A proof with no marked test is the gap between what a spec claims to
@@ -210,9 +214,9 @@ def proof_counts(rule_entries):
 
     A `@manual` proof is left out of the count: it declares that no test is
     written for it, so naming it as a gap would report the spec's own answer
-    as a fault. Which tests back a proof is read from the evidence, so a
-    project whose tests have never run reads every proof as one without a
-    test, which is what it is until something runs.
+    as a fault. A proof has a test when a marker naming it is tied to a test
+    declaration, `tied` being `markers.tied_ids`' answer, so a marked test
+    that has not run yet is a test and its rule reads `not run`.
     """
     seen = set()
     total = 0
@@ -224,7 +228,9 @@ def proof_counts(rule_entries):
                 continue
             seen.add(key)
             total += 1
-            if not proof.get('tests') and not proof.get('manual'):
+            if proof.get('manual'):
+                continue
+            if (rule.get('feature'), proof.get('id')) not in (tied or ()):
                 without.append(proof.get('id'))
     return {'proofs': total, 'proofs_without_test': len(without),
             'proofs_without_test_ids': without}
@@ -244,7 +250,7 @@ def _rule_number(rule_id):
 def _feature_entry(project_root, name, info, features, evidence,
                    all_signatures, cfg, blob_cache, queue,
                    own_results=None, counted_cache=None, could_not_run=None,
-                   incomplete=None):
+                   incomplete=None, tied=None):
     incomplete = incomplete or {}
     own = evidence.get(name) or _no_evidence(name)
     mutation = evidence_module.mutation(own['loaded'])
@@ -262,7 +268,8 @@ def _feature_entry(project_root, name, info, features, evidence,
             project_root, owner, owner_info, rule_id, label, owner_evidence,
             all_signatures, cfg, blob_cache,
             owner_mutation.get('score') if owner_mutation else None,
-            counted_cache, could_not_run, incomplete.get(owner))
+            counted_cache, could_not_run, incomplete.get(owner),
+            {marked for feature, marked in (tied or ()) if feature == owner})
         need = result.pop('need')
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
@@ -279,7 +286,7 @@ def _feature_entry(project_root, name, info, features, evidence,
 
     rollup = states.feature_rollup(rule_results, cfg.gate,
                                    test_strength=test_strength)
-    rollup.update(proof_counts(rule_entries))
+    rollup.update(proof_counts(rule_entries, tied))
     rollup['incomplete'] = bool(incomplete.get(name))
 
     entry = {
@@ -441,7 +448,7 @@ def queue_row(feature, owner, rule, need):
 def _rule_entry(project_root, owner, owner_info, rule_id, label,
                 owner_evidence, all_signatures, cfg, blob_cache,
                 test_strength=None, counted_cache=None, could_not_run=None,
-                incomplete=None):
+                incomplete=None, marked=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -502,6 +509,9 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'test_strength': test_strength,
         # Why the rule's own spec names no files, or None.
         'incomplete': incomplete,
+        # The owner's proof and rule ids a marker ties to a test declaration,
+        # so a marked test that has not run reads `not run`, not `no test`.
+        'marked': marked or set(),
     }, cfg)
 
     return {

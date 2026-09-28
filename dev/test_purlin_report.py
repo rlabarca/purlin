@@ -601,8 +601,12 @@ def test_every_tile_carries_its_hover(browser, tmp_path):
     titles = page.eval_on_selector_all(
         '.tile', 'els => els.map(e => e.getAttribute("title"))')
     assert len(titles) == 6
-    for title in titles[:3]:
+    for title in titles[1:3]:
         assert '\n' not in title and title.endswith('.'), title
+    # The `Untested` tile's sentence, then one line per word its rules read.
+    untested = titles[0].split('\n')
+    assert untested[0].endswith('.'), untested
+    assert untested[1:] == ['out of date \u00b7 1'], untested
     assert titles[3].split('\n')[0].startswith('windows \u00b7 ci \u00b7 ')
     assert titles[4].split('\n')[0].startswith('audit \u00b7 ci \u00b7 ')
     assert titles[5].split('\n')[0] == 'jane@acme.com \u00b7 2026-09-12'
@@ -1472,4 +1476,28 @@ def test_neutral_text_measures_7_to_1_in_both_themes(browser, tmp_path):
     page.evaluate("document.documentElement.style.setProperty("
                   "'--state-idle', '#94A2B8')")
     assert [item for item in neutral_text(page) if item[3] < 7]
+    page.close()
+
+
+# purlin: purlin_report PROOF-67
+def test_the_untested_tile_says_which_have_no_test_and_which_have_not_run(
+        browser, tmp_path):
+    payload = payload_named('regulated')
+    words = iter(['no test', 'not run'])
+    for feature in payload['features']:
+        for rule in feature['rules']:
+            if feature['name'] == 'invoice' and rule.get('label') == 'own' \
+                    and rule['bucket'] != 'untested':
+                word = next(words, None)
+                if word is None:
+                    continue
+                rule['bucket'] = 'untested'
+                rule['cells']['passed']['word'] = word
+    page = open_board(browser, tmp_path, payload)
+    title = page.eval_on_selector_all(
+        '.tile', "els => els.filter(e => e.querySelector('.tile-l')"
+        ".textContent === 'Untested').map(e => e.getAttribute('title'))")[0]
+    assert title.split('\n') == [
+        'No test, no current run, or no proof written.',
+        'no test \u00b7 1', 'not run \u00b7 1', 'out of date \u00b7 1'], title
     page.close()

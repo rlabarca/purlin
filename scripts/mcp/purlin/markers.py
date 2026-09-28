@@ -880,6 +880,25 @@ def scan(project_root, suites=None, tracked_only=False):
     return out
 
 
+def tied_ids(project_root, found=None):
+    """`{(feature, id)}` for every marker tied to a test declaration.
+
+    Read from the test files as they are on disk, so a proof whose marked
+    test exists has a test whether or not anything has run it yet. A marker
+    no test follows ties nothing. `found` is `scan`'s answer where the caller
+    already has one.
+    """
+    if found is None:
+        found = scan(project_root)
+    tied = set()
+    for markers in found.values():
+        loose = set(id(marker) for marker in markers.untied)
+        for marker in markers.markers:
+            if id(marker) not in loose:
+                tied.add((marker.feature, marker.id))
+    return tied
+
+
 def marker_index(project_root):
     """`{feature: [paths]}` for every tracked test file carrying a marker of it."""
     index = {}

@@ -50,7 +50,8 @@ joins at `strong` and `Signed` at `signed`. `Passing`, `Strong` and `Signed` cou
 reached, so a signed rule is counted in all three; the first three count their own rules alone.
 At `signed` two cards sit beside the tiles: `Queue`, the rules that wait on a person, and
 `Stale`, the rules whose signature does not match. A card is counted beside the tiles, never
-instead of them. Each tile and card names what it counts in its hover.
+instead of them. Each tile and card names what it counts in its hover; the `Untested` hover adds
+how many of its rules read each word, as `no test · 3` and `not run · 552`.
 
 **Columns.** `Spec`, `Rules` and `Tests` are there at every gate. `Proofs` sits between `Rules`
 and `Tests` from `strong` up, and at `passed` only where the project writes at least one proof
@@ -60,7 +61,7 @@ line, since proofs are optional there. `Strong` joins at `strong` and `Signed` a
 |---|---|---|
 | `Spec` | the feature name, under the band that names its category | the spec's path |
 | `Rules` | how many rules the spec holds | none |
-| `Proofs` | `24 · 3 no test`: how many proof lines the spec holds and how many no test runs. A `@manual` proof counts as no gap | which proofs those are |
+| `Proofs` | `24 · 3 no test`: how many proof lines the spec holds and how many no marker above a test names, whether or not that test has run. A `@manual` proof counts as no gap | which proofs those are |
 | `Tests` | `21 of 24 · 1 partial · 2 failing`: how many rules passed everywhere they ran, then the two words that say they did not | one line per operating system a current run covered, newest first: `linux · ci · 9 days old · 22 passed · 1 failed · 1 not run` |
 | `Strong` | `18 of 24 · 71%`: how many rules reached `strong`, and the test strength, `n/a` where nothing measured one | where the newest audit came from, how old it is, and `minimum strength 80%` |
 | `Signed` | `1 of 4`: how many rules carry a signature that counts | each signer with the date of their newest signature, then how many are `stale` |

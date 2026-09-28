@@ -141,6 +141,9 @@ def rule_cells(inp, cfg):
     `proofs`        `[{'id', 'manual', 'env', 'text', 'tests'}, ...]`
     `rule_id`       the rule's own id, which a test may be marked with when
                     the rule has no proof
+    `marked`        the proof and rule ids of the rule's feature that a
+                    marker in the test files ties to a test declaration, so
+                    a marked test no run has reached reads `not run`
     `sections`      every evidence section of the rule's own feature, each
                     `{source, os, path, section, current, out_of_date}` as
                     `evidence.checked_sections` gives them
@@ -246,7 +249,8 @@ def _passed_cell(inp, cfg):
         # A rule with no proof is answered by the tests marked with its own
         # id, read exactly as a proof's tests are.
         rule_id = inp.get('rule_id')
-        if not rule_id or not _rule_marked(inp.get('sections'), rule_id):
+        if not rule_id or not (_rule_marked(inp.get('sections'), rule_id)
+                               or rule_id in (inp.get('marked') or ())):
             cell['reasons'] = [NO_PROOF_WRITTEN]
             return cell
         written = [{'id': rule_id, 'manual': False, 'env': None,
@@ -315,7 +319,10 @@ def _passed_cell(inp, cfg):
         cell['word'] = 'passed'
         return cell
 
-    if any(proof.get('tests') for proof in proofs):
+    # A test the evidence names, or a marker tied to a test in the source,
+    # means the test exists and no counting run has reached it yet.
+    marked = inp.get('marked') or ()
+    if any(proof.get('tests') or proof.get('id') in marked for proof in proofs):
         cell['word'] = 'not run'
     return cell
 

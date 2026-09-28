@@ -76,10 +76,28 @@ function staleLines() {
 function tileHover(bucket, project) {
   if (bucket === 'passed') { return platformLines(project); }
   if (bucket === 'strong') { return auditLines(project); }
-  if (bucket === 'untested' && !showsProofs()) {
-    return [TILE_HOVER.untested_no_proofs];
+  if (bucket === 'untested') {
+    return [showsProofs() ? TILE_HOVER.untested : TILE_HOVER.untested_no_proofs]
+      .concat(untestedLines());
   }
   return bucket === 'signed' ? signerLines(project) : [TILE_HOVER[bucket]];
+}
+
+/* The untested rules by what their passed cell reads, `no test · 3` then
+   `not run · 552`: a rule with no marked test is a gap in the tests, and a
+   rule whose test has not run is waiting on a run. */
+function untestedLines() {
+  var counts = {};
+  var order = [];
+  everyRule().forEach(function (pair) {
+    if (pair.rule.bucket !== 'untested') { return; }
+    var word = ((pair.rule.cells || {}).passed || {}).word || 'no test';
+    if (!(word in counts)) { counts[word] = 0; order.push(word); }
+    counts[word] += 1;
+  });
+  return order.sort().map(function (word) {
+    return word + DOT + counts[word];
+  });
 }
 
 /* The columns the gate reaches, and no others. Every when, who and platform

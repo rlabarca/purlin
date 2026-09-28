@@ -296,6 +296,21 @@ def _test_of(entry, feature):
         feature, str(entry.get('id', '')).lower().replace('-', '_'))
 
 
+def _marked_tests(*proof_ids, feature='login'):
+    """A test file holding one marked test per proof id."""
+    return ''.join('# purlin: %s %s\ndef test_%s():\n    pass\n\n'
+                   % (feature, proof_id, proof_id.lower().replace('-', '_'))
+                   for proof_id in proof_ids)
+
+
+def _commit_tests(project, *proof_ids):
+    """Write and commit a test file marking each proof id."""
+    _write(os.path.join(project.root, 'tests', 'test_login.py'),
+           _marked_tests(*proof_ids))
+    _git(project.root, 'add', '-A')
+    _git(project.root, 'commit', '-q', '-m', 'test(login): marked tests')
+
+
 def _entry(proof_id, rule_id, status='pass', feature='login',
            test_file='tests/test_login.py'):
     return {'feature': feature, 'id': proof_id, 'rule': rule_id,
@@ -1541,6 +1556,7 @@ class TestPayload:
 
     # purlin: states PROOF-29
     def test_the_rollup_counts_the_buckets_the_gate_reaches(self, project):
+        _commit_tests(project, 'PROOF-2')
         project.evidence([_entry('PROOF-2', 'RULE-2')])
         data = project.payload()
         feature = next(f for f in data['features'] if f['name'] == 'login')
@@ -1573,12 +1589,33 @@ class TestPayload:
             '- PROOF-3 (RULE-1): Sign in on the handset and read that the '
             'home screen names the account; verify it reads the email '
             '@manual\n')
+        _commit_tests(project, 'PROOF-1')
         project.evidence([_entry('PROOF-1', 'RULE-1')])
         rollup = next(f for f in project.payload()['features']
                       if f['name'] == 'login')['rollup']
         assert rollup['proofs'] == 3, rollup
         assert rollup['proofs_without_test'] == 1, rollup
         assert rollup['proofs_without_test_ids'] == ['PROOF-2'], rollup
+
+    # purlin: states PROOF-84
+    def test_a_marked_test_that_has_not_run_is_a_test(self, project):
+        path = os.path.join(project.root, 'tests', 'test_login.py')
+        _write(path, _marked_tests('PROOF-1'))
+        data = project.payload()
+        rollup = next(f for f in data['features']
+                      if f['name'] == 'login')['rollup']
+        for counted in (rollup, data['summary']):
+            assert counted['proofs_without_test'] == 1, counted
+            assert counted['proofs_without_test_ids'] == ['PROOF-2'], counted
+        words = {rule['id']: rule['cells']['passed']['word']
+                 for f in data['features'] for rule in f['rules']}
+        assert words == {'RULE-1': 'not run', 'RULE-2': 'no test'}, words
+
+        # A marker below the last test is tied to none, so it backs nothing.
+        _write(path, 'def test_x():\n    pass\n\n# purlin: login PROOF-1\n')
+        rollup = next(f for f in project.payload()['features']
+                      if f['name'] == 'login')['rollup']
+        assert rollup['proofs_without_test'] == 2, rollup
 
     # purlin: states PROOF-56
     def test_the_signed_cell_carries_when_it_was_signed(self):
@@ -1804,6 +1841,7 @@ class TestStatusTable:
 
     # purlin: states PROOF-43
     def test_the_columns_scale_with_the_gate(self, project):
+        _commit_tests(project, 'PROOF-2')
         project.evidence([_entry('PROOF-2', 'RULE-2')])
         text = purlin_status.sync_status(project.root)
         header = next(line for line in text.splitlines()
