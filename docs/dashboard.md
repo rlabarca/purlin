@@ -8,231 +8,173 @@ the table `purlin:test --commit` commits.
 
 ## Opening it
 
-`purlin:init` copies the page to `purlin-report.html` at the project root. It is a
-copy rather than a link, because the only path a plugin install can be linked at is
-version-pinned and the link would break on the first plugin update. The copy does not refresh
-itself; run `purlin:init --update` after a plugin update. The page is gitignored, so each
-person gets their own.
+`purlin:init` copies the page to `purlin-report.html` at the project root. The page is
+gitignored, so each person has their own copy. The copy does not refresh itself: after a plugin
+update, run `purlin:init` again and it asks before it replaces the copy.
 
 Open it in any browser. It reads `.purlin/report-data.js`, which `purlin:status`,
 `purlin:test`, `purlin:audit` and `purlin:sign` each write as they finish. Nothing writes it in
-the background: an edit you make with no Purlin command leaves the page as it was, and shows up
-after the next of those four. The file is generated and never committed. The page reloads
-itself when you come back to the tab and what it is showing is more than 60 seconds old,
-keeping the screen and the open rule, so a signature you have just written appears without you
-reloading anything.
+the background, so an edit you make with no Purlin command shows up after the next of those
+four. The data file is generated and never committed. With no data file the page says `No board
+data yet. Run purlin:status to write .purlin/report-data.js, then reload this page.`
 
-Nothing is provisioned, nothing is hosted, and no site has to be published. A remote runner
-uploads no artifact and posts no comment: the page is local.
+When you come back to the tab and the data is more than 60 seconds old, the page reloads itself
+and keeps the screen and the open rule, so a signature you have just written appears without
+you reloading anything.
 
-## The chrome
+## The top bar
 
-Every screen carries the same top bar: the logo, how old the data is, the gate in force, the
-signed tag at `strong` and above, the commit the data was built from, and the theme toggle. The
-tag reads `signed/<version>` with the first seven characters of the commit it points at, or `no
-signed tag` where the data names none: `purlin:sign` writes one only when every rule meets the
-gate, so its absence is a statement too. How old the data is is a button: press it to
-reload the page. The age recomputes itself every 60 seconds from the stamp the data already
-carries, so a tab left open does not read `less than a minute old` an hour later. Below it are
-the tabs: `Board`, then `Queue (n)` at `strong` and above, and the open rule last when there
-is one.
+Every screen carries the same top bar: the logo; how old the data is, as `Data: 12 minutes
+old`, which is a button that reloads the page; the gate, as `gate: signed`; at `strong` and
+above, the signed tag this commit carries, as `signed/1.4.0 · a1b2c3d`, or `no signed tag`; the
+commit the data was built from, as `at a1b2c3d`; and the theme toggle. The age recomputes every
+60 seconds, and from 90 minutes on it adds `— run purlin:status to refresh`.
+
+Below it are the tabs: `Board`, then `Queue (n)` at `strong` and above, and the open rule, such
+as `login RULE-1`, when there is one.
 
 ## Board
 
-The Board is where every rule stands. Its headline is two lines:
+![The Board at the gate signed: two warnings, the two headline lines, six tiles with the Queue and Stale cards, the six filters, and four specs under their categories with all six columns](images/dashboard-board.png)
+
+Warnings sit above the headline, one per line: `The working tree has uncommitted changes, so
+what is on this board is not what a commit would carry.`, and any line the spec parser could
+not read. The headline is two lines:
 
 ```
-3 of 5 rules pass their tests · 0 failing · 0 partial · 2 untested
-3 of 5 rules meet the gate passed.
+8 of 10 rules pass their tests · 0 failing · 1 partial · 1 untested
+4 of 10 rules meet the gate signed.
 ```
 
-The first line is what the board is mainly about: whether the rules pass their tests. The
-second names the gate, in the sentence `purlin:status` opens its own summary on, so the board
-and the table lead with the same words. A rule meets the gate when its passed cell is met,
-its strong cell is met if its level is `strong` or `signed`, and its signed cell is met if its
-level is `signed`. The gate decides how many cells a rule has, so it also decides how much
-of this page exists.
+The second line is the sentence `purlin:status` opens its summary on. A rule meets the gate
+when its passed cell is met, its strong cell is met if its level is `strong` or `signed`, and
+its signed cell is met if its level is `signed`. The gate decides how many cells a rule has, so
+it also decides how much of this page exists: a tile, a column or a filter above the gate is
+absent, not empty.
 
-![The Board at the signed gate: six tiles, the Queue and Stale flag cards, the filters, and four specs under their categories with every column](images/dashboard-board.png)
+**Tiles.** At `passed` there are four: `Untested`, `Failing`, `Partial` and `Passing`. `Strong`
+joins at `strong` and `Signed` at `signed`. `Passing`, `Strong` and `Signed` count levels
+reached, so a signed rule is counted in all three; the first three count their own rules alone.
+At `signed` two cards sit beside the tiles: `Queue`, the rules that wait on a person, and
+`Stale`, the rules whose signature does not match. A card is counted beside the tiles, never
+instead of them. Each tile and card names what it counts in its hover.
 
-At the `passed` gate a rule has one cell, its passed cell, so the board
-carries four tiles and four columns. The tiles are `Untested`, `Failing`, `Partial` and
-`Passing`. The last of them counts levels rather than buckets: a rule that is signed is still
-passing, so it is counted in `Passing`, in `Strong` and in `Signed` alike. The three below it
-count their own bucket alone. The columns are `Spec`, `Rules`, `Proofs` and `Tests`. A rule shows its text, its tests and
-one status: `passed`, `failed`, `partial`, `no test`, `not run` or `out of date`. Nothing at this
-gate names a higher level.
+**Columns.** At `passed` there are four: `Spec`, `Rules`, `Proofs` and `Tests`. `Strong` joins
+at `strong` and `Signed` at `signed`.
 
 | Column | What it reads | What its hover says |
 |---|---|---|
 | `Spec` | the feature name, under the band that names its category | the spec's path |
-| `Rules` | how many rules the spec holds | — |
-| `Proofs` | `24 · 3 without a test`, how many proof lines the spec holds and how many of them no tagged test runs, the second count in the warn tone. A `@manual` proof declares that no test is written for it, so it counts as no gap | which proofs those are |
-| `Tests` | `21 of 24 · 1 partial · 2 failing`, how many rules passed everywhere they ran, then the two words that say they did not | one line per operating system a counting run covered, newest first: `linux · ci · 9 days old · 22 passed · 1 failed · 1 not run` |
+| `Rules` | how many rules the spec holds | none |
+| `Proofs` | `24 · 3 without a test`: how many proof lines the spec holds and how many no test runs. A `@manual` proof counts as no gap | which proofs those are |
+| `Tests` | `21 of 24 · 1 partial · 2 failing`: how many rules passed everywhere they ran, then the two words that say they did not | one line per operating system a current run covered, newest first: `linux · ci · 9 days old · 22 passed · 1 failed · 1 not run` |
+| `Strong` | `18 of 24 · 71%`: how many rules reached `strong`, and the test strength, `n/a` where nothing measured one | where the newest audit came from, how old it is, and `minimum strength 80%` |
+| `Signed` | `1 of 4`: how many rules carry a signature that counts | each signer with the date of their newest signature, then how many are `stale` |
 
-Every count names the word it counts beside the number. The first part is always drawn, so a
-spec with nothing passing reads `0 of 24`; a later part is drawn only where it is above zero,
-so a spec with nothing partial and nothing failing reads `24 of 24` and stops there.
-
-A rule reads `partial` when its tests passed on one operating system and failed or did not run
-on another. It is not passing and it is not failing, so it has a tile, a filter and a word of
-its own rather than hiding inside either.
-
-At `strong` each rule gains a strong cell, so a `Strong` tile joins the four and one column
-joins the four: `Strong`, reading `18 of 24 · 71%`, how many rules the audit proved strong and
-the test strength it measured, `n/a` where nothing measured one. Its hover names where the newest
-audit came from, `local` or `ci`, how old it is, and the minimum strength this gate asks for. Your own `purlin:audit`
-counts at this gate and at the one above it.
-
-At `signed` each rule gains a signed cell. A `Signed` tile joins the five, two flag cards sit
-beside the tiles, and one column joins the five.
-
-`Signed` reads `1 of 4`, and its hover names each signer with the date of their newest
-signature and then how many signatures stopped matching.
-
-The `Queue` card carries how many rules across the project wait on a person, the summary's
-queue count, and the `Stale` card how many signatures stopped matching. A
-flag card is counted beside the tiles and never instead of them: a stale rule is still in
-whichever tile its cells put it. Warnings sit above the headline, one per line: an uncommitted
-working tree, or a spec line the parser could not read as a rule.
-
-**Every when, who and platform detail is in a hover.** A hover is a `title` attribute, one item
-to a line, so it works on a page opened from disk with no script behind it, and six columns fit
-a 1024-wide window.
+Every count names the word it counts. The first part is always drawn; a later part is drawn
+only above zero, so a spec with nothing partial and nothing failing reads `24 of 24`. Every
+when, who and platform detail is in a hover, a plain `title` attribute, so it works on a page
+opened from disk. The six columns fit a 1024-pixel window; a narrower window scrolls the table
+sideways.
 
 A spec with no `> Scope:` line names no files, so Purlin cannot tell which code it covers. Its
-row reads `<name> · no scope`, and the hover on `no scope` gives the reason. A default
-`purlin:test` always runs such a spec, and at `signed` none of its rules can be signed.
+row reads `<name> · no scope`, and the hover gives the reason. A `purlin:test` with no feature
+named always runs such a spec, and at `signed` none of its rules can be signed.
 
-Specs are grouped by category. The band above each group carries the category, how many specs
-are in it, and how many of their rules pass their tests, as `mcp · 6 specs · 108 of 113 pass`
-with a bar after it. The gate is not repeated there: the `Signed` column carries it for each
-spec and the headline's second line carries it for the project.
+Specs are grouped by category. The band above each group reads `billing · 2 specs · 4 of 5
+pass` with a bar after it. Pressing a band folds it; pressing a spec expands its rules. Each
+rule row carries the rule id, the rule text, and one pill per cell that exists, reading the
+cell's word:
 
-Every column holds a minimum width, and those minima sum to less than a 1024-wide window gives
-the table, so a laptop shows every column the gate reaches with no sideways scroll. At 1280 and
-above every count cell holds its parts on one line. In a window narrower than the sum of the
-minima the table scrolls sideways rather than squeezing a heading into its neighbour, and no
-text on the board is set smaller than 13 pixels in either theme. Nothing on the table is aligned
-right: two bare number columns twelve pixels apart read as one number.
-
-**A column exists only where its cell does.** A project at `passed` is not shown two empty
-evidence columns, and nothing has to be configured to get the rest: `purlin:init --gate strong`
-is the whole of it.
-
-Pressing a spec expands its rules. Each row carries the rule id, the rule text, and one pill per
-cell that exists, so a rule at `signed` shows three pills and the same rule at `passed` shows
-one. A pill reads the cell's word: `passed`, `partial`, `failed`, `no test`, `not run` or
-`out of date` at level 1; `strong`, `weak`, `not audited` or `manual test` at
-level 2; `signed`, `unsigned` or `stale` at level 3.
+| Cell | Words |
+|---|---|
+| passed | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
+| strong | `strong`, `weak`, `not audited`, `manual test`, `no proof` |
+| signed | `signed`, `unsigned`, `stale` |
 
 ## Filters
 
-Filter pills sit above the spec table. Each answers a question someone arrives with, and they
-compose: a rule shows when every active filter accepts it, and a spec shows when one of its
-rules does. The gate decides which exist, because a filter with no cell behind it selects
-nothing.
-
-There is one pill per bucket the board shows and one per kind of work beyond the tests, in the
-order the tiles and the columns read. Each pill carries the number of rules it accepts, so it
-and the tile or the cell it mirrors state the same number before anything is pressed.
+Filter pills sit above the spec table, each with the number of rules it accepts. They compose:
+a rule shows when every pressed filter accepts it, and a spec shows when one of its rules does.
 
 | Filter | What it selects | Exists at |
 |---|---|---|
-| `Untested` | rules in the untested tile: no proof written, no test, or no current counting run | every gate |
-| `Failing` | rules in the failing tile: every platform that ran the tests found a failure | every gate |
-| `Partial` | rules in the partial tile: passed on one platform, failed or did not run on another | every gate |
-| `Weak` | rules whose strong cell reads `weak` or `not audited`: the audit measured them and did not prove them, or has not run on this code yet | `strong` and above |
-| `Queue` | rules that wait on a person: a hand check or a signature, the rows of the Queue tab | `strong` and above |
-| `Stale` | rules whose signature no longer matches | `signed` |
+| `Untested` | rules in the `Untested` tile: no proof written, no test, or no current run | every gate |
+| `Failing` | rules in the `Failing` tile: every platform that ran the tests found a failure | every gate |
+| `Partial` | rules in the `Partial` tile: passed on one platform, failed or did not run on another | every gate |
+| `Weak` | rules whose strong cell reads `weak` or `not audited` | `strong` and above |
+| `Queue` | the rules on the Queue tab | `strong` and above |
+| `Stale` | rules whose signature does not match | `signed` |
 
-`Weak` is build work and `Queue` is a person's. A rule is in one or the other, never both.
+`Weak` is build work and `Queue` is a person's. With nothing left the table reads `No rule
+matches every filter you set.`
 
 ## Rule
 
 Pressing a rule opens it.
 
-![The rule screen for login RULE-1: the three cell rows with the level, spec, last run and signature file, then the Audit panel, the Signed panel and the proofs](images/dashboard-rule.png)
+![The rule screen for login RULE-1 at the gate signed: the Passed, Strong and Signed rows with the lin and win boxes, the Level, Spec, Last run and Signatures rows, then the Audit panel, the Signed panel and PROOF-1 with its test](images/dashboard-rule.png)
 
-The screen opens with the feature, the rule id and the rule's text, then one panel of facts:
-one row per cell that exists, then the `Level` row, the spec's path, the last run and the
-signature files that bind the rule. The `Level` row reads, for example, `signed (the gate)`,
-`passed (marked)` or `strong (marked signed; the gate is the ceiling)`, so you can see at once
-whether the rule asked for its level itself or took the project's. Each cell row carries
-the cell's word as a pill and the reasons it carries:
-`failing: tests/test_login.py`, `windows: no run yet`, `code changed since 9f8e7d6`,
-`strength 64% under 80%`, `manual proof`, `by jane@acme.com`. A cell with nothing to add carries no reason.
-A rule with no proof reads `no test` with `no proof written`; a rule whose spec, code or tests
-changed after its last run reads `out of date` with what changed.
+The screen opens with the feature, the rule id and the rule's text, then one panel of facts: a
+row per cell that exists, then, at `strong` and above, the `Level` row, then `Spec`, `Last run`
+and, at `signed`, the `Signatures` that bind the rule. The `Level` row reads `signed (the
+gate)`, `passed (marked)` or `strong (marked signed; the gate is the ceiling)`, so you see
+whether the rule asked for its level itself.
 
-The passed cell's row also carries one small box per operating system a counting run covered,
-labelled `lin`, `mac` or `win`, green where the rule passed there and red where it failed, each
-naming that system's word, the source of its newest run and how old that run is in its hover.
-The board draws no such box: which platform found what is the rule's business, and the `Tests`
-cell's hover sums it for the spec. The signed cell's row names the signer and the date beside
-the word.
+Each cell row carries the word as a pill and the cell's reasons, such as `failing: linux, local`,
+`windows: no run yet`, `code changed since 9f8e7d6`, `strength 64% under 80%` or `manual
+proof`. The passed row adds one box per operating system a current run covered, `lin`, `mac` or
+`win`, green where the rule passed and red where it failed, with the word, the source and the
+age in its hover. The signed row adds the signer and the date.
 
-At `strong` and above the **Audit panel** follows. It reads what the audit found:
-`Strong. It found nothing.`, `Weak.`, or `Undecided.` with the reason the rule reads weak, then
-each finding on a line of its own as the audit wrote it, then the test strength beside
-`min_strength`, or `no mutation score measured` where mutation testing is off or no engine
-exists, then the model that read the rule and the minute it did, and a link to the evidence
-file. A rule no audit has read says so. The audit reports and recommends nothing, so what you
-read here is what was seen, not what to do about it.
+At `strong` and above the **Audit** panel follows: `Strong. It found nothing.`, `Weak.` or
+`Undecided. The AI audit could not decide, so the rule reads weak until its proof or test
+changes.`, then each finding on its own line, then `Test strength 86%, against a minimum of
+80%.` or `no mutation score measured`, then `Read by <model> on <date> <time> UTC` and a link
+to the evidence file. A rule no audit has read says `No audit has read this rule’s text, proof
+and test yet.` The panel reports and recommends nothing.
 
-At `signed` the signature panel comes next. A rule that is not signed carries a panel headed
-with what the queue calls its need, `Signature` or `Hand check`, naming the command to run in
-Claude Code: `purlin:sign <feature> <RULE-N>`, with `--note "<what you saw>"` for a hand check.
-A signature is a signed commit that names its signer, so this page can only read one back once
-it is committed. A signed rule's panel is headed `Signed` and names who signed it, the date and
-minute in UTC, and the machine and operating system it was signed on. Where the rule's level
-is below `signed`, the panel says it asks for no signature and that one written anyway still
-counts.
+At `signed` the signature panel comes next. A signed rule's panel is headed `Signed` and names
+who signed it, the date and minute in UTC, and the machine and operating system. Otherwise the
+panel is headed `Signature` or `Hand check` and names the command to run in Claude Code,
+`purlin:sign <feature> <RULE-N>`, with `--note "<what you saw>"` for a hand check. Where the
+rule's level is below `signed`, it says the rule asks for no signature and that one written
+anyway still counts.
 
-The **Proofs** are last, each with its `@manual` and `@env` tags where it carries them, and the tests that ran it.
-
-`← Queue` at the top closes the rule and returns to the Queue tab when it was opened from
-there; from the board the same link reads `← Board`.
+The **Proofs** are last, each with its `@manual` and `@env` tags and the tests that ran it.
+`← Board` at the top closes the rule; it reads `← Queue` when the rule was opened from there.
 
 ## Queue
 
-The Queue tab is the rules whose next step is a person. It exists at `strong` and above,
-because below that there is no cell a person answers.
+The Queue tab is the rules whose next step is a person. It exists at `strong` and above.
 
-![The Queue tab at the signed gate: a hand check and a signature, each with its spec, rule id, text, level, what it needs and the command](images/dashboard-queue.png)
+![The Queue tab at the gate signed: 2 rules need a person, one hand check for invoice RULE-3 and one signature for login RULE-2, each with its claim, level and command](images/dashboard-queue.png)
 
-The heading says `<n> rules need a person`, with the subline `Hand checks <h> · Signatures <s>`.
-The columns are `Spec`, `Rule`, `What it claims`, `Level`, `Needs` and `Command`. Rows come by
-feature, then by rule number. A rule whose level is `passed` is never here.
+The heading says `<n> rules need a person`, with the line `Hand checks <h> · Signatures <s>`.
+The columns are `Spec`, `Rule`, `What it claims`, `Level`, `Needs` and `Command`, and rows come
+by feature, then by rule number. The claim is cut at 90 characters; the rule screen has the
+rest. The hover on `Needs` gives the cell's word and reasons.
 
 | Needs | When | Command |
 |---|---|---|
 | `hand check` | the rule's level is `strong` or `signed` and its strong cell reads `manual test` | `purlin:sign <feature> <RULE-N> --note "<what you saw>"` |
-| `signature` | the rule's level is `signed`, its passed and strong cells are met, and its signed cell is not; at `signed` only | `purlin:sign <feature> <RULE-N>` |
+| `signature` | at `signed`: the rule's level is `signed`, its passed and strong cells are met, and its signed cell is not | `purlin:sign <feature> <RULE-N>` |
 
-A rule that needs both is one `hand check` row. A rule leaves the tab the moment someone signs
-it.
+When nothing is waiting, the screen says what arrives there at the project's gate. At `strong`:
+`No rule is waiting for a person. A rule arrives here when its level is strong and its proof is
+@manual.` At `signed`: `No rule is waiting for a person. A rule arrives here when its proof is
+@manual, or when its level is signed and it has passed its tests and its audit.`
 
-`not audited` does not put a rule here. A rule reads `not audited` when its level is `strong` or
-`signed` and no audit has run on this code yet; it waits for `purlin:audit`, not for a person.
-A rule with no test, a failing rule and a weak rule are build work, and they stay on the board.
-
-When nothing is waiting the screen says what arrives there at the project's gate. At `strong`
-it reads `No rule is waiting for a person. A rule arrives here when its level is strong and its
-proof is @manual.` At `signed` it reads `No rule is waiting for a person. A rule arrives here
-when its proof is @manual, or when its level is signed and it has passed its tests and its
-audit.`
-
-`purlin:sign` with no argument walks the same queue in the same order. The page is the
-read-only view of it, for someone who has no checkout.
+`purlin:sign` with no argument walks the same queue in the same order.
+[review-and-signing.md](review-and-signing.md) covers the walk.
 
 ## Both themes
 
 The toggle in the top bar switches between dark and light. Every colour on the page is a token
-the theme redefines, so nothing else changes and the logo swaps to the colourway that reads on
-the new ground. The choice is remembered in the browser.
+the theme redefines, and the logo swaps to the colourway that reads on the new ground. The
+browser remembers the choice.
 
 ## Next
 
-- [running-and-records.md](running-and-records.md): what writes the data this page shows.
+- [running-and-evidence.md](running-and-evidence.md): what writes the data this page shows.
 - [review-and-signing.md](review-and-signing.md): working the queue.
