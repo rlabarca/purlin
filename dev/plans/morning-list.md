@@ -19,16 +19,25 @@ here was audited, signed, tagged or pushed.
 | P9a the guideline for a good proof | 51 | merged | 916 passed, 0 failed |
 | G2 the Azure check of who committed | 43 | merged | 937 passed, 0 failed |
 | P3 levels | 36 | merged | 937 passed, 0 failed |
+| P4 one queue, no holds | 37, 48, 50, 52 | merged | 939 passed, 0 failed |
+| P6 drift by role | 42 | merged | 948 passed, 0 failed |
+| P5 the audit calls the model | 35, 50, 52 | merged | 980 passed, 0 failed |
 
 The count falls where tests of removed things were deleted and rises where new tests were
 added. No count was edited.
 
 ## Red on main, outside the fast sweep
 
-| Test | Since | Cause | Owner |
-|---|---|---|---|
-| `dev/test_purlin_report.py`, two hover tests | P2 | The page cannot say when the audit ran until the audit piece records it | S1, after P5 |
-| `dev/test_e2e_required_rules.sh`, 6 checks | P2 | The suite writes runtime proof files; the status now reads evidence | P4 |
+Nothing, as of P5. Two things were red for a while and are fixed:
+
+| Test | Red from | Fixed by |
+|---|---|---|
+| `dev/test_purlin_report.py`, two hover tests | P2 | P5 |
+| `dev/test_e2e_required_rules.sh`, 6 checks | P2 | P4 |
+
+One test failed once on a clock boundary and passed on every later run:
+`dev/test_drift.py::TestReportShape::test_the_report_the_views_and_the_narrowed_answer`.
+P7 makes it independent of the clock.
 
 ## Choices made on your behalf
 
@@ -93,10 +102,39 @@ One line each, with the piece that made it. Each took the smaller option.
   re-marking the bar did.
 - `purlin:spec` writes no level tag; `purlin:spec-from-code` writes `[level: passed]`.
 
+### P4
+
+- A rule whose level is `passed` is never in the queue, even when it needs a hand check.
+- **A hand check signed without a note is still accepted.** The walk asks for the note and does
+  not require it. You may want it required: a hand check with no note says a person checked and
+  not what they saw.
+- The refusal over uncommitted evidence reads the rule's own feature; the tag reads every feature.
+- The walk shows each rule in a fixed shape and no longer prints the test's code.
+
+### P6
+
+- A rebase is measured from before it started.
+- **A merge that needed conflicts resolved is not counted as a merge**, because git logs it as
+  `commit (merge)` and your list named `merge`. It is a one-line change to count it.
+- A checkout that does not move HEAD gives an empty range.
+- "The rules behind" changed code are all of that spec's own rules.
+- A file deleted in the range is in neither the covered nor the uncovered list.
+
+### P5
+
+- Why a rule could not be audited is kept in a file that is never committed, so the status can
+  say why; nothing about a failure goes into the evidence.
+- With mutation testing on, the breaks still do not run at the gate `passed`.
+- Only an answer that gave no decision is tried again; a timeout or a failure is not.
+- The model's name is what the model's own output reports, or `unknown`.
+- A repeated audit entry is kept only when the model and the instructions also match.
+- `signature_format.md` was reworded and not bumped, since no field changed.
+- The evidence file's `schema` string stays `purlin-evidence/1` while its format version is 2.
+
 ## Test gaps the proof guideline exposed
 
 Each is a place where a test shows less than a good proof would claim. The proof now claims
-only what the test shows.
+only what the test shows. The five in `drift` were closed by P6; the two in `upstream` are open.
 
 - `drift` PROOF-13: no refusal of a NUL byte or a newline is shown.
 - `drift` PROOF-16: the PM view's keys are shown by no proof.
