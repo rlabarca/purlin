@@ -344,13 +344,14 @@ class TestTagParsing:
 
     # purlin: schema_spec_format PROOF-9
     def test_real_spec_is_parsed_correctly(self):
-        """The two shapes, read off this repository's own specs.
+        """The two shapes, read off whole spec files.
 
-        PROOF-9 of this anchor quotes several tags in backticks and carries
-        no tag of its own; scaffold's PROOF-36 carries one real trailing
-        `@env` tag. A parser that read a quoted tag would give the first an
-        environment or a manual mark it never declared and truncate its
-        description at the last quote."""
+        PROOF-9 of this anchor, in this repository, quotes several tags in
+        backticks and carries no tag of its own; a spec written into a
+        temporary project carries one real trailing `@env` tag. A parser that
+        read a quoted tag would give the first an environment or a manual
+        mark it never declared and truncate its description at the last
+        quote."""
         features = purlin_specs.scan_specs(PROJECT_ROOT)
 
         quoted = features['schema_spec_format']['proofs']['PROOF-9']
@@ -363,9 +364,23 @@ class TestTagParsing:
         assert quoted['text'].rstrip().endswith('identical tuples'), \
             "the description's final clause must not be truncated"
 
-        tagged = features['scaffold']['proofs']['PROOF-36']
+        root = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(root, 'specs', 'files'))
+            with open(os.path.join(root, 'specs', 'files', 'lock.md'), 'w',
+                      encoding='utf-8') as handle:
+                handle.write(
+                    '# Feature: lock\n\n## Rules\n\n'
+                    '- RULE-1: An open file cannot be deleted\n\n'
+                    '## Proof\n\n'
+                    '- PROOF-1 (RULE-1): Open the file, delete it, and read '
+                    'the refusal `in use`, the typescript one, each with a '
+                    'note @env(linux)\n')
+            tagged = purlin_specs.scan_specs(root)['lock']['proofs']['PROOF-1']
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
         assert tagged['env'] == 'linux', \
-            "scaffold PROOF-36's one trailing tag is its environment"
+            "the proof's one trailing tag is its environment"
         assert tagged['manual'] is False, tagged['manual']
         assert tagged['text'].rstrip().endswith(
             'the typescript one, each with a note'), \
