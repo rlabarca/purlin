@@ -121,6 +121,9 @@ def render_workflow(host, env_tags, purlin_ref):
 # The two reasons a project has a workflow, in the words init prints them.
 FOREIGN_OS_REASON = ('A proof in specs/ is tagged @env for %s, which this '
                      'machine is not, so only a runner can prove it.')
+# The same at the gate `passed`, whose words are rules and tests.
+FOREIGN_OS_REASON_AT_PASSED = ('A test is tagged @env for %s, which this '
+                               'machine is not, so only a runner can run it.')
 TRUST_REASON = ('You chose not to trust this machine for signing, so the '
                 'tests a signature rests on run on a clean one.')
 # The trust reason at the gate `passed`, which signs nothing and asks
@@ -137,6 +140,11 @@ NO_REASON_AT_PASSED = ('every test runs on this operating system and you '
 def no_reason(gate):
     """Why a project needs no runner, in the words its gate uses."""
     return NO_REASON_AT_PASSED if gate == 'passed' else NO_REASON
+
+
+def foreign_reason(gate):
+    """The operating-system reason in the words the gate uses."""
+    return FOREIGN_OS_REASON_AT_PASSED if gate == 'passed' else FOREIGN_OS_REASON
 
 
 def trust_reason(gate):
@@ -157,7 +165,7 @@ def wanted(env_tags, trust, host_os, gate=None):
                       if str(tag).strip().lower()
                       and str(tag).strip().lower() != str(host_os or '')})
     if foreign:
-        reasons.append(FOREIGN_OS_REASON % ', '.join(foreign))
+        reasons.append(foreign_reason(gate) % ', '.join(foreign))
     if str(trust or '') == 'remote':
         reasons.append(trust_reason(gate))
     return bool(reasons), reasons

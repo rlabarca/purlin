@@ -136,15 +136,14 @@ Do you trust your own machine for the tests and the signing? [y/n]
 
 A yes writes `"trust": "local"` and prints `Trust local: your own runs count.` at `passed`, and
 `Trust local: your own runs count, and purlin:sign signs what you ran.` from `strong` up. A no
-writes `"trust": "remote"`. `--update` asks again, in the words of the gate it sets.
+writes `"trust": "remote"`: from `strong` up a signature rests on a run this machine did not make,
+so `purlin:sign` refuses a rule whose tests have no current `ci` run for this code; at `passed`,
+where no run is refused, it prints `Trust remote: purlin:test --remote runs your tests on the remote
+runner, and your own runs count too.` `--update` asks again, in the words of the gate it sets.
 
-Under `local` the whole chain runs here: test, audit, sign, tag, push. A project that answers
-yes and tags no proof for another operating system has no CI at all. That is the ordinary
-case, at every gate, `signed` included: the tag is your word that every rule met the gate on
-your machine.
-
-Under `remote` a signature rests on a run this machine did not make. `purlin:sign` refuses a
-rule whose tests have no current `ci` run for this code, so `purlin:test --remote` runs first.
+Under `local` the whole chain runs here: test, audit, sign, tag, push. A project that answers yes
+and tags no proof for another operating system has no CI at all. That is the ordinary case, at every
+gate, `signed` included: the tag is your word that every rule met the gate on your machine.
 
 ## The remote runner
 
@@ -156,10 +155,11 @@ A remote runner is written because:
   You chose not to trust this machine for signing, so the tests a signature rests on run on a clean one.
 ```
 
-At `passed` the second reads `You chose not to trust this machine for the tests, so they run on a
-clean one.` With neither, init writes no workflow and prints `No remote runner: every test runs on
-this operating system and you trust this machine, so nothing has to run remotely.`, with `every
-proof` from `strong` up. Teammates read the evidence `purlin:test --commit` commits.
+At `passed` they read `A test is tagged @env for windows, which this machine is not, so only a
+runner can run it.` and `You chose not to trust this machine for the tests, so they run on a clean
+one.` With neither, init writes no workflow and prints `No remote runner: every test runs on this
+operating system and you trust this machine, so nothing has to run remotely.`, with `every proof`
+from `strong` up. Teammates read the evidence `purlin:test --commit` commits.
 
 Before a workflow is written init checks two prerequisites: a remote exists, and its URL names
 GitHub or Azure DevOps. The first that fails is printed in one line naming what to do, and no

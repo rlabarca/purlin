@@ -686,7 +686,14 @@ class TestTheWorkflow:
         output = project.run('--gate', 'passed')
         assert project.has('.github/workflows/purlin.yml'), output
         assert scaffold_module.REMOTE_INTRO in output
-        assert named in output, output
+        # At `passed` the reason names the test and no proof.
+        assert ('  A test is tagged @env for %s, which this machine is not, '
+                'so only a runner can run it.' % named
+                in output.splitlines()), output
+        output = project.run('--gate', 'strong')
+        assert ('  A proof in specs/ is tagged @env for %s, which this '
+                'machine is not, so only a runner can prove it.' % named
+                in output.splitlines()), output
 
     # purlin: scaffold PROOF-13
     def test_answering_no_to_trust_writes_one(self, project):
@@ -733,9 +740,15 @@ class TestTheWorkflow:
         signing = ('  You chose not to trust this machine for signing, so '
                    'the tests a signature rests on run on a clean one.')
         lines = output.splitlines()
+        answer_at_passed = ('Trust remote: purlin:test --remote runs your '
+                            'tests on the remote runner, and your own runs '
+                            'count too.')
         if gate == 'passed':
             assert at_passed in lines, output
             assert signing not in lines, output
+            assert answer_at_passed in lines, output
+            assert not any(line.startswith('Trust remote: purlin:sign')
+                           for line in lines), output
             start = next(i for i, line in enumerate(lines)
                          if line.startswith('A remote runner is written'))
             reasons = []
@@ -748,6 +761,8 @@ class TestTheWorkflow:
         else:
             assert signing in lines, output
             assert at_passed not in lines, output
+            assert scaffold_module.TRUST_REMOTE in lines, output
+            assert answer_at_passed not in lines, output
 
     # purlin: scaffold PROOF-13
     def test_with_no_remote_nothing_is_written(self):

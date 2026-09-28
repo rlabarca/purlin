@@ -104,6 +104,12 @@ TRUST_LOCAL_AT_PASSED = 'Trust local: your own runs count.'
 TRUST_REMOTE = ('Trust remote: purlin:sign refuses a rule whose tests have no '
                 'run from the remote runner for this commit, so '
                 'purlin:test --remote runs first.')
+# The same answer at the gate `passed`, which signs nothing. There the trust
+# setting adds a remote runner and sends a rule waiting on a run to it; a run
+# on this machine still counts.
+TRUST_REMOTE_AT_PASSED = ('Trust remote: purlin:test --remote runs your tests '
+                          'on the remote runner, and your own runs count '
+                          'too.')
 
 REMOTE_INTRO = 'A remote runner is written because:'
 REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
@@ -125,8 +131,9 @@ def trust_question(gate):
 
 def trust_words(trust, gate):
     """The line init prints for the trust answer, in the gate's words."""
-    if trust == 'local' and gate == 'passed':
-        return TRUST_LOCAL_AT_PASSED
+    if gate == 'passed':
+        return (TRUST_REMOTE_AT_PASSED if trust == 'remote'
+                else TRUST_LOCAL_AT_PASSED)
     return _TRUST_WORDS[trust]
 
 
