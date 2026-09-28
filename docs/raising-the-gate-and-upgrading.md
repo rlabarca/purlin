@@ -114,7 +114,7 @@ purlin:init --update`, and a skill stops and asks before doing its own work
 ([purlin_commands.md](../references/purlin_commands.md#pending-migrations)).
 
 ```
-purlin:init --update --check
+purlin:init --update --dry-run
 ```
 
 prints the pending list, one migration per line with the files it touches, writes nothing, and
@@ -176,7 +176,7 @@ optional below the gate signed and required at signed.`
 ## What it asks, and what it keeps
 
 Every migration asks `Apply <id>, which will <what it does>? [y/N]` before it writes. Answer
-them one at a time, or pass `--yes` once you have read the `--check` output and want the whole
+them one at a time, or pass `--yes` once you have read the `--dry-run` output and want the whole
 set applied with every default.
 
 Before the update rewrites or removes a file, it copies the bytes beside it as
@@ -189,7 +189,7 @@ Everything the run applied lands in one commit, `chore(update): migrate to <VERS
 naming each migration it applied. It ends on `→ Next: run purlin:status to see where every rule
 stands.`, or names the migrations still pending when you skipped one.
 
-Exit codes: 0 when nothing is pending or the run applied what was, 1 for `--check` with
+Exit codes: 0 when nothing is pending or the run applied what was, 1 for `--dry-run` with
 something pending, 2 when the directory has no `.purlin/`.
 
 Read next: [getting-started.md](getting-started.md) if you are setting a project up for the

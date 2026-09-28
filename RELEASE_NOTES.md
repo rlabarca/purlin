@@ -117,7 +117,7 @@ anything in your test suite: a test is any test in your own suite with one comme
 
 ### What `purlin:init --update` does
 
-It reads what the project contains, not its `version` field. `purlin:init --update --check`
+It reads what the project contains, not its `version` field. `purlin:init --update --dry-run`
 prints the pending list and writes nothing. Until the update runs, `purlin:status` prints
 `→ Run: purlin:init --update`. The run goes in this order:
 
