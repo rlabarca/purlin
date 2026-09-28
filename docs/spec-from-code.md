@@ -1,6 +1,6 @@
 # Specs from existing code
 
-For an engineer bringing a codebase that predates its specs into Purlin.
+For a developer bringing a codebase that predates its specs into Purlin.
 
 ```
 purlin:spec-from-code
@@ -31,10 +31,10 @@ skill says so when it hands the result over.
    This is the only step worth a conversation; everything after it is mechanical.
 4. **One spec at a time**, shared and lower-level features first so a later spec can say
    `> Requires: <name>` instead of repeating their rules. Each is committed on its own. The
-   position is written under `.purlin/runtime/`, so a session that ends halfway resumes at
-   the next feature instead of starting over.
-5. **A report**: how many features, how many rules, and how many of those rules already have
-   a passing test.
+   position is written to `.purlin/runtime/spec-from-code.json`, so a session that ends
+   halfway resumes at the next feature instead of starting over.
+5. **A report**: how many features, how many rules, how many of those rules already have a
+   passing test, and each proof an existing test already shows, beside that test.
 
 ## What it writes
 
@@ -53,21 +53,24 @@ Every rule carries `[level: passed]`:
 
 ## Proof
 
-- PROOF-1 (RULE-1): Send 61 requests in one minute from one client; verify the 61st returns 429
-- PROOF-2 (RULE-2): Read the 429 response headers; verify Retry-After is present and is a positive integer
+- PROOF-1 (RULE-1): One client sends 61 requests within one minute; the first 60 return 200 and the 61st returns 429
+- PROOF-2 (RULE-2): The 429 answer to a 61st request carries a `Retry-After` header holding a whole number of seconds above 0
 ```
 
 `passed` is correct because nobody has judged yet whether the rule is worth an audit and a
 signature. The level is re-marked later, in one pass, and re-marking it stales no signature.
 
-Where a test already exercises the behaviour, the proof says so, and `purlin:build` adds the
-marker to that test instead of writing a new one:
+Where a test already shows what a proof asks, the proof says what that test shows, in the words
+it would use if no test existed, and never names the test. The skill then offers to add the
+marker comment above that test and writes no new test:
 
-```
-- PROOF-4 (RULE-4): tests/test_rate_limit.py::test_burst already asserts this
+```python
+# purlin: rate_limit PROOF-1
+def test_burst():
 ```
 
-Where nothing tests it, the proof is written as if the test existed. The rule's passed cell
+A test that shows part of what the proof asks is left unmarked. Where nothing tests it, the
+proof is written as if the test existed. The rule's passed cell
 reads `no test`, and `purlin:build` writes the test on the next pass.
 
 ## What it does not write
@@ -76,7 +79,7 @@ reads `no test`, and `purlin:build` writes the test on the next pass.
 - No implementation in a rule. "Uses a sorted set in the cache" is not a claim about
   behaviour; "rejects the 61st request in a minute" is.
 - No level above `passed`. That judgment belongs to the people who own the product.
-- No test results, no records and no signatures. Those come from `purlin:test`, `purlin:audit` and `purlin:sign`.
+- No evidence and no signatures. Those come from `purlin:test`, `purlin:audit` and `purlin:sign`.
 - No rule for behaviour that could not be stated as an observable. The behaviour is noted in
   `> Description:` and the rule is dropped.
 
@@ -86,14 +89,14 @@ The skill names the next step from what it found:
 
 | What it left | What to run |
 |--------------|-------------|
-| Rules a test already exercises | `purlin:test`, which tags those tests and shows what passes |
+| Rules whose existing tests now carry their markers | `purlin:test`, which runs them and shows what passes |
 | Rules with no test at all | `purlin:build <name>` on the feature with the most of them |
-| Everything drafted, and the team wants the paper trail | `purlin:init --gate strong` |
+| Every rule written, and the team wants the paper trail | `purlin:init --gate strong` |
 
-Then read the drafts. Re-mark the level of anything a PM or a designer actually asked for, and
-delete the rules that turned out to describe a bug.
+Then read the rules. Re-mark the level of anything product asked for, and delete the rules that
+turned out to describe a bug.
 
 ## Next
 
-- The format the drafts are written in: [specs-and-anchors.md](specs-and-anchors.md)
+- The format the rules are written in: [specs-and-anchors.md](specs-and-anchors.md)
 - Who owns which rule from here on: [working-together.md](working-together.md)

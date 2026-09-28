@@ -1,11 +1,13 @@
 # Specs and anchors
 
-For anyone who writes rules: engineers, PMs, designers and QA.
+For anyone who writes rules: product, developers and QA.
 
 A spec is one file per feature. It holds the claims the software must satisfy and how each
-claim is observed. A **rule** is one claim, one line. A **proof** says how that claim is
-observed. A **test** is the executable form of a proof, tagged with its rule. Those three
-are the whole model, and everything else Purlin does reads them.
+claim is shown. A **rule** is one claim, one line. A **proof** says in plain language how that
+claim is shown. A **test** is any test in your own suite that carries a marker, one comment
+naming the proof: `# purlin: login PROOF-2`. Those three are the whole model, and everything
+else Purlin does reads them. `references/formats/marker_format.md` is the one home of the
+marker.
 
 The format is versioned. `references/formats/spec_format.md` inside the plugin is the
 contract, and its `> Format-Version:` line says which version this release ships; this page
@@ -39,12 +41,12 @@ specs/<category>/<name>.md
 ```
 
 You do not type this by hand. `purlin:spec` writes it from a sentence in chat, a ticket, a
-product brief, pasted acceptance criteria or a folder of mocks, and `purlin:spec <name>`
-again edits it in place.
+requirements document or pasted acceptance criteria, and `purlin:spec <name>` edits it in
+place.
 
-`## Rules` and `## Proof` are the only two sections anything reads, matched without regard to
-case. A spec carrying some other heading still parses and nothing reads that heading, so an
-older spec keeps working. What the feature does belongs in `> Description:`.
+`## Rules` and `## Proof` are the only two sections anything reads, spelled exactly so. A spec
+carrying some other heading still parses and nothing reads that heading. What the feature does
+belongs in `> Description:`.
 
 ### Metadata
 
@@ -77,7 +79,7 @@ One claim per line, in the present tense, saying what the software does rather t
 ```
 
 The one tag sits at the end of the line and is read off it, so the text that remains is the
-claim alone. A signature records the level but does not lock it, so re-marking a rule stales
+claim alone. A signature logs the level but does not lock it, so re-marking a rule stales
 no signature.
 
 | Tag | Values | Default | What it decides |
@@ -86,7 +88,7 @@ no signature.
 
 A level tag is never required: a rule without one takes the project's gate, and at the `passed` gate `purlin:spec` writes none at all, because the gate is the ceiling and every rule is read as `passed` there.
 
-Ids are assigned in increasing order and never reused. A retired rule leaves its number
+Ids are assigned in increasing order and never reused. A deleted rule leaves its number
 vacant and every other rule keeps the number it had; a gap in the sequence is legal and
 nothing reports it. Renumbering would silently repoint every test marker and every signature
 that already names the old id.
@@ -109,13 +111,18 @@ and the observable that settles the claim.
 - PROOF-N (RULE-A, RULE-B): <a flow that exercises several rules in order>
 ```
 
-Every rule needs at least one proof. Several proofs may name one rule, and one proof may name
-several rules when it drives a flow through all of them.
+Several proofs may name one rule, and one proof may name several rules when it drives a flow
+through all of them.
+
+A proof is optional at the gate `passed` and for a rule marked `[level: passed]`: a test may
+carry the rule's own id instead, `# purlin: login RULE-2`. A rule with neither a proof nor such a
+test reads `no test` with the reason `no proof written`. From `strong` up every rule needs a
+proof, and a rule whose tests pass with none reads `no proof` in its strong cell.
 
 ### Manual proofs
 
 A proof carries no tag when a test settles it, whatever that test needs to run: `purlin:test`
-runs every tagged test of the features it runs. Tag a proof `@manual` when only human judgment
+runs every marked test of the features it runs. Tag a proof `@manual` when only human judgment
 settles it.
 
 A `@manual` proof has no test. Its evidence is a signature carrying a one-line note, always
@@ -130,11 +137,11 @@ written by a person, never by a machine.
 - PROOF-53 (RULE-29): Lock a file and verify a second process cannot open it @env(windows)
 ```
 
-At most one `@env` per proof. A proof with no `@env` is satisfied by a record from any system.
-A proof with one is passed only when a record from that system passes it, and a rule with
-proofs on two systems needs both. `purlin:init` reads the tags in `specs/` and writes one
-runner job per system named, where the project has a runner. On a machine that is not the named one the test is skipped and the
-status line says `windows: no record yet`.
+At most one `@env` per proof. A proof with no `@env` is satisfied by a run on any operating
+system. A proof with one is passed only when a run on that system passes it, and a rule with
+proofs on two systems needs both. On another machine the run does not count the proof, and the
+passed cell reads `not run` with the reason `windows: no run yet`. Where the project has a
+remote runner, its matrix gets one job per system the tags name.
 
 ## Ids across branches
 
@@ -149,7 +156,7 @@ the newer sha.
 ## Anchors
 
 An anchor is a spec for something shared across features: a security policy, an API contract,
-a brand rule. A feature names it with `> Requires: <name>` and the
+a data-retention rule. A feature names it with `> Requires: <name>` and the
 anchor's rules are counted with the feature's own. An anchor with `> Global: true` applies to
 every feature spec without being named.
 
@@ -163,8 +170,7 @@ Most projects need nothing but `specs/_anchors/`:
 purlin:anchor create <name>
 ```
 
-A PM, a designer or QA opens a pull request against that folder like anyone else. Nothing is
-pinned and nothing is synced. Reach for a second repository only when two or more projects
+Anyone who writes specs writes anchors there too. Nothing is pinned and nothing is synced. Reach for a second repository only when two or more projects
 must share the same rules: it is a cost, and one project does not need it.
 
 ### An anchor repo
@@ -173,7 +179,6 @@ When several projects share rules, the rules live in their own repository and ea
 keeps a pinned copy of the ones it uses.
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"background": "#0C3444", "primaryColor": "#092936", "primaryTextColor": "#E4DDD4", "primaryBorderColor": "#C0793F", "lineColor": "#C0793F", "secondaryColor": "#0C3444", "tertiaryColor": "#092936", "fontFamily": "Arial", "textColor": "#E4DDD4"}}}%%
 flowchart LR
   A["anchor repo<br/>specs/no_eval.md"]
   B["project<br/>specs/_anchors/no_eval.md<br/>Pinned: abc1234"]
@@ -192,25 +197,18 @@ file does not carry:
 A pin is always a commit, never a branch. A branch moves, and an anchor whose rules changed
 under a project with no diff to read is exactly what pinning exists to prevent.
 
-**sync** shows the delta, updates the local copy and advances the pin, all in one commit. A rule whose
-text moved stales its signature. `purlin:anchor sync --check` reports without writing:
-`anchor security_baseline is 4 commits behind its pin: RULE-3 changed, RULE-6 added`.
-`purlin:drift` runs that same check, one cached lookup per pin per run, so a pin that has
+**sync** shows the delta, updates the local copy and advances the pin, in one commit:
+`security_baseline: RULE-3 changed, RULE-6 added. Pin advanced from abc1234 to 3c4d5e6.` A rule
+whose text moved stales its signature. `purlin:anchor sync --check` reports without writing,
+and exits 1 when a pin is behind:
+`security_baseline: the pin abc1234 is behind its source, now 3c4d5e6. Run purlin:anchor sync security_baseline.`
+`purlin:drift` runs the same check, one cached lookup per source per run, so a pin that has
 fallen behind shows at the start of a session without anyone asking for it.
 
 Never edit a pinned rule in place: the next sync overwrites it and the change is lost with no
 trace. A change to the rule is a pull request against the source repository, and the next sync
 brings it back once it merges. A rule that belongs only to this project goes in a separate
 local anchor that says `> Requires: <the pinned one>`.
-
-## Retired fields
-
-`> Visual-Reference:`, `> Visual-Hash:`, the visual hash comparison, live design-tool sources,
-the older operating-system tag, a bare `@windows` and a stamped
-`@manual(<email>, <date>, <sha>)` are all retired. A spec that still carries one parses, the
-field or tag is ignored, and the file is named once in the run's warnings. `purlin:init
---update` rewrites the old operating-system tags as `@env(windows)`, `@env(macos)` and
-`@env(linux)`.
 
 ## Next
 
