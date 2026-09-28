@@ -1,9 +1,9 @@
 # Line endings are LF in the index and LF in every working tree, whatever a
 # machine's core.autocrlf says. Windows is the reason: a checkout there would
-# otherwise hold CRLF, and three things in this repository read bytes rather
-# than lines. The shell suites and the git hooks are run by bash, which
-# refuses a script whose lines end in CR, and the digest a spec change is
-# measured by is a hash of the file.
+# otherwise hold CRLF, and two things in this repository read bytes rather
+# than lines. The shell suites are run by bash, which refuses a script whose
+# lines end in CR, and the digest a spec change is measured by is a hash of
+# the file.
 * text=auto eol=lf
 
 # Binary, so neither the index nor a checkout ever rewrites a byte.

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# The end-to-end suites that prove the proof plugins, gathered where the run
-# script's shell arm looks for them.
+# The end-to-end suites that prove the proof plugins, started from a file name
+# the run script's shell arm looks for.
 #
-# `run_framework` runs each `*.test.sh` at the project root, so a suite that
-# lives anywhere else is never executed by `purlin:test` and the proofs it
-# would have written stay missing. Each suite below sources the shell harness,
+# `run_framework` runs each `*.test.sh` in the project, and the suites below
+# are named `test_*.sh`, so without this file `purlin:test` never executes
+# them and the proofs they would have written stay missing. Each suite below
+# sources the shell harness,
 # records its own cases at the `e2e` tier and calls `purlin_proof_finish`
 # itself, so this file starts them and reports what they returned and nothing
 # else.
