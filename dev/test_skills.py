@@ -33,7 +33,7 @@ BASH = bash_command()
 # Every skill, each with the ceiling its spec sets.
 CEILINGS = {
     'anchor': 160, 'audit': 105, 'build': 130, 'drift': 150,
-    'init': 250, 'sign': 185, 'spec': 210,
+    'export': 90, 'init': 250, 'sign': 185, 'spec': 210,
     'spec-from-code': 130, 'status': 100, 'test': 120,
 }
 COMMANDS = sorted(CEILINGS)
@@ -748,6 +748,44 @@ class TestSkillDrift:
     @pytest.mark.proof("skill_drift", "PROOF-4", "RULE-4")
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('drift') == []
+
+
+# ---------------------------------------------------------------------------
+# skill_export
+# ---------------------------------------------------------------------------
+
+class TestSkillExport:
+
+    @pytest.mark.proof("skill_export", "PROOF-1", "RULE-1")
+    def test_the_frontmatter_names_the_skill(self):
+        assert frontmatter_problems('export') == []
+
+    @pytest.mark.proof("skill_export", "PROOF-2", "RULE-2")
+    def test_it_runs_the_script_in_each_form(self):
+        assert carries(skill_path('export'), [
+            'scripts/export/package.py', 'purlin:export --release <name>',
+            'purlin:export --commit', 'purlin:export --check <file>']) == []
+
+    @pytest.mark.proof("skill_export", "PROOF-3", "RULE-3")
+    def test_it_makes_no_claim_of_compliance(self):
+        assert carries(skill_path('export'), [
+            'Purlin makes no claim that the software is compliant.',
+            'evidence for review in a regulated document and sign-off '
+            'system']) == []
+
+    @pytest.mark.proof("skill_export", "PROOF-4", "RULE-4")
+    def test_it_names_the_three_states(self):
+        assert carries(skill_path('export'), [
+            '`work in progress`', '`gate <gate> met`', '`signed`',
+            'Only `purlin:sign` writes a package whose state is']) == []
+
+    @pytest.mark.proof("skill_export", "PROOF-5", "RULE-5")
+    def test_it_closes_by_naming_the_next_step(self):
+        assert next_step_problems('export') == []
+
+    @pytest.mark.proof("skill_export", "PROOF-6", "RULE-6")
+    def test_it_stays_under_its_ceiling(self):
+        assert skill_ceiling_problems('export') == []
 
 
 # ---------------------------------------------------------------------------

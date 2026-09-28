@@ -42,6 +42,7 @@ before a signature is `trust: remote`.
 | `purlin:init` | Set a project up for Purlin, and change the gate later | An engineer, once. Four questions at most |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current | An engineer, or a PM in Claude Code |
 | `purlin:status [name]` | Show every rule's cells and what blocks the gate | Anyone with a checkout, any time; with a name, to see one spec's rules |
+| `purlin:export` | Write the evidence package for a version, the data file a regulated system of record reviews | Anyone, any time; `purlin:sign` writes it too, into the commit the tag names |
 | `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies | An engineer, once, on a codebase that predates Purlin |
 
 ## Syntax
@@ -79,6 +80,10 @@ Purlin
   purlin:status                   Every rule's cells, and what blocks the gate
   purlin:status <name>            One spec: its rules and their cells
   purlin:drift [pm|eng|qa]        What changed since your last pull
+  purlin:export                   The evidence package for the version
+  purlin:export --release <name>  The same, for another version name
+  purlin:export --commit          The same, then commit the package
+  purlin:export --check <file>    Check a package against its fingerprint
   purlin:drift --since <N|date>   A window other than since your last pull
 
   Project
@@ -102,7 +107,8 @@ Purlin
 | `purlin:build` | Code, test files, and the commit carrying the changeset |
 | `purlin:test` | `.purlin/runtime/proofs/`, which is not committed, and this operating system's section of `.purlin/evidence/local/<feature>.json` and `.purlin/tests.md`, which `--commit` commits as `purlin: evidence at <sha7>`; it never pushes. `--remote` pushes the run branch `run/<branch>-<sha7>`, waits for the git host's run through `gh` on GitHub or `az` on Azure DevOps, pulls the runner's own section home under `.purlin/evidence/ci/<feature>.json`, and deletes the branch |
 | `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits as `purlin: evidence at <sha7>`; it never pushes |
-| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, in a signed commit. Proof lines in a spec when the walk adds a case. The signed tag `signed/<version>` when the walk closes with every rule meeting the gate and every feature's evidence committed, which a person pushes |
+| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, in a signed commit. Proof lines in a spec when the walk adds a case. The signed tag `signed/<version>` when the walk closes with every rule meeting the gate and every feature's evidence committed, on a signed commit carrying the evidence package `.purlin/evidence/package/<version>.json`, which a person pushes |
+| `purlin:export` | `.purlin/evidence/package/<version>.json`, which `--commit` commits as `purlin: evidence at <sha7>`; it never pushes |
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when a proof names another operating system or the trust answer was no |
 | `purlin:anchor` | `specs/_anchors/<name>.md` |
 | `purlin:status`, `purlin:drift` | Nothing |

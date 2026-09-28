@@ -105,6 +105,7 @@ read what the person wants and run the command that serves it.
 | QA | "add a case for the empty basket" | `purlin:sign`, which drafts the proof line |
 | QA | "sign these off", "this test does not prove it" | `purlin:sign`, adding the missing case for the second |
 | QA | "what went stale?" | `purlin:drift qa` |
+| QA | "what do we hand to the system of record?" | `purlin:export` |
 
 A request that names no command still routes: "make sure nobody logs in with a blank
 password" is a rule, so it reaches `purlin:spec`, and the spec skill ends by offering the
