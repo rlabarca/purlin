@@ -144,9 +144,9 @@ the PM writes the criteria anywhere and hands them over; the engineer's agent ru
 **The designer hands over the mocks.** They export from whatever tool they use and hand the
 files to `purlin:spec`, which reads the images and drafts rules about what a person would see.
 
-**The engineer builds.** `purlin:drift eng` at the start of the session says what moved:
-files touched and the rules behind them, rules with no test, anchor pins behind their
-source. Then `purlin:anchor sync` if a pin is behind, `purlin:spec` if a rule is
+**The engineer builds.** `purlin:drift eng` after a pull says what it brought in: code
+changed and the rules behind it, rules with no test, anchors behind their source, features
+out of date. Then `purlin:anchor sync` if a pin is behind, `purlin:spec` if a rule is
 wrong, `purlin:build`, `purlin:test` while working, and `purlin:audit` before pushing, which
 is what writes the record the strong cell reads.
 

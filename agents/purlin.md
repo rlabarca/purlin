@@ -43,7 +43,7 @@ purlin:drift → purlin:spec → purlin:build → purlin:test → purlin:audit �
 Every step runs on the person's own machine, at every gate. Nothing in the loop needs a remote
 runner, and a project at `signed` with no CI at all is the ordinary case.
 
-Run `purlin:drift` when a session opens: it says what changed under you and what that costs.
+Run `purlin:drift` after a pull, a merge, a rebase or a checkout: it says what that brought in.
 Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and
 the tagged tests. Run `purlin:test` while you work; it takes seconds, writes the evidence,
 and its last line, `gate passed: <n> of <rules>`, is the whole check at `passed`. Run

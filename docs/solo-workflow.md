@@ -60,9 +60,9 @@ check to require.
 purlin:drift eng
 ```
 
-Start here. Drift reports what moved in the tree that the specs and the tests have not caught up
-with: files touched and the rules they affect, rules with no test, tests with no marker. It
-writes nothing, and it is also how you read what a pull request changed against your own tree.
+Start here. Drift reports what changed since your last pull, merge, rebase or checkout: code
+changed and the rules behind it, rules with no test, anchors behind their source, features out
+of date. It writes nothing.
 
 ```
 purlin:spec <name>

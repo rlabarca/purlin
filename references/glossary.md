@@ -137,7 +137,7 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 | evidence, source, section, fingerprint, test strength, the table | `references/formats/evidence_format.md` |
 | signature, note | `references/formats/signature_format.md` |
 | the gate, which evidence counts, when a signature counts, what `signed/<version>` means | `references/hard_gates.md` |
-| drift, the four role views, config field ownership | `references/drift_criteria.md` |
+| drift, where its range starts, the three role views, config field ownership | `references/drift_criteria.md` |
 | what the audit looks for, the two lists, the brief's layers, what the brief reports | `references/review_criteria.md` |
 | every command's syntax and one-liner | `references/purlin_commands.md` |
 | every commit message shape | `references/commit_conventions.md` |

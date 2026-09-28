@@ -33,7 +33,7 @@ before a signature is `trust: remote`.
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell | An engineer, constantly. Seconds; tests only. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:audit [feature]` | Run the tests and the breaks, then write the audit into the evidence | An engineer locally, any time. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:sign [feature] [RULE-N]` | Walk the queue, or sign a rule, a feature or a batch as a signed commit | Anyone with commit signing set up; the signature names them. With no argument it walks the queue |
-| `purlin:drift [role]` | Report what changed since the last record, by role | Everyone, at session start and before a release |
+| `purlin:drift [role]` | Report what changed since your last pull, by role | Everyone, after a pull, a merge, a rebase or a checkout |
 
 ## Supporting
 
@@ -76,8 +76,8 @@ Purlin
   ──────
   purlin:status                   Every rule's cells, and what blocks the gate
   purlin:status <name>            One spec: its rules and their cells
-  purlin:drift [pm|qa|eng]        What changed that the specs have not caught up with
-  purlin:drift --since <N|date>   A window other than since the last record
+  purlin:drift [pm|eng|qa]        What changed since your last pull
+  purlin:drift --since <N|date>   A window other than since your last pull
 
   Project
   ──────
@@ -115,7 +115,7 @@ writes the tag when every rule meets the gate. An audit `purlin:audit` wrote cou
 gate.
 
 `purlin:sign` under `passed` says the gate is `passed`, names what `purlin:init --gate strong`
-would add, and stops. `purlin:drift qa` says the same.
+would add, and stops. `purlin:drift qa` reports only the tests that changed.
 
 ## Path resolution
 

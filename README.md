@@ -135,7 +135,7 @@ Every command ends by naming the next step, computed from the cells it found.
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell |
 | `purlin:audit [feature]` | Run the tests and the breaks, then write the audit into the evidence |
 | `purlin:sign [feature] [RULE-N]` | Walk the queue, or sign a rule, a feature or a batch as a signed commit |
-| `purlin:drift [role]` | Report what changed since the last record, by role |
+| `purlin:drift [role]` | Report what changed since your last pull, by role |
 | `purlin:init` | Set a project up for Purlin, and change the gate later |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current |
 | `purlin:status [name]` | Show every rule's cells and what blocks the gate |

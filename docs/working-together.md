@@ -20,13 +20,13 @@ and their agent runs `purlin:spec`. You review that pull request like any other.
 
 **What you see.** The state of every rule. With a checkout, the dashboard's **rollup** says how
 many rules meet the gate out of how many there are, plus one count per bucket; without one,
-`.purlin/tests.md` on the git host carries the latest test results. `purlin:drift pm` tells
-you which anchor pins are behind their source:
+`.purlin/tests.md` on the git host carries the latest test results. After a pull,
+`purlin:drift pm` tells you which rules it added, changed or removed:
 
 ```
-drift pm: 1 thing to look at
-
-  design_tokens (anchor)     pinned 4 commits behind its source
+Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
+3 rules added: login RULE-7, RULE-8; export RULE-2.
+1 rule removed: cart RULE-4.
 ```
 
 ## The designer
@@ -72,7 +72,7 @@ line is written into the spec with the next free proof id; the test arrives on t
 **What you run**, in this order, at the start of a session:
 
 ```
-purlin:drift eng            what moved that the specs have not caught up with
+purlin:drift eng            what changed since your last pull
 purlin:anchor sync <name>   when a pin is behind
 purlin:spec <name>          when a rule is missing or wrong
 purlin:build <name>         code and tagged tests
@@ -85,13 +85,12 @@ Then push, which is free and starts nothing.
 **What you see.**
 
 ```
-drift eng: 14 files since the last record (a1b2c3d)
-
-  src/auth/login.js          RULE-2, RULE-5 behind this change
-  src/auth/mfa.js            no spec covers this file
-  login RULE-7               no test carries PROOF-7
-  design_tokens (anchor)     pinned 4 commits behind
-  export                     out of date: the code moved, the signatures stand
+Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
+2 files changed under login's scope: RULE-2, RULE-5 are behind them.
+1 changed file is under no spec's scope: src/auth/mfa.js.
+1 rule has no test: login RULE-7.
+anchor design_tokens is behind its source (now 3c4d5e6). Run: purlin:anchor sync design_tokens.
+1 feature is out of date: export.
 ```
 
 You may also be the person who signs, at either gate. Signing is logged, not policed: the
@@ -105,21 +104,21 @@ back once it merges.
 
 ## Drift, one view per role
 
-`purlin:drift` is the same data filtered three ways, not three computations. It writes nothing.
+`purlin:drift` reports what changed since the last git action that brought changes into your
+checkout: the newest pull, merge, rebase, checkout, clone or reset in git's log of HEAD. It
+writes nothing and judges nothing.
 
 | Role | What it reports |
 |------|-----------------|
-| `pm` | Pins behind their source |
-| `qa` | Signatures gone stale, how long the queue is, the rules reading `manual test`, `unsettled` and `not audited`, rules whose every proof asserts a success path |
-| `eng` | Files touched and the rules behind them, rules with no test, pins behind, rules whose passed cell reads `out of date` |
+| `pm` | Rules added, rules changed, rules removed |
+| `eng` | Code changed and the rules behind it, changed files under no spec's scope, rules with no test, anchors behind their source, features out of date |
+| `qa` | Test files changed and the features they cover, signatures gone stale and why, the size of the queue |
 
-Run it at four moments: at the start of a session, after an anchor pin moved, before QA walks
-the queue, and before a release. Those are the four times the tree has moved ahead of
-the specs without anyone being told.
+Run it right after you pull, merge, rebase or check out someone else's branch.
 
 With no role named, `purlin:drift` infers one from the files the session touched and says
-which it chose in the first line. `--since <N>` or `--since <YYYY-MM-DD>` reads a window other
-than since the last record.
+which it chose. `--since <N>` or `--since <YYYY-MM-DD>` reads a window other than since your
+last pull.
 
 ## Next
 
