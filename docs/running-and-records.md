@@ -266,8 +266,23 @@ committer field carries `GitHub <noreply@github.com>` as its committer and
 two names and treats the signature as confirmation: `git log --format=%G?` printing `B`, a
 signature that does not match the commit, refuses it, and `N`, no signature, refuses it when
 gpg is installed. Every other answer means this machine holds no current key for the
-signature, which is the ordinary case for the git host's own key. On Azure DevOps the
-committer is the build service and no signature exists, which is what Azure DevOps documents.
+signature, which is the ordinary case for the git host's own key.
+
+On Azure DevOps a commit carries no signature and its committer is a name anyone can type, so
+Purlin never reads it. The tag run asks Azure DevOps instead, with the build service's token,
+`SYSTEM_ACCESSTOKEN`, which the pipeline's `Check the gate` step hands it. It reads its own
+identity, `authenticatedUser.id` from `_apis/connectionData`, then, for the commit that last
+changed each `ci/` file, the `push.pushedBy.id` Azure DevOps holds for it, and the two must
+be the same. A different id, a commit with no `push`, a refusal such as HTTP 401 or 403, or no
+answer within 30 seconds names the file under `Evidence` and fails the job. On your own machine
+there is no token, so `gate_check.py --check --verify` prints `ci/ provenance is checked by the
+tag run; this machine has no token.` and counts those files as not checked, neither passed nor
+failed. Purlin's own tests prove this check against a stand-in for Azure DevOps; how the live
+service answers is confirmed by a hand-run check on a machine with Azure DevOps access.
+
+On either host, a squash merge or a rebase that rewrites a commit under `ci/` breaks this
+check: the rewritten commit is yours, not the runner's, and the file fails. Merge a run
+branch's evidence without rewriting it.
 
 ### Retention
 

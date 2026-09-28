@@ -198,10 +198,19 @@ hands, into different paths.
 
 Where a project has a runner, a push of the `signed/**` tag starts one last run: it reruns the
 tagged tests on a clean machine, checks that every signature and every hold still binds the
-rule, the proof, the test, the bar and the audit it names, checks that every record and brief
-under `ci/` was committed by the runner's own identity, and ends with the gate check. Anything
-it finds lands in the gate check's `Evidence` section and fails the job. It commits nothing. A
-red run there is the host's word that this version is not proven.
+rule, the proof, the test, the bar and the audit it names, checks that every file under `ci/`
+was committed by the runner's own identity, and ends with the gate check. On GitHub that
+identity is read from the commit's committer and the host's signature on it. On Azure DevOps,
+where a commit carries no signature and its committer is a name anyone can type, it is read
+from the host itself: the run's own identity against the identity Azure DevOps names as having
+pushed the commit, asked with the build service's token. The live behaviour on Azure DevOps is
+confirmed by a hand-run check on a machine with Azure DevOps access. Anything it finds lands in
+the gate check's `Evidence` section and fails the job. It commits nothing. A red run there is
+the host's word that this version is not proven.
+
+A squash merge or a rebase that rewrites a commit under `ci/`, on either host, makes the
+rewritten commit a person's, and the tag run fails the file. Merge a run branch's evidence
+without rewriting it.
 
 ## `@manual` proofs
 

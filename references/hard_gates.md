@@ -128,6 +128,20 @@ own identity, read off the commit that last changed it, so a person cannot write
 CI's. A file that fails either is named under `Evidence` and the
 job fails.
 
+| Git host | How the runner's identity is read |
+|----------|-----------------------------------|
+| GitHub | the commit's committer `noreply@github.com` and author `github-actions[bot]`, with a signature that does not contradict them |
+| Azure DevOps | `push.pushedBy.id` of the commit, from `_apis/git/repositories/<repo>/commits/<sha>`, against the run's own `authenticatedUser.id` from `_apis/connectionData`, both asked with `SYSTEM_ACCESSTOKEN`. The committer's name is never read |
+
+On Azure DevOps a different id, a commit with no `push`, HTTP 401 or 403, or no answer within
+30 seconds fails the file. Off a runner there is no token: the gate check prints `ci/ provenance
+is checked by the tag run; this machine has no token.` and counts the files as not checked,
+neither passed nor failed. The live behaviour on Azure DevOps is confirmed by a hand-run check
+on a machine with Azure DevOps access.
+
+A squash merge or a rebase that rewrites a `ci/` commit breaks the check on either host: the
+commit that last changed the file is then a person's.
+
 No breaks run on CI. Test strength is what `purlin:audit` measures on a person's machine,
 and evidence either source wrote counts at every gate.
 
