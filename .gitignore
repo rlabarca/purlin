@@ -17,9 +17,6 @@ venv/
 .purlin/plugins/__pycache__/
 .purlin/report-data.js
 
-# The text rendering of a brief, a local view of the committed JSON beside it
-.purlin/briefs/**/*.brief.txt
-
 # MCP server config (machine-specific)
 .mcp.json
 
