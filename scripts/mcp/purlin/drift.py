@@ -2,8 +2,8 @@
 
 Drift is for a person who has just brought someone else's changes into their
 checkout. It reads git's own log of HEAD for the last action that brought
-changes in, a pull, a merge, a rebase, a checkout, a clone or a reset, and
-reports what changed between where HEAD stood before that action and HEAD.
+changes in, a pull, a merge, a merge committed after its conflicts were
+resolved, a rebase, a checkout, a clone or a reset, and reports what changed between where HEAD stood before that action and HEAD.
 It reports facts and judges nothing.
 
 Three role views come out of the same range:
@@ -44,7 +44,9 @@ _SINCE_DAYS_RE = re.compile(r'^[0-9]+$')
 _SINCE_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
 # The reflog actions that bring changes in, as the first word of an entry's
-# subject, and how the first line of a view names each.
+# subject, and how the first line of a view names each. A merge that stopped
+# on conflicts is finished by a commit, which git logs as `commit (merge)`;
+# it is read as a merge.
 _ACTIONS = {
     'pull': 'your last pull',
     'merge': 'your last merge',
@@ -214,16 +216,20 @@ def _action_of(subject):
 
     The action is the first word before the colon; a pull or a rebase that
     ran as several entries carries its stage in parentheses, `start`,
-    `pick` or `finish`.
+    `pick` or `finish`. `commit (merge)`, the commit that finishes a merge
+    whose conflicts were resolved, is a merge in one entry; any other commit
+    is not an action.
     """
     head = subject.split(':', 1)[0]
     words = head.split()
-    if not words or words[0] not in _ACTIONS:
-        return None, None
     stage = None
     match = re.search(r'\((\w+)\)\s*$', head)
     if match:
         stage = match.group(1)
+    if words[:1] == ['commit'] and stage == 'merge':
+        return 'merge', None
+    if not words or words[0] not in _ACTIONS:
+        return None, None
     return words[0], stage
 
 

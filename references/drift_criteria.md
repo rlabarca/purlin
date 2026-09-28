@@ -18,6 +18,7 @@ action is one of these:
 |--------|----------------------|------------------------|
 | pull | `pull: ...` | Where HEAD stood before the pull |
 | merge | `merge <branch>: ...` | Where HEAD stood before the merge |
+| merge with conflicts | `commit (merge): ...`, the commit that finishes a merge once its conflicts are resolved | Where HEAD stood before that commit |
 | rebase | `rebase (finish): ...` | Where HEAD stood before the rebase's first step, `rebase (start)` |
 | checkout | `checkout: moving from <a> to <b>` | The commit HEAD left |
 | reset | `reset: moving to <ref>` | Where HEAD stood before the reset |

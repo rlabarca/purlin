@@ -101,6 +101,31 @@ def _change(root, files, message='feat: change'):
     return _commit(root, message)
 
 
+def _merged_with_conflict(tmp_path):
+    """`(root, before)`: a merge of `topic` into `main` that stopped on a
+    conflict, resolved and committed by hand.
+
+    `topic` carries 2 commits and `main` 1, both changing the same line of
+    `a.txt`. `before` is where `main` stood before the merge.
+    """
+    root = _repo(str(tmp_path / 'proj'), {'a.txt': '0\n'})
+    _git(['checkout', '-q', '-b', 'topic'], root)
+    _change(root, {'b.txt': '1\n'})
+    _change(root, {'a.txt': 'topic\n'})
+    _git(['checkout', '-q', 'main'], root)
+    _change(root, {'a.txt': 'main\n'})
+    before = _sha(root)
+    stopped = _git(['merge', '-q', '--no-edit', 'topic'], root, check=False)
+    assert stopped.returncode != 0, stopped
+    assert 'CONFLICT' in stopped.stdout + stopped.stderr, stopped
+    _write(os.path.join(root, 'a.txt'), 'both\n')
+    _git(['add', 'a.txt'], root)
+    _git(['commit', '-q', '--no-edit'], root)
+    subjects = _git(['reflog', 'show', '--format=%gs', 'HEAD'], root).stdout
+    assert subjects.splitlines()[0].startswith('commit (merge):'), subjects
+    return root, before
+
+
 def _pulled(tmp_path, start, changes, gate=None):
     """`(upstream, checkout, before)`: the checkout pulled `changes`.
 
@@ -245,6 +270,25 @@ class TestWhereDriftStarts:
         assert since['action'] == 'merge', since
         assert since['from'] == before, since
         assert since['commits'] == 3, since
+
+    # purlin: drift PROOF-29
+    def test_a_merge_committed_after_its_conflicts_counts_as_a_merge(
+            self, tmp_path):
+        root, before = _merged_with_conflict(tmp_path)
+
+        since = _report(root)['since']
+        assert since['action'] == 'merge', since
+        assert since['from'] == before, since
+        assert since['to'] == _sha(root), since
+        assert since['commits'] == 3, since
+
+        # A plain commit afterwards is not an action: the range still
+        # starts before the merge.
+        _change(root, {'c.txt': 'after\n'}, 'feat: after the merge')
+        since = _report(root)['since']
+        assert since['action'] == 'merge', since
+        assert since['from'] == before, since
+        assert since['commits'] == 4, since
 
     # purlin: drift PROOF-5
     def test_a_rebase_is_measured_from_before_its_first_step(self, tmp_path):
@@ -393,6 +437,20 @@ class TestTheFirstLine:
         assert re.match(pattern, firsts[0]), firsts[0]
         assert report['since']['line'] == firsts[0]
 
+
+    # purlin: drift PROOF-30
+    def test_every_view_opens_by_naming_a_merge_with_conflicts(self,
+                                                               tmp_path):
+        root, before = _merged_with_conflict(tmp_path)
+        report = _report(root)
+
+        firsts = [report['roles'][role]['lines'][0]
+                  for role in ('pm', 'eng', 'qa')]
+        assert len(set(firsts)) == 1, firsts
+        pattern = (r'^Since your last merge, \d+ \w+ ago '
+                   r'\(%s\.\.%s, 3 commits\)\.$'
+                   % (before[:7], _sha(root)[:7]))
+        assert re.match(pattern, firsts[0]), firsts[0]
 
 # ---------------------------------------------------------------------------
 # RULE-6: the PM view

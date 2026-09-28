@@ -30,9 +30,10 @@ stale for QA". With no role, infer one from the files the session has touched: s
 
 ## When to run it
 
-Run it right after a pull, a merge, a rebase or a checkout of someone else's branch. The range
-starts where HEAD stood before that action, so it shows what the action brought in and what you
-committed since.
+Run it right after a pull, a merge, a rebase or a checkout of someone else's branch. A merge
+that stopped on conflicts counts once you commit it, `commit (merge)` in git's log of HEAD. The
+range starts where HEAD stood before that action, so it shows what the action brought in and what
+you committed since.
 
 ## Step 1: get the data
 
