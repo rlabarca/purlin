@@ -1,25 +1,28 @@
 #!/usr/bin/env python3
-"""purlin:init: one question, then every file a project needs.
+"""purlin:init: four questions at most, then every file a project needs.
 
-    scaffold.py [--gate passed|strong|signed]
+    scaffold.py [--gate passed|strong|signed] [--mutation]
                 [--add <language>] [--update] [--dry-run]
                 [--project-root DIR] [--plugin-root DIR] [--yes]
 
-On a project that has code, init asks two questions and nothing else:
+Init asks these, in this order, and nothing else:
 
     What must be true of every rule before a version is proven?
+    Which framework the tests use, only where nothing in the tree says
+    Measure test strength by breaking the code on purpose? [y/N], only
+      where an engine exists for a detected framework
     Do you trust your own machine for the tests and the signing? [y/n]
 
 Everything else is derived from those answers or read from the tree: the
 language from detection, the git host from the remote URL, and the minimum
-test strength from the gate. Two honest exceptions: a tree with nothing to
-detect is asked which framework its tests use, and `signed` is asked which
-rules need a signature.
+test strength from the gate when mutation testing is on. `--yes` takes every
+default, so mutation testing stays off; `--mutation` turns it on without the
+question. `audit_parallel` is written as 4 and is not asked.
 
 It then writes, in this order and naming every one in the summary: the config,
-the plugin copies, the runner's wiring, the engine's config block, the
-`.gitignore` entries, the dashboard, and, where one is wanted, the workflow
-CI runs.
+the plugin copies, the runner's wiring, the engine's config block where
+mutation testing is on, the `.gitignore` entries, `.purlin/evidence/` with
+its README, the dashboard, and, where one is wanted, the workflow CI runs.
 It ends with the next step computed from the state.
 
 A workflow is written for two reasons and no others: a proof in `specs/` is
@@ -51,7 +54,7 @@ for _path in (os.path.join(PLUGIN_ROOT, 'scripts', 'mcp'),
         sys.path.insert(0, _path)
 
 import workflow as workflow_module                            # noqa: E402
-from mutation import mutmut                                   # noqa: E402
+from mutation import ENGINE_BY_FRAMEWORK, mutmut              # noqa: E402
 from purlin import (console as console_module,                # noqa: E402
                     frameworks as frameworks_module,
                     evidence as evidence_module,
@@ -69,9 +72,9 @@ DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
 
 GATE_QUESTION = 'What must be true of every rule before a version is proven?'
 GATE_CHOICES = (
-    'passed  every rule has a passing tagged test, from any source',
-    'strong  every rule has a record an audit wrote, at the minimum test strength',
-    'signed  strong, plus a signature from a person on the rule',
+    "passed  every rule's tagged tests pass",
+    'strong  tests pass and the audit finds them sound',
+    'signed  strong, and a person signs each rule',
 )
 LANGUAGE_QUESTION = ('There is nothing here to detect a test framework from. '
                      'Which one do the tests use?')
@@ -135,6 +138,24 @@ _STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
                  'strength reads n/a.')
 
 _TRUST_WORDS = {'local': TRUST_LOCAL, 'remote': TRUST_REMOTE}
+
+# Mutation testing is optional and off by default. The question is asked only
+# where an engine exists for a framework the tree carries; a yes writes
+# `mutation_engine: auto` and the gate's minimum strength, a no writes `none`.
+MUTATION_QUESTION = ('Measure test strength by breaking the code on purpose? '
+                     'It needs %s and takes minutes to hours per run. [y/N]')
+NO_ENGINE = ('Mutation testing is off: no engine breaks %s code, so the AI '
+             'audit alone judges test strength.')
+ENGINE_NAMES = {'mutmut': 'mutmut', 'stryker': 'Stryker',
+                'stryker_net': 'Stryker.NET'}
+
+# How many AI audit calls run at once. Written into every new project and
+# never asked; a project changes it in the settings file.
+AUDIT_PARALLEL = 4
+AUDIT_PARALLEL_RANGE = (1, 16)
+
+EVIDENCE_DIR = '.purlin/evidence'
+EVIDENCE_README = os.path.join('templates', 'evidence-readme.md')
 
 # --- Reading the tree ------------------------------------------------------
 
@@ -365,14 +386,32 @@ class Plan(object):
 
 # --- The steps -------------------------------------------------------------
 
+def audit_parallel(existing):
+    """The number of audit calls at once: the project's own, or 4."""
+    value = (existing or {}).get('audit_parallel')
+    low, high = AUDIT_PARALLEL_RANGE
+    if isinstance(value, int) and not isinstance(value, bool) \
+            and low <= value <= high:
+        return value
+    return AUDIT_PARALLEL
+
+
+def min_strength_for(gate, mutation):
+    """The minimum score: the gate's where mutation testing is on, else null."""
+    if mutation == 'none':
+        return None
+    return gate_module.resolve_gate({'gate': gate}).min_strength
+
+
 def write_config(plan, plugin_root, existing, gate, host, framework,
-                 trust=None):
-    """`.purlin/config.json`: the template, the gate, and what follows from it."""
+                 trust=None, mutation='none'):
+    """`.purlin/config.json`: the template, the answers, and what they derive."""
     config = json.loads(_read(plugin_root, 'templates', 'config.json'))
     config.update(existing or {})
-    derived = gate_module.resolve_gate({'gate': gate})
     config.update({'version': _read(plugin_root, 'VERSION').strip(),
-                   'gate': gate, 'min_strength': derived.min_strength,
+                   'gate': gate, 'mutation_engine': mutation,
+                   'min_strength': min_strength_for(gate, mutation),
+                   'audit_parallel': audit_parallel(existing),
                    'trust': trust or gate_module.DEFAULT_TRUST})
     if host:
         config['ci'] = host
@@ -418,6 +457,42 @@ def write_engine(plan, root, selected):
         plan.append('.gitignore', MUTANTS_IGNORE, 'mutants/')
     for name in [f for f in ('jest', 'vitest', 'xunit') if f in selected]:
         plan.note(_STRYKER_NOTE % name)
+
+
+def write_evidence(plan, plugin_root):
+    """`.purlin/evidence/` and the README that says what the folder holds."""
+    plan.directory(EVIDENCE_DIR)
+    plan.write(EVIDENCE_DIR + '/README.md', _read(plugin_root, EVIDENCE_README))
+
+
+def engine_for(selected):
+    """The engine that breaks the code of the first framework that has one."""
+    for framework in selected:
+        engine = ENGINE_BY_FRAMEWORK.get(framework, 'none')
+        if engine != 'none':
+            return engine
+    return None
+
+
+def resolve_mutation(console, existing, selected, turn_on):
+    """`(mutation_engine, the line to print or None)`.
+
+    A value the project already wrote is kept and nothing is asked. With no
+    engine for any framework the tree carries, nothing is asked either:
+    mutation testing stays off and one line says why. Otherwise `--mutation`
+    turns it on and the question decides, defaulting to no.
+    """
+    engine = engine_for(selected)
+    if engine is None:
+        return 'none', NO_ENGINE % ', '.join(selected)
+    written = str((existing or {}).get('mutation_engine') or '').strip()
+    if written and not turn_on:
+        return written, None
+    if turn_on:
+        return 'auto', None
+    answer = str(console.ask(MUTATION_QUESTION % ENGINE_NAMES.get(engine, engine),
+                             'n') or '').strip().lower()
+    return ('auto' if answer.startswith('y') else 'none'), None
 
 
 def write_gitignore(plan, plugin_root):
@@ -498,7 +573,7 @@ def parse_args(argv):
     parser.add_argument('--add', default=None, help='one more framework')
     parser.add_argument('--project-root', default='.')
     parser.add_argument('--plugin-root', default=None)
-    for flag in ('--update', '--dry-run', '--yes'):
+    for flag in ('--update', '--dry-run', '--yes', '--mutation'):
         parser.add_argument(flag, action='store_true')
     return parser.parse_args(argv)
 
@@ -619,6 +694,8 @@ def main(argv=None):
 
     selected, framework, dropped = resolve_frameworks(
         root, console, existing, args.add)
+    mutation, no_engine = resolve_mutation(console, existing, selected,
+                                           args.mutation)
     trust = ask_trust(console, existing)
     host = git_host(root)
 
@@ -628,16 +705,20 @@ def main(argv=None):
         plan.note(DROPPED_FRAMEWORK % name)
     plan.note('Gate %s. Frameworks %s. Git host %s.'
               % (gate, ', '.join(selected), host or 'not read from a remote'))
+    if no_engine:
+        plan.note(no_engine)
     plan.note(_TRUST_WORDS[trust])
     for name in ('.purlin', '.purlin/plugins', 'specs', 'specs/_anchors'):
         plan.directory(name)
 
     config = write_config(plan, plugin_root, existing, gate, host, framework,
-                          trust)
+                          trust, mutation)
     install_plugins(plan, plugin_root, selected)
     write_wiring(plan, selected)
-    write_engine(plan, root, selected)
+    if mutation != 'none':
+        write_engine(plan, root, selected)
     write_gitignore(plan, plugin_root)
+    write_evidence(plan, plugin_root)
     plan.copy(os.path.join(plugin_root, 'scripts', 'report',
                            'purlin-report.html'), 'purlin-report.html')
     # A workflow is written for two reasons and no others: a proof this

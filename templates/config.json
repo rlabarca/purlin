@@ -1,11 +1,11 @@
 {
   "version": "0.10.0",
   "gate": "passed",
+  "mutation_engine": "none",
   "min_strength": null,
-  "mutation_engine": "auto",
   "audit_parallel": 4,
+  "test_framework": "auto",
   "sql_engine": null,
   "ci": "github",
-  "test_framework": "auto",
   "trust": "local"
 }

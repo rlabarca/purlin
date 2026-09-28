@@ -55,6 +55,11 @@ LANGUAGES = {
               '.purlin/plugins/purlin-proof.sh'),
 }
 
+# The nine settings a new project gets, and the only ones.
+CONFIG_KEYS = sorted(['version', 'gate', 'mutation_engine', 'min_strength',
+                      'audit_parallel', 'test_framework', 'sql_engine', 'ci',
+                      'trust'])
+
 SPEC = """# Feature: login
 
 > Scope: login.py
@@ -218,8 +223,8 @@ def summary_paths(output):
 class TestTheOneQuestion:
 
     @pytest.mark.proof("scaffold", "PROOF-1", "RULE-1")
-    def test_a_project_with_code_is_asked_two_questions_and_no_others(self):
-        """The gate and trust are the only prompts a detectable project sees."""
+    def test_a_project_with_code_is_asked_three_questions_and_no_others(self):
+        """Gate, mutation and trust, in that order, for a detectable project."""
         made = Project('pytest')
         try:
             done = subprocess.run(
@@ -227,11 +232,18 @@ class TestTheOneQuestion:
                 input='strong\n', capture_output=True, encoding='utf-8',
                 timeout=300)
             assert done.returncode == 0, done.stdout + done.stderr
-            assert scaffold_module.GATE_QUESTION in done.stdout
-            assert scaffold_module.TRUST_QUESTION in done.stdout
-            assert scaffold_module.LANGUAGE_QUESTION not in done.stdout
-            assert 'email' not in done.stdout.lower(), done.stdout
+            out = done.stdout
+            mutation = scaffold_module.MUTATION_QUESTION % 'mutmut'
+            for question in (scaffold_module.GATE_QUESTION, mutation,
+                             scaffold_module.TRUST_QUESTION):
+                assert question in out, (question, out)
+            assert (out.index(scaffold_module.GATE_QUESTION)
+                    < out.index(mutation)
+                    < out.index(scaffold_module.TRUST_QUESTION)), out
+            assert scaffold_module.LANGUAGE_QUESTION not in out
+            assert 'email' not in out.lower(), out
             assert made.config()['gate'] == 'strong'
+            assert made.config()['mutation_engine'] == 'none'
             assert made.config()['trust'] == 'local'
         finally:
             made.close()
@@ -243,15 +255,19 @@ class TestTheOneQuestion:
     @pytest.mark.proof("scaffold", "PROOF-2", "RULE-2")
     def test_each_answer_derives_its_own_settings(self, project, gate,
                                                   strength):
-        project.run('--gate', gate)
+        project.run('--gate', gate, '--mutation')
         config = project.config()
         assert config['gate'] == gate
         assert config['min_strength'] == strength
-        assert sorted(config) == ['audit_parallel', 'ci', 'gate', 'min_strength',
-                                  'mutation_engine', 'sql_engine',
-                                  'test_framework', 'trust', 'version']
+        assert sorted(config) == CONFIG_KEYS
         for key in scaffold_module.gate_module.RETIRED_KEYS:
             assert key not in config, key
+
+    @pytest.mark.parametrize('gate', ['passed', 'strong', 'signed'])
+    @pytest.mark.proof("scaffold", "PROOF-2", "RULE-2")
+    def test_with_mutation_off_there_is_no_minimum(self, project, gate):
+        project.run('--gate', gate)
+        assert project.config()['min_strength'] is None
 
     @pytest.mark.proof("scaffold", "PROOF-3", "RULE-3")
     def test_the_gate_flag_answers_the_question_without_asking(self, project):
@@ -273,13 +289,23 @@ class TestTheOneQuestion:
 
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
     def test_the_config_holds_the_shape_and_no_retired_key(self, project):
-        project.run('--gate', 'strong')
+        output = project.run('--gate', 'strong')
         config = project.config()
-        assert sorted(config) == ['audit_parallel', 'ci', 'gate', 'min_strength',
-                                  'mutation_engine', 'sql_engine',
-                                  'test_framework', 'trust', 'version']
+        assert sorted(config) == CONFIG_KEYS
         assert config['version'] == read(os.path.join(ROOT, 'VERSION')).strip()
         assert config['audit_parallel'] == 4
+        assert 'audit_parallel' not in output
+        assert 'at a time' not in output
+
+    @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
+    def test_audit_parallel_keeps_a_value_in_range_only(self, project):
+        project.run('--gate', 'passed')
+        for written, kept in ((9, 9), (40, 4)):
+            config = project.config()
+            config['audit_parallel'] = written
+            write(project.path('.purlin/config.json'), json.dumps(config))
+            project.run()
+            assert project.config()['audit_parallel'] == kept, written
 
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
     def test_a_child_run_and_an_in_process_run_agree(self):
@@ -288,10 +314,7 @@ class TestTheOneQuestion:
         try:
             child_out = child.run('--gate', 'strong', subprocess=True)
             inline_out = inline.run('--gate', 'strong')
-            assert sorted(child.config()) == ['audit_parallel', 'ci', 'gate', 'min_strength',
-                                              'mutation_engine', 'sql_engine',
-                                              'test_framework', 'trust',
-                                              'version']
+            assert sorted(child.config()) == CONFIG_KEYS
             assert child.config() == inline.config()
             assert summary_paths(child_out) == summary_paths(inline_out)
             assert (child_out.replace(child.root, '<root>')
@@ -303,11 +326,106 @@ class TestTheOneQuestion:
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
     def test_the_template_carries_the_same_shape(self):
         template = json.loads(read(TEMPLATE_CONFIG))
-        assert sorted(template) == ['audit_parallel', 'ci', 'gate', 'min_strength',
-                                    'mutation_engine', 'sql_engine',
-                                    'test_framework', 'trust', 'version']
+        assert sorted(template) == CONFIG_KEYS
         assert template['version'] == read(
             os.path.join(ROOT, 'VERSION')).strip()
+
+
+# ---------------------------------------------------------------------------
+# Mutation testing, and the evidence folder
+# ---------------------------------------------------------------------------
+
+def _answering(made, answers, *args):
+    """The script as a child reading `answers` on stdin, with no `--yes`."""
+    done = subprocess.run(
+        [sys.executable, SCAFFOLD, '--project-root', made.root] + list(args),
+        input=answers, capture_output=True, encoding='utf-8', timeout=300)
+    assert done.returncode == 0, done.stdout + done.stderr
+    return done.stdout
+
+
+class TestMutationTesting:
+
+    @pytest.mark.proof("scaffold", "PROOF-45", "RULE-45")
+    def test_yes_turns_it_on_and_wires_the_engine(self):
+        made = Project('pytest')
+        try:
+            out = _answering(made, 'y\n\n', '--gate', 'strong')
+            assert scaffold_module.MUTATION_QUESTION % 'mutmut' in out, out
+            assert made.config()['mutation_engine'] == 'auto'
+            assert made.config()['min_strength'] == 70
+            assert '[mutmut]' in read(made.path('setup.cfg'))
+        finally:
+            made.close()
+
+    @pytest.mark.proof("scaffold", "PROOF-45", "RULE-45")
+    def test_no_turns_it_off_and_wires_nothing(self):
+        made = Project('pytest')
+        try:
+            _answering(made, 'n\n\n', '--gate', 'strong')
+            assert made.config()['mutation_engine'] == 'none'
+            assert made.config()['min_strength'] is None
+            assert not made.has('setup.cfg')
+            assert 'mutants/' not in read(made.path('.gitignore'))
+        finally:
+            made.close()
+
+    @pytest.mark.proof("scaffold", "PROOF-45", "RULE-45")
+    def test_a_framework_with_no_engine_is_asked_nothing(self):
+        made = Project('shell')
+        try:
+            out = _answering(made, '\n\n', '--gate', 'strong')
+            assert 'Measure test strength' not in out, out
+            assert made.config()['mutation_engine'] == 'none'
+            assert made.config()['min_strength'] is None
+            assert 'no engine breaks shell code' in out, out
+        finally:
+            made.close()
+
+    @pytest.mark.proof("scaffold", "PROOF-45", "RULE-45")
+    def test_a_value_the_config_carries_is_kept_without_asking(self, project):
+        write(project.path('.purlin/config.json'),
+              json.dumps({'mutation_engine': 'auto'}) + '\n')
+        done = subprocess.run(
+            [sys.executable, SCAFFOLD, '--project-root', project.root,
+             '--gate', 'passed'], capture_output=True, encoding='utf-8',
+            timeout=300, stdin=subprocess.DEVNULL)
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'Measure test strength' not in done.stdout, done.stdout
+        assert project.config()['mutation_engine'] == 'auto'
+
+    @pytest.mark.proof("scaffold", "PROOF-46", "RULE-46")
+    def test_yes_leaves_it_off(self, project):
+        output = project.run('--gate', 'strong')
+        question = scaffold_module.MUTATION_QUESTION % 'mutmut'
+        assert '%s\n[n]: n' % question in output, output
+        assert project.config()['mutation_engine'] == 'none'
+        assert project.config()['min_strength'] is None
+        assert not project.has('setup.cfg')
+
+    @pytest.mark.proof("scaffold", "PROOF-46", "RULE-46")
+    def test_the_flag_turns_it_on_without_asking(self, project):
+        output = project.run('--gate', 'strong', '--mutation')
+        assert 'Measure test strength' not in output
+        assert project.config()['mutation_engine'] == 'auto'
+        assert project.config()['min_strength'] == 70
+        assert '[mutmut]' in read(project.path('setup.cfg'))
+
+
+class TestTheEvidenceFolder:
+
+    @pytest.mark.proof("scaffold", "PROOF-47", "RULE-47")
+    def test_the_folder_and_its_readme_are_written_once(self, project):
+        output = project.run('--gate', 'passed')
+        readme = project.path('.purlin/evidence/README.md')
+        with open(readme, 'rb') as got, open(os.path.join(
+                ROOT, 'templates', 'evidence-readme.md'), 'rb') as want:
+            assert got.read() == want.read()
+        text = read(readme)
+        assert 'local/' in text and 'ci/' in text
+        assert summary_paths(output)['.purlin/evidence/README.md'] == 'wrote'
+        again = project.run('--gate', 'passed')
+        assert summary_paths(again)['.purlin/evidence/README.md'] == 'kept'
 
 
 # ---------------------------------------------------------------------------
@@ -715,7 +833,7 @@ class TestWhatInitWrites:
         write(project.path('pyproject.toml'), '[project]\nname = "demo"\n')
         os.makedirs(project.path('src'), exist_ok=True)
         write(project.path('src/app.py'), 'def go():\n    return 1\n')
-        project.run('--gate', 'passed')
+        project.run('--gate', 'passed', '--mutation')
         text = read(project.path('pyproject.toml'))
         assert '[tool.mutmut]' in text
         assert 'source_paths = ["src"]' in text
@@ -724,21 +842,21 @@ class TestWhatInitWrites:
 
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")
     def test_without_a_pyproject_the_block_lands_in_setup_cfg(self, project):
-        project.run('--gate', 'passed')
+        project.run('--gate', 'passed', '--mutation')
         assert '[mutmut]' in read(project.path('setup.cfg'))
 
     @pytest.mark.proof("scaffold", "PROOF-40", "RULE-40")
     def test_the_mutmut_copy_is_ignored_once(self, project):
         write(project.path('greeting.py'), 'def greet(name):\n    return name\n')
         write(project.path('tests/test_greeting.py'), 'def test_greet():\n    pass\n')
-        project.run('--gate', 'passed')
+        project.run('--gate', 'passed', '--mutation')
         project.run('--gate', 'passed')
         lines = read(project.path('.gitignore')).splitlines()
         assert lines.count('mutants/') == 1
 
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")
     def test_the_engine_block_is_added_once(self, project):
-        project.run('--gate', 'passed')
+        project.run('--gate', 'passed', '--mutation')
         project.run('--gate', 'passed')
         assert read(project.path('setup.cfg')).count('[mutmut]') == 1
 
@@ -746,7 +864,7 @@ class TestWhatInitWrites:
     def test_a_node_project_is_told_about_stryker(self):
         made = Project('vitest')
         try:
-            assert 'Stryker' in made.run('--gate', 'passed')
+            assert 'Stryker' in made.run('--gate', 'passed', '--mutation')
         finally:
             made.close()
 

@@ -102,13 +102,13 @@ it is adopted.
 |-------|-----------|---------|---------|
 | `version` | `purlin:init` | The dashboard header | From the `VERSION` file |
 | `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/gate_check.py`, every skill that names a next step | `passed` |
-| `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` under `passed`, 70 under `strong`, 80 under `signed` |
-| `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
-| `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py`, `sync_status` | `auto` where absent; `none` turns mutation testing off, so no breaks run and `min_strength` is not applied |
+| `mutation_engine` | `purlin:init`, which asks `Measure test strength by breaking the code on purpose?` where an engine exists | `scripts/run/purlin_run.py`, `sync_status` | `none` from init, and a yes writes `auto`; `auto` where the key is absent. `none` turns mutation testing off, so no breaks run and `min_strength` is not applied |
+| `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` while mutation testing is off; with it on, `null` under `passed`, 70 under `strong`, 80 under `signed` |
 | `audit_parallel` | `purlin:init`, with no question | `scripts/run/purlin_run.py`, which makes that many AI audit calls at once | `4`; any value that is not a whole number from 1 to 16 is read as 4 with one warning |
+| `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
+| `sql_engine` | `purlin:init` | The SQL proof plugin | Not set |
 | `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure` |
 | `trust` | `purlin:init`, which asks `Do you trust your own machine for the tests and the signing?` | `scripts/review/sign.py`, `scripts/run/workflow.py` | `local`; the only other value is `remote` |
-| `sql_engine` | `purlin:init` | The SQL proof plugin | Not set |
 
 `purlin:init` is the only command that writes config unprompted. Every other command reads. A
 field that is absent or set to `auto` leaves the reader to its own fallback. This table must
