@@ -1,17 +1,59 @@
-{"Time":"2026-09-28T07:10:00.000000Z","Action":"start","Package":"example.com/shop/cart"}
-{"Time":"2026-09-28T07:10:00.001000Z","Action":"run","Package":"example.com/shop/cart","Test":"TestTotal"}
-{"Time":"2026-09-28T07:10:00.001100Z","Action":"output","Package":"example.com/shop/cart","Test":"TestTotal","Output":"=== RUN   TestTotal\n"}
-{"Time":"2026-09-28T07:10:00.001200Z","Action":"output","Package":"example.com/shop/cart","Test":"TestTotal","Output":"--- PASS: TestTotal (0.00s)\n"}
-{"Time":"2026-09-28T07:10:00.001300Z","Action":"pass","Package":"example.com/shop/cart","Test":"TestTotal","Elapsed":0}
-{"Time":"2026-09-28T07:10:00.001400Z","Action":"run","Package":"example.com/shop/cart","Test":"TestParse"}
-{"Time":"2026-09-28T07:10:00.001500Z","Action":"run","Package":"example.com/shop/cart","Test":"TestParse/empty"}
-{"Time":"2026-09-28T07:10:00.001600Z","Action":"output","Package":"example.com/shop/cart","Test":"TestParse/empty","Output":"    cart_test.go:16: an empty basket parsed\n"}
-{"Time":"2026-09-28T07:10:00.001700Z","Action":"fail","Package":"example.com/shop/cart","Test":"TestParse/empty","Elapsed":0}
-{"Time":"2026-09-28T07:10:00.001800Z","Action":"run","Package":"example.com/shop/cart","Test":"TestParse/one"}
-{"Time":"2026-09-28T07:10:00.001900Z","Action":"pass","Package":"example.com/shop/cart","Test":"TestParse/one","Elapsed":0}
-{"Time":"2026-09-28T07:10:00.002000Z","Action":"fail","Package":"example.com/shop/cart","Test":"TestParse","Elapsed":0}
-{"Time":"2026-09-28T07:10:00.002100Z","Action":"run","Package":"example.com/shop/cart","Test":"TestDiscount"}
-{"Time":"2026-09-28T07:10:00.002200Z","Action":"output","Package":"example.com/shop/cart","Test":"TestDiscount","Output":"    cart_test.go:23: no discounts yet\n"}
-{"Time":"2026-09-28T07:10:00.002300Z","Action":"skip","Package":"example.com/shop/cart","Test":"TestDiscount","Elapsed":0}
-{"Time":"2026-09-28T07:10:00.002400Z","Action":"output","Package":"example.com/shop/cart","Output":"FAIL\n"}
-{"Time":"2026-09-28T07:10:00.002500Z","Action":"fail","Package":"example.com/shop/cart","Elapsed":0.002}
+{"Time":"2026-09-28T12:02:11.737459-04:00","Action":"start","Package":"example.com/shop/cart"}
+{"Time":"2026-09-28T12:02:11.738598-04:00","Action":"start","Package":"example.com/shop/tax"}
+{"Time":"2026-09-28T12:02:11.914421-04:00","Action":"run","Package":"example.com/shop/tax","Test":"TestRate"}
+{"Time":"2026-09-28T12:02:11.914555-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestRate","Output":"=== RUN   TestRate\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:11.914637-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestRate","Output":"--- PASS: TestRate (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:11.914648-04:00","Action":"pass","Package":"example.com/shop/tax","Test":"TestRate","Elapsed":0}
+{"Time":"2026-09-28T12:02:11.914658-04:00","Action":"run","Package":"example.com/shop/tax","Test":"TestLookupPanics"}
+{"Time":"2026-09-28T12:02:11.914664-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"=== RUN   TestLookupPanics\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:11.914688-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"--- FAIL: TestLookupPanics (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:11.917481-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"panic: runtime error: index out of range [3] with length 0 [recovered, repanicked]\n"}
+{"Time":"2026-09-28T12:02:11.917501-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"\n"}
+{"Time":"2026-09-28T12:02:11.917504-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"goroutine 35 [running]:\n"}
+{"Time":"2026-09-28T12:02:11.917512-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"testing.tRunner.func1.2({0x100efff98, 0x16884ca2018})\n"}
+{"Time":"2026-09-28T12:02:11.917515-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"\t/usr/local/go/src/testing/testing.go:2123 +0x1a0\n"}
+{"Time":"2026-09-28T12:02:11.917518-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"testing.tRunner.func1()\n"}
+{"Time":"2026-09-28T12:02:11.91752-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"\t/usr/local/go/src/testing/testing.go:2126 +0x2c8\n"}
+{"Time":"2026-09-28T12:02:11.91753-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"panic({0x100efff98?, 0x16884ca2018?})\n"}
+{"Time":"2026-09-28T12:02:11.917532-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"\t/usr/local/go/src/runtime/panic.go:859 +0x120\n"}
+{"Time":"2026-09-28T12:02:11.917535-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"example.com/shop/tax.Lookup(...)\n"}
+{"Time":"2026-09-28T12:02:11.917538-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"\t/home/dev/project/tax/tax.go:8\n"}
+{"Time":"2026-09-28T12:02:11.917547-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"example.com/shop/tax.TestLookupPanics(0x16884cdc488?)\n"}
+{"Time":"2026-09-28T12:02:11.917553-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"\t/home/dev/project/tax/tax_test.go:14 +0x20\n"}
+{"Time":"2026-09-28T12:02:11.917555-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"testing.tRunner(0x16884cdc488, 0x100f0b410)\n"}
+{"Time":"2026-09-28T12:02:11.917558-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"\t/usr/local/go/src/testing/testing.go:2193 +0xc4\n"}
+{"Time":"2026-09-28T12:02:11.917576-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"created by testing.(*T).Run in goroutine 1\n"}
+{"Time":"2026-09-28T12:02:11.917587-04:00","Action":"output","Package":"example.com/shop/tax","Test":"TestLookupPanics","Output":"\t/usr/local/go/src/testing/testing.go:2258 +0x3b8\n"}
+{"Time":"2026-09-28T12:02:11.917857-04:00","Action":"fail","Package":"example.com/shop/tax","Test":"TestLookupPanics","Elapsed":0}
+{"Time":"2026-09-28T12:02:11.91789-04:00","Action":"output","Package":"example.com/shop/tax","Output":"FAIL\texample.com/shop/tax\t0.179s\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:11.917904-04:00","Action":"fail","Package":"example.com/shop/tax","Elapsed":0.179}
+{"Time":"2026-09-28T12:02:12.045605-04:00","Action":"run","Package":"example.com/shop/cart","Test":"TestTotal"}
+{"Time":"2026-09-28T12:02:12.045692-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestTotal","Output":"=== RUN   TestTotal\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.045721-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestTotal","Output":"--- PASS: TestTotal (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.045739-04:00","Action":"pass","Package":"example.com/shop/cart","Test":"TestTotal","Elapsed":0}
+{"Time":"2026-09-28T12:02:12.045752-04:00","Action":"run","Package":"example.com/shop/cart","Test":"TestParse"}
+{"Time":"2026-09-28T12:02:12.045759-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestParse","Output":"=== RUN   TestParse\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.045811-04:00","Action":"run","Package":"example.com/shop/cart","Test":"TestParse/empty"}
+{"Time":"2026-09-28T12:02:12.045824-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestParse/empty","Output":"=== RUN   TestParse/empty\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.045943-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestParse/empty","Output":"    cart_test.go:23: Parse(\"\") error = empty\n","OutputType":"error"}
+{"Time":"2026-09-28T12:02:12.045964-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestParse/empty","Output":"--- FAIL: TestParse/empty (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.045975-04:00","Action":"fail","Package":"example.com/shop/cart","Test":"TestParse/empty","Elapsed":0}
+{"Time":"2026-09-28T12:02:12.045982-04:00","Action":"run","Package":"example.com/shop/cart","Test":"TestParse/one"}
+{"Time":"2026-09-28T12:02:12.045988-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestParse/one","Output":"=== RUN   TestParse/one\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.045996-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestParse/one","Output":"--- PASS: TestParse/one (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.046001-04:00","Action":"pass","Package":"example.com/shop/cart","Test":"TestParse/one","Elapsed":0}
+{"Time":"2026-09-28T12:02:12.046007-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestParse","Output":"--- FAIL: TestParse (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.046013-04:00","Action":"fail","Package":"example.com/shop/cart","Test":"TestParse","Elapsed":0}
+{"Time":"2026-09-28T12:02:12.046018-04:00","Action":"run","Package":"example.com/shop/cart","Test":"TestDiscount"}
+{"Time":"2026-09-28T12:02:12.046024-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestDiscount","Output":"=== RUN   TestDiscount\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.046039-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestDiscount","Output":"    cart_test.go:31: no discounts yet\n"}
+{"Time":"2026-09-28T12:02:12.046047-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestDiscount","Output":"--- SKIP: TestDiscount (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.046063-04:00","Action":"skip","Package":"example.com/shop/cart","Test":"TestDiscount","Elapsed":0}
+{"Time":"2026-09-28T12:02:12.046069-04:00","Action":"run","Package":"example.com/shop/cart","Test":"TestTotalIsWrong"}
+{"Time":"2026-09-28T12:02:12.046074-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestTotalIsWrong","Output":"=== RUN   TestTotalIsWrong\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.04608-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestTotalIsWrong","Output":"    cart_test.go:37: 2 + 2 is not 5\n","OutputType":"error"}
+{"Time":"2026-09-28T12:02:12.046088-04:00","Action":"output","Package":"example.com/shop/cart","Test":"TestTotalIsWrong","Output":"--- FAIL: TestTotalIsWrong (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.046097-04:00","Action":"fail","Package":"example.com/shop/cart","Test":"TestTotalIsWrong","Elapsed":0}
+{"Time":"2026-09-28T12:02:12.046102-04:00","Action":"output","Package":"example.com/shop/cart","Output":"FAIL\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.046823-04:00","Action":"output","Package":"example.com/shop/cart","Output":"FAIL\texample.com/shop/cart\t0.308s\n","OutputType":"frame"}
+{"Time":"2026-09-28T12:02:12.046845-04:00","Action":"fail","Package":"example.com/shop/cart","Elapsed":0.309}

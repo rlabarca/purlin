@@ -123,6 +123,11 @@ nothing when it runs them all.
 }
 ```
 
+A subtest's result counts for the test that declares it, so `TestParse/empty` failing fails
+`TestParse`. A test that panics reads `fail`, and a test in the same package that the panic
+stopped before it started has no result and reads `not run`. This reading is checked against
+the stream `go test -json` prints on Go 1.27.1.
+
 ### sql
 
 ```json

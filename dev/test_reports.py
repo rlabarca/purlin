@@ -5,8 +5,9 @@ projects, and the JUnit XML, the TRX and the exit codes they leave are what
 is read. Jest, Vitest and `dotnet test` reports are captured under
 `dev/fixtures/reports/`, each beside the test source it was written for; the
 tests at the end of this file run those tools again where they are installed
-and check that they still write what the capture holds. The Go stream is
-written from the documented format, because no Go toolchain was at hand.
+and check that they still write what the capture holds. The Go stream is the
+one real `go test -json` printed over the two packages beside it, and a run of
+that module through the project's own command closes the file.
 """
 
 import json
@@ -228,7 +229,7 @@ class TestTheMarker:
                   encoding='utf-8') as handle:
             go = markers.go_tests(handle.read())
         assert [t.name for t in go] == ['TestTotal', 'TestParse',
-                                        'TestDiscount']
+                                        'TestDiscount', 'TestTotalIsWrong']
 
 
 # ---------------------------------------------------------------------------
@@ -273,10 +274,13 @@ class TestTheReports:
             text = handle.read()
         cases = reports.read_gotest(text + 'ok  \texample.com/shop 0.1s\n')
         assert [(c.name, c.outcome) for c in cases] == [
+            ('TestRate', 'pass'), ('TestLookupPanics', 'fail'),
             ('TestTotal', 'pass'), ('TestParse/empty', 'fail'),
             ('TestParse/one', 'pass'), ('TestParse', 'fail'),
-            ('TestDiscount', 'skip')]
-        assert {c.package for c in cases} == {'example.com/shop/cart'}
+            ('TestDiscount', 'skip'), ('TestTotalIsWrong', 'fail')]
+        assert 'TestAfterThePanic' not in {c.name for c in cases}
+        assert [c.package for c in cases] == (
+            ['example.com/shop/tax'] * 2 + ['example.com/shop/cart'] * 6)
 
 
 # ---------------------------------------------------------------------------
@@ -324,6 +328,7 @@ class TestTheTie:
                                               'report.json')
         (outcomes, _p), _marked = _tie(root, suite, cases)
         assert outcomes[('cart/cart_test.go', 6)] == ['pass']
+        assert outcomes[('tax/tax_test.go', 6)] == ['pass']
 
     # purlin: reports PROOF-11
     def test_every_case_of_a_parametrised_test_must_pass(self, tmp_path):
@@ -518,7 +523,7 @@ class TestThroughARun:
         cases, problem = reports.read_report(
             'gotest', str(root), '-',
             (root / 'report.json').read_text(encoding='utf-8'))
-        assert problem is None and len(cases) == 5
+        assert problem is None and len(cases) == 8
 
     # purlin: reports PROOF-18
     def test_a_suite_with_no_report_is_missing_evidence(self, tmp_path):
@@ -720,3 +725,94 @@ def test_dotnet_still_writes_what_the_capture_holds(tmp_path):
     captured, _p = reports.read_report(
         'trx', os.path.join(FIXTURES, 'dotnet'), 'dotnet.trx')
     assert _shape(now, str(root)) == _shape(captured, '/home/dev/project')
+
+
+def test_go_still_writes_what_the_capture_holds(tmp_path):
+    if not shutil.which('go'):
+        pytest.skip('go is not on this machine')
+    from purlin import frameworks
+    root = _fixture(tmp_path, 'go')
+    entry = frameworks.entry_for('go')
+    done = subprocess.run(['bash', '-c', entry['run']], cwd=str(root),
+                          capture_output=True, encoding='utf-8')
+    now, problem = reports.read_report('gotest', str(root), '-', done.stdout)
+    assert problem is None
+    captured, _p = reports.read_report(
+        'gotest', os.path.join(FIXTURES, 'go'), 'report.json')
+    assert sorted((c.package, c.name, c.outcome) for c in now) == sorted(
+        (c.package, c.name, c.outcome) for c in captured)
+
+
+GO_SPECS = {
+    'cart': ('# Feature: cart\n\n> Scope: cart/\n\n## Rules\n\n'
+             '- RULE-1: Two prices add up\n'
+             '- RULE-2: An empty basket is refused\n'
+             '- RULE-3: A discount applies\n'
+             '- RULE-4: Two and two total five\n\n## Proof\n\n'
+             '- PROOF-1 (RULE-1): 2 and 3 total 5\n'
+             '- PROOF-2 (RULE-2): an empty basket is refused\n'
+             '- PROOF-3 (RULE-3): a discount applies\n'
+             '- PROOF-4 (RULE-4): 2 and 2 total 5\n'),
+    'tax': ('# Feature: tax\n\n> Scope: tax/\n\n## Rules\n\n'
+            '- RULE-1: The uk rate is 0.2\n'
+            '- RULE-2: A lookup past the table is refused\n'
+            '- RULE-3: A test after a panic is reached\n\n## Proof\n\n'
+            '- PROOF-1 (RULE-1): the uk rate reads 0.2\n'
+            '- PROOF-2 (RULE-2): a lookup past the table is refused\n'
+            '- PROOF-3 (RULE-3): the test after the panic runs\n'),
+}
+
+
+# purlin: scaffold PROOF-52
+def test_a_go_module_runs_through_the_command_init_writes(tmp_path):
+    """Go itself, not a sample of what it prints: init sets the module up,
+    the module's own command runs, and each marker reads what Go said."""
+    if not shutil.which('go'):
+        pytest.skip('go is not on this machine')
+    root = _fixture(tmp_path, 'go')
+    (root / 'report.json').unlink()
+    module = {str(p.relative_to(root)): p.read_bytes()
+              for p in root.rglob('*') if p.is_file()}
+    for command in (['init', '-q'], ['config', 'user.email', 'dev@example.com'],
+                    ['config', 'user.name', 'Dev']):
+        subprocess.run(['git'] + command, cwd=str(root), check=True)
+    init = subprocess.run(
+        [sys.executable, os.path.join(REPO, 'scripts', 'init', 'scaffold.py'),
+         '--project-root', str(root), '--gate', 'passed', '--yes'],
+        capture_output=True, encoding='utf-8', stdin=subprocess.DEVNULL)
+    assert init.returncode == 0, init.stdout + init.stderr
+    assert not [line for line in init.stdout.splitlines() if 'needs' in line], (
+        init.stdout)
+    config = json.loads((root / '.purlin' / 'config.json').read_text(
+        encoding='utf-8'))
+    assert config['tests'] == [{'name': 'go', 'run': 'go test -json ./...',
+                                'report': '-', 'format': 'gotest',
+                                'files': ['**/*_test.go']}], config
+    for name, text in GO_SPECS.items():
+        _write(root, 'specs/shop/%s.md' % name, text)
+    subprocess.run(['git', 'add', '-A'], cwd=str(root), check=True)
+    subprocess.run(['git', 'commit', '-q', '-m', 'the module'], cwd=str(root),
+                   check=True)
+
+    code, out = _run(root, '--all', '--test')
+    assert 'Markers: 7 tied to a test, 0 not tied.' in out, out
+    seen = {}
+    for feature in ('cart', 'tax'):
+        for entry in _evidence(root, feature)['proofs']:
+            seen[(feature, entry['id'])] = (entry['result'], entry['test'])
+    assert seen == {
+        ('cart', 'PROOF-1'): ('pass', 'cart/cart_test.go::TestTotal'),
+        ('cart', 'PROOF-2'): ('fail', 'cart/cart_test.go::TestParse'),
+        ('cart', 'PROOF-3'): ('missing', 'cart/cart_test.go::TestDiscount'),
+        ('cart', 'PROOF-4'): ('fail', 'cart/cart_test.go::TestTotalIsWrong'),
+        ('tax', 'PROOF-1'): ('pass', 'tax/tax_test.go::TestRate'),
+        ('tax', 'PROOF-2'): ('fail', 'tax/tax_test.go::TestLookupPanics'),
+        ('tax', 'PROOF-3'): ('missing', 'tax/tax_test.go::TestAfterThePanic'),
+    }, seen
+    assert code == 1, out
+    # Nothing of Purlin was added to the module: every file it held reads as
+    # it did, and every Go file there is one of them.
+    assert {rel: (root / rel).read_bytes() for rel in module} == module
+    assert sorted(str(p.relative_to(root)) for p in root.rglob('*.go')
+                  ) == sorted(rel for rel in module if rel.endswith('.go'))
+    assert not (root / 'go.sum').exists()
