@@ -42,6 +42,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import gate_check  # noqa: E402
 import sign as sign_module  # noqa: E402
+from purlin import evidence as purlin_evidence  # noqa: E402
 from test_signatures import (EVERY_RULE_SIGNED, SPEC,  # noqa: E402
                              Project, commit_as_ci, git, signing_key)
 
@@ -113,6 +114,16 @@ class TestThePassedGate:
             assert code == 0, output
             assert 'gate: gate = passed' in output
             assert 'PASS. Every rule meets passed.' in output
+            # The same project with RULE-1's test failing: only RULE-2 is met.
+            made.proofs({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
+            made.evidence({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
+            code, output = run(made, as_json=True)
+            assert code == 1, output
+            assert 'gate: FAIL. 1 of 2 rules do not meet passed.' in output
+            data = json.loads(output[output.index('{'):])
+            assert data['rules'] == 2 and data['met'] == 1, data
+            assert [line.split(':')[0] for line in data['not_passed']] == [
+                'login RULE-1'], data
         finally:
             made.close()
 
@@ -139,6 +150,9 @@ class TestThePassedGate:
             assert code == 1
             assert 'login RULE-1: failed' in output, output
             assert 'failing:' in output
+            assert ('  login RULE-1: failed (failing: %s, local)'
+                    % purlin_evidence.host_os()) in output.splitlines(), output
+            assert 'login RULE-2' not in output, output
         finally:
             made.close()
 
@@ -166,6 +180,17 @@ class TestThePassedGate:
             assert code == 0, output
             assert 'minimum test strength' not in output
             assert 'Weak' not in output and 'Not signed' not in output
+            for title in ('Partial', 'Not audited', 'Queue'):
+                assert title not in output, (title, output)
+            assert not [line for line in output.splitlines()
+                        if line.endswith('):')], output
+            # The same project at `strong` prints the minimum and a section.
+            made.config(gate='strong')
+            code, output = run(made)
+            assert code == 1, output
+            assert ('gate: 2 rules across 1 features; minimum test strength '
+                    '80.') in output.splitlines(), output
+            assert 'Not audited (1):' in output.splitlines(), output
         finally:
             made.close()
 
@@ -246,6 +271,17 @@ class TestTheStrongGate:
         finally:
             made.close()
 
+    # purlin: gate_check PROOF-8
+    def test_a_strength_at_the_minimum_is_not_weak(self):
+        made = project_at('strong', strength=70, config={'min_strength': 70})
+        try:
+            code, output = run(made)
+            assert code == 0, output
+            assert 'Weak' not in output, output
+            assert 'PASS. Every rule meets strong.' in output, output
+        finally:
+            made.close()
+
     # purlin: gate_check PROOF-9
     def test_a_rule_with_no_audit_entry_is_not_audited(self):
         made = project_at('strong', audits=())
@@ -292,6 +328,11 @@ class TestTheStrongGate:
             assert 'Weak (1):' in output, output
             assert 'login RULE-2: weak' in output, output
             assert 'never the body the rule names' in output
+            lines = output.splitlines()
+            finding = ('  login RULE-2: weak (PROOF-2 asserts the status but '
+                       'never the body the rule names.)')
+            assert finding in lines, output
+            assert lines.index(finding) == lines.index('Weak (1):') + 1, output
         finally:
             made.close()
 
@@ -351,6 +392,10 @@ class TestTheSignedGate:
             code, output = run(made)
             assert code == 1
             assert 'the signing commit is not signed' in output, output
+            lines = output.splitlines()
+            unsigned = '  login RULE-2: unsigned (the signing commit is not signed)'
+            assert unsigned in lines and 'Queue (1):' in lines, output
+            assert lines.index(unsigned) == lines.index('Queue (1):') + 1, output
         finally:
             made.close()
 
@@ -520,6 +565,17 @@ class TestTheJsonResult:
             assert data['weak'] == [] and data['queue'] == []
             assert data['not_audited'] == []
             assert data['commit'] == made.head()
+            assert data['partial'] == [] and data['evidence'] == []
+            assert data['min_strength'] is None, data
+            # The same result from the command line's `--json` flag.
+            result = subprocess.run(
+                [sys.executable, GATE_PY, '--check', '--json',
+                 '--project-root', made.root],
+                capture_output=True, text=True, timeout=120)
+            assert result.returncode == 1, result.stdout + result.stderr
+            assert '{' in result.stdout, result.stdout
+            printed = json.loads(result.stdout[result.stdout.index('{'):])
+            assert printed == data, (printed, data)
         finally:
             made.close()
 
@@ -557,23 +613,37 @@ class TestTheGateNeverWrites:
 
     # purlin: gate_check PROOF-29
     def test_no_file_is_created_or_changed_at_any_level(self):
-        for gate in ('passed', 'strong', 'signed'):
+        # Met at passed and strong; at signed RULE-2 waits on a signature.
+        for gate, expected in (('passed', 0), ('strong', 0), ('signed', 1)):
             made = project_at(gate)
             try:
                 before = _tree(made.root)
-                run(made)
+                inside_git = _tree(made.root, with_git=True)
+                code, output = run(made)
+                assert code == expected, (gate, output)
                 assert _tree(made.root) == before, (
                     'a gate that can edit the evidence it grades is not a gate')
+                assert _tree(made.root, with_git=True) == inside_git, (
+                    'the refs, the index and the config under .git moved')
                 status = git(made.root, 'status', '--porcelain').stdout
                 assert status.strip() == '', status
             finally:
                 made.close()
 
+    # purlin: gate_check PROOF-29
+    def test_a_folder_it_cannot_read_is_left_as_it_was(self, tmp_path):
+        (tmp_path / 'notes.txt').write_text('not a project\n')
+        before = _tree(str(tmp_path), with_git=True)
+        out = io.StringIO()
+        assert gate_check.check(str(tmp_path), out=out) == 2, out.getvalue()
+        assert _tree(str(tmp_path), with_git=True) == before
 
-def _tree(root):
+
+def _tree(root, with_git=False):
     found = {}
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d != '.git']
+        if not with_git:
+            dirnames[:] = [d for d in dirnames if d != '.git']
         for name in filenames:
             path = os.path.join(dirpath, name)
             with open(path, 'rb') as handle:
@@ -598,6 +668,28 @@ class TestWhatTheGateReads:
                 'a gate that parsed a rendered table would move with the '
                 'dashboard')
 
+    # purlin: gate_check PROOF-30
+    def test_the_verdict_follows_meets_gate(self):
+        """Neither rule has a test run, and each still reads `no test`."""
+        made = Project(gate='passed')
+        try:
+            payload = made.payload()
+            rules = {entry['id']: entry
+                     for entry in payload['features'][0]['rules']}
+            rules['RULE-2']['meets_gate'] = True
+            out = io.StringIO()
+            assert gate_check.check(made.root, payload=payload, out=out) == 1
+            output = out.getvalue()
+            assert 'gate: FAIL. 1 of 2 rules do not meet passed.' in output
+            assert 'login RULE-1: no test' in output, output
+            assert 'login RULE-2' not in output, output
+            rules['RULE-1']['meets_gate'] = True
+            out = io.StringIO()
+            assert gate_check.check(made.root, payload=payload, out=out) == 0
+            assert 'PASS. Every rule meets passed.' in out.getvalue()
+        finally:
+            made.close()
+
     # purlin: gate_check PROOF-31
     def test_a_caller_may_hand_over_the_payload_it_already_built(self):
         made = project_at('passed', by_ci=False, audits=())
@@ -606,6 +698,16 @@ class TestWhatTheGateReads:
             out = io.StringIO()
             assert gate_check.check(made.root, payload=payload, out=out) == 0
             assert 'PASS' in out.getvalue()
+            # A handed payload reading RULE-1 short is the one the gate reads,
+            # over a project whose own payload passes.
+            for entry in payload['features'][0]['rules']:
+                if entry['id'] == 'RULE-1':
+                    entry['meets_gate'] = False
+            out = io.StringIO()
+            assert gate_check.check(made.root, payload=payload, out=out) == 1
+            assert ('gate: FAIL. 1 of 2 rules do not meet passed.'
+                    in out.getvalue()), out.getvalue()
+            assert run(made)[0] == 0
         finally:
             made.close()
 
@@ -646,6 +748,45 @@ def test_the_report_carries_its_six_sections_in_order():
         printed = [line for line in output.splitlines()
                    if any(line.startswith(title + ' (') for title in titles)]
         assert printed == ['Not audited (1):'], output
+    finally:
+        made.close()
+
+
+ZETA = ('# Feature: zeta\n\n> Description: Two rules.\n'
+        '> Scope: src/login.py\n\n## Rules\n\n'
+        '- RULE-1: A person checks the page\n'
+        '- RULE-2: Nothing tests this yet\n\n## Proof\n\n'
+        '- PROOF-1 (RULE-1): A person reads the page @manual\n')
+
+
+# purlin: gate_check PROOF-34
+def test_rules_short_in_five_sections_print_them_in_the_chain_order(
+        monkeypatch):
+    """`zeta` comes after `login`, yet its `Not passed` line prints first."""
+    for name in ('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', 'GITHUB_REPOSITORY'):
+        monkeypatch.delenv(name, raising=False)
+    made = Project(gate='signed', config={'min_strength': 80},
+                   spec=EVERY_RULE_SIGNED)
+    try:
+        made.proofs()
+        # CI's folder, committed by a person: `--verify` names it.
+        made.evidence(strength=90, runner='ci', source='ci', commit_it=False)
+        made.audit('RULE-1', findings=['PROOF-1 never checks the token.'])
+        made.spec(ZETA, name='zeta')
+        git(made.root, 'add', '-A')
+        git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
+        out = io.StringIO()
+        assert gate_check.check(made.root, out=out, verify_evidence=True) == 1
+        lines = out.getvalue().splitlines()
+        headings = [line for line in lines if line.endswith('):')]
+        assert headings == ['Not passed (1):', 'Weak (1):', 'Not audited (1):',
+                            'Queue (1):', 'Evidence (1):'], lines
+        for line in ('  zeta RULE-2: no test (no proof written)',
+                     '  login RULE-1: weak (PROOF-1 never checks the token.)',
+                     '  login RULE-2: not audited (no audit has run on this '
+                     'code)',
+                     '  zeta RULE-1: manual test (manual proof)'):
+            assert line in lines, lines
     finally:
         made.close()
 
@@ -705,6 +846,9 @@ class TestTheTagNote:
                 assert 'gate: gate = %s' % gate in output, output
                 if gate == 'signed':
                     assert note in output.splitlines(), output
+                    lines = output.splitlines()
+                    assert (lines.index(note)
+                            > lines.index('gate: gate = signed')), output
                 else:
                     assert 'tag' not in output.lower(), (gate, output)
                     assert 'signed/' not in output, (gate, output)
