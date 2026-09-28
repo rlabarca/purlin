@@ -76,6 +76,9 @@ function staleLines() {
 function tileHover(bucket, project) {
   if (bucket === 'passed') { return platformLines(project); }
   if (bucket === 'strong') { return auditLines(project); }
+  if (bucket === 'untested' && !showsProofs()) {
+    return [TILE_HOVER.untested_no_proofs];
+  }
   return bucket === 'signed' ? signerLines(project) : [TILE_HOVER[bucket]];
 }
 
@@ -93,9 +96,11 @@ function tileHover(bucket, project) {
    sideways rather than squeezing a column past one. */
 function boardColumns() {
   var columns = [{label: COLUMNS[0], width: '2.3fr', floor: 132},
-                 {label: COLUMNS[1], width: '0.7fr', floor: 58},
-                 {label: COLUMNS[2], width: '2.15fr', floor: 180},
-                 {label: COLUMNS[3], width: '2.15fr', floor: 120}];
+                 {label: COLUMNS[1], width: '0.7fr', floor: 58}];
+  if (showsProofs()) {
+    columns.push({label: COLUMNS[2], width: '2.15fr', floor: 180});
+  }
+  columns.push({label: COLUMNS[3], width: '2.15fr', floor: 120});
   if (level('strong')) {
     columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
@@ -184,7 +189,7 @@ function featureRow(feature, columns) {
     + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
     + esc(feature.name) + '</span>' + noScope(feature) + '</span>'];
   cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');
-  cells.push(proofsCell(feature));
+  if (showsProofs()) { cells.push(proofsCell(feature)); }
   cells.push(testsCell(feature));
   if (level('strong')) { cells.push(strongCell(feature)); }
   if (level('signed')) { cells.push(signedCell(feature)); }

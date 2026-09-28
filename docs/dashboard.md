@@ -59,8 +59,9 @@ At `signed` two cards sit beside the tiles: `Queue`, the rules that wait on a pe
 `Stale`, the rules whose signature does not match. A card is counted beside the tiles, never
 instead of them. Each tile and card names what it counts in its hover.
 
-**Columns.** At `passed` there are four: `Spec`, `Rules`, `Proofs` and `Tests`. `Strong` joins
-at `strong` and `Signed` at `signed`.
+**Columns.** `Spec`, `Rules` and `Tests` are there at every gate. `Proofs` sits between `Rules`
+and `Tests` from `strong` up, and at `passed` only where the project writes at least one proof
+line, since proofs are optional there. `Strong` joins at `strong` and `Signed` at `signed`.
 
 | Column | What it reads | What its hover says |
 |---|---|---|
@@ -141,7 +142,8 @@ panel is headed `Signature` or `Hand check` and names the command to run in Clau
 rule's level is below `signed`, it says the rule asks for no signature and that one written
 anyway still counts.
 
-The **Proofs** are last, each with its `@manual` and `@env` tags and the tests that ran it.
+The **Proofs** are last, each with its `@manual` and `@env` tags and the tests that ran it. A
+project at `passed` that writes no proof line has no proofs here.
 `← Board` at the top closes the rule; it reads `← Queue` when the rule was opened from there.
 
 ## Queue

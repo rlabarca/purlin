@@ -59,6 +59,28 @@ def payload_named(name):
     return json.loads(read(os.path.join(FIXTURES, name + '.json')))
 
 
+def without_proof_lines(payload):
+    """The payload of the same project with every proof line taken out.
+
+    A rule whose proof had a test keeps that test, marked with the rule's own
+    id, so its passed cell reads as it did; a rule whose proof had none reads
+    `no test` for the reason `sync_status` gives a rule no proof line names.
+    The counts of proof lines go to zero with them.
+    """
+    for feature in payload['features']:
+        for rule in feature['rules']:
+            proofs = rule['proofs']
+            rule['proofs'] = []
+            rule['flags']['no_proof'] = True
+            if proofs and not any(proof['tests'] for proof in proofs):
+                rule['cells']['passed'].update(
+                    {'word': 'no test', 'reasons': ['no proof written']})
+        for counted in (feature['rollup'], payload['summary']):
+            counted.update({'proofs': 0, 'proofs_without_test': 0,
+                            'proofs_without_test_ids': []})
+    return payload
+
+
 # The levels the board's tiles count, lowest first. A payload counts a rule
 # once, in the highest bucket it reached; a tile asks how many rules got at
 # least that far, so it adds that bucket to every bucket above it.
@@ -315,7 +337,20 @@ def test_the_columns_scale_with_the_gate(browser, tmp_path):
     assert head_labels(solo) == BASE_COLUMNS
     solo.close()
 
+    # Proofs are optional at `passed`: a project there that writes none is
+    # shown no column for them.
+    bare = open_board(browser, tmp_path / 'bare',
+                      without_proof_lines(payload_named('solo')))
+    assert head_labels(bare) == ['Spec', 'Rules', 'Tests']
+    bare.close()
+
     team = open_board(browser, tmp_path / 'team', payload_named('team'))
+    assert head_labels(team) == BASE_COLUMNS + ['Strong']
+    team.close()
+
+    # From `strong` up every rule needs a proof, so the column stays.
+    team = open_board(browser, tmp_path / 'team-bare',
+                      without_proof_lines(payload_named('team')))
     assert head_labels(team) == BASE_COLUMNS + ['Strong']
     team.close()
 
@@ -1167,6 +1202,10 @@ def test_no_proof_and_out_of_date_read_their_reasons(browser, tmp_path):
 # never shown: the requirement names them, so the test does too.
 HIGHER_WORDS = re.compile(
     r'\b(strong|signed|audit|queue|signature|level|hand check)', re.I)
+# Proofs are optional at `passed`, so a project there that writes no proof
+# line is not shown the word either.
+HIGHER_WORDS_NO_PROOFS = re.compile(
+    r'\b(strong|signed|audit|queue|signature|level|hand check|proof)', re.I)
 STATUSES = ('passed', 'failed', 'partial', 'no test', 'not run',
             'out of date')
 
@@ -1205,13 +1244,17 @@ def _walk_everything(page):
     return seen, statuses
 
 
+@pytest.mark.parametrize('proof_lines', (True, False))
 @pytest.mark.parametrize('word', (None, 'failed', 'partial', 'not run',
                                   'out of date'))
 # purlin: purlin_report PROOF-63
 def test_the_passed_gate_shows_no_word_of_a_higher_level(browser, tmp_path,
-                                                         word):
+                                                         word, proof_lines):
     payload = payload_named('solo')
     assert payload['gate']['gate'] == 'passed'
+    if not proof_lines:
+        payload = without_proof_lines(payload)
+        assert payload['summary']['proofs'] == 0
     if word:
         cell = payload['features'][0]['rules'][0]['cells']['passed']
         cell['word'] = word
@@ -1222,8 +1265,9 @@ def test_the_passed_gate_shows_no_word_of_a_higher_level(browser, tmp_path,
     page = open_board(browser, tmp_path, payload)
     seen, statuses = _walk_everything(page)
     page.close()
+    words = HIGHER_WORDS if proof_lines else HIGHER_WORDS_NO_PROOFS
     found = sorted({match.group(0) for text in seen if text
-                    for match in HIGHER_WORDS.finditer(text)})
+                    for match in words.finditer(text)})
     assert found == [], found
     assert len(statuses) == 5, statuses
     assert all(status in STATUSES for status in statuses), statuses

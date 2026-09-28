@@ -258,13 +258,18 @@ function staleLines() {
 function tileHover(bucket, project) {
   if (bucket === 'passed') { return platformLines(project); }
   if (bucket === 'strong') { return auditLines(project); }
+  if (bucket === 'untested' && !showsProofs()) {
+    return [TILE_HOVER.untested_no_proofs];
+  }
   return bucket === 'signed' ? signerLines(project) : [TILE_HOVER[bucket]];
 }
 function boardColumns() {
   var columns = [{label: COLUMNS[0], width: '2.3fr', floor: 132},
-                 {label: COLUMNS[1], width: '0.7fr', floor: 58},
-                 {label: COLUMNS[2], width: '2.15fr', floor: 180},
-                 {label: COLUMNS[3], width: '2.15fr', floor: 120}];
+                 {label: COLUMNS[1], width: '0.7fr', floor: 58}];
+  if (showsProofs()) {
+    columns.push({label: COLUMNS[2], width: '2.15fr', floor: 180});
+  }
+  columns.push({label: COLUMNS[3], width: '2.15fr', floor: 120});
   if (level('strong')) {
     columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
   }
@@ -326,7 +331,7 @@ function featureRow(feature, columns) {
     + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
     + esc(feature.name) + '</span>' + noScope(feature) + '</span>'];
   cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');
-  cells.push(proofsCell(feature));
+  if (showsProofs()) { cells.push(proofsCell(feature)); }
   cells.push(testsCell(feature));
   if (level('strong')) { cells.push(strongCell(feature)); }
   if (level('signed')) { cells.push(signedCell(feature)); }
@@ -424,7 +429,8 @@ function cellRow(rule, name) {
   var cell = cellOf(rule, name);
   if (!cell) { return ''; }
   var reasons = (cell.reasons || []).filter(function (text) {
-    return text !== 'by ' + cell.signer;
+    return text !== 'by ' + cell.signer
+      && (showsProofs() || text !== 'no proof written');
   }).join('; ');
   var beside = name === 'passed' ? platformBoxes(cell)
     : name === 'signed' && cell.signer ? '<span class="mono sec">'
@@ -550,11 +556,11 @@ function renderRule() {
     + '<section class="stack"><div class="panel"><dl class="kv">'
     + rows.join('') + '</dl></div>'
     + auditPanel(rule) + signPanel(feature, rule) + '</section>'
-    + '<section><p class="eyebrow">Proofs</p><div class="stack">'
-    + ((rule.proofs || []).length
-      ? rule.proofs.map(proofPanel).join('')
-      : '<div class="panel sec">No proof written.</div>')
-    + '</div></section>';
+    + (showsProofs() ? '<section><p class="eyebrow">Proofs</p>'
+      + '<div class="stack">' + ((rule.proofs || []).length
+        ? rule.proofs.map(proofPanel).join('')
+        : '<div class="panel sec">No proof written.</div>')
+      + '</div></section>' : '');
 }
 var ARRIVES = {
   strong: 'A rule arrives here when its level is strong and its proof is '
@@ -615,6 +621,7 @@ var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
   partial: 'Partial', passed: 'Passing', strong: 'Strong', signed: 'Signed'};
 var TILE_HOVER = {
   untested: 'No test, no current run, or no proof written.',
+  untested_no_proofs: 'No test, or no current run.',
   failing: 'Every platform that ran the tests found a failure.',
   partial: 'Passed on one platform, failed or did not run on another.'};
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
@@ -659,6 +666,9 @@ function gateName() {
 }
 function level(name) {
   return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
+}
+function showsProofs() {
+  return level('strong') || ((DATA && DATA.summary) || {}).proofs > 0;
 }
 function minStrength() { return (DATA.gate && DATA.gate.min_strength) || 0; }
 function esc(value) {

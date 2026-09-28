@@ -36,7 +36,8 @@ function cellRow(rule, name) {
   var cell = cellOf(rule, name);
   if (!cell) { return ''; }
   var reasons = (cell.reasons || []).filter(function (text) {
-    return text !== 'by ' + cell.signer;
+    return text !== 'by ' + cell.signer
+      && (showsProofs() || text !== 'no proof written');
   }).join('; ');
   var beside = name === 'passed' ? platformBoxes(cell)
     : name === 'signed' && cell.signer ? '<span class="mono sec">'
@@ -182,9 +183,9 @@ function renderRule() {
     + '<section class="stack"><div class="panel"><dl class="kv">'
     + rows.join('') + '</dl></div>'
     + auditPanel(rule) + signPanel(feature, rule) + '</section>'
-    + '<section><p class="eyebrow">Proofs</p><div class="stack">'
-    + ((rule.proofs || []).length
-      ? rule.proofs.map(proofPanel).join('')
-      : '<div class="panel sec">No proof written.</div>')
-    + '</div></section>';
+    + (showsProofs() ? '<section><p class="eyebrow">Proofs</p>'
+      + '<div class="stack">' + ((rule.proofs || []).length
+        ? rule.proofs.map(proofPanel).join('')
+        : '<div class="panel sec">No proof written.</div>')
+      + '</div></section>' : '');
 }

@@ -39,6 +39,7 @@ var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
    instead, which are the column hovers read over every spec. */
 var TILE_HOVER = {
   untested: 'No test, no current run, or no proof written.',
+  untested_no_proofs: 'No test, or no current run.',
   failing: 'Every platform that ran the tests found a failure.',
   partial: 'Passed on one platform, failed or did not run on another.'};
 
@@ -46,7 +47,8 @@ var TILE_HOVER = {
    place. `scripts/mcp/purlin/board.py` renders the same six columns for
    `purlin:status`, so these are its
    `COLUMNS` and its cell words: a string changed there is changed here in
-   the same commit. */
+   the same commit. `Proofs` is drawn where `showsProofs` says, as
+   `board.shows_proofs` decides it for the status table. */
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 
 /* The one separator every cell, hover and line puts between two parts, which
@@ -107,6 +109,14 @@ function gateName() {
    drawn at all. */
 function level(name) {
   return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
+}
+
+/* Whether the page names proofs at all. They are optional at `passed`, so a
+   project there that writes no proof line is shown no `Proofs` column, no
+   proofs section and no reason naming them; from `strong` up every rule needs
+   one. `board.shows_proofs` answers the same for `purlin:status`. */
+function showsProofs() {
+  return level('strong') || ((DATA && DATA.summary) || {}).proofs > 0;
 }
 
 function minStrength() { return (DATA.gate && DATA.gate.min_strength) || 0; }
