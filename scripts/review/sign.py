@@ -43,6 +43,19 @@ the tag while any feature has such evidence, with one line per feature:
 `sign: <feature> has evidence that is not committed. Run: purlin:test
 --commit`.
 
+**A spec that names no files is not signed at `signed`.** Under the gate
+`signed` a rule of a feature spec with no `> Scope:` line, or one that
+reaches no file, is refused with `sign: <feature> names no files in > Scope:,
+so a signature cannot be tied to the code it governs. Run: purlin:spec
+<feature>`, and the tag is not written while any such spec exists. Below
+`signed` nothing is refused for it. Anchors are exempt.
+
+**The tag waits on current evidence.** A rule meets the gate only while its
+passed cell reads over evidence current for its spec, code and tests, so a
+feature whose evidence is older than any of them holds the tag back, and the
+refusal names it: `No tag: login is out of date (code changed since
+a1b2c3d).`
+
 **Trust.** With `trust: remote` in `.purlin/config.json` a rule with a proof
 that has a test, whose feature has no current section in its `ci` evidence,
 is refused, and the line says to run `purlin:test --remote` first. A rule
@@ -111,6 +124,11 @@ NO_CI_RUN = ('sign: %s %s has no ci test run for this code; run '
 MARKED_BELOW = 'sign: %s %s is marked [level: %s]; it asks for no signature.'
 NOT_COMMITTED = ('sign: %s has evidence that is not committed. Run: '
                  'purlin:test --commit')
+NAMES_NO_FILES = ('sign: %s names no files in > Scope:, so a signature cannot '
+                  'be tied to the code it governs. Run: purlin:spec %s')
+NO_TAG_NO_FILES = ('No tag: %s names no files in > Scope:, so a signature '
+                   'cannot be tied to the code it governs.')
+NO_TAG_OUT_OF_DATE = 'No tag: %s is out of date (%s).'
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
@@ -378,6 +396,52 @@ def _committed_only(payload, targets, out=None):
     return [pair for pair in targets if pair[0] not in refused]
 
 
+def names_no_files(payload, features=None):
+    """The feature specs, sorted, that name no files, at the gate `signed`.
+
+    Below `signed` nothing is refused for it and the answer is empty.
+    `features` narrows the question to the ones a signature reads; None asks
+    it of every feature, which is what the tag reads. An anchor is never
+    one: the code behind its rules belongs to the features that use it.
+    """
+    if (payload.get('gate') or {}).get('gate') != gate_module.GATES[-1]:
+        return []
+    return sorted(entry.get('name')
+                  for entry in (payload or {}).get('features') or ()
+                  if entry.get('incomplete')
+                  and (features is None or entry.get('name') in features))
+
+
+def _tied_only(payload, targets, out=None):
+    """The targets whose spec names its files, printing one line per other."""
+    refused = names_no_files(payload, {feature for feature, _rule in targets})
+    for feature in refused:
+        print(NAMES_NO_FILES % (feature, feature), file=out or sys.stdout)
+    return [pair for pair in targets if pair[0] not in refused]
+
+
+def out_of_date(payload):
+    """`[(feature, reasons)]` whose evidence is older than its spec, code or tests.
+
+    Read off each feature's own rules: a passed cell reading `out of date`
+    names what changed since its newest run. Sorted by feature, the reasons
+    in the order the cells give them, each once.
+    """
+    found = {}
+    for feature in (payload or {}).get('features') or ():
+        for entry in feature.get('rules') or ():
+            if entry.get('feature') != feature.get('name'):
+                continue
+            cell = (entry.get('cells') or {}).get('passed') or {}
+            if cell.get('word') != states.OUT_OF_DATE:
+                continue
+            reasons = found.setdefault(feature['name'], [])
+            for reason in cell.get('reasons') or ():
+                if reason not in reasons:
+                    reasons.append(reason)
+    return sorted(found.items())
+
+
 def marked_below(payload, targets):
     """`[(feature, rule, level)]` whose `[level: ...]` tag asks for no signature.
 
@@ -470,8 +534,18 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
     payload = load_payload(project_root, payload)
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
     short, total = short_of_the_gate(payload)
-    if short:
-        print(NO_TAG_SHORT % (short, total, gate), file=out)
+    stale = out_of_date(payload)
+    untied = names_no_files(payload)
+    if short or untied:
+        # Every feature the tag waits on is named with its reason, then the
+        # count, so the refusal says what to run and not only how far off.
+        for feature, reasons in stale:
+            print(NO_TAG_OUT_OF_DATE % (feature, ', '.join(reasons)),
+                  file=out)
+        for feature in untied:
+            print(NO_TAG_NO_FILES % feature, file=out)
+        if short:
+            print(NO_TAG_SHORT % (short, total, gate), file=out)
         return None
     refused = uncommitted(payload)
     if refused:
@@ -700,8 +774,8 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
             result['skipped'].append(pair)
 
     if result['signed']:
-        allowed = _committed_only(payload, _allowed(payload, result['signed'],
-                                                    out), out)
+        allowed = _committed_only(payload, _tied_only(
+            payload, _allowed(payload, result['signed'], out), out), out)
         result['skipped'].extend(pair for pair in result['signed']
                                  if pair not in allowed)
         result['signed'] = allowed
@@ -892,7 +966,8 @@ def main(argv=None):
     if gate == 'strong' and len(in_queue(payload, targets)) < len(targets):
         print('sign: a signature is required only under the gate signed. '
               'Writing it anyway.')
-    targets = _committed_only(payload, _allowed(payload, targets))
+    targets = _committed_only(payload, _tied_only(payload,
+                                                  _allowed(payload, targets)))
     if not targets:
         print('sign: nothing here needs a signature. Run purlin:status to see '
               'what blocks the gate.')

@@ -408,3 +408,85 @@ class TestVerify:
             assert 'Evidence' not in printed, printed
         finally:
             made.close()
+
+
+# ---------------------------------------------------------------------------
+# What holds the tag back, by name
+# ---------------------------------------------------------------------------
+
+NO_SCOPE = _read_spec().replace('> Scope: src/login.py\n', '')
+
+
+def _unscoped_project(gate):
+    made = Project(gate=gate, spec=NO_SCOPE.replace(' [level: passed]', ''),
+                   config={'min_strength': 50})
+    made.proofs()
+    made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
+    made.audit('RULE-1')
+    made.audit('RULE-2')
+    write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+    commit_as_ci(made.root)
+    signing_key(made.root)
+    return made
+
+
+class TestWhatHoldsTheTagBack:
+
+    @pytest.mark.proof("signatures", "PROOF-76", "RULE-51")
+    def test_at_signed_a_spec_that_names_no_files_is_refused(self, capsys):
+        made = _unscoped_project('signed')
+        try:
+            assert sign_module.queued(made.payload()) == []
+            code = sign_module.main(['login', 'RULE-2', '--project-root',
+                                     made.root])
+            printed = capsys.readouterr().out
+            assert code == sign_module.EXIT_NOTHING, printed
+            assert ('sign: login names no files in > Scope:, so a signature '
+                    'cannot be tied to the code it governs. Run: purlin:spec '
+                    'login') in printed.splitlines(), printed
+            assert made.signatures() == []
+            out = _Out()
+            assert sign_module.tag_if_met(made.root, out) is None
+            assert out.text().splitlines() == [
+                'No tag: login names no files in > Scope:, so a signature '
+                'cannot be tied to the code it governs.',
+                'No tag: 2 of 2 rules do not meet the gate signed.'], \
+                out.text()
+            assert git(made.root, 'tag', '-l').stdout.strip() == ''
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-76", "RULE-51")
+    def test_at_strong_it_is_signed_like_any_other(self, capsys):
+        made = _unscoped_project('strong')
+        try:
+            code = sign_module.main(['login', 'RULE-2', '--project-root',
+                                     made.root])
+            printed = capsys.readouterr().out
+            assert code == sign_module.EXIT_OK, printed
+            assert 'names no files' not in printed, printed
+            assert len(made.signatures()) == 1, printed
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-77", "RULE-52")
+    def test_the_refusal_names_a_feature_whose_evidence_is_out_of_date(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            section = next(iter(json.loads(_read(
+                made.root, '.purlin/evidence/ci/login.json'))[
+                    'platforms'].values()))
+            write(os.path.join(made.root, 'src', 'login.py'),
+                  'def login(user, password):\n    return 401\n')
+            git(made.root, 'commit', '-q', '-am', 'change the code')
+            out = _Out()
+            assert sign_module.tag_if_met(made.root, out) is None
+            assert out.text().splitlines() == [
+                'No tag: login is out of date (code changed since %s).'
+                % section['commit'][:7],
+                'No tag: 2 of 2 rules do not meet the gate signed.'], \
+                out.text()
+            assert git(made.root, 'tag', '-l').stdout.strip() == ''
+        finally:
+            made.close()
