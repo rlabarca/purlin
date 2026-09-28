@@ -1,104 +1,118 @@
-import json, os, sys
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deck', 'project')
+import json, os
+# DECK_ROOT names the folder the deck's files are written under; the default sits beside this script.
+ROOT = os.environ.get('DECK_ROOT') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deck', 'project')
 MONO = "font-family:'Courier New', monospace"
 def m(text):
     return '<span style="%s">%s</span>' % (MONO, text)
 SECTION = ('<section id="%s" data-transition="fade" style="background:#0C3444; color:#E4DDD4; '
            'font-family:Arial, sans-serif; padding:96px 128px 160px; display:flex; '
            'flex-direction:column; gap:%dpx">')
-ROW = ('<div style="display:flex; align-items:center; gap:32px; padding:%dpx 24px; '
-       'background:#092936; border-radius:10px">%s</div>')
+CARD = ('<div style="display:flex; flex-direction:column; gap:14px; padding:%dpx 24px; '
+        'background:#092936; border-radius:10px">%s</div>')
+LINE = '<div style="display:flex; align-items:center; gap:32px">%s</div>'
 NUM = '<p style="font-size:32px; color:#BFCED5; width:48px">%s</p>'
-PILL = ('<p style="font-size:24px; letter-spacing:2px; width:150px; text-align:center; '
-        'padding:8px 0; border:2px solid #C0793F; border-radius:999px; color:#C0793F">LOCAL</p>')
+# A command is machine text and is monospace; a label in plain words is sans.
 CMD = '<p style="' + MONO + '; font-size:32px; color:#E6BEB0; width:%dpx">%s</p>'
+LABEL = '<p style="font-size:32px; font-weight:600; color:#E6BEB0; width:%dpx">%s</p>'
 WHAT = '<p style="font-size:32px; color:#E4DDD4; flex:1">%s</p>'
-def slide(sid, eyebrow, headline, rows, closing, footer, notes, pill=True, gap=20, pad=18):
+# A part of a step: no number, set in under the step it belongs to.
+PART = ('<div style="display:flex; align-items:center; gap:32px; padding:0 0 0 80px">'
+        '<p style="font-size:28px; color:#BFCED5; width:%dpx">%s</p>'
+        '<p style="font-size:28px; color:#BFCED5; flex:1">%s</p></div>')
+def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=20, pad=18):
     out = [SECTION % (sid, gap),
            '<p style="font-size:24px; letter-spacing:3px; text-transform:uppercase; color:#C0793F">%s</p>' % eyebrow,
-           '<h2 style="font-size:64px; font-weight:600; line-height:1.1">%s</h2>' % headline,
-           '<div style="flex:1"></div>']
-    for i, (cmd, what) in enumerate(rows, 1):
-        cells = NUM % i + (PILL + CMD % (560, cmd) if pill else CMD % (742, cmd)) + WHAT % what
-        out.append(ROW % (pad, cells))
-    out += ['<div style="flex:1"></div>',
-            '<p style="font-size:32px; color:#E4DDD4">%s</p>' % closing,
-            '<p style="position:absolute; left:128px; bottom:64px; width:1664px; font-size:24px; color:#BFCED5">%s</p>' % footer,
-            '<aside>%s</aside>' % notes, '</section>', '']
+           '<h2 style="font-size:64px; font-weight:600; line-height:1.1">%s</h2>' % headline]
+    if lead:
+        out.append('<p style="font-size:32px; color:#BFCED5">%s</p>' % lead)
+    out.append('<div style="flex:1"></div>')
+    for i, row in enumerate(rows, 1):
+        name, what, parts = row[0], row[1], row[2] if len(row) > 2 else ()
+        head = (CMD if name.startswith('`') else LABEL) % (width, name.strip('`'))
+        lines = [LINE % (NUM % i + head + WHAT % what)]
+        lines += [PART % (width, part, said) for part, said in parts]
+        out.append(CARD % (pad, ''.join(lines)))
+    out.append('<div style="flex:1"></div>')
+    if closing:
+        out.append('<p style="font-size:32px; color:#E4DDD4">%s</p>' % closing)
+    out += ['<aside>%s</aside>' % notes, '</section>', '']
     with open(os.path.join(ROOT, 'slides', sid + '.html'), 'w', encoding='utf-8') as h:
         h.write('\n'.join(out))
-FOOT = 'Every step is on your machine. Only you push.'
-slide('passed', 'Gate passed', 'Did the rules pass their tests?', [
-    ('purlin:spec', 'Rules written.'),
-    ('purlin:build', 'Code and tests written. One comment above each test.'),
-    ('purlin:test', 'Each rule: passed, failed, no test, out of date.'),
-    ('git push', 'You push. Nothing runs when you do.'),
-], '<b>Red</b> means a test failed, a rule has no test, or a rule is out of date.', FOOT,
- 'At passed a project needs a rule and a test that names it. purlin:test runs only what your change '
- 'touched, writes the evidence, and commits it only when you pass --commit. Its last line is the '
- 'check: gate passed, or gate not met.')
-slide('strong', 'Gate strong', 'Are the tests worth trusting?', [
-    ('spec, build, test', 'The passed loop, with a proof for every rule.'),
-    ('purlin:audit', 'A model reads each test against its proof. A finding blocks.'),
-    ('mutation testing', 'Optional, and off unless you turned it on.'),
-    ('the evidence', 'One file per feature. Committed when you ask, with %s.' % m('--commit')),
-    ('git push', 'You push. Your evidence counts.'),
-], '<b>Red</b> means a rule is weak, not audited, or has no proof.', FOOT,
- 'A proof says in plain language how a rule is shown; QA writes and reviews them, and AI may draft '
- 'them. The audit reads one rule per call, several at once, says how many it will read before it '
- 'starts, and names the model on every finding. A rule whose text, proof and test have not changed '
- 'is not read again.',
- gap=int(sys.argv[1]) if len(sys.argv) > 1 else 20, pad=int(sys.argv[2]) if len(sys.argv) > 2 else 18)
-slide('signed', 'Gate signed', 'Did a person sign it?', [
-    ('the strong steps', 'Tests and audit, with the evidence committed.'),
-    ('purlin:sign', 'Walks the queue: hand checks and signatures.'),
-    ('the signature', 'One file per rule, in a signed commit: who, when, on which machine.'),
-    ('the package and the tag', 'The evidence package is committed, and %s is written on it.' % m('signed/1.4.0')),
-    ('git push origin signed/1.4.0', 'You push the tag. That is the claim.'),
-], '<b>Red</b> means a rule needs a signature and has none, or the one it had went stale. '
-   'No tag is written.', FOOT,
- 'Signing is the formal lock on all the evidence together: the rule, its proof, its test and what '
- 'the audit found. Change any of them and the signature goes stale. A signature belongs to no '
- 'machine; it records where it was made. The tag itself is signed.',
- gap=int(sys.argv[1]) if len(sys.argv) > 1 else 20, pad=int(sys.argv[2]) if len(sys.argv) > 2 else 18)
-slide('remote', 'The remote runner', 'When does anything leave your machine?', [
-    ('another operating system', 'A proof is tagged %s for a system this machine is not, so only a runner can show it. %s brings its evidence home.' % (m('@env'), m('purlin:test --remote'))),
-    ('you said not to trust this one', 'You chose not to trust this machine, so the tests a signature rests on run on a clean one.'),
-], 'With neither, %s writes no runner file at any gate.' % m('purlin:init'),
- 'REMOTE is the git host\'s runner. It starts on a pushed tag or a run branch, and on nothing else.',
- 'Two reasons and no others. Where a runner exists it runs on a pushed signed tag and on the run '
- 'branch purlin:test --remote creates, waits on and deletes. The tag run reruns the tests on a clean '
- 'machine, checks every signature against the tagged code, and checks that every file in the ci '
- 'folder was committed by the runner itself.', pill=False)
-slide('touches', 'In your project', 'What does Purlin put in your project?', [
-    ('a settings file', '%s, a folder for evidence, and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
-    ('your specs', 'Markdown you write, under %s.' % m('specs/')),
-    ('one comment per test', '%s above the test. The test is unchanged.' % m('# purlin: login PROOF-4')),
-    ('your test command', 'Your framework, your suite. Nothing is installed in it.'),
-    ('nothing on its own', 'Nothing committed unless you ask. Nothing runs unless you ran it.'),
-], 'If you leave, the markers are comments.',
- 'Ten minutes: install, write three rules, add one comment above each of three tests, run purlin:test.',
+os.makedirs(os.path.join(ROOT, 'slides'), exist_ok=True)
+slide('touches', 'Your project and your workflow', 'How little does Purlin change?', [
+    ('A settings file', '%s, a folder for evidence, and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
+    ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),
+    ('One comment per test', '%s above the test. The test itself does not change.' % m('# purlin: login RULE-4')),
+    ('Your test command', 'Purlin runs your tests the way you already do. Nothing is installed in your test suite.'),
+    ('Your workflow', 'You commit and push as before. Purlin commits only when you ask, and adds no git hook and no background job.'),
+], '',
  'Purlin reads the report your test framework already writes and ties each result to its comment by '
  'the name of the test. A test with no comment runs as always and is ignored. A test Purlin wrote '
  'and a test you wrote differ in nothing but who typed them. Setup also copies the dashboard page '
- 'into the project, where git ignores it.', pill=False,
- gap=int(sys.argv[1]) if len(sys.argv) > 1 else 20, pad=int(sys.argv[2]) if len(sys.argv) > 2 else 18)
-slide('regulated', 'Regulated work', 'Where does Purlin stop?', [
-    ('Purlin produces', 'Evidence, signatures, the signed tag and the evidence package.'),
-    ('you hand over', 'The package: one data file for the version, made by %s.' % m('purlin:export')),
-    ('the regulated system', 'Holds the document, decides who signs it off, and carries the signature that counts.'),
-], 'Purlin makes no claim that software is compliant with any regulation.',
- 'Purlin is an input to a system of record. It is not one.',
+ 'into the project, where git ignores it.', pad=16)
+slide('start', 'Getting started', 'Start in under ten minutes', [
+    ('Install the plugin', 'Inside Claude Code: %s.' % m('/plugin install purlin@purlin')),
+    ('`purlin:init`', 'Sets the project up. It asks how far every rule must go; answer %s.' % m('passed')),
+    ('Write three rules', 'In a markdown file, one line each, saying what must be true.'),
+    ('Add three comments', 'One above each test, naming the rule it shows: %s.' % m('# purlin: cart RULE-1')),
+    ('`purlin:test`', 'Runs your tests and prints %s' % m('Tests: 3 of 3 rules pass.')),
+], '',
+ 'You need git, Python 3.9 or later and Claude Code. The marketplace is added once per project with '
+ 'claude plugin marketplace add. Setup reads the test framework from the project; where it finds '
+ 'none it asks for the command that runs the tests.', pad=16)
+slide('passed', 'The first gate', 'Gate %s: only check that rules pass their tests' % m('passed'), [
+    ('`purlin:spec`', 'You say what must be true. It is written down as rules.'),
+    ('`purlin:build`', 'The code and its tests are written. One comment above each test names the rule it shows.'),
+    ('`purlin:test`', 'Runs the tests and reports each rule: passed, failed, no test, or out of date.'),
+], '<b>The gate is met</b> when every rule has a test, and the test passes on the code as it is now.',
+ 'At passed a project needs a rule and a test that names it. Out of date means the code, the rule or '
+ 'the test changed after the last run. purlin:test runs only what your change touched, writes the '
+ 'evidence, and commits it only when you pass --commit.',
+ lead='A gate is how far every rule must go before a version counts as proven. You choose one of three.')
+slide('strong', 'The second gate', 'Gate %s: also check that the tests are good enough' % m('strong'), [
+    ('`spec, build, test`', 'As before. Every rule also gets a proof: one plain sentence saying how the rule is shown to hold.'),
+    ('`purlin:audit`', 'An AI model reads each test against its proof and reports any test that shows less than its proof says.', [
+        ('Mutation testing', 'Optional. The code is broken on purpose to see whether the tests notice.'),
+        ('The evidence', 'What ran and what the audit found, one file per feature. Committed when you ask.')]),
+], '<b>The gate is met</b> when every rule also has a proof, and an audit that found no fault.',
+ 'A proof says in plain language how a rule is shown; QA writes and reviews them, and AI may draft '
+ 'them. The audit reads one rule per call, several at once, says how many it will read before it '
+ 'starts, and names the model on every finding. A rule whose text, proof and test have not changed '
+ 'is not read again.')
+slide('signed', 'The third gate', 'Gate %s: also have a person sign every rule' % m('signed'), [
+    ('`test, audit`', 'As before. Every rule passes its tests and its audit.'),
+    ('`purlin:sign`', 'Shows you each rule with its proof, its tests and what the audit found. You sign it.', [
+        ('The signature', 'One file per rule, in a signed commit. It records who signed and when.'),
+        ('The package and the tag', 'When every rule is signed, the evidence is written as one file and the version is tagged %s.' % m('signed/1.4.0'))]),
+    ('`git push origin signed/1.4.0`', 'You publish the tag. It says every rule of this version is signed.'),
+], '<b>The gate is met</b> when every rule has a signature. A signature stops counting when its rule, proof or test changes.',
+ 'Signing is the formal lock on all the evidence together: the rule, its proof, its test and what '
+ 'the audit found. Change any of them and the signature goes stale. A signature belongs to no '
+ 'machine; it records where it was made. The tag itself is signed.', pad=16)
+slide('remote', 'Remote runners', 'When does Purlin use a remote runner in your repository?', [
+    ('A rule must hold on another operating system', 'You work on a Mac and a rule must hold on Windows. %s runs those tests on a runner and brings the results back.' % m('purlin:test --remote')),
+    ('You want the tests run on a clean machine', 'You choose at setup that results from a developer\'s machine do not count toward a signature. The tests run on a runner instead.'),
+], 'In every other case Purlin uses no runner and adds no pipeline file to your repository.',
+ 'Two reasons and no others. Where a runner exists it runs on a pushed signed tag and on the run '
+ 'branch purlin:test --remote creates, waits on and deletes. The tag run reruns the tests on a clean '
+ 'machine, checks every signature against the tagged code, and checks that every file in the ci '
+ 'folder was committed by the runner itself.',
+ lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.', width=560)
+slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not claim compliance.', [
+    ('Purlin produces', 'Evidence for each rule: its tests and their results, what the audit found, and who signed.'),
+    ('You hand over', 'The evidence package: one file for the version, made by %s.' % m('purlin:export')),
+    ('Your system of record', 'The validated system your company uses for approval. It holds the document, decides who approves, and carries the approval that counts.'),
+], '<b>Purlin makes no claim that software complies with any regulation.</b>',
  'The package holds, for each rule: its words, its proofs, its tests, each result with when and '
  'where it ran, what the audit found and which model judged, and who signed, when and on which '
  'machine. A requirement number such as (URS-042) reaches it as a note in the rule\'s own words. '
- 'The same tag always gives the same package, byte for byte.', pill=False)
+ 'The same tag always gives the same package, byte for byte.', width=560)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin gate workflows",
-        "order": ["touches", "passed", "strong", "signed", "remote", "regulated"],
-        "sections": {"s1": {"description": "What Purlin puts in a project, and how little that is", "start": "touches"},
-                     "s2": {"description": "One slide per gate, all on one machine: what you run, what it leaves behind, what red means", "start": "passed"},
-                     "s3": {"description": "The two reasons a remote runner exists, and where Purlin stops in regulated work", "start": "remote"}},
+        "order": ["touches", "start", "passed", "strong", "signed", "remote", "regulated"],
+        "sections": {"s1": {"description": "How little Purlin changes in a project and a workflow, and how to start in under ten minutes", "start": "touches"},
+                     "s2": {"description": "One slide per gate: what the gate checks, what you run, and when the gate is met", "start": "passed"},
+                     "s3": {"description": "The two cases where Purlin uses a remote runner, and where Purlin stops in regulated work", "start": "remote"}},
         "faces": {}, "designSystems": []}
 with open(os.path.join(ROOT, 'deck.json'), 'w', encoding='utf-8') as h:
     json.dump(deck, h, indent=2); h.write('\n')
