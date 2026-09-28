@@ -37,7 +37,7 @@ def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=
     with open(os.path.join(ROOT, 'slides', sid + '.html'), 'w', encoding='utf-8') as h:
         h.write('\n'.join(out))
 os.makedirs(os.path.join(ROOT, 'slides'), exist_ok=True)
-slide('touches', 'Your project and your workflow', 'How little does Purlin change?', [
+slide('touches', 'Your project and your workflow', 'How little does Purlin change your project?', [
     ('A settings file', '%s, a folder for evidence, and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
     ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),
     ('One comment per test', '%s above the test. The test itself does not change.' % m('# purlin: login RULE-4')),
