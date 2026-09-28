@@ -157,24 +157,24 @@ if body_ok "$NO_PREFIX"; then
     fail "a body with no feat(<name>): subject prefix was accepted"
 fi
 
-# --- the skill and the conventions still describe this contract --------------------------
+# --- the skill and the conventions describe this contract --------------------------
 
 for word in Changeset Decisions Review; do
     counted
-    grep -q "$word" "$BUILD_SKILL" || fail "skills/build/SKILL.md no longer names $word"
+    grep -q "$word" "$BUILD_SKILL" || fail "skills/build/SKILL.md does not name $word"
     counted
-    grep -q "$word" "$CONVENTIONS" || fail "references/commit_conventions.md no longer names $word"
+    grep -q "$word" "$CONVENTIONS" || fail "references/commit_conventions.md does not name $word"
 done
 
 counted
 grep -qE 'RULE-N (->|→) file:line' "$BUILD_SKILL" \
-    || fail "skills/build/SKILL.md no longer states the RULE-N -> file:line mapping"
+    || fail "skills/build/SKILL.md does not state the RULE-N -> file:line mapping"
 counted
 grep -q 'feat(<name>):' "$BUILD_SKILL" \
-    || fail "skills/build/SKILL.md no longer states the feat(<name>): subject prefix"
+    || fail "skills/build/SKILL.md does not state the feat(<name>): subject prefix"
 counted
 grep -q 'commit_conventions.md' "$BUILD_SKILL" \
-    || fail "skills/build/SKILL.md no longer points at references/commit_conventions.md"
+    || fail "skills/build/SKILL.md does not point at references/commit_conventions.md"
 
 if [ "$failures" -eq 0 ]; then
     echo "  ok: $checks checks"
