@@ -95,10 +95,6 @@ function signaturesFor(feature, rule) {
   });
 }
 
-function signerOf(path) {
-  return path.split('/').pop().split('.')[2] || '';
-}
-
 /* A signature is a signed commit, so this page cannot write one: it names the
    command that does, and reads back the signature already committed, with
    who signed, when, and on which machine and operating system. The panel is
@@ -110,8 +106,7 @@ function signPanel(feature, rule) {
     var where = cell.machine
       ? ', on ' + cell.machine + (cell.os ? ' (' + cell.os + ')' : '') : '';
     return '<div class="panel"><h2>Signed</h2><p class="sec">'
-      + esc('Signed by ' + (cell.signer || signerOf(cell.path || '')
-          || 'a person') + ' on ' + moment(cell.at) + where
+      + esc('Signed by ' + (cell.signer || 'a person') + ' on ' + moment(cell.at) + where
         + ', against the rule, its proofs, its tests and what the audit '
         + 'found as this screen shows them. The signature file beside the '
         + 'spec carries the commit that signed it.')

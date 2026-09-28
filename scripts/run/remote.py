@@ -102,7 +102,7 @@ def run_branch_name(project_root, branch):
 
 def run_remote(project_root, args=None, cfg=None):
     """Push a run branch, wait for CI, pull it back, delete it. Exit code."""
-    host = _host(project_root, args)
+    host = _host(project_root)
     branch = _branch(project_root)
     if not branch or branch == 'HEAD':
         print('This checkout is not on a branch, so there is nothing to push.')
@@ -354,10 +354,7 @@ def _table(project_root):
     return status_module.sync_status(project_root)
 
 
-def _host(project_root, args):
-    named = getattr(args, 'host', None) if args is not None else None
-    if named:
-        return 'azure' if str(named).lower().startswith(('a', 'ado')) else 'github'
+def _host(project_root):
     remote = _remote_url(project_root).lower()
     if 'dev.azure.com' in remote or 'visualstudio.com' in remote:
         return 'azure'

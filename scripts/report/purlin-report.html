@@ -472,9 +472,6 @@ function signaturesFor(feature, rule) {
     return path.split('/').pop().indexOf(rule.id + '.') === 0;
   });
 }
-function signerOf(path) {
-  return path.split('/').pop().split('.')[2] || '';
-}
 function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
   if (!cell) { return ''; }
@@ -482,8 +479,7 @@ function signPanel(feature, rule) {
     var where = cell.machine
       ? ', on ' + cell.machine + (cell.os ? ' (' + cell.os + ')' : '') : '';
     return '<div class="panel"><h2>Signed</h2><p class="sec">'
-      + esc('Signed by ' + (cell.signer || signerOf(cell.path || '')
-          || 'a person') + ' on ' + moment(cell.at) + where
+      + esc('Signed by ' + (cell.signer || 'a person') + ' on ' + moment(cell.at) + where
         + ', against the rule, its proofs, its tests and what the audit '
         + 'found as this screen shows them. The signature file beside the '
         + 'spec carries the commit that signed it.')
@@ -900,12 +896,9 @@ function ageLine() {
 }
 function signedTag() {
   var found = DATA && DATA.tag;
-  var name = typeof found === 'string' ? found
-    : found && typeof found === 'object' ? found.name || found.tag || null
-    : null;
-  var at = found && typeof found === 'object' && found.commit
-    ? String(found.commit).slice(0, 7) : null;
-  return name ? {name: String(name), at: at} : null;
+  if (!found || !found.name) { return null; }
+  return {name: String(found.name),
+          at: found.commit ? String(found.commit).slice(0, 7) : null};
 }
 function tagChip() {
   var found = signedTag();

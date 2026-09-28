@@ -206,12 +206,11 @@ def _one_test(project_root, feature, proof_id, test):
 # ---------------------------------------------------------------------------
 
 def criteria_text(project_root):
-    """`references/review_criteria.md`, verbatim, from the plugin or project."""
-    for base in (_ROOT, project_root):
-        path = os.path.join(base, CRITERIA)
-        if os.path.isfile(path):
-            with open(path, 'r', encoding='utf-8') as handle:
-                return handle.read()
+    """The plugin's `references/review_criteria.md`, verbatim."""
+    path = os.path.join(_ROOT, CRITERIA)
+    if os.path.isfile(path):
+        with open(path, 'r', encoding='utf-8') as handle:
+            return handle.read()
     return ''
 
 

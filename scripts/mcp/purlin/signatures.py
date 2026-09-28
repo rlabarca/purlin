@@ -162,8 +162,6 @@ def load_signatures(project_root, features):
                 continue
             data = dict(data)
             data['path'] = os.path.relpath(path, project_root).replace(os.sep, '/')
-            data.setdefault('feature', name)
-            data.setdefault('rule', m.group(1))
             found.setdefault((name, m.group(1)), []).append(data)
     return found
 

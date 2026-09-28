@@ -218,8 +218,6 @@ def read_suites(project_root, config=None):
         run = entry.get('run')
         fmt = str(entry.get('format') or '').strip()
         files = entry.get('files')
-        if isinstance(files, str):
-            files = [files]
         if not isinstance(run, str) or not run.strip():
             problems.append('%s names no run command' % label)
             continue
@@ -761,18 +759,6 @@ def declared_tests(text, ext):
 # ---------------------------------------------------------------------------
 # One file
 # ---------------------------------------------------------------------------
-
-def read_file(project_root, path, fmt):
-    """`FileMarkers` for the `/` relative `path`, read as a file of a `fmt` suite."""
-    result = FileMarkers(path, fmt)
-    full = os.path.join(project_root, *path.split('/'))
-    try:
-        with open(full, 'r', encoding='utf-8') as handle:
-            text = handle.read()
-    except (IOError, OSError, UnicodeDecodeError):
-        return result
-    return read_text(path, text, fmt)
-
 
 def read_text(path, text, fmt):
     """`FileMarkers` for `text`, the content of `path`."""

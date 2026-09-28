@@ -24,7 +24,6 @@ What each group proves:
 import os
 import subprocess
 import sys
-import types
 
 import pytest
 
@@ -147,10 +146,6 @@ def azure_run(monkeypatch, tmp_path):
     return arrange
 
 
-def azure_host():
-    return types.SimpleNamespace(host='azure')
-
-
 # ---------------------------------------------------------------------------
 # The remote URL
 # ---------------------------------------------------------------------------
@@ -189,13 +184,13 @@ def test_a_url_in_no_azure_form_reads_none(url):
 # purlin: host PROOF-36
 def test_a_remote_in_no_azure_form_is_refused_before_the_push(azure_run,
                                                               capsys):
-    fake, _clock = azure_run(origin='https://github.com/acme/widgets.git')
+    fake, _clock = azure_run(origin='https://dev.azure.com/acme/widgets')
 
-    assert remote_module.run_remote('/project', azure_host()) == 1
+    assert remote_module.run_remote('/project') == 1
     assert fake.started == []
     printed = capsys.readouterr().out.strip()
     assert printed == (
-        'The remote https://github.com/acme/widgets.git is not an Azure '
+        'The remote https://dev.azure.com/acme/widgets is not an Azure '
         'DevOps repository URL, so nothing was pushed: set origin to the URL '
         'Azure DevOps shows under Clone and run purlin:test --remote again.')
 

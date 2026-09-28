@@ -1008,10 +1008,10 @@ def test_a_project_that_is_not_the_workspace_commits_nothing(
 def test_the_git_host_is_read_from_the_remote(project):
     git(project, 'remote', 'add', 'origin',
         'https://dev.azure.com/acme/widgets/_git/widgets')
-    assert remote_module._host(project, None) == 'azure'
+    assert remote_module._host(project) == 'azure'
     git(project, 'remote', 'set-url', 'origin',
         'https://github.com/acme/widgets.git')
-    assert remote_module._host(project, None) == 'github'
+    assert remote_module._host(project) == 'github'
 
 
 # purlin: host PROOF-12

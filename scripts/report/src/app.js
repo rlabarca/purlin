@@ -451,18 +451,14 @@ function ageLine() {
 /* The tag this commit carries, which is the marker that a version was signed
    off: `purlin:sign` writes `signed/<version>` once every rule meets the gate,
    and a person pushes it. Under `passed` nothing is signed and no tag is
-   written, so the top bar names none. The payload's `tag` is whatever git reported, so it
-   is read defensively: a string is the tag's own name, an object carries that
-   name and the commit it points at, and anything else, a missing key
-   included, means this commit carries none. */
+   written, so the top bar names none. The payload's `tag` carries the tag's
+   name and the commit it points at, and is null where this commit carries
+   none. */
 function signedTag() {
   var found = DATA && DATA.tag;
-  var name = typeof found === 'string' ? found
-    : found && typeof found === 'object' ? found.name || found.tag || null
-    : null;
-  var at = found && typeof found === 'object' && found.commit
-    ? String(found.commit).slice(0, 7) : null;
-  return name ? {name: String(name), at: at} : null;
+  if (!found || !found.name) { return null; }
+  return {name: String(found.name),
+          at: found.commit ? String(found.commit).slice(0, 7) : null};
 }
 
 function tagChip() {

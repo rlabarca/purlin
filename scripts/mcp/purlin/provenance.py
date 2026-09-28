@@ -43,7 +43,7 @@ import urllib.request
 # commit with its own key and records its web identity as the committer, so
 # the committer is `GitHub <noreply@github.com>` and the Actions token is the
 # author. Reading the committer name alone misses it.
-_GITHUB_COMMITTERS = ('github-actions[bot]', 'github-actions')
+_GITHUB_COMMITTERS = ('github-actions[bot]',)
 _GITHUB_COMMITTER_EMAIL = 'noreply@github.com'
 _GITHUB_ACTIONS_AUTHOR = 'github-actions[bot]'
 

@@ -135,7 +135,7 @@ def wanted(env_tags, trust, host_os):
 
 def _host(host):
     name = str(host or 'github').strip().lower()
-    if name in ('azure', 'ado', 'azure devops', 'azure-devops'):
+    if name == 'azure':
         return 'azure'
     return 'github'
 
