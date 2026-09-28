@@ -499,6 +499,25 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     nothing committed unless you ask, nothing running unless you ran it, nothing installed
     in your test suite, and markers that are comments if you leave. The ten-minute path
     (install, three rules, one comment per test, one command) is the first thing shown.
+54. **The overnight run** (added 2026-09-27). The owner's standing answers for work done
+    while they are away: a choice no decision covers takes the smaller option and goes on a
+    list for the morning; a piece whose tests still fail after a second attempt stays on
+    its own branch, unmerged, and pieces that do not build on it carry on;
+    `purlin:init --update` is applied to this repository in full once the pieces are in;
+    `dev/plans/` stays until the owner has reviewed the docs, the slides and the release
+    notes; merged local branches, their worktrees and the leftover output folders on this
+    machine are removed, nothing on the remote is, and a branch holding unmerged work is
+    listed instead; the slides are published to the same private link, six of them: the
+    three levels, the remote runner, how little Purlin touches, Purlin and the regulated
+    system. No audit, no signing, no tag and no push.
+55. **The evidence package is part of the workflow and is committed with the tag** (added
+    2026-09-27; amends decision 52). `purlin:export` writes the package into the project,
+    at `.purlin/evidence/package/<version>.json`. When `purlin:sign` is about to write
+    `signed/<version>` it writes the package for that version, commits it, and tags that
+    commit, so the tagged code carries the package that describes it. The package names the
+    commit its evidence was taken at, which is the parent of the commit that carries it.
+    Run at any other time, `purlin:export` writes the file, says the version is work in
+    progress, and commits it only with `--commit`.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
