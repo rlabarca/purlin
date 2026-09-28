@@ -669,7 +669,7 @@ def _linux_merge():
     return writer.merge_for_host('linux', {'greeting': ['RULE-1']})
 
 
-# purlin: host PROOF-36
+# purlin: host PROOF-38
 def test_the_section_is_merged_into_what_the_branch_holds(
         project, github_env, monkeypatch):
     """A Windows runner committed first; the Linux runner keeps its section."""
@@ -685,6 +685,8 @@ def test_the_section_is_merged_into_what_the_branch_holds(
     sent = json.loads(host.body_for('/git/trees', method='POST')['tree'][0][
         'content'])
     assert sorted(sent['platforms']) == ['linux', 'windows']
+    assert sent['platforms']['windows'] == json.loads(held)['platforms'][
+        'windows']
     assert sent['platforms']['windows']['proofs'][0]['result'] == 'fail'
     assert sent['platforms']['linux'] == section()
     contents = [url for url in host.urls('GET') if '/contents/' in url]
@@ -692,7 +694,7 @@ def test_the_section_is_merged_into_what_the_branch_holds(
     assert contents[0].endswith('ref=' + '1' * 40)
 
 
-# purlin: host PROOF-36
+# purlin: host PROOF-38
 def test_a_retry_reads_the_file_again_at_the_new_parent(
         project, github_env, monkeypatch):
     """The branch moved because another runner committed; its section stays."""
@@ -714,7 +716,7 @@ def test_a_retry_reads_the_file_again_at_the_new_parent(
     assert len([url for url in host.urls('GET') if '/contents/' in url]) == 2
 
 
-# purlin: host PROOF-37
+# purlin: host PROOF-39
 def test_an_azure_retry_merges_and_turns_an_add_into_an_edit(
         project, azure_env, monkeypatch):
     path = write_ci(project)
@@ -737,8 +739,8 @@ def test_an_azure_retry_merges_and_turns_an_add_into_an_edit(
     assert sorted(merged['platforms']) == ['linux', 'windows']
 
 
-# purlin: host PROOF-36
-def test_a_rule_the_spec_no_longer_has_is_dropped_in_the_merge(
+# purlin: host PROOF-38
+def test_a_rule_the_spec_does_not_carry_is_dropped_in_the_merge(
         project, github_env, monkeypatch):
     path = write_ci(project)
     old = section()
