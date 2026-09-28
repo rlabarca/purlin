@@ -7,10 +7,12 @@
 >   `signed`. `--verify` adds one section over the evidence already
 >   committed: every signature and hold must still bind what it names, and
 >   every file under `.purlin/evidence/ci/` must have been committed by the runner
->   itself. It writes nothing, prints every line under the `gate:` prefix,
->   and fails closed, so a project it cannot read never passes.
-> Scope: scripts/ci/gate_check.py
-> Stack: python/stdlib (argparse, json)
+>   itself: on GitHub as git reads the commit's signature and committer, on
+>   Azure DevOps as the host records who pushed it. It writes nothing, prints
+>   every line under the `gate:` prefix, and fails closed, so a project it
+>   cannot read never passes.
+> Scope: scripts/ci/gate_check.py, scripts/mcp/purlin/provenance.py, templates/purlin.azure-pipelines.yml
+> Stack: python/stdlib (argparse, json, urllib), Azure DevOps REST API
 
 ## Rules
 
@@ -29,7 +31,12 @@
 - RULE-13: Every line the gate prints either carries the `gate:` prefix or is an indented finding under a section heading [bar: passed]
 - RULE-14: The report's sections are `Not passed`, `Partial`, `Weak`, `Not audited`, `To review`, `To sign` and `Evidence`, in that order, and a section with no line in it is not printed [bar: strong]
 - RULE-15: `--verify` names under `Evidence` every signature and every hold that no longer binds the rule, proof, test, bar and audit it names, so a tag cannot stand over code that changed after it was signed, and a file naming a rule the project no longer declares is named too [bar: strong]
-- RULE-16: `--verify` names under `Evidence` every file under `.purlin/evidence/ci/` whose last commit is not the runner's own, and without `--verify` neither check runs at all [bar: strong]
+- RULE-16: `--verify` names under `Evidence` every file under `.purlin/evidence/ci/` whose last commit is not the runner's own, read on GitHub, and on a project whose runner variables and `origin` name no Azure DevOps, as `provenance.committed_by` reads it; without `--verify` neither check runs at all [bar: strong]
+- RULE-17: On Azure DevOps the tag run reads its own identity as `authenticatedUser.id` from `{SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}_apis/connectionData?api-version=7.0`, finds the commit that last changed each `ci/` file with git, reads that commit's `push.pushedBy.id` from `{collection}{SYSTEM_TEAMPROJECT}/_apis/git/repositories/{BUILD_REPOSITORY_ID}/commits/{sha}?api-version=7.0`, and passes the file only when the two ids are the same; the committer's name is never read [bar: strong]
+- RULE-18: On an Azure DevOps runner the check fails closed: a `pushedBy` id that is not the run's own, a commit answer with no `push`, HTTP 401 or 403 or any other refusal on either request, no answer within 30 seconds, a file no commit changed, and a run with no `SYSTEM_ACCESSTOKEN` each name the file under `Evidence` with the reason in one plain sentence, and the gate exits 1 [bar: strong]
+- RULE-19: Off a runner, where no `SYSTEM_TEAMFOUNDATIONCOLLECTIONURI` is set and `origin` is an Azure DevOps URL, the check sends no request, prints `ci/ provenance is checked by the tag run; this machine has no token.` and the count of files not checked, lists them under `not_checked` in `--json`, and neither names them under `Evidence` nor changes the exit code [bar: strong]
+- RULE-20: Every request to Azure DevOps carries a 30-second timeout and the token from `SYSTEM_ACCESSTOKEN` in its `Authorization` header and nowhere else, and the token appears in no line the gate prints and in no field of its JSON [bar: strong]
+- RULE-21: The rendered Azure DevOps pipeline's `Check the gate` step hands the run's token to the gate as `SYSTEM_ACCESSTOKEN: $(System.AccessToken)` [bar: strong]
 
 ## Proof
 
@@ -71,3 +78,13 @@
 - PROOF-36 (RULE-15): Write a hold for a rule, delete that rule from the spec and run the gate with `--check --verify`; verify the hold file is named under `Evidence` with `no rule login RULE-2 is in this project`
 - PROOF-37 (RULE-15): Re-audit a signed rule so the audit finds something it did not before, then run the gate with `--check --verify`; verify the signature is named under `Evidence`, because the audit hash a signature binds moved
 - PROOF-38 (RULE-16): Commit a file under `.purlin/evidence/ci/` as a person and run the gate with `--check --verify`; verify it exits 1 and names that path under `Evidence` with `the commit that added it is not the runner's`. Commit the same file as the build identity and verify it is not named
+- PROOF-39 (RULE-17): Commit a `ci/` file, set the Azure DevOps variables and a token, and stand a fake opener in for the network answering `connectionData` with the id `build-1` and the commit with `push.pushedBy.id` `build-1`; run the check; verify the file is not named, that the first request is the `connectionData` URL and the second the `commits/<sha>` URL for the sha `git log -1` names for the file. Commit it under the committer name `Project Collection Build Service` and have the commit answer `jane-1`; verify it is named
+- PROOF-40 (RULE-17): Commit a `ci/` file twice, the first commit answering `pushedBy.id` `build-1` and the second `jane-1`; verify it is named and that only the second sha was asked about. Swap the two answers; verify it is not named
+- PROOF-41 (RULE-18): Answer a commit with `pushedBy` `jane-1`, `jane@acme.com`, and run the gate with `--check --verify`; verify it exits 1, opens `Evidence (1):` and names the file with `was pushed by jane@acme.com, not by the identity this run holds`
+- PROOF-42 (RULE-18): Answer a commit with no `push` key; verify the file is named with `Azure DevOps names no push for commit`
+- PROOF-43 (RULE-18): Answer the commit request with HTTP 401, then with HTTP 403; verify the file is named each time with `refused the token with HTTP 401` and `refused the token with HTTP 403`. Answer `connectionData` with HTTP 401; verify every `ci/` file is named and no commit was asked about
+- PROOF-44 (RULE-18): Have the opener raise a timeout; verify the file is named with `did not answer within 30 seconds`. Commit nothing under a `ci/` file that exists; verify it is named with `no commit has changed it`
+- PROOF-45 (RULE-18): Set the collection, project and repository but no token; verify every `ci/` file is named with `the run has no SYSTEM_ACCESSTOKEN` and no request was sent
+- PROOF-46 (RULE-19): Point `origin` at `https://dev.azure.com/acme/demo/_git/demo`, set no Azure DevOps variable, and run the gate with `--check --verify --json` over a project that otherwise meets the gate with two `ci/` files; verify it exits 0, prints `gate: ci/ provenance is checked by the tag run; this machine has no token.` and `gate: 2 files under .purlin/evidence/ci/ are not checked.`, opens no `Evidence` section, lists both files under `not_checked`, and sent no request
+- PROOF-47 (RULE-20): Run the match, the mismatch, the 401 and the timeout cases through the gate with `--json` and the token `s3cret-token-value`; verify every request carried the timeout 30 and `Authorization: Bearer s3cret-token-value`, and that the token appears nowhere in what the gate printed
+- PROOF-48 (RULE-21): Render the Azure DevOps pipeline; verify the step whose `displayName` is `Check the gate` carries `env:` with `SYSTEM_ACCESSTOKEN: $(System.AccessToken)`

@@ -773,14 +773,17 @@ def test_a_persons_commit_is_local(project):
 
 
 @pytest.mark.proof("host", "PROOF-9", "RULE-9")
-def test_the_azure_build_service_is_ci_without_a_signature(project):
+def test_a_build_service_name_alone_is_local(project):
+    """Anyone can type a committer name, so a name is never read as CI's."""
     path = write_ci(project)
     git(project, 'add', '-A')
     git(project, '-c', 'user.name=' + AZURE_BUILD,
         '-c', 'user.email=build@example.com',
         'commit', '--quiet', '-m', 'purlin: evidence at 4f1c2ab')
     assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')
-    assert provenance.committed_by(project, path) == 'ci'
+    assert git(project, 'log', '-1', '--format=%cn').stdout.strip() == \
+        AZURE_BUILD
+    assert provenance.committed_by(project, path) == 'local'
 
 
 @pytest.mark.proof("host", "PROOF-9", "RULE-9")

@@ -49,11 +49,12 @@ def _git(root, *args, **kwargs):
                           text=True, env=kwargs.get('env'))
 
 
-# What a commit Azure DevOps made looks like. `provenance.committed_by` reads
-# the committer, so a file written under this identity reads as CI's without
-# a signature this checkout would have to hold a key for.
-CI_COMMITTER = {'GIT_COMMITTER_NAME': 'Project Collection Build Service',
-                'GIT_COMMITTER_EMAIL': 'build@azure.local'}
+# The committer a CI evidence commit carries in these fixtures. An evidence
+# file's source is the folder it sits in, and nothing the server reads asks
+# who committed it; that is the tag run's question, proved in
+# `dev/test_provenance.py`.
+CI_COMMITTER = {'GIT_COMMITTER_NAME': 'github-actions[bot]',
+                'GIT_COMMITTER_EMAIL': 'noreply@github.com'}
 
 
 def _write(path, text):

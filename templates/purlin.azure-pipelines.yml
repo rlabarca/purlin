@@ -16,8 +16,9 @@
 # it on that branch. The build service writes it, and nothing on the host has
 # to be configured for that. A tag run writes nothing: it runs the tagged
 # tests, checks that every committed signature still hashes to the tagged
-# code, checks that every file under .purlin/evidence/ci/ was committed by the
-# build service, and ends with the gate check.
+# code, checks that every file under .purlin/evidence/ci/ was pushed by the
+# identity this run holds, as Azure DevOps records the push, and ends with the
+# gate check. The gate step reads that identity with $(System.AccessToken).
 #
 # No breaks and no AI audit run here. purlin:audit does both on a person's
 # machine, and the evidence either source wrote counts at every gate.
@@ -99,7 +100,11 @@ jobs:
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
       # The last word of every run. The gate check exits 1 when a rule does
-      # not meet the gate or when a committed signature no longer hashes to
-      # this code, which fails this job.
+      # not meet the gate, when a committed signature no longer hashes to
+      # this code, or when a file under .purlin/evidence/ci/ was not pushed
+      # by this run's own identity, which fails this job. The token is how
+      # it asks Azure DevOps who that identity is and who pushed each file.
       - bash: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check --verify
         displayName: Check the gate
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)

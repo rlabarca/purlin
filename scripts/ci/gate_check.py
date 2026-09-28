@@ -23,8 +23,11 @@ evidence already in the tree. Every signature and every hold must still bind
 the rule, proof, test, bar and audit it names, so a tag cannot stand over code
 that changed after it was signed. Every file under `.purlin/evidence/ci/`
 must have been committed by the runner's own identity, read off the commit
-that last changed it, so a person cannot write evidence as CI's. A file that
-fails either is named and the job fails.
+that last changed it, so a person cannot write evidence as CI's: on GitHub
+from the commit's signature and committer, on Azure DevOps from who the host
+says pushed it (`scripts/mcp/purlin/provenance.py`). A file that fails either
+is named and the job fails. Off a runner an Azure DevOps project's `ci/`
+files cannot be asked about, so they are counted as not checked.
 
 **The setting is the declaration, not the enforcement.** `.purlin/config.json`
 is a file in the repository that an agent can edit. What enforces it is the
@@ -52,6 +55,7 @@ import sys
 
 _CI_DIR = os.path.dirname(os.path.abspath(__file__))
 _MCP_DIR = os.path.join(os.path.dirname(_CI_DIR), 'mcp')
+_RUN_DIR = os.path.join(os.path.dirname(_CI_DIR), 'run')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
@@ -99,12 +103,13 @@ def _package():
 
 
 def verify(project_root, payload):
-    """What `--verify` found wrong with the evidence already in the tree.
+    """`(problems, not_checked, notice)` for the evidence already in the tree.
 
     Two questions. Does every signature and hold still bind the rule, proof,
     test, bar and audit it names? And was every file under the `ci/` folders
     committed by the runner itself? Each answer that is no is one line naming
-    the file, and any line at all fails the job.
+    the file, and any line at all fails the job. `not_checked` lists the
+    `ci/` files this machine could not ask about and `notice` says why.
     """
     from purlin import signatures as signatures_module, specs as specs_module
 
@@ -138,35 +143,48 @@ def verify(project_root, payload):
                     entry.get('proof_hash'), entry.get('test_hash'),
                     entry.get('bar'), audit):
                 problems.append('%s: what it binds is not this code' % path)
-    return problems + _provenance(project_root)
+    found, not_checked, notice = _provenance(project_root)
+    return problems + found, not_checked, notice
 
 
 def _provenance(project_root):
-    """Every file under `.purlin/evidence/ci/` the runner itself did not commit.
+    """`(problems, not_checked, notice)` for every file under `ci/`.
 
     The folder is the source, and this is what keeps it honest: the commit
-    that last changed each file, and whether its identity is the runner's
-    own. No branch rule stands behind the folder, so a file a person wrote
+    that last changed each file, and whether the runner's own identity made
+    it. No branch rule stands behind the folder, so a file a person wrote
     into it is found here and nowhere else.
     """
     from purlin import evidence as evidence_module, provenance
 
-    problems = []
     folder = os.path.join(project_root,
                           *evidence_module.EVIDENCE_DIR.split('/'))
     folder = os.path.join(folder, 'ci')
     try:
         names = sorted(os.listdir(folder))
     except OSError:
-        return problems
-    for name in names:
-        if not name.endswith('.json'):
-            continue
-        rel = '%s/ci/%s' % (evidence_module.EVIDENCE_DIR, name)
-        if provenance.committed_by(project_root, rel) != 'ci':
-            problems.append('%s: the commit that added it is not the '
-                            'runner\'s' % rel)
-    return problems
+        return [], [], None
+    rels = ['%s/ci/%s' % (evidence_module.EVIDENCE_DIR, name)
+            for name in names if name.endswith('.json')]
+    problems, not_checked, notice = provenance.check(
+        project_root, rels, _git_host(project_root))
+    return (['%s: %s' % (rel, reason) for rel, reason in problems],
+            not_checked, notice)
+
+
+def _git_host(project_root):
+    """`azure` or `github`: the runner's own variables first, then `origin`.
+
+    A project whose remote is neither is read as GitHub's, whose check needs
+    nothing but git.
+    """
+    if _RUN_DIR not in sys.path:
+        sys.path.insert(0, _RUN_DIR)
+    import host as host_module
+    import workflow
+
+    return (host_module.detect_host() or workflow.host_of(project_root)
+            or 'github')
 
 
 def check(project_root, payload=None, out=None, as_json=False,
@@ -208,6 +226,7 @@ def check(project_root, payload=None, out=None, as_json=False,
         'to_review': [],
         'to_sign': [],
         'evidence': [],
+        'not_checked': [],
         'result': 'pass',
     }
 
@@ -216,7 +235,14 @@ def check(project_root, payload=None, out=None, as_json=False,
 
     _collect(payload, result)
     if verify_evidence:
-        result['evidence'] = verify(project_root, payload)
+        result['evidence'], result['not_checked'], notice = verify(
+            project_root, payload)
+        if notice:
+            count = len(result['not_checked'])
+            _say(out, notice)
+            _say(out, '%d %s under .purlin/evidence/ci/ %s not checked.'
+                      % (count, 'file' if count == 1 else 'files',
+                         'is' if count == 1 else 'are'))
 
     # Nothing measures a test strength under `passed`, so naming a minimum
     # there would print a number the gate never reads.
