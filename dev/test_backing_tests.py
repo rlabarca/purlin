@@ -82,3 +82,20 @@ class TestTheEvidenceNamesTheTests:
         names = [test['name'] for test in proof['tests']]
         assert sorted(names) == sorted([TEST_NAMES['PROOF-1'],
                                         'test_the_windows_lock']), names
+
+    # purlin: states PROOF-42
+    def test_both_sources_make_up_the_hash(self, project):
+        local = [TEST_NAMES['PROOF-1'], 'test_the_linux_lock']
+        ci = [TEST_NAMES['PROOF-1'], 'test_the_windows_lock']
+        project.evidence(os_name='linux', tests={'PROOF-1': local})
+        project.evidence(os_name='windows', runner='ci', source='ci',
+                         at='2026-09-13T12:10:00Z', tests={'PROOF-1': ci})
+        combined = Project()
+        try:
+            combined.evidence(os_name='linux', tests={
+                'PROOF-1': local + ['test_the_windows_lock']})
+            assert project.rule('RULE-1')['test_hash'] == \
+                combined.rule('RULE-1')['test_hash'], \
+                'a local and a ci section did not make up one list'
+        finally:
+            combined.close()
