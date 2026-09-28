@@ -147,11 +147,12 @@ run_upstream() {
 }
 
 run_drift() {
-  PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$1" python3 -c '
+  PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$1" PURLIN_SINCE="${2:-}" python3 -c '
 import os, sys
 sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
 from purlin import drift
-print(drift.drift(os.environ["PURLIN_ROOT"]))
+print(drift.drift(os.environ["PURLIN_ROOT"],
+                  since=os.environ["PURLIN_SINCE"] or None))
 '
 }
 
@@ -177,9 +178,6 @@ build_workspace() {
     >/dev/null
   printf '%s' "$LOCAL_ANCHOR" > "$PROJECT/specs/_anchors/local_security.md"
   commit_project "$PROJECT" "pin the published anchor and add the local one"
-  # Drift measures from the newest record, else the newest tag. There is no
-  # record yet, so this tag is the baseline every check below measures from.
-  (cd "$PROJECT" && git tag -a baseline -m "the state these checks measure from")
   SOURCE_PATH="$source_path"
 }
 
@@ -193,9 +191,10 @@ drift_json=$(run_drift "$PROJECT")
 result=$(PURLIN_JSON="$drift_json" PURLIN_REMOTE="$NEW_SHA" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
-rows = {p["anchor"]: p for p in data.get("pins", [])}
+pins = data["roles"]["eng"]["anchors_behind"]
+rows = {p["anchor"]: p for p in pins}
 if "ext_security" not in rows:
-    print("no pin row: %s" % json.dumps(data.get("pins", [])))
+    print("no pin row: %s" % json.dumps(pins))
 elif "local_security" in rows:
     print("the local anchor was reported as pinned")
 else:
@@ -226,21 +225,19 @@ with open(path, 'w', encoding='utf-8') as handle:
     handle.write(text)
 PY
 commit_project "$PROJECT" "add a local rule"
-drift_json=$(run_drift "$PROJECT")
+drift_json=$(run_drift "$PROJECT" 1)
 result=$(PURLIN_JSON="$drift_json" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
-changed = [f for f in data.get("files", [])
-           if "local_security" in f.get("path", "")]
-spec = [s for s in data.get("spec_changes", [])
-        if s.get("spec") == "local_security"]
+pm = data["roles"]["pm"]
+pins = data["roles"]["eng"]["anchors_behind"]
 problems = []
-if not changed or changed[0].get("category") != "CHANGED_SPECS":
-    problems.append("files=%s" % json.dumps(changed))
-if not spec or spec[0].get("new_rules") != ["RULE-2"]:
-    problems.append("spec_changes=%s" % json.dumps(spec))
-if data.get("pins"):
-    problems.append("pins=%s" % json.dumps(data["pins"]))
+if pm["rules_added"] != {"local_security": ["RULE-2"]}:
+    problems.append("rules_added=%s" % json.dumps(pm["rules_added"]))
+if pm["rules_changed"] or pm["rules_removed"]:
+    problems.append("pm=%s" % json.dumps(pm))
+if pins:
+    problems.append("pins=%s" % json.dumps(pins))
 print("ok" if not problems else ", ".join(problems))
 ')
 ok=true
@@ -266,14 +263,13 @@ with open(path, 'w', encoding='utf-8') as handle:
     handle.write(text)
 PY
 commit_project "$PROJECT" "add a local rule while the source is ahead"
-drift_json=$(run_drift "$PROJECT")
+drift_json=$(run_drift "$PROJECT" 1)
 result=$(PURLIN_JSON="$drift_json" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
 behind = any(p.get("anchor") == "ext_security" and p.get("status") == "behind"
-             for p in data.get("pins", []))
-added = any(s.get("spec") == "local_security" and s.get("new_rules") == ["RULE-2"]
-            for s in data.get("spec_changes", []))
+             for p in data["roles"]["eng"]["anchors_behind"])
+added = data["roles"]["pm"]["rules_added"] == {"local_security": ["RULE-2"]}
 print("ok" if behind and added else "behind=%s added=%s" % (behind, added))
 ')
 ok=true
@@ -322,7 +318,7 @@ drift_json=$(run_drift "$PROJECT")
 result=$(PURLIN_JSON="$drift_json" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
-names = sorted(p.get("anchor") for p in data.get("pins", []))
+names = sorted(p.get("anchor") for p in data["roles"]["eng"]["anchors_behind"])
 print("ok" if names == ["ext_security"] else json.dumps(names))
 ')
 ok=true

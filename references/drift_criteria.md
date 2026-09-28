@@ -1,115 +1,98 @@
-> Criteria-Version: 7
+> Criteria-Version: 8
 
 # Drift criteria
 
-How the `drift` tool classifies a changed file, which config field belongs to which command,
-and what each of the three role views reports. The tool does the deterministic half; the
-`purlin:drift` skill reads the diff and does the judgement half.
+What the `drift` tool measures, what each of the three role views reports and from which git
+facts, and which config field belongs to which command. The tool reports facts and judges
+nothing; the `purlin:drift` skill prints the lines and names the next step.
 
-## File classification
+## Where the range starts
 
-The tool classifies each changed file in this order. The first match wins.
+Drift is for a person who has just brought someone else's changes into their checkout. The range
+runs from where HEAD stood before the last git action that brought changes in, to HEAD.
 
-| Order | Category | Match |
-|-------|----------|-------|
-| 1 | CHANGED_SPECS | The path starts with `specs/` and ends with `.md` |
-| 2 | TESTS_CHANGED | The path matches a test pattern, below |
-| 3 | CHANGED_BEHAVIOR | The path is in some spec's `> Scope:`, exactly or by prefix |
-| 4 | NO_IMPACT | The path matches a documentation or config pattern and is not in a behavioural directory |
-| 5 | NEW_BEHAVIOR | Everything else: code with no spec behind it |
+The tool reads git's own log of HEAD, `git reflog show HEAD`, and takes the newest entry whose
+action is one of these:
 
-**Test patterns.** The path contains any of `test_`, `_test.`, `.test.`, `tests/`.
+| Action | The entry git writes | Where the range starts |
+|--------|----------------------|------------------------|
+| pull | `pull: ...` | Where HEAD stood before the pull |
+| merge | `merge <branch>: ...` | Where HEAD stood before the merge |
+| rebase | `rebase (finish): ...` | Where HEAD stood before the rebase's first step, `rebase (start)` |
+| checkout | `checkout: moving from <a> to <b>` | The commit HEAD left |
+| reset | `reset: moving to <ref>` | Where HEAD stood before the reset |
+| clone | `clone: from <url>` | No commit before it: the last 20 commits |
 
-**No-impact patterns.** `docs/`, `assets/`, `templates/`, `references/`, `.gitignore`,
-`LICENSE`, `CLAUDE.md`, `README.md`, `RELEASE_NOTES.md`, `.mcp.json`, `settings.json`, and any
-`.md` file outside a behavioural directory.
+A pull that rebases is logged as several steps, `pull --rebase (start)` to `pull --rebase
+(finish)`, and is measured from before its first step, like a rebase. With no such entry at
+all, the range is the last 20 commits. With fewer than 20 commits, it is every commit.
 
-**Behavioural directories**, excluded from that `.md` catch-all because what they hold decides
-what the agent does: `skills/`, `agents/`, `.claude/agents/`. A file there that no spec scopes
-is NEW_BEHAVIOR, not NO_IMPACT.
+`--since <N>` measures the last N commits and `--since <YYYY-MM-DD>` every commit made on or after
+that date. Either overrides the log. Any other value is refused before git runs.
 
-**Scope matching.** `> Scope: src/api/handler.py` matches that one path. `> Scope: src/api/`,
-with the trailing slash, matches every path beneath it. That is how a spec scopes a directory
-without listing every file in it.
+The first line of every view names the range in words a person recognises:
 
-## Significance
-
-The category is where the skill starts. The diff decides what it means.
-
-| Significance | What changed | Who cares |
-|--------------|--------------|-----------|
-| Behavioural | What the software does: a new capability, a changed rule, a removed one | PM, engineer, QA |
-| Structural | How it is organised: a rename, a move, a refactor, a dependency bump | Engineer |
-| Operational | How it runs: CI, container, environment | Engineer, QA |
-| Documentation | Prose only | PM when it faces a user |
-| Trivial | Whitespace, formatting, generated files | Nobody |
-
-A file the tool calls CHANGED_BEHAVIOR may be structural, and a config file may be operational.
-Read the diff before you report.
-
-## Rules with nothing behind them
-
-A feature whose files changed and whose rules are not met has nothing standing behind the
-change. The tool precomputes this per feature in `rule_details`: `met` is how many of the
-feature's rules meet the gate, `total_rules` is how many there are, and `unproved` lists the
-rules no proof line names, which have no proof at all. The skill surfaces a feature
-whose `met` is below its `total_rules` first.
-
-## Broken scope
-
-When a spec's `> Scope:` names a file or a directory that is no longer on disk, something was
-deleted or renamed and the spec was not told. The tool checks every scope path against the
-filesystem — exact paths with `os.path.exists`, prefix paths with `os.path.isdir` — and lists
-each spec with a missing path in `broken_scopes`. Whether it was renamed or deleted on purpose,
-`purlin:spec` updates the spec.
-
-## Rules behind the change
-
-For every spec with changed behaviour files, the tool returns `rule_details`: `spec_path`,
-`changed_files`, `total_rules`, `met`, `unproved`, and one entry per own rule carrying
-`rule_id`, `description`, `bucket` and `level`. The skill reads the diff against those
-rule descriptions and sorts each rule into one of four:
-
-- **Covered**: the rule describes behaviour that did not change, or changed compatibly.
-- **Potentially stale**: the rule describes behaviour the diff altered.
-- **No test**: the rule has no passing test, whatever changed.
-- **Missing**: the diff shows behaviour no rule describes.
-
-The `bucket` in `rule_details` describes the rule before this change was measured. A feature
-reading "6 of 6 strong" after a behavioural change to the code still needs a look: that
-evidence was taken against the old behaviour.
-
-## Pins behind
-
-For every anchor carrying a `> Source:`, drift runs one cached `git ls-remote` against that
-source and compares its `> Pinned:` sha.
-
-| Condition | What to report |
-|-----------|----------------|
-| The pin equals the source head | Nothing |
-| The pin is behind | `anchor <name> is N commits behind its pin: RULE-3 changed, RULE-6 added` and `→ Run: purlin:anchor sync <name>` |
-| The source is unreachable | `→ source unreachable; check the URL in the anchor` |
-| A `> Source:` with no `> Pinned:` | `→ Run: purlin:anchor sync <name> to pin it` |
-
-Drift never advances a pin on its own. A change that came from somewhere else gets read before
-it is adopted.
+```
+Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
+```
 
 ## The three role views
 
-Each view is a filter over the same data, not a different computation.
+Each view is a list of lines, the first naming the range, beside the facts each line was built
+from. Every view ends with `<n> spec files have changes that are not committed.` when a spec file
+under `specs/` differs from HEAD or is not tracked, read from `git status --porcelain -- specs/`.
 
-| Role | What it reports | Signal |
-|------|-----------------|--------|
-| `pm` | Pins behind their source | `pins_behind` |
-| `qa` | Signatures gone stale, how long the queue is, the rules reading `manual test`, the rules reading `unsettled`, the rules reading `not audited` | `signatures_stale`, `queue_size`, `manual`, `unsettled`, `not_audited` |
-| `eng` | Files touched and the rules behind them, rules with no test, pins behind, rules whose passed cell reads `out of date` | `files_touched`, `rules_affected`, `tests_missing`, `pins_behind`, `code_changed` |
+### `pm`
 
-`code_changed` appears in the `eng` view as information and never in the `qa` view: the
-evidence is out of date, the signature stands, and the next run clears it.
+Every spec file the range changed is read at both ends with `git show <sha>:<path>`, and its map
+of rule id to rule text at the start is compared with the one at HEAD. A spec that moved folder
+and kept its rules changed nothing.
 
-The `qa` view exists at `strong` and above. Under `passed` there is no queue, no
-strength and no signature, so `purlin:drift qa` says the gate is `passed` and names what
-`purlin:init --gate strong` would add.
+| Key | Line |
+|-----|------|
+| `rules_added` | `3 rules added: login RULE-7, RULE-8; export RULE-2.` |
+| `rules_changed` | `2 rules changed: login RULE-3, billing RULE-1.` |
+| `rules_removed` | `1 rule removed: cart RULE-4.` |
+| none of the three | `No rule was added, changed or removed since your last pull.` |
+
+### `eng`
+
+| Key | From | Line |
+|-----|------|------|
+| `code_changed` | The changed files, `git diff --name-only`, matched to each spec's `> Scope:` expanded to the files git tracks; `src/api/` reaches every file under it | `4 files changed under login's scope: RULE-1, RULE-2, RULE-5 are behind them.` |
+| `unscoped` | The changed files no scope reaches, leaving out spec files, `.purlin/` and files that carry a proof marker | `2 changed files are under no spec's scope: src/x.py, src/y.py.` |
+| `rules_without_test` | Rules whose passed cell reads `no test` | `5 rules have no test: login RULE-1, RULE-2.` |
+| `anchors_behind` | One `git ls-remote` per anchor source, below | `anchor proof_common is behind its source (now 3c4d5e6). Run: purlin:anchor sync proof_common.` |
+| `out_of_date` | Features that have evidence and whose evidence is not current | `3 features are out of date: login, export, cart.` |
+
+A file deleted in the range is not on disk and is in neither list.
+
+### `qa`
+
+| Key | From | Line |
+|-----|------|------|
+| `tests_changed` | The changed files that carry a proof marker, and the features those markers name | `6 test files changed, covering export, login.` |
+| `signatures_stale` | Signatures that no longer bind the rule, with which of the rule text, the proofs, the tests or the audit findings changed | `2 signatures are stale: login RULE-2 (audit findings changed), billing RULE-1 (rule text changed).` |
+| `queue` | The queue, counted by what each rule needs | `Queue: 5 rules. 2 hand checks, 3 signatures.` |
+
+Under the gate `passed` there is no signature and no queue, so the `qa` view prints neither line
+and reports only the tests that changed.
+
+## Anchors behind
+
+For every anchor carrying a `> Source:`, drift runs one cached `git ls-remote` against that
+source and compares its `> Pinned:` sha. A source that begins with `-`, names an `ext::` or an
+`fd::` transport, or carries a NUL byte or a newline is refused before any process starts.
+
+| Condition | Line |
+|-----------|------|
+| The pin equals the source head | Nothing |
+| The pin is behind | `anchor <name> is behind its source (now <sha7>). Run: purlin:anchor sync <name>.` |
+| A `> Source:` with no `> Pinned:` | `anchor <name> names a source and no pin. Run: purlin:anchor sync <name>.` |
+| The source cannot be read | `anchor <name>: its source could not be read (<reason>).` |
+
+Drift never advances a pin on its own. A change that came from somewhere else gets read before
+it is adopted.
 
 ## Config field ownership
 

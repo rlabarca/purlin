@@ -299,7 +299,7 @@ drift_json=$(run_drift "$PROJECT5")
 result=$(PURLIN_JSON="$drift_json" PURLIN_REMOTE="$NEW5" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
-pins = data.get("pins", [])
+pins = data["roles"]["eng"]["anchors_behind"]
 match = [p for p in pins if p.get("anchor") == "no_eval"]
 if not match:
     print("no pin row: %s" % json.dumps(pins))

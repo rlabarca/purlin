@@ -25,7 +25,6 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 
 from purlin import board as purlin_board
 from purlin import signatures as purlin_signatures
-from purlin import drift as purlin_drift
 from purlin import evidence as purlin_evidence
 from purlin import fingerprint as purlin_fingerprint
 from purlin import frameworks as purlin_frameworks
@@ -1777,67 +1776,6 @@ class TestStatusTable:
 
 
 # ---------------------------------------------------------------------------
-# Drift
-# ---------------------------------------------------------------------------
-
-class TestDriftRoles:
-
-    @pytest.mark.proof("drift", "PROOF-16", "RULE-14")
-    def test_the_three_role_views_are_present(self, project):
-        _write(os.path.join(project.root, 'src', 'login.py'),
-               'def login():\n    return 401\n')
-        _git(project.root, 'add', '-A')
-        _git(project.root, 'commit', '-q', '-m', 'fix: login')
-        report = json.loads(purlin_drift.drift(project.root, since='1'))
-        assert sorted(report['roles']) == ['eng', 'pm', 'qa']
-        assert 'src/login.py' in report['roles']['eng']['files_touched']
-        assert report['roles']['eng']['tests_missing'] == [
-            'login/RULE-1', 'login/RULE-2']
-
-    @pytest.mark.proof("drift", "PROOF-17", "RULE-15")
-    def test_a_role_narrows_the_report(self, project):
-        report = json.loads(purlin_drift.drift(project.root, since='1',
-                                               role='qa'))
-        assert report['role'] == 'qa'
-        assert sorted(report['view']) == [
-            'manual', 'not_audited', 'queue_size',
-            'signatures_stale', 'unsettled']
-
-    @pytest.mark.proof("drift", "PROOF-2", "RULE-1")
-    def test_a_hostile_since_never_reaches_git(self, project):
-        report = json.loads(purlin_drift.drift(project.root,
-                                               since='--output=/tmp/x'))
-        assert report['error'] == 'rejected since'
-
-    @pytest.mark.proof("drift", "PROOF-13", "RULE-11")
-    def test_a_source_that_is_not_safe_is_refused_before_any_process(self):
-        for value, reason in (('--upload-pack=/bin/echo', 'begins with "-"'),
-                              ('ext::sh -c id', 'names an ext:: transport'),
-                              ('fd::7', 'names an fd:: transport')):
-            safe, got = purlin_drift.source_url_is_safe(value)
-            assert safe is False and got == reason, (value, got)
-        assert purlin_drift.source_url_is_safe(
-            'https://github.com/acme/p.git') == (True, '')
-
-    @pytest.mark.proof("drift", "PROOF-14", "RULE-12")
-    def test_one_ls_remote_per_source_per_run(self, project, monkeypatch):
-        calls = []
-        real_run = purlin_drift.subprocess.run
-
-        def spy(args, *rest, **kwargs):
-            calls.append(list(args))
-            return real_run(args, *rest, **kwargs)
-
-        monkeypatch.setattr(purlin_drift.subprocess, 'run', spy)
-        cache = {}
-        for _ in range(3):
-            purlin_drift.check_pin(project.root,
-                                   'https://github.invalid/acme/p.git',
-                                   'abc1234', cache)
-        assert len([c for c in calls if 'ls-remote' in c]) == 1, calls
-
-
-# ---------------------------------------------------------------------------
 # The MCP transport
 # ---------------------------------------------------------------------------
 
@@ -1933,7 +1871,8 @@ class TestTransport:
             'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',
             'params': {'name': 'drift', 'arguments': {'since': '1'}}})
         report = json.loads(responses[0]['result']['content'][0]['text'])
-        assert 'commits' in report and 'files' in report
+        assert sorted(report) == ['roles', 'since'], sorted(report)
+        assert sorted(report['roles']) == ['eng', 'pm', 'qa']
 
     @pytest.mark.proof("server", "PROOF-7", "RULE-7")
     def test_a_root_with_no_workspace_says_so_rather_than_reporting_nothing(

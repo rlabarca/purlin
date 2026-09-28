@@ -10,7 +10,7 @@ for a person goes to stderr. Claude Code starts it when the plugin is enabled.
 Three tools, each taking the same optional `project_root`:
 
 `sync_status`   the spec status and the cells of every rule, as a table
-`drift`         what changed since the evidence was last written, as JSON
+`drift`         what changed since your last pull, by role, as JSON
 `purlin_config` read or write `.purlin/config.json`
 """
 
@@ -79,16 +79,20 @@ TOOLS = [
     {
         "name": "drift",
         "description": (
-            "Structured summary of what changed since the last evidence. "
-            "Returns JSON with commits, classified files, spec changes, pins "
-            "and the four role views for the purlin:drift skill to read."),
+            "What changed since the last git action that brought changes "
+            "in: the newest pull, merge, rebase, checkout, clone or reset in "
+            "git's log of HEAD, else the last 20 commits. Returns JSON with "
+            "the range and three role views, pm, eng and qa, each a list of "
+            "lines beside the facts behind them, for the purlin:drift skill "
+            "to print."),
         "inputSchema": {
             "type": "object",
             "properties": {
                 "since": {
                     "type": "string",
-                    "description": ("Override the anchor: a number of commits "
-                                    "or a YYYY-MM-DD date."),
+                    "description": ("Override where the range starts: a "
+                                    "number of commits or a YYYY-MM-DD "
+                                    "date."),
                 },
                 "role": {
                     "type": "string",
