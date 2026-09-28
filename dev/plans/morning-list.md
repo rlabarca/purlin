@@ -1,7 +1,92 @@
 # The morning list
 
-What was done overnight on 2026-09-27 to 28, under decision 54. Read top to bottom. Nothing
-here was audited, signed, tagged or pushed.
+What was done on 2026-09-27 and overnight into 2026-09-28, under decision 54. Nothing here was
+audited, signed, tagged or pushed. `main` is local only.
+
+## Where things stand
+
+- Every piece is merged into `main` by fast-forward. The full sweep on `main` after the last
+  of them: **1036 passed across 7 suites, 0 failed.**
+- This repository's own tests run through the new path tie **947 of 947** markers, and **553 of
+  555** rules meet the gate. The two that do not are tagged for Linux and this machine is a Mac.
+- The repository holds 374 tracked files, down from 1,350.
+- `purlin:init --update` found one thing here, an old git hook, and removed it with a backup.
+  Plain `purlin:init` then replaced this repository's runner file and rewrote the settings file
+  in its own key order, with no value changed.
+
+## What to review, in this order
+
+1. **What differs between 0.9.5 and 0.10.0**: `RELEASE_NOTES.md`, the 0.10.0 section. Five
+   headings, and the upgrade listed step by step.
+2. **The first pages**: `README.md`, then `docs/getting-started.md`. They lead with how little
+   Purlin touches and the ten-minute path.
+3. **The regulated page**: `docs/regulated-workflow.md`. Eight headings, ending in "No claim of
+   compliance".
+4. **The rest of the docs**, from `docs/index.md`.
+5. **The slides**: https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is, six of them. Pictures of
+   each are in `dev/plans/deck/`, with the script that builds them.
+6. **The diagrams**: four, in light and dark, in `dev/plans/diagrams/`.
+7. **The proof guideline**: `references/spec_quality_guide.md`, "Writing proofs", and the three
+   specs rewritten to it: `specs/mcp/drift.md`, `specs/anchor/upstream.md`,
+   `specs/mcp/config_engine.md`.
+
+## What needs your decision
+
+Each is a choice made on your behalf that you may want made the other way.
+
+1. **A hand check signed without a note is accepted.** The walk asks for the note and does not
+   require it. A hand check with no note says a person checked and not what they saw.
+2. **At `signed`, a spec that names no files fails the gate check even when every rule in it is
+   marked below `signed`.** It follows from `signed` being the strict gate, and it is stricter
+   than you may have meant.
+3. **A merge that needed conflicts resolved does not count as a merge for drift**, because git
+   logs it under another name and your list named merge. One line to change.
+4. **No diagram shows the remote runner.** The one page that could hold it spent its diagram on
+   the local run. The remote steps are a numbered list there.
+5. **A marker that names a feature, proof or rule no spec has is printed and does not fail the
+   run.** A marker tied to no test does fail it.
+6. **`purlin:sign` writes the evidence package and the tag at the gate `strong` too**, with the
+   package saying it is not for approval.
+
+## What is not proven here
+
+- **Go.** Not installed on this machine. Its report reader was tested against a sample written
+  from Go's documentation. The docs say so.
+- **Vitest 4.** It would not install here. Version 3 is proven.
+- **Azure DevOps against the real service.** Two scripts for the work machine:
+  `dev/manual/check_azure_remote.py` and `dev/manual/check_azure_provenance.py`. Each prints ok
+  or FAIL per fact; the second names two fallbacks in its header, neither built.
+- **The two rules tagged for Linux.** They need one `purlin:test --remote`, which pushes a
+  temporary branch.
+
+## Test gaps still open
+
+From writing proofs to the guideline. The proof claims only what the test shows.
+
+- `upstream` PROOF-6: the second refused source is not shown to write no copy.
+- `upstream` PROOF-7: rewording the source is not shown to move the pin.
+
+The rest of this repository's proofs, outside the three rewritten specs, are still in the
+test's own words. An audit will find fault with many of them.
+
+## Yours to delete
+
+Local branches git would not delete for me:
+
+- `lane/13`, `lane/14`: one commit each that is not on `main`, with their worktrees.
+- `worktree-agent-*` (5, with worktrees under `.claude/worktrees/`, 199 MB): not ancestors of
+  `main`, though every patch in them is on `main`.
+- `lane/1B`, `lane/2B`, `lane/3`, `lane/5B`, `lane/6A`, `lane/7A`, `three-levels`,
+  `two-gauges-remote-verification`, `evidence-workflow`: merged into `main`, and different from
+  their copies on the remote.
+
+On the remote, none touched: `origin/lane/*` (13), `origin/three-levels`,
+`origin/evidence-workflow`, `origin/two-gauges-remote-verification`, two
+`origin/worktree-agent-*`, and the tag `pre-instruction-optimization`. The local tag
+`validated/1.0` is a name no longer in use. A backup of the removed git hook sits at
+`.git/hooks/pre-push.local-3ed9f685.bak`.
+
+`dev/plans/` itself stays until you have finished reviewing, then goes.
 
 ## Pieces
 
@@ -27,24 +112,17 @@ here was audited, signed, tagged or pushed.
 | P7 a run covers what the change touched | 39 | merged | 1036 passed, 0 failed |
 | S1 the dashboard, the hook removed | 36, 37, 45, 50 | merged | 1032 passed, 0 failed |
 | P10 the evidence package | 52, 55 | merged | 1057 passed, 0 failed |
+| P9 the marker comment, no plugins | 51 | merged | 967 passed, 0 failed |
+| S2 the prose | 45, 52, 53 | merged | 968 passed, 0 failed |
+| The diagrams | 45 | merged | 968 passed, 0 failed |
+| The clean-release sweep, with 16 code fixes | 44, 50 | merged | 964 passed, 0 failed |
+| The follow-up: pages re-quoted, the board at passed | 50, 51 | merged | 964 passed, 0 failed |
+| Setup applied to this repository | 49 | committed | full sweep 1036 passed, 0 failed |
 
 The count falls where tests of removed things were deleted and rises where new tests were
 added. No count was edited.
 
-## Red on main, outside the fast sweep
-
-Nothing, as of P5. Two things were red for a while and are fixed:
-
-| Test | Red from | Fixed by |
-|---|---|---|
-| `dev/test_purlin_report.py`, two hover tests | P2 | P5 |
-| `dev/test_e2e_required_rules.sh`, 6 checks | P2 | P4 |
-
-One test failed once on a clock boundary and passed on every later run:
-`dev/test_drift.py::TestReportShape::test_the_report_the_views_and_the_narrowed_answer`.
-P7 makes it independent of the clock.
-
-## Choices made on your behalf
+## Every choice made on your behalf
 
 One line each, with the piece that made it. Each took the smaller option.
 
@@ -173,37 +251,41 @@ One line each, with the piece that made it. Each took the smaller option.
   signed status's reason.
 - The phrase "for approval" is allowed by the word guard, because your own wording needs it.
 
-## Test gaps the proof guideline exposed
+### P9
 
-Each is a place where a test shows less than a good proof would claim. The proof now claims
-only what the test shows. The five in `drift` were closed by P6; the two in `upstream` are open.
+- Every test command goes through bash, so an environment prefix works.
+- A marker is read only from files a suite's globs match, and needs a space after `purlin:`.
+- A marker ties to the next test declared after it, even with a helper between.
+- In a shell or SQL suite a marker anywhere in the file counts.
+- With no `tests` setting the run prints one line and runs nothing; it detects nothing.
+- One shell suite was split in two, because two proofs each needed their own result.
 
-- `drift` PROOF-13: no refusal of a NUL byte or a newline is shown.
-- `drift` PROOF-16: the PM view's keys are shown by no proof.
-- `drift` PROOF-17: the narrowed answer's top-level keys are not checked.
-- `drift` PROOF-19: 7 of the report's 10 keys are checked after reading it back.
-- `drift` PROOF-20: the reason on an error row is checked only for being non-empty.
-- `upstream` PROOF-6: the second refused source is not shown to write no copy.
-- `upstream` PROOF-7: rewording the source is not shown to move the pin.
+### S2
 
-## For the work machine
+- The solo page was merged into getting started; `running-and-records.md` became
+  `running-and-evidence.md`.
+- "Protected branches" is written as "branch protection", and "decides who may approve" as
+  "decides who may sign the version off", because the word guard forbade the literals.
+- The release notes keep the header "Unreleased — 0.10.0".
 
-- `dev/manual/check_azure_remote.py`: four facts about the remote run on the real service.
-- `dev/manual/check_azure_provenance.py`: three facts about who pushed a commit, with two
-  fallbacks named in its header, neither built.
+### The diagrams
 
-## Yours to delete
+- `<version>` is written with codes in place of the angle brackets inside a diagram. It
+  renders correctly; the raw text shows the codes.
+- The diagram in `docs/specs-and-anchors.md` was deleted: it restated the paragraphs under it.
 
-Local branches git would not delete for me, with why:
+### The sweep
 
-- `lane/13`, `lane/14`: one commit each that is not on `main`.
-- `worktree-agent-*` (5, with worktrees under `.claude/worktrees/`, 199 MB): not ancestors of
-  `main`, though every patch in them is on `main`.
-- `lane/1B`, `lane/2B`, `lane/3`, `lane/5B`, `lane/6A`, `lane/7A`, `three-levels`,
-  `two-gauges-remote-verification`, `evidence-workflow`: merged into `main`, and different from
-  their copies on the remote.
+- It removed one rule from a spec the prose piece owned, because a rebase conflict forced it
+  and you had decided the rule goes.
+- The word guard now forbids only machine spellings and no ordinary English word.
+- At `passed`, a rule with neither proof nor test is sent to `purlin:build`.
+- The dashboard upgrade step replaces the page only when it is a link or differs from the
+  shipped one.
 
-On the remote, none touched: `origin/lane/*` (13), `origin/three-levels`,
-`origin/evidence-workflow`, `origin/two-gauges-remote-verification`, two
-`origin/worktree-agent-*`, and the tag `pre-instruction-optimization`. The local tag
-`validated/1.0` is a retired name.
+### The follow-up
+
+- At `passed` with no proofs, the rule screen drops its proofs section.
+- The test of the five words builds its own sample without proofs and leaves the shared
+  sample as it was.
+
