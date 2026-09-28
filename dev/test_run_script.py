@@ -236,6 +236,25 @@ class TestTheCommandLine:
         assert code == 2, output
         assert 'Usage: purlin_run.py' in output
 
+    # purlin: run_script PROOF-1
+    def test_audit_remote_names_the_test_command(self, tmp_path):
+        code, output = _run(_project(tmp_path), '--all', '--audit', '--remote')
+        assert code == 2, output
+        assert 'purlin:test --remote' in output, output
+
+    @pytest.mark.parametrize('args', [
+        ('--all', '--test', '--remote'),
+        ('--all', '--test', '--commit'),
+        ('--all', '--audit', '--commit'),
+    ])
+    # purlin: run_script PROOF-1
+    def test_the_allowed_shapes_are_accepted(self, tmp_path, args):
+        # A project with no spec and no git: each shape gets past the command
+        # line and stops on the project, with exit 1 and no usage line.
+        code, output = _run(_project(tmp_path), *args)
+        assert code == 1, output
+        assert 'Usage:' not in output, output
+
     # purlin: run_script PROOF-2
     def test_an_unknown_feature_exits_two(self, tmp_path):
         root = _project(tmp_path)
@@ -274,10 +293,19 @@ class TestTheTestArmRunsEachSuite:
     def test_nothing_is_written_under_specs(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
+
+        def tree():
+            return {os.path.relpath(os.path.join(folder, name), str(root)):
+                    open(os.path.join(folder, name), 'rb').read()
+                    for folder, _dirs, names in os.walk(str(root / 'specs'))
+                    for name in names}
+
+        before = tree()
         _run(root, '--all', '--test')
         stray = [name for name in os.listdir(str(root / 'specs' / 'a'))
                  if not name.endswith('.md')]
         assert stray == []
+        assert tree() == before
 
     @pytest.mark.skipif(shutil.which('sqlite3') is None,
                         reason='sqlite3 is not installed')
@@ -379,6 +407,34 @@ class TestLoudFailureB:
         assert code == 1
         assert '8 markers have no passing or failing result' in output
         assert 'and 3 more' in output
+        line = next(line for line in output.splitlines()
+                    if '8 markers have' in line)
+        assert re.findall(r'feat PROOF-\d at ', line) == [
+            'feat PROOF-%d at ' % n for n in range(1, 6)], line
+
+    # purlin: run_script PROOF-8
+    def test_a_test_the_report_omits_and_a_marker_with_no_test_are_named(
+            self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_ok():\n'
+            '    assert True\n\n'
+            '# purlin: feat PROOF-2\n'
+            'def test_left_out():\n'
+            '    assert True\n\n'
+            '# purlin: feat PROOF-3\n'))
+        # The suite deselects one test, so its report does not hold it.
+        _config(root, tests=[suites.pytest_suite(
+            extra="-k 'not test_left_out'")])
+        _spec(root, 'feat', proofs=tuple(('PROOF-%d' % n, 'RULE-1', '')
+                                         for n in (1, 2, 3)))
+        code, output = _run(root, '--all', '--test')
+        assert code == 1, output
+        assert ('2 markers have no passing or failing result: '
+                'feat PROOF-2 at tests/test_feat.py:7, '
+                'feat PROOF-3 at tests/test_feat.py:11') in output, output
+        assert 'feat PROOF-1 at' not in output, output
 
     # purlin: run_script PROOF-9
     def test_a_marker_for_an_unselected_feature_is_not_named(self, tmp_path):
@@ -424,6 +480,11 @@ class TestEnvScopedProofs:
         assert ('feat PROOF-2 needs %s; this machine is %s. A remote runner '
                 'runs it: purlin:init adds one.' % (other, here)) in output
         assert 'Evidence is missing' not in output, output
+        assert [(entry['id'], entry['result'])
+                for entry in _proofs(root, 'feat')] == [
+            ('PROOF-1', 'pass'), ('PROOF-2', 'not run')], output
+        cell = _rule(root, 'feat', 'RULE-1')['cells']['passed']
+        assert cell['platforms'][here]['word'] == 'passed', cell
 
     # purlin: run_script PROOF-10
     def test_a_foreign_env_proof_is_not_reported_missing(self, tmp_path):
@@ -442,6 +503,10 @@ class TestEnvScopedProofs:
         code, output = _run(root, '--all', '--test')
         assert 'have no passing or failing result' not in output
         assert 'Evidence is missing' not in output, output
+        # Not counted here: the rule reads `passed` on this machine.
+        here = _load_run_script().host_os()
+        cell = _rule(root, 'feat', 'RULE-1')['cells']['passed']
+        assert cell['platforms'][here]['word'] == 'passed', cell
 
     # purlin: run_script PROOF-10
     def test_an_env_proof_for_this_os_is_run_normally(self, tmp_path):
@@ -452,6 +517,9 @@ class TestEnvScopedProofs:
         code, output = _run(root, '--all', '--test')
         assert 'needs %s' % here not in output
         assert _proofs(root, 'feat') is not None, output
+        assert [(entry['id'], entry['result'], entry['env'])
+                for entry in _proofs(root, 'feat')] == [
+            ('PROOF-1', 'pass', here)], output
         assert code == 0, output
 
 
@@ -614,6 +682,14 @@ class TestTheCiArmCommitsItsSection:
         assert callable(merge), 'the commit was handed no merge'
         assert 'Evidence committed.' in output
         assert not (root / '.purlin' / 'evidence' / 'local').exists()
+        # What the branch holds already carries another runner's section;
+        # the merge keeps it beside this runner's own.
+        here = purlin_run.host_os()
+        other = 'windows' if here != 'windows' else 'linux'
+        branch = dict(data, platforms={other: section})
+        merged = json.loads(merge(paths[0], json.dumps(data),
+                                  json.dumps(branch)))
+        assert sorted(merged['platforms']) == sorted([here, other]), merged
 
     # purlin: run_script PROOF-12
     def test_at_passed_the_ci_arm_does_the_same(
@@ -638,6 +714,16 @@ class TestTheLog:
         log = root / '.purlin' / 'runtime' / 'run.log'
         assert '-m pytest' in log.read_text(encoding='utf-8')
 
+    # purlin: run_script PROOF-15
+    def test_the_audit_writes_the_log_too(self, tmp_path, evidence_run,
+                                          claude, capsys):
+        root = _pytest_project(tmp_path, gate='strong')
+        _spec(root, 'feat')
+        evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
+        log = root / '.purlin' / 'runtime' / 'run.log'
+        assert '-m pytest' in log.read_text(encoding='utf-8')
+
 
 class TestTheBreaks:
 
@@ -653,6 +739,25 @@ class TestTheBreaks:
         assert engine == 'mutmut'
         assert scope == {'feat': ['src/']}
         assert tests[('feat', 'RULE-1')][0]['file'] == 'tests/test_feat.py'
+
+    # purlin: run_script PROOF-16
+    def test_each_rule_is_asked_with_its_own_test_file(
+            self, tmp_path, evidence_run, claude, capsys):
+        root = _pytest_project(tmp_path, gate='strong')
+        (root / 'tests' / 'test_two.py').write_text(
+            '# purlin: feat PROOF-2\n'
+            'def test_two():\n'
+            '    assert True\n', encoding='utf-8')
+        _config(root, mutation_engine='auto')
+        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                             ('PROOF-2', 'RULE-2', '')))
+        _code, calls = evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
+        _engine, _scope, tests = calls['breaks'][0]
+        assert {key: [test['file'] for test in found]
+                for key, found in tests.items()} == {
+            ('feat', 'RULE-1'): ['tests/test_feat.py'],
+            ('feat', 'RULE-2'): ['tests/test_two.py']}, tests
 
 
 class TestWhereEachArmCommits:
@@ -1307,6 +1412,15 @@ class TestHostOs:
         purlin_run = _load_run_script()
         assert purlin_run.host_os() in ('windows', 'macos', 'linux')
 
+    @pytest.mark.parametrize('platform, name', [
+        ('darwin', 'macos'), ('win32', 'windows'), ('linux', 'linux')])
+    # purlin: run_script PROOF-21
+    def test_each_platform_reads_its_env_name(self, monkeypatch, platform,
+                                              name):
+        purlin_run = _load_run_script()
+        monkeypatch.setattr(sys, 'platform', platform)
+        assert purlin_run.host_os() == name
+
 
 class TestTheRunScriptCarriesNoEmoji:
 
@@ -1339,6 +1453,27 @@ class TestTheConsoleCodecNeverEndsTheRun:
         assert 'Traceback' not in output, output
         assert 'UnicodeEncodeError' not in output, output
         assert '\u2192' in output, output
+        assert '\u2500' in output, output
+        assert result.returncode == 0, output
+
+
+def _tail(output, suite):
+    """The lines a run printed between a suite's tail heading and its end."""
+    lines = output.splitlines()
+    start = lines.index('--- %s output (last 60 lines) ---' % suite)
+    return lines[start + 1:lines.index('--- end of %s output ---' % suite)]
+
+
+def _hundred_lines(tmp_path, gate='passed'):
+    """A project whose one shell test prints `line 1` to `line 100` and fails."""
+    root = _project(tmp_path, tests=[suites.shell_suite()], gate=gate)
+    _spec(root, 'feat')
+    (root / 'tests').mkdir()
+    (root / 'tests' / 'long.test.sh').write_text(
+        '# purlin: feat PROOF-1\n'
+        'for n in $(seq 1 100); do echo "line $n"; done\nexit 1\n',
+        encoding='utf-8')
+    return root
 
 
 class TestAFailingSuiteStatesItsReason:
@@ -1365,6 +1500,32 @@ class TestAFailingSuiteStatesItsReason:
         assert '1 failed' in output, output
         assert output.index(heading) < output.index('Purlin status:'), output
         assert 'Evidence is missing' not in output, output
+        assert any(line.startswith('1 failed')
+                   for line in _tail(output, 'pytest')), output
+
+    # purlin: run_script PROOF-58
+    def test_only_the_last_60_lines_are_printed(self, tmp_path):
+        root = _hundred_lines(tmp_path)
+        code, output = _run(root, '--all', '--test')
+        assert code == 1, output
+        assert _tail(output, 'shell') == [
+            'line %d' % n for n in range(41, 101)], output
+        assert (output.index('--- shell output (last 60 lines) ---')
+                < output.index('Purlin status:')), output
+
+    # purlin: run_script PROOF-58
+    def test_a_killed_suite_prints_its_tail(self, tmp_path):
+        root = _project(tmp_path, tests=[suites.shell_suite()])
+        _spec(root, 'feat')
+        (root / 'tests').mkdir()
+        (root / 'tests' / 'slow.test.sh').write_text(
+            '# purlin: feat PROOF-1\necho started\nsleep 5\n',
+            encoding='utf-8')
+        code, output = _run(root, '--all', '--test', '--arm-timeout', '1')
+        assert code == 1, output
+        assert 'started' in _tail(output, 'shell'), output
+        assert (output.index('--- shell output (last 60 lines) ---')
+                < output.index('Purlin status:')), output
 
     # purlin: run_script PROOF-58
     def test_an_arm_that_passed_prints_no_tail(self, tmp_path):
@@ -1390,6 +1551,18 @@ class TestAFailingSuiteStatesItsReason:
         text = log.read_text(encoding='utf-8')
         assert '-m pytest' in text, text
         assert '1 failed' in text, text
+
+    @pytest.mark.parametrize('action', ['--ci', '--audit'])
+    # purlin: run_script PROOF-59
+    def test_the_log_keeps_every_line_past_sixty(
+            self, tmp_path, evidence_run, claude, capsys, action):
+        root = _hundred_lines(tmp_path, gate='strong')
+        evidence_run(root, '--all', action)
+        capsys.readouterr()
+        lines = (root / '.purlin' / 'runtime' / 'run.log').read_text(
+            encoding='utf-8').splitlines()
+        assert [line for line in lines if line.startswith('line ')] == [
+            'line %d' % n for n in range(1, 101)], lines
 
 
 class TestAnEmptyProjectRootIsRefused:
