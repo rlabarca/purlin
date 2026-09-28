@@ -755,6 +755,18 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
 82. **Windows** (added 2026-09-28). The rules that must hold on Windows are those about
     reading and writing files, paths, and starting other programs. An agent sorts the rules
     and shows the owner the list before any is marked.
+83. **The seven calls the plan left open** (added 2026-09-28), the answers to section 5 of
+    `phase1-plan.md`. A result from a system that was not there at signing is added beside
+    the others and ends no signature; a signature ends when a machine it was made with
+    changes. A remote runner runs only the systems the rules name, and no Linux job of its
+    own. The separate check at the end of the runner's job goes, with its spec and its
+    tests: the test step's ending is what is read, and its result is the job's. This
+    repository's own runner file is deleted now, and setup writes it again once rules name
+    Windows. The count of signatures that ended, the word `stale` and drift's list of them
+    go: such a rule counts under `to sign`. The dashboard's boxes for rules with no test,
+    failing and failing on one system go: the step boxes, `No proof` and `Left to do`
+    remain. The evidence package's `not for approval` goes: it carries the state and the
+    gate.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
