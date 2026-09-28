@@ -226,13 +226,12 @@ def test_check_writes_nothing(tmp_path):
 
 
 # purlin: update PROOF-1
-def test_json_lists_the_same_migrations(tmp_path, capsys):
+def test_every_pending_entry_says_what_it_does_and_to_which_files(tmp_path):
     root = _project(tmp_path, V095)
-    update.main(['--check', '--json', '--project-root', root])
-    payload = json.loads(capsys.readouterr().out)
-    assert payload['project_root'] == os.path.abspath(root)
-    assert [item['id'] for item in payload['pending']] == _ids(root)
-    for item in payload['pending']:
+    found = update.pending(root)
+    assert found
+    for item in found:
+        assert sorted(item) == ['description', 'files', 'id'], item
         assert item['description']
         assert item['files']
 
@@ -1049,6 +1048,7 @@ def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
     assert 'run purlin:init again to add it later' in printed
     assert 'workflows' not in _ids(root)
 
+
 # purlin: update PROOF-32
 def test_an_azure_remote_gets_the_pipeline_where_init_writes_it(tmp_path):
     root = _project(tmp_path, V095, remote=False)
@@ -1086,7 +1086,6 @@ def test_the_page_linked_into_the_old_plugin_is_replaced(tmp_path):
     assert 'dashboard' in _ids(root)
     os.remove(page)
     assert 'dashboard' not in _ids(root)
-
 
 
 # --- backups -----------------------------------------------------------------

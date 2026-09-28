@@ -44,7 +44,7 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Verify `pending()` on a directory holding no `.purlin/` returns an empty list. Copy the v0.9.5 fixture into a temp repository, run `--check --json` and verify the payload's `project_root` is the absolute root, its `pending` ids equal what `pending()` returned, and every entry carries a non-empty `description` and `files`
+- PROOF-1 (RULE-1): Verify `pending()` on a directory holding no `.purlin/` returns an empty list. Copy the v0.9.5 fixture into a temp repository and verify `pending()` returns at least one entry, each carrying exactly `id`, `description` and `files`, the last two non-empty
 - PROOF-2 (RULE-2): Call `pending()` on the v0.9.5 fixture and verify it reports `design-refs`, `os-tags`, `untracked-files`, `config`, `evidence`, `workflows` and `plugins` and does not report `hooks`; write the pre-commit hook v0.9.5 installed into `.git/hooks/` of a copy of it and verify `hooks` is reported as well
 - PROOF-3 (RULE-3): Run `--check` on the v0.9.5 fixture and verify the return code is 1, every pending id is on stdout and the line `Run: purlin:init --update` is too; run the script as a subprocess and verify exit 1 with `untracked-files` named. Verify `git status --porcelain` is unchanged by a `--check` run. Apply everything, then run `--check` and verify 0 with `Nothing is pending`
 - PROOF-4 (RULE-4): Run `--check --project-root` against an empty directory and verify the return code is 2 and stderr contains `nothing to update`

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """Bring a project an older Purlin set up onto this release.
 
-    python3 scripts/init/update.py [--check] [--json] [--yes] [--project-root DIR]
+    python3 scripts/init/update.py [--check] [--yes] [--project-root DIR]
 
-`purlin:init --update` is the command you run; this file is the part of it that
-has to be deterministic, so the skill asks and this script edits.
+`purlin:init --update` is the command you run, and init hands it here; its
+`--dry-run` is this script's `--check`. This file is the part of the upgrade
+that has to be deterministic, so the skill asks and this script edits.
 
 `pending(project_root)` returns the migrations a project still needs: an id, one
 line saying what it does, and the files it touches. `--check` prints that list
 and exits 1 while anything is pending, and `sync_status` reads the same
 function, so the advisory you see and the work this script does cannot disagree.
 The detectors read the layout v0.9.5 left, and a project lands straight on this
-release's layout: the three gate values and no directory of evidence beside a
-spec. Every migration asks before it writes, and every file
+release's layout. Every migration asks before it writes, and every file
 it rewrites is copied beside itself first as `<name>.local-<sha8>.bak`. `--yes`
 answers yes to every question. A file this release deletes rather than rewrites
 is left in git history instead of copied.
@@ -1035,7 +1035,6 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         prog='update.py', description=__doc__.splitlines()[0])
     for flag, note in (('--check', 'print what is pending and write nothing'),
-                       ('--json', 'print the pending list as JSON'),
                        ('--yes', 'answer yes to every question')):
         parser.add_argument(flag, action='store_true', help=note)
     parser.add_argument('--project-root', default='.')
@@ -1047,9 +1046,6 @@ def main(argv=None):
               'Run purlin:init first.' % root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
     items = pending(root)
-    if args.json:
-        print(json.dumps({'project_root': root, 'pending': items}, indent=2))
-        return EXIT_PENDING if (items and args.check) else EXIT_OK
     advice = scope_advice(root)
     if not items:
         print('Nothing is pending: this project is at %s.' % _version())
