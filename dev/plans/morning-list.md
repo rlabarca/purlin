@@ -8,10 +8,10 @@ audited, signed, tagged or pushed. `main` is local only.
 As of the morning of 2026-09-28, after the owner's first look at the dashboard.
 
 - Every piece is merged into `main` by fast-forward. The full sweep on `main` after the last
-  of them: **1070 passed across 7 suites, 0 failed.**
-- This repository's own tests, run through Purlin: **972 of 972** markers tied to a test,
-  **560 of 562** rules pass their tests, and **91 of 562** meet the gate `signed`. The two that
-  do not pass are tagged for Linux and this machine is a Mac. The 91 are the rules marked
+  of them: **1081 passed across 7 suites, 0 failed.**
+- This repository's own tests, run through Purlin: every marker tied to a test,
+  **562 of 564** rules pass their tests, and **93 of 564** meet the gate `signed`. The two that
+  do not pass are tagged for Linux and this machine is a Mac. The 93 are the rules marked
   `[level: passed]`; the rest wait for an audit and a signature, which have not been run.
 - The evidence of that run is on disk and **not committed**: `.purlin/evidence/local/` and
   `.purlin/tests.md` show as untracked. Open `purlin-report.html` at the root to see the board.
@@ -30,8 +30,8 @@ As of the morning of 2026-09-28, after the owner's first look at the dashboard.
 4. **The rest of the docs**, from `docs/index.md`.
 5. **The slides**: https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is, six of them. Pictures of
    each are in `dev/plans/deck/`, with the script that builds them.
-6. **The diagrams**: five, in light and dark, in `dev/plans/diagrams/`, with a picture of
-   this repository's own board, `board-with-proofs.png`.
+6. **The diagrams**: five, in light and dark, in `dev/plans/diagrams/`, with pictures of this
+   repository's own board at five widths, `board-1500.png` down to `board-390.png`.
 7. **The proof guideline**: `references/spec_quality_guide.md`, "Writing proofs", and the three
    specs rewritten to it: `specs/mcp/drift.md`, `specs/anchor/upstream.md`,
    `specs/mcp/config_engine.md`.
@@ -127,6 +127,7 @@ On the remote, none touched: `origin/lane/*` (13), `origin/three-levels`,
 | Decision 56, with four dashboard changes | 56, 57 | merged | full sweep 1057 passed, 0 failed |
 | Proofs on the board, shared rules once | 57 | merged | full sweep 1064 passed, 0 failed |
 | Six wording fixes | 50 | merged | full sweep 1070 passed, 0 failed |
+| Empty columns, `(+N shared)`, five widths, the bands, the two chips | 57, 58 | merged | full sweep 1081 passed, 0 failed |
 
 The count falls where tests of removed things were deleted and rises where new tests were
 added. No count was edited.
