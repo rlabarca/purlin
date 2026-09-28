@@ -70,15 +70,13 @@ a passed cell can read:
 | Word | What it means |
 |------|---------------|
 | `passed` | A test marked with the rule's proof ran here and passed |
-| `failed` | A marked test ran and failed; the run prints the suite's own output and the reason names the test |
+| `failed` | A marked test ran and failed, a result rather than missing evidence; the run prints the last 60 lines of the suite's own output and the reason names the test |
 | `no test` | No test carries the proof's marker, or, with the reason `no proof written`, the rule has neither a proof nor a test marked with its id |
 | `not run` | A test carries the marker and no counting run reached it |
 | `out of date` | The spec, the code or the tests changed since the run; the reason names which |
 
-Loud failures come first: `Evidence is missing: <what>.` means a suite left no report the run
-can read, or a marker has no pass or fail: its test was skipped, the report lacks it, or no test
-follows it. A failing test is a result, not missing evidence: the run prints the last 60 lines
-of the suite's output under `--- <suite> output (last 60 lines) ---` and exits 1.
+Loud failures come first: `Evidence is missing: <what>.` means a suite left no readable report,
+or a marker has no pass or fail: its test was skipped, the report lacks it, or no test follows it.
 
 ## Step 4: what the gate changes
 

@@ -126,15 +126,11 @@ installed Purlin does not read is reported instead of kept.
 
 ## The trust question
 
-Init asks it exactly like this, with `y` as the default. At the gate `passed`:
+Init asks it exactly like this, with `y` as the default, the first at the gate `passed` and the
+second from `strong` up:
 
 ```
 Do you trust your own machine for the tests? [y/n]
-```
-
-From `strong` up:
-
-```
 Do you trust your own machine for the tests and the signing? [y/n]
 ```
 
@@ -162,7 +158,8 @@ A remote runner is written for two reasons:
 
 With neither, no workflow is written at any gate and init prints `No remote runner: every
 test runs on this operating system and you trust this machine, so nothing has to run
-remotely.` at `passed`, and the same line with `every proof` from `strong` up. Teammates see your results from the evidence `purlin:test --commit` commits.
+remotely.` at `passed`, and the same line with `every proof` from `strong` up. Teammates see
+your results from the evidence `purlin:test --commit` commits.
 
 Before a workflow is written init checks two prerequisites: a remote exists, and its URL names
 GitHub or Azure DevOps. The first that fails is printed in one line naming what to do, and no
