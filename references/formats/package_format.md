@@ -1,4 +1,4 @@
-> Format-Version: 1
+> Format-Version: 2
 
 # Package format
 
@@ -114,7 +114,7 @@ The state is the first thing a reader sees after the schema.
 | `results` | array | one entry per evidence section, ordered by operating system then source. See below |
 | `audit` | object or null | what the audit found for the rule's current words, proof and test. Null where no audit has |
 | `signatures` | array | every signature whose hashes still match the rule, ordered by `at`. A stale signature is not listed; the signed status names it |
-| `statuses` | object | `passed`, `strong` and `signed`, each `{word, reasons}`, or null where the gate creates no such cell |
+| `statuses` | object | one `{word, reasons}` per status the rule is asked for: `passed` always, `strong` where the rule's `level` is `strong` or `signed`, `signed` where it is `signed`. A status the level does not ask for is absent, not null; the level is never above the gate, so a status above the gate is absent too |
 | `meets_gate` | bool | whether the rule meets the gate |
 
 Each `results` entry:

@@ -387,6 +387,28 @@ class TestTheContent:
                                               'reasons': ['by jane@acme.com']}
         assert rule['meets_gate'] is True
 
+    # purlin: package PROOF-20
+    def test_a_rule_carries_only_the_statuses_its_level_asks_for(self,
+                                                                  tagged):
+        package = read_package(tagged.root)
+        lower = rule_of(package, 'RULE-1')
+        assert lower['level'] == 'passed', lower
+        assert list(lower['statuses']) == ['passed'], lower['statuses']
+        assert lower['statuses']['passed']['word'] == 'passed', lower
+        assert sorted(rule_of(package, 'RULE-2')['statuses']) == [
+            'passed', 'signed', 'strong']
+        made = signed_project(spec=SPEC.replace('[level: passed]',
+                                                '[level: strong]'))
+        try:
+            export(made.root)
+            middle = rule_of(read_package(made.root), 'RULE-1')
+            assert middle['level'] == 'strong', middle
+            assert sorted(middle['statuses']) == ['passed', 'strong'], (
+                middle['statuses'])
+            assert None not in middle['statuses'].values(), middle
+        finally:
+            made.close()
+
     # purlin: package PROOF-18
     def test_a_rule_with_no_proof_carries_the_tests_marked_with_its_id(self):
         made = Project(spec=SPEC_WITH_A_THIRD_RULE, gate='passed')

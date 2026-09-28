@@ -6,7 +6,8 @@
 
 The package holds, for every rule, its words, its proofs, its tests, each
 result on each operating system, what the audit found and who signed it, with
-the three statuses and whether the rule meets the gate. It is written to
+the statuses its level asks for and whether the rule meets the gate. It is
+written to
 
     .purlin/evidence/package/<version>.json
 
@@ -339,7 +340,8 @@ def _rule(tree, rule, loaded, sections, signatures):
         'results': _results(rule_id, proofs, sections),
         'audit': _audit(rule, loaded),
         'signatures': _signatures(tree, rule, signatures),
-        'statuses': {name: _status(rule, name) for name in CELLS},
+        'statuses': {name: _status(rule, name) for name in CELLS
+                     if name in (rule.get('cells') or {})},
         'meets_gate': bool(rule.get('meets_gate')),
     }
 
@@ -415,10 +417,12 @@ def _signatures(tree, rule, signatures):
 
 
 def _status(rule, name):
-    """One status: its word and its reasons, or None above the gate."""
-    cell = (rule.get('cells') or {}).get(name)
-    if not cell:
-        return None
+    """One status: its word and its reasons.
+
+    Only a cell the rule has is asked for: a status the rule's level, or the
+    gate, does not reach is left out of `statuses` altogether.
+    """
+    cell = (rule.get('cells') or {}).get(name) or {}
     return {'word': cell.get('word'),
             'reasons': [str(reason) for reason in cell.get('reasons') or ()]}
 
