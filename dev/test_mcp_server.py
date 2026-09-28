@@ -1935,6 +1935,20 @@ class TestStatusTable:
         second = text.splitlines()[text.splitlines().index(line) + 1]
         assert 'test strength' not in second, second
         assert 'signature' not in second, second
+        made = Project(gate='signed')
+        try:
+            made.evidence([_entry('PROOF-1', 'RULE-1'),
+                           _entry('PROOF-2', 'RULE-2')])
+            lines = purlin_status.sync_status(made.root).splitlines()
+            counts = next(line for line in lines
+                          if line.startswith('1 feature'))
+            # Counts only: a requirement is not a count.
+            assert counts == ('1 feature, 2 proof lines · 2 no test, minimum '
+                              'test strength 80%, 2 rules not audited.'), \
+                counts
+            assert 'every rule' not in counts, counts
+        finally:
+            made.close()
 
     # purlin: states PROOF-43
     # purlin: states PROOF-81

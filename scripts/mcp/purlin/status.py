@@ -171,12 +171,9 @@ def _summary(data):
             second.append('%s not audited'
                           % board_module.count_of(summary['not_audited'],
                                                   'rule'))
-    if gate == 'signed':
-        second.append('a signature on every rule whose level is signed')
-        if summary.get('stale'):
-            second.append('%s stale'
-                          % board_module.count_of(summary['stale'],
-                                                  'signature'))
+    if gate == 'signed' and summary.get('stale'):
+        second.append('%s stale'
+                      % board_module.count_of(summary['stale'], 'signature'))
     lines.append(', '.join(second) + '.')
     if gate != 'passed':
         lines.append(board_module.queue_line(summary))
