@@ -192,7 +192,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
 def proof_counts(rule_entries):
     """`{proofs, proofs_without_test, proofs_without_test_ids}` over some rules.
 
-    A proof with no tagged test is the gap between what a spec claims to
+    A proof with no marked test is the gap between what a spec claims to
     observe and what anything actually runs, so the count is carried beside
     the proof total rather than worked out again by each surface. Each proof
     is counted once under the rule that writes it, so a rule an anchor

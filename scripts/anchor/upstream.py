@@ -21,7 +21,7 @@ Every command takes `--project-root DIR`; without it the root is the one
 
 `add` fetches the file at the source's default branch head and writes the local
 copy. A source that is not a repository is free text: the copy carries the text
-and a note saying the rules are still to be drafted, because drafting them is
+and a note saying no rules are written from it yet, because writing them is
 the skill's job, not this module's.
 
 `sync` names the rules that changed and advances the pin. `--check` changes nothing and exits
@@ -244,8 +244,8 @@ def format_rule_diff(diff):
 # add
 # ---------------------------------------------------------------------------
 
-FREE_TEXT_NOTE = ('the source is free text, so the rules below are still to be '
-                  'drafted from it. Run purlin:anchor create to draft them.')
+FREE_TEXT_NOTE = ('the source is free text, so no rules are written from it '
+                  'yet. Run purlin:anchor create to write them.')
 
 
 def _default_name(source, path):
@@ -274,7 +274,7 @@ def add(project_root, source, path=None, name=None):
             body = body.rstrip('\n') + '\n\n## Rules\n\n## Proof\n'
         copy = compose_copy(body, source, pinned, note=FREE_TEXT_NOTE)
         _write(anchor_path(project_root, name), copy)
-        result.update({'status': 'drafted', 'pinned': pinned,
+        result.update({'status': 'no_rules', 'pinned': pinned,
                        'spec_path': 'specs/_anchors/%s.md' % name,
                        'note': FREE_TEXT_NOTE})
         return result
@@ -408,9 +408,9 @@ def _render(result):
         lines.append('%s: written to %s, pinned %s'
                      % (result['anchor'], result['spec_path'],
                         result['pinned'][:7]))
-        if result['status'] == 'drafted':
-            lines.append('  the source is free text: the rules are still to be '
-                         'drafted. Run purlin:anchor create %s.' % result['anchor'])
+        if result['status'] == 'no_rules':
+            lines.append('  the source is free text: no rules written yet. Run '
+                         'purlin:anchor create %s.' % result['anchor'])
         else:
             lines.append('  %d rules. Run purlin:status to see them.'
                          % len(result['rules']))

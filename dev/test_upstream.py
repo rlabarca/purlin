@@ -289,7 +289,7 @@ def test_add_of_free_text_writes_a_note_and_no_rules(workspace):
     source = os.path.join(workspace.root, 'policy.txt')
     _write(source, 'Every refund is countersigned by a second person.\n')
     result = upstream.add(workspace.root, source, name='refunds')
-    assert result['status'] == 'drafted'
+    assert result['status'] == 'no_rules'
     text = _copy_text(workspace, 'refunds')
     assert 'Every refund is countersigned by a second person.' in text
     assert upstream.FREE_TEXT_NOTE in text

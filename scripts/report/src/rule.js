@@ -131,7 +131,7 @@ function signPanel(feature, rule) {
 function proofPanel(proof) {
   var tests = (proof.tests || []).map(function (t) {
     return esc(t.file) + ' :: ' + esc(t.name);
-  }).join('\n') || 'no tagged test yet';
+  }).join('\n') || 'no test yet';
   var tags = (proof.manual ? ['@manual'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   return '<div class="panel"><dl class="kv">'

@@ -7,7 +7,7 @@
 One project setting decides what this job requires. The gate is read from
 `.purlin/config.json` and nothing else has to be configured:
 
-    passed  every rule's passed cell is met: the tagged tests pass, from any
+    passed  every rule's passed cell is met: the marked tests pass, from any
             source, on every operating system a counting run covered
     strong  every rule whose level is `strong` or `signed` has a strong cell
             that is met: the AI audit, from either source, read the current

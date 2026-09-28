@@ -13,10 +13,10 @@
 # rule meets the gate. A push to any other branch starts nothing, and a pull
 # request starts nothing.
 #
-# A run branch run runs the tagged tests, writes its own operating system's
+# A run branch run runs the marked tests, writes its own operating system's
 # section of .purlin/evidence/ci/<feature>.json for every feature, and commits
 # it on that branch, where purlin:test --remote pulls it home. A tag run writes
-# nothing: it runs the tagged tests, checks that every committed signature
+# nothing: it runs the marked tests, checks that every committed signature
 # still hashes to the tagged code, checks that every file under
 # .purlin/evidence/ci/ was committed by the runner itself, and ends with the
 # gate check.
@@ -103,7 +103,7 @@ jobs:
           fi
           if [ -f package.json ]; then npm ci; fi
 
-      - name: Run the tagged tests
+      - name: Run the tests
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

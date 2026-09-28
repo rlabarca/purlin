@@ -110,7 +110,7 @@ _COMMIT = 'chore(update): migrate to %s (%s)'
 
 GATE_QUESTION = """
 What must be true of every rule before a version is proven?
-  passed  every rule's tagged tests pass
+  passed  every rule's tests pass
   strong  tests pass and the audit finds them sound
   signed  strong, and a person signs each rule"""
 
@@ -354,7 +354,8 @@ def _ask_trust(default, assume_yes):
 
     A yes is `local`, which is a project whose own runs count and whose own
     signature is the evidence. A no is `remote`, and `purlin:sign` then
-    refuses a rule whose tests have no ci record for the commit being signed.
+    refuses a rule whose tests have no run from the remote runner for the
+    commit being signed.
     """
     gate = _gate()
     default = default if default in gate.TRUST_VALUES else gate.DEFAULT_TRUST
@@ -500,7 +501,7 @@ def _apply_kind_tags(root, files, args, out):
         _write(path, KIND_TAG_RE.sub(lambda m: m.group(1), _read(path)))
         out.done(rel)
     out.say('dropped the kind of test from the proof lines of %d spec%s: '
-            'purlin:test runs every tagged test' % (len(files), _s(files)))
+            'purlin:test runs every marked test' % (len(files), _s(files)))
 
 def _detect_workflows(root):
     """The workflow files this release replaces: any that commit proof files.

@@ -14,7 +14,7 @@ temporary directory. Nothing here reaches a network or a git host.
 
 What each group holds:
 
-*passed*    a passing tagged test in a section a person or CI wrote
+*passed*    a passing marked test in a section a person or CI wrote
 *strong*    an audit in the evidence, the test strength at or above the
             minimum, and an audit entry that settled where the level asks
 *signed*    a current signature in a signed commit, whoever wrote it and on

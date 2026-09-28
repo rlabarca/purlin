@@ -73,7 +73,7 @@ NOT_A_REPOSITORY = 'This is not a git repository. Run git init, then init.'
 
 GATE_QUESTION = 'What must be true of every rule before a version is proven?'
 GATE_CHOICES = (
-    "passed  every rule's tagged tests pass",
+    "passed  every rule's tests pass",
     'strong  tests pass and the audit finds them sound',
     'signed  strong, and a person signs each rule',
 )
@@ -91,15 +91,15 @@ ASKED_FILES = ['**/test_*', '**/*_test.*', '**/*.test.*', '**/*.spec.*']
 
 # The one question that is not derived from the gate. A project that trusts
 # this machine runs its tests and writes its signatures here; one that does
-# not has purlin:sign refuse a rule whose tests have no ci record for the
-# commit being signed.
+# not has purlin:sign refuse a rule whose tests have no run from the remote
+# runner for the commit being signed.
 TRUST_QUESTION = ('Do you trust your own machine for the tests and the '
                   'signing? [y/n]')
 TRUST_LOCAL = ('Trust local: your own runs count, and purlin:sign signs what '
                'you ran.')
 TRUST_REMOTE = ('Trust remote: purlin:sign refuses a rule whose tests have no '
-                'ci record for this commit, so purlin:test --remote runs '
-                'first.')
+                'run from the remote runner for this commit, so '
+                'purlin:test --remote runs first.')
 
 REMOTE_INTRO = 'A remote runner is written for two reasons:'
 REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
@@ -457,7 +457,8 @@ def ask_trust(console, existing):
 
     The default is `local`, which is a yes: your own tests and your own
     signature are the evidence. A no writes `remote`, and `purlin:sign` then
-    refuses a rule whose tests have no ci record for the commit being signed.
+    refuses a rule whose tests have no run from the remote runner for the
+    commit being signed.
     """
     named = str((existing or {}).get('trust') or '').strip().lower()
     if named in gate_module.TRUST_VALUES:

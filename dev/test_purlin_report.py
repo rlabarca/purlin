@@ -500,8 +500,8 @@ def test_every_cell_of_a_spec_row_carries_its_hover(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     rows = hovers(page)
     assert rows['login']['Spec'] == 'specs/auth/login.md'
-    assert rows['login']['Proofs'] == 'every proof has a tagged test'
-    assert rows['invoice']['Proofs'] == 'every proof has a tagged test'
+    assert rows['login']['Proofs'] == 'every proof has a test'
+    assert rows['invoice']['Proofs'] == 'every proof has a test'
 
     # Newest run first: windows ran after linux, and one of its four rules
     # failed there.
@@ -523,10 +523,10 @@ def test_every_cell_of_a_spec_row_carries_its_hover(browser, tmp_path):
     page.close()
 
     # The gap the regulated board has nowhere: the team board's invoice
-    # writes a proof no tagged test runs, and the hover names it.
+    # writes a proof no marked test runs, and the hover names it.
     team = open_board(browser, tmp_path / 'team', payload_named('team'))
     assert hovers(team)['invoice']['Proofs'] == (
-        'no tagged test \u00b7 PROOF-2')
+        'no test \u00b7 PROOF-2')
     team.close()
 
 

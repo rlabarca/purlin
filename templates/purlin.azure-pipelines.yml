@@ -11,10 +11,10 @@
 # and a push of a `signed/*` tag, which is what purlin:sign writes when every
 # rule meets the gate. A pull request starts nothing.
 #
-# A run branch run runs the tagged tests, writes its own operating system's
+# A run branch run runs the marked tests, writes its own operating system's
 # section of .purlin/evidence/ci/<feature>.json for every feature, and commits
 # it on that branch. The build service writes it, and nothing on the host has
-# to be configured for that. A tag run writes nothing: it runs the tagged
+# to be configured for that. A tag run writes nothing: it runs the marked
 # tests, checks that every committed signature still hashes to the tagged
 # code, checks that every file under .purlin/evidence/ci/ was pushed by the
 # identity this run holds, as Azure DevOps records the push, and ends with the
@@ -95,7 +95,7 @@ jobs:
         displayName: Set up the test framework
 
       - bash: python3 "$PURLIN_ROOT/scripts/run/purlin_run.py" --all --ci
-        displayName: Run the tagged tests
+        displayName: Run the tests
         env:
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 

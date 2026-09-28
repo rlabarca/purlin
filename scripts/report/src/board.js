@@ -106,7 +106,7 @@ function boardColumns() {
   return columns;
 }
 
-/* How many proof lines this spec holds, and how many of them no tagged test
+/* How many proof lines this spec holds, and how many of them no marked test
    runs. A proof nothing tests is the gap between what the spec claims and
    what the tests check, so it is on the board rather than one screen deeper,
    and its ids are in the hover. Both numbers are the rollup's own, so the
@@ -115,13 +115,13 @@ function boardColumns() {
 function proofsCell(feature) {
   var rollup = feature.rollup || {};
   var ids = rollup.proofs_without_test_ids || [];
-  return '<span' + hover([ids.length ? 'no tagged test' + DOT + ids.join(', ')
-      : 'every proof has a tagged test']) + '>'
+  return '<span' + hover([ids.length ? 'no test' + DOT + ids.join(', ')
+      : 'every proof has a test']) + '>'
     + counts([[rollup.proofs || 0, '', ''],
       [rollup.proofs_without_test || 0, WORDS.without_test, 'warn']]) + '</span>';
 }
 
-/* What the tagged tests found, as the passed cells read it: how many of the
+/* What the marked tests found, as the passed cells read it: how many of the
    spec's rules passed everywhere they ran, then the two words that say they
    did not. The hover says which platforms ran and what each found, which is
    the column the board used to spend on `Last run`. */

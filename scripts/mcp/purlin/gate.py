@@ -4,7 +4,7 @@ A project sets `gate` in `.purlin/config.json` and nothing else has to be
 decided. The gate names the deepest evidence level a version has to reach
 before it is proven, and every level above it is not asked for at all:
 
-`passed`  every rule's passed cell is met: the tagged tests pass, from any
+`passed`  every rule's passed cell is met: the marked tests pass, from any
           source
 `strong`  every rule's strong cell is met too: the AI audit read the
           rule's current text, proof and test and found nothing, and where

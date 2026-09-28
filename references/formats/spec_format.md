@@ -141,12 +141,12 @@ Append `@manual` to a proof that no test can settle:
 
 | Tag | When to use |
 |-----|-------------|
-| (none) | A tagged test settles the proof, whatever it needs to run |
+| (none) | A marked test settles the proof, whatever it needs to run |
 | `@manual` | A person's judgment is the only instrument. No test, so the rule's strong cell reads `manual test`; the evidence is a signature file carrying a one-line note, always written by a person |
 
 `@manual` and `@env` are the only tags a proof line carries. Any other trailing
 `@<name>` is not a tag: it stays in the proof text. `purlin:test` runs every
-tagged test of the features it runs.
+marked test of the features it runs.
 
 ### Operating system tags
 

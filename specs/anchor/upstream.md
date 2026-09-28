@@ -6,7 +6,7 @@
 >   a commit, never a branch, so what a project is holding is one sha a reader
 >   can check out. Nothing here reaches the network on its own account: every
 >   source is a git url the caller named, and a source that is free text rather
->   than a repository is copied in as a drafted anchor instead.
+>   than a repository is copied in as an anchor with no rules yet instead.
 > Scope: scripts/anchor/upstream.py
 > Stack: python/stdlib, git plumbing over subprocess, no third-party package
 
@@ -18,7 +18,7 @@
 - RULE-4: Tracking fields the source itself carried are stripped before the copy is written, so a copy of a copy holds one `> Source:` and one `> Pinned:`, both this project's
 - RULE-5: A `--path` the source does not hold writes no file and reports the path it could not read
 - RULE-6: A source that begins with `-`, or that names the `ext::` transport, is refused before any process starts and nothing is written
-- RULE-7: A source that is a readable text file rather than a repository is copied in whole as a drafted anchor carrying a note and no rules, pinned by the hash of its text, so rewording the source moves the pin
+- RULE-7: A source that is a readable text file rather than a repository is copied in whole as an anchor carrying a note and no rules, pinned by the hash of its text, so rewording the source moves the pin
 - RULE-8: `sync --check` writes no file: it reports each anchor as current or behind and carries both the pinned sha and the source's head sha
 - RULE-9: `sync --check` exits 0 when every pin is current, 1 when a pin is behind, and 2 when a named anchor does not exist or a source cannot be read
 - RULE-10: `--json` prints the whole answer as one JSON object carrying `checked`, `behind` and a row per anchor; without it the lines name the anchor behind and the `purlin:anchor sync <name>` that fixes it
@@ -38,7 +38,7 @@
 - PROOF-4 (RULE-4): A published anchor whose own text already carries `> Source: git@example.com:other.git a.md` and `> Pinned: deadbeef` is added; the copy carries exactly one `> Source:` line and one `> Pinned:` line, and `deadbeef` appears nowhere in it
 - PROOF-5 (RULE-5): An anchor is added from `specs/absent.md`, which the source does not hold; the answer is an error naming `specs/absent.md`, and no copy is written at `specs/_anchors/no_eval.md`
 - PROOF-6 (RULE-6): An anchor is added from the source `--upload-pack=/bin/echo`, and again from `ext::sh -c touch`; the first is refused with a message containing `begins with "-"` and writes no copy, and the second is refused with a message naming the `ext:: transport`
-- PROOF-7 (RULE-7): A text file holding the one sentence `Every refund is countersigned by a second person.` is added as the anchor `refunds`; the answer reads `drafted`, the copy carries that sentence, the note that the anchor is free text, a `## Rules` and a `## Proof` heading and no `RULE-` line at all, and adding the unchanged file again gives the same pin. The same file is taken as free text and the source repository is not
+- PROOF-7 (RULE-7): A text file holding the one sentence `Every refund is countersigned by a second person.` is added as the anchor `refunds`; the answer reads `no_rules`, the copy carries that sentence, the note that the anchor is free text, a `## Rules` and a `## Proof` heading and no `RULE-` line at all, and adding the unchanged file again gives the same pin. The same file is taken as free text and the source repository is not
 - PROOF-8 (RULE-8): An anchor is pinned and a new version of it is published; `sync --check` reports the anchor `behind`, with the first sha as `pinned` and the new one as `remote_sha`, counts 1 behind, and leaves the copy byte for byte as it was
 - PROOF-9 (RULE-9): `sync --check` exits 0 with the row reading `current` while the pin is current, and 1 once a new version is published; naming an anchor that does not exist, it exits 2 with the row reading `error`; after the source repository is deleted, it exits 2 with the row reading `error`
 - PROOF-10 (RULE-10): `sync --check --json` on a current pin exits 0 and prints an object with `behind` 0; after a new version is published it exits 1 with `checked` true, `behind` 1 and the first row's `remote_sha` the new sha. Without `--json` it exits 1 and prints `is behind its source` and `purlin:anchor sync no_eval`

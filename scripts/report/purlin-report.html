@@ -276,8 +276,8 @@ function boardColumns() {
 function proofsCell(feature) {
   var rollup = feature.rollup || {};
   var ids = rollup.proofs_without_test_ids || [];
-  return '<span' + hover([ids.length ? 'no tagged test' + DOT + ids.join(', ')
-      : 'every proof has a tagged test']) + '>'
+  return '<span' + hover([ids.length ? 'no test' + DOT + ids.join(', ')
+      : 'every proof has a test']) + '>'
     + counts([[rollup.proofs || 0, '', ''],
       [rollup.proofs_without_test || 0, WORDS.without_test, 'warn']]) + '</span>';
 }
@@ -503,7 +503,7 @@ function signPanel(feature, rule) {
 function proofPanel(proof) {
   var tests = (proof.tests || []).map(function (t) {
     return esc(t.file) + ' :: ' + esc(t.name);
-  }).join('\n') || 'no tagged test yet';
+  }).join('\n') || 'no test yet';
   var tags = (proof.manual ? ['@manual'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   return '<div class="panel"><dl class="kv">'

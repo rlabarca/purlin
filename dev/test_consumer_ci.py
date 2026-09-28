@@ -185,7 +185,7 @@ def test_the_workflow_names_the_test_step_and_uploads_nothing():
     names = step_names(jobs.splitlines())
     assert 'actions/checkout@v4' in names
     assert 'Locate Purlin' in names
-    assert 'Run the tagged tests' in names
+    assert 'Run the tests' in names
     assert 'actions/upload-artifact@v4' not in names, (
         'a run uploads nothing: the two runs are a remote run and a tag run')
     assert names[-1] == 'Check the gate', (

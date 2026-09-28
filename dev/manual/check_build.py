@@ -143,7 +143,7 @@ def main(argv=None):
     code = report([
         ('the build created files', bool(created),
          '%d file(s)' % len(created)),
-        ('a tagged test was written', bool(tests),
+        ('a marked test was written', bool(tests),
          ', '.join(tests) or 'no test file'),
         ('every test carries a proof marker', bool(tests) and len(marked) == len(tests),
          '%d of %d marked' % (len(marked), len(tests))),
