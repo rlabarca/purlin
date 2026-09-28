@@ -51,7 +51,7 @@ slide('touches', 'Your project and your workflow', 'How little does Purlin chang
 slide('start', 'Getting started', 'Start in under ten minutes', [
     ('Install the plugin', 'Inside Claude Code: %s.' % m('/plugin install purlin@purlin')),
     ('`purlin:init`', 'Sets the project up. It asks how far every rule must go; answer %s.' % m('passed')),
-    ('Write three rules', 'In a markdown file, one line each, saying what must be true.'),
+    ('`purlin:spec`', 'Say in your own words what must be true. It writes the rules for you, one line each.'),
     ('Add three comments', 'One above each test, naming the rule it shows: %s.' % m('# purlin: cart RULE-1')),
     ('`purlin:test`', 'Runs your tests and prints %s' % m('Tests: 3 of 3 rules pass.')),
 ], '',
