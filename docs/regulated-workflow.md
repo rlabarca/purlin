@@ -134,21 +134,17 @@ Purlin makes no claim that software is compliant with any regulation.
 
 ## The day to day
 
-The loop is the one every gate runs, with signing at the end:
+The loop is the one every gate runs, with signing at the end, all on one machine:
 
 ```mermaid
-sequenceDiagram
-    actor Developer
-    participant Tree as the checkout
-    actor Signer
-    participant Origin as origin
-    Developer->>Tree: purlin:spec, purlin:build, purlin:test
-    Developer->>Tree: purlin:audit --commit
-    Tree->>Tree: purlin: evidence at sha7, the audit in each feature's file
-    Signer->>Tree: purlin:sign walks the queue
-    Tree->>Tree: git commit -S writes RULE-4.hash8.slug.json
-    Tree->>Tree: every rule meets the gate, so the tag signed/1.4.0 is written
-    Signer->>Origin: git push, then git push origin signed/1.4.0
+flowchart TD
+    W["purlin:spec, purlin:build, purlin:test"] --> A["purlin:audit --commit"]
+    A --> S["purlin:sign<br>one signature file per rule,<br>in a signed commit"]
+    S --> G{"every rule meets<br>the gate signed?"}
+    G -->|no| N["No tag; the output says<br>what falls short"]
+    G -->|yes| P["commit .purlin/evidence/package/#lt;version#gt;.json"]
+    P --> T["git tag -s signed/#lt;version#gt;"]
+    T --> U["you type git push origin<br>signed/#lt;version#gt;"]
 ```
 
 Each signer runs these once, on the machine they sign from, then uploads the same public key to
