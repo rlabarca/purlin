@@ -1637,27 +1637,15 @@ class TestPayload:
         with open(path, encoding='utf-8') as handle:
             text = handle.read()
         assert text.startswith('const PURLIN_DATA = ') and text.endswith(';\n')
-        assert purlin_payload.read_report_payload(project.root)['commit'] == (
-            data['commit'])
-
-    # purlin: states PROOF-38
-    def test_an_unchanged_payload_is_touched_rather_than_rewritten(self,
-                                                                  project):
-        purlin_payload.write_report_data(project.root, project.payload())
-        path = purlin_payload.report_data_path(project.root)
-        before = open(path, 'rb').read()
-        os.utime(path, (0, 0))
-        purlin_payload.write_report_data(project.root, project.payload(),
-                                         only_if_changed=True)
-        assert open(path, 'rb').read() == before
-        assert os.stat(path).st_mtime > 0
+        read_back = json.loads(text[len('const PURLIN_DATA = '):-len(';\n')])
+        assert read_back['commit'] == data['commit']
 
 
 class TestTheFixturesAreTheContract:
     """The dashboard's fixtures and the builder's output are one shape.
 
-    `dev/fixtures/report/{solo,team,regulated}.json` are written by hand from
-    the plan, and the dashboard is built against them. A key the builder adds
+    `dev/fixtures/report/{solo,team,regulated}.json` are written by hand, and
+    the dashboard is built against them. A key the builder adds
     and the fixtures do not carry would render nowhere, so the two are
     compared key by key here rather than by eye.
     """

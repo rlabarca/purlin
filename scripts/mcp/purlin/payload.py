@@ -709,53 +709,15 @@ def report_data_path(project_root):
     return os.path.join(project_root, REPORT_DATA_PATH)
 
 
-def read_report_payload(project_root):
-    """The payload the last write left in `.purlin/report-data.js`, or None."""
-    path = report_data_path(project_root)
-    try:
-        with open(path, 'r', encoding='utf-8') as handle:
-            content = handle.read()
-    except (IOError, OSError, UnicodeDecodeError):
-        return None
-    if not content.startswith(_PREFIX):
-        return None
-    try:
-        return json.loads(content[len(_PREFIX):].rstrip().rstrip(';'))
-    except ValueError:
-        return None
-
-
-def write_report_data(project_root, payload, only_if_changed=False):
-    """Write the payload as `const PURLIN_DATA = {...};`. Returns the path.
-
-    With `only_if_changed`, a payload that differs from the file only by its
-    `generated_at` stamp touches the file instead of rewriting it: the file is
-    gitignored, but a background refresh that rewrote it on every tool call
-    would still churn the disk and every watcher on it.
-    """
+def write_report_data(project_root, payload):
+    """Write the payload as `const PURLIN_DATA = {...};`. Returns the path."""
     path = report_data_path(project_root)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     body = json.dumps(payload, indent=2, sort_keys=True, default=str)
     text = _PREFIX + body + ';\n'
-
-    if only_if_changed:
-        previous = read_report_payload(project_root)
-        if previous is not None and _same(previous, payload):
-            os.utime(path, None)
-            return path
 
     tmp_path = path + '.tmp'
     with open(tmp_path, 'w', encoding='utf-8') as handle:
         handle.write(text)
     os.replace(tmp_path, path)
     return path
-
-
-_VOLATILE = ('generated_at', 'generated_by')
-
-
-def _same(left, right):
-    left = {k: v for k, v in left.items() if k not in _VOLATILE}
-    right = {k: v for k, v in right.items() if k not in _VOLATILE}
-    return json.dumps(left, sort_keys=True, default=str) == json.dumps(
-        right, sort_keys=True, default=str)
