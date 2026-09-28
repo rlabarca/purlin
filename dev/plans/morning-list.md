@@ -22,6 +22,11 @@ here was audited, signed, tagged or pushed.
 | P4 one queue, no holds | 37, 48, 50, 52 | merged | 939 passed, 0 failed |
 | P6 drift by role | 42 | merged | 948 passed, 0 failed |
 | P5 the audit calls the model | 35, 50, 52 | merged | 980 passed, 0 failed |
+| P8 init and the upgrade from 0.9.5 | 35, 36, 39, 40, 45 | merged | 1007 passed, 0 failed |
+| A fix of mine: an empty pass mark warns of nothing | 35 | merged | 1008 passed, 0 failed |
+| P7 a run covers what the change touched | 39 | merged | 1036 passed, 0 failed |
+| S1 the dashboard, the hook removed | 36, 37, 45, 50 | merged | 1032 passed, 0 failed |
+| P10 the evidence package | 52, 55 | merged | 1057 passed, 0 failed |
 
 The count falls where tests of removed things were deleted and rises where new tests were
 added. No count was edited.
@@ -130,6 +135,43 @@ One line each, with the piece that made it. Each took the smaller option.
 - A repeated audit entry is kept only when the model and the instructions also match.
 - `signature_format.md` was reworded and not bumped, since no field changed.
 - The evidence file's `schema` string stays `purlin-evidence/1` while its format version is 2.
+
+### P8
+
+- `--yes` answers no to mutation testing; `--mutation` turns it on without asking.
+- The upgrade names every setting the old file carried that the new one lacks, not a fixed
+  list, so six are named.
+- Removing a Figma source also removes the pin that went with it.
+- A yes to mutation testing during an upgrade writes the setting and says to run `purlin:init`
+  to wire the tool, instead of wiring it inside the upgrade.
+
+### P7
+
+- At `signed`, a rule whose spec names no files leaves the queue, since nobody could clear it.
+- **At `signed`, the gate check fails while any spec names no files, even if every rule in it
+  is marked below `signed`.** This is stricter than you may have meant.
+- The remote runner runs every feature when none is named.
+- On a partial run, C# projects still run their whole suite; the other kinds run only the
+  selected files.
+- "Nothing to run" with `--commit` still commits evidence an earlier run wrote.
+
+### S1
+
+- `purlin:test` and `purlin:audit` refresh the page's data through the status they already end
+  on, so setup and the remote runner, which also print the status, refresh it too.
+- The top bar shows the release label from `strong` up, because one can be written at `strong`.
+- The sample data names a model from 2025 (`claude-opus-4-1-20250805`), which the rule
+  screenshot shows. Sample data only.
+
+### P10
+
+- The package is built from a temporary checkout of the commit the evidence was taken at, so a
+  second clone gives the same bytes.
+- `purlin:sign` also commits the package before the label at the gate `strong`; its state reads
+  `gate strong met` and still not for approval.
+- A package lists only the signatures that are still current; a stale one shows through the
+  signed status's reason.
+- The phrase "for approval" is allowed by the word guard, because your own wording needs it.
 
 ## Test gaps the proof guideline exposed
 
