@@ -23,14 +23,14 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Send an `initialize` request to the server as a subprocess; verify the protocol version is exactly `2024-11-05`, the server name is `purlin`, the version equals the contents of the `VERSION` file, and the capabilities carry the tools key
-- PROOF-2 (RULE-2): Send `tools/list`; verify the sorted tool names are exactly `drift`, `purlin_config` and `sync_status`, and that every one of the three declares `project_root` among its input properties
-- PROOF-3 (RULE-3): Send a notification with no id followed by a `tools/list` request; verify exactly 1 response comes back and its id is 9. Then send the text `not json` on stdin and verify the response carries error code `-32700`
-- PROOF-4 (RULE-4): Send a `tools/call` naming the tool `nope` and then the method `nope/at/all`; verify both answer error code `-32601`
-- PROOF-5 (RULE-5): Run the server over an `initialize` request and verify every line of stdout parses as JSON, while stderr carries the text `Purlin MCP server`
-- PROOF-6 (RULE-6): Start the server in an empty directory and send `sync_status` with `project_root` naming a real workspace; verify the answer carries the feature name `login` from that workspace
-- PROOF-7 (RULE-7): Start the server in an empty directory and send `sync_status` with no arguments; verify the answer carries `No Purlin workspace` and names `purlin:init`
-- PROOF-8 (RULE-8): Patch the status tool to raise `RuntimeError("boom")` and send a `sync_status` call; verify the answer opens `Error running sync_status` and carries `boom`, and that a second call in the same session still answers normally
-- PROOF-9 (RULE-9): Send a read of the key `gate` and verify the answer is exactly `{"gate": "passed"}`; send a write setting it to `strong` and read it again, verifying `{"gate": "strong"}`; then read `.purlin/config.json` from disk and verify its gate reads `strong`
-- PROOF-10 (RULE-10): Call the configuration handler with the action `write` and no key; verify the answer names `key` as required. Call it with the action `delete`; verify the answer opens `Unknown action` and that the merged config is unchanged
-- PROOF-22 (RULE-22): Read `.claude-plugin/plugin.json` and verify the server entry's command is exactly `sh`, that its first argument ends in `scripts/purlin_python.sh` and that its last ends in `scripts/mcp/purlin/server.py`
+- PROOF-1 (RULE-1): A client starts the server as its own process and sends `initialize`; the answer carries the protocol version `2024-11-05`, the server name `purlin` and a version equal to the text of the `VERSION` file
+- PROOF-2 (RULE-2): A client sends `tools/list`; the answer names exactly three tools, `drift`, `purlin_config` and `sync_status`, and each of the three lists `project_root` among the arguments it takes
+- PROOF-3 (RULE-3): A client sends a notification, which carries no id, and then a `tools/list` request with the id 9; exactly 1 response comes back, and its id is 9. A client that sends the line `not json` gets back an error with the code `-32700`
+- PROOF-4 (RULE-4): A client calls the tool `nope`, which the server does not serve, and then the method `nope/at/all`, which it does not know; each answer is an error with the code `-32601`
+- PROOF-5 (RULE-5): A client starts the server as its own process and sends `initialize`; every line the server writes to stdout reads as JSON, and the startup line, carrying `Purlin MCP server`, is on stderr and not on stdout
+- PROOF-6 (RULE-6): The server is started in an empty folder, and a client calls `sync_status` with `project_root` naming a workspace that holds the spec `login`; the answer is that workspace's status and names `login`
+- PROOF-7 (RULE-7): The server is started in an empty folder, and a client calls `sync_status` with no arguments; the answer carries `No Purlin workspace` and names `purlin:init` as the command to run
+- PROOF-8 (RULE-8): The status tool is made to fail with the message `boom`, and a client calls `sync_status`; the answer opens `Error running sync_status` and carries `boom`. Once the fault is gone, a second call to the same server answers with the status table, which carries `Tests`
+- PROOF-9 (RULE-9): In a workspace whose gate is `passed`, a client reads the key `gate` and gets exactly `{"gate": "passed"}`; it writes `gate` as `strong` and reads it again, getting exactly `{"gate": "strong"}`; `.purlin/config.json` on disk then carries the gate `strong`
+- PROOF-10 (RULE-10): A client asks the configuration tool to write the value `x` and names no key; the answer carries `'key' is required`. It asks for the action `delete` on the key `gate`; the answer opens `Unknown action`. After both, the configuration reads back exactly as it did before either
+- PROOF-22 (RULE-22): The plugin manifest `.claude-plugin/plugin.json` starts the `purlin` server with the command `sh`; the first argument it passes ends in `scripts/purlin_python.sh` and the last ends in `scripts/mcp/purlin/server.py`
