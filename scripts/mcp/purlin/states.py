@@ -19,7 +19,10 @@ decides how many rows exist: a cell above the gate is absent, not empty.
             project minimum. `strong`, `weak`, `not audited`, `manual test`.
 
     signed  Met when a named person signed the rule, proof, test and audit
-            hashes. `signed`, `unsigned`, `stale`.
+            hashes. `signed`, `unsigned`, `stale`. At the gate `signed` a
+            rule whose spec names no files in `> Scope:` reads `unsigned`
+            whatever was signed, because a signature cannot be tied to the
+            code it governs.
 
 Every rule has a **level**, `passed`, `strong` or `signed`, meaning what the
 gate means: tests; tests and audit; tests, audit and signature. A rule tagged
@@ -109,6 +112,11 @@ OUT_OF_DATE = 'out of date'
 # The reason the passed cell gives for a rule no proof line names.
 NO_PROOF_WRITTEN = 'no proof written'
 
+# The reason the signed cell gives, at the gate `signed`, for a rule whose
+# own spec names no files in `> Scope:`.
+NAMES_NO_FILES = ('the spec names no files in > Scope:, so a signature cannot '
+                  'be tied to the code it governs')
+
 
 def cells_for(gate):
     """The cells that exist under `gate`, `passed` first."""
@@ -147,6 +155,10 @@ def rule_cells(inp, cfg):
     `could_not_run` why the last audit could not reach the model for this
                     rule's current hashes, or None
     `test_strength` an integer percent, or None when nothing measured it
+    `incomplete`    why the rule's own spec names no files, or None; at the
+                    gate `signed` the signed cell then reads `unsigned` with
+                    `NAMES_NO_FILES`, because a signature cannot be tied to
+                    the code it governs, and the rule waits on no person
     """
     gate = cfg.gate if cfg else CELLS[0]
     level = gate_module.level_of(inp.get('level_marked'), gate)
@@ -160,6 +172,11 @@ def rule_cells(inp, cfg):
     passed = _passed_cell(inp, cfg)
     strong = _strong_cell(inp, cfg, level, passed, counting)
     signed = _signed_cell(signatures, current, counting, inp)
+    incomplete = bool(inp.get('incomplete')) and gate == CELLS[-1]
+    if incomplete and signed['word'] != 'stale':
+        # A stale signature already says it does not count, and why; any
+        # other reads `unsigned` for the spec's own reason.
+        signed = dict(signed, word='unsigned', reasons=[NAMES_NO_FILES])
 
     cells = {}
     for name, cell in (('passed', passed), ('strong', strong),
@@ -186,7 +203,8 @@ def rule_cells(inp, cfg):
     blocked = _blocked_by(cells, gate, level)
     return {
         'level': level,
-        'need': _need(gate, level, passed, strong, signed),
+        'need': None if incomplete else _need(gate, level, passed, strong,
+                                              signed),
         'cells': cells,
         'bucket': _bucket(cells, gate, passed, strong, signed),
         'meets_gate': blocked is None,

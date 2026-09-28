@@ -1538,7 +1538,8 @@ class TestPayload:
             'rules', 'met', 'untested', 'failing', 'partial', 'passed',
             'stale', 'manual', 'not_audited',
             'queue', 'hand_checks', 'test_strength', 'proofs',
-            'proofs_without_test', 'proofs_without_test_ids']), rollup
+            'proofs_without_test', 'proofs_without_test_ids',
+            'incomplete']), rollup
         assert (rollup['rules'], rollup['met']) == (2, 1)
         assert (rollup['passed'], rollup['untested']) == (1, 1), rollup
         assert (rollup['partial'], rollup['failing']) == (0, 0), rollup
@@ -2158,5 +2159,158 @@ class TestTheSignedTag:
             for name in ('signed/1.9.0', 'signed/1.10.0', 'signed/beta'):
                 _git(made.root, 'tag', '-a', name, '-m', name)
             assert made.payload()['tag']['name'] == 'signed/1.10.0'
+        finally:
+            made.close()
+
+
+# ---------------------------------------------------------------------------
+# A spec that names no files
+# ---------------------------------------------------------------------------
+
+NO_SCOPE_SPEC = SPEC.replace('> Scope: src/login.py\n', '')
+PASSING = [{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
+           {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}]
+
+
+def _feature(payload, name='login'):
+    return next(f for f in payload['features'] if f['name'] == name)
+
+
+class TestASpecThatNamesNoFiles:
+    """Its tests still run and pass; only a signature needs its files named."""
+
+    @pytest.mark.proof("states", "PROOF-74", "RULE-62")
+    def test_the_payload_names_why_it_is_incomplete(self):
+        for spec, reason in (
+                (NO_SCOPE_SPEC, 'no > Scope: line'),
+                (SPEC.replace('src/login.py', 'src/nowhere.py'),
+                 '> Scope: names nothing that exists'),
+                (SPEC, None)):
+            made = Project(spec=spec)
+            try:
+                made.evidence(PASSING)
+                data = made.payload()
+                feature = _feature(data)
+                assert feature['incomplete'] is (reason is not None), spec
+                assert feature['incomplete_reason'] == reason, feature
+                assert feature['rollup']['incomplete'] is (
+                    reason is not None), feature['rollup']
+                assert data['summary']['incomplete'] == (
+                    1 if reason else 0), data['summary']
+                # Its tests pass and it meets the gate `passed` all the same.
+                assert [rule['cells']['passed']['word']
+                        for rule in feature['rules']] == ['passed', 'passed']
+                assert all(rule['meets_gate'] for rule in feature['rules'])
+            finally:
+                made.close()
+
+    @pytest.mark.proof("states", "PROOF-74", "RULE-62")
+    def test_an_anchor_is_never_incomplete(self):
+        made = Project()
+        try:
+            made.spec('# Anchor: shared\n\n## Rules\n\n- RULE-1: every '
+                      'answer is JSON\n\n## Proof\n\n- PROOF-1 (RULE-1): an '
+                      'answer parses as JSON\n', name='shared',
+                      category='_anchors')
+            data = made.payload()
+            anchor = _feature(data, 'shared')
+            assert anchor['is_anchor'] is True
+            assert (anchor['incomplete'], anchor['incomplete_reason']) == (
+                False, None)
+            assert data['summary']['incomplete'] == 0
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-75", "RULE-63")
+    def test_at_signed_its_rules_read_unsigned_and_wait_on_nobody(self):
+        for spec, word, queued in ((SPEC, 'unsigned', True),
+                                   (NO_SCOPE_SPEC, 'unsigned', False)):
+            made = Project(spec=spec, gate='signed')
+            try:
+                made.evidence(PASSING)
+                made.audit('RULE-1')
+                made.audit('RULE-2')
+                data = made.payload()
+                rule = next(r for r in _feature(data)['rules']
+                            if r['id'] == 'RULE-2')
+                cell = rule['cells']['signed']
+                assert cell['word'] == word, cell
+                assert rule['cells']['strong']['word'] == 'strong', rule
+                assert rule['meets_gate'] is False
+                assert rule['blocked_by'] == 'signed'
+                assert bool(data['queue']) is queued, data['queue']
+                if not queued:
+                    assert cell['reasons'] == [
+                        'the spec names no files in > Scope:, so a signature '
+                        'cannot be tied to the code it governs'], cell
+            finally:
+                made.close()
+
+    @pytest.mark.proof("states", "PROOF-75", "RULE-63")
+    def test_at_signed_a_signature_on_it_does_not_count(self):
+        made = Project(spec=NO_SCOPE_SPEC, gate='signed')
+        try:
+            made.sign_commits()
+            made.evidence(PASSING)
+            made.audit('RULE-2')
+            _git(made.root, 'add', '-A')
+            _git(made.root, 'commit', '-q', '-m', 'purlin: evidence at x')
+            made.signature('RULE-2')
+            rule = made.rule('RULE-2')
+            assert rule['cells']['signed']['word'] == 'unsigned', rule
+            assert rule['meets_gate'] is False
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-75", "RULE-63")
+    def test_below_signed_it_blocks_nothing(self):
+        made = Project(spec=NO_SCOPE_SPEC, gate='strong')
+        try:
+            made.evidence(PASSING)
+            made.audit('RULE-1')
+            made.audit('RULE-2')
+            data = made.payload()
+            assert _feature(data)['incomplete'] is True
+            assert all(rule['meets_gate'] for rule in _feature(data)['rules'])
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-76", "RULE-64")
+    def test_status_names_it_at_every_gate(self):
+        for gate in ('passed', 'strong', 'signed'):
+            made = Project(spec=NO_SCOPE_SPEC, gate=gate)
+            try:
+                lines = purlin_status.sync_status(made.root).splitlines()
+                assert ('1 spec names no files, so its tests run every time: '
+                        'login.') in lines, (gate, lines)
+            finally:
+                made.close()
+        made = Project()
+        try:
+            made.spec(NO_SCOPE_SPEC.replace('login', 'export'), name='export')
+            made.spec(NO_SCOPE_SPEC)
+            lines = purlin_status.sync_status(made.root).splitlines()
+            assert ('2 specs name no files, so their tests run every time: '
+                    'export, login.') in lines, lines
+        finally:
+            made.close()
+        made = Project()
+        try:
+            text = purlin_status.sync_status(made.root)
+            assert 'names no files' not in text and 'name no files' not in text
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-76", "RULE-64")
+    def test_at_signed_with_nothing_else_left_the_next_step_is_the_spec(self):
+        made = Project(spec=NO_SCOPE_SPEC.replace(' [level: signed]', ''),
+                       gate='signed')
+        try:
+            made.evidence(PASSING)
+            made.audit('RULE-1')
+            made.audit('RULE-2')
+            lines = purlin_status.sync_status(made.root).splitlines()
+            assert ('→ Next: run purlin:spec login. It names no files in '
+                    '> Scope:, so its rules cannot be signed.') in lines, lines
         finally:
             made.close()

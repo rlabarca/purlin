@@ -162,7 +162,25 @@ def _summary(data):
     above = marked_above_the_gate(data)
     if above:
         lines.append(above_the_gate_line(above, gate))
+    names = incomplete_names(data)
+    if names:
+        lines.append(incomplete_line(names))
     return lines
+
+
+def incomplete_names(data):
+    """The feature specs that name no files, sorted. Anchors are never one."""
+    return sorted(feature['name'] for feature in data['features']
+                  if feature.get('incomplete'))
+
+
+def incomplete_line(names):
+    """`1 spec names no files, so its tests run every time: export.`"""
+    if len(names) == 1:
+        return ('1 spec names no files, so its tests run every time: %s.'
+                % names[0])
+    return ('%d specs name no files, so their tests run every time: %s.'
+            % (len(names), ', '.join(names)))
 
 
 def marked_above_the_gate(data):
@@ -288,6 +306,13 @@ def _directives(data, project_root):
     elif person:
         lines.append('%s Next: run purlin:sign. %d rules are waiting for a '
                      'person.' % (ARROW, person))
+    elif gate == 'signed' and incomplete_names(data):
+        # A signature needs a spec tied to its files, so what the rest of
+        # the gate waits on is the `> Scope:` line.
+        name = incomplete_names(data)[0]
+        lines.append('%s Next: run purlin:spec %s. It names no files in '
+                     '> Scope:, so its rules cannot be signed.'
+                     % (ARROW, name))
     else:
         lines.append('%s Next: nothing is outstanding at gate %s.' % (ARROW, gate))
 

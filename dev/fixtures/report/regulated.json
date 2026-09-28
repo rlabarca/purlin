@@ -85,6 +85,8 @@
         },
         "local": null
       },
+      "incomplete": false,
+      "incomplete_reason": null,
       "is_anchor": false,
       "is_global": false,
       "name": "login",
@@ -93,6 +95,7 @@
       "rollup": {
         "failing": 0,
         "hand_checks": 0,
+        "incomplete": false,
         "manual": 0,
         "met": 2,
         "not_audited": 0,
@@ -466,7 +469,9 @@
           "text": "The session cookie is refused over an unencrypted connection."
         }
       ],
-      "scope": [],
+      "scope": [
+        "src/login/"
+      ],
       "signatures": [
         "specs/auth/login.signatures/RULE-1.1a2b3c4d.jane-doe.json",
         "specs/auth/login.signatures/RULE-2.5e6f7a8b.sam-acme.json"
@@ -499,6 +504,8 @@
         },
         "local": null
       },
+      "incomplete": false,
+      "incomplete_reason": null,
       "is_anchor": false,
       "is_global": false,
       "name": "invoice",
@@ -507,6 +514,7 @@
       "rollup": {
         "failing": 0,
         "hand_checks": 1,
+        "incomplete": false,
         "manual": 1,
         "met": 2,
         "not_audited": 0,
@@ -765,7 +773,9 @@
           "text": "A credit note prints the original invoice number and the reason the credit was raised"
         }
       ],
-      "scope": [],
+      "scope": [
+        "src/invoice/"
+      ],
       "signatures": [],
       "source": null,
       "source_path": null,
@@ -790,6 +800,8 @@
         },
         "local": null
       },
+      "incomplete": false,
+      "incomplete_reason": null,
       "is_anchor": true,
       "is_global": false,
       "name": "checkout_design",
@@ -798,6 +810,7 @@
       "rollup": {
         "failing": 0,
         "hand_checks": 0,
+        "incomplete": false,
         "manual": 0,
         "met": 0,
         "not_audited": 0,
@@ -926,6 +939,8 @@
         },
         "local": null
       },
+      "incomplete": false,
+      "incomplete_reason": null,
       "is_anchor": false,
       "is_global": false,
       "name": "export",
@@ -934,6 +949,7 @@
       "rollup": {
         "failing": 0,
         "hand_checks": 0,
+        "incomplete": false,
         "manual": 0,
         "met": 0,
         "not_audited": 1,
@@ -1094,7 +1110,9 @@
           "text": "A statement export opens with a header row naming every column."
         }
       ],
-      "scope": [],
+      "scope": [
+        "src/export/"
+      ],
       "signatures": [],
       "source": null,
       "source_path": null,
@@ -1150,6 +1168,7 @@
     "failing": 0,
     "features": 4,
     "hand_checks": 1,
+    "incomplete": 0,
     "manual": 1,
     "met": 4,
     "not_audited": 1,

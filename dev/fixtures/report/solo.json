@@ -44,6 +44,8 @@
           }
         }
       },
+      "incomplete": false,
+      "incomplete_reason": null,
       "is_anchor": false,
       "is_global": false,
       "name": "login",
@@ -52,6 +54,7 @@
       "rollup": {
         "failing": 0,
         "hand_checks": 0,
+        "incomplete": false,
         "manual": 0,
         "met": 1,
         "not_audited": 0,
@@ -213,7 +216,9 @@
           "text": "A locked account sends one notification email."
         }
       ],
-      "scope": [],
+      "scope": [
+        "src/login/"
+      ],
       "signatures": [],
       "source": null,
       "source_path": null,
@@ -238,6 +243,8 @@
           }
         }
       },
+      "incomplete": false,
+      "incomplete_reason": null,
       "is_anchor": false,
       "is_global": false,
       "name": "invoice",
@@ -246,6 +253,7 @@
       "rollup": {
         "failing": 0,
         "hand_checks": 0,
+        "incomplete": false,
         "manual": 0,
         "met": 2,
         "not_audited": 0,
@@ -376,7 +384,9 @@
           "text": "An invoice with no lines totals zero."
         }
       ],
-      "scope": [],
+      "scope": [
+        "src/invoice/"
+      ],
       "signatures": [],
       "source": null,
       "source_path": null,
@@ -404,6 +414,7 @@
     "failing": 0,
     "features": 2,
     "hand_checks": 0,
+    "incomplete": 0,
     "manual": 0,
     "met": 3,
     "not_audited": 0,

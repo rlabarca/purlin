@@ -1,4 +1,4 @@
-> Format-Version: 16
+> Format-Version: 17
 
 # Spec format
 
@@ -51,7 +51,7 @@ belongs in `> Description:`, which the dashboard displays.
 |-------|----------|-------------|
 | `> Description:` | No | Plain-language description. Continuation lines start with `>` and are not themselves `> Field:` lines. Displayed in the dashboard. |
 | `> Requires:` | No | Comma-separated list of other spec or anchor names whose rules also apply |
-| `> Scope:` | No | Comma-separated file paths this feature touches. The evidence carries a fingerprint of these files, which is what tells a code change from a rule change |
+| `> Scope:` | At the gate `signed` | Comma-separated paths this feature touches: a file, a directory, or a glob holding `*`, `?` or `[`. The evidence carries a fingerprint of the tracked files they reach, which is what tells a code change from a rule change. Below `signed` it is optional: a feature spec with none, or one that reaches no tracked file, is reported as naming no files (`incomplete` in the payload), its tests run on every `purlin:test`, and nothing blocks. At `signed` such a spec's rules cannot be signed and no tag is written. An anchor never needs one |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` |
 | `> Source:` | No | Anchors only. A git URL plus a path in that repo. See the anchor format |
 | `> Pinned:` | No | Anchors only. The commit sha of the source |

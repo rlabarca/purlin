@@ -18,12 +18,15 @@ they all read instead.
       "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 4, "strong": 1,
                   "signed": 1, "stale": 1, "manual": 0, "not_audited": 0,
-                  "queue": 2, "hand_checks": 1},
+                  "queue": 2, "hand_checks": 1, "incomplete": 0},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "requires": [], "source": null, "pinned": null,
+         "scope": ["src/auth/"], "incomplete": false,
+         "incomplete_reason": null,
          "rollup": {..., "proofs": 6, "proofs_without_test": 1,
-                    "proofs_without_test_ids": ["PROOF-4"]},
+                    "proofs_without_test_ids": ["PROOF-4"],
+                    "incomplete": false},
          "test_strength": 86,
          "current": true,
          "evidence": {"local": {"path": ".purlin/evidence/local/login.json",
@@ -61,6 +64,13 @@ they all read instead.
 
 A cell above the project's gate is absent, not empty: a `passed` project
 carries one cell per rule, a `signed` project carries three.
+
+A feature spec that names no files, with no `> Scope:` line or a scope that
+reaches no tracked file, carries `incomplete: true` and `incomplete_reason`
+(`no > Scope: line` or `> Scope: names nothing that exists`), its rollup
+carries `incomplete: true`, and `summary.incomplete` counts such specs. An
+anchor is never incomplete. Every cell reads as usual, except that at the
+gate `signed` such a spec's rules read `unsigned` in the signed cell.
 
 `write_report_data` writes the payload to `.purlin/report-data.js` as
 `const PURLIN_DATA = {...};`, which is gitignored and is what the local
@@ -119,6 +129,10 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     # section decides a cell only while it is current, so this is read once
     # here rather than once per rule.
     evidence = _read_evidence(project_root, features, warnings)
+    # Why each feature spec names no files, where it names none. Its rules'
+    # cells are read as usual; only the signed cell reads it, at `signed`.
+    incomplete = {name: fingerprint_module.incomplete_reason(
+        project_root, name, features) for name in sorted(features)}
     could_not_run = evidence_module.could_not_run(project_root)
     all_signatures = signatures_module.load_signatures(project_root, features)
     head = head_sha(project_root)
@@ -138,13 +152,15 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         info = features[name]
         entry, rollup = _feature_entry(
             project_root, name, info, features, evidence, all_signatures,
-            cfg, blob_cache, queue, own_results, counted_cache, could_not_run)
+            cfg, blob_cache, queue, own_results, counted_cache, could_not_run,
+            incomplete)
         feature_entries.append(entry)
         rollups[name] = rollup
 
     summary = states.project_rollup(
         {'': states.feature_rollup(own_results, cfg.gate)}, cfg.gate)
     summary['features'] = len(features)
+    summary['incomplete'] = sum(1 for reason in incomplete.values() if reason)
     # The project's proofs are each feature's own, counted once: a rule an
     # anchor declares is proved by every feature that requires it, and its
     # proofs belong to the anchor.
@@ -217,7 +233,9 @@ def _rule_number(rule_id):
 
 def _feature_entry(project_root, name, info, features, evidence,
                    all_signatures, cfg, blob_cache, queue,
-                   own_results=None, counted_cache=None, could_not_run=None):
+                   own_results=None, counted_cache=None, could_not_run=None,
+                   incomplete=None):
+    incomplete = incomplete or {}
     own = evidence.get(name) or _no_evidence(name)
     mutation = evidence_module.mutation(own['loaded'])
     test_strength = mutation.get('score') if mutation else None
@@ -234,7 +252,7 @@ def _feature_entry(project_root, name, info, features, evidence,
             project_root, owner, owner_info, rule_id, label, owner_evidence,
             all_signatures, cfg, blob_cache,
             owner_mutation.get('score') if owner_mutation else None,
-            counted_cache, could_not_run)
+            counted_cache, could_not_run, incomplete.get(owner))
         need = result.pop('need')
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
@@ -252,6 +270,7 @@ def _feature_entry(project_root, name, info, features, evidence,
     rollup = states.feature_rollup(rule_results, cfg.gate,
                                    test_strength=test_strength)
     rollup.update(proof_counts(rule_entries))
+    rollup['incomplete'] = bool(incomplete.get(name))
 
     entry = {
         'name': name,
@@ -262,6 +281,8 @@ def _feature_entry(project_root, name, info, features, evidence,
         'description': info.get('description'),
         'requires': info.get('requires', []),
         'scope': info.get('scope', []),
+        'incomplete': bool(incomplete.get(name)),
+        'incomplete_reason': incomplete.get(name),
         'source': info.get('source'),
         'source_path': info.get('source_path'),
         'pinned': info.get('pinned'),
@@ -409,7 +430,8 @@ def queue_row(feature, owner, rule, need):
 
 def _rule_entry(project_root, owner, owner_info, rule_id, label,
                 owner_evidence, all_signatures, cfg, blob_cache,
-                test_strength=None, counted_cache=None, could_not_run=None):
+                test_strength=None, counted_cache=None, could_not_run=None,
+                incomplete=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -467,6 +489,8 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         # measures a scope, not one rule, and the strong cell compares what
         # was measured rather than assuming nothing was.
         'test_strength': test_strength,
+        # Why the rule's own spec names no files, or None.
+        'incomplete': incomplete,
     }, cfg)
 
     return {
