@@ -23,6 +23,7 @@ What each group holds:
 *exit codes* 0, 1 and 2, and never 0 when the evidence cannot be read
 *json*      the same result as a machine reads it
 *writes*    nothing on disk moves
+*--verify*  the two questions a tag run asks of the committed evidence
 """
 
 import io
@@ -45,6 +46,8 @@ import sign as sign_module  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from test_signatures import (EVERY_RULE_SIGNED, SPEC,  # noqa: E402
                              Project, commit_as_ci, git, signing_key)
+from test_tag import (_Out, _read, _sign_every_rule,  # noqa: E402
+                      _signed_project)
 
 GATE_PY = os.path.join(ROOT, 'scripts', 'ci', 'gate_check.py')
 
@@ -854,3 +857,167 @@ class TestTheTagNote:
                     assert 'signed/' not in output, (gate, output)
             finally:
                 made.close()
+
+
+# ---------------------------------------------------------------------------
+# The evidence check a tag run makes
+# ---------------------------------------------------------------------------
+
+def _gate(root, verify=True):
+    out = _Out()
+    code = gate_check.check(root, out=out, verify_evidence=verify)
+    return code, out.text()
+
+
+def _assert_the_signature_is_named(made):
+    """`--verify` names the one signature, and only `--verify`; the exit."""
+    code, printed = _gate(made.root)
+    assert 'Evidence (1):' in printed, printed
+    named = [line for line in printed.splitlines()
+             if 'login.signatures/RULE-2.' in line]
+    assert len(named) == 1, printed
+    assert named[0].endswith('what it binds is not this code'), printed
+    _code, unverified = _gate(made.root, verify=False)
+    assert 'Evidence' not in unverified, unverified
+    return code
+
+
+class TestVerify:
+
+    # purlin: gate_check PROOF-35
+    def test_a_signature_the_code_moved_under_is_named(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            assert _gate(made.root)[0] == 0
+            made.spec(_read(made.root, 'specs/auth/login.md').replace(
+                'Invalid credentials return 401',
+                'Invalid credentials return 401 at once'))
+            code, printed = _gate(made.root)
+            assert code == 1
+            assert 'Evidence (1):' in printed, printed
+            assert 'what it binds is not this code' in printed, printed
+            assert 'login.signatures/RULE-2.' in printed, printed
+        finally:
+            made.close()
+
+    # purlin: gate_check PROOF-35
+    def test_without_verify_the_section_is_not_printed(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            made.spec(_read(made.root, 'specs/auth/login.md').replace(
+                'Invalid credentials return 401',
+                'Invalid credentials return 401 at once'))
+            _code, printed = _gate(made.root, verify=False)
+            assert 'Evidence' not in printed, printed
+        finally:
+            made.close()
+
+    # purlin: gate_check PROOF-35
+    def test_a_signature_over_a_reworded_proof_is_named(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            made.spec(_read(made.root, 'specs/auth/login.md').replace(
+                'POST /login with a bad password',
+                'POST /login with a wrong password'))
+            # Audited again as it was when signed, so only the proof differs.
+            # The exit is not asserted: the spec edit also puts the evidence
+            # out of date, so the gate exits 1 whatever the signature.
+            made.audit('RULE-2')
+            _assert_the_signature_is_named(made)
+        finally:
+            made.close()
+
+    # purlin: gate_check PROOF-35
+    def test_a_signature_over_a_changed_test_is_named(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            made.edit_test(_read(made.root, 'tests/test_login.py').replace(
+                'login("ada", "wrong")', 'login("bob", "wrong")'))
+            made.audit('RULE-2')
+            # The changed test leaves the evidence current, so the exit is
+            # the stale signature's alone.
+            assert _assert_the_signature_is_named(made) == 1
+        finally:
+            made.close()
+
+    # purlin: gate_check PROOF-36
+    def test_a_signature_naming_a_rule_that_is_gone_is_named(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            spec = _read(made.root, 'specs/auth/login.md')
+            lines = [line for line in spec.splitlines(True)
+                     if 'RULE-2' not in line]
+            made.spec(''.join(lines))
+            # The exit is 1 here whatever the signature: the edit also puts
+            # RULE-1 out of date, so the exit says nothing about the check.
+            _code, printed = _gate(made.root)
+            assert 'Evidence (1):' in printed, printed
+            named = [line for line in printed.splitlines()
+                     if 'login.signatures/RULE-2.' in line]
+            assert len(named) == 1, printed
+            assert named[0].endswith(
+                'no rule login RULE-2 is in this project'), printed
+            assert 'no rule login RULE-2 is in this project' in printed, \
+                printed
+        finally:
+            made.close()
+
+    # purlin: gate_check PROOF-37
+    def test_a_fresh_audit_that_finds_more_names_the_signature(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            made.audit('RULE-2', findings=[])
+            assert _gate(made.root)[0] == 0, 'the same findings bind the same'
+            made.audit('RULE-2', findings=['PROOF-2 reads the status alone.'])
+            code, printed = _gate(made.root)
+            assert code == 1, printed
+            assert 'Evidence (1):' in printed, printed
+            assert 'login.signatures/RULE-2.' in printed, printed
+            assert 'what it binds is not this code' in printed, printed
+            _code, unverified = _gate(made.root, verify=False)
+            assert 'Evidence' not in unverified, unverified
+        finally:
+            made.close()
+
+    # purlin: gate_check PROOF-38
+    def test_a_ci_file_a_person_committed_is_named(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            rel = made.evidence(strength=90, runner='ada', source='ci',
+                                at='2026-09-14T12:00:00Z', commit_it=True)
+            code, printed = _gate(made.root)
+            assert code == 1, printed
+            assert 'Evidence (1):' in printed, printed
+            named = [line for line in printed.splitlines() if rel in line]
+            assert len(named) == 1, printed
+            assert named[0].endswith(
+                "the commit that added it is not the runner's"), printed
+            assert rel in printed, printed
+            assert "the commit that added it is not the runner's" in printed
+            # Without --verify the same file is not asked about at all.
+            unverified_code, unverified = _gate(made.root, verify=False)
+            assert unverified_code == 0, unverified
+            assert rel not in unverified, unverified
+            assert 'Evidence' not in unverified, unverified
+        finally:
+            made.close()
+
+    # purlin: gate_check PROOF-38
+    def test_a_ci_file_the_runner_committed_is_not_named(self):
+        made = _signed_project()
+        try:
+            _sign_every_rule(made)
+            made.evidence(strength=90, runner='ci', source='ci',
+                          at='2026-09-14T12:00:00Z', commit_it=False)
+            commit_as_ci(made.root)
+            _code, printed = _gate(made.root)
+            assert 'Evidence' not in printed, printed
+        finally:
+            made.close()

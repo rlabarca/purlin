@@ -1,5 +1,4 @@
-"""The evidence package `purlin:export` writes, and the one `purlin:sign`
-commits with the tag.
+"""The evidence package `purlin:export` writes.
 
 Every project here is a throwaway git repository in a temporary directory,
 with a spec, a test file, evidence, audit entries and, where a signature is
@@ -16,7 +15,9 @@ What each group holds:
 *what git holds*  evidence written and not committed is left out and named
 *the bytes*       the same tag gives the same bytes, from a second clone too
 *the fingerprint* `--check` on a package as written and on one edited after
-*the tag*         `purlin:sign` commits the package and tags that commit
+
+The projects, the fixtures `signed` and `tagged`, and the tests of the
+package `purlin:sign` commits with the tag are in `dev/test_signatures.py`.
 """
 
 import hashlib
@@ -28,21 +29,18 @@ import subprocess
 import sys
 import tempfile
 
-import pytest
-
 DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
 sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
-sys.path.insert(0, os.path.join(ROOT, 'scripts', 'export'))
 
-import package as package_module                              # noqa: E402
 import sign as sign_module                                    # noqa: E402
 from purlin import PURLIN_VERSION                             # noqa: E402
-from test_signatures import (SIGNING_GATE, SPEC, TEST_FILE,   # noqa: E402
-                             Project, commit_as_ci, git, manual_at_strong,
-                             signing_key, write)
+from test_signatures import (CRITERIA, MODEL, SPEC,           # noqa: E402
+                             TEST_FILE, Project, git, sign_the_queue,
+                             signed, signed_project, status, tagged,
+                             write)
 
 PACKAGE_PY = os.path.join(ROOT, 'scripts', 'export', 'package.py')
 
@@ -57,23 +55,6 @@ UTC = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 SPEC_WITH_A_THIRD_RULE = SPEC.replace(
     '\n\n## Proof',
     '\n- RULE-3: A locked account returns 423 (URS-042)\n\n## Proof')
-
-MODEL = 'claude-opus-5-20260901'
-CRITERIA = 'c' * 64
-
-
-class _Out(object):
-    def __init__(self):
-        self.lines = []
-
-    def write(self, text):
-        self.lines.append(text)
-
-    def flush(self):
-        pass
-
-    def text(self):
-        return ''.join(self.lines)
 
 
 def export(root, *args):
@@ -109,74 +90,6 @@ def fingerprint_by_hand(data):
 def rule_of(package, rule_id, feature='login'):
     entry = next(f for f in package['features'] if f['name'] == feature)
     return next(r for r in entry['rules'] if r['id'] == rule_id)
-
-
-def status(root):
-    return git(root, 'status', '--porcelain', '--untracked-files=all').stdout
-
-
-def name_the_model(made, rule):
-    """Give an audit entry the model and the criteria fingerprint it names."""
-    rel = '.purlin/evidence/local/login.json'
-    path = os.path.join(made.root, *rel.split('/'))
-    with open(path, encoding='utf-8') as handle:
-        data = json.load(handle)
-    data['audit']['rules'][rule].update(model=MODEL, criteria=CRITERIA)
-    write(path, json.dumps(data, indent=2, sort_keys=True))
-
-
-def signed_project(spec=SPEC, version='2.1.0', gate=SIGNING_GATE):
-    """A project at `signed` whose rules pass, one audited strong, both committed.
-
-    `RULE-1` is marked `[level: passed]`, so `RULE-2` is the one rule that
-    asks for a signature. The signer's key is set up last. With `gate` the
-    same project is made at another gate.
-    """
-    made = Project(spec=spec, gate=gate, config={'min_strength': 50})
-    made.proofs()
-    made.tests_ran_at = made.head()
-    made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
-    made.audit('RULE-2')
-    name_the_model(made, 'RULE-2')
-    write(os.path.join(made.root, 'VERSION'), version + '\n')
-    commit_as_ci(made.root)
-    signing_key(made.root)
-    return made
-
-
-def sign_the_queue(made):
-    payload = made.payload()
-    targets = sign_module.queued(payload)
-    if targets:
-        sign_module.sign_and_commit(made.root, targets, 'jane@acme.com',
-                                    payload=payload)
-    return targets
-
-
-@pytest.fixture
-def signed():
-    made = signed_project()
-    yield made
-    made.close()
-
-
-@pytest.fixture
-def tagged():
-    """A signed project whose tag `purlin:sign` has written."""
-    made = signed_project()
-    sign_the_queue(made)
-    out = _Out()
-    assert sign_module.tag_if_met(made.root, out) == 'signed/2.1.0', out.text()
-    made.tag_output = out.text()
-    yield made
-    made.close()
-
-
-def no_tag_and_no_package(made):
-    """True when the project holds no `signed/*` tag and no package folder."""
-    tags = git(made.root, 'tag', '-l', 'signed/*').stdout.strip()
-    folder = os.path.join(made.root, '.purlin', 'evidence', 'package')
-    return tags == '' and not os.path.exists(folder)
 
 
 # ---------------------------------------------------------------------------
@@ -632,102 +545,3 @@ class TestTheFingerprint:
         code, lines = export(signed.root, '--check', path)
         assert code == 1
         assert 'not in the canonical form' in lines[0], lines
-
-
-# ---------------------------------------------------------------------------
-# The tag
-# ---------------------------------------------------------------------------
-
-class TestTheTag:
-
-    # purlin: signatures PROOF-78
-    def test_sign_commits_the_package_and_tags_that_commit(self, tagged):
-        root = tagged.root
-        tag_commit = git(root, 'rev-parse', 'signed/2.1.0^{commit}').stdout \
-            .strip()
-        parent = git(root, 'rev-parse', 'signed/2.1.0^{commit}^').stdout \
-            .strip()
-        assert tag_commit == tagged.head()
-        assert git(root, 'show', '--name-only', '--format=%s',
-                   tag_commit).stdout.split() == [
-            'purlin:', 'evidence', 'at', parent[:7],
-            '.purlin/evidence/package/2.1.0.json']
-        assert git(root, 'log', '-1', '--format=%G?',
-                   tag_commit).stdout.strip() == 'G'
-        shown = git(root, 'show',
-                    'signed/2.1.0:.purlin/evidence/package/2.1.0.json').stdout
-        package = json.loads(shown)
-        assert (package['state'], package['not_for_approval'],
-                package['commit']) == ('signed', False, parent)
-        assert package_module.check_bytes(shown.encode('utf-8')) is None
-        assert ('Evidence package committed: '
-                '.purlin/evidence/package/2.1.0.json.') in tagged.tag_output
-        assert status(root) == ''
-
-    # purlin: signatures PROOF-79
-    def test_no_tag_when_the_package_cannot_be_written(self, signed):
-        sign_the_queue(signed)
-        write(os.path.join(signed.root, '.purlin', 'evidence', 'package'),
-              'in the way\n')
-        head = signed.head()
-        out = _Out()
-        assert sign_module.tag_if_met(signed.root, out) is None
-        assert out.text().startswith('No tag: the evidence package was not '
-                                     'committed: '), out.text()
-        assert git(signed.root, 'tag', '-l').stdout.strip() == ''
-        assert signed.head() == head
-
-    # purlin: signatures PROOF-80
-    def test_at_strong_the_walk_writes_no_tag_and_no_package(self):
-        made = signed_project(gate='strong')
-        try:
-            assert all(rule['meets_gate'] for feature in made.payload()[
-                'features'] for rule in feature['rules'])
-            head = made.head()
-            out = _Out()
-            result = sign_module.walk(made.root, out=out,
-                                      signer_email='jane@acme.com')
-            printed = out.text().splitlines()
-            assert printed == ['Queue: 0 rules. 0 hand checks, 0 signatures.',
-                               'Nothing is waiting for a person.'], printed
-            assert result['tag'] is None
-            assert no_tag_and_no_package(made)
-            assert made.head() == head
-        finally:
-            made.close()
-
-        made = manual_at_strong()
-        try:
-            out = _Out()
-            result = sign_module.walk(
-                made.root, out=out, signer_email='jane@acme.com',
-                answer=lambda entry, rendered: ('sign', 'saw 401 and denied'))
-            printed = out.text()
-            assert ('Walked 1 rule: 1 signed, 0 cases added, 0 skipped.'
-                    in printed), printed
-            assert result['commits'] and ('Commits: %s'
-                                          % result['commits'][0][:7]
-                                          in printed), printed
-            assert 'tag' not in printed.lower(), printed
-            assert result['tag'] is None
-            assert all(rule['meets_gate'] for feature in made.payload()[
-                'features'] for rule in feature['rules'])
-            assert no_tag_and_no_package(made)
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-81
-    def test_the_same_project_at_signed_gets_the_tag_and_the_package(self):
-        made = signed_project()
-        try:
-            out = _Out()
-            result = sign_module.walk(
-                made.root, out=out, signer_email='jane@acme.com',
-                answer=lambda entry, rendered: 'sign')
-            assert result['signed'] == [('login', 'RULE-2')], out.text()
-            assert result['tag'] == 'signed/2.1.0', out.text()
-            shown = git(made.root, 'show', 'signed/2.1.0:.purlin/evidence/'
-                        'package/2.1.0.json').stdout
-            assert json.loads(shown)['state'] == 'signed'
-        finally:
-            made.close()

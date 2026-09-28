@@ -6,8 +6,8 @@ is read. Jest, Vitest and `dotnet test` reports are captured under
 `dev/fixtures/reports/`, each beside the test source it was written for; the
 tests at the end of this file run those tools again where they are installed
 and check that they still write what the capture holds. The Go stream is the
-one real `go test -json` printed over the two packages beside it, and a run of
-that module through the project's own command closes the file.
+one real `go test -json` printed over the two packages beside it. The run of
+that module through the command init writes is in `dev/test_init_scaffold.py`.
 """
 
 import json
@@ -915,58 +915,3 @@ GO_SPECS = {
             '- PROOF-2 (RULE-2): a lookup past the table is refused\n'
             '- PROOF-3 (RULE-3): the test after the panic runs\n'),
 }
-
-
-# purlin: scaffold PROOF-52
-def test_a_go_module_runs_through_the_command_init_writes(tmp_path):
-    """Go itself, not a sample of what it prints: init sets the module up,
-    the module's own command runs, and each marker reads what Go said."""
-    if not shutil.which('go'):
-        pytest.skip('go is not on this machine')
-    root = _fixture(tmp_path, 'go')
-    (root / 'report.json').unlink()
-    module = {str(p.relative_to(root)): p.read_bytes()
-              for p in root.rglob('*') if p.is_file()}
-    for command in (['init', '-q'], ['config', 'user.email', 'dev@example.com'],
-                    ['config', 'user.name', 'Dev']):
-        subprocess.run(['git'] + command, cwd=str(root), check=True)
-    init = subprocess.run(
-        [sys.executable, os.path.join(REPO, 'scripts', 'init', 'scaffold.py'),
-         '--project-root', str(root), '--gate', 'passed', '--yes'],
-        capture_output=True, encoding='utf-8', stdin=subprocess.DEVNULL)
-    assert init.returncode == 0, init.stdout + init.stderr
-    assert not [line for line in init.stdout.splitlines() if 'needs' in line], (
-        init.stdout)
-    config = json.loads((root / '.purlin' / 'config.json').read_text(
-        encoding='utf-8'))
-    assert config['tests'] == [{'name': 'go', 'run': 'go test -json ./...',
-                                'report': '-', 'format': 'gotest',
-                                'files': ['**/*_test.go']}], config
-    for name, text in GO_SPECS.items():
-        _write(root, 'specs/shop/%s.md' % name, text)
-    subprocess.run(['git', 'add', '-A'], cwd=str(root), check=True)
-    subprocess.run(['git', 'commit', '-q', '-m', 'the module'], cwd=str(root),
-                   check=True)
-
-    code, out = _run(root, '--all', '--test')
-    assert 'Markers: 7 tied to a test, 0 not tied.' in out, out
-    seen = {}
-    for feature in ('cart', 'tax'):
-        for entry in _evidence(root, feature)['proofs']:
-            seen[(feature, entry['id'])] = (entry['result'], entry['test'])
-    assert seen == {
-        ('cart', 'PROOF-1'): ('pass', 'cart/cart_test.go::TestTotal'),
-        ('cart', 'PROOF-2'): ('fail', 'cart/cart_test.go::TestParse'),
-        ('cart', 'PROOF-3'): ('missing', 'cart/cart_test.go::TestDiscount'),
-        ('cart', 'PROOF-4'): ('fail', 'cart/cart_test.go::TestTotalIsWrong'),
-        ('tax', 'PROOF-1'): ('pass', 'tax/tax_test.go::TestRate'),
-        ('tax', 'PROOF-2'): ('fail', 'tax/tax_test.go::TestLookupPanics'),
-        ('tax', 'PROOF-3'): ('missing', 'tax/tax_test.go::TestAfterThePanic'),
-    }, seen
-    assert code == 1, out
-    # Nothing of Purlin was added to the module: every file it held reads as
-    # it did, and every Go file there is one of them.
-    assert {rel: (root / rel).read_bytes() for rel in module} == module
-    assert sorted(str(p.relative_to(root)) for p in root.rglob('*.go')
-                  ) == sorted(rel for rel in module if rel.endswith('.go'))
-    assert not (root / 'go.sum').exists()
