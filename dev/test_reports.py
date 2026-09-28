@@ -138,6 +138,20 @@ def _marker_results(marked, outcomes):
     return out
 
 
+def _trx(rows):
+    """A TRX document of one result per `(class, method, outcome)` row, in
+    the shape `dotnet test --logger trx` writes: a definition per test and a
+    result joined to it by its id."""
+    tests = ''.join('<UnitTest id="t%d"><TestMethod className="%s" '
+                    'name="%s"/></UnitTest>' % (n, cls, name)
+                    for n, (cls, name, _o) in enumerate(rows))
+    results = ''.join('<UnitTestResult testId="t%d" outcome="%s"/>'
+                      % (n, row[2]) for n, row in enumerate(rows))
+    return ('<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/'
+            'TeamTest/2010"><Results>%s</Results><TestDefinitions>%s'
+            '</TestDefinitions></TestRun>' % (results, tests))
+
+
 def _fixture(tmp_path, name):
     target = tmp_path / name
     shutil.copytree(os.path.join(FIXTURES, name), str(target))
@@ -169,6 +183,11 @@ class TestTheMarker:
         assert reports.malformed_lines(scan) == [(
             'purlin: tests/x.txt:9 is not a marker; write purlin: <feature> '
             'PROOF-<n>')]
+        # A marker after code on the same line is not a whole-line comment:
+        # it is neither read nor named as a bad marker.
+        after_code = 'x = 1  # purlin: login PROOF-1\n'
+        for ext in ('.txt', '.py'):
+            assert markers.comment_markers(after_code, ext) == ([], []), ext
 
     # purlin: reports PROOF-2
     def test_a_marker_in_a_string_or_a_here_document_is_not_read(self):
@@ -190,6 +209,11 @@ class TestTheMarker:
             == ['a/b/c.test.ts']
         assert [p for p in paths if markers.glob_match(p, 'test_*.py')] \
             == ['dev/test_a.py', 'dev/sub/test_b.py']
+        # `?` is exactly one character, never a `/`; `**` may be no folder.
+        assert [p for p in paths + ['dev/test_ab.py', 'dev/test_/.py']
+                if markers.glob_match(p, 'dev/test_?.py')] == ['dev/test_a.py']
+        assert markers.glob_match('x.py', '**/*.py')
+        assert markers.glob_match('dev/test_a.py', 'dev/**/test_*.py')
         root = tmp_path / 'p'
         _write(root, 'tests/test_a.py', '# purlin: login PROOF-1\n'
                                         'def test_a():\n    pass\n')
@@ -230,6 +254,22 @@ class TestTheMarker:
             go = markers.go_tests(handle.read())
         assert [t.name for t in go] == ['TestTotal', 'TestParse',
                                         'TestDiscount', 'TestTotalIsWrong']
+        # The other three C# attributes declare a test, and a method with no
+        # attribute does not; a title that is not a literal is no test; nor
+        # is a Go function that is not `func TestX(t *testing.T)`.
+        cs = markers.cs_tests(
+            'namespace N {\n public class C {\n  [Test]\n  public void A() {}\n'
+            '  [TestCase(1)]\n  public void B(int x) {}\n  [TestMethod]\n'
+            '  public void D() {}\n  public void Helper() {}\n }\n}\n')
+        assert [(t.name, t.scopes, t.namespace) for t in cs] == [
+            ('A', ['C'], 'N'), ('B', ['C'], 'N'), ('D', ['C'], 'N')]
+        js = markers.js_tests('const name = "x";\nit(name, () => {});\n'
+                              'test("lit", () => {});\n')
+        assert [t.name for t in js] == ['lit']
+        go = markers.go_tests(
+            'func helper(t *testing.T) {}\nfunc TestA(t *testing.T) {}\n'
+            'func BenchmarkB(b *testing.B) {}\nfunc TestLike(n int) {}\n')
+        assert [t.name for t in go] == ['TestA']
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +306,14 @@ class TestTheReports:
             ('App.Tests.GreetingTests', 'Skipped', 'skip'),
             ('App.Tests.GreetingTests+Nested', 'Inner', 'pass'),
             ('Other.Tests.GreetingTests', 'GreetsByName', 'fail')]
+        # The outcomes the capture holds none of: three more that fail, and
+        # one that is none of the known words and so is skipped.
+        cases = reports.read_trx(_trx([
+            ('A.T', 'E', 'Error'), ('A.T', 'T', 'Timeout'),
+            ('A.T', 'B', 'Aborted'), ('A.T', 'I', 'Inconclusive')]))
+        assert [(c.classname, c.name, c.outcome) for c in cases] == [
+            ('A.T', 'E', 'fail'), ('A.T', 'T', 'fail'), ('A.T', 'B', 'fail'),
+            ('A.T', 'I', 'skip')]
 
     # purlin: reports PROOF-9
     def test_the_stream_go_test_prints(self):
@@ -301,6 +349,9 @@ class TestTheTie:
             '    def test_same(self):\n        pass\n'))
         (outcomes, _problems), _marked = _tie(root, PYTEST_SUITE, cases)
         assert outcomes == {('tests/test_login.py', 3): ['pass']}
+        # A case whose class names no marked file is tied to nothing.
+        stray = reports.Case('test_same', 'fail', 'tests.test_elsewhere')
+        assert _tie(root, PYTEST_SUITE, cases + [stray])[0] == (outcomes, [])
 
         for tool, report in (('vitest', 'vitest.xml'), ('jest', 'jest.xml')):
             root = _fixture(tmp_path, tool)
@@ -320,6 +371,9 @@ class TestTheTie:
         assert problems == []
         assert outcomes[('App.Tests/GreetingTests.cs', 7)] == ['pass']
         assert outcomes[('App.Tests/OtherGreetingTests.cs', 8)] == ['fail']
+        stray = reports.Case('GreetsByName', 'fail',
+                             'Nowhere.Tests.MissingTests')
+        assert _tie(root, suite, cases + [stray])[0] == (outcomes, [])
 
         root = _fixture(tmp_path, 'go')
         suite = markers.Suite('go', 'x', 'report.json', 'gotest',
@@ -329,6 +383,9 @@ class TestTheTie:
         (outcomes, _p), _marked = _tie(root, suite, cases)
         assert outcomes[('cart/cart_test.go', 6)] == ['pass']
         assert outcomes[('tax/tax_test.go', 6)] == ['pass']
+        stray = reports.Case('TestTotal', 'fail',
+                             package='example.com/shop/nowhere')
+        assert _tie(root, suite, cases + [stray])[0][0] == outcomes
 
     # purlin: reports PROOF-11
     def test_every_case_of_a_parametrised_test_must_pass(self, tmp_path):
@@ -390,6 +447,21 @@ class TestTheTie:
         assert problems == []
         assert _marker_results(marked, outcomes) == {('login', 'PROOF-1'):
                                                      'pass'}
+        # Two C# classes in one file, each with a test `Same`: the TRX
+        # result of each is narrowed to its own class.
+        root = tmp_path / 'cs'
+        _write(root, 'tests/Twice.cs', (
+            'namespace N {\n public class First {\n'
+            '  // purlin: login PROOF-3\n  [Fact]\n  public void Same() {}\n'
+            ' }\n public class Second {\n  [Fact]\n  public void Same() {}\n'
+            ' }\n}\n'))
+        suite = markers.Suite('dotnet', 'x', 'r.trx', 'trx', ['**/*.cs'])
+        cases = reports.read_trx(_trx([('N.First', 'Same', 'Passed'),
+                                       ('N.Second', 'Same', 'Failed')]))
+        (outcomes, problems), marked = _tie(root, suite, cases)
+        assert problems == []
+        assert _marker_results(marked, outcomes) == {('login', 'PROOF-3'):
+                                                     'pass'}
 
     # purlin: reports PROOF-13
     def test_a_case_that_is_two_tests_is_counted_for_neither(self, tmp_path):
@@ -403,6 +475,14 @@ class TestTheTie:
             'tests/test_login.py, so its result is not counted']
         assert _marker_results(marked, outcomes) == {('login', 'PROOF-1'):
                                                      'not run'}
+        # The same file through a run: the run prints that line.
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', (
+            '# purlin: login PROOF-1\ndef test_x():\n    pass\n\n'
+            'def test_x():\n    pass\n'))
+        code, out = _run(root, '--all', '--test')
+        assert problems[0] in out.splitlines(), out
+        assert code == 1, out
 
     # purlin: reports PROOF-14
     def test_what_each_outcome_reads(self, tmp_path):
@@ -446,6 +526,24 @@ class TestThroughARun:
             ('PROOF-1', 'tests/test_login.py::test_two'): 'pass',
             ('PROOF-2', 'tests/test_login.py::test_two'): 'pass',
             ('PROOF-3', 'tests/test_login.py::test_decorated'): 'pass'}
+        # A blank line and an ordinary comment between marker and test still
+        # tie, and a failing test's result counts for each of its markers,
+        # each pair written once.
+        _write(root, 'tests/test_login.py', (
+            'import pytest\n\n'
+            '# purlin: login PROOF-3\n\n# an ordinary comment\n'
+            '@pytest.mark.parametrize("x", [1])\n'
+            'def test_decorated(x):\n    assert x\n\n'
+            '# purlin: login PROOF-1\n'
+            '# purlin: login PROOF-2\n'
+            'def test_two():\n    assert False\n'))
+        code, out = _run(root, '--all', '--test')
+        assert code == 1, out
+        assert len(_evidence(root)['proofs']) == 3
+        assert _results(_evidence(root)) == {
+            ('PROOF-1', 'tests/test_login.py::test_two'): 'fail',
+            ('PROOF-2', 'tests/test_login.py::test_two'): 'fail',
+            ('PROOF-3', 'tests/test_login.py::test_decorated'): 'pass'}
 
     # purlin: reports PROOF-5
     def test_a_marker_above_nothing_is_tied_to_no_test(self, tmp_path):
@@ -458,11 +556,18 @@ class TestThroughARun:
         assert code == 1
         assert ('purlin: login PROOF-3 at tests/test_login.py:9 is tied to '
                 'no test') in out
-        assert _results(_evidence(root))[('PROOF-3', '')] == 'missing'
+        assert ('Evidence is missing: 1 marker has no passing or failing '
+                'result: login PROOF-3 at tests/test_login.py:9.') in out
+        assert _results(_evidence(root)) == {
+            ('PROOF-1', 'tests/test_login.py::test_one'): 'pass',
+            ('PROOF-2', 'tests/test_login.py::test_two'): 'pass',
+            ('PROOF-3', ''): 'missing'}
 
     # purlin: reports PROOF-15
     def test_an_exit_suite_runs_each_file_as_one_test(self, tmp_path):
-        root = _project(tmp_path, [suites.shell_suite(('tests/*.sh',))])
+        suite = suites.shell_suite(('tests/*.sh',))
+        suite['run'] = 'echo "call: {files}" >> calls.txt; ' + suite['run']
+        root = _project(tmp_path, [suite])
         _write(root, 'tests/good.sh', '#!/usr/bin/env bash\n'
                '# purlin: login PROOF-1\n# purlin: login PROOF-2\nexit 0\n')
         _write(root, 'tests/bad.sh', '#!/usr/bin/env bash\n'
@@ -474,17 +579,21 @@ class TestThroughARun:
             ('PROOF-1', 'tests/good.sh::good.sh'): 'pass',
             ('PROOF-2', 'tests/good.sh::good.sh'): 'pass',
             ('PROOF-3', 'tests/bad.sh::bad.sh'): 'fail'}
+        # The command ran once per script, given that one script alone.
+        assert (root / 'calls.txt').read_text(encoding='utf-8').splitlines() \
+            == ['call: tests/bad.sh', 'call: tests/good.sh']
 
     # purlin: reports PROOF-16
     def test_files_and_report_are_filled_in(self, tmp_path):
         suite = suites.pytest_suite()
         suite['run'] = ('printf "%s\\n" x {files} {report} >> args.txt; '
+                        'echo "${BASH_VERSION:+bash}" > shell.txt; '
                         + suite['run'])
         other = LOGIN_SPEC.replace('# Feature: login', '# Feature: signup')
         root = _project(tmp_path, [suite], more_specs=(('signup', other),))
         _write(root, 'tests/test_login.py',
                '# purlin: login PROOF-1\ndef test_a():\n    pass\n')
-        _write(root, 'tests/test_signup.py',
+        _write(root, 'tests/test_sign up.py',
                '# purlin: signup PROOF-1\ndef test_b():\n    pass\n')
         _run(root, '--feature', 'login', '--test')
         assert (root / 'args.txt').read_text(encoding='utf-8').split() == [
@@ -493,6 +602,14 @@ class TestThroughARun:
         _run(root, '--all', '--test')
         assert (root / 'args.txt').read_text(encoding='utf-8').split() == [
             'x', '.purlin/runtime/reports/pytest.xml']
+        # A path holding a space arrives as one argument, and the command
+        # runs through bash.
+        (root / 'args.txt').unlink()
+        _run(root, '--feature', 'signup', '--test')
+        assert (root / 'args.txt').read_text(
+            encoding='utf-8').splitlines() == [
+            'x', 'tests/test_sign up.py', '.purlin/runtime/reports/pytest.xml']
+        assert (root / 'shell.txt').read_text(encoding='utf-8') == 'bash\n'
 
     # purlin: reports PROOF-17
     def test_a_stale_report_is_never_read(self, tmp_path):
@@ -510,6 +627,18 @@ class TestThroughARun:
         assert 'wrote no report' in out
         assert not (root / '.purlin' / 'runtime' / 'reports'
                     / 'pytest.xml').exists()
+        # An old report that is a folder is deleted too.
+        suite['report'] = '.purlin/runtime/reports/out'
+        (root / '.purlin' / 'config.json').write_text(json.dumps(
+            {'gate': 'passed', 'mutation_engine': 'none', 'tests': [suite]}),
+            encoding='utf-8')
+        _write(root, '.purlin/runtime/reports/out/old.xml',
+               '<testsuite><testcase classname="tests.test_login" '
+               'name="test_a"/></testsuite>')
+        code, out = _run(root, '--all', '--test')
+        assert code == 1
+        assert 'wrote no report at .purlin/runtime/reports/out' in out, out
+        assert not (root / '.purlin' / 'runtime' / 'reports' / 'out').exists()
 
         folder = tmp_path / 'trx'
         (folder / 'out').mkdir(parents=True)
@@ -524,6 +653,21 @@ class TestThroughARun:
             'gotest', str(root), '-',
             (root / 'report.json').read_text(encoding='utf-8'))
         assert problem is None and len(cases) == 8
+        # Through a run: a suite whose command prints that stream, and whose
+        # report is `-`, gives each Go test its result.
+        (root / '.purlin').mkdir()
+        (root / '.purlin' / 'config.json').write_text(json.dumps(
+            {'gate': 'passed', 'mutation_engine': 'none', 'tests': [{
+                'name': 'go', 'run': 'cat report.json', 'report': '-',
+                'format': 'gotest', 'files': ['**/*_test.go']}]}),
+            encoding='utf-8')
+        for name, text in GO_SPECS.items():
+            _write(root, 'specs/shop/%s.md' % name, text)
+        _run(root, '--all', '--test')
+        assert _results(_evidence(root, 'cart'))[
+            ('PROOF-1', 'cart/cart_test.go::TestTotal')] == 'pass'
+        assert _results(_evidence(root, 'tax'))[
+            ('PROOF-2', 'tax/tax_test.go::TestLookupPanics')] == 'fail'
 
     # purlin: reports PROOF-18
     def test_a_suite_with_no_report_is_missing_evidence(self, tmp_path):
@@ -625,10 +769,10 @@ class TestThroughARun:
 
     # purlin: reports PROOF-20
     def test_a_suite_missing_a_part_is_left_out(self, tmp_path):
-        found, problems = markers.read_suites('', {'tests': [
-            {'name': 'a', 'format': 'junit', 'files': ['x']},
-            {'name': 'b', 'run': 'x', 'format': 'tap', 'files': ['x']},
-            {'name': 'c', 'run': 'x', 'format': 'junit'},
+        broken = [{'name': 'a', 'format': 'junit', 'files': ['x']},
+                  {'name': 'b', 'run': 'x', 'format': 'tap', 'files': ['x']},
+                  {'name': 'c', 'run': 'x', 'format': 'junit'}]
+        found, problems = markers.read_suites('', {'tests': broken + [
             {'name': 'd', 'run': 'x', 'format': 'exit', 'files': ['x']}]})
         assert [suite.name for suite in found] == ['d']
         assert problems == [
@@ -636,6 +780,16 @@ class TestThroughARun:
             'the b suite names the format "tap", which is not one of junit, '
             'trx, gotest, exit',
             'the c suite names no files']
+        # A run prints the three lines and runs only the complete suite.
+        root = _project(tmp_path, broken + [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', _WELL_FORMED)
+        code, out = _run(root, '--all', '--test')
+        lines = out.splitlines()
+        assert ['purlin: %s.' % problem for problem in problems] == [
+            line for line in lines if line.startswith('purlin: the ')], out
+        assert [line for line in lines if line.startswith('Running')] == [
+            'Running the pytest suite.'], out
+        assert code == 0, out
 
 
 # ---------------------------------------------------------------------------
