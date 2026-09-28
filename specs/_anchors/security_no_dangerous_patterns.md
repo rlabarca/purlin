@@ -1,9 +1,5 @@
 # Anchor: security_no_dangerous_patterns
 
-> Source: ./dev/external-refs/security-policy.git security_policy.md
-> Pinned: 15c1fd4904a8ae3e9c8ccedbe3e45596cd757fbc
-> Note: the Source is a local bare repository this checkout creates with `bash dev/setup-external-refs.sh`. Until that script has run the source is unreachable and the status line says so; the script is safe to re-run and prints the sha that belongs on the Pinned line.
-
 > Type: security
 > Global: true
 > Description: The dangerous patterns no executable file under `scripts/` may carry, in

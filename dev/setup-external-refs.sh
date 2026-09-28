@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Creates the dog-food anchor repo this checkout pins against.
+# Creates the dog-food anchor repo the external-refs checks pull from.
 #
-# `specs/_anchors/security_no_dangerous_patterns.md` carries
-# `> Source: ./dev/external-refs/security-policy.git`. That source is a local
-# bare repository, not a network remote, and this script is what creates it.
-# The copy it publishes is a 0.10.0 anchor: the consumer tracking fields and
-# the retired visual fields are stripped, so the bare repository holds what an
-# anchor repo would hold and nothing a consumer added.
+# `specs/_anchors/security_no_dangerous_patterns.md` is this repository's own
+# local anchor, so it carries no `> Source:` and no `> Pinned:`. This script
+# publishes a copy of it to `dev/external-refs/security-policy.git`, a local
+# bare repository, so `dev/test_e2e_external_refs.sh` can add it to a fresh
+# project the way a consumer pulls an anchor from another repository. The copy
+# is a 0.10.0 anchor: any tracking fields and retired visual fields are
+# stripped, so the bare repository holds what an anchor repo would hold.
 #
 # Safe to re-run: it does nothing when the repository already exists, and it
 # never writes to specs/.
@@ -19,25 +20,14 @@ BARE_REPO="$EXT_DIR/security-policy.git"
 ANCHOR_FILE="$PROJECT_ROOT/specs/_anchors/security_no_dangerous_patterns.md"
 PUBLISHED_NAME="security_policy.md"
 
-report_pin() {
-  local sha="$1"
-  local pinned
-  pinned=$(grep '^> Pinned:' "$ANCHOR_FILE" 2>/dev/null | head -1 | awk '{print $3}')
+report_head() {
   echo "Bare repository: $BARE_REPO"
-  echo "Head:            $sha"
-  echo "Anchor pin:      ${pinned:-none}"
-  if [[ "$pinned" == "$sha" ]]; then
-    echo "The pin is current."
-  else
-    echo "The pin is not this head, so purlin:status reports the anchor behind."
-    echo "To make it current, put $sha on the > Pinned: line of"
-    echo "$ANCHOR_FILE."
-  fi
+  echo "Head:            $1"
 }
 
 if [[ -d "$BARE_REPO" ]]; then
   echo "The anchor repo already exists."
-  report_pin "$(git -C "$BARE_REPO" rev-parse HEAD 2>/dev/null || echo unknown)"
+  report_head "$(git -C "$BARE_REPO" rev-parse HEAD 2>/dev/null || echo unknown)"
   echo "To start again: rm -rf $BARE_REPO && bash $0"
   exit 0
 fi
@@ -81,9 +71,7 @@ PY
 SHA=$(git -C "$BARE_REPO" rev-parse HEAD)
 rm -rf "$WORK"
 
-report_pin "$SHA"
+report_head "$SHA"
 echo ""
-echo "Next: run purlin:status to see the anchor, or"
-echo "bash dev/test_e2e_external_refs.sh to run the checks that read it."
-echo "To see a pin go behind, add a commit to the bare repository and run"
-echo "purlin:drift."
+echo "Next: run bash dev/test_e2e_external_refs.sh to run the checks that"
+echo "read it."
