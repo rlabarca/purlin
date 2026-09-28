@@ -108,6 +108,12 @@ is the claim. A tag holds the whole tree, so the code, every
 evidence file and every signature are pinned together under one name. `purlin:audit --tag`
 and the `record/<name>` tags are gone with it, and nothing else pins the evidence.
 
+**The evidence package.** `purlin:export` writes `.purlin/evidence/package/<version>.json`, one
+data file holding every rule's words, proofs, tests, results, audit findings, signatures and
+statuses, with a fingerprint of its own bytes, and `purlin:sign` commits it into the commit the
+tag names. It is handed to a regulated system of record, which holds the authority to sign the
+version off; Purlin makes no claim of compliance.
+
 **A push is free.** Any branch, any time, and nothing runs when you make one. The pre-push hook
 is removed and `purlin:init` installs no git hook; the rule that an agent never pushes is an
 instruction in `agents/purlin.md`. No branch rule is printed and none is asked for.
