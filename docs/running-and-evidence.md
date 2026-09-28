@@ -174,12 +174,23 @@ tell you what it proved. A failing test prints neither: its result is in the rep
 evidence records it as `fail`, and the run prints the last 60 lines of the suite's own output
 under `--- <suite> output (last 60 lines) ---` before the status table, then exits 1.
 
+### A marker that names nothing
+
+A marker that names a feature, a proof or a rule no spec has, or names a rule that has proofs,
+ties its test to nothing. The run prints one line for each, by file and line, then one line
+saying what to do, and exits 1 whatever the tests did:
+
+```
+purlin: login PROOF-9 at tests/test_login.py:12 names a proof no spec has
+Remove the comment, or write the proof it names.
+```
+
 ### Exit codes
 
 | Code | What it means |
 |---|---|
 | `0` | Everything asked for happened |
-| `1` | A test failed, evidence is missing, or the gate is not met |
+| `1` | A test failed, evidence is missing, a marker names nothing a spec has, or the gate is not met |
 | `2` | The command line was wrong |
 
 ## Test strength

@@ -45,7 +45,7 @@ It refuses a detached head and a tree with changes that are not committed, and p
 then. It waits through `gh` on GitHub and `az` with `azure-devops` on Azure DevOps; a red run,
 no CLI, no run found or the wait over exits 1.
 
-Exit codes: `0` the tests ran and the gate is met, `1` a test failed, evidence is missing or the gate is not met, `2` the invocation was wrong.
+Exit codes: `0` the tests ran and the gate is met, `1` a test failed, evidence is missing, a marker names nothing a spec has (it prints the file and line) or the gate is not met, `2` the invocation was wrong.
 
 ## Step 2: the evidence, written and committed when asked
 
@@ -54,11 +54,11 @@ The run writes this operating system's section of `.purlin/evidence/local/<featu
 each proof's result and test) and `.purlin/tests.md`, one table for the whole project:
 `Feature`, `Rules`, `Passed`, `Failing`, `No test`, `Last run`. It prints `Evidence written to
 .purlin/evidence/local/<feature>.json.`, or the folder and a count for several features, and
-commits nothing. With `--commit` it commits both
-under your own git identity, with the subject `purlin: evidence at <sha7>`, and prints
-`Evidence committed.`, or `Evidence unchanged.` when nothing new was seen. It never pushes. A
-run writes the features it ran and leaves the rest of the table as it was. The folder is
-the source: yours are `local`, and a remote run's, under `.purlin/evidence/ci/`, are `ci`.
+commits nothing. With `--commit` it commits both under your own git identity, with the subject
+`purlin: evidence at <sha7>`, and prints `Evidence committed.`, or `Evidence unchanged.` when
+nothing new was seen. It never pushes. A run writes the features it ran and leaves the rest of
+the table as it was. The folder is the source: yours are `local`, and a remote run's, under
+`.purlin/evidence/ci/`, are `ci`.
 `references/formats/evidence_format.md` is the contract.
 
 ## Step 3: read the table

@@ -46,7 +46,7 @@ nothing unless you add `--commit`, which commits the evidence under your own ide
 subject `purlin: evidence at <sha7>`. It ends with `gate strong: <n> of <rules>` or
 `gate not met: <n> of <rules>`, and it never pushes.
 
-Exit codes: `0` every rule met the gate, `1` a test failed, evidence is missing, a rule could not be audited or the gate is not met, `2` the command line was wrong.
+Exit codes: `0` every rule met the gate, `1` a test failed, evidence is missing, a marker names nothing a spec has, a rule could not be audited or the gate is not met, `2` the command line was wrong.
 
 The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call
 it too. A remote runner runs the same script in an arm of its own, which writes its section

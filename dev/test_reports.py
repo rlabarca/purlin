@@ -54,6 +54,12 @@ LOGIN_SPEC = '''# Feature: login
 '''
 
 
+# A passing test for each of LOGIN_SPEC's three proofs, twelve lines long.
+_WELL_FORMED = ('# purlin: login PROOF-1\ndef test_a():\n    pass\n\n'
+                '# purlin: login PROOF-2\ndef test_b():\n    pass\n\n'
+                '# purlin: login PROOF-3\ndef test_c():\n    pass\n\n')
+
+
 def _project(tmp_path, tests, spec=LOGIN_SPEC, feature='login',
              more_specs=()):
     root = tmp_path / 'project'
@@ -159,9 +165,9 @@ class TestTheMarker:
             ('login', 'RULE-7', 7), ('login', 'PROOF-8', 8)]
         assert malformed == [(9, '# purlin: login')]
         scan = {'tests/x.txt': markers.read_text('tests/x.txt', text, 'exit')}
-        assert reports.marker_problems(scan, {'login': {}})[0] == (
+        assert reports.malformed_lines(scan) == [(
             'purlin: tests/x.txt:9 is not a marker; write purlin: <feature> '
-            'PROOF-<n>')
+            'PROOF-<n>')]
 
     # purlin: reports PROOF-2
     def test_a_marker_in_a_string_or_a_here_document_is_not_read(self):
@@ -528,26 +534,89 @@ class TestThroughARun:
                 '.purlin/runtime/reports/pytest.xml.') in out
 
     # purlin: reports PROOF-19
-    def test_a_marker_naming_nothing_is_printed(self, tmp_path):
-        spec = LOGIN_SPEC.replace('- PROOF-2 (RULE-2): observe two\n', '') \
-            .replace('- PROOF-3 (RULE-3): observe three\n', '')
-        root = _project(tmp_path, [suites.pytest_suite()], spec=spec)
-        _write(root, 'tests/test_login.py', (
-            '# purlin: login PROOF-1\ndef test_a():\n    pass\n\n'
-            '# purlin: nosuch PROOF-1\ndef test_b():\n    pass\n\n'
-            '# purlin: login PROOF-9\ndef test_c():\n    pass\n\n'
-            '# purlin: login RULE-1\ndef test_d():\n    pass\n\n'
-            '# purlin: login RULE-2\ndef test_e():\n    pass\n'))
+    def test_a_marker_naming_a_feature_no_spec_has_fails_the_run(
+            self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', _WELL_FORMED + (
+            '# purlin: nosuch PROOF-1\ndef test_x():\n    pass\n'))
         code, out = _run(root, '--all', '--test')
-        assert ('purlin: nosuch PROOF-1 at tests/test_login.py:5 names a '
-                'feature no spec has') in out
-        assert ("purlin: login PROOF-9 at tests/test_login.py:9 names a proof "
-                "login's spec does not have") in out
-        assert ('purlin: login RULE-1 at tests/test_login.py:13 names a rule '
-                'that has proofs; name one of them') in out
+        lines = out.splitlines()
+        wrong = ('purlin: nosuch PROOF-1 at tests/test_login.py:13 names a '
+                 'feature no spec has')
+        assert wrong in lines, out
+        assert lines[lines.index(wrong) + 1] == (
+            'Remove the comment, or write the proof it names.'), out
         assert 'Evidence is missing' not in out
-        assert code == 1  # RULE-3 has neither a proof nor a test
-        assert 'gate not met: 2 of 3' in out
+        assert 'gate passed: 3 of 3' in out, out
+        assert code == 1
+
+        _write(root, 'tests/test_login.py', _WELL_FORMED + (
+            '# purlin: nosuch PROOF-1\ndef test_x():\n    pass\n\n'
+            '# purlin: other PROOF-2\ndef test_y():\n    pass\n'))
+        code, out = _run(root, '--all', '--test')
+        lines = out.splitlines()
+        second = ('purlin: other PROOF-2 at tests/test_login.py:17 names a '
+                  'feature no spec has')
+        assert wrong in lines and second in lines, out
+        assert lines[lines.index(second) + 1] == (
+            'Remove each comment, or write the proof it names.'), out
+        assert 'Remove the comment' not in out
+        assert code == 1
+
+    # purlin: reports PROOF-21
+    def test_a_marker_naming_a_proof_no_spec_has_fails_the_run(
+            self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', _WELL_FORMED + (
+            '# purlin: login PROOF-9\ndef test_x():\n    pass\n'))
+        code, out = _run(root, '--all', '--test')
+        lines = out.splitlines()
+        wrong = ('purlin: login PROOF-9 at tests/test_login.py:13 names a '
+                 'proof no spec has')
+        assert wrong in lines, out
+        assert lines[lines.index(wrong) + 1] == (
+            'Remove the comment, or write the proof it names.'), out
+        assert code == 1
+
+    # purlin: reports PROOF-22
+    def test_a_marker_naming_a_rule_no_spec_has_fails_the_run(
+            self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', _WELL_FORMED + (
+            '# purlin: login RULE-9\ndef test_x():\n    pass\n'))
+        code, out = _run(root, '--all', '--test')
+        lines = out.splitlines()
+        wrong = ('purlin: login RULE-9 at tests/test_login.py:13 names a '
+                 'rule no spec has')
+        assert wrong in lines, out
+        assert lines[lines.index(wrong) + 1] == (
+            'Remove the comment, or write the proof it names.'), out
+        assert code == 1
+
+    # purlin: reports PROOF-23
+    def test_a_marker_naming_a_rule_that_has_proofs_fails_the_run(
+            self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', _WELL_FORMED + (
+            '# purlin: login RULE-1\ndef test_x():\n    pass\n'))
+        code, out = _run(root, '--all', '--test')
+        lines = out.splitlines()
+        wrong = ('purlin: login RULE-1 at tests/test_login.py:13 names a '
+                 'rule that has proofs; name one of them')
+        assert wrong in lines, out
+        assert lines[lines.index(wrong) + 1] == (
+            'Remove the comment, or write the proof it names.'), out
+        assert code == 1
+
+    # purlin: reports PROOF-24
+    def test_a_run_with_only_well_formed_markers_exits_0(self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', _WELL_FORMED)
+        code, out = _run(root, '--all', '--test')
+        assert 'names a' not in out, out
+        assert 'Remove the comment' not in out, out
+        assert 'Remove each comment' not in out, out
+        assert code == 0, out
 
     # purlin: reports PROOF-20
     def test_a_suite_missing_a_part_is_left_out(self, tmp_path):

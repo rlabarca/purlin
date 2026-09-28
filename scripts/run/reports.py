@@ -52,10 +52,14 @@ TIED_TO_NO_TEST = 'purlin: %s %s at %s:%d is tied to no test'
 NOT_A_MARKER = ('purlin: %s:%d is not a marker; write purlin: <feature> '
                 'PROOF-<n>')
 NO_SUCH_FEATURE = 'purlin: %s %s at %s:%d names a feature no spec has'
-NO_SUCH_PROOF = "purlin: %s %s at %s:%d names a proof %s's spec does not have"
-NO_SUCH_RULE = "purlin: %s %s at %s:%d names a rule %s's spec does not have"
+NO_SUCH_PROOF = 'purlin: %s %s at %s:%d names a proof no spec has'
+NO_SUCH_RULE = 'purlin: %s %s at %s:%d names a rule no spec has'
 RULE_HAS_PROOFS = ('purlin: %s %s at %s:%d names a rule that has proofs; '
                    'name one of them')
+# The one line after them, naming what to do. A marker naming nothing a spec
+# has fails the run.
+FIX_ONE = 'Remove the comment, or write the proof it names.'
+FIX_MANY = 'Remove each comment, or write the proof it names.'
 AMBIGUOUS = ("purlin: the report's %s matches %d tests in %s, so its result "
              'is not counted')
 
@@ -463,26 +467,35 @@ def test_name(path, test, fmt):
 # What the markers say
 # ---------------------------------------------------------------------------
 
-def marker_problems(scan, features):
-    """One line per marker that names nothing a spec has, or is malformed.
+def malformed_lines(scan):
+    """One line per `purlin:` comment that is not a marker, by file and line."""
+    lines = []
+    for path in sorted(scan):
+        for line, _text in scan[path].malformed:
+            lines.append(NOT_A_MARKER % (path, line))
+    return lines
 
-    `scan` is `markers.scan`'s answer and `features` `specs.scan_specs`'.
+
+def marker_problems(scan, features):
+    """One line per marker whose id counts for nothing, by file and line.
+
+    A marker naming a feature, a proof or a rule no spec has, or naming a
+    rule that has proofs, ties no result to any rule, and each one fails the
+    run. `scan` is `markers.scan`'s answer and `features`
+    `specs.scan_specs`'.
     """
     lines = []
     for path in sorted(scan):
-        found = scan[path]
-        for line, _text in found.malformed:
-            lines.append(NOT_A_MARKER % (path, line))
-        for marker in found.markers:
+        for marker in scan[path].markers:
             info = features.get(marker.feature)
             args = (marker.feature, marker.id, path, marker.line)
             if info is None:
                 lines.append(NO_SUCH_FEATURE % args)
             elif marker.id.startswith('PROOF-'):
                 if marker.id not in (info.get('proofs') or {}):
-                    lines.append(NO_SUCH_PROOF % (args + (marker.feature,)))
+                    lines.append(NO_SUCH_PROOF % args)
             elif marker.id not in (info.get('rules') or {}):
-                lines.append(NO_SUCH_RULE % (args + (marker.feature,)))
+                lines.append(NO_SUCH_RULE % args)
             elif (info.get('proofs_by_rule') or {}).get(marker.id):
                 lines.append(RULE_HAS_PROOFS % args)
     return lines

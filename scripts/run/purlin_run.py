@@ -73,7 +73,8 @@ what it printed is kept, the run reports the timeout as missing evidence and
 carries on.
 
 Exit codes: 0 everything asked for happened, 1 a test failed, evidence is
-missing or the gate is not met, 2 the command line was wrong.
+missing, a marker names nothing a spec has or the gate is not met, 2 the
+command line was wrong.
 
 The flow is one pass. Resolve the configuration and the suites, scan the
 specs and the markers, run each suite, then check two things no test
@@ -85,7 +86,8 @@ framework reports on its own:
                   is its test, or no test follows the marker
 
 Both are silent in every test framework there is. A marker that names a
-feature, a proof or a rule no spec has is printed and changes nothing else.
+feature, a proof or a rule no spec has, or names a rule that has proofs, is
+printed by file and line and fails the run.
 `references/formats/evidence_format.md` is the shape of what the run then
 writes.
 """
@@ -769,12 +771,17 @@ def main(argv=None):
             if marker.feature in selected:
                 missing.append('%s %s at %s:%d' % (marker.feature, marker.id,
                                                    path, marker.line))
+    # A marker naming nothing a spec has fails the run, whatever the tests did.
+    wrong = reports_module.marker_problems(scan, features)
     if scan:
         print('')
         print(TIED_LINE % (tied, untied))
         for line in (reports_module.untied_lines(scan)
-                     + reports_module.marker_problems(scan, features)):
+                     + reports_module.malformed_lines(scan) + wrong):
             print(line)
+        if wrong:
+            print(reports_module.FIX_ONE if len(wrong) == 1
+                  else reports_module.FIX_MANY)
     if missing:
         # Loud failure B: a marker of a feature this run covers has no result.
         # Five are named and the rest counted: a reader acts on the first few
@@ -799,7 +806,8 @@ def main(argv=None):
     # A failing test is a result the evidence records, so it fails the run
     # without being called missing; only a suite that left nothing to read,
     # or a marker with no result, is missing evidence.
-    exit_code = 1 if failures or any(done.failed_tests for done in runs) else 0
+    exit_code = 1 if (failures or wrong
+                      or any(done.failed_tests for done in runs)) else 0
     if failures:
         print('')
         for failure in failures:

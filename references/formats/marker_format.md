@@ -189,11 +189,15 @@ Purlin never guesses. Each of these is printed as one line, by file and line:
 |------|-----------|
 | `purlin: <feature> <id> at <file>:<line> is tied to no test` | `not run` |
 | `purlin: <file>:<line> is not a marker; write purlin: <feature> PROOF-<n>` | nothing |
-| `purlin: <feature> <id> at <file>:<line> names a feature no spec has` | nothing |
-| `purlin: <feature> <id> at <file>:<line> names a proof <feature>'s spec does not have` | nothing |
-| `purlin: <feature> <id> at <file>:<line> names a rule <feature>'s spec does not have` | nothing |
-| `purlin: <feature> <id> at <file>:<line> names a rule that has proofs; name one of them` | nothing |
+| `purlin: <feature> <id> at <file>:<line> names a feature no spec has` | nothing, and fails the run |
+| `purlin: <feature> <id> at <file>:<line> names a proof no spec has` | nothing, and fails the run |
+| `purlin: <feature> <id> at <file>:<line> names a rule no spec has` | nothing, and fails the run |
+| `purlin: <feature> <id> at <file>:<line> names a rule that has proofs; name one of them` | nothing, and fails the run |
 | `purlin: the report's <name> matches <n> tests in <file>, so its result is not counted` | `not run` for those tests |
+
+After the lines of the four that fail the run, one line says what to do:
+`Remove the comment, or write the proof it names.`, or `Remove each comment, or write the
+proof it names.` when there are several. The run then exits 1, whatever its tests did.
 
 A run also prints `Markers: <n> tied to a test, <k> not tied.`, and ends with
 `Evidence is missing: ...` and exit code 1 when a suite left no report to
