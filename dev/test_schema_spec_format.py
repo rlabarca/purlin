@@ -425,3 +425,16 @@ class TestAnchorNoteMetadata:
         assert not leaked, f"the Note text reached parsed fields {leaked}: {info}"
         assert info.get('rules', {}).get('RULE-1'), (
             f"the rules still parse alongside a Note: {info.get('rules')}")
+
+    # purlin: schema_spec_format PROOF-12
+    def test_the_section_headings_are_read_in_any_case(self):
+        path = os.path.join(self.spec_dir, 'shouty.md')
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write('# Feature: shouty\n\n'
+                    '## rules\n- RULE-1: Headings read in any case\n\n'
+                    '## PROOF\n- PROOF-1 (RULE-1): Scan the spec; verify '
+                    'RULE-1 has PROOF-1\n')
+        info = purlin_specs.scan_specs(self.project_root)['shouty']
+        assert list(info['rules']) == ['RULE-1'], info['rules']
+        assert info['proofs_by_rule'] == {'RULE-1': ['PROOF-1']}, info
+        assert info['has_rules_section'] is True

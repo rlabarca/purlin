@@ -168,10 +168,13 @@ def proof_text_hash(text):
 # ---------------------------------------------------------------------------
 
 def extract_section(content, heading):
-    """The body under a markdown heading, up to the next `## ` or the end."""
+    """The body under a markdown heading, up to the next `## ` or the end.
+
+    The heading is matched without regard to case, as the format says.
+    """
     pattern = re.compile(
         r'^' + re.escape(heading) + r'\s*\n(.*?)(?=^## |\Z)',
-        re.MULTILINE | re.DOTALL)
+        re.MULTILINE | re.DOTALL | re.IGNORECASE)
     m = pattern.search(content)
     return m.group(1) if m else None
 

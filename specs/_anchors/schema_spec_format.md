@@ -22,6 +22,7 @@
 - RULE-9: A proof line carries at most one `@manual` tag and at most one `@env` tag, in either order, read off the end of the line; any other trailing at-word is not a tag and stops the reading, and a tag that follows a list connector (a comma, `and`, `or`) is not a tag either, so a description whose prose ends in an at-word is left whole
 - RULE-10: `@env` takes `windows`, `macos` or `linux` and nothing else; any other value, and any tag this release stopped reading, is returned in the unknown list and sets no environment, so a proof is never treated as owned by an operating system the release cannot name
 - RULE-11: `> Note:` is free text addressed to whoever reads the spec; the parser ignores it, it never reaches the description or displaces `> Source:`, and a spec may carry more than one [level: passed]
+- RULE-12: The two section headings are matched without regard to case, so `## rules` and `## PROOF` are read as `## Rules` and `## Proof`
 
 ## Proof
 
@@ -36,3 +37,4 @@
 - PROOF-9 (RULE-9): Call the tag splitter with `Check it by hand @manual`, `Lock the file @manual @env(windows)`, `Lock the file @env(macos) @manual`, `Lock the file @env(linux)`, `Grep the file; verify present @smoke` and a description whose prose ends in a list of at-words after a comma; verify whether each is manual and its environment, that the `@smoke` case and the prose case each return the description whole, not manual, with an empty environment and an empty unknown list, and that the two orders of the same pair of tags return identical tuples
 - PROOF-10 (RULE-10): Call the tag splitter with `@env(windows)`, `@env(macos)` and `@env(linux)` and verify each sets that environment with an empty unknown list; call it with `@env(windows-2022)`, `@env(ubuntu-24.04)` and `@env(Windows)` and verify each sets no environment and returns exactly one unknown naming the rejected value; call it with a bare `@windows` and verify it sets no environment, is not manual and is returned as unknown
 - PROOF-11 (RULE-11): Write an anchor carrying `> Description: Local policy`, two `> Note:` lines and `> Source: ./dev/external-refs/policy.git`; scan the specs and verify the description equals `Local policy`, the source equals that path, the text of either note is absent from every parsed value of the spec, and `RULE-1` still parses
+- PROOF-12 (RULE-12): Write a spec whose headings read `## rules` and `## PROOF`, holding `RULE-1` and `PROOF-1 (RULE-1)`; scan the specs and verify the rules read exactly `RULE-1` and its proofs exactly `PROOF-1`
