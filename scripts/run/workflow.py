@@ -124,6 +124,14 @@ TRUST_REASON = ('You chose not to trust this machine for signing, so the '
                 'tests a signature rests on run on a clean one.')
 NO_REASON = ('every proof runs on this operating system and you trust this '
              'machine, so nothing has to run remotely')
+# The same at the gate `passed`, whose words are rules and tests.
+NO_REASON_AT_PASSED = ('every test runs on this operating system and you '
+                       'trust this machine, so nothing has to run remotely')
+
+
+def no_reason(gate):
+    """Why a project needs no runner, in the words its gate uses."""
+    return NO_REASON_AT_PASSED if gate == 'passed' else NO_REASON
 
 
 def wanted(env_tags, trust, host_os):

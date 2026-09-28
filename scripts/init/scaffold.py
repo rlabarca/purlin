@@ -97,6 +97,9 @@ TRUST_QUESTION = ('Do you trust your own machine for the tests and the '
                   'signing? [y/n]')
 TRUST_LOCAL = ('Trust local: your own runs count, and purlin:sign signs what '
                'you ran.')
+# The question and the answer at the gate `passed`, which signs nothing.
+TRUST_QUESTION_AT_PASSED = 'Do you trust your own machine for the tests? [y/n]'
+TRUST_LOCAL_AT_PASSED = 'Trust local: your own runs count.'
 TRUST_REMOTE = ('Trust remote: purlin:sign refuses a rule whose tests have no '
                 'run from the remote runner for this commit, so '
                 'purlin:test --remote runs first.')
@@ -112,6 +115,23 @@ _STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
                  'strength reads n/a.')
 
 _TRUST_WORDS = {'local': TRUST_LOCAL, 'remote': TRUST_REMOTE}
+
+
+def trust_question(gate):
+    """The trust question in the words the gate uses."""
+    return TRUST_QUESTION_AT_PASSED if gate == 'passed' else TRUST_QUESTION
+
+
+def trust_words(trust, gate):
+    """The line init prints for the trust answer, in the gate's words."""
+    if trust == 'local' and gate == 'passed':
+        return TRUST_LOCAL_AT_PASSED
+    return _TRUST_WORDS[trust]
+
+
+def runner_label(gate):
+    """What a skip line calls the runner file: at `passed`, not `CI`."""
+    return 'the runner file' if gate == 'passed' else 'the CI workflow'
 
 # Mutation testing is optional and off by default. The question is asked only
 # where an engine exists for a framework the tree carries; a yes writes
@@ -452,7 +472,7 @@ def write_gitignore(plan, plugin_root):
                 '.purlin/runtime/')
 
 
-def ask_trust(console, existing):
+def ask_trust(console, existing, gate=None):
     """`local` or `remote`: whether this machine's own runs count for signing.
 
     The default is `local`, which is a yes: your own tests and your own
@@ -463,22 +483,22 @@ def ask_trust(console, existing):
     named = str((existing or {}).get('trust') or '').strip().lower()
     if named in gate_module.TRUST_VALUES:
         return named
-    answer = str(console.ask(TRUST_QUESTION, 'y') or '').strip().lower()
+    answer = str(console.ask(trust_question(gate), 'y') or '').strip().lower()
     return 'local' if answer.startswith('y') else 'remote'
 
 
-def print_remote_reasons(reasons):
+def print_remote_reasons(reasons, gate=None):
     """Why this project gets a remote runner, or the line saying it needs none."""
     print('')
     if not reasons:
-        print('No remote runner: %s.' % workflow_module.NO_REASON)
+        print('No remote runner: %s.' % workflow_module.no_reason(gate))
         return
     print(REMOTE_INTRO)
     for reason in reasons:
         print('  %s' % reason)
 
 
-def write_workflow(plan, root, purlin_ref):
+def write_workflow(plan, root, purlin_ref, gate=None):
     """The workflow the git host runs, with the matrix the `@env` tags name.
 
     The prerequisites are checked first and nothing is written when one is
@@ -489,7 +509,7 @@ def write_workflow(plan, root, purlin_ref):
     for line in lines:
         plan.note(line)
     if not ok:
-        return plan.skip('the CI workflow', 'a prerequisite is missing')
+        return plan.skip(runner_label(gate), 'a prerequisite is missing')
     env_tags = workflow_module.env_tags_in_specs(root)
     rel = workflow_module.workflow_path(host)
     plan.write(rel, workflow_module.render_workflow(
@@ -666,7 +686,7 @@ def main(argv=None):
     selected, tests = resolve_tests(root, console, existing, args.add)
     mutation, no_engine = resolve_mutation(console, existing, selected,
                                            args.mutation)
-    trust = ask_trust(console, existing)
+    trust = ask_trust(console, existing, gate)
     host = git_host(root)
 
     if not in_git:
@@ -676,7 +696,7 @@ def main(argv=None):
                  host or 'not read from a remote'))
     if no_engine:
         plan.note(no_engine)
-    plan.note(_TRUST_WORDS[trust])
+    plan.note(trust_words(trust, gate))
     for name in ('.purlin', 'specs', 'specs/_anchors'):
         plan.directory(name)
 
@@ -695,14 +715,14 @@ def main(argv=None):
     tags = workflow_module.env_tags_in_specs(root)
     wanted, reasons = workflow_module.wanted(
         tags, trust, evidence_module.host_os())
-    print_remote_reasons(reasons)
+    print_remote_reasons(reasons, gate)
     if wanted and not git_remote(root):
         wanted = False
-        plan.skip('the CI workflow', REMOTE_NO_REMOTE)
+        plan.skip(runner_label(gate), REMOTE_NO_REMOTE)
     elif not wanted:
-        plan.skip('the CI workflow', workflow_module.NO_REASON)
+        plan.skip(runner_label(gate), workflow_module.no_reason(gate))
     if wanted:
-        write_workflow(plan, root, 'v%s' % config.get('version', ''))
+        write_workflow(plan, root, 'v%s' % config.get('version', ''), gate)
 
     for line in plan.lines:
         print(line)

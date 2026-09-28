@@ -55,6 +55,7 @@
 - RULE-46: `--yes` takes every default, so it leaves mutation testing off, and `--mutation` turns it on without asking
 - RULE-47: Init creates `.purlin/evidence/` holding one `README.md` that says what the folder holds, the same bytes as `templates/evidence-readme.md`, and a second run keeps it
 - RULE-48: A `tests` setting the project already carries is kept as it is on every later run, whatever the tree holds
+- RULE-49: At the gate `passed` init asks `Do you trust your own machine for the tests? [y/n]`, prints `Trust local: your own runs count.` for a yes, and where no runner file is written prints `No remote runner: every test runs on this operating system and you trust this machine, so nothing has to run remotely.` and `skipped the runner file (...)` with the same reason, so nothing it prints from the trust question on names a proof or a signature; from `strong` up the question, the answer and the reason name the proofs and the signing
 
 ## Proof
 
@@ -96,3 +97,4 @@
 - PROOF-47 (RULE-47): Run init and verify `.purlin/evidence/README.md` exists, its bytes equal `templates/evidence-readme.md`, it names `local/` and `ci/`, and the summary names it; run init again and verify the summary reports it as kept
 
 - PROOF-48 (RULE-48): A project's config is given one suite of its own, `unit`, running `make test REPORT={report}`; after init runs again at another gate the `tests` setting is exactly that one suite
+- PROOF-49 (RULE-49): Run the script against a temp git project holding `conftest.py`, answering `passed` and taking the default for each question after it; verify the output asks `Do you trust your own machine for the tests? [y/n]` and not the question that names the signing, holds the lines `Trust local: your own runs count.`, `No remote runner: every test runs on this operating system and you trust this machine, so nothing has to run remotely.` and `skipped the runner file (every test runs on this operating system and you trust this machine, so nothing has to run remotely)`, and that nothing from the trust question on holds `proof` or `sign`

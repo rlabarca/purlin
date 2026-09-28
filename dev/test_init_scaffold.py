@@ -649,6 +649,30 @@ class TestTheWorkflow:
                            'returns a session @env(%s)\n' % other[0]))
         return other[0]
 
+    # purlin: scaffold PROOF-49
+    def test_at_passed_the_trust_lines_name_tests_and_no_signing(self):
+        made = Project('pytest')
+        try:
+            done = subprocess.run(
+                [sys.executable, SCAFFOLD, '--project-root', made.root],
+                input='passed\n\n\n', capture_output=True,
+                encoding='utf-8', timeout=300)
+            assert done.returncode == 0, done.stdout + done.stderr
+            out = done.stdout
+            assert scaffold_module.TRUST_QUESTION_AT_PASSED in out, out
+            assert scaffold_module.TRUST_QUESTION not in out, out
+            lines = out.splitlines()
+            assert 'Trust local: your own runs count.' in lines, out
+            reason = ('every test runs on this operating system and you '
+                      'trust this machine, so nothing has to run remotely')
+            assert 'No remote runner: %s.' % reason in lines, out
+            assert 'skipped the runner file (%s)' % reason in lines, out
+            after = out[out.index(scaffold_module.TRUST_QUESTION_AT_PASSED):]
+            assert 'proof' not in after.lower(), after
+            assert 'sign' not in after.lower(), after
+        finally:
+            made.close()
+
     # purlin: scaffold PROOF-13
     def test_a_trusted_project_with_no_foreign_proof_gets_no_workflow(
             self, project):

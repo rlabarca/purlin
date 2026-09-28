@@ -347,11 +347,7 @@ def _gate_default(old):
     return 'strong' if str(old.get(PRE_PUSH_KEY)).strip() == 'strict' else 'passed'
 
 
-TRUST_QUESTION = ('Do you trust your own machine for the tests and the '
-                  'signing? [y/n]')
-
-
-def _ask_trust(default, assume_yes):
+def _ask_trust(default, assume_yes, gate_name):
     """The trust question, asked again on an update.
 
     A yes is `local`, which is a project whose own runs count and whose own
@@ -365,7 +361,8 @@ def _ask_trust(default, assume_yes):
         return default
     try:
         answer = input('%s [%s] ' % (
-            TRUST_QUESTION, 'y' if default == 'local' else 'n')).strip().lower()
+            _init().trust_question(gate_name),
+            'y' if default == 'local' else 'n')).strip().lower()
     except (EOFError, KeyboardInterrupt):
         return default
     if answer.startswith('y'):
@@ -461,7 +458,7 @@ def _apply_config(root, files, args, out):
         'audit_parallel': init.audit_parallel(old),
         'tests': tests,
         'ci': old.get('ci') or _host(root),
-        'trust': _ask_trust(resolved.trust, args.yes),
+        'trust': _ask_trust(resolved.trust, args.yes, chosen),
     }
     # Every key the old file carried that this one does not: the retired
     # ones, and the ones 0.9.5 wrote that nothing here reads. The framework
@@ -538,7 +535,8 @@ def _apply_workflows(root, files, args, out):
     write_one, reasons = flow.wanted(tags, _config(root).get('trust'),
                                      evidence_module.host_os())
     if not write_one:
-        out.say('wrote no workflow: %s' % flow.NO_REASON)
+        out.say('wrote no workflow: %s'
+                % flow.no_reason(_config(root).get('gate')))
         return
     for reason in reasons:
         out.say(reason)
