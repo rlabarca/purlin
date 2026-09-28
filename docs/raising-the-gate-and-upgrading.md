@@ -155,7 +155,13 @@ the mutation question follows, and the default is no:
 Measure test strength by breaking the code on purpose? It needs <engine> and takes minutes to hours per run. [y/N]
 ```
 
-The trust question comes last:
+The trust question comes last, in the words of the gate the update sets. At `passed`:
+
+```
+Do you trust your own machine for the tests? [y/n]
+```
+
+From `strong` up:
 
 ```
 Do you trust your own machine for the tests and the signing? [y/n]

@@ -281,12 +281,15 @@ Most have none. At every gate a rule reaches `passed`, `strong` and `signed` on 
 
 - **A proof in `specs/` is tagged `@env` for an operating system this machine is not**, so only
   a runner can prove it.
-- **The project set `trust: remote`**: you answered no to `Do you trust your own machine for
-  the tests and the signing? [y/n]`, so the tests a signature rests on run on a clean machine,
-  and `purlin:sign` refuses a rule with a test whose feature has no current `ci` section.
+- **The project set `trust: remote`**: you answered no to the trust question, `Do you trust
+  your own machine for the tests? [y/n]` at the gate `passed` and `Do you trust your own
+  machine for the tests and the signing? [y/n]` from `strong` up, so the tests run on a clean
+  machine, and `purlin:sign` refuses a rule with a test whose feature has no current `ci`
+  section.
 
-With neither, init prints `No remote runner: every proof runs on this operating system and you
-trust this machine, so nothing has to run remotely.` Where one is called for, it writes
+With neither, init prints `No remote runner: every test runs on this operating system and you
+trust this machine, so nothing has to run remotely.` at the gate `passed`, and from `strong` up
+the same line with `every proof` in place of `every test`. Where one is called for, it writes
 `.github/workflows/purlin.yml` on GitHub, or `purlin.azure-pipelines.yml` at the project root
 on Azure DevOps. The job is named `purlin`.
 

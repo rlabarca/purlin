@@ -108,7 +108,7 @@ it is adopted.
 | `audit_parallel` | `purlin:init`, with no question | `scripts/run/purlin_run.py`, which makes that many AI audit calls at once | `4`; any value that is not a whole number from 1 to 16 is read as 4 with one warning |
 | `tests` | `purlin:init`, one entry per framework it detects, or the command and report it asks for | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
 | `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure` |
-| `trust` | `purlin:init`, which asks `Do you trust your own machine for the tests and the signing?` | `scripts/review/sign.py`, `scripts/run/workflow.py` | `local`; the only other value is `remote` |
+| `trust` | `purlin:init`, which asks `Do you trust your own machine for the tests and the signing?`, or `Do you trust your own machine for the tests?` at the gate `passed` | `scripts/review/sign.py`, `scripts/run/workflow.py` | `local`; the only other value is `remote` |
 
 `purlin:init` is the only command that writes config unprompted. Every other command reads. A
 field that is absent or set to `auto` leaves the reader to its own fallback. This table must

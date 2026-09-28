@@ -164,7 +164,7 @@ A signature counts on whatever commit carries it, on any branch. Below `signed` 
 signature counts, and under `strong` what it meets is a `manual test` cell.
 
 **Trust.** `purlin:init` asks `Do you trust your own machine for the tests and the signing?
-[y/n]` and writes `trust: local` or `trust: remote`. Under `local`, the default, your own run
+[y/n]`, or at the gate `passed` `Do you trust your own machine for the tests? [y/n]`, and writes `trust: local` or `trust: remote`. Under `local`, the default, your own run
 is the evidence and `purlin:sign` signs what you ran. Under `remote`, `purlin:sign` refuses a
 rule with a test whose feature has no current `ci` section and says to run
 `purlin:test --remote` first. Trust binds signing alone: it is read when a rule is signed, and
