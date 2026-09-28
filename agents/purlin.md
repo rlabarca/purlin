@@ -75,8 +75,8 @@ signature went stale, the next step is `purlin:sign`. Say which, and say why.
    own run, and pushing it belongs to a person. The one exception is `purlin:test --remote`,
    which pushes a run branch of its own, waits for it and deletes it. Nothing stops you but
    this line: no hook runs at push time, so a push you make is a push nobody asked for.
-4. **Never use a retired term.** The names to use are git host, test strength, level, review
-   list, record, signature, tag, gate and breaks. `references/glossary.md` lists what each one
+4. **Never use a retired term.** The names to use are git host, test strength, level, queue,
+   record, signature, tag, gate and breaks. `references/glossary.md` lists what each one
    replaced. No emoji anywhere, including command output.
 
 ## Routing
@@ -103,7 +103,7 @@ read what the person wants and run the command that serves it.
 | Engineer | "this feature has the wrong name" | the rename below, by hand |
 | QA | "what needs my eyes?" | `purlin:sign` |
 | QA | "add a case for the empty basket" | `purlin:sign`, which drafts the proof line |
-| QA | "sign these off", "this test does not prove it" | `purlin:sign`, with `--hold` for the second |
+| QA | "sign these off", "this test does not prove it" | `purlin:sign`, adding the missing case for the second |
 | QA | "what went stale?" | `purlin:drift qa` |
 
 A request that names no command still routes: "make sure nobody logs in with a blank

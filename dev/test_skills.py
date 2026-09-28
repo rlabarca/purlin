@@ -533,7 +533,7 @@ class TestSkillSign:
     @pytest.mark.proof("skill_sign", "PROOF-2", "RULE-2")
     def test_it_shows_the_brief_before_it_writes_the_signature(self):
         rel = skill_path('sign')
-        assert (carries(rel, ['payload.review_list'])
+        assert (carries(rel, ['payload.queue'])
                 + in_order(rel, [
                     '"${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py"',
                     '"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"'])) == []
@@ -557,7 +557,7 @@ class TestSkillSign:
             'whatever branch carries it']) == []
 
     @pytest.mark.proof("skill_sign", "PROOF-6", "RULE-6")
-    def test_the_walk_takes_one_of_four_answers(self):
+    def test_the_walk_takes_one_of_three_answers(self):
         assert sign_answer_problems() == []
 
     @pytest.mark.proof("skill_sign", "PROOF-7", "RULE-7")
@@ -567,15 +567,14 @@ class TestSkillSign:
 
 def sign_answer_problems():
     rel = skill_path('sign')
-    body = section(read(rel), r'four answers')
+    body = section(read(rel), r'three answers')
     if body is None:
         return ["%s has no section naming the walk's answers" % rel]
     flattened = flat(body)
     problems = ['%s answers do not name %r' % (rel, label)
-                for label in ('**Sign.**', '**Add a case.**', '**Hold.**',
-                              '**Skip.**')
+                for label in ('**Sign.**', '**Add a case.**', '**Skip.**')
                 if label not in flattened]
-    if 'A skipped rule is on the list again next time' not in flattened:
+    if 'A skipped rule is in the queue again next time' not in flattened:
         problems.append('%s answers do not say a skipped rule comes back' % rel)
     return problems
 
@@ -592,7 +591,7 @@ def sign_gate_problems():
     for needle in ('purlin:init --gate strong', 'stops'):
         if needle not in rows['`passed`']:
             problems.append('%s passed row does not name %r' % (rel, needle))
-    for needle in ('--note', '--hold'):
+    for needle in ('--note', 'hand check'):
         if needle not in rows['`strong`']:
             problems.append('%s strong row does not name %r' % (rel, needle))
     if '[level: passed]' not in rows['`signed`']:

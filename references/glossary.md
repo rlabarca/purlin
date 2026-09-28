@@ -52,9 +52,6 @@ in the shipped prose where a retired spelling may still be written.
   on the rule, `[level: passed]`, `[level: strong]` or `[level: signed]`; a rule with no tag
   takes the project's gate. The gate is the ceiling, so a tag above it is read as the gate. A
   signature logs the level and does not lock it.
-- **signable**: a rule whose level is `signed`, whose passed and strong cells are met, and that
-  does not have a counting signature. The board's `Signable` column counts them and the `Sign`
-  list holds them.
 - **AI audit**: the model's read of one rule inside an audit. It runs on every rule whose level
   is `strong` or `signed`, and on no other, and it says what it saw the test observe and whether it could settle the
   question.
@@ -65,23 +62,24 @@ in the shipped prose where a retired spelling may still be written.
   file names the signer and git names the commit's author, and no list says who may sign.
   **counting signature**: under `signed`, one whose commit is signed and verifies and whose
   bound hashes still match the rule, proof, test and audit; below `signed`, any committed
-  one. It counts on whatever commit carries it. **hold**: a person's committed statement that the test does not prove the proof, with the
-  missing case; a hold binds no audit hash, and it wins in the strong cell whatever the tests
-  are doing. **note**: the one line a signer writes for a rule reading `manual test` or
-  `unsettled`.
+  one. It counts on whatever commit carries it. **note**: the one line a signer writes for a rule
+  reading `manual test` or `unsettled`.
 - **manual test**: the strong cell's word for a rule whose proofs are `@manual`. No test can be
   written, so a person runs it and a signature with a note records what they saw.
 - **not audited**: the strong cell's word for a rule whose level is `strong` or `signed` and over whose
-  current code no audit has run. It is on no list: `purlin:audit` moves it, not a person.
+  current code no audit has run. It is never in the queue: `purlin:audit` moves it, not a person.
 - **unsettled**: the strong cell's word for a rule whose AI audit ran and could not tell
   whether the test observes what the proof names. A person judges the proof against the test
-  and signs, adds a case or holds. Where no model could be reached the audit did not run, so
+  and signs or adds a case. Where no model could be reached the audit did not run, so
   nothing is unsettled: the strength answers level 2 on its own.
 - **signature stale**: the signed cell's word when a signature exists and its hashes no longer
   match.
-- **Review**: the list of rules whose strong cell reads `manual test`, `unsettled` or `held`.
-  Exists only at `strong` and above. **Sign**: the list of signable rules, at the gate
-  `signed`. **review list**: the two together, which is what `purlin:sign` walks.
+- **queue**: the one list of the rules that wait on a person, which `purlin:sign` walks and the
+  dashboard's Queue tab shows. Each row says what it **needs**: a **hand check**, a rule whose
+  level is `strong` or `signed` and whose strong cell reads `manual test` or `unsettled`, which
+  a person signs with a note; or a **signature**, a rule whose level is `signed`, whose passed
+  and strong cells are met, and that does not have a counting signature. A rule that needs both
+  is one hand check. It exists at `strong` and above.
 - **rollup**: rules meeting the gate out of rules total, plus one count per bucket.
 - **anchor**: a spec for something shared across features. **local anchor**: in the project.
   **anchor repo**: an optional separate repository holding anchors for one or more projects. **pinned anchor**: the project's local copy of an anchor from an anchor repo,
@@ -99,14 +97,14 @@ in the shipped prose where a retired spelling may still be written.
   whose feature has no current `ci` section.
 - **tag run**: the CI run a pushed `signed/<version>` tag starts. It writes nothing: it reruns
   the tagged tests on a clean machine and ends with `gate_check.py --check --verify`, which
-  checks every committed signature and hold against this code and every `ci/` file against the
+  checks every committed signature against this code and every `ci/` file against the
   runner's own identity.
 - **push**: `git push`. It is free, to any branch, and nothing runs at push time: no hook is
   installed at all. No skill pushes and none opens a pull request; a command commits, prints
   `Run: git push` and stops. That an agent does not push is an instruction in
   `agents/purlin.md`, not a mechanism.
-- **tag**: the marker of proven code. `purlin:sign` writes the annotated tag `signed/<version>`
-  when every rule meets the gate, naming the commit and the gate, and a person pushes it.
+- **tag**: the marker of proven code. `purlin:sign` writes the signed tag `signed/<version>`
+  when every rule meets the gate and every feature's evidence is committed, naming the commit and the gate, and a person pushes it.
   **`signed/<version>` means**: at the tagged commit every rule meets the gate, which is that
   its passed cell is met, its strong cell where its level is `strong` or `signed`, and a
   counting signature where its level is `signed`. A rule whose level asks for no signature
@@ -123,12 +121,11 @@ For one rule, top to bottom. Each row is a cell; the gate decides how many rows 
 | Level | Met when | Words the cell can read |
 |-------|----------|-------------------------|
 | passed | a proof line names the rule and every proof has a passing test in a current section from either source, on every platform a current section covers | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
-| strong | passed, an audit measured it, the strength at or above `min_strength`, and where the level is `strong` or `signed` an audit entry for the current hashes that settled and found nothing, no hold | `strong`, `weak`, `not audited`, `unsettled`, `manual test`, `held` |
-| signed | a counting signature for the current rule, proof, test and audit hashes | `signed`, `unsigned`, `stale`, `held` |
+| strong | passed, an audit measured it, the strength at or above `min_strength`, and where the level is `strong` or `signed` an audit entry for the current hashes that settled and found nothing | `strong`, `weak`, `not audited`, `unsettled`, `manual test` |
+| signed | a counting signature for the current rule, proof, test and audit hashes | `signed`, `unsigned`, `stale` |
 
 A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `partial`, `passed`,
-`strong`, `signed`. Two flags are counted beside the buckets, never instead of them: `stale` and
-`held`.
+`strong`, `signed`. One flag is counted beside the buckets, never instead of them: `stale`.
 
 ## Where each is defined
 
@@ -138,7 +135,7 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 | proof marker, proof file | `references/formats/proofs_format.md` |
 | anchor spec, pinned anchor | `references/formats/anchor_format.md` |
 | evidence, source, section, fingerprint, test strength, the table | `references/formats/evidence_format.md` |
-| signature, hold, note | `references/formats/signature_format.md` |
+| signature, note | `references/formats/signature_format.md` |
 | the gate, which evidence counts, when a signature counts, what `signed/<version>` means | `references/hard_gates.md` |
 | drift, the four role views, config field ownership | `references/drift_criteria.md` |
 | what the audit looks for, the two lists, the brief's layers, what the brief reports | `references/review_criteria.md` |
@@ -176,14 +173,14 @@ The repository's own vocabulary check enforces that, reading this table for the 
 | lowest state | `blocked_by`, the lowest unmet cell |
 | the seven states | the three evidence levels |
 | auto-approval | removed. CI writes no signature file, ever |
-| review queue | review list |
+| review queue | queue |
 | `purlin:verify` | `purlin:audit` |
-| `purlin:review` | `purlin:sign` with no argument, which walks the review list |
+| `purlin:review` | `purlin:sign` with no argument, which walks the queue |
 | `purlin:approve` | `purlin:sign` |
 | `verify_gate`, `scripts/ci/verify_gate.py` | `gate_check`, `scripts/ci/gate_check.py` |
 | `verify-gate:` as a log prefix | `gate:` |
 | `validated/<name>` tags | the tag `purlin:sign` writes, `signed/<version>` |
-| needs a person, needs-a-person, `needs_person` | `manual test` where the proofs are `@manual`, `unsettled` where the AI audit could not settle, `held` where a person holds the rule. The one surviving use is the review list's header, `<n> rules need a person` |
+| needs a person, needs-a-person, `needs_person` | `manual test` where the proofs are `@manual`, and `unsettled` where the AI audit could not settle. The one surviving use is the queue's header, `<n> rules need a person` |
 | risk, the `[risk: ...]` tag, the three levels | the **level**, tagged `[level: ...]` with the gate's own words |
 | manual audit | `not audited` where the level is `strong` or `signed` and no audit has run over this code, `unsettled` where the AI audit ran and could not settle. The flags and rollup keys are `not_audited` and `unsettled` |
 | not required | removed. A rule whose level is below `signed` needs no signature, and its signed cell reads `signed` or `unsigned` like any other |
@@ -219,7 +216,6 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | records branch | the evidence lives in the tree, under `.purlin/evidence/` |
 | Pages, the published dashboard site | the dashboard page each person opens from disk |
 | forge | git host |
-| queue | review list |
 | CODEOWNERS, approver rule | removed. No file names who may sign; a signature names its signer |
 | `verify --manual`, `verify --recheck` | removed. `@manual` proofs are evidenced by a signature file with a one-line note |
 | the source `developer` | removed. An evidence file's source is its folder, `ci` or `local`; `purlin:test` and `purlin:audit` write into `local/` |

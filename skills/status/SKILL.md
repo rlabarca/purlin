@@ -92,6 +92,6 @@ empty. `list` is the word for what `purlin:sign` walks; `tab` belongs to the das
 | A rule is waiting for a run | `→ Next: run purlin:test.`, or `→ Next: run purlin:test --remote.` where the proof names an operating system this machine is not |
 | No audit has measured a rule | `→ Next: run purlin:audit.` with the count |
 | A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
-| A rule reads `manual test`, `unsettled` or `held`, or is signable | `→ Next: run purlin:sign.` with the count |
+| A rule is in the queue: it reads `manual test` or `unsettled`, or waits for a signature | `→ Next: run purlin:sign.` with the count |
 | Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |
-| Either list is not empty | `→ Review list <n>, Sign list <m>: <n+m> rules need a person. Run purlin:sign.` |
+| The queue is not empty | `→ Queue: <n> rules need a person. Run purlin:sign.` |

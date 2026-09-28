@@ -1,13 +1,13 @@
 ---
 name: sign
-description: Walk the review list, or sign a rule, a feature or a batch as a signed commit
+description: Walk the queue, or sign a rule, a feature or a batch as a signed commit
 ---
 
 Attest that a rule, its proof and its test belong together. The attestation is a file, and the
 commit that adds it is signed, so who signed what and when is in git history. With no argument
-this skill walks the review list, which is the Review list and then the Sign list, one brief at
-a time; with a feature or a rule it goes straight there. When every rule meets the gate the walk
-ends by writing the tag `signed/<version>`, the marker that this version is proven, as
+this skill walks the queue, the one list of the rules that wait on a person, one rule at a time;
+with a feature or a rule it goes straight there. When every rule meets the gate the walk ends by
+writing the signed tag `signed/<version>`, the marker that this version is proven, as
 `references/hard_gates.md` defines it.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
@@ -19,45 +19,44 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ## Usage
 
 ```
-purlin:sign                                    Walk the review list, one brief at a time
+purlin:sign                                    Walk the queue, one rule at a time
 purlin:sign --release <name>                   The same walk, tagging <name> instead of the VERSION file's value
-purlin:sign <feature> [RULE-N ...]             One rule, several rules, or a feature's lists
-purlin:sign --batch                            Every rule on the lists, in one signed commit
-purlin:sign <feature> RULE-N --hold "<case>"   Hold a rule: the test does not prove the proof
-purlin:sign <feature> RULE-N --note "<text>"   Sign a @manual proof, or settle what the audit could not
+purlin:sign <feature> [RULE-N ...]             One rule, several rules, or a feature's rules in the queue
+purlin:sign --batch                            Every rule in the queue, in one signed commit
+purlin:sign <feature> RULE-N --note "<text>"   Sign a hand check: what you saw, in one line
 ```
 
-Plain language reaches the same place: "what needs my eyes", "sign off on billing", "hold
-login rule 3". A narrowing argument never adds a rule the full walk would skip.
+Plain language reaches the same place: "what needs my eyes", "sign off on billing". A narrowing
+argument never adds a rule the full walk would skip.
 
 ## What the gate decides
 
 | Gate | What this skill does |
 |------|----------------------|
-| `passed` | Prints that the gate asks for no signature, names what `purlin:init --gate strong` adds — the test strength, the AI audit and the review list — and stops without writing anything |
-| `strong` | The walk, `--note` and `--hold` work. A bare feature and `--batch` sign every rule on the Review list; a named rule that is not on it is told a signature is required only under `signed`, then written anyway |
-| `signed` | Every form works; a bare feature and `--batch` read the Review list, then the Sign list. Every rule whose level is `signed` has to carry a signature before it meets the gate; a named rule marked `[level: passed]` or `[level: strong]` is refused, because it asks for none |
+| `passed` | Prints that the gate asks for no signature, names what `purlin:init --gate strong` adds — the test strength, the AI audit and the queue — and stops without writing anything |
+| `strong` | The walk and `--note` work. A bare feature and `--batch` sign every hand check in the queue; a named rule that is not in it is told a signature is required only under `signed`, then written anyway |
+| `signed` | Every form works; a bare feature and `--batch` read the queue, hand checks and signatures alike. Every rule whose level is `signed` has to carry a signature before it meets the gate; a named rule marked `[level: passed]` or `[level: strong]` is refused, because it asks for none |
 
-## Step 1: the list, and the brief behind each rule
+## Step 1: the queue, and the brief behind each rule
 
 ```
 sync_status()
 ```
 
-There are two lists and the walk reads them in this order. `payload.review_list` is the
-**Review list**: the rules whose `strong` cell reads `manual test`, `unsettled` or `held`, at
-the gate `strong` and above. `payload.sign_list` is the **Sign list**: the signable rules, the
-ones whose level is `signed`, whose tests and audit are met and that have no counting
-signature, at the gate `signed`. Both are already ordered, the rules whose level asks the most
-first, then by feature and rule number. The dashboard shows the same two as its Review tab and its Sign tab; `tab` is the
-page's word and `list` is this one's.
+`payload.queue` is the **queue**, ordered by feature and then rule number. Each row says what
+the rule needs. A `hand check` is a rule whose `strong` cell reads `manual test` or
+`unsettled`, at the gate `strong` and above: a person checks it and signs with a note. A
+`signature` is a rule whose level is `signed`, whose tests and audit are met and that has no
+counting signature, at the gate `signed`. A rule that needs both is one row, `hand check`. Each
+row carries the command that answers it. The dashboard shows the same rows on its Queue tab.
 
 A rule blocked lower down — no test, a failing test, a weak one — is build work, so it stays
-on the board and never on either list. So is a rule reading `not audited`: what moves that
-one is `purlin:audit`. The walk opens with one line holding both counts:
+on the board and never in the queue. So is a rule reading `not audited`: what moves that one is
+`purlin:audit`. So is a rule whose level is `passed`: it meets the gate on its tests. The walk
+opens with one line holding the counts:
 
 ```
-Review: 7 rules. Sign: 5 rules.
+Queue: 5 rules. 2 hand checks, 3 signatures.
 ```
 
 Read the brief for a rule before anything is written:
@@ -78,11 +77,16 @@ have not read is the one thing this skill must not help with.
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"
 ```
 
-With no argument the script does the walk: it renders each brief in turn and asks for one
-answer, `sign / case / hold / skip`. It writes nothing until the walk closes; then one signed
-commit carries the signatures and one more per feature carries the holds.
+With no argument the script does the walk: it shows each rule, its proofs and what the audit
+found, and asks for one answer, `sign / case / skip`. Signing a hand check asks
+`What did you see, in one line:` and the line becomes the signature's note. It writes nothing
+until the walk closes; then one signed commit carries the signatures.
 
-## Step 3: the four answers
+The script signs nothing over evidence that is not committed. A rule whose feature has evidence
+written and not committed is refused, and so is the tag, with
+`sign: <feature> has evidence that is not committed. Run: purlin:test --commit`.
+
+## Step 3: the three answers
 
 **Sign.** The rule, the proof and the test belong together.
 
@@ -98,15 +102,10 @@ expired token". Write it into the spec as a new proof line with the next free pr
 the test for the next `purlin:build`, and move on. This skill writes specs and signatures,
 never code.
 
-**Hold.** The test does not prove the proof as written, and no new proof line would fix it.
-Name the missing case in words and commit it, so the rule cannot reach `strong` or `signed`
-while the hold stands. It is committed signed, like a signature:
+A reviewer who finds the test does not prove the proof adds the missing case, or changes the
+proof, alone or with AI help.
 
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py" <feature> RULE-N --hold "<the missing case>"
-```
-
-**Skip.** Move to the next rule and leave the cells alone. A skipped rule is on the list again
+**Skip.** Move to the next rule and leave the cells alone. A skipped rule is in the queue again
 next time, which is the intended behaviour: nothing is marked as seen by being seen.
 
 Never narrow a rule or a proof to make an observation disappear. That lowers the claim instead of
@@ -116,10 +115,10 @@ the change is a pull request against the anchor's source repository.
 ## Step 4: when a signature counts
 
 The script writes one file per rule under `specs/<category>/<feature>.signatures/` and makes
-one signed commit for all of them. A hold is written the same way, with `.hold.json` at the
-end of the name. The commit subjects come from `references/commit_conventions.md`:
-`sign(<feature>): RULE-N ...`, `sign(batch): <feature> RULE-N, ...` and
-`hold(<feature>): RULE-N ...`.
+one signed commit for all of them. Each file names the signer, the machine it was made on and
+that machine's operating system. The commit subjects come from
+`references/commit_conventions.md`: `sign(<feature>): RULE-N ...` and
+`sign(batch): <feature> RULE-N, ...`.
 
 | Under `signed` the signature counts when | What fails it |
 |------------------------------------------|---------------|
@@ -136,8 +135,8 @@ not restate them elsewhere.
 A signature locks one rule. The tag locks the version: it is the marker that every rule met the
 gate at this commit, and the one thing a person pushes to say so.
 
-When the walk leaves every rule meeting the gate, the script writes an annotated tag over the
-current commit, named `signed/<version>` from the `VERSION` file at the project root, or the
+When the walk leaves every rule meeting the gate, the script writes a signed tag (`git tag -s`,
+with the key you sign commits with) over the current commit, named `signed/<version>` from the `VERSION` file at the project root, or the
 config's `version` where there is no such file, or `signed/unversioned` where neither names
 one; `--release <name>` overrides the name. The message names the commit and the gate. Then it
 prints:
@@ -164,7 +163,7 @@ so the script refuses a rule whose passed cell holds no `ci` entry for the curre
 The walk closes with what happened and the commits it made:
 
 ```
-Walked 12 rules: 8 signed, 1 case added, 0 held, 3 skipped.
+Walked 12 rules: 8 signed, 1 case added, 3 skipped.
   billing RULE-2   add this proof line: reject an expired token
 Commits: a1b2c3d
 ```
@@ -172,7 +171,8 @@ Commits: a1b2c3d
 | What you left | The line to print |
 |---------------|-------------------|
 | A case was added | `→ Run: purlin:build <feature>` |
-| Rules still on either list | `→ Run: purlin:sign` |
+| Rules still in the queue | `→ Run: purlin:sign` |
+| Evidence not committed | `→ Run: purlin:test --commit` |
 | Nothing left, and the tag was written | `→ Run: git push origin signed/<version>` |
 | Nothing left, and a rule still does not meet the gate | `→ Run: purlin:status` |
 | A rule with no `ci` run under `trust: remote` | `→ Run: purlin:test --remote` |

@@ -32,7 +32,7 @@ before a signature is `trust: remote`.
 | `purlin:build [name]` | Load a spec's rules, write the code and the tagged tests, commit the changeset | An engineer, on every change. With no name it reads the board |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell | An engineer, constantly. Seconds; tests only. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:audit [feature]` | Run the tests and the breaks, then write the audit into the evidence | An engineer locally, any time. It writes the evidence, commits it with `--commit`, and never pushes |
-| `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit | Anyone with commit signing set up; the signature names them. With no argument it walks the list |
+| `purlin:sign [feature] [RULE-N]` | Walk the queue, or sign a rule, a feature or a batch as a signed commit | Anyone with commit signing set up; the signature names them. With no argument it walks the queue |
 | `purlin:drift [role]` | Report what changed since the last record, by role | Everyone, at session start and before a release |
 
 ## Supporting
@@ -66,12 +66,11 @@ Purlin
   ──────
   purlin:audit [feature ...]      Tests, breaks, and what they found, into the evidence
   purlin:audit --commit           The same, then commit the evidence
-  purlin:sign                     Walk the review list, then write the tag
+  purlin:sign                     Walk the queue, then write the tag
   purlin:sign --release <name>    Name the tag something other than the version
   purlin:sign <feature> [RULE-N ...]  Sign, as a signed commit
-  purlin:sign --batch             Sign the Review list, and at signed the Sign list
-  purlin:sign <feature> RULE-N --hold "<case>"  The test does not prove the proof
-  purlin:sign <feature> RULE-N --note "<text>"  Evidence for a @manual proof
+  purlin:sign --batch             Sign every rule in the queue
+  purlin:sign <feature> RULE-N --note "<text>"  Sign a hand check with what you saw
 
   Reporting
   ──────
@@ -101,7 +100,7 @@ Purlin
 | `purlin:build` | Code, test files, and the commit carrying the changeset |
 | `purlin:test` | `.purlin/runtime/proofs/`, which is not committed, and this operating system's section of `.purlin/evidence/local/<feature>.json` and `.purlin/tests.md`, which `--commit` commits as `purlin: evidence at <sha7>`; it never pushes. `--remote` pushes the run branch `run/<branch>-<sha7>`, waits for the git host's run through `gh` on GitHub or `az` on Azure DevOps, pulls the runner's own section home under `.purlin/evidence/ci/<feature>.json`, and deletes the branch |
 | `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits as `purlin: evidence at <sha7>`; it never pushes |
-| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, or `<signer-slug>.hold.json` under `--hold`, in a signed commit. Proof lines in a spec when the walk adds a case. The annotated tag `signed/<version>` when the walk closes with every rule meeting the gate, which a person pushes |
+| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, in a signed commit. Proof lines in a spec when the walk adds a case. The signed tag `signed/<version>` when the walk closes with every rule meeting the gate and every feature's evidence committed, which a person pushes |
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when a proof names another operating system or the trust answer was no |
 | `purlin:anchor` | `specs/_anchors/<name>.md` |
 | `purlin:status`, `purlin:drift` | Nothing |
@@ -109,9 +108,9 @@ Purlin
 ## What each command shows at each gate
 
 A command prints only what the gate asks for. Under `passed` there is no strength, no level, no
-review list and no signature anywhere in the output, and `purlin:audit` runs no breaks. Under
-`strong` the strength, the strong cell, the level and the Review list appear. Under `signed` the
-signed cell, the Signable column and the Sign list appear, and `purlin:sign`
+queue and no signature anywhere in the output, and `purlin:audit` runs no breaks. Under
+`strong` the strength, the strong cell, the level and the queue's hand checks appear. Under
+`signed` the signed cell, the Signed column and the queue's signatures appear, and `purlin:sign`
 writes the tag when every rule meets the gate. An audit `purlin:audit` wrote counts at every
 gate.
 

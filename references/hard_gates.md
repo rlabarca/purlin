@@ -29,7 +29,7 @@ what must be true of every rule before a version is proven?
 | Gate | Who it fits | Cells that exist | What every rule must have |
 |------|-------------|------------------|---------------------------|
 | `passed` | One person working alone | passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from either source counts |
-| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose level is `strong` or `signed` has a strong cell that is met: an audit read it, the test strength at or above `min_strength`, nothing unsettled, no hold. Evidence from either source counts |
+| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose level is `strong` or `signed` has a strong cell that is met: an audit read it, the test strength at or above `min_strength`, nothing unsettled. Evidence from either source counts |
 | `signed` | The same team under GxP | + signed | Every rule whose level is `signed` has a counting signature |
 
 Each level derives defaults you can override:
@@ -66,9 +66,11 @@ The level decides three things and nothing else decides them:
   `signed`, and on no other.
 - **Whether it needs a signature.** A rule needs one exactly when its level is `signed`.
 
-A rule is **signable** when its level is `signed`, its passed and strong cells are met, and it
-does not have a counting signature. That is what the board's `Signable` column counts and what
-the `Sign` list holds.
+The **queue** is the one list of the rules that wait on a person, each row saying what it
+needs. A `hand check` is a rule whose level is `strong` or `signed` and whose strong cell reads
+`manual test` or `unsettled`. A `signature` is a rule whose level is `signed`, whose passed and
+strong cells are met, and that does not have a counting signature. A rule that needs both is
+one `hand check` row, and a rule whose level is `passed` is never in the queue.
 
 ## Which evidence counts
 
@@ -120,7 +122,7 @@ starts nothing, and a pull request starts nothing.
 | A remote run | `purlin:test --remote` pushes `run/<branch>-<sha7>` | the tagged tests, and its own section of each feature's `.purlin/evidence/ci/<feature>.json`, committed on that branch at every gate. `purlin:test --remote` pulls it home and deletes the branch |
 | A tag run | a person pushes `signed/<version>` | nothing. It reruns the tagged tests on a clean machine and ends with `gate_check.py --check --verify` |
 
-**What the tag run verifies.** Every signature and every hold must still bind the rule,
+**What the tag run verifies.** Every signature must still bind the rule,
 proof, test and audit it names, so a tag cannot stand over code that changed after it
 was signed. Every file under `.purlin/evidence/ci/` must have been committed by the runner's
 own identity, read off the commit that last changed it, so a person cannot write evidence as
@@ -205,7 +207,8 @@ level asks for are met:
 A rule whose level is below `signed` needs no signature and does not hold the tag back for
 one. `trust: remote` is not part of the definition: it is read
 when a rule is signed, and by no cell and not by the tag. `purlin:sign` writes the tag only
-when every rule meets the gate and never over a tag that is already there; a person pushes it.
+when every rule meets the gate and every feature's evidence is committed, as a signed tag, and
+never over a tag that is already there; a person pushes it.
 Where a project has a remote runner, the push starts a run that checks the same thing against
 the tagged code on a clean machine.
 
@@ -221,21 +224,6 @@ makes it read `unsettled`. A rule whose level is `strong` or `signed` that no au
 reached reads `not audited`, and what moves that one is `purlin:audit`, not a person. A
 signature file for the current hashes clears the first two: a committed one under `strong`,
 one in a signed commit under `signed`. The signer writes the one line with `--note`.
-
-## Holds
-
-A **hold** is how a person who read the brief says the test does not prove the proof as written:
-
-```
-purlin:sign <feature> RULE-N --hold "<the missing case>"
-```
-
-That commits one file bound to the rule's hashes. While the hold is current both the strong
-cell and the signed cell read `held`, whatever the level and whatever the tests are doing, so the
-rule does not meet the gate at `strong` or `signed` and it is on the Review list. A failing
-test is work in front of the hold, not instead of it. A signature by a person for the current
-hashes outranks the hold. Changing the rule, the proof or the test ends the hold, as it stales
-a signature.
 
 ## What is not a gate
 

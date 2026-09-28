@@ -13,7 +13,6 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `purlin: evidence at <commit7>` | The evidence of one run: `.purlin/evidence/` and `.purlin/tests.md` | `purlin:test --commit`, `purlin:audit --commit`, and a remote runner |
 | `sign(<name>): RULE-N ...` | Signatures, signed | `purlin:sign` |
 | `sign(batch): <feature> RULE-N, ...` | One signed commit covering more than one feature | `purlin:sign --batch` |
-| `hold(<name>): RULE-N ...` | Holds on rules whose test does not prove the proof, signed | `purlin:sign --hold` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
 | `chore(update): migrate to <VERSION> (<ids>)` | Migrating a project to the installed plugin | `purlin:init --update` |
@@ -63,14 +62,12 @@ evidence commit never carries one.
 ```
 sign(<feature>): RULE-N RULE-M ...
 sign(batch): <feature> RULE-N, <feature> RULE-M ...
-hold(<feature>): RULE-N ...
 ```
 
 Signed, always. `purlin:sign` makes the commit with your git identity, and under the `signed`
 gate the signature counts when the commit signature verifies and its bound hashes still match,
 on whatever branch carries it. One commit may carry a batch; the rule ids
-are all listed in the subject, in order. A hold is committed the same way and carries the
-missing case in the file, not in the subject.
+are all listed in the subject, in order.
 
 ## The tag
 
@@ -79,7 +76,7 @@ signed/<version>
 signed/<name>            with --release <name>
 ```
 
-Annotated, never lightweight, and written by `purlin:sign` when the walk closes with every rule
+Signed, never lightweight (`git tag -s`, with the key you sign commits with), and written by `purlin:sign` when the walk closes with every rule
 meeting the gate; what that means is defined once, in `references/hard_gates.md`. The version is the `VERSION` file at the project root, or the config's
 `version` where there is no such file. The message names the commit and the gate:
 
@@ -127,7 +124,7 @@ Review:
 | The spec is agreed | The spec file | It is the contract the build reads |
 | The build is stable | Code, tests, and the changeset in the body | Half a feature is not a milestone |
 | A run you want to keep, with `--commit` | The evidence and the table, alone | It names the commit the tests ran against |
-| A walk of the review list ended | The signatures, signed, in one commit | The batch is one attestation |
+| A walk of the queue ended | The signatures, signed, in one commit | The batch is one attestation |
 | A pin advanced | The anchor spec and any designs it pulled in | Staleness is read from the committed pin |
 
 Do not commit after each failed test iteration, do not batch two skills' output into one commit,

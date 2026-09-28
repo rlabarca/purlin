@@ -4,8 +4,8 @@ For a team of a PM, a designer, engineers and QA working at the `strong` gate.
 
 At `strong` a rule carries a second cell. Level 1 asks whether the tagged tests passed; level 2
 asks whether those tests are worth trusting, and it is met when a record at the commit under
-review has a test strength at or above `min_strength`, the audit observed nothing outstanding
-and nobody holds the rule. Your own `purlin:audit` writes that record, on your own machine, and
+review has a test strength at or above `min_strength`, and the audit observed nothing
+outstanding. Your own `purlin:audit` writes that record, on your own machine, and
 it counts. What the second question adds is a measurement, not a second machine.
 
 Level 2 is fully automatic. Nobody is asked to do anything to reach it; a person first appears
@@ -25,9 +25,9 @@ Two things, and nothing on the git host:
 `strong` derives two defaults, each of which you can change: `min_strength` 70, and origin
 tags optional. Every unmarked rule's level is `strong` here, so the AI audit runs on every
 rule that carries no `[level: passed]` tag. Signatures are advisory at this gate and no rule has a
-signed cell. What a signature still does here is clear a strong cell reading `manual test`,
-`unsettled` or `held`: `purlin:sign <feature>` and `purlin:sign --batch` sign every rule on the
-Review list, and a committed signature counts at this gate.
+signed cell. What a signature still does here is clear a strong cell reading `manual test` or
+`unsettled`: `purlin:sign <feature>` and `purlin:sign --batch` sign every row in the queue, and
+a committed signature counts at this gate.
 
 ## The loop, and what it writes
 
@@ -114,25 +114,24 @@ measured it, so a matrix of three does not give a rule three strengths to reconc
 
 ## What the strong cell can read
 
-Level 2 has six answers, and each one names who moves it next.
+Level 2 has five answers, and each one names who moves it next.
 
 | Word | What it means | What moves it |
 |------|---------------|---------------|
-| `strong` | the passed cell is met, the test strength is at or above `min_strength`, no hold is current, and the AI audit observed nothing and settled | nothing; the rule meets the gate |
+| `strong` | the passed cell is met, the test strength is at or above `min_strength`, and the AI audit observed nothing and settled | nothing; the rule meets the gate |
 | `weak` | the passed cell is not met, or the strength is under the minimum, or the audit settled and still observed something the test does not read | build work: `purlin:build` |
 | `not audited` | the rule's level is `strong` or `signed` and no audit has run on this code yet | `purlin:audit`; no person is waiting |
-| `unsettled` | the AI audit ran and could not settle whether the test proves the proof | a person judges the proof against the test, then signs, adds a case or holds |
+| `unsettled` | the AI audit ran and could not settle whether the test proves the proof | a person judges the proof against the test, then signs with a `--note` or adds a case |
 | `manual test` | any proof of the rule is tagged `@manual`, so no test can be written for it | a person runs the test and records what they saw with `purlin:sign <feature> RULE-N --note "<text>"` |
-| `held` | a person committed a hold saying the test does not prove the proof, with the missing case | change the rule, the proof or the test, or sign it for the current hashes, which outranks the hold |
 
 A rule with no break engine for its language reads `strong` with a reason saying so. An
 unmeasured rule is unmeasured, not a failure.
 
-At `strong` the Review list holds exactly the rules whose strong cell reads `manual test`,
-`unsettled` or `held`. Its header is the one sentence that says so: `<n> rules need a
-person`. A `weak` rule is never on it, because a build moves it and no person has to decide
-anything, and neither is a `not audited` rule: it waits for `purlin:audit`. A signature file
-for the current hashes clears all three words, and at this gate any committed signature
+At `strong` the queue holds exactly the rules whose level is `strong` or `signed` and whose
+strong cell reads `manual test` or `unsettled`, each a `hand check` row. Its header is the one
+sentence that says so: `<n> rules need a person`. A `weak` rule is never in it, because a build
+moves it and no person has to decide anything, and neither is a `not audited` rule: it waits
+for `purlin:audit`. A signature file for the current hashes clears both words, and at this gate any committed signature
 counts.
 
 ## One sprint, traced
@@ -157,10 +156,10 @@ reached, commits them, and prints the strength beside the minimum. Every rule it
 `strong` without anyone being asked.
 
 **QA looks at what is left.** `purlin:sign` finds every rule whose next step is a person, the
-ones whose level asks the most first, and walks it one brief at a time. At this gate that is the
-rules whose strong cell reads `manual test`, `unsettled` or `held`: a `@manual` proof, an AI
-audit that could not settle, or a rule someone holds. At each stop QA signs, adds a case in plain
-language, holds or skips. Adding a case writes a new proof line into the spec and leaves the
+queue, and walks it one brief at a time. At this gate that is the rules whose strong cell reads
+`manual test` or `unsettled`: a `@manual` proof, or an AI audit that could not settle. At each
+stop QA answers `sign`, `case` or `skip`: signs with a note saying what they saw, adds a case in
+plain language, or skips. Adding a case writes a new proof line into the spec and leaves the
 test for the next `purlin:build`,
 which is how QA's judgment reaches the code without QA writing it.
 [review-and-signing.md](review-and-signing.md) is the whole of that loop.

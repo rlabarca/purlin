@@ -32,7 +32,7 @@ One setting, the **gate**, says what must be true of every rule before a version
 | Gate | Who it fits | What every rule must have | Where the evidence comes from |
 |------|-------------|---------------------------|-------------------------------|
 | `passed` | One person working alone | A tagged test for every proof, passing | the evidence `purlin:test --commit` commits; a pass from any source counts |
-| `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength`, nothing outstanding the audit observed, and no hold | `purlin:audit`, run by anyone; its record counts |
+| `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength`, and nothing outstanding the audit observed | `purlin:audit`, run by anyone; its record counts |
 | `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit | the same, plus a person's signature and the tag |
 
 The whole loop runs on one machine: `purlin:spec`, `purlin:build`, `purlin:test`,
@@ -134,7 +134,7 @@ Every command ends by naming the next step, computed from the cells it found.
 | `purlin:build [name]` | Load a spec's rules, write the code and the tagged tests, commit the changeset |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell |
 | `purlin:audit [feature]` | Run the tests and the breaks, then write the audit into the evidence |
-| `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit |
+| `purlin:sign [feature] [RULE-N]` | Walk the queue, or sign a rule, a feature or a batch as a signed commit |
 | `purlin:drift [role]` | Report what changed since the last record, by role |
 | `purlin:init` | Set a project up for Purlin, and change the gate later |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current |

@@ -98,4 +98,4 @@ the tag holds the whole tree, every evidence file in it included.
 | Every rule met the gate `passed` | `→ Run: git push` |
 | A current `ci` run is missing under `trust: remote` | `→ Run: purlin:test --remote` |
 | A rule's tests pass on one operating system and not another | `→ Run: purlin:build <feature>` (the passed cell reads `partial` and names the platform) |
-| A rule reads `manual test`, `unsettled` or `held`, or is signable | `→ Run: purlin:sign` |
+| A rule is in the queue: it reads `manual test` or `unsettled`, or waits for a signature | `→ Run: purlin:sign` |

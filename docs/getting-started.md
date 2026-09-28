@@ -55,7 +55,7 @@ evidence, and the value is the word a rule's last cell reads when it is met.
 | Gate | Who it fits | What every rule must have |
 |------|-------------|---------------------------|
 | `passed` | One person working alone | A passing tagged test for every proof, from a run of any source |
-| `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength`, nothing the audit observed outstanding and no hold |
+| `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength` and nothing the audit observed outstanding |
 | `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit |
 
 Answer `passed` for now. You can raise the gate later with `purlin:init --gate strong`, which
@@ -194,9 +194,9 @@ counts its proof lines and adds `· <k> without a test` when a proof has none; `
 `<passed> of <rules>` and adds `· <k> partial` and `· <k> failing` when either is above zero.
 When a run happened, on which operating system and from which source is in the cell's hover on
 the dashboard, and on the rule screen in full. A column exists only when the cell behind it
-does, so a project at the `passed` gate has no `Strong`, `Signable` or `Signed` column. The
+does, so a project at the `passed` gate has no `Strong` or `Signed` column. The
 gate is what adds them: `purlin:init --gate strong` adds the first, `--gate signed` adds the
-other two.
+other.
 
 Every command ends with one `→ Next:` line naming the step to take, computed from the cell that
 blocks the rules: `purlin:spec` when a rule has no proof at all, `purlin:build` when a test

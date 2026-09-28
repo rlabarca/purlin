@@ -2,15 +2,14 @@
 
 For QA, or an engineer acting as QA, at the `strong` or `signed` gate.
 
-Reviewing is not reading every rule. It is reading the rules whose next step is a person, the
-ones whose level asks the most first, with the evidence already gathered. `purlin:sign` computes two
-lists and walks them: the Review list, then the Sign list. When it leaves every rule meeting
-the gate it writes the tag `signed/<version>`, and a person pushes it. This page says what puts
-a rule on each list, what the brief shows you, what makes a signature count, and what the tag
-stands for.
+Reviewing is not reading every rule. It is reading the rules whose next step is a person, with
+the evidence already gathered. `purlin:sign` computes one list, the **queue**, and walks it. When it
+leaves every rule meeting the gate it writes the tag `signed/<version>`, and a person pushes it.
+This page says what puts a rule in the queue, what the brief shows you, what makes a signature
+count, and what the tag stands for.
 
-`list` is the word for what `purlin:sign` walks. The dashboard shows the same two as its Review
-tab and its Sign tab, and `tab` belongs to the page.
+`queue` is the word for what `purlin:sign` walks. The dashboard shows the same list as its
+Queue tab, and `tab` belongs to the page.
 
 ## The level
 
@@ -25,58 +24,48 @@ read as the gate. The level decides three things:
   `signed` and on no other.
 - **whether it needs a signature.** A rule needs one exactly when its level is `signed`.
 
-A rule whose level is `signed`, whose passed and strong cells are met, and that is still
-waiting for a signature is **signable**. That is the whole of what `signable` means.
-
-## Review
+## The queue
 
 ```
 purlin:sign
 ```
 
-No arguments and no prior reading. The skill asks for the two lists, prints one line holding
-both counts, then starts the walk with Review.
+No arguments and no prior reading. The skill computes the queue, prints one line with its
+counts, then starts the walk.
 
 ```
-Review: 7 rules. Sign: 5 rules.
+Queue: 5 rules. 2 hand checks, 3 signatures.
 ```
 
-A rule is on the Review list when its strong cell reads one of three words, each of them work
-only a person can do:
+The queue is one list of the rules that wait on a person. Each row says what it needs:
 
-| The word | What happened | What you do |
+| Need | When | What you do |
 |---|---|---|
-| `manual test` | every proof of the rule is `@manual`, so no test can be written | run the test yourself and sign with a note |
-| `unsettled` | the AI audit ran and could not settle whether the test proves the proof | judge it yourself: sign, add a case, or hold |
-| `held` | someone committed a hold saying the test does not prove the proof | write the case, or lift the hold by signing |
+| `hand check` | the rule's level is `strong` or `signed` and its strong cell reads `manual test` (every proof is `@manual`) or `unsettled` (the AI audit ran and could not settle whether the test proves the proof) | check it yourself and sign with a `--note` saying what you saw, or add a case |
+| `signature` | the rule's level is `signed`, its passed and strong cells are met, and its signed cell reads `unsigned` or `stale` | read the brief and sign, or add a case |
 
-Nothing else reaches it. A rule whose strong cell reads `not audited` waits for `purlin:audit`
-rather than for you: its level is `strong` or `signed` and no audit has run on this code yet. A rule
-with no proof written, a rule with no test, a failing rule and a weak rule are all build work, and
-they stay on the board where `purlin:build` finds them. A rule whose passed cell reads `out of date`
-is on neither list: the signature stands, and the next run clears the cell.
-
-Rows come the rules whose level asks the most first, then by feature and rule id. Arguments narrow
-the walk and never widen it: `purlin:sign <feature>`, `purlin:sign <feature> RULE-N`. Plain language
-reaches the same place: "what is waiting on a person", "show me the ones marked `signed`".
-
-Under `passed` there is no list at all: `purlin:sign` says the gate is `passed`, says what
-`purlin:init --gate strong` would add, and stops.
-
-## Sign
-
-The Sign list is the signable rules that no counting signature covers yet: their level is `signed`,
-their passed and strong cells are met, and their signed cell reads `unsigned`, `stale` or `held`. It
-exists at `signed` and nowhere else, because no rule has a signed cell below it.
+A rule that needs both is one `hand check` row. A rule whose level is `passed` is never in the
+queue. The queue exists at the gate `strong` and above, and its `signature` rows only at
+`signed`, because no rule has a signed cell below it.
 
 | The word the signed cell reads | What happened |
 |---|---|
 | `unsigned` | the rule needs a signature and none binds its hashes |
 | `stale` | a signature exists and the hashes it bound no longer match |
-| `held` | someone committed a hold saying the test does not prove the proof |
 
-The walk reaches Sign after Review, because a rule a person has not judged is not a rule to
-sign. A rule needs a signature exactly when its level is `signed`.
+Nothing else reaches the queue. A rule whose strong cell reads `not audited` waits for
+`purlin:audit` rather than for you: its level is `strong` or `signed` and no audit has run on
+this code yet. A rule with no proof written, a rule with no test, a failing rule and a weak rule
+are all build work, and they stay on the board where `purlin:build` finds them. A rule whose
+passed cell reads `out of date` is not in the queue: the signature stands, and the next run
+clears the cell.
+
+Rows come by feature, then by rule number. Arguments narrow the walk and never widen it:
+`purlin:sign <feature>`, `purlin:sign <feature> RULE-N`. Plain language reaches the same place:
+"what is waiting on a person", "show me the ones marked `signed`".
+
+Under `passed` there is no queue at all: `purlin:sign` says the gate is `passed`, says what
+`purlin:init --gate strong` would add, and stops.
 
 ## The brief
 
@@ -122,23 +111,24 @@ rule waits for you rather than for another run. Until the audit has run at all, 
 the brief says so and settles nothing: the strength answers on its own, and the cell does not
 read `unsettled` for a question nobody asked.
 
-## The four answers
+## The three answers
 
-**Sign.** The rule, the proof and the test belong together. The walk writes the signature file
-and makes the signed commit, `sign(<feature>): RULE-N`. Collect several and commit them
-together at the end.
+Each stop is headed with the rule, its level and what it needs, such as
+`login RULE-3   level signed   hand check`, then shows `Rule`, `Proof` and
+`What the audit found`, and asks `sign / case / skip`.
 
-**Add a case.** Say in plain language what is missing - "it should also reject an expired
-token" - and the walk writes a new proof line into the spec with the next free proof id. The
-test is left for the next `purlin:build`. The walk writes specs and signatures, never code.
+**Sign.** The rule, the proof and the test belong together. On a hand check the walk first asks
+`What did you see, in one line:` and records the answer as the note. The walk writes the
+signature file and makes the signed commit, `sign(<feature>): RULE-N`. Collect several and
+commit them together at the end.
 
-**Hold.** The test does not prove the proof as written - it calls two helpers apart where the
-proof names the function that joins them - and a new proof line would not fix that. Name the
-missing case and the walk commits a hold, `hold(<feature>): RULE-N`. The machine cannot see
-that gap, which is why a hold is the one thing that stops a rule reaching `strong` on the
-measurements alone. Changing the test ends the hold.
+**Case.** Say in plain language what is missing - "it should also reject an expired token" -
+and the walk writes a new proof line into the spec with the next free proof id. The test is
+left for the next `purlin:build`. The walk writes specs and signatures, never code. Where the
+test does not prove the proof as written, add the missing case this way or change the proof,
+alone or with AI help.
 
-**Skip.** Move on and leave the cells alone. A skipped rule is on the list again next time,
+**Skip.** Move on and leave the cells alone. A skipped rule is in the queue again next time,
 which is the intended behaviour: nothing is marked as seen by being seen.
 
 Never narrow a rule or a proof to make an observation disappear. That lowers the claim instead of
@@ -148,14 +138,14 @@ all: the change is a pull request against the anchor's source repository.
 The walk closes by saying what happened and what is left:
 
 ```
-Walked 12 rules: 8 signed, 1 case added, 1 held, 2 skipped.
+Walked 5 rules: 3 signed, 1 case added, 1 skipped.
   billing RULE-2   add this proof line: reject an expired token with 401
 Commits: 4f1a9c2, 9b3e07d
 → Run: purlin:build
 → Run: purlin:sign
 ```
 
-The first `→` line appears when a case was added, the second when a rule is still on a list.
+The first `→` line appears when a case was added, the second when a rule is still in the queue.
 
 With nothing left and every rule meeting the gate, the walk writes the tag and the last line is
 `→ Run: git push origin signed/<version>`. With a rule still short it writes no tag and says so,
@@ -166,8 +156,9 @@ them.
 
 A signature locks one rule. The tag locks the version.
 
-When the walk leaves every rule meeting the gate, `purlin:sign` writes an annotated tag over
-the current commit, named `signed/<version>` from the `VERSION` file at the project root.
+When the walk leaves every rule meeting the gate, `purlin:sign` writes a signed tag over
+the current commit (`git tag -s`, with the key you sign commits with), named `signed/<version>`
+from the `VERSION` file at the project root.
 `purlin:sign --release <name>` names it something else. The message carries the commit and the
 gate, and the walk closes on two lines:
 
@@ -183,7 +174,7 @@ so the tag is the claim: every rule met the gate at this commit, as
 signatures are pinned together under one name, which is what an inspection is handed.
 
 Where a project has a runner, pushing the tag starts one last run that reruns the tagged tests
-on a clean machine, checks that every signature and every hold still binds the code the tag
+on a clean machine, checks that every signature still binds the code the tag
 points at, and checks that every record and brief under `ci/` came from the runner itself. A
 red run there is the host's word that this version is not proven.
 
@@ -191,10 +182,9 @@ red run there is the host's word that this version is not proven.
 
 ```
 purlin:sign <feature> RULE-N [RULE-M ...]        one rule, or several
-purlin:sign <feature>                            every rule of one feature on the lists
-purlin:sign --batch                              every rule on the lists
-purlin:sign <feature> RULE-N --hold "<case>"     the test does not prove the proof
-purlin:sign <feature> RULE-N --note "<text>"     a @manual proof, or a review that did not settle
+purlin:sign <feature>                            every row of one feature in the queue
+purlin:sign --batch                              every row in the queue
+purlin:sign <feature> RULE-N --note "<text>"     a hand check: what you saw
 ```
 
 Use these when you already know what you are signing. Each shows the brief for the rule first,
@@ -211,19 +201,19 @@ whose strong cell reads `manual test` or `unsettled`, and it lands in the signat
 Nobody is refused for who they are. The signature file names you and git names the commit's
 author; no list says who may sign.
 
-Under the `strong` gate a signature clears a `manual test`, `unsettled` or `held` cell, so
-`purlin:sign <feature>` and `purlin:sign --batch` sign every rule on the Review list, for that
-feature or for the project. A rule you name that is not on the Review list needs no signature
-there, so the skill says `sign: a signature is required only under the gate signed. Writing it
-anyway.` and writes it. Under `signed` both forms read the Review list and then the Sign list,
-the order the walk uses. Under `passed` nothing is written at all:
+Under the `strong` gate a signature clears a `manual test` or `unsettled` cell, so
+`purlin:sign <feature>` and `purlin:sign --batch` sign every row in the queue, for that feature
+or for the project. A rule you name that is not in the queue needs no signature there, so the
+skill says `sign: a signature is required only under the gate signed. Writing it anyway.` and
+writes it. Under `signed` both forms sign the queue's hand check and signature rows, in the
+order the walk uses. Under `passed` nothing is written at all:
 the skill says the gate is `passed`, names what `purlin:init --gate strong` would add, and
 stops.
 
 ## What makes a signature count
 
 A signature file binds three hashes - the rule text, the proof descriptions, and the test files
-behind them - plus the level at the time, what the audit observed, your email, the brief you read and the record you rested on. Under `signed`
+behind them - plus the level at the time, what the audit observed, your email, the machine (host name) and `os` you signed on, the brief you read and the record you rested on. Under `signed`
 two conditions decide whether it counts, and the signed cell names the one that failed:
 
 | The signature counts when | What the cell reads when it does not |
@@ -240,12 +230,12 @@ Changing the rule text, any of its proof descriptions, or the body of a test beh
 a re-audit that observes something
 different: a new strength, a new observation sentence, or a question it could settle before and
 cannot now. Each of those changes what the signature was given about, so the signed cell reads
-`stale`, the rule returns to the Sign list, and a person looks again. Re-marking the rule's
+`stale`, the rule returns to the queue, and a person looks again. Re-marking the rule's
 level stales nothing: the signature records the level but does not lock it.
 
 Changing the code alone stales nothing. The passed cell reads `out of date` until the next run
 clears it, and no person is asked to look.
 
-Read next: [team-workflow.md](team-workflow.md) for where the Review list comes from,
+Read next: [team-workflow.md](team-workflow.md) for where the queue comes from,
 [regulated-workflow.md](regulated-workflow.md) for signed commits and the tag,
 [specs-and-anchors.md](specs-and-anchors.md) for writing a proof that a test can prove.

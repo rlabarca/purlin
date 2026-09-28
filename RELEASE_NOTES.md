@@ -8,7 +8,7 @@ that command changes.
 0.10.0 replaces two grading scores and one ladder of seven states with three evidence levels, moves the evidence into the repository, and gives each level one command. The
 whole loop runs on one machine, at every gate: nothing needs a new service, a hosted anything or
 a setting on the git host. The evidence is files in git, and the marker that a version met the
-gate is an annotated tag a person pushes.
+gate is a signed tag a person pushes.
 
 ### What a 0.9.5 user does
 
@@ -28,7 +28,7 @@ skill opens with `→ Run: purlin:init --update`.
 
 The evidence a person wrote under 0.9.5 does not carry forward. Those files bound hashes this
 release computes differently, so the update drops them rather than converting them into
-something nobody attested to; they stay in git history, and `purlin:sign` walks the list
+something nobody attested to; they stay in git history, and `purlin:sign` walks the queue
 afterwards.
 
 ### What changed, by concept
@@ -40,8 +40,8 @@ its reasons. A rule no proof line names reads `no test` in its passed cell, with
 | Level | The question | Words the cell can read |
 |-------|--------------|-------------------------|
 | passed | did every tagged test for this rule pass? | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
-| strong | are those tests worth trusting? | `strong`, `weak`, `not audited`, `unsettled`, `manual test`, `held` |
-| signed | did a person say the rule, the proof and the test belong together? | `signed`, `unsigned`, `stale`, `held` |
+| strong | are those tests worth trusting? | `strong`, `weak`, `not audited`, `unsettled`, `manual test` |
+| signed | did a person say the rule, the proof and the test belong together? | `signed`, `unsigned`, `stale` |
 
 A cell exists only at or below the project's gate. Above the gate it is absent, not empty, which
 is why raising the gate is what makes a column, a tile or a filter appear.
@@ -60,15 +60,16 @@ anywhere is the ordinary case, at every gate. Evidence counts whoever wrote it.
 
 **Three commands, one per level.** `purlin:test` runs the tagged tests and writes the evidence.
 `purlin:audit` runs the tests and the breaks, then the AI audit on every rule whose level is
-`strong` or `signed`, and writes what it found into the same evidence. `purlin:sign` walks the Review list
-and then the Sign list one brief at a time when given no rule, signs, holds or notes a rule when
-given one, and closes by writing the tag. `purlin:verify`, `purlin:review` and `purlin:approve`
+`strong` or `signed`, and writes what it found into the same evidence. `purlin:sign` walks the queue one
+rule at a time when given no rule, signs or notes a rule when given one, and closes by writing
+the tag. `purlin:verify`, `purlin:review` and `purlin:approve`
 are gone, not aliased.
 
-**The tag is the marker.** When every rule meets the gate, `purlin:sign` writes the annotated tag
-`signed/<version>` over the commit, taking the name from the `VERSION` file or from
+**The tag is the marker.** When every rule meets the gate, `purlin:sign` writes the signed tag
+`signed/<version>` over the commit, with the key the signer signs commits with, taking the name from the `VERSION` file or from
 `--release <name>`, and prints `Run: git push origin signed/<version>`. No tag is written while
-any rule falls short, so the tag is the claim. A tag holds the whole tree, so the code, every
+any rule falls short, or while a feature's evidence is written and not committed, so the tag
+is the claim. A tag holds the whole tree, so the code, every
 evidence file and every signature are pinned together under one name. `purlin:audit --tag`
 and the `record/<name>` tags are gone with it, and nothing else pins the evidence.
 
@@ -135,7 +136,7 @@ one. The level decides which cells block the rule, whether the AI audit runs on 
 it needs a signature, which it does exactly when its level is `signed`. `purlin:spec` writes no
 level tag at `passed`. `risk` and `ai_review_at` are gone.
 
-**Signatures and holds.** One file per signature,
+**Signatures.** One file per signature,
 `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, so two signatures
 never conflict. It binds the hashes of the rule text, the proof text and the test body, and
 what the audit observed: the strength, the observation sentences and whether it settled. A
@@ -143,23 +144,26 @@ re-audit that sees something different stales the signature. It records the rule
 does not lock it, so marking a rule differently stales nothing. Signing is logged, not
 policed: under `signed` a signature counts when the commit that added it is signed and verifies
 and its bound hashes still match, whoever signed, whoever last committed to the test file and on
-whatever branch carries it. No setting names the people who may sign. A hold is a person's committed statement that the test does not prove the proof,
-with the missing case named; while it is current both the strong cell and the signed cell read
-`held`, whatever the tests do. A `--note` is the one line a signer writes for a rule reading
-`manual test` or `unsettled`.
+whatever branch carries it. No setting names the people who may sign. Each signature records the machine it was made on
+and that machine's operating system beside the signer and the time, and hashes neither. A
+`--note` is the one line a signer writes for a rule reading `manual test` or `unsettled`.
+`purlin:sign` signs nothing over evidence that is written and not committed: it names the
+feature and `purlin:test --commit`. A reviewer who finds the test does not prove the proof adds
+the missing case as a proof line, which is the walk's `case` answer.
 
 **No machine writes a signature file, ever.** A signature directory holds only files a person
 wrote.
 
-**Two lists, two tabs.** The Review list holds the rules whose strong cell reads `manual test`,
-`unsettled` or `held`, at `strong` and above. The Sign list holds the signable rules at `signed`.
-`purlin:sign` walks Review then Sign; the dashboard shows the same two as its Review tab and its
-Sign tab. `list` is the word for what the command walks and `tab` for what the page draws. A weak
-rule is build work and stays on the board, and so is a rule reading `not audited`.
+**One queue.** The queue is the one list of the rules that wait on a person, and each row says
+what it needs: a `hand check`, a rule reading `manual test` or `unsettled` at `strong` and above,
+which a person signs with a note; or a `signature`, a rule whose level is `signed` and whose
+tests and audit are met. `purlin:sign` walks it, `purlin:status` counts it as
+`Queue: <n> rules. <h> hand checks, <s> signatures.`, and the dashboard shows it on its Queue
+tab. A weak rule is build work and stays on the board, and so is a rule reading `not audited`.
 
 **The gate check.** `scripts/ci/verify_gate.py` becomes `scripts/ci/gate_check.py`, its log
 prefix `gate:`, its sections `Not passed (n)`, `Partial (n)`, `Weak (n)`, `Not audited (n)`,
-`To review (n)` and `To sign (n)`, and its JSON key `result` in place of `verdict`.
+`Queue (n)`, and its JSON key `result` in place of `verdict`.
 `purlin:sign` runs it before it writes a tag, and a runner runs it as the last step of every run.
 
 **Breaks engines.** `purlin:audit` breaks the code on purpose at `strong` and above and reports
@@ -204,11 +208,11 @@ output, in any casing:
 | `Proof ready` | the passed cell; a rule with no proof reads `no proof written` |
 | `lowest state`, `seven states` | the three cells |
 | `auto-approval` | nothing: no machine writes a signature file |
-| `review queue` | review list |
+| `review queue` | queue |
 | `purlin:verify`, `purlin:review`, `purlin:approve` | `purlin:audit`, `purlin:sign` |
 | `verify_gate`, `verify-gate:` | `gate_check`, `gate:` |
 | `validated/<name>` and `record/<name>` tags | `signed/<version>`, which `purlin:sign` writes |
-| `needs a person` | `manual test`, `unsettled` or `held`, each naming the work. The one surviving use is the review list's header |
+| `needs a person` | `manual test` or `unsettled`, each naming the work. The one surviving use is the queue's header |
 | `risk`, `[risk: ...]`, `ai_review_at` | the **level**, `[level: ...]` with the gate's own words |
 | `manual audit` | `not audited` and `unsettled` |
 | `not required` | removed: a rule whose level is below `signed` needs no signature, and its signed cell reads `signed` or `unsigned` |

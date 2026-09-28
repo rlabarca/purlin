@@ -93,7 +93,7 @@ the team in the same message:
    the gate.
 3. The status table and the board grow a column, a tile and a filter per level, so nobody
    configures a view. The table and the board carry the same columns, so `Strong` joins both at
-   this gate, and `Signable` and `Signed` join both at the next.
+   this gate, and `Signed` joins both at the next.
 
 At `signed`, add one more: `purlin:sign` closes by writing the tag `signed/<version>` when
 every rule meets the gate, and a person pushes it. No tag while any rule falls short, so the
@@ -182,8 +182,7 @@ spec; it never removes a claim.
 The one thing it does not carry forward is the old evidence a person wrote. The files v0.9.5
 left beside the specs bound hashes this release computes differently, and the words they were
 written in are gone, so the update drops them rather than converting them into something nobody
-attested to. After the update, `purlin:sign` walks the Review and Sign lists and the people who sign sign
-again. The old files stay in git history, which is where an inspection reads them.
+attested to. After the update, `purlin:sign` walks the queue and the people who sign sign again. The old files stay in git history, which is where an inspection reads them.
 
 Exit codes: 0 when nothing is pending or the run applied what was, 1 for `--check` with
 something pending, 2 when the directory is not a Purlin project.

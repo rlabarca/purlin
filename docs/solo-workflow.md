@@ -139,7 +139,7 @@ tiles: `Untested`, `Failing`, `Partial`, `Passing`. Four columns: `Spec`, `Rules
 and says how many carry no tagged test; `Tests` reads `<passed> of <rules>`, with the partial
 and failing counts after it. When a run happened, on which operating system and from which
 source is in the hover on those cells rather than in a column of its own. No strength, no
-Review tab, no signature: those cells do not exist at this gate, so the board has
+Queue tab, no signature: those cells do not exist at this gate, so the board has
 nothing to put in a column for them. [dashboard.md](dashboard.md) describes the four screens
 in full.
 
@@ -187,7 +187,7 @@ Raise to `strong` when any one of these becomes true:
 - A second person commits to the repository. Two people means nobody has measured whether the
   tests one of you wrote are worth trusting, and `strong` is the question that measures it.
 - Someone outside engineering owns a requirement. A PM's or a designer's rule needs `origin`
-  tags and a Review list to be worth tagging.
+  tags and a queue to be worth tagging.
 - You need to answer "what was proved at the commit we shipped?" to someone who was not there.
   A record at a known commit, carrying the strength the breaks measured, answers it; a test
   results file only says the tests ran.

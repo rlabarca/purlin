@@ -41,21 +41,21 @@ what a person would see.
 
 **What you need.** One of three, by preference.
 
-- **A checkout with Claude Code.** `purlin:sign` computes the list of rules whose next step is a
-  person, the rules whose level asks the most first, and walks it one brief at a time. At each stop
-  you sign, add a case in plain language, hold or skip.
+- **A checkout with Claude Code.** `purlin:sign` computes the queue, the rules whose next step is
+  a person, and walks it one brief at a time. At each stop you sign, add a case in plain
+  language, or skip.
 - **An assistant with the repository connected.** It reads the specs and the committed test
   results, opens pull requests carrying proof edits, and batches signatures into one commit.
 - **No AI at all.** Read `.purlin/tests.md` on the git host and review the diff by hand.
 
-**What you work.** The Review and Sign lists, never the whole rule list. A rule reaches them
-only when the cell that blocks it is one a person answers: a strong cell reading `manual test`,
-`unsettled` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A rule with no
+**What you work.** The queue, never the whole rule list. A rule reaches it only when the cell
+that blocks it is one a person answers: a strong cell reading `manual test` or `unsettled` (a
+`hand check`), or a signed cell reading `unsigned` or `stale` (a `signature`). A rule with no
 test, a failing rule, a weak rule and a rule reading `not audited` are all work for the machine
 or the build, and they stay on the board. A rule whose passed cell reads `out of date` is not
-on either list: the signature stands, and the next run clears the cell.
+in the queue: the signature stands, and the next run clears the cell.
 
-When the two lists are empty and every rule meets the gate, `purlin:sign` writes the tag
+When the queue is empty and every rule meets the gate, `purlin:sign` writes the tag
 `signed/<version>` and you push it. That tag is the whole claim: this version is proven, as
 [hard_gates.md](../references/hard_gates.md) defines it.
 
@@ -110,11 +110,11 @@ back once it merges.
 | Role | What it reports |
 |------|-----------------|
 | `pm` | Pins behind their source |
-| `qa` | Signatures gone stale, how long the Review and Sign lists are, the rules reading `manual test`, `unsettled` and `not audited`, rules whose every proof asserts a success path |
+| `qa` | Signatures gone stale, how long the queue is, the rules reading `manual test`, `unsettled` and `not audited`, rules whose every proof asserts a success path |
 | `eng` | Files touched and the rules behind them, rules with no test, pins behind, rules whose passed cell reads `out of date` |
 
 Run it at four moments: at the start of a session, after an anchor pin moved, before QA walks
-the Review list, and before a release. Those are the four times the tree has moved ahead of
+the queue, and before a release. Those are the four times the tree has moved ahead of
 the specs without anyone being told.
 
 With no role named, `purlin:drift` infers one from the files the session touched and says

@@ -21,7 +21,7 @@ proven?** There are three answers, one per evidence level. That answer is the **
 | Gate | Who it fits | What every rule must have | Signatures |
 |------|-------------|---------------------------|------------|
 | `passed` | one person working alone | a passing tagged test for every proof, from any source | none |
-| `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose level is `strong` or above: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding, no hold | none required; anyone may sign to clear a rule reading `manual test`, `unsettled` or `held` |
+| `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose level is `strong` or above: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding | none required; anyone may sign to clear a rule reading `manual test` or `unsettled` |
 | `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit | required on every rule whose level is `signed`; the signature names who signed |
 
 The answer sets three defaults, each changeable afterwards: `min_strength` unused, 70, 80; the
@@ -87,7 +87,7 @@ runs at push time, and a push is free, to any branch, for anyone.
 Where a runner is called for, the workflow triggers on two things and nothing else: a push of a
 `signed/**` tag, and a push to a `run/*` branch, the branch `purlin:test --remote` creates and
 deletes around one run. A pull request starts nothing. The job is named `purlin`. The tag run
-reruns the tagged tests on a clean machine, checks that every signature and every hold still
+reruns the tagged tests on a clean machine, checks that every signature still
 binds the rule, the proof, the test and the audit it names, checks that every file
 under `.purlin/evidence/ci/` was committed by the runner's own identity, and ends with
 `scripts/ci/gate_check.py --check --verify`, which fails the job when the gate is not met or
@@ -204,7 +204,7 @@ workflow carries it.
 
 | The run | What it does |
 |---------|--------------|
-| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks every signature and every hold against the tagged code, checks that every file under `.purlin/evidence/ci/` was committed by the runner's identity, runs the gate check, and commits nothing |
+| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks every signature against the tagged code, checks that every file under `.purlin/evidence/ci/` was committed by the runner's identity, runs the gate check, and commits nothing |
 | a `run/*` branch | Runs the tagged tests, then commits its own section of each feature's `.purlin/evidence/ci/` file onto that branch through the git host's API, at every gate |
 
 The runner writes no signature, ever, and it posts no comment and uploads no artifact: the

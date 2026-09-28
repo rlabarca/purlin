@@ -117,7 +117,7 @@ flowchart TD
   F -- "the runner's arm" --> H["Run the tests"]
   H --> Ci{"what the run is on"}
   Ci -->|"a run/* branch"| I2["Commit its own section of .purlin/evidence/ci/ through the git host API"]
-  Ci -->|"a signed/** tag"| I3["Check every signature and hold, and who committed each ci/ file. Commit nothing"]
+  Ci -->|"a signed/** tag"| I3["Check every signature, and who committed each ci/ file. Commit nothing"]
   T1 --> G["Print each rule's cells"]
   A2 --> G
   I2 --> G
@@ -327,7 +327,7 @@ minutes at all.
 
 | The run | What it does | Commits |
 |---|---|---|
-| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks that every signature and every hold still binds the rule, the proof, the test and the audit it names, checks that every file under `.purlin/evidence/ci/` was committed by the runner's own identity, then runs the gate check | nothing |
+| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks that every signature still binds the rule, the proof, the test and the audit it names, checks that every file under `.purlin/evidence/ci/` was committed by the runner's own identity, then runs the gate check | nothing |
 | a `run/*` branch | Runs the tagged tests | its own section of each feature's `.purlin/evidence/ci/<feature>.json`, at every gate, onto that branch |
 
 The tag run is a verification, not a fresh judgment: the evidence is already in the tree and

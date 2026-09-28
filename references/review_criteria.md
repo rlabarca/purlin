@@ -93,23 +93,23 @@ reads `weak` with that sentence as the reason. Where no model could be reached t
 run at all, and the strength answers level 2 on its own. A rule whose level is `signed` also
 needs a current signature in a signed commit.
 
-## Who is on Review, and who is on Sign
+## Who is in the queue
 
-Two lists hold the rules whose next step is a person, and nothing else holds any.
+One list holds the rules whose next step is a person, the queue, and nothing else holds any.
+Each row says what it needs.
 
-**Review** exists at `strong` and above and holds the rules whose strong cell reads one of
-three words: `manual test`, because the proofs are `@manual` and no test can be written;
-`unsettled`, because the AI audit ran and could not tell; or `held`, because a person wrote
-the case the test misses.
+A **hand check** exists at `strong` and above: a rule whose level is `strong` or `signed` and
+whose strong cell reads `manual test`, because the proofs are `@manual` and no test can be
+written, or `unsettled`, because the AI audit ran and could not tell.
 
-**Sign** exists at the gate `signed` and holds the **signable** rules: the ones whose level is
-`signed`, whose passed and strong cells are met, and that do not have a counting signature. Its
-rows read `unsigned`, `stale` or `held`.
+A **signature** exists at the gate `signed`: a rule whose level is `signed`, whose passed and
+strong cells are met, and that does not have a counting signature. Its row reads `unsigned` or
+`stale`. A rule that needs both is one hand check.
 
-A rule blocked at its passed cell is on neither, a rule with no proof written included: it is
-build work and it stays on the board. A weak rule is build work too, and so is a rule reading
-`not audited`, whose next step is `purlin:audit` rather than a reader. Both lists read the
-rules whose level asks the most first, then by feature and rule number.
+A rule blocked at its passed cell is not in the queue, a rule with no proof written included:
+it is build work and it stays on the board. A weak rule is build work too, and so is a rule
+reading `not audited`, whose next step is `purlin:audit` rather than a reader. A rule whose
+level is `passed` is never in it. The queue reads by feature, then by rule number.
 
 ## What the brief reports
 
@@ -133,12 +133,10 @@ reading the brief sees what the audit read.
 A `@manual` proof has no test, so there is no test body to read and no AI audit is asked
 for. Its strong cell reads `manual test` and its brief says so.
 
-What a person does with the brief is one of four things, and `purlin:sign` takes each:
+What a person does with the brief is one of three things, and `purlin:sign` takes each:
 
 - **Sign it.** The test proves the proof. `purlin:sign <feature> RULE-N`.
 - **Add a case.** The test is right as far as it goes and a case is missing, usually the
   failure the rule's proofs never name. Write the proof line; the next `purlin:build` writes
   the test for it.
-- **Hold it.** No test written against this proof text could prove the rule, or this one does
-  not. `purlin:sign <feature> RULE-N --hold "<the missing case>"` names what is missing.
 - **Skip it.** Come back to it later. Nothing is written.

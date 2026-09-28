@@ -19,7 +19,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 purlin:drift                    The view for your role, inferred from what you touched
 purlin:drift eng                Files touched, tests missing, pins, out of date
 purlin:drift pm                 Anchor pins behind their source
-purlin:drift qa                 Signatures stale, how long Review and Sign are, rules needing a person
+purlin:drift qa                 Signatures stale, how long the queue is, rules needing a person
 purlin:drift --since <N>        The last N commits instead of since the last record
 purlin:drift --since <date>     Since a date, YYYY-MM-DD
 ```
@@ -31,7 +31,7 @@ you chose in the first line.
 ## When to run it
 
 Run it at the start of a session, after an anchor pin moved, before QA
-walks the review list, and before a release. Those are the four moments where the tree has
+walks the queue, and before a release. Those are the four moments where the tree has
 moved ahead of the specs without anyone being told.
 
 Under the gate `passed` the `qa` view has nothing to report: there is no strength, no review
@@ -89,7 +89,7 @@ drift pm: 1 thing to look at
 **qa.** What is waiting for you.
 
 ```
-drift qa: Review is 9 rules and Sign is 3
+drift qa: the queue is 12 rules
 
   login RULE-3               signature stale: the rule text changed after it
   billing RULE-2             unsettled: the AI audit could not settle

@@ -43,7 +43,7 @@ mark above the gate is read as the gate.
 
 | Guide | What it covers |
 |-------|----------------|
-| [Review and signing](review-and-signing.md) | The level, the Review and Sign lists, the brief, `purlin:sign`, the tag, what stales a signature |
+| [Review and signing](review-and-signing.md) | The level, the queue, the brief, `purlin:sign`, the tag, what stales a signature |
 | [Dashboard](dashboard.md) | The page that opens from disk, the four screens, filters, both themes |
 
 ## Admin

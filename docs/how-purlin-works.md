@@ -27,14 +27,14 @@ flowchart TD
     Sig -->|"level signed"| Q3
     Q3 -->|signed| Met
     Q1 -->|"failed, partial, no test, not run, out of date"| Stop
-    Q2 -->|"weak, not audited, unsettled, manual test, held"| Stop
-    Q3 -->|"unsigned, stale, held"| Stop
+    Q2 -->|"weak, not audited, unsettled, manual test"| Stop
+    Q3 -->|"unsigned, stale"| Stop
 ```
 
 The **gate**, the one setting in `.purlin/config.json`, says how many of the three evidence
 levels a project asks for. `passed` asks one, `strong` asks two, `signed` asks three. A cell
-above the gate does not exist, so a project at `passed` never sees a strength, a review list or
-a signature.
+above the gate does not exist, so a project at `passed` never sees a strength, a queue or a
+signature.
 
 Every rule also has a **level**, `passed`, `strong` or `signed`, meaning what the gate means. A
 rule says its own with the tag `[level: passed]`, `[level: strong]` or `[level: signed]`, and a
@@ -64,7 +64,7 @@ when you make one. No skill, no agent and no hook pushes for you, and none opens
 request. A command commits, prints `Run: git push` and stops.
 
 **The tag is the marker that a version is proven.** When the walk leaves every rule meeting the
-gate, `purlin:sign` writes the annotated tag `signed/<version>` over the commit, and a person
+gate, `purlin:sign` writes the signed tag `signed/<version>` over the commit, and a person
 pushes it. No tag is written while any rule falls short; what the tag means is defined once, in
 [hard_gates.md](../references/hard_gates.md). A tag holds the whole tree at that
 commit, so the code, every evidence file and every signature are pinned together by one
@@ -102,7 +102,6 @@ new.
 |------|-----------|----------------|------------------|
 | evidence | `purlin:test`, `purlin:audit`, and a remote runner | `.purlin/evidence/local/<feature>.json`, or `.purlin/evidence/ci/<feature>.json`, and `.purlin/tests.md` | anyone, into `local/`; a runner, into `ci/`, through the git host's API. Both count at every gate |
 | signature | `purlin:sign <feature> RULE-N` | `specs/<category>/<feature>.signatures/` | a person, in a signed commit; the file names who signed |
-| hold | `purlin:sign <feature> RULE-N --hold "<case>"` | the same directory, `.hold.json` | any person, in a signed commit |
 
 Nothing on the git host guards those paths, and nothing has to. What makes a file under `ci/`
 a runner's is the commit that added it: a tag run reads that commit and fails the job unless
@@ -123,7 +122,7 @@ and no other:
 Where one exists it starts on two things: a push of a `signed/**` tag, and a push to the
 `run/*` branch `purlin:test --remote` creates. A pull request starts nothing and a push to an
 ordinary branch starts nothing. The tag run reruns the tagged tests on a clean machine, checks
-that every signature and every hold still binds the rule, the proof, the test and the audit
+that every signature still binds the rule, the proof, the test and the audit
 it names, checks that every record and brief under `ci/` was committed by the runner
 itself, and ends with the gate check. A run on a run branch runs the tests, audits at `strong`
 and above, and commits its records and briefs there.
@@ -162,8 +161,8 @@ have to meet the gate, whether the AI audit runs on it, and whether it needs a s
 all. The AI audit runs on every rule whose level is `strong` or `signed` and on no other, so a
 rule whose level is `passed` never reads `not audited` or `unsettled`. A rule needs a signature
 exactly when its level is `signed`. A rule whose level is `signed`, whose passed and strong
-cells are met, and that is still waiting for a signature is **signable**, which is what the
-board's `Signable` column counts and what the Sign list holds.
+cells are met, and that is still waiting for a signature is a `signature` row in the queue,
+the one list of the rules that wait on a person.
 
 **What if no proof names a rule?** Its passed cell reads `no test` with the reason
 `no proof written`, because there is nothing a test could be written against, and the next step
@@ -172,8 +171,9 @@ the strong cell.
 
 **What is the difference between `not audited` and `unsettled`?** `not audited` means the rule's
 level is `strong` or `signed` and no audit has run on this code yet: it waits for `purlin:audit`,
-not for you, so it is on no list. `unsettled` means the AI audit did run and could not settle
-whether the test proves the proof, so a person judges it. That one is on the Review list.
+not for you, so it is not in the queue. `unsettled` means the AI audit did run and could not
+settle whether the test proves the proof, so a person judges it. That one is in the queue as a
+`hand check`.
 
 **When do I say which operating system a test needs?** On the proof line, with `@env(windows)`,
 `@env(macos)` or `@env(linux)`. A proof with no tag runs anywhere and any operating system's

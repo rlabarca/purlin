@@ -43,7 +43,7 @@ sequenceDiagram
     Engineer->>Tree: purlin:spec, purlin:build, purlin:test
     Engineer->>Tree: purlin:audit --commit
     Tree->>Tree: purlin: evidence at sha7, the audit in each feature's file
-    Signer->>Tree: purlin:sign walks Review, then Sign, one brief at a time
+    Signer->>Tree: purlin:sign walks the queue, one brief at a time
     Tree->>Tree: git commit -S writes RULE-4.hash8.slug.json
     Tree->>Tree: every rule meets the gate, so the tag signed/1.4.0 is written
     Signer->>Origin: git push, then git push origin signed/1.4.0
@@ -57,8 +57,8 @@ when they make one.
 A change that leaves a rule's text, its proof and its test alone leaves that rule's signature
 standing. A change that touches one of the three stales it, and so does a re-audit that
 observes something new, because the signature binds what the audit saw as well. Until a
-signature for the new evidence exists, `purlin:sign` writes no tag and the gate check says
-`To sign`.
+signature for the new evidence exists, `purlin:sign` writes no tag and the gate check lists
+the rule under `Queue`.
 
 Stale and `out of date` are the two answers to "something changed", and the difference is what
 changed. The evidence carries a fingerprint of the spec, of the files the spec's `> Scope:`
@@ -83,8 +83,8 @@ no signature.
 `scripts/ci/gate_check.py --check` is the check a runner makes, as the last step of every run.
 `purlin:sign` asks the same question of the same cells before it writes a tag, and writes none
 while any rule falls short. The check prints one section per kind of
-work, `Not passed (n)`, `Partial (n)`, `Weak (n)`, `Not audited (n)`, `To review (n)`,
-`To sign (n)` and, under `--verify`, `Evidence (n)`, each naming the rules the cell that blocks
+work, `Not passed`, `Partial`, `Weak`, `Not audited`, `Queue` and, under `--verify`,
+`Evidence`, each naming the rules the cell that blocks
 them puts there and the reason that cell carries; it names the first twenty in a section and counts the rest. Its own lines, the
 gate, the counts and the last word on whether the gate held, open with `gate:`; the rules under
 a section heading are indented instead. It writes nothing, exits 0 when the gate is met and 1
@@ -116,8 +116,9 @@ commit as signed. `purlin:init --gate signed` prints these commands.
 
 `purlin:sign` writes one file per rule and makes one `git commit -S` whether it carries one
 rule or forty. Its subject is `sign(<feature>): RULE-N ...` for one feature and
-`sign(batch): <feature> RULE-N, ...` across several; a hold commit reads `hold(<feature>):
-RULE-N`. It does not push. The signer runs `git push`, and `git push origin signed/<version>`
+`sign(batch): <feature> RULE-N, ...` across several. It refuses to sign while a feature's
+evidence is written and not committed: `sign: <feature> has evidence that is not committed.
+Run: purlin:test --commit`. It does not push. The signer runs `git push`, and `git push origin signed/<version>`
 for the tag.
 
 A signature counts under `signed` when two things hold. Each is read from git or from a file,
@@ -141,8 +142,9 @@ gate rests on.
 purlin:sign
 ```
 
-With no argument it walks Review, then Sign. When it leaves every rule meeting the gate it
-writes an annotated tag over the current commit: `signed/<version>`, from the `VERSION` file at
+With no argument it walks the queue. When it leaves every rule meeting the gate it writes a
+signed tag over the current commit (`git tag -s`, with the key you sign commits with):
+`signed/<version>`, from the `VERSION` file at
 the project root, or `--release <name>` where a release carries its own name. The message names
 the commit and the gate. Then it prints two lines:
 
@@ -172,15 +174,15 @@ The level decides three things:
 | The level | The evidence it asks for | Does the AI audit run? | Does it need a signature? |
 |---|---|---|---|
 | `passed` | the rule's tagged tests pass on every platform a counting run covered | no | no |
-| `strong` | all of that, an audit, the strength floor, nothing the audit observed outstanding, no hold | yes | no |
+| `strong` | all of that, an audit, the strength floor, nothing the audit observed outstanding | yes | no |
 | `signed` | all of that, and a person's signature that counts | yes | yes |
 
 A rule meets the gate when its passed cell is met, its strong cell is met if its level is
 `strong` or `signed`, and its signed cell is met if its level is `signed`. Cells above a
 rule's level are still shown and do not block. A rule needs a signature exactly when its level
 is `signed`. A rule whose level is `signed`, whose passed and strong cells are met, and that
-has no signature that counts is **signable**: the board's `Signable` column counts it, the
-`To sign` card counts it for the project, and the Sign tab lists it until someone signs it.
+has no signature that counts is a `signature` row in the queue: the `Queue` card counts it for
+the project, and the Queue tab lists it until someone signs it.
 
 ## What a machine writes, and what it never writes
 
@@ -194,7 +196,7 @@ worth reading: the machine's evidence and a person's attestation are written by 
 hands, into different paths.
 
 Where a project has a runner, a push of the `signed/**` tag starts one last run: it reruns the
-tagged tests on a clean machine, checks that every signature and every hold still binds the
+tagged tests on a clean machine, checks that every signature still binds the
 rule, the proof, the test and the audit it names, checks that every file under `ci/`
 was committed by the runner's own identity, and ends with the gate check. On GitHub that
 identity is read from the commit's committer and the host's signature on it. On Azure DevOps,
@@ -219,7 +221,7 @@ guide, a printed label read by eye, a physical step. Tag the proof `@manual`:
 ```
 
 There is no test and no break measurement. The strong cell reads `manual test` with the
-reason `manual proof`, and the rule waits on the Review list. The evidence is a signature carrying a
+reason `manual proof`, and the rule waits in the queue as a `hand check`. The evidence is a signature carrying a
 one-line note saying what the person did and what they saw:
 
 ```
@@ -228,23 +230,12 @@ purlin:sign <feature> RULE-4 --note "read the four messages on 2026-09-16; each 
 
 A rule whose level is `strong` or `signed` and on whose code no audit has run yet reads `not
 audited`, with the reason `no audit has run on this code`. It waits for `purlin:audit`, not for a
-person, so it is on no list. Once the audit has run and could not settle the question, the cell
-reads `unsettled` and the rule is on the Review list. The same `--note` settles it.
+person, so it is not in the queue. Once the audit has run and could not settle the question,
+the cell reads `unsettled` and the rule is in the queue as a `hand check`. The same `--note`
+settles it.
 
-## Holds
-
-A hold is a person's committed statement that the test does not prove the proof, with the
-missing case named:
-
-```
-purlin:sign <feature> RULE-3 --hold "the lock expiry is never read"
-```
-
-It writes `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json` and
-commits it, signed like any other `purlin:sign` commit. While the hold is current both the strong
-cell and the signed cell read `held`, whatever the level and whatever the tests do, so no rule
-slips past level 2 on the measurements alone. Changing the test ends the hold, because the
-hashes it binds no longer match. A signature by a person for the current hashes outranks it.
+A person who finds that the test does not prove the proof adds the missing case as a proof line,
+the walk's `case` answer, or changes the proof, alone or with AI help.
 
 ## The evidence trail
 
@@ -258,9 +249,10 @@ hand:
   what a signer was shown, and the signature binds what the audit found.
 - **`specs/<category>/<feature>.signatures/`.** One file per signature, binding the hashes of
   the rule, the proof and the test, the level at the time, what the audit observed, the signer's
-  email and the evidence file they rested on. The commit that added it is signed
+  email, the time, the `machine` (host name) and `os` they signed on, and the evidence file they
+  rested on. The commit that added it is signed
   by a person.
-- **`refs/tags/signed/*`.** The annotated tag on each version that met the gate. A tag holds
+- **`refs/tags/signed/*`.** The signed tag on each version that met the gate. A tag holds
   the whole tree, so one name reaches the code and every file above.
 
 Add `.purlin/config.json`'s history for who could sign at any date, and the four questions an

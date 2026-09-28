@@ -78,7 +78,7 @@ or a marker in the tree produced none. Read those before the table.
 ## Step 4: what the gate changes
 
 This is the pattern every Purlin skill follows. Under `passed` the whole project is this one
-cell: no strength, no level, no review list, no signature. Under `strong` the strong cell and
+cell: no strength, no level, no queue, no signature. Under `strong` the strong cell and
 the test strength appear beside it; under `signed` the signed cell appears too. Evidence from either source counts at every gate; what `trust: remote` changes is that
 `purlin:sign` asks for a `ci` run first. Read the gate from `.purlin/config.json` and print
 only what exists; `references/hard_gates.md` defines the three gates once.
