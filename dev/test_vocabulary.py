@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # covered, which the passed cell lists under `platforms`. The registry's own
 # spellings stay retired, in LITERALS below.
 WORDS = ("gauge", "HOLLOW", "PROVABLE", "receipt", "mutation score",
-         "caught score", "records branch", "forge", "queue", "CODEOWNERS", "approver rule",
+         "caught score", "records branch", "forge", "CODEOWNERS", "approver rule",
          # the 0.10.0 three-level model
          "tested", "recorded", "approved", "approve", "approval", "approver", "approvers",
          "verified", "verdict", "reviewed", "re-verify",
@@ -80,9 +80,13 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             # decision 36: a rule's level uses the gate's three words. The
             # rule tag, its payload field and the setting it replaced are
             # retired by their machine spellings.
-            "[bar:", "bar_from", "sign_at")
+            "[bar:", "bar_from", "sign_at",
+            # decision 37: one queue, and no holds. The flag, the two lists
+            # and the payload field they fed are retired by their machine
+            # spellings; hold and review stay plain English words.
+            "--hold", "review_list", "sign_list", "signable")
 
-# The review list is the one place a person is needed, and its header is the
+# The queue is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
 # hit on it falls inside one of these phrases.
 # `verdict` stays retired in prose. It came back in 0.10.0 as one field name,
@@ -145,7 +149,7 @@ def _tracked():
 
 
 def _allowed_spans(probe):
-    """Where the phrases the review list's header may use sit in one line."""
+    """Where the phrases the queue's header may use sit in one line."""
     spans = []
     for phrase in ALLOWED_PHRASES:
         start = probe.find(phrase)
@@ -254,7 +258,7 @@ def test_a_retired_phrase_split_by_a_line_break_is_caught():
     assert findings == ["fixture.md:1: needs a person"], findings
 
 
-def test_the_review_list_header_may_wrap():
+def test_the_queue_header_may_wrap():
     """The one sentence that may say so is allowed across a line break too."""
     fixture = "The header reads `4 rules need a\nperson` and nothing else does.\n"
     assert _collapsed_findings("fixture.md", fixture, list(LITERALS)) == []
