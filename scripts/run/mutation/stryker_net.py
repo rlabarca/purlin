@@ -1,4 +1,4 @@
-"""Stryker.NET: the engine that breaks xunit code.
+"""Stryker.NET: the engine that breaks the code a dotnet suite tests.
 
 One run per feature, over that feature's scope files alone:
 

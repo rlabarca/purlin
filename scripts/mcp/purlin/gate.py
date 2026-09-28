@@ -41,7 +41,7 @@ strength, so no breaks run there either.
 `audit_parallel` is how many model calls `purlin:audit` makes at once, an
 integer from 1 to 16; any other value is read as 4 with one warning.
 
-The keys v0.9.5 wrote that this release no longer reads are ignored with one
+The keys v0.9.5 wrote that this release does not read are ignored with one
 warning naming `purlin:init --update`.
 """
 

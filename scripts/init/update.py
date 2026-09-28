@@ -288,8 +288,8 @@ def _apply_untracked(root, files, args, out):
                + ''.join(line + '\n' for line in missing))
         out.done('.gitignore')
     out.say('deleted %d file%s beside the specs and untracked the dashboard '
-            'data and the cache; proofs are runtime now and evidence lives in '
-            '%s' % (gone, '' if gone == 1 else 's', EVIDENCE_DIR))
+            'data and the cache; a run writes no file beside a spec, and '
+            'evidence lives in %s' % (gone, '' if gone == 1 else 's', EVIDENCE_DIR))
 
 def _detect_hooks(root):
     """Every git hook v0.9.5 installed. This release installs none."""

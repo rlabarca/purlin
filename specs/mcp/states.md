@@ -58,7 +58,7 @@
 - RULE-58: The `Next:` line for rules with no current run to read names `purlin:audit` at `strong` and at `signed`, because evidence either source wrote counts at both and the audit runs the tests too, and names `purlin:test --remote` instead where the project's `trust` is `remote`, which is the one setting that asks for a `ci` run; the `Queue:` line beside it reads the one sentence every surface says a person is owed in, so one rule reads `1 rule needs a person`
 - RULE-39: A project with no specs under `specs/` says what to run instead of printing an empty table [level: passed]
 - RULE-40: The report carries no emoji: the only characters above U+2000 it prints are the arrow, the two triangles and the horizontal rule the design system allows
-- RULE-41: A config carrying a key this release no longer reads prints the line `Run: purlin:init --update` above the next step
+- RULE-41: A config carrying a key 0.9.5 wrote that this release does not read prints the line `Run: purlin:init --update` above the next step
 - RULE-50: A rule's level is the lower of its `[level: ...]` tag and the gate, because the gate is the ceiling, and the gate where it names none; the rule entry carries `level`, the effective one, and `level_marked`, the tag as the spec wrote it or null
 - RULE-52: A rule meets the gate when its passed cell is met, its strong cell is met if its level is `strong` or `signed`, and its signed cell is met if its level is `signed`; a cell above the rule's level is still computed and shown, and does not block it
 - RULE-53: The rollup and the summary carry `queue`, how many of their rules are in the queue, and `hand_checks`, how many of those need a hand check
@@ -121,7 +121,7 @@
 - PROOF-45 (RULE-38): Run the status report and count the lines opening with the arrow and `Next:`; verify there is exactly 1, and that on a project whose rules have a proof and no test it names `purlin:build`
 - PROOF-46 (RULE-39): Run the status report on a project with no spec files; verify the text carries `No specs found` and names `purlin:init`
 - PROOF-47 (RULE-40): Run the status report and read every character of it; verify each one is below U+2000 or is one of the four glyphs the design system allows, so no emoji reaches a terminal
-- PROOF-48 (RULE-41): Set a config key this release no longer reads and run the status report; verify the output carries the line `Run: purlin:init --update`
+- PROOF-48 (RULE-41): Set a config key 0.9.5 wrote that this release does not read and run the status report; verify the output carries the line `Run: purlin:init --update`
 - PROOF-49 (RULE-36): Run the status report over this repository's own specs; verify the output carries the `Proofs` and `Tests` columns, that a row names a count of rules, and that its last line opens with the arrow
 - PROOF-50 (RULE-42): Write a file under `.purlin/evidence/ci/` whose `source` field reads `local`; verify the reader leaves it out and that the payload's warnings carry exactly one line naming its path and saying it is ignored
 - PROOF-51 (RULE-43): Write a `ci` section from `linux` and one from `windows` in which every proof passes; verify the passed cell's `platforms` carries one entry per operating system, each with the word `passed`, the source `ci` and the section's own time

@@ -81,8 +81,7 @@ function tileHover(bucket, project) {
 
 /* The columns the gate reaches, and no others. Every when, who and platform
    detail is in the cell's hover rather than a column of its own, which is
-   what let the board drop from eight columns to six and fit a 1024-wide
-   window where it used to need 1100.
+   what lets six columns fit a 1024-wide window.
 
    `width` is the share of the table the column asks for, and `floor` is the
    width below which it stops being read: a track narrower than its heading
@@ -123,8 +122,7 @@ function proofsCell(feature) {
 
 /* What the marked tests found, as the passed cells read it: how many of the
    spec's rules passed everywhere they ran, then the two words that say they
-   did not. The hover says which platforms ran and what each found, which is
-   the column the board used to spend on `Last run`. */
+   did not. The hover says which platforms ran and what each found. */
 function testsCell(feature) {
   var found = {};
   var rules = ownRules(feature);

@@ -3,9 +3,9 @@
 The dashboard's board and the `purlin:status` table both answer the same
 questions about one spec, and they have to answer them in the same
 words: a reader who learns the board reads the table without learning it
-again. So the columns, the cell text, the bucket names and the next step
-live here, and each surface renders what this module returns rather than
-composing its own string. `scripts/report/src/board.js` mirrors these
+again. So the columns, the cell text and the bucket names live here, and
+each surface renders what this module returns rather than composing its own
+string. `scripts/report/src/board.js` mirrors these
 strings on the dashboard's side; changing one here changes the table.
 
 The columns, left to right:
@@ -31,7 +31,7 @@ SIGNED_COLUMNS = ('Signed',)
 
 # The one tile a rule is counted in, and the word every surface prints for it.
 # The bucket key `passed` reads `Passing` on a tile, because the tile counts
-# rules whose tests pass now rather than a state they were once put in.
+# rules whose tests pass now.
 BUCKET_LABELS = (('untested', 'Untested'), ('failing', 'Failing'),
                  ('partial', 'Partial'), ('passed', 'Passing'),
                  ('strong', 'Strong'), ('signed', 'Signed'))

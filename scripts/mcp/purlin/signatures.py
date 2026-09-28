@@ -18,7 +18,7 @@ The file, field by field in `references/formats/signature_format.md`:
       "triple": "<the first 16 characters of the triple hash>",
       "rule_hash": "<sha256 of the rule text>",
       "proof_hash": "<sha256 of the proof text>",
-      "test_hash": "<sha256 of the test bodies>",
+      "test_hash": "<sha256 of the test files' blob ids>",
       "test_hash_kind": "file",
       "audit_hash": "<sha256 of what the audit found>",
       "level": "signed",
@@ -80,7 +80,7 @@ def signer_slug(email):
 
 
 def triple_hash(rule_hash, proof_hash, test_hash):
-    """The one hash a signature binds: rule text, proof text and test body."""
+    """The one hash a signature binds: rule text, proof text and test files."""
     digest = hashlib.sha256()
     digest.update(('%s\n%s\n%s' % (rule_hash or '', proof_hash or '',
                                    test_hash or '')).encode('utf-8'))

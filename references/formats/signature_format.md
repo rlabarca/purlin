@@ -93,7 +93,7 @@ is OPTIONAL.
 | `signer` | string | the signer's email |
 | `machine` | string | the name of the host the signature was made on, as its operating system reports it. Logged, not hashed and not compared |
 | `os` | string | `windows`, `macos` or `linux`, the operating system of that host. Logged, not hashed and not compared |
-| `note` | string or null | the one line `purlin:sign --note` writes for a `@manual` proof or an AI audit that could not settle; null otherwise |
+| `note` | string or null | the one line `purlin:sign --note` writes for a `@manual` proof; null otherwise |
 | `timestamp` | string | ISO 8601 UTC with `Z` |
 | `gate` | string | the gate in force when the signature was written: `passed`, `strong` or `signed` |
 | `evidence` | string or null | the feature's evidence file the signature rests on, the `local` one where both sources have one |
@@ -128,8 +128,7 @@ A current signature is not automatically a signature that counts. What decides
 depends on the gate.
 
 Below `signed` a committed signature counts, as long as its hashes match. What
-it clears at `strong` is a question the machine could not settle: a `@manual`
-proof, or an AI audit that could not tell.
+it clears at `strong` is a question no test can settle: a `@manual` proof.
 
 Under `signed` a signature counts when two things hold:
 

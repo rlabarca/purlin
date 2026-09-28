@@ -1,16 +1,10 @@
 #!/bin/sh
-# Purlin interpreter resolver. One answer to "which Python runs this", shared
-# by every entry point that needs one.
-#
-# Two ways in, resolving identically:
-#
-#   . "$PLUGIN_ROOT/scripts/purlin_python.sh"
-#       defines purlin_python and leaves the answer in $PURLIN_PY, empty when
-#       there is none.
+# Purlin interpreter resolver: which Python runs a Purlin script.
 #
 #   sh "$PLUGIN_ROOT/scripts/purlin_python.sh" <script> [args...]
-#       execs the resolved interpreter on <script>. This is the form a JSON
-#       launcher takes, where "command" is one program and no shell runs.
+#
+# execs the resolved interpreter on <script>. This is the form a JSON launcher
+# takes, where "command" is one program and no shell runs.
 #
 # The order, the first that runs winning:
 #   1. $PURLIN_PYTHON, for a host whose interpreter carries none of the names
@@ -23,10 +17,9 @@
 #      own path, so $PURLIN_PY is always a single word
 #
 # When none of them runs, this writes one line to stderr naming all four and
-# leaves $PURLIN_PY empty. It never exits non-zero: the git hooks each have a
-# never-block contract of their own, and the MCP launcher is a server whose
-# stderr the client shows, so each caller decides for itself what a missing
-# interpreter means rather than inheriting a status from here.
+# exits 0: the MCP launcher is a server whose stderr the client shows, so the
+# client decides what a missing interpreter means rather than inheriting a
+# status from here.
 #
 # POSIX sh only. This file runs before anything has established that bash is
 # present, on the operating system least likely to have it.
@@ -65,15 +58,9 @@ purlin_python() {
     return 1
 }
 
-# Sourced or run? $0 is this file only when it was run, because a dot-command
-# leaves the sourcing script's own $0 in place.
-if [ "${0##*/}" = "purlin_python.sh" ]; then
-    if [ "$#" -eq 0 ]; then
-        echo "purlin: usage: sh purlin_python.sh <script> [args...]" >&2
-        exit 0
-    fi
-    purlin_python || exit 0
-    exec "$PURLIN_PY" "$@"
+if [ "$#" -eq 0 ]; then
+    echo "purlin: usage: sh purlin_python.sh <script> [args...]" >&2
+    exit 0
 fi
-
-purlin_python || :
+purlin_python || exit 0
+exec "$PURLIN_PY" "$@"

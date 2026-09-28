@@ -20,8 +20,8 @@ def force_utf8_stdio(line_buffering=False):
     """Reconfigure stdout and stderr to UTF-8, optionally line-buffered.
 
     Every stream that cannot be reconfigured is left alone: a caller that
-    replaced `sys.stdout` with a plain object still works, and so does a
-    Python old enough to lack `reconfigure` (3.6). Nothing here raises.
+    replaced `sys.stdout` with a plain object still works. Nothing here
+    raises.
     """
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, 'reconfigure', None)

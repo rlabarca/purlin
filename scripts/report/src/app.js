@@ -29,8 +29,7 @@ var GATE_LEVELS = ['passed', 'strong', 'signed'];
    and still strong, so it is counted in all three. `stale` is a flag
    counted beside the tiles, never instead of one. The keys and the
    labels are `board.BUCKET_LABELS`: the bucket `passed` reads `Passing` on a
-   tile, because the tile counts rules whose tests pass now rather than a
-   state they were once put in. */
+   tile, because the tile counts rules whose tests pass now. */
 var BUCKETS = ['untested', 'failing', 'partial', 'passed', 'strong', 'signed'];
 var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
   partial: 'Partial', passed: 'Passing', strong: 'Strong', signed: 'Signed'};
