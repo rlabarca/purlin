@@ -103,8 +103,9 @@ tag and the gate, so a tag above the gate is read as the gate and
 one of the three words is read as no tag. Any other bracketed text at the end
 of the line is not a tag: it stays in the claim.
 
-A rule no proof line names reads `no test` in its passed cell, with the reason
-`no proof written`.
+A rule no proof line names is read from a test marked with the rule's own id,
+`purlin: <feature> RULE-<n>`; with no such test its passed cell reads `no test`,
+with the reason `no proof written`.
 
 ### Good rules
 
@@ -125,9 +126,13 @@ A rule no proof line names reads `no test` in its passed cell, with the reason
 - PROOF-N (RULE-A, RULE-B, RULE-C): <a flow that exercises several rules in order>
 ```
 
-A proof describes what a test asserts, not how it is written. Every rule needs
-at least one proof; several proofs can name the same rule, and one proof can
-name several rules when it drives a flow through all of them.
+A proof describes what a test asserts, not how it is written. Proofs are
+optional at the gate `passed`, where a rule's passing tests are the whole of its
+evidence, and required from `strong` up: there a rule whose test passes and
+that has no proof reads `no proof` in its strong cell, with the reason `the rule
+has a test and no proof`, and does not meet the gate. Several proofs can name
+the same rule, and one proof can name several rules when it drives a flow
+through all of them.
 
 ### The manual tag
 
