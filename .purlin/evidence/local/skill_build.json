@@ -1,0 +1,86 @@
+{
+  "feature": "skill_build",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T15:34:43Z",
+      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "dirty": false,
+      "fingerprint": {
+        "code": "f74efd79af7d8913ad7022437ecfde5e9505c6a717a7516b642d4d9bce541a83",
+        "spec": "cac190fb639e582175e61e6073403bc606793d506859c0b3addf6b4ad603b13a",
+        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillBuild::test_the_frontmatter_names_the_skill"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillBuild::test_it_reads_the_state_and_runs_the_tests_through_the_test_skill"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillBuild::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skills.py::TestSkillBuild::test_it_stays_under_its_ceiling"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillBuild::test_the_commit_body_contract_holds"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skills.py::TestSkillBuild::test_it_keeps_the_scope_in_the_commit_with_the_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skills.py::TestSkillBuild::test_it_looks_for_an_existing_test_before_it_writes_one"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/skills/skill_build.md"
+}

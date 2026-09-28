@@ -1,0 +1,68 @@
+{
+  "feature": "skill_status",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T15:34:43Z",
+      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "dirty": false,
+      "fingerprint": {
+        "code": "26adc8a959505e7cd87ae64fc98f909d4830377dda529287f835976c5e5fd35c",
+        "spec": "a147aecaa2dfe2a8738a288077efa2dc1d7a17ff911ae2b0ccd56ed24607524f",
+        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillStatus::test_the_frontmatter_names_the_skill"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillStatus::test_it_prints_the_numbers_the_tool_returned"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillStatus::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skills.py::TestSkillStatus::test_it_stays_under_its_ceiling"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillStatus::test_naming_a_spec_shows_its_rules"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/skills/skill_status.md"
+}

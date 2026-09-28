@@ -1,0 +1,139 @@
+{
+  "feature": "schema_spec_format",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T16:56:15Z",
+      "commit": "98fc3cbed94727792e632ba854fcb13ef4e6ed6d",
+      "dirty": false,
+      "fingerprint": {
+        "code": "59c903e8f0bef93f7b83cd862be6ed325a6c7431351cee195a7177bdfe048d2d",
+        "spec": "db95783d4b7cd465f0d92a92dd981ffebae4f9589a45eae7efbfaa06654e9de7",
+        "tests": "f182a2444c307b5a585ec83467b5bbbd89ee09f4c9917c0a0ae8d41da4bdf509"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatReference::test_format_documents_two_sections"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_unnumbered_rule_triggers_warning"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatConventions::test_all_proof_lines_match_pattern"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_a_rule_with_no_proof_line_reads_no_proof_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_requires_includes_referenced_rules"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_scope_metadata_parsed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatConventions::test_spec_headings_use_correct_prefix"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_schema_spec_format.py::TestSpecFormatMultilineDescription::test_multiline_description_continuation"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::TestTagParsing::test_prose_ending_in_an_at_word_is_not_a_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::TestTagParsing::test_real_spec_is_parsed_correctly"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_schema_spec_format.py::TestTagParsing::test_env_takes_three_values_and_nothing_else"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_schema_spec_format.py::TestAnchorNoteMetadata::test_note_field_is_ignored_by_the_parser"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_schema_spec_format.py::TestAnchorNoteMetadata::test_the_section_headings_are_read_in_any_case"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/_anchors/schema_spec_format.md"
+}

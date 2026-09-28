@@ -1,0 +1,145 @@
+{
+  "feature": "config_engine",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T12:46:49Z",
+      "commit": "4c194737a6f77be2dfaac725b89389a1302537a2",
+      "dirty": false,
+      "fingerprint": {
+        "code": "d6a9ff8a0990ffae6f54ff4d0c9f5a55f932bce0dbca276bee593fe14edbd07c",
+        "spec": "e5b8f38871633fe0cba8e714c8350a360f3473e09271e8d20429ea7c3fce114c",
+        "tests": "ef7feaf9d215521732122ae11a7ec0fc9e356b99e3b583005e13baf9553ccd28"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_config_engine.py::TestFindProjectRoot::test_env_var_takes_precedence_only_when_the_directory_exists"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_config_engine.py::TestFindProjectRoot::test_climbs_to_purlin_marker"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_config_engine.py::TestFindProjectRoot::test_falls_back_to_cwd"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_config_engine.py::TestResolveConfig::test_the_config_is_config_json_whole"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_config_engine.py::TestCLI::test_dump_in_process_prints_the_config"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_config_engine.py::TestCLI::test_cli_key"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_config_engine.py::TestCLI::test_key_in_process_prints_the_value"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_config_engine.py::TestResolveConfig::test_no_config_returns_empty"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_config_engine.py::TestUpdateConfig::test_a_write_reaches_config_json"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_config_engine.py::TestUpdateConfig::test_a_write_creates_config_json_when_absent"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_config_engine.py::TestUpdateConfig::test_the_written_value_is_what_the_resolver_reads"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_config_engine.py::TestUpdateConfig::test_a_write_preserves_every_other_key"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_config_engine.py::TestUpdateConfig::test_atomic_replacement"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_config_engine.py::TestFindProjectRoot::test_resolve_project_root_names_how_it_resolved"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-13": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/mcp/config_engine.md"
+}

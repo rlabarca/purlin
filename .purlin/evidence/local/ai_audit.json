@@ -1,0 +1,326 @@
+{
+  "feature": "ai_audit",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T12:46:49Z",
+      "commit": "4c194737a6f77be2dfaac725b89389a1302537a2",
+      "dirty": false,
+      "fingerprint": {
+        "code": "c2ac416fd11fee9b42390b6f96a2de3462f24b0c97ad4087e484d696bbe16765",
+        "spec": "599dad05c45aba4d58b97172afb9a50024a2b59e7273410efd1d16544afa9b76",
+        "tests": "ff20b018eddbc70a26e03d247b127f2a828c07cd1bc4ebfbb09bd3a1f9c3afb7"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_passing_rule_with_no_entry_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_rule_that_did_not_pass_or_has_no_test_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_passed_level_is_read_only_at_the_gate_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_an_entry_for_the_current_hashes_is_skipped_unless_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_ai_audit.py::TestThePrompt::test_the_prompt_is_the_criteria_file_verbatim"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_ai_audit.py::TestThePrompt::test_the_prompt_asks_for_observations_and_bars_a_recommendation"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_ai_audit.py::TestTheCall::test_the_prompt_goes_on_stdin_and_never_in_the_arguments"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_ai_audit.py::TestTheCall::test_a_call_is_given_300_seconds_and_stdin_closes_after_the_prompt"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_ai_audit.py::TestTheCall::test_one_call_per_rule_and_four_at_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_ai_audit.py::TestTheCall::test_the_number_at_once_is_what_it_is_given"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_ai_audit.py::TestTheAnswer::test_settled_with_nothing_found_is_strong"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_ai_audit.py::TestTheAnswer::test_settled_with_a_line_is_weak_and_the_line_is_the_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_ai_audit.py::TestTheAnswer::test_not_settled_is_undecided_with_its_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_ai_audit.py::TestTheAnswer::test_an_answer_in_no_shape_says_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_ai_audit.py::TestTheAnswer::test_the_answer_names_its_model_and_the_criteria_it_was_sent"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_ai_audit.py::TestTheAnswer::test_the_model_that_wrote_most_is_the_one_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_no_claude_on_the_path_calls_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_non_zero_exit_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_call_past_its_limit_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_an_answer_with_no_settled_line_is_asked_once_more"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_the_test_body_is_shown_beside_the_rule"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_the_strength_comes_off_the_evidence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_a_manual_proof_has_no_test_where_a_test_would_be"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_ai_audit_tests_named.py::TestEachTestShowsItsOwnSource::test_each_name_shows_its_own_body"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_ai_audit_tests_named.py::TestEachTestShowsItsOwnSource::test_a_name_the_file_no_longer_holds_shows_no_body"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_ai_audit_tests_named.py::TestANameFromARecordFindsItsSource::test_each_runner_name_form_finds_its_own_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_ai_audit.py::TestTheJavaScriptReader::test_braces_and_apostrophes_do_not_cut_a_body"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_ai_audit.py::TestTheJavaScriptReader::test_regex_literals_comments_and_division_do_not_cut_a_body"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_ai_audit.py::TestWriting::test_reading_asking_and_printing_write_no_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_ai_audit.py::TestWriting::test_the_triple_moves_with_the_text"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_help_exits_zero_and_a_bad_option_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_an_unknown_feature_exits_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_the_script_runs_as_a_command_and_calls_no_model"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_ai_audit.py::TestWriting::test_the_rendering_names_the_rule_and_what_the_audit_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_one_rule_prints_and_a_feature_prints_every_rule"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_a_rule_that_is_not_there_is_not_read"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
+        "RULE-13": "passed",
+        "RULE-14": "passed",
+        "RULE-15": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/review/ai_audit.md"
+}

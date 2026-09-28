@@ -1,0 +1,86 @@
+{
+  "feature": "skill_init",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T15:34:43Z",
+      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "dirty": false,
+      "fingerprint": {
+        "code": "dd7bed4c5a79fde93a28109a8b9b872e450350a83d6901e6eaefc5c37bf2cef1",
+        "spec": "716a3acb91ebbca92c4c266d4db4adf18d9062b899a4b64bdc4ade00d300fa95",
+        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillInit::test_the_frontmatter_names_the_skill"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillInit::test_it_runs_the_scaffold_script"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillInit::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skills.py::TestSkillInit::test_it_stays_under_its_ceiling"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillInit::test_it_names_the_four_questions_in_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skills.py::TestSkillInit::test_it_shows_the_eight_settings"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skills.py::TestSkillInit::test_it_writes_the_tests_setting_and_installs_nothing"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/skills/skill_init.md"
+}

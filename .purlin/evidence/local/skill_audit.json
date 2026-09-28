@@ -1,0 +1,86 @@
+{
+  "feature": "skill_audit",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T15:34:43Z",
+      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "dirty": false,
+      "fingerprint": {
+        "code": "84904fe11d8b5ec371ecd7be6c199de39634308a907c3af25b77a18746747314",
+        "spec": "6144637b8edb62744ef21ea8fc488db16a299cf49652e36904de4bb90d61dc06",
+        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillAudit::test_the_frontmatter_names_the_skill"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillAudit::test_it_runs_the_run_script_and_leaves_ci_to_ci"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillAudit::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skills.py::TestSkillAudit::test_it_stays_under_its_ceiling"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillAudit::test_it_says_which_evidence_counts_under_which_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skills.py::TestSkillAudit::test_the_gate_decides_the_breaks_and_the_audit_writes_the_evidence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skills.py::TestSkillAudit::test_it_names_the_evidence_and_the_retention"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/skills/skill_audit.md"
+}

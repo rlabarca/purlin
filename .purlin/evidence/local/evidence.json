@@ -1,0 +1,233 @@
+{
+  "feature": "evidence",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T12:46:49Z",
+      "commit": "4c194737a6f77be2dfaac725b89389a1302537a2",
+      "dirty": false,
+      "fingerprint": {
+        "code": "418f8db0afae12e6c1fe6c2542bd72ec810ecc22e6ee85b72b5740225c41cada",
+        "spec": "855f62ec54fd4f2ed0d1188668ab708c465ea26577cd4527c3d0f45b1cb3f962",
+        "tests": "1857ef0edc5d15c8bd2f2e6608f44266034809f36d89d63adf1e9a4fd4db3654"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_fingerprint.py::test_a_fingerprint_is_three_hashes_read_from_the_working_tree"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_fingerprint.py::test_a_rule_edit_changes_spec_and_a_description_edit_changes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_fingerprint.py::test_a_required_proof_and_a_proof_tag_are_part_of_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_fingerprint.py::test_an_anchor_rule_edit_reaches_every_feature_that_requires_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_fingerprint.py::test_a_global_anchor_rule_edit_reaches_a_feature_that_does_not_name_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_fingerprint.py::test_a_scoped_file_edit_changes_code_only"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_fingerprint.py::test_a_scoped_directory_reaches_every_tracked_file_under_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_fingerprint.py::test_a_glob_scope_changes_when_a_matching_file_changes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_fingerprint.py::test_a_scope_entry_that_reaches_nothing_is_listed_as_unmatched"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_fingerprint.py::test_a_spec_with_no_scope_names_no_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_fingerprint.py::test_a_marked_test_edit_changes_tests_only"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_fingerprint.py::test_markers_of_every_framework_are_read_outside_skipped_folders"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_fingerprint.py::test_an_untracked_file_is_reported_and_left_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_fingerprint.py::test_an_added_file_joins_the_fingerprint"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_fingerprint.py::test_a_name_no_spec_defines_raises"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_fingerprint.py::test_the_compare_names_the_parts_that_differ_in_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_evidence_reader.py::test_a_source_with_no_file_reads_as_no_evidence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_evidence_reader.py::test_a_malformed_file_or_another_schema_is_ignored_with_one_warning"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_evidence_reader.py::test_a_source_that_disagrees_with_its_folder_is_ignored"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_reader.py::test_two_operating_systems_in_one_file_are_two_sections"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_evidence_reader.py::test_a_section_is_current_until_a_part_changes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_reader.py::test_an_audit_entry_answers_only_while_its_three_hashes_match"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_evidence_reader.py::test_the_newest_section_across_both_sources"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_evidence_reader.py::test_reading_evidence_writes_nothing"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
+        "RULE-13": "passed",
+        "RULE-14": "passed",
+        "RULE-15": "passed",
+        "RULE-16": "passed",
+        "RULE-17": "passed",
+        "RULE-18": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/mcp/evidence.md"
+}

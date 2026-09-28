@@ -1,0 +1,931 @@
+{
+  "feature": "states",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T16:56:16Z",
+      "commit": "98fc3cbed94727792e632ba854fcb13ef4e6ed6d",
+      "dirty": false,
+      "fingerprint": {
+        "code": "93dc0a102112b8de18d2ca908ac21b8986765ecb55f96c9384230738c2504f31",
+        "spec": "0c1efda69eb10e42115fa119fc33f6c4256bda0613d6224327dad92326607aa8",
+        "tests": "5df0fae3f30979aa89ffd22ca066aff1fe7e74552494735e24e04bcb9350e1e8"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_mcp_server.py::TestARuleWithNoProof::test_no_proof_written_reads_no_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_mcp_server.py::TestThePassedCell::test_a_local_section_meets_level_one_under_the_passed_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_mcp_server.py::TestThePassedCell::test_a_ci_section_meets_level_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_mcp_server.py::TestTheSources::test_a_current_section_from_either_source_counts_at_every_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_mcp_server.py::TestThePassedCell::test_a_local_section_counts_under_strong_and_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_mcp_server.py::TestThePassedCell::test_an_uncommitted_run_counts_and_a_report_alone_does_not"
+        },
+        {
+          "env": null,
+          "id": "PROOF-50",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_mcp_server.py::TestThePlatformsInThePassedCell::test_a_file_whose_source_field_disagrees_is_left_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_mcp_server.py::TestThePlatformsInThePassedCell::test_one_entry_per_operating_system_a_current_section_covers"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_mcp_server.py::TestThePlatformsInThePassedCell::test_a_platform_a_proof_asks_for_and_nothing_ran_on_is_listed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_mcp_server.py::TestThePlatformsInThePassedCell::test_a_persons_own_section_answers_for_its_platform_at_every_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_mcp_server.py::TestThePlatformsInThePassedCell::test_platforms_that_disagree_read_partial"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_mcp_server.py::TestThePlatformsInThePassedCell::test_an_older_section_that_is_out_of_date_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_mcp_server.py::TestThePlatformsInThePassedCell::test_a_passed_level_has_no_strong_cell_whatever_the_audit_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_mcp_server.py::TestPayload::test_the_signed_cell_carries_when_it_was_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_mcp_server.py::TestThePassedCell::test_an_env_proof_needs_a_section_from_that_operating_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_mcp_server.py::TestThePassedCell::test_out_of_date_when_the_code_moved"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_mcp_server.py::TestThePassedCell::test_a_spec_edit_and_a_test_edit_leave_it_out_of_date_too"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_mcp_server.py::TestThePassedCell::test_a_rule_no_test_backs_reads_no_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_failing.py::test_a_failing_test_is_named_where_it_failed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_a_cell_above_the_gate_is_absent"
+        },
+        {
+          "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_mcp_server.py::TestALevelAsksItsOwnQuestions::test_a_rule_has_only_the_cells_its_level_asks_for"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_a_rule_that_did_not_pass_waits_for_its_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-92",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_mcp_server.py::TestALevelAsksItsOwnQuestions::test_a_rule_whose_test_fails_reads_its_passed_cell"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_a_strength_under_the_minimum_is_weak_and_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_with_no_score_the_cell_says_no_mutation_score_was_measured"
+        },
+        {
+          "env": null,
+          "id": "PROOF-70",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_mcp_server.py::TestTheAuditOnTheRule::test_with_mutation_off_a_strength_left_behind_is_not_compared"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_a_field_the_format_does_not_name_decides_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_the_audit_entry_settles_level_two_where_the_level_asks"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_a_passed_level_is_never_owed_an_audit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_mcp_server.py::TestTheAuditOnTheRule::test_a_rule_the_model_could_not_be_reached_for_says_why"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_a_manual_proof_asks_for_a_manual_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_mcp_server.py::TestHoldsAndSignatures::test_a_signature_for_the_current_hashes_clears_the_hand_check"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_mcp_server.py::TestTheStrongCell::test_a_strong_cell_with_an_engine_carries_no_reasons"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_mcp_server.py::TestHoldsAndSignatures::test_a_signature_is_read_until_the_hashes_move_under_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_mcp_server.py::TestTheAuditOnTheRule::test_a_fresh_finding_stales_the_signature_and_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-93",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-73",
+          "test": "dev/test_mcp_server.py::TestALevelAsksItsOwnQuestions::test_a_signature_waits_for_the_audit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-94",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-73",
+          "test": "dev/test_mcp_server.py::TestALevelAsksItsOwnQuestions::test_a_stale_signature_reads_stale_while_the_tests_wait"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_mcp_server.py::TestHoldsAndSignatures::test_a_signature_is_needed_where_the_level_is_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_mcp_server.py::TestHoldsAndSignatures::test_an_unsigned_signing_commit_leaves_the_rule_unsigned"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_mcp_server.py::TestBucketsAndTheGate::test_one_rule_in_each_of_the_five_buckets"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_mcp_server.py::TestBucketsAndTheGate::test_partial_sits_between_failing_and_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_mcp_server.py::TestBucketsAndTheGate::test_the_gate_is_met_by_one_of_them_and_blocked_by_name"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_mcp_server.py::TestPayload::test_the_rollup_counts_the_buckets_the_gate_reaches"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_mcp_server.py::TestTheFixturesAreTheContract::test_every_fixture_has_the_key_set_the_builder_writes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_mcp_server.py::TestALevelAsksItsOwnQuestions::test_the_rollup_counts_the_rules_each_question_is_asked_of"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_mcp_server.py::TestPayload::test_the_proof_counts_call_out_a_proof_with_no_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_mcp_server.py::TestPayload::test_a_marked_test_that_has_not_run_is_a_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_mcp_server.py::TestPayload::test_global_anchor_rules_are_counted_once_in_the_summary"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_mcp_server.py::TestPayload::test_schema_nine_carries_the_documented_top_level"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_mcp_server.py::TestTheFixturesAreTheContract::test_every_fixture_has_the_key_set_the_builder_writes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_mcp_server.py::TestPayload::test_a_feature_carries_its_rules_with_their_tags_and_proofs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_mcp_server.py::TestPayload::test_a_feature_says_whether_its_evidence_is_current_and_committed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_queue.py::test_a_hand_check_is_a_manual_test_whose_level_asks_for_more"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_queue.py::test_the_queue_is_empty_under_the_passed_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_mcp_server.py::TestTheFixturesAreTheContract::test_every_fixture_queue_row_uses_the_closed_set"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_queue.py::test_each_row_says_what_it_needs_and_the_command_that_answers"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_queue.py::test_the_queue_reads_by_feature_then_rule_number"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_queue.py::test_a_feature_named_first_in_the_alphabet_reads_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_queue.py::test_a_global_anchor_rule_is_named_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-32",
+          "test": "dev/test_mcp_server.py::TestPayload::test_the_data_file_is_a_const_assignment_and_round_trips"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_mcp_server.py::TestPayload::test_a_section_carries_the_result_of_the_run_it_names"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_backing_tests.py::TestTheEvidenceNamesTheTests::test_what_this_checkout_ran_does_not_move_the_hash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_backing_tests.py::TestTheEvidenceNamesTheTests::test_a_code_change_does_not_move_the_hash_and_a_new_run_can"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_backing_tests.py::TestTheEvidenceNamesTheTests::test_every_operating_system_s_section_counts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_columns_scale_with_the_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_a_passed_project_with_no_proof_line_is_shown_no_proof_count"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_repository_own_specs_print_the_table"
+        },
+        {
+          "env": null,
+          "id": "PROOF-91",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_mcp_server.py::TestALevelAsksItsOwnQuestions::test_the_table_counts_strong_and_signed_over_the_rules_asked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_table_and_the_board_render_the_same_cells"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_board_cells_read_the_way_the_fixtures_say"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_summary_counts_the_rules_that_meet_the_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_table_ends_with_one_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_a_rule_waiting_on_a_run_is_sent_to_the_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_a_rule_tagged_for_another_system_is_sent_to_the_runner"
+        },
+        {
+          "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_audit_is_the_step_only_when_no_rule_waits_on_a_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_an_empty_project_says_what_to_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_no_emoji_and_only_the_four_glyphs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_retired_config_keys_print_the_update_directive"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-50",
+          "test": "dev/test_mcp_server.py::TestLevels::test_a_level_is_the_tag_under_the_gate_or_the_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_mcp_server.py::TestLevels::test_the_level_decides_which_cells_block"
+        },
+        {
+          "env": null,
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_queue.py::test_the_rollup_and_the_summary_count_the_queue"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_queue.py::test_a_signature_row_is_a_rule_that_met_its_tests_and_audit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_queue.py::test_the_status_report_counts_the_queue_in_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-60",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_a_rule_marked_above_the_gate_is_named_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_mcp_server.py::TestTheFixturesAreTheContract::test_the_tag_key_is_present_in_every_fixture"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_mcp_server.py::TestTheSignedTag::test_no_tag_reads_none_and_a_tag_on_head_reads_its_name"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_mcp_server.py::TestTheSignedTag::test_a_tag_that_is_not_on_head_says_nothing_about_this_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_mcp_server.py::TestTheSignedTag::test_the_newest_version_wins_where_several_point_at_head"
+        },
+        {
+          "env": null,
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_mcp_server.py::TestTheSignedTag::test_below_signed_the_payload_names_no_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-61",
+          "test": "dev/test_mcp_server.py::TestTheAuditOnTheRule::test_every_rule_carries_its_audit_at_every_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_mcp_server.py::TestASpecThatNamesNoFiles::test_the_payload_names_why_it_is_incomplete"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_mcp_server.py::TestASpecThatNamesNoFiles::test_an_anchor_is_never_incomplete"
+        },
+        {
+          "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_mcp_server.py::TestASpecThatNamesNoFiles::test_at_signed_its_rules_read_unsigned_and_wait_on_nobody"
+        },
+        {
+          "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_mcp_server.py::TestASpecThatNamesNoFiles::test_at_signed_a_signature_on_it_does_not_count"
+        },
+        {
+          "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_mcp_server.py::TestASpecThatNamesNoFiles::test_below_signed_it_blocks_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_mcp_server.py::TestASpecThatNamesNoFiles::test_status_names_it_at_every_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_mcp_server.py::TestASpecThatNamesNoFiles::test_at_signed_with_nothing_else_left_the_next_step_is_the_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_mcp_server.py::TestARuleWithNoProof::test_a_test_marked_with_the_rule_answers_the_passed_cell"
+        },
+        {
+          "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-66",
+          "test": "dev/test_mcp_server.py::TestARuleWithNoProof::test_above_passed_a_rule_with_a_test_and_no_proof_reads_no_proof"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-67",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_rules_out_of_date_are_counted_and_sent_to_the_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_a_count_of_one_rule_reads_singular"
+        },
+        {
+          "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-69",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_a_passed_project_with_no_proof_line_is_shown_no_proof_count"
+        },
+        {
+          "env": null,
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_mcp_server.py::TestTheFixturesAreTheContract::test_the_fixtures_carry_exactly_the_keys_the_builder_writes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-71",
+          "test": "dev/test_mcp_server.py::TestProofResult::test_each_proof_carries_its_own_result_and_its_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-72",
+          "test": "dev/test_mcp_server.py::TestStatusTable::test_the_rules_cell_names_the_shared_rules"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
+        "RULE-13": "passed",
+        "RULE-14": "passed",
+        "RULE-15": "passed",
+        "RULE-16": "passed",
+        "RULE-18": "passed",
+        "RULE-19": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
+        "RULE-22": "passed",
+        "RULE-23": "passed",
+        "RULE-24": "passed",
+        "RULE-25": "passed",
+        "RULE-26": "passed",
+        "RULE-27": "passed",
+        "RULE-28": "passed",
+        "RULE-29": "passed",
+        "RULE-3": "passed",
+        "RULE-30": "passed",
+        "RULE-31": "passed",
+        "RULE-32": "passed",
+        "RULE-34": "passed",
+        "RULE-35": "passed",
+        "RULE-36": "passed",
+        "RULE-37": "passed",
+        "RULE-38": "passed",
+        "RULE-39": "passed",
+        "RULE-4": "passed",
+        "RULE-40": "passed",
+        "RULE-41": "passed",
+        "RULE-42": "passed",
+        "RULE-43": "passed",
+        "RULE-44": "passed",
+        "RULE-45": "passed",
+        "RULE-46": "passed",
+        "RULE-47": "passed",
+        "RULE-48": "passed",
+        "RULE-49": "passed",
+        "RULE-5": "passed",
+        "RULE-50": "passed",
+        "RULE-52": "passed",
+        "RULE-53": "passed",
+        "RULE-54": "passed",
+        "RULE-55": "passed",
+        "RULE-57": "passed",
+        "RULE-58": "passed",
+        "RULE-59": "passed",
+        "RULE-6": "passed",
+        "RULE-60": "passed",
+        "RULE-61": "passed",
+        "RULE-62": "passed",
+        "RULE-63": "passed",
+        "RULE-64": "passed",
+        "RULE-65": "passed",
+        "RULE-66": "passed",
+        "RULE-67": "passed",
+        "RULE-68": "passed",
+        "RULE-69": "passed",
+        "RULE-7": "passed",
+        "RULE-70": "passed",
+        "RULE-71": "passed",
+        "RULE-72": "passed",
+        "RULE-73": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/mcp/states.md"
+}

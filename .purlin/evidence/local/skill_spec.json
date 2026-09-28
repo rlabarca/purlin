@@ -1,0 +1,77 @@
+{
+  "feature": "skill_spec",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T15:34:43Z",
+      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "dirty": false,
+      "fingerprint": {
+        "code": "a051fd432625679b5433e6d1a782a55b47a0bc1dab331d8c635ea4ccd2e7ceae",
+        "spec": "a7de664881f128bcfce3915134c37b0566eef8967d55d4e6fc5c0e0d8296eb56",
+        "tests": "37508b96146d37652515bc551beda9efe815d71e88918a3c4846e24675af3e24"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skills.py::TestSkillSpec::test_the_frontmatter_names_the_skill"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skills.py::TestSkillSpec::test_it_allocates_ids_against_the_default_branch"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skills.py::TestSkillSpec::test_it_closes_by_naming_the_build"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skills.py::TestSkillSpec::test_it_stays_under_its_ceiling"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skills.py::TestSkillSpec::test_it_writes_the_scope_on_every_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skills.py::TestSkillSpec::test_it_prints_the_proofs_and_asks_before_it_saves"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/skills/skill_spec.md"
+}

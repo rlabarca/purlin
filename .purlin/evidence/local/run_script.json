@@ -1,0 +1,683 @@
+{
+  "feature": "run_script",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-28T15:34:43Z",
+      "commit": "03737d0e0ed457500c1cda2d6f1b94fe4afc7294",
+      "dirty": false,
+      "fingerprint": {
+        "code": "0ed942a37fd2f4bb72ca31a68241b19d9e10c47e519919431d3dd84747803627",
+        "spec": "a87bbdbe02954720a4faed438405d3ea215dc3f7850c50223a2011d71e8c31ed",
+        "tests": "07e8a2229114d7e9b1a88f7e9f8ec22475ff378603c53ad5c352924dbc2717ef"
+      },
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_bad_invocation_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_an_unknown_feature_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_a_missing_project_root_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_run_script.py::TestTheTestArmRunsEachSuite::test_a_marked_test_lands_in_the_evidence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_run_script.py::TestTheTestArmRunsEachSuite::test_nothing_is_written_under_specs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_run_script.py::TestTheTestArmRunsEachSuite::test_a_sql_script_is_a_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_run_script.py::TestTheTestArmRunsEachSuite::test_a_failing_test_exits_one_and_records_the_failure"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_run_script.py::TestAProjectWithNoMarker::test_a_suite_with_no_marker_is_not_a_failure"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_run_script.py::TestLoudFailureB::test_a_marker_with_no_entry_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_run_script.py::TestLoudFailureB::test_the_list_is_bounded_and_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_run_script.py::TestLoudFailureB::test_a_marker_for_an_unselected_feature_is_not_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_run_script.py::TestEnvScopedProofs::test_a_foreign_env_proof_is_listed_as_needing_its_os"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_run_script.py::TestEnvScopedProofs::test_a_foreign_env_proof_is_not_reported_missing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_run_script.py::TestEnvScopedProofs::test_an_env_proof_for_this_os_is_run_normally"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_run_script.py::TestEveryRunEndsWithTheNextStep::test_the_table_and_one_next_step_are_printed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_run_script.py::TestEveryRunEndsWithTheNextStep::test_a_project_with_no_specs_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-101",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_run_script.py::TestEveryRunEndsWithTheNextStep::test_the_tests_line_and_the_gate_line_count_two_things"
+        },
+        {
+          "env": null,
+          "id": "PROOF-101",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_run_script.py::TestEveryRunEndsWithTheNextStep::test_at_passed_both_lines_carry_the_same_number"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_run_script.py::TestTheCiArmCommitsItsSection::test_the_ci_arm_writes_and_commits_its_section"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_run_script.py::TestTheCiArmCommitsItsSection::test_at_passed_the_ci_arm_does_the_same"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_run_script.py::TestTheLog::test_the_log_is_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_run_script.py::TestTheBreaks::test_the_breaks_are_asked_for_the_scope_and_the_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_run_script.py::TestWhereEachArmCommits::test_a_test_run_and_an_audit_never_use_the_git_hosts_api"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_run_script.py::TestWhereEachArmCommits::test_a_tag_run_writes_nothing_and_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_run_script.py::TestWhereEachArmCommits::test_a_run_on_the_branch_that_keeps_it_commits"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_run_script.py::TestTheEvidenceMeetsThePassedCell::test_the_evidence_makes_the_passed_cell_read_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_run_script.py::TestTheEvidenceMeetsThePassedCell::test_a_code_change_leaves_the_cell_out_of_date"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_run_script.py::TestTheEvidenceMeetsThePassedCell::test_a_spec_edit_and_a_test_edit_leave_it_out_of_date"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_run_script.py::TestHostOs::test_the_answer_is_one_of_the_three_env_names"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_run_script.py::TestTheRunScriptCarriesNoEmoji::test_no_character_is_an_emoji"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_run_script.py::TestTheConsoleCodecNeverEndsTheRun::test_a_cp1252_console_gets_the_glyphs_and_no_traceback"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_a_failing_arm_prints_its_tail_before_the_table"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_an_arm_that_passed_prints_no_tail"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_ci_writes_the_whole_run_to_the_log_in_the_tree"
+        },
+        {
+          "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_run_script.py::TestAnEmptyProjectRootIsRefused::test_an_empty_project_root_exits_2_and_runs_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_run_script.py::TestTheMutmutCopy::test_the_copy_mutmut_leaves_is_never_collected"
+        },
+        {
+          "env": null,
+          "id": "PROOF-65",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_under_passed_no_break_runs_and_the_strength_is_not_measured"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_under_strong_the_audit_measures_and_writes_the_score"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_a_ci_run_measures_nothing_and_audits_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_with_mutation_off_the_audit_alone_decides"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_with_mutation_on_a_score_under_the_minimum_is_weak"
+        },
+        {
+          "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_a_feature_with_no_rule_being_read_is_not_measured"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_run_script.py::TestTheAuditGateLine::test_a_finding_blocks_at_strong"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_run_script.py::TestTheAuditGateLine::test_a_passed_level_meets_the_strong_line_on_its_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_run_script.py::TestTheAuditGateLine::test_at_the_gate_passed_a_finding_blocks_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_run_script.py::TestTheAuditGateLine::test_a_failing_test_still_exits_one_at_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-100",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_run_script.py::TestTheAuditGateLine::test_at_signed_the_line_counts_the_gate_and_the_exit_the_audit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_run_script.py::TestWhichRulesTheAuditReads::test_a_rule_that_matches_its_last_audit_is_skipped"
+        },
+        {
+          "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_run_script.py::TestWhichRulesTheAuditReads::test_all_reads_every_rule_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_run_script.py::TestWhichRulesTheAuditReads::test_a_passed_level_is_read_only_at_the_gate_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_run_script.py::TestWhichRulesTheAuditReads::test_a_rule_whose_test_failed_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_run_script.py::TestWhichRulesTheAuditReads::test_with_no_feature_named_every_feature_is_audited"
+        },
+        {
+          "env": null,
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-50",
+          "test": "dev/test_run_script.py::TestTheAuditCallsTheModel::test_the_line_is_printed_before_the_first_call"
+        },
+        {
+          "env": null,
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-50",
+          "test": "dev/test_run_script.py::TestTheAuditCallsTheModel::test_nothing_to_read_says_so_and_calls_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-70",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_run_script.py::TestTheAuditCallsTheModel::test_one_call_per_rule_four_at_a_time_by_default"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_run_script.py::TestTheAuditCallsTheModel::test_the_setting_decides_how_many_run_at_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_run_script.py::TestTheAuditCallsTheModel::test_a_setting_out_of_range_is_read_as_four_with_one_warning"
+        },
+        {
+          "env": null,
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_run_script.py::TestWhenTheModelCannotBeReached::test_nothing_is_written_and_the_cell_says_why"
+        },
+        {
+          "env": null,
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_run_script.py::TestWhenTheModelCannotBeReached::test_the_next_audit_tries_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_run_script.py::TestWhenTheModelCannotBeReached::test_at_the_gate_passed_it_blocks_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_run_script.py::TestAFreshAuditStalesASignature::test_changed_findings_stale_the_signature_and_the_run_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_run_script.py::TestAFreshAuditStalesASignature::test_the_same_findings_stale_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_code_edit_runs_only_the_feature_that_covers_the_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_spec_edit_and_a_test_edit_select_their_feature"
+        },
+        {
+          "env": null,
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_an_anchor_edit_selects_every_feature_that_requires_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-91",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_feature_with_no_evidence_is_selected"
+        },
+        {
+          "env": null,
+          "id": "PROOF-92",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_spec_that_names_no_files_is_selected_every_time"
+        },
+        {
+          "env": null,
+          "id": "PROOF-93",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_an_untracked_file_selects_the_feature_and_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-94",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-56",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_the_skipped_line_names_ten_and_counts_the_rest"
+        },
+        {
+          "env": null,
+          "id": "PROOF-95",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_nothing_changed_runs_nothing_and_exits_on_the_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-95",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_nothing_changed_over_a_failing_test_exits_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-96",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_commit_with_nothing_to_run_commits_the_last_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-97",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_code_edit_runs_only_the_feature_that_covers_the_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-97",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_named_feature_runs_only_its_test_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-98",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_all_runs_every_feature_when_nothing_changed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-98",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_ci_with_no_feature_named_runs_every_feature"
+        },
+        {
+          "env": null,
+          "id": "PROOF-99",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-60",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_the_audit_tests_the_selection_and_reads_every_feature"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_run_script.py::TestTheLastLines::test_the_audit_ends_in_the_order_the_design_gives"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
+        "RULE-15": "passed",
+        "RULE-16": "passed",
+        "RULE-17": "passed",
+        "RULE-2": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
+        "RULE-22": "passed",
+        "RULE-3": "passed",
+        "RULE-39": "passed",
+        "RULE-4": "passed",
+        "RULE-40": "passed",
+        "RULE-41": "passed",
+        "RULE-43": "passed",
+        "RULE-45": "passed",
+        "RULE-47": "passed",
+        "RULE-48": "passed",
+        "RULE-49": "passed",
+        "RULE-5": "passed",
+        "RULE-50": "passed",
+        "RULE-51": "passed",
+        "RULE-52": "passed",
+        "RULE-53": "passed",
+        "RULE-54": "passed",
+        "RULE-55": "passed",
+        "RULE-56": "passed",
+        "RULE-57": "passed",
+        "RULE-58": "passed",
+        "RULE-59": "passed",
+        "RULE-60": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/1",
+  "source": "local",
+  "spec": "specs/run/run_script.md"
+}
