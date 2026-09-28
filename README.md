@@ -87,7 +87,8 @@ purlin:init
 Answer the gate question with `passed`, and `y` to
 `Do you trust your own machine for the tests and the signing?`. Init detects the language and
 the test framework from the tree, reads the git host from the remote URL, writes `.purlin/` and
-`specs/`, installs the proof plugin, and prints every file it wrote. It installs no git hook
+`specs/`, writes your framework's own test command into the `tests` setting, installs nothing
+in your tests, and prints every file it wrote. It installs no git hook
 and asks nothing of your git host.
 
 ```
@@ -96,7 +97,8 @@ account is locked for fifteen minutes."
 ```
 
 That sentence becomes three rules, each with a proof, because each of the three can fail on its
-own. The skill ends with `Spec created: login. Build it now?`
+own. The skill prints each rule with its proofs, asks whether to change any, and ends with
+`Spec saved: login. Next: purlin:build login`
 
 ```
 purlin:build login

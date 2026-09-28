@@ -257,7 +257,7 @@ two, under `signed` all three. A rule's level decides which of them block it.
 | Cell | Word | What it means | What moves it |
 |---|---|---|---|
 | passed | `no test`, with `no proof written` | No proof line names the rule. What a proof is worth is the audit's question. | Write the proof under `## Proof` so it names a trigger and an expected value a test can reach. `purlin:spec`. |
-| passed | `no test` | A proof names the rule and no test carries the proof marker. | `purlin:build` writes the test, then `purlin:test`. |
+| passed | `no test` | A proof names the rule and no test carries its marker comment. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
 | passed | `not run` | Nothing has run the rule's tests yet. | Run `purlin:test`, which counts at every gate. |
 | passed | `not run`, with `<os>: no run yet` | A proof carries `@env` and no current section from that operating system has passed it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any host could prove it. |

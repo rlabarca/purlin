@@ -40,7 +40,7 @@ Init starts from what the project already has, so a raise writes only the missin
 
 **To `passed`.** The setting alone, plus what every project gets: `.purlin/config.json` with
 the gate, the mutation answer and the trust answer, `specs/`, `.purlin/evidence/` with its
-README, the proof plugin for the detected test framework, the break engine for the language
+README, the `tests` setting for the detected test framework, the break engine for the language
 where mutation testing is on, a `.gitignore` block for `.purlin/runtime/`,
 the dashboard page copied so it opens from disk, and the Claude Code hook that refreshes the
 local dashboard data. Nothing to apply on the git host, and no git hook.
@@ -64,7 +64,7 @@ gate is also what turns the AI audit on for every unmarked rule.
 |------|--------------|
 | `--gate <level>` | sets the gate, at setup or later |
 | `--mutation` | turns mutation testing on without asking |
-| `--add <language>` | wires a second language: its test framework and its proof plugin |
+| `--add <language>` | adds a second language: one more entry in the `tests` setting |
 | `--update` | brings a project set up by an older Purlin onto the installed one |
 | `--dry-run` | prints the plan and writes nothing |
 
@@ -144,7 +144,8 @@ is rendered from them:
 | `config` | writes `.purlin/config.json` at the current shape, sets the gate and names every key it dropped |
 | `evidence` | creates `.purlin/evidence/` with one README saying what it holds |
 | `workflows` | replaces the workflow that committed proof files |
-| `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |
+| `markers` | rewrites each 0.9.5 marker in the project's tests as one comment above the same test |
+| `plugins` | removes the plugin copies 0.9.5 installed and the wiring that loaded them |
 
 The `workflows` migration reads each file under `.github/workflows/`. A workflow that committed
 proof files back beside the specs is removed, and where the project has a reason for a runner
@@ -206,8 +207,8 @@ something pending, 2 when the directory is not a Purlin project.
 ## Coming from v0.9.5
 
 A v0.9.5 project meets the update with committed proof files, committed evidence files, a
-committed dashboard data file, a pre-commit hook, the older workflows, and settings for things
-this release does not have. The single command above handles all of it. What is worth knowing
+committed dashboard data file, a pre-commit hook, the older workflows, proof plugins wired into
+its tests with markers only they read, and settings for things this release does not have. The single command above handles all of it. What is worth knowing
 before you run it:
 
 - The grading scores and the reviewer agent that produced them are gone. `purlin:sign` is where

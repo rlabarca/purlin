@@ -165,8 +165,8 @@ meets the passed cell only when a current section from that operating system
 passes it; a rule with proofs on two systems needs both, and the cell reads
 `not run` with the reason `windows: no run yet` rather than adding a word.
 
-On a machine that is not the named one, the plugin skips the test and the
-status says so.
+On a machine that is not the named one, the run does not count the proof and
+says which operating system it needs.
 
 ### Retired tags
 
@@ -195,7 +195,7 @@ asserts absence. No special syntax:
 ```
 
 ```python
-@pytest.mark.proof("security_input", "PROOF-3", "RULE-3")
+# purlin: security_input PROOF-3
 def test_no_eval():
     result = subprocess.run(["grep", "-rn", "eval(", "src/"],
                             capture_output=True, text=True)

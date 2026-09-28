@@ -69,7 +69,8 @@ whole loop runs here, with no CI anywhere. Everything else it reads from the tre
 `origin` remote.
 
 It writes `.purlin/config.json` with the gate, the trust answer and the derived defaults,
-and `specs/` for the specs. It installs the proof plugin for the detected framework and the breaks engine for the
+and `specs/` for the specs. It writes the detected framework's own test command into the `tests`
+setting, installs nothing in your tests, and wires the breaks engine for the
 language, adds a `.gitignore` block for `.purlin/runtime/`, and copies the dashboard page so it
 opens from disk. It installs no git hook and asks nothing of your git host. It ends by
 printing every file it wrote or edited, one per line. `purlin:init --dry-run` prints that list and writes
@@ -113,7 +114,8 @@ says what a test asserts, naming a route, an input and the observable that settl
 earns its place: the evidence carries a fingerprint of those files, which is what lets Purlin
 tell a code change from a rule change later, and run only the features a change touched.
 
-The skill ends with `Spec created: login. Build it now?`
+The skill prints each rule with its proofs, asks whether to change any, and ends with
+`Spec saved: login. Next: purlin:build login`.
 
 ## Build, test, push
 
@@ -122,25 +124,25 @@ purlin:build login
 ```
 
 Build reads every rule the feature is bound by, follows `> Requires:` through the anchors, writes
-the smallest code that satisfies them, and writes one test per proof. Each test carries a marker
-naming the feature, the proof and the rule:
+the smallest code that satisfies them, and writes one test per proof, or marks a test you
+already have. Each test carries one comment above it naming the feature and the proof:
 
 ```python
-@pytest.mark.proof("login", "PROOF-1", "RULE-1")
+# purlin: login PROOF-1
 def test_valid_credentials_return_200():
     assert authenticate("user@test.com", "secret") == 200
 ```
 
 A test with no marker proves nothing as far as Purlin is concerned, however good it is. The
-marker for every other framework is in
-[references/formats/proofs_format.md](../references/formats/proofs_format.md).
+marker is the same comment in every language's own syntax; see
+[references/formats/marker_format.md](../references/formats/marker_format.md).
 
 ```
 purlin:test login
 ```
 
-`purlin:test` runs the tagged tests, writes proof files into `.purlin/runtime/proofs/`, which is
-not committed, and prints the passed cell of every rule. It takes seconds: no breaks, no record.
+`purlin:test` runs your own test command, reads the report it writes under
+`.purlin/runtime/reports/`, which is not committed, and prints the passed cell of every rule. It takes seconds: no breaks, no record.
 It then writes `.purlin/evidence/local/login.json` and `.purlin/tests.md`, prints `Evidence
 written to .purlin/evidence/local/login.json.`, and ends with `gate passed: 3 of 3`. It commits
 nothing; `purlin:test --commit` commits both as `purlin: evidence at <sha7>`. Those two files

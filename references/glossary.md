@@ -7,9 +7,15 @@ in the shipped prose where a retired spelling may still be written.
 ## The words
 
 - **rule**: a claim about what the software must do, one line in a spec. **proof**: how the
-  claim is observed. **test**: the executable form of a proof, tagged with its rule.
-- **no proof written**: the reason the passed cell gives for a rule no proof line names. The
-  cell reads `no test`, and the next step is `purlin:spec`.
+  claim is observed, in plain language. **test**: any test in the project's own suite that
+  carries a **marker**, one comment above it naming the proof, `purlin: <feature> PROOF-<n>`,
+  or the rule where the rule has no proof. **suite**: one entry of the `tests` setting: the
+  project's own test command, where its **report** lands, the report's format and the globs its
+  test files live under.
+- **no proof written**: the reason the passed cell gives for a rule with neither a proof nor a
+  test marked with its id. The cell reads `no test`, and the next step is `purlin:spec`.
+- **no proof**: the strong cell's word, above the gate `passed`, for a rule whose tests pass
+  and that has no proof. Proofs are optional at `passed` and required above it.
 - **evidence level**: one of three questions about a rule, each answered by its own cell.
   **passed**: every tagged test for the rule passed. **strong**: the tests are worth trusting.
   **signed**: a person signed the rule, proof and test hashes, in a signed commit.
@@ -128,7 +134,7 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 | Term | Where the authority lives |
 |------|---------------------------|
 | spec, rule, proof | `references/formats/spec_format.md` |
-| proof marker, proof file | `references/formats/proofs_format.md` |
+| marker, the `tests` setting, report | `references/formats/marker_format.md` |
 | anchor spec, pinned anchor | `references/formats/anchor_format.md` |
 | evidence, source, section, fingerprint, test strength, the table | `references/formats/evidence_format.md` |
 | signature, note | `references/formats/signature_format.md` |

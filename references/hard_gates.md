@@ -230,7 +230,7 @@ one in a signed commit under `signed`. The signer writes the one line with `--no
 ## What is not a gate
 
 - Writing code without invoking a skill.
-- Writing a test with no proof marker. It runs; `sync_status` does not count it.
+- Writing a test with no marker comment above it. It runs; `sync_status` does not count it.
 - Committing without running an audit.
 - A rule whose passed cell reads `out of date`. The spec, the code or the tests moved; the next
   run clears it.

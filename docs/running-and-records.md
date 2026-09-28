@@ -39,10 +39,11 @@ Skipped 32 features whose spec, code and tests match their evidence: auth, billi
 With nothing selected it prints `Nothing to run: every feature's spec, code and tests match its
 evidence. purlin:test --all runs them anyway.`, runs no test, and exits 0 where the gate is met.
 
-The run writes proof files into `.purlin/runtime/proofs/` and prints one line per rule, reading
-that rule's passed cell: `passed`, `failed`, `partial`, `no test`, `not run` or `out of
-date`. That directory
-is generated and never committed, so two test runs never conflict with each other.
+The run runs each suite's own command, reads the report it writes under
+`.purlin/runtime/reports/`, ties each result to the marker above its test, and prints one line
+per rule, reading that rule's passed cell: `passed`, `failed`, `partial`, `no test`, `not run`
+or `out of date`. That directory is generated and never committed, so two test runs never
+conflict with each other.
 
 It then writes what it saw into two tracked files and prints `Evidence written to
 .purlin/evidence/local/<feature>.json.`:
@@ -121,10 +122,10 @@ There is no `--remote` here. A remote runner runs the tests, so that flag belong
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#0C3444", "primaryColor": "#092936", "primaryTextColor": "#E4DDD4", "primaryBorderColor": "#C0793F", "lineColor": "#C0793F", "secondaryColor": "#0C3444", "tertiaryColor": "#092936", "fontFamily": "Arial", "textColor": "#E4DDD4"}}}%%
 flowchart TD
-  A[Resolve the config and the test frameworks] --> B[Scan the specs and the test sources for proof markers]
-  B --> C[Run one arm per framework into .purlin/runtime/proofs/]
-  C --> D[Loud failure A: an arm ran and its plugin wrote no entry]
-  D --> E[Loud failure B: a marker in a test source produced no entry]
+  A[Resolve the config and the tests setting] --> B[Scan the specs and the test files for markers]
+  B --> C[Run each suite's own command and read its report]
+  C --> D[Loud failure A: a suite left no report]
+  D --> E[Loud failure B: a marker has no pass or fail]
   E --> F{"which arm: purlin:test, purlin:audit, or a runner's"}
   F -- "purlin:test" --> T1["Write .purlin/evidence/local/ and .purlin/tests.md; commit them as you with --commit; never push"]
   F -- "purlin:audit" --> A1["Break the code where the gate asks, print the strength and what the audit observed"]
@@ -144,15 +145,14 @@ flowchart TD
 
 ### The two loud failures
 
-A test framework that runs nothing says nothing about it. That silence leaves a reader looking
-at a proof file from an earlier run and believing it describes this one, so the run script
-checks two things the frameworks cannot check themselves.
+A test framework that runs nothing says nothing about it, so the run script checks two things
+the frameworks cannot check themselves.
 
-- **A: an arm ran and its plugin appended nothing.** Marked tests sit in the tree, the runner
-  exited, and no proof entry was written. The proof plugin is not wired in.
-- **B: a marker sits in a test source and this run produced no entry for it.** The message
-  names the first five and counts the rest, because a project mid-migration has hundreds and a
-  reader acts on the first few either way.
+- **A: a suite ran and left no report to read.** The command exited, and nothing is at the
+  report path. Purlin deletes a report before each run, so an old one is never read instead.
+- **B: a marker of a feature the run covers has no passing or failing result.** Its test was
+  skipped, the report does not hold it, or no test follows the marker. The message names the
+  first five by file and line and counts the rest.
 
 Both print as `Evidence is missing: ...` and both make the run exit 1. Neither is a test
 failure; both mean the run cannot tell you what it proved.
@@ -220,8 +220,9 @@ not on Windows. A test that reads git state or the source text sees the copy mut
 
 ### SQL projects
 
-A SQL project has no break engine, but it does choose the binary its tests run against.
-`sql_engine` in `.purlin/config.json` names it; `sqlite3` is the default when the key is null.
+A SQL project has no break engine. Each SQL test file is one test, run by the command its
+suite names, `sqlite3 -bail :memory: < {files}` from `purlin:init`; change that command to use
+another engine.
 
 ## The evidence
 

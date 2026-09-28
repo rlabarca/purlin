@@ -64,4 +64,4 @@ mark above the gate is read as the gate.
 | [Evidence format](../references/formats/evidence_format.md) | The file per feature per source a test run and an audit write, yours or a runner's, and its fingerprint |
 | [Signature format](../references/formats/signature_format.md) | The signature file and what it binds |
 | [Spec quality](../references/spec_quality_guide.md) | Writing a rule worth having, and diagnosing a failure |
-| [Supported frameworks](../references/supported_frameworks.md) | How each test framework is detected and wired |
+| [Supported frameworks](../references/supported_frameworks.md) | How each test framework is detected, and the test command init writes for it |
