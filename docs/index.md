@@ -6,62 +6,57 @@ For anyone looking for the guide that fits their role. Every entry is one sittin
 
 | Guide | What it covers |
 |-------|----------------|
-| [How Purlin works](how-purlin-works.md) | The chain in one diagram, the loop, the six words, who writes each file, and the questions every developer asks: where tests run, what red means, which operating system |
-| [Getting started](getting-started.md) | Install, `purlin:init` and its questions, the first spec, build, test, push |
-| [Working together](working-together.md) | What each role needs, what they run, what they see, and drift per role |
+| [Getting started](getting-started.md) | What Purlin touches in your project, the ten-minute path from install to a first run, and the day to day at the gate `passed` |
+| [How Purlin works](how-purlin-works.md) | The chain in one diagram, the loop, who writes each file, and the questions every developer asks: where tests run, what red means, which operating system |
+| [Working together](working-together.md) | What product, developers and QA each run and read, and drift per role |
 
-One setting, the **gate**, decides how much of that chain a project asks for. The whole loop
-runs on one machine: `purlin:spec`, `purlin:build`, `purlin:test`, `purlin:audit`,
-`purlin:sign`, `git push`. A project at `signed` with no CI anywhere is the ordinary case.
+The gate decides how far every rule must go. The whole loop runs on one machine at every gate.
 
-| Gate | What every rule must have | Where the evidence comes from |
-|------|---------------------------|-------------------------------|
-| `passed` | its passed cell met | your machine's evidence, which `purlin:test --commit` commits; a pass from any source counts |
-| `strong` | its strong cell met too | `purlin:audit`, run by anyone; its record counts |
-| `signed` | its signed cell met too, where its level is `signed` | the same, plus a person's signature and the tag `purlin:sign` writes |
+| Gate | What every rule must have | The command that answers it |
+|------|---------------------------|-----------------------------|
+| `passed` | its tests pass over the current code | `purlin:test` |
+| `strong` | that, and an audit that found the tests sound | `purlin:audit` |
+| `signed` | that, and a person's signature | `purlin:sign` |
 
-Every rule also has a **level**, `passed`, `strong` or `signed`, meaning what the gate means. A
-rule says its own with a tag, `[level: ...]`; a rule with no tag takes the project's gate, and a
-mark above the gate is read as the gate.
-
-## Engineer
+## Developer
 
 | Guide | What it covers |
 |-------|----------------|
-| [Solo workflow](solo-workflow.md) | The `passed` gate end to end, the evidence `purlin:test` writes, and the one time a runner joins in |
 | [Specs and anchors](specs-and-anchors.md) | The spec format, local anchors, the anchor repo option, pins, id allocation |
-| [Running and records](running-and-records.md) | `purlin:test` and the evidence it writes, `purlin:audit` and what it adds, the evidence file, retention, test strength, and the two reasons a project has a remote runner |
+| [Running the tests](running-and-evidence.md) | `purlin:test` and the evidence it writes, `purlin:audit` and what it adds, test strength, and the two reasons a project has a remote runner |
 | [Specs from existing code](spec-from-code.md) | `purlin:spec-from-code` once on a codebase that predates Purlin |
 
-## PM and designer
+## Product
 
 | Guide | What it covers |
 |-------|----------------|
-| [Team workflow](team-workflow.md) | The `strong` gate, the record and who writes one, one traced sprint |
+| [Team workflow](team-workflow.md) | The gate `strong`, who writes what, one traced sprint |
 
 ## QA
 
 | Guide | What it covers |
 |-------|----------------|
-| [Review and signing](review-and-signing.md) | The level, the queue, the brief, `purlin:sign`, the tag, what stales a signature |
-| [Dashboard](dashboard.md) | The page that opens from disk, the four screens, filters, both themes |
+| [Review and signing](review-and-signing.md) | The level, the queue, what the audit found, `purlin:sign`, the tag, what stales a signature |
+| [Dashboard](dashboard.md) | The page that opens from disk, its screens, filters, both themes |
 
-## Admin
+## Raising the gate
 
 | Guide | What it covers |
 |-------|----------------|
-| [Regulated workflow](regulated-workflow.md) | The `signed` gate, who may sign, signed commits, the tag, the evidence trail |
 | [Raising the gate and upgrading](raising-the-gate-and-upgrading.md) | `purlin:init --gate` both ways, and `purlin:init --update` |
+| [Regulated workflow](regulated-workflow.md) | The gate `signed`, what Purlin produces for a regulated sign-off system, and where its part ends |
 
 ## Reference
 
 | File | What it covers |
 |------|----------------|
-| [Commands](../references/purlin_commands.md) | Every command's syntax, its one-liner, and what it writes |
+| [Commands](../references/purlin_commands.md) | Every command's syntax, its purpose, and what it writes |
 | [The gate](../references/hard_gates.md) | The one setting, which evidence counts, when a signature counts, what `signed/<version>` means |
-| [Glossary](../references/glossary.md) | The word this project uses for each concept, and the retired spellings |
+| [Glossary](../references/glossary.md) | The word this project uses for each concept, with its one definition |
 | [Spec format](../references/formats/spec_format.md) | The 2-section spec, field by field |
-| [Evidence format](../references/formats/evidence_format.md) | The file per feature per source a test run and an audit write, yours or a runner's, and its fingerprint |
+| [Marker format](../references/formats/marker_format.md) | The comment that ties a test to a proof, in every language |
+| [Evidence format](../references/formats/evidence_format.md) | The file per feature per source a run writes, and its fingerprint |
 | [Signature format](../references/formats/signature_format.md) | The signature file and what it binds |
-| [Spec quality](../references/spec_quality_guide.md) | Writing a rule worth having, and diagnosing a failure |
+| [Package format](../references/formats/package_format.md) | The evidence package `purlin:export` and `purlin:sign` write |
+| [Spec quality](../references/spec_quality_guide.md) | Writing a rule and a proof worth having, and choosing a level |
 | [Supported frameworks](../references/supported_frameworks.md) | How each test framework is detected, and the test command init writes for it |

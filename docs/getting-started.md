@@ -1,215 +1,186 @@
 # Getting started
 
-For the engineer setting Purlin up on a project for the first time.
+For a developer putting Purlin on a project, who wants it to stay out of the way.
 
-By the end of this page you will have a spec, code, a tagged test and a committed set of test
-results, and you will know which process guide to read next. It takes about fifteen minutes on
-a small project.
+## What Purlin touches
 
-## What you need
+- **A settings file and the specs you write.** `purlin:init` writes `.purlin/config.json`,
+  `.purlin/evidence/README.md`, an empty `specs/`, a block in `.gitignore`, and a copy of the
+  dashboard, `purlin-report.html`, which that block keeps out of git. It prints every file it
+  wrote and commits none of them.
+- **One comment above a test.** `# purlin: cart RULE-1` in Python, `// purlin: cart RULE-1` in
+  JavaScript, TypeScript or C#, `-- purlin: cart RULE-1` in SQL. The comment is how Purlin ties
+  a test to a rule.
+- **Your own test command, in your own framework.** Init writes it into the `tests` setting,
+  with the flag that makes the framework write a report, and Purlin reads that report. For
+  pytest that is `python3 -m pytest --ignore=mutants {files} --junitxml={report}`.
+- **Nothing committed unless you ask.** A run writes its results and commits them only with
+  `--commit`. `purlin:spec` and `purlin:build` commit the spec and the code you asked them for.
+- **Nothing running unless you ran it.** No git hook, no background job, no CI workflow unless
+  a rule needs another operating system or you say you do not trust this machine.
+- **Nothing installed in your test suite.** No plugin, no import, no fixture. The one
+  exception is the framework's own: Jest needs `jest-junit` to write its report.
+- **If you leave, the markers are comments.** Delete `.purlin/`, `specs/`,
+  `purlin-report.html` and the `.gitignore` block, and your tests run exactly as they did.
 
-- git, and a repository. Purlin reads git history to decide what counts as evidence, so
-  `git init` before anything else.
-- Python 3.9 or later.
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+## Ten minutes
 
-## Install
-
-There are two ways to load Purlin, and both work the same afterwards.
-
-**From the marketplace**, which is how a project uses it:
+**1. Install.** Purlin needs git, Python 3.9 or later, and
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 
 ```bash
 cd my-project
-git init
 claude plugin marketplace add https://github.com/rlabarca/purlin.git --scope project
 ```
 
-Then start Claude Code, run `/plugin install purlin@purlin`, and run `/reload-plugins` so the
-skill names autocomplete. The plugin lands under
-`~/.claude/plugins/cache/purlin/purlin/<version>/`. `--scope project` writes the marketplace
-entry into the project's `.claude/settings.json`, so a teammate who clones the repository
-resolves the same source; each teammate still runs the install and the reload themselves.
-
-**From a checkout**, which is how you try a version before installing it or work on Purlin
-itself:
-
-```bash
-claude --plugin-dir /path/to/purlin
-```
-
-Your project never carries a copy of Purlin. Neither does a CI runner, which is why the
-workflow `purlin:init` writes, on the two projects that need one, clones Purlin at a pinned tag
-and runs the same script from that checkout.
-
-## Initialize
+Then, inside Claude Code, run `/plugin install purlin@purlin` and `/reload-plugins`, and:
 
 ```
 purlin:init
 ```
 
-Init's first question is **what must be true of every rule before a version is proven?** The
-answer is the **gate**. Each value names one more level of evidence, and the value is the word
-a rule's last cell reads when it is met.
+Answer `passed` to the first question, `What must be true of every rule before a version is
+proven?`, `y` to `Do you trust your own machine for the tests and the signing?`, and the
+default to anything else it asks. Init reads your test framework from the tree and ends with
+`→ Next: run purlin:spec to write the first spec.`
 
-| Gate | Who it fits | What every rule must have |
-|------|-------------|---------------------------|
-| `passed` | One person working alone | A passing tagged test for every proof, from a run of any source |
-| `strong` | A team of PM, designers, engineers and QA | That, and a record at this commit with the test strength at or above `min_strength` and nothing the audit observed outstanding |
-| `signed` | The same team under GxP | That, and a current signature on every rule that needs one, in a signed commit |
-
-Answer `passed` for now. You can raise the gate later with `purlin:init --gate strong`, which
-adds what is missing and asks before each write.
-
-Init asks at most three more things, in this order: an empty repository is asked which
-language it will be; a project whose framework has an engine is asked `Measure test strength by
-breaking the code on purpose?`, where the default is no; and everyone is asked
-`Do you trust your own machine for the tests and the signing?`. Answer `y` to the last and the
-whole loop runs here, with no CI anywhere. Everything else it reads from the tree and from your
-`origin` remote.
-
-It writes `.purlin/config.json` with the gate, the trust answer and the derived defaults,
-and `specs/` for the specs. It writes the detected framework's own test command into the `tests`
-setting, installs nothing in your tests, and wires the breaks engine for the
-language, adds a `.gitignore` block for `.purlin/runtime/`, and copies the dashboard page so it
-opens from disk. It installs no git hook and asks nothing of your git host. It ends by
-printing every file it wrote or edited, one per line. `purlin:init --dry-run` prints that list and writes
-nothing.
-
-## Write the first spec
-
-Describe the feature in plain language. A sentence, a ticket, a pasted block of acceptance
-criteria and a folder of mocks all reach the same skill.
-
-```
-purlin:spec "Users sign in with email and password. After five failed attempts the
-account is locked for fifteen minutes."
-```
-
-That sentence carries three claims, so it becomes three rules, each with one proof:
+**2. Write three rules.** One file, `specs/shop/cart.md`:
 
 ```markdown
-# Feature: login
+# Feature: cart
 
-> Description: Email and password sign-in with a lockout after repeated failures.
-> Scope: src/auth.py, src/session.py
+> Description: The cart's total.
+> Scope: src/cart.py
 
 ## Rules
 
-- RULE-1: Return 200 and a session cookie for a correct email and password
-- RULE-2: Return 401 for a wrong password
-- RULE-3: Lock the account for 15 minutes after 5 consecutive failures
-
-## Proof
-
-- PROOF-1 (RULE-1): POST /login with a known user; verify 200 and a Set-Cookie header
-- PROOF-2 (RULE-2): POST /login with the wrong password; verify 401 and no cookie
-- PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423
+- RULE-1: An empty cart totals 0
+- RULE-2: The total is the sum of price times quantity
+- RULE-3: A negative quantity is refused
 ```
 
-No rule carries a `[level: ...]` tag here, because at `passed` every rule is read as `passed`;
-`purlin:spec` marks the exceptions once you raise the gate. A single rule covering all three would
-pass while two thirds of the behaviour was missing. A rule says what the software does; a proof
-says what a test asserts, naming a route, an input and the observable that settles the claim. `> Scope:` names the files the feature lives in, and it
-earns its place: the evidence carries a fingerprint of those files, which is what lets Purlin
-tell a code change from a rule change later, and run only the features a change touched.
+`> Scope:` names the code the rules are about. `purlin:spec` writes the same file from a
+sentence, if you would rather describe the feature than type it.
 
-The skill prints each rule with its proofs, asks whether to change any, and ends with
-`Spec saved: login. Next: purlin:build login`.
-
-## Build, test, push
-
-```
-purlin:build login
-```
-
-Build reads every rule the feature is bound by, follows `> Requires:` through the anchors, writes
-the smallest code that satisfies them, and writes one test per proof, or marks a test you
-already have. Each test carries one comment above it naming the feature and the proof:
+**3. Add one comment above each of three tests.** Tests you already have, or new ones:
 
 ```python
-# purlin: login PROOF-1
-def test_valid_credentials_return_200():
-    assert authenticate("user@test.com", "secret") == 200
+# purlin: cart RULE-1
+def test_empty():
+    assert total([]) == 0
+
+# purlin: cart RULE-2
+def test_sum():
+    assert total([(2, 3), (1, 1)]) == 7
+
+# purlin: cart RULE-3
+def test_negative():
+    with pytest.raises(ValueError):
+        total([(2, -1)])
 ```
 
-A test with no marker proves nothing as far as Purlin is concerned, however good it is. The
-marker is the same comment in every language's own syntax; see
-[references/formats/marker_format.md](../references/formats/marker_format.md).
+**4. Run one command.**
 
 ```
-purlin:test login
+purlin:test
 ```
 
-`purlin:test` runs your own test command, reads the report it writes under
-`.purlin/runtime/reports/`, which is not committed, and prints the passed cell of every rule. It takes seconds: no breaks, no record.
-It then writes `.purlin/evidence/local/login.json` and `.purlin/tests.md`, prints `Evidence
-written to .purlin/evidence/local/login.json.`, and ends with `gate passed: 3 of 3`. It commits
-nothing; `purlin:test --commit` commits both as `purlin: evidence at <sha7>`. Those two files
-are tracked, so once committed a teammate reads your run on the git host without running
-anything.
-
-At `passed` that is the whole loop: spec, build, test, then `git push`. No record, no
-signature, and no script for you to run. The push is free: nothing runs when you make one.
-
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {"background": "#0C3444", "primaryColor": "#092936", "primaryTextColor": "#E4DDD4", "primaryBorderColor": "#C0793F", "lineColor": "#C0793F", "secondaryColor": "#0C3444", "tertiaryColor": "#092936", "fontFamily": "Arial", "textColor": "#E4DDD4"}}}%%
-flowchart LR
-  spec["purlin:spec"] --> build["purlin:build"]
-  build --> test["purlin:test"]
-  test --> build
-  test --> audit["purlin:audit"]
-  audit --> sign["purlin:sign"]
-  sign --> push["git push"]
-```
-
-Every box in that picture runs on your machine. The gate says how far along it you go: `passed`
-stops after the test, `strong` after the audit, `signed` ends with `purlin:sign`, which writes
-the tag `signed/<version>` once every rule meets the gate.
+It runs your test command and prints:
 
 ```
-purlin:audit
-```
+Selected 1 of 1 feature: cart (no run on macos yet).
 
-Run the audit when you want to know how good those tests are. It runs them again, and from
-`strong` upward breaks the code on purpose and measures the share of the breaks the tests
-caught: that share is the **test strength**. It prints what it observed. At `passed` that is
-all it does; from `strong` up it also writes what it found into each feature's evidence file,
-and ends with `gate strong: <n> of <rules>`. `purlin:audit --commit` commits it as
-`purlin: evidence at <sha7>`. It runs on this machine, and its evidence counts.
+Running the pytest suite.
+Markers: 3 tied to a test, 0 not tied.
+Ran pytest on 1 feature(s).
 
-## Read the table
+Evidence written to .purlin/evidence/local/cart.json.
 
-```
-Spec   Rules  Proofs  Tests
+Purlin status: my-project, plugin 0.10.0, gate passed
+
+Spec  Rules  Proofs  Tests
 ───────────────────────────
-login      3  3       3 of 3
+cart      3  0       3 of 3
+───────────────────────────
 
 3 of 3 rules meet the gate passed.
 Untested 0 · Failing 0 · Partial 0 · Passing 3.
-1 feature, 3 proof lines.
+1 feature, 0 proof lines.
+
 → Next: nothing is outstanding at gate passed.
+
+gate passed: 3 of 3
 ```
 
-`purlin:status` prints that table any time, one row per feature and per anchor, sorted so the
-rows needing the most work come first. `Rules` counts the rules the spec must prove; `Proofs`
-counts its proof lines and adds `· <k> without a test` when a proof has none; `Tests` reads
-`<passed> of <rules>` and adds `· <k> partial` and `· <k> failing` when either is above zero.
-When a run happened, on which operating system and from which source is in the cell's hover on
-the dashboard, and on the rule screen in full. A column exists only when the cell behind it
-does, so a project at the `passed` gate has no `Strong` or `Signed` column. The
-gate is what adds them: `purlin:init --gate strong` adds the first, `--gate signed` adds the
-other.
+**5. Read it.** `3 of 3` rules passed. A rule whose test fails is counted under `Failing`, and
+the run ends `gate not met: 2 of 3` and exits 1. Open `purlin-report.html` in a browser to see
+each rule on its own line.
 
-Every command ends with one `→ Next:` line naming the step to take, computed from the cell that
-blocks the rules: `purlin:spec` when a rule has no proof at all, `purlin:build` when a test
-fails or a proof has none, `purlin:test` when there is no run to read, `purlin:audit` when no
-audit has measured a rule, and `purlin:sign` when a rule is waiting for a person. Follow the
-line rather than remembering an order.
+Now change `src/cart.py` and run `purlin:test` again. Every rule of `cart` is out of date until
+its tests run over the new code, and the run says why it picked the feature:
+
+```
+Selected 1 of 1 feature: cart (code changed since bf3709e).
+```
+
+Run it once more with nothing changed and it runs nothing: `Nothing to run: every feature's
+spec, code and tests match its evidence. purlin:test --all runs them anyway.`
+
+That is the whole of it at the gate `passed`: a rule, a test, and whether the test passed over
+the code as it is now.
+
+## The day to day
+
+```
+purlin:drift eng
+purlin:spec <name>
+purlin:build <name>
+purlin:test
+```
+
+`purlin:drift eng` says what your last pull, merge, rebase or checkout brought in: code changed
+and the rules behind it, rules with no test, features out of date. `purlin:spec` turns a
+requirement into rules; `purlin:build` writes the code and the tests, or marks a test you
+already have; `purlin:test` runs what the change touched. `purlin:test <feature>` runs one
+feature and `purlin:test --all` runs everything.
+
+A run writes two files: `.purlin/evidence/local/<feature>.json`, what the run saw for each rule
+on this operating system, and `.purlin/tests.md`, one table for the project. `purlin:test
+--commit` commits both as `purlin: evidence at <sha7>`, under your own git identity, so a
+teammate reads your run on the git host without running anything. It never pushes; the push is
+yours.
+
+Every command ends with one `→ Next:` line naming the step to take. Follow it rather than
+remembering an order.
+
+[running-and-evidence.md](running-and-evidence.md) covers a run in full, including the one
+case at this gate that needs a remote runner: a test that can only pass on another operating
+system.
+
+## When a team wants more
+
+The gate is how far a project asks every rule to go. There are three:
+
+| Gate | What every rule must have | The command |
+|------|---------------------------|-------------|
+| `passed` | its tests pass over the current code | `purlin:test` |
+| `strong` | that, and an audit that found the tests sound | `purlin:audit` |
+| `signed` | that, and a person's signature | `purlin:sign` |
+
+From `strong` up each rule also carries a **proof**: a plain sentence saying how the rule is
+shown, which QA writes or reviews and the audit checks the test against. The marker then names
+the proof, `# purlin: cart PROOF-2`. `purlin:audit` calls a model on each rule and a finding
+blocks. At `signed` a person signs each rule, and `purlin:sign` writes the signed tag
+`signed/<version>` once every rule meets the gate.
+
+`purlin:init --gate strong` raises the gate and asks before each write; it changes no rule.
+A single rule can stay lower, `[level: passed]` at the end of its line.
 
 ## Where to go next
 
-- One person working alone, gate `passed`: [solo-workflow.md](solo-workflow.md).
-- A team, gate `strong`: [team-workflow.md](team-workflow.md).
-- Under GxP or a similar obligation, gate `signed`: [regulated-workflow.md](regulated-workflow.md).
+- The model in one page: [how-purlin-works.md](how-purlin-works.md).
+- The gate `strong`, for a team: [team-workflow.md](team-workflow.md).
+- The gate `signed`, when the software is signed off in a regulated system:
+  [regulated-workflow.md](regulated-workflow.md).
 - An existing codebase with no specs yet: [spec-from-code.md](spec-from-code.md).
+- Every command: [purlin_commands.md](../references/purlin_commands.md).
