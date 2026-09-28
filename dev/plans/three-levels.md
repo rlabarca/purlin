@@ -417,6 +417,24 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     `--update` is the check that nothing was missed: whatever it still offers to change is
     a gap, fixed in the piece that owns it. No audit and no signing follow until the owner
     says the sanity checks are done.
+50. **Purlin stays out of the way** (added 2026-09-27, from the first sanity check: a
+    skeptical developer asking why they need it). This amends decisions 28, 29 and 40.
+    - **Evidence is written, and committed when asked.** `purlin:test` and `purlin:audit`
+      write the evidence file and print the table. `--commit` commits it, as
+      `purlin: evidence at <sha7>`. Neither ever commits on its own. `purlin:sign` refuses
+      to sign a rule or write the tag over evidence that is not committed, names the
+      feature, and names the command that commits it. The remote runner is the one writer
+      that always commits, because its evidence exists nowhere else.
+    - **Nothing of Purlin runs unless Purlin was run.** The hooks that refreshed the
+      dashboard's data after a tool call are removed, with `hooks/hooks.json` and the
+      `digest` setting. `purlin:test`, `purlin:audit`, `purlin:sign` and `purlin:status`
+      each refresh the data as they finish.
+    - **A finding blocks**, as decision 35 wrote it.
+    - **The audit says what it is about to do.** Before the first model call it prints one
+      line, `AI audit: <n> rules to read, <k> at a time.`, and carries on without asking.
+    - **Five words at `passed`.** At the gate `passed` every surface and every page a
+      person meets first uses rule, test, passed, out of date and gate, and no word of a
+      higher level. The rest appears when the gate is raised.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

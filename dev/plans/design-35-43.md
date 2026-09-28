@@ -569,3 +569,22 @@ From the stale inventory's open points, also closed by the owner:
 - Decision 48: a signature records `machine` (the host's name) and `os` beside the signer
   and the time, neither of them hashed. The signed-commit condition and `trust: remote`
   stay as they are. Piece P4 adds the two fields and bumps `signature_format.md`.
+- Decision 50, which wins over sections 2, 4 and 8 where they differ:
+  - A run writes the evidence file and does not commit it. `--commit` on `purlin:test` and
+    `purlin:audit` commits it with the subject `purlin: evidence at <sha7>`; the run's last
+    lines read `Evidence written to .purlin/evidence/local/<feature>.json.` and, with
+    `--commit`, `Evidence committed.` The `--ci` arm on a run branch always commits.
+    `.purlin/tests.md` is written and committed with the evidence. The payload's
+    `features[].evidence.<source>` gains `committed: bool` (the file is tracked and matches
+    HEAD). `purlin:sign` refuses a rule, and the tag, while any feature it reads has
+    evidence that is not committed: `sign: login has evidence that is not committed. Run:
+    purlin:test --commit`. Piece P2 owns the write and the flag; P4 owns the refusal.
+  - The hooks go: `hooks/hooks.json`, `scripts/hooks/refresh_digest.py`, the `digest`
+    setting, their spec, tests and docs. The four commands refresh `.purlin/report-data.js`
+    as they finish. Piece S1 owns it.
+  - `purlin:audit` prints `AI audit: <n> rules to read, <k> at a time.` before the first
+    call. Piece P5 owns it.
+  - At the gate `passed` no surface prints a word of a higher level. Pieces S1 and S2 own it.
+- The vocabulary guard under `dev/` still forbids `queue` and, in prose, `verdict`. The
+  queue is the owner's word (decision 37): piece P4 removes it from the guard's list. The
+  audit's field is `verdict` in machine text; in prose the pages say what the audit found.
