@@ -30,7 +30,7 @@ before a signature is `trust: remote`.
 |---------|---------|------------------------|
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs | An engineer's agent, or a PM or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
 | `purlin:build [name]` | Load a spec's rules, write the code and the tagged tests, commit the changeset | An engineer, on every change. With no name it reads the board |
-| `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell | An engineer, constantly. Seconds; tests only. It writes the evidence, commits it with `--commit`, and never pushes |
+| `purlin:test [feature] [--all]` | Run the tagged tests and print each rule's passed cell | An engineer, constantly. Seconds; tests only. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:audit [feature] [--all]` | Run the tests and the breaks, then the AI audit on each rule that changed since its last audit, and write the audit into the evidence | An engineer locally, any time. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:sign [feature] [RULE-N]` | Walk the queue, or sign a rule, a feature or a batch as a signed commit | Anyone with commit signing set up; the signature names them. With no argument it walks the queue |
 | `purlin:drift [role]` | Report what changed since your last pull, by role | Everyone, after a pull, a merge, a rebase or a checkout |
@@ -58,7 +58,8 @@ Purlin
   Building
   ──────
   purlin:build [name]             Implement a spec's rules and their tests
-  purlin:test [feature ...]       Run the tagged tests and write the evidence
+  purlin:test [feature ...]       Run the tagged tests the change touched, write the evidence
+  purlin:test --all               The same, for every feature
   purlin:test --commit            The same, then commit the evidence
   purlin:test --remote            Let the git host's runner do the run
 

@@ -14,6 +14,7 @@ the script called them with.
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -58,12 +59,19 @@ def _project(tmp_path, frameworks='pytest', gate='passed'):
 
 
 def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1,
-          level=None):
+          level=None, scope='src/', requires=None):
     """A two-section spec. Each proof is `(id, rule, tag_suffix)`.
 
     `level` marks every rule, which is what decides whether a brief is owed.
+    `scope` is the `> Scope:` line's value, None for no line at all, and
+    `requires` the `> Requires:` line's.
     """
-    lines = ['# %s' % feature, '', '> Scope: src/', '', '## Rules', '']
+    lines = ['# %s' % feature, '']
+    if requires:
+        lines.append('> Requires: %s' % requires)
+    if scope is not None:
+        lines.append('> Scope: %s' % scope)
+    lines.extend(['', '## Rules', ''])
     tag = ' [level: %s]' % level if level else ''
     for index in range(1, rules + 1):
         lines.append('- RULE-%d: the software does thing %d%s'
@@ -207,7 +215,6 @@ class TestTheCommandLine:
 
     @pytest.mark.parametrize('args', [
         (),                                   # no action
-        ('--test',),                          # no feature and no --all
         ('--all', '--test', '--audit'),       # two actions
         ('--all', '--feature', 'x', '--test'),
         ('--all', '--audit', '--remote'),     # --remote belongs to --test
@@ -1455,3 +1462,314 @@ class TestAnEmptyProjectRootIsRefused:
         assert result.returncode == 2, output
         assert '--project-root' in output, output
         assert not (root / PROOF_REL).exists(), output
+
+
+# ---------------------------------------------------------------------------
+# A run covers what the change touched
+# ---------------------------------------------------------------------------
+
+def _touched_project(tmp_path, names=('login', 'export'), gate='passed',
+                     requires=None, failing=()):
+    """A committed checkout of features that each own one source file and
+    one test file, run once with `--commit` so every feature has evidence.
+
+    Returns `(root, sha)`, where `sha` is the commit that first run started
+    on. A name in `failing` gets a test that fails.
+    """
+    root = _pytest_project(tmp_path, gate=gate, body='')
+    (root / 'tests' / 'test_feat.py').unlink()
+    (root / 'src').mkdir()
+    for name in names:
+        (root / 'src' / ('%s.py' % name)).write_text(
+            'VALUE = 1\n', encoding='utf-8')
+        (root / 'tests' / ('test_%s.py' % name)).write_text(
+            'import pytest\n\n'
+            '@pytest.mark.proof("%s", "PROOF-1", "RULE-1")\n'
+            'def test_%s():\n'
+            '    assert %s\n' % (name, name,
+                                 '1 == 2' if name in failing else 'True'),
+            encoding='utf-8')
+        _spec(root, name, scope='src/%s.py' % name, requires=requires)
+    _git_repo(root)
+    sha = _head(root)
+    _code, output = _run(root, '--test', '--commit')
+    assert 'Evidence committed.' in output, output
+    return root, sha
+
+
+def _selection(output):
+    """`{feature: reasons}` off the `Selected` line, or None when there is none."""
+    for line in output.splitlines():
+        if line.startswith('Selected '):
+            listed = line.split(': ', 1)[1].rstrip('.')
+            return dict(re.findall(r'(\w+) \(([^)]*)\)', listed))
+    return None
+
+
+def _file(root, rel):
+    return (root / rel).read_bytes()
+
+
+class TestARunCoversWhatTheChangeTouched:
+    """With no feature named, a run runs the features its change touched."""
+
+    @pytest.mark.proof("run_script", "PROOF-88", "RULE-55")
+    @pytest.mark.proof("run_script", "PROOF-97", "RULE-58")
+    def test_a_code_edit_runs_only_the_feature_that_covers_the_file(
+            self, tmp_path):
+        root, sha = _touched_project(tmp_path)
+        export = _file(root, '.purlin/evidence/local/export.json')
+        (root / 'src' / 'login.py').write_text('VALUE = 2\n', encoding='utf-8')
+        code, output = _run(root, '--test')
+        assert code == 0, output
+        assert _selection(output) == {
+            'login': 'code changed since %s' % sha[:7]}, output
+        assert _file(root, '.purlin/evidence/local/export.json') == export
+        # Only the test file of the feature being run was run.
+        assert _proofs(root, 'login') is not None, output
+        assert _proofs(root, 'export') is None, output
+
+    @pytest.mark.proof("run_script", "PROOF-89", "RULE-55")
+    def test_a_spec_edit_and_a_test_edit_select_their_feature(self, tmp_path):
+        root, sha = _touched_project(tmp_path)
+        # The run below starts on the commit that holds the first evidence,
+        # and the section it writes names that commit.
+        later = _head(root)
+        spec = root / 'specs' / 'a' / 'export.md'
+        spec.write_text(spec.read_text(encoding='utf-8').replace(
+            'does thing 1', 'does thing one'), encoding='utf-8')
+        code, output = _run(root, '--test')
+        assert code == 0, output
+        assert _selection(output) == {
+            'export': 'spec changed since %s' % sha[:7]}, output
+        test = root / 'tests' / 'test_export.py'
+        test.write_text(test.read_text(encoding='utf-8') + '\n# edited\n',
+                        encoding='utf-8')
+        code, output = _run(root, '--test')
+        assert code == 0, output
+        assert _selection(output) == {
+            'export': 'tests changed since %s' % later[:7]}, output
+
+    @pytest.mark.proof("run_script", "PROOF-90", "RULE-55")
+    def test_an_anchor_edit_selects_every_feature_that_requires_it(
+            self, tmp_path):
+        root, sha = _touched_project(tmp_path, names=('login', 'export',
+                                                      'solo'))
+        anchors = root / 'specs' / '_anchors'
+        anchors.mkdir()
+        (anchors / 'shared.md').write_text(
+            '# Anchor: shared\n\n## Rules\n\n- RULE-1: every answer is JSON\n'
+            '\n## Proof\n\n- PROOF-1 (RULE-1): an answer parses as JSON\n',
+            encoding='utf-8')
+        for name in ('login', 'export'):
+            _spec(root, name, scope='src/%s.py' % name, requires='shared')
+        _git(root, 'add', '-A')
+        _git(root, 'commit', '-q', '-m', 'login and export require shared')
+        _run(root, '--test', '--commit')
+        assert _selection(_run(root, '--test')[1]) is None
+        text = (anchors / 'shared.md').read_text(encoding='utf-8')
+        (anchors / 'shared.md').write_text(
+            text.replace('every answer is JSON', 'every answer is UTF-8 JSON'),
+            encoding='utf-8')
+        _code, output = _run(root, '--test')
+        chosen = _selection(output)
+        assert sorted(chosen) == ['export', 'login', 'shared'], output
+        assert chosen['login'].startswith('spec changed since '), output
+        assert chosen['export'].startswith('spec changed since '), output
+
+    @pytest.mark.proof("run_script", "PROOF-91", "RULE-55")
+    def test_a_feature_with_no_evidence_is_selected(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        (root / 'src' / 'invoice.py').write_text('VALUE = 1\n',
+                                                 encoding='utf-8')
+        (root / 'tests' / 'test_invoice.py').write_text(
+            'import pytest\n\n'
+            '@pytest.mark.proof("invoice", "PROOF-1", "RULE-1")\n'
+            'def test_invoice():\n    assert True\n', encoding='utf-8')
+        _spec(root, 'invoice', scope='src/invoice.py')
+        _git(root, 'add', '-A')
+        _git(root, 'commit', '-q', '-m', 'invoice')
+        code, output = _run(root, '--test')
+        assert code == 0, output
+        purlin_run = _load_run_script()
+        assert _selection(output) == {
+            'invoice': 'no run on %s yet' % purlin_run.host_os()}, output
+        assert ('Skipped 2 features whose spec, code and tests match their '
+                'evidence: export, login. purlin:test --all runs them too.'
+                in output), output
+
+    @pytest.mark.proof("run_script", "PROOF-92", "RULE-55")
+    def test_a_spec_that_names_no_files_is_selected_every_time(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        _spec(root, 'export', scope=None)
+        _spec(root, 'login', scope='src/nowhere.py')
+        _git(root, 'add', '-A')
+        _git(root, 'commit', '-q', '-m', 'the scopes name nothing')
+        # The first run also sees the code part move, since the files the
+        # scope reaches changed; the one reason every run gives is the last.
+        code, output = _run(root, '--test', '--commit')
+        assert code == 0, output
+        chosen = _selection(output)
+        assert sorted(chosen) == ['export', 'login'], output
+        for reasons in chosen.values():
+            assert reasons.endswith('names no files, so every run includes '
+                                    'it'), output
+        code, output = _run(root, '--test', '--commit')
+        assert code == 0, output
+        assert _selection(output) == {
+            'export': 'names no files, so every run includes it',
+            'login': 'names no files, so every run includes it'}, output
+
+    @pytest.mark.proof("run_script", "PROOF-93", "RULE-55")
+    def test_an_untracked_file_selects_the_feature_and_is_named(
+            self, tmp_path):
+        root, sha = _touched_project(tmp_path)
+        # Naming a directory that holds no file yet leaves the fingerprint
+        # as it was, so the section the first run wrote stands.
+        _spec(root, 'login', scope='src/login.py, src/auth/')
+        _git(root, 'add', '-A')
+        _git(root, 'commit', '-q', '-m', 'login covers src/auth/')
+        assert 'Nothing to run' in _run(root, '--test')[1]
+        (root / 'src' / 'auth').mkdir()
+        (root / 'src' / 'auth' / 'token.py').write_text('KEY = 1\n',
+                                                        encoding='utf-8')
+        code, output = _run(root, '--test')
+        assert code == 0, output
+        assert _selection(output) == {'login': 'a file is not tracked'}, output
+        assert ("src/auth/token.py is under login's scope and is not "
+                'tracked, so its content is not part of the evidence until '
+                'you git add it.') in output.splitlines(), output
+        _git(root, 'add', 'src/auth/token.py')
+        _git(root, 'commit', '-q', '-m', 'track the token')
+        _code, output = _run(root, '--test', '--commit')
+        assert _selection(output) == {
+            'login': 'code changed since %s' % sha[:7]}, output
+        _code, output = _run(root, '--test')
+        assert 'Nothing to run' in output, output
+
+    @pytest.mark.proof("run_script", "PROOF-94", "RULE-56")
+    def test_the_skipped_line_names_ten_and_counts_the_rest(self, tmp_path):
+        names = tuple('f%02d' % index for index in range(1, 13))
+        root, sha = _touched_project(tmp_path, names=names)
+        (root / 'src' / 'f01.py').write_text('VALUE = 2\n', encoding='utf-8')
+        code, output = _run(root, '--test')
+        assert code == 0, output
+        lines = output.splitlines()
+        assert ('Selected 1 of 12 features: f01 (code changed since %s).'
+                % sha[:7]) in lines, output
+        assert ('Skipped 11 features whose spec, code and tests match their '
+                'evidence: f02, f03, f04, f05, f06, f07, f08, f09, f10, f11, '
+                'and 1 more. purlin:test --all runs them too.') in lines, output
+        assert lines.index(
+            'Selected 1 of 12 features: f01 (code changed since %s).'
+            % sha[:7]) < lines.index('Running the pytest arm.'), output
+
+    @pytest.mark.proof("run_script", "PROOF-95", "RULE-57")
+    def test_nothing_changed_runs_nothing_and_exits_on_the_gate(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        before = {name: _file(root, '.purlin/evidence/local/%s.json' % name)
+                  for name in ('login', 'export')}
+        code, output = _run(root, '--test')
+        assert code == 0, output
+        assert ("Nothing to run: every feature's spec, code and tests match "
+                'its evidence. purlin:test --all runs them anyway.'
+                in output.splitlines()), output
+        assert 'Running the' not in output, output
+        assert _selection(output) is None, output
+        assert {name: _file(root, '.purlin/evidence/local/%s.json' % name)
+                for name in ('login', 'export')} == before
+        assert [line for line in output.splitlines() if line.strip()][-1] == \
+            'gate passed: 2 of 2', output
+
+    @pytest.mark.proof("run_script", "PROOF-95", "RULE-57")
+    def test_nothing_changed_over_a_failing_test_exits_one(self, tmp_path):
+        root, _sha = _touched_project(tmp_path, failing=('export',))
+        code, output = _run(root, '--test')
+        assert 'Nothing to run' in output, output
+        assert [line for line in output.splitlines() if line.strip()][-1] == \
+            'gate not met: 1 of 2', output
+        assert code == 1, output
+
+    @pytest.mark.proof("run_script", "PROOF-96", "RULE-57")
+    def test_commit_with_nothing_to_run_commits_the_last_run(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        (root / 'src' / 'login.py').write_text('VALUE = 2\n', encoding='utf-8')
+        _git(root, 'add', '-A')
+        _git(root, 'commit', '-q', '-m', 'change login')
+        _run(root, '--test')
+        head = _head(root)
+        code, output = _run(root, '--test', '--commit')
+        assert code == 0, output
+        assert 'Nothing to run' in output, output
+        assert 'Evidence committed.' in output, output
+        subject = _git(root, 'log', '-1', '--format=%s').strip()
+        assert subject == 'purlin: evidence at %s' % head[:7], subject
+        assert _git(root, 'status', '--porcelain', '--',
+                    '.purlin/evidence').strip() == ''
+
+    @pytest.mark.proof("run_script", "PROOF-97", "RULE-58")
+    def test_a_named_feature_runs_only_its_test_files(self, tmp_path):
+        root = _project(tmp_path, frameworks='shell')
+        for name in ('login', 'export'):
+            _spec(root, name)
+            (root / ('%s.test.sh' % name)).write_text(
+                'source "%s"\npurlin_proof "%s" "PROOF-1" "RULE-1" pass '
+                '"shell case"\npurlin_proof_finish\n' % (SHELL_HARNESS, name),
+                encoding='utf-8')
+        _code, output = _run(root, '--feature', 'login', '--test')
+        assert _proofs(root, 'login') is not None, output
+        assert _proofs(root, 'export') is None, output
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert _proofs(root, 'export') is not None, output
+
+    @pytest.mark.proof("run_script", "PROOF-98", "RULE-59")
+    def test_all_runs_every_feature_when_nothing_changed(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert 'Nothing to run' not in output, output
+        assert _selection(output) is None, output
+        assert 'Running the pytest arm.' in output, output
+        assert _proofs(root, 'login') is not None, output
+        assert _proofs(root, 'export') is not None, output
+
+    @pytest.mark.proof("run_script", "PROOF-98", "RULE-59")
+    def test_ci_with_no_feature_named_runs_every_feature(
+            self, tmp_path, evidence_run, capsys):
+        root, _sha = _touched_project(tmp_path)
+        code, calls = evidence_run(root, '--ci')
+        output = capsys.readouterr().out
+        assert code == 0, output
+        assert [sorted(paths) for paths, _m, _merge in calls['commit']] == [
+            ['.purlin/evidence/ci/export.json',
+             '.purlin/evidence/ci/login.json']], output
+
+    @pytest.mark.proof("run_script", "PROOF-99", "RULE-60")
+    def test_the_audit_tests_the_selection_and_reads_every_feature(
+            self, tmp_path, evidence_run, claude, capsys):
+        _install, directory = claude
+        root, _sha = _touched_project(tmp_path, gate='strong')
+        code, _calls = evidence_run(root, '--audit')
+        output = capsys.readouterr().out
+        assert 'Nothing to run' in output, output
+        assert 'Running the' not in output, output
+        assert 'AI audit: 2 rules to read, 2 at a time.' in output, output
+        assert len(fake_claude.calls(directory)) == 2
+        assert code == 0, output
+        code, _calls = evidence_run(root, '--audit')
+        output = capsys.readouterr().out
+        assert ('AI audit: nothing to read; every rule matches its last '
+                'audit.') in output, output
+        assert len(fake_claude.calls(directory)) == 2
+        spec = root / 'specs' / 'a' / 'login.md'
+        spec.write_text(spec.read_text(encoding='utf-8').replace(
+            'does thing 1', 'does thing one'), encoding='utf-8')
+        code, _calls = evidence_run(root, '--audit')
+        output = capsys.readouterr().out
+        assert sorted(_selection(output)) == ['login'], output
+        assert 'AI audit: 1 rule to read, 1 at a time.' in output, output
+        assert len(fake_claude.calls(directory)) == 3
+        assert code == 0, output

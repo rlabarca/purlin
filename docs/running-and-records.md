@@ -19,10 +19,25 @@ is one answer to how a test is run. Both run on your machine, and neither pushes
 ## purlin:test
 
 ```
-purlin:test                     Every feature
+purlin:test                     The features your change touched
+purlin:test --all               Every feature
 purlin:test <feature> [...]     One feature, or several
 purlin:test --remote            Let the git host's runner do the run
 ```
+
+With no feature named, the run selects a feature when it has no run on this operating system,
+when its spec, its code or its tests changed since its newest run here, when an untracked file
+sits under its `> Scope:` or beside its tests, or when its spec names no files. It says what it
+selected and why before it runs anything, runs only the test files that carry those features'
+markers, and names what it skipped:
+
+```
+Selected 2 of 34 features: login (code changed since a1b2c3d), invoice (no run on macos yet).
+Skipped 32 features whose spec, code and tests match their evidence: auth, billing, cart, fees, gate, history, ledger, orders, refunds, search, and 22 more. purlin:test --all runs them too.
+```
+
+With nothing selected it prints `Nothing to run: every feature's spec, code and tests match its
+evidence. purlin:test --all runs them anyway.`, runs no test, and exits 0 where the gate is met.
 
 The run writes proof files into `.purlin/runtime/proofs/` and prints one line per rule, reading
 that rule's passed cell: `passed`, `failed`, `partial`, `no test`, `not run` or `out of

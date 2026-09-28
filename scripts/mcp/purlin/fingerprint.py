@@ -18,7 +18,9 @@ they are not part of the evidence until they are added.
 so rewording a description leaves every fingerprint as it was.
 
 `references/formats/evidence_format.md` documents where a fingerprint is
-stored and how a stored one is compared with one taken now.
+stored and how a stored one is compared with one taken now. `selection` is
+that compare, made for every feature at once: it is what a run with no
+feature named runs.
 """
 
 import hashlib
@@ -205,6 +207,30 @@ def scope_report(project_root, feature, features=None):
             'names_no_files': not files}
 
 
+# The two reasons a feature spec is incomplete.
+NO_SCOPE_LINE = 'no > Scope: line'
+SCOPE_NAMES_NOTHING = '> Scope: names nothing that exists'
+
+
+def incomplete_reason(project_root, feature, features=None):
+    """Why a feature spec names no files, or None when it names some.
+
+    A feature spec is incomplete when it has no `> Scope:` line, or when its
+    scope reaches no tracked file: Purlin then cannot tell which code belongs
+    to it. An anchor is never incomplete, because the code behind its rules
+    belongs to the features that use it.
+    """
+    features = _features(project_root, features)
+    info = _info(feature, features)
+    if info.get('is_anchor'):
+        return None
+    scope = [entry for entry in info.get('scope') or () if entry.strip()]
+    if not scope:
+        return NO_SCOPE_LINE
+    files, _ = expand_scope(project_root, scope)
+    return None if files else SCOPE_NAMES_NOTHING
+
+
 # ---------------------------------------------------------------------------
 # spec
 # ---------------------------------------------------------------------------
@@ -349,16 +375,27 @@ def untracked(project_root, feature, features=None, index=None):
     one of the feature's marker files. None of these is in the fingerprint;
     each joins it once `git add` tracks it. Sorted.
     """
+    parts = untracked_parts(project_root, feature, features, index)
+    return sorted(set(parts['scope']) | set(parts['tests']))
+
+
+def untracked_parts(project_root, feature, features=None, index=None):
+    """`{scope, tests}`: `untracked`'s answer, split by why each file counts.
+
+    `scope` lists the files under a `> Scope:` entry and `tests` the files
+    beside a marker file that no scope entry reaches, each sorted.
+    """
     features = _features(project_root, features)
     info = _info(feature, features)
-    found = set()
+    in_scope = set()
     specs = [pathspec(entry) for entry in info.get('scope') or ()
              if entry.strip()]
     if specs:
-        found.update(_git_lines(
+        in_scope.update(_git_lines(
             project_root,
             ['ls-files', '-z', '--others', '--exclude-standard', '--']
             + specs) or [])
+    beside = set()
     folders = {os.path.dirname(path)
                for path in marker_files(project_root, feature, index)}
     if folders:
@@ -367,9 +404,90 @@ def untracked(project_root, feature, features=None, index=None):
             ['ls-files', '-z', '--others', '--exclude-standard', '--']
             + [':(literal)' + folder if folder else '.'
                for folder in sorted(folders)]) or []
-        found.update(path for path in listed
-                     if os.path.dirname(path) in folders)
-    return sorted(found)
+        beside.update(path for path in listed
+                      if os.path.dirname(path) in folders)
+    return {'scope': sorted(in_scope), 'tests': sorted(beside - in_scope)}
+
+
+def any_untracked(project_root):
+    """True when the tree holds any untracked, non-ignored file at all.
+
+    One git call, so a caller asking about every feature asks per feature
+    only when the answer could be yes.
+    """
+    listed = _git_lines(project_root,
+                        ['ls-files', '-z', '--others', '--exclude-standard'])
+    return listed is None or bool(listed)
+
+
+# ---------------------------------------------------------------------------
+# Which features a run selects
+# ---------------------------------------------------------------------------
+
+def selection(project_root, features=None, os_name=None, index=None):
+    """`[{feature, selected, reasons, untracked}]` for every spec, sorted.
+
+    A feature is selected when any of these holds, and each that holds adds
+    one reason, in this order:
+
+    - no section for this operating system exists in either source of its
+      evidence: `no run on <os> yet`;
+    - the newest such section's fingerprint differs from the one taken now:
+      `<part> changed since <sha7>` for each part that differs;
+    - an untracked, non-ignored file sits under its scope or beside one of
+      its marker files: `a file is not tracked`, with the files under
+      `untracked` as `{scope, tests}`;
+    - it names no files (`incomplete_reason`), so which code belongs to it
+      cannot be told: `names no files, so every run includes it`.
+
+    No commit is compared, so the answer survives a rebase, a merge and a
+    tree with changes no commit holds. An anchor's rules are part of the
+    `spec` part of every feature that requires it, so an anchor edit selects
+    those features too.
+    """
+    from purlin import evidence as evidence_module
+
+    features = _features(project_root, features)
+    os_name = os_name or evidence_module.host_os()
+    if index is None:
+        index = marker_index(project_root)
+    look_for_untracked = any_untracked(project_root)
+    out = []
+    for name in sorted(features):
+        reasons = []
+        loaded = evidence_module.load(project_root, name)
+        mine = [entry for entry in evidence_module.sections(loaded)
+                if entry['os'] == os_name]
+        if not mine:
+            reasons.append(NO_RUN_YET % os_name)
+        else:
+            newest = mine[0]
+            for entry in mine[1:]:
+                if (_text(entry['section'].get('at'))
+                        > _text(newest['section'].get('at'))):
+                    newest = entry
+            now = fingerprint(project_root, name, features, index)
+            commit = _text(newest['section'].get('commit'))[:7]
+            for part in differing_parts(newest['section'].get('fingerprint'),
+                                        now):
+                reasons.append(CHANGED_SINCE % (part, commit or 'unknown'))
+        loose = {'scope': [], 'tests': []}
+        if look_for_untracked:
+            loose = untracked_parts(project_root, name, features, index)
+            if loose['scope'] or loose['tests']:
+                reasons.append(NOT_TRACKED)
+        if incomplete_reason(project_root, name, features):
+            reasons.append(NAMES_NO_FILES)
+        out.append({'feature': name, 'selected': bool(reasons),
+                    'reasons': reasons, 'untracked': loose})
+    return out
+
+
+# The reasons `selection` gives, in the words a run prints them in.
+NO_RUN_YET = 'no run on %s yet'
+CHANGED_SINCE = '%s changed since %s'
+NOT_TRACKED = 'a file is not tracked'
+NAMES_NO_FILES = 'names no files, so every run includes it'
 
 
 # ---------------------------------------------------------------------------
@@ -378,6 +496,10 @@ def untracked(project_root, feature, features=None, index=None):
 
 def _normalise(text):
     return ' '.join((text or '').split())
+
+
+def _text(value):
+    return value if isinstance(value, str) else ''
 
 
 def _features(project_root, features):

@@ -1,10 +1,22 @@
 """Run a project's tagged tests, write the evidence, and audit it on request.
 
-    purlin_run.py (--feature NAME ... | --all)
+    purlin_run.py [--feature NAME ... | --all]
                   (--test [--remote] [--commit] | --ci)
                   [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py [--feature NAME ... | --all] --audit [--commit]
                   [--arm-timeout SECONDS] [--project-root DIR]
+
+**Which features run.** `--feature` names them and `--all` runs every one.
+With neither, `--test` and `--audit` run the features the change touched:
+`fingerprint.selection` selects a feature with no section for this
+operating system, one whose newest such section was taken over another
+spec, code or tests, one with an untracked file under its scope or beside
+its tests, and one whose spec names no files. Before anything runs the run
+prints what it selected and why, what it skipped, and each untracked file
+that selected a feature; with nothing selected it says so, runs no test,
+and exits on the gate. Every arm then runs only the test files that carry a
+marker of a feature being run, except xUnit, whose `dotnet test` runs the
+whole suite. `--ci` with no feature named runs every feature.
 
 `--test` is what `purlin:test` runs: the plugins run the tagged tests into
 `.purlin/runtime/proofs/`, and the run writes this operating system's section
@@ -22,8 +34,9 @@ write. The AI audit reads each own rule of the features run that has a proof
 with a test, whose passed cell reads `passed`, and that has no audit entry for its
 current rule, proof and test hashes; under a gate above `passed` a rule whose
 level is `passed` is not read. `--all` runs every feature and reads every
-such rule again; with no feature named and no `--all`, every feature is run
-and the rules that match their last audit are skipped. One model call per
+such rule again; with no feature named and no `--all`, the tests run on the
+selection above and every feature's rules are read, skipping those that
+match their last audit. One model call per
 rule, `audit_parallel` at once (`scripts/review/ai_audit.py` makes them).
 Before the first call the run prints `AI audit: <n> rules to read, <k> at a
 time.` and carries on without asking. What the audit found lands in the same
@@ -96,7 +109,7 @@ ARROW = '→'
 LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
 USAGE = (
-    'Usage: purlin_run.py (--feature NAME ... | --all) '
+    'Usage: purlin_run.py [--feature NAME ... | --all] '
     '(--test [--remote] [--commit] | --ci) '
     '[--arm-timeout SECONDS] [--project-root DIR]\n'
     '       purlin_run.py [--feature NAME ... | --all] --audit [--commit] '
@@ -205,9 +218,6 @@ def parse_args(argv):
     if args.all and args.features:
         args.error = 'name features or --all, not both'
         return args
-    if not args.all and not args.features and args.action != 'audit':
-        args.error = 'name at least one --feature, or --all'
-        return args
     if args.remote and args.action != 'test':
         args.error = REMOTE_IS_A_TEST
         return args
@@ -270,19 +280,36 @@ def shell_tests(project_root):
 
 def scan_markers(project_root, framework):
     """`{(feature, proof_id)}` every marker of one framework's syntax."""
+    return {(feature, proof_id) for feature, proof_id, _path
+            in _marker_hits(project_root, framework)}
+
+
+def marker_paths(project_root, framework, selected):
+    """The `/` relative paths, sorted, of the test files one arm runs.
+
+    A file is run when it carries a marker, in the framework's own syntax,
+    of a feature in `selected`. The files are read from the disk, tracked or
+    not, so a new test is run before anyone has added it.
+    """
+    wanted = set(selected)
+    return sorted({path for feature, _proof, path
+                   in _marker_hits(project_root, framework)
+                   if feature in wanted})
+
+
+def _marker_hits(project_root, framework):
     extensions, pattern = _MARKER_PATTERNS.get(framework, ((), None))
-    found = set()
     if pattern is None:
-        return found
+        return
     for path in _source_files(project_root, extensions):
         try:
             with open(path, 'r', encoding='utf-8') as handle:
                 text = handle.read()
         except (IOError, OSError, UnicodeDecodeError):
             continue
+        rel = os.path.relpath(path, project_root).replace(os.sep, '/')
         for match in pattern.finditer(text):
-            found.add((match.group(1), match.group(2)))
-    return found
+            yield match.group(1), match.group(2), rel
 
 
 # ---------------------------------------------------------------------------
@@ -408,29 +435,34 @@ def print_arm_output(framework, text):
 
 
 def run_framework(project_root, framework, config, log,
-                  timeout=ARM_TIMEOUT_DEFAULT):
+                  timeout=ARM_TIMEOUT_DEFAULT, only=None):
     """Run one framework's tagged tests. The exit code its runner gave.
+
+    `only` is the list of test files to run, `marker_paths`' answer, or None
+    to run the framework's whole suite. xUnit runs its whole suite either
+    way: `dotnet test` runs a project, not a file.
 
     `TIMED_OUT` comes back when the arm ran past `timeout` seconds and was
     killed. Every command runs without stdin and without a git password
     prompt, because both are ways for a run on a hosted runner to stop for an
     answer that never arrives.
     """
+    files = list(only or ())
     if framework == 'pytest':
         # `mutants/` is mutmut's copy of the project, tests included. A test
         # collected twice under one module name stops pytest before a single
         # test runs, so the copy is never collected.
         command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
-                   '--ignore=mutants']
+                   '--ignore=mutants'] + files
         code = _run(command, project_root, log, timeout)
         # pytest exits 5 when it collected nothing. No tests is not a failure
         # here; the two loud failures below are what report that.
         return 0 if code == 5 else code
     if framework == 'jest':
-        return _run(['npx', 'jest', '--passWithNoTests'], project_root, log,
-                    timeout)
+        return _run(['npx', 'jest', '--passWithNoTests'] + files,
+                    project_root, log, timeout)
     if framework == 'vitest':
-        return _run(['npx', 'vitest', 'run', '--passWithNoTests'],
+        return _run(['npx', 'vitest', 'run', '--passWithNoTests'] + files,
                     project_root, log, timeout)
     if framework == 'xunit':
         return _run(['dotnet', 'test', '--logger', 'purlin'], project_root,
@@ -440,6 +472,8 @@ def run_framework(project_root, framework, config, log,
         # alike, run from the root by its relative path in sorted order.
         code = 0
         for path in shell_tests(project_root):
+            if only is not None and path not in files:
+                continue
             code = _run([bash_command(), path], project_root, log, timeout)
             if code != 0:
                 break
@@ -453,6 +487,8 @@ def run_framework(project_root, framework, config, log,
         for name in sorted(os.listdir(tests_dir)
                            if os.path.isdir(tests_dir) else []):
             if not name.endswith('.sql'):
+                continue
+            if only is not None and 'tests/' + name not in files:
                 continue
             code = _run([bash_command(), bash_path(harness),
                          os.path.join('tests', name)],
@@ -673,9 +709,13 @@ def main(argv=None):
         return _remote(project_root, args, cfg)
 
     features = specs_module.scan_specs(project_root)
-    if args.all or not args.features:
+    if not features:
+        print(status_module.NO_SPECS)
+        return 1
+    os_name = host_os()
+    if args.all or (not args.features and args.action == 'ci'):
         selected = sorted(features)
-    else:
+    elif args.features:
         selected = [name for name in args.features if name in features]
         unknown = [name for name in args.features if name not in features]
         for name in unknown:
@@ -683,9 +723,12 @@ def main(argv=None):
                   file=sys.stderr)
         if unknown:
             return 2
-    if not selected:
-        print(status_module.NO_SPECS)
-        return 1
+    else:
+        selected = print_selection(
+            fingerprint_module.selection(project_root, features, os_name),
+            'purlin:%s' % args.action)
+        if not selected:
+            return _nothing_to_run(project_root, args, features, cfg)
 
     resolved, unknown_frameworks = frameworks_module.resolve_frameworks(
         project_root, cfg.test_framework)
@@ -693,9 +736,12 @@ def main(argv=None):
         print('purlin: "%s" is not a framework this release ships a plugin '
               'for; its tests were not run.' % name)
 
-    os_name = host_os()
     foreign = foreign_env_proofs(features, selected, os_name)
     foreign_ids = {(feature, proof_id) for feature, proof_id, _env in foreign}
+    # A run over every feature runs every arm whole. A narrower run gives
+    # each arm the files that carry a marker of a feature it runs, and an
+    # arm with none of those is not started.
+    narrow = len(selected) < len(features)
 
     log = []
     arm_logs = {}
@@ -705,13 +751,18 @@ def main(argv=None):
     for framework in resolved:
         markers = scan_markers(project_root, framework)
         markers = {pair for pair in markers if pair[0] in selected}
+        only = None
+        if narrow and framework != 'xunit':
+            only = marker_paths(project_root, framework, selected)
+            if not only:
+                continue
         before = set(proof_index(project_root))
         # One line per arm before it starts, so a job log says where a run
         # is while it is still running.
         print('Running the %s arm.' % framework)
         mark = len(log)
         code = run_framework(project_root, framework, config,
-                             log, args.arm_timeout)
+                             log, args.arm_timeout, only)
         arm_logs[framework] = '\n'.join(log[mark:])
         after = set(proof_index(project_root))
         ran.append(framework)
@@ -777,8 +828,12 @@ def main(argv=None):
                            os_name, 'local')
     removed = _prune(project_root, features)
     if args.action == 'audit':
-        return _audit(project_root, args, features, selected, log, cfg,
-                      paths, removed, exit_code)
+        # The tests ran on the selection; the audit reads every feature's
+        # rules unless features were named, and skips each rule whose text,
+        # proof and test match its last audit.
+        return _audit(project_root, args, features,
+                      selected if args.features else sorted(features), log,
+                      cfg, paths, removed, exit_code)
     evidence_writer.write_table(project_root)
     print(evidence_writer.written_line(paths))
     if args.commit:
@@ -791,6 +846,101 @@ def main(argv=None):
     print('')
     print(line)
     return exit_code or gate_code
+
+
+# ---------------------------------------------------------------------------
+# The selection a run with no feature named makes
+# ---------------------------------------------------------------------------
+
+SELECTED = 'Selected %d of %d %s: %s.'
+SKIPPED_FEATURES = ('Skipped %d %s whose spec, code and tests match %s '
+                    'evidence: %s. %s --all runs them too.')
+NOTHING_TO_RUN = ("Nothing to run: every feature's spec, code and tests match "
+                  'its evidence. %s --all runs them anyway.')
+NOT_TRACKED_LINE = ('%s is %s and is not tracked, so its content is not part '
+                    'of the evidence until you git add it.')
+
+# How many skipped features the line names before it counts the rest.
+SKIPPED_SHOWN = 10
+
+
+def print_selection(rows, command):
+    """Print what a run with no feature named selected and why. The names.
+
+    `rows` is `fingerprint.selection`'s answer and `command` the command
+    the person ran, which the lines name as the way to run everything.
+    Nothing is printed when nothing was selected: `_nothing_to_run` says so.
+    """
+    chosen = [row for row in rows if row['selected']]
+    skipped = [row['feature'] for row in rows if not row['selected']]
+    if not chosen:
+        return []
+    print(SELECTED % (len(chosen), len(rows),
+                      _plural(len(rows), 'feature', 'features'),
+                      ', '.join('%s (%s)' % (row['feature'],
+                                             '; '.join(row['reasons']))
+                                for row in chosen)))
+    if skipped:
+        shown = ', '.join(skipped[:SKIPPED_SHOWN])
+        if len(skipped) > SKIPPED_SHOWN:
+            shown += ', and %d more' % (len(skipped) - SKIPPED_SHOWN)
+        print(SKIPPED_FEATURES % (len(skipped),
+                                  _plural(len(skipped), 'feature', 'features'),
+                                  _plural(len(skipped), 'its', 'their'),
+                                  shown, command))
+    for line in untracked_lines(chosen):
+        print(line)
+    print('')
+    return [row['feature'] for row in chosen]
+
+
+def untracked_lines(rows):
+    """One line per untracked file that selected a feature, sorted by path."""
+    by_path = {}
+    for row in rows:
+        loose = row.get('untracked') or {}
+        for kind in ('scope', 'tests'):
+            for path in loose.get(kind) or ():
+                by_path.setdefault(path, []).append((row['feature'], kind))
+    lines = []
+    for path in sorted(by_path):
+        names = sorted({name for name, _kind in by_path[path]})
+        kind = ('scope' if any(k == 'scope' for _n, k in by_path[path])
+                else 'tests')
+        if len(names) == 1:
+            where = ("under %s's scope" % names[0] if kind == 'scope'
+                     else "beside %s's tests" % names[0])
+        else:
+            listed = '%s and %s' % (', '.join(names[:-1]), names[-1])
+            where = ('under the scope of %s' % listed if kind == 'scope'
+                     else 'beside the tests of %s' % listed)
+        lines.append(NOT_TRACKED_LINE % (path, where))
+    return lines
+
+
+def _nothing_to_run(project_root, args, features, cfg):
+    """A run with no feature named that selected nothing. The exit code.
+
+    No test runs. `--commit` still commits evidence an earlier run wrote,
+    because that is the command a refused signature names. `--audit` goes
+    on to the AI audit, which reads every rule that has no audit of its
+    current text, proof and test. Otherwise the run ends on the gate line,
+    exiting 0 where the gate is met and 1 where it is not.
+    """
+    print(NOTHING_TO_RUN % ('purlin:%s' % args.action))
+    if args.action == 'audit':
+        return _audit(project_root, args, features, sorted(features), [],
+                      cfg, [], [], 0)
+    if args.commit:
+        print('')
+        print(evidence_writer.commit_local(project_root,
+                                           head_commit(project_root)))
+    print('')
+    print(status_module.sync_status(project_root))
+    line, gate_code = project_gate_line(project_root, 'passed')
+    print('')
+    print(line)
+    return gate_code
 
 
 def _write_log(project_root, log):
@@ -945,7 +1095,15 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
         print(WENT_STALE % (went_stale,
                             _plural(went_stale, 'signature', 'signatures'),
                             _plural(went_stale, 'its', 'their')))
-    print(evidence_writer.written_line(paths))
+    # The files the tests wrote, then any the audit alone wrote into: a run
+    # that selected nothing for its tests still writes what the audit found.
+    written = list(paths)
+    for feature in sorted(entries_by_feature):
+        path = evidence_reader.evidence_path('local', feature)
+        if path not in written:
+            written.append(path)
+    if written:
+        print(evidence_writer.written_line(written))
     if args.commit:
         print(evidence_writer.commit_local(project_root,
                                            head_commit(project_root), removed))
