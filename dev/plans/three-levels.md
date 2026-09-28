@@ -591,6 +591,12 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     decision above and every answer to the sanity checks is applied. The ten-minute path
     writes its first rules with `purlin:spec` and marks its tests with `purlin:build`. The
     screenshots are retaken at the end.
+64. **The docs and the rules agree, always** (added 2026-09-28). A sanity check reads every
+    statement in the docs against the rules and proofs, and is repeated by a fresh agent
+    before every release. A statement no rule covers gets a rule, a proof and a test by
+    default. The same check runs `purlin:spec-from-code` for real on three small real
+    projects, at each gate, and holds the result to three measures: most rules already
+    pass, the rules and proofs meet the quality guide, every file and function is covered.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

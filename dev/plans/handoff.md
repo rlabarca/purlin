@@ -56,10 +56,23 @@ claim of compliance: it hands evidence to a system of record.
    Windows, since today its Windows skip exits 0 and would be read as a pass; have
    `purlin:init` rewrite this repository's runner file for Windows; run `purlin:test --remote`
    once, which also proves the remote run against GitHub for the first time.
-4. **More sanity checks**, each its own fresh agent, in the order the owner picks: a QA person
+4. **Sanity check 3: the docs and the rules agree, and starting from existing code works**,
+   which the owner ordered on 2026-09-28 (decision 64). It runs after every decision is
+   applied and before the pages are read again, and it is repeated before every release.
+   - Every statement in `README.md` and `docs/` is read against the rules and proofs under
+     `specs/`. A statement a rule contradicts is a question for the owner. A statement no
+     rule covers is a gap, and the first proposal is to write the rule, its proof and its
+     test, not to cut the statement.
+   - `purlin:spec-from-code` is run for real on three small real projects that have tests,
+     one Python, one JavaScript, one C#, at each of the three gates: nine runs. The result
+     is usable when most rules already pass on the first run, the rules and proofs meet
+     `references/spec_quality_guide.md`, and every file and function is covered by a rule.
+     What share is "most", and how "every function" sits with the skill writing no rule
+     for a private helper, are the owner's to settle before it runs.
+5. **More sanity checks**, each its own fresh agent, in the order the owner picks: a QA person
    writes proofs; an upgrade from a real 0.9.5 project; a hostile reviewer who tries to make an
    unproven rule read as proven.
-5. **Every page is read again against the code**, which the owner asked for on 2026-09-28. It
+6. **Every page is read again against the code**, which the owner asked for on 2026-09-28. It
    comes after every decision from the sanity checks and the dashboard is applied, since each
    of those changes what a page must say. One agent per page of `README.md` and `docs/`, each
    checking every sentence, command, sample of output and file name against what the product
@@ -70,9 +83,9 @@ claim of compliance: it hands evidence to a system of record.
    rules with `purlin:spec` and marks its tests with `purlin:build`, as the slides do. The three screenshots in `docs/images/` are
    retaken last with `dev/capture_doc_screenshots.py`, from the rebuilt dashboard, and looked
    at before they are committed.
-6. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/getting-started.md`,
+7. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/getting-started.md`,
    `docs/regulated-workflow.md`, the rest of `docs/`, the slides, the diagrams.
-7. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
+8. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
    push the work as a branch; on the work machine run `dev/manual/check_azure_remote.py` and
    `dev/manual/check_azure_provenance.py` against a real Azure DevOps project, then
    `purlin:audit`, `purlin:sign`, the push of the tag, the release.
