@@ -48,14 +48,10 @@ neutral text colour measures at least 7 to 1 in both themes; whether a proof has
 read from the source; proofs open under each rule on the board; a shared spec's rules are
 shown once. All applied.
 
-## One question still open
+## Decision 58, from the one question left
 
-**A rule marked `[level: passed]` shows `WEAK` in the Strong column.** Such a rule needs only
-its tests, and the audit never reads it, yet the page draws a `weak` pill for it, with the
-reason that no audit has run. On this repository that is 91 rules, so the `Weak` filter reads
-93 when no rule has a finding against it. The pill blocks nothing. The choice is what that
-column should read for a rule the audit is never going to read: nothing at all, or a plain
-word such as `not asked`.
+A rule is asked only what its level asks: for a rule whose level is `passed`, the Strong and
+Signed columns show nothing. The `Weak` filter then counts only rules with a finding.
 
 ## What is not proven here
 

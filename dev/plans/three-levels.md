@@ -548,6 +548,15 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       lists them once, under the anchor that owns them, and a feature's row reads
       `<n> rules, plus <k> shared`, with the hover naming the anchors. A rule is always
       addressed by its owner and its id, so opening a rule opens that rule.
+58. **A cell above a rule's level shows nothing** (added 2026-09-28). A rule is asked only
+    what its level asks. For a rule whose level is `passed`, the strong cell and the signed
+    cell are absent: no word, no badge, no reason, on the board, the rule's screen, the
+    status table, the evidence package and the payload. For a rule whose level is `strong`
+    the signed cell is absent the same way. The `Weak` and `Not audited` counts, the tiles
+    and the filters count only rules that are asked the question. This amends decision 36,
+    which showed such cells and let them block nothing. A rule whose tests do not pass reads
+    what its passed cell says, and its strong cell says `not passed` only where its level
+    asks for the audit.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
