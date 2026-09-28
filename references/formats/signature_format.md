@@ -111,8 +111,9 @@ machine made it.
 The level is logged, not locked: `level` says what the rule asked for when it
 was signed, and marking the rule differently afterwards leaves the signature
 current. A re-audit that finds something different stales it: the strength
-moved, or the AI audit found something it did not find before, or settled
-where it had not. A rule whose first audit writes an
+moved, or the AI audit's `verdict` or one of its `findings` changed. The model
+that answered and the criteria it was sent are not hashed, so a new model
+that finds the same thing stales nothing. A rule whose first audit writes an
 entry where there was none goes stale for the same reason, which is the
 honest answer: there is evidence now that there was not before.
 
@@ -135,7 +136,7 @@ Under `signed` a signature counts when two things hold:
 | Condition | How it is read | The reason when it fails |
 |---|---|---|
 | The commit that added the file is signed and verifies | `git log -1 --format=%G?` prints `G` | `the signing commit is not signed` |
-| Its hashes are current | the rule, proof, test and audit hashes, as above | `hashes changed after the signature` (the cell reads `stale`) |
+| Its hashes are current | the rule, proof, test and audit hashes, as above | `audit findings changed after the signature` where the rule, proof and test still match and only what the audit found moved, else `hashes changed after the signature` (the cell reads `stale`) |
 
 Nothing else is read. Signing is logged, not policed: the file names the
 signer and git names the commit's author, and neither is compared with a list

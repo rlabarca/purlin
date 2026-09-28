@@ -3,6 +3,7 @@
   "gate": "signed",
   "min_strength": 80,
   "mutation_engine": "auto",
+  "audit_parallel": 4,
   "sql_engine": null,
   "ci": "github",
   "test_framework": "pytest,shell",

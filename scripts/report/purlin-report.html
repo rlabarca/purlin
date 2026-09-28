@@ -435,14 +435,15 @@ function briefPanel(feature, rule) {
     ? 'Test strength is n/a: nothing measured it.'
     : esc('Test strength ' + Math.round(cell.strength) + '%, against a '
         + 'minimum of ' + minStrength() + '%.')) + '</p>');
-  (cell.observations || []).forEach(function (text) {
+  (cell.findings || []).forEach(function (text) {
     lines.push('<p class="sec">' + esc(text) + '</p>');
   });
-  if (cell.settled === true) {
+  var answered = (rule.audit || {})['verdict'];
+  if (answered === 'strong' || answered === 'weak') {
     lines.push('<p class="sec">The AI audit settled the question.</p>');
-  } else if (cell.settled === false) {
-    lines.push('<p class="sec">The AI audit could not settle the question, '
-      + 'so a person states what they see.</p>');
+  } else if (answered === 'undecided') {
+    lines.push('<p class="sec">The AI audit could not decide the question, '
+      + 'so the rule reads weak until its proof or test changes.</p>');
   }
   if (cell.evidence) {
     lines.push('<p class="sec">' + hostLink(cell.evidence, cell.evidence)
@@ -599,7 +600,7 @@ var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
-  'manual test': 'warn', 'not audited': 'idle', 'unsettled': 'warn',
+  'manual test': 'warn', 'not audited': 'idle',
   'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail'};
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
 function loadData(callback) {
@@ -773,10 +774,21 @@ function platformLines(feature) {
     });
 }
 function auditLines(feature) {
-  var run = newestRun(feature);
-  return [run ? 'run' + DOT + run.source + DOT + ageText(run.at).text
-    : 'No run has written evidence here.',
+  var newest = null;
+  ownRules(feature).forEach(function (rule) {
+    var audit = rule.audit;
+    if (audit && audit.at && (!newest || newer(audit.at, newest.at))) {
+      newest = audit;
+    }
+  });
+  return [newest ? 'audit' + DOT + sourceOf(newest.path) + DOT
+      + ageText(newest.at).text
+    : 'No audit has read a rule here.',
     'minimum strength ' + minStrength() + '%'];
+}
+function sourceOf(path) {
+  var parts = String(path || '').split('/');
+  return parts.length > 1 ? parts[parts.length - 2] : 'local';
 }
 function signerLines(feature) {
   var byWho = {};

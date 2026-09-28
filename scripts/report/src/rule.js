@@ -47,8 +47,8 @@ function cellRow(rule, name) {
 }
 
 /* What the audit found, and nothing about what to do with it: the strength
-   beside the minimum this gate asks for, then what the AI audit observed, one
-   sentence to a line as it wrote them, then whether it could settle the
+   beside the minimum this gate asks for, then what the AI audit found, one
+   sentence to a line as it wrote them, then whether it could decide the
    question. The audit writes sentences, so there is no list of check names
    to render here. */
 function briefPanel(feature, rule) {
@@ -59,14 +59,15 @@ function briefPanel(feature, rule) {
     ? 'Test strength is n/a: nothing measured it.'
     : esc('Test strength ' + Math.round(cell.strength) + '%, against a '
         + 'minimum of ' + minStrength() + '%.')) + '</p>');
-  (cell.observations || []).forEach(function (text) {
+  (cell.findings || []).forEach(function (text) {
     lines.push('<p class="sec">' + esc(text) + '</p>');
   });
-  if (cell.settled === true) {
+  var answered = (rule.audit || {})['verdict'];
+  if (answered === 'strong' || answered === 'weak') {
     lines.push('<p class="sec">The AI audit settled the question.</p>');
-  } else if (cell.settled === false) {
-    lines.push('<p class="sec">The AI audit could not settle the question, '
-      + 'so a person states what they see.</p>');
+  } else if (answered === 'undecided') {
+    lines.push('<p class="sec">The AI audit could not decide the question, '
+      + 'so the rule reads weak until its proof or test changes.</p>');
   }
   if (cell.evidence) {
     lines.push('<p class="sec">' + hostLink(cell.evidence, cell.evidence)

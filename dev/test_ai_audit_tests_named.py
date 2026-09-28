@@ -1,7 +1,7 @@
 """Tests for `scripts/review/ai_audit.py`: several tests behind one proof.
 
-A proof may be backed by more than one test, and a person signing from the
-brief reads the source shown under each test's name. These tests hold that the
+A proof may be backed by more than one test, and the AI audit, and a person
+reading what it read, see the source shown under each test's name. These tests hold that the
 source under a name is that test's own. The throwaway project
 is `dev/test_signatures.py`'s, with a second test marked for the same proof.
 """
@@ -48,8 +48,8 @@ def _two_tests(project, second=SECOND_TEST, names=NAMES):
 
 
 def _tests_by_name(project):
-    brief = audit_module.build_brief(project.root, None, 'login', 'RULE-1')
-    return {test['name']: test for test in brief['tests']}
+    reading = audit_module.reading_for(project.root, None, 'login', 'RULE-1')
+    return {test['name']: test for test in reading['tests']}
 
 
 @pytest.fixture
@@ -61,7 +61,7 @@ def project():
 
 class TestEachTestShowsItsOwnSource:
 
-    @pytest.mark.proof("ai_audit", "PROOF-38", "RULE-26")
+    @pytest.mark.proof("ai_audit", "PROOF-34", "RULE-10")
     def test_each_name_shows_its_own_body(self, project):
         _two_tests(project)
         tests = _tests_by_name(project)
@@ -75,7 +75,7 @@ class TestEachTestShowsItsOwnSource:
         assert 'token' in second, second
         assert 'def test_valid_credentials_return_200' not in second, second
 
-    @pytest.mark.proof("ai_audit", "PROOF-40", "RULE-26")
+    @pytest.mark.proof("ai_audit", "PROOF-35", "RULE-10")
     def test_a_name_the_file_no_longer_holds_shows_no_body(self, project):
         _two_tests(project, names=NAMES + ('test_renamed_away',))
         tests = _tests_by_name(project)
@@ -89,7 +89,7 @@ class TestEachTestShowsItsOwnSource:
 
 class TestANameFromARecordFindsItsSource:
 
-    @pytest.mark.proof("ai_audit", "PROOF-41", "RULE-26")
+    @pytest.mark.proof("ai_audit", "PROOF-36", "RULE-10")
     def test_each_runner_name_form_finds_its_own_test(self):
         names = ['Allowed', 'Denied', 'test_found',
                  'works [proof:login:PROOF-1:RULE-1]']

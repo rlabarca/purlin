@@ -1,7 +1,7 @@
 """Tests for the queue: which rules wait on a person, and in what order.
 
 A row is a `hand check`, a rule whose level is `strong` or `signed` and whose
-strong cell reads `manual test` or `unsettled`, or a `signature`, a rule whose
+strong cell reads `manual test`, or a `signature`, a rule whose
 level is `signed`, whose tests and audit are met and that has no signature
 that counts. A rule with no test is build work and stays on the board, and so
 is a rule reading `not audited`, whose next step is `purlin:audit`. A rule

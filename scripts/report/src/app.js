@@ -62,7 +62,7 @@ var WORDS = {of: 'of', without_test: 'without a test', partial: 'partial',
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
-  'manual test': 'warn', 'not audited': 'idle', 'unsettled': 'warn',
+  'manual test': 'warn', 'not audited': 'idle',
   'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail'};
 
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
@@ -316,13 +316,27 @@ function platformLines(feature) {
     });
 }
 
-/* Where the newest run came from, how old it is, and the strength this
-   gate asks for. The strength itself is in the cell beside it. */
+/* Where the newest audit came from, how old it is, and the strength this
+   gate asks for. The strength itself is in the cell beside it. Each rule
+   carries its own audit, so the newest of them answers for the spec. */
 function auditLines(feature) {
-  var run = newestRun(feature);
-  return [run ? 'run' + DOT + run.source + DOT + ageText(run.at).text
-    : 'No run has written evidence here.',
+  var newest = null;
+  ownRules(feature).forEach(function (rule) {
+    var audit = rule.audit;
+    if (audit && audit.at && (!newest || newer(audit.at, newest.at))) {
+      newest = audit;
+    }
+  });
+  return [newest ? 'audit' + DOT + sourceOf(newest.path) + DOT
+      + ageText(newest.at).text
+    : 'No audit has read a rule here.',
     'minimum strength ' + minStrength() + '%'];
+}
+
+/* The source an evidence file belongs to: the folder it sits in. */
+function sourceOf(path) {
+  var parts = String(path || '').split('/');
+  return parts.length > 1 ? parts[parts.length - 2] : 'local';
 }
 
 /* Who has signed a rule here and when their newest signature was written,

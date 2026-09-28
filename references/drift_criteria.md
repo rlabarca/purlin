@@ -104,7 +104,8 @@ it is adopted.
 | `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/gate_check.py`, every skill that names a next step | `passed` |
 | `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` under `passed`, 70 under `strong`, 80 under `signed` |
 | `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
-| `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py` | Not set; test strength reads `n/a` without one |
+| `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py`, `sync_status` | `auto` where absent; `none` turns mutation testing off, so no breaks run and `min_strength` is not applied |
+| `audit_parallel` | `purlin:init`, with no question | `scripts/run/purlin_run.py`, which makes that many AI audit calls at once | `4`; any value that is not a whole number from 1 to 16 is read as 4 with one warning |
 | `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure` |
 | `trust` | `purlin:init`, which asks `Do you trust your own machine for the tests and the signing?` | `scripts/review/sign.py`, `scripts/run/workflow.py` | `local`; the only other value is `remote` |
 | `sql_engine` | `purlin:init` | The SQL proof plugin | Not set |

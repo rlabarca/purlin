@@ -3,6 +3,7 @@
   "gate": "passed",
   "min_strength": null,
   "mutation_engine": "auto",
+  "audit_parallel": 4,
   "sql_engine": null,
   "ci": "github",
   "test_framework": "auto",

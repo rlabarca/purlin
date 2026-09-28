@@ -283,7 +283,8 @@ class TestTheAuditHash:
                'at': '2026-09-13T12:00:00Z', 'commit': 'a' * 40,
                'path': '.purlin/evidence/local/login.json'}
         same = dict(one, at='2026-09-27T09:00:00Z', commit='b' * 40,
-                    path='.purlin/evidence/ci/login.json')
+                    path='.purlin/evidence/ci/login.json',
+                    model='claude-opus-4-1-20250805', criteria='c' * 64)
         assert purlin_signatures.audit_hash(one, 90) == \
             purlin_signatures.audit_hash(same, 90)
 

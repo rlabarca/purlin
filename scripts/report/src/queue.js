@@ -1,6 +1,6 @@
 /* The one tab that holds a person's work: the queue, the rules that wait on
    a person, each saying what it needs. A hand check is a rule whose proof is
-   @manual or whose audit could not settle; a signature is a rule whose level
+   @manual; a signature is a rule whose level
    is `signed` and that has passed its tests and its audit. `purlin:sign`
    walks the queue in this order, so the page reads it in this order too.
 

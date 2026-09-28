@@ -107,11 +107,19 @@
         "stale": 1,
         "strong": 1,
         "test_strength": 86,
-        "unsettled": 0,
         "untested": 0
       },
       "rules": [
         {
+          "audit": {
+            "at": "2026-09-12T09:15:40Z",
+            "commit": "a1b2c3d",
+            "findings": [],
+            "model": "claude-opus-4-1-20250805",
+            "path": ".purlin/evidence/ci/login.json",
+            "strength": 86,
+            "verdict": "strong"
+          },
           "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
           "blocked_by": null,
           "bucket": "signed",
@@ -147,9 +155,8 @@
             },
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
-              "observations": [],
+              "findings": [],
               "reasons": [],
-              "settled": true,
               "strength": 86,
               "word": "strong"
             }
@@ -162,8 +169,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
@@ -191,6 +197,15 @@
           "text": "A person signs in with an email address and a password."
         },
         {
+          "audit": {
+            "at": "2026-09-12T09:15:40Z",
+            "commit": "a1b2c3d",
+            "findings": [],
+            "model": "claude-opus-4-1-20250805",
+            "path": ".purlin/evidence/ci/login.json",
+            "strength": 86,
+            "verdict": "strong"
+          },
           "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
           "blocked_by": "signed",
           "bucket": "strong",
@@ -226,9 +241,8 @@
             },
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
-              "observations": [],
+              "findings": [],
               "reasons": [],
-              "settled": true,
               "strength": 86,
               "word": "strong"
             }
@@ -241,8 +255,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": true,
-            "unsettled": false
+            "stale": true
           },
           "id": "RULE-2",
           "label": "own",
@@ -270,6 +283,17 @@
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
+          "audit": {
+            "at": "2026-09-12T09:15:40Z",
+            "commit": "a1b2c3d",
+            "findings": [
+              "PROOF-3 reads the status code alone; no test reads when the lock expires."
+            ],
+            "model": "claude-opus-4-1-20250805",
+            "path": ".purlin/evidence/ci/login.json",
+            "strength": 86,
+            "verdict": "weak"
+          },
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": null,
           "bucket": "passed",
@@ -303,13 +327,12 @@
             },
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
-              "observations": [
+              "findings": [
                 "PROOF-3 reads the status code alone; no test reads when the lock expires."
               ],
               "reasons": [
                 "PROOF-3 reads the status code alone; no test reads when the lock expires."
               ],
-              "settled": true,
               "strength": 86,
               "word": "weak"
             }
@@ -322,8 +345,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-3",
           "label": "own",
@@ -351,6 +373,7 @@
           "text": "A locked account sends one notification email."
         },
         {
+          "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "passed",
           "bucket": "partial",
@@ -387,11 +410,10 @@
             },
             "strong": {
               "evidence": null,
-              "observations": [],
+              "findings": [],
               "reasons": [
                 "not passed"
               ],
-              "settled": null,
               "strength": 86,
               "word": "weak"
             }
@@ -404,8 +426,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": true,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-4",
           "label": "own",
@@ -500,11 +521,19 @@
         "stale": 0,
         "strong": 0,
         "test_strength": 64,
-        "unsettled": 0,
         "untested": 0
       },
       "rules": [
         {
+          "audit": {
+            "at": "2026-09-12T09:14:02Z",
+            "commit": "a1b2c3d",
+            "findings": [],
+            "model": "claude-opus-4-1-20250805",
+            "path": ".purlin/evidence/ci/invoice.json",
+            "strength": 64,
+            "verdict": "strong"
+          },
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": null,
           "bucket": "passed",
@@ -537,12 +566,11 @@
               "word": "unsigned"
             },
             "strong": {
-              "evidence": null,
-              "observations": [],
+              "evidence": ".purlin/evidence/ci/invoice.json",
+              "findings": [],
               "reasons": [
                 "strength 64% under 80%"
               ],
-              "settled": null,
               "strength": 64,
               "word": "weak"
             }
@@ -555,8 +583,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
@@ -584,6 +611,17 @@
           "text": "An invoice totals its lines to the cent."
         },
         {
+          "audit": {
+            "at": "2026-09-12T09:14:02Z",
+            "commit": "a1b2c3d",
+            "findings": [
+              "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
+            ],
+            "model": "claude-opus-4-1-20250805",
+            "path": ".purlin/evidence/ci/invoice.json",
+            "strength": 64,
+            "verdict": "weak"
+          },
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": null,
           "bucket": "passed",
@@ -616,15 +654,14 @@
               "word": "unsigned"
             },
             "strong": {
-              "evidence": null,
-              "observations": [
+              "evidence": ".purlin/evidence/ci/invoice.json",
+              "findings": [
                 "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
               ],
               "reasons": [
                 "strength 64% under 80%",
                 "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
               ],
-              "settled": true,
               "strength": 64,
               "word": "weak"
             }
@@ -637,8 +674,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-2",
           "label": "own",
@@ -666,6 +702,7 @@
           "text": "An invoice with no lines totals zero."
         },
         {
+          "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "strong",
           "bucket": "passed",
@@ -688,12 +725,11 @@
             },
             "strong": {
               "evidence": null,
-              "observations": [],
+              "findings": [],
               "reasons": [
                 "manual proof",
                 "strength 64% under 80%"
               ],
-              "settled": null,
               "strength": 64,
               "word": "manual test"
             }
@@ -706,8 +742,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-3",
           "label": "own",
@@ -762,7 +797,7 @@
       "requires": [],
       "rollup": {
         "failing": 0,
-        "hand_checks": 1,
+        "hand_checks": 0,
         "manual": 0,
         "met": 0,
         "not_audited": 0,
@@ -771,17 +806,27 @@
         "proofs": 1,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
-        "queue": 1,
+        "queue": 0,
         "rules": 1,
         "signed": 0,
         "stale": 0,
         "strong": 0,
         "test_strength": 90,
-        "unsettled": 1,
         "untested": 0
       },
       "rules": [
         {
+          "audit": {
+            "at": "2026-09-12T09:14:02Z",
+            "commit": "a1b2c3d",
+            "findings": [
+              "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
+            ],
+            "model": "claude-opus-4-1-20250805",
+            "path": ".purlin/evidence/ci/checkout_design.json",
+            "strength": 90,
+            "verdict": "undecided"
+          },
           "audit_hash": "9e0234b91cb67b7cc732ed426155abfcd337d8b475526678af23259ba26330d9",
           "blocked_by": "strong",
           "bucket": "passed",
@@ -810,15 +855,14 @@
             },
             "strong": {
               "evidence": ".purlin/evidence/ci/checkout_design.json",
-              "observations": [
+              "findings": [
                 "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
               ],
               "reasons": [
-                "the AI audit could not settle"
+                "the AI audit could not decide: The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
               ],
-              "settled": false,
               "strength": 90,
-              "word": "unsettled"
+              "word": "weak"
             }
           },
           "feature": "checkout_design",
@@ -829,8 +873,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": true
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
@@ -905,11 +948,11 @@
         "stale": 0,
         "strong": 0,
         "test_strength": 82,
-        "unsettled": 0,
         "untested": 1
       },
       "rules": [
         {
+          "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "passed",
           "bucket": "untested",
@@ -934,11 +977,10 @@
             },
             "strong": {
               "evidence": null,
-              "observations": [],
+              "findings": [],
               "reasons": [
                 "not passed"
               ],
-              "settled": null,
               "strength": 82,
               "word": "weak"
             }
@@ -951,8 +993,7 @@
             "not_audited": false,
             "out_of_date": true,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
@@ -980,6 +1021,7 @@
           "text": "A statement export lists every invoice of the month in date order."
         },
         {
+          "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "strong",
           "bucket": "passed",
@@ -1008,11 +1050,10 @@
             },
             "strong": {
               "evidence": null,
-              "observations": [],
+              "findings": [],
               "reasons": [
                 "no audit has run on this code"
               ],
-              "settled": null,
               "strength": 82,
               "word": "not audited"
             }
@@ -1025,8 +1066,7 @@
             "not_audited": true,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-2",
           "label": "own",
@@ -1063,6 +1103,7 @@
     }
   ],
   "gate": {
+    "audit_parallel": 4,
     "ci": "github",
     "gate": "signed",
     "min_strength": 80,
@@ -1075,19 +1116,6 @@
   "generated_by": "sync_status",
   "project": "ledger",
   "queue": [
-    {
-      "command": "purlin:sign checkout_design RULE-1 --note \"<what you saw>\"",
-      "feature": "checkout_design",
-      "level": "signed",
-      "need": "hand check",
-      "owner": "checkout_design",
-      "reasons": [
-        "the AI audit could not settle"
-      ],
-      "rule": "RULE-1",
-      "text": "The cart page shows the order total above the pay button.",
-      "word": "unsettled"
-    },
     {
       "command": "purlin:sign invoice RULE-3 --note \"<what you saw>\"",
       "feature": "invoice",
@@ -1121,7 +1149,7 @@
   "summary": {
     "failing": 0,
     "features": 4,
-    "hand_checks": 2,
+    "hand_checks": 1,
     "manual": 1,
     "met": 4,
     "not_audited": 1,
@@ -1130,12 +1158,11 @@
     "proofs": 11,
     "proofs_without_test": 0,
     "proofs_without_test_ids": [],
-    "queue": 3,
+    "queue": 2,
     "rules": 10,
     "signed": 1,
     "stale": 1,
     "strong": 1,
-    "unsettled": 1,
     "untested": 1
   },
   "tag": {

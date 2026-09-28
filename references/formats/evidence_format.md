@@ -1,4 +1,4 @@
-> Format-Version: 1
+> Format-Version: 2
 
 # Evidence format
 
@@ -63,6 +63,8 @@ operating system that ran the feature, one section each.
     "rules": {
       "RULE-1": {"rule_hash": "<sha256>", "proof_hash": "<sha256>",
                  "test_hash": "<sha256>", "verdict": "strong", "findings": [],
+                 "model": "claude-opus-4-1-20250805",
+                 "criteria": "<sha256>",
                  "at": "2026-09-27T12:05:00Z",
                  "commit": "4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7"}
     }
@@ -75,7 +77,7 @@ present only once an audit has run.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `schema` | string | `purlin-evidence/1` for this format version. A file carrying any other value is ignored with one warning |
+| `schema` | string | `purlin-evidence/1`. A file carrying any other value is ignored with one warning |
 | `feature` | string | the feature, the spec's name |
 | `source` | string | `local` or `ci`, the same word as the folder the file sits in |
 | `spec` | string | the spec's path, `/` separated |
@@ -130,13 +132,20 @@ Each `audit.rules` entry:
 | `test_hash` | string | sha256 of the tests the audit read |
 | `verdict` | string | `strong`, `weak` or `undecided` |
 | `findings` | array of strings | one sentence per finding; empty when the audit found nothing |
+| `model` | string | the model that answered, its name and version as the `claude` command's JSON reports them, or `unknown` where it reports none |
+| `criteria` | string | sha256 of `references/review_criteria.md` as it was sent to the model |
 | `at` | string | ISO 8601 UTC with `Z` |
 | `commit` | string | the full sha of `HEAD` when the audit ran |
 
-`verdict` is `strong` with no findings when the audit found nothing: the
-model settled with nothing to report, or no model was asked. It is `weak`
-when the model settled and found something, and `undecided` when it could
-not settle.
+`verdict` is what the AI audit answered. It is `strong` with no findings when
+the model settled and found nothing, `weak` when it settled and found
+something, each finding one sentence, and `undecided` when it could not
+settle, its findings being the reason it gave. A rule the model could not be
+reached for gets no entry at all, so the next audit reads it again.
+
+`model` and `criteria` name the judge and the instructions it was given. A
+signature does not lock either: it locks the `verdict`, the test strength and
+the `findings`, so a new model that finds the same thing stales nothing.
 
 An audit entry answers a rule while its `rule_hash`, `proof_hash` and
 `test_hash` all equal the rule's current ones. `commit` and `at` are shown and
@@ -176,8 +185,10 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
 - A test run reads the file from disk and replaces `platforms[<this os>]`
   whole. Every other section and `audit` stay as they are.
 - An audit run first makes the same test-run write. It then replaces
-  `audit.rules[<rule>]` for each rule it read and leaves every other entry as
-  it is. It replaces `audit.mutation` when mutation testing ran.
+  `audit.rules[<rule>]` for each rule the model answered for and leaves every
+  other entry as it is. It replaces `audit.mutation` for each feature it
+  measured, which is a feature with at least one rule being read, when
+  mutation testing is on.
 - Every write drops the `rules` and `audit.rules` entries of rules the spec no
   longer carries.
 - Every run deletes the files under `local/` and `ci/` whose feature has no

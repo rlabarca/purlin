@@ -1,6 +1,6 @@
 """The source of the test that backs a proof, read out of its file.
 
-The AI audit sets a proof against the test that backs it, so the brief needs
+The AI audit sets a proof against the test that backs it, so it needs
 that test's own source. This module finds it: it reads the proof marker each
 shipped plugin writes, locates the marked test, and returns its source text.
 It judges nothing about the test.

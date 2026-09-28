@@ -6,9 +6,9 @@ before it is proven, and every level above it is not asked for at all:
 
 `passed`  every rule's passed cell is met: the tagged tests pass, from any
           source
-`strong`  every rule's strong cell is met too: an audit in the evidence
-          of either source, test strength at or above the project
-          minimum, a settled AI audit, and nobody holding the rule
+`strong`  every rule's strong cell is met too: the AI audit read the
+          rule's current text, proof and test and found nothing, and where
+          mutation testing is on, the test strength reaches the minimum
 `signed`  every rule has a counting signature too: a person signed the
           rule, proof, test and audit hashes in a signed commit. Who signed
           is logged, not policed
@@ -23,11 +23,20 @@ the tests and the signing. `remote` is one that does not, and there
 `purlin:sign` refuses a rule whose tests have no `ci` run current for the
 code being signed.
 
-Everything else has a default derived from the gate, and every default can be
-overridden by naming the key:
+Everything else has a default, and every default can be overridden by naming
+the key:
 
     {"gate": "strong", "min_strength": 70, "mutation_engine": "auto",
-     "sql_engine": null, "ci": "github", "trust": "local"}
+     "audit_parallel": 4, "sql_engine": null, "ci": "github",
+     "trust": "local"}
+
+Mutation testing is optional. `mutation_engine` set to `none` turns it off:
+no breaks run and `min_strength` is not applied, so the AI audit alone
+decides the strong cell. `auto` or an engine's name turns it on, and a key
+that is absent reads as `auto`. Under the gate `passed` nothing compares a
+strength, so no breaks run there either.
+`audit_parallel` is how many model calls `purlin:audit` makes at once, an
+integer from 1 to 16; any other value is read as 4 with one warning.
 
 The keys v0.9.5 wrote that this release no longer reads are ignored with one
 warning naming `purlin:init --update`.
@@ -43,15 +52,22 @@ if _MCP_DIR not in sys.path:
 GATES = ('passed', 'strong', 'signed')
 DEFAULT_GATE = 'passed'
 
-# gate -> (min_strength, breaks)
+# gate -> min_strength
 #
-# `min_strength` is None under `passed`: nothing measures test strength there,
+# `min_strength` is None under `passed`: nothing compares test strength there,
 # so there is no number to compare and the audit reads `n/a`.
 _DERIVED = {
-    'passed': (None, False),
-    'strong': (70, True),
-    'signed': (80, True),
+    'passed': None,
+    'strong': 70,
+    'signed': 80,
 }
+
+# What an absent `mutation_engine` reads as. `none` turns mutation testing off.
+DEFAULT_MUTATION_ENGINE = 'auto'
+
+# How many model calls the audit makes at once, and the range it may take.
+DEFAULT_AUDIT_PARALLEL = 4
+AUDIT_PARALLEL_RANGE = (1, 16)
 
 # Whether a project trusts this machine for the tests and the signing.
 # `purlin:init` asks once and `purlin:init --update` asks again.
@@ -68,11 +84,12 @@ class GateConfig(object):
     """The resolved settings one run reads, plus the warnings resolving raised."""
 
     __slots__ = ('gate', 'min_strength', 'breaks',
-                 'mutation_engine', 'sql_engine', 'ci',
+                 'mutation_engine', 'audit_parallel', 'sql_engine', 'ci',
                  'test_framework', 'trust', 'warnings')
 
-    # What a surface reads is the settings a project can name. `breaks` and
-    # `warnings` are derived from the gate alone, so neither is written out.
+    # What a surface reads is the settings a project can name. `breaks` is
+    # derived from `mutation_engine` and `warnings` from resolving, so
+    # neither is written out.
     _PRIVATE = ('warnings', 'breaks')
 
     def __init__(self, **kwargs):
@@ -104,7 +121,7 @@ def resolve_gate(config):
                 % (gate, ', '.join(GATES), DEFAULT_GATE))
         gate = DEFAULT_GATE
 
-    min_strength, breaks = _DERIVED[gate]
+    min_strength = _DERIVED[gate]
 
     if 'min_strength' in config:
         try:
@@ -121,6 +138,9 @@ def resolve_gate(config):
                 % (trust, ', '.join(TRUST_VALUES), DEFAULT_TRUST))
         trust = DEFAULT_TRUST
 
+    mutation_engine = config.get('mutation_engine') or DEFAULT_MUTATION_ENGINE
+    audit_parallel = _audit_parallel(config, warnings)
+
     retired = sorted(key for key in RETIRED_KEYS if key in config)
     if retired:
         warnings.append(
@@ -130,8 +150,10 @@ def resolve_gate(config):
     resolved = GateConfig(
         gate=gate,
         min_strength=min_strength,
-        breaks=breaks,
-        mutation_engine=config.get('mutation_engine', 'auto'),
+        breaks=(gate != 'passed'
+                and str(mutation_engine).strip().lower() != 'none'),
+        mutation_engine=mutation_engine,
+        audit_parallel=audit_parallel,
         sql_engine=config.get('sql_engine'),
         ci=config.get('ci'),
         test_framework=config.get('test_framework', 'auto'),
@@ -139,6 +161,21 @@ def resolve_gate(config):
         warnings=warnings,
     )
     return resolved
+
+
+def _audit_parallel(config, warnings):
+    """`audit_parallel` as an integer from 1 to 16, else 4 with one warning."""
+    if 'audit_parallel' not in config:
+        return DEFAULT_AUDIT_PARALLEL
+    value = config['audit_parallel']
+    low, high = AUDIT_PARALLEL_RANGE
+    if isinstance(value, int) and not isinstance(value, bool) \
+            and low <= value <= high:
+        return value
+    warnings.append('"audit_parallel" is %r, which is not a whole number from '
+                    '%d to %d; reading it as %d'
+                    % (value, low, high, DEFAULT_AUDIT_PARALLEL))
+    return DEFAULT_AUDIT_PARALLEL
 
 
 def level_of(marked, gate):

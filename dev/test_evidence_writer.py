@@ -5,6 +5,7 @@ run-level parts build a throwaway project under `tmp_path` and drive the real
 run script against it.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -484,10 +485,38 @@ def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
         rule['rule_hash'], rule['proof_hash'], rule['test_hash'])
     assert entry['verdict'] == 'strong'
     assert entry['findings'] == []
+    assert entry['model'] == 'claude-fake-1'
+    with open(os.path.join(REPO, 'references', 'review_criteria.md'),
+              encoding='utf-8') as handle:
+        assert entry['criteria'] == hashlib.sha256(
+            handle.read().encode('utf-8')).hexdigest()
     assert STAMP.match(entry['at'])
     assert entry['commit'] == _git(root, 'rev-parse', 'HEAD').strip()
     assert rule['cells']['strong']['evidence'] == \
         '.purlin/evidence/local/feat.json'
+
+
+@pytest.mark.proof("evidence_writer", "PROOF-14", "RULE-14")
+def test_a_repeated_entry_keeps_its_time_and_a_new_model_replaces_it(tmp_path):
+    root = tmp_path
+    info = _info(rules=('RULE-1',))
+    _put(root, _file(platforms={'linux': _section()}))
+    found = {'verdict': 'strong', 'findings': [], 'model': 'claude-a',
+             'criteria': 'c' * 64}
+    rule = {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't'}
+    writer.write_audit(str(root), 'local', 'feat', info,
+                       {'RULE-1': writer.audit_entry(rule, found, 'y',
+                                                     at='x')}, None, False)
+    writer.write_audit(str(root), 'local', 'feat', info,
+                       {'RULE-1': writer.audit_entry(rule, found, 'y',
+                                                     at='later')}, None, False)
+    assert _evidence(root)['audit']['rules']['RULE-1']['at'] == 'x'
+    writer.write_audit(str(root), 'local', 'feat', info,
+                       {'RULE-1': writer.audit_entry(
+                           rule, dict(found, model='claude-b'), 'y',
+                           at='later')}, None, False)
+    entry = _evidence(root)['audit']['rules']['RULE-1']
+    assert (entry['model'], entry['at']) == ('claude-b', 'later'), entry
 
 
 @pytest.mark.proof("evidence_writer", "PROOF-13", "RULE-13")

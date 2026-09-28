@@ -726,12 +726,19 @@ class TestTheGateScales:
         assert len(at_strong.signatures()) == 1
 
 
-def unsettled_at_strong():
-    """A project at `strong` whose unmarked rule is a hand check in the queue."""
-    made = Project(gate=REVIEW_GATE)
+MANUAL_SPEC = SPEC.replace('verify 401 and the body "denied"',
+                           'verify 401 and the body "denied" @manual')
+
+
+def manual_at_strong():
+    """A project at `strong` whose unmarked rule is a hand check in the queue.
+
+    Its one proof is `@manual`, so no test backs it and a person signs it
+    with a note.
+    """
+    made = Project(gate=REVIEW_GATE, spec=MANUAL_SPEC)
     made.proofs()
     made.evidence()
-    made.audit('RULE-2', settled=False)
     git(made.root, 'add', '-A')
     git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
     signing_key(made.root)
@@ -743,7 +750,7 @@ class TestTheQueueAtStrong:
     @pytest.mark.proof("signatures", "PROOF-70", "RULE-12")
     def test_a_batch_and_a_bare_feature_sign_the_queue(self, capsys):
         for argv in (['--batch'], ['login']):
-            made = unsettled_at_strong()
+            made = manual_at_strong()
             try:
                 assert [row['rule'] for row in made.payload()['queue']] \
                     == ['RULE-2']
@@ -761,7 +768,7 @@ class TestTheQueueAtStrong:
     @pytest.mark.proof("signatures", "PROOF-71", "RULE-15")
     def test_a_named_rule_in_the_queue_is_not_told_it_needs_none(
             self, capsys):
-        made = unsettled_at_strong()
+        made = manual_at_strong()
         try:
             code = sign_module.main(['login', 'RULE-2', '--project-root',
                                      made.root])
@@ -807,6 +814,11 @@ class TestWhatIsQueued:
                 'the rule whose level is signed has no audit entry, so its '
                 'strong cell is not met')
             made.audit('RULE-2', settled=False)
+            payload = made.payload()
+            assert payload['queue'] == [], (
+                'an audit that could not decide is build work, not a hand '
+                'check')
+            made.spec(MANUAL_SPEC)
             payload = made.payload()
             assert [(row['rule'], row['need']) for row in payload['queue']] \
                 == [('RULE-2', 'hand check')], payload['queue']

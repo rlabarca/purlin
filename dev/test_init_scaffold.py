@@ -247,7 +247,7 @@ class TestTheOneQuestion:
         config = project.config()
         assert config['gate'] == gate
         assert config['min_strength'] == strength
-        assert sorted(config) == ['ci', 'gate', 'min_strength',
+        assert sorted(config) == ['audit_parallel', 'ci', 'gate', 'min_strength',
                                   'mutation_engine', 'sql_engine',
                                   'test_framework', 'trust', 'version']
         for key in scaffold_module.gate_module.RETIRED_KEYS:
@@ -275,10 +275,11 @@ class TestTheOneQuestion:
     def test_the_config_holds_the_shape_and_no_retired_key(self, project):
         project.run('--gate', 'strong')
         config = project.config()
-        assert sorted(config) == ['ci', 'gate', 'min_strength',
+        assert sorted(config) == ['audit_parallel', 'ci', 'gate', 'min_strength',
                                   'mutation_engine', 'sql_engine',
                                   'test_framework', 'trust', 'version']
         assert config['version'] == read(os.path.join(ROOT, 'VERSION')).strip()
+        assert config['audit_parallel'] == 4
 
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
     def test_a_child_run_and_an_in_process_run_agree(self):
@@ -287,7 +288,7 @@ class TestTheOneQuestion:
         try:
             child_out = child.run('--gate', 'strong', subprocess=True)
             inline_out = inline.run('--gate', 'strong')
-            assert sorted(child.config()) == ['ci', 'gate', 'min_strength',
+            assert sorted(child.config()) == ['audit_parallel', 'ci', 'gate', 'min_strength',
                                               'mutation_engine', 'sql_engine',
                                               'test_framework', 'trust',
                                               'version']
@@ -302,7 +303,7 @@ class TestTheOneQuestion:
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
     def test_the_template_carries_the_same_shape(self):
         template = json.loads(read(TEMPLATE_CONFIG))
-        assert sorted(template) == ['ci', 'gate', 'min_strength',
+        assert sorted(template) == ['audit_parallel', 'ci', 'gate', 'min_strength',
                                     'mutation_engine', 'sql_engine',
                                     'test_framework', 'trust', 'version']
         assert template['version'] == read(

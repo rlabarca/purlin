@@ -18,6 +18,13 @@ is, so a writer and a reader spell it the same way.
 A file that cannot be read, is not JSON, carries another schema, or names a
 source other than its folder is ignored, and the reader says so once per file
 in `warnings`.
+
+One more file is read here and is not evidence: `.purlin/runtime/
+audit_could_not_run.json`, which `purlin:audit` leaves behind for the rules
+whose model call could not be made. Nothing is written into the evidence for
+such a rule, so the next audit tries it again; this file only lets the strong
+cell say why it still reads `not audited`. It sits under `runtime/`, which is
+never committed.
 """
 
 import json
@@ -34,6 +41,7 @@ SCHEMA = 'purlin-evidence/1'
 SOURCES = ('local', 'ci')
 PLATFORMS = ('windows', 'macos', 'linux')
 EVIDENCE_DIR = '.purlin/evidence'
+COULD_NOT_RUN_PATH = '.purlin/runtime/audit_could_not_run.json'
 
 
 # How `sys.platform` spells each operating system a section is keyed by.
@@ -199,6 +207,34 @@ def audit_entry(loaded, rule_id, rule_hash, proof_hash, test_hash):
     return best
 
 
+def could_not_run(project_root):
+    """`{feature: {rule: {rule_hash, proof_hash, test_hash, why}}}`, or `{}`.
+
+    What the last audit could not do: the rules whose model call failed,
+    each keyed by the hashes it would have read. A file that is missing or
+    cannot be read is the same as an empty one.
+    """
+    path = os.path.join(project_root, *COULD_NOT_RUN_PATH.split('/'))
+    try:
+        with open(path, 'r', encoding='utf-8') as handle:
+            data = json.load(handle)
+    except (IOError, OSError, UnicodeDecodeError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def why_not_audited(table, feature, rule_id, rule_hash, proof_hash,
+                    test_hash):
+    """Why the last audit could not read this rule's current hashes, or None."""
+    entry = ((table or {}).get(feature) or {}).get(rule_id)
+    if not isinstance(entry, dict):
+        return None
+    if (entry.get('rule_hash'), entry.get('proof_hash'),
+            entry.get('test_hash')) != (rule_hash, proof_hash, test_hash):
+        return None
+    return entry.get('why') or None
+
+
 def proof_results(section):
     """`{proof_id: 'pass' | 'fail'}` for one section.
 
@@ -246,12 +282,6 @@ def mutation(loaded):
         if best is None or _text(found.get('at')) > _text(best.get('at')):
             best = found
     return best
-
-
-def audited(loaded):
-    """True when either source's file carries an `audit` object."""
-    return any(isinstance((data or {}).get('audit'), dict)
-               for data in loaded['files'].values())
 
 
 def _text(value):

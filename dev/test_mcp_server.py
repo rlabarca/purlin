@@ -601,7 +601,7 @@ class TestGate:
     def test_the_settings_written_out_are_the_ones_a_project_can_name(self):
         written = purlin_gate.resolve_gate({'gate': 'signed'}).as_dict()
         assert sorted(written) == [
-            'ci', 'gate', 'min_strength', 'mutation_engine',
+            'audit_parallel', 'ci', 'gate', 'min_strength', 'mutation_engine',
             'sql_engine', 'test_framework', 'trust']
 
     def test_a_named_key_overrides_the_derived_default(self):
@@ -691,7 +691,6 @@ STRONG_INPUT = {
                 'findings': [], 'tests': [{'file': 'tests/t.py',
                                            'name': 'test_x'}]}],
     'sections': [_section()],
-    'audited': True,
     'test_strength': 90,
 }
 
@@ -888,12 +887,12 @@ class TestTheStrongCell:
             cell = made.cell('RULE-1', 'strong')
             assert cell['word'] == 'weak'
             assert cell['reasons'] == ['strength 48% under 70%'], cell
-            assert 'findings' not in cell, cell
+            assert cell['findings'] == [], cell
         finally:
             made.close()
 
     @pytest.mark.proof("states", "PROOF-15", "RULE-13")
-    def test_with_no_engine_the_cell_says_nothing_measured_a_strength(self):
+    def test_with_no_score_the_cell_says_no_mutation_score_was_measured(self):
         made = Project(gate='strong')
         try:
             made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
@@ -901,8 +900,7 @@ class TestTheStrongCell:
             made.audit('RULE-2')
             cell = made.cell('RULE-2', 'strong')
             assert cell['word'] == 'strong', cell
-            assert cell['reasons'] == [
-                'no engine: nothing measured a strength'], cell
+            assert cell['reasons'] == ['no mutation score measured'], cell
             # A proof a scan would flag no longer holds the rule anywhere:
             # the strong cell is the audit's.
             made.spec(SPEC.replace(
@@ -912,6 +910,7 @@ class TestTheStrongCell:
                 'body "denied"', 'Check that the login handles it properly'))
             made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
                             'status': 'pass'}], ci=True, strength=None)
+            made.audit('RULE-2')
             loose = made.rule('RULE-2')
             assert loose['cells']['strong']['word'] == 'strong', loose
         finally:
@@ -927,7 +926,7 @@ class TestTheStrongCell:
             tests=[{'proof': 'PROOF-1',
                     'notes': ['The marked test body holds no assertion.']}]))
         assert cell['word'] == 'strong', cell
-        assert 'findings' not in cell, cell
+        assert cell['findings'] == [], cell
         assert cell['evidence'] == '.purlin/evidence/local/login.json', cell
         found = _strong(audit=_audit('weak', [
             'The test reads the status code alone.']))
@@ -939,17 +938,26 @@ class TestTheStrongCell:
     def test_the_audit_entry_settles_level_two_where_the_level_asks(self):
         assert _strong()['word'] == 'not audited'
         assert _strong()['reasons'] == ['no audit has run on this code']
-        open_question = _strong(audit=_audit('undecided'))
-        assert open_question['word'] == 'unsettled', open_question
+        open_question = _strong(audit=_audit('undecided', [
+            'The test body is not shown, so PROOF-1 cannot be read.']))
+        assert open_question['word'] == 'weak', open_question
         assert open_question['reasons'] == [
-            'the AI audit could not settle'], open_question
+            'the AI audit could not decide: The test body is not shown, so '
+            'PROOF-1 cannot be read.'], open_question
+        silent = _strong(audit=_audit('undecided'))
+        assert silent['reasons'] == ['the AI audit could not decide'], silent
         settled = _strong(audit=_audit('strong'))
         assert settled['word'] == 'strong', settled
 
     @pytest.mark.proof("states", "PROOF-18", "RULE-15")
-    def test_a_passed_level_reads_neither_of_the_two_audit_words(self):
-        lower = _strong(level_marked='passed')
-        assert lower['word'] == 'strong', lower
+    def test_a_passed_level_is_never_owed_an_audit(self):
+        cfg = purlin_gate.resolve_gate({'gate': 'strong'})
+        lower = purlin_states.rule_cells(
+            dict(STRONG_INPUT, level_marked='passed'), cfg)
+        assert lower['cells']['strong']['word'] == 'weak', lower
+        assert lower['cells']['strong']['reasons'] == ['no audit has run']
+        assert lower['flags']['not_audited'] is False, lower
+        assert lower['meets_gate'] is True, lower
         assert _strong()['word'] == 'not audited'
         assert _strong(level_marked='signed')['word'] == 'not audited'
 
@@ -973,6 +981,90 @@ class TestTheStrongCell:
             assert cell['reasons'] == [], cell
         finally:
             made.close()
+
+
+class TestTheAuditOnTheRule:
+    """What the AI audit left decides the strong cell, and every rule shows it."""
+
+    @pytest.mark.proof("states", "PROOF-70", "RULE-13")
+    def test_with_mutation_off_a_strength_left_behind_is_not_compared(self):
+        made = Project(gate='strong', extra_config={'mutation_engine': 'none'})
+        try:
+            made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
+                            'status': 'pass'}], ci=True, strength=40)
+            made.audit('RULE-2')
+            cell = made.cell('RULE-2', 'strong')
+            assert cell['word'] == 'strong', cell
+            assert cell['reasons'] == ['no mutation score measured'], cell
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-71", "RULE-15")
+    def test_a_rule_the_model_could_not_be_reached_for_says_why(self):
+        made = Project(gate='strong')
+        try:
+            made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
+                            'status': 'pass'}], ci=True)
+            rule = made.rule('RULE-2')
+            _write(os.path.join(made.root, '.purlin', 'runtime',
+                                'audit_could_not_run.json'),
+                   json.dumps({'login': {'RULE-2': {
+                       'rule_hash': rule['rule_hash'],
+                       'proof_hash': rule['proof_hash'],
+                       'test_hash': rule['test_hash'],
+                       'why': 'claude is not on PATH'}}}))
+            cell = made.cell('RULE-2', 'strong')
+            assert cell['word'] == 'not audited', cell
+            assert cell['reasons'] == [
+                'the AI audit could not run: claude is not on PATH'], cell
+            made.spec(SPEC.replace('return 401 and the body "denied"',
+                                   'return 403 and the body "denied"'))
+            made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
+                            'status': 'pass'}], ci=True)
+            cell = made.cell('RULE-2', 'strong')
+            assert cell['reasons'] == ['no audit has run on this code'], cell
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-72", "RULE-20")
+    def test_a_fresh_finding_stales_the_signature_and_says_so(self):
+        made = Project(gate='signed')
+        try:
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'}], ci=True)
+            made.audit('RULE-1')
+            made.signature('RULE-1')
+            assert made.cell('RULE-1', 'signed')['word'] != 'stale'
+            made.audit('RULE-1',
+                       observations=['PROOF-2 reads the status alone.'])
+            cell = made.cell('RULE-1', 'signed')
+            assert cell['word'] == 'stale', cell
+            assert cell['reasons'] == [
+                'audit findings changed after the signature'], cell
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-73", "RULE-61")
+    def test_every_rule_carries_its_audit_at_every_gate(self):
+        for gate in ('passed', 'strong', 'signed'):
+            made = Project(gate=gate)
+            try:
+                made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                                'status': 'pass'},
+                               {'id': 'PROOF-2', 'rule': 'RULE-2',
+                                'status': 'pass'}])
+                made.audit('RULE-2', observations=['PROOF-2 reads 401 alone.'])
+                audit = made.rule('RULE-2')['audit']
+                assert sorted(audit) == ['at', 'commit', 'findings', 'model',
+                                         'path', 'strength', 'verdict'], audit
+                assert audit['verdict'] == 'weak', (gate, audit)
+                assert audit['findings'] == ['PROOF-2 reads 401 alone.']
+                assert audit['model'] == 'unknown', audit
+                assert audit['strength'] == 90, audit
+                assert audit['path'] == '.purlin/evidence/local/login.json'
+                assert made.rule('RULE-1')['audit'] is None, gate
+            finally:
+                made.close()
 
 
 class TestHoldsAndSignatures:
@@ -1266,7 +1358,7 @@ class TestThePlatformsInThePassedCell:
         cell = purlin_states.rule_cells({
             'proofs': STRONG_INPUT['proofs'],
             'sections': [_section('local', 'macos')],
-            'audited': False, 'level_marked': 'passed',
+            'level_marked': 'passed',
         }, cfg)['cells']['strong']
         assert cell['word'] == 'weak', cell
         assert cell['reasons'] == ['no audit has run'], cell
@@ -1434,7 +1526,7 @@ class TestPayload:
         rollup = feature['rollup']
         assert sorted(rollup) == sorted([
             'rules', 'met', 'untested', 'failing', 'partial', 'passed',
-            'stale', 'manual', 'unsettled', 'not_audited',
+            'stale', 'manual', 'not_audited',
             'queue', 'hand_checks', 'test_strength', 'proofs',
             'proofs_without_test', 'proofs_without_test_ids']), rollup
         assert (rollup['rules'], rollup['met']) == (2, 1)
@@ -1592,7 +1684,7 @@ class TestTheFixturesAreTheContract:
 
     @pytest.mark.proof("states", "PROOF-34", "RULE-30")
     def test_every_fixture_queue_row_uses_the_closed_set(self):
-        words = {'hand check': {'manual test', 'unsettled'},
+        words = {'hand check': {'manual test'},
                  'signature': {'unsigned', 'stale'}}
         keys = ['command', 'feature', 'level', 'need', 'owner', 'reasons',
                 'rule', 'text', 'word']

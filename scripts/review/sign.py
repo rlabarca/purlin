@@ -17,7 +17,7 @@ CI writes no signature, ever.
 
 With no argument this walks the queue one rule at a time: the payload's one
 list of the rules that wait on a person, each saying what it needs. A `hand
-check` is a rule whose strong cell reads `manual test` or `unsettled`; a
+check` is a rule whose strong cell reads `manual test`; a
 `signature` is a rule whose level is `signed`, whose tests and audit are met
 and that has no counting signature. At each stop the answer is one of three:
 sign the rule, add a case (a proof line to write into the spec), or skip it.
@@ -49,8 +49,8 @@ is refused, and the line says to run `purlin:test --remote` first. A rule
 whose proofs are all `@manual` has no test for a runner to run, so it is not
 refused. With `trust: local`, the default, your own run is the evidence.
 
-`--note` carries the one line a signer writes where the machine could not
-settle the question: a rule reading `manual test` or `unsettled`. A reviewer
+`--note` carries the one line a signer writes where no test can be read: a
+rule reading `manual test`. A reviewer
 who finds the test does not prove the proof adds the missing case as a proof
 line instead, which is the walk's `case`.
 
@@ -263,8 +263,8 @@ def queued(payload, feature=None, rules=None):
     """Every `(feature, rule)` a bare feature or `--batch` signs, in order.
 
     The payload works out the queue, so this reads what it wrote rather than
-    asking the question again: the hand checks, rules reading `manual test`
-    or `unsettled`, and the signatures, rules whose level is `signed`, whose
+    asking the question again: the hand checks, rules reading `manual test`,
+    and the signatures, rules whose level is `signed`, whose
     tests and audit are met and that have no counting signature. Everything
     else is build work and stays on the board.
     """
@@ -617,19 +617,22 @@ def _proof_tags(proof):
 def audit_lines(entry):
     """What the audit found for one rule, as the walk prints it.
 
-    Read off the rule's own strong cell, so the walk says what the board
-    says: `Strong. It found nothing.`, `Weak.` with each finding, or that no
-    audit has read the rule yet.
+    Read off the rule's own `audit`, so the walk says what the board says:
+    `Strong. It found nothing.`, `Weak.` with each finding, `Undecided.` with
+    the audit's own sentence, or that no audit has read the rule yet.
     """
-    cell = (entry.get('cells') or {}).get('strong') or {}
-    findings = [str(line) for line in cell.get('observations') or ()]
-    if cell.get('settled') is True and findings:
-        return ['  Weak. %s' % findings[0]] + ['  %s' % line
-                                               for line in findings[1:]]
-    if cell.get('settled') is True:
+    audit = entry.get('audit') or {}
+    findings = [str(line) for line in audit.get('findings') or ()]
+    answered = audit.get('verdict')
+    if answered == 'strong':
         return ['  Strong. It found nothing.']
-    if cell.get('settled') is False:
-        return ['  Undecided. The AI audit could not settle.']
+    if answered == 'weak':
+        return ['  Weak. %s' % (findings[0] if findings else '')] + [
+            '  %s' % line for line in findings[1:]]
+    if answered:
+        return ['  Undecided. %s' % (findings[0] if findings
+                                     else 'The AI audit could not decide.')] \
+            + ['  %s' % line for line in findings[1:]]
     return ["  Nothing yet: no audit has read this rule's text, proof and test."]
 
 

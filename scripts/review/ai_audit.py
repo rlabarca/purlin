@@ -1,35 +1,44 @@
 #!/usr/bin/env python3
-"""Build the brief the machine writes about one rule.
+"""The AI audit: what one rule is read with, the model call, and its answer.
 
-    ai_audit.py --feature <f> [--rule RULE-N] [--ai] [--project-root DIR]
+    ai_audit.py --feature <f> [--rule RULE-N] [--project-root DIR]
 
-The brief reports; it recommends nothing. It sets the rule, its proofs and
-the source of each test that backs them beside the evidence, in two layers,
-and stops when it has enough for the rule's level:
+`purlin:audit` reads each rule that needs reading through this module: it
+sets the rule, its proofs and the source of each test that backs them beside
+`references/review_criteria.md`, sends that prompt to the model, and reads
+the answer back into a `verdict` and findings. The run script writes what comes
+back into the feature's evidence; this module writes no file.
 
-    passed  the test strength the evidence holds
-    strong  plus the AI audit, which reads the rule, the proofs and the
-            test source against `references/review_criteria.md`
+**The call.** `claude -p --output-format json`, with the prompt on stdin, so
+no command line carries it, and stdin closed after the prompt. One call per
+rule, `MODEL_TIMEOUT` seconds each, and `audit_parallel` calls at once. The
+JSON's `result` is the answer; the model is the one its `modelUsage` names,
+or `unknown` where it names none.
 
-The AI audit writes what it observed in plain sentences. A settled audit
-that observed a gap leaves the strong cell reading `weak` with that sentence
-as the reason.
+**The answer.** The model is asked for what it observed, never for a grade:
 
-What the brief ends with is three things and no judgment: the test strength
-beside the project minimum, the audit's observations one sentence at a time,
-and whether the audit settled the question. A rule whose brief settled with
-nothing observed is one the machine could read; an audit that could not
-settle leaves the strong cell reading `unsettled`.
+    settled: yes
+    - <one sentence per finding, naming the proof>
 
-No file is written. `purlin:audit` reads each brief it builds into the
-feature's evidence, as the rule's entry under `audit.rules` keyed by the
-rule, proof and test hashes the brief was built over; this command prints
-the brief and nothing else.
+Settled with no line is the `verdict` `strong`. Settled with lines is `weak`,
+and the lines are the findings. Not settled is `undecided`, and its lines are
+the reason it gives.
 
-Exit codes: 0 a brief was built, 1 the rule is not in the project, 2 the
+**When the model cannot be reached** (no `claude` on PATH, a non-zero exit, a
+timeout, or an answer with no settled line after one retry) nothing comes
+back for that rule but the reason, so nothing is written and the next audit
+tries again.
+
+The command line prints what the audit reads for a rule and what the last
+audit found, from the payload. It calls no model and writes no file.
+
+Exit codes: 0 a rule was printed, 1 the rule is not in the project, 2 the
 command line was wrong.
 """
 
+import concurrent.futures
+import hashlib
+import json
 import os
 import re
 import shutil
@@ -46,9 +55,9 @@ for _path in (_MCP_DIR, _HERE):
 import marked_tests                                           # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
                     payload as payload_module,
-                    signatures as signatures_module, states)
+                    signatures as signatures_module)
 
-USAGE = ('Usage: ai_audit.py --feature <f> [--rule RULE-N] [--ai] '
+USAGE = ('Usage: ai_audit.py --feature <f> [--rule RULE-N] '
          '[--project-root DIR]')
 
 EXIT_OK = 0
@@ -57,37 +66,37 @@ EXIT_BAD_INVOCATION = 2
 
 CRITERIA = os.path.join('references', 'review_criteria.md')
 
-# The layers, cheapest first, and the level each set is built for. The AI
-# audit runs on the rules whose level is `strong` or `signed`.
-LAYERS = ('test strength', 'AI audit')
-_LAYERS_BY_LEVEL = {
-    'passed': LAYERS[:1],
-    'strong': LAYERS,
-    'signed': LAYERS,
-}
+# The command, and how long one call may take.
+COMMAND = ('claude', '-p', '--output-format', 'json')
+MODEL_TIMEOUT = 300
 
-# What the brief writes where no model could be reached. The strong cell
-# reads this word and treats the AI audit as one that never ran, so the name
-# lives in the module that reads it.
-NOT_AVAILABLE = states.NO_MODEL
+# Why a call could not be made, one sentence per cause. The run prints one
+# line per cause with a count, and the strong cell names the cause.
+NOT_ON_PATH = 'claude is not on PATH'
+EXITED = 'claude exited with an error'
+TIMED_OUT = 'claude timed out after %d s'
+NO_ANSWER = 'claude answered without a settled line'
+
+# The three verdicts an answer becomes.
+VERDICTS = ('strong', 'weak', 'undecided')
 
 
 # ---------------------------------------------------------------------------
-# One brief
+# What one rule is read with
 # ---------------------------------------------------------------------------
 
 def load_payload(project_root, payload=None):
     """The payload to read, built when the caller did not hand one over."""
     if payload is not None:
         return payload
-    return payload_module.build_payload(project_root, generated_by='brief')
+    return payload_module.build_payload(project_root, generated_by='audit')
 
 
 def rule_entry(payload, feature, rule):
     """The rule dict for `<feature> <rule>`, or None.
 
     A required rule belongs to the feature its own `feature` field names, so a
-    brief is built where the rule lives and not once per consumer.
+    rule is read where it lives and not once per consumer.
     """
     for entry in (payload or {}).get('features') or ():
         for item in entry.get('rules') or ():
@@ -96,69 +105,56 @@ def rule_entry(payload, feature, rule):
     return None
 
 
-def triple_for(entry):
-    """The triple hash of one rule entry."""
-    return signatures_module.triple_hash(
-        entry.get('rule_hash'), entry.get('proof_hash'), entry.get('test_hash'))
+def is_read(entry, gate, again=False):
+    """True when the audit reads this rule.
+
+    A rule is read when it is its feature's own, at least one of its proofs
+    has a test, its passed cell reads `passed`, and it has no audit entry for
+    its current rule, proof and test hashes. Under a gate above `passed` a
+    rule whose level is `passed` is never read. `again` drops the condition
+    about an existing entry, which is what `--all` asks for.
+    """
+    entry = entry or {}
+    if entry.get('label', 'own') != 'own':
+        return False
+    passed = ((entry.get('cells') or {}).get('passed') or {}).get('word')
+    if passed != 'passed':
+        return False
+    if not any(proof.get('tests') and not proof.get('manual')
+               for proof in entry.get('proofs') or ()):
+        return False
+    if gate != 'passed' and entry.get('level') == 'passed':
+        return False
+    return again or not entry.get('audit')
 
 
-def build_brief(project_root, payload, feature, rule, ai=False):
-    """The brief for one rule, as a dict. None when the rule is not there."""
+def reading_for(project_root, payload, feature, rule):
+    """What the audit reads for one rule, as a dict. None when it is not there."""
     payload = load_payload(project_root, payload)
     entry = rule_entry(payload, feature, rule)
     if entry is None:
         return None
-
-    level = entry.get('level') or 'passed'
-    layers = _LAYERS_BY_LEVEL.get(level, _LAYERS_BY_LEVEL['passed'])
     gate = payload.get('gate') or {}
-    min_strength = gate.get('min_strength') or 0
-    feature_entry = _feature_entry(payload, feature)
-
     proofs = [{'id': proof.get('id'), 'manual': bool(proof.get('manual')),
                'env': proof.get('env'), 'text': proof.get('text')}
               for proof in entry.get('proofs') or ()]
-
-    brief = {
+    return {
         'feature': feature,
         'rule': rule,
-        'level': level,
+        'level': entry.get('level') or 'passed',
         'rule_text': entry.get('text'),
         'proofs': proofs,
         'rule_hash': entry.get('rule_hash'),
         'proof_hash': entry.get('proof_hash'),
         'test_hash': entry.get('test_hash'),
-        'test_hash_kind': entry.get('test_hash_kind'),
-        'triple_hash': triple_for(entry),
-        'layers': list(layers),
+        'triple_hash': signatures_module.triple_hash(
+            entry.get('rule_hash'), entry.get('proof_hash'),
+            entry.get('test_hash')),
         'tests': _test_layer(project_root, feature, entry),
-        'test_strength': None,
-        'min_strength': min_strength,
-        'ai_review': None,
-        'observations': [],
-        'settled': None,
-        'generated_at': payload_module.now_iso(),
+        'test_strength': _feature_entry(payload, feature).get('test_strength'),
+        'min_strength': gate.get('min_strength'),
+        'audit': entry.get('audit'),
     }
-
-    if 'test strength' in layers:
-        brief['test_strength'] = feature_entry.get('test_strength')
-
-    if 'AI audit' in layers:
-        brief['ai_review'] = (_ai_audit(project_root, brief) if ai
-                              else NOT_AVAILABLE)
-        brief['observations'], brief['settled'] = model_observations(
-            brief['ai_review'])
-
-    return brief
-
-
-def asks_for_a_review(entry):
-    """True when the AI audit runs on a rule: its level is `strong` or `signed`.
-
-    The strong cell asks the same question when it decides whether a brief
-    was owed, so the answer is computed from the one place that knows it.
-    """
-    return (entry or {}).get('level') in ('strong', 'signed')
 
 
 def _feature_entry(payload, feature):
@@ -209,7 +205,7 @@ def _one_test(project_root, feature, proof_id, test):
 
 
 # ---------------------------------------------------------------------------
-# The AI audit
+# The prompt
 # ---------------------------------------------------------------------------
 
 def criteria_text(project_root):
@@ -222,10 +218,14 @@ def criteria_text(project_root):
     return ''
 
 
+def criteria_hash(text):
+    """The sha256 of the criteria as they were sent, which each entry records."""
+    return hashlib.sha256((text or '').encode('utf-8')).hexdigest()
+
+
 # What the model is asked for: what the test observes set against what the
 # proof names, one sentence at a time, and a plain statement when it cannot
-# tell. Never a recommendation and never a grade: the brief reports, and the
-# person reading it decides.
+# tell. Never a recommendation and never a grade.
 INSTRUCTION = (
     'Read one rule against the criteria above and report what you see: '
     'set each proof against the test body below it and say what you '
@@ -244,95 +244,188 @@ INSTRUCTION = (
 )
 
 
-def model_prompt(project_root, brief):
+def model_prompt(project_root, reading, criteria=None):
     """The criteria verbatim, then this rule's rule, proof, test and numbers."""
-    parts = [criteria_text(project_root), '', '---', '']
+    text = criteria_text(project_root) if criteria is None else criteria
+    parts = [text, '', '---', '']
     parts.extend(INSTRUCTION)
     parts.extend([
         '',
         '%s %s (level %s)'
-        % (brief.get('feature'), brief.get('rule'), brief.get('level')),
-        'Rule: %s' % (brief.get('rule_text') or '')])
-    for proof in brief.get('proofs') or ():
+        % (reading.get('feature'), reading.get('rule'), reading.get('level')),
+        'Rule: %s' % (reading.get('rule_text') or '')])
+    for proof in reading.get('proofs') or ():
         parts.append('%s%s: %s' % (proof.get('id'), _proof_tags(proof),
                                    proof.get('text')))
-    for test in brief.get('tests') or ():
+    for test in reading.get('tests') or ():
         parts.append('')
         parts.append('Test for %s: %s::%s'
                      % (test.get('proof'), test.get('file'), test.get('name')))
         if test.get('body'):
             parts.append(test['body'])
-    strength = brief.get('test_strength')
+    strength = reading.get('test_strength')
     parts.append('')
     parts.append('Test strength: %s (minimum %s)'
                  % ('n/a' if strength is None else '%d percent' % strength,
-                    brief.get('min_strength')))
+                    'n/a' if reading.get('min_strength') is None
+                    else reading.get('min_strength')))
     return '\n'.join(parts)
 
 
-def _ai_audit(project_root, brief):
-    """The model's answer, or `not available` when no model can be reached."""
-    if not shutil.which('claude'):
-        return NOT_AVAILABLE
-    try:
-        result = subprocess.run(
-            ['claude', '-p', model_prompt(project_root, brief)],
-            capture_output=True, text=True, cwd=project_root, timeout=300)
-    except (subprocess.SubprocessError, OSError):
-        return NOT_AVAILABLE
-    if result.returncode != 0 or not result.stdout.strip():
-        return NOT_AVAILABLE
-    return result.stdout.strip()
-
+# ---------------------------------------------------------------------------
+# The answer
+# ---------------------------------------------------------------------------
 
 _SETTLED_RE = re.compile(r'^\s*settled\s*:\s*(yes|no|true|false)\s*$', re.I)
-_OBSERVATION_RE = re.compile(r'^\s*[-*]\s+(.*\S)\s*$')
+_FINDING_RE = re.compile(r'^\s*[-*]\s+(.*\S)\s*$')
 
 
-def model_observations(answer):
-    """`(observations, settled)` read out of one model answer.
+def parse_answer(answer):
+    """`(findings, settled)` read out of one model answer.
 
-    An answer nobody could get, or one that never says whether it settled,
-    leaves `settled` None: the strong cell reads that as a question still
-    open, which is the honest reading of an answer that is not there.
+    `settled` is True, False, or None for an answer that never says whether
+    it settled, which is not an answer the audit can record.
     """
-    if not answer or answer == NOT_AVAILABLE:
-        return [], None
     settled = None
-    observations = []
-    for line in str(answer).splitlines():
+    findings = []
+    for line in str(answer or '').splitlines():
         found = _SETTLED_RE.match(line)
         if found:
             settled = found.group(1).lower() in ('yes', 'true')
             continue
-        found = _OBSERVATION_RE.match(line)
+        found = _FINDING_RE.match(line)
         if found:
-            observations.append(found.group(1))
-    return observations, settled
+            findings.append(found.group(1))
+    return findings, settled
+
+
+def verdict_of(findings, settled):
+    """`strong`, `weak` or `undecided`, or None when the answer did not say."""
+    if settled is None:
+        return None
+    if not settled:
+        return 'undecided'
+    return 'weak' if findings else 'strong'
+
+
+def model_name(body):
+    """The model the CLI's JSON names, or `unknown`.
+
+    A top-level `model` is read first. Otherwise `modelUsage` names each model
+    the call used; the one that wrote the most output answered.
+    """
+    if not isinstance(body, dict):
+        return 'unknown'
+    if isinstance(body.get('model'), str) and body['model'].strip():
+        return body['model'].strip()
+    usage = body.get('modelUsage')
+    if isinstance(usage, dict) and usage:
+        def weight(name):
+            entry = usage.get(name)
+            tokens = entry.get('outputTokens') if isinstance(entry, dict) else 0
+            return (-(tokens if isinstance(tokens, (int, float)) else 0), name)
+        return sorted(usage, key=weight)[0]
+    return 'unknown'
+
+
+# ---------------------------------------------------------------------------
+# The call
+# ---------------------------------------------------------------------------
+
+def claude_path():
+    """Where `claude` is on PATH, or None."""
+    return shutil.which(COMMAND[0])
+
+
+def ask_model(project_root, prompt, command=None, runner=None):
+    """`(answer, model, why)` for one call.
+
+    The prompt goes on stdin and stdin is closed after it, so the command
+    line never carries it. `why` is None when the model answered, and names
+    the cause otherwise. `runner` stands in for `subprocess.run` in a test.
+    """
+    command = command or claude_path()
+    if not command:
+        return None, None, NOT_ON_PATH
+    runner = runner or subprocess.run
+    try:
+        result = runner([command] + list(COMMAND[1:]), input=prompt,
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace', cwd=project_root,
+                        timeout=MODEL_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        return None, None, TIMED_OUT % MODEL_TIMEOUT
+    except (OSError, subprocess.SubprocessError):
+        return None, None, EXITED
+    if result.returncode != 0:
+        return None, None, EXITED
+    stdout = result.stdout or ''
+    try:
+        body = json.loads(stdout)
+    except ValueError:
+        return stdout, 'unknown', None
+    if not isinstance(body, dict):
+        return stdout, 'unknown', None
+    answer = body.get('result')
+    return (answer if isinstance(answer, str) else ''), model_name(body), None
+
+
+def audit_one(project_root, reading, criteria, command=None, runner=None):
+    """What the audit found for one rule, or why it could not ask.
+
+    `{'verdict', 'findings', 'model', 'criteria'}` when the model answered, where
+    `criteria` is the sha256 of the criteria it was sent; `{why}` when it
+    could not be reached. An answer with no settled line is asked once more
+    before it counts as no answer.
+    """
+    prompt = model_prompt(project_root, reading, criteria)
+    for _attempt in range(2):
+        answer, model, why = ask_model(project_root, prompt, command, runner)
+        if why:
+            return {'why': why}
+        findings, settled = parse_answer(answer)
+        answered = verdict_of(findings, settled)
+        if answered:
+            return {'verdict': answered, 'findings': findings, 'model': model,
+                    'criteria': criteria_hash(criteria)}
+    return {'why': NO_ANSWER}
+
+
+def audit_all(project_root, readings, parallel, runner=None):
+    """One result per reading, in order, `parallel` calls at once.
+
+    With no `claude` on PATH nothing is called and every reading carries
+    that reason.
+    """
+    readings = list(readings or ())
+    command = claude_path()
+    if not command:
+        return [{'why': NOT_ON_PATH} for _ in readings]
+    criteria = criteria_text(project_root)
+    workers = max(1, min(int(parallel or 1), len(readings) or 1))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(audit_one, project_root, reading, criteria,
+                               command, runner) for reading in readings]
+        return [future.result() for future in futures]
 
 
 # ---------------------------------------------------------------------------
 # The text a person reads
 # ---------------------------------------------------------------------------
 
-def render_brief(brief):
-    """The brief as text: the rule, the proof, the test, and what it found."""
-    lines = []
-    lines.append('%s %s   level %s'
-                 % (brief.get('feature'), brief.get('rule'), brief.get('level')))
-    lines.append('')
-    lines.append('Rule')
-    lines.append('  %s' % (brief.get('rule_text') or ''))
-    lines.append('')
-    lines.append('Proof')
-    for proof in brief.get('proofs') or ():
+def render(reading):
+    """One rule as the audit reads it, and what the last audit found."""
+    lines = ['%s %s   level %s' % (reading.get('feature'), reading.get('rule'),
+                                     reading.get('level')),
+             '', 'Rule', '  %s' % (reading.get('rule_text') or ''), '',
+             'Proof']
+    for proof in reading.get('proofs') or ():
         lines.append('  %s%s: %s' % (proof.get('id'), _proof_tags(proof),
                                      proof.get('text')))
-    lines.append('')
-    lines.append('Test')
-    if not brief.get('tests'):
+    lines.extend(['', 'Test'])
+    if not reading.get('tests'):
         lines.append('  Nothing backs this rule yet.')
-    for test in brief.get('tests') or ():
+    for test in reading.get('tests') or ():
         if test.get('file'):
             lines.append('  %s  %s::%s' % (test.get('proof'), test['file'],
                                            test.get('name')))
@@ -340,39 +433,27 @@ def render_brief(brief):
             lines.append('  %s  manual' % test.get('proof'))
         for line in (test.get('body') or '').splitlines():
             lines.append('    %s' % line)
-    lines.append('')
-    strength = brief.get('test_strength')
-    if 'test strength' in (brief.get('layers') or ()):
-        lines.append('Test strength: %s   minimum %s'
-                     % ('n/a' if strength is None else '%d percent' % strength,
-                        brief.get('min_strength')))
-    # The AI audit is printed only where one was asked for, so a brief for
-    # a rule whose level is `passed` says nothing about an audit that was
-    # never owed.
-    if brief.get('ai_review') is not None:
-        if brief['ai_review'] != NOT_AVAILABLE:
-            lines.append('')
-            lines.append('AI audit')
-            for line in str(brief['ai_review']).splitlines():
-                lines.append('  %s' % line)
-        lines.append('')
-        lines.append('Observations')
-        for observation in brief.get('observations') or ():
-            lines.append('  %s' % observation)
-        if not brief.get('observations'):
-            lines.append('  None.')
-        lines.append('Settled: %s' % _settled_word(brief.get('settled')))
+    strength = reading.get('test_strength')
+    lines.extend(['', 'Test strength: %s   minimum %s'
+                  % ('n/a' if strength is None else '%d percent' % strength,
+                     'n/a' if reading.get('min_strength') is None
+                     else reading.get('min_strength')),
+                  '', 'What the audit found'])
+    audit = reading.get('audit') or {}
+    if not audit:
+        lines.append("  Nothing yet: no audit has read this rule's text, "
+                     "proof and test.")
+    else:
+        lines.append('  %s, by %s at %s.'
+                     % (str(audit.get('verdict') or '').capitalize(),
+                        audit.get('model') or 'unknown',
+                        audit.get('at') or 'an unknown time'))
+        for finding in audit.get('findings') or ():
+            lines.append('  %s' % finding)
+        if not audit.get('findings'):
+            lines.append('  It found nothing.')
     lines.append('')
     return '\n'.join(lines)
-
-
-def _settled_word(settled):
-    """`yes`, `no` or `not answered`, the three answers an AI audit gives."""
-    if settled is True:
-        return 'yes'
-    if settled is False:
-        return 'no'
-    return 'not answered'
 
 
 # ---------------------------------------------------------------------------
@@ -382,12 +463,11 @@ def _settled_word(settled):
 class _Args(object):
     """One parsed invocation, or the reason it could not be parsed."""
 
-    __slots__ = ('feature', 'rule', 'ai', 'project_root', 'error', 'help')
+    __slots__ = ('feature', 'rule', 'project_root', 'error', 'help')
 
     def __init__(self):
         self.feature = None
         self.rule = None
-        self.ai = False
         self.project_root = '.'
         self.error = None
         self.help = False
@@ -401,9 +481,7 @@ def _parse(argv):
         if item in ('-h', '--help'):
             args.help = True
             return args
-        if item == '--ai':
-            args.ai = True
-        elif item in ('--feature', '--rule', '--project-root'):
+        if item in ('--feature', '--rule', '--project-root'):
             if not rest:
                 args.error = '%s needs a value.' % item
                 return args
@@ -436,18 +514,17 @@ def main(argv=None):
     rules = ([args.rule] if args.rule
              else _rules_of(payload, args.feature))
     if not rules:
-        print('brief: no rule of %s is in this project.' % args.feature)
+        print('audit: no rule of %s is in this project.' % args.feature)
         return EXIT_NOTHING
 
-    built = 0
+    shown = 0
     for rule in rules:
-        brief = build_brief(args.project_root, payload, args.feature, rule,
-                            ai=args.ai)
-        if brief is None:
+        reading = reading_for(args.project_root, payload, args.feature, rule)
+        if reading is None:
             continue
-        print(render_brief(brief))
-        built += 1
-    return EXIT_OK if built else EXIT_NOTHING
+        print(render(reading))
+        shown += 1
+    return EXIT_OK if shown else EXIT_NOTHING
 
 
 def _rules_of(payload, feature):

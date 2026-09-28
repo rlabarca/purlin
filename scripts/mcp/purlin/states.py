@@ -13,10 +13,10 @@ decides how many rows exist: a cell above the gate is absent, not empty.
             `partial` when the tests passed on some of them and failed or did
             not run on others. `partial` is not met.
 
-    strong  Met when the tests are worth trusting: test strength at or above
-            the project minimum and a settled AI audit that observed nothing
-            where the rule's level asks for one. `strong`, `weak`,
-            `not audited`, `unsettled`, `manual test`.
+    strong  Met when the tests are worth trusting: the AI audit read the
+            rule's current text, proof and test and found nothing, and, where
+            mutation testing is on and measured a score, the score reaches the
+            project minimum. `strong`, `weak`, `not audited`, `manual test`.
 
     signed  Met when a named person signed the rule, proof, test and audit
             hashes. `signed`, `unsigned`, `stale`.
@@ -42,8 +42,7 @@ returns:
      'meets_gate': True,
      'blocked_by': None,
      'flags': {'failing': False, 'partial': False, 'stale': False,
-               'manual': False, 'unsettled': False,
-               'not_audited': False, 'out_of_date': False,
+               'manual': False, 'not_audited': False, 'out_of_date': False,
                'no_proof': False}}
 
 A rule's **bucket** is the one tile it is counted in, and the flag `stale` is
@@ -51,7 +50,7 @@ counted beside the buckets, never instead of them.
 
 A rule's **need** is what it waits on a person for, which puts it in the
 queue: `hand check` where its level is `strong` or `signed` and its strong
-cell reads `manual test` or `unsettled`, `signature` where its level is
+cell reads `manual test`, `signature` where its level is
 `signed`, its passed and strong cells are met and its signed cell is not, and
 None otherwise. A rule that needs both is one `hand check`: the note a person
 signs it with, in a signed commit, meets the signed cell too.
@@ -73,16 +72,16 @@ CELLS = ('passed', 'strong', 'signed')
 # The one tile a rule is counted in, weakest first.
 BUCKETS = ('untested', 'failing', 'partial', 'passed', 'strong', 'signed')
 
-# The flags a rule carries. `manual`, `unsettled` and `not_audited` are the
-# three strong-cell words the machine cannot move on its own, and `no_proof`
-# is a rule no proof line names.
-FLAGS = ('failing', 'partial', 'stale', 'manual', 'unsettled',
-         'not_audited', 'out_of_date', 'no_proof')
+# The flags a rule carries. `manual` and `not_audited` are the two
+# strong-cell words the tests alone cannot move, and `no_proof` is a rule no
+# proof line names.
+FLAGS = ('failing', 'partial', 'stale', 'manual', 'not_audited',
+         'out_of_date', 'no_proof')
 
-# The strong cell's words that put a rule in the queue as a hand check, and
+# The strong cell's word that puts a rule in the queue as a hand check, and
 # the one that waits for the audit instead. `not audited` is never in the
-# queue: running `purlin:audit` settles it.
-HAND_CHECK_WORDS = ('manual test', 'unsettled')
+# queue: running `purlin:audit` moves it.
+HAND_CHECK_WORDS = ('manual test',)
 NOT_AUDITED = 'not audited'
 
 # What a queue row says it needs, the two reasons a rule waits on a person.
@@ -90,14 +89,16 @@ HAND_CHECK = 'hand check'
 SIGNATURE = 'signature'
 NEEDS = (HAND_CHECK, SIGNATURE)
 
-# What a brief writes under `ai_review` when no model could be reached. The
-# audit records that as a rule it read and found nothing against, so the
-# strength is the whole of level 2. `scripts/review/ai_audit.py` reads this name
-# from here so the two cannot drift.
-NO_MODEL = 'not available'
-
 # The flags a rollup counts, beside the buckets and never instead of them.
-COUNTED_FLAGS = ('stale', 'manual', 'unsettled', 'not_audited')
+COUNTED_FLAGS = ('stale', 'manual', 'not_audited')
+
+# The strong cell's reasons for what the audit said and could not say.
+NOT_AUDITED_REASON = 'no audit has run on this code'
+COULD_NOT_RUN = 'the AI audit could not run: %s'
+COULD_NOT_DECIDE = 'the AI audit could not decide'
+NO_SCORE = 'no mutation score measured'
+AUDIT_MOVED = 'audit findings changed after the signature'
+HASHES_MOVED = 'hashes changed after the signature'
 
 # Where a pass came from, most trusted first. An evidence file's source is
 # the folder it sits in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`.
@@ -143,7 +144,8 @@ def rule_cells(inp, cfg):
                     beside the triple
     `audit`         the evidence's audit entry for this rule's current
                     hashes, carrying its `path`, or None
-    `audited`       whether the feature's evidence holds any audit at all
+    `could_not_run` why the last audit could not reach the model for this
+                    rule's current hashes, or None
     `test_strength` an integer percent, or None when nothing measured it
     """
     gate = cfg.gate if cfg else CELLS[0]
@@ -157,7 +159,7 @@ def rule_cells(inp, cfg):
 
     passed = _passed_cell(inp, cfg)
     strong = _strong_cell(inp, cfg, level, passed, counting)
-    signed = _signed_cell(signatures, current, counting)
+    signed = _signed_cell(signatures, current, counting, inp)
 
     cells = {}
     for name, cell in (('passed', passed), ('strong', strong),
@@ -170,13 +172,14 @@ def rule_cells(inp, cfg):
         'partial': passed['word'] == 'partial',
         'out_of_date': passed['word'] == OUT_OF_DATE,
         # A signature is a fact about committed files, so it is read the
-        # same at every gate. `manual test`, `unsettled` and `not audited`
-        # are the strong cell's own words, and that cell does not exist under
-        # `passed`.
+        # same at every gate. `manual test` and `not audited` are the strong
+        # cell's own words, and that cell does not exist under `passed`. A
+        # rule whose level is `passed` is never audited under a higher gate,
+        # so its `not audited` is shown and not counted.
         'stale': bool(signatures) and not current,
         'manual': gate != 'passed' and strong['word'] == 'manual test',
-        'unsettled': gate != 'passed' and strong['word'] == 'unsettled',
-        'not_audited': gate != 'passed' and strong['word'] == NOT_AUDITED,
+        'not_audited': (gate != 'passed' and level != 'passed'
+                        and strong['word'] == NOT_AUDITED),
         'no_proof': not proofs,
     }
 
@@ -438,11 +441,19 @@ def _section_passes(proofs, current):
 # ---------------------------------------------------------------------------
 
 def _strong_cell(inp, cfg, level, passed, counting_signatures):
-    """Level 2: whether the tests behind a met passed cell are worth trusting."""
+    """Level 2: whether the tests behind a met passed cell are worth trusting.
+
+    The AI audit decides it. An entry for the rule's current text, proof and
+    test whose `verdict` is `strong` meets the cell; `weak` carries each
+    finding as a reason; `undecided` is build work too, and reads `weak` with
+    the audit's own sentence. With mutation testing on and a score measured,
+    the score must also reach `min_strength`; with it off, or where nothing
+    measured a score, the audit alone decides and the cell says no score was
+    measured. A rule the audit has not read reads `not audited`.
+    """
     strength = inp.get('test_strength')
-    cell = {'word': 'weak', 'strength': strength,
-            'observations': [], 'evidence': None, 'settled': None,
-            'reasons': []}
+    cell = {'word': 'weak', 'strength': strength, 'findings': [],
+            'evidence': None, 'reasons': []}
 
     if passed['word'] != 'passed':
         cell['reasons'] = ['not passed']
@@ -451,89 +462,57 @@ def _strong_cell(inp, cfg, level, passed, counting_signatures):
     audit = inp.get('audit') or None
     if audit:
         cell['evidence'] = audit.get('path')
-        cell['observations'] = [str(line) for line in
-                                (audit.get('findings') or ())]
-        cell['settled'] = settled_of(audit)
+        cell['findings'] = [str(line) for line in
+                            (audit.get('findings') or ())]
 
-    min_strength = cfg.min_strength if cfg else None
-    notes = []
-    if strength is None and level != 'passed' and not audit:
-        # The audit is what measures a rule whose level asks for one, and
-        # `not audited` below is the word for one it has not reached.
-        # Nothing is noted here, so the cell does not say it twice.
-        pass
-    elif strength is None and not inp.get('audited', True):
-        # Level 2 asks how good the tests are, and only an audit measures
-        # that. With no audit in the evidence there is nothing to read, so the cell
-        # says the work is outstanding rather than passing the rule on
-        # nothing at all.
-        notes.append('no audit has run')
-        cell['word'] = 'weak'
-    elif strength is None:
-        # An audit ran and no engine measured a strength, so what level 2 has
-        # to read is the audit's own observations. The cell says so rather
-        # than leaving a blank where a percentage usually sits.
-        notes.append('no engine: nothing measured a strength')
-        cell['word'] = 'strong'
-    elif min_strength is not None and strength < min_strength:
-        notes.append('strength %d%% under %d%%' % (round(strength), min_strength))
-        cell['word'] = 'weak'
-    else:
-        cell['word'] = 'strong'
-    # A review that settled and still observed something answered the
-    # question: the test does not read what the proof names, which is build
-    # work, so the observation lands in the weak cell rather than in the
-    # queue.
-    observed = cell['observations'] if cell['settled'] is True else []
-    if observed:
-        cell['word'] = 'weak'
-
-    word, person = _outstanding(inp, level, audit, counting_signatures)
-    if word:
-        cell['word'] = word
-
-    # A cell that reads `strong` names only what a reader could not work out
-    # from the word: nothing at all where an engine measured the strength.
-    cell['reasons'] = list(person) + list(notes) + list(observed)
-    return cell
-
-
-def settled_of(audit):
-    """Whether an audit entry settled: its `verdict` is `strong` or `weak`.
-
-    `undecided` is an AI audit that ran and could not tell, which is the one
-    answer that did not settle.
-    """
-    if not audit:
-        return None
-    return audit.get('verdict') in ('strong', 'weak')
-
-
-def _outstanding(inp, level, audit, counting_signatures):
-    """`(word, reasons)` when level 2 is not the machine's to settle alone.
-
-    Each word names the work that is outstanding. `manual test` is a proof no
-    test can back, `unsettled` is an AI audit that ran and could not tell,
-    and `not audited` is a rule the audit has not reached: that one waits for
-    `purlin:audit` rather than for a person, which is why it is never in the
-    queue. A signature for the current hashes outranks them: under `strong` a signature from anyone
-    counts, because what it clears there is a question the machine could not
-    settle. The word is None when nothing is outstanding.
-    """
-    if counting_signatures:
-        return None, []
     if any(proof.get('manual') for proof in inp.get('proofs') or ()):
-        return 'manual test', ['manual proof']
-    if level != 'passed':
-        # The AI audit runs on every rule whose level is `strong` or
-        # `signed`, so a missing entry here means the audit has not read this
-        # rule, proof and test, and the strength beside it is not the
-        # question yet.
-        if not audit:
-            return NOT_AUDITED, ['no audit has run on this code']
-        if not settled_of(audit):
-            return 'unsettled', ['the AI audit could not settle']
-    return None, []
+        # A `@manual` proof has no test for the audit to read. The note a
+        # person signs it with is the evidence, and a signature for the
+        # current hashes is what meets the cell.
+        if counting_signatures:
+            cell['word'] = 'strong'
+            cell['reasons'] = ['hand check by %s'
+                               % counting_signatures[0].get('signer')]
+            return cell
+        cell['word'] = 'manual test'
+        cell['reasons'] = ['manual proof']
+        return cell
+
+    if not audit:
+        if level == 'passed':
+            # The audit never reads a rule whose level is `passed` under a
+            # higher gate, so nothing here is outstanding: the cell is
+            # shown and does not block.
+            cell['reasons'] = ['no audit has run']
+            return cell
+        cell['word'] = NOT_AUDITED
+        why = inp.get('could_not_run')
+        cell['reasons'] = [COULD_NOT_RUN % why if why else NOT_AUDITED_REASON]
+        return cell
+
+    answered = audit.get('verdict')
+    reasons = []
+    if answered == 'weak':
+        reasons.extend(cell['findings'])
+    elif answered != 'strong':
+        reasons.extend(['%s: %s' % (COULD_NOT_DECIDE, line)
+                        for line in cell['findings']] or [COULD_NOT_DECIDE])
+
+    mutation_on = bool(cfg) and (cfg.mutation_engine or 'none') != 'none'
+    min_strength = cfg.min_strength if cfg else None
+    if (mutation_on and strength is not None and min_strength is not None
+            and strength < min_strength):
+        reasons.append('strength %d%% under %d%%'
+                       % (round(strength), min_strength))
+
+    if reasons:
+        cell['word'] = 'weak'
+        cell['reasons'] = reasons
+        return cell
+    cell['word'] = 'strong'
+    if not mutation_on or strength is None:
+        cell['reasons'] = [NO_SCORE]
+    return cell
 
 
 # ---------------------------------------------------------------------------
@@ -545,7 +524,7 @@ def _signature_at(signature):
     return signature.get('committed_at') or signature.get('timestamp')
 
 
-def _signed_cell(signatures, current, counting):
+def _signed_cell(signatures, current, counting, inp=None):
     """Level 3: what the signature files say, whatever the cells below read.
 
     A signature is a fact about committed files. This cell is computed from
@@ -581,10 +560,25 @@ def _signed_cell(signatures, current, counting):
         cell['signer'] = signature.get('signer')
         cell['at'] = _signature_at(signature)
         cell['path'] = signature.get('path')
-        cell['reasons'] = ['hashes changed after the signature']
+        cell['reasons'] = [_what_moved(signature, inp or {})]
         return cell
 
     return cell
+
+
+def _what_moved(signature, inp):
+    """The reason a stale signature gives: the audit alone, or the hashes.
+
+    Where the rule, the proof and the test still match and only what the
+    audit found moved, the reason says so, because that is a fresh audit
+    finding something different, not an edit.
+    """
+    from purlin import signatures as signatures_module
+    if signatures_module.is_current(signature, inp.get('rule_hash'),
+                                    inp.get('proof_hash'),
+                                    inp.get('test_hash')):
+        return AUDIT_MOVED
+    return HASHES_MOVED
 
 
 def _binds(signature, inp, audit):
@@ -624,8 +618,7 @@ def _need(gate, level, passed, strong, signed):
     The queue exists at the gate `strong` and above, and holds only a rule
     whose level asks for more than its tests: a rule whose level is `passed`
     meets the gate on its tests, so nothing about it waits. A hand check is a
-    strong cell reading `manual test`, or `unsettled` until the audit stops
-    writing that word. A signature is a rule whose level is `signed` whose
+    strong cell reading `manual test`. A signature is a rule whose level is `signed` whose
     passed and strong cells are met and whose signed cell is not. A rule that
     needs both is one hand check, because the note it is signed with meets
     the signed cell as well.
@@ -672,7 +665,7 @@ def feature_rollup(rule_results, gate='passed', test_strength=None):
     """One feature's rollup over `{rule_ref: rule_cells result}`.
 
     Carries how many rules the feature has, how many meet the gate, one count
-    per bucket the gate reaches, the stale, manual, unsettled and not-audited
+    per bucket the gate reaches, the stale, manual and not-audited
     counts, how many rules are in the queue and how many of those are hand
     checks, and the test strength.
     """

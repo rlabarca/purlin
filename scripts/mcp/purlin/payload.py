@@ -17,8 +17,8 @@ they all read instead.
       "gate": {"gate": "strong", "min_strength": 70, "trust": "local", ...},
       "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 4, "strong": 1,
-                  "signed": 1, "stale": 1, "manual": 0, "unsettled": 1,
-                  "not_audited": 0, "queue": 2, "hand_checks": 1},
+                  "signed": 1, "stale": 1, "manual": 0, "not_audited": 0,
+                  "queue": 2, "hand_checks": 1},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "requires": [], "source": null, "pinned": null,
@@ -36,6 +36,9 @@ they all read instead.
            {"id": "RULE-1", "feature": "login", "label": "own",
             "text": "...", "level": "signed", "level_marked": null,
             "audit_hash": "<sha256>",
+            "audit": {"verdict": "strong", "findings": [], "strength": 86,
+                      "model": "<model>", "at": "...", "commit": "<sha>",
+                      "path": ".purlin/evidence/local/login.json"},
             "bucket": "signed", "meets_gate": true,
             "blocked_by": null, "flags": {...},
             "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
@@ -116,6 +119,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     # section decides a cell only while it is current, so this is read once
     # here rather than once per rule.
     evidence = _read_evidence(project_root, features, warnings)
+    could_not_run = evidence_module.could_not_run(project_root)
     all_signatures = signatures_module.load_signatures(project_root, features)
     head = head_sha(project_root)
 
@@ -134,7 +138,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         info = features[name]
         entry, rollup = _feature_entry(
             project_root, name, info, features, evidence, all_signatures,
-            cfg, blob_cache, queue, own_results, counted_cache)
+            cfg, blob_cache, queue, own_results, counted_cache, could_not_run)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -213,7 +217,7 @@ def _rule_number(rule_id):
 
 def _feature_entry(project_root, name, info, features, evidence,
                    all_signatures, cfg, blob_cache, queue,
-                   own_results=None, counted_cache=None):
+                   own_results=None, counted_cache=None, could_not_run=None):
     own = evidence.get(name) or _no_evidence(name)
     mutation = evidence_module.mutation(own['loaded'])
     test_strength = mutation.get('score') if mutation else None
@@ -230,7 +234,7 @@ def _feature_entry(project_root, name, info, features, evidence,
             project_root, owner, owner_info, rule_id, label, owner_evidence,
             all_signatures, cfg, blob_cache,
             owner_mutation.get('score') if owner_mutation else None,
-            counted_cache)
+            counted_cache, could_not_run)
         need = result.pop('need')
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
@@ -405,7 +409,7 @@ def queue_row(feature, owner, rule, need):
 
 def _rule_entry(project_root, owner, owner_info, rule_id, label,
                 owner_evidence, all_signatures, cfg, blob_cache,
-                test_strength=None, counted_cache=None):
+                test_strength=None, counted_cache=None, could_not_run=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -449,16 +453,16 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'audit_hash': audit_hash,
         'proofs': proof_dicts,
         'sections': sections,
-        # Whether the feature's evidence holds any audit at all. With none,
-        # nothing measured how good the tests are and the strong cell says
-        # so rather than passing the rule on nothing at all.
-        'audited': evidence_module.audited(owner_evidence['loaded']),
         'signatures': signatures,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
         'level_marked': level_marked,
         'audit': audit,
+        # Why the last audit could not reach the model for these hashes,
+        # which is what the strong cell says while it reads `not audited`.
+        'could_not_run': evidence_module.why_not_audited(
+            could_not_run, owner, rule_id, rule_hash, proof_hash, test_hash),
         # The feature's strength stands for every rule in it: a break engine
         # measures a scope, not one rule, and the strong cell compares what
         # was measured rather than assuming nothing was.
@@ -477,6 +481,7 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'test_hash': test_hash,
         'test_hash_kind': test_hash_kind,
         'audit_hash': audit_hash,
+        'audit': audit_summary(audit, test_strength),
         'cells': result['cells'],
         'bucket': result['bucket'],
         'meets_gate': result['meets_gate'],
@@ -485,6 +490,25 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'flags': result['flags'],
         'proofs': proof_dicts,
     }
+
+
+def audit_summary(audit, strength):
+    """`rules[].audit`: what the audit found for the current hashes, or None.
+
+    The `verdict` and the findings, the feature's test strength, the model
+    that read the rule, when and at which commit, and the evidence file the
+    entry sits in. Present at every gate, so a surface reads when the audit
+    ran without working it out.
+    """
+    if not audit:
+        return None
+    return {'verdict': audit.get('verdict'),
+            'findings': [str(line) for line in audit.get('findings') or ()],
+            'strength': strength,
+            'model': audit.get('model') or 'unknown',
+            'at': audit.get('at'),
+            'commit': audit.get('commit'),
+            'path': audit.get('path')}
 
 
 def _counted(project_root, signature, cfg, cache):

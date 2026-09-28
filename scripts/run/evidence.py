@@ -40,7 +40,7 @@ _MCP_DIR = os.path.join(os.path.dirname(_RUN_DIR), 'mcp')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import evidence as reader, states as states_module  # noqa: E402
+from purlin import evidence as reader                           # noqa: E402
 
 SCHEMA = reader.SCHEMA
 EVIDENCE_DIR = reader.EVIDENCE_DIR
@@ -268,33 +268,55 @@ def merge_audit(data, source, feature, spec_path, entries, mutation,
     return drop_removed_rules(merged, rule_ids)
 
 
-def audit_entry(rule, built, commit, at=None):
+def audit_entry(rule, found, commit, at=None):
     """The `audit.rules` entry for one rule the audit read.
 
     `rule` is the payload's rule entry, whose three hashes key the entry, and
-    `built` the brief the audit built for it. The model's answer decides the
-    `verdict`: settled with nothing observed is `strong`, settled with an
-    observation is `weak`, and an answer that did not settle is `undecided`.
-    Where no model was asked, the audit read the rule and found nothing to
-    say against it, which is `strong`, as the strong cell has always read it.
+    `found` what the AI audit answered for it: its `verdict` (`strong`,
+    `weak` or `undecided`), its `findings`, the `model` that answered and the
+    sha256 of the `criteria` it was sent.
     """
-    findings = [str(line) for line in (built.get('observations') or ())]
-    if built.get('ai_review') in (None, states_module.NO_MODEL):
-        word = 'strong'
-    elif built.get('settled') is True:
-        word = 'weak' if findings else 'strong'
-    else:
-        word = 'undecided'
     return {'rule_hash': rule.get('rule_hash'),
             'proof_hash': rule.get('proof_hash'),
             'test_hash': rule.get('test_hash'),
-            'verdict': word, 'findings': findings,
+            'verdict': found.get('verdict'),
+            'findings': [str(line) for line in found.get('findings') or ()],
+            'model': found.get('model') or 'unknown',
+            'criteria': found.get('criteria') or '',
             'at': at or now_iso(), 'commit': commit or ''}
 
 
 def _same_audit(one, other):
-    keys = ('rule_hash', 'proof_hash', 'test_hash', 'verdict', 'findings')
+    keys = ('rule_hash', 'proof_hash', 'test_hash', 'verdict', 'findings',
+            'model', 'criteria')
     return all(one.get(key) == other.get(key) for key in keys)
+
+
+def write_could_not_run(project_root, failures, cleared):
+    """Record the rules whose model call failed, for the strong cell to name.
+
+    `failures` is `{(feature, rule): {rule_hash, proof_hash, test_hash,
+    why}}` from this audit, and `cleared` the `(feature, rule)` pairs it
+    read. What an earlier audit left there stays for every other rule. The
+    file sits under `.purlin/runtime/`, which is never committed: nothing
+    about a rule the model could not read goes into the evidence.
+    """
+    table = reader.could_not_run(project_root)
+    for feature, rule in cleared or ():
+        (table.get(feature) or {}).pop(rule, None)
+    for (feature, rule), entry in (failures or {}).items():
+        table.setdefault(feature, {})[rule] = dict(entry)
+    table = {feature: rules for feature, rules in table.items() if rules}
+    path = full_path(project_root, reader.COULD_NOT_RUN_PATH)
+    if not table:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as handle:
+        handle.write(dump(table))
 
 
 def drop_removed_rules(data, rule_ids):

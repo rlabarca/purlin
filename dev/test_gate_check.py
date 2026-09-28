@@ -254,16 +254,23 @@ class TestTheStrongGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-9", "RULE-4")
-    def test_an_unsettled_audit_lands_a_rule_in_the_queue_section(self):
+    def test_an_undecided_audit_is_weak_and_a_manual_proof_is_queued(self):
         made = project_at('strong', audits=())
         try:
             made.audit('RULE-2', settled=False)
             commit_as_ci(made.root, 'purlin: evidence at abc1234')
             code, output = run(made)
             assert code == 1
+            assert 'Weak (1):' in output, output
+            assert ('login RULE-2: weak (the AI audit could not decide)'
+                    in output), output
+            assert 'Queue (' not in output, output
+            made.spec(SPEC.replace('verify 401 and the body "denied"',
+                                   'verify 401 and the body "denied" @manual'))
+            code, output = run(made)
+            assert code == 1
             assert 'Queue (1):' in output, output
-            assert 'login RULE-2: unsettled' in output, output
-            assert 'the AI audit could not settle' in output
+            assert 'login RULE-2: manual test' in output, output
         finally:
             made.close()
 

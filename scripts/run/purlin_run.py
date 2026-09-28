@@ -1,9 +1,10 @@
 """Run a project's tagged tests, write the evidence, and audit it on request.
 
     purlin_run.py (--feature NAME ... | --all)
-                  (--test [--remote] [--commit] | --audit [--commit] | --ci)
-                  [--arm-timeout SECONDS]
-                  [--project-root DIR]
+                  (--test [--remote] [--commit] | --ci)
+                  [--arm-timeout SECONDS] [--project-root DIR]
+    purlin_run.py [--feature NAME ... | --all] --audit [--commit]
+                  [--arm-timeout SECONDS] [--project-root DIR]
 
 `--test` is what `purlin:test` runs: the plugins run the tagged tests into
 `.purlin/runtime/proofs/`, and the run writes this operating system's section
@@ -16,11 +17,23 @@ ever pushes. `--remote` hands the commit to the git host's runner instead and
 brings back what that runner wrote.
 
 `--audit` is what `purlin:audit` runs: the tests, as `--test` runs them, then
-the breaks where the gate asks for them and the AI audit, printed per rule as
-the strength beside the minimum and the audit's observations. Both land in the
-same evidence file, under `audit`, and `--commit` commits them the same way.
-It ends with `gate strong: <n> of <rules>` or `gate not met: <n> of <rules>`
-and exits 1 when the gate is not met.
+the breaks where mutation testing is on, then the AI audit, then the evidence
+write. The AI audit reads each own rule of the features run that has a proof
+with a test, whose passed cell reads `passed`, and that has no audit entry for its
+current rule, proof and test hashes; under a gate above `passed` a rule whose
+level is `passed` is not read. `--all` runs every feature and reads every
+such rule again; with no feature named and no `--all`, every feature is run
+and the rules that match their last audit are skipped. One model call per
+rule, `audit_parallel` at once (`scripts/review/ai_audit.py` makes them).
+Before the first call the run prints `AI audit: <n> rules to read, <k> at a
+time.` and carries on without asking. What the audit found lands in the same
+evidence file, under `audit`, and `--commit` commits it the same way. A rule
+the model could not be reached for gets nothing written and reads `not
+audited`; at `strong` and above that exits 1. At the gate `passed` the audit
+blocks nothing and the run ends on `Audit: <n> strong, <n> weak. Nothing
+blocks at the gate passed.`; otherwise it ends with `gate strong: <n> of
+<rules>` or `gate not met: <n> of <rules>` and exits 1 when the gate is not
+met.
 
 `--ci` is the arm the CI job runs. On a run branch it writes this runner's
 section of `.purlin/evidence/ci/<feature>.json` and always commits it,
@@ -84,7 +97,9 @@ LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
 USAGE = (
     'Usage: purlin_run.py (--feature NAME ... | --all) '
-    '(--test [--remote] [--commit] | --audit [--commit] | --ci) '
+    '(--test [--remote] [--commit] | --ci) '
+    '[--arm-timeout SECONDS] [--project-root DIR]\n'
+    '       purlin_run.py [--feature NAME ... | --all] --audit [--commit] '
     '[--arm-timeout SECONDS] [--project-root DIR]')
 
 # The one line `purlin:test --remote` gets. A remote runner runs the tests,
@@ -190,7 +205,7 @@ def parse_args(argv):
     if args.all and args.features:
         args.error = 'name features or --all, not both'
         return args
-    if not args.all and not args.features:
+    if not args.all and not args.features and args.action != 'audit':
         args.error = 'name at least one --feature, or --all'
         return args
     if args.remote and args.action != 'test':
@@ -608,8 +623,10 @@ def project_gate_line(project_root, level='passed'):
     Each rule is counted once, under the feature that owns it, and the
     project is counted rather than the run, so a `--feature` run answers for
     every rule and not only for the features it ran. `purlin:test` counts
-    the passed cell; `purlin:audit` counts the strong cell where one exists,
-    and the passed cell under the gate `passed`, where none does.
+    the passed cell. `purlin:audit` counts a rule whose passed cell is met
+    and, where its level asks for one, its strong cell too: a rule whose
+    level is `passed` is never audited under a higher gate, and its tests
+    are what it answers with.
     """
     payload = payload_module.build_payload(project_root, generated_by='run')
     met = rules = 0
@@ -618,8 +635,11 @@ def project_gate_line(project_root, level='passed'):
             if rule.get('feature') != feature.get('name'):
                 continue
             rules += 1
-            cell = (rule.get('cells') or {}).get(level)
-            if states_module.cell_is_met(level, cell):
+            cells = rule.get('cells') or {}
+            if level == 'passed':
+                if states_module.cell_is_met('passed', cells.get('passed')):
+                    met += 1
+            elif rule.get('blocked_by') not in ('passed', 'strong'):
                 met += 1
     return gate_line(met, rules, level)
 
@@ -653,7 +673,7 @@ def main(argv=None):
         return _remote(project_root, args, cfg)
 
     features = specs_module.scan_specs(project_root)
-    if args.all:
+    if args.all or not args.features:
         selected = sorted(features)
     else:
         selected = [name for name in args.features if name in features]
@@ -756,10 +776,9 @@ def main(argv=None):
     paths = write_sections(project_root, args, features, selected, index,
                            os_name, 'local')
     removed = _prune(project_root, features)
-    level = 'passed'
     if args.action == 'audit':
-        _audit(project_root, args, features, selected, log, cfg)
-        level = 'passed' if cfg.gate == 'passed' else 'strong'
+        return _audit(project_root, args, features, selected, log, cfg,
+                      paths, removed, exit_code)
     evidence_writer.write_table(project_root)
     print(evidence_writer.written_line(paths))
     if args.commit:
@@ -768,7 +787,7 @@ def main(argv=None):
 
     print('')
     print(status_module.sync_status(project_root))
-    line, gate_code = project_gate_line(project_root, level)
+    line, gate_code = project_gate_line(project_root, 'passed')
     print('')
     print(line)
     return exit_code or gate_code
@@ -790,88 +809,201 @@ def _write_log(project_root, log):
 # The audit
 # ---------------------------------------------------------------------------
 
-def _audit(project_root, args, features, selected, log, cfg):
-    """The `--audit` arm: how good the tests are, written into the evidence.
+# What the audit says before its first call, and when it has nothing to read.
+TO_READ = 'AI audit: %d %s to read, %d at a time.'
+NOTHING_TO_READ = ('AI audit: nothing to read; every rule matches its last '
+                   'audit.')
 
-    The breaks run where the gate asks for them and their score goes under
-    each feature's `audit.mutation`. Each rule the AI audit reads gets an
-    entry under `audit.rules`, keyed by the rule, proof and test hashes it
-    read. Both land in `.purlin/evidence/local/<feature>.json`, beside the
-    section the tests just wrote; nothing here commits.
+# What it says when it is done.
+SKIPPED = ('%d %s skipped; %s text, proof and test match %s last audit. '
+           'purlin:audit --all reads them again.')
+NOT_MEASURED_OFF = 'Test strength: not measured; mutation testing is off.'
+NOT_MEASURED_PASSED = 'Test strength: not measured; the gate is passed.'
+NOT_ON_PATH_LINE = 'Install Claude Code, then run purlin:audit again.'
+TRY_AGAIN_LINE = 'Run purlin:audit again.'
+WENT_STALE = '%d %s went stale: %s audit findings changed.'
+NOTHING_BLOCKS = 'Audit: %d strong, %d weak. Nothing blocks at the gate passed.'
+
+
+def _plural(count, one, many):
+    return one if count == 1 else many
+
+
+def _audit(project_root, args, features, selected, log, cfg, paths, removed,
+           exit_code):
+    """The `--audit` arm, after the tests: the breaks, the AI audit, the write.
+
+    Which rules are read is `ai_audit.is_read`'s answer. The breaks run only
+    where mutation testing is on, and only for a feature with a rule being
+    read. One model call per rule, `cfg.audit_parallel` at once. What each
+    answer found goes under `audit.rules` in the feature's local evidence;
+    a rule the model could not be reached for gets nothing, and the reason
+    goes to `.purlin/runtime/` for the strong cell to name. Returns the exit
+    code.
     """
-    breaks = (_run_breaks(project_root, args, features, selected)
-              if cfg.breaks else _no_breaks(cfg.gate))
+    import ai_audit
+    from purlin import signatures as signatures_module
+
     _write_log(project_root, log)
-    commit = head_commit(project_root)
-    break_features = breaks.get('features') or {}
-    for name in selected:
-        score = ((break_features.get(name) or {}).get('scope_score')
-                 or {}).get('score')
-        mutation = {'engine': breaks.get('engine') or 'none', 'score': score,
-                    'at': evidence_writer.now_iso(), 'commit': commit}
-        evidence_writer.write_audit(project_root, 'local', name,
-                                    features.get(name) or {}, {}, mutation,
-                                    cfg.breaks)
-    print('')
-    _audit_report(project_root, features, selected, break_features, commit)
-
-
-def _audit_report(project_root, features, selected, break_features, commit):
-    """One block per feature: the strength, then each rule's observations.
-
-    Each rule whose level asks for the AI audit is read, and what the audit
-    found goes into the feature's evidence as that rule's entry.
-    """
-    try:
-        from ai_audit import asks_for_a_review, build_brief, rule_entry
-    except ImportError:
-        print('purlin: the AI audit is not available in this checkout; it '
-              'did not run.')
-        return
-    payload = payload_module.build_payload(project_root,
-                                           generated_by='audit')
-    minimum = (payload.get('gate') or {}).get('min_strength') or 0
-    for name in selected:
-        score = ((break_features.get(name) or {}).get('scope_score')
-                 or {}).get('score')
-        print('%s: test strength %s, minimum %s'
-              % (name, 'n/a' if score is None else '%d percent' % score,
-                 minimum or 'n/a'))
-        entries = {}
-        for rule_id in sorted(_own_rules(payload, name), key=_rule_number):
-            entry = rule_entry(payload, name, rule_id)
-            if entry is None:
-                continue
-            observations = []
-            settled = None
-            if asks_for_a_review(entry):
-                built = build_brief(project_root, payload, name, rule_id)
-                if built is not None:
-                    observations = built.get('observations') or []
-                    settled = built.get('settled')
-                    entries[rule_id] = evidence_writer.audit_entry(
-                        entry, built, commit)
-            print('  %s %s' % (name, rule_id))
-            for observation in observations:
-                print('    observation: %s' % observation)
-            if settled is not None:
-                print('    settled: %s' % ('yes' if settled else 'no'))
-            if not observations and settled is None:
-                print('    nothing to report')
-        evidence_writer.write_audit(project_root, 'local', name,
-                                    features.get(name) or {}, entries, None,
-                                    False)
-        print('')
-
-
-def _own_rules(payload, feature):
-    """The rule ids one feature's own spec writes, unsorted."""
-    for entry in payload.get('features') or ():
-        if entry.get('name') != feature:
+    gate = cfg.gate
+    payload = payload_module.build_payload(project_root, generated_by='audit')
+    to_read, skipped = [], 0
+    for feature in payload.get('features') or ():
+        if feature.get('name') not in selected:
             continue
-        return [rule['id'] for rule in entry.get('rules') or ()
-                if rule.get('feature') == feature]
-    return []
+        for rule in feature.get('rules') or ():
+            if rule.get('feature') != feature.get('name'):
+                continue
+            if ai_audit.is_read(rule, gate, again=args.all):
+                to_read.append((feature['name'], rule['id']))
+            elif ai_audit.is_read(rule, gate, again=True):
+                skipped += 1
+    to_read.sort(key=lambda pair: (pair[0], _rule_number(pair[1])))
+
+    print('')
+    if to_read:
+        print(TO_READ % (len(to_read), _plural(len(to_read), 'rule', 'rules'),
+                         min(cfg.audit_parallel, len(to_read))))
+    else:
+        print(NOTHING_TO_READ)
+
+    measured = sorted({feature for feature, _rule in to_read})
+    strength_line = (NOT_MEASURED_PASSED if gate == 'passed'
+                     else NOT_MEASURED_OFF)
+    if cfg.breaks and measured:
+        breaks = _run_breaks(project_root, args, features, measured)
+        strength_line = _strength_line(breaks, measured, cfg)
+        commit = head_commit(project_root)
+        for name in measured:
+            score = (((breaks.get('features') or {}).get(name) or {})
+                     .get('scope_score') or {}).get('score')
+            mutation = {'engine': breaks.get('engine') or 'none',
+                        'score': score, 'at': evidence_writer.now_iso(),
+                        'commit': commit}
+            evidence_writer.write_audit(project_root, 'local', name,
+                                        features.get(name) or {}, {},
+                                        mutation, True)
+        payload = payload_module.build_payload(project_root,
+                                               generated_by='audit')
+    elif cfg.breaks:
+        strength_line = ('Test strength: not measured; no rule was read, so '
+                         'no feature was measured.')
+
+    readings = [ai_audit.reading_for(project_root, payload, feature, rule)
+                for feature, rule in to_read]
+    results = ai_audit.audit_all(project_root, readings, cfg.audit_parallel)
+
+    commit = head_commit(project_root)
+    signatures = signatures_module.load_signatures(project_root, features)
+    entries_by_feature = {}
+    failures = {}
+    answered = []
+    counts = {'strong': 0, 'weak': 0, 'undecided': 0}
+    causes = {}
+    went_stale = 0
+    for (feature, rule_id), reading, found in zip(to_read, readings, results):
+        entry = ai_audit.rule_entry(payload, feature, rule_id) or {}
+        if found.get('why'):
+            causes[found['why']] = causes.get(found['why'], 0) + 1
+            failures[(feature, rule_id)] = {
+                'rule_hash': entry.get('rule_hash'),
+                'proof_hash': entry.get('proof_hash'),
+                'test_hash': entry.get('test_hash'), 'why': found['why']}
+            continue
+        answered.append((feature, rule_id))
+        counts[found['verdict']] += 1
+        written = evidence_writer.audit_entry(entry, found, commit)
+        entries_by_feature.setdefault(feature, {})[rule_id] = written
+        before = entry.get('audit_hash')
+        after = signatures_module.audit_hash(written,
+                                             reading.get('test_strength'))
+        if after != before:
+            for signature in signatures.get((feature, rule_id)) or ():
+                if signatures_module.is_current(
+                        signature, entry.get('rule_hash'),
+                        entry.get('proof_hash'), entry.get('test_hash'),
+                        before):
+                    went_stale += 1
+    for feature, entries in sorted(entries_by_feature.items()):
+        evidence_writer.write_audit(project_root, 'local', feature,
+                                    features.get(feature) or {}, entries,
+                                    None, False)
+    evidence_writer.write_could_not_run(project_root, failures, answered)
+    evidence_writer.write_table(project_root)
+
+    print('')
+    print(status_module.sync_status(project_root))
+    print('')
+    print(_summary_line(counts, skipped))
+    print(strength_line)
+    for why in sorted(causes):
+        print('%d %s could not be audited: %s. %s'
+              % (causes[why], _plural(causes[why], 'rule', 'rules'), why,
+                 NOT_ON_PATH_LINE if why == ai_audit.NOT_ON_PATH
+                 else TRY_AGAIN_LINE))
+    if went_stale:
+        print(WENT_STALE % (went_stale,
+                            _plural(went_stale, 'signature', 'signatures'),
+                            _plural(went_stale, 'its', 'their')))
+    print(evidence_writer.written_line(paths))
+    if args.commit:
+        print(evidence_writer.commit_local(project_root,
+                                           head_commit(project_root), removed))
+    if gate == 'passed':
+        print(NOTHING_BLOCKS % _project_verdicts(project_root))
+        return exit_code
+    line, gate_code = project_gate_line(project_root, 'strong')
+    print(line)
+    return exit_code or (1 if causes else 0) or gate_code
+
+
+def _summary_line(counts, skipped):
+    """`AI audit: <n> rules read, <n> strong, <n> weak.` and what it skipped."""
+    read = sum(counts.values())
+    parts = ['%d %s read' % (read, _plural(read, 'rule', 'rules')),
+             '%d strong' % counts['strong'], '%d weak' % counts['weak']]
+    if counts['undecided']:
+        parts.append('%d undecided' % counts['undecided'])
+    line = 'AI audit: %s.' % ', '.join(parts)
+    if skipped:
+        line += ' ' + SKIPPED % (skipped, _plural(skipped, 'rule', 'rules'),
+                                 _plural(skipped, 'its', 'their'),
+                                 _plural(skipped, 'its', 'their'))
+    return line
+
+
+def _strength_line(breaks, measured, cfg):
+    """`Test strength: <feature> <n>%, ... (minimum <m>).`, or why it is not."""
+    scores = []
+    for name in measured:
+        score = (((breaks.get('features') or {}).get(name) or {})
+                 .get('scope_score') or {}).get('score')
+        scores.append((name, score))
+    if not breaks.get('available') or all(score is None
+                                          for _name, score in scores):
+        reason = breaks.get('reason') or ('no mutation engine covers this '
+                                          "project's tests")
+        return 'Test strength: not measured; %s.' % str(reason).rstrip('.')
+    return 'Test strength: %s (minimum %s).' % (
+        ', '.join('%s %s' % (name, 'n/a' if score is None else '%d%%' % score)
+                  for name, score in scores),
+        'n/a' if cfg.min_strength is None else '%d%%' % cfg.min_strength)
+
+
+def _project_verdicts(project_root):
+    """`(strong, weak)` over every rule's audit entry for its current hashes."""
+    payload = payload_module.build_payload(project_root, generated_by='run')
+    strong = weak = 0
+    for feature in payload.get('features') or ():
+        for rule in feature.get('rules') or ():
+            if rule.get('feature') != feature.get('name'):
+                continue
+            answered = (rule.get('audit') or {}).get('verdict')
+            if answered == 'strong':
+                strong += 1
+            elif answered:
+                weak += 1
+    return strong, weak
 
 
 def _rule_number(rule_id):
@@ -879,19 +1011,12 @@ def _rule_number(rule_id):
     return int(digits) if digits.isdigit() else 0
 
 
-def _no_breaks(gate):
-    """What a gate that asks for no breaks hands the audit instead.
-
-    Under `passed` nothing measures test strength, so there is no number to
-    print and the run says so on its own line, because a blank where a
-    percentage usually sits reads as a missing engine rather than a setting.
-    """
-    print('Strength n/a: the gate is %s.' % gate)
-    return {'engine': None, 'available': False, 'features': {}}
-
-
 def _run_breaks(project_root, args, features, selected):
-    """The breaks, through the engine the project resolved to."""
+    """The breaks, through the engine the project resolved to.
+
+    `selected` is the features with a rule the audit reads: a score is
+    measured for a feature only then.
+    """
     try:
         import mutation as mutation_module
         from mutation import select_engine, run_breaks

@@ -148,8 +148,6 @@ def _summary(data):
             second.append('minimum test strength %d%%' % cfg['min_strength'])
         if summary.get('manual'):
             second.append('%d rules with a manual test' % summary['manual'])
-        if summary.get('unsettled'):
-            second.append('%d rules unsettled' % summary['unsettled'])
         if summary.get('not_audited'):
             second.append('%d rules not audited' % summary['not_audited'])
     if gate == 'signed':

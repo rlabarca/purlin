@@ -11,6 +11,7 @@ lazily, so those tests inject fakes through `sys.modules` and read back what
 the script called them with.
 """
 
+import hashlib
 import json
 import os
 import shutil
@@ -30,7 +31,9 @@ SHELL_HARNESS = os.path.join(PROOF_DIR, 'shell_purlin.sh').replace(
 PROOF_REL = os.path.join('.purlin', 'runtime', 'proofs')
 
 sys.path.insert(0, os.path.join(REPO, 'scripts', 'mcp'))
+sys.path.insert(0, os.path.join(REPO, 'dev'))
 
+import fake_claude  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
 
 
@@ -128,6 +131,32 @@ def _gate(root, gate):
     config = json.loads(path.read_text(encoding='utf-8'))
     config['gate'] = gate
     path.write_text(json.dumps(config, indent=2) + '\n', encoding='utf-8')
+
+
+def _config(root, **fields):
+    """Set keys in the project's `.purlin/config.json`."""
+    path = root / '.purlin' / 'config.json'
+    config = json.loads(path.read_text(encoding='utf-8'))
+    config.update(fields)
+    path.write_text(json.dumps(config, indent=2) + '\n', encoding='utf-8')
+
+
+@pytest.fixture
+def claude(tmp_path, monkeypatch):
+    """A fake `claude` first on PATH: `(install, directory)`.
+
+    `install(**settings)` rewrites what it answers; see `dev/fake_claude.py`.
+    """
+    directory = tmp_path / 'claude'
+
+    def install(**settings):
+        fake_claude.install(directory, **settings)
+        return directory
+
+    install()
+    monkeypatch.setenv('PATH', str(directory) + os.pathsep
+                       + os.environ.get('PATH', ''))
+    return install, directory
 
 
 def _rule(root, feature, rule_id):
@@ -659,10 +688,10 @@ class TestWhereEachArmCommits:
 
 
 class TestTheGateDecidesTheBreaks:
-    """Under `passed` nothing measures test strength, so nothing is broken."""
+    """The breaks run only where mutation testing is on and a strength is compared."""
 
     @pytest.mark.proof("run_script", "PROOF-65", "RULE-45")
-    def test_under_passed_no_break_runs_and_the_strength_is_n_a(
+    def test_under_passed_no_break_runs_and_the_strength_is_not_measured(
             self, tmp_path, evidence_run, capsys):
         root = _pytest_project(tmp_path, gate='passed')
         _spec(root, 'feat')
@@ -670,16 +699,9 @@ class TestTheGateDecidesTheBreaks:
         output = capsys.readouterr().out
 
         assert calls['breaks'] == [], 'the breaks ran under the passed gate'
-        assert 'Strength n/a: the gate is passed.' in output, output
-        assert 'feat: test strength n/a' in output, output
+        assert 'Test strength: not measured; the gate is passed.' in output, \
+            output
         assert _evidence(root)['audit']['mutation'] is None
-
-    @pytest.mark.proof("run_script", "PROOF-65", "RULE-45")
-    def test_no_breaks_answers_no_engine(self, capsys):
-        purlin_run = _load_run_script()
-        breaks = purlin_run._no_breaks('passed')
-        capsys.readouterr()
-        assert breaks == {'engine': None, 'available': False, 'features': {}}
 
     @pytest.mark.proof("run_script", "PROOF-66", "RULE-45")
     def test_under_strong_the_audit_measures_and_writes_the_score(
@@ -690,19 +712,501 @@ class TestTheGateDecidesTheBreaks:
         output = capsys.readouterr().out
 
         assert len(calls['breaks']) == 1, 'the breaks did not run under strong'
-        assert 'feat: test strength 80 percent' in output, output
+        assert 'Test strength: feat 80% (minimum 70%).' in output, output
         mutation = _evidence(root)['audit']['mutation']
         assert (mutation['engine'], mutation['score']) == ('mutmut', 80)
+        cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
+        assert (cell['word'], cell['reasons']) == ('strong', []), cell
 
     @pytest.mark.proof("run_script", "PROOF-66", "RULE-45")
     def test_a_ci_run_measures_nothing_and_audits_nothing(
-            self, tmp_path, evidence_run, capsys):
+            self, tmp_path, evidence_run, claude, capsys):
+        _install, directory = claude
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat', level='strong')
         _code, calls = evidence_run(root, '--all', '--ci')
         capsys.readouterr()
         assert calls['breaks'] == []
         assert 'audit' not in _evidence(root, source='ci')
+        assert fake_claude.calls(directory) == []
+
+    @pytest.mark.proof("run_script", "PROOF-79", "RULE-45")
+    def test_with_mutation_off_the_audit_alone_decides(
+            self, tmp_path, evidence_run, capsys):
+        root = _pytest_project(tmp_path, gate='strong')
+        _config(root, mutation_engine='none')
+        _spec(root, 'feat')
+        code, calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+
+        assert calls['breaks'] == [], output
+        assert 'Test strength: not measured; mutation testing is off.' in \
+            output, output
+        cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
+        assert (cell['word'], cell['reasons']) == (
+            'strong', ['no mutation score measured']), cell
+        assert code == 0, output
+
+    @pytest.mark.proof("run_script", "PROOF-80", "RULE-45")
+    def test_with_mutation_on_a_score_under_the_minimum_is_weak(
+            self, tmp_path, evidence_run, capsys):
+        root = _pytest_project(tmp_path, gate='strong')
+        _config(root, min_strength=90)
+        _spec(root, 'feat')
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
+        assert (cell['word'], cell['reasons']) == (
+            'weak', ['strength 80% under 90%']), cell
+        assert 'Test strength: feat 80% (minimum 90%).' in output, output
+        assert code == 1, output
+
+    @pytest.mark.proof("run_script", "PROOF-81", "RULE-45")
+    def test_a_feature_with_no_rule_being_read_is_not_measured(
+            self, tmp_path, evidence_run, capsys):
+        root = _pytest_project(tmp_path, gate='strong', body=(
+            'import pytest\n\n'
+            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+            'def test_ok():\n'
+            '    assert 1 + 1 == 2\n\n'
+            '@pytest.mark.proof("other", "PROOF-1", "RULE-1")\n'
+            'def test_other():\n'
+            '    assert 2 + 2 == 4\n'))
+        _spec(root, 'feat')
+        _spec(root, 'other')
+        _code, calls = evidence_run(root, '--all', '--audit')
+        assert sorted(calls['breaks'][0][1]) == ['feat', 'other']
+        spec = root / 'specs' / 'a' / 'feat.md'
+        spec.write_text(spec.read_text(encoding='utf-8').replace(
+            'does thing 1', 'does thing one'), encoding='utf-8')
+        _code, calls = evidence_run(root, '--audit')
+        capsys.readouterr()
+        assert len(calls['breaks']) == 2, calls['breaks']
+        assert sorted(calls['breaks'][1][1]) == ['feat'], calls['breaks'][1]
+
+
+# ---------------------------------------------------------------------------
+# The AI audit: which rules, how many calls, what is written
+# ---------------------------------------------------------------------------
+
+def _many(tmp_path, count, gate='strong', level=None):
+    """A project with one feature of `count` rules, each with a passing test."""
+    body = ['import pytest', '']
+    for index in range(1, count + 1):
+        body.extend(['',
+                     '@pytest.mark.proof("feat", "PROOF-%d", "RULE-%d")'
+                     % (index, index),
+                     'def test_rule_%d():' % index,
+                     '    assert %d == %d' % (index, index), ''])
+    root = _pytest_project(tmp_path, gate=gate, body='\n'.join(body))
+    _spec(root, 'feat', rules=count, level=level,
+          proofs=[('PROOF-%d' % n, 'RULE-%d' % n, '')
+                  for n in range(1, count + 1)])
+    return root
+
+
+def _audited(root, feature='feat'):
+    """`{rule: entry}` the local evidence holds under `audit.rules`."""
+    try:
+        data = _evidence(root, feature)
+    except (IOError, OSError):
+        return {}
+    return (data.get('audit') or {}).get('rules') or {}
+
+
+class TestTheAuditCallsTheModel:
+
+    @pytest.mark.proof("run_script", "PROOF-70", "RULE-51")
+    def test_one_call_per_rule_four_at_a_time_by_default(
+            self, tmp_path, evidence_run, claude, capsys):
+        install, directory = claude
+        install(sleep=0.4)
+        root = _many(tmp_path, 6)
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 6, calls
+        assert fake_claude.most_at_once(calls) == 4, calls
+        assert 'AI audit: 6 rules to read, 4 at a time.' in output, output
+        entries = _audited(root)
+        assert sorted(entries) == ['RULE-%d' % n for n in range(1, 7)]
+        with open(os.path.join(REPO, 'references', 'review_criteria.md'),
+                  encoding='utf-8') as handle:
+            criteria = hashlib.sha256(handle.read().encode('utf-8'))
+        for entry in entries.values():
+            assert entry['verdict'] == 'strong', entry
+            assert entry['findings'] == [], entry
+            assert entry['model'] == 'claude-fake-1', entry
+            assert entry['criteria'] == criteria.hexdigest(), entry
+        assert code == 0, output
+
+    @pytest.mark.proof("run_script", "PROOF-71", "RULE-51")
+    def test_the_setting_decides_how_many_run_at_once(
+            self, tmp_path, evidence_run, claude, capsys):
+        install, directory = claude
+        install(sleep=0.4)
+        root = _many(tmp_path, 4)
+        _config(root, audit_parallel=2)
+        evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        calls = fake_claude.calls(directory)
+        assert 'AI audit: 4 rules to read, 2 at a time.' in output, output
+        assert len(calls) == 4 and fake_claude.most_at_once(calls) == 2, calls
+
+    @pytest.mark.proof("run_script", "PROOF-71", "RULE-51")
+    def test_a_setting_out_of_range_is_read_as_four_with_one_warning(
+            self, tmp_path, evidence_run, claude, capsys):
+        root = _many(tmp_path, 5)
+        _config(root, audit_parallel=40)
+        evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        # The run opens with the warning, as it opens with every warning
+        # resolving the settings raised, and the status repeats it.
+        assert output.splitlines()[0] == (
+            '"audit_parallel" is 40, which is not a whole number from 1 to '
+            '16; reading it as 4'), output
+        assert 'AI audit: 5 rules to read, 4 at a time.' in output, output
+
+    @pytest.mark.proof("run_script", "PROOF-72", "RULE-50")
+    def test_the_line_is_printed_before_the_first_call(
+            self, tmp_path, evidence_run, claude, capsys, monkeypatch):
+        root = _many(tmp_path, 2)
+        _load_run_script()
+        import ai_audit
+        printed = []
+        real = ai_audit.ask_model
+
+        def watched(*args, **kwargs):
+            printed.append(sys.stdout.getvalue())
+            return real(*args, **kwargs)
+
+        monkeypatch.setattr(ai_audit, 'ask_model', watched)
+        evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
+        assert len(printed) == 2, printed
+        assert 'AI audit: 2 rules to read, 2 at a time.' in printed[0], \
+            printed[0]
+
+    @pytest.mark.proof("run_script", "PROOF-73", "RULE-50")
+    def test_nothing_to_read_says_so_and_calls_nothing(
+            self, tmp_path, evidence_run, claude, capsys):
+        _install, directory = claude
+        root = _many(tmp_path, 2)
+        evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
+        assert len(fake_claude.calls(directory)) == 2
+        evidence_run(root, '--audit')
+        output = capsys.readouterr().out
+        assert ('AI audit: nothing to read; every rule matches its last '
+                'audit.') in output, output
+        assert len(fake_claude.calls(directory)) == 2
+        assert 'AI audit: 0 rules read, 0 strong, 0 weak. 2 rules skipped; ' \
+            'their text, proof and test match their last audit. ' \
+            'purlin:audit --all reads them again.' in output, output
+
+
+class TestWhichRulesTheAuditReads:
+
+    @pytest.mark.proof("run_script", "PROOF-74", "RULE-49")
+    def test_a_rule_that_matches_its_last_audit_is_skipped(
+            self, tmp_path, evidence_run, claude, capsys):
+        _install, directory = claude
+        root = _many(tmp_path, 2)
+        evidence_run(root, '--all', '--audit')
+        first = _audited(root)
+        spec = root / 'specs' / 'a' / 'feat.md'
+        spec.write_text(spec.read_text(encoding='utf-8').replace(
+            'does thing 2', 'does thing two'), encoding='utf-8')
+        capsys.readouterr()
+        evidence_run(root, '--audit')
+        output = capsys.readouterr().out
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 3, calls
+        assert 'does thing two' in calls[2]['prompt']
+        assert 'AI audit: 1 rule to read, 1 at a time.' in output, output
+        assert '1 rule skipped; its text, proof and test match its last ' \
+            'audit.' in output, output
+        assert _audited(root)['RULE-1'] == first['RULE-1']
+
+    @pytest.mark.proof("run_script", "PROOF-75", "RULE-49")
+    def test_all_reads_every_rule_again(self, tmp_path, evidence_run, claude,
+                                        capsys):
+        _install, directory = claude
+        root = _many(tmp_path, 2)
+        evidence_run(root, '--all', '--audit')
+        evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert len(fake_claude.calls(directory)) == 4
+        assert output.count('AI audit: 2 rules to read, 2 at a time.') == 2
+
+    @pytest.mark.proof("run_script", "PROOF-76", "RULE-49")
+    def test_a_passed_level_is_read_only_at_the_gate_passed(
+            self, tmp_path, evidence_run, claude, capsys):
+        _install, directory = claude
+        root = _many(tmp_path, 2)
+        spec = root / 'specs' / 'a' / 'feat.md'
+        spec.write_text(spec.read_text(encoding='utf-8').replace(
+            'does thing 1', 'does thing 1 [level: passed]'), encoding='utf-8')
+        evidence_run(root, '--all', '--audit')
+        assert len(fake_claude.calls(directory)) == 1
+        assert sorted(_audited(root)) == ['RULE-2']
+        _gate(root, 'passed')
+        evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
+        assert len(fake_claude.calls(directory)) == 3
+        assert sorted(_audited(root)) == ['RULE-1', 'RULE-2']
+
+    @pytest.mark.proof("run_script", "PROOF-77", "RULE-49")
+    def test_a_rule_whose_test_failed_is_not_read(
+            self, tmp_path, evidence_run, claude, capsys):
+        _install, directory = claude
+        root = _pytest_project(tmp_path, gate='strong', body=(
+            'import pytest\n\n'
+            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+            'def test_bad():\n'
+            '    assert 1 == 2\n\n'
+            '@pytest.mark.proof("feat", "PROOF-2", "RULE-2")\n'
+            'def test_good():\n'
+            '    assert 2 == 2\n'))
+        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                             ('PROOF-2', 'RULE-2', '')))
+        evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
+        assert len(fake_claude.calls(directory)) == 1
+        assert sorted(_audited(root)) == ['RULE-2']
+
+    @pytest.mark.proof("run_script", "PROOF-78", "RULE-49")
+    def test_with_no_feature_named_every_feature_is_audited(
+            self, tmp_path, evidence_run, claude, capsys):
+        _install, directory = claude
+        root = _pytest_project(tmp_path, gate='strong', body=(
+            'import pytest\n\n'
+            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+            'def test_ok():\n'
+            '    assert 1 + 1 == 2\n\n'
+            '@pytest.mark.proof("other", "PROOF-1", "RULE-1")\n'
+            'def test_other():\n'
+            '    assert 2 + 2 == 4\n'))
+        _spec(root, 'feat')
+        _spec(root, 'other')
+        code, _calls = evidence_run(root, '--audit')
+        output = capsys.readouterr().out
+        assert code == 0, output
+        assert len(fake_claude.calls(directory)) == 2
+        assert sorted(_audited(root, 'feat')) == ['RULE-1']
+        assert sorted(_audited(root, 'other')) == ['RULE-1']
+
+
+class TestWhenTheModelCannotBeReached:
+
+    CAUSES = [
+        ('path', {}, 'claude is not on PATH',
+         'Install Claude Code, then run purlin:audit again.'),
+        ('exit', {'exit_code': 1}, 'claude exited with an error',
+         'Run purlin:audit again.'),
+        ('timeout', {'sleep': 3}, 'claude timed out after 1 s',
+         'Run purlin:audit again.'),
+        ('no answer', {'answers': ['It looks fine to me.']},
+         'claude answered without a settled line', 'Run purlin:audit again.'),
+    ]
+
+    @pytest.mark.parametrize('cause,settings,why,then', CAUSES)
+    @pytest.mark.proof("run_script", "PROOF-82", "RULE-52")
+    def test_nothing_is_written_and_the_cell_says_why(
+            self, tmp_path, evidence_run, claude, capsys, monkeypatch,
+            cause, settings, why, then):
+        install, _directory = claude
+        install(**settings)
+        _load_run_script()
+        import ai_audit
+        monkeypatch.setattr(ai_audit, 'MODEL_TIMEOUT', 1)
+        if cause == 'path':
+            monkeypatch.setattr(ai_audit, 'claude_path', lambda: None)
+        root = _many(tmp_path, 2)
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert _audited(root) == {}, _audited(root)
+        cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
+        assert cell['word'] == 'not audited', cell
+        assert cell['reasons'] == ['the AI audit could not run: %s' % why]
+        assert '2 rules could not be audited: %s. %s' % (why, then) in \
+            output, output
+        assert code == 1, output
+
+    @pytest.mark.proof("run_script", "PROOF-83", "RULE-52")
+    def test_the_next_audit_tries_again(self, tmp_path, evidence_run, claude,
+                                        capsys):
+        install, directory = claude
+        install(exit_code=1)
+        root = _many(tmp_path, 1)
+        evidence_run(root, '--all', '--audit')
+        install()
+        code, _calls = evidence_run(root, '--audit')
+        output = capsys.readouterr().out
+        assert len(fake_claude.calls(directory)) == 1
+        assert _audited(root)['RULE-1']['verdict'] == 'strong'
+        cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
+        assert cell['word'] == 'strong', cell
+        assert code == 0, output
+
+    @pytest.mark.proof("run_script", "PROOF-84", "RULE-52")
+    def test_at_the_gate_passed_it_blocks_nothing(
+            self, tmp_path, evidence_run, claude, capsys):
+        install, _directory = claude
+        install(exit_code=1)
+        root = _many(tmp_path, 1, gate='passed')
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert '1 rule could not be audited: claude exited with an error.' \
+            in output, output
+        assert code == 0, output
+
+
+class TestAFreshAuditStalesASignature:
+
+    @staticmethod
+    def _sign(root, rule_id):
+        rule = _rule(root, 'feat', rule_id)
+        _load_run_script()
+        from purlin import signatures as signatures_module
+        triple = signatures_module.triple_hash(
+            rule['rule_hash'], rule['proof_hash'], rule['test_hash'])
+        data = {'schema': 'purlin-signature/1', 'feature': 'feat',
+                'rule': rule_id, 'triple': triple[:16],
+                'rule_hash': rule['rule_hash'],
+                'proof_hash': rule['proof_hash'],
+                'test_hash': rule['test_hash'],
+                'test_hash_kind': rule['test_hash_kind'],
+                'audit_hash': rule['audit_hash'], 'level': rule['level'],
+                'signer': 'dev@example.com', 'machine': 'box', 'os': 'linux',
+                'note': None, 'timestamp': '2026-09-28T12:00:00Z',
+                'gate': 'signed', 'evidence': '.purlin/evidence/local/feat.json'}
+        directory = root / 'specs' / 'a' / 'feat.signatures'
+        directory.mkdir(exist_ok=True)
+        (directory / ('%s.%s.dev.json' % (rule_id, triple[:8]))).write_text(
+            json.dumps(data), encoding='utf-8')
+        _git(root, 'add', '-A')
+        _git(root, 'commit', '-q', '-m', 'sign(feat): %s' % rule_id)
+
+    @pytest.mark.proof("run_script", "PROOF-85", "RULE-53")
+    def test_changed_findings_stale_the_signature_and_the_run_says_so(
+            self, tmp_path, evidence_run, claude, capsys):
+        install, _directory = claude
+        root = _many(tmp_path, 1, gate='signed')
+        _git_repo(root)
+        evidence_run(root, '--all', '--audit', '--commit')
+        self._sign(root, 'RULE-1')
+        assert _rule(root, 'feat', 'RULE-1')['cells']['signed']['word'] != \
+            'stale'
+        capsys.readouterr()
+        install(answers=['settled: yes\n- PROOF-1 reads the value alone.'])
+        evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert '1 signature went stale: its audit findings changed.' in \
+            output, output
+        cell = _rule(root, 'feat', 'RULE-1')['cells']['signed']
+        assert cell['word'] == 'stale', cell
+        assert cell['reasons'] == [
+            'audit findings changed after the signature'], cell
+
+    @pytest.mark.proof("run_script", "PROOF-85", "RULE-53")
+    def test_the_same_findings_stale_nothing(self, tmp_path, evidence_run,
+                                             claude, capsys):
+        root = _many(tmp_path, 1, gate='signed')
+        _git_repo(root)
+        evidence_run(root, '--all', '--audit', '--commit')
+        self._sign(root, 'RULE-1')
+        capsys.readouterr()
+        evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert 'went stale' not in output, output
+        assert _rule(root, 'feat', 'RULE-1')['cells']['signed']['word'] != \
+            'stale'
+
+
+class TestTheLastLines:
+
+    @pytest.mark.proof("run_script", "PROOF-86", "RULE-54")
+    def test_the_audit_ends_in_the_order_the_design_gives(
+            self, tmp_path, evidence_run, claude, capsys):
+        install, _directory = claude
+        install(answers=['settled: yes\n- PROOF-1 reads the value alone.',
+                         'It looks fine to me.'])
+        root = _many(tmp_path, 2)
+        _config(root, audit_parallel=1)
+        _git_repo(root)
+        code, _calls = evidence_run(root, '--all', '--audit', '--commit')
+        lines = capsys.readouterr().out.strip().splitlines()
+        order = ['AI audit: 1 rule read, 0 strong, 1 weak.',
+                 'Test strength: feat 80% (minimum 70%).',
+                 '1 rule could not be audited: claude answered without a '
+                 'settled line. Run purlin:audit again.',
+                 'Evidence written to .purlin/evidence/local/feat.json.',
+                 'Evidence committed.',
+                 'gate not met: 0 of 2']
+        assert lines[-len(order):] == order, lines
+        assert code == 1
+
+
+class TestTheAuditGateLine:
+    """Above `passed` the audit answers level 2; at `passed` it blocks nothing."""
+
+    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48")
+    def test_a_finding_blocks_at_strong(self, tmp_path, evidence_run, claude,
+                                        capsys):
+        install, _directory = claude
+        install(answers=['settled: yes\n- PROOF-1 reads the value alone.'])
+        root = _many(tmp_path, 1)
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert output.strip().splitlines()[-1] == 'gate not met: 0 of 1', \
+            output
+        assert code == 1, output
+        install()
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert output.strip().splitlines()[-1] == 'gate strong: 1 of 1', \
+            output
+        assert code == 0, output
+
+    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48")
+    def test_a_passed_level_meets_the_strong_line_on_its_tests(
+            self, tmp_path, evidence_run, claude, capsys):
+        _install, directory = claude
+        root = _many(tmp_path, 1, level='passed')
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert fake_claude.calls(directory) == []
+        assert output.strip().splitlines()[-1] == 'gate strong: 1 of 1', \
+            output
+        assert code == 0, output
+
+    @pytest.mark.proof("run_script", "PROOF-87", "RULE-48")
+    def test_at_the_gate_passed_a_finding_blocks_nothing(
+            self, tmp_path, evidence_run, claude, capsys):
+        install, _directory = claude
+        install(answers=['settled: yes\n- PROOF-1 reads the value alone.'])
+        root = _many(tmp_path, 1, gate='passed')
+        code, _calls = evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert output.strip().splitlines()[-1] == (
+            'Audit: 0 strong, 1 weak. Nothing blocks at the gate passed.'), \
+            output
+        assert _audited(root)['RULE-1']['findings'] == [
+            'PROOF-1 reads the value alone.']
+        assert code == 0, output
+
+    @pytest.mark.proof("run_script", "PROOF-87", "RULE-48")
+    def test_a_failing_test_still_exits_one_at_passed(self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            'import pytest\n\n'
+            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+            'def test_ok():\n'
+            '    assert False\n'))
+        _spec(root, 'feat')
+        code, out = _run(root, '--all', '--audit')
+        assert 'Nothing blocks at the gate passed.' in out, out
+        assert code == 1, out
 
 
 class TestTheAuditWithoutTheEngines:
@@ -768,54 +1272,6 @@ class TestTheMarkerScanReadsEveryFrameworkSMarker:
             'it("[proof:vendor:PROOF-1:RULE-1]", () => {});\n',
             encoding='utf-8')
         assert purlin_run.scan_markers(str(tmp_path), 'jest') == set()
-
-
-class TestTheAuditGateLine:
-    """The audit answers level 2, so its last line names the strong cell."""
-
-    # The level is `passed`, so the AI audit is not owed on the rule and the
-    # strength is the whole of level 2.
-    SPEC = ('# Feature: feat\n\n> Scope: src/feat.py\n\n## Rules\n\n'
-            '- RULE-1: The value is 2 [level: passed]\n\n## Proof\n\n'
-            '- PROOF-1 (RULE-1): Import feat and read VALUE; verify it is '
-            'exactly 2\n')
-
-    def _project(self, tmp_path, body=None):
-        root = _pytest_project(tmp_path, body=body, gate='strong')
-        (root / 'src').mkdir()
-        (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
-        (root / 'specs' / 'a').mkdir(parents=True, exist_ok=True)
-        (root / 'specs' / 'a' / 'feat.md').write_text(self.SPEC,
-                                                      encoding='utf-8')
-        _git_repo(root)
-        return root
-
-    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48")
-    def test_a_failing_test_leaves_the_gate_not_met_and_exits_one(self,
-                                                                  tmp_path):
-        root = self._project(tmp_path, body=(
-            'import pytest\n\n'
-            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
-            'def test_ok():\n'
-            '    assert False\n'))
-        code, out = _run(root, '--all', '--audit')
-        assert 'gate not met: 0 of 1' in out, out
-        assert code == 1, out
-
-    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48")
-    def test_a_strong_rule_ends_the_run_at_gate_strong(self, tmp_path):
-        root = self._project(tmp_path)
-        code, out = _run(root, '--all', '--audit')
-        assert 'gate strong: 1 of 1' in out, out
-        assert code == 0, out
-
-    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48")
-    def test_under_passed_the_line_names_the_passed_cell(self, tmp_path):
-        root = self._project(tmp_path)
-        _gate(root, 'passed')
-        code, out = _run(root, '--all', '--audit')
-        assert 'gate passed: 1 of 1' in out, out
-        assert code == 0, out
 
 
 class TestTheEvidenceMeetsThePassedCell:
@@ -889,10 +1345,12 @@ class TestTheRunScriptCarriesNoRetiredVocabulary:
 
     # The words this release retired, spelled in halves so this list is not
     # itself a hit when the same scan is run over the test file.
+    # `verdict` is not here: it is the audit entry's field name, which the
+    # run reads, and `dev/test_vocabulary.py` holds it to that.
     RETIRED = ('rec' + 'eipt', 'ga' + 'uge', 'HOL' + 'LOW', 'PROV' + 'ABLE',
                '@' + 'on(', 'records ' + 'branch', 'CODE' + 'OWNERS',
-               'fo' + 'rge', 'appro' + 'val', 'verd' + 'ict',
-               'valid' + 'ated/')
+               'fo' + 'rge', 'appro' + 'val', 'valid' + 'ated/',
+               'un' + 'settled', 'build' + '_brief')
 
     @pytest.mark.proof("run_script", "PROOF-22", "RULE-22")
     def test_no_retired_word_and_no_emoji(self):

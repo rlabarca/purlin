@@ -66,11 +66,11 @@
         "rules": 3,
         "stale": 0,
         "test_strength": null,
-        "unsettled": 0,
         "untested": 2
       },
       "rules": [
         {
+          "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": null,
           "bucket": "passed",
@@ -99,8 +99,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
@@ -128,6 +127,7 @@
           "text": "A person signs in with an email address and a password."
         },
         {
+          "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "passed",
           "bucket": "untested",
@@ -150,8 +150,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-2",
           "label": "own",
@@ -174,6 +173,7 @@
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
+          "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "passed",
           "bucket": "untested",
@@ -198,8 +198,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-3",
           "label": "own",
@@ -259,11 +258,11 @@
         "rules": 2,
         "stale": 0,
         "test_strength": null,
-        "unsettled": 0,
         "untested": 0
       },
       "rules": [
         {
+          "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": null,
           "bucket": "passed",
@@ -292,8 +291,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
@@ -321,6 +319,7 @@
           "text": "An invoice totals its lines to the cent."
         },
         {
+          "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": null,
           "bucket": "passed",
@@ -349,8 +348,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": false,
-            "unsettled": false
+            "stale": false
           },
           "id": "RULE-2",
           "label": "own",
@@ -387,6 +385,7 @@
     }
   ],
   "gate": {
+    "audit_parallel": 4,
     "ci": "github",
     "gate": "passed",
     "min_strength": null,
@@ -418,7 +417,6 @@
     "queue": 0,
     "rules": 5,
     "stale": 0,
-    "unsettled": 0,
     "untested": 2
   },
   "tag": null,

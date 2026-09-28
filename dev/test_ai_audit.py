@@ -1,25 +1,27 @@
-"""Tests for `scripts/review/ai_audit.py`: the layers, the report, the file.
+"""Tests for `scripts/review/ai_audit.py`: the prompt, the call, the answer.
 
 The throwaway project is `dev/test_signatures.py`'s, so a spec, a test file, a
 runtime proof file and the evidence are written by the test and nothing reads
-this repository's own specs. No model is ever called: the one test that exercises
-the AI audit replaces the process launch, so nothing here spends money or
-reaches a service.
+this repository's own specs. No test reaches the real model: every call lands
+on the fake `claude` that `dev/fake_claude.py` writes, first on PATH, or on a
+runner handed in its place.
 
 What each group holds:
 
-*layers*        which layers run at which level, cheapest first
-*tests*         the source of each test backing a proof stands beside it
-*strength*      the test strength comes off the evidence, and reads `n/a`
-                when no engine measured one
-*model*         the prompt is the criteria file verbatim, the AI audit runs
-                only for a rule whose level is `strong` or `signed` and only
-                with `--ai`
-*observations*  the answer becomes one observation per sentence, and whether
-                it settled stands beside them
-*writing*       building and printing a brief writes no file
+*reading*   which rules the audit reads, and what it reads for one: the rule,
+            its proofs and the source of each test beside it
+*prompt*    the criteria file verbatim, then the rule, and a request for what
+            was observed rather than a grade
+*call*      one call per rule, the prompt on stdin and never in the arguments,
+            `parallel` calls at once
+*answer*    settled with nothing is `strong`, settled with lines is `weak`,
+            not settled is `undecided`; the model and the criteria are named
+*failure*   the four ways the model cannot be reached, each with its reason
+*writing*   reading and printing a rule writes no file
 """
 
+import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -33,18 +35,15 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import ai_audit as audit_module  # noqa: E402
+import fake_claude  # noqa: E402
 import marked_tests  # noqa: E402
 from test_signatures import (REVIEW_GATE, SIGNING_GATE, SPEC,  # noqa: E402
-                             TEST_FILE,
-                             Project, write)
+                             Project)
 
-BRIEF_PY = os.path.join(ROOT, 'scripts', 'review', 'ai_audit.py')
+AI_AUDIT_PY = os.path.join(ROOT, 'scripts', 'review', 'ai_audit.py')
 CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
 
-# A model answer in the shape the prompt asks for: whether it settled, then
-# one line per observation.
-ANSWER = ('settled: no\n'
-          '- PROOF-2 asserts the status but never the body the rule names.\n')
+FINDING = 'PROOF-2 asserts the status but never the body the rule names.'
 
 
 @pytest.fixture
@@ -58,7 +57,7 @@ def proved():
 
 @pytest.fixture
 def at_strong():
-    """The same project at `strong`, where an unmarked rule asks for a model."""
+    """The same project at `strong`, where an unmarked rule is read."""
     made = Project(gate=REVIEW_GATE)
     made.proofs()
     made.evidence()
@@ -67,84 +66,110 @@ def at_strong():
 
 
 @pytest.fixture
-def at_signed():
-    """A project at `signed`."""
-    made = Project(gate=SIGNING_GATE)
-    made.proofs()
-    made.evidence()
-    yield made
-    made.close()
+def claude(tmp_path, monkeypatch):
+    """Install a fake `claude` first on PATH; returns `(install, directory)`."""
+    directory = tmp_path / 'claude'
+
+    def install(**settings):
+        fake_claude.install(directory, **settings)
+        return directory
+
+    install()
+    monkeypatch.setenv('PATH', str(directory) + os.pathsep
+                       + os.environ.get('PATH', ''))
+    return install, directory
 
 
-def build(project, rule='RULE-1', ai=False):
-    return audit_module.build_brief(project.root, None, 'login', rule, ai=ai)
+def read(project, rule='RULE-1'):
+    return audit_module.reading_for(project.root, None, 'login', rule)
+
+
+def criteria_text():
+    with open(CRITERIA, encoding='utf-8') as handle:
+        return handle.read()
 
 
 # ---------------------------------------------------------------------------
-# The layers
+# What is read
 # ---------------------------------------------------------------------------
 
-class TestTheLayers:
+class TestWhichRulesAreRead:
+
+    @staticmethod
+    def _rule(**overrides):
+        rule = {'label': 'own', 'level': 'strong', 'audit': None,
+                'cells': {'passed': {'word': 'passed'}},
+                'proofs': [{'id': 'PROOF-1', 'manual': False,
+                            'tests': [{'file': 't.py', 'name': 'test_x'}]}]}
+        rule.update(overrides)
+        return rule
 
     @pytest.mark.proof("ai_audit", "PROOF-1", "RULE-1")
-    @pytest.mark.proof("ai_audit", "PROOF-3", "RULE-2")
-    def test_a_passed_level_stops_after_the_test_strength(self, proved,
-                                                          at_strong):
-        assert build(proved, 'RULE-1')['layers'] == ['test strength']
-        assert build(at_strong, 'RULE-2')['layers'][-1] == 'AI audit'
-
-    @pytest.mark.proof("ai_audit", "PROOF-4", "RULE-3")
-    def test_a_strong_level_runs_every_layer(self, at_strong):
-        assert build(at_strong, 'RULE-2')['layers'] == [
-            'test strength', 'AI audit']
+    def test_a_passing_rule_with_no_entry_is_read(self):
+        assert audit_module.is_read(self._rule(), 'strong') is True
 
     @pytest.mark.proof("ai_audit", "PROOF-2", "RULE-1")
-    def test_a_passed_level_asks_for_no_model(self, proved):
-        built = build(proved, 'RULE-1')
-        assert 'AI audit' not in built['layers']
-        assert built['ai_review'] is None
+    def test_a_rule_that_did_not_pass_or_has_no_test_is_not_read(self):
+        assert audit_module.is_read(self._rule(cells={'passed': {
+            'word': 'failed'}}), 'strong') is False
+        assert audit_module.is_read(self._rule(proofs=[
+            {'id': 'PROOF-1', 'manual': True, 'tests': []}]), 'strong') \
+            is False
+        assert audit_module.is_read(self._rule(label='required'),
+                                    'strong') is False
 
-    @pytest.mark.proof("ai_audit", "PROOF-5", "RULE-4")
-    def test_a_rule_that_is_not_there_has_no_brief(self, proved):
-        assert build(proved, 'RULE-99') is None
+    @pytest.mark.proof("ai_audit", "PROOF-3", "RULE-1")
+    def test_a_passed_level_is_read_only_at_the_gate_passed(self):
+        lower = self._rule(level='passed')
+        assert audit_module.is_read(lower, 'strong') is False
+        assert audit_module.is_read(lower, 'signed') is False
+        assert audit_module.is_read(lower, 'passed') is True
+
+    @pytest.mark.proof("ai_audit", "PROOF-4", "RULE-1")
+    def test_an_entry_for_the_current_hashes_is_skipped_unless_again(self):
+        audited = self._rule(audit={'verdict': 'strong', 'findings': []})
+        assert audit_module.is_read(audited, 'strong') is False
+        assert audit_module.is_read(audited, 'strong', again=True) is True
 
 
-# ---------------------------------------------------------------------------
-# The tests beside the rule
-# ---------------------------------------------------------------------------
+class TestWhatOneRuleIsReadWith:
 
-class TestTheTests:
-
-    @pytest.mark.proof("ai_audit", "PROOF-8", "RULE-7")
+    @pytest.mark.proof("ai_audit", "PROOF-5", "RULE-8")
     def test_the_test_body_is_shown_beside_the_rule(self, proved):
-        test = build(proved, 'RULE-1')['tests'][0]
+        test = read(proved, 'RULE-1')['tests'][0]
         assert test['file'] == 'tests/test_login.py'
         assert test['name'] == 'test_valid_credentials_return_200'
         assert 'assert login("ada", "secret") == 200' in test['body']
 
-    @pytest.mark.proof("ai_audit", "PROOF-9", "RULE-8")
-    def test_a_manual_proof_has_a_note_where_a_test_would_be(self):
+    @pytest.mark.proof("ai_audit", "PROOF-6", "RULE-9")
+    def test_a_manual_proof_has_no_test_where_a_test_would_be(self):
         made = Project(spec=SPEC.replace(
             'verify 200 and a token',
             'verify 200 and a token @manual'))
         try:
-            test = build(made, 'RULE-1')['tests'][0]
+            test = read(made, 'RULE-1')['tests'][0]
             assert test['file'] is None
             assert test['body'] is None
             assert test['manual'] is True
         finally:
             made.close()
 
-    @pytest.mark.proof("ai_audit", "PROOF-12", "RULE-10")
-    def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):
-        built = build(proved, 'RULE-1')
-        assert set(built) == {
-            'feature', 'rule', 'level', 'rule_text',
-            'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',
-            'triple_hash', 'layers', 'tests', 'test_strength', 'min_strength',
-            'ai_review', 'observations', 'settled',
-            'generated_at'}, sorted(built)
-        assert built['observations'] == []
+    @pytest.mark.proof("ai_audit", "PROOF-7", "RULE-15")
+    def test_a_rule_that_is_not_there_is_not_read(self, proved):
+        assert read(proved, 'RULE-99') is None
+
+    @pytest.mark.proof("ai_audit", "PROOF-8", "RULE-8")
+    def test_the_strength_comes_off_the_evidence(self, at_strong):
+        reading = read(at_strong, 'RULE-2')
+        assert (reading['test_strength'], reading['min_strength']) == (90, 70)
+        made = Project()
+        try:
+            made.proofs()
+            made.evidence(strength=None)
+            assert 'Test strength: n/a' in audit_module.render(
+                read(made, 'RULE-2'))
+        finally:
+            made.close()
 
 
 class TestTheJavaScriptReader:
@@ -154,7 +179,7 @@ class TestTheJavaScriptReader:
         return {proof: body for proof, _rule, _name, body
                 in marked_tests._iter_js_proof_bodies(text, feature)}
 
-    @pytest.mark.proof("ai_audit", "PROOF-46", "RULE-28")
+    @pytest.mark.proof("ai_audit", "PROOF-9", "RULE-11")
     def test_braces_and_apostrophes_do_not_cut_a_body(self, tmp_path):
         text = """import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
@@ -180,7 +205,7 @@ describe("repro", () => {
         assert 'expect(out).toMatch' in first, first
         assert 'expect(1).toBe(1)' in second, second
 
-    @pytest.mark.proof("ai_audit", "PROOF-47", "RULE-28")
+    @pytest.mark.proof("ai_audit", "PROOF-10", "RULE-11")
     def test_regex_literals_comments_and_division_do_not_cut_a_body(self):
         text = r"""import { it, expect } from "vitest";
 
@@ -216,132 +241,220 @@ it("division [proof:rx:PROOF-5:RULE-5]", () => { const q = 4 / 2; expect(q).toBe
 
 
 # ---------------------------------------------------------------------------
-# The test strength
+# The prompt
 # ---------------------------------------------------------------------------
 
-class TestTheTestStrength:
+class TestThePrompt:
 
-    @pytest.mark.proof("ai_audit", "PROOF-10", "RULE-9")
-    def test_it_comes_off_the_evidence(self, at_strong):
-        assert build(at_strong, 'RULE-2')['test_strength'] == 90
-        assert build(at_strong, 'RULE-2')['min_strength'] == 70
-
-    @pytest.mark.proof("ai_audit", "PROOF-10", "RULE-9")
-    def test_a_passed_level_still_reads_the_strength(self, proved):
-        assert build(proved, 'RULE-1')['test_strength'] == 90, (
-            'the strength layer runs at every level')
-
-    @pytest.mark.proof("ai_audit", "PROOF-11", "RULE-9")
-    def test_no_engine_reads_as_n_a(self):
-        made = Project()
-        try:
-            made.proofs()
-            made.evidence(strength=None)
-            rendered = audit_module.render_brief(build(made, 'RULE-2'))
-            assert 'Test strength: n/a' in rendered
-        finally:
-            made.close()
-
-
-# ---------------------------------------------------------------------------
-# The AI audit
-# ---------------------------------------------------------------------------
-
-class TestTheModelReview:
-
-    @pytest.mark.proof("ai_audit", "PROOF-19", "RULE-15")
+    @pytest.mark.proof("ai_audit", "PROOF-11", "RULE-2")
     def test_the_prompt_is_the_criteria_file_verbatim(self, at_strong):
-        built = build(at_strong, 'RULE-2')
-        prompt = audit_module.model_prompt(at_strong.root, built)
-        with open(CRITERIA, encoding='utf-8') as handle:
-            criteria = handle.read()
-        assert prompt.startswith(criteria)
+        prompt = audit_module.model_prompt(at_strong.root,
+                                           read(at_strong, 'RULE-2'))
+        assert prompt.startswith(criteria_text())
         assert 'RULE-2' in prompt
         assert 'Invalid credentials return 401' in prompt
         assert 'test_a_bad_password_is_denied' in prompt
         assert 'Test strength: 90 percent (minimum 70)' in prompt
 
-    @pytest.mark.proof("ai_audit", "PROOF-44", "RULE-15")
+    @pytest.mark.proof("ai_audit", "PROOF-12", "RULE-2")
     def test_the_prompt_asks_for_observations_and_bars_a_recommendation(
             self, at_strong):
         prompt = audit_module.model_prompt(at_strong.root,
-                                           build(at_strong, 'RULE-2'))
+                                           read(at_strong, 'RULE-2'))
         assert 'settled: yes' in prompt
         assert 'one line per observation' in prompt
         assert 'Do not recommend a change' in prompt
         assert 'do not grade the rule' in prompt
 
-    @pytest.mark.proof("ai_audit", "PROOF-20", "RULE-16")
-    def test_without_ai_the_brief_says_not_available(self, at_strong):
-        built = build(at_strong, 'RULE-2')
-        assert built['ai_review'] == 'not available'
-        assert built['observations'] == [] and built['settled'] is None
-        assert 'Settled: not answered' in audit_module.render_brief(built)
-
-    @pytest.mark.proof("ai_audit", "PROOF-21", "RULE-16")
-    def test_with_no_claude_on_the_path_it_says_not_available(
-            self, at_strong, monkeypatch):
-        monkeypatch.setattr(audit_module.shutil, 'which', lambda name: None)
-        assert build(at_strong, 'RULE-2', ai=True)['ai_review'] == (
-            'not available')
-
-    @pytest.mark.proof("ai_audit", "PROOF-22", "RULE-16")
-    def test_a_rule_whose_level_is_passed_never_calls_a_model(
-            self, at_strong, monkeypatch):
-        def fail(*args, **kwargs):
-            raise AssertionError('a rule whose level is passed calls no model')
-
-        monkeypatch.setattr(audit_module.shutil, 'which', fail)
-        built = build(at_strong, 'RULE-1', ai=True)
-        assert built['ai_review'] is None
-        assert 'Observations' not in audit_module.render_brief(built)
-
 
 # ---------------------------------------------------------------------------
-# The observations
+# The call
 # ---------------------------------------------------------------------------
 
-class TestTheObservations:
+class TestTheCall:
 
-    @pytest.mark.proof("ai_audit", "PROOF-23", "RULE-12")
-    def test_the_answer_becomes_one_observation_per_sentence(
-            self, at_strong, monkeypatch):
-        calls = []
-        real_run = audit_module.subprocess.run
+    @pytest.mark.proof("ai_audit", "PROOF-13", "RULE-3")
+    def test_the_prompt_goes_on_stdin_and_never_in_the_arguments(
+            self, at_strong, claude):
+        _install, directory = claude
+        reading = read(at_strong, 'RULE-2')
+        found = audit_module.audit_one(at_strong.root, reading,
+                                       criteria_text())
+        calls = fake_claude.calls(directory)
+        assert found['verdict'] == 'strong', found
+        assert len(calls) == 1, calls
+        assert calls[0]['argv'] == ['-p', '--output-format', 'json']
+        prompt = audit_module.model_prompt(at_strong.root, reading,
+                                           criteria_text())
+        assert calls[0]['prompt'] == prompt
+        assert not any('Invalid credentials' in part
+                       for part in calls[0]['argv'])
 
-        class Result(object):
+    @pytest.mark.proof("ai_audit", "PROOF-14", "RULE-3")
+    def test_a_call_is_given_300_seconds_and_stdin_closes_after_the_prompt(
+            self, at_strong):
+        seen = []
+
+        class Done(object):
             returncode = 0
-            stdout = ANSWER
+            stdout = json.dumps({'result': 'settled: yes'})
 
-        def fake_run(command, **kwargs):
-            if command and command[0] == 'claude':
-                calls.append(command)
-                return Result()
-            return real_run(command, **kwargs)
+        def runner(command, **kwargs):
+            seen.append((command, kwargs))
+            return Done()
 
-        monkeypatch.setattr(audit_module.shutil, 'which',
-                            lambda name: '/usr/local/bin/claude')
-        monkeypatch.setattr(audit_module.subprocess, 'run', fake_run)
-        built = build(at_strong, 'RULE-2', ai=True)
-        assert len(calls) == 1 and calls[0][:2] == ['claude', '-p']
-        assert built['observations'] == [
-            'PROOF-2 asserts the status but never the body the rule names.']
-        assert built['settled'] is False
+        audit_module.audit_one(at_strong.root, read(at_strong, 'RULE-2'),
+                               'criteria', command='/bin/claude',
+                               runner=runner)
+        command, kwargs = seen[0]
+        assert command == ['/bin/claude', '-p', '--output-format', 'json']
+        assert kwargs['timeout'] == 300
+        # `input=` writes the prompt and closes stdin behind it.
+        assert kwargs['input'].startswith('criteria')
+        assert 'stdin' not in kwargs
 
-    @pytest.mark.proof("ai_audit", "PROOF-17", "RULE-13")
-    def test_settled_reads_yes_no_or_nothing_at_all(self):
-        assert audit_module.model_observations(
-            'settled: yes\n') == ([], True)
-        assert audit_module.model_observations(
-            'settled: no\n- PROOF-1 never runs the code.') == (
-            ['PROOF-1 never runs the code.'], False)
+    @pytest.mark.proof("ai_audit", "PROOF-15", "RULE-4")
+    def test_one_call_per_rule_and_four_at_once(self, at_strong, claude):
+        install, directory = claude
+        install(sleep=0.4)
+        reading = read(at_strong, 'RULE-2')
+        results = audit_module.audit_all(at_strong.root, [reading] * 6, 4)
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 6, calls
+        assert [found['verdict'] for found in results] == ['strong'] * 6
+        assert fake_claude.most_at_once(calls) == 4, calls
 
-    @pytest.mark.proof("ai_audit", "PROOF-24", "RULE-17")
-    def test_an_answer_in_no_shape_at_all_observes_nothing(self):
-        assert audit_module.model_observations('It looks fine to me.') == (
-            [], None)
-        assert audit_module.model_observations('not available') == ([], None)
-        assert audit_module.model_observations('') == ([], None)
+    @pytest.mark.proof("ai_audit", "PROOF-16", "RULE-4")
+    def test_the_number_at_once_is_what_it_is_given(self, at_strong, claude):
+        install, directory = claude
+        install(sleep=0.4)
+        reading = read(at_strong, 'RULE-2')
+        audit_module.audit_all(at_strong.root, [reading] * 4, 2)
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 4, calls
+        assert fake_claude.most_at_once(calls) == 2, calls
+
+
+# ---------------------------------------------------------------------------
+# The answer
+# ---------------------------------------------------------------------------
+
+class TestTheAnswer:
+
+    @pytest.mark.proof("ai_audit", "PROOF-17", "RULE-5")
+    def test_settled_with_nothing_found_is_strong(self, at_strong, claude):
+        install, _directory = claude
+        install(answers=['settled: yes'])
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert (found['verdict'], found['findings']) == ('strong', [])
+
+    @pytest.mark.proof("ai_audit", "PROOF-18", "RULE-5")
+    def test_settled_with_a_line_is_weak_and_the_line_is_the_finding(
+            self, at_strong, claude):
+        install, _directory = claude
+        install(answers=['settled: yes\n- %s\n' % FINDING])
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert (found['verdict'], found['findings']) == ('weak', [FINDING])
+
+    @pytest.mark.proof("ai_audit", "PROOF-19", "RULE-5")
+    def test_not_settled_is_undecided_with_its_reason(self, at_strong, claude):
+        install, _directory = claude
+        install(answers=['settled: no\n- The body of PROOF-2 is not shown.'])
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert (found['verdict'], found['findings']) == (
+            'undecided', ['The body of PROOF-2 is not shown.'])
+
+    @pytest.mark.proof("ai_audit", "PROOF-20", "RULE-6")
+    def test_the_answer_names_its_model_and_the_criteria_it_was_sent(
+            self, at_strong, claude):
+        install, _directory = claude
+        install(model='claude-opus-4-1-20250805')
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert found['model'] == 'claude-opus-4-1-20250805'
+        assert found['criteria'] == hashlib.sha256(
+            criteria_text().encode('utf-8')).hexdigest()
+        install(model=None)
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert found['model'] == 'unknown'
+
+    @pytest.mark.proof("ai_audit", "PROOF-21", "RULE-6")
+    def test_the_model_that_wrote_most_is_the_one_named(self):
+        body = {'modelUsage': {'claude-haiku-3-5': {'outputTokens': 12},
+                               'claude-opus-4-1': {'outputTokens': 900}}}
+        assert audit_module.model_name(body) == 'claude-opus-4-1'
+        assert audit_module.model_name({'model': 'claude-x-1'}) == \
+            'claude-x-1'
+        assert audit_module.model_name({}) == 'unknown'
+
+    @pytest.mark.proof("ai_audit", "PROOF-22", "RULE-5")
+    def test_an_answer_in_no_shape_says_nothing(self):
+        assert audit_module.parse_answer('It looks fine to me.') == ([], None)
+        assert audit_module.parse_answer('') == ([], None)
+        assert audit_module.verdict_of([], None) is None
+
+
+# ---------------------------------------------------------------------------
+# When the model cannot be reached
+# ---------------------------------------------------------------------------
+
+class TestWhenTheModelCannotBeReached:
+
+    @pytest.mark.proof("ai_audit", "PROOF-23", "RULE-7")
+    def test_no_claude_on_the_path_calls_nothing(self, at_strong, claude,
+                                                 monkeypatch):
+        _install, directory = claude
+        monkeypatch.setattr(audit_module, 'claude_path', lambda: None)
+        results = audit_module.audit_all(at_strong.root,
+                                         [read(at_strong, 'RULE-2')] * 2, 4)
+        assert results == [{'why': 'claude is not on PATH'}] * 2
+        assert fake_claude.calls(directory) == []
+
+    @pytest.mark.proof("ai_audit", "PROOF-24", "RULE-7")
+    def test_a_non_zero_exit_is_named(self, at_strong, claude):
+        install, _directory = claude
+        install(exit_code=1)
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert found == {'why': 'claude exited with an error'}
+
+    @pytest.mark.proof("ai_audit", "PROOF-25", "RULE-7")
+    def test_a_call_past_its_limit_is_named(self, at_strong, claude,
+                                            monkeypatch):
+        install, _directory = claude
+        install(sleep=3)
+        monkeypatch.setattr(audit_module, 'MODEL_TIMEOUT', 1)
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert found == {'why': 'claude timed out after 1 s'}
+
+    @pytest.mark.proof("ai_audit", "PROOF-26", "RULE-7")
+    def test_an_answer_with_no_settled_line_is_asked_once_more(
+            self, at_strong, claude):
+        install, directory = claude
+        install(answers=['It looks fine to me.'])
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert found == {'why': 'claude answered without a settled line'}
+        assert len(fake_claude.calls(directory)) == 2
+        install(answers=['It looks fine to me.', 'settled: yes'])
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert found['verdict'] == 'strong', found
+        assert len(fake_claude.calls(directory)) == 2
 
 
 # ---------------------------------------------------------------------------
@@ -359,36 +472,46 @@ class TestWriting:
             found.extend(os.path.join(current, name) for name in names)
         return sorted(found)
 
-    @pytest.mark.proof("ai_audit", "PROOF-27", "RULE-19")
-    def test_building_and_printing_a_brief_writes_no_file(self, proved,
-                                                         capsys):
-        before = self._files(proved.root)
-        built = build(proved, 'RULE-1')
-        audit_module.render_brief(built)
+    @pytest.mark.proof("ai_audit", "PROOF-27", "RULE-12")
+    def test_reading_asking_and_printing_write_no_file(self, at_strong,
+                                                       claude, capsys):
+        before = self._files(at_strong.root)
+        reading = read(at_strong, 'RULE-2')
+        audit_module.audit_all(at_strong.root, [reading], 4)
+        audit_module.render(reading)
         assert audit_module.main(['--feature', 'login', '--project-root',
-                                  proved.root]) == 0
+                                  at_strong.root]) == 0
         capsys.readouterr()
-        assert self._files(proved.root) == before
+        assert self._files(at_strong.root) == before
 
-    @pytest.mark.proof("ai_audit", "PROOF-28", "RULE-19")
+    @pytest.mark.proof("ai_audit", "PROOF-28", "RULE-12")
     def test_the_triple_moves_with_the_text(self, proved):
-        built = build(proved, 'RULE-1')
+        first = read(proved, 'RULE-1')
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with a short session token'))
-        again = build(proved, 'RULE-1')
-        assert again['triple_hash'] != built['triple_hash'], (
-            'a brief for text that has since changed is not a brief for it')
+        assert read(proved, 'RULE-1')['triple_hash'] != first['triple_hash']
 
-    @pytest.mark.proof("ai_audit", "PROOF-31", "RULE-22")
-    def test_the_rendering_names_the_rule_the_proof_and_what_was_found(
+    @pytest.mark.proof("ai_audit", "PROOF-29", "RULE-14")
+    def test_the_rendering_names_the_rule_and_what_the_audit_found(
             self, at_strong):
-        rendered = audit_module.render_brief(build(at_strong, 'RULE-2'))
+        at_strong.audit('RULE-2', findings=[FINDING])
+        rendered = audit_module.render(read(at_strong, 'RULE-2'))
         assert 'login RULE-2' in rendered
         assert 'Invalid credentials return 401' in rendered
         assert 'PROOF-2' in rendered
         assert 'Test strength: 90 percent   minimum 70' in rendered
-        assert 'Observations' in rendered and 'Settled:' in rendered
+        assert 'What the audit found' in rendered
+        assert 'Weak, by unknown at 2026-09-13T12:05:00Z.' in rendered
+        assert FINDING in rendered
         assert '✓' not in rendered and ':)' not in rendered
+        fresh = Project(gate=SIGNING_GATE)
+        try:
+            fresh.proofs()
+            fresh.evidence()
+            assert "Nothing yet: no audit has read this rule's text" in \
+                audit_module.render(read(fresh, 'RULE-2'))
+        finally:
+            fresh.close()
 
 
 # ---------------------------------------------------------------------------
@@ -397,44 +520,41 @@ class TestWriting:
 
 class TestTheCommandLine:
 
-    @pytest.mark.proof("ai_audit", "PROOF-32", "RULE-23")
+    @pytest.mark.proof("ai_audit", "PROOF-30", "RULE-13")
     def test_help_exits_zero_and_a_bad_option_exits_two(self):
         assert audit_module.main(['--help']) == 0
         assert audit_module.main(['--nope']) == 2
         assert audit_module.main([]) == 2
 
-    @pytest.mark.proof("ai_audit", "PROOF-34", "RULE-24")
-    def test_one_rule_prints_its_brief_and_writes_nothing(self, proved,
-                                                         capsys):
-        before = TestWriting._files(proved.root)
-        code = audit_module.main(['--feature', 'login', '--rule', 'RULE-1',
-                                  '--project-root', proved.root])
-        output = capsys.readouterr().out
-        assert code == 0
-        assert 'login RULE-1' in output
-        assert TestWriting._files(proved.root) == before
-
-    @pytest.mark.proof("ai_audit", "PROOF-35", "RULE-24")
-    def test_a_feature_with_no_rule_named_covers_every_rule(self, proved,
-                                                            capsys):
-        code = audit_module.main(['--feature', 'login',
-                                  '--project-root', proved.root])
-        output = capsys.readouterr().out
-        assert code == 0
-        assert 'login RULE-1' in output and 'login RULE-2' in output
-
-    @pytest.mark.proof("ai_audit", "PROOF-33", "RULE-23")
+    @pytest.mark.proof("ai_audit", "PROOF-31", "RULE-13")
     def test_an_unknown_feature_exits_one(self, proved, capsys):
         code = audit_module.main(['--feature', 'nothing',
                                   '--project-root', proved.root])
         capsys.readouterr()
         assert code == 1
 
-    @pytest.mark.proof("ai_audit", "PROOF-36", "RULE-23")
-    def test_the_script_runs_as_a_command(self, proved):
+    @pytest.mark.proof("ai_audit", "PROOF-32", "RULE-14")
+    def test_one_rule_prints_and_a_feature_prints_every_rule(self, proved,
+                                                             capsys):
+        code = audit_module.main(['--feature', 'login', '--rule', 'RULE-1',
+                                  '--project-root', proved.root])
+        output = capsys.readouterr().out
+        assert code == 0
+        assert 'login RULE-1' in output and 'login RULE-2' not in output
+        code = audit_module.main(['--feature', 'login',
+                                  '--project-root', proved.root])
+        output = capsys.readouterr().out
+        assert code == 0
+        assert 'login RULE-1' in output and 'login RULE-2' in output
+
+    @pytest.mark.proof("ai_audit", "PROOF-33", "RULE-13")
+    def test_the_script_runs_as_a_command_and_calls_no_model(self, proved,
+                                                             claude):
+        _install, directory = claude
         result = subprocess.run(
-            [sys.executable, BRIEF_PY, '--feature', 'login', '--rule',
+            [sys.executable, AI_AUDIT_PY, '--feature', 'login', '--rule',
              'RULE-1', '--project-root', proved.root],
             capture_output=True, text=True, timeout=120)
         assert result.returncode == 0, result.stdout + result.stderr
         assert 'login RULE-1' in result.stdout
+        assert fake_claude.calls(directory) == []
