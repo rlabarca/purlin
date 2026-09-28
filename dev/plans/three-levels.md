@@ -627,6 +627,56 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     least 7 in 10 rules pass on the first run. A test that was failing before is never made
     to pass by writing the rule to fit it: the rule says what the code should do, and the
     test stays failing until the code is fixed.
+67. **Purlin logs a signature and polices none** (added 2026-09-28). A signature counts when
+    its commit was signed with an SSH key, any key. Purlin records the signer's name, the
+    time and the key's fingerprint, and does not check whose key it is. The list of who may
+    sign goes, with the setting and the code behind it: anyone can sign, and the system of
+    record decides who was entitled. Before signing starts Purlin confirms only that there
+    is a key to sign with. This amends decisions 32 and 48, which asked that the signature
+    verify.
+68. **One summary, steps reached, and what is left to do** (added 2026-09-28). The terminal,
+    the dashboard and the check on a remote runner show the same thing. Each step contains
+    the next: `35 pass their tests. 30 are strong. 20 are signed.` Whether a version is
+    finished is said by what is left: `Left to do: 5 rules to audit, 10 to sign.`, and
+    `Nothing left to do` when nothing is. The phrase `meets the gate` is used nowhere. On a
+    remote runner the job fails only when a test fails or could not run; rules not yet
+    audited or signed never fail it, and no `PASS` or `FAIL` word is printed. A rule with
+    no proof, at the gates that ask for one, has its own box and filter on the dashboard.
+    A spec's `> Description:` is shown under the feature's name on the dashboard.
+69. **Every command says exactly what to do next** (added 2026-09-28). The test of any
+    output is that an agent seeking a goal can read it, know which rule is affected and
+    what to do, and improve the project by doing it. A run names each rule that fails or has
+    no test, and its advice fits the cause: a comment to correct, settings to restore, or
+    `purlin:build`. With the settings file missing, a run stops, says so, names the command
+    that restores it, and writes nothing. A comment above a test that is nearly right is
+    found and repaired by `purlin:build`; a test run does not look for them. A rule has
+    passed only when every test tied to it ran and passed, and the terminal, the dashboard,
+    the evidence and the exit code all say the same.
+70. **Setup asks one thing** (added 2026-09-28). `purlin:init` asks how far every rule must
+    go. How the tests are run is settled at the first test run: `purlin:build` sets it when
+    it writes the tests, and where tests already exist Purlin suggests a command, the user
+    confirms, and it runs at once. The question about breaking the code on purpose is asked
+    only at the gates where it runs. The rehearsal, `--dry-run`, goes. The folder for anchors
+    is created when the first anchor is written or brought in. A test run that commits its
+    results commits the rules, the marked tests and the settings they describe in the same
+    step, and lists each file. With no version stated by the project, `purlin:sign` asks for
+    one and offers to write it to a version file. A signed tag is written only when every
+    result came from committed work. The docs say commands are run inside Claude Code, and
+    carry no section on removing Purlin.
+71. **One proof, one case** (added 2026-09-28). A proof holds one starting situation, one
+    action and the results seen from it, in at most 60 words. A refusal or a boundary is a
+    case of its own. This is written into `references/spec_quality_guide.md`, `purlin:spec`
+    writes to it and the audit checks it. Every proof in this repository that holds more is
+    split before release, its tests tied again, and the 37 gaps still open are closed in
+    that work. The 128 rules the rewrite flagged are sorted: loose wording where the product
+    is right is reworded and listed; a product that is wrong, and a real choice, come to the
+    owner.
+72. **The order of the work** (added 2026-09-28). First every change to what the product
+    does, one agent per decision. Then the proofs are split and the gaps closed. Then sanity
+    check 3, then every page is read again. A signature's code is the files its feature
+    lists: a change to any of them ends the signature of every rule in that feature. Where
+    existing code has a test that was already failing, `purlin:spec-from-code` writes the
+    rule from what the test expects and leaves it failing.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

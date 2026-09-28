@@ -918,5 +918,5 @@ None was changed.
 
 ## 8. Questions for the owner
 
-Put with the question UI, with Part 1's. Those answered on 2026-09-28 are decisions 60 to 66 in `three-levels.md`.
+Put with the question UI, with Part 1's. Those answered on 2026-09-28 are decisions 60 to 72 in `three-levels.md`.
 

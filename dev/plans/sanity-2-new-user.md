@@ -468,3 +468,8 @@ The fallback is written into `specs/review/signatures.md` RULE-45 ("taking the v
 - 4.9: the package names the commit its evidence was taken at, decision 55.
 - 4.10: at `passed` no word of a higher level appears, decision 50. The summary line breaks this decision.
 - 3.10: decision 31 names the `VERSION` file only. The fallback to the config's version is in signatures RULE-45 and in no decision.
+
+## 9. What the owner decided
+
+Every question of section 7 was put to the owner on 2026-09-28. The answers are decisions 60
+to 72 in `three-levels.md`.
