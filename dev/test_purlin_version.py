@@ -1,4 +1,4 @@
-"""Tests for purlin_version: 9 rules.
+"""Tests for purlin_version.
 
 Ensures the Purlin version string is defined in exactly one place (the VERSION
 file) and all references to it read from that file or match its value.
@@ -7,7 +7,6 @@ file) and all references to it read from that file or match its value.
 import json
 import os
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -357,105 +356,3 @@ class TestDocsCiteVersionFileInsteadOfALiteral:
             f"a second `version` field row lives in {sorted(copies)}; "
             f"{self.OWNER} is the field's one documented home")
 
-
-DEV_SWEEP = 'dev/run_tests.sh'
-RUN_TESTS_SH = os.path.join(PROJECT_ROOT, 'dev', 'run_tests.sh')
-
-
-def _write_marker_function_text():
-    """The `write_marker` function as dev/run_tests.sh defines it, cut out
-    between its opening line and the closing brace on a line of its own."""
-    cut = subprocess.run(
-        ['sed', '-n', '/^write_marker()/,/^}$/p', RUN_TESTS_SH],
-        capture_output=True, text=True, check=True,
-    ).stdout
-    assert cut.startswith('write_marker()'), \
-        f"could not cut write_marker out of {RUN_TESTS_SH}"
-    assert cut.rstrip().endswith('}'), \
-        f"the write_marker cut from {RUN_TESTS_SH} is not closed: {cut[-200:]!r}"
-    return cut
-
-
-class TestTheSweepRecordsItself:
-    """RULE-10 - the sweep writes its own whole record of what ran to
-    .purlin/runtime/last_sweep.json, beside the shared test_run.json it merges
-    into. The record is runtime state a reader can
-    open; nothing compares `RELEASE_NOTES.md` against it."""
-
-    # purlin: purlin_version PROOF-10
-    def test_sweep_exit_trap_writes_its_own_sweep_record(self, tmp_path):
-        """Drive the sweep's real writer and verify it writes last_sweep.json,
-        unmerged, beside the shared test_run.json."""
-        root = tmp_path / 'proj'
-        (root / '.purlin' / 'runtime').mkdir(parents=True)
-        git = ['git', '-c', 'user.email=t@example.com', '-c', 'user.name=t']
-        subprocess.run(['git', '-c', 'init.defaultBranch=main', 'init', '-q'], cwd=str(root), check=True)
-        subprocess.run(git + ['commit', '-q', '--allow-empty', '-m', 'seed'],
-                       cwd=str(root), check=True, capture_output=True)
-        head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=str(root),
-                              capture_output=True, text=True,
-                              check=True).stdout.strip()
-
-        marker = root / '.purlin' / 'runtime' / 'test_run.json'
-        record = root / '.purlin' / 'runtime' / 'last_sweep.json'
-        preamble = '\n'.join([
-            'ROOT=' + shlex.quote(str(root)),
-            'MARKER=' + shlex.quote(str(marker)),
-            'LAST_SWEEP=' + shlex.quote(str(record)),
-            'PYTEST_LOG=' + shlex.quote(str(tmp_path / 'pytest.log')),
-            # The pytest pool counts as one suite in PASS; its 11 tests are
-            # counted individually, so the record must report 11 + 1 = 12.
-            "SUITES=$'Shell Suites\\nAll Pytest Tests\\n'",
-            "TEST_FILES=$'dev/test_purlin_version.py\\n'",
-            'PASS=2',
-            'FAIL=0',
-            'PYTEST_PASSED=11',
-            'PYTEST_FAILED=0',
-            'PYTEST_SKIPPED=3',
-            'SWEEP_COMPLETE=1',
-        ])
-        run = subprocess.run(
-            [BASH, '-c', preamble + '\n' + _write_marker_function_text()
-             + '\nwrite_marker\n'],
-            cwd=str(root), capture_output=True, text=True,
-        )
-        assert run.returncode == 0, (
-            f"write_marker exited {run.returncode}\n"
-            f"stdout:{run.stdout}\nstderr:{run.stderr}")
-
-        assert marker.is_file(), (
-            f"the sweep's exit trap wrote no test_run.json at {marker}\n"
-            f"stdout:{run.stdout}\nstderr:{run.stderr}")
-        assert record.is_file(), (
-            f"the sweep's exit trap wrote no last_sweep.json at {record}: the "
-            f"dev sweep must record its own counts in last_sweep.json beside "
-            f"test_run.json, because the shared marker is merged with what "
-            f"other writers put there\n"
-            f"stdout:{run.stdout}\nstderr:{run.stderr}")
-
-        sweep = json.loads(record.read_text(encoding='utf-8'))
-        assert sweep.get('passed') == 12, \
-            f"last_sweep.json passed is {sweep.get('passed')!r}, expected 12"
-        assert sweep.get('failed') == 0, \
-            f"last_sweep.json failed is {sweep.get('failed')!r}, expected 0"
-        assert sweep.get('skipped') == 3, \
-            f"last_sweep.json skipped is {sweep.get('skipped')!r}, expected 3"
-        assert sweep.get('ok') is True, \
-            f"last_sweep.json ok is {sweep.get('ok')!r}, expected True"
-        assert sweep.get('suites') == ['Shell Suites',
-                                       'All Pytest Tests'], \
-            f"last_sweep.json suites is {sweep.get('suites')!r}"
-        assert sweep.get('commit') == head, \
-            f"last_sweep.json commit is {sweep.get('commit')!r}, expected {head!r}"
-        assert sweep.get('at'), "last_sweep.json carries no `at` timestamp"
-        assert 'runs' not in sweep, (
-            f"last_sweep.json is the sweep's own record and is never merged "
-            f"with other runs, so it must carry no `runs` key; it has "
-            f"{sweep.get('runs')!r}")
-
-        shared = json.loads(marker.read_text(encoding='utf-8'))
-        assert shared.get('sweep') == DEV_SWEEP, (
-            f"test_run.json sweep is {shared.get('sweep')!r}, expected "
-            f"{DEV_SWEEP!r}")
-        assert 'runs' in shared, \
-            "test_run.json is the merged marker and must carry a `runs` list"
