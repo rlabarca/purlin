@@ -512,7 +512,7 @@ class TestAnchorNoteMetadata:
     """RULE-11: `> Note:` is free text the parser ignores.
 
     The anchor-metadata tests for `> Source:`/`> Pinned:` live in
-    dev/test_mcp_server.py; this proof lives here because `> Note:` is a spec
+    dev/test_specs_reader.py; this proof lives here because `> Note:` is a spec
     metadata field, which is what schema_spec_format owns.
     """
 

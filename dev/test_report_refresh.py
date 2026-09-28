@@ -26,7 +26,7 @@ import sign as sign_module  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
 from purlin import report_data  # noqa: E402
 from purlin import status as purlin_status  # noqa: E402
-from test_mcp_server import SPEC, Project  # noqa: E402
+from mcp_project import SPEC, Project  # noqa: E402
 from test_run_script import (_pytest_project, _run, _spec,  # noqa: E402
                              claude)  # noqa: F401
 from test_signatures import signing_project  # noqa: E402

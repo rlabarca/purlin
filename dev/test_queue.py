@@ -9,7 +9,7 @@ whose level is `passed` meets the gate on its tests, so nothing about it
 waits.
 
 The throwaway project holds one rule for each kind of row, and one of each
-kind that must never be a row. `dev/test_mcp_server.py` owns the fixture.
+kind that must never be a row. `dev/mcp_project.py` owns the fixture.
 """
 
 import os
@@ -23,7 +23,7 @@ sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
 from purlin import status as purlin_status  # noqa: E402
-from test_mcp_server import Project, _git  # noqa: E402
+from mcp_project import Project, _git  # noqa: E402
 
 SPEC = (
     '# Feature: review\n\n'

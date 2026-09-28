@@ -1833,7 +1833,7 @@ def _levels_payload():
     """A project at the gate `signed` holding a rule at each level, a rule at
     `passed` and one at `strong` whose tests fail, and a second spec whose one
     rule is marked `[level: passed]`, as the payload builder writes it."""
-    from test_mcp_server import ONE_PASSED_SPEC, _levels_project
+    from test_states import ONE_PASSED_SPEC, _levels_project
     made = _levels_project()
     try:
         made.spec(ONE_PASSED_SPEC, name='notes', category='notes')
