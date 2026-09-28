@@ -546,18 +546,22 @@ def _signed_cell(signatures, current, counting, inp=None):
     """Level 3: what the signature files say, whatever the cells below read.
 
     A signature is a fact about committed files. This cell is computed from
-    those files alone and reads `signed`, `unsigned` or `stale`. A
+    those files alone and reads `signed`, `unsigned` or `stale`, and names
+    the signer, when, and the machine and operating system the signature
+    file logs, null where it logs none. A
     rule whose level is below `signed` still says whether anyone signed it,
     and the cell does not block it.
     """
-    cell = {'word': 'unsigned', 'signer': None,
-            'at': None, 'path': None, 'reasons': []}
+    cell = {'word': 'unsigned', 'signer': None, 'at': None, 'machine': None,
+            'os': None, 'path': None, 'reasons': []}
 
     if counting:
         signature = counting[0]
         cell['word'] = 'signed'
         cell['signer'] = signature.get('signer')
         cell['at'] = _signature_at(signature)
+        cell['machine'] = signature.get('machine')
+        cell['os'] = signature.get('os')
         cell['path'] = signature.get('path')
         cell['reasons'] = ['by %s' % signature.get('signer')]
         return cell
@@ -567,6 +571,8 @@ def _signed_cell(signatures, current, counting, inp=None):
         cell['word'] = 'unsigned'
         cell['signer'] = signature.get('signer')
         cell['at'] = _signature_at(signature)
+        cell['machine'] = signature.get('machine')
+        cell['os'] = signature.get('os')
         cell['path'] = signature.get('path')
         reason = signature.get('count_reason')
         cell['reasons'] = [reason] if reason else []
@@ -577,6 +583,8 @@ def _signed_cell(signatures, current, counting, inp=None):
         cell['word'] = 'stale'
         cell['signer'] = signature.get('signer')
         cell['at'] = _signature_at(signature)
+        cell['machine'] = signature.get('machine')
+        cell['os'] = signature.get('os')
         cell['path'] = signature.get('path')
         cell['reasons'] = [_what_moved(signature, inp or {})]
         return cell

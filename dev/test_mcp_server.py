@@ -1574,11 +1574,15 @@ class TestPayload:
         made = Project(gate='signed')
         try:
             made.sign_commits()
-            made.signature('RULE-2')
+            made.signature('RULE-2', machine='jane-laptop', os='macos')
             cell = made.cell('RULE-2', 'signed')
             assert cell['signer'] == 'jane@acme.com'
             assert cell['at'] and cell['at'].endswith('Z'), cell
             assert len(cell['at']) == 20, cell
+            assert (cell['machine'], cell['os']) == ('jane-laptop', 'macos')
+            made.signature('RULE-1')
+            other = made.cell('RULE-1', 'signed')
+            assert (other['machine'], other['os']) == (None, None), other
         finally:
             made.close()
 

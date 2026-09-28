@@ -149,6 +149,8 @@
             },
             "signed": {
               "at": "2026-09-12T10:02:11Z",
+              "machine": "jane-laptop",
+              "os": "macos",
               "path": "specs/auth/login.signatures/RULE-1.1a2b3c4d.jane-doe.json",
               "reasons": [
                 "by jane@acme.com"
@@ -235,6 +237,8 @@
             },
             "signed": {
               "at": "2026-09-08T16:40:53Z",
+              "machine": "sam-desktop",
+              "os": "linux",
               "path": "specs/auth/login.signatures/RULE-2.5e6f7a8b.sam-acme.json",
               "reasons": [
                 "hashes changed after the signature"
@@ -323,6 +327,8 @@
             },
             "signed": {
               "at": null,
+              "machine": null,
+              "os": null,
               "path": null,
               "reasons": [],
               "signer": null,
@@ -406,6 +412,8 @@
             },
             "signed": {
               "at": null,
+              "machine": null,
+              "os": null,
               "path": null,
               "reasons": [],
               "signer": null,
@@ -568,6 +576,8 @@
             },
             "signed": {
               "at": null,
+              "machine": null,
+              "os": null,
               "path": null,
               "reasons": [],
               "signer": null,
@@ -656,6 +666,8 @@
             },
             "signed": {
               "at": null,
+              "machine": null,
+              "os": null,
               "path": null,
               "reasons": [],
               "signer": null,
@@ -726,6 +738,8 @@
             },
             "signed": {
               "at": null,
+              "machine": null,
+              "os": null,
               "path": null,
               "reasons": [],
               "signer": null,
@@ -861,6 +875,8 @@
             },
             "signed": {
               "at": null,
+              "machine": null,
+              "os": null,
               "path": null,
               "reasons": [],
               "signer": null,
@@ -986,6 +1002,8 @@
             },
             "signed": {
               "at": null,
+              "machine": null,
+              "os": null,
               "path": null,
               "reasons": [],
               "signer": null,
@@ -1059,6 +1077,8 @@
             },
             "signed": {
               "at": null,
+              "machine": null,
+              "os": null,
               "path": null,
               "reasons": [],
               "signer": null,
