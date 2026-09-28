@@ -56,7 +56,7 @@ def _project(tmp_path, gate='passed', name='project'):
 
 
 def _spec(root, name='feat', rules=1, proofs=(('PROOF-1', 'RULE-1', ''),),
-          bar='passed'):
+          level='passed'):
     folder = root / 'specs' / 'a'
     folder.mkdir(parents=True, exist_ok=True)
     lines = ['# Feature: %s' % name, '',
@@ -64,8 +64,8 @@ def _spec(root, name='feat', rules=1, proofs=(('PROOF-1', 'RULE-1', ''),),
              '> Scope: src/feat.py',
              '> Stack: python', '', '## Rules', '']
     for index in range(1, rules + 1):
-        lines.append('- RULE-%d: The thing works, case %d [bar: %s]'
-                     % (index, index, bar))
+        lines.append('- RULE-%d: The thing works, case %d [level: %s]'
+                     % (index, index, level))
     lines.extend(['', '## Proof', ''])
     for proof_id, rule_id, tail in proofs:
         lines.append('- %s (%s): Call it with 2; verify it answers 4%s'
@@ -469,7 +469,7 @@ def test_an_audit_replaces_the_entries_it_read_and_no_others(tmp_path):
 @pytest.mark.proof("evidence_writer", "PROOF-12", "RULE-12")
 def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
     root = _project(tmp_path, gate='strong')
-    _spec(root, bar='strong')
+    _spec(root, level='strong')
     _test_file(root)
     _repo(root)
 
