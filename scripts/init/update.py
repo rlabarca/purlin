@@ -57,8 +57,7 @@ PRE_PUSH_HOOK = '.git/hooks/pre-push'                      # retired
 PRE_PUSH_KEY = 'pre_push'                                  # retired
 
 # --- what this release writes instead --------------------------------------
-IGNORE_LINES = ('.purlin/report-data.js', '.purlin/report-stamp.js',
-                '.purlin/briefs/**/*.brief.txt')
+IGNORE_LINES = ('.purlin/report-data.js', '.purlin/briefs/**/*.brief.txt')
 RECORDS_DIR = '.purlin/records'
 WORKFLOW_DIR = '.github/workflows'
 ARROW = '→'

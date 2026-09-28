@@ -327,7 +327,6 @@ def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):
     assert os.path.isfile(os.path.join(root, '.purlin', 'report-data.js'))
     ignored = _read(root, '.gitignore').splitlines()
     assert '.purlin/report-data.js' in ignored
-    assert '.purlin/report-stamp.js' in ignored
 
 
 @pytest.mark.proof("update", "PROOF-8", "RULE-8")

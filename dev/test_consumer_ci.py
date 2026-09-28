@@ -35,9 +35,9 @@ FIXTURE = os.path.join(ROOT, 'dev', 'fixtures', 'consumer-ci')
 FIXTURE_REL = 'dev/fixtures/consumer-ci'
 WORKFLOW_REL = '.github/workflows/purlin.yml'
 
-# Every file the fixture is made of. `.purlin/runtime/`, `.purlin/cache/` and
-# the dashboard page are deliberately absent: they are generated state that the
-# fixture's own `.gitignore` excludes, and a fixture that shipped them would
+# Every file the fixture is made of. `.purlin/runtime/` and the dashboard page
+# are deliberately absent: they are generated state that the fixture's own
+# `.gitignore` excludes, and a fixture that shipped them would
 # ship a claim about a run that did not happen here.
 FIXTURE_FILES = (
     '.github/workflows/purlin.yml',

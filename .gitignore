@@ -12,18 +12,13 @@ mutants/
 env/
 venv/
 
-# Purlin Runtime & Cache
+# Purlin runtime
 .purlin/runtime/
 .purlin/plugins/__pycache__/
-.purlin/cache/
-.purlin/report-stamp.js
 .purlin/report-data.js
 
 # The text rendering of a brief, a local view of the committed JSON beside it
 .purlin/briefs/**/*.brief.txt
-
-# Plugin data (persists across updates)
-.claude-plugin-data/
 
 # MCP server config (machine-specific)
 .mcp.json
@@ -34,26 +29,18 @@ dev/external-refs/
 # Purlin Tool Logs & Artifacts
 *.log
 *.pid
-*.mmd
-!assets/src/*.mmd
 *.png
 !docs/images/*.png
 *.jpeg
 
-# Worktrees (both Purlin agent and Claude Code sub-agent)
-.purlin/worktrees/
+# Claude Code sub-agent worktrees
 .claude/worktrees/
-.purlin_worktree_label
-.purlin_session.lock
 
 # Claude Code per-user settings (machine-specific)
 .claude/settings.local.json
 
-# Dashboard HTML (symlinked from framework)
+# Dashboard HTML (copied by purlin:init and by dev/build_report.py)
 /purlin-report.html
-
-# Transient planning artifacts
-PURLIN_AGENT_PLAN.md
 
 # Credential files (must never be committed)
 credentials.json

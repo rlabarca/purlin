@@ -94,7 +94,7 @@ class TestTheTextRenderingIsIgnored:
 def test_the_update_adds_the_rendering_to_gitignore(tmp_path):
     root = _project(tmp_path, V095)
     write(os.path.join(root, '.gitignore'),
-          '.purlin/runtime/\n.purlin/report-data.js\n.purlin/report-stamp.js\n')
+          '.purlin/runtime/\n.purlin/report-data.js\n')
     assert 'untracked-files' in [item['id'] for item in update.pending(root)]
     assert update.main(['--yes', '--project-root', root]) == 0
     lines = _read(root, '.gitignore').splitlines()
