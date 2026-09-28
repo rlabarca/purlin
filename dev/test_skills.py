@@ -642,7 +642,7 @@ class TestSkillDrift:
     def test_it_takes_its_data_from_the_tool(self):
         assert carries(skill_path('drift'), [
             'drift(role="eng")', 'references/drift_criteria.md',
-            'do not restate them here and do not invent a category the tool '
+            'do not restate them here and do not invent a line the tool '
             'does not return']) == []
 
     @pytest.mark.proof("skill_drift", "PROOF-3", "RULE-3")
