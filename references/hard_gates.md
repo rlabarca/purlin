@@ -60,7 +60,8 @@ The level decides three things and nothing else decides them:
 
 - **Which cells block.** A rule meets the gate when its passed cell is met, its strong cell is
   met if its level is `strong` or `signed`, and its signed cell is met if its level is
-  `signed`. A cell above the rule's level is still shown and does not block.
+  `signed`. A rule has no cell above its level, so nothing above it blocks the rule, is
+  shown for it or is counted for it.
 - **Whether the AI audit reads it.** Under the gate `strong` or `signed` the audit reads every
   rule whose level is `strong` or `signed`, and no other. Under the gate `passed` it reads
   every rule, and what it finds blocks nothing.

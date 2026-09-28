@@ -63,8 +63,8 @@ line, since proofs are optional there. `Strong` joins at `strong` and `Signed` a
 | `Rules` | how many rules the spec owns, then, where it proves rules from an anchor it requires or from a global anchor, `15 · plus 6 shared` | each anchor the shared rules come from and how many, as `security_no_dangerous_patterns · 6`; none where there are no shared rules |
 | `Proofs` | `24 · 3 no test`: how many proof lines the spec holds and how many no marker above a test names, whether or not that test has run. A `@manual` proof counts as no gap | which proofs those are |
 | `Tests` | `21 of 24 · 1 partial · 2 failing`: how many rules passed everywhere they ran, then the two words that say they did not | one line per operating system a current run covered, newest first: `linux · ci · 9 days old · 22 passed · 1 failed · 1 not run` |
-| `Strong` | `18 of 24 · 71%`: how many rules reached `strong`, and the test strength, `n/a` where nothing measured one | where the newest audit came from, how old it is, and `minimum strength 80%` |
-| `Signed` | `1 of 4`: how many rules carry a signature that counts | each signer with the date of their newest signature, then how many are `stale` |
+| `Strong` | `18 of 20 · 71%`: how many rules reached `strong` of those whose level is `strong` or `signed`, and the test strength, `n/a` where nothing measured one; empty where no rule's level asks for the audit | where the newest audit came from, how old it is, and `minimum strength 80%` |
+| `Signed` | `1 of 4`: how many rules carry a signature that counts, of those whose level is `signed`; empty where none is | each signer with the date of their newest signature, then how many are `stale` |
 
 Shared rules count toward every feature that proves them, in `Proofs`, `Tests`, `Strong` and
 `Signed`, so `ai_audit` reads `15 · plus 6 shared` and `0 of 21` beside it. The tiles, the
@@ -91,6 +91,10 @@ reading the cell's word, and a button that opens the rule's proofs:
 | passed | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
 | strong | `strong`, `weak`, `not audited`, `manual test`, `no proof` |
 | signed | `signed`, `unsigned`, `stale` |
+
+A rule has the cells its level asks for: one whose level is `passed` carries one pill, and one
+whose level is `strong` carries two. The `Strong` and `Signed` tiles and the `Weak` and `Not
+audited` filters count only the rules whose level asks for that cell.
 
 **Proofs under a rule.** The button reads `▶ 2 proofs` while closed, in the warn tone when one
 of the proofs reads `failed` or `no test`, and `no proof` where the rule has none. Pressing it,
@@ -131,10 +135,10 @@ the tab names the owner.
 ![The rule screen for login RULE-1 at the gate signed: the Passed, Strong and Signed rows with the lin and win boxes, the Level, Spec, Last run and Signatures rows, then the Audit panel, the Signed panel and PROOF-1 with its test](images/dashboard-rule.png)
 
 The screen opens with the feature, the rule id and the rule's text, then one panel of facts: a
-row per cell that exists, then, at `strong` and above, the `Level` row, then `Spec`, `Last run`
-and, at `signed`, the `Signatures` that bind the rule. The `Level` row reads `signed (the
-gate)`, `passed (marked)` or `strong (marked signed; the gate is the ceiling)`, so you see
-whether the rule asked for its level itself.
+row per cell the rule's level asks for, then, at `strong` and above, the `Level` row, then
+`Spec`, `Last run` and, where the rule has a signed cell, the `Signatures` that bind it. The
+`Level` row reads `signed (the gate)`, `passed (marked)` or `strong (marked signed; the gate is
+the ceiling)`, so you see whether the rule asked for its level itself.
 
 Each cell row carries the word as a pill and the cell's reasons, such as `failing: linux, local`,
 `windows: no run yet`, `code changed since 9f8e7d6`, `strength 64% under 80%` or `manual
@@ -142,9 +146,9 @@ proof`. The passed row adds one box per operating system a current run covered, 
 `win`, green where the rule passed and red where it failed, with the word, the source and the
 age in its hover. The signed row adds the signer and the date.
 
-At `strong` and above the **Audit** panel follows: `Strong. It found nothing.`, `Weak.` or
-`Undecided. The AI audit could not decide, so the rule reads weak until its proof or test
-changes.`, then each finding on its own line, then `Test strength 86%, against a minimum of
+Where the rule's level is `strong` or `signed` the **Audit** panel follows: `Strong. It found
+nothing.`, `Weak.` or `Undecided. The AI audit could not decide, so the rule reads weak until
+its proof or test changes.`, then each finding on its own line, then `Test strength 86%, against a minimum of
 80%.` or `no mutation score measured`, then `Read by <model> on <date> <time> UTC` and a link
 to the evidence file. A rule no audit has read says `No audit has read this rule’s text, proof
 and test yet.` The panel reports and recommends nothing.
@@ -152,9 +156,8 @@ and test yet.` The panel reports and recommends nothing.
 At `signed` the signature panel comes next. A signed rule's panel is headed `Signed` and names
 who signed it, the date and minute in UTC, and the machine and operating system. Otherwise the
 panel is headed `Signature` or `Hand check` and names the command to run in Claude Code,
-`purlin:sign <feature> <RULE-N>`, with `--note "<what you saw>"` for a hand check. Where the
-rule's level is below `signed`, it says the rule asks for no signature and that one written
-anyway still counts.
+`purlin:sign <feature> <RULE-N>`, with `--note "<what you saw>"` for a hand check. A rule
+whose level is below `signed` has no signature panel, unless it waits for a hand check.
 
 The **Proofs** are last, each drawn exactly as the board draws it under the rule: its words, its
 result, its `@manual` and `@env` tags, and its tests with their results. A project at `passed`

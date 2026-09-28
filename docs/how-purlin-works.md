@@ -34,7 +34,8 @@ rule says its own with the tag `[level: passed]`, `[level: strong]` or `[level: 
 rule with no tag takes the project's gate as its level. The gate is the ceiling: a tag above it
 is read as the gate. A rule **meets the gate** when its passed cell is met, its strong cell is
 met if its level is `strong` or `signed`, and its signed cell is met if its level is `signed`.
-Cells above a rule's level are shown and do not block.
+A rule has no cell above its level: one whose level is `passed` shows no strong and no signed
+cell, and one whose level is `strong` no signed cell.
 [references/hard_gates.md](../references/hard_gates.md) is the one definition.
 
 ## The loop, and where it runs
