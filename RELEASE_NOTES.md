@@ -146,6 +146,30 @@ operating system's section, because its evidence exists nowhere else.
 spec, the covered code or the tests change, the passed cell reads `out of date`, naming what
 changed, whoever made the run and whether or not it was committed; the next run clears it.
 
+**A run covers what the change touched.** 0.9.5's `purlin:test` ran every test every time.
+Now, with no feature named, it runs a feature only when that feature has no run on this
+operating system, when its spec, its covered code or its tests changed since its newest run,
+when an untracked file sits under its `> Scope:` or beside its tests, or when its spec names no
+files. Before it runs anything it prints what it selected and why, `Selected 2 of 34 features:
+login (code changed since a1b2c3d), invoice (no run on macos yet).`, and what it skipped; each
+test framework is then given only the test files of those features, except `dotnet test`,
+which runs its whole suite. With nothing selected it prints `Nothing to run: every feature's
+spec, code and tests match its evidence. purlin:test --all runs them anyway.` and runs no test.
+`purlin:test --all` runs every feature, `purlin:test <feature>` runs the ones named, and
+`purlin:audit` runs its tests on the same selection. An anchor's rules count in the spec of
+every feature that requires it, so editing an anchor runs those features.
+
+**`> Scope:` is required at `signed`.** Below `signed` a spec with no `> Scope:` line, or one
+that names no file that exists, has its tests run and its rules read as usual; the cost is that
+Purlin cannot tell which code belongs to it, so every run includes it, and `purlin:status`
+names it: `1 spec names no files, so its tests run every time: export.` At `signed`,
+`purlin:sign` refuses its rules, `sign: export names no files in > Scope:, so a signature cannot
+be tied to the code it governs. Run: purlin:spec export`, no tag is written, and the gate check
+lists it under `Incomplete`. Anchors never need one. `purlin:spec` writes the line on every
+spec it creates and `purlin:build` keeps it current in the commit that changes the code. The
+tag's refusal also names each feature whose evidence is out of date, `No tag: login is out of
+date (code changed since a1b2c3d).`
+
 **Platforms.** A rule's passed cell carries one entry per operating system a counting run
 covered. The cell reads `partial` when the tests passed on some and failed or did not run on
 others, which is not met, and `partial` has its own tile and filter at every gate. Test strength
