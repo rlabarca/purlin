@@ -9,6 +9,7 @@ project and reads the file back.
     python3 -m pytest dev/test_report_refresh.py -q
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -35,7 +36,14 @@ DATA = os.path.join('.purlin', 'report-data.js')
 
 def _data(root):
     """The payload the data file holds, or None where there is no file."""
-    return purlin_payload.read_report_payload(str(root))
+    path = os.path.join(str(root), DATA)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding='utf-8') as handle:
+        text = handle.read()
+    prefix = 'const PURLIN_DATA = '
+    assert text.startswith(prefix) and text.endswith(';\n'), text[:80]
+    return json.loads(text[len(prefix):-len(';\n')])
 
 
 def _rule(data, feature, rule_id):
