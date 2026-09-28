@@ -31,13 +31,11 @@ everything". The documented syntax is canonical, never required.
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --test
 ```
 
-One feature at a time is `--feature <name>`, repeated for each, and `--commit` commits what
-the run wrote.
+One feature at a time is `--feature <name>`, repeated for each; `--commit` commits the run.
 The run script owns test execution for the whole plugin: `purlin:build` and `purlin:audit`
 call it too, so there is one answer to how a test is run. `--remote` hands the run to the git
 host's runner instead, on a run branch it creates, waits on and deletes; the runner writes its
-own section under `.purlin/evidence/ci/` and always commits it, and the run pulls that commit
-back. Use
+own section under `.purlin/evidence/ci/` and always commits it, and the run pulls it back. Use
 it for two reasons and no other: a proof is tagged `@env` for an operating system this machine
 is not, or `trust` is `remote`, so a signature rests on a run this machine did not make.
 It waits through `gh` on GitHub and through `az` with its `azure-devops` extension on Azure
