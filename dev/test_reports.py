@@ -458,7 +458,7 @@ class TestThroughARun:
                '# purlin: login PROOF-3\nexit 3\n')
         code, out = _run(root, '--all', '--test')
         assert code == 1
-        assert 'the shell suite had 1 failing test file(s)' in out
+        assert 'Evidence is missing' not in out, out
         assert _results(_evidence(root)) == {
             ('PROOF-1', 'tests/good.sh::good.sh'): 'pass',
             ('PROOF-2', 'tests/good.sh::good.sh'): 'pass',

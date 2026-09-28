@@ -313,7 +313,9 @@ class TestTheTestArmRunsEachSuite:
         _spec(root, 'feat')
         code, output = _run(root, '--all', '--test')
         assert code == 1, output
-        assert 'the pytest suite exited 1' in output
+        assert 'Evidence is missing' not in output, output
+        assert ('→ Next: run purlin:build. 1 rule has a failing test.'
+                in output), output
         assert _proofs(root, 'feat')[0]['result'] == 'fail'
 
 
@@ -355,7 +357,7 @@ class TestLoudFailureB:
                                     ('PROOF-2', 'RULE-1', '')))
         code, output = _run(root, '--all', '--test')
         assert code == 1, output
-        assert ('1 marker(s) have no passing or failing result: feat PROOF-2 '
+        assert ('1 marker has no passing or failing result: feat PROOF-2 '
                 'at tests/test_feat.py:7') in output, output
         assert 'feat PROOF-1 at' not in output
 
@@ -373,7 +375,7 @@ class TestLoudFailureB:
               proofs=tuple(('PROOF-%d' % i, 'RULE-1', '') for i in range(1, 9)))
         code, output = _run(root, '--all', '--test')
         assert code == 1
-        assert '8 marker(s) have no passing or failing result' in output
+        assert '8 markers have no passing or failing result' in output
         assert 'and 3 more' in output
 
     # purlin: run_script PROOF-9
@@ -1287,8 +1289,7 @@ class TestAFailingSuiteStatesItsReason:
     """
 
     # purlin: run_script PROOF-58
-    def test_a_failing_arm_prints_its_tail_before_the_missing_evidence(
-            self, tmp_path):
+    def test_a_failing_arm_prints_its_tail_before_the_table(self, tmp_path):
         root = _pytest_project(tmp_path, body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
@@ -1300,8 +1301,8 @@ class TestAFailingSuiteStatesItsReason:
         heading = '--- pytest output (last 60 lines) ---'
         assert heading in output, output
         assert '1 failed' in output, output
-        assert output.index(heading) < output.index('Evidence is missing'), \
-            output
+        assert output.index(heading) < output.index('Purlin status:'), output
+        assert 'Evidence is missing' not in output, output
 
     # purlin: run_script PROOF-58
     def test_an_arm_that_passed_prints_no_tail(self, tmp_path):

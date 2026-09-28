@@ -1,4 +1,4 @@
-"""Run a project's tagged tests, write the evidence, and audit it on request.
+"""Run a project's marked tests, write the evidence, and audit it on request.
 
     purlin_run.py [--feature NAME ... | --all]
                   (--test [--remote] [--commit] | --ci)
@@ -385,6 +385,7 @@ class SuiteRun(object):
         self.outcomes = {}        # (path, test line) -> [outcome]
         self.file_results = {}    # path -> pass | fail, for an exit suite
         self.failures = []
+        self.failed_tests = False  # it ran, and at least one test failed
         self.problems = []
         self.log = ''
 
@@ -417,12 +418,7 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
                                        else reports_module.FAIL)
             if code != 0:
                 failed.append(path)
-        if failed:
-            shown = ', '.join(failed[:5])
-            if len(failed) > 5:
-                shown += ', and %d more' % (len(failed) - 5)
-            done.failures.append('the %s suite had %d failing test file(s): '
-                                 '%s' % (suite.name, len(failed), shown))
+        done.failed_tests = bool(failed)
         done.log = '\n'.join(log[mark:])
         return done
 
@@ -435,12 +431,13 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     if code == TIMED_OUT:
         done.failures.append('the %s suite timed out after %d s'
                              % (suite.name, timeout))
-    elif code != 0:
-        done.failures.append('the %s suite exited %d' % (suite.name, code))
+    done.failed_tests = code not in (0, TIMED_OUT)
     cases, problem = reports_module.read_report(suite.format, project_root,
                                                 report, stdout)
     if problem:
-        # Loud failure A: the suite ran and there is no report to read.
+        # Loud failure A: the suite ran and there is no report to read. A
+        # suite that exits non-zero over a report it wrote has only failing
+        # tests, which the report itself says.
         done.failures.append('the %s suite %s' % (suite.name, problem))
         return done
     here = {path: found for path, found in (marked or {}).items()
@@ -743,7 +740,7 @@ def main(argv=None):
                          scan)
         runs.append(done)
         failures.extend(done.failures)
-        if done.failures:
+        if done.failures or done.failed_tests:
             print_arm_output(suite.name, done.log)
         for problem in done.problems:
             print(problem)
@@ -785,20 +782,25 @@ def main(argv=None):
         shown = ', '.join(missing[:5])
         more = ('' if len(missing) <= 5
                 else ', and %d more' % (len(missing) - 5))
-        failures.append('%d marker(s) have no passing or failing result: %s%s'
-                        % (len(missing), shown, more))
+        failures.append('%s no passing or failing result: %s%s'
+                        % ('1 marker has' if len(missing) == 1
+                           else '%d markers have' % len(missing), shown, more))
     ran = [done.suite.name for done in runs]
 
-    print('Ran %s on %d feature(s).'
-          % (', '.join(ran) or 'nothing', len(selected)))
+    print('Ran %s on %s.'
+          % (', '.join(ran) or 'nothing',
+             '1 feature' if len(selected) == 1
+             else '%d features' % len(selected)))
     if foreign:
         print('')
         for feature, proof_id, env in foreign:
             print(FOREIGN_PROOF % (feature, proof_id, env, os_name))
 
-    exit_code = 0
+    # A failing test is a result the evidence records, so it fails the run
+    # without being called missing; only a suite that left nothing to read,
+    # or a marker with no result, is missing evidence.
+    exit_code = 1 if failures or any(done.failed_tests for done in runs) else 0
     if failures:
-        exit_code = 1
         print('')
         for failure in failures:
             print('Evidence is missing: %s.' % failure)
