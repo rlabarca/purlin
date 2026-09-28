@@ -26,10 +26,10 @@ from purlin import status as purlin_status  # noqa: E402
 SCRIPT_EXTENSIONS = ('.py', '.sh', '.js', '.ts', '.php', '.cs')
 
 
-def _all_script_files():
+def _all_script_files(root=SCRIPTS_DIR):
     files = []
     for ext in SCRIPT_EXTENSIONS:
-        files.extend(glob.glob(os.path.join(SCRIPTS_DIR, '**', '*' + ext),
+        files.extend(glob.glob(os.path.join(root, '**', '*' + ext),
                                recursive=True))
     return files
 
@@ -71,7 +71,10 @@ def _ext(path):
 # RULE-1: dynamic code and command strings, in the form each language spells it.
 _DANGEROUS_BY_EXT = {
     '.py': [r'\beval\s*\(', r'\bexec\s*\('],
-    '.sh': [r'(^|[;&|]\s*)eval\s', r'`[^`]*`'],
+    # eval in command position: a line's start (indented or not), after ;, &,
+    # |, ( or $( or !, or after a keyword that runs a command next.
+    '.sh': [r'(^|[;&|(!{]|\b(if|then|else|elif|do|while|until|time|command|'
+            r'builtin|exec))\s*eval\b', r'`[^`]*`'],
     '.js': [r'\beval\s*\(', r'new\s+Function\s*\(', r'\bexecSync\s*\(',
             r'child_process\s*\.\s*exec\s*\('],
     '.ts': [r'\beval\s*\(', r'new\s+Function\s*\(', r'\bexecSync\s*\(',
@@ -96,87 +99,262 @@ _SYSTEM_CALL_BY_EXT = {
 }
 
 
+def _pattern_hits(paths, table, strip=True):
+    """`[(path, pattern), ...]` for each form of `table` a file holds."""
+    hits = []
+    for path in paths:
+        ext = _ext(path)
+        content = _read(path)
+        if strip:
+            content = _strip_comments(content, ext)
+        for pattern in table.get(ext, []):
+            if re.search(pattern, content, re.MULTILINE):
+                hits.append((path, pattern))
+    return hits
+
+
+# RULE-4: a quoted value given to a name ending in a credential word, with `=`
+# in every language and also with `:` in JS and TS object fields.
+_CRED_ASSIGN = re.compile(
+    r'(password|secret|api_key|token)\s*=\s*["\'][^"\']+["\']', re.IGNORECASE)
+_CRED_FIELD = re.compile(
+    r'(password|secret|api_key|token)\s*:\s*["\'][^"\']+["\']', re.IGNORECASE)
+
+
+def _credential_hits(paths):
+    hits = []
+    for path in paths:
+        if os.path.basename(path).startswith('test_'):
+            continue
+        ext = _ext(path)
+        content = _strip_comments(_read(path), ext)
+        matches = _CRED_ASSIGN.findall(content)
+        if ext in ('.js', '.ts'):
+            matches += _CRED_FIELD.findall(content)
+        if matches:
+            hits.append((path, matches))
+    return hits
+
+
+# RULE-5: the launch forms and what their argument vector must look like.
+_PY_LAUNCHES = ('run', 'call', 'check_call', 'check_output')
+_PY_CALL = re.compile(r'subprocess\.(run|call|check_call|check_output)\s*\(')
+_PY_STRING_ARG = re.compile(
+    r'subprocess\.(run|call|check_call|check_output|Popen)\s*\(\s*[fbr]?["\']')
+_PY_IMPORTED = re.compile(r'^\s*from\s+subprocess\s+import\s+\(?([\w\s,]+)',
+                          re.MULTILINE)
+_PHP_CALL = re.compile(r'\bproc_open\s*\(')
+_JS_CALL = re.compile(r'\b(spawn|spawnSync|execFile|execFileSync)\s*\(')
+_CS_STRING_ARGS = re.compile(r'\.Arguments\s*=\s*"')
+
+
+def _launch_faults(paths):
+    """One message per launch that is not handed an argument vector."""
+    faults = []
+    for path in paths:
+        ext = _ext(path)
+        content = _strip_comments(_read(path), ext)
+
+        def where(m):
+            return f"{path}:{content[:m.start()].count(chr(10)) + 1}"
+
+        def head(m):
+            return content[m.end():m.end() + 50].lstrip()
+
+        if ext == '.py':
+            if _PY_STRING_ARG.findall(content):
+                faults.append(f"Found subprocess with string arg in {path}")
+            calls = list(_PY_CALL.finditer(content))
+            # A launch imported by name, under its own name or an alias.
+            for imported in _PY_IMPORTED.findall(content):
+                for entry in (e.split() for e in imported.split(',')):
+                    if not entry:
+                        continue
+                    bare = re.compile(r'(?<![\w.])%s\s*\(' % entry[-1])
+                    if entry[0] in _PY_LAUNCHES:
+                        calls += bare.finditer(content)
+                    elif entry[0] == 'Popen':
+                        for m in bare.finditer(content):
+                            if re.match(r'[fbr]?["\']', head(m)):
+                                faults.append(f"Popen with string arg at {where(m)}")
+            for m in calls:
+                if not head(m).startswith(('[', '*')):
+                    faults.append(f"subprocess call at {where(m)} first arg is "
+                                  f"not a list literal: ...{head(m)[:30]}")
+        elif ext == '.php':
+            for m in _PHP_CALL.finditer(content):
+                if not head(m).startswith('['):
+                    faults.append(f"proc_open at {where(m)} first arg is not "
+                                  f"an array literal: ...{head(m)[:30]}")
+        elif ext in ('.js', '.ts'):
+            for m in _JS_CALL.finditer(content):
+                if not re.match(r'[^,)]*,\s*\[', content[m.end():]):
+                    faults.append(f"{m.group(1)} at {where(m)} args argument "
+                                  f"is not an array literal: ...{head(m)[:30]}")
+        elif ext == '.cs':
+            if _CS_STRING_ARGS.findall(content):
+                faults.append(f"Found ProcessStartInfo.Arguments string "
+                              f"assignment in {path}")
+    return faults
+
+
+def _plant(root, index, name, text):
+    """Write `text` to `<root>/<index>/<name>` and return its path."""
+    folder = os.path.join(str(root), str(index))
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, name)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(text)
+    return path
+
+
+def _misses(root, samples, finds):
+    """The samples for which `finds([path])` found nothing."""
+    return [(name, text) for i, (name, text) in enumerate(samples)
+            if not finds([_plant(root, i, name, text)])]
+
+
+def _false_alarms(root, samples, finds):
+    """The samples for which `finds([path])` found something."""
+    return [(name, text) for i, (name, text) in enumerate(samples)
+            if finds([_plant(root, 'clean-%d' % i, name, text)])]
+
+
+# A file holding one form of each rule, and files that hold none.
+_PLANTED_DYNAMIC = [
+    ('a.py', 'x = eval(src)\n'), ('a.py', 'exec (src)\n'),
+    ('a.py', 'x = eval(src)  # only a comment follows\n'),
+    ('a.sh', 'eval "$cmd"\n'), ('a.sh', '    eval "$cmd"\n'),
+    ('a.sh', 'if eval "$cmd"; then :; fi\n'), ('a.sh', 'out=$(eval "$cmd")\n'),
+    ('a.sh', 'true && eval "$cmd"\n'), ('a.sh', 'out=`date`\n'),
+    ('a.js', 'eval(src);\n'), ('a.js', 'const f = new Function(src);\n'),
+    ('a.js', 'execSync(cmd);\n'), ('a.js', 'child_process.exec(cmd);\n'),
+    ('a.js', 'eval(src); // only a comment follows\n'),
+    ('a.ts', 'eval(src);\n'), ('a.ts', 'const f = new Function(src);\n'),
+    ('a.ts', 'execSync(cmd);\n'), ('a.ts', 'child_process.exec(cmd);\n'),
+    ('a.php', '<?php eval($src);\n'), ('a.php', '<?php exec($cmd);\n'),
+    ('a.php', '<?php shell_exec($cmd);\n'), ('a.php', '<?php system($cmd);\n'),
+    ('a.php', '<?php passthru($cmd);\n'), ('a.php', '<?php $o = `ls`;\n'),
+    ('a.cs', 'Process.Start("cmd.exe /c dir");\n'),
+]
+_CLEAN_DYNAMIC = [
+    ('a.py', '# eval(src) is never called\nx = evaluate(src)\n'),
+    ('a.sh', '  # eval "$cmd" is never run\nrun_evaluation "$x"\n'),
+    ('a.js', '// eval(src) is never called\nconst x = evaluate(src);\n'),
+    ('a.cs', 'Process.Start(info);\n'),
+]
+
+
 class TestSecurityPatterns:
 
     # purlin: security_no_dangerous_patterns PROOF-1
     def test_no_dynamic_code_execution(self):
-        for path in _all_script_files():
-            ext = _ext(path)
-            content = _strip_comments(_read(path), ext)
-            for pattern in _DANGEROUS_BY_EXT.get(ext, []):
-                assert not re.search(pattern, content, re.MULTILINE), \
-                    f"Found dynamic-code pattern {pattern!r} in {path}"
+        hits = _pattern_hits(_all_script_files(), _DANGEROUS_BY_EXT)
+        assert not hits, "\n".join(f"Found dynamic-code pattern {pattern!r} in {path}"
+                                   for path, pattern in hits)
+
+    # purlin: security_no_dangerous_patterns PROOF-1
+    def test_planted_dynamic_code_is_found(self, tmp_path):
+        finds = lambda paths: _pattern_hits(paths, _DANGEROUS_BY_EXT)  # noqa: E731
+        assert not _misses(tmp_path, _PLANTED_DYNAMIC, finds), \
+            "a planted form went unfound"
+        assert not _false_alarms(tmp_path, _CLEAN_DYNAMIC, finds), \
+            "a comment-only line or a harmless word was counted"
+        # The scan of a folder finds every planted file, and names it.
+        found = {path for path, _ in _pattern_hits(_all_script_files(str(tmp_path)),
+                                                   _DANGEROUS_BY_EXT)}
+        assert len(found) == len(_PLANTED_DYNAMIC), found
 
     # purlin: security_no_dangerous_patterns PROOF-2
     def test_no_shell_true(self):
-        for path in _all_script_files():
-            ext = _ext(path)
-            content = _read(path)
-            for pattern in _SHELL_FLAG_BY_EXT.get(ext, []):
-                assert not re.search(pattern, content), \
-                    f"Found shell opt-in {pattern!r} in {path}"
+        hits = _pattern_hits(_all_script_files(), _SHELL_FLAG_BY_EXT, strip=False)
+        assert not hits, "\n".join(f"Found shell opt-in {pattern!r} in {path}"
+                                   for path, pattern in hits)
+
+    # purlin: security_no_dangerous_patterns PROOF-2
+    def test_planted_shell_opt_in_is_found(self, tmp_path):
+        finds = lambda paths: _pattern_hits(paths, _SHELL_FLAG_BY_EXT,  # noqa: E731
+                                            strip=False)
+        planted = [('a.py', 'subprocess.run(argv, shell=True)\n'),
+                   ('a.py', 'subprocess.run(argv, shell = True)\n'),
+                   ('a.py', '# subprocess.run(argv, shell=True)\n'),
+                   ('a.js', 'spawn("ls", [], { shell: true });\n'),
+                   ('a.ts', 'spawn("ls", [], { shell :true });\n'),
+                   ('a.cs', 'psi.UseShellExecute = true;\n'),
+                   ('a.cs', 'psi.UseShellExecute=true;\n')]
+        clean = [('a.py', 'subprocess.run(argv, shell=False)\n'),
+                 ('a.js', 'spawn("ls", [], { shell: false });\n'),
+                 ('a.cs', 'psi.UseShellExecute = false;\n')]
+        assert not _misses(tmp_path, planted, finds), "a planted opt-in went unfound"
+        assert not _false_alarms(tmp_path, clean, finds), "an opt-out was counted"
 
     # purlin: security_no_dangerous_patterns PROOF-3
     def test_no_os_system(self):
-        for path in _all_script_files():
-            ext = _ext(path)
-            content = _strip_comments(_read(path), ext)
-            for pattern in _SYSTEM_CALL_BY_EXT.get(ext, []):
-                assert not re.search(pattern, content), \
-                    f"Found shell-command builtin {pattern!r} in {path}"
+        hits = _pattern_hits(_all_script_files(), _SYSTEM_CALL_BY_EXT)
+        assert not hits, "\n".join(f"Found shell-command builtin {pattern!r} in {path}"
+                                   for path, pattern in hits)
+
+    # purlin: security_no_dangerous_patterns PROOF-3
+    def test_planted_system_call_is_found(self, tmp_path):
+        finds = lambda paths: _pattern_hits(paths, _SYSTEM_CALL_BY_EXT)  # noqa: E731
+        planted = [('a.py', 'os.system(cmd)\n'), ('a.py', 'os.system (cmd)\n'),
+                   ('a.php', '<?php system($cmd);\n'),
+                   ('a.php', '<?php passthru ($cmd);\n')]
+        clean = [('a.py', '# os.system(cmd) is never called\n'),
+                 ('a.php', '<?php\n// system($cmd) is never called\n')]
+        assert not _misses(tmp_path, planted, finds), "a planted call went unfound"
+        assert not _false_alarms(tmp_path, clean, finds), "a comment was counted"
 
     # purlin: security_no_dangerous_patterns PROOF-4
     def test_no_hardcoded_credentials(self):
-        cred_pattern = re.compile(
-            r'(password|secret|api_key|token)\s*=\s*["\'][^"\']+["\']',
-            re.IGNORECASE
-        )
-        for path in _all_script_files():
-            basename = os.path.basename(path)
-            if basename.startswith('test_'):
-                continue
-            content = _strip_comments(_read(path), _ext(path))
-            matches = cred_pattern.findall(content)
-            assert not matches, \
-                f"Found hardcoded credential in {path}: {matches}"
+        hits = _credential_hits(_all_script_files())
+        assert not hits, "\n".join(f"Found hardcoded credential in {path}: {matches}"
+                                   for path, matches in hits)
+
+    # purlin: security_no_dangerous_patterns PROOF-4
+    def test_planted_credential_is_found(self, tmp_path):
+        planted = [('a.py', 'API_KEY = "abc"\n'), ('a.py', "db_password='x'\n"),
+                   ('a.sh', 'GITHUB_TOKEN="abc"\n'),
+                   ('a.js', 'const cfg = { password: "x" };\n'),
+                   ('a.ts', 'const auth = { Token : "abc" };\n')]
+        clean = [('a.py', 'API_KEY = ""\n'), ('a.py', 'if token == "x":\n    pass\n'),
+                 ('test_a.py', 'password = "x"\n'),
+                 ('a.py', 'row = {"password": ""}\n')]
+        assert not _misses(tmp_path, planted, _credential_hits), \
+            "a planted credential went unfound"
+        assert not _false_alarms(tmp_path, clean, _credential_hits), \
+            "an empty value, a comparison or a test file was counted"
 
     # purlin: security_no_dangerous_patterns PROOF-5
     def test_subprocess_uses_list_args(self):
-        py_call = re.compile(r'subprocess\.(run|call|check_call|check_output)\s*\(')
-        py_string_arg = re.compile(
-            r'subprocess\.(run|call|check_call|check_output)\s*\(\s*["\']')
-        php_call = re.compile(r'\bproc_open\s*\(')
-        js_call = re.compile(
-            r'\b(spawn|spawnSync|execFile|execFileSync)\s*\([^,)]*,\s*')
-        cs_string_args = re.compile(r'\.Arguments\s*=\s*"')
+        faults = _launch_faults(_all_script_files())
+        assert not faults, "\n".join(faults)
 
-        for path in _all_script_files():
-            ext = _ext(path)
-            content = _strip_comments(_read(path), ext)
-
-            if ext == '.py':
-                assert not py_string_arg.findall(content), \
-                    f"Found subprocess with string arg in {path}"
-                for m in py_call.finditer(content):
-                    after_paren = content[m.end():m.end() + 50].lstrip()
-                    assert after_paren.startswith('[') or after_paren.startswith('*'), \
-                        f"subprocess call at {path}:{content[:m.start()].count(chr(10))+1} " \
-                        f"first arg is not a list literal: ...{after_paren[:30]}"
-            elif ext == '.php':
-                for m in php_call.finditer(content):
-                    after_paren = content[m.end():m.end() + 50].lstrip()
-                    assert after_paren.startswith('['), \
-                        f"proc_open at {path}:{content[:m.start()].count(chr(10))+1} " \
-                        f"first arg is not an array literal: ...{after_paren[:30]}"
-            elif ext in ('.js', '.ts'):
-                for m in js_call.finditer(content):
-                    after_comma = content[m.end():m.end() + 50].lstrip()
-                    assert after_comma.startswith('['), \
-                        f"{m.group(1)} at {path}:{content[:m.start()].count(chr(10))+1} " \
-                        f"args argument is not an array literal: ...{after_comma[:30]}"
-            elif ext == '.cs':
-                assert not cs_string_args.findall(content), \
-                    f"Found ProcessStartInfo.Arguments string assignment in {path}"
+    # purlin: security_no_dangerous_patterns PROOF-5
+    def test_planted_command_string_launch_is_found(self, tmp_path):
+        planted = [('a.py', 'subprocess.run("git status")\n'),
+                   ('a.py', 'subprocess.run(cmd)\n'),
+                   ('a.py', 'subprocess.Popen("git status")\n'),
+                   ('a.py', 'subprocess.Popen(f"git {verb}")\n'),
+                   ('a.py', 'from subprocess import run\nrun("git status")\n'),
+                   ('a.py', 'from subprocess import check_output as co, call\n'
+                            'co("git status")\n'),
+                   ('a.py', 'from subprocess import Popen\nPopen("git status")\n'),
+                   ('a.php', '<?php proc_open("ls -la", $spec, $pipes);\n'),
+                   ('a.js', 'spawn("ls", "-la");\n'), ('a.js', 'spawn("ls -la");\n'),
+                   ('a.ts', 'execFileSync(cmd);\n'),
+                   ('a.cs', 'psi.Arguments = "status --short";\n')]
+        clean = [('a.py', 'subprocess.run(["git", "status"])\n'),
+                 ('a.py', 'subprocess.run(*argv)\n'),
+                 ('a.py', 'from subprocess import run\nrun(["git", "status"])\n'),
+                 ('a.py', 'subprocess.Popen(command, cwd=root)\n'),
+                 ('a.php', '<?php proc_open(["ls", "-la"], $spec, $pipes);\n'),
+                 ('a.js', 'spawn("ls", ["-la"]);\n'),
+                 ('a.cs', 'psi.ArgumentList.Add("status");\n')]
+        assert not _misses(tmp_path, planted, _launch_faults), \
+            "a planted command-string launch went unfound"
+        assert not _false_alarms(tmp_path, clean, _launch_faults), \
+            "a launch handed an argument vector was counted"
 
 
 EVIL_SOURCE = '--upload-pack=/bin/echo'
@@ -221,6 +399,27 @@ def _write_anchor(anchors_dir, name, source, pinned):
         )
 
 
+_SHA = re.compile(r'\b[0-9a-f]{40}\b')
+
+
+def _record_launches(monkeypatch):
+    """Record the argv of every process started through the subprocess module.
+
+    It records at the process itself, so a launch through `run`, `call`,
+    `check_output` or `Popen` directly is recorded alike.
+    """
+    calls = []
+    real_popen = subprocess.Popen
+
+    class Recording(real_popen):
+        def __init__(self, args, *rest, **kwargs):
+            calls.append(list(args) if isinstance(args, (list, tuple)) else [args])
+            super().__init__(args, *rest, **kwargs)
+
+    monkeypatch.setattr(subprocess, 'Popen', Recording)
+    return calls
+
+
 class TestGitArgvHardening:
     """RULE-6: nothing repository-supplied reaches git in option position."""
 
@@ -253,18 +452,27 @@ class TestGitArgvHardening:
         _git(['add', '-A'], cwd=str(project))
         _git(['commit', '-q', '-m', 'chore: project under test'], cwd=str(project))
 
-        calls = []
-        real_run = subprocess.run
-
-        def spy(args, *rest, **kwargs):
-            calls.append(list(args) if isinstance(args, (list, tuple)) else [args])
-            return real_run(args, *rest, **kwargs)
-
-        monkeypatch.setattr(purlin_drift.subprocess, 'run', spy)
+        calls = _record_launches(monkeypatch)
         text = purlin_status.sync_status(str(project))
         monkeypatch.undo()
+        status_calls = list(calls)
 
-        assert calls, "no subprocess calls captured"
+        # A branch and two commits changing a spec, so drift measures a range
+        # from the checkout and hands git revisions: a count, a diff, a show.
+        _git(['checkout', '-q', '-b', 'topic'], cwd=str(project))
+        spec = project / 'specs' / 'demo' / 'demo.md'
+        spec.parent.mkdir(parents=True)
+        for body in ('- RULE-1: One\n', '- RULE-1: One\n- RULE-2: Two\n'):
+            spec.write_text('# Feature: demo\n\n## Rules\n\n' + body)
+            _git(['add', '-A'], cwd=str(project))
+            _git(['commit', '-q', '-m', 'spec(demo): rules'], cwd=str(project))
+        calls = _record_launches(monkeypatch)
+        purlin_drift.drift(str(project))
+        monkeypatch.undo()
+        drift_calls = list(calls)
+        calls = status_calls + drift_calls
+
+        assert status_calls and drift_calls, "no subprocess calls captured"
 
         # Each rejected Source never reaches git at all, and certainly never
         # ahead of an end-of-options separator.
@@ -289,6 +497,8 @@ class TestGitArgvHardening:
         # `--` precedes every path argument. The path operands the server hands
         # git here are repository-relative: `specs/` and spec paths under it.
         def _is_path_operand(arg):
+            if _SHA.search(arg):
+                return False  # `<sha>:specs/x.md` is a revision, checked below
             return arg == 'specs/' or arg.startswith('specs/') or arg.endswith('.md')
 
         carried_a_path = []
@@ -307,6 +517,25 @@ class TestGitArgvHardening:
         assert carried_a_path, (
             "no captured git argv carried a path operand, so the -- check "
             "would pass by matching nothing")
+
+        # --end-of-options immediately precedes the first revision operand, a
+        # commit sha, a range or a `<sha>:<path>`, in every git command.
+        took_a_revision = set()
+        for argv in calls:
+            if not argv or argv[0] != 'git':
+                continue
+            revisions = [i for i, a in enumerate(argv)
+                         if _SHA.search(a) and not a.startswith('-')]
+            if not revisions:
+                continue
+            took_a_revision.add(argv[1])
+            first = min(revisions)
+            assert argv[first - 1] == '--end-of-options', (
+                f"a revision reaches git with no --end-of-options immediately "
+                f"before it: {argv}")
+        assert {'rev-list', 'diff', 'show'} <= took_a_revision, (
+            f"drift handed git no revision in some of rev-list, diff and show, "
+            f"so the check above covers only {sorted(took_a_revision)}")
 
         for reason in ('(source rejected: begins with "-")',
                        '(source rejected: names an ext:: transport)',
