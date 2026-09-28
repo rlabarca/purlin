@@ -48,8 +48,6 @@ ENGINES = ('stryker', 'stryker_net', 'mutmut', 'none')
 ARM_TIMEOUT = 3600
 TIMED_OUT = 124
 
-ATTRIBUTIONS = ('per_test', 'per_scope', 'unavailable')
-
 # Which engine breaks the code a framework's tests cover. jest and vitest are
 # both Stryker; dotnet is Stryker.NET; pytest is mutmut. go, shell and sql
 # have no engine, so those rules carry `attribution: unavailable`.

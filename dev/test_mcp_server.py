@@ -516,14 +516,12 @@ class TestFrameworks:
         assert purlin_frameworks.detect_frameworks(root) == ['go', 'sql',
                                                              'shell']
 
-    def test_c_and_php_are_gone(self, tmp_path):
+    def test_a_project_of_no_known_framework_detects_none(self, tmp_path):
         root = str(tmp_path)
         _write(os.path.join(root, 'Makefile'), 'all:\n\techo hi\n')
         _write(os.path.join(root, 'main.c'), 'int main(){return 0;}\n')
         _write(os.path.join(root, 'composer.json'), '{}')
         assert purlin_frameworks.detect_frameworks(root) == []
-        assert 'c' not in purlin_frameworks.KNOWN_FRAMEWORKS
-        assert 'php' not in purlin_frameworks.KNOWN_FRAMEWORKS
 
 
 # ---------------------------------------------------------------------------
@@ -1375,8 +1373,8 @@ class TestBucketsAndTheGate:
 
     # purlin: states PROOF-27
     def test_partial_sits_between_failing_and_passed(self):
-        assert purlin_states.BUCKETS == ('untested', 'failing', 'partial',
-                                         'passed', 'strong', 'signed')
+        assert purlin_states.bucket_keys('signed') == [
+            'untested', 'failing', 'partial', 'passed', 'strong', 'signed']
         assert purlin_states.bucket_keys('passed') == [
             'untested', 'failing', 'partial', 'passed']
 
@@ -1671,7 +1669,8 @@ class TestTheFixturesAreTheContract:
             for cell_name, cell in rule['cells'].items():
                 built_cell = built['features'][0]['rules'][0]['cells'][cell_name]
                 assert sorted(cell) == sorted(built_cell), (name, cell_name)
-            assert sorted(rule['flags']) == sorted(purlin_states.FLAGS), name
+            assert sorted(rule['flags']) == sorted(
+                built['features'][0]['rules'][0]['flags']), name
 
     # purlin: states PROOF-68
     def test_the_tag_key_is_present_in_every_fixture(self):
@@ -2077,10 +2076,6 @@ class TestPackageHygiene:
                         continue
                     offenders.append('%s: %s' % (name, line.strip()))
         assert offenders == [], offenders
-
-    def test_the_old_server_module_is_gone(self):
-        assert not os.path.exists(
-            os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin_srv.py'))
 
     # purlin: server PROOF-22
     def test_the_plugin_entry_point_names_the_package(self):

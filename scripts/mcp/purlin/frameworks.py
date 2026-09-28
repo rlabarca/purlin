@@ -21,8 +21,6 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-KNOWN_FRAMEWORKS = ('pytest', 'vitest', 'jest', 'dotnet', 'go', 'sql', 'shell')
-
 REPORTS = '.purlin/runtime/reports'
 
 _JS_TEST_GLOBS = ['**/*.%s.%s' % (kind, ext) for kind in ('test', 'spec')

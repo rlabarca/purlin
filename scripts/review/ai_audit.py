@@ -77,9 +77,6 @@ EXITED = 'claude exited with an error'
 TIMED_OUT = 'claude timed out after %d s'
 NO_ANSWER = 'claude answered without a settled line'
 
-# The three verdicts an answer becomes.
-VERDICTS = ('strong', 'weak', 'undecided')
-
 
 # ---------------------------------------------------------------------------
 # What one rule is read with

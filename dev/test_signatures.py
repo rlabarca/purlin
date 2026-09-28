@@ -357,17 +357,17 @@ class TestTheTriple:
 
     # purlin: signatures PROOF-1
     def test_the_three_hashes_come_back_with_their_kind(self, proved):
-        parts = sign_module.rule_proof_test_hashes(
-            proved.root, 'login', 'RULE-1')
-        rule_hash, proof_hash, test_hash, kind = parts
-        assert len(rule_hash) == 64 and len(proof_hash) == 64
-        assert len(test_hash) == 64
-        assert kind == 'file'
+        entry = sign_module.rule_entry(
+            sign_module.load_payload(proved.root), 'login', 'RULE-1')
+        assert len(entry['rule_hash']) == 64
+        assert len(entry['proof_hash']) == 64
+        assert len(entry['test_hash']) == 64
+        assert entry['test_hash_kind'] == 'file'
 
     # purlin: signatures PROOF-2
     def test_a_rule_that_is_not_there_has_no_hashes(self, proved):
-        assert sign_module.rule_proof_test_hashes(
-            proved.root, 'login', 'RULE-99') == (None, None, None, None)
+        assert sign_module.rule_entry(
+            sign_module.load_payload(proved.root), 'login', 'RULE-99') is None
 
     # purlin: signatures PROOF-3
     def test_reflowing_a_rule_and_changing_its_level_keep_the_triple(self,
@@ -408,9 +408,9 @@ class TestTheTriple:
             'verify 401 and the body "denied"',
             'verify 401 and the body "denied" @manual'))
         try:
-            parts = sign_module.rule_proof_test_hashes(
-                made.root, 'login', 'RULE-2')
-            assert parts[3] == 'manual'
+            entry = sign_module.rule_entry(
+                sign_module.load_payload(made.root), 'login', 'RULE-2')
+            assert entry['test_hash_kind'] == 'manual'
         finally:
             made.close()
 

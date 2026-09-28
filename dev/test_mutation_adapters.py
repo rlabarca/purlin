@@ -711,7 +711,8 @@ def assert_answer_shape(answer, scope_by_feature, tests_by_rule):
         rule_score = entry['rules'][rule]
         assert set(rule_score) == {'engine', 'score', 'killed', 'survived',
                                    'attribution'}
-        assert rule_score['attribution'] in mutation.ATTRIBUTIONS
+        assert rule_score['attribution'] in ('per_test', 'per_scope',
+                                             'unavailable')
 
 
 # purlin: mutation PROOF-20

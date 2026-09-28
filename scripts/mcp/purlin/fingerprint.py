@@ -168,22 +168,6 @@ def code_hash(project_root, scope):
     return _files_part(project_root, files)
 
 
-def scope_report(project_root, feature, features=None):
-    """What a feature's `> Scope:` reaches.
-
-    Returns `{scope, files, unmatched, names_no_files}`: the entries as the
-    spec writes them, the tracked files they reach, the entries that reach
-    none, and whether the feature names no file at all. A spec with no
-    `> Scope:` line names no files. That is a fact about the spec, not an
-    error: its evidence is compared on its `spec` and `tests` parts alone.
-    """
-    features = _features(project_root, features)
-    scope = list(_info(feature, features).get('scope') or [])
-    files, unmatched = expand_scope(project_root, scope)
-    return {'scope': scope, 'files': files, 'unmatched': unmatched,
-            'names_no_files': not files}
-
-
 # The two reasons a feature spec is incomplete.
 NO_SCOPE_LINE = 'no > Scope: line'
 SCOPE_NAMES_NOTHING = '> Scope: names nothing that exists'

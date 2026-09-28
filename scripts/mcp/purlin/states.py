@@ -75,15 +75,6 @@ from purlin import evidence as evidence_module, gate as gate_module
 # deepest cell that exists, so the names are the gate values.
 CELLS = ('passed', 'strong', 'signed')
 
-# The one tile a rule is counted in, weakest first.
-BUCKETS = ('untested', 'failing', 'partial', 'passed', 'strong', 'signed')
-
-# The flags a rule carries. `manual` and `not_audited` are the two
-# strong-cell words the tests alone cannot move, and `no_proof` is a rule no
-# proof line names.
-FLAGS = ('failing', 'partial', 'stale', 'manual', 'not_audited',
-         'out_of_date', 'no_proof')
-
 # The strong cell's word that puts a rule in the queue as a hand check, and
 # the one that waits for the audit instead. `not audited` is never in the
 # queue: running `purlin:audit` moves it.
@@ -93,7 +84,6 @@ NOT_AUDITED = 'not audited'
 # What a queue row says it needs, the two reasons a rule waits on a person.
 HAND_CHECK = 'hand check'
 SIGNATURE = 'signature'
-NEEDS = (HAND_CHECK, SIGNATURE)
 
 # The flags a rollup counts, beside the buckets and never instead of them.
 COUNTED_FLAGS = ('stale', 'manual', 'not_audited')

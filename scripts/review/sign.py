@@ -182,20 +182,6 @@ def rule_entry(payload, feature, rule):
     return None
 
 
-def rule_proof_test_hashes(project_root, feature, rule, payload=None):
-    """`(rule_hash, proof_hash, test_hash, test_hash_kind)`.
-
-    R is the rule text with its tags stripped and its whitespace normalised,
-    P the proof descriptions in order and T the test files backing them. A
-    rule that is not in the payload has no hashes and every element is None.
-    """
-    entry = rule_entry(load_payload(project_root, payload), feature, rule)
-    if entry is None:
-        return (None, None, None, None)
-    return (entry.get('rule_hash'), entry.get('proof_hash'),
-            entry.get('test_hash'), entry.get('test_hash_kind'))
-
-
 def triple_for(entry):
     """The triple hash of one rule entry."""
     return signatures_module.triple_hash(
@@ -312,11 +298,6 @@ def in_queue(payload, targets):
     rows = {(row.get('owner'), row.get('rule'))
             for row in (payload or {}).get('queue') or ()}
     return [pair for pair in targets or () if pair in rows]
-
-
-def _rule_number(rule_id):
-    digits = str(rule_id).rsplit('-', 1)[-1]
-    return int(digits) if digits.isdigit() else 0
 
 
 # ---------------------------------------------------------------------------

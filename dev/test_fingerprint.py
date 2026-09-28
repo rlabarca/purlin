@@ -206,8 +206,8 @@ def test_a_glob_scope_changes_when_a_matching_file_changes(tmp_path):
     p.write('src/deep/token.py', 'b = 1\n')
     p.write('src/notes.txt', 'notes\n')
     p.commit()
-    report = fingerprint.scope_report(p.root, 'login')
-    assert report['files'] == ['src/deep/token.py', 'src/login.py']
+    files, _unmatched = fingerprint.expand_scope(p.root, ['src/**/*.py'])
+    assert files == ['src/deep/token.py', 'src/login.py']
     first = p.fp('login')
     p.write('src/deep/token.py', 'b = 2\n')
     second = p.fp('login')
@@ -222,10 +222,11 @@ def test_a_scope_entry_that_reaches_nothing_is_listed_as_unmatched(project):
         'login', ['Valid credentials return 200'],
         ['POST /login; verify 200'],
         scope='src/login.py, src/gone.py, lib/*.rs'))
-    report = fingerprint.scope_report(project.root, 'login')
-    assert report['unmatched'] == ['src/gone.py', 'lib/*.rs']
-    assert report['files'] == ['src/login.py']
-    assert report['names_no_files'] is False
+    files, unmatched = fingerprint.expand_scope(
+        project.root, ['src/login.py', 'src/gone.py', 'lib/*.rs'])
+    assert unmatched == ['src/gone.py', 'lib/*.rs']
+    assert files == ['src/login.py']
+    assert fingerprint.incomplete_reason(project.root, 'login') is None
     assert len(project.fp('login')['code']) == 64
 
 
@@ -234,9 +235,8 @@ def test_a_spec_with_no_scope_names_no_files(project):
     project.write('specs/auth/login.md', _spec(
         'login', ['Valid credentials return 200'],
         ['POST /login; verify 200']))
-    report = fingerprint.scope_report(project.root, 'login')
-    assert report['names_no_files'] is True
-    assert report['scope'] == [] and report['files'] == []
+    assert fingerprint.incomplete_reason(project.root, 'login') == (
+        'no > Scope: line')
     fp = project.fp('login')
     assert fp['code'] == EMPTY
     assert len(fp['spec']) == 64 and len(fp['tests']) == 64

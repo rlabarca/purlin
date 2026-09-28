@@ -56,7 +56,7 @@
 ## Proof
 
 - PROOF-1 (RULE-1): Read the hashes of `login RULE-1` in a project with evidence; verify the rule, proof and test hashes are each 64 characters and the kind is `file`
-- PROOF-2 (RULE-2): Read the hashes of `login RULE-99`, which the spec does not declare; verify all five values are `none`
+- PROOF-2 (RULE-2): Read the hashes of `login RULE-99`, which the spec does not declare; verify no rule is found, so there is no hash to bind
 - PROOF-3 (RULE-3): Read the triple, rewrite the rule line with doubled spaces and `[level: signed]` in place of `[level: passed]`, and read it again; verify the two values are equal
 - PROOF-4 (RULE-4): Read the triple, then change `200` to `201` in the rule, then extend the proof text, then add a comment to the test; verify each of the three values differs from the first
 - PROOF-5 (RULE-5): Retag `PROOF-2` as `@manual` and read the hashes of `RULE-2`; verify the kind of the test hash is `manual`
