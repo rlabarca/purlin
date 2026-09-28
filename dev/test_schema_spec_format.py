@@ -23,7 +23,7 @@ from purlin import status as purlin_status
 
 class TestSpecFormatReference:
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-1", "RULE-1")
+    # purlin: schema_spec_format PROOF-1
     def test_format_documents_two_sections(self):
         formats = os.path.join(PROJECT_ROOT, 'references', 'formats')
         with open(os.path.join(formats, 'spec_format.md')) as f:
@@ -97,7 +97,7 @@ class TestSpecFormatEnforcement:
         with open(os.path.join(self.spec_dir, f'{name}.md'), 'w') as f:
             f.write(content)
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-2", "RULE-2")
+    # purlin: schema_spec_format PROOF-2
     def test_unnumbered_rule_triggers_warning(self):
         self._write_spec('test_feat', (
             '# Feature: test_feat\n\n'
@@ -138,7 +138,7 @@ class TestSpecFormatEnforcement:
             "the gapped spec was not parsed as written: "
             f"{[r['id'] for r in feature['rules']]}")
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-4", "RULE-4")
+    # purlin: schema_spec_format PROOF-4
     def test_a_rule_with_no_proof_line_reads_no_proof_written(self):
         self._write_spec('test_feat', (
             '# Feature: test_feat\n\n'
@@ -154,7 +154,7 @@ class TestSpecFormatEnforcement:
         assert (cell['word'], cell['reasons']) == (
             'no test', ['no proof written']), cell
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-5", "RULE-5")
+    # purlin: schema_spec_format PROOF-5
     def test_requires_includes_referenced_rules(self):
         # Create an anchor spec
         anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
@@ -180,7 +180,7 @@ class TestSpecFormatEnforcement:
             f"the required spec's rules are not counted with the feature's own: "
             f"{[(r['feature'], r['id'], r['label']) for r in feature['rules']]}")
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-6", "RULE-6")
+    # purlin: schema_spec_format PROOF-6
     def test_scope_metadata_parsed(self):
         # Create a feature with Scope and an anchor with overlapping scope
         # so sync_status exercises the scope in its overlap suggestion
@@ -226,7 +226,7 @@ class TestSpecFormatMultilineDescription:
             f.write(content)
         return path
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-8", "RULE-8")
+    # purlin: schema_spec_format PROOF-8
     def test_multiline_description_continuation(self):
         """PROOF-8: Description continuation lines joined; Scope not included."""
         spec_path = self._write_spec('test_feat', (
@@ -259,7 +259,7 @@ class TestSpecFormatMultilineDescription:
 
 class TestSpecFormatConventions:
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-3", "RULE-3")
+    # purlin: schema_spec_format PROOF-3
     def test_all_proof_lines_match_pattern(self):
         spec_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**', '*.md'),
                                recursive=True)
@@ -279,7 +279,7 @@ class TestSpecFormatConventions:
                     assert pattern.match(line), \
                         f"Bad proof line in {path}: {line}"
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-7", "RULE-7")
+    # purlin: schema_spec_format PROOF-7
     def test_spec_headings_use_correct_prefix(self):
         spec_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**', '*.md'),
                                recursive=True)
@@ -303,7 +303,7 @@ class TestTagParsing:
     which is what separates the two.
     """
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
+    # purlin: schema_spec_format PROOF-9
     def test_prose_ending_in_an_at_word_is_not_a_tag(self):
         split = purlin_specs.split_proof_tags
         tagged = [
@@ -333,7 +333,7 @@ class TestTagParsing:
         assert (split('Lock the file @manual @env(windows)')
                 == split('Lock the file @env(windows) @manual'))
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-10", "RULE-10")
+    # purlin: schema_spec_format PROOF-10
     def test_env_takes_three_values_and_nothing_else(self):
         split = purlin_specs.split_proof_tags
         for good in ('windows', 'macos', 'linux'):
@@ -352,7 +352,7 @@ class TestTagParsing:
         assert (clean, manual, env) == ('Lock the file', False, None)
         assert unknown == ['@on(windows-2022)'], unknown  # retired
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
+    # purlin: schema_spec_format PROOF-9
     def test_real_spec_is_parsed_correctly(self):
         """The two shapes, read off this repository's own specs.
 
@@ -378,7 +378,7 @@ class TestTagParsing:
             "scaffold PROOF-36's one trailing tag is its environment"
         assert tagged['manual'] is False, tagged['manual']
         assert tagged['text'].rstrip().endswith(
-            'only a machine with no `dotnet` skips it, with a note'), \
+            'the typescript one, each with a note'), \
             "the tag is stripped off the description, nothing else is"
 
 
@@ -399,7 +399,7 @@ class TestAnchorNoteMetadata:
     def teardown_method(self):
         shutil.rmtree(self.project_root)
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-11", "RULE-11")
+    # purlin: schema_spec_format PROOF-11
     def test_note_field_is_ignored_by_the_parser(self):
         path = os.path.join(self.spec_dir, 'policy.md')
         with open(path, 'w') as f:

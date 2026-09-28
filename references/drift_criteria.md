@@ -60,7 +60,7 @@ and kept its rules changed nothing.
 | Key | From | Line |
 |-----|------|------|
 | `code_changed` | The changed files, `git diff --name-only`, matched to each spec's `> Scope:` expanded to the files git tracks; `src/api/` reaches every file under it | `4 files changed under login's scope: RULE-1, RULE-2, RULE-5 are behind them.` |
-| `unscoped` | The changed files no scope reaches, leaving out spec files, `.purlin/` and files that carry a proof marker | `2 changed files are under no spec's scope: src/x.py, src/y.py.` |
+| `unscoped` | The changed files no scope reaches, leaving out spec files, `.purlin/` and test files that carry a marker | `2 changed files are under no spec's scope: src/x.py, src/y.py.` |
 | `rules_without_test` | Rules whose passed cell reads `no test` | `5 rules have no test: login RULE-1, RULE-2.` |
 | `anchors_behind` | One `git ls-remote` per anchor source, below | `anchor proof_common is behind its source (now 3c4d5e6). Run: purlin:anchor sync proof_common.` |
 | `out_of_date` | Features that have evidence and whose evidence is not current | `3 features are out of date: login, export, cart.` |
@@ -71,7 +71,7 @@ A file deleted in the range is not on disk and is in neither list.
 
 | Key | From | Line |
 |-----|------|------|
-| `tests_changed` | The changed files that carry a proof marker, and the features those markers name | `6 test files changed, covering export, login.` |
+| `tests_changed` | The changed test files that carry a marker, and the features those markers name | `6 test files changed, covering export, login.` |
 | `signatures_stale` | Signatures that no longer bind the rule, with which of the rule text, the proofs, the tests or the audit findings changed | `2 signatures are stale: login RULE-2 (audit findings changed), billing RULE-1 (rule text changed).` |
 | `queue` | The queue, counted by what each rule needs | `Queue: 5 rules. 2 hand checks, 3 signatures.` |
 
@@ -105,8 +105,7 @@ it is adopted.
 | `mutation_engine` | `purlin:init`, which asks `Measure test strength by breaking the code on purpose?` where an engine exists | `scripts/run/purlin_run.py`, `sync_status` | `none` from init, and a yes writes `auto`; `auto` where the key is absent. `none` turns mutation testing off, so no breaks run and `min_strength` is not applied |
 | `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` while mutation testing is off; with it on, `null` under `passed`, 70 under `strong`, 80 under `signed` |
 | `audit_parallel` | `purlin:init`, with no question | `scripts/run/purlin_run.py`, which makes that many AI audit calls at once | `4`; any value that is not a whole number from 1 to 16 is read as 4 with one warning |
-| `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
-| `sql_engine` | `purlin:init` | The SQL proof plugin | Not set |
+| `tests` | `purlin:init`, one entry per framework it detects, or the command and report it asks for | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
 | `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure` |
 | `trust` | `purlin:init`, which asks `Do you trust your own machine for the tests and the signing?` | `scripts/review/sign.py`, `scripts/run/workflow.py` | `local`; the only other value is `remote` |
 

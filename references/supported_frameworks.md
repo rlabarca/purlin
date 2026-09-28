@@ -1,107 +1,173 @@
-> Format-Version: 8
+# Supported test frameworks
 
-# Supported Test Frameworks
+Purlin runs your project's own test command and reads the report it writes. Nothing of
+Purlin is installed in your test suite: a test is tied to a proof by one comment above it,
+`purlin: <feature> PROOF-<n>`. `references/formats/marker_format.md` is the contract: the
+marker, the `tests` setting, the four report formats and how a result is tied to its marker.
 
-Six proof plugins ship with Purlin, across five languages. `purlin:init` detects a project's
-frameworks and scaffolds the plugins that match.
+`purlin:init` detects every framework below that the project uses and writes one entry of
+the `tests` setting for each, with the flag that writes the report already in the command.
+It says in one line what a framework needs added before it can write that report. Where it
+detects none, it asks for the command that runs the tests and where the report lands.
 
-## Built-in Plugins
+## What init detects, and what it needs
 
-| Framework | Display name | Languages | Plugin file | Installed as | Detection | Marker syntax | Runner setup |
-|-----------|-------------|-----------|------------|--------------|-----------|---------------|--------------|
-| **pytest** | pytest (Python) | Python | `scripts/proof/pytest_purlin.py` | `pytest_purlin.py` | `conftest.py` at the root, or `[tool.pytest` in `pyproject.toml` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` | `pip install pytest` |
-| **Vitest** | vitest (JS/TS) | JavaScript, TypeScript | `scripts/proof/vitest_purlin.ts` | `vitest_purlin.ts` | `vitest` under `dependencies` or `devDependencies` in `package.json`, or a `vitest.config.*` file beside it | `[proof:feature:PROOF-1:RULE-1]` in the test title (a native TypeScript reporter: Vitest loads `.ts` reporters through Vite, so it covers JavaScript and TypeScript projects alike) | `npm ci` |
-| **Jest** | jest (JS/TS) | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `jest_purlin.js` | `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file beside it | `[proof:feature:PROOF-1:RULE-1]` in the test title | `npm ci` |
-| **xUnit** | xunit (.NET) | C# | `scripts/proof/xunit_purlin.cs` | `xunit_purlin.cs` | any `*.csproj` referencing the `xunit` package | `[Trait("PurlinProof", "feature:PROOF-1:RULE-1")]` test trait | `dotnet restore` |
-| **SQL** | sql (sqlite3) | SQL | `scripts/proof/sql_purlin.sh` | `sql_purlin.sh` | a `test_*.sql`, `*_test.sql` or `*.test.sql` file in `tests/` | `-- @purlin feature PROOF-1 RULE-1` comment | the engine named by `sql_engine` in `.purlin/config.json`, `sqlite3` by default, plus `python3` |
-| **Shell** | shell (Bash) | Bash | `scripts/proof/shell_purlin.sh` | `purlin-proof.sh` | none: shell is the fallback when nothing else is detected, and is otherwise selected by hand | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` | nothing beyond `python3` |
+| Framework | Detected by | Needs added |
+|-----------|-------------|-------------|
+| pytest | `conftest.py` or `pytest.ini` at the root, or `[tool.pytest` in `pyproject.toml` | nothing; `--junitxml` is pytest's own |
+| vitest | `vitest` under `dependencies` or `devDependencies` in `package.json`, or a `vitest.config.*` file | nothing; the `junit` reporter is Vitest's own |
+| jest | `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file | the package `jest-junit`: `npm install --save-dev jest-junit` |
+| dotnet | a `*.csproj` referencing xUnit, NUnit, MSTest or the test SDK | nothing; the `trx` logger ships with `dotnet test` |
+| go | `go.mod` at the root and a `*_test.go` file | nothing; `-json` is `go test`'s own |
+| sql | a `test_*.sql`, `*_test.sql` or `*.test.sql` file | the `sqlite3` command; a test fails by raising an error, and another engine is a change to `run` |
+| shell | a `*.test.sh` file | nothing |
 
-The **Installed as** column is the basename each plugin file takes inside a project's
-`.purlin/plugins/`. It is the same name for every framework but shell, which a project installs
-as `purlin-proof.sh` because that is the name every shell test sources. `purlin:init` reads this
-column when it copies a plugin, and `purlin:init --update` reads it backwards to find the source
-of a copy it has to refresh, so neither script holds the fact and the two cannot disagree about
-the name a project's file has.
+Detection descends the tree, skipping dot directories, `node_modules`, `bin`, `obj` and
+`mutants/`. A project can carry several frameworks, and gets one suite for each.
 
-The **Runner setup** column is what the workflow `purlin:init` writes reads: it becomes the
-per-framework install step of the CI job. Every listed framework
-carries a cell, because a framework whose setup is unlisted is one a scaffolded workflow cannot
-run.
+## The entry init writes
 
-Two languages were dropped in 0.10.0: C and PHP. Their plugins, their detection entries and
-their marker syntax are gone, and a project that used one keeps its proofs only by writing a
-custom plugin. `purlin:init` also offers an **other** option in its selection list; when the user
-selects it, direct them to `purlin:init --add-plugin` to install a custom proof plugin.
+Each entry is written under `tests` in `.purlin/config.json`. `{report}` is where Purlin wants
+the report, and `{files}` is replaced by the test files of the features a run covers, or by
+nothing when it runs them all.
 
-## Detection
+### pytest
 
-`purlin:init` detects ALL matching frameworks, not just the first match. A project can have
-several plugins (pytest for the server, Vitest for the client):
-
-| Check | Framework |
-|-------|-----------|
-| `conftest.py` at the root, or `[tool.pytest` in `pyproject.toml` | pytest |
-| `vitest` under `dependencies` or `devDependencies` in `package.json`, or a `vitest.config.*` file | Vitest |
-| `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file | Jest |
-| any `*.csproj` referencing the `xunit` package | xUnit |
-| a `test_*.sql`, `*_test.sql` or `*.test.sql` file in `tests/` | SQL |
-
-Detection descends the tree, skipping dot directories and `node_modules`: a vendored package's
-own fixtures are not this project's frameworks. Shell has no heuristic, so it is the fallback
-that keeps a runner always present: a project where nothing else matches resolves to shell rather
-than to nothing.
-
-All detected frameworks are scaffolded. The `test_framework` config field records the answer the
-user gave, not the detection result: `auto` when detection chose the frameworks, or the
-comma-separated list the user named (`"pytest,vitest"`). `auto` is written verbatim, so every run
-resolves the frameworks from what is on disk. A name outside the six is reported rather than run:
-a typo must not silently run nothing.
-
-## Where each framework runs
-
-`scripts/run/purlin_run.py` has one arm per framework, and that is the only place a project's
-suite is invoked:
-
-| Framework | Arm |
-|-----------|-----|
-| pytest | `python3 -m pytest -q`; an exit code of 5 (nothing collected) is not a failure |
-| jest | `npx jest --passWithNoTests` |
-| vitest | `npx vitest run --passWithNoTests` |
-| xunit | `dotnet test --logger purlin` |
-| shell | `bash <path>` for each `*.test.sh` in the project, the root and every subdirectory but hidden ones, `node_modules`, `bin`, `obj` and `mutants/`, in sorted order from the root, stopping at the first failure |
-| sql | `bash sql_purlin.sh tests/<name>.sql` for each `.sql` file in `tests/`, against `sql_engine` |
-
-## Browser proofs
-
-No dedicated browser proof reporter ships with Purlin. A proof that drives a browser describes an
-observable flow (arrange, act, observe; see `spec_quality_guide.md`, "Flow proofs"), so any runner
-that can execute the flow qualifies: Playwright, Cypress, an agent-driven browser, or a screenshot
-compared by eye. The description never references a specific runner's API.
-
-A browser test emits through the existing plugins:
-
-- **Through Vitest or Jest:** drive the browser from a test (Playwright's library API inside a
-  test body, for example) and put the standard marker in the test title:
-  `[proof:feature:PROOF-1:RULE-1]`.
-- **Through shell:** wrap any browser runner's invocation in a shell test that calls
-  `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` based on the runner's exit status.
-
-A test that captures a screenshot writes it to
-`.purlin/runtime/attachments/<feature>/<PROOF-N>.png`; `purlin:audit` hashes it into the record
-and CI keeps it as an artifact.
-
-## Adding more frameworks
-
-Community or custom plugins can be installed with:
-
-```
-purlin:init --add-plugin <path or git URL>
+```json
+{
+  "name": "pytest",
+  "run": "python3 -m pytest --ignore=mutants {files} --junitxml={report}",
+  "report": ".purlin/runtime/reports/pytest.xml",
+  "format": "junit",
+  "files": [
+    "**/test_*.py",
+    "**/*_test.py"
+  ]
+}
 ```
 
-What a plugin has to do, and every file a new framework has to be named in before a project can
-select it and a run can execute it, is the checklist in
-[`proof_plugin_contract.md`](proof_plugin_contract.md). The tables above are one step of its
-wiring list, so a framework added here and nowhere else is half wired. The six plugin files the table above
-names are the worked samples; what a run does with what they write, and what it prints when a
-plugin is not wired in, is in
-[running-and-records.md](../docs/running-and-records.md).
+### vitest
+
+```json
+{
+  "name": "vitest",
+  "run": "npx vitest run --reporter=default --reporter=junit --outputFile.junit={report} {files}",
+  "report": ".purlin/runtime/reports/vitest.xml",
+  "format": "junit",
+  "files": [
+    "**/*.test.js",
+    "**/*.test.jsx",
+    "**/*.test.mjs",
+    "**/*.test.cjs",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.js",
+    "**/*.spec.jsx",
+    "**/*.spec.mjs",
+    "**/*.spec.cjs",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
+}
+```
+
+### jest
+
+```json
+{
+  "name": "jest",
+  "run": "JEST_JUNIT_OUTPUT_FILE={report} JEST_JUNIT_ADD_FILE_ATTRIBUTE=true JEST_JUNIT_CLASSNAME='{classname}' JEST_JUNIT_TITLE='{title}' JEST_JUNIT_ANCESTOR_SEPARATOR=' > ' npx jest --ci --reporters=default --reporters=jest-junit {files}",
+  "report": ".purlin/runtime/reports/jest.xml",
+  "format": "junit",
+  "files": [
+    "**/*.test.js",
+    "**/*.test.jsx",
+    "**/*.test.mjs",
+    "**/*.test.cjs",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.js",
+    "**/*.spec.jsx",
+    "**/*.spec.mjs",
+    "**/*.spec.cjs",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
+}
+```
+
+### dotnet
+
+```json
+{
+  "name": "dotnet",
+  "run": "dotnet test --logger trx --results-directory {report}",
+  "report": ".purlin/runtime/reports/dotnet",
+  "format": "trx",
+  "files": [
+    "**/*.cs"
+  ]
+}
+```
+
+### go
+
+```json
+{
+  "name": "go",
+  "run": "go test -json ./...",
+  "report": "-",
+  "format": "gotest",
+  "files": [
+    "**/*_test.go"
+  ]
+}
+```
+
+### sql
+
+```json
+{
+  "name": "sql",
+  "run": "sqlite3 -bail :memory: < {files}",
+  "report": null,
+  "format": "exit",
+  "files": [
+    "**/test_*.sql",
+    "**/*_test.sql",
+    "**/*.test.sql"
+  ]
+}
+```
+
+### shell
+
+```json
+{
+  "name": "shell",
+  "run": "bash {files}",
+  "report": null,
+  "format": "exit",
+  "files": [
+    "**/*.test.sh"
+  ]
+}
+```
+
+An entry is yours to change once it is written: a different command, another report path,
+narrower globs. `purlin:init` keeps a `tests` setting a project already carries, and `--add
+<framework>` appends one more entry.
+
+## Any other framework
+
+Any test runner that writes JUnit XML, the TRX `dotnet test` writes or the JSON stream
+`go test -json` writes is read the same way: write its entry by hand, with its own command,
+its report and its format. A runner that writes none of the three can still be used with
+the format `exit`, where each test file is one test and passes when the command exits 0.
+
+## Browser tests
+
+A proof that drives a browser describes an observable flow (see `spec_quality_guide.md`,
+"Flow proofs"), so any runner that can execute the flow and write one of the four report
+formats serves: Playwright, Cypress, or a browser driven from a pytest, Jest or Vitest test.
+The marker goes above that test like any other.

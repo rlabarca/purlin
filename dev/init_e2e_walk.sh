@@ -2,10 +2,18 @@
 # End to end: a project set up by purlin:init, walked from the first spec to a
 # gate that lets a change merge.
 #
+#   bash dev/init_e2e_walk.sh gates|wiring|all
+#
+# Two tests start this walk, one per proof, because each proof needs its own
+# result: `dev/test_init_e2e_gates.sh` exits on the gates the walk checks and
+# `dev/test_init_e2e_wiring.sh` on how each language is set up. `wiring` skips
+# the gate steps, which are most of the time; `all` runs everything and exits
+# on every check.
+#
 # The walk is the one the plan traces. On each fixture:
 #
 #   1. purlin:init at gate passed
-#   2. a hand-written spec and one tagged test
+#   2. a hand-written spec and one test carrying one marker comment
 #   3. purlin_run.py --test --commit    the tests, the evidence, the commit
 #   4. gate_check.py --check            exits 0 under passed
 #   5. purlin:init --gate strong        raises the gate
@@ -25,10 +33,16 @@
 # signing keys are generated into the temp repository and deleted with it.
 #
 # Fixtures: python (always), typescript (when npm can install vitest, from its
-# cache or a registry), and C# with xunit. The C# walk builds the logger
-# assembly init tells a person to build, the way that person would, and skips
-# only on a machine with no `dotnet` at all.
+# cache or a registry), and C# with xunit, which skips only on a machine with
+# no `dotnet` at all. Nothing of Purlin is installed in any fixture's tests:
+# each runs its own test command from the `tests` setting init wrote.
 set -uo pipefail
+
+PART="${1:-all}"
+case "$PART" in
+  gates|wiring|all) ;;
+  *) echo "usage: $0 gates|wiring|all" >&2; exit 2 ;;
+esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -237,10 +251,23 @@ EOF
 # --- the walk -------------------------------------------------------------
 #
 # Everything below is the same for every language: the fixture builder leaves a
-# project with a spec, a tagged test and a plugin, and this walks the gates.
+# project with a spec and a marked test, and this walks the gates.
+
+# The marked test runs through the project's own command, which is how a
+# language is shown to be wired.
+test_walk() {  # dir language
+  local dir="$1" language="$2"
+  python3 "$RUN" --feature greeting --test --project-root "$dir" \
+    > "$dir/.purlin-test.log" 2>&1
+  expect_in "$language: the marked test runs through purlin_run.py --test" \
+    'gate passed: 1 of 1' "$dir/.purlin-test.log"
+  expect_in "$language: its marker is tied to its test" \
+    'Markers: 1 tied to a test, 0 not tied.' "$dir/.purlin-test.log"
+}
 
 gate_walk() {  # dir language
   local dir="$1" language="$2"
+  [ "$PART" = wiring ] && return 0
 
   expect_exit "$language: test run passes and meets the gate" 0 \
     python3 "$RUN" --all --test --commit --project-root "$dir"
@@ -386,26 +413,27 @@ walk_python() {
   init_at "$dir" passed
   mark
   expect_file "python: the config is written" "$dir/.purlin/config.json"
-  expect_file "python: the plugin is copied" \
-    "$dir/.purlin/plugins/pytest_purlin.py"
-  expect_file "python: the runner is wired" "$dir/conftest.py"
+  expect_in "python: the config names the pytest suite" \
+    '"name": "pytest"' "$dir/.purlin/config.json"
+  expect_absent "python: nothing is added to the test suite" \
+    "$dir/conftest.py"
   expect_absent "python: no workflow under passed" \
     "$dir/.github/workflows/purlin.yml"
-  wire_since_mark
 
   spec_file "$dir" greeting greeting.py
   mkdir -p "$dir/tests"
   cat > "$dir/tests/test_greeting.py" <<'EOF'
-import pytest
-
 from greeting import greet
 
 
-@pytest.mark.proof("greeting", "PROOF-1", "RULE-1")
+# purlin: greeting PROOF-1
 def test_greet():
     assert greet("Ada") == "Hello, Ada!"
 EOF
+  printf '__pycache__/\n' >> "$dir/.gitignore"
   commit_all "$dir" "the first spec and its test"
+  test_walk "$dir" python
+  wire_since_mark
   mark
   gate_walk "$dir" python
   gate_since_mark
@@ -423,11 +451,11 @@ walk_typescript() {
   TMPDIRS="$TMPDIRS $dir"
   echo "--- typescript ---"
   new_repo "$dir"
-  printf '{"name":"demo","private":true,"devDependencies":{"vitest":"^4.0.0"}}\n' \
+  printf '{"name":"demo","private":true,"devDependencies":{"vitest":"^3.2.0"}}\n' \
     > "$dir/package.json"
   printf 'export function greet(name: string) {\n  return `Hello, ${name}!`;\n}\n' \
     > "$dir/greeting.ts"
-  # The reporter loads from the project's own vitest, so the runner has to be
+  # The suite runs the project's own vitest, so the runner has to be
   # installed. A host with neither the package cached nor a way to fetch it
   # skips this fixture rather than reporting a failure that is about the host.
   if ! (cd "$dir" && npm install --prefer-offline --no-fund \
@@ -439,10 +467,10 @@ walk_typescript() {
 
   init_at "$dir" passed
   mark
-  expect_file "typescript: the plugin is copied" \
-    "$dir/.purlin/plugins/vitest_purlin.ts"
-  expect_file "typescript: the runner is wired" "$dir/vitest.config.ts"
-  wire_since_mark
+  expect_in "typescript: the config names the vitest suite" \
+    '"name": "vitest"' "$dir/.purlin/config.json"
+  expect_absent "typescript: nothing is added to the runner's configuration" \
+    "$dir/vitest.config.ts"
 
   spec_file "$dir" greeting greeting.ts
   mkdir -p "$dir/tests"
@@ -451,12 +479,15 @@ import { expect, test } from 'vitest';
 
 import { greet } from '../greeting';
 
-test('[proof:greeting:PROOF-1:RULE-1] greets by name', () => {
+// purlin: greeting PROOF-1
+test('greets by name', () => {
   expect(greet('Ada')).toBe('Hello, Ada!');
 });
 EOF
   printf 'node_modules/\n' >> "$dir/.gitignore"
   commit_all "$dir" "the first spec and its test"
+  test_walk "$dir" typescript
+  wire_since_mark
   mark
   gate_walk "$dir" typescript
   gate_since_mark
@@ -504,47 +535,17 @@ EOF
 
   init_at "$dir" passed
   mark
-  expect_file "xunit: the logger is copied" \
-    "$dir/.purlin/plugins/xunit_purlin.cs"
-  expect_in "xunit: the summary says how to wire the logger" \
-    'TestLogger.dll' "$dir/.purlin-init.log"
-  expect_in "xunit: the summary names the runner flag" \
-    'dotnet test --logger purlin' "$dir/.purlin-init.log"
-  wire_since_mark
+  expect_in "xunit: the config names the dotnet suite" \
+    '"name": "dotnet"' "$dir/.purlin/config.json"
+  expect_not_in "xunit: nothing asks for a logger" \
+    'logger purlin' "$dir/.purlin-init.log"
 
-  # What the summary tells a person to do: compile the copied logger into a
-  # `*.TestLogger.dll` beside the tests, so `dotnet test --logger purlin`
-  # finds it. A solution at the root lets the run script's plain
-  # `dotnet test` reach the test project.
-  mkdir -p "$dir/logger"
-  cat > "$dir/logger/logger.csproj" <<'EOF'
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Purlin.TestLogger</AssemblyName>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>disable</ImplicitUsings>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="../.purlin/plugins/xunit_purlin.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="17.11.1" />
-  </ItemGroup>
-</Project>
-EOF
+  # A solution at the root is what lets the suite's plain `dotnet test` reach
+  # the test project.
   (cd "$dir" \
-    && dotnet add App.Tests/App.Tests.csproj reference logger/logger.csproj \
     && dotnet new sln -n App \
-    && dotnet sln App.sln add App.Tests/App.Tests.csproj logger/logger.csproj) \
+    && dotnet sln App.sln add App.Tests/App.Tests.csproj) \
     > "$dir/.purlin-dotnet.log" 2>&1
-  if (cd "$dir" && dotnet build -nologo -v q) >> "$dir/.purlin-dotnet.log" 2>&1; then
-    pass "xunit: the logger builds beside the tests"
-  else
-    bad "xunit: the logger builds beside the tests" \
-      "$(tail -20 "$dir/.purlin-dotnet.log")"
-  fi
 
   spec_file "$dir" greeting App/Greeting.cs
   cat > "$dir/App.Tests/GreetingTests.cs" <<'EOF'
@@ -552,8 +553,8 @@ using Xunit;
 
 namespace App.Tests {
   public class GreetingTests {
+    // purlin: greeting PROOF-1
     [Fact]
-    [Trait("PurlinProof", "greeting:PROOF-1:RULE-1")]
     public void GreetsByName() {
       Assert.Equal("Hello, Ada!", App.Greeting.Greet("Ada"));
     }
@@ -561,11 +562,9 @@ namespace App.Tests {
 }
 EOF
   commit_all "$dir" "the first spec and its test"
+  test_walk "$dir" xunit
+  wire_since_mark
   mark
-  python3 "$RUN" --feature greeting --test --project-root "$dir" \
-    > "$dir/.purlin-test.log" 2>&1
-  expect_in "xunit: the tagged test runs through purlin_run.py --test" \
-    'gate passed: 1 of 1' "$dir/.purlin-test.log"
   gate_walk "$dir" xunit
   gate_since_mark
 }
@@ -607,19 +606,12 @@ walk_typescript
 walk_xunit
 walk_marketplace
 
-# The two proofs this suite writes. The harness is sourced here, at the end,
-# so its own shell settings never reach the walk above.
-# shellcheck source=../scripts/proof/shell_purlin.sh
-. "$ROOT/scripts/proof/shell_purlin.sh"
-if [ "$GATE_FAIL" -eq 0 ]; then GATE_STATUS=pass; else GATE_STATUS=fail; fi
-if [ "$WIRE_FAIL" -eq 0 ]; then WIRE_STATUS=pass; else WIRE_STATUS=fail; fi
-purlin_proof "scaffold" "PROOF-36" "RULE-36" "$GATE_STATUS" \
-  "the three gates walked on every fixture init set up"
-purlin_proof "scaffold" "PROOF-37" "RULE-37" "$WIRE_STATUS" \
-  "each language wired, and the marketplace install"
-purlin_proof_finish
-
 echo ""
 echo "passed $PASS, failed $FAIL, skipped $SKIP"
-[ "$FAIL" -eq 0 ] || exit 1
+echo "the gates: $GATE_FAIL failed; the wiring: $WIRE_FAIL failed"
+case "$PART" in
+  gates)  [ "$GATE_FAIL" -eq 0 ] || exit 1 ;;
+  wiring) [ "$WIRE_FAIL" -eq 0 ] || exit 1 ;;
+  *)      [ "$FAIL" -eq 0 ] || exit 1 ;;
+esac
 echo "init e2e ok"

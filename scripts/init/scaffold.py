@@ -8,7 +8,8 @@
 Init asks these, in this order, and nothing else:
 
     What must be true of every rule before a version is proven?
-    Which framework the tests use, only where nothing in the tree says
+    The command that runs the tests and where its report lands, only where
+      nothing in the tree says which framework they use
     Measure test strength by breaking the code on purpose? [y/N], only
       where an engine exists for a detected framework
     Do you trust your own machine for the tests and the signing? [y/n]
@@ -20,10 +21,13 @@ default, so mutation testing stays off; `--mutation` turns it on without the
 question. `audit_parallel` is written as 4 and is not asked.
 
 It then writes, in this order and naming every one in the summary: the config,
-the plugin copies, the runner's wiring, the engine's config block where
-mutation testing is on, the `.gitignore` entries, `.purlin/evidence/` with
-its README, the dashboard, and, where one is wanted, the workflow CI runs.
-It ends with the next step computed from the state.
+whose `tests` setting holds one entry per detected framework with the report
+flag already in its command, the engine's config block where mutation testing
+is on, the `.gitignore` entries, `.purlin/evidence/` with its README, the
+dashboard, and, where one is wanted, the workflow CI runs. It says in one line
+what a framework needs added before it can write its report. Nothing is
+written into the project's test suite or its test runner's configuration. It
+ends with the next step computed from the state.
 
 A workflow is written for two reasons and no others: a proof in `specs/` is
 tagged `@env` for an operating system this machine is not, or you answered no
@@ -67,8 +71,6 @@ EXIT_BAD_INVOCATION = 2
 
 ARROW = '→'
 NOT_A_REPOSITORY = 'This is not a git repository. Run git init, then init.'
-DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
-                     'runs it')
 
 GATE_QUESTION = 'What must be true of every rule before a version is proven?'
 GATE_CHOICES = (
@@ -76,8 +78,17 @@ GATE_CHOICES = (
     'strong  tests pass and the audit finds them sound',
     'signed  strong, and a person signs each rule',
 )
-LANGUAGE_QUESTION = ('There is nothing here to detect a test framework from. '
-                     'Which one do the tests use?')
+# What init asks where it detects no framework: the two things a run needs.
+COMMAND_QUESTION = ('There is nothing here to detect a test framework from. '
+                    'What command runs the tests?')
+REPORT_QUESTION = ('Where does that command write its report? A JUnit XML '
+                   'file, a .trx file or folder, - for a go test -json '
+                   'stream on standard output, or nothing when each test '
+                   'file passes by exiting 0.')
+NO_COMMAND = ('No test command was given, so no suite is written. Add one '
+              'under "tests" in .purlin/config.json.')
+# The globs a suite init could not detect reads its test files from.
+ASKED_FILES = ['**/test_*', '**/*_test.*', '**/*.test.*', '**/*.spec.*']
 
 # The one question that is not derived from the gate. A project that trusts
 # this machine runs its tests and writes its signatures here; one that does
@@ -95,44 +106,8 @@ REMOTE_INTRO = 'A remote runner is written for two reasons:'
 REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
                     'it')
 
-# The registry's **Installed as** column is the one place a plugin's name
-# inside a project is written, so this script and the upgrade cannot disagree.
-_REGISTRY = os.path.join('references', 'supported_frameworks.md')
-
 MUTANTS_IGNORE = ('# The copy mutmut breaks, rebuilt on every run, never committed\n'
                   'mutants/\n')
-
-_WIRING = {
-    'pytest': ('conftest.py',
-               '# Purlin proof plugin, wired by purlin:init. `.purlin` is not\n'
-               "# an importable package name, so the plugin's directory goes\n"
-               '# on sys.path and the plugin is named by module.\n'
-               'import os\n'
-               'import sys\n'
-               '\n'
-               'sys.path.insert(0, os.path.join(\n'
-               '    os.path.dirname(os.path.abspath(__file__)),\n'
-               '    ".purlin", "plugins"))\n'
-               '\n'
-               'pytest_plugins = ["pytest_purlin"]\n'),
-    'jest': ('jest.config.js',
-             '// Purlin proof reporter, wired by purlin:init.\n'
-             'module.exports = {\n'
-             "  reporters: ['default', '.purlin/plugins/jest_purlin.js'],\n"
-             '};\n'),
-    'vitest': ('vitest.config.ts',
-               '// Purlin proof reporter, wired by purlin:init.\n'
-               "import { defineConfig } from 'vitest/config';\n"
-               '\n'
-               'export default defineConfig({\n'
-               "  test: { reporters: ['default', "
-               "'.purlin/plugins/vitest_purlin.ts'] },\n"
-               '});\n'),
-}
-
-# xUnit is wired by hand: the logger needs a `*.TestLogger.dll` assembly.
-_XUNIT_NOTE = ('xunit: compile .purlin/plugins/xunit_purlin.cs into a '
-               '*.TestLogger.dll and run dotnet test --logger purlin.')
 
 _STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
                  'strength reads n/a.')
@@ -211,18 +186,6 @@ def is_repository(root):
     """
     ok, top = _git(root, 'rev-parse', '--show-toplevel')
     return bool(ok and top)
-
-
-def plugin_files(plugin_root):
-    """framework -> (the plugin's file name, the name a project installs it as)."""
-    rows = {}
-    for line in _read(plugin_root, _REGISTRY).splitlines():
-        cells = [cell.strip() for cell in line.split('|')]
-        if len(cells) < 7 or not cells[1].startswith('**'):
-            continue
-        source = cells[4].strip('`').split('/')[-1]
-        rows[cells[2].split()[0].lower()] = (source, cells[5].strip('`'))
-    return rows
 
 
 def _is_test_file(name):
@@ -335,9 +298,8 @@ class Plan(object):
 
         `exact` hands over bytes rather than text and writes them as they
         came. Text mode on Windows turns every line ending into two bytes on
-        the way out, so a plugin copied through it stops being the file it was
-        copied from, and a project could no longer be shown to hold the
-        plugin this release ships.
+        the way out, so a file copied through it would stop being the file it
+        was copied from.
         """
         path = os.path.join(self.root, rel)
         if os.path.lexists(path):
@@ -403,9 +365,12 @@ def min_strength_for(gate, mutation):
     return gate_module.resolve_gate({'gate': gate}).min_strength
 
 
-def write_config(plan, plugin_root, existing, gate, host, framework,
+def write_config(plan, plugin_root, existing, gate, host, tests,
                  trust=None, mutation='none'):
-    """`.purlin/config.json`: the template, the answers, and what they derive."""
+    """`.purlin/config.json`: the template, the answers, and what they derive.
+
+    `tests` is the `tests` setting, one entry per suite.
+    """
     config = json.loads(_read(plugin_root, 'templates', 'config.json'))
     config.update(existing or {})
     config.update({'version': _read(plugin_root, 'VERSION').strip(),
@@ -415,8 +380,7 @@ def write_config(plan, plugin_root, existing, gate, host, framework,
                    'trust': trust or gate_module.DEFAULT_TRUST})
     if host:
         config['ci'] = host
-    if framework:
-        config['test_framework'] = framework
+    config['tests'] = tests
     for key in gate_module.RETIRED_KEYS:
         config.pop(key, None)
     plan.write('.purlin/config.json', json.dumps(config, indent=2) + '\n',
@@ -424,25 +388,12 @@ def write_config(plan, plugin_root, existing, gate, host, framework,
     return config
 
 
-def install_plugins(plan, plugin_root, selected):
-    """A byte-identical copy of each selected framework's plugin."""
-    known = plugin_files(plugin_root)
+def print_needs(plan, selected):
+    """One line per framework that needs something added to write its report."""
     for framework in selected:
-        if framework not in known:
-            plan.skip('.purlin/plugins/', 'no plugin for %s' % framework)
-            continue
-        plan.copy(os.path.join(plugin_root, 'scripts', 'proof',
-                               known[framework][0]),
-                  '.purlin/plugins/%s' % known[framework][1])
-
-
-def write_wiring(plan, selected):
-    """The test runner's own configuration, never written over."""
-    for framework in selected:
-        if framework in _WIRING:
-            plan.write(*_WIRING[framework])
-        elif framework == 'xunit':
-            plan.note(_XUNIT_NOTE)
+        needs = frameworks_module.NEEDS.get(framework)
+        if needs:
+            plan.note(needs)
 
 
 def write_engine(plan, root, selected):
@@ -455,7 +406,7 @@ def write_engine(plan, root, selected):
         # mutmut leaves its working copy in `mutants/`. Committed, it carries
         # a copy of every test and every record into the next commit.
         plan.append('.gitignore', MUTANTS_IGNORE, 'mutants/')
-    for name in [f for f in ('jest', 'vitest', 'xunit') if f in selected]:
+    for name in [f for f in ('jest', 'vitest', 'dotnet') if f in selected]:
         plan.note(_STRYKER_NOTE % name)
 
 
@@ -594,42 +545,67 @@ def delegate_update(args):
                        + (['--check'] if args.dry_run else []))
 
 
-def resolve_frameworks(root, console, existing, add):
-    """`(the frameworks to wire, the answer to record, the names dropped)`.
+def format_for(report):
+    """The report format a report path names: `.trx` or a folder is TRX, `-`
+    a Go JSON stream, nothing at all an exit code, and anything else JUnit."""
+    report = (report or '').strip()
+    if not report:
+        return 'exit'
+    if report == '-':
+        return 'gotest'
+    if report.lower().endswith('.trx') or report.endswith('/'):
+        return 'trx'
+    return 'junit'
 
-    Detection answers on a project with code, and nothing is asked. A tree
-    with nothing to detect is asked once, which is the second exception.
 
-    A name the config carries that the tree cannot run is dropped rather than
-    carried: an older release wrote down every plugin it shipped, and wiring a
-    runner with nothing to run makes every run print that runner exiting
-    non-zero. A name the tree does carry stays even when detection would not
-    have picked it.
+def asked_suite(console):
+    """The one suite a tree init could not detect is asked for, or None."""
+    command = str(console.ask(COMMAND_QUESTION, '') or '').strip()
+    if not command:
+        print(NO_COMMAND)
+        return None
+    report = str(console.ask(REPORT_QUESTION, '') or '').strip()
+    fmt = format_for(report)
+    run = command
+    if fmt == 'exit' and '{files}' not in run:
+        run += ' {files}'
+    return {'name': 'tests', 'run': run,
+            'report': report.rstrip('/') or None, 'format': fmt,
+            'files': list(ASKED_FILES)}
+
+
+def resolve_tests(root, console, existing, add):
+    """`(the frameworks named, the tests setting to write)`.
+
+    A `tests` setting the project already carries is kept as it is. Otherwise
+    detection answers on a project with code, and nothing is asked; a tree
+    with nothing to detect is asked for its command and its report, which is
+    the second exception. `--add` appends the entry of one more framework,
+    once however many times it is added.
     """
-    written = (existing or {}).get('test_framework')
-    written = written if isinstance(written, str) else ''
-    if add:
-        named = (frameworks_module.detect_frameworks(root)
-                 if written in ('', 'auto')
-                 else frameworks_module.resolve_frameworks(root, written)[0])
-        named, dropped = frameworks_module.prune_unwired(root, named)
-        named += [part.strip() for part in add.split(',') if part.strip()]
-        named = list(dict.fromkeys(named))
-        return named, ','.join(named), dropped
-    if written and written != 'auto':
-        named = frameworks_module.resolve_frameworks(root, written)[0]
-        named, dropped = frameworks_module.prune_unwired(root, named)
-        return named, ','.join(named), dropped
-    detected = frameworks_module.detect_frameworks(root)
-    if detected != ['shell']:
-        return detected, 'auto', []
-    answer = console.ask(LANGUAGE_QUESTION, 'shell',
-                         ['  '.join(frameworks_module.KNOWN_FRAMEWORKS)])
-    if answer not in frameworks_module.KNOWN_FRAMEWORKS:
-        print('purlin: "%s" is not a framework this release ships a plugin '
-              'for; reading it as shell.' % answer)
-        answer = 'shell'
-    return [answer], answer, []
+    written = (existing or {}).get('tests')
+    tests = [dict(entry) for entry in written] if isinstance(
+        written, list) else None
+    if tests is None:
+        detected = frameworks_module.detect_frameworks(root)
+        if detected:
+            tests = frameworks_module.entries_for(detected)
+        else:
+            asked = asked_suite(console)
+            tests = [asked] if asked else []
+    names = [entry.get('name') for entry in tests if isinstance(entry, dict)]
+    for part in str(add or '').split(','):
+        name = part.strip()
+        if not name:
+            continue
+        if name not in frameworks_module.ENTRIES:
+            print('purlin: "%s" is not a framework init writes a command for; '
+                  'add it under "tests" in .purlin/config.json.' % name)
+            continue
+        if name not in names:
+            tests.append(frameworks_module.entry_for(name))
+            names.append(name)
+    return [name for name in names if name], tests
 
 
 def _existing_config(root):
@@ -692,8 +668,7 @@ def main(argv=None):
                   % (gate, gate_module.DEFAULT_GATE))
             gate = gate_module.DEFAULT_GATE
 
-    selected, framework, dropped = resolve_frameworks(
-        root, console, existing, args.add)
+    selected, tests = resolve_tests(root, console, existing, args.add)
     mutation, no_engine = resolve_mutation(console, existing, selected,
                                            args.mutation)
     trust = ask_trust(console, existing)
@@ -701,20 +676,18 @@ def main(argv=None):
 
     if not in_git:
         plan.note(NOT_A_REPOSITORY)
-    for name in dropped:
-        plan.note(DROPPED_FRAMEWORK % name)
-    plan.note('Gate %s. Frameworks %s. Git host %s.'
-              % (gate, ', '.join(selected), host or 'not read from a remote'))
+    plan.note('Gate %s. Suites %s. Git host %s.'
+              % (gate, ', '.join(selected) or 'none',
+                 host or 'not read from a remote'))
     if no_engine:
         plan.note(no_engine)
     plan.note(_TRUST_WORDS[trust])
-    for name in ('.purlin', '.purlin/plugins', 'specs', 'specs/_anchors'):
+    for name in ('.purlin', 'specs', 'specs/_anchors'):
         plan.directory(name)
 
-    config = write_config(plan, plugin_root, existing, gate, host, framework,
+    config = write_config(plan, plugin_root, existing, gate, host, tests,
                           trust, mutation)
-    install_plugins(plan, plugin_root, selected)
-    write_wiring(plan, selected)
+    print_needs(plan, selected)
     if mutation != 'none':
         write_engine(plan, root, selected)
     write_gitignore(plan, plugin_root)

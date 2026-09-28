@@ -4,8 +4,7 @@
   "mutation_engine": "none",
   "min_strength": null,
   "audit_parallel": 4,
-  "test_framework": "auto",
-  "sql_engine": null,
+  "tests": [],
   "ci": "github",
   "trust": "local"
 }

@@ -1,8 +1,5 @@
-# Purlin runtime (generated, not committed)
+# Purlin runtime: the test reports and the run log, never committed
 .purlin/runtime/
-
-# Purlin plugin cache
-.purlin/plugins/__pycache__/
 
 # Dashboard HTML (copied by purlin:init and refreshed by purlin:init --update)
 /purlin-report.html
@@ -12,6 +9,3 @@
 
 # .purlin/evidence/ and .purlin/tests.md are tracked on purpose: they are
 # the evidence of each run, for somebody who did not make it to read.
-
-# Plugin copies the update backed up before refreshing them
-.purlin/plugins/*.local-*.bak

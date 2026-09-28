@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
 # Run the Purlin dev tests and print a summary. The shell suites run first,
 # then one pytest session over the rest; pooling the pytest files is a speed
-# choice, not a correctness one, because the proof merge key is (feature,
-# test_file). Running a subset of the tests inside one file still
-# replaces that file's entries for the features it touches, so run whole files.
+# choice, not a correctness one. This is the maintainer's sweep; the evidence
+# path is `purlin_run.py`, which runs the suites `.purlin/config.json` names.
 #
 # On exit the sweep writes two gitignored files under .purlin/runtime/.
-# test_run.json is the shared marker the proof plugins also write, so the
-# sweep merges: their `runs` entries and any field they added survive, and
-# only the summary the sweep owns is replaced. last_sweep.json is the sweep's
-# own copy of those counts, written whole, because partway through a run the
-# shared marker is a plugin's and carries only that plugin's share.
+# test_run.json is the shared marker, merged so any field another writer
+# added survives and only the summary the sweep owns is replaced.
+# last_sweep.json is the sweep's own copy of those counts, written whole.
 #
 # `--fast` holds out the shell suites and the browser suite
 # (dev/test_purlin_report.py), nearly all of the wall clock, and writes
@@ -29,7 +26,7 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # The shell suites and the hooks they drive call python3 by name; put the
-# repository venv first so that name carries pytest and the proof plugin.
+# repository venv first so that name carries pytest.
 if [[ -x "$ROOT/.venv/bin/python3" ]]; then export PATH="$ROOT/.venv/bin:$PATH"; fi
 cd "$ROOT"
 
@@ -118,7 +115,7 @@ if 'All Pytest Tests' in suites:
 commit = subprocess.run(['git', 'rev-parse', 'HEAD'],
                         capture_output=True, text=True).stdout.strip() or None
 
-# The proof plugins write this marker too, so an existing marker at this
+# Another writer may have written this marker too, so an existing marker at this
 # commit keeps its `runs` list and every field the sweep does not own.
 run = {}
 for _attempt in range(3):
@@ -131,7 +128,7 @@ for _attempt in range(3):
     except FileNotFoundError:
         break
     except (ValueError, OSError):
-        time.sleep(0.05)  # a plugin is partway through a replace
+        time.sleep(0.05)  # another writer is partway through a replace
 
 def write_atomic(path, payload):
     tmp = '%s.%d.tmp' % (path, os.getpid())
@@ -155,25 +152,19 @@ run.update({'sweep': 'dev/run_tests.sh', 'test_files': lines('PURLIN_RUN_TEST_FI
 run.setdefault('runs', [])
 write_atomic(marker, run)
 write_atomic(last_sweep, summary)
-print('run marker: %s (ok=%s, %d plugin run(s) merged)' % (marker, str(summary['ok']).lower(), len(run['runs'])))
+print('run marker: %s (ok=%s, %d earlier run(s) merged)' % (marker, str(summary['ok']).lower(), len(run['runs'])))
 print('sweep record: %s (%d passed, %d failed, %d skipped)' % (last_sweep, summary['passed'], summary['failed'], py_skipped))
 PY
   rm -f "$PYTEST_LOG"
 }
 trap write_marker EXIT
 
-# ── Shell suites first (proof files written per feature) ─────────────
+# ── Shell suites first ───────────────────────────────────────────────
 # Held out by `--fast`: these invocations are most of the sweep's wall clock.
 if [[ $FAST -eq 0 ]]; then
-run_suite "Proof Plugins (Shell)" bash "$SCRIPT_DIR/test_proof_plugins.sh"
-# test_proof_plugins.sh covers the behaviour the three plugins share; these
-# three cover one plugin each, and it does not invoke them.
-run_suite "Proof Plugin (pytest)" bash "$SCRIPT_DIR/test_proof_pytest.sh"
-run_suite "Proof Plugin (jest)" bash "$SCRIPT_DIR/test_proof_jest.sh"
-run_suite "Proof Plugin (shell)" bash "$SCRIPT_DIR/test_proof_shell.sh"
 run_suite "E2E Build Changeset" bash "$SCRIPT_DIR/test_e2e_build_changeset.sh"
-run_suite "E2E Init" bash "$SCRIPT_DIR/test_init_e2e.sh"
-run_suite "E2E Write-Scoped Overwrite" bash "$SCRIPT_DIR/test_e2e_feature_scoped_overwrite.sh"
+run_suite "E2E Init (gates)" bash "$SCRIPT_DIR/test_init_e2e_gates.sh"
+run_suite "E2E Init (wiring)" bash "$SCRIPT_DIR/test_init_e2e_wiring.sh"
 # The dog-food external reference repo; idempotent, creates it once.
 bash "$SCRIPT_DIR/setup-external-refs.sh"
 run_suite "E2E External Refs" bash "$SCRIPT_DIR/test_e2e_external_refs.sh"
@@ -184,8 +175,7 @@ else
 fi
 
 # ── All pytest tests in a single session ─────────────────────────────
-# One session for speed. Correctness does not depend on it: the merge key
-# includes test_file, so these files can coexist in one proof file.
+# One session for speed. Correctness does not depend on it.
 # Every dev/test_*.py, found rather than listed: a hand-kept list left new test
 # files out of the sweep. The browser suites (test_purlin_report*.py) join below.
 PYTEST_FILES=()

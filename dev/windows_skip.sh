@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Is this shell running on Windows? Sourced by the `*.test.sh` wrappers at the
-# project root, which is the one place the answer is needed and so the one
-# place it is written.
+# Is this shell running on Windows? Sourced by the two tests that start the
+# end-to-end walk of purlin:init, which is the one place the answer is needed
+# and so the one place it is written.
 #
-# The end-to-end suites below those wrappers need a POSIX shell: they generate
+# The walk needs a POSIX shell: they generate
 # ssh keys, sign commits and read `%G?` back, and Git Bash is not one for that.
 # The proofs they serve carry `@env(linux)`, so the Linux job proves them and a
 # Windows run lists them as needing linux rather than reporting a failure that
