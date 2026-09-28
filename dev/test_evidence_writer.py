@@ -435,9 +435,9 @@ def test_outside_git_the_files_are_written_and_nothing_is_committed(tmp_path):
 # The audit's entries
 # ---------------------------------------------------------------------------
 
-def _entry(verdict='strong'):
+def _entry(word='strong'):
     return {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't',
-            'verdict': verdict, 'findings': [], 'at': 'x', 'commit': 'y'}
+            'verdict': word, 'findings': [], 'at': 'x', 'commit': 'y'}
 
 
 @pytest.mark.proof("evidence_writer", "PROOF-12", "RULE-12")

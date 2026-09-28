@@ -280,15 +280,15 @@ def audit_entry(rule, built, commit, at=None):
     """
     findings = [str(line) for line in (built.get('observations') or ())]
     if built.get('ai_review') in (None, states_module.NO_MODEL):
-        verdict = 'strong'
+        word = 'strong'
     elif built.get('settled') is True:
-        verdict = 'weak' if findings else 'strong'
+        word = 'weak' if findings else 'strong'
     else:
-        verdict = 'undecided'
+        word = 'undecided'
     return {'rule_hash': rule.get('rule_hash'),
             'proof_hash': rule.get('proof_hash'),
             'test_hash': rule.get('test_hash'),
-            'verdict': verdict, 'findings': findings,
+            'verdict': word, 'findings': findings,
             'at': at or now_iso(), 'commit': commit or ''}
 
 
