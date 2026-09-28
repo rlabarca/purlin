@@ -89,7 +89,7 @@
             "findings": [
               "The test reads the status code and the cookie name; the proof also names a session cookie, and no assertion reads its expiry."
             ],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/login.json",
             "strength": 71,
             "verdict": "undecided"
@@ -165,7 +165,7 @@
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/login.json",
             "strength": 71,
             "verdict": "strong"
@@ -237,7 +237,7 @@
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/login.json",
             "strength": 71,
             "verdict": "strong"
@@ -366,7 +366,7 @@
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/invoice.json",
             "strength": 48,
             "verdict": "strong"
@@ -548,7 +548,7 @@
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/local/checkout_design.json",
             "strength": 90,
             "verdict": "strong"

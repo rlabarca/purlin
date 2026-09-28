@@ -63,7 +63,7 @@ operating system that ran the feature, one section each.
     "rules": {
       "RULE-1": {"rule_hash": "<sha256>", "proof_hash": "<sha256>",
                  "test_hash": "<sha256>", "verdict": "strong", "findings": [],
-                 "model": "claude-opus-4-1-20250805",
+                 "model": "example-model-1",
                  "criteria": "<sha256>",
                  "at": "2026-09-27T12:05:00Z",
                  "commit": "4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7"}

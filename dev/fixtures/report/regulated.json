@@ -118,7 +118,7 @@
             "at": "2026-09-12T09:15:40Z",
             "commit": "a1b2c3d",
             "findings": [],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/login.json",
             "strength": 86,
             "verdict": "strong"
@@ -206,7 +206,7 @@
             "at": "2026-09-12T09:15:40Z",
             "commit": "a1b2c3d",
             "findings": [],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/login.json",
             "strength": 86,
             "verdict": "strong"
@@ -296,7 +296,7 @@
             "findings": [
               "PROOF-3 reads the status code alone; no test reads when the lock expires."
             ],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/login.json",
             "strength": 86,
             "verdict": "weak"
@@ -545,7 +545,7 @@
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/invoice.json",
             "strength": 64,
             "verdict": "strong"
@@ -635,7 +635,7 @@
             "findings": [
               "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
             ],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/invoice.json",
             "strength": 64,
             "verdict": "weak"
@@ -849,7 +849,7 @@
             "findings": [
               "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
             ],
-            "model": "claude-opus-4-1-20250805",
+            "model": "example-model-1",
             "path": ".purlin/evidence/ci/checkout_design.json",
             "strength": 90,
             "verdict": "undecided"

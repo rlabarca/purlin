@@ -1079,7 +1079,7 @@ def test_the_audit_panel_reads_what_the_audit_found(browser, tmp_path):
     assert lines[0].startswith('Undecided. '), lines
     assert lines[1].startswith('The test reads the text "Total"'), lines
     assert lines[2] == 'Test strength 90%, against a minimum of 80%.', lines
-    assert lines[3] == ('Read by claude-opus-4-1-20250805 on 2026-09-12 '
+    assert lines[3] == ('Read by example-model-1 on 2026-09-12 '
                         '09:14 UTC'), lines
 
     page.click('[data-act="close"]')
