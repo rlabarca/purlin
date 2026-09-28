@@ -320,17 +320,6 @@ def bash_command():
     return 'bash'
 
 
-def bash_path(path):
-    """A path spelled the way bash reads it, on every operating system.
-
-    Git Bash reads `C:/work/x.sh` as the file it names; the backslash spelling
-    of the same path is what `os.path.join` builds on Windows, and a backslash
-    is an escape to a shell. Nothing changes anywhere else, because there the
-    separator already is the one bash wants.
-    """
-    return str(path).replace(os.sep, '/')
-
-
 def _run(command, project_root, log, timeout, environment=None,
          keep_stdout=False):
     """Run one command in the project root, echoing it and its output.

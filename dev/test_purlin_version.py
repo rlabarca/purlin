@@ -26,13 +26,21 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'run'))
 import purlin as purlin_package
 from purlin import server as purlin_srv
-from purlin_run import bash_command, bash_path
+from purlin_run import bash_command
 
 # The bash a shell test runs under. `bash` on PATH is the Windows
 # Subsystem for Linux launcher on a Windows runner, which never reads the
 # script, so the run script finds Git Bash and this asks it the same
 # question rather than asking it again.
 BASH = bash_command()
+
+
+def bash_path(path):
+    """`path` with forward slashes, the spelling Git Bash reads on Windows.
+
+    The backslash `os.path.join` builds there is an escape to a shell.
+    """
+    return str(path).replace(os.sep, '/')
 
 
 class TestVersionFileSemver:
