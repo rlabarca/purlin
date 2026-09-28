@@ -7,6 +7,7 @@ pathspec is written with `/` once, and these tests hold it there.
 """
 
 import json
+import ntpath
 import os
 import subprocess
 import sys
@@ -50,6 +51,37 @@ def test_git_is_handed_a_forward_slash_pathspec(tmp_path, monkeypatch):
     assert [command for command, _specs in handed] == ['ls-files'], calls
     for command, specs in handed:
         assert specs == ['.purlin/evidence'], (command, specs)
+
+
+class _WindowsOs(object):
+    """The `os` module as Windows has it: paths joined with `\\`."""
+
+    path = ntpath
+    sep = '\\'
+
+    def __getattr__(self, name):
+        return getattr(os, name)
+
+
+# purlin: host PROOF-26
+def test_a_run_that_spells_paths_the_windows_way_finds_the_removal(
+        tmp_path, monkeypatch):
+    root = str(tmp_path)
+    _git(root, 'init', '-q', '-b', 'main')
+    _git(root, 'config', 'user.email', 'dev@example.com')
+    _git(root, 'config', 'user.name', 'Dev')
+    _git(root, 'config', 'commit.gpgsign', 'false')
+    gone = '.purlin/evidence/ci/retired.json'
+    _write(root, gone)
+    _write(root, '.purlin/evidence/ci/login.json')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'evidence')
+    os.remove(os.path.join(root, *gone.split('/')))
+
+    monkeypatch.setattr(host_module, 'os', _WindowsOs())
+    assert host_module.os.path.join('.purlin', 'evidence') == \
+        '.purlin\\evidence'
+    assert host_module.deleted_files(root) == [gone]
 
 
 class _Host(object):
