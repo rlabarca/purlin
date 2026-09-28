@@ -31,22 +31,19 @@ cell reading `manual test`: `purlin:sign <feature>` signs that feature's rows in
 
 ## The loop, and what it writes
 
+Each answer sends a rule back to one step or on to the next:
+
 ```mermaid
-sequenceDiagram
-    actor You
-    participant Tree as your checkout
-    participant Origin as origin
-    actor QA
-    loop until every rule's passed cell reads passed
-        You->>Tree: purlin:spec, purlin:build, purlin:test
-        Tree->>Tree: the evidence, into .purlin/evidence/local/
-    end
-    You->>Tree: purlin:audit --commit
-    Tree->>Tree: the breaks, then the AI audit on every rule whose level is strong
-    Tree->>Tree: purlin: evidence at sha7, from .purlin/evidence/local/
-    Tree-->>You: the strength beside the minimum, then gate strong: n of n
-    You->>Origin: git push
-    QA->>QA: purlin:sign walks what the machine could not settle
+flowchart TD
+    Sp["purlin:spec"] --> B["purlin:build"]
+    B --> T{"purlin:test<br>passed?"}
+    T -->|no| B
+    T -->|yes| A{"purlin:audit --commit<br>strong?"}
+    A -->|weak| B
+    A -->|"manual test"| Q["QA: purlin:sign<br>a hand check, with a note"]
+    Q -->|"a case: a new proof"| Sp
+    A -->|strong| G["once every rule meets<br>the gate, purlin:sign<br>writes signed/#lt;version#gt;"]
+    Q -->|signed| G
 ```
 
 Every step is on your machine. `purlin:test` and `purlin:audit` write the evidence, `--commit`
