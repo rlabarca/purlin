@@ -309,24 +309,31 @@ def test_affordances_are_unicode_glyphs_not_an_icon_set(page_text):
 def test_the_board_renders_for_each_process(browser, tmp_path, process):
     payload = payload_named(process)
     summary = payload['summary']
+    gate = payload['gate']['gate']
     page = open_board(browser, tmp_path, payload)
-    heading = page.inner_text('h1')
-    assert '%d of %d rules pass their tests' % (
-        reached(summary, 'passed'), summary['rules']) in heading
-    assert '%d failing' % summary['failing'] in heading
-    assert '%d partial' % summary['partial'] in heading
-    assert '%d untested' % summary['untested'] in heading
-    # The second line is `board.headline`, which the status table's summary
-    # opens on: the same sentence, down to the full stop.
-    assert '%d of %d rules meet the gate %s.' % (
-        summary['met'], summary['rules'],
-        payload['gate']['gate']) in page.inner_text('.ledger')
+    bar = page.inner_text('.topbar')
+    assert 'gate: %s \u00b7 %d of %d' % (
+        gate, summary['met'], summary['rules']) in bar, bar
+    assert 'Data:' in bar
+    assert page.query_selector('.strip') is not None
+    first = page.evaluate(
+        "() => { const s = document.querySelector('.strip');"
+        " const sec = s.closest('section');"
+        " return sec.parentElement.querySelector('section') === sec; }")
+    assert first, 'the board does not open on the tiles'
+    text = page.inner_text('body')
+    assert 'rules pass their tests' not in text
+    assert 'rules meet the gate' not in text
     assert len(page.query_selector_all('.tile')) == TILES[process]
-    assert 'gate: ' + payload['gate']['gate'] in page.inner_text('.topbar')
-    assert 'Data:' in page.inner_text('.topbar')
     assert set(feature_names(page)) == set(
         f['name'] for f in payload['features'])
     page.close()
+    if process == 'regulated':
+        payload['summary']['met'] = 3
+        page = open_board(browser, tmp_path, payload)
+        assert 'gate: signed \u00b7 3 of %d' % summary['rules'] in \
+            page.inner_text('.topbar')
+        page.close()
 
 
 BASE_COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests']

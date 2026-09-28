@@ -37,10 +37,8 @@ button{font-family:inherit}
 .tabs button[aria-current="page"]{color:var(--text-primary);border-bottom-color:var(--accent)}
 .wrap{max-width:1360px;margin:0 auto;padding:var(--space-8)}
 section{margin-bottom:var(--space-10)}
-section.ledger{margin-bottom:var(--space-5)}
 .line{margin:0;font-size:var(--ui-base);font-weight:normal;line-height:inherit;color:var(--text-secondary)}
 .line b{font-family:var(--font-mono);font-weight:var(--weight-bold);color:var(--text-primary)}
-.sep{color:var(--text-muted);padding:0 var(--space-3)}
 .eyebrow{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-accent);margin:0 0 var(--space-4)}
 h1{font-size:var(--ui-metric);font-weight:var(--weight-bold);margin:0 0 var(--space-3);line-height:1.1}
 h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-4)}
@@ -382,16 +380,8 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  var summary = DATA.summary || {};
   var floor = columns.reduce(function (sum, c) { return sum + c.floor; }, 0);
-  var head = '<section class="ledger"><h1 class="line"><b>'
-    + reached(summary, 'passed') + '</b> of <b>' + (summary.rules || 0)
-    + '</b> rules pass their tests<span class="sep">·</span><b>'
-    + (summary.failing || 0) + '</b> failing<span class="sep">·</span><b>'
-    + (summary.partial || 0) + '</b> partial<span class="sep">·</span><b>'
-    + (summary.untested || 0) + '</b> untested</h1>'
-    + '<p class="line">' + headline(summary, gateName())
-    + '</p></section><section>' + statStrip() + '</section>';
+  var head = '<section>' + statStrip() + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
         return 'minmax(' + c.floor + 'px,' + c.width + ')';
@@ -708,12 +698,6 @@ function reached(counted, name) {
       return sum + (counted[key] || 0);
     }, 0);
 }
-function headline(summary, gate) {
-  return '<span class="mono">' + (summary.met || 0)
-    + '</span> of <span class="mono">' + (summary.rules || 0)
-    + '</span> rules meet the gate <span class="mono">' + esc(gate)
-    + '</span>.';
-}
 function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
 }
@@ -935,6 +919,11 @@ function tagChip() {
       + (found.at ? DOT + found.at : '')]) + '>'
     + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
 }
+function gateChip(gate) {
+  var summary = (DATA && DATA.summary) || {};
+  return tag('gate: ' + gate + DOT + (summary.met || 0) + ' of '
+    + (summary.rules || 0), true);
+}
 function topBar() {
   var line = ageLine();
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
@@ -943,7 +932,7 @@ function topBar() {
     + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? tag('gate: ' + gate, true) : '')
+    + (gate ? gateChip(gate) : '')
     + (level('signed') ? tagChip() : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '

@@ -213,9 +213,9 @@ function featureRow(feature, columns) {
 /* The band over a category's specs, and what its two numbers are. `MCP (6) 5
    of 113` left the reader to guess both, so the band says them: how many specs
    the category holds, then how many of their rules pass their tests, in the
-   same words and the same mono face the headline uses. The gate ratio is not
-   here: the `Signed` column carries it for each spec and the headline's
-   second line carries it for the project. */
+   same words and the same mono face the tiles use. The gate ratio is not
+   here: the `Signed` column carries it for each spec and the top bar's gate
+   chip carries it for the project. */
 function groupBand(name, features, columns) {
   var open = VIEW.groups[name] !== false;
   var passing = 0;
@@ -248,20 +248,10 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  var summary = DATA.summary || {};
   var floor = columns.reduce(function (sum, c) { return sum + c.floor; }, 0);
-  /* What the board is mainly about is the tests: how many rules pass them,
-     how many fail, how many pass on one platform and not another, and how
-     many nothing has run against. The gate is the second line, because the
-     signed layer is one column's business. */
-  var head = '<section class="ledger"><h1 class="line"><b>'
-    + reached(summary, 'passed') + '</b> of <b>' + (summary.rules || 0)
-    + '</b> rules pass their tests<span class="sep">·</span><b>'
-    + (summary.failing || 0) + '</b> failing<span class="sep">·</span><b>'
-    + (summary.partial || 0) + '</b> partial<span class="sep">·</span><b>'
-    + (summary.untested || 0) + '</b> untested</h1>'
-    + '<p class="line">' + headline(summary, gateName())
-    + '</p></section><section>' + statStrip() + '</section>';
+  /* The board opens on the tiles, which carry every count the tests give;
+     how many rules meet the gate sits beside the gate in the top bar. */
+  var head = '<section>' + statStrip() + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
         /* minmax sizes every track from these two numbers alone. A bare fr

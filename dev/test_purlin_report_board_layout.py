@@ -61,7 +61,10 @@ def test_the_stale_card_carries_the_count(browser, tmp_path):  # noqa: F811
         " s.remove(); return v; }", fail)
     assert colour == probe, (colour, probe)
     assert len(page.query_selector_all('.tile')) == 6
-    assert '2 failing' in page.inner_text('h1')
+    failing = page.eval_on_selector_all(
+        '.tile', "els => els.map(e => [e.querySelector('.tile-l').textContent,"
+        " e.querySelector('.tile-v').textContent])")
+    assert dict(failing)['Failing'] == '2', failing
     # The stale count is the flag card's and the `Signed` hover's; the cell
     # states the share alone.
     signed = count_cells(page)['login']['Signed']

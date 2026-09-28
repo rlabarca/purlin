@@ -25,32 +25,25 @@ you reloading anything.
 ## The top bar
 
 Every screen carries the same top bar: the logo; how old the data is, as `Data: 12 minutes
-old`, which is a button that reloads the page; the gate, as `gate: signed`; at `signed`, the
-signed tag this commit carries, as `signed/1.4.0 · a1b2c3d`, or `no signed tag`; the
-commit the data was built from, as `at a1b2c3d`; and the theme toggle. The age recomputes every
-60 seconds, and from 90 minutes on it adds `— run purlin:status to refresh`.
+old`, which is a button that reloads the page; the gate and how many rules meet it, as
+`gate: signed · 4 of 10`; at `signed`, the signed tag this commit carries, as
+`signed/1.4.0 · a1b2c3d`, or `no signed tag`; the commit the data was built from, as
+`at a1b2c3d`; and the theme toggle. The age recomputes every 60 seconds, and from 90 minutes on
+it adds `— run purlin:status to refresh`.
 
 Below it are the tabs: `Board`, then `Queue (n)` at `strong` and above, and the open rule, such
 as `login RULE-1`, when there is one.
 
 ## Board
 
-![The Board at the gate signed: two warnings, the two headline lines, six tiles with the Queue and Stale cards, the six filters, and four specs under their categories with all six columns](images/dashboard-board.png)
+![The Board at the gate signed: two warnings, six tiles with the Queue and Stale cards, the six filters, and four specs under their categories with all six columns](images/dashboard-board.png)
 
-Warnings sit above the headline, one per line: `The working tree has uncommitted changes, so
+Warnings sit above the tiles, one per line: `The working tree has uncommitted changes, so
 what is on this board is not what a commit would carry.`, and any line the spec parser could
-not read. The headline is two lines:
-
-```
-8 of 10 rules pass their tests · 0 failing · 1 partial · 1 untested
-4 of 10 rules meet the gate signed.
-```
-
-The second line is the sentence `purlin:status` opens its summary on. A rule meets the gate
-when its passed cell is met, its strong cell is met if its level is `strong` or `signed`, and
-its signed cell is met if its level is `signed`. The gate decides how many cells a rule has, so
-it also decides how much of this page exists: a tile, a column or a filter above the gate is
-absent, not empty.
+not read. The board then opens on the tiles. A rule meets the gate when its passed cell is met,
+its strong cell is met if its level is `strong` or `signed`, and its signed cell is met if its
+level is `signed`. The gate decides how many cells a rule has, so it also decides how much of
+this page exists: a tile, a column or a filter above the gate is absent, not empty.
 
 **Tiles.** At `passed` there are four: `Untested`, `Failing`, `Partial` and `Passing`. `Strong`
 joins at `strong` and `Signed` at `signed`. `Passing`, `Strong` and `Signed` count levels

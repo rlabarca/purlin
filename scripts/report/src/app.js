@@ -159,18 +159,6 @@ function reached(counted, name) {
     }, 0);
 }
 
-/* The one sentence that says where the project stands against its gate,
-   which is `board.headline`: the board's gate line and the line a status
-   table's summary opens on are the same words, down to the full stop, so a
-   reader who learns one reads the other. The counts and the gate are mono,
-   the way machine text is set everywhere. */
-function headline(summary, gate) {
-  return '<span class="mono">' + (summary.met || 0)
-    + '</span> of <span class="mono">' + (summary.rules || 0)
-    + '</span> rules meet the gate <span class="mono">' + esc(gate)
-    + '</span>.';
-}
-
 function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
 }
@@ -483,6 +471,15 @@ function tagChip() {
     + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
 }
 
+/* The gate, and how many rules meet it, as `gate: signed · 553 of 555`: the
+   one place on the page that says where the project stands against its gate,
+   on every screen. */
+function gateChip(gate) {
+  var summary = (DATA && DATA.summary) || {};
+  return tag('gate: ' + gate + DOT + (summary.met || 0) + ' of '
+    + (summary.rules || 0), true);
+}
+
 function topBar() {
   var line = ageLine();
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
@@ -491,7 +488,7 @@ function topBar() {
     + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? tag('gate: ' + gate, true) : '')
+    + (gate ? gateChip(gate) : '')
     + (level('signed') ? tagChip() : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
