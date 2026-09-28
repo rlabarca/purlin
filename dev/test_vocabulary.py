@@ -91,7 +91,14 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             # decision 35: `purlin:audit` calls the model itself. The flag
             # that once asked for it and the builder of the file it fed are
             # retired by their machine spellings.
-            re.compile(r"--ai\b"), "build_brief")
+            re.compile(r"--ai\b"), "build_brief",
+            # decision 51: a marker is one comment, and no plugin is
+            # installed in a project's tests. The markers the plugins read,
+            # the folder their copies sat in and the format of the files they
+            # wrote are retired by their machine spellings; the 0.9.5
+            # upgrade and its tests are the one place they are written.
+            "pytest.mark.proof", "purlin_proof", "[proof:", "PurlinProof",
+            "-- @purlin", ".purlin/plugins", "proofs_format")
 
 # The queue is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
@@ -148,7 +155,6 @@ MARKED = {
     # the 0.9.5 upgrade drops the kind of test, so its test writes one
     "dev/test_init_update.py": "# retired",
     "dev/test_schema_spec_format.py": "# retired",
-    "dev/test_schema_proof_format.py": "# retired",
     "dev/test_run_script.py": "# retired",
 }
 
