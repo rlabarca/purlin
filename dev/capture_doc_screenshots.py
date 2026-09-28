@@ -1,18 +1,17 @@
 """Capture the board screenshots the docs embed.
 
-Six images, from the same fixture payloads `dev/test_purlin_report.py` renders
-(`dev/fixtures/report/`) rather than from whatever this checkout happens to
-hold: a screenshot taken from live data goes stale the moment the data moves,
-and shows one project's names to every reader.
+Three images, from the same fixture payloads `dev/test_purlin_report.py`
+renders (`dev/fixtures/report/`) rather than from whatever this checkout
+happens to hold: a screenshot taken from live data goes stale the moment the
+data moves, and shows one project's names to every reader.
 
     python3 dev/build_report.py && python3 dev/capture_doc_screenshots.py
 
-    dashboard-solo.png         the board at the passed gate, four tiles
-    dashboard-team.png         the board at strong, with the Strong column
-    dashboard-regulated.png    the board at signed, with the Signed column
-    dashboard-rule.png         one rule, its cells, its brief, its proofs
-    dashboard-review-list.png  the rules whose next step is a person
-    dashboard-sign.png         the rules whose tests and audit are met, waiting to be signed
+    dashboard-board.png   the board at the signed gate: six tiles, the two
+                          flag cards, every column and the filters
+    dashboard-queue.png   the Queue tab: a hand check and a signature
+    dashboard-rule.png    one signed rule: its cells, its level, what the
+                          audit found, its signature and its proofs
 
 Each is the dark theme at 1440 wide, captured at 2x so the type stays crisp.
 Uses dev/browser_launch.py, so it drives an installed Google Chrome when the
@@ -40,15 +39,12 @@ SCALE = 2
 
 # name -> (fixture, the clicks that reach the screen)
 SHOTS = (
-    ('dashboard-solo.png', 'solo', ()),
-    ('dashboard-team.png', 'team', ()),
-    ('dashboard-regulated.png', 'regulated', ()),
+    ('dashboard-board.png', 'regulated', ()),
+    ('dashboard-queue.png', 'regulated', ('[data-screen="queue"]',)),
+    # RULE-1 is the signed one: its cells show a platform box, what the audit
+    # found and a signature, which is the whole chain on one screen.
     ('dashboard-rule.png', 'regulated',
      ('[data-act="feature"][data-feature="login"]', '.rule[data-rule="RULE-1"]')),
-    # RULE-1 is the signed one: its cells show a platform box, a brief and a
-    # signature, which is the whole chain on one screen.
-    ('dashboard-review-list.png', 'regulated', ('[data-screen="queue"]',)),
-    ('dashboard-sign.png', 'regulated', ('[data-screen="queue"]',)),
 )
 
 

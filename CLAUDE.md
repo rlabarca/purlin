@@ -9,9 +9,9 @@ extensions specific to developing the framework.
 The look follows `design/readme.md` and the wording follows `references/writing_style.md`; each
 is the authority for its half. They bind the dashboard, the CLI output, the docs and this file.
 
-- **Two surfaces, one system.** Warm navy, cream, blush and copper for the brand and the docs;
-  `data-surface="product"` for the dashboard. Green, amber, red and teal mean pass, warn, fail
-  and neutral on both. No other accent, no gradient, no shadow, no icon set beyond the unicode
+- **Two surfaces, one system.** Warm navy, cream, blush and copper for the brand, the docs and
+  the dashboard, which sets no surface; `data-surface="product"` for the slate product ground.
+  Green, amber, red and teal mean pass, warn, fail and neutral on both. No other accent, no gradient, no shadow, no icon set beyond the unicode
   glyphs `▶ ▼ ▲ →`, and no emoji anywhere, CLI output included.
 - **Machine text is monospace, human text is sans.** Commands, rule ids, paths, shas and gates in
   Courier New; prose in Arial. Sentence case; command names lowercase with the colon.
@@ -19,8 +19,9 @@ is the authority for its half. They bind the dashboard, the CLI output, the docs
   `theme-light.css`, never a raw palette value. Both themes ship.
 - **Copy voice** follows `references/writing_style.md`: plain and declarative, second person for
   the reader, third person for the system, exact numbers, limits stated, no superlatives.
-- Docs diagrams are mermaid with the init block from `docs/_mermaid.md`; screenshots come from
-  the rebuilt dashboard; the logo is `design/assets/logo.svg`.
+- Docs diagrams are mermaid with the init block from `docs/_mermaid.md`; the three
+  screenshots, the board, the queue and one rule, are taken by `dev/capture_doc_screenshots.py`
+  from the rebuilt dashboard and the fixtures; the logo is `design/assets/logo.svg`.
 
 ## Format reference versioning
 
