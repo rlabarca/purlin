@@ -6,7 +6,7 @@ MONO = "font-family:'Courier New', monospace"
 def m(text):
     return '<span style="%s; color:#E6BEB0">%s</span>' % (MONO, text)
 def mt(text):
-    return '<span style="%s">%s</span>' % (MONO, text)
+    return '<span style="color:#C0793F">%s</span>' % text
 SECTION = ('<section id="%s" data-transition="fade" style="background:#0C3444; color:#E4DDD4; '
            'font-family:Arial, sans-serif; padding:96px 128px 160px; display:flex; '
            'flex-direction:column; gap:%dpx">')
@@ -49,8 +49,8 @@ def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=
         h.write('\n'.join(out))
 os.makedirs(os.path.join(ROOT, 'slides'), exist_ok=True)
 slide('why', 'What Purlin is for', 'Why use Purlin?', [
-    ('Tests pass. Do they cover what was asked?', 'You write each requirement as a rule. Purlin ties every rule to the tests that show it, and names every rule with no test.'),
-    ('AI writes tests fast. Are they any good?', 'An AI audit reads each test against what it claims to show, and names the tests that show too little.'),
+    ('Tests pass. Do they cover what was asked?', 'You write each requirement as a rule. Purlin ties every rule to the tests that show it, and calls out every rule that doesn\'t have a test.'),
+    ('AI writes code &amp; tests fast. Are they any good?', 'An AI audit reads each test against what it claims to show, and names the tests that show too little.'),
     ('Something changed. Is the result still true?', 'A result stops counting when the rule, the test or the code changes, until the tests are run again.'),
     ('Someone has to sign it off.', 'A person signs each rule, and the version gets a signed tag. The evidence is one file you hand over.'),
 ], '',
@@ -59,7 +59,7 @@ slide('why', 'What Purlin is for', 'Why use Purlin?', [
  'off. A team chooses how far to go: tests only, an audit too, or a signature too. Purlin cannot '
  'prove your code is correct, and it makes no claim of compliance.',
  lead='Purlin shows, rule by rule, that your software does what you said it must.', width=700)
-slide('touches', 'Your project and your workflow', 'How little does Purlin change your project?', [
+slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t change your project much', [
     ('A settings file', '%s, a folder for evidence, and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
     ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),
     ('One comment per test', '%s above the test. The test itself does not change.' % m('# purlin: login RULE-4')),
@@ -88,47 +88,45 @@ slide('fromcode', 'An existing codebase', 'Starting from code you already have',
 ], '<b>A person reads every rule.</b> A rule read from code says what the code does, not what it should do.',
  'Run purlin:init first, then purlin:spec-from-code once. Twenty to forty features is normal for a '
  'mid-sized service. Each spec is committed on its own, and a session that ends halfway resumes at '
- 'the next feature. Every rule starts at the level passed; the team marks the rules that need an '
- 'audit or a signature afterwards. Rules with no test go to purlin:build.',
+ 'the next feature. Every rule is asked what the gate asks. Rules with no test go to purlin:build.',
  lead='%s is run once. It turns a codebase with no rules into one whose rules can be proven.' % m('purlin:spec-from-code'), width=560, pad=16)
 slide('passed', 'The first gate', 'Gate %s: only check that rules pass their tests' % mt('passed'), [
     ('`purlin:spec`', 'You say what must be true. It is written down as rules.'),
     ('`purlin:build`', 'The code and its tests are written. One comment above each test names the rule it shows.'),
     ('`purlin:test`', 'Runs the tests and reports each rule: passed, failed, no test, or out of date, which means something changed since its test ran.'),
-], '<b>The gate is met</b> when every rule has a test that passed, and nothing has changed since it ran.',
+], '<b>A version is finished</b> when every rule has a test that passed, and nothing has changed since it ran.',
  'At passed a project needs a rule and a test that names it. Out of date means the code, the rule or '
  'the test changed after the last run. purlin:test runs only what your change touched, writes the '
  'evidence, and commits it only when you pass --commit.',
  lead='A gate is how far every rule must go before a version counts as proven. You choose one of three.')
-slide('strong', 'The second gate', 'Gate %s: also check that the tests are good enough' % mt('strong'), [
+slide('strong', 'The second gate', 'Gate %s: also check that the tests are good' % mt('strong'), [
     ('`spec, build, test`', 'As before. Every rule also gets a proof: one plain sentence saying how the rule is shown to hold.'),
     ('`purlin:audit`', 'An AI model reads each test against its proof and reports any test that shows less than its proof says.', [
         ('Mutation testing', 'Optional. The code is broken on purpose to see whether the tests notice.'),
         ('The evidence', 'What ran and what the audit found, one file per feature. Committed when you ask.')]),
-], '<b>The gate is met</b> when the audit finds every rule strong: meaning its test actually shows what its proof says.',
+], '<b>A version is finished</b> when the audit finds every rule strong: meaning its test actually shows what its proof says.',
  'A proof says in plain language how a rule is shown; QA writes and reviews them, and AI may draft '
  'them. The audit reads one rule per call, several at once, says how many it will read before it '
  'starts, and names the model on every finding. A rule whose text, proof and test have not changed '
  'is not read again.')
-slide('signed', 'The third gate', 'Gate %s: a person signs each rule, locked to exactly what they reviewed' % mt('signed'), [
+slide('signed', 'The third gate', 'Gate %s: a person signs to lock each rule to exactly what they reviewed' % mt('signed'), [
     ('`test, audit`', 'As before. Every rule passes its tests and its audit.'),
     ('`purlin:sign`', 'Shows you each rule with its proof, its tests and what the audit found. You sign it.', [
         ('The signature', 'One file per rule, in a signed commit. It records who signed and when.'),
         ('The package and the tag', 'When every rule is signed, the evidence is written as one file and the version is tagged %s.' % m('signed/1.4.0'))]),
     ('`git push origin signed/1.4.0`', 'You publish the tag. It says every rule of this version is signed.'),
-], '<b>The gate is met</b> when every rule has a signature. This means the rule, its proof, its test, the code, what the audit found and where the tests ran are all tied together under the signature.',
+], '<b>A version is finished</b> when every rule has a signature. This means the rule, its proof, its test, the code, what the audit found and where the tests ran are all tied together under the signature.',
  'Signing is the formal lock on one exact set: the rule, its proof, its test, the code the rule '
  'covers, what the audit found and the operating systems the tests ran on. Change any of them and '
  'the signature stops counting, and a person signs again. A signature belongs to no machine; it is '
  'bound to where the tests ran, not to where it was signed. The tag itself is signed.', pad=16)
 slide('remote', 'Remote runners', 'When does Purlin use a remote runner in your repository?', [
     ('A rule must hold on another operating system', 'You work on a Mac and a rule must hold on Windows. %s runs those tests on a runner and brings the results back.' % m('purlin:test --remote')),
-    ('You want the tests run on a clean machine', 'You choose at setup that results from a developer\'s machine do not count toward a signature. The tests run on a runner instead.'),
-], 'In every other case Purlin uses no runner and does NOT add a pipeline file to your repository.',
- 'Two reasons and no others. Where a runner exists it runs on a pushed signed tag and on the run '
- 'branch purlin:test --remote creates, waits on and deletes. The tag run reruns the tests on a clean '
- 'machine, checks every signature against the tagged code, and checks that every file in the ci '
- 'folder was committed by the runner itself.',
+    ('What the runner does', 'It runs the tests and saves the results. Its job fails only when a test fails.'),
+], 'In every other case Purlin only works locally and does NOT add a pipeline file to your repository.',
+ 'One reason and no other. Where a runner exists it runs on a pushed signed tag and on the run '
+ 'branch purlin:test --remote creates, waits on and deletes. A result counts wherever it ran, and '
+ 'each records the machine and the operating system it came from.',
  lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.')
 slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not claim compliance.', [
     ('Purlin produces', 'Evidence for each rule: its tests and their results, what the audit found, and who signed.'),
@@ -155,8 +153,8 @@ deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin gate workflows",
         "order": ["why", "touches", "start", "fromcode", "passed", "strong", "signed", "remote", "regulated", "anchors"],
         "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
-                     "s2": {"description": "One slide per gate: what the gate checks, what you run, and when the gate is met", "start": "passed"},
-                     "s3": {"description": "The two cases where Purlin uses a remote runner, where Purlin stops in regulated work, and how anchors carry shared rules across projects", "start": "remote"}},
+                     "s2": {"description": "One slide per gate: what the gate checks, what you run, and when a version is finished", "start": "passed"},
+                     "s3": {"description": "The one case where Purlin uses a remote runner, where Purlin stops in regulated work, and how anchors carry shared rules across projects", "start": "remote"}},
         "faces": {}, "designSystems": []}
 with open(os.path.join(ROOT, 'deck.json'), 'w', encoding='utf-8') as h:
     json.dump(deck, h, indent=2); h.write('\n')

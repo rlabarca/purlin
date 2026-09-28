@@ -677,6 +677,31 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     lists: a change to any of them ends the signature of every rule in that feature. Where
     existing code has a test that was already failing, `purlin:spec-from-code` writes the
     rule from what the test expects and leaves it failing.
+73. **Every rule is asked what the gate asks** (added 2026-09-28). Marking a rule lower,
+    `[level: ...]`, goes. A finished project at the gate `signed` reads the same number
+    three times. This removes decisions 36 and 58 and the amendment of decision 60 that kept
+    them. The 124 proofs left out of the rewrite because their rule was marked lower are
+    rewritten with the rest. `purlin:spec-from-code` marks no level.
+74. **One list, `Left to do`** (added 2026-09-28). The queue goes as a separate idea, with
+    its tab, its box and its line. `Left to do` holds every kind of remaining work, each
+    with who or what does it; `to test by hand` and `to sign` are two of its lines.
+    `purlin:sign` still walks the rules that wait for a person. This amends decision 61.
+75. **Where Purlin refuses, and where it does not** (added 2026-09-28). Purlin refuses
+    nothing a person does. It will not itself state that a version is finished unless that
+    is so: the signed tag is written only when nothing is left to do and every result came
+    from committed work. The choice not to trust a developer's machine goes, with the
+    setting, its question at setup and the check of who committed a runner's results: a
+    result counts wherever it ran and records where. A remote runner has one reason, a rule
+    that must hold on another operating system. On a pushed signed tag the runner runs the
+    tests and nothing else. An audit that finds a proof longer than the standard, or holding
+    two cases, notes it and does not find the rule weak for it.
+76. **Small things that follow** (added 2026-09-28). The word `gate` stays. A finished
+    project's last line names the release step at the gate `signed`, `git push origin
+    signed/<version>`, and at the other two gates says `Nothing left to do.` and names no
+    command; every other ending names a command. An anchor's rule is signed once in each
+    feature it applies to, a change to that feature's files ends that one signature, and the
+    rule counts as signed when it is signed in every one of them. The slides end each gate
+    with `A version is finished when`.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
