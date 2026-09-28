@@ -518,6 +518,20 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     commit its evidence was taken at, which is the parent of the commit that carries it.
     Run at any other time, `purlin:export` writes the file, says the version is work in
     progress, and commits it only with `--commit`.
+56. **Six choices from the overnight run, settled** (added 2026-09-28).
+    - A hand check signed without a note is accepted, as it is.
+    - At the gate `signed`, a spec that names no files fails the gate check whatever its
+      rules are marked, as it is.
+    - **A merge that needed conflicts resolved counts as a merge for drift.** Git logs it as
+      `commit (merge)`; drift measures from before it.
+    - **A marker that names a feature, a proof or a rule no spec has fails the run**, with
+      the file and the line, exit 1.
+    - **The tag and its package are written only at the gate `signed`.** At `strong`,
+      `purlin:sign` clears hand checks and writes no tag and no package; `purlin:export`
+      still produces a package at any gate, saying where things stand. No surface shows a
+      tag below `signed`.
+    - **The remote runner gets a diagram**, in the section of `docs/running-and-evidence.md`
+      that describes the two cases. That page then holds two diagrams, one per section.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

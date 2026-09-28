@@ -30,23 +30,13 @@ audited, signed, tagged or pushed. `main` is local only.
    specs rewritten to it: `specs/mcp/drift.md`, `specs/anchor/upstream.md`,
    `specs/mcp/config_engine.md`.
 
-## What needs your decision
+## Decided on the morning of 2026-09-28
 
-Each is a choice made on your behalf that you may want made the other way.
-
-1. **A hand check signed without a note is accepted.** The walk asks for the note and does not
-   require it. A hand check with no note says a person checked and not what they saw.
-2. **At `signed`, a spec that names no files fails the gate check even when every rule in it is
-   marked below `signed`.** It follows from `signed` being the strict gate, and it is stricter
-   than you may have meant.
-3. **A merge that needed conflicts resolved does not count as a merge for drift**, because git
-   logs it under another name and your list named merge. One line to change.
-4. **No diagram shows the remote runner.** The one page that could hold it spent its diagram on
-   the local run. The remote steps are a numbered list there.
-5. **A marker that names a feature, proof or rule no spec has is printed and does not fail the
-   run.** A marker tied to no test does fail it.
-6. **`purlin:sign` writes the evidence package and the tag at the gate `strong` too**, with the
-   package saying it is not for approval.
+Six choices were put to you; decision 56 records the answers. Two stay as they were (a hand
+check without a note; a spec that names no files at `signed`). Four change, and one more piece
+applies them: a merge with conflicts counts for drift; a marker that names nothing fails the
+run; the tag and its package are written only at the gate `signed`; the remote runner gets a
+diagram.
 
 ## What is not proven here
 
