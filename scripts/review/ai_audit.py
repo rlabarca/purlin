@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the brief the machine writes about one rule.
 
-    brief.py --feature <f> [--rule RULE-N] [--ai] [--project-root DIR]
+    ai_audit.py --feature <f> [--rule RULE-N] [--ai] [--project-root DIR]
 
 The brief reports; it recommends nothing. It sets the rule, its proofs and
 the source of each test that backs them beside the evidence, in two layers,
@@ -48,7 +48,7 @@ from purlin import (console as console_module,                 # noqa: E402
                     payload as payload_module,
                     signatures as signatures_module, states)
 
-USAGE = ('Usage: brief.py --feature <f> [--rule RULE-N] [--ai] '
+USAGE = ('Usage: ai_audit.py --feature <f> [--rule RULE-N] [--ai] '
          '[--project-root DIR]')
 
 EXIT_OK = 0
@@ -425,10 +425,10 @@ def main(argv=None):
         return EXIT_OK
     if args.error:
         print(USAGE, file=sys.stderr)
-        print('brief.py: %s' % args.error, file=sys.stderr)
+        print('ai_audit.py: %s' % args.error, file=sys.stderr)
         return EXIT_BAD_INVOCATION
     if not os.path.isdir(args.project_root or '.'):
-        print('brief.py: not a directory: %r' % args.project_root,
+        print('ai_audit.py: not a directory: %r' % args.project_root,
               file=sys.stderr)
         return EXIT_BAD_INVOCATION
 

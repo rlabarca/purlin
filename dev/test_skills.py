@@ -535,7 +535,7 @@ class TestSkillSign:
         rel = skill_path('sign')
         assert (carries(rel, ['payload.queue'])
                 + in_order(rel, [
-                    '"${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py"',
+                    '"${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py"',
                     '"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"'])) == []
 
     @pytest.mark.proof("skill_sign", "PROOF-3", "RULE-3")

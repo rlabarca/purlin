@@ -823,7 +823,7 @@ def _audit_report(project_root, features, selected, break_features, commit):
     found goes into the feature's evidence as that rule's entry.
     """
     try:
-        from brief import asks_for_a_review, build_brief, rule_entry
+        from ai_audit import asks_for_a_review, build_brief, rule_entry
     except ImportError:
         print('purlin: the AI audit is not available in this checkout; it '
               'did not run.')

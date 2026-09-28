@@ -1,4 +1,4 @@
-# Feature: brief
+# Feature: ai_audit
 
 > Description: The machine's report on one rule. It sets the rule, its
 >   proofs and the source of each test that backs them beside the evidence,
@@ -10,7 +10,7 @@
 >   observations one sentence at a time, and whether the audit settled. It
 >   recommends nothing, and it writes no file: `purlin:audit` reads each
 >   brief into the feature's evidence as that rule's audit entry.
-> Scope: scripts/review/brief.py, scripts/review/marked_tests.py
+> Scope: scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, glob, subprocess, shutil)
 
 ## Rules
@@ -30,8 +30,8 @@
 - RULE-17: An answer in no shape the brief can read observes nothing and leaves the question not answered
 - RULE-19: Building a brief, rendering it and running the command write no file anywhere under `.purlin/`, and the triple a brief names moves whenever the rule, the proof or the test moves
 - RULE-22: The text rendering names the rule, its proofs, the test strength beside the minimum, the observations and whether the review settled, and carries no emoji [level: passed]
-- RULE-23: `brief.py --help` exits 0, an unknown option or a missing `--feature` exits 2, and a feature with no rule in the project exits 1 [level: passed]
-- RULE-24: `brief.py --feature <name>` with no `--rule` builds and prints a brief for every rule of that feature [level: passed]
+- RULE-23: `ai_audit.py --help` exits 0, an unknown option or a missing `--feature` exits 2, and a feature with no rule in the project exits 1 [level: passed]
+- RULE-24: `ai_audit.py --feature <name>` with no `--rule` builds and prints a brief for every rule of that feature [level: passed]
 - RULE-26: When several tests back one proof, each test in the brief shows its own source; a test whose source cannot be found shows none rather than another test's
 - RULE-28: The test source is read out of JavaScript and TypeScript by balancing braces, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 
@@ -61,7 +61,7 @@
 - PROOF-33 (RULE-23): Run the command for the feature `nothing`, which no spec declares; verify it exits 1
 - PROOF-34 (RULE-24): Run the command for `--feature login --rule RULE-1`; verify it exits 0, prints `login RULE-1` and writes no file under `.purlin/` outside `runtime/`
 - PROOF-35 (RULE-24): Run the command for `--feature login` with no rule named; verify it exits 0 and prints both `login RULE-1` and `login RULE-2`
-- PROOF-36 (RULE-23): Run `brief.py` as a command in a separate process against a project holding evidence; verify it exits 0 and its output names `login RULE-1`
+- PROOF-36 (RULE-23): Run `ai_audit.py` as a command in a separate process against a project holding evidence; verify it exits 0 and its output names `login RULE-1`
 - PROOF-38 (RULE-26): Mark `test_valid_credentials_return_200` and a second test `test_a_token_comes_back` with `PROOF-1`, write both into the evidence, and build the brief; verify the first entry's body holds `def test_valid_credentials_return_200` and `== 200` and not `def test_a_token_comes_back`, and the second entry's body holds `def test_a_token_comes_back` and `token` and not `def test_valid_credentials_return_200`
 - PROOF-40 (RULE-26): Write a third name `test_renamed_away` into the evidence for `PROOF-1` that the file no longer holds; verify its body is empty while the other two still show their own source
 - PROOF-41 (RULE-26): Read the names a section carries, `Acme.LoginTests.Denied(user: "x")`, `test_found[jest-[proof:f:PROOF-1:RULE-1]]`, `TestLogin::test_found` and `works [proof:login:PROOF-1:RULE-1]` against the source names `Allowed`, `Denied`, `test_found` and `works [proof:login:PROOF-1:RULE-1]`; verify each finds its own source name and nothing else, and `test_gone` finds none

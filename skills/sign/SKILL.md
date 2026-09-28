@@ -62,7 +62,7 @@ Queue: 5 rules. 2 hand checks, 3 signatures.
 Read the brief for a rule before anything is written:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py" --feature <feature> --rule RULE-N
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py" --feature <feature> --rule RULE-N
 ```
 
 It carries the rule text, the proof text, the test body, the test strength beside

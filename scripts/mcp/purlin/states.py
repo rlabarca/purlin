@@ -92,7 +92,7 @@ NEEDS = (HAND_CHECK, SIGNATURE)
 
 # What a brief writes under `ai_review` when no model could be reached. The
 # audit records that as a rule it read and found nothing against, so the
-# strength is the whole of level 2. `scripts/review/brief.py` reads this name
+# strength is the whole of level 2. `scripts/review/ai_audit.py` reads this name
 # from here so the two cannot drift.
 NO_MODEL = 'not available'
 
