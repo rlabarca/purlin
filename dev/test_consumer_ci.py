@@ -43,8 +43,6 @@ FIXTURE_FILES = (
     '.github/workflows/purlin.yml',
     '.gitignore',
     '.purlin/config.json',
-    '.purlin/plugins/pytest_purlin.py',
-    'conftest.py',
     'greeting.py',
     'specs/core/greeting.md',
     'tests/test_greeting.py',
@@ -122,7 +120,7 @@ def step_names(lines):
 # The workflow
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("host", "PROOF-17", "RULE-17")
+# purlin: host PROOF-17
 def test_the_fixture_workflow_is_what_the_template_renders():
     rendered = workflow_module.render_workflow('github', ['linux'], PURLIN_REF)
     committed = read(WORKFLOW_REL)
@@ -141,7 +139,7 @@ def test_the_fixture_workflow_is_what_the_template_renders():
         raise AssertionError('the two texts differ only in trailing bytes')
 
 
-@pytest.mark.proof("host", "PROOF-17", "RULE-17")
+# purlin: host PROOF-17
 def test_the_template_still_carries_the_placeholders():
     """A substitution that has become a no-op proves nothing."""
     template = read(os.path.join('templates', 'purlin.yml'), root=ROOT)
@@ -149,7 +147,7 @@ def test_the_template_still_carries_the_placeholders():
     assert '<<PURLIN_REF>>' in template
 
 
-@pytest.mark.proof("host", "PROOF-17", "RULE-17")
+# purlin: host PROOF-17
 def test_the_triggers_name_a_run_branch_and_the_signing_tag_and_nothing_else():
     named = workflow_module.render_workflow('github', ['linux'], PURLIN_REF)
     assert "branches: ['run/**']" in named
@@ -157,7 +155,7 @@ def test_the_triggers_name_a_run_branch_and_the_signing_tag_and_nothing_else():
     assert 'pull_request' not in named
 
 
-@pytest.mark.proof("host", "PROOF-17", "RULE-17")
+# purlin: host PROOF-17
 def test_a_workflow_is_written_for_two_reasons_and_no_others():
     wanted, reasons = workflow_module.wanted([], 'local', 'macos')
     assert wanted is False and reasons == []
@@ -171,7 +169,7 @@ def test_a_workflow_is_written_for_two_reasons_and_no_others():
     assert wanted is False, reasons
 
 
-@pytest.mark.proof("host", "PROOF-18", "RULE-18")
+# purlin: host PROOF-18
 def test_the_workflow_is_shaped_like_a_workflow():
     blocks = parse_blocks(read(WORKFLOW_REL))
     assert sorted(blocks) == ['jobs', 'name', 'on', 'permissions']
@@ -184,7 +182,7 @@ def test_the_workflow_is_shaped_like_a_workflow():
             '%s was left unfilled' % placeholder)
 
 
-@pytest.mark.proof("host", "PROOF-18", "RULE-18")
+# purlin: host PROOF-18
 def test_the_workflow_names_the_test_step_and_uploads_nothing():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     names = step_names(jobs.splitlines())
@@ -199,13 +197,13 @@ def test_the_workflow_names_the_test_step_and_uploads_nothing():
     assert 'scripts/ci/gate_check.py" --check --verify' in jobs
 
 
-@pytest.mark.proof("host", "PROOF-18", "RULE-18")
+# purlin: host PROOF-18
 def test_the_job_is_named_purlin():
     jobs = parse_blocks(read(WORKFLOW_REL))['jobs']
     assert jobs[0].strip() == 'purlin:', jobs[0]
 
 
-@pytest.mark.proof("host", "PROOF-19", "RULE-19")
+# purlin: host PROOF-19
 def test_the_matrix_is_the_one_operating_system_the_spec_names():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     assert 'os: [ubuntu-latest]' in jobs
@@ -213,7 +211,7 @@ def test_the_matrix_is_the_one_operating_system_the_spec_names():
     assert workflow_module.env_tags_in_specs(FIXTURE) == ['linux']
 
 
-@pytest.mark.proof("host", "PROOF-19", "RULE-19")
+# purlin: host PROOF-19
 def test_the_matrix_is_one_job_per_named_operating_system():
     """Linux always leads, the order is fixed, and an unknown name is ignored."""
     assert workflow_module.runners_for(['windows', 'linux']) == [
@@ -222,7 +220,7 @@ def test_the_matrix_is_one_job_per_named_operating_system():
     assert workflow_module.runners_for(['plan9']) == ['ubuntu-latest']
 
 
-@pytest.mark.proof("host", "PROOF-19", "RULE-19")
+# purlin: host PROOF-19
 def test_the_matrix_always_carries_linux_first():
     """Every untagged proof is proved somewhere, so the Linux job always runs."""
     assert workflow_module.runners_for(['windows']) == [
@@ -234,7 +232,7 @@ def test_the_matrix_always_carries_linux_first():
     assert 'os: [ubuntu-latest, windows-latest]' in rendered
 
 
-@pytest.mark.proof("host", "PROOF-18", "RULE-18")
+# purlin: host PROOF-18
 def test_the_workflow_clones_the_release_the_project_pins():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     assert 'ref="%s"' % PURLIN_REF in jobs, (
@@ -243,7 +241,7 @@ def test_the_workflow_clones_the_release_the_project_pins():
     assert 'vars.PURLIN_REF' in jobs, 'the pin must be movable without an edit'
 
 
-@pytest.mark.proof("host", "PROOF-18", "RULE-18")
+# purlin: host PROOF-18
 def test_no_pull_request_starts_a_run_at_all():
     """A fork's read-only token was the awkward case; there is no such run."""
     text = read(WORKFLOW_REL)
@@ -255,7 +253,7 @@ def test_no_pull_request_starts_a_run_at_all():
 # The project
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("host", "PROOF-20", "RULE-20")
+# purlin: host PROOF-20
 def test_the_fixture_is_complete_and_every_file_is_tracked():
     on_disk = set()
     for folder, dirnames, filenames in os.walk(FIXTURE):
@@ -274,28 +272,15 @@ def test_the_fixture_is_complete_and_every_file_is_tracked():
             'would not carry it' % (FIXTURE_REL, rel))
 
 
-@pytest.mark.proof("host", "PROOF-20", "RULE-20")
+# purlin: host PROOF-20
 def test_the_config_is_the_shape_this_release_reads():
     config = json.loads(read('.purlin/config.json'))
     assert config['gate'] == 'strong'
-    assert config['test_framework'] == 'pytest'
+    assert [suite['name'] for suite in config['tests']] == ['pytest']
     assert config['version'] == PURLIN_REF[1:]
     retired = {'spec_dir', 'audit_criteria', 'digest', 'report', 'pre_push'}
     assert not retired & set(config), (
         'the config still carries %s' % sorted(retired & set(config)))
-
-
-@pytest.mark.proof("host", "PROOF-20", "RULE-20")
-def test_the_plugin_copy_is_the_plugin():
-    with open(os.path.join(FIXTURE, '.purlin/plugins/pytest_purlin.py'),
-              'rb') as handle:
-        copied = handle.read()
-    with open(os.path.join(ROOT, 'scripts/proof/pytest_purlin.py'),
-              'rb') as handle:
-        source = handle.read()
-    assert copied == source, (
-        '.purlin/plugins/pytest_purlin.py is not a byte-identical copy of '
-        'scripts/proof/pytest_purlin.py')
 
 
 # The spec tag this release retired and the marker keyword that went with
@@ -306,7 +291,7 @@ RETIRED_TAG = '@' + 'on('
 RETIRED_KEYWORD = 'plat' + 'forms='
 
 
-@pytest.mark.proof("host", "PROOF-20", "RULE-20")
+# purlin: host PROOF-20
 def test_the_spec_carries_no_tag_this_release_retired():
     spec = read('specs/core/greeting.md')
     assert '@env(linux)' in spec
@@ -314,7 +299,7 @@ def test_the_spec_carries_no_tag_this_release_retired():
     assert RETIRED_KEYWORD not in read('tests/test_greeting.py')
 
 
-@pytest.mark.proof("host", "PROOF-20", "RULE-20")
+# purlin: host PROOF-20
 def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():
     data = payload_module.build_payload(FIXTURE, generated_by='test')
     assert data['warnings'] == []
@@ -330,7 +315,7 @@ def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():
     assert data['evidence'] == {}, 'no run has happened in the fixture'
 
 
-@pytest.mark.proof("host", "PROOF-20", "RULE-20")
+# purlin: host PROOF-20
 def test_the_fixtures_tests_pass_against_its_own_module():
     sys.path.insert(0, FIXTURE)
     try:
@@ -342,7 +327,7 @@ def test_the_fixtures_tests_pass_against_its_own_module():
     assert isinstance(greeting.os_tag(), str)
 
 
-@pytest.mark.proof("host", "PROOF-20", "RULE-20")
+# purlin: host PROOF-20
 def test_the_dry_run_walks_the_committed_workflow():
     script = read(os.path.join('dev', 'consumer_ci_dryrun.sh'), root=ROOT)
     assert WORKFLOW_REL in script

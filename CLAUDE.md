@@ -33,8 +33,8 @@ Do not bump for clarified wording, a new example or a typo.
 
 **When you change spec, proof, anchor, evidence or signature parsing or emission:**
 
-1. Make the code change, in `scripts/mcp/purlin/`, `scripts/proof/`, `scripts/review/`,
-   `scripts/run/` or a skill definition.
+1. Make the code change, in `scripts/mcp/purlin/`, `scripts/review/`, `scripts/run/` or a
+   skill definition.
 2. Update the matching file in `references/formats/`, bumping `> Format-Version:` by 1 when the
    change is structural.
 3. Update `references/spec_quality_guide.md` when the change affects how a rule is written.
@@ -45,7 +45,7 @@ Do not bump for clarified wording, a new example or a typo.
 |------|-----------------|
 | `spec_format.md` | The 2-section spec, parsed by `sync_status` |
 | `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
-| `proofs_format.md` | The proof files the test plugins emit, read by `sync_status` |
+| `marker_format.md` | The marker comment above a test, the `tests` setting, the four report formats and the tie, read by `purlin_run.py` and `sync_status` |
 | `signature_format.md` | The signature and the hold `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
 | `package_format.md` | The evidence package `purlin:export` and `purlin:sign` write, read by the system of record it is handed to |
 | `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a remote run, read by `sync_status` and `scripts/ci/gate_check.py` |
@@ -71,8 +71,7 @@ concept and consolidate any duplicate in the same commit.
 | `references/spec_quality_guide.md` | Writing a rule, writing a proof, reading the status that blocks it |
 | `references/drift_criteria.md` | File classification, config field ownership, drift by role |
 | `references/commit_conventions.md` | Every commit message prefix and shape |
-| `references/supported_frameworks.md` | Test framework detection |
-| `references/proof_plugin_contract.md` | The checklist for a proof plugin and how to prove one |
+| `references/supported_frameworks.md` | Test framework detection, the `tests` entry init writes for each, and what each needs added |
 | `references/rule_examples.md` | Worked rules and proofs |
 | `references/writing_style.md` | How Purlin writes: voice, person, casing, numbers, machine text |
 

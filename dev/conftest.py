@@ -1,10 +1,7 @@
-"""Load the Purlin proof plugin for pytest, and keep every test off the model."""
+"""Keep every test off the model."""
 import os
 import sys
 import tempfile
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'proof'))
-from pytest_purlin import pytest_configure  # noqa: F401
 
 import pytest  # noqa: E402
 

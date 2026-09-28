@@ -14,7 +14,6 @@ venv/
 
 # Purlin runtime
 .purlin/runtime/
-.purlin/plugins/__pycache__/
 .purlin/report-data.js
 
 # MCP server config (machine-specific)
