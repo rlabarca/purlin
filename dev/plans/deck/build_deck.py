@@ -75,7 +75,7 @@ slide('strong', 'The second gate', 'Gate %s: also check that the tests are good 
     ('`purlin:audit`', 'An AI model reads each test against its proof and reports any test that shows less than its proof says.', [
         ('Mutation testing', 'Optional. The code is broken on purpose to see whether the tests notice.'),
         ('The evidence', 'What ran and what the audit found, one file per feature. Committed when you ask.')]),
-], '<b>The gate is met</b> when every rule also has a proof, and an audit that found no fault.',
+], '<b>The gate is met</b> when the audit finds every rule strong: its test really shows what its proof says.',
  'A proof says in plain language how a rule is shown; QA writes and reviews them, and AI may draft '
  'them. The audit reads one rule per call, several at once, says how many it will read before it '
  'starts, and names the model on every finding. A rule whose text, proof and test have not changed '
