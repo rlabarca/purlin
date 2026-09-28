@@ -73,12 +73,6 @@ GATE_CHOICES = (
     'strong  every rule has a record an audit wrote, at the minimum test strength',
     'signed  strong, plus a signature from a person on the rule',
 )
-SIGN_AT_QUESTION = 'Which rules need a signature?'
-SIGN_AT_CHOICES = (
-    'strong  the rules whose bar is strong; the rest meet the gate on their '
-    'tests',
-    'all     every rule, whatever its bar',
-)
 LANGUAGE_QUESTION = ('There is nothing here to detect a test framework from. '
                      'Which one do the tests use?')
 
@@ -372,7 +366,7 @@ class Plan(object):
 # --- The steps -------------------------------------------------------------
 
 def write_config(plan, plugin_root, existing, gate, host, framework,
-                 sign_at=None, trust=None):
+                 trust=None):
     """`.purlin/config.json`: the template, the gate, and what follows from it."""
     config = json.loads(_read(plugin_root, 'templates', 'config.json'))
     config.update(existing or {})
@@ -386,10 +380,6 @@ def write_config(plan, plugin_root, existing, gate, host, framework,
         config['test_framework'] = framework
     for key in gate_module.RETIRED_KEYS:
         config.pop(key, None)
-    if gate == 'signed':
-        config['sign_at'] = sign_at or derived.sign_at
-    else:
-        config.pop('sign_at', None)
     plan.write('.purlin/config.json', json.dumps(config, indent=2) + '\n',
                own=True)
     return config
@@ -567,23 +557,6 @@ def resolve_frameworks(root, console, existing, add):
     return [answer], answer, []
 
 
-def ask_sign_at(console):
-    """Which rules need a signature: the one question the `signed` gate adds.
-
-    A bar is what a rule must prove before anyone signs it, so the answer is
-    either the rules that carry the strong bar or every rule there is.
-    """
-    answer = str(console.ask(SIGN_AT_QUESTION,
-                             gate_module.DEFAULT_SIGN_AT,
-                             SIGN_AT_CHOICES) or '').strip().lower()
-    if answer in gate_module.SIGN_AT_VALUES:
-        return answer
-    print('purlin: "%s" is not one of %s; reading it as %s.'
-          % (answer, ' or '.join(gate_module.SIGN_AT_VALUES),
-             gate_module.DEFAULT_SIGN_AT))
-    return gate_module.DEFAULT_SIGN_AT
-
-
 def _existing_config(root):
     """The project's own `.purlin/config.json`, or None when it has none."""
     try:
@@ -644,10 +617,6 @@ def main(argv=None):
                   % (gate, gate_module.DEFAULT_GATE))
             gate = gate_module.DEFAULT_GATE
 
-    sign_at = None
-    if gate == 'signed':
-        sign_at = ask_sign_at(console)
-
     selected, framework, dropped = resolve_frameworks(
         root, console, existing, args.add)
     trust = ask_trust(console, existing)
@@ -664,7 +633,7 @@ def main(argv=None):
         plan.directory(name)
 
     config = write_config(plan, plugin_root, existing, gate, host, framework,
-                          sign_at, trust)
+                          trust)
     install_plugins(plan, plugin_root, selected)
     write_wiring(plan, selected)
     write_engine(plan, root, selected)

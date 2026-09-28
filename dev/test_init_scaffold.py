@@ -236,18 +236,20 @@ class TestTheOneQuestion:
         finally:
             made.close()
 
-    @pytest.mark.parametrize('gate,strength,sign_at',
-                             [('passed', None, None),
-                              ('strong', 70, None),
-                              ('signed', 80, 'strong')])
+    @pytest.mark.parametrize('gate,strength',
+                             [('passed', None),
+                              ('strong', 70),
+                              ('signed', 80)])
     @pytest.mark.proof("scaffold", "PROOF-2", "RULE-2")
     def test_each_answer_derives_its_own_settings(self, project, gate,
-                                                  strength, sign_at):
+                                                  strength):
         project.run('--gate', gate)
         config = project.config()
         assert config['gate'] == gate
         assert config['min_strength'] == strength
-        assert config.get('sign_at') == sign_at
+        assert sorted(config) == ['ci', 'gate', 'min_strength',
+                                  'mutation_engine', 'sql_engine',
+                                  'test_framework', 'trust', 'version']
         for key in scaffold_module.gate_module.RETIRED_KEYS:
             assert key not in config, key
 
@@ -446,33 +448,6 @@ class TestNobodyIsNamed:
                     assert 'git config commit.gpgsign true' in done.stdout
             finally:
                 made.close()
-
-    @pytest.mark.proof("scaffold", "PROOF-45", "RULE-45")
-    def test_signed_asks_which_rules_need_a_signature(self):
-        for answer, written in (('all', 'all'), ('strong', 'strong'),
-                                ('medium', 'strong')):
-            made = Project('pytest')
-            try:
-                done = subprocess.run(
-                    [sys.executable, SCAFFOLD, '--project-root', made.root,
-                     '--gate', 'signed'],
-                    input='%s\n' % answer,
-                    capture_output=True, encoding='utf-8', timeout=300)
-                assert scaffold_module.SIGN_AT_QUESTION in done.stdout
-                for line in scaffold_module.SIGN_AT_CHOICES:
-                    assert line in done.stdout, done.stdout
-                assert made.config()['sign_at'] == written, answer
-                if answer == 'medium':
-                    assert 'is not one of' in done.stdout, done.stdout
-            finally:
-                made.close()
-
-
-# ---------------------------------------------------------------------------
-# The gate transitions
-# ---------------------------------------------------------------------------
-
-class TestTheGateTransitions:
 
     @pytest.mark.proof("scaffold", "PROOF-12", "RULE-12")
     def test_raising_the_gate_writes_the_setting_and_no_workflow(self,

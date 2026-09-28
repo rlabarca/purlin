@@ -22,24 +22,22 @@ proven?** There are three answers, one per evidence level. That answer is the **
 |------|-------------|---------------------------|------------|
 | `passed` | one person working alone | a passing tagged test for every proof, from any source | none |
 | `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose bar is `strong`: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding, no hold | none required; anyone may sign to clear a rule reading `manual test`, `unsettled` or `held` |
-| `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit | required on the rules `sign_at` names; the signature names who signed |
+| `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit | required on every rule whose level is `signed`; the signature names who signed |
 
 The answer sets three defaults, each changeable afterwards: `min_strength` unused, 70, 80; the
-default bar `passed`, `strong`, `strong`; `sign_at` unset, unset, `strong`.
+level of an unmarked rule `passed`, `strong`, `signed`: an unmarked rule takes the gate.
 
 `purlin:sign` is what says a version met the gate: it walks the two lists and writes the
 annotated tag `signed/<version>`, which a person pushes. The gate is the standard that tag
 stands for; `references/hard_gates.md` defines what it means.
 
-## The three honest exceptions
+## The two honest exceptions
 
 Init asks nothing else. It reads the language and the test framework from the tree and the git
-host from the remote URL. Three questions remain because no answer can be read from anywhere:
+host from the remote URL. Two questions remain because no answer can be read from anywhere:
 
 1. An empty repository has nothing to detect, so init asks which language the project will be.
-2. `signed` needs to know which rules need a signature, so init asks `Which rules need a
-   signature?` and writes `sign_at`.
-3. Whether this machine is trusted for the tests and the signing is a judgment, not a fact in
+2. Whether this machine is trusted for the tests and the signing is a judgment, not a fact in
    the tree, so init asks it.
 
 ## Run it
@@ -111,7 +109,7 @@ implies:
 }
 ```
 
-`sign_at` joins it under `signed` and nowhere else; init asks for it there. Read and change the file with the `purlin_config`
+Read and change the file with the `purlin_config`
 tool rather than by hand, so a key the installed Purlin no longer reads is reported instead of
 silently kept.
 
@@ -163,14 +161,13 @@ same checks run under `--update`.
 
 ## What each gate brings
 
-Under every gate, init leaves the bar tag optional. Under `strong` and `signed`, init also turns the breaks on. Where a workflow is called for, and `specs/` carries `@env(windows)`
+Under every gate, init leaves the level tag optional. Under `strong` and `signed`, init also turns the breaks on. Where a workflow is called for, and `specs/` carries `@env(windows)`
 or `@env(macos)` proofs, it gets a matrix: a Linux job always, plus one job per other operating
 system named, each running the same tests and writing its own section. With no such proof there
 is one Linux job.
 
-Under `signed`, init asks `Which rules need a signature?` and writes the answer to `sign_at`:
-`strong`, the rules whose bar is strong, the rest meeting the gate on their tests; or `all`,
-every rule whatever its bar. It prints the commit-signing setup. It asks for no names: signing is
+Under `signed`, a rule needs a signature exactly when its level is `signed`, and init asks nothing
+about it. It prints the commit-signing setup. It asks for no names: signing is
 logged, not policed, and a signature names its signer.
 
 Anchor pins are added on demand. When something is missing later the tool that needs it says

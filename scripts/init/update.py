@@ -240,8 +240,6 @@ def _detect_config(root):
     stale = ('gate' not in config
              or config.get('version') != _version()
              or config.get('trust') not in gate.TRUST_VALUES
-             or (config.get('gate') == 'signed'
-                 and config.get('sign_at') not in gate.SIGN_AT_VALUES)
              or any(key in config for key in gate.RETIRED_KEYS))
     return ['.purlin/config.json'] if stale else []
 
@@ -284,26 +282,6 @@ def _ask_trust(default, assume_yes):
     if answer.startswith('n'):
         return 'remote'
     return default
-
-
-SIGN_AT_QUESTION = """
-Which rules need a signature?
-  strong  the rules whose bar is strong; the rest meet the gate on their tests
-  all     every rule, whatever its bar"""
-
-
-def _ask_sign_at(default, assume_yes):
-    """The one question the `signed` gate adds, asked again on an update."""
-    gate = _gate()
-    default = default if default in gate.SIGN_AT_VALUES else gate.DEFAULT_SIGN_AT
-    if assume_yes:
-        return default
-    print(SIGN_AT_QUESTION)
-    try:
-        answer = input('Signature on [%s]: ' % default).strip().lower()
-    except (EOFError, KeyboardInterrupt):
-        return default
-    return answer if answer in gate.SIGN_AT_VALUES else default
 
 
 def _ask_gate(default, assume_yes):
@@ -354,8 +332,6 @@ def _apply_config(root, files, args, out):
     }
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
-    if chosen == 'signed':
-        config['sign_at'] = _ask_sign_at(resolved.sign_at, args.yes)
     dropped = sorted(key for key in gate.RETIRED_KEYS if key in old)
     _write(path, json.dumps(config, indent=2) + '\n')
     out.done('.purlin/config.json')

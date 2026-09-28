@@ -184,12 +184,11 @@ def init_question_problems():
         problems.append('%s has no section naming the further questions' % rel)
         return problems
     items = re.findall(r'^\d+\. ', body, re.M)
-    if len(items) != 3:
-        problems.append('%s names %d further questions, expected 3'
+    if len(items) != 2:
+        problems.append('%s names %d further questions, expected 2'
                         % (rel, len(items)))
     flattened = flat(body)
-    for needle in ('empty repository', 'Which rules need a signature?',
-                   'trusted'):
+    for needle in ('empty repository', 'trusted'):
         if needle not in flattened:
             problems.append('%s exceptions do not name %r' % (rel, needle))
     return problems

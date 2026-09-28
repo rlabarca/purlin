@@ -17,10 +17,10 @@
 ## Rules
 
 - RULE-1: A project with code to detect is asked the gate question, and at `passed` with a remote one more: whether to run the tests on a remote runner too [bar: strong]
-- RULE-2: Each gate answer derives its own settings: `passed` has no minimum test strength and asks for no signature, `strong` sets the minimum to 70, and `signed` sets it to 80 and asks which rules need a signature [bar: strong]
+- RULE-2: Each gate answer derives its own settings: `passed` has no minimum test strength and asks for no signature, `strong` sets the minimum to 70, and `signed` sets it to 80 [bar: strong]
 - RULE-3: `--gate` answers the question without asking it, and a later run with no flag keeps the gate the config already names [bar: strong]
 - RULE-4: An answer that is not one of the three gates is read as `passed` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently [bar: strong]
-- RULE-5: The config init writes carries exactly `ci`, `gate`, `min_strength`, `mutation_engine`, `sql_engine`, `test_framework`, `trust` and `version`, plus `sign_at` under `signed`, and no key this release stopped reading; `templates/config.json` carries the same eight keys [bar: strong]
+- RULE-5: The config init writes carries exactly `ci`, `gate`, `min_strength`, `mutation_engine`, `sql_engine`, `test_framework`, `trust` and `version` at every gate, and no key this release stopped reading; `templates/config.json` carries the same eight keys [bar: strong]
 - RULE-6: A tree with nothing to detect is asked which framework its tests use, that answer is the one installed, and a name this release ships no plugin for is reported and read as `shell` [bar: strong]
 - RULE-7: The framework detected in the tree gets its proof plugin copied into `.purlin/plugins/` byte for byte, under the file name the framework registry gives it [bar: strong]
 - RULE-8: The test runner's own configuration is written for pytest, jest and vitest, naming that framework's plugin, and a configuration the project wrote itself is kept rather than replaced [bar: strong]
@@ -52,12 +52,11 @@
 - RULE-38: A `test_framework` name the config carries that detection does not find and the tree carries no wiring for is dropped and the drop is printed, so no runner is wired for a language the project does not have; a name the tree does carry is kept [bar: strong]
 - RULE-39: The mutmut block names as source every top-level directory holding a `.py` file at any depth and no test file at its top level, and names as the test selection the directories that do hold one, with `src`, `lib` and `app` preferred as source and `tests` and `test` as the selection; a project with no such directory names each non-test `.py` module at its root, and names `.` only when there is none [bar: strong]
 - RULE-40: Writing the mutmut block also appends `mutants/` to the project's `.gitignore`, once and never twice, so the copy mutmut breaks is never committed [bar: strong]
-- RULE-45: At the gate `signed` init asks `Which rules need a signature?` with one line for `strong` and one for `all`, writes the answer to `sign_at`, and reads an answer that is neither as `strong` [bar: strong]
 
 ## Proof
 
 - PROOF-1 (RULE-1): Run the script against a temp git project holding `conftest.py` and one test file, answering `strong` on stdin; verify the gate question and the trust question are on stdout, the framework question is not and nothing asks for an email, the config reads `gate` `strong`, and `trust` reads `local` because the trust question was left at its default
-- PROOF-2 (RULE-2): Run with `--gate passed`, `--gate strong` and `--gate signed` in turn and verify the config reads `min_strength` null, 70, 80 respectively, that `sign_at` is absent under the first two and reads `strong` under the third, and that none of the three carries a key this release stopped reading
+- PROOF-2 (RULE-2): Run with `--gate passed`, `--gate strong` and `--gate signed` in turn and verify the config reads `min_strength` null, 70, 80 respectively, that each holds exactly the eight keys `templates/config.json` holds and that none of the three carries a key this release stopped reading
 - PROOF-3 (RULE-3): Run with `--gate passed` and verify the gate question is absent from the output; then run `--gate strong`, run again with no flag, and verify the question is still absent and the config still reads `strong`
 - PROOF-4 (RULE-4): Run init and answer the gate question `whenever`; verify the config reads `gate` `passed` and the output contains `is not a gate`
 - PROOF-5 (RULE-5): Run with `--gate strong` and verify `sorted(config)` equals the eight keys and `version` equals the `VERSION` file; read `templates/config.json` and verify its keys and version match the same two
@@ -92,4 +91,3 @@
 - PROOF-38 (RULE-38): Run init on a pytest project, write `pytest,jest,shell,vitest` into its `test_framework`, run `--gate strong` and verify the value reads `pytest,shell`, that the output holds `dropped jest from test_framework: nothing in the tree runs it` and the same line for `vitest`, and that neither `jest.config.js` nor `vitest.config.ts` exists. Write a `package.json` into a second pytest project, write `pytest,jest,shell` into its `test_framework`, run `--gate strong` and verify the value is unchanged and `dropped` is absent
 - PROOF-39 (RULE-39): Write `scripts/run/job.py`, `dev/test_job.py`, `dev/build.py` and `docs/guide.md` and verify the paths are `(["scripts"], ["dev"])`; write `src/app.py`, `tools/helper.py`, `tests/test_app.py` and `dev/test_extra.py` into another project and verify `(["src"], ["tests"])`; on a project whose one file is `docs/guide.md` verify the source is `["."]`; on a project holding `greeting.py`, `conftest.py` and `test_greeting.py` at its root verify the source is exactly `["greeting.py"]`
 - PROOF-40 (RULE-40): Write `greeting.py` and `tests/test_greeting.py`, run init twice and verify `.gitignore` carries the line `mutants/` exactly once
-- PROOF-45 (RULE-45): Run with `--gate signed` and answer `all`; verify the question and both choice lines were printed and that the config reads `sign_at` `all`. Answer `strong` and verify it reads `strong`; answer `medium` and verify it reads `strong` and the run said so

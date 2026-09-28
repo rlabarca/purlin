@@ -388,7 +388,6 @@ def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):
     written = json.loads(_read(root, '.purlin/config.json'))
     assert written['gate'] == 'strong'
     assert written['min_strength'] == 70
-    assert 'sign_at' not in written
 
 
 @pytest.mark.proof("update", "PROOF-12", "RULE-12")
