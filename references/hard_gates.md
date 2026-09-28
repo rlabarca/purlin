@@ -29,7 +29,7 @@ what must be true of every rule before a version is proven?
 | Gate | Who it fits | Cells that exist | What every rule must have |
 |------|-------------|------------------|---------------------------|
 | `passed` | One person working alone | passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from either source counts |
-| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose level is `strong` or `signed` has a strong cell that is met: an audit read it, the test strength at or above `min_strength`, nothing unsettled. Evidence from either source counts |
+| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose level is `strong` or `signed` has a strong cell that is met: an audit read it and found nothing, and where mutation testing is on the test strength at or above `min_strength`. Evidence from either source counts |
 | `signed` | The same team under GxP | + signed | Every rule whose level is `signed` has a counting signature |
 
 Each level derives defaults you can override:
@@ -68,7 +68,7 @@ The level decides three things and nothing else decides them:
 
 The **queue** is the one list of the rules that wait on a person, each row saying what it
 needs. A `hand check` is a rule whose level is `strong` or `signed` and whose strong cell reads
-`manual test` or `unsettled`. A `signature` is a rule whose level is `signed`, whose passed and
+`manual test`. A `signature` is a rule whose level is `signed`, whose passed and
 strong cells are met, and that does not have a counting signature. A rule that needs both is
 one `hand check` row, and a rule whose level is `passed` is never in the queue.
 
@@ -220,7 +220,7 @@ every `ci/` file was committed by the runner itself.
 
 What CI cannot settle it says out loud. A `@manual` proof makes the strong cell read `manual
 test`, and an AI audit that could not tell whether the test observes what the proof names
-makes it read `unsettled`. A rule whose level is `strong` or `signed` that no audit has
+makes it read `weak`, with the reason `the AI audit could not decide`. A rule whose level is `strong` or `signed` that no audit has
 reached reads `not audited`, and what moves that one is `purlin:audit`, not a person. A
 signature file for the current hashes clears the first two: a committed one under `strong`,
 one in a signed commit under `signed`. The signer writes the one line with `--note`.

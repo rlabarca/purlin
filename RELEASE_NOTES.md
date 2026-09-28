@@ -40,7 +40,7 @@ its reasons. A rule no proof line names reads `no test` in its passed cell, with
 | Level | The question | Words the cell can read |
 |-------|--------------|-------------------------|
 | passed | did every tagged test for this rule pass? | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
-| strong | are those tests worth trusting? | `strong`, `weak`, `not audited`, `unsettled`, `manual test` |
+| strong | are those tests worth trusting? | `strong`, `weak`, `not audited`, `manual test` |
 | signed | did a person say the rule, the proof and the test belong together? | `signed`, `unsigned`, `stale` |
 
 A cell exists only at or below the project's gate. Above the gate it is absent, not empty, which
@@ -59,8 +59,8 @@ nothing.
 anywhere is the ordinary case, at every gate. Evidence counts whoever wrote it.
 
 **Three commands, one per level.** `purlin:test` runs the tagged tests and writes the evidence.
-`purlin:audit` runs the tests and the breaks, then the AI audit on every rule whose level is
-`strong` or `signed`, and writes what it found into the same evidence. `purlin:sign` walks the queue one
+`purlin:audit` runs the tests, the breaks where mutation testing is on, then the AI audit, and
+writes what it found into the same evidence. `purlin:sign` walks the queue one
 rule at a time when given no rule, signs or notes a rule when given one, and closes by writing
 the tag. `purlin:verify`, `purlin:review` and `purlin:approve`
 are gone, not aliased.
@@ -116,10 +116,21 @@ covered. The cell reads `partial` when the tests passed on some and failed or di
 others, which is not met, and `partial` has its own tile and filter at every gate. Test strength
 is platform independent.
 
-**Briefs.** A brief is the machine's report on one rule, written into the feature's evidence as
-that rule's audit entry rather than as a file of its own. A brief reports three things: the test strength beside the minimum, what the audit observed as the
-sentences the audit wrote, and whether it could settle the question. **It recommends nothing.**
-The four verdict words are retired with it.
+**The AI audit.** `purlin:audit` calls the model itself: one `claude -p --output-format json`
+call per rule, with the prompt on stdin, 300 seconds each, `audit_parallel` calls at once (a
+setting from 1 to 16, 4 by default). Before the first call it prints
+`AI audit: <n> rules to read, <k> at a time.` and carries on without asking. It reads the rules
+with a passing test whose text, proof or test changed since their last audit, and skips the
+rest; `purlin:audit --all` reads them again. A rule whose level is `passed` is not read under a
+higher gate. The answer is recorded per rule as a `verdict`: `strong` where the model settled
+and found nothing, `weak` with each finding as a sentence, and `undecided` where it could not
+decide, which reads `weak` with the reason `the AI audit could not decide: <its sentence>` and is
+build work. **It recommends nothing.** A finding blocks at `strong` and above. Each entry names
+the model that answered and the sha256 of `references/review_criteria.md` as it was sent. Where
+the model cannot be reached, nothing is written: the rule reads `not audited` with the reason
+`the AI audit could not run: <why>`, the run prints one line per cause, exits 1 at `strong` and
+above, and the next audit tries again. At the gate `passed` the audit reads every rule with a
+passing test, writes what it found, and blocks nothing.
 
 **The free checks are removed; the AI audit is the one judge of test quality.** Nothing scans the
 proof text or the test body before the audit. `references/review_criteria.md` lists what the AI
@@ -139,14 +150,15 @@ level tag at `passed`. `risk` and `ai_review_at` are gone.
 **Signatures.** One file per signature,
 `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, so two signatures
 never conflict. It binds the hashes of the rule text, the proof text and the test body, and
-what the audit observed: the strength, the observation sentences and whether it settled. A
-re-audit that sees something different stales the signature. It records the rule's level and
+what the audit found: the strength, the `verdict` and the findings, and neither the model nor
+the criteria. A re-audit that finds something different stales the signature, and the run
+prints `<n> signatures went stale: their audit findings changed.` It records the rule's level and
 does not lock it, so marking a rule differently stales nothing. Signing is logged, not
 policed: under `signed` a signature counts when the commit that added it is signed and verifies
 and its bound hashes still match, whoever signed, whoever last committed to the test file and on
 whatever branch carries it. No setting names the people who may sign. Each signature records the machine it was made on
 and that machine's operating system beside the signer and the time, and hashes neither. A
-`--note` is the one line a signer writes for a rule reading `manual test` or `unsettled`.
+`--note` is the one line a signer writes for a rule reading `manual test`.
 `purlin:sign` signs nothing over evidence that is written and not committed: it names the
 feature and `purlin:test --commit`. A reviewer who finds the test does not prove the proof adds
 the missing case as a proof line, which is the walk's `case` answer.
@@ -155,7 +167,7 @@ the missing case as a proof line, which is the walk's `case` answer.
 wrote.
 
 **One queue.** The queue is the one list of the rules that wait on a person, and each row says
-what it needs: a `hand check`, a rule reading `manual test` or `unsettled` at `strong` and above,
+what it needs: a `hand check`, a rule reading `manual test` at `strong` and above,
 which a person signs with a note; or a `signature`, a rule whose level is `signed` and whose
 tests and audit are met. `purlin:sign` walks it, `purlin:status` counts it as
 `Queue: <n> rules. <h> hand checks, <s> signatures.`, and the dashboard shows it on its Queue
@@ -166,11 +178,13 @@ prefix `gate:`, its sections `Not passed (n)`, `Partial (n)`, `Weak (n)`, `Not a
 `Queue (n)`, and its JSON key `result` in place of `verdict`.
 `purlin:sign` runs it before it writes a tag, and a runner runs it as the last step of every run.
 
-**Breaks engines.** `purlin:audit` breaks the code on purpose at `strong` and above and reports
-the share of those breaks the tests caught as the **test strength**, an integer percent. Three
-engines ship, chosen by `mutation_engine` in the config: mutmut for Python, Stryker for
-JavaScript and TypeScript, and Stryker.NET for C#. SQL and Bash have no engine, so their
-strength reads `n/a` and the strong cell rests on what the audit observed.
+**Breaks engines.** Mutation testing is optional. Where it is on, `purlin:audit` breaks the code
+on purpose at `strong` and above, for each feature with a rule it reads, and reports the share of
+those breaks the tests caught as the **test strength**, an integer percent, which must also
+reach `min_strength`. Three engines ship, chosen by `mutation_engine` in the config: mutmut for
+Python, Stryker for JavaScript and TypeScript, and Stryker.NET for C#. With `mutation_engine`
+`none`, or for SQL and Bash, which have no engine, no breaks run and a rule the audit found sound
+reads `strong` with the reason `no mutation score measured`.
 
 **`@env`.** A proof that can only be proved on one operating system carries `@env(windows)`,
 `@env(macos)` or `@env(linux)`. Those three are the whole vocabulary. Where a project has a
@@ -212,9 +226,9 @@ output, in any casing:
 | `purlin:verify`, `purlin:review`, `purlin:approve` | `purlin:audit`, `purlin:sign` |
 | `verify_gate`, `verify-gate:` | `gate_check`, `gate:` |
 | `validated/<name>` and `record/<name>` tags | `signed/<version>`, which `purlin:sign` writes |
-| `needs a person` | `manual test` or `unsettled`, each naming the work. The one surviving use is the queue's header |
+| `needs a person` | `manual test`, naming the work. The one surviving use is the queue's header |
 | `risk`, `[risk: ...]`, `ai_review_at` | the **level**, `[level: ...]` with the gate's own words |
-| `manual audit` | `not audited` and `unsettled` |
+| `manual audit` | `not audited` |
 | `not required` | removed: a rule whose level is below `signed` needs no signature, and its signed cell reads `signed` or `unsigned` |
 | the source `developer` | the folder: `local/` or `ci/` |
 | `happy_path_only` and the other free-check names | the sentence the audit wrote about what it observed |

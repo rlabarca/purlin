@@ -44,8 +44,8 @@ sync_status()
 ```
 
 `payload.queue` is the **queue**, ordered by feature and then rule number. Each row says what
-the rule needs. A `hand check` is a rule whose `strong` cell reads `manual test` or
-`unsettled`, at the gate `strong` and above: a person checks it and signs with a note. A
+the rule needs. A `hand check` is a rule whose `strong` cell reads `manual test`, at the
+gate `strong` and above: a person checks it and signs with a note. A
 `signature` is a rule whose level is `signed`, whose tests and audit are met and that has no
 counting signature, at the gate `signed`. A rule that needs both is one row, `hand check`. Each
 row carries the command that answers it. The dashboard shows the same rows on its Queue tab.
@@ -66,7 +66,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py" --feature <feature> -
 ```
 
 It carries the rule text, the proof text, the test body, the test strength beside
-`min_strength`, and what the audit observed and whether it settled.
+`min_strength`, and what the last audit found, with the model that found it.
 It reports; it recommends nothing, so the judgment is yours. Judge it against
 `references/review_criteria.md`, which is the one place the criteria live. Signing a rule you
 have not read is the one thing this skill must not help with.

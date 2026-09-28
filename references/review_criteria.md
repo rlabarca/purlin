@@ -85,13 +85,14 @@ takes the project's gate, and a tag above the gate is read as the gate. The leve
 and the AI audit does not run on the rule at all. The rule needs no signature, and it meets
 the gate on its tests.
 
-**`strong`** and **`signed`.** The strong cell is the evidence. The strength must reach
-`min_strength`, and the AI audit must have run on the current rule, proof and test, observed
-nothing and settled. Until it has run the strong cell reads `not audited`; where it ran and
-could not tell it reads `unsettled`; where it settled and still observed something the cell
-reads `weak` with that sentence as the reason. Where no model could be reached the audit did not
-run at all, and the strength answers level 2 on its own. A rule whose level is `signed` also
-needs a current signature in a signed commit.
+**`strong`** and **`signed`.** The strong cell is the evidence. The AI audit must have run on
+the current rule, proof and test, observed nothing and settled, and where mutation testing is
+on the strength must reach `min_strength`. Until it has run the strong cell reads
+`not audited`; where it ran and could not tell it reads `weak` with the reason
+`the AI audit could not decide: <its sentence>`; where it settled and still observed something
+the cell reads `weak` with that sentence as the reason. Where no model could be reached nothing
+is written, and the cell reads `not audited` until an audit reaches the rule. A rule whose
+level is `signed` also needs a current signature in a signed commit.
 
 ## Who is in the queue
 
@@ -100,7 +101,7 @@ Each row says what it needs.
 
 A **hand check** exists at `strong` and above: a rule whose level is `strong` or `signed` and
 whose strong cell reads `manual test`, because the proofs are `@manual` and no test can be
-written, or `unsettled`, because the AI audit ran and could not tell.
+written.
 
 A **signature** exists at the gate `signed`: a rule whose level is `signed`, whose passed and
 strong cells are met, and that does not have a counting signature. Its row reads `unsigned` or
@@ -121,9 +122,9 @@ The brief reports. It recommends nothing, and it never names a next action. Thre
   names, one sentence each. The audit is asked to state what it saw and to say when it
   cannot tell. It is never asked what to do.
 - **Whether it settled.** `Settled: yes` when the audit could tell, `no` when it could not, and
-  `not answered` when no AI audit ran. `no` on a rule whose level is `strong` or `signed` makes
-  the strong cell read `unsettled`; `not answered` does not, because nothing asked the question
-  and the strength answers level 2 on its own. An audit that settled and still observed
+  `not answered` when no AI audit ran. `no` makes the strong cell read `weak`, with the
+  audit's own sentence as the reason: an audit that cannot decide is build work. `not answered`
+  writes nothing, and the rule reads `not audited`. An audit that settled and still observed
   something is a different answer: it could tell, and what it saw is build work, so the cell
   reads `weak` with each observation sentence among its reasons.
 

@@ -21,7 +21,7 @@ proven?** There are three answers, one per evidence level. That answer is the **
 | Gate | Who it fits | What every rule must have | Signatures |
 |------|-------------|---------------------------|------------|
 | `passed` | one person working alone | a passing tagged test for every proof, from any source | none |
-| `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose level is `strong` or above: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding | none required; anyone may sign to clear a rule reading `manual test` or `unsettled` |
+| `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose level is `strong` or above: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding | none required; anyone may sign to clear a rule reading `manual test` |
 | `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit | required on every rule whose level is `signed`; the signature names who signed |
 
 The answer sets three defaults, each changeable afterwards: `min_strength` unused, 70, 80; the

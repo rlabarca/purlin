@@ -507,7 +507,7 @@ def audit_gate_problems():
             problems.append('%s gate table has no %s row' % (rel, gate))
     if problems:
         return problems
-    for needle in ('n/a', 'tests only'):
+    for needle in ('not measured', 'Nothing blocks at the gate passed.'):
         if needle not in rows['`passed`']:
             problems.append('%s passed row does not name %r' % (rel, needle))
     for needle in ('breaks', 'minimum'):

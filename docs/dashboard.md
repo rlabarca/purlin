@@ -120,7 +120,7 @@ is the whole of it.
 Pressing a spec expands its rules. Each row carries the rule id, the rule text, and one pill per
 cell that exists, so a rule at `signed` shows three pills and the same rule at `passed` shows
 one. A pill reads the cell's word: `passed`, `partial`, `failed`, `no test`, `not run` or
-`out of date` at level 1; `strong`, `weak`, `not audited`, `unsettled` or `manual test` at
+`out of date` at level 1; `strong`, `weak`, `not audited` or `manual test` at
 level 2; `signed`, `unsigned` or `stale` at level 3.
 
 ## Filters
@@ -197,7 +197,7 @@ feature, then by rule number. A rule whose level is `passed` is never here.
 
 | Needs | When | Command |
 |---|---|---|
-| `hand check` | the rule's level is `strong` or `signed` and its strong cell reads `manual test` or `unsettled` | `purlin:sign <feature> <RULE-N> --note "<what you saw>"` |
+| `hand check` | the rule's level is `strong` or `signed` and its strong cell reads `manual test` | `purlin:sign <feature> <RULE-N> --note "<what you saw>"` |
 | `signature` | the rule's level is `signed`, its passed and strong cells are met, and its signed cell is not; at `signed` only | `purlin:sign <feature> <RULE-N>` |
 
 A rule that needs both is one `hand check` row. A rule leaves the tab the moment someone signs

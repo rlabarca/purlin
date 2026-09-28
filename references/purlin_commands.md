@@ -31,7 +31,7 @@ before a signature is `trust: remote`.
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs | An engineer's agent, or a PM or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
 | `purlin:build [name]` | Load a spec's rules, write the code and the tagged tests, commit the changeset | An engineer, on every change. With no name it reads the board |
 | `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell | An engineer, constantly. Seconds; tests only. It writes the evidence, commits it with `--commit`, and never pushes |
-| `purlin:audit [feature]` | Run the tests and the breaks, then write the audit into the evidence | An engineer locally, any time. It writes the evidence, commits it with `--commit`, and never pushes |
+| `purlin:audit [feature] [--all]` | Run the tests and the breaks, then the AI audit on each rule that changed since its last audit, and write the audit into the evidence | An engineer locally, any time. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:sign [feature] [RULE-N]` | Walk the queue, or sign a rule, a feature or a batch as a signed commit | Anyone with commit signing set up; the signature names them. With no argument it walks the queue |
 | `purlin:drift [role]` | Report what changed since your last pull, by role | Everyone, after a pull, a merge, a rebase or a checkout |
 
@@ -65,6 +65,7 @@ Purlin
   Proving
   ──────
   purlin:audit [feature ...]      Tests, breaks, and what they found, into the evidence
+  purlin:audit --all              The same, reading every rule again
   purlin:audit --commit           The same, then commit the evidence
   purlin:sign                     Walk the queue, then write the tag
   purlin:sign --release <name>    Name the tag something other than the version

@@ -41,7 +41,7 @@ The queue is one list of the rules that wait on a person. Each row says what it 
 
 | Need | When | What you do |
 |---|---|---|
-| `hand check` | the rule's level is `strong` or `signed` and its strong cell reads `manual test` (every proof is `@manual`) or `unsettled` (the AI audit ran and could not settle whether the test proves the proof) | check it yourself and sign with a `--note` saying what you saw, or add a case |
+| `hand check` | the rule's level is `strong` or `signed` and its strong cell reads `manual test` (every proof is `@manual`) | check it yourself and sign with a `--note` saying what you saw, or add a case |
 | `signature` | the rule's level is `signed`, its passed and strong cells are met, and its signed cell reads `unsigned` or `stale` | read the brief and sign, or add a case |
 
 A rule that needs both is one `hand check` row. A rule whose level is `passed` is never in the
@@ -105,11 +105,11 @@ boundary; a description names no literal, number or quoted string; a test body a
 or asserts a literal against itself; a proof about a flow reads as a function call. Where the audit
 settled and still observed something, the strong cell reads `weak` with that sentence as its
 reason. It is asked to state what the test observes against what the proof names, and to say
-when it cannot tell. When it cannot tell, the strong cell reads `unsettled`, and the
-rule waits for you rather than for another run. Until the audit has run at all, the cell reads
-`not audited`, and the rule waits for `purlin:audit`. Where no model could be reached at all
-the brief says so and settles nothing: the strength answers on its own, and the cell does not
-read `unsettled` for a question nobody asked.
+when it cannot tell. When it cannot tell, the strong cell reads `weak` with the reason
+`the AI audit could not decide: <its sentence>`, which is build work. Until the audit has run at
+all, the cell reads `not audited`, and the rule waits for `purlin:audit`. Where no model could
+be reached nothing is written, and the cell reads `not audited` with the reason
+`the AI audit could not run: <why>` until an audit reaches it.
 
 ## The three answers
 
@@ -195,13 +195,13 @@ anyone else's.
 
 `--note` is the one line a person writes where no test can speak: what they did and what they
 saw for a `@manual` proof, or the judgment the model could not settle. It is allowed on any rule
-whose strong cell reads `manual test` or `unsettled`, and it lands in the signature file's
+whose strong cell reads `manual test`, and it lands in the signature file's
 `note` field.
 
 Nobody is refused for who they are. The signature file names you and git names the commit's
 author; no list says who may sign.
 
-Under the `strong` gate a signature clears a `manual test` or `unsettled` cell, so
+Under the `strong` gate a signature clears a `manual test` cell, so
 `purlin:sign <feature>` and `purlin:sign --batch` sign every row in the queue, for that feature
 or for the project. A rule you name that is not in the queue needs no signature there, so the
 skill says `sign: a signature is required only under the gate signed. Writing it anyway.` and

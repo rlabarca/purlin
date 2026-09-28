@@ -19,6 +19,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ```
 purlin:audit                    Run the tests and the breaks, and write the evidence
 purlin:audit <feature> [...]    One feature, or several
+purlin:audit --all              Read every rule again, whatever its last audit found
 purlin:audit --commit           Commit the evidence the run wrote
 ```
 
@@ -30,10 +31,13 @@ There is no `--remote` here: a remote runner runs the tests, so that flag is
 ## Step 1: run
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --audit
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --audit
 ```
 
-`--audit` runs the tests, then the breaks where the gate asks for them, then the AI audit. It
+Add `--all` for `purlin:audit --all` and `--feature <name>` for each feature named.
+`--audit` runs the tests, then the breaks where mutation testing is on, then the AI audit: one
+`claude -p` call per rule whose text, proof or test changed since its last audit,
+`audit_parallel` at once, announced by `AI audit: <n> rules to read, <k> at a time.` It
 writes each feature's section and its `audit` into `.purlin/evidence/local/<feature>.json`,
 prints each feature's test strength beside the minimum and each rule's observations, and
 prints `Evidence written to .purlin/evidence/local/<feature>.json.`. It commits nothing unless
@@ -63,8 +67,8 @@ that sentence as the reason.
 
 | Gate | What this run does |
 |------|--------------------|
-| `passed` | Runs the tests only. No breaks; the run says `Strength n/a: the gate is passed.` |
-| `strong` | Runs the breaks too, and prints the strength beside the minimum |
+| `passed` | Runs the tests and the AI audit, and no breaks: `Test strength: not measured; the gate is passed.` Nothing blocks: `Audit: <n> strong, <n> weak. Nothing blocks at the gate passed.` |
+| `strong` | Runs the breaks too where mutation testing is on, and prints the strength beside the minimum |
 | `signed` | The same as `strong`. Evidence either source wrote counts here too; a project that wants CI's word before a signature sets `trust: remote`, which `purlin:sign` reads |
 
 Raising the gate to `strong` turns the breaks on, locally and in CI.
@@ -98,4 +102,4 @@ the tag holds the whole tree, every evidence file in it included.
 | Every rule met the gate `passed` | `→ Run: git push` |
 | A current `ci` run is missing under `trust: remote` | `→ Run: purlin:test --remote` |
 | A rule's tests pass on one operating system and not another | `→ Run: purlin:build <feature>` (the passed cell reads `partial` and names the platform) |
-| A rule is in the queue: it reads `manual test` or `unsettled`, or waits for a signature | `→ Run: purlin:sign` |
+| A rule is in the queue: it reads `manual test`, or waits for a signature | `→ Run: purlin:sign` |

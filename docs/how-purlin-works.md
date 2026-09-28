@@ -27,7 +27,7 @@ flowchart TD
     Sig -->|"level signed"| Q3
     Q3 -->|signed| Met
     Q1 -->|"failed, partial, no test, not run, out of date"| Stop
-    Q2 -->|"weak, not audited, unsettled, manual test"| Stop
+    Q2 -->|"weak, not audited, manual test"| Stop
     Q3 -->|"unsigned, stale"| Stop
 ```
 
@@ -159,7 +159,7 @@ on a pushed tag is the host's word that this version is not proven.
 **What does a level do?** It decides three things and nothing else: the evidence the rule must
 have to meet the gate, whether the AI audit runs on it, and whether it needs a signature at
 all. The AI audit runs on every rule whose level is `strong` or `signed` and on no other, so a
-rule whose level is `passed` never reads `not audited` or `unsettled`. A rule needs a signature
+rule whose level is `passed` never reads `not audited`. A rule needs a signature
 exactly when its level is `signed`. A rule whose level is `signed`, whose passed and strong
 cells are met, and that is still waiting for a signature is a `signature` row in the queue,
 the one list of the rules that wait on a person.
@@ -169,11 +169,11 @@ the one list of the rules that wait on a person.
 is `purlin:spec`. The judgment about whether a proof is any good is the audit's, and it lands on
 the strong cell.
 
-**What is the difference between `not audited` and `unsettled`?** `not audited` means the rule's
+**What is the difference between `not audited` and `weak`?** `not audited` means the rule's
 level is `strong` or `signed` and no audit has run on this code yet: it waits for `purlin:audit`,
-not for you, so it is not in the queue. `unsettled` means the AI audit did run and could not
-settle whether the test proves the proof, so a person judges it. That one is in the queue as a
-`hand check`.
+not for you, so it is not in the queue. `weak` means the AI audit did run and found a gap, or
+could not decide whether the test proves the proof, and says so in its reason. Both are build
+work, and neither is in the queue.
 
 **When do I say which operating system a test needs?** On the proof line, with `@env(windows)`,
 `@env(macos)` or `@env(linux)`. A proof with no tag runs anywhere and any operating system's

@@ -9,7 +9,7 @@
 ## Rules
 
 - RULE-1: `skills/sign/SKILL.md` opens with a frontmatter block whose `name` is `sign` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:sign`
-- RULE-2: The skill reads the queue from `sync_status` as `payload.queue`, shows the brief with `scripts/review/ai_audit.py` before it writes anything, and writes the signature with `scripts/review/sign.py`, both scripts inside `${CLAUDE_PLUGIN_ROOT}`
+- RULE-2: The skill reads the queue from `sync_status` as `payload.queue`, shows what the audit read and found with `scripts/review/ai_audit.py` before it writes anything, and writes the signature with `scripts/review/sign.py`, both scripts inside `${CLAUDE_PLUGIN_ROOT}`
 - RULE-3: The last section of `skills/sign/SKILL.md` names the next step and computes it from the cells the skill found, giving a `→` directive for each outcome
 - RULE-4: The whole of `skills/sign/SKILL.md` is at most 185 lines [level: passed]
 - RULE-5: The skill states the two things that make a signature count under the `signed` gate, a signing commit that is signed and verifies and bound hashes that still match, and that it counts whoever wrote it, whoever last committed to the test file, and on whatever branch carries it

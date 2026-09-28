@@ -230,9 +230,9 @@ purlin:sign <feature> RULE-4 --note "read the four messages on 2026-09-16; each 
 
 A rule whose level is `strong` or `signed` and on whose code no audit has run yet reads `not
 audited`, with the reason `no audit has run on this code`. It waits for `purlin:audit`, not for a
-person, so it is not in the queue. Once the audit has run and could not settle the question,
-the cell reads `unsettled` and the rule is in the queue as a `hand check`. The same `--note`
-settles it.
+person, so it is not in the queue. Once the audit has run and could not decide the question,
+the cell reads `weak` with the reason `the AI audit could not decide: <its sentence>`, which is
+build work: the proof or the test changes, and the next audit reads the rule again.
 
 A person who finds that the test does not prove the proof adds the missing case as a proof line,
 the walk's `case` answer, or changes the proof, alone or with AI help.

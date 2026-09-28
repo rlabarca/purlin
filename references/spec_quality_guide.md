@@ -267,7 +267,7 @@ two, under `signed` all three. A rule's level decides which of them block it.
 | strong | `weak`, with a sentence the model wrote | The AI audit settled the question and observed that the test does not read what the proof names. | Write the assertion the sentence asks for. `purlin:build`, then `purlin:audit`. |
 | strong | `manual test` | The proof is `@manual`, so no test can be written and a person runs it. | `purlin:sign <feature> RULE-N --note "<what you saw>"`. |
 | strong | `not audited` | The rule's level is `strong` or `signed` and no audit has read this rule, proof and test, so the evidence holds no audit entry for the current hashes. | `purlin:audit`, which writes the entry into the evidence. |
-| strong | `unsettled` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:sign` and answer the brief. A signature for the current hashes clears it. |
+| strong | `weak`, `the AI audit could not decide: ...` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:build`: make the proof or the test say plainly what is observed; the next `purlin:audit` reads the rule again. |
 | signed | `unsigned` | No signature file for the current hashes, and the rule's level is `signed`, so it needs one. | `purlin:sign <feature> RULE-N`, which writes it in a signed commit. |
 | signed | `stale` | The rule text, the proof text, the test body or what the audit found changed after the signature. | Read what changed, then sign again or fix what broke. |
 

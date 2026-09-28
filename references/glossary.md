@@ -63,20 +63,16 @@ in the shipped prose where a retired spelling may still be written.
   **counting signature**: under `signed`, one whose commit is signed and verifies and whose
   bound hashes still match the rule, proof, test and audit; below `signed`, any committed
   one. It counts on whatever commit carries it. **note**: the one line a signer writes for a rule
-  reading `manual test` or `unsettled`.
+  reading `manual test`.
 - **manual test**: the strong cell's word for a rule whose proofs are `@manual`. No test can be
   written, so a person runs it and a signature with a note records what they saw.
 - **not audited**: the strong cell's word for a rule whose level is `strong` or `signed` and over whose
   current code no audit has run. It is never in the queue: `purlin:audit` moves it, not a person.
-- **unsettled**: the strong cell's word for a rule whose AI audit ran and could not tell
-  whether the test observes what the proof names. A person judges the proof against the test
-  and signs or adds a case. Where no model could be reached the audit did not run, so
-  nothing is unsettled: the strength answers level 2 on its own.
 - **signature stale**: the signed cell's word when a signature exists and its hashes no longer
   match.
 - **queue**: the one list of the rules that wait on a person, which `purlin:sign` walks and the
   dashboard's Queue tab shows. Each row says what it **needs**: a **hand check**, a rule whose
-  level is `strong` or `signed` and whose strong cell reads `manual test` or `unsettled`, which
+  level is `strong` or `signed` and whose strong cell reads `manual test`, which
   a person signs with a note; or a **signature**, a rule whose level is `signed`, whose passed
   and strong cells are met, and that does not have a counting signature. A rule that needs both
   is one hand check. It exists at `strong` and above.
@@ -121,7 +117,7 @@ For one rule, top to bottom. Each row is a cell; the gate decides how many rows 
 | Level | Met when | Words the cell can read |
 |-------|----------|-------------------------|
 | passed | a proof line names the rule and every proof has a passing test in a current section from either source, on every platform a current section covers | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
-| strong | passed, an audit measured it, the strength at or above `min_strength`, and where the level is `strong` or `signed` an audit entry for the current hashes that settled and found nothing | `strong`, `weak`, `not audited`, `unsettled`, `manual test` |
+| strong | passed, and where the level is `strong` or `signed` an audit entry for the current hashes that settled and found nothing, and, where mutation testing is on, the strength at or above `min_strength` | `strong`, `weak`, `not audited`, `manual test` |
 | signed | a counting signature for the current rule, proof, test and audit hashes | `signed`, `unsigned`, `stale` |
 
 A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `partial`, `passed`,
@@ -180,9 +176,9 @@ The repository's own vocabulary check enforces that, reading this table for the 
 | `verify_gate`, `scripts/ci/verify_gate.py` | `gate_check`, `scripts/ci/gate_check.py` |
 | `verify-gate:` as a log prefix | `gate:` |
 | `validated/<name>` tags | the tag `purlin:sign` writes, `signed/<version>` |
-| needs a person, needs-a-person, `needs_person` | `manual test` where the proofs are `@manual`, and `unsettled` where the AI audit could not settle. The one surviving use is the queue's header, `<n> rules need a person` |
+| needs a person, needs-a-person, `needs_person` | `manual test` where the proofs are `@manual`. The one surviving use is the queue's header, `<n> rules need a person` |
 | risk, the `[risk: ...]` tag, the three levels | the **level**, tagged `[level: ...]` with the gate's own words |
-| manual audit | `not audited` where the level is `strong` or `signed` and no audit has run over this code, `unsettled` where the AI audit ran and could not settle. The flags and rollup keys are `not_audited` and `unsettled` |
+| manual audit | `not audited` where the level is `strong` or `signed` and no audit has run over this code. The flag and rollup key is `not_audited` |
 | not required | removed. A rule whose level is below `signed` needs no signature, and its signed cell reads `signed` or `unsigned` like any other |
 | `ai_review_at` | removed. The AI audit runs on every rule whose level is `strong` or `signed` |
 | the free checks, and every finding name they carried | the AI audit's observations, written as plain sentences inside the brief. No name reaches a cell, a list or the board |

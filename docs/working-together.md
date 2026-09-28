@@ -49,7 +49,7 @@ what a person would see.
 - **No AI at all.** Read `.purlin/tests.md` on the git host and review the diff by hand.
 
 **What you work.** The queue, never the whole rule list. A rule reaches it only when the cell
-that blocks it is one a person answers: a strong cell reading `manual test` or `unsettled` (a
+that blocks it is one a person answers: a strong cell reading `manual test` (a
 `hand check`), or a signed cell reading `unsigned` or `stale` (a `signature`). A rule with no
 test, a failing rule, a weak rule and a rule reading `not audited` are all work for the machine
 or the build, and they stay on the board. A rule whose passed cell reads `out of date` is not
