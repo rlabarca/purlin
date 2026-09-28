@@ -80,6 +80,17 @@ slide('start', 'Getting started', 'Start in under ten minutes', [
  'You need git, Python 3.9 or later and Claude Code. The marketplace is added once per project with '
  'claude plugin marketplace add. Setup reads the test framework from the project; where it finds '
  'none it asks for the command that runs the tests.', pad=16)
+slide('fromcode', 'An existing codebase', 'Starting from code you already have', [
+    ('Reads the code', 'It surveys the project and proposes a list of features. You merge, split and rename until the list is right.'),
+    ('Writes the rules', 'One file per feature. Each rule says what the code does today, with a plain sentence saying how that is shown.'),
+    ('Uses the tests you have', 'Where a test already shows a rule, it offers to add the comment above that test. It writes no new test.'),
+    ('Reports where you stand', 'How many rules it wrote, how many already pass, and which have no test yet.'),
+], '<b>A person reads every rule.</b> A rule read from code says what the code does, not what it should do.',
+ 'Run purlin:init first, then purlin:spec-from-code once. Twenty to forty features is normal for a '
+ 'mid-sized service. Each spec is committed on its own, and a session that ends halfway resumes at '
+ 'the next feature. Every rule starts at the level passed; the team marks the rules that need an '
+ 'audit or a signature afterwards. Rules with no test go to purlin:build.',
+ lead='%s is run once. It turns a codebase with no rules into one whose rules can be proven.' % m('purlin:spec-from-code'), width=560, pad=16)
 slide('passed', 'The first gate', 'Gate %s: only check that rules pass their tests' % mt('passed'), [
     ('`purlin:spec`', 'You say what must be true. It is written down as rules.'),
     ('`purlin:build`', 'The code and its tests are written. One comment above each test names the rule it shows.'),
@@ -128,12 +139,24 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
  'where it ran, what the audit found and which model judged, and who signed, when and on which '
  'machine. A requirement number such as (URS-042) reaches it as a note in the rule\'s own words. '
  'The same tag always gives the same package, byte for byte.')
+slide('anchors', 'Shared rules', 'Anchors: rules that every project must follow', [
+    ('Shared inside one project', 'Write a rule once, such as an API contract. Every feature that names the anchor takes on its rules. A global anchor applies to every feature.'),
+    ('Owned by another department', 'Security, GRC or GxP keep their rules in their own repository. Each project brings in the ones it must follow.'),
+    ('Kept in step', '%s shows what changed at the source and updates the project. A rule whose words changed is signed again.' % m('purlin:anchor sync')),
+    ('Design standards too', 'Design publishes its standards as an anchor. Every feature that produces a screen follows them, and proves it.'),
+], '<b>An anchor\'s rules count like any other:</b> each has its tests, its audit and its signature in every project that uses it.',
+ 'An anchor is a spec for something shared. A feature names it with Requires, and an anchor marked '
+ 'Global applies to every feature without being named. Most projects keep their anchors in their own '
+ 'repository and sync nothing. A second repository is for rules two or more projects must share: '
+ 'each project keeps a copy pinned to one commit, and purlin:anchor sync moves the pin. A pinned rule '
+ 'is never edited in place; a change is made at the source.',
+ lead='An anchor is a set of rules written once and applied to many features, or to many projects.', width=560, pad=16)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin gate workflows",
-        "order": ["why", "touches", "start", "passed", "strong", "signed", "remote", "regulated"],
-        "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes", "start": "why"},
+        "order": ["why", "touches", "start", "fromcode", "passed", "strong", "signed", "remote", "regulated", "anchors"],
+        "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
                      "s2": {"description": "One slide per gate: what the gate checks, what you run, and when the gate is met", "start": "passed"},
-                     "s3": {"description": "The two cases where Purlin uses a remote runner, and where Purlin stops in regulated work", "start": "remote"}},
+                     "s3": {"description": "The two cases where Purlin uses a remote runner, where Purlin stops in regulated work, and how anchors carry shared rules across projects", "start": "remote"}},
         "faces": {}, "designSystems": []}
 with open(os.path.join(ROOT, 'deck.json'), 'w', encoding='utf-8') as h:
     json.dump(deck, h, indent=2); h.write('\n')
