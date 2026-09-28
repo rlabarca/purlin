@@ -702,6 +702,59 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     feature it applies to, a change to that feature's files ends that one signature, and the
     rule counts as signed when it is signed in every one of them. The slides end each gate
     with `A version is finished when`.
+77. **What a signature is made over** (added 2026-09-28). The rule, its proof, its test, the
+    code its feature lists, what the audit found, and the machine the tests ran on. The
+    machine it was signed on is not recorded. Run again on the same machine with nothing
+    changed, the signature is the same and still counts. A run on another machine replaces
+    the results, as results are kept today, and ends the signature. A remote runner is named
+    by its kind, `remote runner, Windows`, and not by the name the host lent it, so a second
+    remote run ends nothing; the lent name is kept beside it. Purlin checks that a signature
+    is present and looks no further. The signature records the signer's name and email as
+    git holds them, the time and the key's fingerprint. With no key set up, `purlin:sign`
+    shows the commands, offers to run them, and carries on. When it finishes it prints
+    `Signed 3 rules as jane@acme.com with the key ending ...Xy4Q.` No message is printed
+    when a change ends signatures; the rules return to `to sign`. This amends decision 62.
+78. **A check done by hand** (added 2026-09-28). A proof marked `@manual` is checked by a
+    person, who writes what they saw and signs, in one act, at any gate. That act stands for
+    the test, the audit and the signature of the rule. Only `purlin:sign` records it. It
+    shows under `Left to do` as `to test by hand`, and in drift for QA. The dashboard is
+    for reading: each line of `Left to do` shows what to type in Claude Code to clear it,
+    and nothing is ticked on the page. `purlin:sign` takes one rule, a feature or all.
+79. **The summary and `Left to do`, in full** (added 2026-09-28). `40 rules. 35 pass their
+    tests. 30 are strong. 20 are signed.` Then `Left to do`, one line per kind of work in
+    the order it is done, each with its count and its command, kinds at zero left out. The
+    lines carry counts and no names; a run names each rule where it reports the problem.
+    Every run and every audit ends on the summary and `Left to do`; the audit keeps one
+    earlier line saying what it read and found. The arrow line goes: the first line of
+    `Left to do` is the next step. On the dashboard a step's box is green when every rule
+    has reached it and amber until then, and `Left to do` is a list under the boxes. A rule
+    with neither proof nor test is counted under `No proof` alone. A feature's description
+    shows when its row is opened. The evidence package carries the same: the total, the
+    count at each step, what is left, and the state `finished` or `not finished`; its
+    format version is raised. The systems are shown as `Windows`, `macOS` and
+    `Linux/Unix`, and in the dashboard's small boxes as `Win`, `Mac`, `Lin`.
+80. **Setup, the first run and the upgrade, in full** (added 2026-09-28). `purlin:init` asks
+    the gate, and at `strong` and `signed` also whether to break the code on purpose. The
+    first test run in a project with tests and no command suggests one from a fixed list of
+    test tools, and where it recognises none the AI reads the project and proposes one; the
+    user confirms and it runs. A run that commits makes two commits in one step: the rules,
+    the marked tests and the settings, then the results, which name the first. The version
+    is read from a version file, then from what the project already states in its package
+    description, and asked for only when neither gives one. With no supported git host the
+    settings say `ci: none`. A missing settings file ends a run with exit 1. In a project
+    set up by 0.9.5 and not upgraded, a run stops and names the upgrade. The upgrade has no
+    rehearsal. `purlin:build` repairs a comment whose form is wrong or whose feature or rule
+    name is one letter from a real one. Each command's instructions keep their maximum
+    length: a change cuts as many lines as it adds.
+81. **Starting from existing code, in full** (added 2026-09-28). Every rule is written from
+    what its test expects, passing or not, and no test is run first. `purlin:spec-from-code`
+    does its best to give every source file a rule and ends by listing the files that got
+    none, for a person or an agent to decide. A test may be left untied for three reasons,
+    each listed in the report: it shows only part of what a rule needs, it repeats a test
+    already tied, or it tests code the project does not own. This amends decision 66.
+82. **Windows** (added 2026-09-28). The rules that must hold on Windows are those about
+    reading and writing files, paths, and starting other programs. An agent sorts the rules
+    and shows the owner the list before any is marked.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
