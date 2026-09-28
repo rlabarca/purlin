@@ -2,12 +2,13 @@
 
 The tag is the marker of proven code: the rule, the proof, the test and the
 audit are locked into a signature for every rule whose level asks for one,
-and one annotated tag says so about one commit. Nothing here pushes, and nothing here writes a
+and one signed tag says so about one commit. Nothing here pushes, and nothing here writes a
 tag outside the temporary project the test made.
 
 What each group holds:
 
-*the tag*       the name, the message, the refusals and the line a person runs
+*the tag*       the name, the message, the signature, the refusals and the
+                line a person runs
 *trust*         what `trust: remote` refuses, and what `trust: local` allows
 *the audit*     the hash a signature binds over what the audit found
 *--verify*      the two questions a tag run asks of the committed evidence
@@ -107,6 +108,11 @@ class TestTheTag:
             assert ('Queue: 0 rules. 0 hand checks, 0 signatures.'
                     in printed), printed
             assert result['tag'] == 'signed/2.1.0', printed
+            # A signed tag, not an annotated one: its object carries the
+            # signature, and git verifies it against the signer's key.
+            body = git(made.root, 'cat-file', 'tag', 'signed/2.1.0').stdout
+            assert '-----BEGIN SSH SIGNATURE-----' in body, body
+            assert git(made.root, 'tag', '-v', 'signed/2.1.0').returncode == 0
             message = git(made.root, 'tag', '-n99', '-l',
                           'signed/2.1.0').stdout
             assert 'Every rule meets the gate signed.' in message, message

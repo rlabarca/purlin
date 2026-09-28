@@ -29,9 +29,10 @@ A bare feature signs every rule of that feature in the queue, and `--batch`
 every rule in the queue, in one signed commit and with no stop.
 
 **The tag is the marker of proven code.** When the walk closes and every rule
-meets the gate, it writes the annotated tag `signed/<version>`, where the
-version is the `VERSION` file at the project root or the one in
-`.purlin/config.json`; `--release <name>` names another. The tag's message names the commit and the
+meets the gate, it writes the signed tag `signed/<version>` with `git tag -s`
+and the key the signer signs commits with, where the version is the
+`VERSION` file at the project root or the one in `.purlin/config.json`;
+`--release <name>` names another. The tag's message names the commit and the
 gate. No tag is written while any rule falls short, and none is written over
 a tag that is already there. Nothing is pushed: the last line names the push
 for a person to run.
@@ -460,9 +461,10 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
 
     This is the marker of proven code: the rule, the proof, the test and the
     audit are locked into a signature for every rule that asks for one, and
-    the tag says so about one commit. It is written after the walk's own
-    commits, so the payload is read again rather than reused. Nothing is
-    pushed.
+    the tag says so about one commit. It is a signed tag, made with the key
+    the signer signs commits with, so git can show who wrote it as surely as
+    it shows who signed. It is written after the walk's own commits, so the payload is
+    read again rather than reused. Nothing is pushed.
     """
     out = sys.stdout if out is None else out
     payload = load_payload(project_root, payload)
@@ -482,7 +484,7 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
         return None
     commit = payload.get('commit') or ''
     written = subprocess.run(
-        ['git', 'tag', '-a', name, '-m', tag_message(commit, gate)],
+        ['git', 'tag', '-s', name, '-m', tag_message(commit, gate)],
         capture_output=True, text=True, cwd=project_root, timeout=30)
     if written.returncode != 0:
         print(NO_TAG_EXISTS % name, file=out)
