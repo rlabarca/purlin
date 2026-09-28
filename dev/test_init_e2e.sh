@@ -81,6 +81,14 @@ tmp_dir() {  # prefix
   printf '%s\n' "$d"
 }
 
+# The audit calls the model through the `claude` command. A fake stands first
+# on PATH for the whole walk, answering `settled: yes`, so nothing here ever
+# reaches the real one.
+FAKE_CLAUDE="$(tmp_dir purlin-claude)"
+TMPDIRS="$TMPDIRS $FAKE_CLAUDE"
+python3 "$SCRIPT_DIR/fake_claude.py" install "$FAKE_CLAUDE" >/dev/null
+export PATH="$FAKE_CLAUDE:$PATH"
+
 pass() { PASS=$((PASS + 1)); echo "  ok   $1"; }
 note() { SKIP=$((SKIP + 1)); echo "  skip $1"; }
 bad() {
