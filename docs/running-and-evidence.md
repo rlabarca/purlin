@@ -53,20 +53,20 @@ Selected 1 of 1 feature: cart (no run on macos yet).
 Running the pytest suite.
 
 Markers: 3 tied to a test, 0 not tied.
-Ran pytest on 1 feature(s).
+Ran pytest on 1 feature.
 
 Evidence written to .purlin/evidence/local/cart.json.
 
 Purlin status: demo, plugin 0.10.0, gate passed
 
-Spec  Rules  Proofs  Tests
-───────────────────────────
-cart      3  0       3 of 3
-───────────────────────────
+Spec  Rules  Tests
+───────────────────
+cart      3  3 of 3
+───────────────────
 
 3 of 3 rules meet the gate passed.
 Untested 0 · Failing 0 · Partial 0 · Passing 3.
-1 feature, 0 proof lines.
+1 feature.
 
 → Next: nothing is outstanding at gate passed.
 

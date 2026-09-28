@@ -65,7 +65,7 @@ and it makes no claim of compliance.
    ```
    3 of 3 rules meet the gate passed.
    Untested 0 · Failing 0 · Partial 0 · Passing 3.
-   1 feature, 0 proof lines.
+   1 feature.
 
    → Next: nothing is outstanding at gate passed.
 

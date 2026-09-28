@@ -143,7 +143,7 @@ config names as the default:
 
 ```
 What must be true of every rule before a version is proven?
-  passed  every rule's tagged tests pass
+  passed  every rule's tests pass
   strong  tests pass and the audit finds them sound
   signed  strong, and a person signs each rule
 ```

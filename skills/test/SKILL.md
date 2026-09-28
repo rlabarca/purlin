@@ -64,7 +64,7 @@ the source: yours are `local`, and a remote run's, under `.purlin/evidence/ci/`,
 ## Step 3: read the table
 
 The run prints `Markers: <n> tied to a test, <k> not tied.` and `Ran <suite> on <n>
-feature(s).`, then the status table `purlin:status` builds. The `Tests` column counts the words
+features.`, then the status table `purlin:status` builds. The `Tests` column counts the words
 a passed cell can read:
 
 | Word | What it means |
