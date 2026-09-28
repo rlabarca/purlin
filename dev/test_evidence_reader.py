@@ -29,6 +29,7 @@ def _git(root, *args):
     result = subprocess.run(['git'] + list(args), cwd=root,
                             capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+    return result.stdout.strip()
 
 
 def _write(root, rel, text):
@@ -159,13 +160,22 @@ def test_an_audit_entry_answers_only_while_its_three_hashes_match(root):
     loaded = evidence.load(root, 'login')
     entry = evidence.audit_entry(loaded, 'RULE-1', 'r', 'p', 't')
     assert entry['source'] == 'local' and entry['verdict'] == 'strong'
+    head = _git(root, 'rev-parse', 'HEAD')
+    assert entry['commit'] == 'b' * 40 != head
     assert evidence.audit_entry(loaded, 'RULE-1', 'r', 'p', 't2') is None
+    assert evidence.audit_entry(loaded, 'RULE-1', 'r2', 'p', 't') is None
+    assert evidence.audit_entry(loaded, 'RULE-1', 'r', 'p2', 't') is None
     _put(root, 'ci', _file('ci', audit=_audit('2026-09-02T00:00:00Z',
                                                commit='c' * 40)))
     entry = evidence.audit_entry(evidence.load(root, 'login'),
                                  'RULE-1', 'r', 'p', 't')
     assert entry['source'] == 'ci' and entry['commit'] == 'c' * 40
     assert entry['path'] == '.purlin/evidence/ci/login.json'
+    _put(root, 'local', _file('local', audit=_audit('2026-09-03T00:00:00Z')))
+    entry = evidence.audit_entry(evidence.load(root, 'login'),
+                                 'RULE-1', 'r', 'p', 't')
+    assert entry['source'] == 'local' and entry['commit'] == 'b' * 40
+    assert entry['path'] == '.purlin/evidence/local/login.json'
 
 
 # purlin: evidence PROOF-23
