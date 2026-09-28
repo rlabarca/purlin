@@ -68,8 +68,8 @@ field, and `purlin:export --check <file>` recomputes the fingerprint.
 
 ## What you hand to the regulated system
 
-The package: one data file per version, from the tagged commit. How it is shown, rendered,
-reviewed and filed is the receiving system's job. Purlin writes no document and no report
+The package: one data file per version, from the tagged commit. How it is shown, read and
+filed is the receiving system's job. Purlin writes no document and no report
 layout for it.
 
 A package whose state is anything but `signed` says so in its first field, and carries
@@ -103,7 +103,7 @@ A signature counts at `signed` while two things hold, each read from git or from
 
 A change to any of the four stales it, and so does a re-audit that finds something different.
 A code change under the spec's `> Scope:` leaves the signature standing and puts the evidence
-`out of date` until the next run. Who signed and where is recorded, not policed: anyone with
+`out of date` until the next run. Who signed and where is logged, not policed: anyone with
 commit signing set up can sign, from any machine, and the signature names them. If your
 organisation limits who may attest, that limit is yours to hold.
 
