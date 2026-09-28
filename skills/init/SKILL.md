@@ -219,19 +219,21 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root
 
 `--update` reads the layout Purlin 0.9.5 leaves in a project and lists each pending migration
 with the files it touches. With `--dry-run` it prints that list, writes nothing and exits 1
-while anything is pending. Otherwise it asks `Apply <migration>, which will <what it does>?`
-for each, and in this order it: removes a spec's Figma `> Source:`, its `> Pinned:`, its
+while anything is pending. Otherwise it asks `Apply <migration>, which will <what it does>?` for
+each, and in this order it: removes a spec's Figma `> Source:`, its `> Pinned:`, its
 `> Visual-Reference:` and its `> Visual-Hash:` lines; rewrites the Windows tag to
 `@env(windows)`; drops the kind of test from every proof line; deletes the per-run files 0.9.5
 committed beside the specs and untracks `.purlin/report-data.js`; removes the `pre-commit` and
-`pre-push` scripts 0.9.5 put in `.git/hooks/`; rewrites `.purlin/config.json` to the eight
-keys, asking the gate and trust questions, and the mutation question where the old config
-names no engine, writing the `tests` setting from
-the frameworks the old config named and the tree carries, and naming every key it drops;
-creates `.purlin/evidence/` with its README; replaces a workflow that committed per-run files
-with `purlin.yml` where the project has one of the two reasons; rewrites each 0.9.5 marker in
-the project's tests as one comment above the same test; and removes the files 0.9.5 copied
-into the project for its test frameworks, with the lines that loaded them.
+`pre-push` scripts 0.9.5 put in `.git/hooks/`; rewrites `.purlin/config.json` to the eight keys,
+asking the gate and trust questions, and the mutation question where the old config names no
+engine, writing the `tests` setting from the frameworks the old config named and the tree
+carries, and naming every key it drops; creates `.purlin/evidence/` with its README; replaces
+`purlin-report.html` at the project root, the link 0.9.5 left or a copy that differs, with the
+page init copies; replaces a workflow that committed per-run files with the runner file init
+writes for the git host, `.github/workflows/purlin.yml` or `purlin.azure-pipelines.yml`, where
+the project has one of the two reasons; rewrites each 0.9.5 marker in the project's tests as one
+comment above the same test; and removes the files 0.9.5 copied into the project for its test
+frameworks, with the lines that loaded them.
 
 Every file it rewrites is backed up beside the original as `<name>.local-<sha8>.bak`. It
 commits what it applied in one commit, `chore(update): migrate to <version> (<migrations>)`.
