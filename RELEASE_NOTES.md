@@ -36,11 +36,13 @@ What it does to a 0.9.5 project, step by step:
 - **Git hooks.** The pre-commit and pre-push hooks 0.9.5 installed are removed. Nothing runs at
   commit time or at push time. A hook another tool wrote is left alone.
 - **Settings.** `.purlin/config.json` is rewritten with `version`, `gate`, `mutation_engine`,
-  `min_strength`, `audit_parallel` (4), `test_framework`, `sql_engine`, `ci` and `trust`. Every
-  key 0.9.5 wrote that this release does not read is dropped and named in one line:
-  `spec_dir`, `pre_push`, `report`, `digest`, `audit_criteria`, `audit_criteria_pinned`,
-  `audit_llm` and `audit_llm_name`, whichever the file carried. A `test_framework` name the tree cannot run is
-  dropped and named.
+  `min_strength`, `audit_parallel` (4), `tests`, `ci` and `trust`. Every key 0.9.5 wrote that
+  this release does not read is dropped and named in one line: `spec_dir`, `pre_push`,
+  `report`, `digest`, `sql_engine`, `audit_criteria`, `audit_criteria_pinned`, `audit_llm` and
+  `audit_llm_name`, whichever the file carried. `test_framework` becomes `tests`: one entry per
+  framework it named, each running your own test command with the flag that writes a report
+  (xunit becomes `dotnet`, run as `dotnet test --logger trx`). A framework the tree cannot run
+  is dropped and named.
 - **Three questions.** The gate question, defaulting to `strong` where `pre_push` was `strict`
   and to `passed` otherwise. The mutation question, `Measure test strength by breaking the code
   on purpose?`, asked only where an engine exists for the project's frameworks, defaulting to
@@ -52,8 +54,22 @@ What it does to a 0.9.5 project, step by step:
 - **Workflows.** The workflow that committed Windows proof files is removed. One `purlin.yml`
   is offered in its place only where a spec names another operating system or you answered no
   to the trust question.
-- **Plugin copies.** Every copy under `.purlin/plugins/` is refreshed to the plugin this
-  release ships, keeping the name the project gave it.
+- **Markers become comments.** Every marker a 0.9.5 plugin read becomes one comment above the
+  same test, in the file's own comment syntax: `# purlin: login PROOF-1` above a pytest test,
+  `// purlin: login PROOF-1` above a Jest, Vitest or C# test, `-- purlin: login PROOF-1` in a
+  SQL file. The pytest decorator, the tag in a Jest or Vitest title, the xUnit trait and the
+  SQL comment are rewritten in place; a shell script's harness calls become comments at its
+  top and the calls themselves no-ops. One line per file says how many it rewrote. A shell or
+  SQL test file is now one test that passes when it exits 0, so a script that recorded a
+  failure through the harness must now exit non-zero. A module-wide `pytestmark` is named by
+  file and line and left for you to move.
+- **The plugins go.** No plugin is installed in your tests any more: Purlin runs your own test
+  command and reads the report it writes, JUnit XML, the TRX `dotnet test` writes or the JSON
+  `go test -json` writes. The update removes the plugin copies 0.9.5 put under `.purlin/`, the
+  `pytest_plugins` line it wrote into `conftest.py`, and the reporter it added to
+  `jest.config.js`, `vitest.config.ts` or `package.json`. A `.csproj` that compiles the xUnit
+  logger is named for you to edit by hand. Jest needs `jest-junit` added to write its report:
+  `npm install --save-dev jest-junit`.
 - **Specs with no `> Scope:` line** are named, `2 specs have no > Scope: line: a, b. Run
   purlin:spec <name> to add one.`, and changed by nothing. The line is optional below `signed`
   and required at `signed`.
@@ -365,8 +381,13 @@ Also gone, each without a replacement:
   reads on the git host.
 - The kind of test on a proof line is gone: `@integration`, `@e2e` and `@unit`, the `--tier`
   flag of `purlin_run.py`, the `tier` field of a proof file and `PURLIN_PROOF_TIER`.
-  `purlin:test` runs every tagged test of the features it runs, each plugin writes one proof
-  file per feature, and `purlin:init --update` drops the tag from a 0.9.5 proof line.
+  `purlin:test` runs every marked test of the features it runs, and `purlin:init --update`
+  drops the tag from a 0.9.5 proof line.
+- The proof plugins, for pytest, Jest, Vitest, xUnit, shell and SQL, the proof files they
+  wrote under `.purlin/runtime/`, the `test_framework` and `sql_engine` settings, and the
+  wiring init wrote into a project's test configuration. A proof is optional at the gate
+  `passed`, where a test marked with a rule's own id is that rule's evidence, and required
+  from `strong` up, where a rule with a test and no proof reads `no proof`.
 - A rule names no owner and no upstream criterion: `[origin: ...]` and `[criterion: ...]` are
   no longer tags, the payload and the brief carry neither, init stops listing rules without an
   owner at `signed`, and `purlin:drift` loses `criteria_without_rules`, `pm_rules_changed`,
