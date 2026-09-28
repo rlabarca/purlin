@@ -10,8 +10,8 @@
   --surface-veil:rgba(228,221,212,.30);   /* the deck's full-bleed cream veil */
 
   --text-primary:var(--purlin-cream-050);
-  --text-secondary:var(--purlin-blush-200);
-  --text-muted:var(--purlin-slate-200);
+  --text-secondary:var(--purlin-blush-100);
+  --text-muted:var(--purlin-slate-100);
   --text-accent:var(--purlin-copper-500);
   --text-inverse:var(--purlin-navy-900);
 
@@ -31,10 +31,10 @@
   --state-fail-soft:rgba(239,68,68,.14);
   --state-neutral:var(--teal-400);
   --state-neutral-soft:rgba(45,212,191,.14);
-  --state-idle:var(--slate-400);
+  --state-idle:var(--slate-100);
 
   --focus-ring:var(--purlin-blush-200);
-  --link:var(--purlin-blush-200);
+  --link:var(--purlin-blush-100);
   --link-hover:var(--purlin-copper-500);
 }
 
@@ -47,7 +47,7 @@
   --surface-sunken:var(--slate-900);
   --text-primary:var(--slate-200);
   --text-secondary:var(--slate-300);
-  --text-muted:var(--slate-400);
+  --text-muted:var(--slate-350);
   --border-hairline:var(--slate-700);
   --border-default:var(--slate-700);
   --border-strong:var(--slate-500);

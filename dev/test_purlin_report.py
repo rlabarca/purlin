@@ -1357,3 +1357,119 @@ def test_a_rule_with_no_proof_shows_the_tests_marked_with_its_id(
     found = sorted({match.group(0) for text in seen if text
                     for match in HIGHER_WORDS_NO_PROOFS.finditer(text)})
     assert found == [], found
+
+
+# Every element that draws a text node of its own, its colour, the ground under
+# it composited through each translucent background up to the page, and the
+# WCAG contrast ratio of the two. Text in one of the four state colours or the
+# accent, and text on a solid badge filled with a state colour, is left out:
+# its colour is its meaning.
+NEUTRAL_CONTRAST = """() => {
+  function parse(c) {
+    const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) { return null; }
+    const p = m[1].split(/[ ,\\/]+/).filter(Boolean).map(Number);
+    return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
+  }
+  function over(top, under) {
+    return [0, 1, 2].map(i => top[i] * top[3] + under[i] * (1 - top[3]))
+      .concat([1]);
+  }
+  function lum(c) {
+    const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92
+      : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+  }
+  function ratio(a, b) {
+    const x = lum(a), y = lum(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  }
+  function ground(el) {
+    const layers = [];
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      const c = parse(getComputedStyle(n).backgroundColor);
+      if (c && c[3] > 0) { layers.push(c); if (c[3] >= 1) { break; } }
+    }
+    let base = [255, 255, 255, 1];
+    for (let i = layers.length - 1; i >= 0; i--) { base = over(layers[i], base); }
+    return base;
+  }
+  const root = getComputedStyle(document.documentElement);
+  const probe = document.createElement('span');
+  document.body.appendChild(probe);
+  const resolve = name => { probe.style.color = root.getPropertyValue(name).trim();
+    return getComputedStyle(probe).color; };
+  const states = new Set(['--state-pass', '--state-warn', '--state-fail',
+    '--state-neutral'].map(resolve));
+  const coloured = new Set([...states, resolve('--accent'),
+    resolve('--text-accent')]);
+  probe.remove();
+  const out = [];
+  const seen = new Set();
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (!node.textContent.trim()) { continue; }
+    const el = node.parentElement;
+    if (seen.has(el)) { continue; }
+    seen.add(el);
+    const box = el.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    if (!box.width || !box.height || style.visibility === 'hidden') { continue; }
+    if (coloured.has(style.color)) { continue; }
+    const under = ground(el);
+    const fill = 'rgb(' + under.slice(0, 3).map(Math.round).join(', ') + ')';
+    if (states.has(fill)) { continue; }
+    let ink = parse(style.color);
+    if (ink[3] < 1) { ink = over(ink, under); }
+    out.push([node.textContent.trim().slice(0, 40), style.color, fill,
+              ratio(ink, under)]);
+  }
+  return out;
+}"""
+
+
+def neutral_text(page):
+    """`[(text, colour, ground, ratio)]` for every neutral text on screen."""
+    return page.evaluate(NEUTRAL_CONTRAST)
+
+
+def open_in_theme(browser, tmp_path, payload, theme):
+    page = open_board(browser, tmp_path, payload)
+    page.evaluate("t => { localStorage.setItem('purlin-theme', t); }", theme)
+    page.reload()
+    page.wait_for_selector('.topbar', timeout=10000)
+    assert page.get_attribute('html', 'data-theme') == theme
+    return page
+
+
+# purlin: purlin_report PROOF-66
+def test_neutral_text_measures_7_to_1_in_both_themes(browser, tmp_path):
+    checked = 0
+    for process in PROCESSES:
+        payload = payload_named(process)
+        for theme in ('dark', 'light'):
+            for screen in ('board', 'queue', 'rule'):
+                page = open_in_theme(browser, tmp_path / process, payload,
+                                     theme)
+                if screen == 'queue':
+                    if page.query_selector('[data-screen="queue"]') is None:
+                        page.close()
+                        continue
+                    page.click('[data-screen="queue"]')
+                elif screen == 'rule':
+                    page.click('.tr')
+                    page.click('.rule')
+                    page.wait_for_selector('h1', timeout=10000)
+                found = neutral_text(page)
+                low = [item for item in found if item[3] < 7]
+                assert low == [], (process, theme, screen, low)
+                checked += len(found)
+                page.close()
+    assert checked > 100, checked
+
+    page = open_in_theme(browser, tmp_path / 'old', payload_named('team'),
+                         'dark')
+    page.evaluate("document.documentElement.style.setProperty("
+                  "'--state-idle', '#94A2B8')")
+    assert [item for item in neutral_text(page) if item[3] < 7]
+    page.close()

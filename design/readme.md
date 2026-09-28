@@ -63,6 +63,9 @@ Both themes ship. The light theme is extrapolated from the warm half: paper grou
 `#D3C9BC` from the cream, navy ink, copper darkened to `#8F5626` for contrast, and the four state
 hues dropped to their 700 steps so they clear 4.5:1 on paper.
 
+Every neutral text token, in both themes, measures at least 7:1 by the WCAG contrast formula
+against every ground it is drawn on.
+
 ## Icons
 
 Purlin ships no icon set. The interface uses the unicode glyphs `▶ ▼ ▲ →`, which inherit

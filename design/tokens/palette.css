@@ -9,6 +9,8 @@
   --purlin-slate-300:#93AEB8;  /* muted mono, list numerals */
   --purlin-slate-200:#BFCED5;  /* muted text on navy, one step brighter for reading */
   --purlin-cream-050:#F1ECE5;  /* primary ink on navy, one step brighter than the logo cream */
+  --purlin-blush-100:#F6E8E2;  /* secondary ink on navy, 7:1 on the lightest band */
+  --purlin-slate-100:#E2E9EC;  /* muted ink on navy, 7:1 on the lightest band */
 
   /* --- Product / dashboard: cool slate --------------------------- */
   --slate-950:#0F172A;
@@ -18,8 +20,10 @@
   --slate-700:#334155;
   --slate-500:#64738B;
   --slate-400:#94A2B8;
+  --slate-350:#BBC4D2;  /* muted ink on the product ramp, 7:1 on slate-750 */
   --slate-300:#CBD5E1;  /* secondary ink on the product ramp */
   --slate-200:#E2E8F0;
+  --slate-100:#E1E5EB;  /* idle ink on navy, 7:1 on the lightest band */
   --white:#FFFFFF;
 
   /* --- State hues (dashboard) ------------------------------------ */
@@ -46,4 +50,5 @@
   --purlin-ink-700:#1B4A5C;
   --purlin-ink-600:#345865;  /* muted ink on paper, one step darker than 500 */
   --purlin-ink-500:#4D676F;  /* navy under the 30% cream veil */
+  --purlin-ink-650:#3B4F56;  /* muted and idle ink on paper, 7:1 on paper-100 */
 }
