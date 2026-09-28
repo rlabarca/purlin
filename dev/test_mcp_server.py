@@ -608,6 +608,16 @@ class TestGate:
         cfg = purlin_gate.resolve_gate({'gate': 'strong', 'min_strength': 95})
         assert cfg.min_strength == 95
 
+    def test_an_empty_minimum_is_read_as_none_and_warns_of_nothing(self):
+        cfg = purlin_gate.resolve_gate({'gate': 'strong', 'min_strength': None})
+        assert cfg.min_strength is None
+        assert cfg.warnings == []
+        named = purlin_gate.resolve_gate({'gate': 'strong',
+                                          'min_strength': 'high'})
+        assert named.min_strength == 70
+        assert any('"min_strength" is not a number' in line
+                   for line in named.warnings)
+
     def test_an_unreadable_gate_falls_back_loudly(self):
         cfg = purlin_gate.resolve_gate({'gate': 'stronng'})
         assert cfg.gate == 'passed'

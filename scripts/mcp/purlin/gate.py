@@ -123,7 +123,10 @@ def resolve_gate(config):
 
     min_strength = _DERIVED[gate]
 
-    if 'min_strength' in config:
+    if config.get('min_strength') is None and 'min_strength' in config:
+        # Written as null where mutation testing is off: no mark applies.
+        min_strength = None
+    elif 'min_strength' in config:
         try:
             min_strength = int(config['min_strength'])
         except (TypeError, ValueError):
