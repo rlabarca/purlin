@@ -75,6 +75,7 @@
 - RULE-67: The status report's summary counts the rules whose passed cell reads `out of date`, `<n> rules out of date` and `1 rule out of date` for one, and nothing where there are none; where those rules are what blocks a project at the gate `passed`, its `Next:` line reads `→ Next: run purlin:test. <n> rules are out of date.`, and `1 rule is out of date.` for one
 - RULE-68: Every `Next:` line that counts rules reads singular for one rule, `1 rule has` and `1 rule is`, and plural for any other count
 - RULE-69: At the gate `passed`, where proofs are optional, a rule with neither a proof nor a test sends the reader to `purlin:build` with `<n> rules have no test.`, and the report names no proof
+- RULE-70: The three sample payloads the dashboard is built and photographed against, one per gate, carry together exactly the key paths the builder writes, at every depth, and no other [level: passed]
 
 ## Proof
 
@@ -153,3 +154,4 @@
 - PROOF-79 (RULE-67): At the gate `passed`, write a section for both rules of `login` whose fingerprint names code that has since moved; verify the line under the bucket counts ends `2 rules out of date` and the one `Next:` line reads `→ Next: run purlin:test. 2 rules are out of date.`; with a spec of one rule verify `1 rule out of date` and `→ Next: run purlin:test. 1 rule is out of date.`; with a current section verify no line says `out of date`
 - PROOF-80 (RULE-68): Write a failing section for a spec of one rule and verify the `Next:` line reads `→ Next: run purlin:build. 1 rule has a failing test.`; for a spec of two rules both failing verify `→ Next: run purlin:build. 2 rules have a failing test.`
 - PROOF-81 (RULE-69): At the gate `passed`, run the status report over a spec of one rule with no proof line and no test; verify the last line reads `→ Next: run purlin:build. 1 rule has no test.` and no line holds the word `proof`
+- PROOF-82 (RULE-70): Collect every key path of the three sample payloads, reading a list as one element and a map keyed by operating system or source as one key; build a payload at each gate over a project with evidence from both sources, audit entries, a `@manual` rule in the queue, a signature and a `signed/` tag on HEAD, and collect its paths the same way; verify the two sets are equal

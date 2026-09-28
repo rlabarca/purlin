@@ -1658,6 +1658,59 @@ class TestTheFixturesAreTheContract:
                                name + '.json'), encoding='utf-8') as handle:
             return json.load(handle)
 
+    # Where a payload keys a map by a name rather than by a field, such as
+    # an operating system or a source, every name reads as one path.
+    MAPS = ('.evidence', '.evidence.*', '.evidence.*.*',
+            '.features[].evidence.ci.platforms',
+            '.features[].evidence.local.platforms',
+            '.features[].rules[].cells', '.features[].rules[].cells.*.platforms')
+
+    @classmethod
+    def _key_paths(cls, value, prefix='', found=None):
+        """Every key path in `value`, lists read as `[]`."""
+        found = set() if found is None else found
+        if isinstance(value, dict):
+            for key, inner in value.items():
+                path = prefix + '.' + ('*' if prefix in cls.MAPS else key)
+                found.add(path)
+                cls._key_paths(inner, path, found)
+        elif isinstance(value, list):
+            for inner in value:
+                cls._key_paths(inner, prefix + '[]', found)
+        return found
+
+    @staticmethod
+    def _full_payload(gate):
+        """A payload that fills every part a fixture fills: evidence from both
+        sources, audit entries, a hand check in the queue, a signature and
+        the signed tag on HEAD."""
+        made = Project(gate=gate, spec=SPEC.replace(
+            'body "denied"\n', 'body "denied" @manual\n'),
+            extra_config={'mutation_engine': 'auto'})
+        try:
+            made.sign_commits()
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'}], source='local')
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'}], ci=True)
+            made.audit('RULE-1')
+            made.audit('RULE-2', observations=['PROOF-2 reads the status.'])
+            made.signature('RULE-1')
+            _git(made.root, 'tag', 'signed/1.0')
+            return made.payload()
+        finally:
+            made.close()
+
+    # purlin: states PROOF-82
+    def test_the_fixtures_carry_exactly_the_keys_the_builder_writes(self):
+        fixtures, built = set(), set()
+        for name, gate in (('solo', 'passed'), ('team', 'strong'),
+                           ('regulated', 'signed')):
+            fixtures |= self._key_paths(self._fixture(name))
+            built |= self._key_paths(self._full_payload(gate))
+        assert sorted(fixtures - built) == [], 'no builder writes these'
+        assert sorted(built - fixtures) == [], 'no fixture carries these'
+
     # purlin: states PROOF-31
     # purlin: states PROOF-29
     def test_every_fixture_has_the_key_set_the_builder_writes(self):
