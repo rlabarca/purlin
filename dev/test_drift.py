@@ -797,10 +797,24 @@ class TestSpecsNotCommitted:
 class TestReportShape:
 
     @pytest.mark.proof("drift", "PROOF-27", "RULE-18")
-    def test_the_report_the_views_and_the_narrowed_answer(self, tmp_path):
+    def test_the_report_the_views_and_the_narrowed_answer(self, tmp_path,
+                                                          monkeypatch):
         _up, checkout, _before = _pulled(
             tmp_path, LOGIN_FILES,
             [{'src/auth/login.py': 'def login():\n    return 2\n'}])
+        # The reflog names its times relative to now, so two reads a moment
+        # apart can straddle a second and read `1 second ago` and `0 seconds
+        # ago`. Both reports here see the one read, so they are compared
+        # whole, relative time included.
+        read = purlin_drift._reflog
+        seen = {}
+
+        def read_once(root):
+            if root not in seen:
+                seen[root] = read(root)
+            return seen[root]
+
+        monkeypatch.setattr(purlin_drift, '_reflog', read_once)
         report = _report(checkout)
 
         assert sorted(report) == ['roles', 'since'], sorted(report)
