@@ -225,8 +225,8 @@ def merge_section(data, source, feature, spec_path, os_name, section,
     platforms = merged.get('platforms')
     if not isinstance(platforms, dict):
         platforms = {}
-    held = platforms.get(os_name)
-    if not (isinstance(held, dict) and _same_observation(held, section)):
+    kept = platforms.get(os_name)
+    if not (isinstance(kept, dict) and _same_observation(kept, section)):
         platforms[os_name] = section
     merged['platforms'] = platforms
     return drop_removed_rules(merged, rule_ids)
@@ -250,15 +250,15 @@ def merge_audit(data, source, feature, spec_path, entries, mutation,
     if not isinstance(rules, dict):
         rules = {}
     for rule_id, entry in (entries or {}).items():
-        held = rules.get(rule_id)
-        if isinstance(held, dict) and _same_audit(held, entry):
+        kept = rules.get(rule_id)
+        if isinstance(kept, dict) and _same_audit(kept, entry):
             continue
         rules[rule_id] = entry
     audit['rules'] = rules
     if mutation_ran:
-        held = audit.get('mutation')
-        if not (isinstance(held, dict)
-                and (held.get('engine'), held.get('score'))
+        kept = audit.get('mutation')
+        if not (isinstance(kept, dict)
+                and (kept.get('engine'), kept.get('score'))
                 == ((mutation or {}).get('engine'),
                     (mutation or {}).get('score'))):
             audit['mutation'] = mutation
