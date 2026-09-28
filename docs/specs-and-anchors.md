@@ -178,14 +178,6 @@ must share the same rules: it is a cost, and one project does not need it.
 When several projects share rules, the rules live in their own repository and each project
 keeps a pinned copy of the ones it uses.
 
-```mermaid
-flowchart LR
-  A["anchor repo<br/>specs/no_eval.md"]
-  B["project<br/>specs/_anchors/no_eval.md<br/>Pinned: abc1234"]
-  A -- "anchor add: fetch and pin" --> B
-  A -- "anchor sync: read the delta, advance the pin" --> B
-```
-
 **add** fetches the anchor and writes the local copy with two tracking lines the author's own
 file does not carry:
 
