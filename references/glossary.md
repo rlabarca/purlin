@@ -67,7 +67,7 @@ other page points here rather than defining it again.
   operating system, the rule's level, and the hashes it binds, including an **audit hash** over
   what the audit found. **counting signature**: at the gate `signed`, one whose commit is signed
   and verifies and whose hashes still match; below `signed`, any committed one. **stale**: the
-  signed cell's word when the hashes no longer match.
+  signed cell's word when the hashes it bound do not match what is there now.
 - **tag**: `signed/<version>`, the signed tag `purlin:sign` writes on the commit that carries
   the evidence package, once every rule meets the gate and every feature's evidence is committed
   and current. It means that at the tagged commit every rule meets the gate;
