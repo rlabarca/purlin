@@ -435,6 +435,37 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **Five words at `passed`.** At the gate `passed` every surface and every page a
       person meets first uses rule, test, passed, out of date and gate, and no word of a
       higher level. The rest appears when the gate is raised.
+51. **A proof is QA's plan, a test is any test with one comment, and there are no plugins**
+    (added 2026-09-27, from the first sanity check). Product, QA and developers all work in
+    Claude Code on a checkout; `purlin:drift` is how each catches up after pulling.
+    - **A guideline for a good proof**, one page, the one home for it: what is done, what is
+      observed, the expected value, at least one failure case, written so a non-developer
+      can judge it, with no file path and no function name. AI may draft a proof; the
+      guideline is what it drafts against and what the audit checks.
+    - **Proofs are optional at `passed` and required from `strong` up.** At `strong` and
+      above a rule with a test and no proof reads `no proof` and does not meet the gate. A
+      rule marked `[level: passed]` needs none, which is how one rule is exempted.
+    - **`purlin:spec` shows the proofs and asks** whether to change any, saves the spec, and
+      names `purlin:build`. It never starts building. `purlin:build` works from the proofs
+      that exist, and looks first for an existing test that already shows what a proof
+      asks; when it finds one it offers to add the marker and writes nothing new.
+    - **The marker is a comment**, `purlin: <feature> PROOF-<n>`, in the language's own
+      comment syntax on a line above the test; where a rule has no proof it names the rule,
+      `purlin: <feature> RULE-<n>`. A test may carry several, one line each, and its result
+      counts for each.
+    - **No plugins.** Purlin runs the project's own test command, held in the settings file,
+      with the report flag added, and reads the report: JUnit XML, the format `dotnet test`
+      writes, the JSON `go test` writes, and for a shell or SQL script its exit code. It
+      ties each result to its marker by the test's name, and reports a marker it cannot tie
+      to exactly one test; it never guesses. `purlin:init` writes the command for the
+      framework it detects, says what a framework needs added, and asks for the command and
+      the report's path where it detects none.
+    - **One suite.** A test the developer wrote and a test `purlin:build` wrote differ in
+      nothing but who typed them; a test with no marker runs as always and is ignored.
+    - **This repository**: every marker is rewritten, and two or three specs have their
+      proofs rewritten to the guideline as the examples the docs show.
+    - **Order**: after the scheduled pieces, and not before the owner has talked through the
+      GxP complaints of the same sanity check.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
