@@ -11,7 +11,7 @@ strings on the dashboard's side; changing one here changes the table.
 The columns, left to right:
 
     Spec     the spec's name
-    Rules    how many rules it owns, then `plus <k> shared` for the rules it
+    Rules    how many rules it owns, then ` (+<k> shared)` for the rules it
              proves from an anchor it requires or from a global anchor
     Proofs   how many proof lines it writes, and how many have no test; at
              `passed` only where the project writes a proof line at all
@@ -122,7 +122,7 @@ def shared_counts(rules):
 
 
 def rules_cell(rollup, shared=()):
-    """`<n>`, or `<own> · plus <k> shared` where the spec proves shared rules.
+    """`<n>`, or `<own> (+<k> shared)` where the spec proves shared rules.
 
     The rollup counts every rule the spec must prove, so the rules it owns are
     that total less the shared ones, which are listed once, under the anchor
@@ -132,7 +132,7 @@ def rules_cell(rollup, shared=()):
     more = sum(count for _owner, count in shared or ())
     if not more:
         return '%d' % total
-    return '%d%splus %d shared' % (total - more, DOT, more)
+    return '%d (+%d shared)' % (total - more, more)
 
 
 def proofs_cell(rollup):

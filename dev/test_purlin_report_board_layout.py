@@ -132,8 +132,8 @@ RIGHT_ALIGNED = """() => Array.from(document.querySelectorAll('.tbl *')).filter(
 
 
 # purlin: purlin_report PROOF-42
-def test_a_column_keeps_its_floor_and_the_table_scrolls_instead(browser,  # noqa: F811
-                                                                tmp_path):
+def test_every_column_fits_from_1024_up_and_no_value_breaks(browser,  # noqa: F811
+                                                            tmp_path):
     """`SIGNED` sat off the right of a 1024-wide window with eight columns."""
     for width in WIDTHS:
         page = open_board(browser, tmp_path / str(width),
@@ -144,23 +144,118 @@ def test_a_column_keeps_its_floor_and_the_table_scrolls_instead(browser,  # noqa
             '.tbl', 'el => el.scrollWidth - el.clientWidth') == 0
         assert page.evaluate(LAST_HEADING) <= width
         assert page.evaluate(RIGHT_ALIGNED) == 0
-        if width >= 1280:
-            assert page.evaluate(WRAPPED) == 0, width
+        assert page.evaluate(WRAPPED) == 0, width
         page.close()
-        if width >= 1280:
-            # A spec that proves an anchor's rules reads `1 · plus 1 shared`,
-            # and that cell holds its two parts on one line too.
-            team = open_board(browser, tmp_path / ('team%d' % width),
-                              payload_named('team'),
-                              viewport={'width': width, 'height': 1000})
-            assert 'plus 1 shared' in team.inner_text('.tbl')
-            assert team.evaluate(WRAPPED) == 0, width
-            team.close()
+        # A spec that proves an anchor's rules reads `1 (+1 shared)`, and
+        # that value is one line too.
+        team = open_board(browser, tmp_path / ('team%d' % width),
+                          payload_named('team'),
+                          viewport={'width': width, 'height': 1000})
+        assert '1 (+1 shared)' in team.inner_text('.tbl')
+        assert team.evaluate(WRAPPED) == 0, width
+        team.close()
 
-    narrow = open_board(browser, tmp_path / 'narrow',
-                        payload_named('regulated'),
-                        viewport={'width': 700, 'height': 1000})
-    assert [h for h in narrow.evaluate(HEADINGS) if h['over'] > 0] == []
-    assert narrow.eval_on_selector(
-        '.tbl', 'el => el.scrollWidth - el.clientWidth') > 0
-    narrow.close()
+
+# The five widths a person opens the board at, from a wide screen to a phone.
+EVERY_WIDTH = (1500, 1280, 1024, 768, 390)
+
+# Every element that holds one value, and how many lines its own text takes:
+# the distinct tops of the line boxes a range over its content gives. A value
+# broken inside itself has two.
+BROKEN_VALUES = """() => {
+  const sel = ['.trio', '.tr > div[data-label]', '.chip', '.tag', '.pill',
+               '.rule .rid', '.more', '.tile-l', '.flag-l', '.name .n',
+               '.rev > [data-label]', '.fresh', '.group .gt'];
+  const out = [];
+  document.querySelectorAll(sel.join(',')).forEach(el => {
+    if (!el.textContent.trim() || !el.getClientRects().length) { return; }
+    const near = parseFloat(getComputedStyle(el).fontSize) * 0.6;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const tops = [];
+    while (walker.nextNode()) {
+      if (!walker.currentNode.textContent.trim()) { continue; }
+      const range = document.createRange();
+      range.selectNodeContents(walker.currentNode);
+      Array.from(range.getClientRects()).forEach(r => {
+        if (r.width < 1) { return; }
+        if (!tops.some(t => Math.abs(t - r.top) < near)) { tops.push(r.top); }
+      });
+    }
+    if (tops.length > 1) { out.push(el.textContent.trim()); }
+  });
+  return out;
+}"""
+
+SIDEWAYS = """() => document.documentElement.scrollWidth
+  - document.documentElement.clientWidth"""
+
+# How many tiles and flag cards share the first tile's row.
+FIRST_ROW = """() => {
+  const tiles = Array.from(document.querySelectorAll('.tile, .flag'));
+  const top = tiles[0].getBoundingClientRect().top;
+  return tiles.filter(t => Math.abs(t.getBoundingClientRect().top - top) < 2)
+    .length;
+}"""
+
+
+def _every_screen(page):
+    """Open login and one rule's proofs; then the rule screen; then the queue.
+
+    Returns what each screen showed: `(screen, sideways pixels, broken values)`.
+    """
+    seen = []
+    page.click('[data-act="feature"][data-feature="login"]')
+    page.click('[data-act="proofs"][data-feature="login"][data-rule="RULE-4"]')
+    seen.append(('board', page.evaluate(SIDEWAYS), page.evaluate(BROKEN_VALUES)))
+    page.click('.rule[data-feature="login"][data-rule="RULE-1"] .rt')
+    seen.append(('rule', page.evaluate(SIDEWAYS), page.evaluate(BROKEN_VALUES)))
+    page.click('[data-screen="queue"]')
+    seen.append(('queue', page.evaluate(SIDEWAYS), page.evaluate(BROKEN_VALUES)))
+    return seen
+
+
+# purlin: purlin_report PROOF-75
+def test_every_screen_fits_every_width_and_no_value_breaks(browser, tmp_path):  # noqa: F811
+    for width in EVERY_WIDTH:
+        for theme in ('dark', 'light'):
+            page = open_board(browser, tmp_path / ('%d%s' % (width, theme)),
+                              payload_named('regulated'),
+                              viewport={'width': width, 'height': 900})
+            if theme == 'light':
+                page.click('[data-act="theme"]')
+            assert page.get_attribute('html', 'data-theme') == theme
+            for screen, sideways, broken in _every_screen(page):
+                assert sideways == 0, (width, theme, screen, sideways)
+                assert broken == [], (width, theme, screen, broken)
+            page.close()
+        # The team board holds a spec that proves an anchor's rule.
+        team = open_board(browser, tmp_path / ('team%d' % width),
+                          payload_named('team'),
+                          viewport={'width': width, 'height': 900})
+        assert '1 (+1 shared)' in team.inner_text('.tr[data-feature="receipt"]')
+        assert team.evaluate(SIDEWAYS) == 0, width
+        assert team.evaluate(BROKEN_VALUES) == [], width
+        team.close()
+
+
+# purlin: purlin_report PROOF-76
+def test_a_narrow_board_is_blocks_of_labelled_pairs(browser, tmp_path):  # noqa: F811
+    rows = {}
+    for width, expected in ((1024, 6), (768, 4), (390, 2)):
+        page = open_board(browser, tmp_path / str(width),
+                          payload_named('team' if width == 390 else 'regulated'),
+                          viewport={'width': width, 'height': 900})
+        rows[width] = page.evaluate(FIRST_ROW)
+        if width == 390:
+            receipt = page.inner_text('.tr[data-feature="receipt"]')
+            rows['receipt'] = ' '.join(receipt.split())
+            rows['label'] = page.eval_on_selector(
+                '.tr[data-feature="receipt"] > div:nth-child(2)',
+                "el => getComputedStyle(el, '::before').content")
+            rows['heads'] = page.is_visible('.th')
+        page.close()
+    assert (rows[768], rows[390]) == (4, 2), rows
+    assert rows[1024] >= 6, rows
+    assert rows['heads'] is False, rows
+    assert rows['receipt'].startswith('▶ receipt 1 (+1 shared)'), rows
+    assert rows['label'] == '"Rules"', rows

@@ -104,27 +104,26 @@ function untestedLines() {
    detail is in the cell's hover rather than a column of its own, which is
    what lets six columns fit a 1024-wide window.
 
-   `width` is the share of the table the column asks for, and `floor` is the
-   width below which it stops being read: a track narrower than its heading
-   ran that heading into the next one. Each floor is the heading, or the
-   longest single part of a count cell, whichever is wider: `Rules` holds
-   `· plus 18 shared`. The shares are set so that the floors fit a
-   1024-wide window and every count cell holds its first two parts on one
-   line at 1280; under the sum of the floors, 776 pixels, which with the
-   five gaps and the padding is 884, the table scrolls sideways rather than
-   squeezing a column past one. */
+   `width` is the share of the table the column asks for once every column
+   holds its content. A value never breaks inside itself, `42 · 2 no test`
+   and `15 (+6 shared)` alike, so each value column is at least as wide as
+   its widest value: the rows share the table's own tracks, so that width is
+   the same in every row. The spec's name is the one text that gives way,
+   cut with an ellipsis at `floor` pixels, its full path in the hover. Under
+   1024 pixels the table is no table: each spec is a block of labelled
+   pairs, and the stylesheet says how. */
 function boardColumns() {
-  var columns = [{label: COLUMNS[0], width: '1.7fr', floor: 132},
-                 {label: COLUMNS[1], width: '1.6fr', floor: 144}];
+  var columns = [{label: COLUMNS[0], width: '1.7fr', floor: 200},
+                 {label: COLUMNS[1], width: '1.6fr'}];
   if (showsProofs()) {
-    columns.push({label: COLUMNS[2], width: '2fr', floor: 180});
+    columns.push({label: COLUMNS[2], width: '2fr'});
   }
-  columns.push({label: COLUMNS[3], width: '2fr', floor: 120});
+  columns.push({label: COLUMNS[3], width: '2fr'});
   if (level('strong')) {
-    columns.push({label: COLUMNS[4], width: '1.5fr', floor: 110});
+    columns.push({label: COLUMNS[4], width: '1.5fr'});
   }
   if (level('signed')) {
-    columns.push({label: COLUMNS[5], width: '1.1fr', floor: 90});
+    columns.push({label: COLUMNS[5], width: '1.1fr'});
   }
   return columns;
 }
@@ -145,10 +144,11 @@ function proofsCell(feature) {
 }
 
 /* How many rules the spec owns, then how many it proves from an anchor it
-   requires or from a global anchor, as `15 · plus 6 shared`, with the hover
-   naming each anchor and how many rules come from it. Shared rules count
-   toward the spec everywhere, and are listed once, under their anchor. A
-   spec with none reads its own count alone, as `board.rules_cell` does. */
+   requires or from a global anchor, as `15 (+6 shared)`, one value that
+   never breaks, with the hover naming each anchor and how many rules come
+   from it. Shared rules count toward the spec everywhere, and are listed
+   once, under their anchor. A spec with none reads its own count alone, as
+   `board.rules_cell` does. */
 function rulesCell(feature) {
   var shared = sharedBy(feature);
   var own = ownRules(feature).length;
@@ -156,7 +156,7 @@ function rulesCell(feature) {
   var more = shared.reduce(function (sum, pair) { return sum + pair[1]; }, 0);
   return '<span' + hover(shared.map(function (pair) {
       return pair[0] + DOT + pair[1];
-    })) + '>' + counts([[own, '', ''], ['plus ' + more + ' shared', '', '']])
+    })) + '>' + counts([[own + ' (+' + more + ' shared)', '', '']])
     + '</span>';
 }
 
@@ -235,9 +235,12 @@ function featureRow(feature, columns) {
   cells.push(testsCell(feature));
   if (level('strong')) { cells.push(strongCell(feature)); }
   if (level('signed')) { cells.push(signedCell(feature)); }
+  /* Each value cell carries its column's heading, which a narrow screen,
+     with no heading row, draws beside the value as a labelled pair. */
   var row = '<div class="tr" data-act="feature" data-feature="'
-    + esc(feature.name) + '">' + cells.map(function (cell) {
-      return '<div>' + cell + '</div>';
+    + esc(feature.name) + '">' + cells.map(function (cell, index) {
+      return '<div' + (index ? ' data-label="' + esc(columns[index].label)
+        + '"' : '') + '>' + cell + '</div>';
     }).join('') + '</div>';
   if (!open) { return row; }
   return row + visibleRules(feature).map(function (rule) {
@@ -340,19 +343,17 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  var floor = columns.reduce(function (sum, c) { return sum + c.floor; }, 0);
   /* The board opens on the tiles, which carry every count the tests give;
      how many rules meet the gate sits beside the gate in the top bar. */
   var head = '<section>' + statStrip() + '</section>';
   var table = order.length
-    ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
-        /* minmax sizes every track from these two numbers alone. A bare fr
-           track grows to fit its widest cell, and the header and each row are
-           separate grids, so their columns drifted apart. The floor is what
-           keeps a heading and its content readable once the window narrows. */
-        return 'minmax(' + c.floor + 'px,' + c.width + ')';
-      }).join(' ') + ';--cols-floor:' + floor + 'px;--cols-gaps:'
-      + (columns.length - 1) + '"><div class="th">' + columns.map(function (c) {
+    ? '<div class="tbl specs" style="--cols:' + columns.map(function (c) {
+        /* The table owns the tracks and every row shares them, so a heading
+           and its cells start at one edge. A value column is never narrower
+           than its widest value; the name gives way at its floor. */
+        return 'minmax(' + (c.floor ? c.floor + 'px' : 'max-content') + ','
+          + c.width + ')';
+      }).join(' ') + '"><div class="th">' + columns.map(function (c) {
         return '<div>' + esc(c.label) + '</div>';
       }).join('') + '</div>' + order.map(function (name) {
         return groupBand(name, groups[name], columns);

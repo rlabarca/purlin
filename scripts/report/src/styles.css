@@ -5,11 +5,11 @@
 button{font-family:inherit}
 
 /* --- chrome ---------------------------------------------------------- */
-.topbar{display:flex;align-items:center;gap:var(--space-6);height:56px;padding:0 var(--space-8);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3) var(--space-6);min-height:56px;padding:var(--space-2) var(--space-8);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
 .brand{display:inline-flex;align-items:center;gap:var(--space-3)}
 .brand img{display:block;height:24px;width:auto}
 .brand span{font-size:18px;line-height:1;letter-spacing:var(--tracking-hero);color:var(--text-primary)}
-.fresh{display:inline-flex;align-items:center;gap:var(--space-3);font-size:var(--ui-base)}
+.fresh{white-space:nowrap;display:inline-flex;align-items:center;gap:var(--space-3);font-size:var(--ui-base)}
 .dot{width:9px;height:9px;border-radius:var(--radius-pill);background:currentColor;flex:none}
 .spacer{flex:1}
 .tabs{display:flex;gap:var(--space-8);padding:0 var(--space-8);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
@@ -27,7 +27,7 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .mono{font-family:var(--font-mono)}
 .muted{color:var(--text-muted)}
 .sec{color:var(--text-secondary)}
-.tag{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--accent);color:var(--text-primary);white-space:nowrap}
+.tag{display:inline-flex;flex:none;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--accent);color:var(--text-primary);white-space:nowrap}
 .tag.plain{border-color:var(--text-muted);color:var(--text-muted)}
 .os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:0 5px;border-radius:var(--radius-sm);border:1px solid;white-space:nowrap;line-height:1.5}
 .os.pass{border-color:var(--state-pass);color:var(--state-pass)}
@@ -61,22 +61,29 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 
 /* --- the spec table -------------------------------------------------- */
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
-.chip{font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
+.chip{white-space:nowrap;font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
 .chip:hover{background:var(--hover-tint)}
 .chip b{font-family:var(--font-mono);font-weight:var(--weight-regular);margin-left:var(--space-2);color:var(--text-muted)}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .chip[aria-pressed="true"] b{color:var(--accent)}
-.tbl{--cols-min:calc(var(--cols-floor,0px) + var(--space-3) * var(--cols-gaps,0) + var(--space-6) * 2);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
-.th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-3);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);min-width:var(--cols-min)}
-.th>div,.tr>div{min-width:0}
-.trio{display:inline-flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-base)}
+/* The spec table owns its tracks, the outer two being the row padding less
+   one gap, and every heading and spec row takes them as a subgrid: one set
+   of columns, so a heading starts where its cells start, and a value column
+   is as wide as its widest value in every row. */
+.tbl{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
+.tbl.specs{display:grid;grid-template-columns:calc(var(--space-6) - var(--space-3)) var(--cols) calc(var(--space-6) - var(--space-3));column-gap:var(--space-3)}
+.specs>*{grid-column:1/-1}
+.th,.tr{display:grid;grid-template-columns:subgrid;align-items:center;padding:var(--space-4) 0;border-bottom:1px solid var(--border-hairline)}
+.th>div:first-child,.tr>div:first-child{grid-column-start:2}
+.th>div,.tr>div{min-width:0;white-space:nowrap}
+.trio{display:inline-flex;align-items:center;flex-wrap:nowrap;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-base);white-space:nowrap}
 .trio b{font-weight:var(--weight-regular);white-space:nowrap}
 .trio i{color:var(--text-muted);font-style:normal}
 .th{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 .tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .tr:hover{background:var(--hover-tint)}
 .tbl>:last-child{border-bottom:0}
-.group{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3);min-width:var(--cols-min);padding:var(--space-4) var(--space-6);background:var(--surface-2);border-bottom:1px solid var(--border-hairline);cursor:pointer}
+.group{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3);padding:var(--space-4) var(--space-6);background:var(--surface-2);border-bottom:1px solid var(--border-hairline);cursor:pointer}
 .group .gt{font-weight:var(--weight-bold);font-size:var(--ui-base);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-primary)}
 .caret{color:var(--text-muted);font-size:var(--ui-sm);flex:none}
 .name{display:flex;align-items:center;gap:var(--space-4);min-width:0}
@@ -112,3 +119,42 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .rev .cmd{white-space:normal;overflow-wrap:anywhere}
 .rev.th{cursor:default}
 .rev.th:hover{background:none}
+
+/* --- narrow screens -------------------------------------------------- */
+/* Under 1024 pixels the columns cannot all fit, and the page neither shrinks
+   its text nor scrolls sideways. Each spec, each rule and each queue row
+   becomes a block: its name first, then its values as labelled pairs that
+   wrap whole. The tiles, the flag cards, the filters and the top bar's chips
+   wrap as whole items. */
+@media (max-width:1023px){
+.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}
+.topbar .spacer{flex-basis:100%;height:0}
+.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}
+.wrap{padding:var(--space-6) var(--space-5)}
+.strip,.strip.flagged{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tiles,.flags{display:contents}
+.tbl.specs{display:block}
+.specs .th{display:none}
+.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}
+.specs .tr>div{flex:none}
+.specs .tr>div:first-child{flex-basis:100%}
+.specs .tr>div:empty{display:none}
+.tr>div[data-label],.rev>[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}
+.tr>div[data-label]::before,.rev>[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+.rule{grid-template-columns:auto 1fr;grid-template-areas:"rid rp" "rt rt" "rm rm";gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}
+.rule .rid{grid-area:rid;white-space:nowrap}
+.rule .rp{grid-area:rp;justify-content:flex-start}
+.rule .rt{grid-area:rt}
+.rule .rm{grid-area:rm}
+.rule-proofs{padding:var(--space-4) var(--space-5)}
+.rev{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}
+.rev.th{display:none}
+.rev>.claim,.rev>.cmd{flex-basis:100%}
+.group{padding:var(--space-4) var(--space-5)}
+}
+@media (max-width:599px){
+.strip,.strip.flagged{grid-template-columns:repeat(2,minmax(0,1fr))}
+.wrap{padding:var(--space-5) var(--space-4)}
+.kv{grid-template-columns:1fr;gap:var(--space-1) 0}
+.kv dd{margin-bottom:var(--space-3)}
+}

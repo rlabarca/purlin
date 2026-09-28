@@ -1667,7 +1667,7 @@ def test_a_shared_rule_is_listed_once_under_its_owner(browser, tmp_path):
     payload = payload_named('team')
     page = open_board(browser, tmp_path, payload)
     cells = count_cells(page)
-    assert cells['receipt']['Rules'] == '1 · plus 1 shared'
+    assert cells['receipt']['Rules'] == '1 (+1 shared)'
     assert cells['login']['Rules'] == '3'
     assert hovers(page)['receipt']['Rules'] == 'checkout_design · 1'
     assert '4 of 7' in page.inner_text('.topbar')
@@ -1749,7 +1749,7 @@ def test_a_real_projects_shared_rules_are_listed_once(browser, tmp_path):
         [('lock', 'own')] * 2 + [('security', 'global')] * 6)
 
     page = open_board(browser, tmp_path / 'page', payload)
-    assert count_cells(page)['lock']['Rules'] == '2 · plus 6 shared'
+    assert count_cells(page)['lock']['Rules'] == '2 (+6 shared)'
     assert hovers(page)['lock']['Rules'] == 'security · 6'
     assert 'of 8' in page.inner_text('.topbar')
     assert sum(int(value) for value in texts(page, '.tile-v')) == 8

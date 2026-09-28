@@ -27,20 +27,23 @@ function shortText(text) {
 }
 
 /* One row: the spec, the rule, its claim, its level, what it needs and the
-   command. The row opens the rule screen, so the rule id is the link a reader
+   command. Each short value carries its heading, which a narrow screen, with
+   no heading row, draws beside it as a labelled pair; the claim and the
+   command take a line each there. The row opens the rule screen, so the rule id is the link a reader
    follows to everything this row had to cut. */
 function queueRow(entry) {
   var rule = listedRule(entry);
   return '<div class="rev" data-act="rule" data-feature="'
     + esc(entry.owner || entry.feature) + '" data-rule="' + esc(entry.rule)
     + '">'
-    + '<span>' + esc(entry.feature) + '</span>'
-    + '<span class="mono">' + esc(entry.rule) + '</span>'
-    + '<span>' + esc(shortText(entry.text || (rule ? rule.text : ''))) + '</span>'
-    + levelTag(rule || entry)
-    + '<span' + hover([entry.word + ((entry.reasons || []).length
-        ? DOT + entry.reasons.join('; ') : '')]) + '>' + esc(entry.need)
-    + '</span>'
+    + '<span data-label="Spec">' + esc(entry.feature) + '</span>'
+    + '<span class="mono" data-label="Rule">' + esc(entry.rule) + '</span>'
+    + '<span class="claim">'
+    + esc(shortText(entry.text || (rule ? rule.text : ''))) + '</span>'
+    + '<span data-label="Level">' + levelTag(rule || entry) + '</span>'
+    + '<span data-label="Needs"' + hover([entry.word + ((entry.reasons
+        || []).length ? DOT + entry.reasons.join('; ') : '')]) + '>'
+    + esc(entry.need) + '</span>'
     + '<span class="cmd">' + esc(entry.command) + '</span></div>';
 }
 

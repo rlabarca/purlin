@@ -60,21 +60,26 @@ line, since proofs are optional there. `Strong` joins at `strong` and `Signed` a
 | Column | What it reads | What its hover says |
 |---|---|---|
 | `Spec` | the feature name, under the band that names its category | the spec's path |
-| `Rules` | how many rules the spec owns, then, where it proves rules from an anchor it requires or from a global anchor, `15 · plus 6 shared` | each anchor the shared rules come from and how many, as `security_no_dangerous_patterns · 6`; none where there are no shared rules |
+| `Rules` | how many rules the spec owns, then, where it proves rules from an anchor it requires or from a global anchor, `15 (+6 shared)` | each anchor the shared rules come from and how many, as `security_no_dangerous_patterns · 6`; none where there are no shared rules |
 | `Proofs` | `24 · 3 no test`: how many proof lines the spec holds and how many no marker above a test names, whether or not that test has run. A `@manual` proof counts as no gap | which proofs those are |
 | `Tests` | `21 of 24 · 1 partial · 2 failing`: how many rules passed everywhere they ran, then the two words that say they did not | one line per operating system a current run covered, newest first: `linux · ci · 9 days old · 22 passed · 1 failed · 1 not run` |
 | `Strong` | `18 of 20 · 71%`: how many rules reached `strong` of those whose level is `strong` or `signed`, and the test strength, `n/a` where nothing measured one; empty where no rule's level asks for the audit | where the newest audit came from, how old it is, and `minimum strength 80%` |
 | `Signed` | `1 of 4`: how many rules carry a signature that counts, of those whose level is `signed`; empty where none is | each signer with the date of their newest signature, then how many are `stale` |
 
 Shared rules count toward every feature that proves them, in `Proofs`, `Tests`, `Strong` and
-`Signed`, so `ai_audit` reads `15 · plus 6 shared` and `0 of 21` beside it. The tiles, the
+`Signed`, so `ai_audit` reads `15 (+6 shared)` and `0 of 21` beside it. The tiles, the
 filters and the top bar count each rule once, under the spec that owns it.
 
 Every count names the word it counts. The first part is always drawn; a later part is drawn
 only above zero, so a spec with nothing partial and nothing failing reads `24 of 24`. Every
 when, who and platform detail is in a hover, a plain `title` attribute, so it works on a page
-opened from disk. The six columns fit a 1024-pixel window; a narrower window scrolls the table
-sideways.
+opened from disk. A value never breaks inside itself: `15 (+6 shared)` and `42 · 2 no test`
+stay on one line. The six columns fit a 1024-pixel window. Under 1024 pixels the table has no
+heading row: each spec is a block, its name first and its values beneath as labelled pairs
+that wrap whole, `Rules 15 (+6 shared)`, `Tests 21 of 21`, and a rule in an open spec reads its
+id and badges, then its words, then its proofs control. The tiles wrap four to a row, and two
+to a row under 600 pixels; the filters and the top bar's chips wrap whole. The page never
+scrolls sideways and its text keeps its size, on the board, a rule's screen and the Queue tab.
 
 A spec with no `> Scope:` line names no files, so Purlin cannot tell which code it covers. Its
 row reads `<name> · no scope`, and the hover gives the reason. A `purlin:test` with no feature

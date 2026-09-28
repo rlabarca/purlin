@@ -2013,7 +2013,7 @@ class TestStatusTable:
         login = next(line for line in lines if line.startswith('login '))
         anchor = next(line for line in lines if line.startswith('security '))
         column = header.index('Rules')
-        assert login[column:].startswith('2 \u00b7 plus 1 shared'), (header,
+        assert login[column:].startswith('2 (+1 shared)'), (header,
                                                                      login)
         assert anchor[column:].split('  ')[0] == '1', (header, anchor)
 
