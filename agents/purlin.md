@@ -47,7 +47,8 @@ runner, and a project at `signed` with no CI at all is the ordinary case.
 Run `purlin:drift` after a pull, a merge, a rebase or a checkout: it says what that brought in.
 Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and
 the marked tests. Run `purlin:test` while you work; it takes seconds, writes the evidence,
-and its last line, `gate passed: <n> of <rules>`, is the whole check at `passed`. Run
+and its last line, `gate passed: <n> of <rules>`, is the whole check at `passed`; the line
+above it, `Tests: <n> of <rules> rules pass.`, says what the tests found. Run
 `purlin:audit` next: a model reads each rule, its proof and its test and reports what it
 observed, and where mutation testing is on the run breaks the code on purpose to measure test
 strength. It writes that into `.purlin/evidence/local/`. `--commit` on either commits it. At

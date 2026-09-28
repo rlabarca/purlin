@@ -120,7 +120,7 @@ Purlin
 
 A command prints only what the gate asks for. Under `passed` no strength is measured, and no
 level, no queue and no signature appears in the output; `purlin:audit` runs no breaks and ends
-on `Audit: <n> strong, <n> weak. Nothing blocks at the gate passed.` Under `strong` the
+on `Audit: <n> strong, <n> weak. Nothing blocks at the gate passed.` and the gate line. Under `strong` the
 strength where mutation testing is on, the strong cell, the level and the queue's hand checks
 appear. Under `signed` the signed cell, the Signed column and the queue's signatures appear,
 and `purlin:sign` writes the tag when every rule meets the gate `signed`; below `signed` it

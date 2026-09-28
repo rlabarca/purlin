@@ -512,7 +512,10 @@ class TestSkillTest:
         rel = skill_path('test')
         assert (same_line(rel, [
             '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"', '--test'])
-            + same_line(rel, ['Exit codes:', '`0`', '`1`', '`2`'])) == []
+            + same_line(rel, ['Exit codes:', '`0`', '`1`', '`2`',
+                              'whatever the gate line says'])
+            + carries(rel, ['cannot make an audit or a signature appear'])
+            ) == []
 
     # purlin: skill_test PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
@@ -528,8 +531,9 @@ class TestSkillTest:
         assert carries(rel, [
             '.purlin/evidence/local/<feature>.json', '.purlin/tests.md',
             '--commit', 'purlin: evidence at <sha7>', 'Evidence committed.',
-            'Evidence unchanged.', 'gate passed: <n> of <rules>',
-            'It never pushes.']) == []
+            'Evidence unchanged.', 'Tests: <p> of <rules> rules pass.',
+            'gate <gate>: <n> of <rules>', 'gate not met: <n> of <rules>',
+            'gate passed: <n> of <rules>', 'It never pushes.']) == []
 
     # purlin: skill_test PROOF-6
     def test_it_says_what_a_run_with_no_feature_named_runs(self):
@@ -654,9 +658,11 @@ def audit_gate_problems():
     for needle in ('breaks', 'minimum'):
         if needle not in rows['`strong`']:
             problems.append('%s strong row does not name %r' % (rel, needle))
-    for needle in ('counts here too', 'gate strong: <n> of <rules>',
+    for needle in ('counts here too', 'Audit: <n> strong, <n> weak.',
+                   'gate strong: <n> of <rules>',
+                   'cannot make a signature appear',
                    'purlin: evidence at <sha7>'):
-        if needle not in read(rel):
+        if needle not in flat(read(rel)):
             problems.append('%s does not say %r' % (rel, needle))
     return problems
 

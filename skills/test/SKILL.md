@@ -29,23 +29,22 @@ purlin:test --remote            Let the git host's runner do the run
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test
 ```
 
-Add `--all` for `purlin:test --all` and `--feature <name>` for each feature named. With neither,
-the run selects each feature with no run on this operating system, whose spec, code or tests
-changed since its evidence, with an untracked file under its `> Scope:` or beside its tests, or
-whose spec names no files, and runs only the test files carrying its markers: each suite of
-the `tests` setting gets them as its `{files}`. It first prints
-`Selected <n> of <m> features: login (code changed since a1b2c3d), ...`, the skipped ones ending
-`purlin:test --all runs them too.`, and a line per untracked file. With nothing selected it
-prints `Nothing to run: every feature's spec, code and tests match its evidence. purlin:test
---all runs them anyway.` and exits on the gate. `purlin:build` and `purlin:audit` call this
-script too. `--remote` hands the run to the git host's runner on a run branch it creates, waits
-on and deletes; the runner commits its section under `.purlin/evidence/ci/` and the run pulls it
-back. Use it when a proof is tagged `@env` for another operating system, or `trust` is `remote`.
-It refuses a detached head and a tree with changes that are not committed, and pushes nothing
-then. It waits through `gh` on GitHub and `az` with `azure-devops` on Azure DevOps; a red run,
-no CLI, no run found or the wait over exits 1.
+Add `--all` for `purlin:test --all` and `--feature <name>` for each feature named. With neither, the
+run selects each feature with no run on this operating system, whose spec, code or tests changed
+since its evidence, with an untracked file under its `> Scope:` or beside its tests, or whose spec
+names no files, and runs only the test files carrying its markers: each suite of the `tests` setting
+gets them as its `{files}`. It first prints `Selected <n> of <m> features: login (code changed since
+a1b2c3d), ...`, the skipped ones ending `purlin:test --all runs them too.`, and a line per untracked
+file. With nothing selected it prints `Nothing to run: every feature's spec, code and tests match
+its evidence. purlin:test --all runs them anyway.` and exits 1 only where the evidence holds a
+failing test. `purlin:build` and `purlin:audit` call this script too. `--remote` hands the run to
+the git host's runner on a run branch it creates, waits on and deletes; the runner commits its
+section under `.purlin/evidence/ci/` and the run pulls it back. Use it when a proof is tagged `@env`
+for another operating system, or `trust` is `remote`. It refuses a detached head and a tree with
+changes that are not committed, and pushes nothing then. It waits through `gh` on GitHub and `az`
+with `azure-devops` on Azure DevOps; a red run, no CLI, no run found or the wait over exits 1.
 
-Exit codes: `0` the tests ran and the gate is met, `1` a test failed, evidence is missing, a marker names nothing a spec has (it prints the file and line) or the gate is not met, `2` the invocation was wrong.
+Exit codes: `0` no test failed and no marker is wrong, whatever the gate line says, `1` a test failed, evidence is missing or a marker names nothing a spec has (it prints the file and line), `2` the invocation was wrong. A test run cannot make an audit or a signature appear, so the gate does not set the code.
 
 ## Step 2: the evidence, written and committed when asked
 
@@ -98,10 +97,11 @@ on another reads `partial`, which is not met. `--remote` pulls the runner's resu
 every gate, so a proof tagged for a system this machine is not reads `passed` with that
 platform beside it rather than `not run`.
 
-## Step 6: the gate line
+## Step 6: the last two lines
 
-The last line is `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`, and the run
-exits 1 on the second. At `passed` that line is the check; `gate_check.py` is CI's step.
+`Tests: <p> of <rules> rules pass.` says what the run found. `gate <gate>: <n> of <rules>`, or
+`gate not met: <n> of <rules>`, counts the rules that meet the gate, the status headline's number.
+At `passed` both carry one number, and `gate passed: <n> of <rules>` is the check.
 
 ## Step 7: name the next step
 

@@ -39,7 +39,8 @@ Skipped 32 features whose spec, code and tests match their evidence: auth, billi
 ```
 
 With nothing selected it prints `Nothing to run: every feature's spec, code and tests match its
-evidence. purlin:test --all runs them anyway.`, runs no test, and exits 0 where the gate is met.
+evidence. purlin:test --all runs them anyway.`, runs no test, and exits 1 only where the evidence
+holds a failing test.
 
 The run runs each suite's own command from the `tests` setting in `.purlin/config.json`, reads
 the report it writes under `.purlin/runtime/reports/`, and ties each result to the marker
@@ -70,6 +71,7 @@ Untested 0 · Failing 0 · Partial 0 · Passing 3.
 
 → Next: nothing is outstanding at gate passed.
 
+Tests: 3 of 3 rules pass.
 gate passed: 3 of 3
 ```
 
@@ -89,9 +91,13 @@ subject `purlin: evidence at <sha7>`, and prints `Evidence committed.`, or `Evid
 unchanged.` when the run saw the same thing over the same code. A run of one feature replaces
 that feature's section and leaves the rest as it was.
 
-The last line is `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`, counted over
-every rule under `specs/` rather than over the features this run covered, and the run exits 1
-on the second. At `passed` that line is the check.
+The run ends on two lines, counted over every rule under `specs/` rather than over the features
+this run covered. `Tests: <p> of <rules> rules pass.` says what the tests found. `gate <gate>:
+<n> of <rules>` or `gate not met: <n> of <rules>` says where the project stands against its
+gate, the number the status headline carries. At `passed` the two numbers are the same, and the
+gate line is the check. The exit code follows the tests, whatever the gate line says: 0 when no
+test failed and no marker is wrong, 1 otherwise, because a test run cannot make an audit or a
+signature appear.
 
 A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating
 system. On a machine that does not match, the run prints one sentence rather than a pass or a
@@ -137,10 +143,11 @@ identity. It prints `AI audit: <n> rules read, <n> strong, <n> weak.` and the te
 and, where a new finding moved what a signature bound, `<n> signatures went stale: their audit
 findings changed.`
 
-At the gate `passed` nothing the audit finds blocks, and the run ends on `Audit: <n> strong,
-<n> weak. Nothing blocks at the gate passed.` Above it, the last line is `gate strong: <n> of
-<rules>` or `gate not met: <n> of <rules>`, and the run exits 1 on the second or when a rule
-could not be audited.
+The run ends on two lines: `Audit: <n> strong, <n> weak.`, then the gate line `purlin:test`
+ends on. At the gate `passed` the first adds `Nothing blocks at the gate passed.`, and nothing
+the audit finds makes the run exit 1. Above it, the run exits 1 when a rule is short of its
+tests or, where its level asks for one, of its audit, or when a rule could not be audited; a
+rule waiting only on a signature does not make it exit 1.
 
 ### The flow
 
