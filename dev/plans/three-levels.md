@@ -557,6 +557,14 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     which showed such cells and let them block nothing. A rule whose tests do not pass reads
     what its passed cell says, and its strong cell says `not passed` only where its level
     asks for the audit.
+59. **The close of the first session** (added 2026-09-28). A rule whose tests have not
+    passed reads `waiting` in the columns above, and `weak` means only that the audit found
+    fault. The two gaps in the tests of `upstream` are closed. Go is proven against the real
+    tool. Linux does not matter for this project; Windows and Mac do, and Windows is shown
+    by a remote runner, with the proofs that must hold there still to be named by the owner.
+    The evidence of this repository's own run is committed. Text on a solid coloured badge
+    is left as it is. The next sanity check, a new user following the docs, is run by a
+    fresh agent from `dev/plans/next-agent-prompt.md`.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

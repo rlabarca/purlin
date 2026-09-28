@@ -8,14 +8,14 @@ audited, signed, tagged or pushed. `main` is local only.
 As of the morning of 2026-09-28, after the owner's first look at the dashboard.
 
 - Every piece is merged into `main` by fast-forward. The full sweep on `main` after the last
-  of them: **1081 passed across 7 suites, 0 failed.**
-- This repository's own tests, run through Purlin: every marker tied to a test,
-  **562 of 564** rules pass their tests, and **93 of 564** meet the gate `signed`. The two that
-  do not pass are tagged for Linux and this machine is a Mac. The 93 are the rules marked
+  of them: **1088 passed across 7 suites, 0 failed.**
+- This repository's own tests, run through Purlin: 994 of 994 markers tied to a
+  test, **566 of 566** rules pass their tests, and **94 of 566** meet the gate `signed`. The 94
+  are the rules marked
   `[level: passed]`; the rest wait for an audit and a signature, which have not been run.
-- The evidence of that run is on disk and **not committed**: `.purlin/evidence/local/` and
-  `.purlin/tests.md` show as untracked. Open `purlin-report.html` at the root to see the board.
-- The repository holds 376 tracked files, down from 1,350.
+- The evidence of that run is committed. Open `purlin-report.html` at the root to see the
+  board.
+- The repository holds 414 tracked files, 35 of them evidence, down from 1,350.
 - `purlin:init --update` found one thing here, an old git hook, and removed it with a backup.
   Plain `purlin:init` then replaced this repository's runner file.
 

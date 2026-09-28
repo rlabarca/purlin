@@ -1,73 +1,93 @@
-# Handoff, 2026-09-27
+# Handoff, 2026-09-28
 
-For the session that continues Purlin 0.10.0 after the three-levels work. Read this, then
-`dev/plans/three-levels.md` decisions 23 to 31 (the model as the user settled it; 31 with its
-amendments is the latest), `dev/plans/lanes/tl-_rules.md`, and
-`dev/plans/lanes/tl-15-findings.md` (the second full review; its nine questions are open).
+For the session that continues Purlin 0.10.0. Read this, then `dev/plans/three-levels.md`
+decisions 31 to 58 (together they are the product as the owner settled it), then
+`dev/plans/morning-list.md` (every choice made on the owner's behalf, one line each).
 
 ## Where the tree is
 
-- `main` and `three-levels` both point at the same commit, the integrated stack of lanes 8A
-  through 15, merged locally by fast-forward. Nothing has been pushed since decision 25; the
-  remote `three-levels` carries three CI record commits the local branch does not, all inert
-  old-layout records. The user pushes; no agent does.
-- Sweep at that commit: 11 suites, 1169 passed, 0 failed, 6 skipped. `bash dev/run_tests.sh`
-  runs it; there is no counts line and nothing to bootstrap.
-- `.purlin/config.json` here: gate `signed`, `sign_at: strong`, `trust: local`, one signer.
-  This repository's own `.purlin/records/` and `.purlin/briefs/` are still the pre-0.10.0
-  layout and are ignored by the reader; `purlin:init --update` moves them, or they are deleted.
-- The inert `record/1.0` tag was deleted locally; it was never on the remote.
-- The deck: https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is, three gate slides plus an
-  optional fourth. Its content is `dev/plans/lanes/tl-14B-slides.md` and has not been
-  republished since decision 31.
-
-## What is left, in order
-
-1. **The nine questions in `tl-15-findings.md`**, put to the user before any code moves:
-   the signer list below `signed` (Q1); `purlin:sign <feature>` and `--batch` at `strong`
-   (Q2); whether `trust: remote` binds the passed cell or only signing (Q3); the drift key
-   `rules_without_a_negative_case` (Q4); the protected-branch prerequisite in init (Q5);
-   `is_fork()` (Q6); six unread constants (Q7); the free scans' internal names (Q8);
-   `--quick` versus `--test` (Q9). Each has its options and consequences in the file.
-2. **Apply the answers** in one worktree, one agent, one commit series, fast sweep plus the
-   touched files, then one full sweep.
-3. **Regenerate the diagrams** (every mermaid fence in `docs/`, rendered and looked at) and
-   **republish the deck** from `tl-14B-slides.md`, then check both against the code once
-   more. The user's words: simple, clear and direct for developers; the bare workflow is the
-   story; remote runners only where the two cases are described.
-4. **Closeout by the user**: `purlin:sign` to walk Review then Sign (the list is long because
-   no audit with a model has run here yet; `purlin:audit` first), the tag `signed/0.10.0`
-   that the walk writes, `git push` of `main` and the tag, a pull request if wanted.
-
-## How to work, as the user settled it this week
-
-- **Decisions close before anything launches.** If a change needs the user, ask with the
-  question UI, with options and consequences, and wait. Three lanes were rebuilt this week
-  because a decision moved under them.
-- **One thread, not lanes.** A decision is applied by one Opus agent in one worktree under
-  `/Users/richlabarca/LocalCode/purlin-wt/<name>` across code, board, docs and skills, then
-  merged by fast-forward. Two agents at most, split by surface (code and fixtures first,
-  then board and docs against the fixtures). No stack of branches.
-- **Opus for every agent.** The user asked for it explicitly.
-- **No push, no pull request, no tag by any agent.** A push is a person's act (decision 27
-  and 31). `purlin:sign` writes the tag; the person pushes it.
-- **Acceptance is `bash dev/run_tests.sh --fast` plus the touched test files**; the full
-  sweep runs once at integration. Never edit a number to make a sweep green.
-- **Look at pages with playwright from the `.venv`**, never the Chrome extension.
-- **The vocabulary guard** (`dev/test_vocabulary.py`) fails on retired words in shipped
-  prose; the retired table in `references/glossary.md` is the only place they may appear.
-- **Format files bump in the same commit as the code** they govern (`CLAUDE.md`).
-- Prose per `design/readme.md` "Content fundamentals": plain, declarative, no emoji, second
-  person for the reader, third for the system.
+- `main` is local only. Nothing has been pushed, tagged, audited or signed. The owner pushes;
+  no agent does, except the one temporary branch `purlin:test --remote` sends.
+- Full sweep on `main`: **1088 passed across 7 suites, 0 failed.** `bash dev/run_tests.sh`.
+- This repository through its own tool: 994 of 994 markers tied to a test, **566 of 566 rules
+  pass their tests**, 94 of 566 meet the gate `signed`. The 94 are rules marked
+  `[level: passed]`. The other 472 wait for an audit and a signature, which the owner has said
+  not to run yet.
+- The evidence of that run is committed (`purlin: evidence at 98fc3cb`), under
+  `.purlin/evidence/local/`.
+- `.purlin/config.json` here: gate `signed`, `trust: local`, mutation testing on.
+- No branch but `main` is left on this machine, and no worktree. The remote still carries old
+  branches and the tag `pre-instruction-optimization`; those are the owner's to delete.
+- The slides: https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is, six of them, built by
+  `dev/plans/deck/build_deck.py`.
 
 ## The model in one paragraph
 
-A rule has a spec status (`drafted`, `ready`) and up to three cells, `passed`, `strong`,
-`signed`, answered by `purlin:test`, `purlin:audit` and `purlin:sign`. Every rule has a bar,
-`passed` or `strong`, from a tag or the gate; a rule that has cleared its bar is signable. The
-audit measures test strength and runs the AI audit on bar-`strong` rules; its words are
-`strong`, `weak`, `not audited`, `unsettled`, `manual test`, `held`. Local evidence counts at
-every gate. A signature locks rule, proof, test, bar and the audit's findings. The gate is
-checked when `purlin:sign` writes `signed/<version>`; push is free; a remote runner exists
-only for a proof tagged for another operating system or `trust: remote`, and then it runs
-on `run/*` branches and `signed/*` tags and verifies the evidence.
+A rule says what must be true. A proof says in plain language how that is shown. A test is
+any test in the project's own suite with one comment above it, `purlin: <feature> PROOF-<n>`.
+Three levels: `passed` (`purlin:test`), `strong` (`purlin:audit`, a model reading each test
+against its proof, with optional mutation testing), `signed` (`purlin:sign`). The gate is how
+far every rule is asked to go; a rule may be marked lower with `[level: ...]`, and a column a
+rule is not asked shows nothing. Evidence is one file per feature, written by a run and
+committed with `--commit`; it goes out of date when the spec, the covered code or the tests
+change, and a run with no feature named runs only what changed. `purlin:sign` walks one queue
+and, at the gate `signed`, writes the evidence package and the signed tag. Purlin makes no
+claim of compliance: it hands evidence to a system of record.
+
+## What is left, in order
+
+1. **Sanity check 2: a new user follows the docs.** A fresh agent with fresh context, given
+   only the README and the docs. The prompt is `dev/plans/next-agent-prompt.md`. It changes
+   nothing in this repository and reports what it found.
+2. **Put its findings to the owner as questions**, in plain words, most basic first, then
+   apply the answers: one Opus agent per closed decision, in its own worktree under
+   `/Users/richlabarca/LocalCode/purlin-wt/<name>`, merged by fast-forward.
+3. **Windows.** The owner decided that Windows and Mac matter and Linux does not, and that
+   Windows is shown by a remote runner. Still open, and the owner's to answer: which proofs
+   must hold on Windows. Then: mark them `@env(windows)`; make the init walk really run on
+   Windows, since today its Windows skip exits 0 and would be read as a pass; have
+   `purlin:init` rewrite this repository's runner file for Windows; run `purlin:test --remote`
+   once, which also proves the remote run against GitHub for the first time.
+4. **More sanity checks**, each its own fresh agent, in the order the owner picks: a QA person
+   writes proofs; an upgrade from a real 0.9.5 project; a hostile reviewer who tries to make an
+   unproven rule read as proven.
+5. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/getting-started.md`,
+   `docs/regulated-workflow.md`, the rest of `docs/`, the slides, the diagrams.
+6. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
+   push the work as a branch; on the work machine run `dev/manual/check_azure_remote.py` and
+   `dev/manual/check_azure_provenance.py` against a real Azure DevOps project, then
+   `purlin:audit`, `purlin:sign`, the push of the tag, the release.
+
+## Small things known and not fixed
+
+- `purlin:init` without `--yes`, run with its output piped, hung once in a scratch Go project.
+  Not looked into. With `--yes` it is fine.
+- The rule's own screen still shows the `purlin:sign` panel for a rule whose signed column
+  reads `waiting`.
+- Proofs outside `drift`, `upstream` and `config_engine` are still written in the test's own
+  words. An audit will find fault with many of them.
+- Vitest 4 would not install on this machine; version 3 is proven.
+- Text on a solid coloured badge measures under 7 to 1. The owner chose to leave it.
+- A hand check may be signed without a note. The owner chose to leave it.
+
+## How to work, as the owner settled it
+
+- **Decisions close before anything launches.** Ask with the question UI, with options and
+  consequences, and wait.
+- **Ask from the root.** Say what a thing is for in plain words before asking about it. No
+  function names, no file names, no term that has not been explained. Offer the option that
+  removes the mechanism. The owner is simplifying Purlin with every answer.
+- **One Opus agent per closed decision**, own worktree, fast-forward merge, two writing at
+  once at most and only where their files do not overlap.
+- **No push, no pull request, no tag, no audit and no signing by any agent.**
+- **Acceptance is the full sweep**, `bash dev/run_tests.sh`, plus this repository run through
+  its own tool with every marker tied. Never edit a number to make a sweep green.
+- **Look at anything visual** with playwright from the `.venv`, at 1500, 1280, 1024, 768 and
+  390 pixels, dark theme, before telling the owner it is done. A value never breaks inside
+  itself; neutral text measures at least 7 to 1.
+- **A clean release.** Nothing that represents earlier functionality stays: no compatibility
+  reader, no test that a removed thing is absent, no table of removed words.
+  `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5 needs is
+  the one exception in code.
+- **A page says what is**, checked against the code, in the words of
+  `references/writing_style.md`.
