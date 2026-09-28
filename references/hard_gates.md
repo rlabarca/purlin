@@ -28,48 +28,47 @@ what must be true of every rule before a version is proven?
 
 | Gate | Who it fits | Cells that exist | What every rule must have |
 |------|-------------|------------------|---------------------------|
-| `passed` | One person working alone | spec, passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from either source counts |
-| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose bar is `strong` has a strong cell that is met: an audit read it, the test strength at or above `min_strength`, nothing unsettled, no hold. Evidence from either source counts |
-| `signed` | The same team under GxP | + signed | Every rule that needs a signature has a counting one |
+| `passed` | One person working alone | passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from either source counts |
+| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose level is `strong` or `signed` has a strong cell that is met: an audit read it, the test strength at or above `min_strength`, nothing unsettled, no hold. Evidence from either source counts |
+| `signed` | The same team under GxP | + signed | Every rule whose level is `signed` has a counting signature |
 
 Each level derives defaults you can override:
 
 | Derived | `passed` | `strong` | `signed` |
 |---------|----------|----------|----------|
 | `min_strength` | unused | 70 | 80 |
-| The default bar | `passed` | `strong` | `strong` |
-| `sign_at` | n/a | n/a | `strong`, asked by init |
+| The level of an unmarked rule | `passed` | `strong` | `signed` |
 | The breaks | off | on | on |
 
 `purlin:init --gate <level>` changes the level later. Raising it adds what is missing and asks
 before each write. Lowering it deletes nothing.
 
-Under `passed` no strength is measured, no bar is read, no list exists and no signature is
-asked for. Raising the gate to `strong` turns the breaks on. The breaks run on a person's
-machine and nowhere else: CI reruns the tests and verifies, and evidence either source wrote
+Under `passed` no strength is measured, no level above `passed` is read, no list exists and no
+signature is asked for. Raising the gate to `strong` turns the breaks on. The breaks run on a
+person's machine and nowhere else: CI reruns the tests and verifies, and evidence either source wrote
 counts, so measuring the same breaks twice would cost a runner an hour and write the same
 number.
 
-## The bar
+## The level
 
-Every rule carries a **bar**, `passed` or `strong`: the evidence it must have before it can
-be signed. A rule tagged `[bar: passed]` or `[bar: strong]` carries what it names, and a rule
-with no tag takes the project's gate, so `passed` at the gate `passed` and `strong` at
-`strong` and at `signed`.
+Every rule has a **level**, `passed`, `strong` or `signed`, meaning what the gate means: its
+tests; its tests and the audit; its tests, the audit and a signature. A rule tagged
+`[level: passed]`, `[level: strong]` or `[level: signed]` asks for what it names, and a rule
+with no tag takes the project's gate. The gate is the ceiling: a tag above the gate is read as
+the gate, and `purlin:status` says how many rules are marked above it.
 
-The bar decides three things and nothing else decides them:
+The level decides three things and nothing else decides them:
 
-- **What the rule must clear.** A rule has **cleared its bar** when its bar is `passed` and
-  its passed cell is met, or its bar is `strong` and its strong cell is met.
-- **Whether the AI audit runs on it.** It runs on every rule whose bar is `strong`, and on no
-  other.
-- **Whether it needs a signature.** At the gate `signed` a rule needs one when `sign_at` is
-  `all`, or when its bar is `strong`. `purlin:init` asks which at the `signed` gate; the
-  default is `strong`.
+- **Which cells block.** A rule meets the gate when its passed cell is met, its strong cell is
+  met if its level is `strong` or `signed`, and its signed cell is met if its level is
+  `signed`. A cell above the rule's level is still shown and does not block.
+- **Whether the AI audit runs on it.** It runs on every rule whose level is `strong` or
+  `signed`, and on no other.
+- **Whether it needs a signature.** A rule needs one exactly when its level is `signed`.
 
-A rule is **signable** when it has cleared its bar, needs a signature and does not have a
-counting one. That is what the board's `Signable` column counts and what the `Sign` list
-holds.
+A rule is **signable** when its level is `signed`, its passed and strong cells are met, and it
+does not have a counting signature. That is what the board's `Signable` column counts and what
+the `Sign` list holds.
 
 ## Which evidence counts
 
@@ -122,7 +121,7 @@ starts nothing, and a pull request starts nothing.
 | A tag run | a person pushes `signed/<version>` | nothing. It reruns the tagged tests on a clean machine and ends with `gate_check.py --check --verify` |
 
 **What the tag run verifies.** Every signature and every hold must still bind the rule,
-proof, test, bar and audit it names, so a tag cannot stand over code that changed after it
+proof, test and audit it names, so a tag cannot stand over code that changed after it
 was signed. Every file under `.purlin/evidence/ci/` must have been committed by the runner's
 own identity, read off the commit that last changed it, so a person cannot write evidence as
 CI's. A file that fails either is named under `Evidence` and the
@@ -160,8 +159,8 @@ mean what it says. Apply whatever your organisation asks of any repository.
 ## When a signature counts
 
 **Signing is logged, not policed.** Purlin keeps a log you can prove and trace: where the
-tests ran, and who signed that the rule, the proof, the test, the bar and what the audit found
-belong together. It does not decide who may sign. No list names the people who may, and
+tests ran, and who signed that the rule, the proof, the test and what the audit found belong
+together. It does not decide who may sign. No list names the people who may, and
 nothing compares the signer with whoever last committed to the test file; the signature file names the
 signer and git names both authors.
 
@@ -169,8 +168,8 @@ Under `signed` a signature counts when two things hold:
 
 - The commit that added the signature file is cryptographically signed and the signature
   verifies.
-- The signature's bound hashes still match the current rule text, proof text, test body, bar
-  and what the audit found.
+- The signature's bound hashes still match the current rule text, proof text, test body and
+  what the audit found.
 
 A signature counts on whatever commit carries it, on any branch. Below `signed` a committed
 signature counts, as before: under `strong` what it clears is a question the machine could not
@@ -187,27 +186,24 @@ by no cell and not by the tag. `purlin:init --update` asks again.
 single QA person, works the same on both git hosts, and needs nothing the git host has to be
 configured for beyond the signer's public key.
 
-`sign_at` says which rules need one, and `purlin:init --gate signed` asks for it. `strong`,
-the default, asks for a signature on every rule whose bar is `strong`; `all` asks for one on
-every rule. A rule that needs none carries `required` false on its signed cell and meets the
-level whichever way that cell reads.
+A rule needs a signature exactly when its level is `signed`. A rule whose level is lower
+still shows its signed cell, and that cell does not keep it from meeting the gate.
 
 ## What `signed/<version>` means
 
 This is the one definition of the tag. Every other page points here.
 
-At the tagged commit, every rule meets the gate. A rule meets the gate when it has cleared its
-bar and, if it needs a signature, it has a counting one:
+At the tagged commit, every rule meets the gate. A rule meets the gate when the cells its
+level asks for are met:
 
-- **Cleared its bar.** Its bar is `passed` and its passed cell is met, or its bar is `strong`
-  and its strong cell is met.
-- **Needs a signature.** At the gate `signed`, when `sign_at` is `all`, or when its bar is
-  `strong`.
-- **A counting one.** A signature in a signed commit that verifies, whose bound hashes still
-  match the rule, the proof, the test, the bar and what the audit found.
+- **Its passed cell**, always.
+- **Its strong cell**, where its level is `strong` or `signed`.
+- **A counting signature**, where its level is `signed`: a signature in a signed commit that
+  verifies, whose bound hashes still match the rule, the proof, the test and what the audit
+  found.
 
-A rule that needs no signature, bar `passed` under `sign_at: strong`, meets the gate on its
-tests and does not hold the tag back. `trust: remote` is not part of the definition: it is read
+A rule whose level is below `signed` needs no signature and does not hold the tag back for
+one. `trust: remote` is not part of the definition: it is read
 when a rule is signed, and by no cell and not by the tag. `purlin:sign` writes the tag only
 when every rule meets the gate and never over a tag that is already there; a person pushes it.
 Where a project has a remote runner, the push starts a run that checks the same thing against
@@ -221,10 +217,10 @@ every `ci/` file was committed by the runner itself.
 
 What CI cannot settle it says out loud. A `@manual` proof makes the strong cell read `manual
 test`, and an AI audit that could not tell whether the test observes what the proof names
-makes it read `unsettled`. A rule whose bar is `strong` that no audit has reached reads `not
-audited`, and what moves that one is `purlin:audit`, not a person. A signature file for the
-current hashes clears the first two: a committed one under `strong`, one in a signed commit
-under `signed`. The signer writes the one line with `--note`.
+makes it read `unsettled`. A rule whose level is `strong` or `signed` that no audit has
+reached reads `not audited`, and what moves that one is `purlin:audit`, not a person. A
+signature file for the current hashes clears the first two: a committed one under `strong`,
+one in a signed commit under `signed`. The signer writes the one line with `--note`.
 
 ## Holds
 
@@ -235,7 +231,7 @@ purlin:sign <feature> RULE-N --hold "<the missing case>"
 ```
 
 That commits one file bound to the rule's hashes. While the hold is current both the strong
-cell and the signed cell read `held`, whatever the bar and whatever the tests are doing, so the
+cell and the signed cell read `held`, whatever the level and whatever the tests are doing, so the
 rule does not meet the gate at `strong` or `signed` and it is on the Review list. A failing
 test is work in front of the hold, not instead of it. A signature by a person for the current
 hashes outranks the hold. Changing the rule, the proof or the test ends the hold, as it stales

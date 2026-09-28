@@ -79,15 +79,15 @@ dependency fails.
 
 ### The rule tag
 
-One tag goes at the end of a rule line: `[bar: passed|strong]`. It says what evidence the
-rule must have before it can be signed. It is read at the `strong` gate and above: under
-`passed` it is never asked for and changes nothing. A rule with no tag takes the project's
-gate as its bar, so `strong` at `strong` and at `signed`. Tag `[bar: passed]` where a
-passing test is the whole of what the rule needs, and leave the tag off, or write
-`[bar: strong]`, where the AI audit should read the rule and a person should sign it.
+One tag goes at the end of a rule line: `[level: passed|strong|signed]`. It says what the rule
+must have to meet the gate, in the gate's own words: tests; tests and the audit; tests, the
+audit and a signature. It is read at the `strong` gate and above: under `passed` it is never
+asked for and changes nothing. A rule with no tag takes the project's gate, and a tag above the
+gate is read as the gate. Tag `[level: passed]` where a passing test is the whole of what the
+rule needs, and leave the tag off where the rule needs everything the gate asks for.
 
-Tag rules as you write them: retagging a spec later is a separate pass over every line,
-and a bar re-tag stales the rule's signature.
+Tag rules as you write them: retagging a spec later is a separate pass over every line. A
+signature logs the rule's level and does not lock it, so a re-tag stales no signature.
 
 ## Writing proofs
 
@@ -244,20 +244,20 @@ or are `@manual`. Where no test could observe what the proof names, the proof is
 audit to read. The rule's strong cell reads `manual test` with the reason `manual proof`.
 A signature file carrying a one-line note clears it, written by a person:
 `purlin:sign <feature> RULE-N --note "<what you saw>"`. CI never writes that file, at
-any bar and under any gate. Use `@manual` where judgment is the only instrument,
+any level and under any gate. Use `@manual` where judgment is the only instrument,
 and keep the rule's `> Scope:` tight: when a scope file changes, the signature goes
 stale and someone must look again.
 
 ## When a rule is stuck
 
 Find the rule in the status table, read the cell that blocks it, then read the row. The
-gate decides how many cells exist: under `passed` only the first two, under `strong` the
-first three, under `signed` all four.
+gate decides how many cells exist: under `passed` only the first, under `strong` the first
+two, under `signed` all three. A rule's level decides which of them block it.
 
 | Cell | Word | What it means | What moves it |
 |---|---|---|---|
-| spec | `drafted` | No proof line names the rule. Nothing else holds a rule here: what a proof is worth is the audit's question. | Write the proof under `## Proof` so it names a trigger and an expected value a test can reach. `purlin:spec`. |
-| passed | `no test` | The spec status is `ready` and no test carries the proof marker. | `purlin:build` writes the test, then `purlin:test`. |
+| passed | `no test`, with `no proof written` | No proof line names the rule. What a proof is worth is the audit's question. | Write the proof under `## Proof` so it names a trigger and an expected value a test can reach. `purlin:spec`. |
+| passed | `no test` | A proof names the rule and no test carries the proof marker. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
 | passed | `not run` | Nothing has run the rule's tests yet. | Run `purlin:test`, which counts at every gate. |
 | passed | `not run`, with `<os>: no run yet` | A proof carries `@env` and no current section from that operating system has passed it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any host could prove it. |
@@ -266,11 +266,11 @@ first three, under `signed` all four.
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
 | strong | `weak`, with a sentence the model wrote | The AI audit settled the question and observed that the test does not read what the proof names. | Write the assertion the sentence asks for. `purlin:build`, then `purlin:audit`. |
 | strong | `manual test` | The proof is `@manual`, so no test can be written and a person runs it. | `purlin:sign <feature> RULE-N --note "<what you saw>"`. |
-| strong | `not audited` | The rule's bar is `strong` and no audit has read this rule, proof and test, so the evidence holds no audit entry for the current hashes. | `purlin:audit`, which writes the entry into the evidence. |
+| strong | `not audited` | The rule's level is `strong` or `signed` and no audit has read this rule, proof and test, so the evidence holds no audit entry for the current hashes. | `purlin:audit`, which writes the entry into the evidence. |
 | strong | `unsettled` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:sign` and answer the brief. A signature for the current hashes clears it. |
 | strong | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
-| signed | `unsigned` | No signature file for the current hashes, and the rule needs one: `sign_at` is `all`, or the rule's bar is `strong`. | `purlin:sign <feature> RULE-N`, which writes it in a signed commit. |
-| signed | `stale` | The rule text, the proof text, the test body, the bar or what the audit found changed after the signature. | Read what changed, then sign again or fix what broke. |
+| signed | `unsigned` | No signature file for the current hashes, and the rule's level is `signed`, so it needs one. | `purlin:sign <feature> RULE-N`, which writes it in a signed commit. |
+| signed | `stale` | The rule text, the proof text, the test body or what the audit found changed after the signature. | Read what changed, then sign again or fix what broke. |
 | signed | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
 
 ## When a test fails, fix the code

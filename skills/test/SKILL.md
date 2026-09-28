@@ -67,18 +67,18 @@ The run prints `Ran <framework> on <n> feature(s).`, then the status table
 |------|---------------|
 | `passed` | A test tagged with the rule's proof ran here and passed |
 | `failed` | A tagged test ran and failed; the script names the test and the assertion |
-| `no test` | The proof is written and no test carries its marker |
+| `no test` | No test carries the proof's marker, or, with the reason `no proof written`, no proof line names the rule |
 | `not run` | A test carries the marker and no counting run reached it |
 | `out of date` | The spec, the code or the tests changed since the run; the reason names which |
 
-A rule whose spec status is `drafted` has no proof text yet, so it has no passed cell. Loud
-failures come first: `Evidence is missing: <what>.` means an arm ran and wrote no proof entry,
+A rule no proof line names reads `no test` with the reason `no proof written`. Loud failures
+come first: `Evidence is missing: <what>.` means an arm ran and wrote no proof entry,
 or a marker in the tree produced none. Read those before the table.
 
 ## Step 4: what the gate changes
 
 This is the pattern every Purlin skill follows. Under `passed` the whole project is this one
-cell: no strength, no bar, no review list, no signature. Under `strong` the strong cell and
+cell: no strength, no level, no review list, no signature. Under `strong` the strong cell and
 the test strength appear beside it; under `signed` the signed cell appears too. Evidence from either source counts at every gate; what `trust: remote` changes is that
 `purlin:sign` asks for a `ci` run first. Read the gate from `.purlin/config.json` and print
 only what exists; `references/hard_gates.md` defines the three gates once.
@@ -111,7 +111,7 @@ End with one line, computed from the table:
 | A test failed | `→ Run: purlin:build <feature>` (fix the code or the test) |
 | A rule reads `partial` | `→ Run: purlin:build <feature>` (the cell names the platform that failed) |
 | A rule reads `no test` | `→ Run: purlin:build <feature>` |
-| A rule's spec status is `drafted` | `→ Run: purlin:spec <feature>` |
+| A rule reads `no test` with the reason `no proof written` | `→ Run: purlin:spec <feature>` |
 | Every rule reads `passed`, gate `passed` | `→ Push.` |
 | Every rule reads `passed`, gate `strong` or `signed` | `→ Run: purlin:audit` |
 | Only `needs <os>` proofs remain | `→ Run: purlin:test --remote` |

@@ -1,31 +1,31 @@
 # How Purlin works
 
 For anyone meeting Purlin for the first time, and for anyone who has to explain it. It is the
-shortest description of the whole thing: one rule, four questions, and who is allowed to answer
+shortest description of the whole thing: one rule, three questions, and who is allowed to answer
 each one.
 
 A **rule** is one line in a spec saying what the software must do. A **proof** says how that
 claim is observed. A **test** is the executable form of a proof, tagged with the rule it
-settles. Every rule answers the same four questions, top to bottom.
+settles. Every rule answers the same three questions, top to bottom.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#0C3444", "primaryColor": "#092936", "primaryTextColor": "#E4DDD4", "primaryBorderColor": "#C0793F", "lineColor": "#C0793F", "secondaryColor": "#0C3444", "tertiaryColor": "#092936", "fontFamily": "Arial", "textColor": "#E4DDD4"}}}%%
 flowchart TD
-    Q0["spec status<br>does a proof name the rule?<br>purlin:spec, from the spec text"]
     Q1["passed<br>did every tagged test pass?<br>purlin:test, from the results and the records"]
     Q2["strong<br>are those tests worth trusting?<br>purlin:audit, from the record and the brief"]
     Q3["signed<br>did a person say the three belong together?<br>purlin:sign, from the signature file"]
-    Bar{"has it cleared its bar?<br>bar passed, or bar strong"}
+    Lvl{"what is its level?<br>level passed, strong or signed"}
+    Sig{"is its level signed?"}
     Met(["the rule meets the gate"])
     Stop(["blocked here; the cell carries the reason"])
 
-    Q0 -->|ready| Q1
-    Q1 -->|passed| Bar
-    Bar -->|"bar passed"| Q3
-    Bar -->|"bar strong"| Q2
-    Q2 -->|strong| Q3
+    Q1 -->|passed| Lvl
+    Lvl -->|"level passed"| Met
+    Lvl -->|"level strong or signed"| Q2
+    Q2 -->|strong| Sig
+    Sig -->|"level strong"| Met
+    Sig -->|"level signed"| Q3
     Q3 -->|signed| Met
-    Q0 -->|drafted| Stop
     Q1 -->|"failed, partial, no test, not run, out of date"| Stop
     Q2 -->|"weak, not audited, unsettled, manual test, held"| Stop
     Q3 -->|"unsigned, stale, held"| Stop
@@ -33,15 +33,16 @@ flowchart TD
 
 The **gate**, the one setting in `.purlin/config.json`, says how many of the three evidence
 levels a project asks for. `passed` asks one, `strong` asks two, `signed` asks three. A cell
-above the gate does not exist, so a project at `passed` never sees a strength, a bar, a review
-list or a signature.
+above the gate does not exist, so a project at `passed` never sees a strength, a review list or
+a signature.
 
-Every rule also has a **bar**, `passed` or `strong`: the evidence that rule must have before it
-can be signed. A rule says its own with the tag `[bar: passed]` or `[bar: strong]`, and a rule
-with no tag takes the project's gate as its bar. A rule **meets the gate** when nothing up to
-the gate's level blocks it: its tests pass, its bar is cleared, no hold is current, and where a
-signature is required it counts. A rule whose bar is `passed` is therefore not held to the
-strong cell even at the `strong` gate.
+Every rule also has a **level**, `passed`, `strong` or `signed`, meaning what the gate means. A
+rule says its own with the tag `[level: passed]`, `[level: strong]` or `[level: signed]`, and a
+rule with no tag takes the project's gate as its level. The gate is the ceiling: a mark above it
+is read as the gate. A rule **meets the gate** when its passed cell is met, its strong cell is
+met if its level is `strong` or `signed`, and its signed cell is met if its level is `signed`.
+Cells above a rule's level are still shown and do not block, so a rule whose level is `passed`
+is not held to the strong cell even at the `strong` gate.
 [references/hard_gates.md](../references/hard_gates.md) is the one definition.
 
 ## The loop, and where it runs
@@ -90,9 +91,9 @@ holds what a run on somebody's machine wrote. A file whose own `source` field di
 its folder is ignored, with a warning. Both count at every gate.
 
 **A signature is a named person's attestation** that a rule, its proof and its test belong
-together, bound to the hashes of all three, to the rule's bar, and to what the audit observed.
+together, bound to the hashes of all three and to what the audit observed.
 `purlin:sign` writes it in a signed commit. A runner writes no signature file, ever. Change any
-of those five and the signature reads `stale`, including a re-audit that observes something
+of those four and the signature reads `stale`, including a re-audit that observes something
 new.
 
 ## Who writes what, where it lands, and who may touch it
@@ -122,8 +123,8 @@ and no other:
 Where one exists it starts on two things: a push of a `signed/**` tag, and a push to the
 `run/*` branch `purlin:test --remote` creates. A pull request starts nothing and a push to an
 ordinary branch starts nothing. The tag run reruns the tagged tests on a clean machine, checks
-that every signature and every hold still binds the rule, the proof, the test, the bar and the
-audit it names, checks that every record and brief under `ci/` was committed by the runner
+that every signature and every hold still binds the rule, the proof, the test and the audit
+it names, checks that every record and brief under `ci/` was committed by the runner
 itself, and ends with the gate check. A run on a run branch runs the tests, audits at `strong`
 and above, and commits its records and briefs there.
 [running-and-records.md](running-and-records.md) has it in full.
@@ -156,22 +157,22 @@ stops a push, and there is nothing to stop: `purlin:sign` writes no tag while an
 short, so a version that is not proven simply has no marker. Where a runner exists, a red run
 on a pushed tag is the host's word that this version is not proven.
 
-**What does a bar do?** It decides three things and nothing else: the evidence the rule must
-have before anyone can sign it, whether the AI audit runs on it, and whether it needs a
-signature at all. The AI audit runs on every rule whose bar is `strong` and on no other, so a
-rule whose bar is `passed` never reads `not audited` or `unsettled`. Under `signed` a rule
-needs a signature when the project's `sign_at` is `all`, or when its own bar is `strong`.
-A rule that has cleared its bar and is still waiting for a signature is **signable**, which
-is what the board's `Signable` column counts and what the Sign list holds.
+**What does a level do?** It decides three things and nothing else: the evidence the rule must
+have to meet the gate, whether the AI audit runs on it, and whether it needs a signature at
+all. The AI audit runs on every rule whose level is `strong` or `signed` and on no other, so a
+rule whose level is `passed` never reads `not audited` or `unsettled`. A rule needs a signature
+exactly when its level is `signed`. A rule whose level is `signed`, whose passed and strong
+cells are met, and that is still waiting for a signature is **signable**, which is what the
+board's `Signable` column counts and what the Sign list holds.
 
-**What is the spec status for?** `drafted` means no proof line names the rule, so there is
-nothing a test could be written against. `ready` means at least one proof does, and nothing
-more: the judgment about whether that proof is any good is the audit's, and it lands on the
-strong cell.
+**What if no proof names a rule?** Its passed cell reads `no test` with the reason
+`no proof written`, because there is nothing a test could be written against, and the next step
+is `purlin:spec`. The judgment about whether a proof is any good is the audit's, and it lands on
+the strong cell.
 
-**What is the difference between `not audited` and `unsettled`?** `not audited` means the
-rule's bar is `strong` and no audit has run on this code yet: it waits for `purlin:audit`, not
-for you, so it is on no list. `unsettled` means the AI audit did run and could not settle
+**What is the difference between `not audited` and `unsettled`?** `not audited` means the rule's
+level is `strong` or `signed` and no audit has run on this code yet: it waits for `purlin:audit`,
+not for you, so it is on no list. `unsettled` means the AI audit did run and could not settle
 whether the test proves the proof, so a person judges it. That one is on the Review list.
 
 **When do I say which operating system a test needs?** On the proof line, with `@env(windows)`,

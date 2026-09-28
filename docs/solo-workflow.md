@@ -46,8 +46,8 @@ and moves no cell.
 
 `purlin:init` writes that into `.purlin/config.json` when you answer the one question with
 `passed`. `min_strength` is unused at this gate. Every rule's
-bar defaults to `passed` here: a rule clears its bar when its tagged tests pass, which is the
-only evidence this gate asks for. Read
+level is read as `passed` here, because the gate is the ceiling: a rule meets the gate when its
+tagged tests pass, which is the only evidence this gate asks for. Read
 and change the file with the `purlin_config` tool rather than by hand, so a key the installed
 Purlin no longer reads is reported instead of silently kept.
 
@@ -138,8 +138,8 @@ tiles: `Untested`, `Failing`, `Partial`, `Passing`. Four columns: `Spec`, `Rules
 `Tests`. Three filters: `Untested`, `Failing` and `Partial`. `Proofs` counts the proof lines
 and says how many carry no tagged test; `Tests` reads `<passed> of <rules>`, with the partial
 and failing counts after it. When a run happened, on which operating system and from which
-source is in the hover on those cells rather than in a column of its own. No strength, no bar
-row, no Review tab, no signature: those cells do not exist at this gate, so the board has
+source is in the hover on those cells rather than in a column of its own. No strength, no
+Review tab, no signature: those cells do not exist at this gate, so the board has
 nothing to put in a column for them. [dashboard.md](dashboard.md) describes the four screens
 in full.
 

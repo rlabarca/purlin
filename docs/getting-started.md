@@ -105,8 +105,8 @@ That sentence carries three claims, so it becomes three rules, each with one pro
 - PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423
 ```
 
-No rule carries a `[bar: ...]` tag here, because at `passed` the bar is never read;
-`purlin:spec` starts writing it when you raise the gate. A single rule covering all three would
+No rule carries a `[level: ...]` tag here, because at `passed` every rule is read as `passed`;
+`purlin:spec` marks the exceptions once you raise the gate. A single rule covering all three would
 pass while two thirds of the behaviour was missing. A rule says what the software does; a proof
 says what a test asserts, naming a route, an input and the observable that settles the claim. `> Scope:` names the files the feature lives in, and it
 earns its place: a record carries the git tree hash of those files, which is what lets Purlin

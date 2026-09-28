@@ -21,7 +21,7 @@ proven?** There are three answers, one per evidence level. That answer is the **
 | Gate | Who it fits | What every rule must have | Signatures |
 |------|-------------|---------------------------|------------|
 | `passed` | one person working alone | a passing tagged test for every proof, from any source | none |
-| `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose bar is `strong`: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding, no hold | none required; anyone may sign to clear a rule reading `manual test`, `unsettled` or `held` |
+| `strong` | a team of PM, designers, engineers and QA | that, and a strong cell that is met on every rule whose level is `strong` or above: an audit at this commit, test strength at or above `min_strength`, nothing the audit observed outstanding, no hold | none required; anyone may sign to clear a rule reading `manual test`, `unsettled` or `held` |
 | `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule that needs one, in a signed commit | required on every rule whose level is `signed`; the signature names who signed |
 
 The answer sets three defaults, each changeable afterwards: `min_strength` unused, 70, 80; the
@@ -88,7 +88,7 @@ Where a runner is called for, the workflow triggers on two things and nothing el
 `signed/**` tag, and a push to a `run/*` branch, the branch `purlin:test --remote` creates and
 deletes around one run. A pull request starts nothing. The job is named `purlin`. The tag run
 reruns the tagged tests on a clean machine, checks that every signature and every hold still
-binds the rule, the proof, the test, the bar and the audit it names, checks that every file
+binds the rule, the proof, the test and the audit it names, checks that every file
 under `.purlin/evidence/ci/` was committed by the runner's own identity, and ends with
 `scripts/ci/gate_check.py --check --verify`, which fails the job when the gate is not met or
 the evidence does not hold. No breaks run on the runner.

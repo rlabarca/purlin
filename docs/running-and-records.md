@@ -76,9 +76,9 @@ purlin:audit                    The tests, the breaks, and what they found
 purlin:audit <feature> [...]    One feature, or several
 ```
 
-An audit is the level 2 run: the tests, then the breaks, then the AI audit on every rule whose
-bar is `strong`. It prints each feature's test strength beside the minimum, then everything the
-audit observed. An audit proves a rule strong or weak; it signs nothing.
+An audit is the level 2 run: the tests, then the breaks, then the AI audit on every rule whose level
+is `strong` or `signed`. It prints each feature's test strength beside the minimum, then everything
+the audit observed. An audit proves a rule strong or weak; it signs nothing.
 
 The AI audit reads each proof beside the source of its test and writes what it observed, in its
 own words, rather than a list of check names. An audit that settled and still observed something
@@ -327,7 +327,7 @@ minutes at all.
 
 | The run | What it does | Commits |
 |---|---|---|
-| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks that every signature and every hold still binds the rule, the proof, the test, the bar and the audit it names, checks that every file under `.purlin/evidence/ci/` was committed by the runner's own identity, then runs the gate check | nothing |
+| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks that every signature and every hold still binds the rule, the proof, the test and the audit it names, checks that every file under `.purlin/evidence/ci/` was committed by the runner's own identity, then runs the gate check | nothing |
 | a `run/*` branch | Runs the tagged tests | its own section of each feature's `.purlin/evidence/ci/<feature>.json`, at every gate, onto that branch |
 
 The tag run is a verification, not a fresh judgment: the evidence is already in the tree and

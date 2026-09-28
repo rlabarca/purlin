@@ -18,10 +18,11 @@ runs on one machine: `purlin:spec`, `purlin:build`, `purlin:test`, `purlin:audit
 |------|---------------------------|-------------------------------|
 | `passed` | its passed cell met | your machine's evidence, which `purlin:test --commit` commits; a pass from any source counts |
 | `strong` | its strong cell met too | `purlin:audit`, run by anyone; its record counts |
-| `signed` | its bar cleared, and a current signature where it needs one | the same, plus a person's signature and the tag `purlin:sign` writes |
+| `signed` | its signed cell met too, where its level is `signed` | the same, plus a person's signature and the tag `purlin:sign` writes |
 
-Every rule also has a **bar**, `passed` or `strong`: the evidence that rule must have before it
-can be signed. A rule says its own with a tag; a rule with no tag takes the project's gate.
+Every rule also has a **level**, `passed`, `strong` or `signed`, meaning what the gate means. A
+rule says its own with a tag, `[level: ...]`; a rule with no tag takes the project's gate, and a
+mark above the gate is read as the gate.
 
 ## Engineer
 
@@ -42,7 +43,7 @@ can be signed. A rule says its own with a tag; a rule with no tag takes the proj
 
 | Guide | What it covers |
 |-------|----------------|
-| [Review and signing](review-and-signing.md) | The bar, the Review and Sign lists, the brief, `purlin:sign`, the tag, what stales a signature |
+| [Review and signing](review-and-signing.md) | The level, the Review and Sign lists, the brief, `purlin:sign`, the tag, what stales a signature |
 | [Dashboard](dashboard.md) | The page that opens from disk, the four screens, filters, both themes |
 
 ## Admin

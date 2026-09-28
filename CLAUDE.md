@@ -66,7 +66,7 @@ concept and consolidate any duplicate in the same commit.
 | `references/purlin_commands.md` | Every command's syntax, its one purpose sentence, and what it writes |
 | `references/hard_gates.md` | The gate, the three levels, which evidence counts, when a signature counts, what `signed/<version>` means |
 | `references/review_criteria.md` | What the audit looks for, the two lists, the brief's layers, what the brief reports |
-| `references/spec_quality_guide.md` | Writing a rule, assigning a tier, reading the cell that blocks it |
+| `references/spec_quality_guide.md` | Writing a rule, writing a proof, reading the status that blocks it |
 | `references/drift_criteria.md` | File classification, config field ownership, drift by role |
 | `references/commit_conventions.md` | Every commit message prefix and shape |
 | `references/supported_frameworks.md` | Test framework detection |

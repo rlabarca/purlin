@@ -108,9 +108,9 @@ Purlin
 
 ## What each command shows at each gate
 
-A command prints only what the gate asks for. Under `passed` there is no strength, no bar, no
+A command prints only what the gate asks for. Under `passed` there is no strength, no level, no
 review list and no signature anywhere in the output, and `purlin:audit` runs no breaks. Under
-`strong` the strength, the strong cell, the bar and the Review list appear. Under `signed` the
+`strong` the strength, the strong cell, the level and the Review list appear. Under `signed` the
 signed cell, the Signable column and the Sign list appear, and `purlin:sign`
 writes the tag when every rule meets the gate. An audit `purlin:audit` wrote counts at every
 gate.

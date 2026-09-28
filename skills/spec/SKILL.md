@@ -67,9 +67,9 @@ the first two here. The third is a person's decision, so name the rules and leav
 
 ## Rules
 
-- RULE-1: Return 200 and a session cookie for a correct email and password [bar: strong]
-- RULE-2: Return 401 for a wrong password [bar: strong]
-- RULE-3: Lock the account for 15 minutes after 5 consecutive failures [bar: strong]
+- RULE-1: Return 200 and a session cookie for a correct email and password
+- RULE-2: Return 401 for a wrong password
+- RULE-3: Lock the account for 15 minutes after 5 consecutive failures
 
 ## Proof
 
@@ -90,17 +90,17 @@ tag sits at the end of the line and is read off it, so the claim text stays clea
 
 | Tag | Values | Default | What it decides |
 |-----|--------|---------|-----------------|
-| `[bar: ...]` | `passed`, `strong` | the project's gate | The evidence the rule must have before it can be signed. Read only at `strong` and above: it decides whether the AI audit runs on the rule, and under `signed` whether the rule needs a signature |
+| `[level: ...]` | `passed`, `strong`, `signed` | the project's gate | What the rule must have to meet the gate, in the gate's own words: tests; tests and the audit; tests, the audit and a signature. The gate is the ceiling, so a mark above it is read as the gate |
 
-A rule with no tag takes the project's gate, so leave it off unless the rule needs a different
-answer from the rest.
+A rule with no tag takes the project's gate, so leave it off unless the rule needs less than
+the rest.
 
-**Write no bar tag at the gate `passed`.** Nothing reads one there, and a tag a reader cannot
-act on is a tag they have to ask about. At `strong` and above write the gate's own bar on
-every rule, `[bar: strong]`, and change the exceptions: a rule whose evidence is its tests
-alone takes `[bar: passed]`.
-Re-tagging a rule's bar stales its signature, because the bar is one of the things a
-signature binds; say so before you change one.
+**Write no level tag at the gate `passed`.** Nothing reads one there, and a tag a reader
+cannot act on is a tag they have to ask about. At `strong` and above leave every rule
+unmarked and mark the exceptions: a rule whose evidence is its tests alone takes
+`[level: passed]`, and under `signed` a rule that needs the audit and no signature takes
+`[level: strong]`. A signature logs the rule's level and does not lock it, so re-marking a
+rule stales no signature.
 
 A rule about what the software must never do is an ordinary rule with a proof that asserts
 absence. There is no separate syntax for it.

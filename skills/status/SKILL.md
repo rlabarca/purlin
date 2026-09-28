@@ -85,7 +85,7 @@ empty. `list` is the word for what `purlin:sign` walks; `tab` belongs to the das
 
 | What blocks the gate | The line the tool prints |
 |----------------------|--------------------------|
-| A rule's spec status is `drafted` | `→ Next: run purlin:spec.` with the count |
+| A rule reads `no test` because no proof is written | `→ Next: run purlin:spec.` with the count |
 | A rule has a failing test | `→ Next: run purlin:build.` with the count |
 | A rule's tests pass on one operating system and not another | `→ Next: run purlin:build.` with the `partial` count |
 | A rule has no test | `→ Next: run purlin:build.` with the count |

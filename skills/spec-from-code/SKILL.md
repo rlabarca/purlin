@@ -43,7 +43,7 @@ this skill writes specs and nothing can read them until the project is set up.
 
 ## What the rules look like
 
-Every rule this skill writes carries `[bar: passed]`:
+Every rule this skill writes carries `[level: passed]`:
 
 ```markdown
 # Feature: rate_limit
@@ -53,8 +53,8 @@ Every rule this skill writes carries `[bar: passed]`:
 
 ## Rules
 
-- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [bar: passed]
-- RULE-2: Include a Retry-After header on every 429 response [bar: passed]
+- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [level: passed]
+- RULE-2: Include a Retry-After header on every 429 response [level: passed]
 
 ## Proof
 
@@ -63,7 +63,7 @@ Every rule this skill writes carries `[bar: passed]`:
 ```
 
 `passed` is correct because nobody has judged yet whether the rule is worth an audit and a
-signature. The bar is re-tagged later, in one pass, and re-tagging it stales a signature.
+signature. The level is re-marked later, in one pass, and re-marking it stales no signature.
 
 For the rule and proof grammar read `references/formats/spec_format.md`; for what makes a rule
 worth keeping read `references/spec_quality_guide.md`.
@@ -75,8 +75,8 @@ already exercises the behaviour, the proof says what that test shows, in the sam
 would use if no test existed, and never names the test. The report lists that test beside its
 proof, so `purlin:build` can add the marker instead of writing a new test.
 
-When nothing tests it, write the proof as if the test existed. The rule then lands in the
-Drafted state and `purlin:build` writes the test on the next pass.
+When nothing tests it, write the proof as if the test existed. The rule then reads `no test`
+in its passed cell and `purlin:build` writes the test on the next pass.
 
 Do not invent a proof for a rule you could not state as an observable. Drop the rule instead
 and note the behaviour in `> Description:`.
@@ -87,7 +87,8 @@ and note the behaviour in `> Description:`.
   module can see.
 - Do not copy an implementation into a rule. "Uses a Redis sorted set" is not a claim about
   the software's behaviour; "rejects the 61st request in a minute" is.
-- Do not write `[bar: strong]`. That judgment belongs to the people who own the product.
+- Do not write `[level: strong]` or `[level: signed]`. That judgment belongs to the people
+  who own the product.
 - Do not write signatures or records. Those come from `purlin:audit` and `purlin:sign`.
 
 ## When you are done
@@ -98,5 +99,5 @@ Report the counts, then name the next step from the state:
   existing tests and shows what passes.
 - Rules with no test at all: `→ Next: purlin:build <name>` on the feature with the most of
   them.
-- Everything drafted and the team wants the paper trail:
+- Every rule written and the team wants the paper trail:
   `→ Next: purlin:init --gate strong`.

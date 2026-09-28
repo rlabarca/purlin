@@ -38,7 +38,7 @@ skill says so when it hands the result over.
 
 ## What it writes
 
-Every rule carries `[bar: passed]`:
+Every rule carries `[level: passed]`:
 
 ```markdown
 # Feature: rate_limit
@@ -48,8 +48,8 @@ Every rule carries `[bar: passed]`:
 
 ## Rules
 
-- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [bar: passed]
-- RULE-2: Include a Retry-After header on every 429 response [bar: passed]
+- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [level: passed]
+- RULE-2: Include a Retry-After header on every 429 response [level: passed]
 
 ## Proof
 
@@ -58,7 +58,7 @@ Every rule carries `[bar: passed]`:
 ```
 
 `passed` is correct because nobody has judged yet whether the rule is worth an audit and a
-signature. The bar is re-tagged later, in one pass, and re-tagging it stales a signature.
+signature. The level is re-marked later, in one pass, and re-marking it stales no signature.
 
 Where a test already exercises the behaviour, the proof says so, and `purlin:build` adds the
 marker to that test instead of writing a new one:
@@ -67,15 +67,15 @@ marker to that test instead of writing a new one:
 - PROOF-4 (RULE-4): tests/test_rate_limit.py::test_burst already asserts this
 ```
 
-Where nothing tests it, the proof is written as if the test existed. The rule lands Drafted
-and `purlin:build` writes the test on the next pass.
+Where nothing tests it, the proof is written as if the test existed. The rule's passed cell
+reads `no test`, and `purlin:build` writes the test on the next pass.
 
 ## What it does not write
 
 - No rule for a private helper. Rules describe behaviour someone outside the module can see.
 - No implementation in a rule. "Uses a sorted set in the cache" is not a claim about
   behaviour; "rejects the 61st request in a minute" is.
-- No bar above `passed`. That judgment belongs to the people who own the product.
+- No level above `passed`. That judgment belongs to the people who own the product.
 - No test results, no records and no signatures. Those come from `purlin:test`, `purlin:audit` and `purlin:sign`.
 - No rule for behaviour that could not be stated as an observable. The behaviour is noted in
   `> Description:` and the rule is dropped.
@@ -90,7 +90,7 @@ The skill names the next step from what it found:
 | Rules with no test at all | `purlin:build <name>` on the feature with the most of them |
 | Everything drafted, and the team wants the paper trail | `purlin:init --gate strong` |
 
-Then read the drafts. Retag the bar of anything a PM or a designer actually asked for, and
+Then read the drafts. Re-mark the level of anything a PM or a designer actually asked for, and
 delete the rules that turned out to describe a bug.
 
 ## Next

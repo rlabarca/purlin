@@ -41,9 +41,9 @@ what a person would see.
 
 **What you need.** One of three, by preference.
 
-- **A checkout with Claude Code.** `purlin:sign` computes the list of rules whose next step is
-  a person, the higher bar first, and walks it one brief at a time. At each stop you sign, add a
-  case in plain language, hold or skip.
+- **A checkout with Claude Code.** `purlin:sign` computes the list of rules whose next step is a
+  person, the rules whose level asks the most first, and walks it one brief at a time. At each stop
+  you sign, add a case in plain language, hold or skip.
 - **An assistant with the repository connected.** It reads the specs and the committed test
   results, opens pull requests carrying proof edits, and batches signatures into one commit.
 - **No AI at all.** Read `.purlin/tests.md` on the git host and review the diff by hand.

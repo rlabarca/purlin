@@ -36,7 +36,7 @@ login rule 3". A narrowing argument never adds a rule the full walk would skip.
 |------|----------------------|
 | `passed` | Prints that the gate asks for no signature, names what `purlin:init --gate strong` adds — the test strength, the AI audit and the review list — and stops without writing anything |
 | `strong` | The walk, `--note` and `--hold` work. A bare feature and `--batch` sign every rule on the Review list; a named rule that is not on it is told a signature is required only under `signed`, then written anyway |
-| `signed` | Every form works; a bare feature and `--batch` read the Review list, then the Sign list. Every rule that needs a signature has to carry one before it meets the gate: `sign_at: strong` asks on the rules whose bar is `strong`, `sign_at: all` on every rule |
+| `signed` | Every form works; a bare feature and `--batch` read the Review list, then the Sign list. Every rule whose level is `signed` has to carry a signature before it meets the gate; a named rule marked `[level: passed]` or `[level: strong]` is refused, because it asks for none |
 
 ## Step 1: the list, and the brief behind each rule
 
@@ -47,9 +47,9 @@ sync_status()
 There are two lists and the walk reads them in this order. `payload.review_list` is the
 **Review list**: the rules whose `strong` cell reads `manual test`, `unsettled` or `held`, at
 the gate `strong` and above. `payload.sign_list` is the **Sign list**: the signable rules, the
-ones that have cleared their bar and need a signature they do not have, at the gate `signed`.
-Both are already ordered, the rules whose bar is `strong` first, then by feature and rule
-number. The dashboard shows the same two as its Review tab and its Sign tab; `tab` is the
+ones whose level is `signed`, whose tests and audit are met and that have no counting
+signature, at the gate `signed`. Both are already ordered, the rules whose level asks the most
+first, then by feature and rule number. The dashboard shows the same two as its Review tab and its Sign tab; `tab` is the
 page's word and `list` is this one's.
 
 A rule blocked lower down — no test, a failing test, a weak one — is build work, so it stays
@@ -124,7 +124,7 @@ end of the name. The commit subjects come from `references/commit_conventions.md
 | Under `signed` the signature counts when | What fails it |
 |------------------------------------------|---------------|
 | The commit that added the file is signed and the signature verifies | `the signing commit is not signed` |
-| Its bound hashes still match the rule, the proof, the test, the bar and what the audit found | `hashes changed after the signature` |
+| Its bound hashes still match the rule, the proof, the test and what the audit found | `hashes changed after the signature` |
 
 Nothing else is read. Signing is logged, not policed: the signature counts whoever wrote it,
 whoever last committed to the test file, and on whatever branch carries it. Below `signed` a

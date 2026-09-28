@@ -39,10 +39,11 @@ The whole loop runs on one machine: `purlin:spec`, `purlin:build`, `purlin:test`
 `purlin:audit`, `purlin:sign`, `git push`. A project at `signed` with no CI anywhere is the
 ordinary case, not a special one.
 
-Every rule also has a **bar**, `passed` or `strong`: the evidence that rule must have before it
-can be signed, written as `[bar: passed]` or `[bar: strong]` on the rule line. A rule with no
-tag takes the project's gate as its bar. The bar decides what evidence the rule needs, whether
-the AI audit runs on it, and whether it needs a signature.
+Every rule also has a **level**, `passed`, `strong` or `signed`, meaning what the gate means,
+written as `[level: passed]`, `[level: strong]` or `[level: signed]` on the rule line. A rule
+with no tag takes the project's gate as its level, and the gate is the ceiling: a mark above it
+is read as the gate. The level decides what evidence the rule needs, whether the AI audit runs
+on it, and whether it needs a signature.
 
 Raise or lower the gate later with `purlin:init --gate <level>`. Raising adds what is missing;
 lowering deletes nothing. The one definition lives in

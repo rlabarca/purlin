@@ -256,7 +256,7 @@ class TestSkillSpecFromCode:
         assert skill_ceiling_problems('spec-from-code') == []
 
     @pytest.mark.proof("skill_spec_from_code", "PROOF-5", "RULE-5")
-    def test_every_rule_it_writes_is_engineer_owned_at_the_passed_bar(self):
+    def test_every_rule_it_writes_is_engineer_owned_at_the_passed_level(self):
         assert spec_from_code_tag_problems() == []
 
 
@@ -279,10 +279,11 @@ def spec_from_code_tag_problems():
     if not examples:
         problems.append('%s shows no example rule' % rel)
     for line in examples:
-        if '[bar: passed]' not in line:
-            problems.append('%s example rule carries no [bar: passed]: %s'
+        if '[level: passed]' not in line:
+            problems.append('%s example rule carries no [level: passed]: %s'
                             % (rel, line))
-    problems.extend(carries(rel, ['Do not write `[bar: strong]`']))
+    problems.extend(carries(rel, [
+        'Do not write `[level: strong]` or `[level: signed]`']))
     return problems
 
 
@@ -550,8 +551,8 @@ class TestSkillSign:
         assert carries(skill_path('sign'), [
             'The commit that added the file is signed and the signature '
             'verifies',
-            'Its bound hashes still match the rule, the proof, the test, the '
-            'bar and what the audit found',
+            'Its bound hashes still match the rule, the proof, the test and '
+            'what the audit found',
             'whoever wrote it, whoever last committed to the test file, and on '
             'whatever branch carries it']) == []
 
@@ -594,8 +595,8 @@ def sign_gate_problems():
     for needle in ('--note', '--hold'):
         if needle not in rows['`strong`']:
             problems.append('%s strong row does not name %r' % (rel, needle))
-    if 'sign_at' not in rows['`signed`']:
-        problems.append('%s signed row does not name sign_at' % rel)
+    if '[level: passed]' not in rows['`signed`']:
+        problems.append('%s signed row does not name [level: passed]' % rel)
     return problems
 
 
@@ -680,7 +681,7 @@ class TestPurlinAgent:
     def test_it_reads_the_state_before_it_answers(self):
         assert carries(AGENT, [
             'Call `sync_status` before you answer any question about state.',
-            '`drafted`', '`ready`', '`passed`', '`strong`', '`signed`',
+            '`no proof written`', '`passed`', '`strong`', '`signed`',
             '`out of date`']) == []
 
     @pytest.mark.proof("purlin_agent", "PROOF-6", "RULE-6")

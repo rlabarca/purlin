@@ -52,7 +52,7 @@ Read the diff before you report.
 A feature whose files changed and whose rules are not met has nothing standing behind the
 change. The tool precomputes this per feature in `rule_details`: `met` is how many of the
 feature's rules meet the gate, `total_rules` is how many there are, and `unproved` lists the
-rules whose spec status is `drafted`, which have no proof at all. The skill surfaces a feature
+rules no proof line names, which have no proof at all. The skill surfaces a feature
 whose `met` is below its `total_rules` first.
 
 ## Broken scope
@@ -120,7 +120,6 @@ strength and no signature, so `purlin:drift qa` says the gate is `passed` and na
 | `version` | `purlin:init` | The dashboard header | From the `VERSION` file |
 | `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/gate_check.py`, every skill that names a next step | `passed` |
 | `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` under `passed`, 70 under `strong`, 80 under `signed` |
-| `sign_at` | `purlin:init --gate signed`, which asks for it | `sync_status`, `scripts/ci/gate_check.py`, `scripts/review/sign.py` | Not written below `signed`; `strong` under `signed` |
 | `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
 | `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py` | Not set; test strength reads `n/a` without one |
 | `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure` |

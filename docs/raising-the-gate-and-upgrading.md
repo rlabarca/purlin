@@ -49,20 +49,15 @@ tests alone, nothing measures a strength, and no record is written at all. From 
 audit writes one record per feature and the briefs beside them, and commits them.
 
 **To `signed`.** On top of that: the commit-signing setup printed once, for each person who
-signs; the question `Which rules need a signature?`, whose answers are `strong`, the
-rules whose bar is strong and the rest meeting the gate on their tests, and `all`, every rule
-whatever its bar. From here `purlin:sign` closes its walk by writing
-the tag `signed/<version>` whenever every rule meets the gate.
+signs. From here `purlin:sign` closes its walk by writing the tag `signed/<version>` whenever
+every rule meets the gate.
 
-The derived defaults move too: `min_strength` becomes 80, and `sign_at` takes the answer you
-gave, `strong` by default. A rule whose bar is `passed` under `sign_at: strong` needs no
-signature: it meets the gate once its tests pass, and a signature written anyway still counts.
+The derived defaults move too: `min_strength` becomes 80. A rule needs a signature exactly when
+its level is `signed`. A rule whose level is `passed` or `strong` needs no signature: it meets
+the gate on its lower cells, and a signature written anyway still counts.
 
-Every rule's **bar** is `strong` at both of the upper gates unless the rule carries a
-`[bar: passed]` tag, so raising the gate is also what turns the AI audit on. Before 0.10.0 a
-rule carried a three-level tag in place of a bar; `--update` rewrites it, the two higher
-levels to `[bar: strong]` and the lowest to `[bar: passed]`, and the signature hashes follow
-the bar as they followed the old tag.
+Every rule's **level** is the gate unless the rule carries a `[level: ...]` tag, so raising the
+gate is also what turns the AI audit on for every unmarked rule.
 
 | Flag | What it does |
 |------|--------------|
@@ -167,14 +162,6 @@ The trust question follows it:
 
 ```
 Do you trust your own machine for the tests and the signing? [y/n]
-```
-
-Under `signed` a second question follows:
-
-```
-Which rules need a signature?
-  strong  the rules whose bar is strong; the rest meet the gate on their tests
-  all     every rule, whatever its bar
 ```
 
 The `config` migration also drops the settings that named the old gate values and the old list

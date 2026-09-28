@@ -3,7 +3,7 @@
 For QA, or an engineer acting as QA, at the `strong` or `signed` gate.
 
 Reviewing is not reading every rule. It is reading the rules whose next step is a person, the
-ones with the higher bar first, with the evidence already gathered. `purlin:sign` computes two
+ones whose level asks the most first, with the evidence already gathered. `purlin:sign` computes two
 lists and walks them: the Review list, then the Sign list. When it leaves every rule meeting
 the gate it writes the tag `signed/<version>`, and a person pushes it. This page says what puts
 a rule on each list, what the brief shows you, what makes a signature count, and what the tag
@@ -12,21 +12,21 @@ stands for.
 `list` is the word for what `purlin:sign` walks. The dashboard shows the same two as its Review
 tab and its Sign tab, and `tab` belongs to the page.
 
-## The bar
+## The level
 
-Every rule has a **bar**, `passed` or `strong`: the evidence that rule must have before anyone
-can sign it. A rule says its own with a tag, `[bar: passed]` or `[bar: strong]`, and a rule
-with no tag takes the project's gate as its bar. The bar decides three things:
+Every rule has a **level**, `passed`, `strong` or `signed`, meaning what the gate means. A rule
+says its own with a tag, `[level: passed]`, `[level: strong]` or `[level: signed]`, and a rule
+with no tag takes the project's gate as its level. The gate is the ceiling: a mark above it is
+read as the gate. The level decides three things:
 
-- **the evidence the rule needs.** Bar `passed` asks that its tests pass. Bar `strong` asks
-  that an audit proved them worth trusting.
-- **whether the AI audit runs on it.** It runs on every rule whose bar is `strong` and on no
-  other.
-- **whether it needs a signature.** Under `signed`, a rule needs one when the project's
-  `sign_at` is `all`, or when its own bar is `strong`.
+- **the evidence the rule needs.** Level `passed` asks that its tests pass. Level `strong` asks
+  that an audit also proved them worth trusting. Level `signed` asks for both and a signature.
+- **whether the AI audit runs on it.** It runs on every rule whose level is `strong` or
+  `signed` and on no other.
+- **whether it needs a signature.** A rule needs one exactly when its level is `signed`.
 
-A rule that has met its bar has **cleared** it, and a rule that has cleared its bar and is
-still waiting for a signature is **signable**. That is the whole of what `signable` means.
+A rule whose level is `signed`, whose passed and strong cells are met, and that is still
+waiting for a signature is **signable**. That is the whole of what `signable` means.
 
 ## Review
 
@@ -51,22 +51,22 @@ only a person can do:
 | `held` | someone committed a hold saying the test does not prove the proof | write the case, or lift the hold by signing |
 
 Nothing else reaches it. A rule whose strong cell reads `not audited` waits for `purlin:audit`
-rather than for you: its bar is `strong` and no audit has run on this code yet. A drafted rule,
-a rule with no test, a failing rule and a weak rule are all build work, and they stay on the
-board where `purlin:build` finds them. A rule whose passed cell reads `out of date` is on
-neither list: the signature stands, and the next run clears the cell.
+rather than for you: its level is `strong` or `signed` and no audit has run on this code yet. A rule
+with no proof written, a rule with no test, a failing rule and a weak rule are all build work, and
+they stay on the board where `purlin:build` finds them. A rule whose passed cell reads `out of date`
+is on neither list: the signature stands, and the next run clears the cell.
 
-Rows come bar `strong` first, then by feature and rule id. Arguments narrow the walk and never
-widen it: `purlin:sign <feature>`, `purlin:sign <feature> RULE-N`. Plain language reaches the
-same place: "what is waiting on a person", "show me the ones with the strong bar".
+Rows come the rules whose level asks the most first, then by feature and rule id. Arguments narrow
+the walk and never widen it: `purlin:sign <feature>`, `purlin:sign <feature> RULE-N`. Plain language
+reaches the same place: "what is waiting on a person", "show me the ones marked `signed`".
 
 Under `passed` there is no list at all: `purlin:sign` says the gate is `passed`, says what
 `purlin:init --gate strong` would add, and stops.
 
 ## Sign
 
-The Sign list is the signable rules that no counting signature covers yet: they have cleared
-their bar, they need a signature, and their signed cell reads `unsigned`, `stale` or `held`. It
+The Sign list is the signable rules that no counting signature covers yet: their level is `signed`,
+their passed and strong cells are met, and their signed cell reads `unsigned`, `stale` or `held`. It
 exists at `signed` and nowhere else, because no rule has a signed cell below it.
 
 | The word the signed cell reads | What happened |
@@ -76,9 +76,7 @@ exists at `signed` and nowhere else, because no rule has a signed cell below it.
 | `held` | someone committed a hold saying the test does not prove the proof |
 
 The walk reaches Sign after Review, because a rule a person has not judged is not a rule to
-sign. `sign_at` decides which rules need a signature at all: `strong` asks for one on the rules
-whose bar is `strong`, and `all` asks for one on every rule. `purlin:init` sets it at the
-`signed` gate and `--update` asks again.
+sign. A rule needs a signature exactly when its level is `signed`.
 
 ## The brief
 
@@ -102,8 +100,8 @@ changed.
 
 | Layer | What it reads | Runs at |
 |-------|---------------|---------|
-| Test strength | `test_strength` from the newest counting record, against `min_strength` | every bar |
-| The AI audit | the review criteria, the rule, its proofs and the source of each test | bar `strong` |
+| Test strength | `test_strength` from the newest counting record, against `min_strength` | every level |
+| The AI audit | the review criteria, the rule, its proofs and the source of each test | level `strong` or `signed` |
 
 **Test strength** is the share of the deliberate breaks made to the code that the tests caught,
 as an integer percent, or `n/a` when no engine ran. It says one thing: the tests noticed when
@@ -111,9 +109,9 @@ the behaviour changed. It does not say the tests prove the right rule. A rule ca
 percent on a proof that observes the wrong thing, and a correct proof of a small rule can sit
 at 0 percent because nothing broke. Read it beside what the audit observed, never instead of it.
 
-**The AI audit** runs on every rule whose bar is `strong` and on no other. It is built from the
-review criteria verbatim and this rule's evidence, so it observes by the same sentences you
-read. The criteria list what it looks for: no proof of a rule names a rejection, an error or a
+**The AI audit** runs on every rule whose level is `strong` or `signed` and on no other. It is
+built from the review criteria verbatim and this rule's evidence, so it observes by the same
+sentences you read. The criteria list what it looks for: no proof of a rule names a rejection, an error or a
 boundary; a description names no literal, number or quoted string; a test body asserts nothing,
 or asserts a literal against itself; a proof about a flow reads as a function call. Where the audit
 settled and still observed something, the strong cell reads `weak` with that sentence as its
@@ -225,24 +223,25 @@ stops.
 ## What makes a signature count
 
 A signature file binds three hashes - the rule text, the proof descriptions, and the test files
-behind them - plus the bar at the time, what the audit observed, your email, the brief you read and the record you rested on. Under `signed`
+behind them - plus the level at the time, what the audit observed, your email, the brief you read and the record you rested on. Under `signed`
 two conditions decide whether it counts, and the signed cell names the one that failed:
 
 | The signature counts when | What the cell reads when it does not |
 |---|---|
 | The commit that added the file is signed and the signature verifies | `the signing commit is not signed` |
-| The bound rule, proof, test, bar and audit hashes still match | `stale`, `hashes changed after the signature` |
+| The bound rule, proof, test and audit hashes still match | `stale`, `hashes changed after the signature` |
 
 Nothing else is read: a signature counts whoever last committed to the test file, and on
 whatever commit carries it. Below `signed` a committed signature counts.
 
 ## What stales a signature
 
-Changing the rule text, any of its proof descriptions, the body of a test behind it, or the
-rule's bar. So does a re-audit that observes something
+Changing the rule text, any of its proof descriptions, or the body of a test behind it. So does
+a re-audit that observes something
 different: a new strength, a new observation sentence, or a question it could settle before and
 cannot now. Each of those changes what the signature was given about, so the signed cell reads
-`stale`, the rule returns to the Sign list, and a person looks again.
+`stale`, the rule returns to the Sign list, and a person looks again. Re-marking the rule's
+level stales nothing: the signature records the level but does not lock it.
 
 Changing the code alone stales nothing. The passed cell reads `out of date` until the next run
 clears it, and no person is asked to look.

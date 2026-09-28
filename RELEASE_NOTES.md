@@ -5,8 +5,7 @@
 For a project running 0.9.5. One command moves it forward, and the rest of this page says what
 that command changes.
 
-0.10.0 replaces two grading scores and one ladder of seven states with a spec status and three
-evidence levels, moves the evidence into the repository, and gives each level one command. The
+0.10.0 replaces two grading scores and one ladder of seven states with three evidence levels, moves the evidence into the repository, and gives each level one command. The
 whole loop runs on one machine, at every gate: nothing needs a new service, a hosted anything or
 a setting on the git host. The evidence is files in git, and the marker that a version met the
 gate is an annotated tag a person pushes.
@@ -34,9 +33,9 @@ afterwards.
 
 ### What changed, by concept
 
-**The spec status and the three levels.** A rule has a spec status and up to three cells, each
-of which reads one word and carries its reasons. The spec status is `drafted` when no proof
-line names the rule and `ready` when one does, and nothing more. Then:
+**The three levels.** A rule has up to three cells, each of which reads one word and carries
+its reasons. A rule no proof line names reads `no test` in its passed cell, with the reason
+`no proof written`.
 
 | Level | The question | Words the cell can read |
 |-------|--------------|-------------------------|
@@ -50,8 +49,8 @@ is why raising the gate is what makes a column, a tile or a filter appear.
 **The gate.** One project setting, `gate` in `.purlin/config.json`, with three values named for
 the word the last cell reads when it is met: `passed`, `strong` and `signed`. `purlin:init` asks
 one question, **what must be true of every rule before a version is proven?**, and derives the
-rest: `min_strength` unused, 70 and 80; the default bar `passed`, `strong` and `strong`;
-`sign_at` absent, absent and `strong`; the breaks off under `passed` and on above it.
+rest: `min_strength` unused, 70 and 80; the level of an unmarked rule `passed`, `strong` and
+`signed`; the breaks off under `passed` and on above it.
 `purlin:init --gate <value>` changes it later; raising adds what is missing, lowering deletes
 nothing.
 
@@ -60,8 +59,8 @@ nothing.
 anywhere is the ordinary case, at every gate. Evidence counts whoever wrote it.
 
 **Three commands, one per level.** `purlin:test` runs the tagged tests and writes the evidence.
-`purlin:audit` runs the tests and the breaks, then the AI audit on every rule whose bar is
-`strong`, and writes what it found into the same evidence. `purlin:sign` walks the Review list
+`purlin:audit` runs the tests and the breaks, then the AI audit on every rule whose level is
+`strong` or `signed`, and writes what it found into the same evidence. `purlin:sign` walks the Review list
 and then the Sign list one brief at a time when given no rule, signs, holds or notes a rule when
 given one, and closes by writing the tag. `purlin:verify`, `purlin:review` and `purlin:approve`
 are gone, not aliased.
@@ -126,20 +125,22 @@ proof text or the test body before the audit. `references/review_criteria.md` li
 audit looks for when it reads each proof beside the source of its test, and the audit writes what
 it observed in plain sentences; an audit that settled and still observed a gap proves the rule
 `weak` with that sentence as the reason. The brief's layers are `test strength` and `AI audit`.
-At `passed` nothing reads test quality at all. `ready` means
-the rule has a proof, nothing more.
+At `passed` nothing reads test quality at all.
 
-**The bar replaces risk.** Every rule has a bar, `passed` or `strong`, tagged `[bar: passed]` or
-`[bar: strong]`; a rule with no tag takes the project's gate. The bar decides the evidence the
-rule needs, whether the AI audit runs on it, and whether it needs a signature. `purlin:spec`
-writes no bar tag at `passed`. `risk` and `ai_review_at` are gone, and `sign_at` is `strong` or
-`all`.
+**A rule's level.** A rule may be marked `[level: passed]`, `[level: strong]` or
+`[level: signed]`, meaning what the gate means: its tests; its tests and the audit; its tests,
+the audit and a signature. A rule with no tag takes the project's gate, and the gate is the
+ceiling: a mark above it is read as the gate, and `purlin:status` says how many rules carry
+one. The level decides which cells block the rule, whether the AI audit runs on it, and whether
+it needs a signature, which it does exactly when its level is `signed`. `purlin:spec` writes no
+level tag at `passed`. `risk` and `ai_review_at` are gone.
 
 **Signatures and holds.** One file per signature,
 `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, so two signatures
-never conflict. It binds the hashes of the rule text, the proof text and the test body, the
-rule's bar, and what the audit observed: the strength, the observation sentences and whether it
-settled. A re-audit that sees something different stales the signature. Signing is logged, not
+never conflict. It binds the hashes of the rule text, the proof text and the test body, and
+what the audit observed: the strength, the observation sentences and whether it settled. A
+re-audit that sees something different stales the signature. It records the rule's level and
+does not lock it, so marking a rule differently stales nothing. Signing is logged, not
 policed: under `signed` a signature counts when the commit that added it is signed and verifies
 and its bound hashes still match, whoever signed, whoever last committed to the test file and on
 whatever branch carries it. No setting names the people who may sign. A hold is a person's committed statement that the test does not prove the proof,
@@ -200,17 +201,17 @@ output, in any casing:
 | `verdict`, the four verdicts | what the brief reports: the strength, the observations, settled |
 | `Reviewed`, the state | the strong cell's word |
 | `re-verify pending` | the passed cell reading `out of date` |
-| `Proof ready` | the spec status `ready` |
-| `lowest state`, `seven states` | the spec status and the three cells |
+| `Proof ready` | the passed cell; a rule with no proof reads `no proof written` |
+| `lowest state`, `seven states` | the three cells |
 | `auto-approval` | nothing: no machine writes a signature file |
 | `review queue` | review list |
 | `purlin:verify`, `purlin:review`, `purlin:approve` | `purlin:audit`, `purlin:sign` |
 | `verify_gate`, `verify-gate:` | `gate_check`, `gate:` |
 | `validated/<name>` and `record/<name>` tags | `signed/<version>`, which `purlin:sign` writes |
 | `needs a person` | `manual test`, `unsettled` or `held`, each naming the work. The one surviving use is the review list's header |
-| `risk`, `[risk: ...]`, `ai_review_at` | the **bar**, `[bar: passed]` or `[bar: strong]` |
+| `risk`, `[risk: ...]`, `ai_review_at` | the **level**, `[level: ...]` with the gate's own words |
 | `manual audit` | `not audited` and `unsettled` |
-| `not required` | removed: the signed cell carries `required` false and reads `signed` or `unsigned` |
+| `not required` | removed: a rule whose level is below `signed` needs no signature, and its signed cell reads `signed` or `unsigned` |
 | the source `developer` | the folder: `local/` or `ci/` |
 | `happy_path_only` and the other free-check names | the sentence the audit wrote about what it observed |
 | free scan, hint | the AI audit's observations |
@@ -257,12 +258,11 @@ Also gone, each without a replacement:
 - `purlin:rename`. `agents/purlin.md` says what carries a feature's name and moves together
   in one commit.
 - The upgrade steps for layouts 0.9.5 never shipped: the gate value renames, the signer key,
-  the rule tag the bar replaced, the scope tag and its runner registry, the pre-commit and
+  the `[risk: ...]` rule tag, the scope tag and its runner registry, the pre-commit and
   pre-push shims under `.purlin/hooks/`, the stale `purlin.yml`, and moving records into
   source folders. `purlin:init --update` reads what 0.9.5 left and nothing else.
-- The readers that mapped an old spelling: `sign_at: high`, `medium` and `low`, and the rule
-  tag the bar replaced. An old spelling is not recognised: `sign_at` warns and reads the
-  gate's own value, and the tag stays in the rule text.
+- The reader that mapped the `[risk: ...]` rule tag. An old spelling is not recognised, and the
+  tag stays in the rule text.
 - `purlin:spec --resolve` and `scripts/mcp/purlin/ids.py`. Ids are still allocated against
   `origin/main`; a duplicate after a merge is renumbered by hand.
 - `purlin:find`. `purlin:status <name>` shows one spec's rules and their cells.
@@ -288,7 +288,7 @@ An earlier 0.10.0 development line added two LLM grading scores, one for proof d
 one for test bodies, together with a skill and an agent to produce them. A later one added a
 seven-state ladder. Neither was released, and 0.10.0 as it ships has neither. What a person needs
 before signing a rule is a brief: the test strength from the evidence, and what the AI audit
-observed where the rule's bar asks for one. `references/review_criteria.md` holds those criteria.
+observed where the rule's level asks for one. `references/review_criteria.md` holds those criteria.
 
 ## 0.9.5 — Windows-scoped proof checks & C# support
 

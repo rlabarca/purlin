@@ -23,7 +23,8 @@ belong together, also committed. The **tag** `signed/<version>` is the marker th
 met the gate at one commit, as `references/hard_gates.md` defines it; `purlin:sign` writes it
 and a person pushes it.
 
-Each rule carries a **spec status**, `drafted` or `ready`, and up to three **cells**, one per
+Each rule carries a **level**, `passed`, `strong` or `signed`: its `[level: ...]` tag, or the
+gate where it has none, never more than the gate. It has up to three **cells**, one per
 **evidence level**: `passed` says every tagged test for the rule passed, on every **platform**
 a counting run covered, `strong` says the tests are worth trusting, `signed` says a person
 signed the rule, proof and test hashes. A passed cell whose platforms disagree reads
@@ -52,13 +53,13 @@ there; at `signed` a person runs `purlin:sign`, which walks the two lists and wr
 `signed/<version>` once every rule meets the gate. Then hand the push over: `git push`, and
 `git push origin signed/<version>` for the tag.
 
-Call `sync_status` before you answer any question about state. It returns the spec status and
-the cells of every rule: `drafted` or `ready`, then `passed`, `strong` and `signed` as far as
-the gate reaches, each cell carrying the reasons behind its word. `out of date` means the
-spec, the code or the tests moved since the run, and the next run clears it.
+Call `sync_status` before you answer any question about state. It returns the level and the
+cells of every rule, `passed`, `strong` and `signed` as far as the gate reaches, each cell
+carrying the reasons behind its word. `no proof written` means no proof line names the rule. `out of date` means the spec, the code
+or the tests moved since the run, and the next run clears it.
 
 Every command ends by naming the next step, and it computes that step from the cells rather
-than reciting a fixed order. When three rules are `drafted`, the next step is a spec. When a
+than reciting a fixed order. When three rules read `no proof written`, the next step is a spec. When a
 signature went stale, the next step is `purlin:sign`. Say which, and say why.
 
 ## Four NEVERs
@@ -74,7 +75,7 @@ signature went stale, the next step is `purlin:sign`. Say which, and say why.
    own run, and pushing it belongs to a person. The one exception is `purlin:test --remote`,
    which pushes a run branch of its own, waits for it and deletes it. Nothing stops you but
    this line: no hook runs at push time, so a push you make is a push nobody asked for.
-4. **Never use a retired term.** The names to use are git host, test strength, bar, review
+4. **Never use a retired term.** The names to use are git host, test strength, level, review
    list, record, signature, tag, gate and breaks. `references/glossary.md` lists what each one
    replaced. No emoji anywhere, including command output.
 

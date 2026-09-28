@@ -23,8 +23,8 @@ Two things, and nothing on the git host:
 2. A record at the commit under review for every rule, which `purlin:audit` writes and `--commit` commits.
 
 `strong` derives two defaults, each of which you can change: `min_strength` 70, and origin
-tags optional. Every rule's bar defaults to `strong` here, so the AI audit runs on every rule
-that carries no `[bar: passed]` tag. Signatures are advisory at this gate and no rule has a
+tags optional. Every unmarked rule's level is `strong` here, so the AI audit runs on every
+rule that carries no `[level: passed]` tag. Signatures are advisory at this gate and no rule has a
 signed cell. What a signature still does here is clear a strong cell reading `manual test`,
 `unsettled` or `held`: `purlin:sign <feature>` and `purlin:sign --batch` sign every rule on the
 Review list, and a committed signature counts at this gate.
@@ -43,7 +43,7 @@ sequenceDiagram
         Tree->>Tree: the evidence, into .purlin/evidence/local/
     end
     You->>Tree: purlin:audit --commit
-    Tree->>Tree: the breaks, then the AI audit on every rule whose bar is strong
+    Tree->>Tree: the breaks, then the AI audit on every rule whose level is strong
     Tree->>Tree: purlin: evidence at sha7, from .purlin/evidence/local/
     Tree-->>You: the strength beside the minimum, then gate strong: n of n
     You->>Origin: git push
@@ -120,7 +120,7 @@ Level 2 has six answers, and each one names who moves it next.
 |------|---------------|---------------|
 | `strong` | the passed cell is met, the test strength is at or above `min_strength`, no hold is current, and the AI audit observed nothing and settled | nothing; the rule meets the gate |
 | `weak` | the passed cell is not met, or the strength is under the minimum, or the audit settled and still observed something the test does not read | build work: `purlin:build` |
-| `not audited` | the rule's bar is `strong` and no audit has run on this code yet | `purlin:audit`; no person is waiting |
+| `not audited` | the rule's level is `strong` or `signed` and no audit has run on this code yet | `purlin:audit`; no person is waiting |
 | `unsettled` | the AI audit ran and could not settle whether the test proves the proof | a person judges the proof against the test, then signs, adds a case or holds |
 | `manual test` | any proof of the rule is tagged `@manual`, so no test can be written for it | a person runs the test and records what they saw with `purlin:sign <feature> RULE-N --note "<text>"` |
 | `held` | a person committed a hold saying the test does not prove the proof, with the missing case | change the rule, the proof or the test, or sign it for the current hashes, which outranks the hold |
@@ -151,13 +151,13 @@ source. Then `purlin:anchor sync` if a pin is behind, `purlin:spec` if a rule is
 wrong, `purlin:build`, `purlin:test` while working, and `purlin:audit` before pushing, which
 is what writes the record the strong cell reads.
 
-**The audit proves it.** `purlin:audit` runs the tests, the breaks, and the AI audit on every
-rule whose bar is `strong`. It writes one record per feature and one brief per rule it reached,
-commits them, and prints the strength beside the minimum. Every rule it could settle reads
+**The audit proves it.** `purlin:audit` runs the tests, the breaks, and the AI audit on every rule
+whose level is `strong` or `signed`. It writes one record per feature and one brief per rule it
+reached, commits them, and prints the strength beside the minimum. Every rule it could settle reads
 `strong` without anyone being asked.
 
 **QA looks at what is left.** `purlin:sign` finds every rule whose next step is a person, the
-ones with the higher bar first, and walks it one brief at a time. At this gate that is the
+ones whose level asks the most first, and walks it one brief at a time. At this gate that is the
 rules whose strong cell reads `manual test`, `unsettled` or `held`: a `@manual` proof, an AI
 audit that could not settle, or a rule someone holds. At each stop QA signs, adds a case in plain
 language, holds or skips. Adding a case writes a new proof line into the spec and leaves the

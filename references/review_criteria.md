@@ -1,9 +1,9 @@
 # Review criteria
 
-What the audit reads on one rule before a person does, and what a person reads after.
-The brief sets the rule, its proofs and the source of each test that backs them beside two
-layers of evidence, and stops when it has enough for the rule's bar: the test strength from
-the latest record, then the AI audit on every rule whose bar is `strong`. The brief builds
+What the audit reads on one rule before a person does, and what a person reads after. The brief
+sets the rule, its proofs and the source of each test that backs them beside two layers of
+evidence, and stops when it has enough for the rule's level: the test strength from the latest
+record, then the AI audit on every rule whose level is `strong` or `signed`. The brief builds
 that model prompt from this file verbatim, so every sentence here is written to be read by a
 person and by a model.
 
@@ -57,9 +57,9 @@ checks each of these against the test the proof names:
   claims to prove. A test mocks the network, the clock and the filesystem, never the code
   under test.
 
-A rule's spec status reads `ready` when a proof line names it and `drafted` when none does.
-Nothing else is read there: what a proof is worth is the audit's question, answered by a
-model that read the test beside it.
+A rule no proof line names reads `no test` with the reason `no proof written`. Whether a proof
+line is there is all that is read there: what a proof is worth is the audit's question,
+answered by a model that read the test beside it.
 
 ## What test strength says
 
@@ -74,28 +74,24 @@ worth having. A rule can reach 90 percent strength on a proof that observes the 
 thing, and a correct proof of a small rule can sit at 0 percent because nothing broke.
 Read it beside what the audit observed, never instead of it.
 
-## The two bars
+## The three levels
 
-A rule's **bar** is the evidence it must have before it can be signed: `passed` or `strong`.
-A rule tagged `[bar: ...]` carries what it names; a rule with no tag takes the project's
-gate, so `passed` at the gate `passed` and `strong` at `strong` and at `signed`. The bar is
-read at `strong` and above; under `passed` it is never shown and it changes nothing.
+A rule's **level** is what it must have to meet the gate, in the gate's own words: `passed`,
+`strong` or `signed`. A rule tagged `[level: ...]` asks for what it names; a rule with no tag
+takes the project's gate, and a tag above the gate is read as the gate. The level is read at
+`strong` and above; under `passed` it is never shown and it changes nothing.
 
-**`passed`.** The tests are the evidence. A passing run from either source clears the
-bar, and the AI audit does not run on the rule at all. Under `signed` with the default
-`sign_at: strong` the rule needs no signature: its signed cell carries `required` false and
-the rule meets the gate on its tests.
+**`passed`.** The tests are the evidence. A passing run from either source meets the level,
+and the AI audit does not run on the rule at all. The rule needs no signature, and it meets
+the gate on its tests.
 
-**`strong`.** The strong cell is the evidence. The strength must reach `min_strength`, and
-the AI audit must have run on the current rule, proof and test, observed nothing and
-settled. Until it has run the strong cell reads `not audited`; where it ran and could not
-tell it reads `unsettled`; where it settled and still observed something the cell reads
-`weak` with that sentence as the reason. Where no model could be reached the audit did not
-run at all, and the strength answers level 2 on its own. Under `signed` the rule needs a
-current signature in a signed commit, whatever `sign_at` says.
-
-`sign_at` widens that last requirement: `strong`, the default, asks for a signature on the
-rules whose bar is `strong`, and `all` asks for one on every rule.
+**`strong`** and **`signed`.** The strong cell is the evidence. The strength must reach
+`min_strength`, and the AI audit must have run on the current rule, proof and test, observed
+nothing and settled. Until it has run the strong cell reads `not audited`; where it ran and
+could not tell it reads `unsettled`; where it settled and still observed something the cell
+reads `weak` with that sentence as the reason. Where no model could be reached the audit did not
+run at all, and the strength answers level 2 on its own. A rule whose level is `signed` also
+needs a current signature in a signed commit.
 
 ## Who is on Review, and who is on Sign
 
@@ -106,14 +102,14 @@ three words: `manual test`, because the proofs are `@manual` and no test can be 
 `unsettled`, because the AI audit ran and could not tell; or `held`, because a person wrote
 the case the test misses.
 
-**Sign** exists at the gate `signed` and holds the **signable** rules: the ones that have
-cleared their bar, need a signature, and do not have a counting one. Its rows read
-`unsigned`, `stale` or `held`.
+**Sign** exists at the gate `signed` and holds the **signable** rules: the ones whose level is
+`signed`, whose passed and strong cells are met, and that do not have a counting signature. Its
+rows read `unsigned`, `stale` or `held`.
 
-A rule blocked at its spec status or at its passed cell is on neither: it is build work and
-it stays on the board. A weak rule is build work too, and so is a rule reading `not audited`,
-whose next step is `purlin:audit` rather than a reader. Both lists read the rules whose bar
-is `strong` first, then by feature and rule number.
+A rule blocked at its passed cell is on neither, a rule with no proof written included: it is
+build work and it stays on the board. A weak rule is build work too, and so is a rule reading
+`not audited`, whose next step is `purlin:audit` rather than a reader. Both lists read the
+rules whose level asks the most first, then by feature and rule number.
 
 ## What the brief reports
 
@@ -124,12 +120,12 @@ The brief reports. It recommends nothing, and it never names a next action. Thre
 - **The observations.** What the AI audit saw the test observe, against what the proof
   names, one sentence each. The audit is asked to state what it saw and to say when it
   cannot tell. It is never asked what to do.
-- **Whether it settled.** `Settled: yes` when the audit could tell, `no` when it could not,
-  and `not answered` when no AI audit ran. `no` on a rule whose bar is `strong` makes the
-  strong cell read `unsettled`; `not answered` does not, because nothing asked the question
-  and the strength answers level 2 on its own. An audit that settled and still observed something
-  is a different answer: it could tell, and what it saw is build work, so the cell reads
-  `weak` with each observation sentence among its reasons.
+- **Whether it settled.** `Settled: yes` when the audit could tell, `no` when it could not, and
+  `not answered` when no AI audit ran. `no` on a rule whose level is `strong` or `signed` makes
+  the strong cell read `unsettled`; `not answered` does not, because nothing asked the question
+  and the strength answers level 2 on its own. An audit that settled and still observed
+  something is a different answer: it could tell, and what it saw is build work, so the cell
+  reads `weak` with each observation sentence among its reasons.
 
 The rule, each proof and the source of each test are printed above the evidence, so a person
 reading the brief sees what the audit read.
