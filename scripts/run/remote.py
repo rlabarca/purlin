@@ -5,11 +5,11 @@ anyone to own a second machine, `--remote` hands the commit to the git host's
 runner and brings back what that runner wrote. The evidence is the git host's,
 because the commit is the git host's.
 
-What comes back is what the runner committed on the run branch: at `strong`
-and above the record it audited, at `passed` the test results under
-`.purlin/tests/ci/`. Either way the run pulls that commit onto this branch,
-so a proof tagged `@env` for an operating system nobody here has ends up with
-its own platform's pass in the tree.
+What comes back is what the runner committed on the run branch: its own
+operating system's section of `.purlin/evidence/ci/<feature>.json`, at every
+gate. The run pulls that commit onto this branch, so a proof tagged `@env`
+for an operating system nobody here has ends up with its own platform's pass
+in the tree.
 
 **This is the one push Purlin makes.** Everywhere else a push is a person's
 act. Here the push is the point of the command, and it goes to a branch of
@@ -160,8 +160,8 @@ def _bring_back(project_root, run_branch, code):
     if code != 0:
         print('The run finished red. The table below is what came back.')
     # The run branch is this branch plus the one commit the runner made, so a
-    # fast-forward is the whole of it: at `strong` and above that commit is
-    # the records, and at `passed` the test results under `.purlin/tests/ci/`.
+    # fast-forward is the whole of it: that commit is the evidence under
+    # `.purlin/evidence/ci/`.
     _run(project_root, ['git', 'pull', '--ff-only', REMOTE, run_branch])
     _delete(project_root, run_branch)
     print(_table(project_root))
@@ -332,7 +332,7 @@ def _push(project_root, run_branch):
 
 
 def _delete(project_root, run_branch):
-    """Remove the run branch from the remote once its records are here."""
+    """Remove the run branch from the remote once its evidence is here."""
     if _run(project_root, ['git', 'push', REMOTE, '--delete', run_branch]) != 0:
         print('The run branch %s is still on %s. Delete it with: git push %s '
               '--delete %s' % (run_branch, REMOTE, REMOTE, run_branch))

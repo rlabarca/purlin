@@ -18,18 +18,16 @@ in the shipped prose where a retired spelling may still be written.
   and exists only at or below the project's gate. Above the gate a cell is absent, not empty.
 - **gate**: the one project setting, `passed`, `strong` or `signed`. A rule **meets the gate**
   when every cell up to the gate's level is met.
-- **run**: one execution of the tagged tests. **test results**: what a run of the tagged tests
-  writes and commits, `.purlin/tests/<feature>.json` per feature and `.purlin/tests.md` for the
-  project. The folder is the source here too: `purlin:test` writes yours under
-  `.purlin/tests/`, a remote run writes its own under `.purlin/tests/ci/`, and
-  `purlin:test --remote` pulls those home. **record**: the machine's evidence of one audit at `strong` and above: results,
-  strength and scope tree, a committed file. Nobody signs a record.
-  **source**: where a pass came from, and the folder the record sits in: `ci`
-  (`.purlin/records/ci/`, which a remote runner writes and a tag run checks the provenance of)
-  or `local` (`.purlin/records/local/`, which anyone may write, and the test results
-  `purlin:test` commits). A record's own `source` field must agree with its folder or the file is ignored.
-  Both sources count at every gate, `signed` included: what a signature locks is the
-  evidence, not the machine that produced it.
+- **run**: one execution of the tagged tests. **evidence**: what runs saw, one file per
+  feature per source, `.purlin/evidence/<source>/<feature>.json`, with one **section** per
+  operating system and, once an audit has read the feature, what the audit found; the table
+  `.purlin/tests.md` sums it up for the project. `purlin:test` and `purlin:audit` write it and
+  `--commit` commits it; nobody signs it. **source**: where a pass came from, and the folder the
+  file sits in: `ci` (`.purlin/evidence/ci/`, which a remote runner writes and a tag run checks
+  the provenance of) or `local` (`.purlin/evidence/local/`, which anyone may write). A file's
+  own `source` field must agree with its folder or the file is ignored. Both sources count at
+  every gate, `signed` included: what a signature locks is the evidence, not the machine that
+  produced it.
 - **platform**: one operating system a counting run covered. The passed cell
   carries one entry per platform, each with its own word, source and time, and
   the cell's own word rolls them up. **partial**: the passed cell's word when a
@@ -37,16 +35,16 @@ in the shipped prose where a retired spelling may still be written.
   `partial` is not met, so a rule green on one machine and red on another
   blocks the gate exactly as a failure does. Test strength is platform
   independent: the breaks are measured once per feature.
-- **current**: a record describes the checkout when its commit is HEAD or its scope tree still
-  hashes the same. A pass that is not current reads **code changed**, and the next run clears
-  it.
+- **current**: a section describes the checkout while its **fingerprint**, over the spec, the
+  covered code and the tests, is the one taken now. A pass that is not current reads **out of
+  date**, naming what changed, and the next run clears it.
 - **audit**: the level 2 run: the tests, then the breaks and the AI audit on every rule whose
   bar is `strong`. An audit measures how good the tests are and proves a rule strong or weak.
-  It writes one record per feature it audited, with the briefs beside it, and commits them
-  itself as `purlin: record for <sha7>`; it never pushes. The breaks run on a person's machine
+  It writes what it found into each feature's evidence, and `--commit` commits it as
+  `purlin: evidence at <sha7>`; it never pushes. The breaks run on a person's machine
   and nowhere else: CI reruns the tests and verifies. **the breaks**: deliberate changes to the
   code. **test strength**: the share of the breaks the tests caught, as a percentage. Config key
-  `min_strength`, record field `test_strength`, status column `Strength`. Measured only at
+  `min_strength`, evidence field `audit.mutation`, status column `Strength`. Measured only at
   `strong` and above.
 - **brief**: the machine's report on one rule: the strength beside the minimum, the AI audit's
   observations, and whether it settled. It recommends nothing.
@@ -64,8 +62,8 @@ in the shipped prose where a retired spelling may still be written.
   question.
 - **signature**: a named person's attestation that a rule, its proof, its test and the audit
   that read them belong together, a committed file. It binds an **audit hash** beside the
-  triple, taken over the brief's strength, its observations sorted and whether it settled, so a
-  re-audit that observes something different stales it. Signing is logged, not policed: the
+  triple, taken over the test strength and the `verdict` and sorted `findings` of the audit
+  entry for the current hashes, so a re-audit that finds something different stales it. Signing is logged, not policed: the
   file names the signer and git names the commit's author, and no list says who may sign.
   **counting signature**: under `signed`, one whose commit is signed and verifies and whose
   bound hashes still match the rule, proof, test, bar and audit; below `signed`, any committed
@@ -102,8 +100,8 @@ in the shipped prose where a retired spelling may still be written.
 - **trust**: the one setting that is not derived from the gate, asked once by `purlin:init` as
   `Do you trust your own machine for the tests and the signing? [y/n]` and written as `trust`.
   `local`, the default, is a project whose own runs count and whose own signature is the
-  evidence. `remote` is one that does not, and there `purlin:sign` refuses a rule whose tests
-  have no `ci` record for the commit being signed.
+  evidence. `remote` is one that does not, and there `purlin:sign` refuses a rule with a test
+  whose feature has no current `ci` section.
 - **tag run**: the CI run a pushed `signed/<version>` tag starts. It writes nothing: it reruns
   the tagged tests on a clean machine and ends with `gate_check.py --check --verify`, which
   checks every committed signature and hold against this code and every `ci/` file against the
@@ -119,7 +117,7 @@ in the shipped prose where a retired spelling may still be written.
   no signature meets the gate on its tests and does not hold the tag back, and `trust: remote`
   is read when a rule is signed, not by the tag. `references/hard_gates.md` gives it at length.
 - **remote run**: `purlin:test --remote`, the one case in which Purlin pushes. **run branch**:
-  `run/<branch>-<sha7>`, the branch a remote run creates, waits on, pulls the records back from
+  `run/<branch>-<sha7>`, the branch a remote run creates, waits on, pulls the evidence back from
   and deletes. The branch you are working on is never pushed.
 
 ## The chain
@@ -129,8 +127,8 @@ For one rule, top to bottom. Each row is a cell; the gate decides how many rows 
 | Level | Met when | Words the cell can read |
 |-------|----------|-------------------------|
 | spec | a proof line names the rule | `drafted`, `ready` |
-| passed | every proof has a passing test from either source, on every platform a counting run covered, and that pass is current | `passed`, `partial`, `failed`, `no test`, `not run`, `code changed` |
-| strong | passed, an audit measured it, the strength at or above `min_strength`, and where the bar is `strong` a brief for the current triple that observed nothing and settled, no hold | `strong`, `weak`, `not audited`, `unsettled`, `manual test`, `held` |
+| passed | every proof has a passing test in a current section from either source, on every platform a current section covers | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
+| strong | passed, an audit measured it, the strength at or above `min_strength`, and where the bar is `strong` an audit entry for the current hashes that settled and found nothing, no hold | `strong`, `weak`, `not audited`, `unsettled`, `manual test`, `held` |
 | signed | a counting signature for the current rule, proof, test, bar and audit hashes, where the rule needs one | `signed`, `unsigned`, `stale`, `held` |
 
 A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `partial`, `passed`,
@@ -144,10 +142,9 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 | spec, rule, proof | `references/formats/spec_format.md` |
 | proof marker, proof file | `references/formats/proofs_format.md` |
 | anchor spec, pinned anchor | `references/formats/anchor_format.md` |
-| record, source, test strength | `references/formats/record_format.md` |
-| test results, the table | `references/formats/tests_format.md` |
+| evidence, source, section, fingerprint, test strength, the table | `references/formats/evidence_format.md` |
 | signature, hold, note | `references/formats/signature_format.md` |
-| the gate, which records count, when a signature counts, what `signed/<version>` means | `references/hard_gates.md` |
+| the gate, which evidence counts, when a signature counts, what `signed/<version>` means | `references/hard_gates.md` |
 | drift, the four role views, config field ownership | `references/drift_criteria.md` |
 | what the audit looks for, the two lists, the brief's layers, what the brief reports | `references/review_criteria.md` |
 | every command's syntax and one-liner | `references/purlin_commands.md` |
@@ -179,7 +176,7 @@ The repository's own vocabulary check enforces that, reading this table for the 
 | verified | the cell word: `passed`, `strong` or `signed` |
 | verdict, the four verdicts | what the brief reports: the strength, the findings, the `observations` and `settled` |
 | Reviewed | removed. A brief is written by the audit; no state stands for it |
-| re-verify, re-verify pending | `code changed`, the passed cell's word when the record is not current |
+| re-verify, re-verify pending | `out of date`, the passed cell's word when the evidence is not current |
 | Proof ready | `ready`, the spec status |
 | lowest state | `blocked_by`, the lowest unmet cell |
 | the seven states | the spec status and the three evidence levels |
@@ -218,21 +215,20 @@ The grading scores the old `purlin:audit` printed stay retired, in the table bel
 | gauge, Proof Design, Proof Integrity | removed. Both grading scores are gone |
 | `PROVABLE`, `LOOSE`, `UNPROVABLE`, `STRUCTURAL` | removed with Proof Design |
 | `STRONG`, `WEAK`, `HOLLOW`, `EXCLUDED` | removed with Proof Integrity |
-| receipt, vhash, `*.receipt.json` | record: `.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` |
-| `verify:` as a commit prefix | `purlin: record for <commit7>` |
+| receipt, vhash, `*.receipt.json` | the evidence: `.purlin/evidence/<source>/<feature>.json` |
+| `verify:` as a commit prefix | `purlin: evidence at <commit7>` |
 | platform registry, `@on(<id>)`, `--platform` | `@env(windows)`, `@env(macos)`, `@env(linux)`, and the CI matrix. **`platform` itself is not retired**: it means one operating system a counting run covered, and the passed cell lists them under `platforms` |
 | `AWAITING RUNNER` | `needs <os>` |
 | mutation score, caught score, kill rate | test strength |
 | mutation testing | the breaks, in prose; `mutation_engine` in config and code |
 | mode, pre-push mode, external LLM mode | removed. The gate is the one setting |
-| records branch | records live in the tree, under `.purlin/records/` |
+| records branch | the evidence lives in the tree, under `.purlin/evidence/` |
 | Pages, the published dashboard site | the dashboard page each person opens from disk |
 | forge | git host |
 | queue | review list |
 | CODEOWNERS, approver rule | removed. No file names who may sign; a signature names its signer |
 | `verify --manual`, `verify --recheck` | removed. `@manual` proofs are evidenced by a signature file with a one-line note |
-| the source `developer`, a record a person commits | removed. A record's source is its folder, `ci` or `local`; `purlin:audit` writes into `local/` and a person's own test run is the test results `purlin:test` commits |
-| `purlin:audit --commit` | removed. `purlin:audit` always writes and commits its record; `purlin:test` commits the test results |
+| the source `developer` | removed. An evidence file's source is its folder, `ci` or `local`; `purlin:test` and `purlin:audit` write into `local/` |
 | `purlin:audit --remote` | `purlin:test --remote`: a remote runner runs the tests |
 | `purlin_run.py --record` | `purlin_run.py --audit`, and `--ci` for the CI job's arm |
 | `figma://`, `> Visual-Reference:`, the visual hash | removed: no design file is tied to a spec |

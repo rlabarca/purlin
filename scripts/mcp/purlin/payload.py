@@ -1,13 +1,13 @@
-"""The structured project payload, schema 8.
+"""The structured project payload, schema 9.
 
-One reader assembles specs, runtime proofs, records and signatures into the
-spec status and the cells of every rule, and every surface renders that: the
+One reader assembles specs, evidence and signatures into the spec status and
+the cells of every rule, and every surface renders that: the
 status table, the dashboard, the gate check and the drift report. A surface
 that parsed the rendered table would be coupled to a layout; this is the shape
 they all read instead.
 
     {
-      "schema_version": 8,
+      "schema_version": 9,
       "generated_at": "2026-09-13T12:00:00Z",
       "generated_by": "sync_status",
       "project": "purlin",
@@ -25,7 +25,12 @@ they all read instead.
          "rollup": {..., "proofs": 6, "proofs_without_test": 1,
                     "proofs_without_test_ids": ["PROOF-4"]},
          "test_strength": 86,
-         "latest_record": {"path": ..., "label": "ci", "timestamp": ..., "os": null},
+         "current": true,
+         "evidence": {"local": {"path": ".purlin/evidence/local/login.json",
+                                "committed": true,
+                                "platforms": {"macos": {"commit": ..., "at": ...,
+                                                        "current": true}}},
+                      "ci": null},
          "signatures": [...],
          "rules": [
            {"id": "RULE-1", "feature": "login", "label": "own",
@@ -44,7 +49,10 @@ they all read instead.
                        "why": ["unsettled"]}],
       "sign_list": [{"feature": ..., "owner": ..., "rule": ..., "bar": ...,
                      "cell": "signed", "kind": "stale", "why": ["stale"]}],
-      "records": {"login": {"": {..., "label": "ci", "result": "pass"}}},
+      "evidence": {"login": {"local": {"macos": {"commit": ..., "at": ...,
+                                                 "result": "pass",
+                                                 "current": true,
+                                                 "path": ...}}}},
       "tag": {"name": "signed/1.4.0", "commit": "<sha>"},
       "remote_url": "https://github.com/acme/ledger.git",
       "warnings": ["..."]
@@ -71,13 +79,13 @@ if _MCP_DIR not in sys.path:
 
 from config_engine import resolve_config
 from purlin import (PURLIN_VERSION,
+                    evidence as evidence_module,
                     fingerprint as fingerprint_module,
-                    gate as gate_module, proofs as proofs_module,
-                    records as records_module, results as results_module,
+                    gate as gate_module,
                     signatures as signatures_module,
                     specs as specs_module, states)
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -106,27 +114,15 @@ def build_payload(project_root, generated_by='sync_status', config=None):
                 'rule is `- RULE-N: <text>`.'
                 % (len(unnumbered), features[name]['spec_path']))
 
-    runtime_proofs = proofs_module.load_proofs(project_root)
-    # The `local` source: the test results `purlin:test` committed, and this
-    # checkout's own run where that run is the newer of the two.
-    local_by_feature = results_module.local_status_map(project_root,
-                                                       runtime_proofs)
-    # Which operating system the local source ran on, and when, so the passed
-    # cell can list it as one platform beside the records.
-    local_run = results_module.local_run_map(project_root)
-    # The results a remote run committed under `.purlin/tests/ci/`. At the
-    # gate `passed` no record is written at all, so these are what carries a
-    # platform nobody here can run, and the passed cell reads them beside the
-    # records.
-    ci_runs = results_module.ci_runs(project_root)
-    all_records = records_module.load_records(project_root,
-                                              warnings=warnings)
+    # Every feature's evidence, checked against a fingerprint taken now. A
+    # section decides a cell only while it is current, so this is read once
+    # here rather than once per rule.
+    evidence = _read_evidence(project_root, features, warnings)
     all_signatures = signatures_module.load_signatures(project_root, features)
     all_holds = signatures_module.load_holds(project_root, features)
-    head = records_module.head_sha(project_root)
+    head = head_sha(project_root)
 
     blob_cache = {}
-    scope_cache = {}
     counted_cache = {}
     feature_entries = []
     review_list = []
@@ -141,10 +137,9 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     for name in sorted(features):
         info = features[name]
         entry, rollup = _feature_entry(
-            project_root, name, info, features, runtime_proofs, all_records,
-            all_signatures, cfg, head, blob_cache, scope_cache, review_list,
-            own_results, all_holds, counted_cache, local_by_feature,
-            local_run, sign_list, ci_runs)
+            project_root, name, info, features, evidence, all_signatures,
+            cfg, blob_cache, review_list, own_results, all_holds,
+            counted_cache, sign_list)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -172,9 +167,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'features': feature_entries,
         'review_list': _sorted_list(review_list),
         'sign_list': _sorted_list(sign_list),
-        'records': {feature: {(os_name or ''): _with_result(record)
-                              for os_name, record in by_os.items()}
-                    for feature, by_os in all_records.items()},
+        'evidence': _evidence_map(evidence),
         'tag': signed_tag(project_root, head),
         'remote_url': _remote_url(project_root),
         'warnings': warnings,
@@ -193,9 +186,9 @@ def proof_counts(rule_entries):
 
     A `@manual` proof is left out of the count: it declares that no test is
     written for it, so naming it as a gap would report the spec's own answer
-    as a fault. Which tests back a proof is read from the records and this
-    checkout's run, so a project whose tests have never run reads every
-    proof as one without a test, which is what it is until something runs.
+    as a fault. Which tests back a proof is read from the evidence, so a
+    project whose tests have never run reads every proof as one without a
+    test, which is what it is until something runs.
     """
     seen = set()
     total = 0
@@ -230,14 +223,13 @@ def _rule_number(rule_id):
     return int(digits) if digits.isdigit() else 0
 
 
-def _feature_entry(project_root, name, info, features, runtime_proofs,
-                   all_records, all_signatures, cfg, head, blob_cache,
-                   scope_cache, review_list, own_results=None, all_holds=None,
-                   counted_cache=None, local_by_feature=None,
-                   local_run=None, sign_list=None, ci_runs=None):
-    counting = _counting(all_records, name, cfg)
-    latest = _latest(all_records.get(name) or {})
-    test_strength = latest.get('test_strength') if latest else None
+def _feature_entry(project_root, name, info, features, evidence,
+                   all_signatures, cfg, blob_cache, review_list,
+                   own_results=None, all_holds=None, counted_cache=None,
+                   sign_list=None):
+    own = evidence.get(name) or _no_evidence(name)
+    mutation = evidence_module.mutation(own['loaded'])
+    test_strength = mutation.get('score') if mutation else None
 
     rule_entries = []
     rule_results = {}
@@ -245,13 +237,13 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         owner_info = features.get(owner)
         if not owner_info:
             continue
+        owner_evidence = evidence.get(owner) or _no_evidence(owner)
+        owner_mutation = evidence_module.mutation(owner_evidence['loaded'])
         result = _rule_entry(
-            project_root, name, owner, owner_info, rule_id, label,
-            runtime_proofs, counting, all_signatures, cfg, head,
-            blob_cache, scope_cache, test_strength, all_holds,
-            _counting(all_records, owner, cfg),
-            counted_cache, local_by_feature, local_run,
-            (ci_runs or {}).get(owner))
+            project_root, owner, owner_info, rule_id, label, owner_evidence,
+            all_signatures, cfg, blob_cache,
+            owner_mutation.get('score') if owner_mutation else None,
+            all_holds, counted_cache)
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
                    'meets_gate': result['meets_gate'],
@@ -271,10 +263,8 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         if entry is not None and sign_list is not None:
             sign_list.append(entry)
 
-    rollup = states.feature_rollup(
-        rule_results, cfg.gate,
-        latest_record=_record_summary(latest),
-        test_strength=test_strength)
+    rollup = states.feature_rollup(rule_results, cfg.gate,
+                                   test_strength=test_strength)
     rollup.update(proof_counts(rule_entries))
 
     entry = {
@@ -291,7 +281,8 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         'pinned': info.get('pinned'),
         'rollup': rollup,
         'test_strength': test_strength,
-        'latest_record': _record_summary(latest),
+        'current': own['current'],
+        'evidence': own['summary'],
         'signatures': sorted(
             signature['path']
             for key, entries in all_signatures.items() if key[0] == name
@@ -299,6 +290,117 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         'rules': rule_entries,
     }
     return entry, rollup
+
+
+# ---------------------------------------------------------------------------
+# The evidence
+# ---------------------------------------------------------------------------
+
+def _read_evidence(project_root, features, warnings):
+    """`{feature: {loaded, sections, current, summary}}` for every spec.
+
+    `sections` is every section of the feature's two files, each checked
+    against a fingerprint taken now; `current` says the newest of them is
+    current; `summary` is the `features[].evidence` object. A file the
+    reader ignores adds its warning once.
+    """
+    markers = fingerprint_module.marker_index(project_root)
+    uncommitted = _uncommitted_evidence(project_root)
+    out = {}
+    for name in sorted(features):
+        loaded = evidence_module.load(project_root, name)
+        for warning in loaded['warnings']:
+            if warning not in warnings:
+                warnings.append(warning)
+        sections = []
+        if any(loaded['files'].values()):
+            now = fingerprint_module.fingerprint(project_root, name, features,
+                                                 markers)
+            sections = evidence_module.checked_sections(loaded, now)
+        newest = None
+        for entry in sections:
+            if newest is None or str(entry['section'].get('at') or '') > str(
+                    newest['section'].get('at') or ''):
+                newest = entry
+        summary = {}
+        for source in evidence_module.SOURCES:
+            if loaded['files'].get(source) is None:
+                summary[source] = None
+                continue
+            path = loaded['paths'][source]
+            summary[source] = {
+                'path': path,
+                'committed': path not in uncommitted,
+                'platforms': {
+                    entry['os']: {'commit': entry['section'].get('commit'),
+                                  'at': entry['section'].get('at'),
+                                  'current': entry['current']}
+                    for entry in sections if entry['source'] == source},
+            }
+        out[name] = {'loaded': loaded, 'sections': sections,
+                     'current': bool(newest and newest['current']),
+                     'summary': summary}
+    return out
+
+
+def _no_evidence(name):
+    """What `_read_evidence` answers for a feature that has no spec of its own."""
+    return {'loaded': {'feature': name, 'files': {'local': None, 'ci': None},
+                       'paths': {}, 'warnings': []},
+            'sections': [], 'current': False,
+            'summary': {'local': None, 'ci': None}}
+
+
+def _uncommitted_evidence(project_root):
+    """The evidence paths whose file is not tracked or differs from HEAD.
+
+    One `git status` answers every file: a path it lists is not committed as
+    it stands, and a path it does not list is tracked and matches HEAD.
+    Outside a repository nothing is committed, so every path counts as not.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'status', '--porcelain', '--untracked-files=all', '--',
+             evidence_module.EVIDENCE_DIR],
+            capture_output=True, text=True, cwd=project_root, timeout=15)
+    except (subprocess.SubprocessError, OSError):
+        return _AllPaths()
+    if result.returncode != 0:
+        return _AllPaths()
+    listed = set()
+    for line in result.stdout.splitlines():
+        if len(line) > 3:
+            listed.add(line[3:].strip('"').split(' -> ')[-1])
+    return listed
+
+
+class _AllPaths(object):
+    """A set that holds every path: outside git, nothing is committed."""
+
+    def __contains__(self, _path):
+        return True
+
+
+def _evidence_map(evidence):
+    """`{feature: {source: {os: {commit, at, result, current, path}}}}`.
+
+    `result` is `fail` where any proof the section observed failed and `pass`
+    otherwise, so two sections with nothing but their operating system to
+    tell them apart still say which one failed.
+    """
+    out = {}
+    for name in sorted(evidence):
+        for entry in evidence[name]['sections']:
+            results = evidence_module.proof_results(entry['section'])
+            out.setdefault(name, {}).setdefault(entry['source'], {})[
+                entry['os']] = {
+                    'commit': entry['section'].get('commit'),
+                    'at': entry['section'].get('at'),
+                    'result': 'fail' if 'fail' in results.values() else 'pass',
+                    'current': entry['current'],
+                    'path': entry['path'],
+                }
+    return out
 
 
 def _review_entry(feature, owner, rule, cfg):
@@ -335,17 +437,13 @@ def _sign_entry(feature, owner, rule, cfg):
             'why': [word]}
 
 
-def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
-                runtime_proofs, counting, all_signatures, cfg, head,
-                blob_cache, scope_cache, test_strength=None, all_holds=None,
-                owner_counting=None, counted_cache=None,
-                local_by_feature=None, local_run=None, runs=None):
+def _rule_entry(project_root, owner, owner_info, rule_id, label,
+                owner_evidence, all_signatures, cfg, blob_cache,
+                test_strength=None, all_holds=None, counted_cache=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
-    entries = runtime_proofs.get(owner, [])
-    local_status = (local_by_feature or {}).get(owner) or {}
-    local_here = (local_run or {}).get(owner) or {}
+    sections = owner_evidence['sections']
 
     proof_dicts = []
     for proof_id in proof_ids:
@@ -356,8 +454,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
             'env': proof['env'],
             'text': proof['text'],
             'tests': [{'file': f, 'name': n}
-                      for f, n in _backing_tests(entries, owner_counting,
-                                                 proof_id)],
+                      for f, n in _backing_tests(sections, proof_id)],
         })
 
     rule_hash = specs_module.rule_text_hash(text)
@@ -368,43 +465,33 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
     bar = meta.get('bar')
     bar_from = 'tag' if bar in gate_module.BARS else 'gate'
     bar = states.bar_of(bar, cfg.gate)
-    scope_key = owner
-    if scope_key not in scope_cache:
-        scope_cache[scope_key] = fingerprint_module.code_hash(
-            project_root, owner_info.get('scope', []))
 
     signatures = [_counted(project_root, signature, cfg, counted_cache)
                   for signature in all_signatures.get((owner, rule_id), [])]
 
-    brief, brief_path = _read_brief(project_root, owner, rule_id, rule_hash,
-                                    proof_hash, test_hash)
+    # The audit entry for this rule's current hashes, in either source. An
+    # entry taken over other text, another proof or another test does not
+    # answer, which is what keeps the strong cell honest.
+    audit = evidence_module.audit_entry(owner_evidence['loaded'], rule_id,
+                                        rule_hash, proof_hash, test_hash)
+    audit_hash = signatures_module.audit_hash(audit, test_strength)
     result = states.rule_cells({
-        # What the signature locks beside the triple: the audit's own
-        # evidence, so a re-audit that observes something different stales it.
-        'audit_hash': signatures_module.audit_hash(brief),
+        # What the signature locks beside the triple: what the audit found,
+        # so a re-audit that finds something different stales it.
+        'audit_hash': audit_hash,
         'proofs': proof_dicts,
-        'local_status': local_status,
-        'local_os': local_here.get('os'),
-        'local_at': local_here.get('at'),
-        'records': counting,
-        # The test results a remote run committed, read as a run per platform
-        # beside the records. They are not an audit, so `audited` below reads
-        # the records alone.
-        'runs': runs or {},
-        # Whether an audit wrote a record the gate counts for this feature.
-        # With none, nothing measured how good the tests are and the strong
-        # cell says so rather than passing the rule on nothing at all.
-        'audited': bool(owner_counting),
-        'head': head,
-        'scope_tree': scope_cache[scope_key],
+        'sections': sections,
+        # Whether the feature's evidence holds any audit at all. With none,
+        # nothing measured how good the tests are and the strong cell says
+        # so rather than passing the rule on nothing at all.
+        'audited': evidence_module.audited(owner_evidence['loaded']),
         'signatures': signatures,
         'holds': (all_holds or {}).get((owner, rule_id), []),
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
         'bar': bar,
-        'brief': brief,
-        'brief_path': brief_path,
+        'audit': audit,
         # The feature's strength stands for every rule in it: a break engine
         # measures a scope, not one rule, and the strong cell compares what
         # was measured rather than assuming nothing was.
@@ -422,7 +509,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
         'test_hash_kind': test_hash_kind,
-        'audit_hash': signatures_module.audit_hash(brief),
+        'audit_hash': audit_hash,
         'spec': result['spec'],
         'cells': result['cells'],
         'bucket': result['bucket'],
@@ -457,30 +544,28 @@ def _counted(project_root, signature, cfg, cache):
     return entry
 
 
-def _counting(all_records, feature, cfg):
-    """`{os: record}`, the latest records of one feature that count under the gate."""
-    return {os_name: record
-            for os_name, record in (all_records.get(feature) or {}).items()
-            if records_module.counts_under(cfg.gate, record.get('label'))}
-
-
-def _backing_tests(runtime_entries, records, proof_id):
+def _backing_tests(sections, proof_id):
     """`[(test_file, test_name), ...]` backing one proof, the same on every machine.
 
-    The tests a committed record observed for the proof come first, across every
-    operating system's latest counting record, because a record is the one list
-    every checkout reads alike. This machine's runtime proofs answer only for a
-    proof no record has observed yet. Reading the runtime first made T depend on
-    which tests this machine could run: a checkout with no `dotnet` ran no xUnit
-    test, listed fewer tests, and read a current signature as stale.
+    The tests the current sections list come first, every operating system
+    and both sources together, because a section is the one list every
+    checkout reads alike. Where no current section lists one, every section
+    answers, so a code change that leaves a section out of date does not
+    change which tests back the proof: the signature binds the tests, and a
+    code change alone stales nothing.
     """
-    observed = []
-    for os_name in sorted(records or {}, key=lambda name: name or ''):
-        for pair in proofs_module.tests_for(
-                (records[os_name] or {}).get('proofs'), proof_id):
-            if pair not in observed:
-                observed.append(pair)
-    return observed or proofs_module.tests_for(runtime_entries, proof_id)
+    for wanted in (True, False):
+        observed = []
+        for entry in sections or ():
+            if wanted and not entry.get('current'):
+                continue
+            for pair in evidence_module.proof_tests(entry['section'],
+                                                    proof_id):
+                if pair not in observed:
+                    observed.append(pair)
+        if observed:
+            return observed
+    return []
 
 
 def _test_hash(project_root, proof_dicts, blob_cache):
@@ -492,7 +577,7 @@ def _test_hash(project_root, proof_dicts, blob_cache):
     the behaviour the signature is meant to have. `signatures.test_hash_kind`
     names what was read beside the hash, so a signature says so on its face.
     Which tests back each proof is `_backing_tests`'s answer, read from the
-    records so it does not depend on the machine.
+    evidence so it does not depend on the machine.
     """
     parts = []
     for proof in proof_dicts:
@@ -505,67 +590,6 @@ def _test_hash(project_root, proof_dicts, blob_cache):
     digest = hashlib.sha256()
     digest.update('\n'.join(sorted(parts)).encode('utf-8'))
     return digest.hexdigest()
-
-
-def _read_brief(project_root, feature, rule_id, rule_hash, proof_hash,
-                test_hash):
-    """`(brief, path)` for a rule's current text, or `(None, None)`.
-
-    A brief is named for the triple it was built from, so a brief for text
-    that has since changed is simply not found: that is what keeps the strong
-    cell honest. Both source folders count at every gate, so a local audit's
-    brief answers wherever it was written. `records.find_brief` is the one
-    place that path is built.
-    """
-    triple = signatures_module.triple_hash(rule_hash, proof_hash, test_hash)
-    rel, path = records_module.find_brief(project_root, feature, rule_id,
-                                          triple)
-    if not path:
-        return None, None
-    try:
-        with open(path, 'r', encoding='utf-8') as handle:
-            brief = json.load(handle)
-    except (json.JSONDecodeError, IOError, OSError, UnicodeDecodeError):
-        return None, None
-    return (brief, rel) if isinstance(brief, dict) else (None, None)
-
-
-def _with_result(record):
-    """One record plus `result`: `fail` where a proof it observed failed.
-
-    A record's existence is not its result. The map is keyed by operating
-    system, and a reader holding two records with nothing but their labels to
-    tell them apart cannot see that the Linux job failed every proof while
-    the Windows job passed them. `fail` where any observation reads `fail`,
-    `pass` otherwise, which is how the run script reads a rule's own
-    observations. The label is already on the record, read from git.
-    """
-    entry = dict(record)
-    statuses = records_module.proof_statuses(record).values()
-    entry['result'] = 'fail' if 'fail' in statuses else 'pass'
-    return entry
-
-
-def _latest(by_os):
-    latest = None
-    for record in by_os.values():
-        if latest is None or str(record.get('timestamp', '')) > str(
-                latest.get('timestamp', '')):
-            latest = record
-    return latest or {}
-
-
-def _record_summary(record):
-    if not record:
-        return None
-    return {
-        'path': record.get('path'),
-        'label': record.get('label'),
-        'timestamp': record.get('timestamp'),
-        'os': record.get('os') or (record.get('environment') or {}).get('os'),
-        'commit': record.get('commit'),
-        'test_strength': record.get('test_strength'),
-    }
 
 
 def signed_tag(project_root, head=None):
@@ -607,7 +631,20 @@ def _tag_order(name):
 
 def head_sha_of(project_root):
     """The sha at HEAD, read once more where the caller had none to hand."""
-    return records_module.head_sha(project_root)
+    return head_sha(project_root)
+
+
+def head_sha(project_root):
+    """The full sha at HEAD, or None outside a git checkout."""
+    try:
+        result = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'],
+            capture_output=True, text=True, cwd=project_root, timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
 
 
 def _remote_url(project_root):

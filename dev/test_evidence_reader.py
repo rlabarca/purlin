@@ -91,7 +91,7 @@ def test_a_source_with_no_file_reads_as_no_evidence(root):
 @pytest.mark.parametrize('content', [
     '{not json',
     '[1, 2]',
-    json.dumps(_file('local', schema='purlin-tests/2')),
+    json.dumps(_file('local', schema='purlin-evidence/2')),
 ])
 def test_a_malformed_file_or_another_schema_is_ignored_with_one_warning(
         root, content):

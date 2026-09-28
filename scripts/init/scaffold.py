@@ -18,8 +18,8 @@ rules need a signature.
 
 It then writes, in this order and naming every one in the summary: the config,
 the plugin copies, the runner's wiring, the engine's config block, the
-`.gitignore` entries, `.purlin/records/` with its README, the dashboard, and,
-where one is wanted, the workflow CI runs.
+`.gitignore` entries, the dashboard, and, where one is wanted, the workflow
+CI runs.
 It ends with the next step computed from the state.
 
 A workflow is written for two reasons and no others: a proof in `specs/` is
@@ -54,8 +54,8 @@ import workflow as workflow_module                            # noqa: E402
 from mutation import mutmut                                   # noqa: E402
 from purlin import (console as console_module,                # noqa: E402
                     frameworks as frameworks_module,
+                    evidence as evidence_module,
                     gate as gate_module,
-                    results as results_module,
                     specs as specs_module, status as status_module)
 
 EXIT_OK = 0
@@ -141,15 +141,6 @@ _STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
                  'strength reads n/a.')
 
 _TRUST_WORDS = {'local': TRUST_LOCAL, 'remote': TRUST_REMOTE}
-
-_READMES = {
-    '.purlin/records': """Every audit at the gate strong or signed writes one record per feature here, in ci/
-or local/, and commits it. The folder is the source: ci/ is a remote runner's, local/ is
-anyone's, and both count at every gate. A tag run fails on a ci/ file the runner did not commit.
-Under passed the evidence is the test results purlin:test commits, under .purlin/tests/.
-""",
-}
-
 
 # --- Reading the tree ------------------------------------------------------
 
@@ -678,9 +669,6 @@ def main(argv=None):
     write_wiring(plan, selected)
     write_engine(plan, root, selected)
     write_gitignore(plan, plugin_root)
-    for directory in sorted(_READMES):
-        plan.directory(directory)
-        plan.write(directory + '/README.md', _READMES[directory])
     plan.copy(os.path.join(plugin_root, 'scripts', 'report',
                            'purlin-report.html'), 'purlin-report.html')
     # A workflow is written for two reasons and no others: a proof this
@@ -688,7 +676,7 @@ def main(argv=None):
     # for signing. A project with neither runs nothing remotely.
     tags = workflow_module.env_tags_in_specs(root)
     wanted, reasons = workflow_module.wanted(
-        tags, trust, results_module.host_os())
+        tags, trust, evidence_module.host_os())
     print_remote_reasons(reasons)
     if wanted and not git_remote(root):
         wanted = False

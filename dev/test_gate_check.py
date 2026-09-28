@@ -7,15 +7,15 @@ Three things it must never do: parse a rendered table, write anything, or pass
 when it cannot read the evidence.
 
 Every fixture is a throwaway project from `dev/test_signatures.py`, with its
-records committed either by a person or under the git host's build identity,
+evidence committed either by a person or under the git host's build identity,
 and its signatures written by a throwaway ssh key that exists only inside the
 temporary directory. Nothing here reaches a network or a git host.
 
 What each group holds:
 
-*passed*    a passing tagged test in a record a person or CI committed
-*strong*    a record CI committed, the test strength at or above the
-            minimum, and a settled brief where the bar asks for one
+*passed*    a passing tagged test in a section a person or CI wrote
+*strong*    an audit in the evidence, the test strength at or above the
+            minimum, and an audit entry that settled where the bar asks
 *signed*    a current signature in a signed commit, whoever wrote it and on
             whatever branch carries it
 *sections*  one section per cell a rule can be blocked at, capped at 20 rules
@@ -58,21 +58,21 @@ def run(project, as_json=False):
     return code, out.getvalue()
 
 
-def project_at(gate, strength=90, by_ci=True, config=None, briefs=('RULE-2',)):
-    """A project whose rules have a record and a brief, at the gate named."""
+def project_at(gate, strength=90, by_ci=True, config=None, audits=('RULE-2',)):
+    """A project whose rules have evidence and an audit entry, at the gate named."""
     settings = {'min_strength': 50}
     settings.update(config or {})
     made = Project(gate=gate, config=settings)
     made.proofs()
-    made.record(strength=strength, runner='ci' if by_ci else 'ada',
+    made.evidence(strength=strength, runner='ci' if by_ci else 'ada',
                 commit_it=False, source='ci' if by_ci else 'local')
-    for rule in briefs or ():
-        made.brief(rule)
+    for rule in audits or ():
+        made.audit(rule)
     if by_ci:
         commit_as_ci(made.root)
     else:
         git(made.root, 'add', '-A')
-        git(made.root, 'commit', '-q', '-m', 'purlin: record for abc1234')
+        git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
     return made
 
 
@@ -92,8 +92,8 @@ def signed_project(signer='jane@acme.com', strength=90, config=None):
 class TestThePassedGate:
 
     @pytest.mark.proof("gate_check", "PROOF-1", "RULE-2")
-    def test_a_developer_record_is_enough(self):
-        made = project_at('passed', by_ci=False, briefs=())
+    def test_a_persons_evidence_is_enough(self):
+        made = project_at('passed', by_ci=False, audits=())
         try:
             code, output = run(made)
             assert code == 0, output
@@ -103,7 +103,7 @@ class TestThePassedGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-2", "RULE-3")
-    def test_a_rule_with_no_record_is_not_passed(self):
+    def test_a_rule_with_no_evidence_is_not_passed(self):
         made = Project(gate='passed')
         try:
             code, output = run(made)
@@ -120,7 +120,7 @@ class TestThePassedGate:
         made = Project(gate='passed')
         try:
             made.proofs({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
-            made.record({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
+            made.evidence({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
             code, output = run(made)
             assert code == 1
             assert 'login RULE-1: failed' in output, output
@@ -135,7 +135,7 @@ class TestThePassedGate:
             'verify 200 and a token\n', ''), gate='passed')
         try:
             made.proofs()
-            made.record()
+            made.evidence()
             code, output = run(made)
             assert code == 1
             assert 'login RULE-1: drafted' in output, output
@@ -145,7 +145,7 @@ class TestThePassedGate:
 
     @pytest.mark.proof("gate_check", "PROOF-5", "RULE-6")
     def test_no_minimum_test_strength_is_printed_under_passed(self):
-        made = project_at('passed', strength=10, by_ci=False, briefs=(),
+        made = project_at('passed', strength=10, by_ci=False, audits=(),
                           config={'min_strength': 80})
         try:
             code, output = run(made)
@@ -163,7 +163,7 @@ class TestThePassedGate:
 class TestTheStrongGate:
 
     @pytest.mark.proof("gate_check", "PROOF-6", "RULE-2")
-    def test_a_record_ci_committed_with_a_settled_brief_passes(self):
+    def test_ci_evidence_with_a_settled_audit_passes(self):
         made = project_at('strong')
         try:
             code, output = run(made)
@@ -174,7 +174,7 @@ class TestTheStrongGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-7", "RULE-3")
-    def test_a_local_record_counts_under_strong(self):
+    def test_local_evidence_counts_under_strong(self):
         """An audit a person ran measures the same breaks CI measures."""
         made = project_at('strong', by_ci=False)
         try:
@@ -185,13 +185,13 @@ class TestTheStrongGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-7", "RULE-3")
-    def test_a_local_record_counts_under_signed_too(self):
+    def test_local_evidence_counts_under_signed_too(self):
         made = project_at('signed', by_ci=False)
         try:
             code, output = run(made)
             assert code == 1
             assert 'Not passed' not in output, output
-            # The tests passed on a local record, so what is left is the
+            # The tests passed in a local section, so what is left is the
             # signature nobody has written.
             assert 'To sign (1):' in output, output
         finally:
@@ -202,12 +202,12 @@ class TestTheStrongGate:
         """Green on one operating system, red on another, is neither."""
         made = Project(gate='strong', config={'min_strength': 50})
         made.proofs()
-        made.record(strength=90, runner='ci', commit_it=False, source='ci',
+        made.evidence(strength=90, runner='ci', commit_it=False, source='ci',
                     os_name='linux')
-        made.record(statuses={'PROOF-1': 'pass', 'PROOF-2': 'fail'},
+        made.evidence(statuses={'PROOF-1': 'pass', 'PROOF-2': 'fail'},
                     strength=90, runner='ci', commit_it=False, source='ci',
-                    os_name='windows', stamp='20260913T130000Z')
-        made.brief('RULE-2')
+                    os_name='windows', at='2026-09-13T13:00:00Z')
+        made.audit('RULE-2')
         commit_as_ci(made.root)
         try:
             code, output = run(made)
@@ -233,8 +233,8 @@ class TestTheStrongGate:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-9", "RULE-4")
-    def test_a_rule_with_no_brief_is_not_audited(self):
-        made = project_at('strong', briefs=())
+    def test_a_rule_with_no_audit_entry_is_not_audited(self):
+        made = project_at('strong', audits=())
         try:
             code, output = run(made)
             assert code == 1
@@ -246,10 +246,10 @@ class TestTheStrongGate:
 
     @pytest.mark.proof("gate_check", "PROOF-9", "RULE-4")
     def test_an_unsettled_audit_lands_a_rule_on_the_review_section(self):
-        made = project_at('strong', briefs=())
+        made = project_at('strong', audits=())
         try:
-            made.brief('RULE-2', settled=False)
-            commit_as_ci(made.root, 'purlin: record for abc1234')
+            made.audit('RULE-2', settled=False)
+            commit_as_ci(made.root, 'purlin: evidence at abc1234')
             code, output = run(made)
             assert code == 1
             assert 'To review (1):' in output, output
@@ -260,12 +260,12 @@ class TestTheStrongGate:
 
     @pytest.mark.proof("gate_check", "PROOF-10", "RULE-4")
     def test_an_observation_the_model_made_stands_against_the_rule(self):
-        made = project_at('strong', briefs=())
+        made = project_at('strong', audits=())
         try:
-            made.brief('RULE-2',
-                       observations=['PROOF-2 asserts the status but never '
+            made.audit('RULE-2',
+                       findings=['PROOF-2 asserts the status but never '
                                      'the body the rule names.'])
-            commit_as_ci(made.root, 'purlin: record for abc1234')
+            commit_as_ci(made.root, 'purlin: evidence at abc1234')
             code, output = run(made)
             assert code == 1
             assert 'Weak (1):' in output, output
@@ -322,7 +322,7 @@ class TestTheSignedGate:
         try:
             entry = made.rule('RULE-2')
             sign_module.write_signature(
-                made.root, 'login', 'RULE-2', 'jane@acme.com', None, None,
+                made.root, 'login', 'RULE-2', 'jane@acme.com', None,
                 'signed', 'strong', entry=entry)
             git(made.root, 'add', '-A')
             git(made.root, '-c', 'commit.gpgsign=false', 'commit', '-q', '-m',
@@ -356,6 +356,9 @@ class TestTheSignedGate:
                 ['login', '--project-root', made.root]) == 0
             made.spec(SPEC.replace('return 200 with a session token',
                                    'return 200 with a signed session token'))
+            # The spec moved, so the tests run again over it; what is left
+            # is the signature the new text no longer matches.
+            made.evidence(runner='ci', source='ci', commit_it=False)
             code, output = run(made)
             assert code == 1
             assert 'login RULE-1: stale' in output, output
@@ -452,7 +455,7 @@ class TestExitCodes:
 
     @pytest.mark.proof("gate_check", "PROOF-21", "RULE-9")
     def test_zero_one_and_two(self, tmp_path):
-        passing = project_at('passed', by_ci=False, briefs=())
+        passing = project_at('passed', by_ci=False, audits=())
         failing = Project(gate='passed')
         try:
             assert run(passing)[0] == 0
@@ -479,7 +482,7 @@ class TestExitCodes:
 
     @pytest.mark.proof("gate_check", "PROOF-24", "RULE-13")
     def test_the_script_runs_as_a_command(self):
-        made = project_at('passed', by_ci=False, briefs=())
+        made = project_at('passed', by_ci=False, audits=())
         try:
             result = subprocess.run(
                 [sys.executable, GATE_PY, '--check', '--project-root',
@@ -516,7 +519,7 @@ class TestTheJsonResult:
 
     @pytest.mark.proof("gate_check", "PROOF-26", "RULE-11")
     def test_a_passing_project_says_pass(self):
-        made = project_at('passed', by_ci=False, briefs=())
+        made = project_at('passed', by_ci=False, audits=())
         try:
             code, output = run(made, as_json=True)
             data = json.loads(output[output.index('{'):])
@@ -602,7 +605,7 @@ class TestWhatTheGateReads:
 
     @pytest.mark.proof("gate_check", "PROOF-31", "RULE-1")
     def test_a_caller_may_hand_over_the_payload_it_already_built(self):
-        made = project_at('passed', by_ci=False, briefs=())
+        made = project_at('passed', by_ci=False, audits=())
         try:
             payload = made.payload()
             out = io.StringIO()
@@ -633,7 +636,7 @@ class TestWhatTheGateReads:
 def test_the_report_carries_its_seven_sections_in_order():
     """One rule short at each section, and the seven headings in the chain's
     own order."""
-    made = project_at('signed', briefs=(),
+    made = project_at('signed', audits=(),
                       config={'min_strength': 80})
     try:
         code, output = run(made, as_json=True)

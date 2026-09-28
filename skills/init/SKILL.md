@@ -61,7 +61,7 @@ list back to the person before running it for real on a project that already has
 Raising the gate is additive. `--gate strong` on a project set up as `passed` turns the
 breaks on; it asks before each write and touches nothing else. `--gate signed` on top of that
 asks which rules need a signature. Lowering the gate rewrites the setting and
-deletes nothing: the workflow, the records and the signatures stay where they are.
+deletes nothing: the workflow, the evidence and the signatures stay where they are.
 
 Raising the gate writes no workflow. A runner is added for its own two reasons, below, and not
 because the gate moved.
@@ -73,16 +73,15 @@ engine, and writes both into `.purlin/config.json`. One `purlin:test` then runs 
 ## What init writes
 
 It writes `.purlin/config.json` with the gate, the trust answer, the git host, the test
-framework, the breaks engine and the derived defaults; `specs/` for the two-section specs; and
-`.purlin/records/` with a README saying an audit writes the files in it, under `ci/` or
-`local/`, and nobody edits them by hand. It installs the proof plugin for the detected
+framework, the breaks engine and the derived defaults; and `specs/` for the two-section specs.
+It installs the proof plugin for the detected
 framework and the breaks engine for the language, writing `[tool.mutmut]` into `pyproject.toml`
 when that file exists and `[mutmut]` into `setup.cfg` otherwise. It adds a `.gitignore` block
 for `.purlin/runtime/`, where test runs put their proof files, and copies the dashboard page so
 it opens from disk. It installs no git hook at all: nothing runs at commit time and nothing
 runs at push time. It installs the Claude Code hook that refreshes the local dashboard data. It
-ignores `.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON an audit commits,
-then prints every file it wrote or edited, one per line.
+leaves `.purlin/evidence/` and `.purlin/tests.md` tracked, then prints every file it wrote or
+edited, one per line.
 
 That Claude Code hook is the only hook init installs. It writes no git hook at all: nothing
 runs at push time, and a push is free, to any branch, for anyone.
@@ -91,8 +90,8 @@ Where a runner is called for, the workflow triggers on two things and nothing el
 `signed/**` tag, and a push to a `run/*` branch, the branch `purlin:test --remote` creates and
 deletes around one run. A pull request starts nothing. The job is named `purlin`. The tag run
 reruns the tagged tests on a clean machine, checks that every signature and every hold still
-binds the rule, the proof, the test, the bar and the audit it names, checks that every record
-and brief under `ci/` was committed by the runner's own identity, and ends with
+binds the rule, the proof, the test, the bar and the audit it names, checks that every file
+under `.purlin/evidence/ci/` was committed by the runner's own identity, and ends with
 `scripts/ci/gate_check.py --check --verify`, which fails the job when the gate is not met or
 the evidence does not hold. No breaks run on the runner.
 
@@ -118,9 +117,10 @@ silently kept.
 
 ## Who writes the evidence
 
-`purlin:test` commits the test results under `.purlin/tests/` and `purlin:audit` writes the
-record. A record's source is the folder it sits in: `.purlin/records/ci/`, written by a remote
-runner, or `.purlin/records/local/`, which is anyone's. Both count at every gate.
+`purlin:test` writes each feature's evidence under `.purlin/evidence/local/`, `purlin:audit`
+adds what the audit found, and `--commit` on either commits it. A file's source is the folder
+it sits in: `.purlin/evidence/ci/`, written by a remote runner, or `.purlin/evidence/local/`,
+which is anyone's. Both count at every gate.
 
 ## The trust question
 
@@ -138,7 +138,7 @@ at all. That is the ordinary case, at every gate, `signed` included: the tag is 
 every rule met the gate on your machine.
 
 Under `remote` a signature rests on a run this machine did not make. `purlin:sign` refuses a
-rule whose tests have no `ci` record for the current commit, so `purlin:test --remote` runs
+rule whose tests have no current `ci` run for this code, so `purlin:test --remote` runs
 first.
 
 ## The remote runner
@@ -163,10 +163,9 @@ same checks run under `--update`.
 
 ## What each gate brings
 
-Under every gate, init creates the records folder and its retention rule, and leaves the bar
-tag optional. Under `strong` and `signed`, init also turns the breaks on. Where a workflow is called for, and `specs/` carries `@env(windows)`
+Under every gate, init leaves the bar tag optional. Under `strong` and `signed`, init also turns the breaks on. Where a workflow is called for, and `specs/` carries `@env(windows)`
 or `@env(macos)` proofs, it gets a matrix: a Linux job always, plus one job per other operating
-system named, each running the same tests and writing its own record. With no such proof there
+system named, each running the same tests and writing its own section. With no such proof there
 is one Linux job.
 
 Under `signed`, init asks `Which rules need a signature?` and writes the answer to `sign_at`:
@@ -208,8 +207,8 @@ workflow carries it.
 
 | The run | What it does |
 |---------|--------------|
-| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks every signature and every hold against the tagged code, checks that every record and brief under `ci/` was committed by the runner's identity, runs the gate check, and commits nothing |
-| a `run/*` branch | Runs the tagged tests, and at `strong` and above audits what it ran, then commits its records and briefs onto that branch under `ci/` through the git host's API |
+| a `signed/**` tag | Reruns the tagged tests on a clean machine, checks every signature and every hold against the tagged code, checks that every file under `.purlin/evidence/ci/` was committed by the runner's identity, runs the gate check, and commits nothing |
+| a `run/*` branch | Runs the tagged tests, then commits its own section of each feature's `.purlin/evidence/ci/` file onto that branch through the git host's API, at every gate |
 
 The runner writes no signature, ever, and it posts no comment and uploads no artifact: the
 dashboard is the page that opens from disk.

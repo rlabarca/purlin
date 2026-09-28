@@ -1,34 +1,33 @@
-"""Run a project's tagged tests, write the results, and audit them on request.
+"""Run a project's tagged tests, write the evidence, and audit it on request.
 
     purlin_run.py (--feature NAME ... | --all)
-                  (--test [--remote] | --audit | --ci)
+                  (--test [--remote] [--commit] | --audit [--commit] | --ci)
                   [--arm-timeout SECONDS]
                   [--project-root DIR]
 
 `--test` is what `purlin:test` runs: the plugins run the tagged tests into
-`.purlin/runtime/proofs/`, the run writes `.purlin/tests/<feature>.json` and
-`.purlin/tests.md`, commits both under the person's identity, prints the table
-and ends with `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`.
-It never pushes. `--remote` hands the commit to the git host's runner instead
-and brings back what that runner wrote.
+`.purlin/runtime/proofs/`, and the run writes this operating system's section
+of `.purlin/evidence/local/<feature>.json` for every feature it covered,
+re-renders `.purlin/tests.md` from every evidence file, prints the table and
+ends with `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`.
+It writes and does not commit. `--commit` commits the evidence and the table
+under the person's own identity as `purlin: evidence at <sha7>`; nothing here
+ever pushes. `--remote` hands the commit to the git host's runner instead and
+brings back what that runner wrote.
 
-`--audit` is what `purlin:audit` runs: the tests, then the breaks and the AI
-audit, printed per rule as the strength beside the minimum and the audit's
-observations. It writes one record per feature
-under `.purlin/records/local/` with the briefs under
-`.purlin/briefs/local/`, commits them under the person's own identity as
-`purlin: record for <sha7>`, and never pushes. It ends with `gate strong:
-<n> of <rules>` or `gate not met: <n> of <rules>` and exits 1 when the gate
-is not met. Nothing here pins a record: the tag `purlin:sign` writes,
-`signed/<version>`, holds the whole tree at one commit.
+`--audit` is what `purlin:audit` runs: the tests, as `--test` runs them, then
+the breaks where the gate asks for them and the AI audit, printed per rule as
+the strength beside the minimum and the audit's observations. Both land in the
+same evidence file, under `audit`, and `--commit` commits them the same way.
+It ends with `gate strong: <n> of <rules>` or `gate not met: <n> of <rules>`
+and exits 1 when the gate is not met.
 
-`--ci` is the arm the CI job runs: the tagged tests, and then, on a run
-branch, what the gate asks for. At `strong` and above that is the briefs and
-one record per feature under `.purlin/records/ci/`; at `passed` it is the
-test results under `.purlin/tests/ci/`. Either way the commit goes through
-the git host's API, and no breaks run there. On a tag run it writes nothing
-at all: the rerun and the gate check with `--verify` are what a tag run is
-for.
+`--ci` is the arm the CI job runs. On a run branch it writes this runner's
+section of `.purlin/evidence/ci/<feature>.json` and always commits it,
+through the git host's API, because the evidence exists nowhere else. No
+breaks run there and the AI audit is not called. On a tag run it writes
+nothing at all: the rerun and the gate check with `--verify` are what a tag
+run is for.
 
 A proof the spec tags `@env` for another operating system is not run here. The
 run says so in one sentence and names the command that adds a remote runner.
@@ -41,7 +40,7 @@ what it printed is kept, the run reports the timeout as missing evidence and
 carries on.
 
 Exit codes: 0 everything asked for happened, 1 a test failed, evidence is
-missing or the passed level is not met, 2 the command line was wrong.
+missing or the gate is not met, 2 the command line was wrong.
 
 The flow is one pass. Resolve the configuration and the frameworks, scan the
 specs, run one arm per framework, then check two things the arms cannot check
@@ -53,12 +52,10 @@ themselves:
 
 Both are silent by default in every test framework there is, and both leave a
 reader looking at a proof file from an earlier run believing it describes this
-one. Under `--audit` and `--ci` the run then measures the breaks per spec
-scope where the gate asks for them, hashes the attachments, builds the
-`purlin-record/3` dict and hands it to the record writer.
+one. `references/formats/evidence_format.md` is the shape of what the run
+then writes.
 """
 
-import hashlib
 import os
 import shutil
 import subprocess
@@ -73,24 +70,21 @@ for _path in (_MCP_DIR, _REVIEW_DIR, _HERE):
 
 from config_engine import resolve_config                      # noqa: E402
 from purlin import (console as console_module,                # noqa: E402
+                    evidence as evidence_reader,
                     fingerprint as fingerprint_module,
                     frameworks as frameworks_module,
                     gate as gate_module, payload as payload_module,
-                    proofs as proofs_module, records as records_module,
-                    results as results_reader,
+                    proofs as proofs_module,
                     specs as specs_module, states as states_module,
                     status as status_module)
+import evidence as evidence_writer                             # noqa: E402
 
 ARROW = '→'
-RECORD_SCHEMA = 'purlin-record/3'
-# The `schema_version` the record format carries; see references/formats/.
-RECORD_SCHEMA_VERSION = 3
-ATTACHMENT_DIR = os.path.join('.purlin', 'runtime', 'attachments')
 LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
 USAGE = (
     'Usage: purlin_run.py (--feature NAME ... | --all) '
-    '(--test [--remote] | --audit | --ci) '
+    '(--test [--remote] [--commit] | --audit [--commit] | --ci) '
     '[--arm-timeout SECONDS] [--project-root DIR]')
 
 # The one line `purlin:test --remote` gets. A remote runner runs the tests,
@@ -102,13 +96,15 @@ REMOTE_IS_A_TEST = ('a remote runner runs the tests, so --remote belongs to '
 FOREIGN_PROOF = ('%s %s needs %s; this machine is %s. A remote runner runs '
                  'it: purlin:init adds one.')
 
-# What a `--ci` run says where the gate asks for no record at all.
-NO_RECORD_AT_PASSED = 'The gate is passed, so this run writes no record.'
+# The one line `--commit` gets anywhere but `--test` and `--audit`. A runner
+# always commits, and a remote run commits nothing here.
+COMMIT_IS_A_PERSONS = ('--commit belongs to --test and --audit; a remote run '
+                       'commits on the runner')
 
 # How long one arm may take before it is killed. An hour is longer than any
 # shipped suite and far shorter than a hosted runner's six-hour job limit, so
-# a stuck arm ends as a named piece of missing evidence in a record rather
-# than as a cancelled job with an empty log.
+# a stuck arm ends as a named piece of missing evidence rather than as a
+# cancelled job with an empty log.
 ARM_TIMEOUT_DEFAULT = 3600
 
 # What `_run` returns when it killed the command.
@@ -135,6 +131,7 @@ class Args(object):
         self.all = False
         self.action = None          # 'test', 'audit' or 'ci'
         self.remote = False
+        self.commit = False
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
         self.error = None
@@ -158,6 +155,8 @@ def parse_args(argv):
             actions.append(token[2:])
         elif token == '--remote':
             args.remote = True
+        elif token == '--commit':
+            args.commit = True
         elif token == '--arm-timeout':
             index += 1
             value = argv[index] if index < len(argv) else ''
@@ -197,6 +196,9 @@ def parse_args(argv):
     if args.remote and args.action != 'test':
         args.error = REMOTE_IS_A_TEST
         return args
+    if args.commit and (args.action == 'ci' or args.remote):
+        args.error = COMMIT_IS_A_PERSONS
+        return args
     return args
 
 
@@ -210,7 +212,7 @@ def host_os():
     The reader package answers it, so the platform a run writes into its
     evidence and the platform a cell reads back out are the same string.
     """
-    return results_reader.host_os()
+    return evidence_reader.host_os()
 
 
 def foreign_env_proofs(features, selected, os_name):
@@ -482,34 +484,14 @@ def clear_proofs(project_root):
 
 
 # ---------------------------------------------------------------------------
-# The record
+# Who ran, and on what
 # ---------------------------------------------------------------------------
 
-def runner_identity(project_root, args):
-    """`(slug, environment)` naming who this run was.
-
-    The slug is the record's `runner`, matching the file name, and the rest
-    goes under `environment`: what kind of run it was, which job it was, and
-    which machine. None of it claims who wrote the record, because the label on
-    a record comes from the commit and never from the file.
-    """
-    on_ci = args.action == 'ci'
-    kind = 'ci' if on_ci else 'local'
-    if on_ci:
-        slug = 'ci'
-    else:
-        slug = records_module.runner_slug(_git_email(project_root))
-    job = (os.environ.get('GITHUB_JOB')
-           or os.environ.get('BUILD_DEFINITIONNAME') or None)
-    host = os.environ.get('RUNNER_NAME') or _hostname()
-    return slug, {'kind': kind, 'job': job, 'host': host}
-
-
-def _hostname():
-    try:
-        return os.uname().nodename
-    except AttributeError:
-        return os.environ.get('COMPUTERNAME', '')
+def runner_name(project_root, args):
+    """`ci` on a runner, else the slug of the person's git email."""
+    if args.action == 'ci':
+        return 'ci'
+    return evidence_writer.runner_slug(_git_email(project_root))
 
 
 def _git_email(project_root):
@@ -522,175 +504,27 @@ def _git_email(project_root):
     return result.stdout.strip()
 
 
-def environment_id():
-    """A short name for the machine's shape, for the record to carry."""
-    try:
-        uname = os.uname()
-        return '%s-%s' % (uname.sysname.lower(), uname.machine)
-    except AttributeError:
-        return host_os()
-
-
 def head_commit(project_root):
-    return records_module.head_sha(project_root) or ''
+    return payload_module.head_sha(project_root) or ''
 
 
 def working_tree_dirty(project_root):
+    """True when the tree carries a change no commit holds, outside `.purlin/`.
+
+    What Purlin writes about a project is not a change to the project, so
+    the evidence a run has just written does not make the next run's tree
+    read as dirty.
+    """
     try:
         result = subprocess.run(['git', 'status', '--porcelain'],
                                 capture_output=True, text=True,
                                 cwd=project_root, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return False
-    return bool(result.stdout.strip())
-
-
-def attachments_for(project_root, feature, proof_ids):
-    """`[{proof, sha256, artifact}]` for the captures a test wrote."""
-    directory = os.path.join(project_root, ATTACHMENT_DIR, feature)
-    out = []
-    try:
-        names = sorted(os.listdir(directory))
-    except OSError:
-        return out
-    for name in names:
-        proof_id = os.path.splitext(name)[0]
-        if proof_id not in proof_ids:
-            continue
-        path = os.path.join(directory, name)
-        digest = hashlib.sha256()
-        try:
-            with open(path, 'rb') as handle:
-                for block in iter(lambda: handle.read(65536), b''):
-                    digest.update(block)
-        except (IOError, OSError):
-            continue
-        out.append({
-            'proof': proof_id,
-            'sha256': digest.hexdigest(),
-            'artifact': '%s/%s/%s' % (ATTACHMENT_DIR.replace(os.sep, '/'),
-                                      feature, name),
-        })
-    return out
-
-
-def build_record(project_root, args, features, selected, index, plugins,
-                 breaks, log_digest, gate='passed'):
-    """The record dict `references/formats/record_format.md` describes.
-
-    Every field that file marks REQUIRED is filled here; `os`, `timestamp` and
-    `runner` are finished by the record writer, which owns the file name they
-    have to agree with. The run's own detail (`features`, `plugins`,
-    `missing`, `log`, `dirty`) rides along as optional fields a reader that
-    does not know them ignores.
-    """
-    runner, environment = runner_identity(project_root, args)
-    record = {
-        'schema': RECORD_SCHEMA,
-        'schema_version': RECORD_SCHEMA_VERSION,
-        'gate': gate,
-        # One record per feature: the record writer files it under
-        # `.purlin/records/<source>/<feature>/` and prunes that folder, and
-        # the retention rule counts per feature per operating system.
-        'feature': selected[0] if len(selected) == 1 else '',
-        'commit': head_commit(project_root),
-        'dirty': working_tree_dirty(project_root),
-        # The slug, the same string the file name carries. What kind of run it
-        # was, which job and which machine go under `environment`, so nothing
-        # here has to be rewritten by the writer to agree with the name.
-        'runner': runner,
-        'timestamp': _now_iso(),
-        'environment': {
-            'os': host_os(),
-            'id': environment_id(),
-            'kind': environment['kind'],
-            'job': environment['job'],
-            'host': environment['host'],
-            'engines': [breaks.get('engine')] if breaks.get('engine') else [],
-        },
-        'plugins': list(plugins),
-        'missing': [],
-        'features': {},
-        # The git tree hash of the record's own feature scope, one string: the
-        # record is per feature, so there is nothing else to key it by.
-        'scope_tree': '',
-        # The percentage of the deliberate breaks the tests caught over this
-        # feature's scope. None when no engine measured it, which is every
-        # run under the `passed` gate, where the breaks do not run at all.
-        'test_strength': None,
-        # One entry per proof this run observed, which is what the reader
-        # compares a rule's proofs against.
-        'proofs': [],
-        'log': log_digest,
-    }
-    break_features = (breaks.get('features') or {})
-    for name in selected:
-        info = features.get(name) or {}
-        feature_breaks = break_features.get(name) or {}
-        rules = {}
-        own = name == record['feature']
-        for rule_id in info.get('rule_order', []):
-            proof_ids = info.get('proofs_by_rule', {}).get(rule_id, [])
-            tests = []
-            statuses = []
-            for proof_id in proof_ids:
-                proof = (info.get('proofs') or {}).get(proof_id) or {}
-                for entry in index.get((name, proof_id), []):
-                    tests.append({
-                        'file': entry.get('test_file', ''),
-                        'name': entry.get('test_name', ''),
-                        'status': entry.get('status', ''),
-                        'plugin': entry.get('plugin', ''),
-                    })
-                    statuses.append(entry.get('status'))
-                    if own:
-                        record['proofs'].append({
-                            'id': proof_id,
-                            'rule': rule_id,
-                            'status': entry.get('status', ''),
-                            'env': proof.get('env'),
-                            'test_file': entry.get('test_file', ''),
-                            'test_name': entry.get('test_name', ''),
-                        })
-            if not statuses:
-                result = 'missing'
-                record['missing'].append('%s %s' % (name, rule_id))
-            elif 'fail' in statuses:
-                result = 'fail'
-            else:
-                result = 'pass'
-            rules[rule_id] = {
-                'proofs': list(proof_ids),
-                'tests': tests,
-                'result': result,
-                'test_strength': (feature_breaks.get('rules') or {}).get(
-                    rule_id) or _no_strength(breaks),
-                'attachments': attachments_for(project_root, name,
-                                               set(proof_ids)),
-            }
-        record['features'][name] = {
-            'spec': info.get('spec_path', ''),
-            'rules': rules,
-            'scope_score': feature_breaks.get('scope_score'),
-        }
-        if own:
-            record['scope_tree'] = fingerprint_module.code_hash(
-                project_root, info.get('scope', []))
-            record['test_strength'] = (
-                feature_breaks.get('scope_score') or {}).get('score')
-    return record
-
-
-def _no_strength(breaks):
-    return {'engine': breaks.get('engine') or 'none', 'score': None,
-            'killed': 0, 'survived': 0, 'attribution': 'unavailable'}
-
-
-def _now_iso():
-    import datetime
-
-    return datetime.datetime.now(
-        datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    for line in result.stdout.splitlines():
+        if len(line) > 3 and not line[3:].strip('"').startswith('.purlin/'):
+            return True
+    return False
 
 
 def scope_by_feature(features, selected):
@@ -712,6 +546,82 @@ def tests_by_rule(features, selected, index):
             if tests:
                 out[(name, rule_id)] = tests
     return out
+
+
+# ---------------------------------------------------------------------------
+# The evidence
+# ---------------------------------------------------------------------------
+
+def write_sections(project_root, args, features, selected, index, os_name,
+                   source):
+    """One section per feature this run covered, merged into its file. The paths.
+
+    Each file is read from disk and only this operating system's section is
+    replaced, so a `--feature` run, and a run on another machine, leave
+    every other section as it was.
+    """
+    commit = head_commit(project_root)
+    dirty = working_tree_dirty(project_root)
+    runner = runner_name(project_root, args)
+    markers = fingerprint_module.marker_index(project_root)
+    paths = []
+    for name in selected:
+        info = features.get(name) or {}
+        entries = {}
+        for proof_id in sorted(info.get('proofs') or {}):
+            found = index.get((name, proof_id), [])
+            if found:
+                entries[proof_id] = found
+        section = evidence_writer.build_section(
+            info, entries, os_name, commit, dirty, runner,
+            fingerprint_module.fingerprint(project_root, name, features,
+                                           markers))
+        paths.append(evidence_writer.write_section(
+            project_root, source, name, info, os_name, section))
+    return paths
+
+
+def _prune(project_root, features):
+    """Delete the evidence of every feature no spec defines, one line each."""
+    removed = evidence_writer.prune(project_root, features)
+    for path in removed:
+        print(evidence_writer.REMOVED
+              % (path, path.rsplit('/', 1)[-1][:-len('.json')]))
+    return removed
+
+
+def gate_line(met, rules, level='passed'):
+    """The one line a run ends on, and the exit code with it.
+
+    `level` is the cell the run answered: `passed` for `purlin:test`,
+    `strong` for `purlin:audit` where that cell exists. One shape for both,
+    so a reader learns the line once.
+    """
+    if rules and met == rules:
+        return 'gate %s: %d of %d' % (level, met, rules), 0
+    return 'gate not met: %d of %d' % (met, rules), 1
+
+
+def project_gate_line(project_root, level='passed'):
+    """`(line, exit code)` for one cell, over every rule under specs/.
+
+    Each rule is counted once, under the feature that owns it, and the
+    project is counted rather than the run, so a `--feature` run answers for
+    every rule and not only for the features it ran. `purlin:test` counts
+    the passed cell; `purlin:audit` counts the strong cell where one exists,
+    and the passed cell under the gate `passed`, where none does.
+    """
+    payload = payload_module.build_payload(project_root, generated_by='run')
+    met = rules = 0
+    for feature in payload.get('features') or ():
+        for rule in feature.get('rules') or ():
+            if rule.get('feature') != feature.get('name'):
+                continue
+            rules += 1
+            cell = (rule.get('cells') or {}).get(level)
+            if states_module.cell_is_met(level, cell):
+                met += 1
+    return gate_line(met, rules, level)
 
 
 # ---------------------------------------------------------------------------
@@ -832,201 +742,102 @@ def main(argv=None):
         for failure in failures:
             print('Evidence is missing: %s.' % failure)
 
-    gate_code = 0
-    if args.action == 'test':
-        gate_line = _write_test_results(project_root, features, selected,
-                                        index, os_name)
-    elif args.action == 'audit':
-        gate_line = _audit(project_root, args, features, selected, index,
-                           ran, log, cfg)
-    else:
+    if args.action == 'ci':
         # Called whatever the arms found: a run that reports missing evidence
-        # still writes its record, posts its comment and publishes its logs,
-        # which is where a reader finds out what went missing.
-        ci_code = _ci(project_root, args, features, selected, index, ran, log,
-                      cfg)
-        exit_code = exit_code or ci_code
+        # still commits what it saw, which is where a reader finds out what
+        # went missing.
+        ci_code = _ci(project_root, args, features, selected, index, log,
+                      os_name)
+        print('')
+        print(status_module.sync_status(project_root))
+        return exit_code or ci_code
+
+    print('')
+    paths = write_sections(project_root, args, features, selected, index,
+                           os_name, 'local')
+    removed = _prune(project_root, features)
+    level = 'passed'
+    if args.action == 'audit':
+        _audit(project_root, args, features, selected, log, cfg)
+        level = 'passed' if cfg.gate == 'passed' else 'strong'
+    evidence_writer.write_table(project_root)
+    print(evidence_writer.written_line(paths))
+    if args.commit:
+        print(evidence_writer.commit_local(project_root,
+                                           head_commit(project_root), removed))
 
     print('')
     print(status_module.sync_status(project_root))
-    if args.action in ('test', 'audit'):
-        print('')
-        print(gate_line[0])
-        gate_code = gate_line[1]
+    line, gate_code = project_gate_line(project_root, level)
+    print('')
+    print(line)
     return exit_code or gate_code
 
 
 def _write_log(project_root, log):
-    """The run's console log, written once and hashed into the record."""
+    """The run's console log, written once to `.purlin/runtime/run.log`."""
     path = os.path.join(project_root, LOG_PATH)
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        text = '\n'.join(log) + '\n'
         with open(path, 'w', encoding='utf-8') as handle:
-            handle.write(text)
+            handle.write('\n'.join(log) + '\n')
     except (IOError, OSError):
-        return {'sha256': '', 'path': LOG_PATH.replace(os.sep, '/')}
-    return {'sha256': hashlib.sha256(text.encode('utf-8')).hexdigest(),
-            'path': LOG_PATH.replace(os.sep, '/')}
+        return None
+    return LOG_PATH.replace(os.sep, '/')
 
 
-def _build_test_results(project_root, features, selected, index, os_name,
-                        source='local'):
-    """Write one results file per feature the run covered, then the table.
+# ---------------------------------------------------------------------------
+# The audit
+# ---------------------------------------------------------------------------
 
-    Every feature the run covered gets its own file under the folder its
-    source names, and the table is rendered from every file on disk, so a
-    `--feature` run leaves the rows it did not run as they were. The paths
-    and the commit the run observed come back, because a run branch's arm
-    commits them through the git host's API rather than through git here.
+def _audit(project_root, args, features, selected, log, cfg):
+    """The `--audit` arm: how good the tests are, written into the evidence.
+
+    The breaks run where the gate asks for them and their score goes under
+    each feature's `audit.mutation`. Each rule the AI audit reads gets an
+    entry under `audit.rules`, keyed by the rule, proof and test hashes it
+    read. Both land in `.purlin/evidence/local/<feature>.json`, beside the
+    section the tests just wrote; nothing here commits.
     """
-    from results import build_results, write_results, write_table
-
-    commit = head_commit(project_root)
-    when = _now_iso()
-    paths = []
-    for name in selected:
-        info = features.get(name) or {}
-        observed = {}
-        tests = {}
-        for proof_id in sorted(info.get('proofs') or {}):
-            for entry in index.get((name, proof_id), []):
-                status = entry.get('status')
-                if observed.get(proof_id) != 'fail':
-                    observed[proof_id] = status
-                if proof_id not in tests and entry.get('test_file'):
-                    tests[proof_id] = '%s::%s' % (entry.get('test_file'),
-                                                  entry.get('test_name', ''))
-        paths.append(write_results(project_root, build_results(
-            name, info, observed, tests, commit, os_name, when, source,
-            fingerprint_module.code_hash(project_root,
-                                         info.get('scope', [])))))
-    paths.append(write_table(project_root))
-    return paths, commit
-
-
-def _write_test_results(project_root, features, selected, index, os_name):
-    """The `--test` arm's own evidence: the two files, and the commit.
-
-    The commit is the person's own and nothing here pushes. The answer comes
-    back as `(line, exit code)`.
-    """
-    from results import commit_results, gate_line, project_totals
-
-    print('')
-    _paths, commit = _build_test_results(project_root, features, selected,
-                                         index, os_name)
-    print(commit_results(project_root, commit))
-    return gate_line(*project_totals(project_root, features))
-
-
-def _audit(project_root, args, features, selected, index, plugins, log,
-           cfg):
-    """The `--audit` arm: how good the tests are, written down and committed.
-
-    The breaks run where the gate asks for them, the AI audit is read off
-    the brief, and the whole of it
-    goes into one record per feature under `.purlin/records/local/` with the
-    briefs beside it. The commit is the person's own, under their own
-    identity, and nothing here pushes. A record this run wrote counts at
-    every gate, `signed` included: what a signature locks is the evidence,
-    not the machine. The answer comes back as `(line, exit code)`.
-    """
-    breaks = (_run_breaks(project_root, args, features, selected, index)
+    breaks = (_run_breaks(project_root, args, features, selected)
               if cfg.breaks else _no_breaks(cfg.gate))
-    log_digest = _write_log(project_root, log)
-    print('')
-    paths, _written, head = _write_records(
-        project_root, args, features, selected, index, plugins, breaks,
-        log_digest, cfg, 'local')
-    print('')
-    _audit_report(project_root, selected, breaks, 'local')
-    if paths:
-        from records import commit_local_records
-        print(commit_local_records(project_root, head))
-    return _audit_gate_line(project_root, cfg)
-
-
-def _write_records(project_root, args, features, selected, index, plugins,
-                   breaks, log_digest, cfg, source):
-    """One record per feature, written into `source`'s folder. `(paths, records, head)`.
-
-    One record per feature, because that is what the record writer files and
-    prunes: `.purlin/records/<source>/<feature>/` keeps the newest three per
-    operating system, which it cannot do for a file covering several features
-    at once. At `passed` there is no record to write at all: the committed
-    test results are the evidence there, and `purlin:test` writes those.
-    """
-    if cfg.gate == 'passed':
-        print(NO_RECORD_AT_PASSED)
-        return [], [], head_commit(project_root)
-
-    from records import write_record
-
-    paths = []
-    written = []
-    head = ''
+    _write_log(project_root, log)
+    commit = head_commit(project_root)
+    break_features = breaks.get('features') or {}
     for name in selected:
-        record = build_record(project_root, args, features, [name], index,
-                              plugins, breaks, log_digest, cfg.gate)
-        head = record['commit']
-        path = write_record(project_root, record, record['runner'],
-                            os_name=record['environment']['os'],
-                            source=source)
-        paths.append(path)
-        written.append(record)
-        print('Record written: %s' % path)
-    return paths, written, head or head_commit(project_root)
+        score = ((break_features.get(name) or {}).get('scope_score')
+                 or {}).get('score')
+        mutation = {'engine': breaks.get('engine') or 'none', 'score': score,
+                    'at': evidence_writer.now_iso(), 'commit': commit}
+        evidence_writer.write_audit(project_root, 'local', name,
+                                    features.get(name) or {}, {}, mutation,
+                                    cfg.breaks)
+    print('')
+    _audit_report(project_root, features, selected, break_features, commit)
 
 
-def _audit_gate_line(project_root, cfg):
-    """`(line, exit code)` for what the audit proved, over every rule under specs/.
-
-    Level 2 is what an audit answers, so the line names the strong cell and
-    counts the rules that meet it, the same shape `purlin:test` prints for
-    level 1. Under `passed` no strong cell exists, so there the line is level
-    1's and says the same thing `purlin:test` says.
-    """
-    from results import gate_line
-
-    payload = payload_module.build_payload(project_root, generated_by='audit')
-    level = 'passed' if cfg.gate == 'passed' else 'strong'
-    met = rules = 0
-    for feature in payload.get('features') or ():
-        for rule in feature.get('rules') or ():
-            if rule.get('feature') != feature.get('name'):
-                continue
-            rules += 1
-            cell = (rule.get('cells') or {}).get(level)
-            if states_module.cell_is_met(level, cell):
-                met += 1
-    return gate_line(met, rules, level)
-
-
-def _audit_report(project_root, selected, breaks, source='local'):
+def _audit_report(project_root, features, selected, break_features, commit):
     """One block per feature: the strength, then each rule's observations.
 
-    The briefs a review is owed for are written as they are built, into
-    `source`'s folder beside the record, so the one commit carries both.
+    Each rule whose bar asks for the AI audit is read, and what the audit
+    found goes into the feature's evidence as that rule's entry.
     """
     try:
-        from brief import (asks_for_a_review, build_brief, rule_entry,
-                           write_brief)
+        from brief import asks_for_a_review, build_brief, rule_entry
     except ImportError:
-        print('purlin: the brief writer is not available; the AI audit did '
-              'not run.')
-        return []
+        print('purlin: the AI audit is not available in this checkout; it '
+              'did not run.')
+        return
     payload = payload_module.build_payload(project_root,
                                            generated_by='audit')
     minimum = (payload.get('gate') or {}).get('min_strength') or 0
-    break_features = breaks.get('features') or {}
-    written = []
     for name in selected:
         score = ((break_features.get(name) or {}).get('scope_score')
                  or {}).get('score')
         print('%s: test strength %s, minimum %s'
               % (name, 'n/a' if score is None else '%d percent' % score,
                  minimum or 'n/a'))
+        entries = {}
         for rule_id in sorted(_own_rules(payload, name), key=_rule_number):
             entry = rule_entry(payload, name, rule_id)
             if entry is None:
@@ -1038,9 +849,8 @@ def _audit_report(project_root, selected, breaks, source='local'):
                 if built is not None:
                     observations = built.get('observations') or []
                     settled = built.get('settled')
-                    path = write_brief(project_root, built, source)
-                    if path:
-                        written.append(path)
+                    entries[rule_id] = evidence_writer.audit_entry(
+                        entry, built, commit)
             print('  %s %s' % (name, rule_id))
             for observation in observations:
                 print('    observation: %s' % observation)
@@ -1048,8 +858,10 @@ def _audit_report(project_root, selected, breaks, source='local'):
                 print('    settled: %s' % ('yes' if settled else 'no'))
             if not observations and settled is None:
                 print('    nothing to report')
+        evidence_writer.write_audit(project_root, 'local', name,
+                                    features.get(name) or {}, entries, None,
+                                    False)
         print('')
-    return written
 
 
 def _own_rules(payload, feature):
@@ -1067,77 +879,6 @@ def _rule_number(rule_id):
     return int(digits) if digits.isdigit() else 0
 
 
-def _ci(project_root, args, features, selected, index, plugins, log,
-        cfg):
-    """The `--ci` arm: on a run branch the record CI writes and the briefs.
-
-    The record goes under `.purlin/records/ci/`, and what makes that folder
-    worth trusting is the tag run, which checks that the runner's own
-    identity committed every file in it. A tag run writes nothing, and at
-    `passed` there is no record to write at all: the committed test results
-    are the evidence there, and a person writes those themselves.
-    """
-    from records import commit_records, commits_here, no_commit_line
-
-    if not commits_here(project_root):
-        # A tag run writes nothing. What it is for is the rerun on a clean
-        # machine and the check the gate step makes over what is already
-        # committed, so there is no record for it to add.
-        print('')
-        print(no_commit_line(project_root))
-        return 0
-
-    if cfg.gate == 'passed':
-        # There is no record to write at `passed`, and the evidence a remote
-        # run brings home is the test results themselves. They go under
-        # `.purlin/tests/ci/`, so a proof tagged for an operating system
-        # nobody here has reaches the tree as that platform's own pass.
-        from results import COMMITTED, COMMIT_SUBJECT
-
-        print('')
-        print(NO_RECORD_AT_PASSED)
-        paths, commit = _build_test_results(
-            project_root, features, selected, index, host_os(), 'ci')
-        commit_records(project_root, paths, COMMIT_SUBJECT
-                       % (str(commit or '')[:7] or 'an unknown commit'))
-        print(COMMITTED)
-        return 0
-
-    # No breaks run on CI. Test strength is what `purlin:audit` measures on a
-    # person's machine, and a record either source wrote counts at every
-    # gate, so measuring it twice buys nothing and costs a runner an hour.
-    breaks = _no_breaks_on_ci()
-    log_digest = _write_log(project_root, log)
-
-    print('')
-    paths, written, head = _write_records(
-        project_root, args, features, selected, index, plugins, breaks,
-        log_digest, cfg, 'ci')
-
-    # The briefs are written before the commit, because the commit is what
-    # carries them: a brief that exists only on the runner is evidence
-    # nobody can read.
-    brief_paths = _ci_review(project_root, _passed_here(written))
-
-    from records import RECORD_SUBJECT
-
-    commit_records(project_root, paths + brief_paths,
-                   RECORD_SUBJECT % head[:7])
-    print('Record committed.')
-    return 0
-
-
-def _no_breaks_on_ci():
-    """What a CI run hands the record writer in place of a break measurement.
-
-    CI runs no breaks. The strength a record carries is the one a person's
-    own `purlin:audit` measured, and it counts at every gate, so a runner
-    measuring it again would spend an hour to write the same number.
-    """
-    print('Strength n/a: no breaks run on CI.')
-    return {'engine': None, 'available': False, 'features': {}}
-
-
 def _no_breaks(gate):
     """What a gate that asks for no breaks hands the audit instead.
 
@@ -1149,7 +890,7 @@ def _no_breaks(gate):
     return {'engine': None, 'available': False, 'features': {}}
 
 
-def _run_breaks(project_root, args, features, selected, index):
+def _run_breaks(project_root, args, features, selected):
     """The breaks, through the engine the project resolved to."""
     try:
         import mutation as mutation_module
@@ -1163,6 +904,7 @@ def _run_breaks(project_root, args, features, selected, index):
     resolved, _unknown = frameworks_module.resolve_frameworks(
         project_root, cfg.test_framework)
     engine = select_engine(config, resolved)
+    index = proof_index(project_root)
     # The engine reaches its own subprocesses, so the cap is set on the
     # module rather than passed down through every adapter.
     mutation_module.ARM_TIMEOUT = args.arm_timeout
@@ -1178,67 +920,50 @@ def _run_breaks(project_root, args, features, selected, index):
     return answer
 
 
-def _passed_here(records):
-    """`[(feature, rule)]` whose every tagged test passed in this run.
+# ---------------------------------------------------------------------------
+# CI
+# ---------------------------------------------------------------------------
 
-    Read off the records this run just built rather than off a rule's passed
-    cell, because the run is the one thing that knows what it observed on
-    this machine, whatever the tree around it says.
+def _ci(project_root, args, features, selected, index, log, os_name):
+    """The `--ci` arm: on a run branch, this runner's sections, committed.
+
+    A runner writes only its own operating system's section of
+    `.purlin/evidence/ci/<feature>.json` and commits it through the git
+    host's API, merged on every attempt into what the branch's head holds,
+    because its evidence exists nowhere else. No breaks run here and the AI
+    audit is not called: `purlin:audit` on a person's machine does both. A
+    tag run writes nothing: what it is for is the rerun on a clean machine
+    and the check the gate step makes over what is already committed.
     """
-    passed = []
-    for record in records or ():
-        for feature, entry in (record.get('features') or {}).items():
-            for rule_id, rule in (entry.get('rules') or {}).items():
-                if rule.get('result') != 'pass':
-                    continue
-                pair = (feature, rule_id)
-                if pair not in passed:
-                    passed.append(pair)
-    return sorted(passed)
+    from host import commit_files, commits_here, no_commit_line
 
+    if not commits_here(project_root):
+        print('')
+        print(no_commit_line(project_root))
+        return 0
 
-def _ci_review(project_root, passed_here=()):
-    """The briefs this run wrote, as file paths. CI writes nothing else.
-
-    The paths go back to the caller so the one commit that carries the record
-    carries the briefs too: a brief is what a person works from, and a person
-    reads it out of the branch rather than off the runner. No signature file
-    is ever written here, by CI or by anyone else: a signature is a named
-    person's attestation and a runner is nobody.
-
-    The rules are named rather than left to the brief writer to choose. Left
-    to choose, it reads each rule's passed cell, and at this point in the run
-    the record this run wrote is not committed yet, so a rule whose evidence
-    is that record alone has nothing for a cell to read. Every brief would
-    then be skipped, and the rules on the Review list would reach it with
-    nothing for anyone to read.
-    """
-    try:
-        from brief import asks_for_a_review, rule_entry, write_briefs
-    except ImportError:
-        print('purlin: the brief writer is not available; no brief was '
-              'written.')
-        return []
-    payload = payload_module.build_payload(project_root,
-                                           generated_by='audit')
-    wanted = []
-    for feature, rule_id in passed_here or ():
-        entry = rule_entry(payload, feature, rule_id)
-        if entry is not None and asks_for_a_review(entry):
-            wanted.append((feature, rule_id))
-    briefs = write_briefs(project_root, payload, rules=wanted, source='ci')
-    print('%d brief%s written.'
-          % (len(briefs), '' if len(briefs) == 1 else 's'))
-    return [path for path in briefs if path]
+    _write_log(project_root, log)
+    print('')
+    paths = write_sections(project_root, args, features, selected, index,
+                           os_name, 'ci')
+    _prune(project_root, features)
+    print(evidence_writer.written_line(paths, 'ci'))
+    commit = head_commit(project_root)
+    merge = evidence_writer.merge_for_host(
+        os_name, {name: list((info or {}).get('rule_order') or ())
+                  for name, info in features.items()})
+    commit_files(project_root, paths, evidence_writer.COMMIT_SUBJECT
+                 % (commit[:7] or 'an unknown commit'), merge)
+    print(evidence_writer.COMMITTED)
+    return 0
 
 
 def _remote(project_root, args, cfg=None):
     """`--test --remote`: let the git host's runner do the run.
 
-    The runner runs the same tests this machine would. At `strong` and above
-    it audits them too and commits the record, which is the evidence that
-    counts there, and the run pulls that commit back. At `passed` there is no
-    record to bring home, so the runner's own summary is what comes back.
+    The runner runs the same tests this machine would, writes its own
+    operating system's section of each feature's `ci/` evidence, and commits
+    it on the run branch; the run pulls that commit back.
     """
     try:
         from remote import run_remote

@@ -1,17 +1,17 @@
 """What a CI run may speak for: the workspace the job checked out, and nothing
 else.
 
-A run branch run commits its records and briefs through the git host's API,
-and that is the whole of what CI publishes. It posts no comment and uploads
-no artifact: the two runs this release starts are a remote run, whose records
+A run branch run commits its evidence through the git host's API, and that
+is the whole of what CI publishes. It posts no comment and uploads no
+artifact: the two runs this release starts are a remote run, whose evidence
 `purlin:test --remote` pulls home, and a tag run, which writes nothing at all.
 There is no pull request run to comment on.
 
 A run refuses a project that is not the workspace the job checked out. A test
 suite that drives a run over a fixture project inherits the runner's whole
 environment and token, so without that check every fixture would commit its
-own records to the real repository. `is_the_workspace` is the one question
-asked, and `scripts/run/records.py` asks it before every API commit.
+own evidence to the real repository. `is_the_workspace` is the one question
+asked, and `scripts/run/host.py` asks it before every API commit.
 """
 
 import os

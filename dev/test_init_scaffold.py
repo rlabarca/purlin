@@ -535,7 +535,7 @@ class TestTheWorkflow:
     @staticmethod
     def _foreign_env(made):
         """A spec naming the two operating systems this machine is not."""
-        host = scaffold_module.results_module.host_os()
+        host = scaffold_module.evidence_module.host_os()
         other = [name for name in ('linux', 'macos', 'windows')
                  if name != host]
         write(made.path('specs/core/login.md'),
@@ -718,17 +718,9 @@ class TestWhatInitWrites:
         named = summary_paths(output)
         for rel in ('.purlin/config.json',
                     '.purlin/plugins/pytest_purlin.py', 'conftest.py',
-                    '.gitignore', '.purlin/records', '.purlin/records/README.md',
-                    'purlin-report.html'):
+                    '.gitignore', 'purlin-report.html'):
             assert rel in named, output
             assert project.has(rel), rel
-
-    @pytest.mark.proof("scaffold", "PROOF-18", "RULE-18")
-    def test_the_records_readme_is_short(self, project):
-        project.run('--gate', 'strong')
-        rel = '.purlin/records/README.md'
-        lines = read(project.path(rel)).strip().splitlines()
-        assert 3 <= len(lines) <= 4, (rel, lines)
         assert not project.has('designs'), 'init writes no designs folder'
 
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")

@@ -38,10 +38,11 @@ names the commit and the gate. No tag is written while any rule falls short,
 and none is written over a tag that is already there. Nothing is pushed: the
 last line names the push for a person to run.
 
-**Trust.** With `trust: remote` in `.purlin/config.json` a rule whose tests
-have no `ci` record for this commit is refused, and the line says to run
-`purlin:test --remote` first. With `trust: local`, the default, your own run
-is the evidence.
+**Trust.** With `trust: remote` in `.purlin/config.json` a rule with a proof
+that has a test, whose feature has no current section in its `ci` evidence,
+is refused, and the line says to run `purlin:test --remote` first. A rule
+whose proofs are all `@manual` has no test for a runner to run, so it is not
+refused. With `trust: local`, the default, your own run is the evidence.
 
 `--note` carries the one line a signer writes where the machine could not
 settle the question: a rule reading `manual test` or `unsettled`.
@@ -77,7 +78,6 @@ for _path in (_MCP_DIR, _HERE):
 from purlin import (console as console_module,                 # noqa: E402
                     gate as gate_module,
                     payload as payload_module,
-                    records as records_module,
                     signatures as signatures_module,
                     specs as specs_module)
 
@@ -94,7 +94,7 @@ NO_TAG_EXISTS = ('No tag: %s is already written. Name another with '
                  '--release <name>.')
 TAGGED = 'Tagged %s at %s: every rule meets the gate %s.'
 PUSH_THE_TAG = 'Run: git push origin %s'
-NO_CI_RUN = ('sign: %s %s has no ci test run for this commit; run '
+NO_CI_RUN = ('sign: %s %s has no ci test run for this code; run '
              'purlin:test --remote first')
 
 EXIT_OK = 0
@@ -174,9 +174,8 @@ def signature_path(project_root, feature, rule, triple, signer_slug):
                         '%s.%s.%s.json' % (rule, str(triple)[:8], signer_slug))
 
 
-def write_signature(project_root, feature, rule, signer_email, brief_path,
-                    record_path, gate, bar, payload=None, entry=None,
-                    note=None):
+def write_signature(project_root, feature, rule, signer_email, evidence_path,
+                    gate, bar, payload=None, entry=None, note=None):
     """Write one signature file and return its project-relative path."""
     entry = entry or rule_entry(load_payload(project_root, payload), feature,
                                 rule)
@@ -203,23 +202,26 @@ def write_signature(project_root, feature, rule, signer_email, brief_path,
         'note': str(note).strip() if str(note or '').strip() else None,
         'timestamp': payload_module.now_iso(),
         'gate': gate,
-        'brief': brief_path,
-        'record': record_path,
+        'evidence': evidence_path,
     }
     _write_json(path, body)
     return os.path.relpath(path, project_root).replace(os.sep, '/')
 
 
-def brief_for(project_root, feature, rule, triple):
-    """The brief an audit wrote for this triple, or None when none exists.
+def evidence_for(payload, feature):
+    """The evidence file a signer read for a feature, or None when it has none.
 
-    A brief sits under `.purlin/briefs/<source>/<feature>/`, and both folders
-    count. `records.find_brief` is the one place that path is built, so a
-    signature names the file a reader can open rather than a path nothing
-    ever writes.
+    The file a person's own run wrote comes first, then a runner's: a
+    signature names the file a reader can open, not a path nothing wrote.
     """
-    rel, _full = records_module.find_brief(project_root, feature, rule, triple)
-    return rel
+    for entry in (payload or {}).get('features') or ():
+        if entry.get('name') != feature:
+            continue
+        for source in ('local', 'ci'):
+            found = (entry.get('evidence') or {}).get(source)
+            if found:
+                return found.get('path')
+    return None
 
 
 def hold_path(project_root, feature, rule, triple, holder_slug):
@@ -257,7 +259,7 @@ def write_hold(project_root, feature, rule, holder_email, reason, payload=None,
         'holder': str(holder_email),
         'reason': str(reason).strip(),
         'timestamp': payload_module.now_iso(),
-        'brief': brief_for(project_root, feature, rule, triple),
+        'evidence': evidence_for(payload, feature),
     }
     _write_json(path, body)
     return os.path.relpath(path, project_root).replace(os.sep, '/')
@@ -320,37 +322,41 @@ def _rule_number(rule_id):
 # Trust: whether this machine's own test run is evidence enough to sign on
 # ---------------------------------------------------------------------------
 
-def has_a_ci_run(entry):
-    """True when a `ci` record answered this rule's tests for this commit.
+def has_a_ci_run(payload, entry):
+    """True when the rule's `ci` evidence holds a section current for this code.
 
-    The passed cell lists one platform per operating system a counting run
-    covered, each with the source that answered it, and the cell's own
-    `source` answers for a run that named no operating system at all. A
+    The rule's own feature's `ci` file is read, and one current section of
+    it is a run the runner made over this spec, this code and these tests. A
     project that trusts this machine never asks; one that does not asks here,
     and a rule with no such run is refused until `purlin:test --remote` has
-    been run.
+    been run. A rule whose proofs are all `@manual` has no test for a runner
+    to run, so the question is not asked of it.
     """
-    cell = ((entry or {}).get('cells') or {}).get('passed') or {}
-    if not cell.get('current'):
-        return False
-    if any((platform or {}).get('source') == 'ci'
-           for platform in (cell.get('platforms') or {}).values()):
+    if not any(not proof.get('manual')
+               for proof in (entry or {}).get('proofs') or ()):
         return True
-    return cell.get('source') == 'ci'
+    for feature in (payload or {}).get('features') or ():
+        if feature.get('name') != (entry or {}).get('feature'):
+            continue
+        ci = (feature.get('evidence') or {}).get('ci') or {}
+        return any((platform or {}).get('current')
+                   for platform in (ci.get('platforms') or {}).values())
+    return False
 
 
 def untrusted(payload, targets):
     """`[(feature, rule)]` this project's trust setting refuses to sign.
 
     Empty under `trust: local`, which is the default and is a project saying
-    its own runs count. Under `trust: remote` it is every named rule whose
-    tests no CI run has answered for this commit.
+    its own runs count. Under `trust: remote` it is every named rule with a
+    proof that has a test, whose `ci` evidence holds no section current for
+    this code.
     """
     if (payload.get('gate') or {}).get('trust') != 'remote':
         return []
     refused = []
     for feature, rule in targets or ():
-        if not has_a_ci_run(rule_entry(payload, feature, rule)):
+        if not has_a_ci_run(payload, rule_entry(payload, feature, rule)):
             refused.append((feature, rule))
     return refused
 
@@ -524,11 +530,9 @@ def sign_and_commit(project_root, targets, signer_email, note=None,
         entry = rule_entry(payload, feature, rule)
         if entry is None:
             continue
-        triple = triple_for(entry)
         path = write_signature(
             project_root, feature, rule, signer_email,
-            brief_for(project_root, feature, rule, triple),
-            _latest_record(payload, feature), gate, entry.get('bar'),
+            evidence_for(payload, feature), gate, entry.get('bar'),
             entry=entry, note=note)
         if path:
             paths.append(path)
@@ -552,13 +556,6 @@ def hold_and_commit(project_root, targets, holder_email, reason, payload=None):
     if not paths:
         return None
     return _commit(project_root, paths, hold_message(written))
-
-
-def _latest_record(payload, feature):
-    for entry in (payload or {}).get('features') or ():
-        if entry.get('name') == feature:
-            return (entry.get('latest_record') or {}).get('path')
-    return None
 
 
 def _commit(project_root, paths, message):
@@ -637,7 +634,7 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
         built = brief_module.build_brief(project_root, payload,
                                          entry['feature'], entry['id'])
         rendered = (brief_module.render_brief(built) if built
-                    else '%s %s   no brief was written for this triple.'
+                    else '%s %s   is not in this project.'
                     % (entry['feature'], entry['id']))
         print('', file=out)
         print(rendered, file=out)

@@ -7,7 +7,7 @@ The brief reports; it recommends nothing. It sets the rule, its proofs and
 the source of each test that backs them beside the evidence, in two layers,
 and stops when it has enough for the rule's bar:
 
-    passed  the test strength from the latest record
+    passed  the test strength the evidence holds
     strong  plus the AI audit, which reads the rule, the proofs and the
             test source against `references/review_criteria.md`
 
@@ -21,24 +21,15 @@ and whether the audit settled the question. A rule whose brief settled with
 nothing observed is one the machine could read; an audit that could not
 settle leaves the strong cell reading `unsettled`.
 
-The brief lands beside the records, as
-`.purlin/briefs/<source>/<feature>/<RULE-N>.<hash8>.brief.json`, with a text
-rendering beside it. `source` is `ci` or `local`, the same folder the record
-of that run went in. A brief is named for the triple it was built from, so a
-brief for text that has since changed is simply not found again.
-
-The JSON is evidence: the audit commits it with the record and a signature
-names it.
-Building a brief again for the same triple leaves that file untouched unless
-the evidence in it changed, so reading a brief does not dirty the tree. The
-`.brief.txt` beside it is a local view, named in `.gitignore` and never
-committed.
+No file is written. `purlin:audit` reads each brief it builds into the
+feature's evidence, as the rule's entry under `audit.rules` keyed by the
+rule, proof and test hashes the brief was built over; this command prints
+the brief and nothing else.
 
 Exit codes: 0 a brief was built, 1 the rule is not in the project, 2 the
 command line was wrong.
 """
 
-import json
 import os
 import re
 import shutil
@@ -55,10 +46,8 @@ for _path in (_MCP_DIR, _HERE):
 import marked_tests                                           # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
                     payload as payload_module,
-                    records as records_module,
                     signatures as signatures_module, states)
 
-SCHEMA = 'purlin-brief/5'
 USAGE = ('Usage: brief.py --feature <f> [--rule RULE-N] [--ai] '
          '[--project-root DIR]')
 
@@ -67,12 +56,6 @@ EXIT_NOTHING = 1
 EXIT_BAD_INVOCATION = 2
 
 CRITERIA = os.path.join('references', 'review_criteria.md')
-
-# Where an audit commits the briefs, beside the records, under the same two
-# source folders. The record reader owns both names, so a brief and the
-# record it rests on can never disagree about either.
-BRIEFS_DIR = records_module.BRIEFS_DIR
-SOURCES = records_module.SOURCES
 
 # The layers, cheapest first, and the bar each set is built for. The AI audit
 # runs on the rules whose bar is `strong` and on no other.
@@ -136,7 +119,6 @@ def build_brief(project_root, payload, feature, rule, ai=False):
               for proof in entry.get('proofs') or ()]
 
     brief = {
-        'schema': SCHEMA,
         'feature': feature,
         'rule': rule,
         'bar': bar,
@@ -151,7 +133,6 @@ def build_brief(project_root, payload, feature, rule, ai=False):
         'tests': _test_layer(project_root, feature, entry),
         'test_strength': None,
         'min_strength': min_strength,
-        'record': (feature_entry.get('latest_record') or {}).get('path'),
         'ai_review': None,
         'observations': [],
         'settled': None,
@@ -195,7 +176,7 @@ def _proof_tags(proof):
 
 
 def _test_layer(project_root, feature, entry):
-    """One record per test backing the rule, with its source."""
+    """One entry per test backing the rule, with its source."""
     seen = set()
     tests = []
     for proof in entry.get('proofs') or ():
@@ -330,116 +311,6 @@ def model_observations(answer):
 
 
 # ---------------------------------------------------------------------------
-# Writing
-# ---------------------------------------------------------------------------
-
-def brief_paths(project_root, feature, rule, triple, source='local'):
-    """`(json_path, text_path)` for one brief, beside its run's record."""
-    if source not in SOURCES:
-        source = 'local'
-    json_path = os.path.join(records_module.briefs_dir(project_root, source),
-                             feature,
-                             records_module.brief_name(rule, triple))
-    return json_path, json_path[:-len('.json')] + '.txt'
-
-
-# What says when and where a brief was built, not what it found. A brief that
-# differs from the one on disk only here is the same evidence.
-_WHEN_BUILT = ('generated_at', 'record')
-
-
-def same_evidence(one, other):
-    """True when two briefs differ at most in when and where they were built."""
-    if not isinstance(one, dict) or not isinstance(other, dict):
-        return False
-
-    def evidence(brief):
-        # Through JSON, so a tuple built in memory equals the list read back.
-        return json.loads(json.dumps({key: value for key, value in brief.items()
-                                      if key not in _WHEN_BUILT}))
-    return evidence(one) == evidence(other)
-
-
-def write_brief(project_root, brief, source='local'):
-    """Write one brief and its text rendering. Returns the JSON path.
-
-    `source` is the folder the run's record went in, so the brief and the
-    record it rests on travel together in one commit.
-
-    The JSON is left untouched when the brief already on disk for this triple
-    holds the same evidence, so a second read of a brief changes no tracked file.
-    """
-    json_path, text_path = brief_paths(
-        project_root, brief['feature'], brief['rule'], brief['triple_hash'],
-        source)
-    if not json_path:
-        return None
-    directory = os.path.dirname(json_path)
-    if not os.path.isdir(directory):
-        os.makedirs(directory)
-    try:
-        with open(json_path, 'r', encoding='utf-8') as handle:
-            existing = json.load(handle)
-    except (OSError, ValueError, UnicodeDecodeError):
-        existing = None
-    if not same_evidence(existing, brief):
-        with open(json_path, 'w', encoding='utf-8') as handle:
-            json.dump(brief, handle, indent=2, sort_keys=True)
-            handle.write('\n')
-    with open(text_path, 'w', encoding='utf-8') as handle:
-        handle.write(render_brief(brief))
-    return os.path.relpath(json_path, project_root).replace(os.sep, '/')
-
-
-def write_briefs(project_root, payload=None, rules=None, ai=False,
-                 source='local'):
-    """Write a brief for every rule a review is owed for. Returns their paths.
-
-    A review is owed when the rule's bar is `strong` and its passed cell
-    counts: the AI audit runs on no other rule, and with no counting pass
-    there is no test result to set the proof against.
-
-    `rules` narrows the list: each entry is `(feature, rule)` or a dict with
-    `feature` and `rule`. CI writes these with the record, so a person opens a
-    brief rather than waiting for one.
-    """
-    payload = load_payload(project_root, payload)
-    targets = []
-    if rules is not None:
-        for item in rules:
-            if isinstance(item, dict):
-                pair = (item.get('owner') or item.get('feature'),
-                        item.get('rule'))
-            else:
-                pair = tuple(item)
-            if pair[0] and pair[1] and pair not in targets:
-                targets.append(pair)
-    else:
-        for feature_entry in payload.get('features') or ():
-            for entry in feature_entry.get('rules') or ():
-                if entry.get('feature') != feature_entry.get('name'):
-                    continue
-                if not asks_for_a_review(entry):
-                    continue
-                if not ((entry.get('cells') or {}).get('passed')
-                        or {}).get('counts'):
-                    continue
-                pair = (entry['feature'], entry['id'])
-                if pair not in targets:
-                    targets.append(pair)
-
-    written = []
-    for feature, rule in targets:
-        brief = build_brief(project_root, payload, feature, rule, ai=ai)
-        if brief is None:
-            continue
-        path = write_brief(project_root, brief, source)
-        if path:
-            written.append(path)
-    return written
-
-
-# ---------------------------------------------------------------------------
 # The text a person reads
 # ---------------------------------------------------------------------------
 
@@ -474,8 +345,6 @@ def render_brief(brief):
         lines.append('Test strength: %s   minimum %s'
                      % ('n/a' if strength is None else '%d percent' % strength,
                         brief.get('min_strength')))
-    if brief.get('record'):
-        lines.append('Record: %s' % brief['record'])
     # The AI audit is printed only where one was asked for, so a brief for
     # a rule whose bar is `passed` says nothing about an audit that was
     # never owed.
@@ -575,7 +444,6 @@ def main(argv=None):
                             ai=args.ai)
         if brief is None:
             continue
-        write_brief(args.project_root, brief)
         print(render_brief(brief))
         built += 1
     return EXIT_OK if built else EXIT_NOTHING

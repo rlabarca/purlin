@@ -533,16 +533,30 @@ def _write(path, text):
         fh.write(text)
 
 
-def _proof_file(root, feature, rule_ids):
-    """Write a unit proof file marking each of `rule_ids` as passing."""
-    path = os.path.join(root, '.purlin', 'runtime', 'proofs',
+def _evidence_file(root, feature, rule_ids):
+    """Write a local section marking each of `rule_ids` as passing.
+
+    The fingerprint is taken when this is called, so the section is current
+    for the tree as it stands then.
+    """
+    from purlin import evidence as purlin_evidence
+    from purlin import fingerprint as purlin_fingerprint
+
+    path = os.path.join(root, '.purlin', 'evidence', 'local',
                         '%s.json' % feature)
-    _write(path, json.dumps({'proofs': [
-        {'feature': feature, 'id': 'PROOF-%s' % rid.split('-')[1],
-         'rule': rid, 'test_file': 'tests/test_%s.py' % feature,
-         'test_name': 'test_%s' % rid.lower().replace('-', '_'),
-         'status': 'pass'}
-        for rid in rule_ids]}))
+    _write(path, json.dumps({
+        'schema': 'purlin-evidence/1', 'feature': feature,
+        'source': 'local', 'spec': '',
+        'platforms': {purlin_evidence.host_os(): {
+            'commit': '', 'dirty': False, 'at': '2026-09-13T12:00:00Z',
+            'runner': 'test',
+            'fingerprint': purlin_fingerprint.fingerprint(root, feature),
+            'rules': {},
+            'proofs': [{'id': 'PROOF-%s' % rid.split('-')[1], 'rule': rid,
+                        'result': 'pass', 'env': None, 'manual': False,
+                        'test': 'tests/test_%s.py::test_%s' % (
+                            feature, rid.lower().replace('-', '_'))}
+                       for rid in rule_ids]}}}))
 
 
 class TestDriftRuleDetails:
@@ -564,7 +578,6 @@ class TestDriftRuleDetails:
                '- PROOF-1 (RULE-1): Post 0.1 plus 0.2 and verify 30 cents\n'
                '- PROOF-2 (RULE-2): Post without a code and verify 422\n'
                '- PROOF-3 (RULE-3): Post 10 cents split 3 ways and verify 4/3/3\n')
-        _proof_file(root, 'money_anchor', ['RULE-1', 'RULE-2', 'RULE-3'])
 
         # `ledger`: 4 own rules, 3 of them proved, requiring the anchor.
         _write(os.path.join(root, 'specs', 'ledger', 'ledger.md'),
@@ -582,7 +595,6 @@ class TestDriftRuleDetails:
                '- PROOF-2 (RULE-2): Post twice and verify 2 identifiers\n'
                '- PROOF-3 (RULE-3): Post twice and verify the first 8 bytes hold\n'
                % _LEDGER_LONG_RULE)
-        _proof_file(root, 'ledger', ['RULE-1', 'RULE-2', 'RULE-3'])
 
         # Two more features with changed scope files, so the order of
         # `rule_details` is something a run can get wrong.
@@ -597,7 +609,6 @@ class TestDriftRuleDetails:
                    '## Proof\n\n'
                    '- PROOF-1 (RULE-1): Call it and verify the balance 0\n'
                    % (name, name, src))
-            _proof_file(root, name, ['RULE-1'])
 
         for src in ('posting.py', 'gateway.py', 'api.py'):
             _write(os.path.join(root, 'src', 'ledger', src), 'def run():\n    return 0\n')
@@ -614,6 +625,12 @@ class TestDriftRuleDetails:
                    'def run():\n    return 0\n\n\ndef batch():\n    return 1\n')
         _git(['add', '-A'], root)
         _git(['commit', '-q', '-m', 'feat: batch posting'], root)
+
+        # A run over the tree as it now stands passes every proved rule.
+        _evidence_file(root, 'money_anchor', ['RULE-1', 'RULE-2', 'RULE-3'])
+        _evidence_file(root, 'ledger', ['RULE-1', 'RULE-2', 'RULE-3'])
+        for name in ('money_gateway', 'posting_api'):
+            _evidence_file(root, name, ['RULE-1'])
 
     def _rule_details_under_seed(self, root, seed):
         """Return the rule_details JSON text from a fresh process, hash seed set."""
@@ -718,19 +735,20 @@ def _new_repo(root):
 
 
 class TestDriftSinceAnchor:
-    """drift RULE-2: the last record, then the last tag, then the setup commit."""
+    """drift RULE-2: the last evidence, then the last tag, then the setup commit."""
 
     @pytest.mark.proof("drift", "PROOF-3", "RULE-2")
-    def test_the_anchor_walks_the_record_then_the_tag_then_the_setup_commit(
+    def test_the_anchor_walks_the_evidence_then_the_tag_then_the_setup_commit(
             self, tmp_path):
-        with_record = _new_repo(str(tmp_path / 'with_record'))
-        _write(os.path.join(with_record, '.purlin', 'records', 'thing',
-                            '20260913T120000Z-abc1234-ci.json'), '{}')
-        _commit(with_record, 'purlin: record for abc1234')
-        record_sha = _git(['rev-parse', 'HEAD'], with_record).stdout.strip()
-        ref, description = purlin_drift.resolve_since(with_record)
-        assert ref == record_sha, (ref, record_sha)
-        assert description.startswith('last record'), description
+        with_evidence = _new_repo(str(tmp_path / 'with_evidence'))
+        _write(os.path.join(with_evidence, '.purlin', 'evidence', 'local',
+                            'thing.json'), '{}')
+        _commit(with_evidence, 'purlin: evidence at abc1234')
+        evidence_sha = _git(['rev-parse', 'HEAD'],
+                            with_evidence).stdout.strip()
+        ref, description = purlin_drift.resolve_since(with_evidence)
+        assert ref == evidence_sha, (ref, evidence_sha)
+        assert description.startswith('last evidence'), description
 
         with_tag = _new_repo(str(tmp_path / 'with_tag'))
         _git(['tag', 'v1.0.0'], with_tag)

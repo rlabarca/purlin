@@ -3,8 +3,9 @@
 # Proof File Format
 
 Proof files are JSON files the proof plugins write while the tests run. They are runtime, not
-evidence: the record `purlin:audit` writes is what says a run happened, on which commit, on
-which machine, and that is the file that gets committed.
+evidence: the evidence file a run writes, `.purlin/evidence/<source>/<feature>.json`, is what
+says a run happened, on which commit, on which operating system, and that is the file that gets
+committed.
 
 ## Location
 
@@ -68,8 +69,8 @@ Six fields, and no seventh. Fields earlier versions carried and this one does no
 | Retired field | What replaced it |
 |---------------|------------------|
 | the operating-system field on the file and on every entry | `@env(windows)`, `@env(macos)` or `@env(linux)` on the proof line in the spec. The operating system a proof must be proved on is a property of the claim, not of the test run. |
-| the `@<os>` filename suffix | the record, which carries `environment.os` once per run and is named `<timestamp>-<commit7>-ci-<os>.json` when CI wrote it. |
-| the run marker `.purlin/runtime/test_run.json` | the record. It says what ran, on which commit, and what passed, once, and it is committed. |
+| the `@<os>` filename suffix | the evidence file, which holds one section per operating system. |
+| the run marker `.purlin/runtime/test_run.json` | the evidence file. It says what ran, on which commit, and what passed, once per operating system, and it is committed. |
 
 ## Merge Behavior (Write-Scoped Overwrite)
 
@@ -325,4 +326,5 @@ file, at any bar and under any gate.
 ## Git behavior
 
 Proof files are never committed. `.purlin/runtime/` is gitignored, and a proof file that reaches
-a commit is a mistake to remove rather than evidence to keep. What gets committed is the record.
+a commit is a mistake to remove rather than evidence to keep. What gets committed is the
+evidence file.

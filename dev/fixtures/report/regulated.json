@@ -1,34 +1,98 @@
 {
   "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
   "dirty": true,
+  "evidence": {
+    "checkout_design": {
+      "ci": {
+        "linux": {
+          "at": "2026-09-12T09:14:02Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/ci/checkout_design.json",
+          "result": "pass"
+        }
+      }
+    },
+    "export": {
+      "ci": {
+        "linux": {
+          "at": "2026-09-10T17:02:41Z",
+          "commit": "9f8e7d6",
+          "current": false,
+          "path": ".purlin/evidence/ci/export.json",
+          "result": "pass"
+        }
+      }
+    },
+    "invoice": {
+      "ci": {
+        "linux": {
+          "at": "2026-09-12T09:14:02Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/ci/invoice.json",
+          "result": "pass"
+        },
+        "macos": {
+          "at": "2026-09-12T09:13:55Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/ci/invoice.json",
+          "result": "pass"
+        }
+      }
+    },
+    "login": {
+      "ci": {
+        "linux": {
+          "at": "2026-09-12T09:14:02Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/ci/login.json",
+          "result": "pass"
+        },
+        "windows": {
+          "at": "2026-09-12T09:15:40Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/ci/login.json",
+          "result": "fail"
+        }
+      }
+    }
+  },
   "features": [
     {
       "category": "auth",
+      "current": true,
       "description": null,
+      "evidence": {
+        "ci": {
+          "committed": true,
+          "path": ".purlin/evidence/ci/login.json",
+          "platforms": {
+            "linux": {
+              "at": "2026-09-12T09:14:02Z",
+              "commit": "a1b2c3d",
+              "current": true
+            },
+            "windows": {
+              "at": "2026-09-12T09:15:40Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        },
+        "local": null
+      },
       "is_anchor": false,
       "is_global": false,
-      "latest_record": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": "windows",
-        "path": ".purlin/records/ci/login/20260912T091540Z-a1b2c3d-ci-windows.json",
-        "test_strength": 86,
-        "timestamp": "2026-09-12T09:15:40Z"
-      },
       "name": "login",
       "pinned": null,
       "requires": [],
       "rollup": {
         "failing": 0,
         "held": 1,
-        "latest_record": {
-          "commit": "a1b2c3d",
-          "label": "ci",
-          "os": "windows",
-          "path": ".purlin/records/ci/login/20260912T091540Z-a1b2c3d-ci-windows.json",
-          "test_strength": 86,
-          "timestamp": "2026-09-12T09:15:40Z"
-        },
         "manual": 0,
         "met": 1,
         "not_audited": 0,
@@ -85,7 +149,7 @@
               "word": "signed"
             },
             "strong": {
-              "brief": ".purlin/briefs/ci/login/RULE-1.1a2b3c4d.brief.json",
+              "evidence": ".purlin/evidence/ci/login.json",
               "observations": [],
               "reasons": [],
               "settled": true,
@@ -96,11 +160,11 @@
           "cleared": true,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -113,14 +177,14 @@
             {
               "env": null,
               "id": "PROOF-1",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_login.py",
                   "name": "test_sign_in"
                 }
               ],
-              "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie.",
-              "manual": false
+              "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie."
             }
           ],
           "rule_hash": "rrule1log",
@@ -168,7 +232,7 @@
               "word": "stale"
             },
             "strong": {
-              "brief": ".purlin/briefs/ci/login/RULE-2.6f7a8b9c.brief.json",
+              "evidence": ".purlin/evidence/ci/login.json",
               "observations": [],
               "reasons": [],
               "settled": true,
@@ -179,11 +243,11 @@
           "cleared": true,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": true,
             "unsettled": false
@@ -196,14 +260,14 @@
             {
               "env": null,
               "id": "PROOF-2",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_login.py",
                   "name": "test_lockout"
                 }
               ],
-              "text": "POST /session five times with a wrong password, then once more with the right one, and read 423.",
-              "manual": false
+              "text": "POST /session five times with a wrong password, then once more with the right one, and read 423."
             }
           ],
           "rule_hash": "rrule2log",
@@ -251,7 +315,7 @@
               "word": "held"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [
                 "held by sam@acme.com: the lock expiry is never read"
@@ -264,11 +328,11 @@
           "cleared": true,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": true,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -281,14 +345,14 @@
             {
               "env": null,
               "id": "PROOF-3",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_login.py",
                   "name": "test_notice"
                 }
               ],
-              "text": "Lock an account and read 1 message in the outbox.",
-              "manual": false
+              "text": "Lock an account and read 1 message in the outbox."
             }
           ],
           "rule_hash": "rrule3log",
@@ -337,7 +401,7 @@
               "word": "unsigned"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [
                 "not passed"
@@ -350,11 +414,11 @@
           "cleared": false,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": true,
             "stale": false,
             "unsettled": false
@@ -367,26 +431,26 @@
             {
               "env": "windows",
               "id": "PROOF-4",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_login.py",
                   "name": "test_no_cookie"
                 }
               ],
-              "text": "On Windows, open http://localhost/session and read that no cookie is set.",
-              "manual": false
+              "text": "On Windows, open http://localhost/session and read that no cookie is set."
             },
             {
               "env": null,
               "id": "PROOF-5",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_login.py",
                   "name": "test_secure_flag"
                 }
               ],
-              "text": "Read the Set-Cookie header of a 200 response and verify it carries Secure.",
-              "manual": false
+              "text": "Read the Set-Cookie header of a 200 response and verify it carries Secure."
             }
           ],
           "rule_hash": "rrule4log",
@@ -410,31 +474,35 @@
     },
     {
       "category": "billing",
+      "current": true,
       "description": null,
+      "evidence": {
+        "ci": {
+          "committed": true,
+          "path": ".purlin/evidence/ci/invoice.json",
+          "platforms": {
+            "linux": {
+              "at": "2026-09-12T09:14:02Z",
+              "commit": "a1b2c3d",
+              "current": true
+            },
+            "macos": {
+              "at": "2026-09-12T09:13:55Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        },
+        "local": null
+      },
       "is_anchor": false,
       "is_global": false,
-      "latest_record": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": "linux",
-        "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
-        "test_strength": 64,
-        "timestamp": "2026-09-12T09:14:02Z"
-      },
       "name": "invoice",
       "pinned": null,
       "requires": [],
       "rollup": {
         "failing": 0,
         "held": 0,
-        "latest_record": {
-          "commit": "a1b2c3d",
-          "label": "ci",
-          "os": "linux",
-          "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
-          "test_strength": 64,
-          "timestamp": "2026-09-12T09:14:02Z"
-        },
         "manual": 1,
         "met": 2,
         "not_audited": 0,
@@ -489,7 +557,7 @@
               "word": "unsigned"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [
                 "strength 64% under 80%"
@@ -502,11 +570,11 @@
           "cleared": true,
           "feature": "invoice",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -519,14 +587,14 @@
             {
               "env": null,
               "id": "PROOF-1",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
                   "name": "test_total"
                 }
               ],
-              "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97.",
-              "manual": false
+              "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97."
             }
           ],
           "rule_hash": "rrule1inv",
@@ -572,7 +640,7 @@
               "word": "unsigned"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [
                 "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
               ],
@@ -588,11 +656,11 @@
           "cleared": true,
           "feature": "invoice",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -605,14 +673,14 @@
             {
               "env": null,
               "id": "PROOF-2",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
                   "name": "test_empty"
                 }
               ],
-              "text": "Build an invoice with zero lines and read the total 0.00.",
-              "manual": false
+              "text": "Build an invoice with zero lines and read the total 0.00."
             }
           ],
           "rule_hash": "rrule2inv",
@@ -647,7 +715,7 @@
               "word": "unsigned"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [
                 "manual proof",
@@ -661,11 +729,11 @@
           "cleared": false,
           "feature": "invoice",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": true,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -678,9 +746,9 @@
             {
               "env": null,
               "id": "PROOF-4",
+              "manual": true,
               "tests": [],
-              "text": "Raise a credit note against a paid invoice and read the printed note: it names the original invoice number and the reason",
-              "manual": true
+              "text": "Raise a credit note against a paid invoice and read the printed note: it names the original invoice number and the reason"
             }
           ],
           "rule_hash": "c3d4e5f6aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -700,31 +768,30 @@
     },
     {
       "category": "_anchors",
+      "current": true,
       "description": null,
+      "evidence": {
+        "ci": {
+          "committed": true,
+          "path": ".purlin/evidence/ci/checkout_design.json",
+          "platforms": {
+            "linux": {
+              "at": "2026-09-12T09:14:02Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        },
+        "local": null
+      },
       "is_anchor": true,
       "is_global": false,
-      "latest_record": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": null,
-        "path": ".purlin/records/ci/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
-        "test_strength": 90,
-        "timestamp": "2026-09-12T09:14:02Z"
-      },
       "name": "checkout_design",
       "pinned": null,
       "requires": [],
       "rollup": {
         "failing": 0,
         "held": 0,
-        "latest_record": {
-          "commit": "a1b2c3d",
-          "label": "ci",
-          "os": null,
-          "path": ".purlin/records/ci/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
-          "test_strength": 90,
-          "timestamp": "2026-09-12T09:14:02Z"
-        },
         "manual": 0,
         "met": 0,
         "not_audited": 0,
@@ -754,7 +821,13 @@
               "counts": true,
               "current": true,
               "missing_env": [],
-              "platforms": {},
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
@@ -768,7 +841,7 @@
               "word": "unsigned"
             },
             "strong": {
-              "brief": ".purlin/briefs/ci/checkout_design/RULE-1.7b8c9d0e.brief.json",
+              "evidence": ".purlin/evidence/ci/checkout_design.json",
               "observations": [
                 "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
               ],
@@ -783,11 +856,11 @@
           "cleared": false,
           "feature": "checkout_design",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": true
@@ -800,14 +873,14 @@
             {
               "env": null,
               "id": "PROOF-1",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_cart.py",
                   "name": "test_total_above"
                 }
               ],
-              "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\".",
-              "manual": false
+              "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\"."
             }
           ],
           "rule_hash": "rrule1che",
@@ -827,31 +900,30 @@
     },
     {
       "category": "billing",
+      "current": false,
       "description": null,
+      "evidence": {
+        "ci": {
+          "committed": true,
+          "path": ".purlin/evidence/ci/export.json",
+          "platforms": {
+            "linux": {
+              "at": "2026-09-10T17:02:41Z",
+              "commit": "9f8e7d6",
+              "current": false
+            }
+          }
+        },
+        "local": null
+      },
       "is_anchor": false,
       "is_global": false,
-      "latest_record": {
-        "commit": "9f8e7d6",
-        "label": "ci",
-        "os": null,
-        "path": ".purlin/records/ci/export/20260910T170241Z-9f8e7d6-ci.json",
-        "test_strength": 82,
-        "timestamp": "2026-09-10T17:02:41Z"
-      },
       "name": "export",
       "pinned": null,
       "requires": [],
       "rollup": {
         "failing": 0,
         "held": 0,
-        "latest_record": {
-          "commit": "9f8e7d6",
-          "label": "ci",
-          "os": null,
-          "path": ".purlin/records/ci/export/20260910T170241Z-9f8e7d6-ci.json",
-          "test_strength": 82,
-          "timestamp": "2026-09-10T17:02:41Z"
-        },
         "manual": 0,
         "met": 0,
         "not_audited": 1,
@@ -886,7 +958,7 @@
                 "code changed since 9f8e7d6"
               ],
               "source": "ci",
-              "word": "code changed"
+              "word": "out of date"
             },
             "signed": {
               "at": null,
@@ -897,7 +969,7 @@
               "word": "unsigned"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [
                 "not passed"
@@ -910,11 +982,11 @@
           "cleared": false,
           "feature": "export",
           "flags": {
-            "code_changed": true,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": true,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -927,14 +999,14 @@
             {
               "env": null,
               "id": "PROOF-1",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_export.py",
                   "name": "test_month_order"
                 }
               ],
-              "text": "Export September with 3 invoices dated the 3rd, the 1st and the 9th and read them in the order 1st, 3rd, 9th.",
-              "manual": false
+              "text": "Export September with 3 invoices dated the 3rd, the 1st and the 9th and read them in the order 1st, 3rd, 9th."
             }
           ],
           "rule_hash": "rrule1exp",
@@ -975,7 +1047,7 @@
               "word": "unsigned"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [
                 "no audit has run on this code"
@@ -988,11 +1060,11 @@
           "cleared": false,
           "feature": "export",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": true,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -1005,14 +1077,14 @@
             {
               "env": null,
               "id": "PROOF-2",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_export.py",
                   "name": "test_csv_header"
                 }
               ],
-              "text": "Export one invoice and read the header row `date,number,total` before the first line.",
-              "manual": false
+              "text": "Export one invoice and read the header row `date,number,total` before the first line."
             }
           ],
           "rule_hash": "rrule2exp",
@@ -1044,76 +1116,6 @@
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
   "project": "ledger",
-  "records": {
-    "checkout_design": {
-      "": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": null,
-        "path": ".purlin/records/ci/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
-        "result": "pass",
-        "source": "ci",
-        "test_strength": 90,
-        "timestamp": "2026-09-12T09:14:02Z"
-      }
-    },
-    "export": {
-      "": {
-        "commit": "9f8e7d6",
-        "label": "ci",
-        "os": null,
-        "path": ".purlin/records/ci/export/20260910T170241Z-9f8e7d6-ci.json",
-        "result": "pass",
-        "source": "ci",
-        "test_strength": 82,
-        "timestamp": "2026-09-10T17:02:41Z"
-      }
-    },
-    "invoice": {
-      "linux": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": "linux",
-        "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
-        "result": "pass",
-        "source": "ci",
-        "test_strength": 64,
-        "timestamp": "2026-09-12T09:14:02Z"
-      },
-      "macos": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": "macos",
-        "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci-macos.json",
-        "result": "pass",
-        "source": "ci",
-        "test_strength": 64,
-        "timestamp": "2026-09-12T09:13:55Z"
-      }
-    },
-    "login": {
-      "linux": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": "linux",
-        "path": ".purlin/records/ci/login/20260912T091402Z-a1b2c3d-ci-linux.json",
-        "result": "pass",
-        "source": "ci",
-        "test_strength": 86,
-        "timestamp": "2026-09-12T09:14:02Z"
-      },
-      "windows": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": "windows",
-        "path": ".purlin/records/ci/login/20260912T091540Z-a1b2c3d-ci-windows.json",
-        "result": "fail",
-        "source": "ci",
-        "test_strength": 86,
-        "timestamp": "2026-09-12T09:15:40Z"
-      }
-    }
-  },
   "remote_url": "https://github.com/acme/ledger.git",
   "review_list": [
     {
@@ -1150,7 +1152,7 @@
       ]
     }
   ],
-  "schema_version": 8,
+  "schema_version": 9,
   "sign_list": [
     {
       "bar": "strong",

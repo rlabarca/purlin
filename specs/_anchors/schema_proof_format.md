@@ -10,7 +10,7 @@
 
 ## Rules
 
-- RULE-1: A proof file lives at `.purlin/runtime/proofs/<feature>.json`, and a passing entry there is what makes a rule's passed cell read `passed` under the gate `passed`; a rule whose proof has no entry reads `no test` [bar: strong]
+- RULE-1: A proof file lives at `.purlin/runtime/proofs/<feature>.json`, and a run reads a passing entry there into the feature's evidence, which is what makes a rule's passed cell read `passed` under the gate `passed`; a rule whose proof has no entry reads `no test` [bar: strong]
 - RULE-2: An entry carries the six fields `feature`, `id`, `rule`, `test_file`, `test_name` and `status`, and the file carries a `proofs` array and nothing else; no entry names the runner or the operating system, because a record says where a run happened once per run [bar: strong]
 - RULE-3: `status` is `pass` or `fail` and nothing else counts as proved: an entry carrying any other value, or none at all, holds its rule's passed cell short of `passed` while a passing entry beside it still counts for its own rule [bar: strong]
 - RULE-4: A proof claimed by two entries is proved only when both passed, so one failing test naming a proof id holds that rule's passed cell back even though another test naming the same id passed [bar: strong]
@@ -20,9 +20,9 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Write a spec holding `RULE-1` and `PROOF-1`, build the payload with an empty proof directory and verify the rule's passed cell reads `no test`; write `.purlin/runtime/proofs/foo.json` holding one passing entry for `PROOF-1`, build the payload again and verify the cell reads `passed`
+- PROOF-1 (RULE-1): Write a spec holding `RULE-1` and `PROOF-1`, read an empty proof directory into the evidence, build the payload and verify the rule's passed cell reads `no test`; write `.purlin/runtime/proofs/foo.json` holding one passing entry for `PROOF-1`, read it into the evidence, build the payload again and verify the cell reads `passed`
 - PROOF-2 (RULE-2): Write a proof file holding one entry, read it back as JSON, and verify the document's only key is `proofs`, that the entry is missing none of the six required fields, and that it carries neither a `runner` key nor an `os` key
-- PROOF-3 (RULE-3): Write a spec holding `RULE-1` and `RULE-2`; for each of the statuses `error`, `fail`, `skipped` and a null status, write a file whose `PROOF-1` entry carries it beside a passing `PROOF-2` entry, and verify `RULE-1`'s passed cell never reads `passed` while `RULE-2`'s reads `passed` every time
+- PROOF-3 (RULE-3): Write a spec holding `RULE-1` and `RULE-2`; for each of the statuses `error`, `fail`, `skipped` and a null status, write a file whose `PROOF-1` entry carries it beside a passing `PROOF-2` entry and read it into the evidence, and verify `RULE-1`'s passed cell never reads `passed` while `RULE-2`'s reads `passed` every time
 - PROOF-4 (RULE-4): Write a spec holding `RULE-1` and `PROOF-1`, then a proof file holding two entries for `PROOF-1` from two different test files, one `pass` and one `fail`; build the payload and verify `RULE-1`'s passed cell does not read `passed`
 - PROOF-5 (RULE-5): Call the proof loader on a project with no proof directory and verify it returns an empty result; create the directory empty, call it again and verify the result is still empty
 - PROOF-7 (RULE-7): Read `.gitignore` and verify it carries the line `.purlin/runtime/`; verify the proof directory constant the loader uses begins with `.purlin/runtime/`; a gitignore that has stopped carrying the line fails, because a committed proof file is evidence nothing regenerates

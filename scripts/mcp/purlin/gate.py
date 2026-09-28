@@ -6,8 +6,8 @@ before it is proven, and every level above it is not asked for at all:
 
 `passed`  every rule's passed cell is met: the tagged tests pass, from any
           source
-`strong`  every rule's strong cell is met too: a record an audit wrote
-          under either source, test strength at or above the project
+`strong`  every rule's strong cell is met too: an audit in the evidence
+          of either source, test strength at or above the project
           minimum, a settled AI audit where the bar asks for one, and nobody
           holding the rule
 `signed`  every rule that needs a signature has a counting one: a person
@@ -17,8 +17,8 @@ before it is proven, and every level above it is not asked for at all:
 One setting is not derived from the gate: `trust`, which `purlin:init` asks
 for once. `local`, the default, is a project that trusts this machine for
 the tests and the signing. `remote` is one that does not, and there
-`purlin:sign` refuses a rule whose tests have no `ci` record for the commit
-being signed.
+`purlin:sign` refuses a rule whose tests have no `ci` run current for the
+code being signed.
 
 Everything else has a default derived from the gate, and every default can be
 overridden by naming the key:
@@ -53,7 +53,7 @@ DEFAULT_SIGN_AT = 'strong'
 # gate -> (min_strength, sign_at, breaks)
 #
 # `min_strength` is None under `passed`: nothing measures test strength there,
-# so there is no number to compare and the record writes `n/a`.
+# so there is no number to compare and the audit reads `n/a`.
 _DERIVED = {
     'passed': (None, None, False),
     'strong': (70, None, True),

@@ -30,7 +30,7 @@ file for the current number. **Bump it** when a required field is added or remov
 structure changes, or when an optional field is added, because a consumer may need to handle it.
 Do not bump for clarified wording, a new example or a typo.
 
-**When you change spec, proof, anchor, record or signature parsing or emission:**
+**When you change spec, proof, anchor, evidence or signature parsing or emission:**
 
 1. Make the code change, in `scripts/mcp/purlin/`, `scripts/proof/`, `scripts/review/`,
    `scripts/run/` or a skill definition.
@@ -45,10 +45,8 @@ Do not bump for clarified wording, a new example or a typo.
 | `spec_format.md` | The 2-section spec, parsed by `sync_status` |
 | `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
 | `proofs_format.md` | The proof files the test plugins emit, read by `sync_status` |
-| `tests_format.md` | The test results `purlin:test` writes and commits, read by `sync_status` |
-| `record_format.md` | The record `purlin:audit` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
 | `signature_format.md` | The signature and the hold `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
-| `evidence_format.md` | The evidence file per feature per source and its fingerprint, read by `scripts/mcp/purlin/evidence.py` |
+| `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a remote run, read by `sync_status` and `scripts/ci/gate_check.py` |
 
 ## Skill and reference deduplication
 
@@ -66,7 +64,7 @@ concept and consolidate any duplicate in the same commit.
 |-----------|---------------------------|
 | `references/glossary.md` | The word this project uses for each concept, the chain, and every retired spelling |
 | `references/purlin_commands.md` | Every command's syntax, its one purpose sentence, and what it writes |
-| `references/hard_gates.md` | The gate, the three levels, which records count, when a signature counts, what `signed/<version>` means |
+| `references/hard_gates.md` | The gate, the three levels, which evidence counts, when a signature counts, what `signed/<version>` means |
 | `references/review_criteria.md` | What the audit looks for, the two lists, the brief's layers, what the brief reports |
 | `references/spec_quality_guide.md` | Writing a rule, assigning a tier, reading the cell that blocks it |
 | `references/drift_criteria.md` | File classification, config field ownership, drift by role |

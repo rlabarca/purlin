@@ -6,7 +6,7 @@
 >   project's gate decides how far the chain is read: `passed`, `strong` or
 >   `signed`. `--verify` adds one section over the evidence already
 >   committed: every signature and hold must still bind what it names, and
->   every file under a `ci/` folder must have been committed by the runner
+>   every file under `.purlin/evidence/ci/` must have been committed by the runner
 >   itself. It writes nothing, prints every line under the `gate:` prefix,
 >   and fails closed, so a project it cannot read never passes.
 > Scope: scripts/ci/gate_check.py
@@ -29,21 +29,21 @@
 - RULE-13: Every line the gate prints either carries the `gate:` prefix or is an indented finding under a section heading [bar: passed]
 - RULE-14: The report's sections are `Not passed`, `Partial`, `Weak`, `Not audited`, `To review`, `To sign` and `Evidence`, in that order, and a section with no line in it is not printed [bar: strong]
 - RULE-15: `--verify` names under `Evidence` every signature and every hold that no longer binds the rule, proof, test, bar and audit it names, so a tag cannot stand over code that changed after it was signed, and a file naming a rule the project no longer declares is named too [bar: strong]
-- RULE-16: `--verify` names under `Evidence` every file under `.purlin/records/ci/` or `.purlin/briefs/ci/` whose commit is not the runner's own, and without `--verify` neither check runs at all [bar: strong]
+- RULE-16: `--verify` names under `Evidence` every file under `.purlin/evidence/ci/` whose last commit is not the runner's own, and without `--verify` neither check runs at all [bar: strong]
 
 ## Proof
 
-- PROOF-1 (RULE-2): Run the gate over a project at gate `passed` whose record a person committed; verify it exits 0 and prints `gate: gate = passed` and `PASS. Every rule meets passed.`
-- PROOF-2 (RULE-3): Run the gate over a project at gate `passed` with no record at all; verify it exits 1, opens a section `Not passed (2):`, reads `login RULE-1: no test` and `login RULE-2: no test`, and closes with `gate: FAIL. 2 of 2 rules do not meet passed.`
-- PROOF-3 (RULE-3): Write a record whose `PROOF-1` failed and run the gate at gate `passed`; verify it exits 1 and reads `login RULE-1: failed` with a reason opening `failing:`
+- PROOF-1 (RULE-2): Run the gate over a project at gate `passed` whose evidence a person committed; verify it exits 0 and prints `gate: gate = passed` and `PASS. Every rule meets passed.`
+- PROOF-2 (RULE-3): Run the gate over a project at gate `passed` with no evidence at all; verify it exits 1, opens a section `Not passed (2):`, reads `login RULE-1: no test` and `login RULE-2: no test`, and closes with `gate: FAIL. 2 of 2 rules do not meet passed.`
+- PROOF-3 (RULE-3): Write a section whose `PROOF-1` failed and run the gate at gate `passed`; verify it exits 1 and reads `login RULE-1: failed` with a reason opening `failing:`
 - PROOF-4 (RULE-3): Delete the proof line naming `RULE-1` and run the gate at gate `passed`; verify it exits 1, reads `login RULE-1: drafted` and gives the reason `no proof names this rule`
-- PROOF-5 (RULE-6): Run the gate at gate `passed` over a project naming a minimum of 80 and a record measuring 10; verify it exits 0, prints no line holding `minimum test strength`, and opens neither `Weak` nor `Not signed`
-- PROOF-6 (RULE-2): Run the gate at gate `strong` over a record CI committed, a strength of 90 and a settled brief for the `[bar: strong]` rule; verify it exits 0 and prints `gate: gate = strong` and `minimum test strength 50.`
-- PROOF-7 (RULE-3): Run the gate at gate `strong` over a record written under `.purlin/records/local/`; verify it exits 0 and passes. Run the same project at gate `signed`; verify it opens no `Not passed` section, because a local record counts there too, and opens `To sign (1):` instead
+- PROOF-5 (RULE-6): Run the gate at gate `passed` over a project naming a minimum of 80 and evidence measuring 10; verify it exits 0, prints no line holding `minimum test strength`, and opens neither `Weak` nor `Not signed`
+- PROOF-6 (RULE-2): Run the gate at gate `strong` over a section CI committed, a strength of 90 and an audit entry for the `[bar: strong]` rule; verify it exits 0 and prints `gate: gate = strong` and `minimum test strength 50.`
+- PROOF-7 (RULE-3): Run the gate at gate `strong` over a section written under `.purlin/evidence/local/`; verify it exits 0 and passes. Run the same project at gate `signed`; verify it opens no `Not passed` section, because a local section counts there too, and opens `To sign (1):` instead
 - PROOF-33 (RULE-3): Run the gate over a project whose rule passed on one operating system and failed on another; verify it exits 1, opens a section `Partial (1):` rather than `Not passed`, and names the platform that failed
-- PROOF-8 (RULE-4): Run the gate at gate `strong` with a minimum of 70 over a record measuring 40; verify it exits 1, opens `Weak (2):` and reads `strength 40% under 70%`
-- PROOF-9 (RULE-4): Run the gate at gate `strong` with no brief written for the `[bar: strong]` rule; verify it exits 1, opens `Not audited (1):`, reads `login RULE-2: not audited` and names `no audit has run on this code`
-- PROOF-10 (RULE-4): Write a settled brief whose observation reads `PROOF-2 asserts the status but never the body the rule names.` and run the gate at gate `strong`; verify it exits 1, opens `Weak (1):`, reads `login RULE-2: weak` and prints that sentence
+- PROOF-8 (RULE-4): Run the gate at gate `strong` with a minimum of 70 over evidence measuring 40; verify it exits 1, opens `Weak (2):` and reads `strength 40% under 70%`
+- PROOF-9 (RULE-4): Run the gate at gate `strong` with no audit entry written for the `[bar: strong]` rule; verify it exits 1, opens `Not audited (1):`, reads `login RULE-2: not audited` and names `no audit has run on this code`
+- PROOF-10 (RULE-4): Write an audit entry that settled and found `PROOF-2 asserts the status but never the body the rule names.` and run the gate at gate `strong`; verify it exits 1, opens `Weak (1):`, reads `login RULE-2: weak` and prints that sentence
 - PROOF-11 (RULE-5): Sign the `[bar: strong]` rule with a signed commit by the listed signer, then run the gate at gate `signed`; verify it exits 0 and prints `gate: gate = signed`
 - PROOF-12 (RULE-5): Sign only the `[bar: strong]` rule and run the gate at gate `signed` with `sign_at` at `strong`; verify it exits 0 and never names `login RULE-1`, whose bar is `passed`
 - PROOF-13 (RULE-5): Run the gate at gate `signed` with no signature written; verify it exits 1, opens `Not signed (1):` and reads `login RULE-2: unsigned`
@@ -52,22 +52,22 @@
 - PROOF-16 (RULE-5): Sign every rule at gate `signed` with `sign_at` `all`, then change `200` to `signed 200` in the `[bar: passed]` rule and run the gate; verify it exits 1, reads `login RULE-1: stale` and gives the reason `hashes changed after the signature`
 - PROOF-17 (RULE-5): Point `origin/HEAD` at `main`, sign the `[bar: strong]` rule in a signed commit on a branch called `side`, and run the gate at gate `signed` there; verify it exits 0 and never reads `not on main`
 - PROOF-18 (RULE-8): Run the gate at gate `signed` over a project whose config names nobody and whose `[bar: strong]` rule is unsigned; verify it exits 1, opens `To sign (1):` naming `login RULE-2: unsigned`, and never prints `purlin:init --gate signed`. Sign that rule in a signed commit and run it again; verify it exits 0
-- PROOF-19 (RULE-7): Run the gate at gate `strong` over a spec carrying 30 rules and no record; verify it opens `Not passed (30):` and closes the section with `and 10 more; --json prints every one.`
+- PROOF-19 (RULE-7): Run the gate at gate `strong` over a spec carrying 30 rules and no evidence; verify it opens `Not passed (30):` and closes the section with `and 10 more; --json prints every one.`
 - PROOF-20 (RULE-2): Declare an anchor holding 1 rule, require it from a feature holding 2, and run the gate with `--json` at gate `passed`; verify it counts 3 rules and names `policy RULE-1` exactly once
 - PROOF-21 (RULE-9): Run the gate over a passing project, then a failing one, then a directory holding no project; verify the exit codes are 0, 1 and 2 and that the last prints `failing closed`
 - PROOF-22 (RULE-9): Run the gate over a directory that does not exist; verify it exits 2 and prints `cannot read a Purlin project`
 - PROOF-23 (RULE-10): Run the gate with no argument, and with `--check --project-root /no/such/directory`; verify both exit 2
 - PROOF-24 (RULE-13): Run `gate_check.py` as a command in a separate process over a passing project; verify it exits 0 and its output opens `gate: gate = passed`
-- PROOF-25 (RULE-11): Run the gate with `--json` over a project at gate `passed` with no record; verify the JSON reads gate `passed`, result `fail`, exit 1, 2 rules, 0 met, 2 entries under `not_passed`, empty `weak`, `waiting` and `not_signed`, and the commit the payload named
+- PROOF-25 (RULE-11): Run the gate with `--json` over a project at gate `passed` with no evidence; verify the JSON reads gate `passed`, result `fail`, exit 1, 2 rules, 0 met, 2 entries under `not_passed`, empty `weak`, `waiting` and `not_signed`, and the commit the payload named
 - PROOF-26 (RULE-11): Run the gate with `--json` over a passing project; verify the result is `pass`, that met equals 2 of 2 rules and `not_passed` is empty
-- PROOF-27 (RULE-11): Run the gate with `--json` at gate `strong` with a minimum of 70 over a record measuring 40; verify `weak` holds 2 entries, `not_passed` is empty and the minimum reads 70
+- PROOF-27 (RULE-11): Run the gate with `--json` at gate `strong` with a minimum of 70 over evidence measuring 40; verify `weak` holds 2 entries, `not_passed` is empty and the minimum reads 70
 - PROOF-28 (RULE-8): Run the gate with `--json` at gate `signed` over a project whose config names nobody; verify it exits 1, that `to_sign` holds exactly 1 row, and that the JSON carries no key naming who may sign
 - PROOF-29 (RULE-12): Snapshot every file of a project, run the gate at `passed`, `strong` and `signed`, and snapshot again; verify the two snapshots are equal and `git status --porcelain` prints nothing
 - PROOF-30 (RULE-1): Read the gate's own source; verify it builds the payload, reads `meets_gate`, and that none of the box-drawing glyphs a rendered table uses appears in it
 - PROOF-31 (RULE-1): Build the payload, hand it to the gate and run it; verify it exits 0 and prints `PASS`
-- PROOF-32 (RULE-13): Run the gate over a project with no record; verify every line that is not indented either opens with `gate:` or ends with a colon
+- PROOF-32 (RULE-13): Run the gate over a project with no evidence; verify every line that is not indented either opens with `gate:` or ends with a colon
 - PROOF-34 (RULE-14): Run the gate with `--json` at gate `signed` over a project holding one rule short at each section; verify the JSON carries the keys `not_passed`, `partial`, `weak`, `not_audited`, `to_review`, `to_sign` and `evidence`, and that the section titles read `Not passed`, `Partial`, `Weak`, `Not audited`, `To review`, `To sign` and `Evidence` in that order
 - PROOF-35 (RULE-15): Sign a rule at gate `signed`, then edit the rule text and run the gate with `--check --verify`; verify it exits 1, opens `Evidence (1):`, names the signature file and reads `what it binds is not this code`. Run the same project with `--check` alone and verify no `Evidence` section is printed
 - PROOF-36 (RULE-15): Write a hold for a rule, delete that rule from the spec and run the gate with `--check --verify`; verify the hold file is named under `Evidence` with `no rule login RULE-2 is in this project`
-- PROOF-37 (RULE-15): Re-audit a signed rule so the brief observes something it did not before, then run the gate with `--check --verify`; verify the signature is named under `Evidence`, because the audit hash a signature binds moved
-- PROOF-38 (RULE-16): Commit a record under `.purlin/records/ci/` as a person and run the gate with `--check --verify`; verify it exits 1 and names that path under `Evidence` with `the commit that added it is not the runner's`. Commit the same file as the build identity and verify it is not named
+- PROOF-37 (RULE-15): Re-audit a signed rule so the audit finds something it did not before, then run the gate with `--check --verify`; verify the signature is named under `Evidence`, because the audit hash a signature binds moved
+- PROOF-38 (RULE-16): Commit a file under `.purlin/evidence/ci/` as a person and run the gate with `--check --verify`; verify it exits 1 and names that path under `Evidence` with `the commit that added it is not the runner's`. Commit the same file as the build identity and verify it is not named

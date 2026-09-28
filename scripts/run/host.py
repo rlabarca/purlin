@@ -1,50 +1,43 @@
-"""Write, prune and commit the records a run produces.
+"""Commit a remote runner's evidence through the git host's API.
 
-A record is one audit's observations for one feature, written as a file in
-the tree and committed:
+A run on a run branch is the one writer that always commits, because the
+evidence it writes exists nowhere else. It writes only its own operating
+system's section of `.purlin/evidence/ci/<feature>.json`, and the commit goes
+through the git host's REST API so the host, not Purlin, makes it:
 
-    .purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
+- GitHub: one tree request, then the commit, then the ref update. No
+  `author` and no `committer` field is sent, so GitHub signs the commit with
+  its own key and reports `github-actions[bot]` as its author.
+- Azure DevOps: one push through the Pushes API with the build service's
+  token, `changeType: edit` for a file the branch already holds and `add`
+  for one it does not.
 
-Adding a file never conflicts, so two runs never collide and the log of what
-ran is the git history of that folder.
-
-**The folder is the source.** `purlin:audit` on a person's machine writes
-under `.purlin/records/local/` and commits it under their own identity;
-the CI job writes under `.purlin/records/ci/` and commits it through the git
-host's API. Each record carries the same word in its own `source` field, and
-`scripts/mcp/purlin/records.py` ignores a file where the two disagree. What
-keeps the ci folder honest is the tag run: it reads the commit that added
-each file under `ci/` and fails the job where the identity is not the
-runner's own.
-
-CI commits through the REST API with no author and no committer field, so
-GitHub signs the commit with its own key and reports `github-actions[bot]`
-as the committer; Azure DevOps pushes through its Pushes API with the build
-service's token. Either commit carries more than the record: the briefs the
-same run wrote travel in it, because a brief that never leaves the runner is
-evidence nobody can read.
+**Two runners, one file.** A matrix of runners writes one file per feature,
+one section each. When the branch moved between reading its head and writing
+the commit, the commit is retried, and on every attempt each file is read
+again at the new parent and this runner's section is merged into it, so one
+runner never overwrites what another wrote.
 
 **Where CI commits.** On a run branch, and nowhere else. A run branch is what
 `purlin:test --remote` creates for one run and deletes afterwards, so the
-records it writes are pulled home by the command that asked for them. The
-other run CI does is the tag run, and that one writes nothing at all: it
-reruns the tests on a clean machine and verifies what is already committed.
+evidence it writes is pulled home by the command that asked for it. The other
+run CI does is the tag run, and that one writes nothing at all: it reruns the
+tests on a clean machine and verifies what is already committed.
 `commits_here()` is the one question the run asks.
 
-**Retention.** A feature keeps the newest three records per operating system
-per source.
+Who made a commit under `ci/` is `scripts/mcp/purlin/provenance.py`'s
+question, which the tag run asks.
 """
 
 import base64
 import json
 import os
-import re
 import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
 
 _RUN_DIR = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(os.path.dirname(_RUN_DIR))
@@ -52,25 +45,10 @@ _MCP_DIR = os.path.join(_ROOT, 'scripts', 'mcp')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import records as reader  # noqa: E402
-
-RECORDS_DIR = reader.RECORDS_DIR
-BRIEFS_DIR = reader.BRIEFS_DIR
-SOURCES = reader.SOURCES
 # What git is handed. A pathspec takes `/` on every operating system: the
-# `os.path.join` spelling of RECORDS_DIR is `.purlin\\records` on Windows, which
-# matches nothing, so a record commit made there staged nothing.
-RECORDS_PATHSPEC = '.purlin/records'
-LOCAL_RECORDS_PATHSPEC = '.purlin/records/local'
-LOCAL_BRIEFS_PATHSPEC = '.purlin/briefs/local'
-
-# What one commit of an audit's own evidence says, whoever made it.
-RECORD_SUBJECT = 'purlin: record for %s'
-RECORD_COMMITTED = 'Record committed.'
-RECORD_UNCHANGED = 'Record unchanged.'
-RECORD_NO_REPOSITORY = ('Record written; there is no git repository to commit '
-                        'it to.')
-RETENTION = reader.RETENTION
+# `os.path.join` spelling is `.purlin\\evidence` on Windows, which matches
+# nothing, so a commit made there would carry no deletion.
+EVIDENCE_PATHSPEC = '.purlin/evidence'
 
 # The branch `purlin:test --remote` creates for one run, and the ref prefix
 # a git host's own branch variable carries.
@@ -103,170 +81,85 @@ PAUSE_CAP_SECONDS = 120
 
 
 # ---------------------------------------------------------------------------
-# Delegated readers, so a caller needs one import
-# ---------------------------------------------------------------------------
-
-def load_records(project_root, ref=None):
-    """`{feature: {os_or_None: record}}`, read by `purlin.records`."""
-    return reader.load_records(project_root, ref=ref)
-
-
-def record_label(project_root, path):
-    """`ci` or `local` for one record, read by `purlin.records`."""
-    return reader.record_label(project_root, path)
-
-
-# ---------------------------------------------------------------------------
-# Writing
-# ---------------------------------------------------------------------------
-
-def _utc_now():
-    """The current time in UTC, the one clock every timestamp reads."""
-    return datetime.now(timezone.utc)
-
-
-def record_filename(commit, runner, os_name=None, when=None):
-    """`<timestamp>-<commit7>-<runner>[-<os>].json` for one run."""
-    stamp = (when or _utc_now()).strftime('%Y%m%dT%H%M%SZ')
-    commit7 = (str(commit or '') + '0000000')[:7]
-    slug = 'ci' if runner == 'ci' else reader.runner_slug(runner)
-    tail = '-%s' % os_name if os_name else ''
-    return '%s-%s-%s%s.json' % (stamp, commit7, slug, tail)
-
-
-def write_record(project_root, record, runner, os_name=None, source='local'):
-    """Write one record, prune the feature's folder, return its path.
-
-    `record` is the `purlin-record/3` dict the run assembled, and `source` is
-    `ci` or `local`: the folder it goes in and the word its own `source`
-    field carries, which a reader checks against each other. The file name
-    carries the timestamp, the commit observed, the runner and the operating
-    system when the run was one job of a matrix; the record's own `timestamp`
-    and `os` fields are set to match, so the file and its name never disagree.
-    The run already names the runner as the slug, so this fills it in only when
-    a caller handed over a record without one.
-    """
-    record = dict(record or {})
-    if source not in SOURCES:
-        source = 'local'
-    feature = record.get('feature') or 'unknown'
-    now = _utc_now()
-    name = record_filename(record.get('commit'), runner, os_name, when=now)
-    record.setdefault(
-        'runner', 'ci' if runner == 'ci' else reader.runner_slug(runner))
-    record['os'] = os_name
-    record['source'] = source
-    record['timestamp'] = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-    folder = os.path.join(reader.records_dir(project_root, source), feature)
-    if not os.path.isdir(folder):
-        os.makedirs(folder)
-    path = os.path.join(folder, name)
-    with open(path, 'w', encoding='utf-8') as handle:
-        json.dump(record, handle, indent=2, sort_keys=True)
-        handle.write('\n')
-
-    prune(project_root, feature, os_name, source=source)
-    return os.path.relpath(path, project_root).replace(os.sep, '/')
-
-
-def prune(project_root, feature, os_name=None, keep=RETENTION,
-          source='local'):
-    """Delete a feature's records past the newest `keep` for one OS.
-
-    Records for another operating system are untouched: a matrix keeps three
-    per OS, so a Windows job never prunes what a Linux job wrote. Records
-    under the other source are untouched too: a local audit never prunes
-    what CI wrote, and it could not, because the git host will not let it.
-    """
-    folder = os.path.join(reader.records_dir(project_root, source), feature)
-    if not os.path.isdir(folder):
-        return []
-    candidates = []
-    for name in os.listdir(folder):
-        parts = reader.record_name_parts(name)
-        if parts is None or parts[3] != os_name:
-            continue
-        candidates.append((parts[0], name))
-    candidates.sort(reverse=True)
-
-    removed = []
-    for _stamp, name in candidates[keep:]:
-        rel = os.path.relpath(os.path.join(folder, name),
-                              project_root).replace(os.sep, '/')
-        try:
-            os.remove(os.path.join(folder, name))
-        except OSError:
-            continue
-        removed.append(rel)
-    return removed
-
-
-# ---------------------------------------------------------------------------
 # Committing
 # ---------------------------------------------------------------------------
 
-def commit_local_records(project_root, commit):
-    """Commit a local audit's record and briefs under the person's identity.
-
-    The same commit path `purlin:test` uses for the test results, because it
-    is the same act: a person's own run writing its own evidence under their
-    own name. Nothing here pushes, and nothing here touches
-    `.purlin/records/ci/`, which the git host reserves for the build
-    identity. The line to print comes back.
-    """
-    from results import commit_paths
-
-    return commit_paths(
-        project_root, [LOCAL_RECORDS_PATHSPEC, LOCAL_BRIEFS_PATHSPEC],
-        RECORD_SUBJECT % (str(commit or '')[:7] or 'an unknown commit'),
-        RECORD_COMMITTED, RECORD_UNCHANGED, RECORD_NO_REPOSITORY)
-
-
-def commit_records(project_root, paths, message):
+def commit_files(project_root, paths, message, merge=None):
     """Commit the files at `paths` through the git host's API. The sha.
 
-    The commit goes through the API so the git host, not Purlin, signs it:
-    CI publishes its own evidence and a person pushes theirs. One CI run
-    hands over the records plus the briefs it wrote, so one commit carries
-    the evidence and the reports that rest on it; every path is sent whether
-    it sits under `.purlin/records/` or under `.purlin/briefs/`.
+    `merge`, when given, is called on every attempt as
+    `merge(path, local_text, parent_text)` and answers the text to send:
+    `parent_text` is the file the branch's current head holds, or None when
+    it holds none. That is how a runner's own section joins a file another
+    runner wrote a moment before.
     """
     paths = [str(path).replace(os.sep, '/') for path in (paths or [])]
-    return _commit_through_api(project_root, paths, message)
+    return _commit_through_api(project_root, paths, message, merge)
 
 
-def deleted_records(project_root):
-    """Record files git knows about and the working tree no longer has.
+def deleted_files(project_root):
+    """Evidence files git knows about and the working tree no longer has.
 
-    Retention deletes on disk as it writes, so the commit has to carry those
-    deletions or a pruned record lives on in the git host's copy for ever.
+    A run deletes the file of a feature that no spec defines, so the commit
+    has to carry that deletion or the file lives on in the git host's copy.
     """
     listed = _git(project_root,
-                  ['ls-files', '--deleted', '--', RECORDS_PATHSPEC], check=False)
+                  ['ls-files', '--deleted', '--', EVIDENCE_PATHSPEC],
+                  check=False)
     return [line.strip() for line in (listed or '').splitlines()
             if line.strip()]
 
 
-def _commit_through_api(project_root, paths, message):
+def _commit_through_api(project_root, paths, message, merge=None):
     """One commit carrying `paths`, made through the git host's REST API.
 
     A project that is not the workspace the job checked out commits nothing.
-    A test suite driving an audit over a fixture project inherits the
-    runner's token and repository name, and the API commit those name is the
-    real repository's, not the fixture's: the fixture's records would land on
-    the branch under review.
+    A test suite driving a run over a fixture project inherits the runner's
+    token and repository name, and the API commit those name is the real
+    repository's, not the fixture's: the fixture's evidence would land on the
+    branch under review.
     """
     from ci import is_the_workspace
 
     if not is_the_workspace(project_root):
-        print('%s is not the workspace this job checked out, so no record '
+        print('%s is not the workspace this job checked out, so no evidence '
               'was committed.' % project_root)
         return ''
     host = detect_host()
     if host == 'azure':
-        return _commit_azure(project_root, paths, message)
-    return _commit_github(project_root, paths, message)
+        return _commit_azure(project_root, paths, message, merge)
+    return _commit_github(project_root, paths, message, merge)
+
+
+def default_branch(project_root):
+    """The default branch name: what origin points at, else the branch HEAD is
+    on, else `main`.
+
+    A repository with a remote answers this outright. One with no remote, or
+    one whose `origin/HEAD` was never set, has only its own branch to go on,
+    and `main` is a guess that is wrong for every repository made by a git
+    still configured for `master`.
+    """
+    try:
+        # The whole ref comes back here, and the branch is its last part.
+        result = subprocess.run(
+            ['git', 'symbolic-ref', 'refs/remotes/origin/HEAD'],
+            capture_output=True, text=True, cwd=project_root, timeout=10)
+        if result.returncode == 0:
+            named = result.stdout.strip().rsplit('/', 1)[-1]
+            if named:
+                return named
+        # The branch itself comes back here, and a branch name may hold a
+        # slash of its own, so nothing is cut off it. A detached head has no
+        # branch to name and the command fails, which leaves `main`.
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'],
+            capture_output=True, text=True, cwd=project_root, timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return 'main'
+    if result.returncode != 0:
+        return 'main'
+    return result.stdout.strip() or 'main'
 
 
 def detect_host():
@@ -286,7 +179,7 @@ def current_branch(project_root):
             return value
     branch = (_git(project_root, ['rev-parse', '--abbrev-ref', 'HEAD'],
                    check=False) or '').strip()
-    return branch or reader.default_branch(project_root)
+    return branch or default_branch(project_root)
 
 
 def ref_branch(project_root):
@@ -324,10 +217,10 @@ def is_a_tag_run():
 
 
 def commits_here(project_root):
-    """True when a CI run on this ref writes its records into the tree.
+    """True when a CI run on this ref writes its evidence into the tree.
 
     A run branch is the only ref CI commits on: `purlin:test --remote`
-    created it for one run, pulls the records home and deletes it. A tag run
+    created it for one run, pulls the evidence home and deletes it. A tag run
     commits nothing, because it is there to verify rather than to write.
 
     Off a runner the answer is True: there is no branch rule to speak for,
@@ -347,23 +240,32 @@ def no_commit_line(project_root):
             % (ref_branch(project_root) or 'this ref'))
 
 
-def _read_file(project_root, rel_path):
-    with open(os.path.join(project_root, rel_path), 'r',
-              encoding='utf-8') as handle:
+def _read_bytes(project_root, rel_path):
+    with open(os.path.join(project_root, *rel_path.split('/')), 'rb') as handle:
         return handle.read()
 
 
-def _tree_entry(project_root, token, base, rel):
+def _text_to_send(project_root, rel, merge, parent_text):
+    """The text a file is committed with: its own, or merged at the parent."""
+    raw = _read_bytes(project_root, rel)
+    if merge is None:
+        return raw
+    try:
+        local_text = raw.decode('utf-8')
+    except UnicodeDecodeError:
+        return raw
+    return merge(rel, local_text, parent_text).encode('utf-8')
+
+
+def _tree_entry(token, base, rel, raw):
     """One tree entry for a file: its text inline, or a blob when it is not text.
 
     The trees endpoint creates the blob itself for an entry that carries
     `content`, so a file whose bytes are valid UTF-8 costs no request of its
     own. A file that is not valid UTF-8 cannot travel inline and gets one
-    blob request; nothing an audit run writes is such a file, because a
-    record and a brief are both JSON.
+    blob request; nothing a run writes is such a file, because the evidence
+    is JSON.
     """
-    with open(os.path.join(project_root, rel), 'rb') as handle:
-        raw = handle.read()
     entry = {'path': rel, 'type': 'blob'}
     entry[_PERM_KEY] = _FILE_PERM
     try:
@@ -376,46 +278,65 @@ def _tree_entry(project_root, token, base, rel):
     return entry
 
 
-def _commit_github(project_root, paths, message):
+def _github_file_at(token, repo, rel, ref):
+    """The text a file holds at `ref` on GitHub, or None when it holds none."""
+    url = '%s/repos/%s/contents/%s?ref=%s' % (
+        _GITHUB_API, repo, urllib.parse.quote(rel), urllib.parse.quote(ref))
+    try:
+        found = _api(token, 'GET', url)
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return None
+        raise
+    content = (found or {}).get('content')
+    if not content:
+        return None
+    return base64.b64decode(content).decode('utf-8', 'replace')
+
+
+def _commit_github(project_root, paths, message, merge=None):
     """Tree, commit, ref update, retried when the branch moved.
 
-    One tree request carries every path handed over, wherever in the tree it
-    sits, plus a deletion entry for every record retention removed. A run
-    that writes a record and several hundred briefs therefore asks the git
-    host once rather than once per file, which is what
-    its limit on content-creating requests counts. GitHub's own limit on a
-    tree request is on the size of the request body, not on the number of
-    entries, and the few hundred small JSON files one run writes are far
-    inside it, so the entries are never split into successive trees.
+    One tree request carries every path handed over, plus a deletion entry
+    for every evidence file the run removed. Its entries are built again on
+    each attempt, because with `merge` each file is merged into what the new
+    parent holds.
 
     No `author` and no `committer` field is sent. GitHub then attributes the
     commit to the Actions token, signs it with its own key, and reports
-    `github-actions[bot]` as the committer, which is exactly what gives the
-    record the source `ci`.
+    `github-actions[bot]` as the author, which is what the tag run's
+    provenance check reads.
     """
     repo = os.environ.get('GITHUB_REPOSITORY') or ''
     token = os.environ.get('GITHUB_TOKEN') or ''
     if not repo or not token:
-        print('No GITHUB_REPOSITORY and GITHUB_TOKEN, so no record was '
+        print('No GITHUB_REPOSITORY and GITHUB_TOKEN, so no evidence was '
               'committed.')
         return ''
 
     base = '%s/repos/%s/git' % (_GITHUB_API, repo)
     branch = current_branch(project_root)
-    entries = [_tree_entry(project_root, token, base, rel) for rel in paths]
-    for rel in deleted_records(project_root):
+    deletions = []
+    for rel in deleted_files(project_root):
         entry = {'path': rel, 'type': 'blob', 'sha': None}
         entry[_PERM_KEY] = _FILE_PERM
-        entries.append(entry)
+        deletions.append(entry)
 
     last_error = None
     for attempt in range(REF_RETRIES):
         head = _api(token, 'GET', base + '/ref/heads/%s' % branch)
         parent = head['object']['sha']
         parent_commit = _api(token, 'GET', base + '/commits/%s' % parent)
+        entries = []
+        for rel in paths:
+            parent_text = (_github_file_at(token, repo, rel, parent)
+                           if merge is not None else None)
+            entries.append(_tree_entry(
+                token, base, rel,
+                _text_to_send(project_root, rel, merge, parent_text)))
         tree = _api(token, 'POST', base + '/trees',
                     {'base_tree': parent_commit['tree']['sha'],
-                     'tree': entries})
+                     'tree': entries + deletions})
         commit = _api(token, 'POST', base + '/commits',
                       {'message': message, 'tree': tree['sha'],
                        'parents': [parent]})
@@ -431,11 +352,40 @@ def _commit_github(project_root, paths, message):
     raise last_error
 
 
-def _commit_azure(project_root, paths, message):
+def _azure_file_at(token, base, rel, branch):
+    """The text a file holds on an Azure DevOps branch, or None when it holds none."""
+    url = ('%s/items?path=%s&versionDescriptor.version=%s'
+           '&versionDescriptor.versionType=branch&includeContent=true'
+           '&api-version=7.0' % (base, urllib.parse.quote('/' + rel),
+                                 urllib.parse.quote(branch)))
+    try:
+        found = _api(token, 'GET', url, host='azure')
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return None
+        raise
+    content = (found or {}).get('content')
+    return content if isinstance(content, str) else None
+
+
+def azure_change(rel, text, exists):
+    """One change of an Azure DevOps push: `edit` for a file the branch holds.
+
+    The Pushes API refuses `add` for a path that exists and `edit` for one
+    that does not, and one file per feature is rewritten on every run, so
+    which of the two is read off the branch on every attempt.
+    """
+    return {'changeType': 'edit' if exists else 'add',
+            'item': {'path': '/' + rel},
+            'newContent': {'content': text, 'contentType': 'rawtext'}}
+
+
+def _commit_azure(project_root, paths, message, merge=None):
     """One push through the Azure DevOps Pushes API, retried when stale.
 
-    The build service's token signs nothing, so the record is labelled `ci`
-    on the committer name alone, which is what Azure DevOps documents.
+    Each attempt reads the branch's object id and each file at the branch
+    again: whether a file exists decides `edit` or `add`, and with `merge`
+    what it holds is what this runner's section is merged into.
     """
     token = os.environ.get('SYSTEM_ACCESSTOKEN') or ''
     collection = (os.environ.get('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI')
@@ -443,17 +393,13 @@ def _commit_azure(project_root, paths, message):
     project = os.environ.get('SYSTEM_TEAMPROJECT') or ''
     repo = os.environ.get('BUILD_REPOSITORY_ID') or ''
     if not (token and collection and project and repo):
-        print('No Azure DevOps build variables, so no record was committed.')
+        print('No Azure DevOps build variables, so no evidence was '
+              'committed.')
         return ''
 
     base = '%s/%s/_apis/git/repositories/%s' % (collection, project, repo)
     branch = current_branch(project_root)
     ref = 'refs/heads/%s' % branch
-    changes = [{'changeType': 'add',
-                'item': {'path': '/' + rel},
-                'newContent': {'content': _read_file(project_root, rel),
-                               'contentType': 'rawtext'}}
-               for rel in paths]
 
     last_error = None
     for attempt in range(REF_RETRIES):
@@ -462,6 +408,12 @@ def _commit_azure(project_root, paths, message):
                     host='azure')
         values = refs.get('value') or []
         old = values[0]['objectId'] if values else '0' * 40
+        changes = []
+        for rel in paths:
+            parent_text = _azure_file_at(token, base, rel, branch)
+            text = _text_to_send(project_root, rel, merge, parent_text)
+            changes.append(azure_change(
+                rel, text.decode('utf-8', 'replace'), parent_text is not None))
         body = {'refUpdates': [{'name': ref, 'oldObjectId': old}],
                 'commits': [{'comment': message, 'changes': changes}]}
         try:

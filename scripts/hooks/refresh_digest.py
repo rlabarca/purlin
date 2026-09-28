@@ -14,8 +14,7 @@ WHAT IT DOES
        dashboard is always on: nothing configures it, so nothing turns it off
        but that one opt-out.
     3. Compares the digest's mtime to every input that feeds it: the specs,
-       the proof files under `.purlin/runtime/proofs/`, the records under
-       `.purlin/records/`, and the config. Nothing newer, nothing to do. This
+       the evidence under `.purlin/evidence/`, and the config. Nothing newer, nothing to do. This
        check runs before any Purlin module is imported, so a quiet tool call
        costs a process start and a directory walk.
     4. Takes a non-blocking lock under `.purlin/runtime/`; a second instance
@@ -115,14 +114,13 @@ def _config(root):
     return config if isinstance(config, dict) else None
 
 
-# What the digest reports, and so what makes it stale: the specs, the proof
-# files a test run leaves under `.purlin/runtime/proofs/`, the records under
-# `.purlin/records/`, and the config. Nothing else under `.purlin/runtime/`
-# is an input, so a test run's scratch files never wake the hook.
+# What the digest reports, and so what makes it stale: the specs, the
+# evidence under `.purlin/evidence/`, and the config. Nothing under
+# `.purlin/runtime/` is an input, so a test run's scratch files never wake
+# the hook.
 _INPUT_TREES = (
     ('specs',),
-    ('.purlin', 'runtime', 'proofs'),
-    ('.purlin', 'records'),
+    ('.purlin', 'evidence'),
 )
 
 

@@ -1,34 +1,68 @@
 {
   "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
   "dirty": false,
+  "evidence": {
+    "checkout_design": {
+      "local": {
+        "linux": {
+          "at": "2026-09-12T09:14:02Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/local/checkout_design.json",
+          "result": "pass"
+        }
+      }
+    },
+    "invoice": {
+      "ci": {
+        "linux": {
+          "at": "2026-09-12T09:14:02Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/ci/invoice.json",
+          "result": "pass"
+        }
+      }
+    },
+    "login": {
+      "ci": {
+        "linux": {
+          "at": "2026-09-12T09:14:02Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/ci/login.json",
+          "result": "pass"
+        }
+      }
+    }
+  },
   "features": [
     {
       "category": "auth",
+      "current": true,
       "description": null,
+      "evidence": {
+        "ci": {
+          "committed": true,
+          "path": ".purlin/evidence/ci/login.json",
+          "platforms": {
+            "linux": {
+              "at": "2026-09-12T09:14:02Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        },
+        "local": null
+      },
       "is_anchor": false,
       "is_global": false,
-      "latest_record": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": null,
-        "path": ".purlin/records/ci/login/20260912T091402Z-a1b2c3d-ci.json",
-        "test_strength": 71,
-        "timestamp": "2026-09-12T09:14:02Z"
-      },
       "name": "login",
       "pinned": null,
       "requires": [],
       "rollup": {
         "failing": 0,
         "held": 0,
-        "latest_record": {
-          "commit": "a1b2c3d",
-          "label": "ci",
-          "os": null,
-          "path": ".purlin/records/ci/login/20260912T091402Z-a1b2c3d-ci.json",
-          "test_strength": 71,
-          "timestamp": "2026-09-12T09:14:02Z"
-        },
         "manual": 0,
         "met": 2,
         "not_audited": 0,
@@ -57,13 +91,19 @@
               "counts": true,
               "current": true,
               "missing_env": [],
-              "platforms": {},
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "strong": {
-              "brief": ".purlin/briefs/ci/login/RULE-1.1a2b3c4d.brief.json",
+              "evidence": ".purlin/evidence/ci/login.json",
               "observations": [
                 "The test reads the status code and the cookie name; the proof also names a session cookie, and no assertion reads its expiry."
               ],
@@ -78,11 +118,11 @@
           "cleared": false,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": true
@@ -95,14 +135,14 @@
             {
               "env": null,
               "id": "PROOF-1",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_login.py",
                   "name": "test_sign_in"
                 }
               ],
-              "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie.",
-              "manual": false
+              "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie."
             }
           ],
           "rule_hash": "rrule1log",
@@ -123,13 +163,19 @@
               "counts": true,
               "current": true,
               "missing_env": [],
-              "platforms": {},
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [],
               "settled": null,
@@ -140,11 +186,11 @@
           "cleared": true,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -157,14 +203,14 @@
             {
               "env": null,
               "id": "PROOF-2",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_login.py",
                   "name": "test_lockout"
                 }
               ],
-              "text": "POST /session five times with a wrong password, then once more with the right one, and read 423.",
-              "manual": false
+              "text": "POST /session five times with a wrong password, then once more with the right one, and read 423."
             }
           ],
           "rule_hash": "rrule2log",
@@ -185,13 +231,19 @@
               "counts": true,
               "current": true,
               "missing_env": [],
-              "platforms": {},
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [],
               "settled": null,
@@ -202,11 +254,11 @@
           "cleared": true,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -219,14 +271,14 @@
             {
               "env": null,
               "id": "PROOF-3",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_login.py",
                   "name": "test_notice"
                 }
               ],
-              "text": "Lock an account and read 1 message in the outbox.",
-              "manual": false
+              "text": "Lock an account and read 1 message in the outbox."
             }
           ],
           "rule_hash": "rrule3log",
@@ -246,31 +298,30 @@
     },
     {
       "category": "billing",
+      "current": true,
       "description": null,
+      "evidence": {
+        "ci": {
+          "committed": true,
+          "path": ".purlin/evidence/ci/invoice.json",
+          "platforms": {
+            "linux": {
+              "at": "2026-09-12T09:14:02Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        },
+        "local": null
+      },
       "is_anchor": false,
       "is_global": false,
-      "latest_record": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": null,
-        "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci.json",
-        "test_strength": 48,
-        "timestamp": "2026-09-12T09:14:02Z"
-      },
       "name": "invoice",
       "pinned": null,
       "requires": [],
       "rollup": {
         "failing": 0,
         "held": 0,
-        "latest_record": {
-          "commit": "a1b2c3d",
-          "label": "ci",
-          "os": null,
-          "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci.json",
-          "test_strength": 48,
-          "timestamp": "2026-09-12T09:14:02Z"
-        },
         "manual": 0,
         "met": 0,
         "not_audited": 0,
@@ -301,13 +352,19 @@
               "counts": true,
               "current": true,
               "missing_env": [],
-              "platforms": {},
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
               "reasons": [],
               "source": "ci",
               "word": "passed"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [
                 "strength 48% under 70%"
@@ -320,11 +377,11 @@
           "cleared": false,
           "feature": "invoice",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -337,14 +394,14 @@
             {
               "env": null,
               "id": "PROOF-1",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
                   "name": "test_total"
                 }
               ],
-              "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97.",
-              "manual": false
+              "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97."
             }
           ],
           "rule_hash": "rrule1inv",
@@ -371,7 +428,7 @@
               "word": "no test"
             },
             "strong": {
-              "brief": null,
+              "evidence": null,
               "observations": [],
               "reasons": [
                 "not passed"
@@ -384,11 +441,11 @@
           "cleared": false,
           "feature": "invoice",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -401,9 +458,9 @@
             {
               "env": null,
               "id": "PROOF-2",
+              "manual": false,
               "tests": [],
-              "text": "Build an invoice with zero lines and read the total 0.00.",
-              "manual": false
+              "text": "Build an invoice with zero lines and read the total 0.00."
             }
           ],
           "rule_hash": "rrule2inv",
@@ -423,31 +480,30 @@
     },
     {
       "category": "_anchors",
+      "current": true,
       "description": null,
+      "evidence": {
+        "ci": null,
+        "local": {
+          "committed": true,
+          "path": ".purlin/evidence/local/checkout_design.json",
+          "platforms": {
+            "linux": {
+              "at": "2026-09-12T09:14:02Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        }
+      },
       "is_anchor": true,
       "is_global": false,
-      "latest_record": {
-        "commit": "a1b2c3d",
-        "label": "local",
-        "os": "linux",
-        "path": ".purlin/records/local/checkout_design/20260912T091402Z-a1b2c3d-ada.json",
-        "test_strength": 90,
-        "timestamp": "2026-09-12T09:14:02Z"
-      },
       "name": "checkout_design",
       "pinned": null,
       "requires": [],
       "rollup": {
         "failing": 0,
         "held": 0,
-        "latest_record": {
-          "commit": "a1b2c3d",
-          "label": "local",
-          "os": "linux",
-          "path": ".purlin/records/local/checkout_design/20260912T091402Z-a1b2c3d-ada.json",
-          "test_strength": 90,
-          "timestamp": "2026-09-12T09:14:02Z"
-        },
         "manual": 0,
         "met": 1,
         "not_audited": 0,
@@ -488,7 +544,7 @@
               "word": "passed"
             },
             "strong": {
-              "brief": ".purlin/briefs/local/checkout_design/RULE-1.9c0d1e2f.brief.json",
+              "evidence": ".purlin/evidence/local/checkout_design.json",
               "observations": [],
               "reasons": [],
               "settled": true,
@@ -499,11 +555,11 @@
           "cleared": true,
           "feature": "checkout_design",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -516,14 +572,14 @@
             {
               "env": null,
               "id": "PROOF-1",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_cart.py",
                   "name": "test_total_above"
                 }
               ],
-              "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\".",
-              "manual": false
+              "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\"."
             }
           ],
           "rule_hash": "rrule1che",
@@ -555,44 +611,6 @@
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
   "project": "ledger",
-  "records": {
-    "checkout_design": {
-      "": {
-        "commit": "a1b2c3d",
-        "label": "local",
-        "os": "linux",
-        "path": ".purlin/records/local/checkout_design/20260912T091402Z-a1b2c3d-ada.json",
-        "result": "pass",
-        "source": "local",
-        "test_strength": 90,
-        "timestamp": "2026-09-12T09:14:02Z"
-      }
-    },
-    "invoice": {
-      "": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": null,
-        "path": ".purlin/records/ci/invoice/20260912T091402Z-a1b2c3d-ci.json",
-        "result": "pass",
-        "source": "ci",
-        "test_strength": 48,
-        "timestamp": "2026-09-12T09:14:02Z"
-      }
-    },
-    "login": {
-      "": {
-        "commit": "a1b2c3d",
-        "label": "ci",
-        "os": null,
-        "path": ".purlin/records/ci/login/20260912T091402Z-a1b2c3d-ci.json",
-        "result": "pass",
-        "source": "ci",
-        "test_strength": 71,
-        "timestamp": "2026-09-12T09:14:02Z"
-      }
-    }
-  },
   "remote_url": "https://github.com/acme/ledger.git",
   "review_list": [
     {
@@ -607,7 +625,7 @@
       ]
     }
   ],
-  "schema_version": 8,
+  "schema_version": 9,
   "sign_list": [],
   "summary": {
     "failing": 0,

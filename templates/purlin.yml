@@ -13,16 +13,16 @@
 # rule meets the gate. A push to any other branch starts nothing, and a pull
 # request starts nothing.
 #
-# A run branch run runs the tagged tests and, at the gate strong and above,
-# writes one record per feature under .purlin/records/ci/ with the briefs
-# beside it and commits them on that branch, where purlin:test --remote pulls
-# them home. A tag run writes nothing: it runs the tagged tests, checks that
-# every committed record, brief and signature still hashes to the tagged code,
-# checks that every ci/ record and brief was committed by the runner itself,
-# and ends with the gate check.
+# A run branch run runs the tagged tests, writes its own operating system's
+# section of .purlin/evidence/ci/<feature>.json for every feature, and commits
+# it on that branch, where purlin:test --remote pulls it home. A tag run writes
+# nothing: it runs the tagged tests, checks that every committed signature
+# still hashes to the tagged code, checks that every file under
+# .purlin/evidence/ci/ was committed by the runner itself, and ends with the
+# gate check.
 #
-# No breaks run here. Test strength is measured by purlin:audit on a person's
-# machine, and a record either source wrote counts at every gate.
+# No breaks and no AI audit run here. purlin:audit does both on a person's
+# machine, and the evidence either source wrote counts at every gate.
 #
 # Every run ends with the gate check, and the job fails when the gate is not
 # met.
@@ -31,7 +31,8 @@
 # system the `@env` tags in specs/ name; a project that tags nothing runs on
 # ubuntu-latest alone. An untagged proof is satisfied by any operating system,
 # so the Linux job proves those. Each job runs the same tests a person runs
-# and writes its own record, so two jobs never write the same file name.
+# and writes its own section, merged into the file at the branch's head, so
+# two jobs never overwrite each other.
 #
 # The job is capped at 90 minutes. GitHub cancels a job at 6 hours and
 # keeps nothing, so a run that stops for something cannot be read; 90 minutes
@@ -109,8 +110,8 @@ jobs:
         run: python3 "$PURLIN_ROOT/scripts/run/purlin_run.py" --all --ci
 
       # The last word of every run. The gate check exits 1 when a rule does
-      # not meet the gate or when a committed record, brief or signature no
-      # longer hashes to this code, which fails this job.
+      # not meet the gate or when a committed signature no longer hashes to
+      # this code, which fails this job.
       - name: Check the gate
         shell: bash
         run: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check --verify

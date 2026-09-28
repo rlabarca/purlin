@@ -1,8 +1,8 @@
 # Feature: skill_test
 
 > Description: What `skills/test/SKILL.md` must say. The test skill is the one an engineer runs
->   constantly: it runs the tagged tests, writes and commits the test results, prints the
->   passed cell of every rule and ends with the gate line.
+>   constantly: it runs the tagged tests, writes the evidence and commits it when asked,
+>   prints the passed cell of every rule and ends with the gate line.
 > Scope: skills/test/SKILL.md
 > Stack: markdown, Claude Code skill definition
 
@@ -12,7 +12,7 @@
 - RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--test`, and states its three exit codes: 0 everything passed, 1 a test failed or the passed level is not met, 2 the invocation was wrong [bar: strong]
 - RULE-3: The last section of `skills/test/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong]
 - RULE-4: The whole of `skills/test/SKILL.md` is at most 120 lines [bar: passed]
-- RULE-5: The skill names the two files the run writes, `.purlin/tests/<feature>.json` and `.purlin/tests.md`, the commit subject `purlin: tests at <sha7>` and that the run never pushes, and it names the gate line `gate passed: <n> of <rules>` as the last line of the run [bar: strong]
+- RULE-5: The skill names the two files the run writes, `.purlin/evidence/local/<feature>.json` and `.purlin/tests.md`, the flag `--commit`, the commit subject `purlin: evidence at <sha7>` and that the run never pushes, and it names the gate line `gate passed: <n> of <rules>` as the last line of the run [bar: strong]
 
 ## Proof
 
@@ -20,4 +20,4 @@
 - PROOF-2 (RULE-2): Read `skills/test/SKILL.md`; verify it carries the literal `"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"` followed by `--test` on the same line, and that one line names all three exit codes `0`, `1` and `2`. Deleting the exit-code line fails naming it
 - PROOF-3 (RULE-3): Read `skills/test/SKILL.md` and split it on its `## ` headings; verify the last heading matches `next step` or `when you are done` case-insensitively, that the text under it names at least two outcomes as list items or table rows, and that at least one of its lines carries `→`. Deleting the closing section fails naming the heading it found instead
 - PROOF-4 (RULE-4): Read `skills/test/SKILL.md` and count its lines; verify the count is at most 120. Appending prose until the file passes 120 lines fails, and the failure reports the count it found beside the ceiling
-- PROOF-5 (RULE-5): Read `skills/test/SKILL.md`; verify it names `.purlin/tests/<feature>.json`, `.purlin/tests.md`, `purlin: tests at <sha7>`, `Test results committed.`, `Test results unchanged.` and `gate passed: <n> of <rules>`, and that one line says the run never pushes
+- PROOF-5 (RULE-5): Read `skills/test/SKILL.md`; verify it names `.purlin/evidence/local/<feature>.json`, `.purlin/tests.md`, `--commit`, `purlin: evidence at <sha7>`, `Evidence committed.`, `Evidence unchanged.` and `gate passed: <n> of <rules>`, and that one line says the run never pushes

@@ -7,14 +7,14 @@ decides how many rows exist: a cell above the gate is absent, not empty.
             `drafted` no proof line names it; `ready` one or more do. What
             the proof is worth is the audit's question, not this one.
 
-    passed  Met when every proof has a passing test from a source that counts
-            under the gate, on every operating system a counting run covered,
-            and that pass describes the current checkout.
+    passed  Met when every proof has a passing test in an evidence section
+            that is current: its spec, code and tests fingerprint equals the
+            one taken now. Only current sections decide the cell.
             `passed`, `partial`, `failed`, `no test`, `not run`,
-            `code changed`. The cell carries `platforms`, one entry per
-            operating system a counting run covered, and reads `partial` when
-            the tests passed on some of them and failed or did not run on
-            others. `partial` is not met.
+            `out of date`. The cell carries `platforms`, one entry per
+            operating system a current section covers, and reads `partial`
+            when the tests passed on some of them and failed or did not run
+            on others. `partial` is not met.
 
     strong  Met when the tests are worth trusting: test strength at or above
             the project minimum, a settled AI audit that observed nothing
@@ -48,7 +48,7 @@ returns:
      'blocked_by': None,
      'flags': {'failing': False, 'partial': False, 'stale': False,
                'held': False, 'manual': False, 'unsettled': False,
-               'not_audited': False, 'code_changed': False}}
+               'not_audited': False, 'out_of_date': False}}
 
 A rule's **bucket** is the one tile it is counted in, and the two flags
 `stale` and `held` are counted beside the buckets, never instead of them.
@@ -61,7 +61,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import gate as gate_module
+from purlin import evidence as evidence_module, gate as gate_module
 
 # The three cells, in the order the chain reads them. A gate value names the
 # deepest cell that exists, so the names are the gate values.
@@ -74,7 +74,7 @@ BUCKETS = ('untested', 'failing', 'partial', 'passed', 'strong', 'signed')
 # `manual`, `unsettled` and `not_audited` are the three strong-cell words the
 # machine cannot move on its own.
 FLAGS = ('failing', 'partial', 'stale', 'held', 'manual', 'unsettled',
-         'not_audited', 'code_changed')
+         'not_audited', 'out_of_date')
 
 # The strong cell's words that put a rule in front of a person, and the one
 # that waits for the audit instead. `not audited` is on no list: running
@@ -83,7 +83,7 @@ REVIEW_WORDS = ('manual test', 'unsettled', 'held')
 NOT_AUDITED = 'not audited'
 
 # What a brief writes under `ai_review` when no model could be reached. The
-# AI audit did not run, so it settled nothing and it observed nothing: the
+# audit records that as a rule it read and found nothing against, so the
 # strength is the whole of level 2. `scripts/review/brief.py` reads this name
 # from here so the two cannot drift.
 NO_MODEL = 'not available'
@@ -91,10 +91,11 @@ NO_MODEL = 'not available'
 # The flags a rollup counts, beside the buckets and never instead of them.
 COUNTED_FLAGS = ('stale', 'held', 'manual', 'unsettled', 'not_audited')
 
-# Where a pass came from, most trusted first. A record's source is the folder
-# it sits in, `.purlin/records/ci/` or `.purlin/records/local/`; the test
-# results `purlin:test` commits are `local`.
+# Where a pass came from, most trusted first. An evidence file's source is
+# the folder it sits in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`.
 SOURCES = ('ci', 'local')
+
+OUT_OF_DATE = 'out of date'
 
 DRAFTED = 'drafted'
 READY = 'ready'
@@ -134,23 +135,18 @@ def rule_cells(inp, cfg):
     `inp` carries:
 
     `proofs`        `[{'id', 'manual', 'env', 'text', 'tests'}, ...]`
-    `local_status`  `{proof_id: 'pass' | 'fail' | None}` from the runtime files
-                    and the committed test results, whichever is newer
-    `local_os`      the operating system that local source ran on, or None
-    `local_at`      when it ran, ISO 8601 UTC, or None
-    `records`       `{os_or_None: record}`, the latest record per platform
-    `runs`          `{os: record}`, the test results a remote run committed,
-                    read beside the records and never as an audit
-    `head`          the sha the working tree is on
-    `scope_tree`    the current scope tree of the rule's spec
+    `sections`      every evidence section of the rule's own feature, each
+                    `{source, os, path, section, current, out_of_date}` as
+                    `evidence.checked_sections` gives them
     `signatures`    every signature file for this rule, each carrying `counts`
                     and `count_reason` from `signatures.counts`
     `holds`         every hold a person committed for this rule
     `rule_hash`, `proof_hash`, `test_hash`, `bar`
-    `audit_hash`    the hash of the brief's own evidence, which a signature
-                    binds beside the triple
-    `brief`         the brief for this rule's current hashes, or None
-    `brief_path`    where that brief was read from, or None
+    `audit_hash`    the hash of what the audit found, which a signature binds
+                    beside the triple
+    `audit`         the evidence's audit entry for this rule's current
+                    hashes, carrying its `path`, or None
+    `audited`       whether the feature's evidence holds any audit at all
     `test_strength` an integer percent, or None when nothing measured it
     """
     gate = cfg.gate if cfg else CELLS[0]
@@ -178,7 +174,7 @@ def rule_cells(inp, cfg):
     flags = {
         'failing': passed['word'] == 'failed',
         'partial': passed['word'] == 'partial',
-        'code_changed': passed['word'] == 'code changed',
+        'out_of_date': passed['word'] == OUT_OF_DATE,
         # A hold and a signature are facts about committed files, so they are
         # read the same at every gate. `manual test`, `unsettled` and
         # `not audited` are the strong cell's own words, and that cell does
@@ -216,15 +212,19 @@ def bar_of(bar, gate):
 # ---------------------------------------------------------------------------
 
 def _passed_cell(inp, cfg):
-    """Level 1: every proof has a passing test from a counting source.
+    """Level 1: every proof has a passing test in a current section.
 
-    The question is asked once per operating system a counting run named, and
-    each answer goes in `platforms`. Where those answers disagree the cell
-    reads `partial`, because a rule whose tests pass on Linux and fail on
-    Windows is neither passed nor failed; `partial` is not met, so it blocks
-    the gate exactly as a failure does. Where they agree, or where no run
-    named an operating system at all, the records and this checkout's own
-    run answer as one.
+    Only a section whose fingerprint equals the one taken now decides the
+    cell. Where the newest section that says anything about the rule is not
+    current, the cell reads `out of date` and names what changed since, and
+    the next run clears it: a person's own run goes out of date like any
+    other, and so does a spec edit or a test edit.
+
+    Over the current sections the question is asked once per operating
+    system, and each answer goes in `platforms`. Where those answers disagree
+    the cell reads `partial`, because a rule whose tests pass on Linux and
+    fail on Windows is neither passed nor failed; `partial` is not met, so it
+    blocks the gate exactly as a failure does.
 
     A `@manual` proof declares that no test is written for it and no proof
     entry is ever produced, so level 1 has no question to ask of it: it is
@@ -233,10 +233,6 @@ def _passed_cell(inp, cfg):
     """
     written = inp.get('proofs') or []
     proofs = [proof for proof in written if not proof.get('manual')]
-    records = _runs_and_records(inp.get('records') or {}, inp.get('runs') or {})
-    # This checkout's own run is the `local` source, and it counts at every
-    # gate: the tests it ran are the tests CI runs.
-    local_status = inp.get('local_status') or {}
     cell = {'word': 'no test', 'source': None, 'current': False,
             'counts': False, 'missing_env': [], 'platforms': {},
             'reasons': []}
@@ -245,7 +241,28 @@ def _passed_cell(inp, cfg):
         cell.update({'word': 'passed', 'current': True, 'counts': True})
         return cell
 
-    platforms = _platforms(inp, proofs, records)
+    answering = [entry for entry in inp.get('sections') or ()
+                 if _word_of(proofs, entry) is not None]
+    newest = None
+    for entry in answering:
+        if newest is None or str(entry['section'].get('at') or '') > str(
+                newest['section'].get('at') or ''):
+            newest = entry
+    if newest is not None and not newest.get('current'):
+        cell['word'] = OUT_OF_DATE
+        cell['source'] = newest.get('source')
+        cell['counts'] = True
+        commit = str(newest['section'].get('commit') or '')[:7]
+        cell['reasons'] = ['%s changed since %s' % (part, commit)
+                           for part in newest.get('out_of_date') or ()]
+        return cell
+
+    current = [entry for entry in answering if entry.get('current')]
+    # A current section that says nothing about the rule, one from an
+    # operating system its `@env` proof does not name, still says which
+    # systems ran, so it is what names the one the rule is waiting for.
+    ran = [entry for entry in inp.get('sections') or () if entry.get('current')]
+    platforms = _platforms(proofs, current)
     cell['platforms'] = platforms
     words = [entry['word'] for entry in platforms.values()]
     if 'passed' in words and any(word != 'passed' for word in words):
@@ -260,46 +277,26 @@ def _passed_cell(inp, cfg):
         cell['reasons'] = _platform_reasons(platforms)
         return cell
 
-    failing = _failing_where(proofs, records, local_status)
+    failing = _failing_where(proofs, current)
     if failing:
         cell['word'] = 'failed'
         cell['reasons'] = ['failing: %s' % where for where in failing]
-        cell['source'] = _label_of(records) or 'local'
+        cell['source'] = _least_trusted(entry['source'] for entry in current)
         cell['current'] = True
         cell['counts'] = True
         return cell
 
-    passes, missing_env, at_head, scope_matches = _record_passes(
-        proofs, records, inp.get('head'), inp.get('scope_tree'))
+    passes, missing_env, used = _section_passes(proofs, ran)
     if passes or missing_env:
-        cell['source'] = _label_of(records)
+        cell['source'] = _least_trusted(entry['source'] for entry in used)
         cell['counts'] = True
-        current = at_head or scope_matches
+        cell['current'] = True
         if missing_env:
             cell['word'] = 'not run'
             cell['missing_env'] = list(missing_env)
-            cell['current'] = current
-            cell['reasons'] = ['%s: no record yet' % env for env in missing_env]
+            cell['reasons'] = ['%s: no run yet' % env for env in missing_env]
             return cell
-        if current:
-            cell['word'] = 'passed'
-            cell['current'] = True
-            return cell
-        cell['word'] = 'code changed'
-        cell['current'] = False
-        head = inp.get('head') or ''
-        commit = _record_commit(records) or head
-        cell['reasons'] = ['code changed since %s' % (commit or '')[:7]]
-        return cell
-
-    # No record answered. This checkout's own run is the last thing to read,
-    # and it counts, so a rule whose tests have just run here reads `passed`
-    # before any record exists.
-    if proofs and _local_passes(proofs, local_status):
         cell['word'] = 'passed'
-        cell['source'] = 'local'
-        cell['current'] = True
-        cell['counts'] = True
         return cell
 
     if any(proof.get('tests') for proof in proofs):
@@ -307,76 +304,36 @@ def _passed_cell(inp, cfg):
     return cell
 
 
-def _runs_and_records(records, runs):
-    """One map per platform over the records and the committed test results.
+def _word_of(proofs, entry):
+    """One section's word for a rule, or None when it has nothing to say."""
+    return _word_from_statuses(proofs,
+                               evidence_module.proof_results(entry['section']),
+                               entry['os'])
 
-    A record an audit wrote and the results a remote run committed are the
-    same news about one platform in two files, so the passed cell reads them
-    as one thing and the newer answers. They are kept apart everywhere else:
-    only an audit measures how good the tests are, and only a record says one
-    did.
+
+def _platforms(proofs, current):
+    """`{os: {word, source, at}}` over every operating system a current section covers.
+
+    Where both sources hold a current section for one operating system the
+    newer answers. A platform a proof is tagged for with `@env` and no
+    current section covers gets an entry too, reading `not run` with no
+    source, so the map lists every platform the rule is owed an answer from.
     """
-    if not runs:
-        return records
-    merged = dict(records)
-    for name, run in runs.items():
-        held = merged.get(name)
-        if held is None or str(run.get('timestamp') or '') >= str(
-                held.get('timestamp') or ''):
-            merged[name] = run
-    return merged
-
-
-def platform_of(record):
-    """The operating system a record observed: its own, else its environment's."""
-    return (record or {}).get('os') or (
-        (record or {}).get('environment') or {}).get('os')
-
-
-def _platforms(inp, proofs, records):
-    """`{os: {word, source, at}}` over every platform a counting run covered.
-
-    A record names the operating system it ran on, and so do the test results
-    `purlin:test` commits, so each is one platform's answer about this rule.
-    Where two runs cover one platform the newer answers. A platform a proof
-    is tagged for with `@env` and nothing ran on gets an entry too, reading
-    `not run` with no source, so the map lists every platform the rule is
-    owed an answer from.
-    """
-    candidates = []
-    for record in (records or {}).values():
-        name = platform_of(record)
-        if not name:
-            continue
-        candidates.append((name, record.get('timestamp'),
-                           record.get('source') or record.get('label'),
-                           _word_from_record(proofs, record, name)))
-    local_os = inp.get('local_os')
-    if local_os and (inp.get('local_status') or {}):
-        candidates.append((local_os, inp.get('local_at'), 'local',
-                           _word_from_statuses(
-                               proofs, inp.get('local_status') or {},
-                               local_os)))
-
     platforms = {}
-    for name, at, source, word in candidates:
+    for entry in current:
+        word = _word_of(proofs, entry)
         if word is None:
             continue
-        held = platforms.get(name)
-        if held is None or str(at or '') >= str(held.get('at') or ''):
-            platforms[name] = {'word': word, 'source': source, 'at': at}
+        at = entry['section'].get('at')
+        held = platforms.get(entry['os'])
+        if held is None or str(at or '') > str(held.get('at') or ''):
+            platforms[entry['os']] = {'word': word, 'source': entry['source'],
+                                      'at': at}
     for proof in proofs:
         env = proof.get('env')
         if env and env not in platforms:
             platforms[env] = {'word': 'not run', 'source': None, 'at': None}
     return platforms
-
-
-def _word_from_record(proofs, record, os_name):
-    """One platform's word for a rule, read off one record, or None."""
-    from purlin import records as records_module
-    return _word_from_statuses(proofs, records_module.proof_statuses(record),
-                               os_name)
 
 
 def _word_from_statuses(proofs, statuses, os_name):
@@ -400,14 +357,19 @@ def _word_from_statuses(proofs, statuses, os_name):
     return 'not run'
 
 
+def _least_trusted(sources):
+    """The least trusted of some sources, or None when there are none."""
+    found = [name for name in sources if name]
+    if not found:
+        return None
+    return max(found, key=lambda name: SOURCES.index(name)
+               if name in SOURCES else len(SOURCES))
+
+
 def _passing_source(platforms):
     """The least trusted source among the platforms that passed."""
-    sources = [entry.get('source') for entry in platforms.values()
-               if entry.get('word') == 'passed' and entry.get('source')]
-    if not sources:
-        return None
-    return max(sources, key=lambda name: SOURCES.index(name)
-               if name in SOURCES else len(SOURCES))
+    return _least_trusted(entry.get('source') for entry in platforms.values()
+                          if entry.get('word') == 'passed')
 
 
 def _platform_reasons(platforms):
@@ -422,106 +384,64 @@ def _platform_reasons(platforms):
         if entry.get('word') == 'passed':
             continue
         if entry.get('source') is None:
-            reasons.append('%s: no record yet' % name)
+            reasons.append('%s: no run yet' % name)
         else:
             reasons.append('%s: %s' % (name, entry.get('word')))
     return reasons
 
 
-def _label_of(records):
-    """The least trusted source among the records a pass was read from."""
-    sources = [record.get('source') or record.get('label')
-               for record in (records or {}).values()
-               if record.get('source') or record.get('label')]
-    if not sources:
-        return None
-    return max(sources, key=lambda name: SOURCES.index(name)
-               if name in SOURCES else len(SOURCES))
+def _failing_where(proofs, current):
+    """Where a test backing the rule failed: `<os>, <source>` per current section.
 
-
-def _record_commit(records):
-    for record in (records or {}).values():
-        if record.get('commit'):
-            return record['commit']
-    return None
-
-
-def _failing_where(proofs, records, local_status):
-    """Where a test backing the rule last failed: each record, then this checkout.
-
-    A cell says what the evidence shows, and a failing test is the one thing a
-    word like `no test` would hide, so the failure itself is named here. A
-    proof tagged `@env` is read only from that operating system's record.
+    A cell says what the evidence shows, and a failing test is the one thing
+    a word like `no test` would hide, so the failure itself is named here. A
+    proof tagged `@env` is read only from that operating system's section.
     """
-    from purlin import records as records_module
-
     where = []
-    for os_name in sorted(records or {}, key=lambda name: name or ''):
-        statuses = records_module.proof_statuses(records[os_name])
+    for entry in current:
+        statuses = evidence_module.proof_results(entry['section'])
         for proof in proofs or ():
-            if proof.get('env') and proof.get('env') != os_name:
+            if proof.get('env') and proof.get('env') != entry['os']:
                 continue
             if statuses.get(proof.get('id')) == 'fail':
-                where.append('%s record' % (os_name or 'the'))
+                where.append('%s, %s' % (entry['os'], entry['source']))
                 break
-    if any(local_status.get(proof.get('id')) == 'fail' for proof in proofs or ()):
-        where.append('this checkout')
     return where
 
 
-def _record_passes(proofs, records, head, scope_tree):
-    """`(passes, missing_env, at_head, scope_matches)` over the records.
+def _section_passes(proofs, current):
+    """`(passes, missing_env, used)` over the current sections.
 
-    A proof with no `@env` is satisfied by any record. A proof with `@env` is
-    satisfied only by a record from that operating system, so a rule whose
-    proofs name two systems needs both.
+    A proof with no `@env` is satisfied by any current section. A proof with
+    `@env` is satisfied only by a current section from that operating system,
+    so a rule whose proofs name two systems needs both.
     """
-    if not proofs or not records:
-        return False, [], False, False
-
-    from purlin import records as records_module
-
+    if not proofs or not current:
+        return False, [], []
+    by_os = {}
+    for entry in current:
+        by_os.setdefault(entry['os'], []).append(entry)
     missing_env = []
     passes = True
     used = []
     for proof in proofs:
         env = proof.get('env')
-        candidates = ([records[env]] if env in records
-                      else [] if env else list(records.values()))
-        if env and env not in records:
+        if env and env not in by_os:
             missing_env.append(env)
             passes = False
             continue
+        candidates = by_os[env] if env else current
         proved = False
-        for record in candidates:
-            if records_module.proof_statuses(record).get(proof.get('id')) == 'pass':
+        for entry in candidates:
+            statuses = evidence_module.proof_results(entry['section'])
+            if statuses.get(proof.get('id')) == 'pass':
                 proved = True
-                used.append(record)
+                if entry not in used:
+                    used.append(entry)
                 break
         if not proved:
             passes = False
-    if not used:
-        return False, sorted(set(missing_env)), False, False
-    # A record describes the current commit when it observed that commit, or
-    # when the scoped files still hash to what the record named. The second is
-    # what makes the first usable at all: CI writes its record as a commit of
-    # its own on top of the one it observed, so a record is almost never at the
-    # literal HEAD and the scope tree is the honest comparison.
-    at_head = all(records_module.at_head(record, head) for record in used)
-    scope_matches = all(
-        not scope_tree or not record.get('scope_tree')
-        or record.get('scope_tree') == scope_tree for record in used)
-    return passes, sorted(set(missing_env)), at_head, scope_matches
-
-
-def _local_passes(proofs, local_status):
-    """True when every proof of the rule passed in the last local test run."""
-    if not local_status:
-        return False
-    for proof in proofs:
-        if local_status.get(proof.get('id')) != 'pass':
-            return False
-    return True
+    return passes, sorted(set(missing_env)), used
 
 
 # ---------------------------------------------------------------------------
@@ -532,7 +452,8 @@ def _strong_cell(inp, cfg, bar, passed, holds, counting_signatures):
     """Level 2: whether the tests behind a met passed cell are worth trusting."""
     strength = inp.get('test_strength')
     cell = {'word': 'weak', 'strength': strength,
-            'observations': [], 'brief': None, 'settled': None, 'reasons': []}
+            'observations': [], 'evidence': None, 'settled': None,
+            'reasons': []}
 
     # A hold wins. A person read the brief and said the test does not prove
     # the proof, and that answer stands whatever the tests are doing: a
@@ -549,23 +470,23 @@ def _strong_cell(inp, cfg, bar, passed, holds, counting_signatures):
         cell['reasons'] = ['not passed']
         return cell
 
-    brief = inp.get('brief') or None
-    if brief:
-        cell['brief'] = inp.get('brief_path')
+    audit = inp.get('audit') or None
+    if audit:
+        cell['evidence'] = audit.get('path')
         cell['observations'] = [str(line) for line in
-                                (brief.get('observations') or ())]
-        cell['settled'] = brief.get('settled')
+                                (audit.get('findings') or ())]
+        cell['settled'] = settled_of(audit)
 
     min_strength = cfg.min_strength if cfg else None
     notes = []
-    if strength is None and bar == 'strong' and not brief:
+    if strength is None and bar == 'strong' and not audit:
         # The audit is what measures a rule whose bar is `strong`, and
         # `not audited` below is the word for one it has not reached.
         # Nothing is noted here, so the cell does not say it twice.
         pass
     elif strength is None and not inp.get('audited', True):
         # Level 2 asks how good the tests are, and only an audit measures
-        # that. With no record of one there is nothing to read, so the cell
+        # that. With no audit in the evidence there is nothing to read, so the cell
         # says the work is outstanding rather than passing the rule on
         # nothing at all.
         notes.append('no audit has run')
@@ -589,7 +510,7 @@ def _strong_cell(inp, cfg, bar, passed, holds, counting_signatures):
     if observed:
         cell['word'] = 'weak'
 
-    word, person = _outstanding(inp, bar, brief, counting_signatures)
+    word, person = _outstanding(inp, bar, audit, counting_signatures)
     if word:
         cell['word'] = word
 
@@ -607,7 +528,18 @@ def _hold_reasons(holds):
             for hold in holds or ()]
 
 
-def _outstanding(inp, bar, brief, counting_signatures):
+def settled_of(audit):
+    """Whether an audit entry settled: its `verdict` is `strong` or `weak`.
+
+    `undecided` is an AI audit that ran and could not tell, which is the one
+    answer that did not settle.
+    """
+    if not audit:
+        return None
+    return audit.get('verdict') in ('strong', 'weak')
+
+
+def _outstanding(inp, bar, audit, counting_signatures):
     """`(word, reasons)` when level 2 is not the machine's to settle alone.
 
     Each word names the work that is outstanding. `manual test` is a proof no
@@ -625,16 +557,12 @@ def _outstanding(inp, bar, brief, counting_signatures):
         return 'manual test', ['manual proof']
     if bar == 'strong':
         # The AI audit runs on every rule whose bar is `strong` and on no
-        # other, so a missing brief here means the audit has not run over
-        # this code and the strength beside it is not the question yet.
-        if not brief:
+        # other, so a missing entry here means the audit has not read this
+        # rule, proof and test, and the strength beside it is not the
+        # question yet.
+        if not audit:
             return NOT_AUDITED, ['no audit has run on this code']
-        # A brief whose model could not be reached is not an unsettled
-        # question: nothing asked one. The audit's other layers answer,
-        # as they do where no break engine measured a strength.
-        if brief.get('ai_review') in (None, NO_MODEL):
-            return None, []
-        if brief.get('settled') is not True:
+        if not settled_of(audit):
             return 'unsettled', ['the AI audit could not settle']
     return None, []
 
@@ -795,14 +723,12 @@ def _bucket(spec, cells, gate, passed, strong, signed):
 # Rollups
 # ---------------------------------------------------------------------------
 
-def feature_rollup(rule_results, gate='passed', latest_record=None,
-                   test_strength=None):
+def feature_rollup(rule_results, gate='passed', test_strength=None):
     """One feature's rollup over `{rule_ref: rule_cells result}`.
 
     Carries how many rules the feature has, how many meet the gate, one count
     per bucket the gate reaches, the stale, held, manual, unsettled and
-    not-audited counts, how many rules are signable, the latest record and
-    the test strength.
+    not-audited counts, how many rules are signable, and the test strength.
     """
     keys = bucket_keys(gate)
     counts = {key: 0 for key in keys}
@@ -826,8 +752,7 @@ def feature_rollup(rule_results, gate='passed', latest_record=None,
     rollup = {'rules': len(rule_results), 'met': met}
     rollup.update(counts)
     rollup.update(flagged)
-    rollup.update({'signable': signable, 'test_strength': test_strength,
-                   'latest_record': latest_record})
+    rollup.update({'signable': signable, 'test_strength': test_strength})
     return rollup
 
 

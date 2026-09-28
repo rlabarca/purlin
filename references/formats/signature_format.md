@@ -1,4 +1,4 @@
-> Format-Version: 7
+> Format-Version: 8
 
 # Signature Format
 
@@ -23,9 +23,7 @@ specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json
 | `<holder-slug>` | the same slug for the person who wrote a hold |
 
 One signature is one file, so two signatures never conflict and a batch of
-forty adds forty files in one commit. The slug `brief` is reserved: the reader
-skips `<RULE-N>.<hash8>.brief.json` rather than reading it as a signature by
-someone called `brief`.
+forty adds forty files in one commit.
 
 ## The triple, and the audit beside it
 
@@ -35,21 +33,20 @@ What a signature binds is hashes, not the files they came from:
 |---|---|
 | R | the rule text, its tags stripped and its whitespace normalised, so reflowing a long line does not stale the signature |
 | P | the proof descriptions of that rule, in order, normalised the same way |
-| T | the test files backing those proofs, each with the test's name and the file's blob id. The tests are the ones the feature's latest counting records observed, every operating system together, so every checkout reads the same T; a proof no record has observed yet takes them from the checkout's own runtime proofs |
-| A | what the audit found: the brief's test strength, its observations sorted, and whether it settled. `sha256` of the empty string where no brief exists |
+| T | the test files backing those proofs, each with the test's name and the file's blob id. The tests are the ones the feature's current evidence sections list, every operating system and both sources together, so every checkout reads the same T; where no section is current, every section's list answers, so a code change alone does not move T |
+| A | what the audit found: the feature's test strength from `audit.mutation`, the `verdict` of the audit entry for the rule's current R, P and T, and its `findings` sorted. `sha256` of the empty string where no such entry exists |
 
 The triple hash is `sha256` over R, P and T, one per line, and the first eight
 characters of it name the file. A is held and compared beside the triple
-rather than folded into it, because a rule no audit has reached has no brief
-to take A from.
+rather than folded into it, because a rule no audit has reached has no audit
+entry to take A from.
 
 A is what locks the audit in. A signature says the test proves the proof, and
-what the signer read before saying so was the brief: the strength, what the
-AI audit observed, and whether it settled. A re-audit that observes something
-different is a new answer to that question, so the signature goes stale and a
-person looks again. Nothing that moves on its own is hashed: no timestamp, no
-commit id, no record path, so running the same audit again over the same code
-changes nothing.
+what the signer read before saying so was what the audit found: the strength
+and the AI audit's findings. A re-audit that finds something different is a
+new answer to that question, so the signature goes stale and a person looks
+again. Nothing that moves on its own is hashed: no timestamp, no commit id, no
+path, so running the same audit again over the same code changes nothing.
 
 `test_hash_kind` says what T was taken from: `file` for a test file version
 control tracks, `manual` for a proof with no test at all, and `none` for a rule
@@ -73,8 +70,7 @@ with nothing behind it yet.
   "note": null,
   "timestamp": "2026-09-13T12:00:00Z",
   "gate": "signed",
-  "brief": ".purlin/briefs/ci/login/RULE-3.9f2c7a1e.brief.json",
-  "record": ".purlin/records/ci/login/20260913T120000Z-abc1234-ci.json"
+  "evidence": ".purlin/evidence/local/login.json"
 }
 ```
 
@@ -98,8 +94,7 @@ OPTIONAL.
 | `note` | string or null | the one line `purlin:sign --note` writes for a `@manual` proof or an AI audit that could not settle; null otherwise |
 | `timestamp` | string | ISO 8601 UTC with `Z` |
 | `gate` | string | the gate in force when the signature was written: `passed`, `strong` or `signed` |
-| `brief` | string or null | the brief the signer read |
-| `record` | string or null | the record the signature rests on |
+| `evidence` | string or null | the feature's evidence file the signature rests on, the `local` one where both sources have one |
 
 ## Current, and stale
 
@@ -111,18 +106,19 @@ stale and a person has to look.
 Changing the bar stales the signature on purpose: raising a rule from
 `passed` to `strong` changes what signing it meant, and the old attestation
 was given under the old bar. So does a re-audit that finds something
-different: the strength moved, the AI audit observed something it did not
-observe before, or it settled where it had not. A rule whose first audit
-writes a brief where there was none goes stale for the same reason, which is
-the honest answer: there is evidence now that there was not before.
+different: the strength moved, or the AI audit found something it did not
+find before, or settled where it had not. A rule whose first audit writes an
+entry where there was none goes stale for the same reason, which is the
+honest answer: there is evidence now that there was not before.
 
 A hold binds the triple and the bar, and not the audit. A hold is
 a person saying the test does not prove the proof, which is a statement about
 the rule, the proof and the test; a re-audit does not answer it.
 
-Changing the code alone stales nothing. A record carries the tree hash of the
-spec's `> Scope:` files, so a code change leaves the signature standing and the
-rule's passed cell reads `code changed` until CI runs again.
+Changing the code alone stales nothing. The evidence carries the fingerprint
+of the spec's `> Scope:` files, not the signature, so a code change leaves the
+signature standing and the rule's passed cell reads `out of date` until the
+tests run again.
 
 ## When a signature counts
 
@@ -146,9 +142,10 @@ or with the author of the test. A signature counts on whatever commit carries
 it, on any branch.
 
 `trust: remote` in `.purlin/config.json` is read when a rule is signed, not
-when a signature is counted: `purlin:sign` refuses a rule whose tests have no
-`ci` record for the commit being signed, and says to run
-`purlin:test --remote` first. At the default, `trust: local`, your own run is
+when a signature is counted: `purlin:sign` refuses a rule with a proof that
+has a test when its feature's `ci` evidence holds no section current for this
+code, and says to run `purlin:test --remote` first. A rule whose proofs are
+all `@manual` is not refused. At the default, `trust: local`, your own run is
 the evidence.
 
 `sign_at` in `.purlin/config.json` says which rules need a signature:
@@ -167,7 +164,7 @@ a signature, with a fourth part in the name:
 ```json
 {
   "schema": "purlin-hold/1",
-  "feature": "records",
+  "feature": "host",
   "rule": "RULE-12",
   "triple": "9f2c7a1e5b8d4c6f",
   "rule_hash": "4b1f...",
@@ -178,13 +175,13 @@ a signature, with a fourth part in the name:
   "holder": "jane@acme.com",
   "reason": "the tests call _azure and _host apart; none calls run_remote()",
   "timestamp": "2026-09-16T12:00:00Z",
-  "brief": ".purlin/briefs/local/records/RULE-12.9f2c7a1e.brief.json"
+  "evidence": ".purlin/evidence/local/host.json"
 }
 ```
 
 REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
 `test_hash`, `bar`, `holder`, `reason`, `timestamp`. The hashes, `bar` and
-`brief` mean what they mean in a signature; `holder` is the person's email and
+`evidence` mean what they mean in a signature; `holder` is the person's email and
 `reason` the missing case, in words.
 
 A hold is current under the same test as a signature. While it is current the

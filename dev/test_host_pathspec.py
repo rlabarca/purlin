@@ -1,0 +1,123 @@
+"""Tests for the pathspec the CI commit hands git.
+
+`os.path.join` spells the evidence directory `.purlin\\evidence` on Windows,
+and a git pathspec with `\\` matches nothing, so a run there would find none
+of the files it had removed and the CI commit would carry no deletion. The
+pathspec is written with `/` once, and these tests hold it there.
+"""
+
+import json
+import os
+import subprocess
+import sys
+import urllib.request
+
+import pytest
+
+DEV = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(DEV)
+sys.path.insert(0, os.path.join(ROOT, 'scripts', 'run'))
+sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
+
+import host as host_module  # noqa: E402
+
+
+def _git(root, *args):
+    return subprocess.run(['git'] + list(args), cwd=root, capture_output=True,
+                          text=True, check=True).stdout
+
+
+def _write(root, rel, text='{}\n'):
+    path = os.path.join(root, *rel.split('/'))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as handle:
+        handle.write(text)
+
+
+@pytest.mark.proof("host", "PROOF-26", "RULE-24")
+def test_git_is_handed_a_forward_slash_pathspec(tmp_path, monkeypatch):
+    root = str(tmp_path)
+    calls = []
+
+    def fake_git(project_root, args, check=True):
+        calls.append(list(args))
+        return ''
+
+    monkeypatch.setattr(host_module, '_git', fake_git)
+    host_module.deleted_files(root)
+    handed = [(args[0], args[args.index('--') + 1:]) for args in calls
+              if args[0] == 'ls-files']
+    assert [command for command, _specs in handed] == ['ls-files'], calls
+    for command, specs in handed:
+        assert specs == ['.purlin/evidence'], (command, specs)
+
+
+class _Host(object):
+    """Just enough of GitHub for one commit: every call is kept."""
+
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, request, timeout=None):
+        body = json.loads(request.data.decode('utf-8')) if request.data \
+            else None
+        self.calls.append((request.get_method(), request.full_url, body))
+        url = request.full_url
+        if '/git/ref/heads/' in url:
+            answer = {'object': {'sha': '1' * 40}}
+        elif '/git/commits/' in url:
+            answer = {'tree': {'sha': 't' * 40}}
+        elif url.endswith('/trees'):
+            answer = {'sha': 'n' * 40}
+        elif url.endswith('/commits'):
+            answer = {'sha': 'c' * 40}
+        else:
+            answer = {'object': {'sha': 'c' * 40}}
+
+        class _Answer(object):
+            def read(self_inner):
+                return json.dumps(answer).encode('utf-8')
+
+            def close(self_inner):
+                return None
+        return _Answer()
+
+
+@pytest.mark.proof("host", "PROOF-27", "RULE-24")
+def test_the_commit_carries_the_new_file_and_the_deletion(tmp_path,
+                                                          monkeypatch):
+    """The tree the CI commit builds adds the file it was handed and drops
+    the one the run removed."""
+    root = str(tmp_path)
+    _git(root, 'init', '-q', '-b', 'main')
+    _git(root, 'config', 'user.email', 'dev@example.com')
+    _git(root, 'config', 'user.name', 'Dev')
+    _git(root, 'config', 'commit.gpgsign', 'false')
+    gone = '.purlin/evidence/ci/retired.json'
+    kept = '.purlin/evidence/ci/login.json'
+    _write(root, gone)
+    _write(root, kept)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'evidence')
+    os.remove(os.path.join(root, *gone.split('/')))
+    _write(root, kept, '{"feature": "login"}\n')
+
+    assert host_module.deleted_files(root) == [gone]
+
+    for variable in ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY',
+                     'SYSTEM_TEAMFOUNDATIONCOLLECTIONURI'):
+        monkeypatch.delenv(variable, raising=False)
+    monkeypatch.setenv('GITHUB_REPOSITORY', 'acme/widgets')
+    monkeypatch.setenv('GITHUB_TOKEN', 'a-token')
+    monkeypatch.setenv('GITHUB_REF_NAME', 'main')
+    fake = _Host()
+    monkeypatch.setattr(urllib.request, 'urlopen', fake)
+
+    host_module.commit_files(root, [kept], 'purlin: evidence at 1111111')
+
+    tree = [body for verb, url, body in fake.calls
+            if url.endswith('/trees')][0]['tree']
+    by_path = {entry['path']: entry for entry in tree}
+    assert sorted(by_path) == sorted([kept, gone])
+    assert by_path[kept].get('content') == '{"feature": "login"}\n'
+    assert by_path[gone].get('sha') is None

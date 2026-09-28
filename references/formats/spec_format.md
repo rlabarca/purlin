@@ -51,7 +51,7 @@ belongs in `> Description:`, which the dashboard displays.
 |-------|----------|-------------|
 | `> Description:` | No | Plain-language description. Continuation lines start with `>` and are not themselves `> Field:` lines. Displayed in the dashboard. |
 | `> Requires:` | No | Comma-separated list of other spec or anchor names whose rules also apply |
-| `> Scope:` | No | Comma-separated file paths this feature touches. A record carries the git tree hash of these files, which is what tells a code change from a rule change |
+| `> Scope:` | No | Comma-separated file paths this feature touches. The evidence carries a fingerprint of these files, which is what tells a code change from a rule change |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` |
 | `> Source:` | No | Anchors only. A git URL plus a path in that repo. See the anchor format |
 | `> Pinned:` | No | Anchors only. The commit sha of the source |
@@ -152,10 +152,10 @@ tagged test of the features it runs.
 
 At most one `@env` per proof, and the values are `windows`, `macos` and
 `linux`: those three are the whole vocabulary. A proof with no `@env` is
-satisfied by a record from any operating system. A proof with `@env` meets the
-passed cell only when a counting record from that operating system passes it; a
-rule with proofs on two systems needs both, and the cell reads `not run` with
-the reason `windows: no record yet` rather than adding a word.
+satisfied by a current section from any operating system. A proof with `@env`
+meets the passed cell only when a current section from that operating system
+passes it; a rule with proofs on two systems needs both, and the cell reads
+`not run` with the reason `windows: no run yet` rather than adding a word.
 
 On a machine that is not the named one, the plugin skips the test and the
 status says so.

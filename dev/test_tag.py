@@ -30,8 +30,12 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 import gate_check                                            # noqa: E402
 import sign as sign_module                                   # noqa: E402
 from purlin import signatures as purlin_signatures           # noqa: E402
-from test_signatures import (SIGNING_GATE, Project,          # noqa: E402
+from test_signatures import (SIGNING_GATE, SPEC, Project,    # noqa: E402
                              commit_as_ci, git, signing_key, write)
+
+
+def _read_spec():
+    return SPEC
 
 
 def _read(root, rel):
@@ -67,8 +71,8 @@ def _signed_project(version='2.1.0', trust='local', key=True):
                    config={'sign_at': 'strong', 'min_strength': 50,
                            'trust': trust})
     made.proofs()
-    made.record(strength=90, runner='ci', commit_it=False, source='ci')
-    made.brief('RULE-2')
+    made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
+    made.audit('RULE-2')
     write(os.path.join(made.root, 'VERSION'), version + '\n')
     commit_as_ci(made.root)
     if key:
@@ -172,18 +176,49 @@ class TestTheTag:
 class TestTrust:
 
     @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
-    def test_remote_refuses_a_rule_with_no_ci_run_for_this_commit(self):
+    def test_remote_refuses_a_rule_with_no_ci_run_for_this_code(self, capsys):
         made = Project(gate=SIGNING_GATE,
                        config={'min_strength': 50, 'trust': 'remote'})
         try:
             made.proofs()
-            made.record(strength=90, runner='ada', source='local')
-            made.brief('RULE-2')
+            made.evidence(strength=90, runner='ada', source='local')
+            made.audit('RULE-2')
             git(made.root, 'add', '-A')
-            git(made.root, 'commit', '-q', '-m', 'purlin: record')
+            git(made.root, 'commit', '-q', '-m', 'purlin: evidence')
             payload = made.payload()
             refused = sign_module.untrusted(payload, [('login', 'RULE-2')])
             assert refused == [('login', 'RULE-2')], refused
+            assert sign_module._allowed(payload, [('login', 'RULE-2')]) == []
+            assert ('sign: login RULE-2 has no ci test run for this code; run '
+                    'purlin:test --remote first') in capsys.readouterr().out
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
+    def test_a_ci_run_out_of_date_for_this_code_is_refused_too(self):
+        made = _signed_project(trust='remote', key=False)
+        try:
+            write(os.path.join(made.root, 'src', 'login.py'),
+                  'def login(user, password):\n    return 401\n')
+            payload = made.payload()
+            assert sign_module.untrusted(payload, [('login', 'RULE-2')]) == [
+                ('login', 'RULE-2')]
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
+    def test_a_rule_whose_proofs_are_all_manual_is_not_refused(self):
+        spec = _read_spec().replace('verify 401 and the body "denied"',
+                                    'verify 401 and the body "denied" @manual')
+        made = Project(spec=spec, gate=SIGNING_GATE,
+                       config={'trust': 'remote'})
+        try:
+            made.proofs({'PROOF-1': 'pass'})
+            made.evidence({'PROOF-1': 'pass'}, runner='ada', source='local')
+            payload = made.payload()
+            assert sign_module.untrusted(payload, [('login', 'RULE-2')]) == []
+            assert sign_module.untrusted(payload, [('login', 'RULE-1')]) == [
+                ('login', 'RULE-1')]
         finally:
             made.close()
 
@@ -202,7 +237,7 @@ class TestTrust:
                        config={'trust': 'local'})
         try:
             made.proofs()
-            made.record(strength=90, runner='ada', source='local')
+            made.evidence(strength=90, runner='ada', source='local')
             payload = made.payload()
             assert sign_module.untrusted(payload, [('login', 'RULE-2')]) == []
         finally:
@@ -217,33 +252,36 @@ class TestTheAuditHash:
 
     @pytest.mark.proof("signatures", "PROOF-64", "RULE-43")
     def test_it_reads_the_evidence_and_nothing_that_moves_on_its_own(self):
-        one = {'test_strength': 90, 'settled': True, 'observations': [],
-               'generated_at': '2026-09-13T12:00:00Z', 'record': 'a.json'}
-        same = {'test_strength': 90, 'settled': True, 'observations': [],
-                'generated_at': '2026-09-27T09:00:00Z', 'record': 'b.json'}
-        assert purlin_signatures.audit_hash(one) == \
-            purlin_signatures.audit_hash(same)
+        one = {'verdict': 'strong', 'findings': [], 'rule_hash': 'r',
+               'at': '2026-09-13T12:00:00Z', 'commit': 'a' * 40,
+               'path': '.purlin/evidence/local/login.json'}
+        same = dict(one, at='2026-09-27T09:00:00Z', commit='b' * 40,
+                    path='.purlin/evidence/ci/login.json')
+        assert purlin_signatures.audit_hash(one, 90) == \
+            purlin_signatures.audit_hash(same, 90)
 
-        observed = dict(one, observations=['PROOF-2 reads the status alone.'])
-        assert purlin_signatures.audit_hash(observed) != \
-            purlin_signatures.audit_hash(one)
+        found = dict(one, findings=['PROOF-2 reads the status alone.'])
+        found['verdict'] = 'weak'
+        assert purlin_signatures.audit_hash(found, 90) != \
+            purlin_signatures.audit_hash(one, 90)
 
-        unsettled = dict(one, settled=False)
-        assert purlin_signatures.audit_hash(unsettled) != \
-            purlin_signatures.audit_hash(one)
+        undecided = dict(one)
+        undecided['verdict'] = 'undecided'
+        assert purlin_signatures.audit_hash(undecided, 90) != \
+            purlin_signatures.audit_hash(one, 90)
+        assert purlin_signatures.audit_hash(one, 70) != \
+            purlin_signatures.audit_hash(one, 90)
 
     @pytest.mark.proof("signatures", "PROOF-64", "RULE-43")
-    def test_no_brief_hashes_the_empty_string(self):
+    def test_no_entry_hashes_the_empty_string(self):
         import hashlib
         assert purlin_signatures.audit_hash(None) == \
             hashlib.sha256(b'').hexdigest()
 
     @pytest.mark.proof("signatures", "PROOF-64", "RULE-43")
-    def test_the_order_of_the_observations_does_not_move_it(self):
-        one = {'test_strength': None, 'settled': True,
-               'observations': ['b.', 'a.']}
-        other = {'test_strength': None, 'settled': True,
-                 'observations': ['a.', 'b.']}
+    def test_the_order_of_the_findings_does_not_move_it(self):
+        one = {'verdict': 'weak', 'findings': ['b.', 'a.']}
+        other = {'verdict': 'weak', 'findings': ['a.', 'b.']}
         assert purlin_signatures.audit_hash(one) == \
             purlin_signatures.audit_hash(other)
 
@@ -253,8 +291,7 @@ class TestTheAuditHash:
         try:
             _sign_every_rule(made)
             assert made.rule('RULE-2')['cells']['signed']['word'] == 'signed'
-            made.brief('RULE-2',
-                       observations=['PROOF-2 reads the status alone.'])
+            made.audit('RULE-2', findings=['PROOF-2 reads the status alone.'])
             cell = made.rule('RULE-2')['cells']['signed']
             assert cell['word'] == 'stale', cell
         finally:
@@ -267,8 +304,7 @@ class TestTheAuditHash:
             sign_module.hold_and_commit(made.root, [('login', 'RULE-2')],
                                         'jane@acme.com', 'no expired token')
             assert made.rule('RULE-2')['cells']['strong']['word'] == 'held'
-            made.brief('RULE-2',
-                       observations=['PROOF-2 reads the status alone.'])
+            made.audit('RULE-2', findings=['PROOF-2 reads the status alone.'])
             cell = made.rule('RULE-2')['cells']['strong']
             assert cell['word'] == 'held', cell
         finally:
@@ -334,12 +370,12 @@ class TestVerify:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-38", "RULE-16")
-    def test_a_ci_record_a_person_committed_is_named(self):
+    def test_a_ci_file_a_person_committed_is_named(self):
         made = _signed_project()
         try:
             _sign_every_rule(made)
-            rel = made.record(strength=90, runner='ada', source='ci',
-                              stamp='20260914T120000Z', commit_it=True)
+            rel = made.evidence(strength=90, runner='ada', source='ci',
+                                at='2026-09-14T12:00:00Z', commit_it=True)
             _code, printed = _gate(made.root)
             assert rel in printed, printed
             assert "the commit that added it is not the runner's" in printed
@@ -347,12 +383,12 @@ class TestVerify:
             made.close()
 
     @pytest.mark.proof("gate_check", "PROOF-38", "RULE-16")
-    def test_a_ci_record_the_runner_committed_is_not_named(self):
+    def test_a_ci_file_the_runner_committed_is_not_named(self):
         made = _signed_project()
         try:
             _sign_every_rule(made)
-            made.record(strength=90, runner='ci', source='ci',
-                        stamp='20260914T120000Z', commit_it=False)
+            made.evidence(strength=90, runner='ci', source='ci',
+                          at='2026-09-14T12:00:00Z', commit_it=False)
             commit_as_ci(made.root)
             _code, printed = _gate(made.root)
             assert 'Evidence' not in printed, printed

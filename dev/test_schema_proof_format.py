@@ -1,8 +1,9 @@
 """Tests for schema_proof_format.
 
-What a proof file holds, where it lives and how `sync_status` reads it. The
-merge behaviour a plugin implements when it writes one is proved by each
-plugin's own spec; this file proves the reader's half.
+What a proof file holds, where it lives and how a run reads it into the
+evidence the passed cell reads. The merge behaviour a plugin implements when it
+writes one is proved by each plugin's own spec; this file proves the reader's
+half.
 """
 
 import json
@@ -15,8 +16,13 @@ import pytest
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
-from purlin import payload as purlin_payload
-from purlin import proofs as purlin_proofs
+sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'run'))
+import evidence as evidence_writer  # noqa: E402
+from purlin import evidence as purlin_evidence  # noqa: E402
+from purlin import fingerprint as purlin_fingerprint  # noqa: E402
+from purlin import payload as purlin_payload  # noqa: E402
+from purlin import proofs as purlin_proofs  # noqa: E402
+from purlin import specs as purlin_specs  # noqa: E402
 
 REQUIRED_FIELDS = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status'}
 
@@ -46,7 +52,24 @@ class TestProofFormatEnforcement:
         return path
 
     def _word(self, feature, rule_id):
-        """The word one rule's passed cell reads."""
+        """The word one rule's passed cell reads once a run has read the proofs.
+
+        A run reads the proof files into the feature's evidence, and the
+        passed cell reads the evidence, so this takes the run's step first.
+        """
+        features = purlin_specs.scan_specs(self.project_root)
+        info = features[feature]
+        found = {}
+        for entry in purlin_proofs.load_proofs(self.project_root).get(
+                feature, []):
+            found.setdefault(entry.get('id'), []).append(entry)
+        here = purlin_evidence.host_os()
+        section = evidence_writer.build_section(
+            info, found, here, '', False, 'test',
+            purlin_fingerprint.fingerprint(self.project_root, feature,
+                                           features))
+        evidence_writer.write_section(self.project_root, 'local', feature,
+                                      info, here, section)
         data = purlin_payload.build_payload(self.project_root)
         entry = next(f for f in data['features'] if f['name'] == feature)
         rule = next(r for r in entry['rules'] if r['id'] == rule_id)

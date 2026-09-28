@@ -401,12 +401,12 @@ class TestSkillTest:
         assert skill_ceiling_problems('test') == []
 
     @pytest.mark.proof("skill_test", "PROOF-5", "RULE-5")
-    def test_it_names_the_results_the_commit_and_the_gate_line(self):
+    def test_it_names_the_evidence_the_commit_and_the_gate_line(self):
         rel = skill_path('test')
         assert carries(rel, [
-            '.purlin/tests/<feature>.json', '.purlin/tests.md',
-            'purlin: tests at <sha7>', 'Test results committed.',
-            'Test results unchanged.', 'gate passed: <n> of <rules>',
+            '.purlin/evidence/local/<feature>.json', '.purlin/tests.md',
+            '--commit', 'purlin: evidence at <sha7>', 'Evidence committed.',
+            'Evidence unchanged.', 'gate passed: <n> of <rules>',
             'It never pushes.']) == []
 
 
@@ -446,10 +446,10 @@ class TestSkillAudit:
         assert audit_gate_problems() == []
 
     @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7")
-    def test_it_names_the_briefs_and_the_retention(self):
+    def test_it_names_the_evidence_and_the_retention(self):
         assert carries(skill_path('audit'), [
-            '.purlin/briefs/',
-            'per operating system per source',
+            'into `.purlin/evidence/local/<feature>.json`',
+            'the newest section per operating system',
             'purlin:test --remote']) == []
 
 
@@ -492,7 +492,7 @@ def record_source_problems():
         if gate not in rows['local']:
             problems.append('%s local row does not count under %r'
                             % (rel, gate))
-    for folder in ('.purlin/records/ci/', '.purlin/records/local/'):
+    for folder in ('.purlin/evidence/ci/', '.purlin/evidence/local/'):
         if folder not in read(rel):
             problems.append('%s does not name %r' % (rel, folder))
     return problems
@@ -514,7 +514,7 @@ def audit_gate_problems():
         if needle not in rows['`strong`']:
             problems.append('%s strong row does not name %r' % (rel, needle))
     for needle in ('counts here too', 'gate strong: <n> of <rules>',
-                   'purlin: record for <sha7>'):
+                   'purlin: evidence at <sha7>'):
         if needle not in read(rel):
             problems.append('%s does not say %r' % (rel, needle))
     return problems
@@ -682,7 +682,7 @@ class TestPurlinAgent:
         assert carries(AGENT, [
             'Call `sync_status` before you answer any question about state.',
             '`drafted`', '`ready`', '`passed`', '`strong`', '`signed`',
-            '`code changed`']) == []
+            '`out of date`']) == []
 
     @pytest.mark.proof("purlin_agent", "PROOF-6", "RULE-6")
     def test_it_stays_under_its_ceiling(self):
@@ -700,9 +700,8 @@ def rename_problems():
     text = flat(body)
     return ['%s rename section does not carry %r' % (AGENT, needle)
             for needle in ('# Feature:', '> Requires:', 'feature-name token',
-                           '.signatures/', '.purlin/records/<source>/<name>/',
-                           '.purlin/briefs/<source>/<name>/',
-                           '.purlin/tests/<name>.json', 'git mv',
+                           '.signatures/',
+                           '.purlin/evidence/<source>/<name>.json', 'git mv',
                            'sync_status')
             if needle not in text]
 

@@ -18,7 +18,7 @@ writes the tag, a person pushes it, and nothing runs remotely.
 The matrix always carries Linux, then the operating systems the `@env` tags in
 `specs/` name. A proof tagged `@env(windows)` adds a Windows job to prove it;
 an untagged proof is satisfied by any operating system, so the Linux job proves
-those and writes the record that counts. A project that tags nothing runs on
+those and writes the section that counts. A project that tags nothing runs on
 Linux alone. Nothing else about the workflow varies, so two projects with the
 same tags get the same file.
 
@@ -63,7 +63,7 @@ def runners_for(env_tags):
 
     Linux always comes first, tagged or not: an untagged proof is satisfied by
     any operating system, and the job that proves every untagged proof and
-    writes the record that counts has to exist. The tagged operating systems
+    writes the section that counts has to exist. The tagged operating systems
     follow in `ORDER`, deduplicated, so `['windows']` gives
     `ubuntu-latest, windows-latest` and `['linux']` gives `ubuntu-latest` once.
 

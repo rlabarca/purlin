@@ -10,7 +10,7 @@ One project setting decides what this job requires. The gate is read from
     passed  every rule's passed cell is met: the tagged tests pass, from any
             source, on every operating system a counting run covered
     strong  every rule whose bar is `strong` has a strong cell that is met:
-            a record an audit wrote, from either source, test strength at or
+            an audit in the evidence, from either source, test strength at or
             above the project minimum, nothing unsettled and nobody holding
             the rule
     signed  every rule that needs a signature has a counting one: a person
@@ -21,10 +21,10 @@ One project setting decides what this job requires. The gate is read from
 `--verify` is what the tag run adds, and it asks two more questions of the
 evidence already in the tree. Every signature and every hold must still bind
 the rule, proof, test, bar and audit it names, so a tag cannot stand over code
-that changed after it was signed. Every file under `.purlin/records/ci/**` and
-`.purlin/briefs/ci/**` must have been committed by the runner's own identity,
-read off the commit that added it, so a person cannot write a record as CI's.
-A file that fails either is named and the job fails.
+that changed after it was signed. Every file under `.purlin/evidence/ci/`
+must have been committed by the runner's own identity, read off the commit
+that last changed it, so a person cannot write evidence as CI's. A file that
+fails either is named and the job fails.
 
 **The setting is the declaration, not the enforcement.** `.purlin/config.json`
 is a file in the repository that an agent can edit. What enforces it is the
@@ -142,28 +142,30 @@ def verify(project_root, payload):
 
 
 def _provenance(project_root):
-    """Every file under a `ci/` folder the runner itself did not commit.
+    """Every file under `.purlin/evidence/ci/` the runner itself did not commit.
 
     The folder is the source, and this is what keeps it honest: the commit
-    that added each file, and whether its identity is the runner's own. No
-    branch rule stands behind the folder, so a file a person wrote into it is
-    found here and nowhere else.
+    that last changed each file, and whether its identity is the runner's
+    own. No branch rule stands behind the folder, so a file a person wrote
+    into it is found here and nowhere else.
     """
-    from purlin import records as records_module
+    from purlin import evidence as evidence_module, provenance
 
     problems = []
-    for base in (records_module.RECORDS_DIR, records_module.BRIEFS_DIR):
-        root = os.path.join(project_root, base, 'ci')
-        for current, _dirs, names in os.walk(root):
-            for name in sorted(names):
-                if not name.endswith('.json'):
-                    continue
-                rel = os.path.relpath(os.path.join(current, name),
-                                      project_root).replace(os.sep, '/')
-                if records_module.record_label(project_root, rel) != 'ci':
-                    problems.append(
-                        '%s: the commit that added it is not the runner\'s'
-                        % rel)
+    folder = os.path.join(project_root,
+                          *evidence_module.EVIDENCE_DIR.split('/'))
+    folder = os.path.join(folder, 'ci')
+    try:
+        names = sorted(os.listdir(folder))
+    except OSError:
+        return problems
+    for name in names:
+        if not name.endswith('.json'):
+            continue
+        rel = '%s/ci/%s' % (evidence_module.EVIDENCE_DIR, name)
+        if provenance.committed_by(project_root, rel) != 'ci':
+            problems.append('%s: the commit that added it is not the '
+                            'runner\'s' % rel)
     return problems
 
 

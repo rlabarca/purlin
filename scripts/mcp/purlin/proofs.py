@@ -24,8 +24,8 @@ Each file is:
 `status` is `pass` or `fail`; anything else is read as neither and the entry
 does not prove its rule. `test_file` is relative to the project root with `/`
 separators on every operating system. No entry carries a runner, an operating
-system or a run marker: the record (`records.py`) is what says where a run
-happened, and it says it once per run rather than once per proof.
+system or a run marker: the evidence file a run writes is what says where a
+run happened, and it says it once per run rather than once per proof.
 
 The proof plugins write exactly what this reads.
 """

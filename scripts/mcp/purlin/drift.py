@@ -13,7 +13,7 @@ different questions of it:
           rules whose strong cell reads `manual test` or `unsettled`, rules no
           proof of which names a rejection or a boundary
 `eng`     files touched and the rules they affect, rules with no test, pins
-          behind, rules whose code changed
+          behind, rules whose evidence is out of date
 """
 
 import json
@@ -196,10 +196,10 @@ def pin_report(project_root, features, network=True, cache=None):
 def resolve_since(project_root, since_arg=None):
     """`(ref, description)`, or `(None, json_text)` when there is nothing to measure.
 
-    Without an argument the anchor is the most recent record in the tree,
-    then the most recent tag, then the commit that added
-    `.purlin/config.json`. A project with no record and a long history gets a
-    recommendation rather than a diff of everything.
+    Without an argument the anchor is the most recent commit of the
+    evidence, then the most recent tag, then the commit that added
+    `.purlin/config.json`. A project with no evidence and a long history gets
+    a recommendation rather than a diff of everything.
     """
     if since_arg is not None and str(since_arg).strip() != '':
         since_arg = str(since_arg).strip()
@@ -221,11 +221,12 @@ def resolve_since(project_root, since_arg=None):
             return sha + '^', 'since %s' % since_arg
         return 'HEAD~20', 'since %s (no commits found, using last 20)' % since_arg
 
-    record_line = _git(project_root, [
-        'log', '-1', '--format=%H %ar', '--', '.purlin/records'])
-    if record_line:
-        parts = record_line.split(' ', 1)
-        return parts[0], 'last record (%s)' % (parts[1] if len(parts) > 1 else '')
+    evidence_line = _git(project_root, [
+        'log', '-1', '--format=%H %ar', '--', '.purlin/evidence'])
+    if evidence_line:
+        parts = evidence_line.split(' ', 1)
+        return parts[0], 'last evidence (%s)' % (
+            parts[1] if len(parts) > 1 else '')
 
     tag = _git(project_root, ['describe', '--tags', '--abbrev=0'])
     if tag:
@@ -245,7 +246,7 @@ def resolve_since(project_root, since_arg=None):
             return init_sha, 'since purlin:init (%d commits)' % count
         return None, json.dumps({
             'recommendation': 'spec-from-code',
-            'reason': ('No record and %d commits since Purlin was set up. '
+            'reason': ('No evidence and %d commits since Purlin was set up. '
                        'Drift measures between runs; for the first specs of '
                        'an existing codebase run purlin:spec-from-code.'
                        % count),
@@ -259,11 +260,11 @@ def resolve_since(project_root, since_arg=None):
         # `count` counts HEAD itself, so `HEAD~count` names a commit that is
         # not there. The window is one short of the whole history.
         window = max(min(count - 1, 20), 0)
-        return 'HEAD~%d' % window, ('last %d commits (no record or tag found)'
+        return 'HEAD~%d' % window, ('last %d commits (no evidence or tag found)'
                                     % window)
     return None, json.dumps({
         'recommendation': 'spec-from-code',
-        'reason': ('No record and %d commits exist. Drift measures between '
+        'reason': ('No evidence and %d commits exist. Drift measures between '
                    'runs; for the first specs of an existing codebase run '
                    'purlin:spec-from-code.' % count),
         'commits_since_init': count,
@@ -465,7 +466,7 @@ def _role_views(report, data, file_entries):
         'pins_behind': pins_behind,
         'code_changed': ['%s/%s' % (feature['name'], rule['id'])
                          for feature, rule in rules
-                         if rule['flags'].get('code_changed')],
+                         if rule['flags'].get('out_of_date')],
     }
     return {'pm': pm, 'qa': qa, 'eng': eng}
 

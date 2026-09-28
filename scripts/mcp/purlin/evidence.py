@@ -11,6 +11,9 @@ This module reads and never writes. It answers four questions: which sections
 exist, whether each is current against a fingerprint taken now and which
 parts are out of date, which audit entry answers a rule whose rule, proof and
 test hashes are known, and which section is the newest across both sources.
+It also reads what a section says about each proof and which tests it
+lists, the newest `audit.mutation`, and which operating system this machine
+is, so a writer and a reader spell it the same way.
 
 A file that cannot be read, is not JSON, carries another schema, or names a
 source other than its folder is ignored, and the reader says so once per file
@@ -33,9 +36,44 @@ PLATFORMS = ('windows', 'macos', 'linux')
 EVIDENCE_DIR = '.purlin/evidence'
 
 
+# How `sys.platform` spells each operating system a section is keyed by.
+_OS_PREFIXES = (('win', 'windows'), ('darwin', 'macos'), ('linux', 'linux'))
+
+
+def host_os():
+    """`windows`, `macos` or `linux` for the machine this runs on.
+
+    The one answer, so a run that writes a section and a cell that reads one
+    never spell an operating system two ways.
+    """
+    for prefix, name in _OS_PREFIXES:
+        if sys.platform.startswith(prefix):
+            return name
+    return sys.platform
+
+
 def evidence_path(source, feature):
     """`.purlin/evidence/<source>/<feature>.json`, `/` separated."""
     return '%s/%s/%s.json' % (EVIDENCE_DIR, source, feature)
+
+
+def feature_names(project_root):
+    """Every feature a file under `.purlin/evidence/` names, sorted.
+
+    A name is read off the file name in either source folder; whether the
+    file parses is `load`'s question.
+    """
+    names = set()
+    for source in SOURCES:
+        folder = os.path.join(project_root, *EVIDENCE_DIR.split('/'))
+        folder = os.path.join(folder, source)
+        try:
+            listed = os.listdir(folder)
+        except OSError:
+            continue
+        names.update(name[:-len('.json')] for name in listed
+                     if name.endswith('.json'))
+    return sorted(names)
 
 
 def load(project_root, feature):
@@ -159,6 +197,61 @@ def audit_entry(loaded, rule_id, rule_hash, proof_hash, test_hash):
         if best is None or _text(entry.get('at')) > _text(best.get('at')):
             best = dict(entry, source=source, path=loaded['paths'][source])
     return best
+
+
+def proof_results(section):
+    """`{proof_id: 'pass' | 'fail'}` for one section.
+
+    `fail` wins over `pass` where two tests claim one proof, and `missing`
+    and `not run` are left out, so a proof nothing observed reads as nothing
+    observed.
+    """
+    results = {}
+    for entry in (section or {}).get('proofs') or ():
+        if not isinstance(entry, dict):
+            continue
+        proof_id = entry.get('id')
+        result = entry.get('result')
+        if not proof_id or result not in ('pass', 'fail'):
+            continue
+        if results.get(proof_id) != 'fail':
+            results[proof_id] = result
+    return results
+
+
+def proof_tests(section, proof_id):
+    """`[(file, name)]` for the tests one section lists against a proof."""
+    out = []
+    for entry in (section or {}).get('proofs') or ():
+        if not isinstance(entry, dict) or entry.get('id') != proof_id:
+            continue
+        test = entry.get('test') or ''
+        if not test:
+            continue
+        path, _, name = test.partition('::')
+        if (path, name) not in out:
+            out.append((path, name))
+    return out
+
+
+def mutation(loaded):
+    """The newest `audit.mutation` across both sources, or `None`."""
+    best = None
+    for source in SOURCES:
+        data = loaded['files'].get(source)
+        audit = data.get('audit') if data else None
+        found = audit.get('mutation') if isinstance(audit, dict) else None
+        if not isinstance(found, dict):
+            continue
+        if best is None or _text(found.get('at')) > _text(best.get('at')):
+            best = found
+    return best
+
+
+def audited(loaded):
+    """True when either source's file carries an `audit` object."""
+    return any(isinstance((data or {}).get('audit'), dict)
+               for data in loaded['files'].values())
 
 
 def _text(value):

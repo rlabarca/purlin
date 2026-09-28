@@ -26,7 +26,6 @@ What each group proves:
 *hooks*       the pre-commit and pre-push hooks v0.9.5 installed go
 *workflows*   the retired workflows go and one `purlin.yml` replaces them
 *plugins*     each copy under `.purlin/plugins/` matches the plugin again
-*records*     `.purlin/records/` exists with the README that explains it
 *backups*     every rewritten file leaves its previous bytes beside it
 *commit*      one commit, naming the migrations it carries
 *status*      `sync_status` says to run the update while anything is pending
@@ -188,7 +187,7 @@ def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
     root = _project(tmp_path, V095)
     found = _ids(root)
     for expected in ('os-tags', 'untracked-files', 'config', 'workflows',
-                     'plugin-copies', 'records'):
+                     'plugin-copies'):
         assert expected in found, found
 
 
@@ -199,7 +198,7 @@ def test_a_retired_hook_adds_the_hook_migration(tmp_path):
     found = _ids(root)
     assert 'hooks' in found, found
     for expected in ('os-tags', 'untracked-files', 'config', 'workflows',
-                     'plugin-copies', 'records'):
+                     'plugin-copies'):
         assert expected in found, found
 
 
@@ -290,10 +289,10 @@ def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):
 def test_one_declined_migration_does_not_stop_the_others(tmp_path, capsys,
                                                          monkeypatch):
     root = _project(tmp_path, V095)
-    _answers(monkeypatch, [('Apply records', 'n')])
+    _answers(monkeypatch, [('Apply plugin-copies', 'n')])
     _apply(root, argv=())
     capsys.readouterr()
-    assert _ids(root) == ['records']
+    assert _ids(root) == ['plugin-copies']
 
 
 # --- the files beside the specs ----------------------------------------------
@@ -663,18 +662,6 @@ def test_a_copy_the_plugin_does_not_ship_is_left_alone(tmp_path):
         '# our own reporter\n')
 
 
-# --- records -----------------------------------------------------------------
-
-@pytest.mark.parametrize('layout', LAYOUTS)
-@pytest.mark.proof("update", "PROOF-17", "RULE-17")
-def test_the_records_folder_and_its_readme_are_created(tmp_path, layout):
-    root = _project(tmp_path, layout)
-    _apply(root)
-    readme = _read(root, '.purlin/records/README.md')
-    assert 'One file per audit run' in readme
-    assert '.purlin/records/README.md' in _tracked(root)
-
-
 # --- backups -----------------------------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
@@ -769,7 +756,9 @@ def test_status_says_it_even_when_the_config_is_already_clean(tmp_path):
     """The line must come from the pending list, not only from a config warning."""
     root = _project(tmp_path, V095)
     _apply(root)
-    os.remove(os.path.join(root, '.purlin', 'records', 'README.md'))
+    _write(root, 'specs/core/later.md',
+           '# Feature: later\n\n## Rules\n\n- RULE-1: x\n\n## Proof\n\n'
+           '- PROOF-1 (RULE-1): y @windows\n')
     assert update.pending(root)
     assert 'Run: purlin:init --update' in status_module.sync_status(root)
 
@@ -796,8 +785,8 @@ def test_the_run_ends_by_naming_the_next_step(tmp_path, capsys):
 @pytest.mark.proof("update", "PROOF-20", "RULE-20")
 def test_a_run_that_leaves_work_names_it(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
-    _answers(monkeypatch, [('Apply records', 'n')])
+    _answers(monkeypatch, [('Apply plugin-copies', 'n')])
     _apply(root, argv=())
     printed = capsys.readouterr().out.rstrip().splitlines()
     assert printed[-1] == ('→ Next: run purlin:init --update again for '
-                           'records.')
+                           'plugin-copies.')

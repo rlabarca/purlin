@@ -133,6 +133,11 @@ Each `audit.rules` entry:
 | `at` | string | ISO 8601 UTC with `Z` |
 | `commit` | string | the full sha of `HEAD` when the audit ran |
 
+`verdict` is `strong` with no findings when the audit found nothing: the
+model settled with nothing to report, or no model was asked. It is `weak`
+when the model settled and found something, and `undecided` when it could
+not settle.
+
 An audit entry answers a rule while its `rule_hash`, `proof_hash` and
 `test_hash` all equal the rule's current ones. `commit` and `at` are shown and
 not compared, so an entry taken at an earlier commit still answers. Where both
@@ -187,15 +192,40 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
 A file keeps the newest section per operating system and the newest audit
 entry per rule. The history is the file's `git log`. Nothing is pruned.
 
+A run that sees the same thing over the same fingerprint as the section
+already there leaves that section as it is, `at` and `commit` included, so
+running the tests twice finds nothing new to commit.
+
+## The table
+
+`.purlin/tests.md` is rendered again from every file under
+`.purlin/evidence/` on each run, one row per feature from its newest section
+in either source:
+
+```
+| Feature | Rules | Passed | Failing | No test | Last run |
+```
+
+`Passed` counts the rules that section reads `passed`, `Failing` those it
+reads `failed`, and `No test` every other rule. `Last run` is
+`<sha7> · <at> · <os> · <source>`. The table is tracked beside the evidence.
+
 ## The commit
 
-A test run, an audit and a remote runner all commit with one subject:
+`purlin:test` and `purlin:audit` write the files and the table and do not
+commit them. With `--commit` they commit the files under `local/`, the table
+and any file the run removed, under the person's own identity, with one
+subject:
 
 ```
 purlin: evidence at <sha7>
 ```
 
-where `<sha7>` is the first seven characters of the section's `commit`. The
-run then prints `Evidence committed.`, or `Evidence unchanged.` when no file
-changed and there was nothing to commit. `purlin:test` and `purlin:audit`
-never push.
+where `<sha7>` is the first seven characters of `HEAD` when the run started.
+The run prints `Evidence committed.`, or `Evidence unchanged.` when no file
+changed and there was nothing to commit. Neither command ever pushes.
+
+A remote runner always commits, with the same subject, through the git
+host's API, because its evidence exists nowhere else. It commits its `ci/`
+files alone; the table is rendered again by the next run on a person's
+machine.

@@ -17,7 +17,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 
 ```
 purlin:drift                    The view for your role, inferred from what you touched
-purlin:drift eng                Files touched, tests missing, pins, code changed
+purlin:drift eng                Files touched, tests missing, pins, out of date
 purlin:drift pm                 Anchor pins behind their source
 purlin:drift qa                 Signatures stale, how long Review and Sign are, rules needing a person
 purlin:drift --since <N>        The last N commits instead of since the last record
@@ -61,8 +61,8 @@ change matters. Read the `git diff` and decide:
 | Documentation | Prose only |
 | Trivial | Whitespace, formatting, generated files |
 
-A feature whose rules all read `strong` after behavioural code changed still needs a look:
-those records were taken against the old behaviour.
+A feature whose rules all read `strong` after a behavioural change to the code still needs a
+look: that audit was taken against the old behaviour.
 
 ## Step 3: the four views
 
@@ -75,7 +75,7 @@ drift eng: 14 files since the last record (a1b2c3d)
   src/auth/mfa.js            no spec covers this file
   login RULE-7               no test carries PROOF-7
   design_tokens (anchor)     pinned 4 commits behind
-  export                     code changed: the code moved, the signatures stand
+  export                     out of date: the code moved, the signatures stand
 ```
 
 **pm.** What happened to what you asked for.
@@ -98,7 +98,7 @@ drift qa: Review is 9 rules and Sign is 3
 
 ## Step 4: what drift never does
 
-It never edits a spec, a test or a signature, and it never counts `code changed` as work for a
+It never edits a spec, a test or a signature, and it never counts `out of date` as work for a
 person: the code moved, the signature stands, and the next run clears the cell. Say so in one
 line rather than listing those rules one by one.
 
@@ -111,5 +111,5 @@ line rather than listing those rules one by one.
 | A rule with no test | `→ Run: purlin:build <feature>` |
 | An anchor pin behind | `→ Run: purlin:anchor sync <name>` |
 | Rules waiting on a person | `→ Run: purlin:sign` |
-| Only `code changed` | `→ Next: run purlin:test; the next run clears it.` |
+| Only `out of date` | `→ Next: run purlin:test; the next run clears it.` |
 | Nothing at all | `→ Nothing has drifted.` |

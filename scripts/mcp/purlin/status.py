@@ -229,7 +229,7 @@ def _directives(data, project_root):
     no_test = passed.get('no test', 0)
     failing = passed.get('failed', 0)
     partial = passed.get('partial', 0)
-    waiting = passed.get('not run', 0) + passed.get('code changed', 0)
+    waiting = passed.get('not run', 0) + passed.get('out of date', 0)
     weak = strong.get('weak', 0)
     unaudited = _unaudited(data)
     person = len(data.get('review_list') or ()) + len(
@@ -256,10 +256,10 @@ def _directives(data, project_root):
                      'for a ci run, which is what this project signs on.'
                      % (ARROW, waiting))
     elif waiting and gate != 'passed':
-        # A record either source wrote counts at every gate, so the shortest
-        # way to one is the audit on this machine.
-        lines.append('%s Next: run purlin:audit. %d rules have no record to '
-                     'read, and an audit you run counts at gate %s.'
+        # Evidence either source wrote counts at every gate, so the shortest
+        # way to it is the audit on this machine, which runs the tests too.
+        lines.append('%s Next: run purlin:audit. %d rules have no current run '
+                     'to read, and an audit you run counts at gate %s.'
                      % (ARROW, waiting, gate))
     elif waiting:
         lines.append('%s Next: run purlin:test. %d rules have no run to read.'

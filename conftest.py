@@ -11,9 +11,9 @@ this repository proves itself with is named by the same file that keeps the
 session collectable.
 
 Under mutmut this file is copied into `mutants/`, and it names each module
-under `scripts/` by its path. The tests import `scripts/run/records.py` as
-`records`, through a `sys.path` entry, while mutmut names a break by the path,
-`scripts.run.records`, and switches a break on only when a function's
+under `scripts/` by its path. The tests import `scripts/run/host.py` as
+`host`, through a `sys.path` entry, while mutmut names a break by the path,
+`scripts.run.host`, and switches a break on only when a function's
 `__module__` matches that name. Without the rename no break is ever switched
 on and mutmut stops before running one. Outside `mutants/` nothing is renamed.
 """
@@ -30,7 +30,7 @@ _SCRIPTS = os.path.join(_ROOT, 'scripts') + os.sep
 
 
 def _path_name(origin):
-    """`scripts.run.records` for `<root>/scripts/run/records.py`."""
+    """`scripts.run.host` for `<root>/scripts/run/host.py`."""
     relative = os.path.relpath(origin, _ROOT)[:-len('.py')]
     name = relative.replace(os.sep, '.')
     if name.endswith('.__init__'):

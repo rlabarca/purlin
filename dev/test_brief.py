@@ -1,8 +1,8 @@
 """Tests for `scripts/review/brief.py`: the layers, the report, the file.
 
 The throwaway project is `dev/test_signatures.py`'s, so a spec, a test file, a
-runtime proof file and a record are written by the test and nothing reads this
-repository's own specs. No model is ever called: the one test that exercises
+runtime proof file and the evidence are written by the test and nothing reads
+this repository's own specs. No model is ever called: the one test that exercises
 the AI audit replaces the process launch, so nothing here spends money or
 reaches a service.
 
@@ -10,17 +10,15 @@ What each group holds:
 
 *layers*        which layers run at which bar, cheapest first
 *tests*         the source of each test backing a proof stands beside it
-*strength*      the test strength comes off the latest record, and reads `n/a`
+*strength*      the test strength comes off the evidence, and reads `n/a`
                 when no engine measured one
 *model*         the prompt is the criteria file verbatim, the AI audit runs
                 only for a rule whose bar is `strong` and only with `--ai`
 *observations*  the answer becomes one observation per sentence, and whether
                 it settled stands beside them
-*writing*       the brief is written beside the records, named for the triple,
-                with a text rendering beside it
+*writing*       building and printing a brief writes no file
 """
 
-import json
 import os
 import subprocess
 import sys
@@ -37,7 +35,7 @@ import brief as brief_module  # noqa: E402
 import marked_tests  # noqa: E402
 from test_signatures import (REVIEW_GATE, SIGNING_GATE, SPEC,  # noqa: E402
                              TEST_FILE,
-                             Project, commit_as_ci, write)
+                             Project, write)
 
 BRIEF_PY = os.path.join(ROOT, 'scripts', 'review', 'brief.py')
 CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
@@ -52,7 +50,7 @@ ANSWER = ('settled: no\n'
 def proved():
     made = Project()
     made.proofs()
-    made.record()
+    made.evidence()
     yield made
     made.close()
 
@@ -62,17 +60,17 @@ def at_strong():
     """The same project at `strong`, where a strong-bar rule asks for a model."""
     made = Project(gate=REVIEW_GATE)
     made.proofs()
-    made.record()
+    made.evidence()
     yield made
     made.close()
 
 
 @pytest.fixture
 def at_signed():
-    """A project at `signed`, where only a record CI wrote counts."""
+    """A project at `signed`."""
     made = Project(gate=SIGNING_GATE)
     made.proofs()
-    made.record()
+    made.evidence()
     yield made
     made.close()
 
@@ -139,12 +137,11 @@ class TestTheTests:
     def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):
         built = build(proved, 'RULE-1')
         assert set(built) == {
-            'schema', 'feature', 'rule', 'bar', 'rule_text',
+            'feature', 'rule', 'bar', 'rule_text',
             'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',
             'triple_hash', 'layers', 'tests', 'test_strength', 'min_strength',
-            'record', 'ai_review', 'observations', 'settled',
+            'ai_review', 'observations', 'settled',
             'generated_at'}, sorted(built)
-        assert built['schema'] == 'purlin-brief/5'
         assert built['observations'] == []
 
 
@@ -223,7 +220,7 @@ it("division [proof:rx:PROOF-5:RULE-5]", () => { const q = 4 / 2; expect(q).toBe
 class TestTheTestStrength:
 
     @pytest.mark.proof("brief", "PROOF-10", "RULE-9")
-    def test_it_comes_off_the_latest_record(self, at_strong):
+    def test_it_comes_off_the_evidence(self, at_strong):
         assert build(at_strong, 'RULE-2')['test_strength'] == 90
         assert build(at_strong, 'RULE-2')['min_strength'] == 70
 
@@ -237,7 +234,7 @@ class TestTheTestStrength:
         made = Project()
         try:
             made.proofs()
-            made.record(strength=None)
+            made.evidence(strength=None)
             rendered = brief_module.render_brief(build(made, 'RULE-2'))
             assert 'Test strength: n/a' in rendered
         finally:
@@ -351,68 +348,34 @@ class TestTheObservations:
 
 class TestWriting:
 
+    @staticmethod
+    def _files(root):
+        found = []
+        for current, _dirs, names in os.walk(os.path.join(root, '.purlin')):
+            if os.sep + 'runtime' in current:
+                continue
+            found.extend(os.path.join(current, name) for name in names)
+        return sorted(found)
+
     @pytest.mark.proof("brief", "PROOF-27", "RULE-19")
-    def test_the_brief_lands_beside_the_records_named_for_the_triple(
-            self, proved):
+    def test_building_and_printing_a_brief_writes_no_file(self, proved,
+                                                         capsys):
+        before = self._files(proved.root)
         built = build(proved, 'RULE-1')
-        path = brief_module.write_brief(proved.root, built)
-        assert path == ('.purlin/briefs/local/login/RULE-1.%s.brief.json'
-                        % built['triple_hash'][:8])
-        text = os.path.join(proved.root, *(path[:-5] + '.txt').split('/'))
-        assert os.path.isfile(text)
-        with open(os.path.join(proved.root, *path.split('/')),
-                  encoding='utf-8') as handle:
-            assert json.load(handle)['schema'] == 'purlin-brief/5'
+        brief_module.render_brief(built)
+        assert brief_module.main(['--feature', 'login', '--project-root',
+                                  proved.root]) == 0
+        capsys.readouterr()
+        assert self._files(proved.root) == before
 
     @pytest.mark.proof("brief", "PROOF-28", "RULE-19")
-    def test_a_brief_is_found_again_only_while_the_text_stands(self, proved):
+    def test_the_triple_moves_with_the_text(self, proved):
         built = build(proved, 'RULE-1')
-        brief_module.write_brief(proved.root, built)
-        first = brief_module.brief_paths(
-            proved.root, 'login', 'RULE-1', built['triple_hash'])[0]
-        assert os.path.isfile(first)
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with a short session token'))
         again = build(proved, 'RULE-1')
         assert again['triple_hash'] != built['triple_hash'], (
             'a brief for text that has since changed is not a brief for it')
-
-    @pytest.mark.proof("brief", "PROOF-29", "RULE-21")
-    def test_write_briefs_covers_the_rules_a_review_is_owed_for(self):
-        made = Project(gate=REVIEW_GATE, config={'min_strength': 50})
-        try:
-            made.proofs()
-            made.record(runner='ci', commit_it=False)
-            commit_as_ci(made.root)
-            written = brief_module.write_briefs(made.root)
-            assert [path.rsplit('/', 1)[1].split('.')[0] for path in written] \
-                == ['RULE-2'], written
-            assert all(path.startswith('.purlin/briefs/local/login/')
-                       for path in written)
-        finally:
-            made.close()
-
-    @pytest.mark.proof("brief", "PROOF-45", "RULE-21")
-    def test_a_local_record_is_a_counting_pass_at_signed_too(self, at_signed):
-        written = brief_module.write_briefs(at_signed.root)
-        assert [path.rsplit('/', 1)[1].split('.')[0] for path in written] \
-            == ['RULE-2'], written
-
-    @pytest.mark.proof("brief", "PROOF-45", "RULE-21")
-    def test_a_rule_with_no_run_at_all_gets_no_brief(self):
-        made = Project(gate=REVIEW_GATE)
-        try:
-            assert brief_module.write_briefs(made.root) == [], (
-                'nothing has run, so there is no test result to set the '
-                'proof against')
-        finally:
-            made.close()
-
-    @pytest.mark.proof("brief", "PROOF-30", "RULE-21")
-    def test_write_briefs_takes_a_narrower_list(self, proved):
-        written = brief_module.write_briefs(
-            proved.root, rules=[('login', 'RULE-1')])
-        assert len(written) == 1 and 'RULE-1' in written[0]
 
     @pytest.mark.proof("brief", "PROOF-31", "RULE-22")
     def test_the_rendering_names_the_rule_the_proof_and_what_was_found(
@@ -439,14 +402,15 @@ class TestTheCommandLine:
         assert brief_module.main([]) == 2
 
     @pytest.mark.proof("brief", "PROOF-34", "RULE-24")
-    def test_one_rule_prints_its_brief_and_writes_it(self, proved, capsys):
+    def test_one_rule_prints_its_brief_and_writes_nothing(self, proved,
+                                                         capsys):
+        before = TestWriting._files(proved.root)
         code = brief_module.main(['--feature', 'login', '--rule', 'RULE-1',
                                   '--project-root', proved.root])
         output = capsys.readouterr().out
         assert code == 0
         assert 'login RULE-1' in output
-        assert os.path.isdir(os.path.join(proved.root, '.purlin', 'briefs', 'local',
-                                          'login'))
+        assert TestWriting._files(proved.root) == before
 
     @pytest.mark.proof("brief", "PROOF-35", "RULE-24")
     def test_a_feature_with_no_rule_named_covers_every_rule(self, proved,

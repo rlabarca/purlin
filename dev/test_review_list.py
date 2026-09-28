@@ -63,15 +63,16 @@ def _project():
     made.spec(SPEC, name='review', category='core')
     _git(made.root, 'add', '-A')
     _git(made.root, 'commit', '-q', '-m', 'docs: the spec under test')
-    made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
-                 {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'},
-                 {'id': 'PROOF-5', 'rule': 'RULE-5', 'status': 'pass'},
-                 {'id': 'PROOF-6', 'rule': 'RULE-6', 'status': 'pass'}],
-                feature='review', ci=True, strength=90)
+    made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
+                   {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'},
+                   {'id': 'PROOF-5', 'rule': 'RULE-5', 'status': 'pass'},
+                   {'id': 'PROOF-6', 'rule': 'RULE-6', 'status': 'pass'}],
+                  feature='review', ci=True, strength=90)
     # Every rule whose bar is `strong` is owed an AI audit. RULE-6 is the one
-    # left without a brief, so it reads `not audited` and is on no list.
+    # left without an audit entry, so it reads `not audited` and is on no
+    # list.
     for rule in ('RULE-1', 'RULE-5'):
-        made.brief(rule, feature='review')
+        made.audit(rule, feature='review')
     made.signature('RULE-1', feature='review', category='core')
     made.hold('RULE-2', 'the lock expiry is never read', feature='review',
               category='core')
@@ -79,7 +80,12 @@ def _project():
     # The audit runs again over the new text, so the rule clears its bar and
     # what is left outstanding is the signature.
     made.spec(REWORDED, name='review', category='core')
-    made.brief('RULE-1', feature='review')
+    made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
+                   {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'},
+                   {'id': 'PROOF-5', 'rule': 'RULE-5', 'status': 'pass'},
+                   {'id': 'PROOF-6', 'rule': 'RULE-6', 'status': 'pass'}],
+                  feature='review', ci=True, strength=90)
+    made.audit('RULE-1', feature='review')
     return made
 
 
@@ -172,13 +178,13 @@ def test_a_global_anchor_rule_is_named_once():
             '## Proof\n\n'
             '- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
             name='security', category='_anchors')
-        made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
+        made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
                      {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
                     ci=True, strength=90)
-        made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],
+        made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],
                     feature='security', ci=True, strength=90)
-        made.brief('RULE-1', settled=False)
-        made.brief('RULE-1', feature='security', settled=False)
+        made.audit('RULE-1', settled=False)
+        made.audit('RULE-1', feature='security', settled=False)
         data = made.payload()
         entries = [(e['feature'], e['rule']) for e in data['review_list']]
         assert sorted(entries) == [('login', 'RULE-1'),

@@ -589,16 +589,16 @@ def test_a_break_in_a_package_init_belongs_to_that_init():
 
 @pytest.mark.proof("mutation", "PROOF-21", "RULE-21")
 def test_a_glob_scope_entry_covers_the_files_it_matches():
-    assert mutmut.source_file('scripts.run.records.x_commit__mutmut_1',
+    assert mutmut.source_file('scripts.run.host.x_commit__mutmut_1',
                               ['scripts/**/*.py']) == 'scripts/**/*.py'
     assert mutmut.source_file('scripts.mcp.purlin.x_read__mutmut_1',
                               ['scripts/**/*.py']) == 'scripts/**/*.py'
     assert mutmut.source_file('dev.build_report.x_build__mutmut_1',
                               ['scripts/**/*.py']) is None
     assert mutmut.source_file(
-        'scripts.run.records.x_commit__mutmut_1',
-        ['scripts/**/*.py', 'scripts/run/records.py']) == \
-        'scripts/run/records.py'
+        'scripts.run.host.x_commit__mutmut_1',
+        ['scripts/**/*.py', 'scripts/run/host.py']) == \
+        'scripts/run/host.py'
 
 
 @pytest.mark.proof("mutation", "PROOF-17", "RULE-17")

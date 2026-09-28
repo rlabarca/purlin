@@ -1,9 +1,9 @@
 """Tests for which tests a rule's test hash binds.
 
 The test hash is part of what a signature binds, so it must read the same in
-every checkout and in CI. The committed records name the tests; this checkout's
-runtime proofs speak only for a proof no record has observed. The throwaway
-project is `dev/test_signatures.py`'s.
+every checkout and in CI. The evidence sections name the tests; this
+checkout's runtime proof files name nothing. The throwaway project is
+`dev/test_signatures.py`'s.
 """
 
 import json
@@ -17,8 +17,7 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-from purlin import fingerprint as purlin_fingerprint  # noqa: E402
-from test_signatures import TEST_NAMES, Project, git, write  # noqa: E402
+from test_signatures import TEST_NAMES, Project, write  # noqa: E402
 
 EXTRA = 'test_only_this_machine_runs'
 
@@ -42,38 +41,12 @@ def _runtime(project, proof_one_names):
           json.dumps({'proofs': entries}))
 
 
-def _os_record(project, os_name, stamp, proof_one_names):
-    proofs = [{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass',
-               'env': None,
-               'test_file': 'tests/test_login.py', 'test_name': name}
-              for name in proof_one_names]
-    proofs.append({'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass',
-                   'env': None,
-                   'test_file': 'tests/test_login.py',
-                   'test_name': TEST_NAMES['PROOF-2']})
-    rel = '.purlin/records/local/login/%s-%s-ci-%s.json' % (
-        stamp, project.head()[:7], os_name)
-    write(os.path.join(project.root, rel), json.dumps({
-        'schema_version': 3, 'feature': 'login', 'source': 'local',
-        'commit': project.head(),
-        'timestamp': '%s-%s-%sT%s:%s:%sZ' % (stamp[0:4], stamp[4:6], stamp[6:8],
-                                             stamp[9:11], stamp[11:13],
-                                             stamp[13:15]),
-        'runner': 'ci-' + os_name, 'os': os_name,
-        'gate': 'passed', 'test_strength': 90,
-        'scope_tree': purlin_fingerprint.code_hash(project.root,
-                                                  ['src/login.py']),
-        'proofs': proofs}))
-    git(project.root, 'add', '-A')
-    git(project.root, 'commit', '-q', '-m', 'purlin: record for abc1234')
-
-
-class TestTheRecordsNameTheTests:
+class TestTheEvidenceNamesTheTests:
 
     @pytest.mark.proof("states", "PROOF-40", "RULE-35")
     def test_what_this_checkout_ran_does_not_move_the_hash(self, project):
         project.proofs()
-        project.record()
+        project.evidence()
         first = project.rule('RULE-1')['test_hash']
         _runtime(project, [TEST_NAMES['PROOF-1'], EXTRA])
         assert project.rule('RULE-1')['test_hash'] == first, \
@@ -83,19 +56,27 @@ class TestTheRecordsNameTheTests:
             'a test this checkout could not run moved the hash'
 
     @pytest.mark.proof("states", "PROOF-41", "RULE-35")
-    def test_with_no_record_the_runtime_names_the_tests(self, project):
-        project.proofs()
-        before = project.rule('RULE-1')['test_hash']
-        _runtime(project, [TEST_NAMES['PROOF-1'], EXTRA])
-        assert project.rule('RULE-1')['test_hash'] != before
+    def test_a_code_change_does_not_move_the_hash_and_a_new_run_can(
+            self, project):
+        project.evidence()
+        first = project.rule('RULE-1')['test_hash']
+        write(os.path.join(project.root, 'src', 'login.py'),
+              'def login(user, password):\n    return 401\n')
+        assert project.rule('RULE-1')['cells']['passed']['word'] == \
+            'out of date'
+        assert project.rule('RULE-1')['test_hash'] == first, \
+            'a section out of date for the code moved the hash'
+        project.evidence(tests={'PROOF-1': [TEST_NAMES['PROOF-1'], EXTRA]},
+                         at='2026-09-14T12:00:00Z')
+        assert project.rule('RULE-1')['test_hash'] != first
 
     @pytest.mark.proof("states", "PROOF-42", "RULE-35")
-    def test_every_operating_system_s_record_counts(self, project):
-        project.proofs()
-        _os_record(project, 'linux', '20260913T120000Z',
-                   [TEST_NAMES['PROOF-1']])
-        _os_record(project, 'windows', '20260913T121000Z',
-                   [TEST_NAMES['PROOF-1'], 'test_the_windows_lock'])
+    def test_every_operating_system_s_section_counts(self, project):
+        project.evidence(os_name='linux', runner='ci', source='ci')
+        project.evidence(os_name='windows', runner='ci', source='ci',
+                         at='2026-09-13T12:10:00Z',
+                         tests={'PROOF-1': [TEST_NAMES['PROOF-1'],
+                                            'test_the_windows_lock']})
         proof = next(p for p in project.rule('RULE-1')['proofs']
                      if p['id'] == 'PROOF-1')
         names = [test['name'] for test in proof['tests']]

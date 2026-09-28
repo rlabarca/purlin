@@ -1,20 +1,57 @@
 {
   "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
   "dirty": false,
+  "evidence": {
+    "invoice": {
+      "local": {
+        "macos": {
+          "at": "2026-09-12T08:41:19Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/local/invoice.json",
+          "result": "pass"
+        }
+      }
+    },
+    "login": {
+      "local": {
+        "macos": {
+          "at": "2026-09-12T08:41:19Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/local/login.json",
+          "result": "pass"
+        }
+      }
+    }
+  },
   "features": [
     {
       "category": "auth",
+      "current": true,
       "description": null,
+      "evidence": {
+        "ci": null,
+        "local": {
+          "committed": false,
+          "path": ".purlin/evidence/local/login.json",
+          "platforms": {
+            "macos": {
+              "at": "2026-09-12T08:41:19Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        }
+      },
       "is_anchor": false,
       "is_global": false,
-      "latest_record": null,
       "name": "login",
       "pinned": null,
       "requires": [],
       "rollup": {
         "failing": 0,
         "held": 0,
-        "latest_record": null,
         "manual": 0,
         "met": 1,
         "not_audited": 0,
@@ -59,11 +96,11 @@
           "cleared": true,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -76,14 +113,14 @@
             {
               "env": null,
               "id": "PROOF-1",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_login.py",
                   "name": "test_sign_in"
                 }
               ],
-              "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie.",
-              "manual": false
+              "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie."
             }
           ],
           "rule_hash": "rrule1log",
@@ -113,11 +150,11 @@
           "cleared": false,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -130,9 +167,9 @@
             {
               "env": null,
               "id": "PROOF-2",
+              "manual": false,
               "tests": [],
-              "text": "POST /session five times with a wrong password, then once more with the right one, and read 423.",
-              "manual": false
+              "text": "POST /session five times with a wrong password, then once more with the right one, and read 423."
             }
           ],
           "rule_hash": "rrule2log",
@@ -162,11 +199,11 @@
           "cleared": false,
           "feature": "login",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -193,17 +230,30 @@
     },
     {
       "category": "billing",
+      "current": true,
       "description": null,
+      "evidence": {
+        "ci": null,
+        "local": {
+          "committed": false,
+          "path": ".purlin/evidence/local/invoice.json",
+          "platforms": {
+            "macos": {
+              "at": "2026-09-12T08:41:19Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        }
+      },
       "is_anchor": false,
       "is_global": false,
-      "latest_record": null,
       "name": "invoice",
       "pinned": null,
       "requires": [],
       "rollup": {
         "failing": 0,
         "held": 0,
-        "latest_record": null,
         "manual": 0,
         "met": 2,
         "not_audited": 0,
@@ -246,11 +296,11 @@
           "cleared": true,
           "feature": "invoice",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -263,14 +313,14 @@
             {
               "env": null,
               "id": "PROOF-1",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
                   "name": "test_total"
                 }
               ],
-              "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97.",
-              "manual": false
+              "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97."
             }
           ],
           "rule_hash": "rrule1inv",
@@ -306,11 +356,11 @@
           "cleared": true,
           "feature": "invoice",
           "flags": {
-            "code_changed": false,
             "failing": false,
             "held": false,
             "manual": false,
             "not_audited": false,
+            "out_of_date": false,
             "partial": false,
             "stale": false,
             "unsettled": false
@@ -323,14 +373,14 @@
             {
               "env": null,
               "id": "PROOF-2",
+              "manual": false,
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
                   "name": "test_empty"
                 }
               ],
-              "text": "Build an invoice with zero lines and read the total 0.00.",
-              "manual": false
+              "text": "Build an invoice with zero lines and read the total 0.00."
             }
           ],
           "rule_hash": "rrule2inv",
@@ -362,10 +412,9 @@
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
   "project": "ledger",
-  "records": {},
   "remote_url": null,
   "review_list": [],
-  "schema_version": 8,
+  "schema_version": 9,
   "sign_list": [],
   "summary": {
     "failing": 0,

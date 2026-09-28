@@ -44,7 +44,7 @@ def _two_tests(project, second=SECOND_TEST, names=NAMES):
     write(os.path.join(project.root, '.purlin', 'runtime', 'proofs',
                        'login.json'),
           json.dumps({'proofs': entries}))
-    project.record(tests={'PROOF-1': list(names)})
+    project.evidence(tests={'PROOF-1': list(names)})
 
 
 def _tests_by_name(project):

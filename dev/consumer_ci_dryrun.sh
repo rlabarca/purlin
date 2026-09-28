@@ -12,7 +12,7 @@
 # dispatch and no account to authenticate: the point is that a person can read
 # what the workflow does before a runner ever does it.
 #
-# The record step needs `scripts/run/purlin_run.py`. When that file is not in
+# The evidence step needs `scripts/run/purlin_run.py`. When that file is not in
 # this checkout yet the step is skipped with a message rather than failed, so
 # the script is useful while the run script is still being written.
 #
@@ -124,19 +124,19 @@ else
   fi
 fi
 
-# ── 6. Run verify and write the record ────────────────────────────────
-say "Run verify and write the record"
+# ── 6. Run the tagged tests and write the evidence ────────────────────
+say "Run the tagged tests and write the evidence"
 if [[ -f "$RUN_SCRIPT" ]]; then
-  cmd "python3 $RUN_SCRIPT --all --record"
-  if python3 "$RUN_SCRIPT" --all --record; then
+  cmd "python3 $RUN_SCRIPT --all --test"
+  if python3 "$RUN_SCRIPT" --all --test; then
     pass "the run script finished"
   else
     fail "the run script exited non-zero"
   fi
-  if compgen -G "$WORK/.purlin/records/greeting/*.json" >/dev/null; then
-    pass "a record was written to .purlin/records/greeting/"
+  if [[ -f "$WORK/.purlin/evidence/local/greeting.json" ]]; then
+    pass "the evidence was written to .purlin/evidence/local/greeting.json"
   else
-    fail "no record was written"
+    fail "no evidence was written"
   fi
 else
   skip "scripts/run/purlin_run.py is not in this checkout yet"

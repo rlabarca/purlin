@@ -30,7 +30,7 @@ CASE = 'no case for an expired token'
 def proved():
     made = Project(gate=REVIEW_GATE)
     made.proofs()
-    made.record()
+    made.evidence()
     yield made
     made.close()
 

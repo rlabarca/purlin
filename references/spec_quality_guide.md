@@ -216,13 +216,13 @@ first three, under `signed` all four.
 | passed | `no test` | The spec status is `ready` and no test carries the proof marker. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
 | passed | `not run` | Nothing has run the rule's tests yet. | Run `purlin:test`, which counts at every gate. |
-| passed | `not run`, with `<os>: no record yet` | A proof carries `@env` and no record from that operating system has passed it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any host could prove it. |
+| passed | `not run`, with `<os>: no run yet` | A proof carries `@env` and no current section from that operating system has passed it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any host could prove it. |
 | passed | `partial` | The rule's tests passed on one operating system and failed or did not run on another. `partial` is not met. | Fix the platform that failed, or let the CI matrix run the one that has not. |
-| passed | `code changed` | A pass exists but the code moved since. | Run the tests again; the next run clears it. |
+| passed | `out of date` | A pass exists but the spec, the code or the tests moved since; the reason names which. | Run the tests again; the next run clears it. |
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
 | strong | `weak`, with a sentence the model wrote | The AI audit settled the question and observed that the test does not read what the proof names. | Write the assertion the sentence asks for. `purlin:build`, then `purlin:audit`. |
 | strong | `manual test` | The proof is `@manual`, so no test can be written and a person runs it. | `purlin:sign <feature> RULE-N --note "<what you saw>"`. |
-| strong | `not audited` | The rule's bar is `strong` and no audit has run over this code, so there is no brief for the current hashes. | `purlin:audit`, which writes the record and the brief. |
+| strong | `not audited` | The rule's bar is `strong` and no audit has read this rule, proof and test, so the evidence holds no audit entry for the current hashes. | `purlin:audit`, which writes the entry into the evidence. |
 | strong | `unsettled` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:sign` and answer the brief. A signature for the current hashes clears it. |
 | strong | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
 | signed | `unsigned` | No signature file for the current hashes, and the rule needs one: `sign_at` is `all`, or the rule's bar is `strong`. | `purlin:sign <feature> RULE-N`, which writes it in a signed commit. |

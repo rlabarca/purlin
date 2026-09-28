@@ -1,7 +1,7 @@
 """Tests for the signature reader and the command that writes one.
 
 Every fixture is written by the test in a throwaway project: a spec, a test
-file, a runtime proof file, a record, a signature. Nothing here reads this
+file, a runtime proof file, the evidence, a signature. Nothing here reads this
 repository's own specs, reaches a network, or signs with a key that exists
 anywhere but the temporary directory the test made.
 
@@ -12,7 +12,7 @@ What each group holds:
                the rule, the proof or the test do
 *stale*        a signature stops being current when any part of the triple
                or the bar moves under it
-*the file*     the name, the fields, and the brief the reader steps over
+*the file*     the name, the fields, and the evidence file it names
 *the commit*   one signed commit for a batch, and the exact setup to print
                when this checkout cannot sign
 *any branch*   a signature counts on whatever commit carries it
@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import sign as sign_module  # noqa: E402
+from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import gate as purlin_gate  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
 from purlin import signatures as purlin_signatures  # noqa: E402
@@ -159,16 +160,20 @@ class Project(object):
                            'login.json'),
               json.dumps({'proofs': entries}))
 
-    def record(self, statuses=None, runner='ada', strength=90,
-               commit_it=True, stamp='20260913T120000Z', tests=None,
-               source='local', os_name=None):
-        """Write a record naming the tests the runtime proofs name.
+    def evidence(self, statuses=None, runner='ada', strength=90,
+                 commit_it=True, at='2026-09-13T12:00:00Z', tests=None,
+                 source='local', os_name=None, audited=True):
+        """Write a section naming the tests the runtime proofs name. Its path.
 
-        `tests` maps a proof to the test names the record observed for it, for
-        a proof backed by more than one test. `source` is the folder it goes
-        in, which is what a reader reads the source off.
+        The section carries the fingerprint taken now, so it is current until
+        the spec, the scoped code or the test changes. `tests` maps a proof to
+        the test names the section observed for it, for a proof backed by
+        more than one test. `source` is the folder it goes in, which is what
+        a reader reads the source off. With `audited` the file carries an
+        `audit` too, whose `mutation` holds `strength`.
         """
         statuses = statuses or {'PROOF-1': 'pass', 'PROOF-2': 'pass'}
+        os_name = os_name or purlin_evidence.host_os()
         proofs = []
         for proof_id, status in sorted(statuses.items()):
             for test_name in (tests or {}).get(proof_id,
@@ -176,56 +181,70 @@ class Project(object):
                 proofs.append({
                     'id': proof_id,
                     'rule': 'RULE-1' if proof_id == 'PROOF-1' else 'RULE-2',
-                    'status': status, 'env': None,
-                    'test_file': 'tests/test_login.py',
-                    'test_name': test_name})
-        name = '%s-%s-%s%s.json' % (stamp, self.head()[:7], runner,
-                                    '-' + os_name if os_name else '')
-        rel = '.purlin/records/%s/login/%s' % (source, name)
-        iso = '%s-%s-%sT%s:%s:%sZ' % (stamp[0:4], stamp[4:6], stamp[6:8],
-                                      stamp[9:11], stamp[11:13], stamp[13:15])
-        write(os.path.join(self.root, rel), json.dumps({
-            'schema_version': 3, 'feature': 'login', 'commit': self.head(),
-            'source': source, 'timestamp': iso, 'runner': runner,
-            'os': os_name, 'environment': {'os': os_name},
-            'gate': FIRST_GATE, 'test_strength': strength,
-            'scope_tree': purlin_fingerprint.code_hash(self.root,
-                                                      ['src/login.py']),
-            'proofs': proofs}))
+                    'result': status, 'env': None, 'manual': False,
+                    'test': 'tests/test_login.py::%s' % test_name})
+        rel = '.purlin/evidence/%s/login.json' % source
+        data = self._read_evidence(rel, source)
+        data['platforms'][os_name] = {
+            'commit': self.head(), 'dirty': False, 'at': at,
+            'runner': runner,
+            'fingerprint': purlin_fingerprint.fingerprint(self.root, 'login'),
+            'rules': {}, 'proofs': proofs}
+        if audited:
+            audit = data.setdefault('audit', {'mutation': None, 'rules': {}})
+            audit['mutation'] = {'engine': 'mutmut' if strength is not None
+                                 else 'none', 'score': strength, 'at': at,
+                                 'commit': self.head()}
+        write(os.path.join(self.root, *rel.split('/')),
+              json.dumps(data, indent=2, sort_keys=True))
         if commit_it:
             git(self.root, 'add', '-A')
-            git(self.root, 'commit', '-q', '-m', 'purlin: record for abc1234')
+            git(self.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
         return rel
 
-    def brief(self, rule, observations=(), settled=True, source='ci'):
-        """Write the brief CI would commit for a rule's current triple.
+    def _read_evidence(self, rel, source, feature='login'):
+        path = os.path.join(self.root, *rel.split('/'))
+        try:
+            with open(path, encoding='utf-8') as handle:
+                return json.load(handle)
+        except (IOError, OSError, ValueError):
+            return {'schema': 'purlin-evidence/1', 'feature': feature,
+                    'source': source, 'spec': 'specs/auth/%s.md' % feature,
+                    'platforms': {}}
 
-        A brief is named for the triple it was built from, so it is found
-        again only while the rule, the proof and the test all stand as they
-        were when the model read them.
+    def audit(self, rule, findings=(), settled=True, source='local',
+              feature='login'):
+        """Write the audit entry for a rule's current rule, proof and test hashes.
+
+        An entry answers only while the rule, the proof and the test all
+        stand as they were when the audit read them. `settled` with no
+        finding is `strong`, with a finding `weak`, and not settled is
+        `undecided`.
         """
-        entry = self.rule(rule)
-        triple = purlin_signatures.triple_hash(
-            entry['rule_hash'], entry['proof_hash'], entry['test_hash'])
-        rel = '.purlin/briefs/%s/login/%s.%s.brief.json' % (source, rule,
-                                                            triple[:8])
-        write(os.path.join(self.root, *rel.split('/')), json.dumps({
-            'schema': 'purlin-brief/3', 'feature': 'login', 'rule': rule,
-            'bar': entry['bar'], 'observations': list(observations),
-            # A brief naming no model answer is one no model was reached
-            # for, and the strong cell reads that as an AI audit that never
-            # ran, so a fixture carries the answer it wants read.
-            'ai_review': 'settled: %s' % ('yes' if settled else 'no'),
-            'settled': settled, 'tests': []}))
+        entry = self.rule(rule, feature)
+        rel = '.purlin/evidence/%s/%s.json' % (source, feature)
+        data = self._read_evidence(rel, source, feature)
+        audit = data.setdefault('audit', {'mutation': None, 'rules': {}})
+        word = ('undecided' if not settled
+                else 'weak' if findings else 'strong')
+        audit['rules'][rule] = {
+            'rule_hash': entry['rule_hash'],
+            'proof_hash': entry['proof_hash'],
+            'test_hash': entry['test_hash'], 'verdict': word,
+            'findings': list(findings), 'at': '2026-09-13T12:05:00Z',
+            'commit': self.head()}
+        write(os.path.join(self.root, *rel.split('/')),
+              json.dumps(data, indent=2, sort_keys=True))
         return rel
 
     def payload(self):
         return purlin_payload.build_payload(self.root)
 
-    def rule(self, rule_id):
+    def rule(self, rule_id, feature='login'):
         data = self.payload()
-        entry = next(f for f in data['features'] if f['name'] == 'login')
-        return next(r for r in entry['rules'] if r['id'] == rule_id)
+        entry = next(f for f in data['features'] if f['name'] == feature)
+        return next(r for r in entry['rules'] if r['id'] == rule_id
+                    and r['feature'] == feature)
 
     def signatures(self):
         directory = os.path.join(self.root, 'specs', 'auth',
@@ -241,10 +260,10 @@ class Project(object):
 
 @pytest.fixture
 def proved():
-    """A project whose rules have a record, so a signature has something to bind."""
+    """A project whose rules have evidence, so a signature has something to bind."""
     made = Project()
     made.proofs()
-    made.record()
+    made.evidence()
     yield made
     made.close()
 
@@ -294,12 +313,12 @@ def ci_signing_key(root):
     return key + '.pub'
 
 
-def commit_as_ci(root, message='purlin: record for abc1234'):
+def commit_as_ci(root, message='purlin: evidence at abc1234'):
     """Commit everything staged under the build identity, as CI does.
 
     CI writes through the git host's API, which signs the commit: the reader
     reads an unsigned commit claiming that identity as a person's, so a
-    fixture that leaves the signature out is not what CI writes and a record
+    fixture that leaves the signature out is not what CI writes and a file
     it wrote would be read as a developer's on any machine that can check
     signatures. The signature here is a throwaway ssh key the project itself
     trusts. Call it before `signing_key`, which points the allowed-signers
@@ -321,12 +340,12 @@ def commit_as_ci(root, message='purlin: record for abc1234'):
                    text=True)
 
 
-def sign_one(project, rule='RULE-1', email='jane@acme.com', brief=None,
-             record=None, gate='passed', bar=None, note=None):
+def sign_one(project, rule='RULE-1', email='jane@acme.com', evidence=None,
+             gate='passed', bar=None, note=None):
     """Write one signature for a rule and return its project-relative path."""
     entry = project.rule(rule)
     return sign_module.write_signature(
-        project.root, 'login', rule, email, brief, record, gate,
+        project.root, 'login', rule, email, evidence, gate,
         entry['bar'] if bar is None else bar, entry=entry, note=note)
 
 
@@ -476,57 +495,44 @@ class TestTheFile:
 
     @pytest.mark.proof("signatures", "PROOF-13", "RULE-9")
     def test_the_fields_are_the_ones_the_format_names(self, proved):
-        record = proved.record()
-        path = sign_one(
-            proved, brief='.purlin/briefs/login/RULE-1.brief.json',
-            record=record, gate='strong')
+        evidence = proved.evidence()
+        path = sign_one(proved, evidence=evidence, gate='strong')
         with open(os.path.join(proved.root, path), encoding='utf-8') as handle:
             data = json.load(handle)
         assert data['schema'] == 'purlin-signature/1'
         assert set(data) == {
             'schema', 'feature', 'rule', 'triple', 'rule_hash', 'proof_hash',
             'test_hash', 'test_hash_kind', 'audit_hash', 'bar',
-            'signer', 'note', 'timestamp', 'gate', 'brief', 'record'}
+            'signer', 'note', 'timestamp', 'gate', 'evidence'}
         assert data['feature'] == 'login' and data['rule'] == 'RULE-1'
         assert data['triple'] == sign_module.triple_for(
             proved.rule('RULE-1'))[:16]
         assert data['signer'] == 'jane@acme.com'
         assert data['note'] is None
         assert data['bar'] == 'passed'
-        assert data['record'] == record
+        assert data['evidence'] == '.purlin/evidence/local/login.json'
         assert data['timestamp'].endswith('Z')
 
     @pytest.mark.proof("signatures", "PROOF-63", "RULE-42")
-    def test_the_brief_it_names_is_the_one_an_audit_committed(self, proved):
-        """A brief sits under its source's folder, and the signature says so.
-
-        The path was built without the source folder once, so every signature
-        named a file nothing writes and every `brief` field read null.
-        """
-        rel = proved.brief('RULE-1')
-        triple = sign_module.triple_for(proved.rule('RULE-1'))
-        path = sign_one(proved, brief=sign_module.brief_for(
-            proved.root, 'login', 'RULE-1', triple))
-        with open(os.path.join(proved.root, path), encoding='utf-8') as handle:
-            assert json.load(handle)['brief'] == rel
-        assert rel == ('.purlin/briefs/ci/login/RULE-1.%s.brief.json'
-                       % triple[:8])
-        assert sign_module.brief_for(
-            proved.root, 'login', 'RULE-2',
-            sign_module.triple_for(proved.rule('RULE-2'))) is None
+    def test_the_evidence_it_names_is_the_file_the_run_wrote(self, proved):
+        """A signature names the evidence file a reader can open."""
+        assert sign_module.evidence_for(proved.payload(), 'login') == \
+            '.purlin/evidence/local/login.json'
+        proved.evidence(source='ci', commit_it=False)
+        assert sign_module.evidence_for(proved.payload(), 'login') == \
+            '.purlin/evidence/local/login.json', 'the local file comes first'
+        os.remove(os.path.join(proved.root, '.purlin', 'evidence', 'local',
+                               'login.json'))
+        assert sign_module.evidence_for(proved.payload(), 'login') == \
+            '.purlin/evidence/ci/login.json'
+        assert sign_module.evidence_for(proved.payload(), 'nosuch') is None
 
     @pytest.mark.proof("signatures", "PROOF-14", "RULE-10")
-    def test_the_reader_finds_it_and_never_reads_a_brief_as_one(self, proved):
-        triple = sign_module.triple_for(proved.rule('RULE-1'))
+    def test_the_reader_finds_it(self, proved):
         sign_one(proved)
-        write(os.path.join(proved.root, 'specs', 'auth', 'login.signatures',
-                           'RULE-1.%s.brief.json' % triple[:8]),
-              json.dumps({'schema': 'purlin-brief/1', 'rule': 'RULE-1'}))
         loaded = proved.load()
         assert len(loaded[('login', 'RULE-1')]) == 1
         assert loaded[('login', 'RULE-1')][0]['signer'] == 'jane@acme.com'
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -538,26 +544,25 @@ def at_strong():
     """The same project at the gate that turns the review list on."""
     made = Project(gate=REVIEW_GATE)
     made.proofs()
-    made.record()
+    made.evidence()
     yield made
     made.close()
 
 
-def signing_project(sign_at='all', signer='jane@acme.com', briefs=True):
+def signing_project(sign_at='all', signer='jane@acme.com', audits=True):
     """A project at the signing gate whose rules are waiting to be signed.
 
-    The record is CI's, because only a CI record counts at this gate, and the
-    person's signing key is configured last so the allowed-signers file names
-    the person rather than the build identity. Every rule whose bar is
-    `strong` carries a brief, so each one has cleared its bar and the only
-    thing outstanding is a person.
+    The evidence is CI's, and the person's signing key is configured last so
+    the allowed-signers file names the person rather than the build
+    identity. Every rule whose bar is `strong` carries an audit entry, so
+    each one has cleared its bar and the only thing outstanding is a person.
     """
     made = Project(gate=SIGNING_GATE, config={'sign_at': sign_at})
     made.proofs()
-    made.record(runner='ci', commit_it=False, source='ci')
+    made.evidence(runner='ci', commit_it=False, source='ci')
+    if audits:
+        made.audit('RULE-2')
     commit_as_ci(made.root)
-    if briefs:
-        made.brief('RULE-2')
     signing_key(made.root, signer)
     return made
 
@@ -717,10 +722,10 @@ def unsettled_at_strong():
     """A project at `strong` whose `[bar: strong]` rule is on the Review list."""
     made = Project(gate=REVIEW_GATE)
     made.proofs()
-    made.record()
-    made.brief('RULE-2', settled=False)
+    made.evidence()
+    made.audit('RULE-2', settled=False)
     git(made.root, 'add', '-A')
-    git(made.root, 'commit', '-q', '-m', 'purlin: record for abc1234')
+    git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
     signing_key(made.root)
     return made
 
@@ -777,7 +782,8 @@ class TestWhatIsSignable:
             assert sign_module.signable(made.payload()) == []
             made.spec(SPEC.replace('return 401 and the body "denied"',
                                    'return 403 and the body "denied"'))
-            made.brief('RULE-2')
+            made.evidence(runner='ci', commit_it=False, source='ci')
+            made.audit('RULE-2')
             assert sign_module.signable(made.payload()) == [
                 ('login', 'RULE-2')], 'a stale signature is signable again'
         finally:
@@ -785,14 +791,14 @@ class TestWhatIsSignable:
 
     @pytest.mark.proof("signatures", "PROOF-30", "RULE-16")
     def test_the_walk_reads_review_before_sign(self):
-        made = signing_project(sign_at='strong', briefs=False)
+        made = signing_project(sign_at='strong', audits=False)
         try:
             payload = made.payload()
             assert [row['rule'] for row in payload['review_list']] == []
             assert sign_module.signable(payload) == [], (
-                'the rule whose bar is strong has no brief, so it has not '
-                'cleared its bar')
-            made.brief('RULE-2', settled=False)
+                'the rule whose bar is strong has no audit entry, so it has '
+                'not cleared its bar')
+            made.audit('RULE-2', settled=False)
             payload = made.payload()
             assert [row['rule'] for row in payload['review_list']] == [
                 'RULE-2'], payload['review_list']

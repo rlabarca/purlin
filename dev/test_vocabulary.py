@@ -33,11 +33,11 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             "purlin:verify", "purlin:review", "purlin:approve", "verify_gate", "verify-gate:",
             "validated/",
             "needs a person", "needs_person", "needs-a-person",
-            # the source a person's own record had, and the two flags that
-            # went with it. `developer` as a plain English word stays legal,
-            # so only the machine spellings are retired.
+            # the source a person's own run once had, and the flag that went
+            # with it. `developer` as a plain English word stays legal, so
+            # only the machine spellings are retired.
             "`developer`", "'developer'", '"developer"',
-            "--commit", "purlin:audit --remote",
+            "purlin:audit --remote",
             # the bar retired these three in one move
             "manual audit", "not required", "ai_review_at",
             # signing is logged, not policed: no list says who may sign,
@@ -62,7 +62,22 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             # and no design is tied to a spec
             "designs/", "design_hash", "CHANGED_DESIGNS",
             # and a rule names no owner and no upstream criterion
-            "[origin:", "[criterion:")
+            "[origin:", "[criterion:",
+            # decision 40: one evidence file per feature. `record` and
+            # `brief` stay plain English words; the files, their folders,
+            # their schemas, their formats, their commit subjects and the
+            # code that wrote and read them are retired by name.
+            ".purlin/records", ".purlin/briefs", ".purlin/tests/",
+            "purlin-record/", "purlin-tests/", "purlin-brief/",
+            "record_format", "tests_format", "test_results.md",
+            "brief.json", "brief.txt",
+            "purlin: record for", "purlin: tests at",
+            "Record committed", "Record unchanged",
+            "Test results committed", "Test results unchanged",
+            "write_record", "load_records", "record_label", "latest_record",
+            "results_reader", "write_brief", "find_brief", "briefs_dir",
+            "scripts/run/records.py", "scripts/run/results.py",
+            "purlin/records.py", "purlin/results.py")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every
@@ -86,7 +101,7 @@ EXCLUDED = (
     "RELEASE_NOTES.md",         # historical entries record what shipped, under
                                 # the names it shipped under; the 0.10.0 section
                                 # is held to this vocabulary by review
-    ".purlin/",                 # records and briefs are machine output
+    ".purlin/",                 # the evidence is machine output
 )
 
 # Paths a later phase of dev/plans/three-levels.md still rewrites, grouped by

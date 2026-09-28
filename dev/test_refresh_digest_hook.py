@@ -75,10 +75,27 @@ def _project(tmp, digest='auto', git=True, anchor=False, config=None):
 
 
 def _write_proofs(tmp, proofs):
-    directory = os.path.join(tmp, '.purlin', 'runtime', 'proofs')
+    """Write the feature's local evidence: one section observing `proofs`."""
+    from purlin import evidence as purlin_evidence
+    from purlin import fingerprint as purlin_fingerprint
+
+    directory = os.path.join(tmp, '.purlin', 'evidence', 'local')
     os.makedirs(directory, exist_ok=True)
     with open(os.path.join(directory, 'login.json'), 'w') as f:
-        json.dump({'proofs': proofs}, f)
+        json.dump({'schema': 'purlin-evidence/1', 'feature': 'login',
+                   'source': 'local', 'spec': 'specs/app/login.md',
+                   'platforms': {purlin_evidence.host_os(): {
+                       'commit': '', 'dirty': False,
+                       'at': '2026-09-13T12:00:00Z', 'runner': 't',
+                       'fingerprint': purlin_fingerprint.fingerprint(
+                           tmp, 'login'),
+                       'rules': {},
+                       'proofs': [{'id': p['id'], 'rule': p['rule'],
+                                   'result': p['status'], 'env': None,
+                                   'manual': False,
+                                   'test': '%s::%s' % (p['test_file'],
+                                                       p['test_name'])}
+                                  for p in proofs]}}}, f)
 
 
 def _passing(digest):

@@ -3,9 +3,9 @@ name: test
 description: Run the tagged tests and print each rule's passed cell
 ---
 
-Run the tests that carry proof markers, write what they saw into `.purlin/tests/` and
-`.purlin/tests.md`, commit those two, and print the passed cell of every rule. This is level 1
-and it takes seconds: no breaks, no record, no signature. `purlin:audit` writes the record.
+Run the tests that carry proof markers, write what they saw into `.purlin/evidence/local/`
+and `.purlin/tests.md`, and print the passed cell of every rule. This is level 1 and it takes
+seconds: no breaks, no audit, no signature. `purlin:audit` adds the audit.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -18,6 +18,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ```
 purlin:test                     Run every feature's tagged tests
 purlin:test <feature> [...]     Run one feature, or several
+purlin:test --commit            Commit the evidence the run wrote
 purlin:test --remote            Let the git host's runner do the run
 ```
 
@@ -30,11 +31,13 @@ everything". The documented syntax is canonical, never required.
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --test
 ```
 
-One feature at a time is `--feature <name>`, repeated for each.
+One feature at a time is `--feature <name>`, repeated for each, and `--commit` commits what
+the run wrote.
 The run script owns test execution for the whole plugin: `purlin:build` and `purlin:audit`
 call it too, so there is one answer to how a test is run. `--remote` hands the run to the git
-host's runner instead, on a run branch it creates, waits on and deletes; at `strong` and above
-the runner audits what it ran and commits the record, and the run pulls that commit back. Use
+host's runner instead, on a run branch it creates, waits on and deletes; the runner writes its
+own section under `.purlin/evidence/ci/` and always commits it, and the run pulls that commit
+back. Use
 it for two reasons and no other: a proof is tagged `@env` for an operating system this machine
 is not, or `trust` is `remote`, so a signature rests on a run this machine did not make.
 It waits through `gh` on GitHub and through `az` with its `azure-devops` extension on Azure
@@ -43,18 +46,19 @@ says so and exits 1. The live Azure DevOps behaviour is confirmed by a hand-run 
 
 Exit codes: `0` the tests ran and the level is met, `1` a test failed or it is not, `2` the invocation was wrong.
 
-## Step 2: the results, committed
+## Step 2: the evidence, written and committed when asked
 
-The run writes `.purlin/tests/<feature>.json` (the commit, the time, the operating system,
-each rule's word, each proof's result and test) and `.purlin/tests.md`, one table for the whole
-project: `Feature`, `Rules`, `Passed`, `Failing`, `No test`, `Last run`. It commits both
-itself, under your own git identity, with the subject `purlin: tests at <sha7>`, and prints
-`Test results committed.`. It never pushes. A run that saw the same thing about the same code
-prints `Test results unchanged.` and commits nothing. A `--feature` run writes what it ran and
-leaves the rest of the table as it was. The folder is the source: yours are `local`, and a
-remote run's, under `.purlin/tests/ci/`, are `ci`. Both count at every gate, and both are how a
-teammate reads a run on the git host. `references/formats/tests_format.md` is the contract for
-both folders, and its `> Format-Version:` line says which version this release ships.
+The run writes this operating system's section of `.purlin/evidence/local/<feature>.json`
+(the commit, the time, the fingerprint of the spec, code and tests it saw, each rule's word,
+each proof's result and test) and `.purlin/tests.md`, one table for the whole project:
+`Feature`, `Rules`, `Passed`, `Failing`, `No test`, `Last run`. It prints `Evidence written to
+.purlin/evidence/local/<feature>.json.` and commits nothing. With `--commit` it commits both
+under your own git identity, with the subject `purlin: evidence at <sha7>`, and prints
+`Evidence committed.`, or `Evidence unchanged.` when nothing new was seen. It never pushes. A
+`--feature` run writes what it ran and leaves the rest of the table as it was. The folder is
+the source: yours are `local`, and a remote run's, under `.purlin/evidence/ci/`, are `ci`.
+`references/formats/evidence_format.md` is the contract, and its `> Format-Version:` line says
+which version this release ships.
 
 ## Step 3: read the table
 
@@ -67,7 +71,7 @@ The run prints `Ran <framework> on <n> feature(s).`, then the status table
 | `failed` | A tagged test ran and failed; the script names the test and the assertion |
 | `no test` | The proof is written and no test carries its marker |
 | `not run` | A test carries the marker and no counting run reached it |
-| `code changed` | The last counting run covered a different tree |
+| `out of date` | The spec, the code or the tests changed since the run; the reason names which |
 
 A rule whose spec status is `drafted` has no proof text yet, so it has no passed cell. Loud
 failures come first: `Evidence is missing: <what>.` means an arm ran and wrote no proof entry,
@@ -77,7 +81,7 @@ or a marker in the tree produced none. Read those before the table.
 
 This is the pattern every Purlin skill follows. Under `passed` the whole project is this one
 cell: no strength, no bar, no review list, no signature. Under `strong` the strong cell and
-the test strength appear beside it; under `signed` the signed cell appears too. A record from either source counts at every gate; what `trust: remote` changes is that
+the test strength appear beside it; under `signed` the signed cell appears too. Evidence from either source counts at every gate; what `trust: remote` changes is that
 `purlin:sign` asks for a `ci` run first. Read the gate from `.purlin/config.json` and print
 only what exists; `references/hard_gates.md` defines the three gates once.
 

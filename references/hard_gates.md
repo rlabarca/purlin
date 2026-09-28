@@ -16,7 +16,7 @@ already.
 
 Setting the first without the second is a preference, not a gate. Where a project has a
 remote runner, the push of that tag starts a run that reruns the tagged tests on a clean
-machine and checks every committed record, brief and signature against the tagged code, so
+machine and checks every committed signature and every `ci/` evidence file against the tagged code, so
 the tag is a claim someone else can test rather than one you have to take on trust.
 
 ## The three levels
@@ -29,7 +29,7 @@ what must be true of every rule before a version is proven?
 | Gate | Who it fits | Cells that exist | What every rule must have |
 |------|-------------|------------------|---------------------------|
 | `passed` | One person working alone | spec, passed | Every rule's passed cell is met, on every platform a counting run covered. A pass from either source counts |
-| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose bar is `strong` has a strong cell that is met: an audit wrote a record, the test strength at or above `min_strength`, nothing unsettled, no hold. A record from either source counts |
+| `strong` | A team: PM, designer, engineers, QA | + strong | Every rule whose bar is `strong` has a strong cell that is met: an audit read it, the test strength at or above `min_strength`, nothing unsettled, no hold. Evidence from either source counts |
 | `signed` | The same team under GxP | + signed | Every rule that needs a signature has a counting one |
 
 Each level derives defaults you can override:
@@ -46,7 +46,7 @@ before each write. Lowering it deletes nothing.
 
 Under `passed` no strength is measured, no bar is read, no list exists and no signature is
 asked for. Raising the gate to `strong` turns the breaks on. The breaks run on a person's
-machine and nowhere else: CI reruns the tests and verifies, and a record either source wrote
+machine and nowhere else: CI reruns the tests and verifies, and evidence either source wrote
 counts, so measuring the same breaks twice would cost a runner an hour and write the same
 number.
 
@@ -73,35 +73,35 @@ holds.
 
 ## Which evidence counts
 
-**At `passed` the evidence is the test results.** `purlin:test` runs the tagged tests, writes
-`.purlin/tests/<feature>.json` and `.purlin/tests.md`, and commits both itself under the
-person's own identity. A teammate reads them on the git host without running anything.
+**The evidence is one file per feature per source.** `purlin:test` runs the tagged tests and
+writes this operating system's section of `.purlin/evidence/local/<feature>.json` and the
+table `.purlin/tests.md`. `purlin:audit` runs the tests and the breaks and writes the same
+section plus what the audit found, under `audit`, into the same file. Neither commits unless
+you add `--commit`, which commits the evidence under your own identity as
+`purlin: evidence at <sha7>`. Neither ever pushes. A remote run writes its own section under
+`.purlin/evidence/ci/` and always commits it. A teammate reads the files on the git host
+without running anything.
 
-**At `strong` and above the evidence is the record, and an audit writes it.** `purlin:audit`
-runs the tests and the breaks, writes one record per feature under
-`.purlin/records/local/<feature>/` with its briefs beside it, and commits both under your own
-identity. It never pushes. A remote run writes the same files under `.purlin/records/ci/`.
-
-**The folder is the source.** A record's own `source` field must say the same word as the
+**The folder is the source.** A file's own `source` field must say the same word as the
 folder it sits in, and a file where the two disagree is ignored with one warning naming it.
-What keeps the ci folder honest is the tag run: it reads the commit that added each file under
-`ci/` and fails the job where the identity is not the runner's own. Nothing on the git host
-guards the folder.
+What keeps the ci folder honest is the tag run: it reads the commit that last changed each file
+under `ci/` and fails the job where the identity is not the runner's own. Nothing on the git
+host guards the folder.
 
 | Source | The folder | Counts under |
 |--------|------------|--------------|
-| `ci` | `.purlin/records/ci/<feature>/`, written by the CI identity through the git host's API | `passed`, `strong`, `signed` |
-| `local` | `.purlin/records/local/<feature>/`, written by `purlin:audit` on anyone's machine, and the test results `purlin:test` commits | `passed`, `strong`, `signed` |
+| `ci` | `.purlin/evidence/ci/<feature>.json`, written by the CI identity through the git host's API | `passed`, `strong`, `signed` |
+| `local` | `.purlin/evidence/local/<feature>.json`, written by `purlin:test` and `purlin:audit` on anyone's machine | `passed`, `strong`, `signed` |
 
 **Both sources count at every gate.** What a signature locks is the evidence, not the machine
 that produced it: the tests a person ran are the tests CI runs, and the breaks they measured
 are the breaks CI would measure. A project that wants CI's word before a signature says so
-once, by answering no to init's trust question, and then `purlin:sign` refuses a rule whose
-tests have no `ci` record for the commit being signed.
+once, by answering no to init's trust question, and then `purlin:sign` refuses a rule with a
+test whose feature has no current `ci` section.
 
-A record describes the checkout while its commit is HEAD or its scope tree still hashes the
-same. A pass that is no longer current makes the passed cell read `code changed`, and the next
-run clears it.
+A section describes the checkout while its fingerprint, over the spec, the covered code and
+the tests, is the one taken now. A pass that is no longer current makes the passed cell read
+`out of date`, naming what changed, and the next run clears it.
 
 ## Where CI runs, and when a project has a runner at all
 
@@ -118,18 +118,18 @@ starts nothing, and a pull request starts nothing.
 
 | The run | What starts it | What it writes |
 |---------|----------------|----------------|
-| A remote run | `purlin:test --remote` pushes `run/<branch>-<sha7>` | the tagged tests, and at `strong` and above one record per feature under `.purlin/records/ci/` with the briefs beside it, committed on that branch. `purlin:test --remote` pulls them home and deletes the branch |
+| A remote run | `purlin:test --remote` pushes `run/<branch>-<sha7>` | the tagged tests, and its own section of each feature's `.purlin/evidence/ci/<feature>.json`, committed on that branch at every gate. `purlin:test --remote` pulls it home and deletes the branch |
 | A tag run | a person pushes `signed/<version>` | nothing. It reruns the tagged tests on a clean machine and ends with `gate_check.py --check --verify` |
 
 **What the tag run verifies.** Every signature and every hold must still bind the rule,
 proof, test, bar and audit it names, so a tag cannot stand over code that changed after it
-was signed. Every file under `.purlin/records/ci/**` and `.purlin/briefs/ci/**` must have
-been committed by the runner's own identity, read off the commit that added it, so a person
-cannot write a record as CI's. A file that fails either is named under `Evidence` and the
+was signed. Every file under `.purlin/evidence/ci/` must have been committed by the runner's
+own identity, read off the commit that last changed it, so a person cannot write evidence as
+CI's. A file that fails either is named under `Evidence` and the
 job fails.
 
 No breaks run on CI. Test strength is what `purlin:audit` measures on a person's machine,
-and a record either source wrote counts at every gate.
+and evidence either source wrote counts at every gate.
 
 **A push is free.** Nothing runs at push time and no hook stands in front of it: a push is
 a person's act, to any branch, and the tag is what says a commit met the gate.
@@ -165,7 +165,7 @@ settle.
 **Trust.** `purlin:init` asks `Do you trust your own machine for the tests and the signing?
 [y/n]` and writes `trust: local` or `trust: remote`. Under `local`, the default, your own run
 is the evidence and `purlin:sign` signs what you ran. Under `remote`, `purlin:sign` refuses a
-rule whose tests have no `ci` record for the commit being signed and says to run
+rule with a test whose feature has no current `ci` section and says to run
 `purlin:test --remote` first. Trust binds signing alone: it is read when a rule is signed, and
 by no cell and not by the tag. `purlin:init --update` asks again.
 
@@ -201,7 +201,7 @@ the tagged code on a clean machine.
 
 ## CI writes no signature file
 
-CI runs the tagged tests and, on a run branch, writes the record and the briefs. It signs
+CI runs the tagged tests and, on a run branch, writes its section of the evidence. It signs
 nothing. A signature directory holds only files a person wrote, and the tag run checks that
 every `ci/` file was committed by the runner itself.
 
@@ -232,15 +232,16 @@ a signature.
 - Writing code without invoking a skill.
 - Writing a test with no proof marker. It runs; `sync_status` does not count it.
 - Committing without running an audit.
-- A rule whose passed cell reads `code changed`. Only the code changed; the next run clears it.
+- A rule whose passed cell reads `out of date`. The spec, the code or the tests moved; the next
+  run clears it.
 - A proof tagged `@env` for an operating system this host is not. It is listed as
-  `<os>: no record yet`, and a remote run's matrix proves it.
+  `<os>: no run yet`, and a remote run's matrix proves it.
 - Pushing a branch. A push is free.
 
 ## Platforms
 
-A record and a set of test results each name the operating system they ran on. The passed cell
-lists one **platform** per operating system a counting run named, each with its own word, its
+Each section of the evidence names the operating system it ran on. The passed cell lists one
+**platform** per operating system a current section covers, each with its own word, its
 source and when it ran, and the cell's own word rolls them up. Where the platforms disagree the
 cell reads `partial`: a rule whose tests pass on Linux and fail on Windows is neither passed nor
 failed, `partial` is not met, and it blocks the gate exactly as a failure does. A rule tagged for

@@ -49,7 +49,7 @@ TOOLS = [
         "name": "sync_status",
         "description": (
             "Show the spec status and the cells of every rule per feature. "
-            "Reads specs/, the runtime proof files and .purlin/records/, and "
+            "Reads specs/, .purlin/evidence/ and the signatures, and "
             "returns the table with the next step."),
         "inputSchema": {
             "type": "object",
@@ -79,7 +79,7 @@ TOOLS = [
     {
         "name": "drift",
         "description": (
-            "Structured summary of what changed since the last record. "
+            "Structured summary of what changed since the last evidence. "
             "Returns JSON with commits, classified files, spec changes, pins "
             "and the four role views for the purlin:drift skill to read."),
         "inputSchema": {

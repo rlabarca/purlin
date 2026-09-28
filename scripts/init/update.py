@@ -57,8 +57,8 @@ PRE_PUSH_HOOK = '.git/hooks/pre-push'                      # retired
 PRE_PUSH_KEY = 'pre_push'                                  # retired
 
 # --- what this release writes instead --------------------------------------
-IGNORE_LINES = ('.purlin/report-data.js', '.purlin/briefs/**/*.brief.txt')
-RECORDS_DIR = '.purlin/records'
+IGNORE_LINES = ('.purlin/report-data.js',)
+EVIDENCE_DIR = '.purlin/evidence'
 WORKFLOW_DIR = '.github/workflows'
 ARROW = '→'
 DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
@@ -73,18 +73,6 @@ What must be true of every rule before a version is proven?
   passed  every rule has a passing tagged test, from any source
   strong  every rule has a record an audit wrote, at the minimum test strength
   signed  strong, plus a signature from a person on the rule"""
-
-RECORDS_README = """# Records
-
-One file per audit run, at
-`.purlin/records/<source>/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`.
-A record says what ran, on which commit, what passed and the test strength. The
-folder says who wrote it: `ci/` is the CI job's, which a tag run checks the
-commit behind, and `local/` is anyone's. Both count at every gate. The git
-history of these folders is the log, so adding a file never conflicts. A run
-prunes a feature's records past the newest three per operating system per
-source. You do not edit anything here by hand.
-"""
 
 # --- helpers ---------------------------------------------------------------
 def _read(path):
@@ -212,8 +200,8 @@ def _apply_untracked(root, files, args, out):
                + ''.join(line + '\n' for line in missing))
         out.done('.gitignore')
     out.say('deleted %d file%s beside the specs and untracked the dashboard '
-            'data and the cache; proofs are runtime now and records live in %s'
-            % (gone, '' if gone == 1 else 's', RECORDS_DIR))
+            'data and the cache; proofs are runtime now and evidence lives in '
+            '%s' % (gone, '' if gone == 1 else 's', EVIDENCE_DIR))
 
 def _detect_hooks(root):
     """Every git hook v0.9.5 installed. This release installs none."""
@@ -431,10 +419,10 @@ def _apply_workflows(root, files, args, out):
     out.say('removed %d workflow%s this release replaced'
             % (len(files), _s(files)))
     flow = _flow()
-    from purlin import results as results_module
+    from purlin import evidence as evidence_module
     tags = flow.env_tags_in_specs(root)
     write_one, reasons = flow.wanted(tags, _config(root).get('trust'),
-                                     results_module.host_os())
+                                     evidence_module.host_os())
     if not write_one:
         out.say('wrote no workflow: %s' % flow.NO_REASON)
         return
@@ -492,15 +480,6 @@ def _apply_plugin_copies(root, files, args, out):
         out.done(rel)
         out.say('copied scripts/proof/%s over %s' % (source, rel))
 
-def _detect_records(root):
-    rel = '%s/README.md' % RECORDS_DIR
-    return [] if os.path.isfile(os.path.join(root, rel)) else [rel]
-
-def _apply_records(root, files, args, out):
-    _write(os.path.join(root, files[0]), RECORDS_README)
-    out.done(files[0])
-    out.say('created %s, where CI commits one file per run' % RECORDS_DIR)
-
 # Order matters: the tags are rewritten before the workflow matrix is rendered
 # from them.
 MIGRATIONS = (
@@ -519,8 +498,6 @@ MIGRATIONS = (
      _detect_workflows, _apply_workflows),
     ('plugin-copies', 'refresh the proof plugin copies under .purlin/plugins/',
      _detect_plugin_copies, _apply_plugin_copies),
-    ('records', 'create .purlin/records/ for the records an audit commits',
-     _detect_records, _apply_records),
 )
 
 def pending(project_root):
