@@ -80,16 +80,17 @@ slide('strong', 'The second gate', 'Gate %s: also check that the tests are good 
  'them. The audit reads one rule per call, several at once, says how many it will read before it '
  'starts, and names the model on every finding. A rule whose text, proof and test have not changed '
  'is not read again.')
-slide('signed', 'The third gate', 'Gate %s: also have a person sign every rule' % mt('signed'), [
+slide('signed', 'The third gate', 'Gate %s: a person signs each rule, locked to exactly what they reviewed' % mt('signed'), [
     ('`test, audit`', 'As before. Every rule passes its tests and its audit.'),
     ('`purlin:sign`', 'Shows you each rule with its proof, its tests and what the audit found. You sign it.', [
         ('The signature', 'One file per rule, in a signed commit. It records who signed and when.'),
         ('The package and the tag', 'When every rule is signed, the evidence is written as one file and the version is tagged %s.' % m('signed/1.4.0'))]),
     ('`git push origin signed/1.4.0`', 'You publish the tag. It says every rule of this version is signed.'),
-], '<b>The gate is met</b> when every rule has a signature that counts: the rule, its proof, its test and what the audit found are still the ones that were signed.',
- 'Signing is the formal lock on all the evidence together: the rule, its proof, its test and what '
- 'the audit found. Change any of them and the signature goes stale. A signature belongs to no '
- 'machine; it records where it was made. The tag itself is signed.', pad=16)
+], '<b>The gate is met</b> when every rule has a signature that counts. It counts while the rule, its proof, its test, the code, what the audit found and where the tests ran all match what was signed.',
+ 'Signing is the formal lock on one exact set: the rule, its proof, its test, the code the rule '
+ 'covers, what the audit found and the operating systems the tests ran on. Change any of them and '
+ 'the signature stops counting, and a person signs again. A signature belongs to no machine; it is '
+ 'bound to where the tests ran, not to where it was signed. The tag itself is signed.', pad=16)
 slide('remote', 'Remote runners', 'When does Purlin use a remote runner in your repository?', [
     ('A rule must hold on another operating system', 'You work on a Mac and a rule must hold on Windows. %s runs those tests on a runner and brings the results back.' % m('purlin:test --remote')),
     ('You want the tests run on a clean machine', 'You choose at setup that results from a developer\'s machine do not count toward a signature. The tests run on a runner instead.'),

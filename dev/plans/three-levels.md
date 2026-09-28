@@ -565,6 +565,32 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     The evidence of this repository's own run is committed. Text on a solid coloured badge
     is left as it is. The next sanity check, a new user following the docs, is run by a
     fresh agent from `dev/plans/next-agent-prompt.md`.
+60. **The count of rules that meet the gate is shown nowhere** (added 2026-09-28). The
+    dashboard's box `<n> of <m> rules meet the gate` and its hover go, and the sentence goes
+    from the terminal, the docs and the README. The tiles carry the number for each level.
+    The CI check still says pass or fail. What meets the gate does not change: a rule marked
+    lower meets it at its own level and never holds back the tag (decisions 32 and 36
+    stand). This removes the secondary line of decision 24. What the last line of a run, the
+    `No tag` line and the CI check's failure say in its place is still to be asked.
+61. **The queue names its two kinds of work** (added 2026-09-28). The queue holds hand
+    checks and signatures and nothing else (decisions 13 and 37 stand; no audit entry, since
+    no person judges strength). `waiting for a person` and `need a person` go. The full
+    sentences are `waiting for someone to test by hand` and `waiting for someone to sign`,
+    used in hovers and empty states; the card stays `Queue`, and beneath it and in the queue
+    tab the short labels are `To test by hand <h> · To sign <s>`. The terminal and the docs
+    use the same words. This replaces the sentence decision 23 kept.
+62. **A signature is locked to the code and to where the tests ran** (added 2026-09-28).
+    A signature says a person signed one exact set: the rule, its proof, its test, what the
+    audit found, the code the rule covers, and the operating systems its test results came
+    from. A change to any of them ends the signature and a person signs again. Before this
+    a code change alone left a signature counting once the tests passed again, and the
+    machine and operating system were recorded and bound nothing. A signature still belongs
+    to no machine: it is bound to where the tests ran, not to where it was signed. The
+    signature format changes, so its `Format-Version` is raised.
+63. **Every page is read again against the code, last** (added 2026-09-28). After every
+    decision above and every answer to the sanity checks is applied. The ten-minute path
+    writes its first rules with `purlin:spec` and marks its tests with `purlin:build`. The
+    screenshots are retaken at the end.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
