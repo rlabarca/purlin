@@ -144,27 +144,17 @@ could not be audited.
 
 ### The flow
 
+Both commands take the same steps on your machine, and the audit adds one before the table:
+
 ```mermaid
 flowchart TD
-  A[Resolve the config and the tests setting] --> B[Scan the specs and the test files for markers]
-  B --> C[Run each suite's own command and read its report]
-  C --> D[Loud failure A: a suite left no report]
-  D --> E[Loud failure B: a marker has no pass or fail]
-  E --> F{"which arm: purlin:test, purlin:audit, or a runner's"}
-  F -- "purlin:test" --> T1["Write .purlin/evidence/local/ and .purlin/tests.md; commit them as you with --commit; never push"]
-  F -- "purlin:audit" --> A1["Break the code where the gate asks, print the strength and what the audit observed"]
-  A1 --> A2["Write the audit into .purlin/evidence/local/; commit it as you with --commit; never push"]
-  F -- "the runner's arm" --> H["Run the tests"]
-  H --> Ci{"what the run is on"}
-  Ci -->|"a run/* branch"| I2["Commit its own section of .purlin/evidence/ci/ through the git host API"]
-  Ci -->|"a signed/** tag"| I3["Check every signature, and who committed each ci/ file. Commit nothing"]
-  T1 --> G["Print each rule's cells"]
-  A2 --> G
-  I2 --> G
-  I3 --> G
-  G --> J{Anything failed or missing}
-  J -- yes --> K[Exit 1]
-  J -- no --> L[Exit 0]
+    S["select the features"] --> R["run each suite's command<br>and read its report"]
+    R --> M["tie each result<br>to its marker"]
+    M --> W["write .purlin/evidence/<br>local/#lt;feature#gt;.json"]
+    W --> Q{"purlin:audit?"}
+    Q -->|yes| A["the breaks where mutation<br>testing is on, then the<br>AI audit, into the same file"]
+    Q -->|"no, purlin:test"| T
+    A --> T["write .purlin/tests.md,<br>print the table, and<br>commit with --commit"]
 ```
 
 ### The two loud failures
