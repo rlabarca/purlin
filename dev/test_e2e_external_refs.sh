@@ -350,9 +350,9 @@ echo "--- 9: the dashboard data carries the pin ---"
 result=$(PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$PROJECT5" python3 -c '
 import json, os, re, sys
 sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
-from purlin import server
+from purlin import report_data
 root = os.environ["PURLIN_ROOT"]
-server.generate_digest(root, network=False)
+report_data.refresh(root)
 with open(os.path.join(root, ".purlin", "report-data.js"), encoding="utf-8") as h:
     text = h.read()
 data = json.loads(re.sub(r";\s*$", "", text.split("= ", 1)[1]))

@@ -24,7 +24,7 @@ if _MCP_DIR not in sys.path:
 
 from purlin import (board as board_module, drift as drift_module,
                     gate as gate_module, payload as payload_module,
-                    specs as specs_module, states)
+                    report_data, specs as specs_module, states)
 
 ARROW = '→'
 DOT = board_module.DOT
@@ -42,6 +42,9 @@ def columns_for(gate):
 def sync_status(project_root):
     """The whole status report for a project root, as text."""
     data = payload_module.build_payload(project_root, generated_by='sync_status')
+    # The dashboard reads what the table reads: every command that ends on
+    # this table refreshes the page's data file with the same payload.
+    report_data.refresh(project_root, data)
     if not data['features']:
         return NO_SPECS
 

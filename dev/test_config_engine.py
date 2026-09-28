@@ -182,10 +182,10 @@ class TestUpdateConfig:
 
     @pytest.mark.proof("config_engine", "PROOF-12", "RULE-8")
     def test_the_written_value_is_what_the_resolver_reads(self):
-        self._write({"digest": "auto", "version": "0.9.0"})
-        update_config(self.project_root, "digest", "off")
+        self._write({"trust": "local", "version": "0.9.0"})
+        update_config(self.project_root, "trust", "remote")
         assert resolve_config(self.project_root) == {
-            "digest": "off", "version": "0.9.0"}
+            "trust": "remote", "version": "0.9.0"}
 
     @pytest.mark.proof("config_engine", "PROOF-9", "RULE-9")
     def test_a_write_preserves_every_other_key(self):

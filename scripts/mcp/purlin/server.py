@@ -27,7 +27,6 @@ from config_engine import (PROJECT_ROOT_SOURCES, resolve_config,
 from purlin import PURLIN_VERSION
 from purlin import console as console_module
 from purlin import drift as drift_module
-from purlin import payload as payload_module
 from purlin import status as status_module
 
 SERVER_INFO = {"name": "purlin", "version": PURLIN_VERSION}
@@ -105,33 +104,6 @@ TOOLS = [
         },
     },
 ]
-
-
-def generate_digest(project_root, generated_by='hook', network=True,
-                    only_if_changed=False):
-    """Write `.purlin/report-data.js` for the local dashboard.
-
-    The refresh hook calls this after something changed what the dashboard
-    reports. It never runs a test and never reaches the network when
-    `network` is False: what it writes is the payload built from what is
-    already on disk.
-    """
-    config = resolve_config(project_root)
-    if not config:
-        return None
-    data = payload_module.build_payload(project_root,
-                                        generated_by=generated_by,
-                                        config=config)
-    if not data['features']:
-        return None
-    if network:
-        try:
-            data['drift'] = drift_module.compute_drift(
-                project_root, network=True, data=data)
-        except Exception:
-            pass
-    return payload_module.write_report_data(project_root, data,
-                                            only_if_changed=only_if_changed)
 
 
 def handle_purlin_config(project_root, arguments):

@@ -2051,23 +2051,6 @@ class TestTransport:
         assert purlin_srv.resolve_config(project.root) == before
 
 
-class TestDigest:
-
-    @pytest.mark.proof("server", "PROOF-11", "RULE-11")
-    def test_generate_digest_writes_the_data_file(self, project):
-        path = purlin_srv.generate_digest(project.root,
-                                             generated_by='hook',
-                                             network=False)
-        assert path and os.path.isfile(path)
-        data = purlin_payload.read_report_payload(project.root)
-        assert data['generated_by'] == 'hook'
-        assert data["schema_version"] == 9
-
-    @pytest.mark.proof("server", "PROOF-12", "RULE-12")
-    def test_a_project_with_no_config_writes_nothing(self, tmp_path):
-        assert purlin_srv.generate_digest(str(tmp_path)) is None
-
-
 class TestPackageHygiene:
     """What the package may not do, whatever else it does."""
 

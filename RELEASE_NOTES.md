@@ -38,8 +38,8 @@ What it does to a 0.9.5 project, step by step:
 - **Settings.** `.purlin/config.json` is rewritten with `version`, `gate`, `mutation_engine`,
   `min_strength`, `audit_parallel` (4), `test_framework`, `sql_engine`, `ci` and `trust`. Every
   key 0.9.5 wrote that this release does not read is dropped and named in one line:
-  `spec_dir`, `pre_push`, `report`, `audit_criteria`, `audit_criteria_pinned`, `audit_llm` and
-  `audit_llm_name`, whichever the file carried. A `test_framework` name the tree cannot run is
+  `spec_dir`, `pre_push`, `report`, `digest`, `audit_criteria`, `audit_criteria_pinned`,
+  `audit_llm` and `audit_llm_name`, whichever the file carried. A `test_framework` name the tree cannot run is
   dropped and named.
 - **Three questions.** The gate question, defaulting to `strong` where `pre_push` was `strict`
   and to `passed` otherwise. The mutation question, `Measure test strength by breaking the code
@@ -252,10 +252,21 @@ the test is skipped and the passed cell reads `not run` with `<os>: no run yet`;
 `purlin:test --remote` pushes a run branch, finds the run by that branch, waits on it and pulls
 the evidence back.
 
-**The dashboard.** One HTML page on the design tokens, with no framework and no build step. Its
-tiles, columns and filters scale with the gate, and its top bar carries the gate, the signed tag
-this commit holds and how old the data is. It opens from disk; nothing is published and no
-artifact is uploaded.
+**The dashboard.** One HTML page on the design tokens, with no framework and no build step. It
+keeps the board, the tiles, the filters and the rule screen, and its tiles, columns and filters
+scale with the gate. At `passed` it shows each rule's text, its tests and one status: `passed`,
+`failed`, `partial`, `no test`, `not run` or `out of date`. At `strong` it adds the `Strong`
+column, the audit's findings on each rule's screen and a Queue tab of the rules that wait on a
+person; at `signed` it adds the `Signed` column and each signature's signer, time, machine and
+operating system. A spec with no `> Scope:` line reads `<name> · no scope`. The top bar carries
+the gate, the signed tag this commit holds from `strong` up, and how old the data is. It opens
+from disk; nothing is published and no artifact is uploaded.
+
+**Nothing runs in the background.** 0.9.5 rewrote the page's data after every tool call and
+every turn, through a Claude Code hook. The hook and its `digest` setting are gone:
+`purlin:status`, `purlin:test`, `purlin:audit` and `purlin:sign` write `.purlin/report-data.js`
+as they finish, and nothing else does. An edit you make with no Purlin command leaves the page
+as it was until you run one.
 
 **Formats.** The spec, proofs and anchor formats change wording only. The evidence format, the
 signature format (from `approval_format.md`), the payload schema and

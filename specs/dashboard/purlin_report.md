@@ -3,12 +3,14 @@
 > Description: The board: one HTML file that shows where every rule stands.
 >   It opens from disk, reads `.purlin/report-data.js`
 >   beside it, and carries three screens: the board, one rule and the Queue
->   tab. It is assembled from the parts under `scripts/report/src/`
+>   tab. `purlin:status`, `purlin:test`, `purlin:audit` and `purlin:sign`
+>   write that data file as they finish, and nothing writes it in the
+>   background. It is assembled from the parts under `scripts/report/src/`
 >   by `dev/build_report.py`, which inlines the design tokens so every colour on
 >   the page resolves to one block and both themes ship in the same file. The
 >   screenshots the docs embed are captured from the same fixture payloads the
 >   tests render.
-> Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/filters.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/review.js, scripts/report/src/app.js, scripts/report/purlin-report.html, dev/build_report.py, dev/capture_doc_screenshots.py
+> Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/filters.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/queue.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py, dev/capture_doc_screenshots.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
 
 ## Rules
@@ -51,6 +53,8 @@
 - RULE-37: Every hover on the board is a `title` attribute, one item to a line and the parts of an item separated by a middot, so a page opened from disk needs no script to show it. The `Spec` cell's hover is the spec's path; the `Proofs` cell's hover names the proofs no tagged test runs; the `Tests` cell's hover reads one line per operating system a counting run covered, newest run first, naming that system, the source of its newest run, that run's age and how its rules came out; the `Strong` cell's hover names the newest record's source and age and the minimum strength; the `Signed` cell's hover names each signer with the date of their newest signature and then the stale count. The `Passing`, `Strong` and `Signed` tiles carry the same three hovers read over every spec, and the `Untested`, `Failing` and `Partial` tiles each say in one sentence what they count [level: passed]
 - RULE-39: The Brief panel names no check: it reads the test strength beside the minimum, then each of the audit's findings as the sentence the audit wrote, then whether the audit settled or could not decide. No proof panel carries a findings row, and no free-check name is drawn anywhere on the page [level: passed]
 - RULE-40: The top bar states the signed tag the payload names, its name and the first seven characters of the commit it points at, and reads `no signed tag` where the payload names none [level: passed]
+- RULE-41: `purlin:status`, `purlin:test`, `purlin:audit` and `purlin:sign` each write the page's data file as they finish, so the page shows what the last of them saw [level: passed]
+- RULE-42: Nothing writes the data file in the background: an edit to a spec or to code made with no Purlin command leaves the file's bytes and its modification time as they were, and a directory with no Purlin settings file gets no data file at all [level: passed]
 
 ## Proof
 
@@ -103,3 +107,9 @@
 - PROOF-44 (RULE-37): Open the board with the regulated fixture and read the `title` attribute of each cell of the login row; verify the `Spec` cell's reads `specs/auth/login.md`, the `Proofs` cell's reads `every proof has a tagged test` and invoice's reads the same, the `Tests` cell's reads 2 lines newest run first, beginning `windows · ci · ` and `linux · ci · ` with the windows line ending `3 passed · 1 failed` and the linux line ending `4 passed`, the `Strong` cell's reads 2 lines, the first beginning `audit · ci · ` and the second `minimum strength 80%`, and the `Signed` cell's reads 3 lines, `jane@acme.com · 2026-09-12`, `sam@acme.com · 2026-09-08` and `1 stale`; open the team fixture and verify invoice's `Proofs` hover reads `no tagged test · PROOF-2`
 - PROOF-45 (RULE-37): Open the board with the regulated fixture and read the `title` attribute of each tile; verify the `Untested`, `Failing` and `Partial` tiles each carry one sentence naming what they count, that the `Passing` tile's first line begins `windows · ci · `, that the `Strong` tile's first line begins `audit · ci · `, and that the `Signed` tile's first line reads `jane@acme.com · 2026-09-12`
 - PROOF-46 (RULE-13): Open the board with the solo, team and regulated fixture in turn; verify each filter pill's count equals the number of spec rows' rules the filter leaves when it is set, and that at `signed` the `Untested`, `Failing` and `Partial` pills read the same numbers as the tiles of those names
+- PROOF-56 (RULE-41): In a project with one spec and no data file, run `purlin:status`; verify the data file now exists and lists the one spec, `login`
+- PROOF-57 (RULE-41): In a project with one spec whose one test passes and no data file, run `purlin:test`; verify the data file now exists and reads that rule's passed cell as `passed`
+- PROOF-58 (RULE-41): In the same project after `purlin:test`, delete the data file and run `purlin:audit` with a model that finds nothing; verify the data file exists again and reads the rule's audit as `strong`
+- PROOF-59 (RULE-41): In a project at the gate `signed` whose `RULE-2` waits for a signature, delete the data file and run `purlin:sign --batch`; verify the data file exists again and reads `RULE-2`'s signed cell as `signed`
+- PROOF-60 (RULE-42): Run `purlin:status` in a project with 2 rules, then add a third rule to the spec, change the code and commit both with no Purlin command; verify the data file's bytes and modification time are the ones `purlin:status` left and it still lists 2 rules; run `purlin:status` again and verify it lists 3
+- PROOF-61 (RULE-42): In a directory holding a spec and no Purlin settings file, run `purlin:status`; verify no data file is written

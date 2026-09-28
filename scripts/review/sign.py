@@ -98,6 +98,7 @@ for _path in (_MCP_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+from purlin import report_data                                 # noqa: E402
 from purlin import (board as board_module,                     # noqa: E402
                     console as console_module,
                     evidence as evidence_module,
@@ -947,6 +948,7 @@ def main(argv=None):
 
     if args.feature is None and not args.batch:
         walk(project_root, payload, signer_email=email, release=args.release)
+        report_data.refresh(project_root)
         return EXIT_OK
 
     if args.feature and args.rules:
@@ -985,7 +987,9 @@ def main(argv=None):
     # The tag is the no-argument walk's to write. A run that named its rules
     # says whether the walk would now write one, so the last signature of a
     # release is not a dead end.
-    if not short_of_the_gate(load_payload(project_root))[0]:
+    after = load_payload(project_root)
+    report_data.refresh(project_root, after)
+    if not short_of_the_gate(after)[0]:
         print('%s Run: purlin:sign' % ARROW)
     return EXIT_OK
 

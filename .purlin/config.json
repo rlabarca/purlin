@@ -7,6 +7,5 @@
   "sql_engine": null,
   "ci": "github",
   "test_framework": "pytest,shell",
-  "digest": "auto",
   "trust": "local"
 }

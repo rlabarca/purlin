@@ -418,7 +418,6 @@ def _apply_config(root, files, args, out):
         'audit_parallel': init.audit_parallel(old),
         'test_framework': framework, 'sql_engine': resolved.sql_engine,
         'ci': old.get('ci') or _host(root),
-        'digest': old.get('digest', 'auto'),
         'trust': _ask_trust(resolved.trust, args.yes),
     }
     # Every key the old file carried that this one does not: the retired

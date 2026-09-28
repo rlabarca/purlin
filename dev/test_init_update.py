@@ -571,11 +571,12 @@ def test_every_dropped_key_is_named(tmp_path, capsys):
     _write(root, '.purlin/config.json', json.dumps(config, indent=2))
     _apply(root)
     printed = capsys.readouterr().out
-    assert ('dropped 5 keys this release does not read: audit_criteria, '
-            'audit_criteria_pinned, pre_push, report, spec_dir') in printed
+    assert ('dropped 6 keys this release does not read: audit_criteria, '
+            'audit_criteria_pinned, digest, pre_push, report, spec_dir'
+            ) in printed
     written = json.loads(_read(root, '.purlin/config.json'))
-    for key in ('audit_criteria', 'audit_criteria_pinned', 'pre_push',
-                'report', 'spec_dir'):
+    for key in ('audit_criteria', 'audit_criteria_pinned', 'digest',
+                'pre_push', 'report', 'spec_dir'):
         assert key not in written, key
 
 
