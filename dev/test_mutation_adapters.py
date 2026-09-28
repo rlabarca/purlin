@@ -13,12 +13,14 @@ hand so both statuses are covered; `mutmut_results_smoke.txt` is what
 `mutmut results --all true` printed for a mutmut 3.8 run; `mutmut_results.txt`
 is the same grammar over a project laid out under `src/`. No engine binary is
 installed for these tests: every run is a stand-in that returns a captured
-report.
+report, except the `--arm-timeout` test, whose stand-in `mutmut` is a shell
+program on PATH that sleeps past the limit so the real stop is observed.
 """
 
 import json
 import os
 import sys
+import time
 
 import pytest
 
@@ -125,6 +127,8 @@ def test_a_missing_key_is_read_as_none():
     (2, 1, 67),
     (5, 2, 71),
     (7, 4, 64),
+    (1, 7, 13),
+    (3, 5, 38),
 ])
 # purlin: mutation PROOF-3
 def test_score_is_an_integer_percent(killed, survived, score):
@@ -160,6 +164,10 @@ def test_the_generated_config_scopes_the_run_to_the_spec_files():
 # purlin: mutation PROOF-6
 def test_the_runner_is_vitest_when_the_project_declares_vitest(tmp_path):
     manifest = {'devDependencies': {'vitest': '^2.0.0'}}
+    (tmp_path / 'package.json').write_text(json.dumps(manifest),
+                                           encoding='utf-8')
+    assert stryker.test_runner(str(tmp_path)) == 'vitest'
+    manifest = {'dependencies': {'vitest': '^2.0.0'}}
     (tmp_path / 'package.json').write_text(json.dumps(manifest),
                                            encoding='utf-8')
     assert stryker.test_runner(str(tmp_path)) == 'vitest'
@@ -228,6 +236,22 @@ def test_a_break_another_rules_test_caught_counts_survived_for_this_one():
     entry = stryker.parse_report(report, {'RULE-2': CALC_TESTS['RULE-2']})
     # Mutants 4 and 5 are covered by RULE-2's test and killed by nothing.
     assert entry['rules']['RULE-2']['survived'] == 2
+    # One break both rules' tests reached, caught by RULE-1's test alone.
+    shared = {
+        'files': {'src/a.js': {'mutants': [
+            {'id': '1', 'status': 'Killed', 'coveredBy': ['0', '1'],
+             'killedBy': ['0']}]}},
+        'testFiles': {'test/a.test.js': {'tests': [
+            {'id': '0', 'name': 'locks'}, {'id': '1', 'name': 'unlocks'}]}},
+    }
+    entry = stryker.parse_report(shared, {
+        'RULE-1': [{'file': 'test/a.test.js', 'name': 'locks'}],
+        'RULE-2': [{'file': 'test/a.test.js', 'name': 'unlocks'}]})
+    assert (entry['rules']['RULE-1']['killed'],
+            entry['rules']['RULE-1']['survived']) == (1, 0)
+    assert (entry['rules']['RULE-2']['killed'],
+            entry['rules']['RULE-2']['survived']) == (0, 1)
+    assert entry['rules']['RULE-2']['score'] == 0
 
 
 # purlin: mutation PROOF-9
@@ -280,6 +304,21 @@ def test_a_test_in_another_file_of_the_same_name_is_not_this_rules_test():
                          'name': 'locks the account'}]}
     entry = stryker.parse_report(report, tests)
     assert entry['rules']['RULE-1']['killed'] == 0
+
+
+# purlin: mutation PROOF-10
+def test_titles_written_with_a_separator_match_titles_joined_by_spaces():
+    report = {
+        'files': {'src/a.js': {'mutants': [
+            {'id': '1', 'status': 'Killed', 'coveredBy': ['0'],
+             'killedBy': ['0']}]}},
+        'testFiles': {'test/a.test.js': {'tests': [
+            {'id': '0', 'name': 'login locks'}]}},
+    }
+    tests = {'RULE-1': [{'file': 'test/a.test.js', 'name': 'login > locks'}]}
+    entry = stryker.parse_report(report, tests)
+    assert entry['rules']['RULE-1']['killed'] == 1
+    assert entry['rules']['RULE-1']['score'] == 100
 
 
 # purlin: mutation PROOF-11
@@ -352,6 +391,26 @@ def test_a_run_writes_the_scoped_config_and_reads_the_report(monkeypatch):
     assert 'calc' in answer['log']
 
 
+# purlin: mutation PROOF-5
+def test_a_run_over_two_features_starts_stryker_once_for_each(monkeypatch):
+    execute, _ = fake_stryker_run('stryker_report.json')
+    mutated = []
+
+    def recording(command, cwd, report_path=None):
+        with open(command[-1], 'r', encoding='utf-8') as handle:
+            mutated.append(json.load(handle)['mutate'])
+        return execute(command, cwd, report_path)
+
+    monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])
+    monkeypatch.setattr(stryker, 'test_runner', lambda root: 'jest')
+    monkeypatch.setattr(stryker, 'execute', recording)
+    stryker.run('/project', {'calc': ['src/calc.js'],
+                             'util': ['src/util.js', 'src/fmt.js']},
+                {('calc', 'RULE-1'): CALC_TESTS['RULE-1'],
+                 ('util', 'RULE-1'): CALC_TESTS['RULE-1']})
+    assert mutated == [['src/calc.js'], ['src/util.js', 'src/fmt.js']]
+
+
 # purlin: mutation PROOF-12
 def test_a_feature_with_no_scope_files_measures_nothing(monkeypatch):
     execute, _ = fake_stryker_run('stryker_report.json')
@@ -363,6 +422,23 @@ def test_a_feature_with_no_scope_files_measures_nothing(monkeypatch):
     assert answer['features']['calc']['scope_score']['score'] is None
     assert answer['features']['calc']['rules']['RULE-1']['score'] is None
     assert 'no scope files' in answer['log']
+
+
+# purlin: mutation PROOF-12
+def test_a_run_whose_report_cannot_be_read_measures_nothing(monkeypatch):
+    def execute(command, cwd, report_path=None):
+        with open(report_path, 'w', encoding='utf-8') as handle:
+            handle.write('not json')
+        return 0, 'Done in 1 second.'
+
+    monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])
+    monkeypatch.setattr(stryker, 'test_runner', lambda root: 'jest')
+    monkeypatch.setattr(stryker, 'execute', execute)
+    answer = stryker.run('/project', {'calc': ['src/calc.js']},
+                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']})
+    assert answer['features']['calc']['scope_score']['score'] is None
+    assert answer['features']['calc']['rules']['RULE-1']['score'] is None
+    assert 'calc: stryker exited 0 and wrote no report' in answer['log']
 
 
 # purlin: mutation PROOF-12
@@ -386,6 +462,7 @@ def test_a_missing_binary_leaves_no_engine_and_says_what_to_install(monkeypatch)
     assert answer['engine'] == 'none'
     assert answer['available'] is False
     assert 'stryker is not installed' in answer['reason']
+    assert '@stryker-mutator/core' in answer['reason']
     rule = answer['features']['calc']['rules']['RULE-1']
     assert rule['attribution'] == 'unavailable'
     assert rule['score'] is None
@@ -443,6 +520,15 @@ def test_the_tool_answering_its_version_is_the_install_check(monkeypatch):
 def test_the_report_is_found_under_the_output_directory(tmp_path):
     reports = tmp_path / 'reports'
     reports.mkdir()
+    (reports / 'mutation-report.json').write_text('{}', encoding='utf-8')
+    assert stryker_net.find_report(str(tmp_path)) == str(
+        reports / 'mutation-report.json')
+
+
+# purlin: mutation PROOF-13
+def test_a_report_several_folders_down_is_found(tmp_path):
+    reports = tmp_path / 'StrykerOutput' / '2026-09-28' / 'reports'
+    reports.mkdir(parents=True)
     (reports / 'mutation-report.json').write_text('{}', encoding='utf-8')
     assert stryker_net.find_report(str(tmp_path)) == str(
         reports / 'mutation-report.json')
@@ -593,6 +679,9 @@ def test_a_glob_scope_entry_covers_the_files_it_matches():
         'scripts.run.host.x_commit__mutmut_1',
         ['scripts/**/*.py', 'scripts/run/host.py']) == \
         'scripts/run/host.py'
+    assert mutmut.source_file(
+        'scripts.run.host.x_commit__mutmut_1',
+        ['scripts/**/*.py', 'scripts/run']) == 'scripts/run'
 
 
 # purlin: mutation PROOF-17
@@ -657,12 +746,33 @@ def test_a_mutmut_run_scores_every_rule_of_a_feature_the_same(tmp_path, monkeypa
     assert answer['features']['reports']['rules']['RULE-1']['score'] == 0
 
 
+# purlin: mutation PROOF-16
+def test_the_listing_read_is_what_mutmut_results_all_prints(tmp_path, monkeypatch):
+    (tmp_path / 'pyproject.toml').write_text(
+        '[project]\n' + mutmut.mutmut_config_block(['calc'], ['tests']),
+        encoding='utf-8')
+
+    def execute(command, cwd, report_path=None):
+        if command == ['mutmut', 'results', '--all', 'true']:
+            return 0, read_fixture('mutmut_results_smoke.txt')
+        return 0, ''
+
+    monkeypatch.setattr(mutmut, 'binary', lambda root=None: '/usr/bin/mutmut')
+    monkeypatch.setattr(mutmut, 'execute', execute)
+    answer = mutmut.run(str(tmp_path), {'calc': ['calc/ops.py']},
+                        {('calc', 'RULE-1'): []})
+    assert '5 breaks read' in answer['log']
+    assert answer['features']['calc']['scope_score'] == {
+        'score': 20, 'killed': 1, 'survived': 4}
+
+
 # purlin: mutation PROOF-18
 def test_mutmut_missing_leaves_no_engine(monkeypatch):
     monkeypatch.setattr(mutmut, 'binary', lambda root=None: None)
     answer = mutmut.run('/project', {'login': ['src/login/session.py']},
                         {('login', 'RULE-1'): []})
     assert answer['engine'] == 'none'
+    assert answer['available'] is False
     assert 'pip install mutmut' in answer['reason']
     assert answer['features']['login']['rules']['RULE-1'][
         'attribution'] == 'unavailable'
@@ -683,6 +793,23 @@ def test_a_project_with_no_config_block_is_not_broken(tmp_path, monkeypatch):
     assert 'pyproject.toml' in answer['reason']
 
 
+# purlin: mutation PROOF-15
+def test_a_project_with_no_block_in_setup_cfg_is_not_broken(tmp_path, monkeypatch):
+    (tmp_path / 'setup.cfg').write_text('[metadata]\nname = demo\n',
+                                        encoding='utf-8')
+    monkeypatch.setattr(mutmut, 'binary', lambda root=None: '/usr/bin/mutmut')
+    called = []
+    monkeypatch.setattr(mutmut, 'execute',
+                        lambda *args, **kwargs: called.append(args) or (0, ''))
+    answer = mutmut.run(str(tmp_path), {'login': ['src/login/session.py']},
+                        {('login', 'RULE-1'): []})
+    assert called == []
+    assert answer['engine'] == 'none'
+    assert '[mutmut]' in answer['reason']
+    assert 'setup.cfg' in answer['reason']
+    assert 'pyproject.toml' not in answer['reason']
+
+
 # ---------------------------------------------------------------------------
 # No engine, and the shape everything answers in
 # ---------------------------------------------------------------------------
@@ -690,14 +817,20 @@ def test_a_project_with_no_config_block_is_not_broken(tmp_path, monkeypatch):
 # purlin: mutation PROOF-19
 def test_no_engine_measures_nothing_and_says_why():
     answer = none.run('/project', {'deploy': ['deploy.sh']},
-                      {('deploy', 'RULE-1'): []})
+                      {('deploy', 'RULE-1'): [], ('deploy', 'RULE-2'): []})
     assert answer['engine'] == 'none'
     assert answer['available'] is False
     assert 'shell or sql' in answer['reason']
+    assert answer['reason'] == ('no engine breaks go, shell or sql code, so '
+                                'test strength is not measured for these rules')
     assert answer['features']['deploy']['scope_score'] == {
         'score': None, 'killed': 0, 'survived': 0}
     assert answer['features']['deploy']['rules']['RULE-1'][
         'attribution'] == 'unavailable'
+    for rule in ('RULE-1', 'RULE-2'):
+        assert answer['features']['deploy']['rules'][rule] == {
+            'engine': 'none', 'score': None, 'killed': 0, 'survived': 0,
+            'attribution': 'unavailable'}
 
 
 def assert_answer_shape(answer, scope_by_feature, tests_by_rule):
@@ -745,10 +878,28 @@ def test_run_breaks_answers_one_shape_for_a_real_engine(tmp_path, monkeypatch):
 
 
 # purlin: mutation PROOF-20
-def test_an_engine_nobody_ships_is_not_run():
+def test_an_engine_nobody_ships_is_not_run(tmp_path, monkeypatch):
+    # Every engine is at hand, so a name mapped to any of them would start it.
+    (tmp_path / 'pyproject.toml').write_text(
+        '[project]\n' + mutmut.mutmut_config_block(['src'], ['tests']),
+        encoding='utf-8')
+    started = []
+
+    def execute(command, cwd, report_path=None):
+        started.append(command)
+        return 0, ''
+
+    monkeypatch.setattr(mutmut, 'binary', lambda root=None: '/usr/bin/mutmut')
+    monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])
+    monkeypatch.setattr(stryker_net, 'available', lambda root: (True, ''))
+    monkeypatch.setattr(stryker_net, 'binary',
+                        lambda root=None: ['dotnet', 'stryker'])
+    for module in (mutation, mutmut, stryker, stryker_net):
+        monkeypatch.setattr(module, 'execute', execute)
     scope = {'login': ['src/login/session.py']}
     tests = {('login', 'RULE-1'): []}
-    answer = mutation.run_breaks('/project', 'cosmic-ray', scope, tests)
+    answer = mutation.run_breaks(str(tmp_path), 'cosmic-ray', scope, tests)
+    assert started == []
     assert_answer_shape(answer, scope, tests)
     assert answer['engine'] == 'none'
     assert 'unknown engine' in answer['reason']
@@ -823,6 +974,36 @@ def test_a_mutmut_run_that_timed_out_measures_nothing(tmp_path, monkeypatch):
                       ('RULE-1', 'RULE-2'))
     assert_unmeasured(answer['features']['reports'], 'mutmut', ('RULE-1',))
     assert_names_the_timeout(answer)
+
+
+# purlin: mutation PROOF-22
+def test_arm_timeout_on_the_command_line_stops_a_running_engine(tmp_path, monkeypatch):
+    import purlin_run
+    tools = tmp_path / 'bin'
+    tools.mkdir()
+    (tools / 'mutmut').write_text('#!/bin/sh\necho started\nexec sleep 30\n',
+                                  encoding='utf-8')
+    (tools / 'mutmut').chmod(0o755)
+    monkeypatch.setenv('PATH', str(tools) + os.pathsep + os.environ['PATH'])
+    project = tmp_path / 'project'
+    (project / '.purlin').mkdir(parents=True)
+    (project / '.purlin' / 'config.json').write_text(
+        json.dumps({'mutation_engine': 'mutmut'}), encoding='utf-8')
+    (project / 'pyproject.toml').write_text(
+        '[project]\n' + mutmut.mutmut_config_block(['src'], ['tests']),
+        encoding='utf-8')
+    monkeypatch.setattr(mutation, 'ARM_TIMEOUT', mutation.ARM_TIMEOUT)
+    args = purlin_run.parse_args(['--audit', '--arm-timeout', '1'])
+    began = time.time()
+    answer = purlin_run._run_breaks(
+        str(project), args, {'login': {'scope': ['src/login/session.py']}},
+        ['login'])
+    assert time.time() - began < 10
+    assert answer['engine'] == 'mutmut'
+    assert answer['features']['login']['scope_score']['score'] is None
+    for text in (answer['reason'], answer['log']):
+        assert 'timed out after 1 s' in text
+        assert '--arm-timeout' in text
 
 
 # purlin: mutation PROOF-22
