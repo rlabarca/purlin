@@ -9,6 +9,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -39,6 +40,9 @@ class TestSpecFormatReference:
             "'## Rules' not listed in Required Sections"
         assert '## Proof' in req_section, \
             "'## Proof' not listed in Required Sections"
+        named = re.findall(r'`(## [^`]+)`', req_section)
+        assert named == ['## Rules', '## Proof'], (
+            f"the format names exactly two sections and no third: {named}")
 
         # A spec carrying a third heading still parses: the heading is
         # ignored, not rejected.
@@ -68,6 +72,8 @@ class TestSpecFormatReference:
             assert 'WARNING' not in result, (
                 "an ignored heading must not be reported as a defect:\n"
                 f"{result}")
+            assert 'What it does' not in result, (
+                f"the report mentions the extra heading:\n{result}")
         finally:
             shutil.rmtree(project_root)
 
@@ -101,6 +107,9 @@ class TestSpecFormatEnforcement:
         assert 'WARNING' in result
         assert 'not numbered' in result, \
             f"WARNING doesn't mention unnumbered rules: {result}"
+        assert ('WARNING: 1 lines under ## Rules in specs/test/test_feat.md '
+                'are not numbered') in result, (
+            f"the warning must name the spec and count its one line: {result}")
 
         # A retired rule leaves its number vacant, so a gapped spec is legal:
         # RULE-2 and RULE-4..19 are absent and nothing is reported.
@@ -144,6 +153,21 @@ class TestSpecFormatEnforcement:
         assert (cell['word'], cell['reasons']) == (
             'no test', ['no proof written']), cell
 
+        # The contrast: the same rule with a proof line and still no test
+        # reads `no test` without the reason `no proof written`.
+        self._write_spec('test_feat', (
+            '# Feature: test_feat\n\n'
+            '## Rules\n- RULE-1: Must work\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Test\n'
+        ))
+        data = purlin_payload.build_payload(self.project_root)
+        feature = next(f for f in data['features'] if f['name'] == 'test_feat')
+        rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')
+        assert [p['id'] for p in rule['proofs']] == ['PROOF-1'], rule
+        cell = rule['cells']['passed']
+        assert cell['word'] == 'no test', cell
+        assert 'no proof written' not in cell['reasons'], cell
+
     # purlin: schema_spec_format PROOF-5
     def test_requires_includes_referenced_rules(self):
         # Create an anchor spec
@@ -169,6 +193,27 @@ class TestSpecFormatEnforcement:
         assert [(r['feature'], r['id']) for r in required] == [('base', 'RULE-1')], (
             f"the required spec's rules are not counted with the feature's own: "
             f"{[(r['feature'], r['id'], r['label']) for r in feature['rules']]}")
+
+        # A list of names: both counted, in the order written, after the
+        # feature's own rule, which is labelled `own`; a name no spec
+        # carries adds no rule.
+        with open(os.path.join(anchor_dir, 'other.md'), 'w') as f:
+            f.write('# Anchor: other\n\n## Rules\n- RULE-1: Other rule\n'
+                    '- RULE-2: Second other rule\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Test\n'
+                    '- PROOF-2 (RULE-2): Test\n')
+        self._write_spec('test_feat', (
+            '# Feature: test_feat\n\n'
+            '> Requires: other, base, ghost\n\n'
+            '## Rules\n- RULE-1: Own rule\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Test\n'
+        ))
+        data = purlin_payload.build_payload(self.project_root)
+        feature = next(f for f in data['features'] if f['name'] == 'test_feat')
+        assert [(r['feature'], r['id'], r['label']) for r in feature['rules']] == [
+            ('test_feat', 'RULE-1', 'own'),
+            ('other', 'RULE-1', 'required'), ('other', 'RULE-2', 'required'),
+            ('base', 'RULE-1', 'required')], feature['rules']
 
     # purlin: schema_spec_format PROOF-6
     def test_scope_metadata_parsed(self):
@@ -197,6 +242,41 @@ class TestSpecFormatEnforcement:
         result = purlin_status.sync_status(self.project_root)
         assert 'test_feat' in result, "Feature should appear in sync_status output"
         assert 'api_conv' in result, "The anchor should appear too"
+
+        # The same two paths written the other way round keep that order:
+        # the list is read as written, not sorted.
+        self._write_spec('test_feat', (
+            '# Feature: test_feat\n\n'
+            '> Scope: src/app.py, scripts/mcp/purlin/specs.py\n\n'
+            '## Rules\n- RULE-1: Must work\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Test\n'
+        ))
+        scope = purlin_specs.scan_specs(self.project_root)['test_feat']['scope']
+        assert scope == ['src/app.py', 'scripts/mcp/purlin/specs.py'], scope
+
+    # purlin: schema_spec_format PROOF-6
+    def test_the_fingerprint_hashes_exactly_the_scoped_files(self):
+        from purlin import fingerprint as purlin_fingerprint
+        root = self.project_root
+        os.makedirs(os.path.join(root, 'src'))
+        for name in ('app.py', 'other.py'):
+            with open(os.path.join(root, 'src', name), 'w') as f:
+                f.write('x = 1\n')
+        self._write_spec('test_feat', (
+            '# Feature: test_feat\n\n> Scope: src/app.py\n\n'
+            '## Rules\n- RULE-1: Must work\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Test\n'))
+        subprocess.run(['git', 'init', '-q'], cwd=root, check=True)
+        subprocess.run(['git', 'add', '-A'], cwd=root, check=True)
+        before = purlin_fingerprint.fingerprint(root, 'test_feat')['code']
+        with open(os.path.join(root, 'src', 'other.py'), 'w') as f:
+            f.write('x = 2\n')
+        assert purlin_fingerprint.fingerprint(root, 'test_feat')['code'] == before, (
+            "a file outside the scope changed the fingerprint")
+        with open(os.path.join(root, 'src', 'app.py'), 'w') as f:
+            f.write('x = 2\n')
+        assert purlin_fingerprint.fingerprint(root, 'test_feat')['code'] != before, (
+            "a file inside the scope did not change the fingerprint")
 
 
 class TestSpecFormatMultilineDescription:
@@ -269,6 +349,29 @@ class TestSpecFormatConventions:
                     assert pattern.match(line), \
                         f"Bad proof line in {path}: {line}"
 
+    # purlin: schema_spec_format PROOF-3
+    def test_a_proof_line_names_one_rule_or_several(self):
+        root = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(root, 'specs', 'test'))
+            with open(os.path.join(root, 'specs', 'test', 'flow.md'), 'w') as f:
+                f.write('# Feature: flow\n\n## Rules\n- RULE-1: One\n'
+                        '- RULE-2: Two\n- RULE-3: Three\n\n## Proof\n'
+                        '- PROOF-1 (RULE-1): One rule\n'
+                        '- PROOF-2 (RULE-2, RULE-3): One flow drives both\n'
+                        '- PROOF-3: No rule named\n')
+            info = purlin_specs.scan_specs(root)['flow']
+        finally:
+            shutil.rmtree(root)
+        assert info['proofs']['PROOF-1']['rules'] == ['RULE-1'], info['proofs']
+        assert info['proofs']['PROOF-2']['rules'] == ['RULE-2', 'RULE-3'], \
+            info['proofs']
+        assert info['proofs_by_rule'] == {
+            'RULE-1': ['PROOF-1'], 'RULE-2': ['PROOF-2'],
+            'RULE-3': ['PROOF-2']}, info['proofs_by_rule']
+        assert 'PROOF-3' not in info['proofs'], \
+            "a line naming no rule is not read as a proof"
+
     # purlin: schema_spec_format PROOF-7
     def test_spec_headings_use_correct_prefix(self):
         spec_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**', '*.md'),
@@ -323,6 +426,17 @@ class TestTagParsing:
         assert (split('Lock the file @manual @env(windows)')
                 == split('Lock the file @env(windows) @manual'))
 
+        # At most one @env: the last one written is the environment and the
+        # earlier one is returned as unknown. A doubled @manual reads manual.
+        assert split('Lock the file @env(linux) @env(macos)') == (
+            'Lock the file', False, 'macos', ['@env(linux)'])
+        assert split('Lock the file @manual @manual') == (
+            'Lock the file', True, None, [])
+        # An at-word that is not a tag stops the reading: the @manual before
+        # it stays in the text and does not make the proof manual.
+        assert split('Lock the file @manual @smoke') == (
+            'Lock the file @manual @smoke', False, None, [])
+
     # purlin: schema_spec_format PROOF-10
     def test_env_takes_three_values_and_nothing_else(self):
         split = purlin_specs.split_proof_tags
@@ -341,6 +455,13 @@ class TestTagParsing:
         clean, manual, env, unknown = split('Lock the file @windows')
         assert (clean, manual, env) == ('Lock the file', False, None)
         assert unknown == ['@windows'], unknown
+        # A tag carrying arguments other than @env is a stamp this release
+        # stopped reading: it is returned as unknown, and a stamped @manual
+        # still reads manual.
+        assert split('Lock the file @manual(2024-01-01)') == (
+            'Lock the file', True, None, ['@manual(...)'])
+        assert split('Lock the file @smoke(x)') == (
+            'Lock the file', False, None, ['@smoke(...)'])
 
     # purlin: schema_spec_format PROOF-9
     def test_real_spec_is_parsed_correctly(self):
@@ -443,3 +564,14 @@ class TestAnchorNoteMetadata:
         assert list(info['rules']) == ['RULE-1'], info['rules']
         assert info['proofs_by_rule'] == {'RULE-1': ['PROOF-1']}, info
         assert info['has_rules_section'] is True
+
+        # A heading that differs by more than case is neither section.
+        with open(os.path.join(self.spec_dir, 'near.md'), 'w',
+                  encoding='utf-8') as f:
+            f.write('# Feature: near\n\n'
+                    '## Rule\n- RULE-1: A heading one letter short\n\n'
+                    '## Proofs\n- PROOF-1 (RULE-1): A heading one letter '
+                    'long\n')
+        near = purlin_specs.scan_specs(self.project_root)['near']
+        assert near['has_rules_section'] is False, near
+        assert (near['rules'], near['proofs']) == ({}, {}), near
