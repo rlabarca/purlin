@@ -49,9 +49,8 @@ WIRING_SITES = (
     'scripts/review/marked_tests.py',
 )
 
-# The seven fields a proof entry carries, and the three it no longer does.
-PROOF_FIELDS = ('feature', 'id', 'rule', 'test_file', 'test_name', 'status',
-                'tier')
+# The six fields a proof entry carries.
+PROOF_FIELDS = ('feature', 'id', 'rule', 'test_file', 'test_name', 'status')
 
 # The six plugins Purlin ships. A framework quietly dropped from the contract's
 # per-framework table would otherwise take its reader requirement with it, so
@@ -94,7 +93,7 @@ FIXTURES = {
             '    public void TheTest() { Assert.True(true); }\n'
             '  }\n'
             '}\n'),
-    '.sql': ('-- @purlin contractfeat PROOF-1 RULE-1 unit\n'
+    '.sql': ('-- @purlin contractfeat PROOF-1 RULE-1\n'
              '-- Test: a tautology\n'
              "SELECT CASE WHEN 1 = 1 THEN 'PASS' ELSE 'FAIL' END;\n"),
 }
@@ -231,22 +230,21 @@ class TestProofsFormatDocumentsTheRuntimeFile:
 
     @pytest.mark.proof("purlin_references", "PROOF-32", "RULE-32")
     @pytest.mark.proof("run_script", "PROOF-45", "RULE-36")
-    def test_the_format_names_the_runtime_location_and_the_seven_fields(self):
+    def test_the_format_names_the_runtime_location_and_the_six_fields(self):
         text = _read(PROOFS_FORMAT)
         first_line = text.split('\n', 1)[0]
         assert first_line.startswith('> Format-Version: '), (
             'proofs_format.md must open with a > Format-Version: line, got %r'
             % first_line)
         version = int(first_line.split(':', 1)[1].strip())
-        assert version >= 8, (
-            'moving the proof file to the runtime directory and dropping the '
-            'operating-system fields is structural, so proofs_format.md is at '
-            'least Format-Version 8, not %d' % version)
+        assert version >= 10, (
+            'one proof file per feature, with no kind of test on the file or '
+            'on an entry, is structural, so proofs_format.md is at least '
+            'Format-Version 10, not %d' % version)
 
         sections = _sections(text)
         assert 'Location' in sections
-        assert '.purlin/runtime/proofs/<feature>.<tier>.json' \
-            in sections['Location']
+        assert '.purlin/runtime/proofs/<feature>.json' in sections['Location']
         assert 'gitignored' in sections['Location']
 
         fields = sections['Fields']
@@ -254,7 +252,7 @@ class TestProofsFormatDocumentsTheRuntimeFile:
         assert not absent, (
             'the fields table does not name %s. A field a plugin author '
             'cannot read here is one every plugin spells differently' % absent)
-        assert 'Seven fields, and no eighth' in fields
+        assert 'Six fields, and no seventh' in fields
 
     @pytest.mark.proof("run_script", "PROOF-45", "RULE-36")
     def test_the_retired_fields_are_listed_as_retired(self):

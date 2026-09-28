@@ -28,8 +28,7 @@ The file:
       "test_strength": 71,
       "scope_tree": "<sha256 from specs.scope_tree>",
       "proofs": [
-        {"id": "PROOF-1", "rule": "RULE-1", "status": "pass",
-         "tier": "unit", "env": null,
+        {"id": "PROOF-1", "rule": "RULE-1", "status": "pass", "env": null,
          "test_file": "tests/test_login.py", "test_name": "test_rejects"}
       ]
     }

@@ -1,4 +1,4 @@
-> Format-Version: 2
+> Format-Version: 3
 
 # Test Results Format
 
@@ -52,7 +52,6 @@ ran and leaves the rest alone.
       "id": "PROOF-1",
       "rule": "RULE-1",
       "result": "pass",
-      "tier": "unit",
       "env": null,
       "test": "tests/test_login.py::test_rejects_a_wrong_password"
     }
@@ -91,7 +90,6 @@ Each `proofs` entry:
 | `id` | string | `PROOF-N` |
 | `rule` | string | the `RULE-N` the proof covers |
 | `result` | string | `pass`, `fail` or `missing` |
-| `tier` | string | `unit`, `integration`, `e2e` or `manual` |
 | `env` | string or null | the operating system the proof's `@env` tag named, or null |
 | `test` | string | `<file>::<name>` for the test that observed the proof, empty when nothing did |
 

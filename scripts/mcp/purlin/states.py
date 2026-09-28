@@ -133,7 +133,7 @@ def rule_cells(inp, cfg):
 
     `inp` carries:
 
-    `proofs`        `[{'id', 'tier', 'env', 'text', 'tests'}, ...]`
+    `proofs`        `[{'id', 'manual', 'env', 'text', 'tests'}, ...]`
     `local_status`  `{proof_id: 'pass' | 'fail' | None}` from the runtime files
                     and the committed test results, whichever is newer
     `local_os`      the operating system that local source ran on, or None
@@ -232,8 +232,7 @@ def _passed_cell(inp, cfg):
     the honest word and a signature with a note is the evidence.
     """
     written = inp.get('proofs') or []
-    proofs = [proof for proof in written
-              if (proof.get('tier') or '') != 'manual']
+    proofs = [proof for proof in written if not proof.get('manual')]
     records = _runs_and_records(inp.get('records') or {}, inp.get('runs') or {})
     # This checkout's own run is the `local` source, and it counts at every
     # gate: the tests it ran are the tests CI runs.
@@ -622,8 +621,7 @@ def _outstanding(inp, bar, brief, counting_signatures):
     """
     if counting_signatures:
         return None, []
-    if any((proof.get('tier') or '') == 'manual' for proof in
-           inp.get('proofs') or ()):
+    if any(proof.get('manual') for proof in inp.get('proofs') or ()):
         return 'manual test', ['manual proof']
     if bar == 'strong':
         # The AI audit runs on every rule whose bar is `strong` and on no

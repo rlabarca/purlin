@@ -2,7 +2,7 @@
 # Run the Purlin dev tests and print a summary. The shell suites run first,
 # then one pytest session over the rest; pooling the pytest files is a speed
 # choice, not a correctness one, because the proof merge key is (feature,
-# tier, test_file). Running a subset of the tests inside one file still
+# test_file). Running a subset of the tests inside one file still
 # replaces that file's entries for the features it touches, so run whole files.
 #
 # On exit the sweep writes two gitignored files under .purlin/runtime/.

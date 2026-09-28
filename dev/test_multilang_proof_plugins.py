@@ -6,7 +6,7 @@ only for its own missing toolchain, so a host without `dotnet` still proves the
 other five.
 
 The behaviour under test is section A of `references/proof_plugin_contract.md`:
-the proof file's location and its seven fields, the write-scoped merge and
+the proof file's location and its six fields, the write-scoped merge and
 orphan reaping, ordinal ordering after the merge, the project root found by
 walking up, `test_file` written relative to it, a skipped test keeping its
 entry, a plugin that saw markers and wrote nothing failing loudly, a retired
@@ -55,8 +55,7 @@ PLUGINS = {
 SKIP_CAPABLE = ('pytest', 'jest', 'vitest', 'xunit')
 SKIP_EXEMPT = ('shell', 'sql')
 
-REQUIRED_FIELDS = ('feature', 'id', 'rule', 'test_file', 'test_name', 'status',
-                   'tier')
+REQUIRED_FIELDS = ('feature', 'id', 'rule', 'test_file', 'test_name', 'status')
 
 
 # ---------------------------------------------------------------------------
@@ -76,29 +75,27 @@ def _purlin_project(tmp_path, feature='feat', sub='a'):
     return root
 
 
-def _read_proofs(root, feature, tier='unit'):
-    path = os.path.join(str(root), PROOF_REL, '%s.%s.json' % (feature, tier))
+def _read_proofs(root, feature):
+    path = os.path.join(str(root), PROOF_REL, '%s.json' % feature)
     if not os.path.isfile(path):
         return None
     with open(path, encoding='utf-8') as handle:
         return json.load(handle)
 
 
-def _write_proofs(root, feature, tier, entries):
+def _write_proofs(root, feature, entries):
     directory = os.path.join(str(root), PROOF_REL)
     os.makedirs(directory, exist_ok=True)
-    path = os.path.join(directory, '%s.%s.json' % (feature, tier))
+    path = os.path.join(directory, '%s.json' % feature)
     with open(path, 'w', encoding='utf-8') as handle:
-        json.dump({'tier': tier, 'proofs': entries}, handle, indent=2)
+        json.dump({'proofs': entries}, handle, indent=2)
     return path
 
 
 def _entry(feature='feat', proof_id='PROOF-1', rule='RULE-1',
-           test_file='tests/test_feat.py', test_name='test_ok', status='pass',
-           tier='unit'):
+           test_file='tests/test_feat.py', test_name='test_ok', status='pass'):
     return {'feature': feature, 'id': proof_id, 'rule': rule,
-            'test_file': test_file, 'test_name': test_name, 'status': status,
-            'tier': tier}
+            'test_file': test_file, 'test_name': test_name, 'status': status}
 
 
 # ---------------------------------------------------------------------------
@@ -187,11 +184,9 @@ def _run_vitest_reporter(root, body):
                           text=True)
 
 
-def _run_shell(root, script_rel, calls, tier=None):
+def _run_shell(root, script_rel, calls):
     """Source the real shell harness from a script and call it."""
     lines = ['source %s' % SHELL_HARNESS]
-    if tier:
-        lines.append('export PURLIN_PROOF_TIER=%s' % tier)
     for feature, proof_id, rule, status, name in calls:
         lines.append('purlin_proof "%s" "%s" "%s" %s "%s"'
                      % (feature, proof_id, rule, status, name))
@@ -214,11 +209,11 @@ def _run_sql(root, sql_rel, body):
 
 
 # ---------------------------------------------------------------------------
-# The location and the seven fields
+# The location and the six fields
 # ---------------------------------------------------------------------------
 
 class TestTheRuntimeProofFile:
-    """Every plugin writes `.purlin/runtime/proofs/<feature>.<tier>.json`."""
+    """Every plugin writes `.purlin/runtime/proofs/<feature>.json`."""
 
     def test_pytest(self, tmp_path):
         root = _purlin_project(tmp_path)
@@ -230,7 +225,7 @@ class TestTheRuntimeProofFile:
         _run_pytest(root)
         data = _read_proofs(root, 'feat')
         assert data is not None
-        assert data['tier'] == 'unit'
+        assert set(data) == {'proofs'}
         entry = data['proofs'][0]
         assert set(entry) == set(REQUIRED_FIELDS)
         assert entry['test_file'] == 'tests/test_feat.py'
@@ -243,7 +238,7 @@ class TestTheRuntimeProofFile:
         (root / 'tests' / 'feat.test.js').write_text('// marked\n',
                                                      encoding='utf-8')
         result = _run_jest_reporter(root, 'tests/feat.test.js', [
-            {'title': 'works [proof:feat:PROOF-1:RULE-1:unit]',
+            {'title': 'works [proof:feat:PROOF-1:RULE-1]',
              'status': 'passed'}])
         assert result.returncode == 0, result.stderr
         entry = _read_proofs(root, 'feat')['proofs'][0]
@@ -261,9 +256,9 @@ const files = [{
   type: "suite",
   filepath: process.cwd() + "/feat.test.ts",
   tasks: [
-    { type: "test", name: "works [proof:feat:PROOF-1:RULE-1:unit]",
+    { type: "test", name: "works [proof:feat:PROOF-1:RULE-1]",
       result: { state: "pass" } },
-    { type: "test", name: "breaks [proof:feat:PROOF-2:RULE-2:unit]",
+    { type: "test", name: "breaks [proof:feat:PROOF-2:RULE-2]",
       result: { state: "fail" } },
   ],
 }];
@@ -291,44 +286,13 @@ new Reporter().onFinished(files);
     def test_sql(self, tmp_path):
         root = _purlin_project(tmp_path)
         _run_sql(root, 'tests/test_feat.sql',
-                 "-- @purlin feat PROOF-1 RULE-1 unit\n"
+                 "-- @purlin feat PROOF-1 RULE-1\n"
                  "-- Test: it passes\n"
                  "SELECT 'PASS';\n")
         entry = _read_proofs(root, 'feat')['proofs'][0]
         assert set(entry) == set(REQUIRED_FIELDS)
         assert entry['test_file'] == 'tests/test_feat.sql'
         assert entry['test_name'] == 'it passes'
-
-
-class TestTheTierNamesTheFile:
-
-    def test_pytest_tier_kwarg(self, tmp_path):
-        root = _purlin_project(tmp_path)
-        (root / 'tests').mkdir()
-        (root / 'tests' / 'test_feat.py').write_text(
-            'import pytest\n\n'
-            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1", '
-            'tier="integration")\n'
-            'def test_ok():\n    assert True\n', encoding='utf-8')
-        _run_pytest(root)
-        assert _read_proofs(root, 'feat', 'unit') is None
-        assert _read_proofs(root, 'feat', 'integration')['tier'] == 'integration'
-
-    def test_shell_tier_env(self, tmp_path):
-        root = _purlin_project(tmp_path)
-        _run_shell(root, 'tests/feat.test.sh',
-                   [('feat', 'PROOF-1', 'RULE-1', 'pass', 'e2e case')],
-                   tier='e2e')
-        assert _read_proofs(root, 'feat', 'e2e')['tier'] == 'e2e'
-        assert _read_proofs(root, 'feat', 'unit') is None
-
-    @pytest.mark.skipif(shutil.which('sqlite3') is None,
-                        reason='sqlite3 not available')
-    def test_sql_tier_defaults_to_unit(self, tmp_path):
-        root = _purlin_project(tmp_path)
-        _run_sql(root, 'tests/test_feat.sql',
-                 "-- @purlin feat PROOF-1 RULE-1\nSELECT 'PASS';\n")
-        assert _read_proofs(root, 'feat', 'unit') is not None
 
 
 # ---------------------------------------------------------------------------
@@ -340,7 +304,7 @@ class TestWriteScopedMergeKey:
     reaped; the same file is replaced."""
 
     def _seed(self, root):
-        return _write_proofs(root, 'feat', 'unit', [
+        return _write_proofs(root, 'feat', [
             _entry(feature='other', proof_id='PROOF-1',
                    test_file='tests/test_other.py', test_name='other'),
             _entry(proof_id='PROOF-2', test_file='tests/test_second.py',
@@ -401,7 +365,7 @@ class TestOrdinalOrderAfterTheMerge:
         (root / 'tests').mkdir()
         (root / 'tests' / 'test_kept.py').write_text('# kept\n',
                                                      encoding='utf-8')
-        _write_proofs(root, 'feat', 'unit', [
+        _write_proofs(root, 'feat', [
             _entry(proof_id='PROOF-2', test_file='tests/test_kept.py',
                    test_name='kept')])
         (root / 'tests' / 'test_feat.py').write_text(
@@ -423,7 +387,7 @@ class TestOrdinalOrderAfterTheMerge:
             'def test_b():\n    assert True\n\n'
             '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
             'def test_a():\n    assert True\n', encoding='utf-8')
-        path = os.path.join(str(root), PROOF_REL, 'feat.unit.json')
+        path = os.path.join(str(root), PROOF_REL, 'feat.json')
         _run_pytest(root)
         first = open(path, encoding='utf-8').read()
         _run_pytest(root)
@@ -526,7 +490,7 @@ class TestSkippedTestKeepsItsEntry:
             '@pytest.mark.proof("feat", "PROOF-2", "RULE-2")\n'
             '@pytest.mark.skip(reason="no tool")\n'
             'def test_skipped():\n    assert True\n', encoding='utf-8')
-        _write_proofs(root, 'feat', 'unit', [
+        _write_proofs(root, 'feat', [
             _entry(proof_id='PROOF-2', rule='RULE-2',
                    test_file='tests/test_feat.py', test_name='test_skipped')])
         _run_pytest(root)
@@ -542,14 +506,14 @@ class TestSkippedTestKeepsItsEntry:
         (root / 'tests').mkdir()
         (root / 'tests' / 'feat.test.js').write_text('// marked\n',
                                                      encoding='utf-8')
-        _write_proofs(root, 'feat', 'unit', [
+        _write_proofs(root, 'feat', [
             _entry(proof_id='PROOF-2', rule='RULE-2',
                    test_file='tests/feat.test.js', test_name='skipped one')])
         _run_jest_reporter(root, 'tests/feat.test.js', [
-            {'title': 'works [proof:feat:PROOF-1:RULE-1:unit]',
+            {'title': 'works [proof:feat:PROOF-1:RULE-1]',
              'status': 'passed'},
             {'title': 'skipped one', 'status': 'pending'},
-            {'title': 'later [proof:feat:PROOF-2:RULE-2:unit]',
+            {'title': 'later [proof:feat:PROOF-2:RULE-2]',
              'status': 'skipped'}])
         by_id = {e['id']: e for e in _read_proofs(root, 'feat')['proofs']}
         assert by_id['PROOF-2']['test_name'] == 'skipped one'
@@ -566,7 +530,7 @@ class TestSkippedTestKeepsItsEntry:
             '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
             '@pytest.mark.skip(reason="no tool")\n'
             'def test_other():\n    assert True\n', encoding='utf-8')
-        _write_proofs(root, 'feat', 'unit', [
+        _write_proofs(root, 'feat', [
             _entry(proof_id='PROOF-1', test_file='tests/test_feat.py',
                    test_name='test_ok', status='fail')])
         _run_pytest(root)
@@ -627,7 +591,7 @@ class TestSeenMarkersAndNoEntryFails:
         (root / 'tests' / 'feat.test.js').write_text('// marked\n',
                                                      encoding='utf-8')
         result = _run_jest_reporter(root, 'tests/feat.test.js', [
-            {'title': 'later [proof:feat:PROOF-1:RULE-1:unit]',
+            {'title': 'later [proof:feat:PROOF-1:RULE-1]',
              'status': 'skipped'}])
         assert result.returncode != 0
         assert 'markers were seen and no proof entry was written' \
@@ -671,7 +635,7 @@ class TestRetiredKeywordRefused:
         (root / 'tests' / 'feat.test.js').write_text('// marked\n',
                                                      encoding='utf-8')
         result = _run_jest_reporter(root, 'tests/feat.test.js', [
-            {'title': 'locks [proof:feat:PROOF-1:RULE-1:unit:on(windows)]',
+            {'title': 'locks [proof:feat:PROOF-1:RULE-1:on(windows)]',
              'status': 'passed'}])
         assert result.returncode != 0
         assert '@env(windows)' in result.stderr
@@ -698,7 +662,7 @@ class TestRetiredKeywordRefused:
     def test_sql_on_marker(self, tmp_path):
         root = _purlin_project(tmp_path)
         result = _run_sql(root, 'tests/test_feat.sql',
-                          "-- @purlin feat PROOF-1 RULE-1 unit on(windows)\n"
+                          "-- @purlin feat PROOF-1 RULE-1 on(windows)\n"
                           "SELECT 'PASS';\n")
         assert result.returncode != 0
         assert '@env(windows)' in result.stderr
@@ -789,17 +753,15 @@ _TEST_CS = (
     'using Xunit;\n'
     'namespace Svc.Tests {\n'
     '  public class FeatTests {\n'
-    '    [Fact][Trait("PurlinProof","feat:PROOF-1:RULE-1:unit")]\n'
+    '    [Fact][Trait("PurlinProof","feat:PROOF-1:RULE-1")]\n'
     '    public void Passes() { Assert.Equal(4, 2+2); }\n'
-    '    [Fact][Trait("PurlinProof","feat:PROOF-2:RULE-2:unit")]\n'
+    '    [Fact][Trait("PurlinProof","feat:PROOF-2:RULE-2")]\n'
     '    public void Fails() { Assert.True(false); }\n'
-    '    [Fact(Skip="nyi")][Trait("PurlinProof","feat:PROOF-9:RULE-9:unit")]\n'
+    '    [Fact(Skip="nyi")][Trait("PurlinProof","feat:PROOF-9:RULE-9")]\n'
     '    public void SkippedTagged() { Assert.True(false); }\n'
-    '    [Fact][Trait("PurlinProof","feat:PROOF-7:RULE-7")]\n'
-    '    public void TierOmitted() { Assert.True(true); }\n'
-    '    [Fact][Trait("Category","feat:PROOF-8:RULE-8:unit")]\n'
+    '    [Fact][Trait("Category","feat:PROOF-8:RULE-8")]\n'
     '    public void CategoryTraitIgnored() { Assert.True(true); }\n'
-    '    [Fact][Trait("purlinproof","feat:PROOF-8:RULE-8:unit")]\n'
+    '    [Fact][Trait("purlinproof","feat:PROOF-8:RULE-8")]\n'
     '    public void LowerCaseTraitNameIgnored() { Assert.True(true); }\n'
     '    [Fact]\n'
     '    public void Untagged() { Assert.True(true); }\n'
@@ -846,20 +808,19 @@ class TestXUnitProofPlugin:
         specs = root / 'specs' / 'svc'
         specs.mkdir(parents=True)
         (specs / 'feat.md').write_text(
-            '# feat\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n- RULE-7: g\n\n'
-            '## Proof\n- PROOF-1 (RULE-1): t\n- PROOF-2 (RULE-2): t\n'
-            '- PROOF-7 (RULE-7): t\n', encoding='utf-8')
+            '# feat\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): t\n- PROOF-2 (RULE-2): t\n',
+            encoding='utf-8')
         (root / '.purlin').mkdir()
         # Another feature's entry, which the write-scoped merge must keep, and
         # a pre-existing entry for the skipped test, which must survive.
         proofs = root / '.purlin' / 'runtime' / 'proofs'
         proofs.mkdir(parents=True)
-        (proofs / 'feat.unit.json').write_text(json.dumps({
-            'tier': 'unit',
+        (proofs / 'feat.json').write_text(json.dumps({
             'proofs': [{'feature': 'otherfeat', 'id': 'PROOF-1',
                         'rule': 'RULE-1', 'test_file': 'tests/Tests.cs',
-                        'test_name': 'Other.Keep', 'status': 'pass',
-                        'tier': 'unit'}]}), encoding='utf-8')
+                        'test_name': 'Other.Keep', 'status': 'pass'}]}),
+            encoding='utf-8')
 
         logger = root / 'logger'
         logger.mkdir()
@@ -878,7 +839,7 @@ class TestXUnitProofPlugin:
                    '--', 'RunConfiguration.CollectSourceInformation=true']
         proc = subprocess.run(command, cwd=str(root), capture_output=True,
                               text=True, env=env)
-        data = json.loads((proofs / 'feat.unit.json').read_text(
+        data = json.loads((proofs / 'feat.json').read_text(
             encoding='utf-8'))
         if not any(p['feature'] == 'feat' for p in data['proofs']):
             reason = _dotnet_host_reason(proc.stdout + proc.stderr)
@@ -892,12 +853,10 @@ class TestXUnitProofPlugin:
                 'by_id': {p['id']: p for p in data['proofs']
                           if p['feature'] == 'feat'}}
 
-    def test_the_trait_parses_and_the_tier_defaults(self, run):
+    def test_the_trait_parses(self, run):
         entry = run['by_id']['PROOF-1']
-        assert (entry['feature'], entry['id'], entry['rule'], entry['tier']) \
-            == ('feat', 'PROOF-1', 'RULE-1', 'unit')
-        omitted = run['by_id']['PROOF-7']
-        assert omitted['tier'] == 'unit'
+        assert (entry['feature'], entry['id'], entry['rule']) \
+            == ('feat', 'PROOF-1', 'RULE-1')
 
     def test_the_logger_collects_in_process(self, run):
         output = run['proc'].stderr + run['proc'].stdout

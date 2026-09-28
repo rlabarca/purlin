@@ -10,7 +10,7 @@
 // test output directory, where vstest discovers it by FriendlyName ("purlin").
 //
 // The logger collects the `PurlinProof` test trait during the run and writes
-// what it observed to `.purlin/runtime/proofs/<feature>.<tier>.json`. Proof
+// what it observed to `.purlin/runtime/proofs/<feature>.json`. Proof
 // files are runtime: they are gitignored, so two runs on two branches never
 // conflict and nothing about a run is committed. The record `purlin:audit`
 // writes is what says where a run happened, and it says it once per run.
@@ -21,10 +21,10 @@
 // "Category", "Property", "TestProperty", or "PurlinProof" spelled in any other
 // casing is not a marker and is ignored. Only xUnit is supported; NUnit and
 // MSTest support is not claimed. The trait value is colon-delimited:
-// "feature:PROOF-N:RULE-N[:tier]" (tier optional, defaults to "unit").
+// "feature:PROOF-N:RULE-N".
 //
 //     [Fact]
-//     [Trait("PurlinProof", "my_feature:PROOF-1:RULE-1:unit")]
+//     [Trait("PurlinProof", "my_feature:PROOF-1:RULE-1")]
 //     public void DoesTheThing() { Assert.Equal(200, Login("alice", "secret")); }
 //
 // The operating system a proof must be proved on is a property of the spec, not
@@ -67,7 +67,6 @@ namespace Purlin
             public string TestFile = "";
             public string TestName = "";
             public string Status = "";
-            public string Tier = "";
         }
 
         private readonly List<Proof> _proofs = new List<Proof>();
@@ -135,24 +134,18 @@ namespace Purlin
             }
             if (marker == null) return;
 
-            // "feature:PROOF-N:RULE-N[:tier]": tier defaults to "unit".
+            // "feature:PROOF-N:RULE-N".
             string[] parts = marker.Split(':');
             if (parts.Length < 3) return;
             string feature = parts[0];
             string id = parts[1];
             string rule = parts[2];
-            string tier = "unit";
             bool retired = false;
             for (int i = 3; i < parts.Length; i++)
             {
-                string part = parts[i].Trim();
-                if (part.StartsWith("on(", StringComparison.Ordinal))
+                if (parts[i].Trim().StartsWith("on(", StringComparison.Ordinal))
                 {
                     retired = true;
-                }
-                else if (part.Length > 0 && i == 3)
-                {
-                    tier = part;
                 }
             }
 
@@ -188,7 +181,6 @@ namespace Purlin
                 TestFile = testFile,
                 TestName = testName,
                 Status = status,
-                Tier = tier,
             });
         }
 
@@ -215,19 +207,16 @@ namespace Purlin
             string directory = Path.Combine(_root, ".purlin", "runtime", "proofs");
             Directory.CreateDirectory(directory);
 
-            // Group by (feature, tier): one file per group.
+            // Group by feature: one file per feature.
             int filesWritten = 0;
-            foreach (var group in _proofs.GroupBy(p => (p.Feature, p.Tier)))
+            foreach (var group in _proofs.GroupBy(p => p.Feature))
             {
-                string feature = group.Key.Feature;
-                string tier = group.Key.Tier;
-                string path = Path.Combine(directory, $"{feature}.{tier}.json");
+                string feature = group.Key;
+                string path = Path.Combine(directory, $"{feature}.json");
 
-                // Write-scoped overwrite keyed by (feature, tier, test_file): the
-                // file carries the tier, so within it the key is (feature,
-                // test_file). Keep other features, keep this feature's entries from
-                // test files this run did not execute, and reap entries whose test
-                // file is gone.
+                // Write-scoped overwrite keyed by (feature, test_file). Keep other
+                // features, keep this feature's entries from test files this run
+                // did not execute, and reap entries whose test file is gone.
                 var runFiles = new HashSet<string>(group.Select(p => p.TestFile));
                 // What this run wrote, so a skipped test's protection never keeps an
                 // entry the run has just replaced: only an executed test replaces
@@ -274,7 +263,6 @@ namespace Purlin
                         ["test_file"] = p.TestFile,
                         ["test_name"] = p.TestName,
                         ["status"] = p.Status,
-                        ["tier"] = p.Tier,
                     });
                 }
 
@@ -282,7 +270,7 @@ namespace Purlin
                 // the collection order never reaches the file.
                 ordered = SortProofEntries(ordered);
 
-                string json = Serialize(tier, ordered);
+                string json = Serialize(ordered);
 
                 // Atomic write: tmp + rename. The temp name carries this process id,
                 // so two plugins writing the same file concurrently never share a
@@ -394,11 +382,10 @@ namespace Purlin
             return entry.TryGetValue(name, out string? v) && v != null ? v : "";
         }
 
-        private static string Serialize(string tier, List<Dictionary<string, string>> proofs)
+        private static string Serialize(List<Dictionary<string, string>> proofs)
         {
             var sb = new StringBuilder();
             sb.Append("{\n");
-            sb.Append("  \"tier\": ").Append(JsonStr(tier)).Append(",\n");
             sb.Append("  \"proofs\": [");
             for (int i = 0; i < proofs.Count; i++)
             {

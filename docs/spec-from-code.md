@@ -53,8 +53,8 @@ Every rule carries `[origin: eng]` and `[bar: passed]`:
 
 ## Proof
 
-- PROOF-1 (RULE-1): Send 61 requests in one minute from one client; verify the 61st returns 429 @integration
-- PROOF-2 (RULE-2): Read the 429 response headers; verify Retry-After is present and is a positive integer @integration
+- PROOF-1 (RULE-1): Send 61 requests in one minute from one client; verify the 61st returns 429
+- PROOF-2 (RULE-2): Read the 429 response headers; verify Retry-After is present and is a positive integer
 ```
 
 `eng` is correct because an engineer derived the rule and no PM asked for it: `purlin:drift
@@ -66,7 +66,7 @@ Where a test already exercises the behaviour, the proof says so, and `purlin:bui
 marker to that test instead of writing a new one:
 
 ```
-- PROOF-4 (RULE-4): tests/test_rate_limit.py::test_burst already asserts this @integration
+- PROOF-4 (RULE-4): tests/test_rate_limit.py::test_burst already asserts this
 ```
 
 Where nothing tests it, the proof is written as if the test existed. The rule lands Drafted

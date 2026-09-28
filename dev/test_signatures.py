@@ -62,7 +62,7 @@ SPEC = (
     '[bar: strong]\n\n'
     '## Proof\n\n'
     '- PROOF-1 (RULE-1): POST /login with the password "secret"; verify 200 '
-    'and a token @integration\n'
+    'and a token\n'
     '- PROOF-2 (RULE-2): POST /login with a bad password; verify 401 and the '
     'body "denied"\n'
 )
@@ -144,19 +144,19 @@ class Project(object):
         settings.update(fields)
         write(path, json.dumps(settings))
 
-    def proofs(self, statuses=None, tier='unit'):
+    def proofs(self, statuses=None):
         statuses = statuses or {'PROOF-1': 'pass', 'PROOF-2': 'pass'}
         entries = []
         for proof_id, status in sorted(statuses.items()):
             entries.append({
                 'feature': 'login', 'id': proof_id,
                 'rule': 'RULE-1' if proof_id == 'PROOF-1' else 'RULE-2',
-                'status': status, 'tier': tier,
+                'status': status,
                 'test_file': 'tests/test_login.py',
                 'test_name': TEST_NAMES[proof_id]})
         write(os.path.join(self.root, '.purlin', 'runtime', 'proofs',
-                           'login.%s.json' % tier),
-              json.dumps({'tier': tier, 'proofs': entries}))
+                           'login.json'),
+              json.dumps({'proofs': entries}))
 
     def record(self, statuses=None, runner='ada', strength=90,
                commit_it=True, stamp='20260913T120000Z', tests=None,
@@ -175,7 +175,7 @@ class Project(object):
                 proofs.append({
                     'id': proof_id,
                     'rule': 'RULE-1' if proof_id == 'PROOF-1' else 'RULE-2',
-                    'status': status, 'tier': 'unit', 'env': None,
+                    'status': status, 'env': None,
                     'test_file': 'tests/test_login.py',
                     'test_name': test_name})
         name = '%s-%s-%s%s.json' % (stamp, self.head()[:7], runner,
@@ -334,7 +334,7 @@ def sign_one(project, rule='RULE-1', email='jane@acme.com', brief=None,
 
 class TestTheTriple:
 
-    @pytest.mark.proof("signatures", "PROOF-1", "RULE-1", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-1", "RULE-1")
     def test_the_three_hashes_come_back_with_their_kind(self, proved):
         parts = sign_module.rule_proof_test_hashes(
             proved.root, 'login', 'RULE-1')
@@ -344,12 +344,12 @@ class TestTheTriple:
         assert kind == 'file'
         assert design is None
 
-    @pytest.mark.proof("signatures", "PROOF-2", "RULE-2", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-2", "RULE-2")
     def test_a_rule_that_is_not_there_has_no_hashes(self, proved):
         assert sign_module.rule_proof_test_hashes(
             proved.root, 'login', 'RULE-99') == (None, None, None, None, None)
 
-    @pytest.mark.proof("signatures", "PROOF-3", "RULE-3", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-3", "RULE-3")
     def test_reflowing_a_rule_and_adding_a_tag_keep_the_triple(self, proved):
         before = sign_module.triple_for(proved.rule('RULE-1'))
         proved.spec(SPEC.replace(
@@ -361,7 +361,7 @@ class TestTheTriple:
         assert after == before, (
             'the triple binds the rule text with its tags stripped')
 
-    @pytest.mark.proof("signatures", "PROOF-4", "RULE-4", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-4", "RULE-4")
     def test_editing_the_rule_the_proof_or_the_test_moves_the_triple(
             self, proved):
         before = sign_module.triple_for(proved.rule('RULE-1'))
@@ -381,7 +381,7 @@ class TestTheTriple:
         test_changed = sign_module.triple_for(proved.rule('RULE-1'))
         assert test_changed != before
 
-    @pytest.mark.proof("signatures", "PROOF-5", "RULE-5", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-5", "RULE-5")
     def test_a_manual_proof_says_so_instead_of_naming_a_file(self):
         made = Project(spec=SPEC.replace(
             'verify 401 and the body "denied"',
@@ -408,33 +408,33 @@ class TestStale:
                     s, entry['rule_hash'], entry['proof_hash'],
                     entry['test_hash'], entry['bar'], entry['design_hash'])]
 
-    @pytest.mark.proof("signatures", "PROOF-6", "RULE-6", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-6", "RULE-6")
     def test_a_fresh_signature_is_current(self, proved):
         sign_one(proved)
         assert len(self._current(proved)) == 1
 
-    @pytest.mark.proof("signatures", "PROOF-7", "RULE-6", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-7", "RULE-6")
     def test_the_rule_text_changing_stales_it(self, proved):
         sign_one(proved)
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with a signed session token'))
         assert self._current(proved) == []
 
-    @pytest.mark.proof("signatures", "PROOF-8", "RULE-6", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-8", "RULE-6")
     def test_the_proof_text_changing_stales_it(self, proved):
         sign_one(proved)
         proved.spec(SPEC.replace('verify 200 and a token',
                                  'verify 200, a token and a cookie'))
         assert self._current(proved) == []
 
-    @pytest.mark.proof("signatures", "PROOF-9", "RULE-6", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-9", "RULE-6")
     def test_the_test_changing_stales_it(self, proved):
         sign_one(proved)
         proved.edit_test(TEST_FILE.replace('== 200', '== 200 or True'))
         assert self._current(proved) == []
 
-    @pytest.mark.proof("signatures", "PROOF-10", "RULE-6", tier="integration")
-    @pytest.mark.proof("signatures", "PROOF-62", "RULE-41", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-10", "RULE-6")
+    @pytest.mark.proof("signatures", "PROOF-62", "RULE-41")
     def test_the_bar_changing_stales_it(self, proved):
         sign_one(proved)
         assert len(self._current(proved)) == 1
@@ -447,7 +447,7 @@ class TestStale:
             'raising a rule from passed to strong changes what signing '
             'it meant')
 
-    @pytest.mark.proof("signatures", "PROOF-11", "RULE-7", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-11", "RULE-7")
     def test_a_stale_signature_still_comes_back_from_the_reader(self, proved):
         sign_one(proved)
         proved.spec(SPEC.replace('return 200 with a session token',
@@ -465,14 +465,14 @@ class TestStale:
 
 class TestTheFile:
 
-    @pytest.mark.proof("signatures", "PROOF-12", "RULE-8", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-12", "RULE-8")
     def test_the_name_carries_the_rule_the_triple_and_the_slug(self, proved):
         triple = sign_module.triple_for(proved.rule('RULE-1'))
         sign_one(proved, email='Rich.LaBarca+purlin@example.com')
         assert proved.signatures() == [
             'RULE-1.%s.rich-labarca-purlin.json' % triple[:8]]
 
-    @pytest.mark.proof("signatures", "PROOF-13", "RULE-9", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-13", "RULE-9")
     def test_the_fields_are_the_ones_the_format_names(self, proved):
         record = proved.record()
         path = sign_one(
@@ -494,7 +494,7 @@ class TestTheFile:
         assert data['record'] == record
         assert data['timestamp'].endswith('Z')
 
-    @pytest.mark.proof("signatures", "PROOF-63", "RULE-42", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-63", "RULE-42")
     def test_the_brief_it_names_is_the_one_an_audit_committed(self, proved):
         """A brief sits under its source's folder, and the signature says so.
 
@@ -513,7 +513,7 @@ class TestTheFile:
             proved.root, 'login', 'RULE-2',
             sign_module.triple_for(proved.rule('RULE-2'))) is None
 
-    @pytest.mark.proof("signatures", "PROOF-14", "RULE-10", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-14", "RULE-10")
     def test_the_reader_finds_it_and_never_reads_a_brief_as_one(self, proved):
         triple = sign_module.triple_for(proved.rule('RULE-1'))
         sign_one(proved)
@@ -562,7 +562,7 @@ def signing_project(sign_at='all', signer='jane@acme.com', briefs=True):
 
 class TestTheSignedCommit:
 
-    @pytest.mark.proof("signatures", "PROOF-21", "RULE-17", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-21", "RULE-17")
     def test_without_signing_the_setup_is_printed_and_nothing_is_written(
             self, at_strong, capsys):
         code = sign_module.main(['login', '--project-root', at_strong.root])
@@ -573,7 +573,7 @@ class TestTheSignedCommit:
         assert 'git config commit.gpgsign true' in output
         assert at_strong.signatures() == []
 
-    @pytest.mark.proof("signatures", "PROOF-23", "RULE-18", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-23", "RULE-18")
     def test_one_signed_commit_carries_the_batch(self, capsys):
         made = signing_project()
         try:
@@ -588,7 +588,7 @@ class TestTheSignedCommit:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-25", "RULE-20", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-25", "RULE-20")
     def test_what_a_counting_signature_is_at_each_gate(self, at_strong):
         signing_key(at_strong.root)
         # The signer is the last person to touch the test, and that is
@@ -631,7 +631,7 @@ class TestTheSignedCommit:
             [('login', 'RULE-1'), ('billing', 'RULE-3')]) == (
             'sign(batch): login RULE-1, billing RULE-3')
 
-    @pytest.mark.proof("signatures", "PROOF-27", "RULE-21", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-27", "RULE-21")
     def test_the_signing_gate_names_nobody_and_signs(self, capsys):
         made = signing_project(sign_at='strong')
         try:
@@ -644,7 +644,7 @@ class TestTheSignedCommit:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-15", "RULE-12", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-15", "RULE-12")
     def test_a_batch_signs_everything_signable(self, capsys):
         made = signing_project(sign_at='strong')
         try:
@@ -658,7 +658,7 @@ class TestTheSignedCommit:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-16", "RULE-13", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-16", "RULE-13")
     def test_a_note_records_what_the_signer_checked(self, capsys):
         made = signing_project()
         try:
@@ -687,7 +687,7 @@ class TestTheSignedCommit:
 
 class TestTheGateScales:
 
-    @pytest.mark.proof("signatures", "PROOF-18", "RULE-14", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-18", "RULE-14")
     def test_under_the_first_gate_it_writes_nothing_and_exits_two(
             self, proved, capsys):
         signing_key(proved.root)
@@ -699,7 +699,7 @@ class TestTheGateScales:
         assert 'purlin:init --gate strong' in output
         assert proved.signatures() == []
 
-    @pytest.mark.proof("signatures", "PROOF-19", "RULE-15", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-19", "RULE-15")
     def test_under_the_review_gate_a_bare_signature_says_so_and_is_written(
             self, at_strong, capsys):
         signing_key(at_strong.root)
@@ -725,7 +725,7 @@ def unsettled_at_strong():
 
 class TestTheReviewListAtStrong:
 
-    @pytest.mark.proof("signatures", "PROOF-70", "RULE-12", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-70", "RULE-12")
     def test_a_batch_and_a_bare_feature_sign_the_review_list(self, capsys):
         for argv in (['--batch'], ['login']):
             made = unsettled_at_strong()
@@ -743,7 +743,7 @@ class TestTheReviewListAtStrong:
             finally:
                 made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-71", "RULE-15", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-71", "RULE-15")
     def test_a_named_rule_on_the_review_list_is_not_told_it_needs_none(
             self, capsys):
         made = unsettled_at_strong()
@@ -764,7 +764,7 @@ class TestTheReviewListAtStrong:
 
 class TestWhatIsSignable:
 
-    @pytest.mark.proof("signatures", "PROOF-20", "RULE-16", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-20", "RULE-16")
     def test_it_is_the_sign_list_the_payload_wrote(self):
         made = signing_project(sign_at='strong')
         try:
@@ -781,7 +781,7 @@ class TestWhatIsSignable:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-30", "RULE-16", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-30", "RULE-16")
     def test_the_walk_reads_review_before_sign(self):
         made = signing_project(sign_at='strong', briefs=False)
         try:
@@ -807,7 +807,7 @@ class TestWhatIsSignable:
 
 class TestTheWalk:
 
-    @pytest.mark.proof("signatures", "PROOF-31", "RULE-11", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-31", "RULE-11")
     def test_the_four_answers_each_do_their_own_thing(self, capsys):
         made = signing_project(sign_at='all')
         try:
@@ -826,7 +826,7 @@ class TestTheWalk:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-32", "RULE-11", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-32", "RULE-11")
     def test_a_skipped_rule_is_written_nothing_and_stays_on_the_list(
             self, capsys):
         made = signing_project(sign_at='all')
@@ -841,7 +841,7 @@ class TestTheWalk:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-33", "RULE-11", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-33", "RULE-11")
     def test_a_case_is_carried_to_the_close_and_written_nowhere(self, capsys):
         made = signing_project(sign_at='all')
         try:
@@ -864,7 +864,7 @@ class TestTheWalk:
 
 class TestAnyBranch:
 
-    @pytest.mark.proof("signatures", "PROOF-29", "RULE-23", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-29", "RULE-23")
     def test_a_signature_on_a_side_branch_counts_there(self, capsys):
         made = signing_project(sign_at='strong')
         try:
@@ -896,7 +896,7 @@ class TestTheCommandLine:
         assert sign_module.main(['login', '--nope']) == 2
         assert sign_module.main(['--nope']) == 2
 
-    @pytest.mark.proof("signatures", "PROOF-22", "RULE-17", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-22", "RULE-17")
     def test_the_script_runs_as_a_command(self, at_strong):
         result = subprocess.run(
             [sys.executable, SIGN_PY, 'login', '--project-root',

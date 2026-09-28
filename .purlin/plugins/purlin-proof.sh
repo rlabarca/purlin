@@ -7,10 +7,8 @@
 #   purlin_proof "my_feature" "PROOF-2" "RULE-2" fail "test description"
 #   purlin_proof_finish  # writes proof files
 #
-# Tier comes from PURLIN_PROOF_TIER (default "unit").
-#
 # The harness writes what it observed to
-# .purlin/runtime/proofs/<feature>.<tier>.json. Proof files are runtime: they
+# .purlin/runtime/proofs/<feature>.json. Proof files are runtime: they
 # are gitignored, so two runs on two branches never conflict and nothing about
 # a run is committed. The record purlin:audit writes is what says where a run
 # happened, and it says it once per run.
@@ -43,7 +41,6 @@ _purlin_pwd() {
 
 purlin_proof() {
   local feature="$1" proof_id="$2" rule_id="$3" status="$4" test_name="${5:-}"
-  local tier="${PURLIN_PROOF_TIER:-unit}"
   local test_file="${BASH_SOURCE[1]:-unknown}"
 
   if [[ -n "${PURLIN_PROOF_PLATFORMS:-}" ]]; then
@@ -56,7 +53,7 @@ purlin_proof() {
   # makes `bash tests/x.sh` and `bash /abs/tests/x.sh` record the SAME
   # test_file:
   # the raw BASH_SOURCE differs between those two, the absolute path does not.
-  # Under the (feature, tier, test_file) merge key a difference here would not
+  # Under the (feature, test_file) merge key a difference here would not
   # collapse, it would accumulate as two entries for one proof.
   # A drive letter is as absolute as a leading slash: a script reached as
   # `bash C:/work/x.sh` must not have the working directory put in front of it.
@@ -65,7 +62,7 @@ purlin_proof() {
     test_file="$(_purlin_pwd)/$test_file"
   fi
 
-  _PURLIN_PROOFS="${_PURLIN_PROOFS}${feature}|${proof_id}|${rule_id}|${status}|${test_name}|${test_file}|${tier}
+  _PURLIN_PROOFS="${_PURLIN_PROOFS}${feature}|${proof_id}|${rule_id}|${status}|${test_name}|${test_file}
 "
 }
 
@@ -109,9 +106,9 @@ for line in sys.stdin.read().strip().split('\n'):
     if not line:
         continue
     parts = line.split('|')
-    if len(parts) < 7:
+    if len(parts) < 6:
         continue
-    feature, proof_id, rule_id, status, test_name, test_file, tier = parts[:7]
+    feature, proof_id, rule_id, status, test_name, test_file = parts[:6]
     seen.add(feature)
     # Record the test file project-relative with POSIX separators, so nothing
     # carries one machine's home directory or a value that depends on how the
@@ -120,7 +117,7 @@ for line in sys.stdin.read().strip().split('\n'):
     # second matters when a harness writes proofs into a different tree than
     # the one holding the test script; without it that case falls back to an
     # absolute path, which then differs by invocation form and accumulates
-    # duplicate entries under the (feature, tier, test_file) merge key.
+    # duplicate entries under the (feature, test_file) merge key.
     if test_file and test_file != 'unknown':
         abs_tf = os.path.realpath(test_file)
         rel = None
@@ -136,14 +133,13 @@ for line in sys.stdin.read().strip().split('\n'):
                 break
         test_file = (rel or abs_tf).replace(os.sep, '/')
     test_file = test_file.replace(chr(92), '/')
-    entries.setdefault((feature, tier), []).append({
+    entries.setdefault(feature, []).append({
         'feature': feature,
         'id': proof_id,
         'rule': rule_id,
         'test_file': test_file,
         'test_name': test_name,
         'status': status,
-        'tier': tier,
     })
 
 if not entries:
@@ -157,8 +153,8 @@ if not entries:
 directory = os.path.join(root, '.purlin', 'runtime', 'proofs')
 os.makedirs(directory, exist_ok=True)
 
-for (feature, tier), new_entries in entries.items():
-    path = os.path.join(directory, '%s.%s.json' % (feature, tier))
+for feature, new_entries in entries.items():
+    path = os.path.join(directory, '%s.json' % feature)
     existing = []
     if os.path.exists(path):
         try:
@@ -166,9 +162,8 @@ for (feature, tier), new_entries in entries.items():
                 existing = json.load(f).get('proofs', [])
         except (ValueError, OSError):
             existing = []
-    # Write-scoped overwrite keyed by (feature, tier, test_file); the file
-    # carries the tier, so within it the key is (feature, test_file). Entries
-    # whose test file no longer exists are reaped. Each path it wrote is
+    # Write-scoped overwrite keyed by (feature, test_file). Entries whose
+    # test file no longer exists are reaped. Each path it wrote is
     # resolved from the project root, the same root it was relativized
     # against. The harness has no skip signal: a script that never called
     # purlin_proof cannot be told apart from one that skipped.
@@ -180,7 +175,7 @@ for (feature, tier), new_entries in entries.items():
             and bool(e.get('test_file'))
             and os.path.exists(os.path.join(root, e.get('test_file') or '')))
     ]
-    payload = {'tier': tier}
+    payload = {}
     # Sorted by (id, test_file, test_name), ordinal, after the merge, so the
     # call order never reaches the file.
     payload['proofs'] = sorted(

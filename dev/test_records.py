@@ -100,7 +100,7 @@ def record(feature='greeting', commit='4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7'
         'test_strength': 71,
         'scope_tree': 'a' * 40,
         'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': status,
-                    'tier': 'unit', 'env': None,
+                    'env': None,
                     'test_file': 'tests/test_greeting.py',
                     'test_name': 'test_greet'}],
     }
@@ -1335,7 +1335,7 @@ def teardown_module(module):
 # The folder is the source
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("records", "PROOF-34", "RULE-1", tier="integration")
+@pytest.mark.proof("records", "PROOF-34", "RULE-1")
 def test_the_folder_a_record_is_written_to_is_its_source(project):
     for source in ('ci', 'local'):
         path = records_module.write_record(project, record(), 'ci',
@@ -1345,14 +1345,14 @@ def test_the_folder_a_record_is_written_to_is_its_source(project):
             assert json.load(handle)['source'] == source
 
 
-@pytest.mark.proof("records", "PROOF-34", "RULE-1", tier="integration")
+@pytest.mark.proof("records", "PROOF-34", "RULE-1")
 def test_a_source_the_writer_does_not_know_falls_back_to_local(project):
     path = records_module.write_record(project, record(), 'ci',
                                        source='somewhere')
     assert path.startswith('.purlin/records/local/greeting/'), path
 
 
-@pytest.mark.proof("records", "PROOF-2", "RULE-2", tier="integration")
+@pytest.mark.proof("records", "PROOF-2", "RULE-2")
 def test_a_local_audit_never_prunes_what_ci_wrote(project):
     for day in range(5):
         put_record(project, 'greeting',

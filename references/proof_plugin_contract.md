@@ -29,10 +29,10 @@ Three sections:
    path and a relative one naming the same file record the same value. A file outside the root is
    measured from the nearest project root above the file itself, and left absolute when there is
    none; never rewritten with `../` segments.
-4. **Write to `.purlin/runtime/proofs/<feature>.<tier>.json`**, one file per feature and tier,
-   creating the directory when it does not exist.
-5. **Emit all seven fields** on every entry: `feature`, `id`, `rule`, `test_file`, `test_name`,
-   `status`, `tier`. No eighth. `status` is `"pass"` or `"fail"` and nothing else.
+4. **Write to `.purlin/runtime/proofs/<feature>.json`**, one file per feature, creating the
+   directory when it does not exist.
+5. **Emit all six fields** on every entry: `feature`, `id`, `rule`, `test_file`, `test_name`,
+   `status`. No seventh. `status` is `"pass"` or `"fail"` and nothing else.
 6. **Write nothing when no marker was collected.** A run of an unmarked suite leaves the proof
    files exactly as it found them.
 7. **Merge write-scoped**, by the filter below, and sort the merged entries by
@@ -147,7 +147,7 @@ the proof plugins:
 
 | Behaviour | Where its arm goes |
 |-----------|--------------------|
-| The proof file's location, name and seven fields (A.4, A.5) | `TestTheRuntimeProofFile`, one arm per plugin |
+| The proof file's location, name and six fields (A.4, A.5) | `TestTheRuntimeProofFile`, one arm per plugin |
 | Write nothing without a marker (A.6) | `test_no_markers_no_proof_files` |
 | The merge filter and orphan reaping (A.7) | `TestWriteScopedMergeKey` |
 | Ordering (A.7) | the ordinal-order class, seeded with a kept sibling entry so the sort is proved to run after the merge |

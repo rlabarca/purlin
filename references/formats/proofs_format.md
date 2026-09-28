@@ -1,4 +1,4 @@
-> Format-Version: 9
+> Format-Version: 10
 
 # Proof File Format
 
@@ -9,19 +9,17 @@ which machine, and that is the file that gets committed.
 ## Location
 
 ```
-.purlin/runtime/proofs/<feature>.<tier>.json
+.purlin/runtime/proofs/<feature>.json
 ```
 
 Examples:
 
-- `.purlin/runtime/proofs/login.unit.json`
-- `.purlin/runtime/proofs/login.integration.json`
-- `.purlin/runtime/proofs/webhook_delivery.e2e.json`
+- `.purlin/runtime/proofs/login.json`
+- `.purlin/runtime/proofs/webhook_delivery.json`
 
 The directory is gitignored. Two runs on two branches never conflict, nothing a plugin writes
-reaches a commit, and a test run can never produce a merge conflict. The tier is `unit`,
-`integration` or `e2e`; the feature stem may carry dots, so the tier is the last dotted segment
-before `.json`.
+reaches a commit, and a test run can never produce a merge conflict. One file holds every tagged
+test of one feature, whatever framework ran it.
 
 The project root is the nearest ancestor of the plugin's working directory holding `specs/` or
 `.purlin/`, and the working directory itself when no ancestor holds either. Every path a plugin
@@ -33,7 +31,6 @@ rather than the exception: vstest runs a logger from the test output folder, and
 
 ```json
 {
-  "tier": "unit",
   "proofs": [
     {
       "feature": "login",
@@ -41,8 +38,7 @@ rather than the exception: vstest runs a logger from the test output folder, and
       "rule": "RULE-1",
       "test_file": "tests/test_login.py",
       "test_name": "test_validates_credentials",
-      "status": "pass",
-      "tier": "unit"
+      "status": "pass"
     },
     {
       "feature": "login",
@@ -50,8 +46,7 @@ rather than the exception: vstest runs a logger from the test output folder, and
       "rule": "RULE-2",
       "test_file": "tests/test_login.py",
       "test_name": "test_rejects_expired_token",
-      "status": "fail",
-      "tier": "unit"
+      "status": "fail"
     }
   ]
 }
@@ -61,16 +56,14 @@ rather than the exception: vstest runs a logger from the test output folder, and
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `tier` | string | Test tier: `"unit"`, `"integration"` or `"e2e"`. A tier says what kind of test a proof is, never where it must run. |
 | `proofs[].feature` | string | Feature name, matching the spec filename stem. |
 | `proofs[].id` | string | Proof id matching the spec's `## Proof` section: `PROOF-1`, `PROOF-2`. |
 | `proofs[].rule` | string | Rule id this proof covers: `RULE-1`, `RULE-2`. |
 | `proofs[].test_file` | string | Path to the test file relative to the project root, with `/` separators on every operating system. |
 | `proofs[].test_name` | string | Test function or case name. |
 | `proofs[].status` | string | `"pass"` or `"fail"`. |
-| `proofs[].tier` | string | Tier this proof belongs to. |
 
-Seven fields, and no eighth. Fields earlier versions carried and this one does not:
+Six fields, and no seventh. Fields earlier versions carried and this one does not:
 
 | Retired field | What replaced it |
 |---------------|------------------|
@@ -80,8 +73,7 @@ Seven fields, and no eighth. Fields earlier versions carried and this one does n
 
 ## Merge Behavior (Write-Scoped Overwrite)
 
-The merge key is `(feature, tier, test_file)`. The tier is carried by the filename, so within
-one file an entry is addressed by `(feature, test_file)`.
+The merge key is `(feature, test_file)`.
 
 When a proof plugin writes a proof file, it:
 
@@ -122,9 +114,9 @@ file behind.
 
 ### Why the key includes the test file
 
-Scoping the overwrite per `(feature, tier)` alone means that whenever two test files cover the
-same feature at the same tier, whichever runs last erases the other's entries. That forces every
-writer for a `(feature, tier)` pair into a single process, which in turn makes it impossible to
+Scoping the overwrite per feature alone means that whenever two test files cover the same
+feature, whichever runs last erases the other's entries. That forces every writer for a feature
+into a single process, which in turn makes it impossible to
 split a large suite across files or to run suites independently.
 
 With `test_file` in the key, those writers coexist. They can run in any order, in separate
@@ -137,7 +129,7 @@ A narrower key reaps less, so three rules bound what survives:
 - **A deleted or renamed test file is reaped** (step 2's existence check). A rename presents as a
   gone path plus a new one: the old entry is dropped and the new is appended in the same write.
 - **A marker removed from a file that is not re-run is not reaped.** The entry stays until that
-  `(feature, tier)` is run again by something that executes the file.
+  feature is run again by something that executes the file.
 - **A test the run skipped is not reaped**, even though its file ran. Without this, one passing
   test in a file would reap the entry of a sibling that a missing tool skipped. Only an executed
   test replaces its own entry.
@@ -208,15 +200,7 @@ belongs.
 @pytest.mark.proof("feature_name", "PROOF-1", "RULE-1")
 def test_something():
     assert actual == expected
-
-@pytest.mark.proof("feature_name", "PROOF-2", "RULE-2", tier="integration")
-def test_integration_thing():
-    assert actual == expected
 ```
-
-The tier a marker names is also added to the test as a registered pytest marker of its own, so a
-tier is selectable with `-m` (for example `-m "not integration and not e2e"` runs only the
-unit-tier proofs) without any test having to restate it.
 
 Runner: `python3 -m pytest -q`
 
@@ -226,18 +210,13 @@ Plugin: `scripts/proof/pytest_purlin.py`, scaffolded to `.purlin/plugins/pytest_
 ### Jest
 
 ```javascript
-it("does something [proof:feature_name:PROOF-1:RULE-1:unit]", () => {
-  expect(actual).toBe(expected);
-});
-
-it("does integration thing [proof:feature_name:PROOF-2:RULE-2:integration]", () => {
+it("does something [proof:feature_name:PROOF-1:RULE-1]", () => {
   expect(actual).toBe(expected);
 });
 ```
 
-The tier may be omitted: `[proof:feature_name:PROOF-1:RULE-1]` is tier `unit`. The reporter's
-pattern is `\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?(?::on\(([^)]*)\))?\]`; the last group
-exists only so the retired keyword can be refused by name.
+The reporter's pattern is `\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::on\(([^)]*)\))?\]`; the last
+group exists only so the retired keyword can be refused by name.
 
 Runner: `npx jest`
 
@@ -249,7 +228,7 @@ Reporter: `scripts/proof/jest_purlin.js`, scaffolded to `.purlin/plugins/jest_pu
 Same marker syntax as Jest:
 
 ```typescript
-it("validates credentials [proof:auth_login:PROOF-1:RULE-1:unit]", () => {
+it("validates credentials [proof:auth_login:PROOF-1:RULE-1]", () => {
   expect(login("alice", "secret")).toBe(200);
 });
 ```
@@ -274,8 +253,6 @@ purlin_proof "feature_name" "PROOF-2" "RULE-2" fail "test description"
 purlin_proof_finish  # writes proof files
 ```
 
-The tier comes from `PURLIN_PROOF_TIER` and defaults to `unit`.
-
 Runner: `bash tests/my_feature.test.sh`
 
 Plugin: `scripts/proof/shell_purlin.sh`, scaffolded to `.purlin/plugins/purlin-proof.sh` by
@@ -284,7 +261,7 @@ Plugin: `scripts/proof/shell_purlin.sh`, scaffolded to `.purlin/plugins/purlin-p
 ### SQL
 
 ```sql
--- @purlin feature_name PROOF-1 RULE-1 unit
+-- @purlin feature_name PROOF-1 RULE-1
 -- Test: unique constraint enforced
 INSERT INTO users (name, email) VALUES ('Alice', 'a@test.com');
 INSERT OR IGNORE INTO users (name, email) VALUES ('Bob', 'a@test.com');
@@ -292,9 +269,8 @@ SELECT CASE WHEN (SELECT count(*) FROM users WHERE email='a@test.com') = 1
        THEN 'PASS' ELSE 'FAIL' END;
 ```
 
-The tier may be omitted: `-- @purlin feature_name PROOF-1 RULE-1` is tier `unit`. Each block ends
-at the next `@purlin` marker or at the end of the file, and must produce a result starting with
-`PASS` or `FAIL`.
+Each block ends at the next `@purlin` marker or at the end of the file, and must produce a result
+starting with `PASS` or `FAIL`.
 
 The engine is the project's `sql_engine` setting from `.purlin/config.json`, defaulting to
 `sqlite3`; `PURLIN_SQL_ENGINE` overrides it for one run.
@@ -311,14 +287,12 @@ The marker is a test trait, not a parsed string. The logger reads exactly one tr
 
 ```csharp
 [Fact]
-[Trait("PurlinProof", "feature_name:PROOF-1:RULE-1:unit")]
+[Trait("PurlinProof", "feature_name:PROOF-1:RULE-1")]
 public void ValidLogin()
 {
     Assert.Equal(200, Login("alice", "secret"));
 }
 ```
-
-The tier may be omitted: `"feature_name:PROOF-1:RULE-1"` is tier `unit`.
 
 Runner: `dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true`
 

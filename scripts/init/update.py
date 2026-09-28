@@ -50,6 +50,8 @@ DASHBOARD_DATA = '.purlin/report-data.js'                  # retired
 CACHE_DIR = '.purlin/cache'                                # retired
 OLD_SHELL_PLUGIN = 'purlin-proof.sh'                       # retired
 TIER_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')     # retired
+KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'  # retired
+                         r'(?=(?:[ \t]+@env\([a-z]+\))?[ \t]*$)')
 DESIGN_SCHEME = 'figma://'                                 # retired
 DESIGN_FIELDS = ('> Visual-Reference:', '> Visual-Hash:')  # retired
 WORKFLOW_MARKER = '.proofs-'                               # retired
@@ -384,11 +386,25 @@ def _apply_os_tags(root, files, args, out):
     for rel in files:
         path = os.path.join(root, rel)
         out.kept(_back_up_copy(path, rel))
-        _write(path, TIER_TAG_RE.sub(' @unit @env(windows)', _read(path)))
+        _write(path, TIER_TAG_RE.sub(' @env(windows)', _read(path)))
         out.done(rel)
     out.say('rewrote the operating-system tags in %d spec%s'
             % (len(files), _s(files)))
 
+def _detect_kind_tags(root):
+    """Every spec with a proof line that still names what kind of test it is."""
+    return [rel for rel in _files_under(root, 'specs', ('*.md',))
+            if KIND_TAG_RE.search(_read(os.path.join(root, rel)))]
+
+def _apply_kind_tags(root, files, args, out):
+    """A proof line names an operating system or `@manual`, and nothing else."""
+    for rel in files:
+        path = os.path.join(root, rel)
+        out.kept(_back_up_copy(path, rel))
+        _write(path, KIND_TAG_RE.sub(lambda m: m.group(1), _read(path)))
+        out.done(rel)
+    out.say('dropped the kind of test from the proof lines of %d spec%s: '
+            'purlin:test runs every tagged test' % (len(files), _s(files)))
 
 def _detect_design_sources(root):
     hits = []
@@ -523,6 +539,8 @@ def _apply_records(root, files, args, out):
 MIGRATIONS = (
     ('os-tags', 'rewrite the retired operating-system tag to @env(windows)',
      _detect_os_tags, _apply_os_tags),
+    ('kind-tags', 'drop the kind of test from every proof line',
+     _detect_kind_tags, _apply_kind_tags),
     ('design-sources', 'point design sources at designs/<feature>/',
      _detect_design_sources, _apply_design_sources),
     ('untracked-files', 'drop the proof files and untrack the dashboard data',

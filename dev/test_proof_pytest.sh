@@ -6,9 +6,8 @@
 # runtime proof file back.
 #
 #   the marker produces an entry with status "pass"
-#   the entry carries the seven fields
-#   the file is .purlin/runtime/proofs/<feature>.<tier>.json
-#   the tier keyword names the file
+#   the entry carries the six fields
+#   the file is .purlin/runtime/proofs/<feature>.json
 #   a second run replaces this file's entries and keeps the rest
 #   a skipped test writes nothing and keeps the entry it had
 set -euo pipefail
@@ -63,8 +62,8 @@ PY
   run_pytest "$d" >/dev/null 2>&1
   python3 -c "
 import json
-data = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))
-assert data['tier'] == 'unit', data
+data = json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))
+assert set(data) == {'proofs'}, data
 entry = data['proofs'][0]
 assert entry['status'] == 'pass', entry
 assert entry['id'] == 'PROOF-1' and entry['rule'] == 'RULE-1', entry
@@ -84,14 +83,14 @@ PY
   run_pytest "$d" >/dev/null 2>&1 || true
   python3 -c "
 import json
-entry = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs'][0]
+entry = json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))['proofs'][0]
 assert entry['status'] == 'fail', entry
 " >/dev/null 2>&1
   local rc=$?; rm -rf "$d"; return $rc
 }
 run_test "a failing marked test records status fail" test_fail_status
 
-test_seven_fields() {
+test_six_fields() {
   local d; d="$(make_project)"
   cat > "$d/tests/test_s.py" <<'PY'
 import pytest
@@ -101,27 +100,13 @@ PY
   run_pytest "$d" >/dev/null 2>&1
   python3 -c "
 import json
-entry = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs'][0]
-assert set(entry) == {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}, entry
+entry = json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))['proofs'][0]
+assert set(entry) == {'feature', 'id', 'rule', 'test_file', 'test_name', 'status'}, entry
 assert entry['test_file'] == 'tests/test_s.py', entry
 " >/dev/null 2>&1
   local rc=$?; rm -rf "$d"; return $rc
 }
-run_test "the entry carries the seven fields and a relative test file" test_seven_fields
-
-test_tier_names_the_file() {
-  local d; d="$(make_project)"
-  cat > "$d/tests/test_s.py" <<'PY'
-import pytest
-@pytest.mark.proof("feat", "PROOF-1", "RULE-1", tier="e2e")
-def test_it(): assert True
-PY
-  run_pytest "$d" >/dev/null 2>&1
-  [[ -f "$d/.purlin/runtime/proofs/feat.e2e.json" ]] && \
-    [[ ! -f "$d/.purlin/runtime/proofs/feat.unit.json" ]]
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run_test "the tier keyword names the file" test_tier_names_the_file
+run_test "the entry carries the six fields and a relative test file" test_six_fields
 
 test_rerun_replaces() {
   local d; d="$(make_project)"
@@ -141,7 +126,7 @@ PY
   run_pytest "$d" >/dev/null 2>&1
   python3 -c "
 import json
-ids = [e['id'] for e in json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs']]
+ids = [e['id'] for e in json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))['proofs']]
 assert ids == ['PROOF-1'], ids
 " >/dev/null 2>&1
   local rc=$?; rm -rf "$d"; return $rc
@@ -163,14 +148,14 @@ PY
 import json
 entries = [{'feature': 'feat', 'id': 'PROOF-2', 'rule': 'RULE-2',
             'test_file': 'tests/test_s.py', 'test_name': 'test_two',
-            'status': 'pass', 'tier': 'unit'}]
-json.dump({'tier': 'unit', 'proofs': entries},
-          open('$d/.purlin/runtime/proofs/feat.unit.json', 'w', encoding='utf-8'), indent=2)
+            'status': 'pass'}]
+json.dump({'proofs': entries},
+          open('$d/.purlin/runtime/proofs/feat.json', 'w', encoding='utf-8'), indent=2)
 "
   run_pytest "$d" >/dev/null 2>&1
   python3 -c "
 import json
-by = {e['id']: e for e in json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs']}
+by = {e['id']: e for e in json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))['proofs']}
 assert by['PROOF-2']['test_name'] == 'test_two', by
 assert by['PROOF-1']['test_name'] == 'test_one', by
 " >/dev/null 2>&1

@@ -2,13 +2,13 @@
 
 `dev/test_multilang_proof_plugins.py` proves the contract one arm per plugin.
 This file covers what is left: the marker signatures each plugin accepts and
-refuses, the tier defaults, the status mapping, the harness's own lifecycle,
+refuses, the status mapping, the harness's own lifecycle,
 and what happens when there is nothing to write.
 
   the shared contract  file naming, the no-marker no-op, purge on re-run
   pytest               marker arity, the registered markers, relative paths
   jest                 the title marker, the ignored title, status mapping
-  shell                the five-argument call, the tier variable, BASH_SOURCE,
+  shell                the five-argument call, BASH_SOURCE,
                        writing only at finish, clearing after finish
   sql                  the comment marker and the engine it runs against
 """
@@ -63,8 +63,8 @@ def _project(tmp_path, feature="feat", subdir="a"):
     return tmp_path
 
 
-def _proofs(root, feature, tier="unit"):
-    path = os.path.join(str(root), PROOF_REL, "%s.%s.json" % (feature, tier))
+def _proofs(root, feature):
+    path = os.path.join(str(root), PROOF_REL, "%s.json" % feature)
     if not os.path.isfile(path):
         return None
     with open(path, encoding="utf-8") as handle:
@@ -142,7 +142,7 @@ def _jest_run_in_process(tmp_path, test_file_rel, test_results):
                           text=True, cwd=str(tmp_path))
 
 
-def _run_shell_proof(tmp_path, feature, proofs, tier=None, name="run_proof.sh"):
+def _run_shell_proof(tmp_path, feature, proofs, name="run_proof.sh"):
     """Call `purlin_proof` for each `(id, rule, status, name)`, then finish."""
     calls = "\n".join(
         'purlin_proof "%s" "%s" "%s" %s "%s"' % (feature, pid, rid, status, n)
@@ -152,11 +152,8 @@ def _run_shell_proof(tmp_path, feature, proofs, tier=None, name="run_proof.sh"):
         set -euo pipefail
         source %s
         %s
-        %s
         purlin_proof_finish
-    """) % (SHELL_HARNESS,
-            "export PURLIN_PROOF_TIER=%s" % tier if tier else "",
-            calls)
+    """) % (SHELL_HARNESS, calls)
     path = tmp_path / name
     path.write_text(script, encoding="utf-8")
     return subprocess.run([BASH, bash_path(path)], capture_output=True,
@@ -170,15 +167,14 @@ def _run_shell_proof(tmp_path, feature, proofs, tier=None, name="run_proof.sh"):
 
 @pytest.mark.proof("proof_common", "PROOF-1", "RULE-1")
 def test_proof_file_naming(tmp_path):
-    """One file per feature and tier, under the runtime directory."""
+    """One file per feature, under the runtime directory."""
     root = _project(tmp_path)
     _run_shell_proof(root, "feat", [("PROOF-1", "RULE-1", "pass", "a")])
     _run_shell_proof(root, "feat", [("PROOF-2", "RULE-2", "pass", "b")],
-                     tier="integration", name="second.sh")
+                     name="second.sh")
     _run_shell_proof(root, "other", [("PROOF-1", "RULE-1", "pass", "c")],
                      name="third.sh")
-    assert _proof_files(root) == ["feat.integration.json", "feat.unit.json",
-                                  "other.unit.json"]
+    assert _proof_files(root) == ["feat.json", "other.json"]
 
 
 @pytest.mark.proof("proof_common", "PROOF-9", "RULE-9")
@@ -244,31 +240,6 @@ def test_a_feature_with_no_spec_still_records(tmp_path):
 # pytest
 # ---------------------------------------------------------------------------
 
-def test_pytest_marker_signature_defaults_to_unit_tier(tmp_path):
-    root = _project(tmp_path)
-    _run_pytest_with_plugin(root, """
-        import pytest
-
-        @pytest.mark.proof("feat", "PROOF-1", "RULE-1")
-        def test_one():
-            assert True
-    """)
-    assert _proofs(root, "feat", "unit") is not None
-    assert _proofs(root, "feat", "unit")["proofs"][0]["tier"] == "unit"
-
-
-def test_pytest_marker_explicit_tier(tmp_path):
-    root = _project(tmp_path)
-    _run_pytest_with_plugin(root, """
-        import pytest
-
-        @pytest.mark.proof("feat", "PROOF-1", "RULE-1", tier="e2e")
-        def test_one():
-            assert True
-    """)
-    assert _proofs(root, "feat", "e2e") is not None
-
-
 def test_pytest_marker_with_too_few_arguments_is_ignored(tmp_path):
     """A marker missing feature, id or rule names no proof, so it writes none."""
     root = _project(tmp_path)
@@ -297,8 +268,8 @@ def test_pytest_test_file_is_relative(tmp_path):
     assert not os.path.isabs(written)
 
 
-def test_pytest_registers_the_proof_marker_and_the_tier_markers(tmp_path):
-    """`-m` selects on the tier, which means the tier is a real marker."""
+def test_pytest_registers_the_proof_marker(tmp_path):
+    """The proof marker is registered, so a strict run accepts it."""
     root = _project(tmp_path)
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "--markers",
@@ -306,28 +277,7 @@ def test_pytest_registers_the_proof_marker_and_the_tier_markers(tmp_path):
          "--override-ini=pythonpath=%s" % PROOF_SCRIPTS_INI,
          "-p", "no:cacheprovider"],
         capture_output=True, text=True, cwd=str(root))
-    for marker in ("proof(feature, proof_id, rule_id", "@pytest.mark.unit",
-                   "@pytest.mark.integration", "@pytest.mark.e2e"):
-        assert marker in result.stdout, marker
-
-    _run_pytest_with_plugin(root, """
-        import pytest
-
-        @pytest.mark.proof("feat", "PROOF-1", "RULE-1")
-        def test_unit_one():
-            assert True
-
-        @pytest.mark.proof("feat", "PROOF-2", "RULE-2", tier="e2e")
-        def test_e2e_one():
-            assert True
-    """)
-    deselected = subprocess.run(
-        [sys.executable, "-m", "pytest", str(root / "test_s.py"),
-         "-p", "pytest_purlin",
-         "--override-ini=pythonpath=%s" % PROOF_SCRIPTS_INI,
-         "-m", "not e2e", "-q", "--no-header", "-p", "no:cacheprovider"],
-        capture_output=True, text=True, cwd=str(root))
-    assert "1 deselected" in deselected.stdout
+    assert "@pytest.mark.proof(feature, proof_id, rule_id)" in result.stdout
 
 
 # ---------------------------------------------------------------------------
@@ -340,19 +290,11 @@ class TestJest:
     def test_marker_parsed_from_title(self, tmp_path):
         root = _project(tmp_path)
         (root / "a.test.js").write_text("// marked\n", encoding="utf-8")
-        self._ran(root, [{"title": "does it "
-                                   "[proof:feat:PROOF-1:RULE-1:integration]",
-                          "status": "passed"}])
-        entry = _proofs(root, "feat", "integration")["proofs"][0]
-        assert (entry["feature"], entry["id"], entry["rule"], entry["tier"]) \
-            == ("feat", "PROOF-1", "RULE-1", "integration")
-
-    def test_tier_defaults_to_unit(self, tmp_path):
-        root = _project(tmp_path)
-        (root / "a.test.js").write_text("// marked\n", encoding="utf-8")
         self._ran(root, [{"title": "does it [proof:feat:PROOF-1:RULE-1]",
                           "status": "passed"}])
-        assert _proofs(root, "feat", "unit") is not None
+        entry = _proofs(root, "feat")["proofs"][0]
+        assert (entry["feature"], entry["id"], entry["rule"]) \
+            == ("feat", "PROOF-1", "RULE-1")
 
     def test_a_title_with_no_marker_is_ignored(self, tmp_path):
         root = _project(tmp_path)
@@ -392,20 +334,6 @@ class TestJest:
 # ---------------------------------------------------------------------------
 # shell
 # ---------------------------------------------------------------------------
-
-def test_shell_proof_uses_purlin_proof_tier_env(tmp_path):
-    root = _project(tmp_path)
-    _run_shell_proof(root, "feat", [("PROOF-1", "RULE-1", "pass", "a")],
-                     tier="integration")
-    assert _proofs(root, "feat", "integration") is not None
-    assert _proofs(root, "feat", "unit") is None
-
-
-def test_shell_proof_defaults_tier_to_unit(tmp_path):
-    root = _project(tmp_path)
-    _run_shell_proof(root, "feat", [("PROOF-1", "RULE-1", "pass", "a")])
-    assert _proofs(root, "feat", "unit") is not None
-
 
 def test_shell_test_file_reflects_the_calling_script(tmp_path):
     """`BASH_SOURCE[1]` is the caller, not the harness."""
@@ -448,7 +376,7 @@ def test_shell_entries_cleared_after_finish(tmp_path):
     subprocess.run([BASH, bash_path(root / "twice.sh")], cwd=str(root),
                    capture_output=True, text=True)
     # The second finish carried only PROOF-2, which replaced the first write
-    # for the same (feature, tier, test_file): the buffer was cleared, so
+    # for the same (feature, test_file): the buffer was cleared, so
     # PROOF-1 was not written a second time.
     ids = [e["id"] for e in _proofs(root, "feat")["proofs"]]
     assert ids == ["PROOF-2"]
@@ -471,7 +399,7 @@ class TestSql:
 
     def test_a_failing_block_records_fail(self, tmp_path):
         root = _project(tmp_path)
-        self._run(root, "-- @purlin feat PROOF-1 RULE-1 unit\n"
+        self._run(root, "-- @purlin feat PROOF-1 RULE-1\n"
                         "-- Test: it fails\n"
                         "SELECT 'FAIL';\n")
         assert _proofs(root, "feat")["proofs"][0]["status"] == "fail"
@@ -488,7 +416,7 @@ class TestSql:
         root = _project(tmp_path)
         (root / ".purlin" / "config.json").write_text(
             json.dumps({"sql_engine": "no-such-engine"}), encoding="utf-8")
-        self._run(root, "-- @purlin feat PROOF-1 RULE-1 unit\n"
+        self._run(root, "-- @purlin feat PROOF-1 RULE-1\n"
                         "SELECT 'PASS';\n")
         assert _proofs(root, "feat")["proofs"][0]["status"] == "fail"
 

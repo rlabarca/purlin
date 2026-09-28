@@ -21,7 +21,8 @@ What each group proves:
               a declined migration stays pending
 *specs*       no proof file and no run file survives beside a spec
 *config*      the file that is left is the gate and what the gate derives
-*tags*        the Windows tier tag becomes `@unit @env(windows)`
+*tags*        the Windows tag becomes `@env(windows)`, and the kind of test
+              goes from every proof line
 *designs*     a design source becomes a path under `designs/`
 *hooks*       the pre-commit and pre-push hooks v0.9.5 installed go
 *workflows*   the retired workflows go and one `purlin.yml` replaces them
@@ -35,6 +36,7 @@ What each group proves:
 import fnmatch
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -462,7 +464,7 @@ def test_a_framework_the_tree_carries_is_kept(tmp_path, capsys):
 
 # --- operating-system tags ---------------------------------------------------
 
-# A spec where the tier tag's spelling is prose in the middle of a line rather
+# A spec where the Windows tag's spelling is prose in the middle of a line rather
 # than a tag at its end: the rewrite has to leave it exactly as it is.
 PROSE_SPEC = """# Feature: runners
 
@@ -474,12 +476,12 @@ PROSE_SPEC = """# Feature: runners
 
 ## Proof
 
-- PROOF-1 (RULE-1): Read a line naming @windows mid-sentence and verify it is left alone @unit
+- PROOF-1 (RULE-1): Read a line naming @windows mid-sentence and verify it is left alone
 """
 
 
 @pytest.mark.proof("update", "PROOF-13", "RULE-13")
-def test_the_retired_tier_tag_becomes_unit_and_env(tmp_path):
+def test_the_retired_windows_tag_becomes_env(tmp_path):
     root = _project(tmp_path, V095)
     rel = _spec_holding(root, 'msvcrt.locking')
     assert '@windows\n' in _read(root, rel)
@@ -488,8 +490,33 @@ def test_the_retired_tier_tag_becomes_unit_and_env(tmp_path):
     proofs = [line for line in text.splitlines()
               if line.startswith('- PROOF-53 ')]
     assert len(proofs) == 1
-    assert proofs[0].endswith('@unit @env(windows)')
+    assert proofs[0].endswith(' @env(windows)')
+    assert '@unit' not in proofs[0]  # retired
     assert '@windows\n' not in text
+
+
+@pytest.mark.proof("update", "PROOF-23", "RULE-23")
+def test_the_kind_of_test_is_dropped_from_every_proof_line(tmp_path):
+    root = _project(tmp_path, V095)
+    rel = 'specs/_anchors/proof_common.md'
+    before = [line for line in _read(root, rel).splitlines()
+              if line.startswith('- PROOF-')]
+    assert before[0].endswith('@integration')  # retired
+    _apply(root)
+    after = [line for line in _read(root, rel).splitlines()
+             if line.startswith('- PROOF-')]
+    assert len(after) == len(before)
+    for line in after:
+        assert not re.search(r'@(unit|integration|e2e)\s*$', line), line  # retired
+    assert after[0].endswith('written to `specs/hooks/`'), after[0]
+
+    path = os.path.join(root, rel)
+    with open(path, 'a', encoding='utf-8') as handle:
+        handle.write('- PROOF-99 (RULE-1): Lock a file @e2e @env(linux)\n')  # retired
+    _apply(root)
+    added = [line for line in _read(root, rel).splitlines()
+             if line.startswith('- PROOF-99 ')]
+    assert added == ['- PROOF-99 (RULE-1): Lock a file @env(linux)']
 
 
 @pytest.mark.proof("update", "PROOF-13", "RULE-13")
@@ -520,7 +547,7 @@ DESIGN_ANCHOR = """# Anchor: checkout_design
 
 ## Proof
 
-- PROOF-1 (RULE-1): Open /checkout and read the two elements in order @e2e
+- PROOF-1 (RULE-1): Open /checkout and read the two elements in order
 """
 
 

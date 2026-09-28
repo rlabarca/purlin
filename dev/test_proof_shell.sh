@@ -2,7 +2,6 @@
 # Tests for scripts/proof/shell_purlin.sh, the shell proof harness.
 #
 #   purlin_proof + purlin_proof_finish writes the runtime proof file
-#   PURLIN_PROOF_TIER names the tier and the file
 #   test_file is the calling script, project-relative
 #   a second run replaces this script's entries and keeps the rest
 #   purlin_proof_finish with nothing buffered writes nothing
@@ -48,31 +47,16 @@ EOF
   (cd "$d" && bash tests/t.sh) >/dev/null 2>&1
   python3 -c "
 import json
-data = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))
-assert data['tier'] == 'unit', data
+data = json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))
+assert set(data) == {'proofs'}, data
 by = {e['id']: e for e in data['proofs']}
 assert by['PROOF-1']['status'] == 'pass', by
 assert by['PROOF-2']['status'] == 'fail', by
-assert set(by['PROOF-1']) == {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}, by
+assert set(by['PROOF-1']) == {'feature', 'id', 'rule', 'test_file', 'test_name', 'status'}, by
 " >/dev/null 2>&1
   local rc=$?; rm -rf "$d"; return $rc
 }
 run_test "purlin_proof_finish writes the runtime proof file" test_writes_the_runtime_file
-
-test_tier_env() {
-  local d; d="$(make_project)"
-  cat > "$d/tests/t.sh" <<EOF
-source "$HARNESS"
-export PURLIN_PROOF_TIER=integration
-purlin_proof "feat" "PROOF-1" "RULE-1" pass "a case"
-purlin_proof_finish
-EOF
-  (cd "$d" && bash tests/t.sh) >/dev/null 2>&1
-  [[ -f "$d/.purlin/runtime/proofs/feat.integration.json" ]] && \
-    [[ ! -f "$d/.purlin/runtime/proofs/feat.unit.json" ]]
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run_test "PURLIN_PROOF_TIER names the tier and the file" test_tier_env
 
 test_test_file_is_the_caller() {
   local d; d="$(make_project)"
@@ -85,7 +69,7 @@ EOF
   (cd "$d" && bash tests/deep/suite.sh) >/dev/null 2>&1
   python3 -c "
 import json
-entry = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs'][0]
+entry = json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))['proofs'][0]
 assert entry['test_file'] == 'tests/deep/suite.sh', entry
 " >/dev/null 2>&1
   local rc=$?; rm -rf "$d"; return $rc
@@ -115,7 +99,7 @@ EOF
   (cd "$d" && bash tests/t.sh) >/dev/null 2>&1
   python3 -c "
 import json
-ids = sorted(e['id'] for e in json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs'])
+ids = sorted(e['id'] for e in json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))['proofs'])
 assert ids == ['PROOF-1', 'PROOF-9'], ids
 " >/dev/null 2>&1
   local rc=$?; rm -rf "$d"; return $rc
@@ -151,7 +135,7 @@ run_test "the retired PURLIN_PROOF_PLATFORMS variable is refused" test_retired_v
 
 source "$HARNESS"
 cd "$PROJECT_ROOT"
-PURLIN_PROOF_TIER=e2e purlin_proof "run_script" "PROOF-56" "RULE-38" \
+purlin_proof "run_script" "PROOF-56" "RULE-38" \
   "$([[ $FAIL -eq 0 ]] && echo pass || echo fail)" "shell harness suite"
 purlin_proof_finish
 

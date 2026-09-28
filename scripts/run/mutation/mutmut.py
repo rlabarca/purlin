@@ -224,21 +224,20 @@ def score_by_feature(entries, scope_by_feature):
     return totals
 
 
-def run(project_root, scope_by_feature, tests_by_rule, tier=None):
+def run(project_root, scope_by_feature, tests_by_rule):
     """Break the project once and report each feature's scope number."""
     if binary(project_root) is None:
-        return none.run(project_root, scope_by_feature, tests_by_rule, tier,
+        return none.run(project_root, scope_by_feature, tests_by_rule,
                         reason='mutmut is not installed: run '
                                '"pip install mutmut"')
     path, _, section = config_target(project_root)
     if not has_config(project_root):
         return none.run(
-            project_root, scope_by_feature, tests_by_rule, tier,
+            project_root, scope_by_feature, tests_by_rule,
             reason='%s carries no %s block, so mutmut would break files no '
                    'spec scopes: run "purlin:init" to write it'
                    % (path, section))
-    lines = ['engine mutmut, config %s in %s, tier %s'
-             % (section, path, tier or 'all')]
+    lines = ['engine mutmut, config %s in %s' % (section, path)]
     code = execute(RUN_COMMAND, project_root)[0]
     lines.append('mutmut run exited %d' % code)
     if code == TIMED_OUT:

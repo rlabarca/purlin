@@ -16,9 +16,8 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ## Usage
 
 ```
-purlin:test                     Run every feature's tagged tests, unit tier
+purlin:test                     Run every feature's tagged tests
 purlin:test <feature> [...]     Run one feature, or several
-purlin:test --all               Run every tier, not just unit
 purlin:test --remote            Let the git host's runner do the run
 ```
 
@@ -31,7 +30,7 @@ everything". The documented syntax is canonical, never required.
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --test
 ```
 
-One feature at a time is `--feature <name>`, repeated for each. Every tier is `--tier all`.
+One feature at a time is `--feature <name>`, repeated for each.
 The run script owns test execution for the whole plugin: `purlin:build` and `purlin:audit`
 call it too, so there is one answer to how a test is run. `--remote` hands the run to the git
 host's runner instead, on a run branch it creates, waits on and deletes; at `strong` and above
@@ -56,7 +55,7 @@ both folders, and its `> Format-Version:` line says which version this release s
 
 ## Step 3: read the table
 
-The run prints `Ran <framework> on <n> feature(s) at tier <tier>.`, then the status table
+The run prints `Ran <framework> on <n> feature(s).`, then the status table
 `purlin:status` builds. The `Tests` column counts the words a passed cell can read:
 
 | Word | What it means |

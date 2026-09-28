@@ -21,8 +21,8 @@ The file:
       "scope_tree": "<sha256 from specs.scope_tree>",
       "rules": {"RULE-1": "passed"},
       "proofs": [
-        {"id": "PROOF-1", "rule": "RULE-1", "result": "pass",
-         "tier": "unit", "env": null, "test": "tests/test_feat.py::test_ok"}
+        {"id": "PROOF-1", "rule": "RULE-1", "result": "pass", "env": null,
+         "test": "tests/test_feat.py::test_ok"}
       ]
     }
 
@@ -202,14 +202,13 @@ def runtime_times(project_root):
     except OSError:
         return times
     for name in names:
-        parts = proofs_module.proof_file_parts(name)
-        if parts is None:
+        if not name.endswith('.json'):
             continue
         try:
             when = os.path.getmtime(os.path.join(directory, name))
         except OSError:
             continue
-        stem = parts[0]
+        stem = name[:-len('.json')]
         if when > times.get(stem, 0):
             times[stem] = when
     return times

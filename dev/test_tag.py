@@ -92,7 +92,7 @@ def _sign_every_rule(made):
 
 class TestTheTag:
 
-    @pytest.mark.proof("signatures", "PROOF-67", "RULE-45", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-67", "RULE-45")
     def test_a_walk_with_nothing_left_writes_the_tag(self):
         made = _signed_project()
         try:
@@ -111,7 +111,7 @@ class TestTheTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-67", "RULE-45", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-67", "RULE-45")
     def test_the_version_comes_from_the_config_with_no_version_file(self):
         made = _signed_project()
         try:
@@ -121,7 +121,7 @@ class TestTheTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-68", "RULE-46", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-68", "RULE-46")
     def test_no_tag_while_a_rule_falls_short(self):
         made = _signed_project()
         try:
@@ -134,7 +134,7 @@ class TestTheTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-68", "RULE-46", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-68", "RULE-46")
     def test_release_names_another_tag_and_a_second_one_is_refused(self):
         made = _signed_project()
         try:
@@ -149,7 +149,7 @@ class TestTheTag:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-67", "RULE-45", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-67", "RULE-45")
     def test_the_tag_is_written_and_nothing_is_pushed(self):
         """The last line names the push; the command makes none."""
         made = _signed_project()
@@ -171,7 +171,7 @@ class TestTheTag:
 
 class TestTrust:
 
-    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
     def test_remote_refuses_a_rule_with_no_ci_run_for_this_commit(self):
         made = Project(gate=SIGNING_GATE,
                        config={'min_strength': 50, 'trust': 'remote'})
@@ -187,7 +187,7 @@ class TestTrust:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
     def test_a_ci_run_for_this_commit_is_enough(self):
         made = _signed_project(trust='remote', key=False)
         try:
@@ -196,7 +196,7 @@ class TestTrust:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-69", "RULE-47")
     def test_local_asks_nothing_of_the_source(self):
         made = Project(gate=SIGNING_GATE,
                        config={'trust': 'local'})
@@ -247,7 +247,7 @@ class TestTheAuditHash:
         assert purlin_signatures.audit_hash(one) == \
             purlin_signatures.audit_hash(other)
 
-    @pytest.mark.proof("signatures", "PROOF-65", "RULE-43", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-65", "RULE-43")
     def test_a_re_audit_that_observes_something_stales_the_signature(self):
         made = _signed_project()
         try:
@@ -260,7 +260,7 @@ class TestTheAuditHash:
         finally:
             made.close()
 
-    @pytest.mark.proof("signatures", "PROOF-66", "RULE-44", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-66", "RULE-44")
     def test_a_hold_is_not_bound_to_the_audit(self):
         made = _signed_project()
         try:
@@ -287,7 +287,7 @@ def _gate(root, verify=True):
 
 class TestVerify:
 
-    @pytest.mark.proof("gate_check", "PROOF-35", "RULE-15", tier="integration")
+    @pytest.mark.proof("gate_check", "PROOF-35", "RULE-15")
     def test_a_signature_the_code_moved_under_is_named(self):
         made = _signed_project()
         try:
@@ -304,7 +304,7 @@ class TestVerify:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-35", "RULE-15", tier="integration")
+    @pytest.mark.proof("gate_check", "PROOF-35", "RULE-15")
     def test_without_verify_the_section_is_not_printed(self):
         made = _signed_project()
         try:
@@ -317,7 +317,7 @@ class TestVerify:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-36", "RULE-15", tier="integration")
+    @pytest.mark.proof("gate_check", "PROOF-36", "RULE-15")
     def test_a_hold_naming_a_rule_that_is_gone_is_named(self):
         made = _signed_project()
         try:
@@ -333,7 +333,7 @@ class TestVerify:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-38", "RULE-16", tier="integration")
+    @pytest.mark.proof("gate_check", "PROOF-38", "RULE-16")
     def test_a_ci_record_a_person_committed_is_named(self):
         made = _signed_project()
         try:
@@ -346,7 +346,7 @@ class TestVerify:
         finally:
             made.close()
 
-    @pytest.mark.proof("gate_check", "PROOF-38", "RULE-16", tier="integration")
+    @pytest.mark.proof("gate_check", "PROOF-38", "RULE-16")
     def test_a_ci_record_the_runner_committed_is_not_named(self):
         made = _signed_project()
         try:

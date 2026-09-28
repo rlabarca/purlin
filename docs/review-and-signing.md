@@ -115,7 +115,7 @@ at 0 percent because nothing broke. Read it beside what the audit observed, neve
 review criteria verbatim and this rule's evidence, so it observes by the same sentences you
 read. The criteria list what it looks for: no proof of a rule names a rejection, an error or a
 boundary; a description names no literal, number or quoted string; a test body asserts nothing,
-or asserts a literal against itself; an `@e2e` proof reads as a function call. Where the audit
+or asserts a literal against itself; a proof about a flow reads as a function call. Where the audit
 settled and still observed something, the strong cell reads `weak` with that sentence as its
 reason. It is asked to state what the test observes against what the proof names, and to say
 when it cannot tell. When it cannot tell, the strong cell reads `unsettled`, and the

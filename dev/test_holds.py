@@ -46,7 +46,7 @@ def _holds(project):
 
 class TestWritingAHold:
 
-    @pytest.mark.proof("signatures", "PROOF-60", "RULE-40", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-60", "RULE-40")
     def test_a_hold_is_one_signed_file_with_the_case(self, proved, capsys):
         signing_key(proved.root)
         code = sign_module.main(['login', 'RULE-1', '--hold', CASE,
@@ -72,7 +72,7 @@ class TestWritingAHold:
         assert data['reason'] == CASE
         assert data['triple'] == triple[:16]
 
-    @pytest.mark.proof("signatures", "PROOF-61", "RULE-40", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-61", "RULE-40")
     def test_a_hold_needs_a_case_and_a_rule(self, proved, capsys):
         for argv in (['login', 'RULE-1', '--hold'],
                      ['login', 'RULE-1', '--hold', '--batch'],

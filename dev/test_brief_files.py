@@ -45,7 +45,7 @@ def _bytes(root, rel):
 
 class TestASecondWrite:
 
-    @pytest.mark.proof("brief", "PROOF-42", "RULE-27", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-42", "RULE-27")
     def test_when_it_was_built_is_not_a_change(self, proved):
         built = brief_module.build_brief(proved.root, None, 'login', 'RULE-1')
         path = brief_module.write_brief(proved.root, built)
@@ -57,7 +57,7 @@ class TestASecondWrite:
         assert _bytes(proved.root, path) == first, \
             'a brief with the same evidence rewrote the committed file'
 
-    @pytest.mark.proof("brief", "PROOF-43", "RULE-27", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-43", "RULE-27")
     def test_a_changed_observation_is_written(self, proved):
         built = brief_module.build_brief(proved.root, None, 'login', 'RULE-1')
         path = brief_module.write_brief(proved.root, built)
@@ -73,7 +73,7 @@ class TestASecondWrite:
 
 class TestTheTextRenderingIsIgnored:
 
-    @pytest.mark.proof("scaffold", "PROOF-41", "RULE-41", tier="integration")
+    @pytest.mark.proof("scaffold", "PROOF-41", "RULE-41")
     def test_the_template_keeps_the_rendering_out_of_git(self, tmp_path):
         root = str(tmp_path)
         git(root, 'init', '-q')

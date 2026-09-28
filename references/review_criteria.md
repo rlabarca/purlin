@@ -15,7 +15,7 @@ reading `weak` with its own sentence as the reason. The checks below are what it
 a rule that trips one may still be proved, so each is read against the test, never on the
 proof text alone.
 
-**In the proof description and its tier tag.** The audit checks each of these against the
+**In the proof description.** The audit checks each of these against the
 test the proof names:
 
 - The description names no literal, number, quoted string, backticked token or named
@@ -26,8 +26,8 @@ test the proof names:
 - Nothing runs before the assertion, so the proof reads an artifact that exists whether or
   not the code is right. A proof names the call, the request, the render or the grep that
   produces what it then asserts on.
-- An `@e2e` proof is described as a function call. An `@e2e` proof must read as an
-  observable flow: arrange, act, observe, through the real running app.
+- A proof about a flow through the running app is described as a function call. Such a
+  proof must read as an observable flow: arrange, act, observe, through the real running app.
 - The description names a private symbol, a CSS selector or a source path instead of an
   observable outcome, so a refactor would break the proof without changing behaviour. A
   name that opens with an underscore after a `/`, such as `specs/_anchors/` or `/_git/`,

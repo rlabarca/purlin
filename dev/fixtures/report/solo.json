@@ -86,7 +86,7 @@
                 }
               ],
               "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule1log",
@@ -138,7 +138,7 @@
               "id": "PROOF-2",
               "tests": [],
               "text": "POST /session five times with a wrong password, then once more with the right one, and read 423.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule2log",
@@ -283,7 +283,7 @@
                 }
               ],
               "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule1inv",
@@ -346,7 +346,7 @@
                 }
               ],
               "text": "Build an invoice with zero lines and read the total 0.00.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule2inv",

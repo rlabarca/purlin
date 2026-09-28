@@ -36,16 +36,14 @@ NAMES = ('test_valid_credentials_return_200', 'test_a_token_comes_back')
 def _two_tests(project, second=SECOND_TEST, names=NAMES):
     project.edit_test(TEST_FILE + second)
     entries = [{'feature': 'login', 'id': 'PROOF-1', 'rule': 'RULE-1',
-                'status': 'pass', 'tier': 'unit',
-                'test_file': 'tests/test_login.py', 'test_name': name}
+                'status': 'pass', 'test_file': 'tests/test_login.py', 'test_name': name}
                for name in names]
     entries.append({'feature': 'login', 'id': 'PROOF-2', 'rule': 'RULE-2',
-                    'status': 'pass', 'tier': 'unit',
-                    'test_file': 'tests/test_login.py',
+                    'status': 'pass', 'test_file': 'tests/test_login.py',
                     'test_name': 'test_a_bad_password_is_denied'})
     write(os.path.join(project.root, '.purlin', 'runtime', 'proofs',
-                       'login.unit.json'),
-          json.dumps({'tier': 'unit', 'proofs': entries}))
+                       'login.json'),
+          json.dumps({'proofs': entries}))
     project.record(tests={'PROOF-1': list(names)})
 
 
@@ -63,7 +61,7 @@ def project():
 
 class TestEachTestShowsItsOwnSource:
 
-    @pytest.mark.proof("brief", "PROOF-38", "RULE-26", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-38", "RULE-26")
     def test_each_name_shows_its_own_body(self, project):
         _two_tests(project)
         tests = _tests_by_name(project)
@@ -77,7 +75,7 @@ class TestEachTestShowsItsOwnSource:
         assert 'token' in second, second
         assert 'def test_valid_credentials_return_200' not in second, second
 
-    @pytest.mark.proof("brief", "PROOF-40", "RULE-26", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-40", "RULE-26")
     def test_a_name_the_file_no_longer_holds_shows_no_body(self, project):
         _two_tests(project, names=NAMES + ('test_renamed_away',))
         tests = _tests_by_name(project)

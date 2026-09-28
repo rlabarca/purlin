@@ -100,7 +100,7 @@ anchor pins the files themselves:
 
 ## Proof
 
-- PROOF-1 (RULE-1): Load /checkout with one item in the basket; verify the text "Order total" appears above the button labelled "Pay" @e2e
+- PROOF-1 (RULE-1): Load /checkout with one item in the basket; verify the text "Order total" appears above the button labelled "Pay"
 ```
 
 `> Pinned:` is the hash of the named files, so a new export changes it and stales the

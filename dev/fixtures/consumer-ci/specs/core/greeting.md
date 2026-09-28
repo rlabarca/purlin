@@ -14,5 +14,5 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Call `greet("Ada")` and verify it returns exactly `Hello, Ada!`; call `greet("")` and verify it returns exactly `Hello, world!` @unit
-- PROOF-2 (RULE-2): Call `os_tag()` on a Linux runner and verify it returns exactly `linux` @unit @env(linux)
+- PROOF-1 (RULE-1): Call `greet("Ada")` and verify it returns exactly `Hello, Ada!`; call `greet("")` and verify it returns exactly `Hello, world!`
+- PROOF-2 (RULE-2): Call `os_tag()` on a Linux runner and verify it returns exactly `linux` @env(linux)

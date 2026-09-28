@@ -210,7 +210,7 @@ def _cli(workspace, args, child=False):
 # add
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("upstream", "PROOF-1", "RULE-1", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-1", "RULE-1")
 def test_add_writes_the_copy_with_source_and_pin(workspace):
     result = _add(workspace)
     assert result['status'] == 'added'
@@ -225,7 +225,7 @@ def test_add_writes_the_copy_with_source_and_pin(workspace):
     assert result['rules'] == ['RULE-1', 'RULE-2']
 
 
-@pytest.mark.proof("upstream", "PROOF-2", "RULE-2", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-2", "RULE-2")
 def test_add_pins_a_commit_not_a_branch(workspace):
     result = _add(workspace)
     head = _git(['rev-parse', 'HEAD'], workspace.anchor_work)
@@ -234,7 +234,7 @@ def test_add_pins_a_commit_not_a_branch(workspace):
     assert 'main' not in _copy_text(workspace).split('## Rules')[0]
 
 
-@pytest.mark.proof("upstream", "PROOF-3", "RULE-3", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-3", "RULE-3")
 def test_add_derives_the_name_from_the_path(workspace):
     result = upstream.add(workspace.root, workspace.anchor_repo,
                           path='specs/no_secrets.md')
@@ -242,7 +242,7 @@ def test_add_derives_the_name_from_the_path(workspace):
     assert os.path.isfile(upstream.anchor_path(workspace.root, 'no_secrets'))
 
 
-@pytest.mark.proof("upstream", "PROOF-4", "RULE-4", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-4", "RULE-4")
 def test_add_strips_the_tracking_fields_the_source_carried(workspace):
     """A source that is itself a consumer copy must not bring its pin along."""
     _write(os.path.join(workspace.anchor_work, 'specs', 'no_eval.md'),
@@ -258,7 +258,7 @@ def test_add_strips_the_tracking_fields_the_source_carried(workspace):
     assert 'deadbeef' not in text
 
 
-@pytest.mark.proof("upstream", "PROOF-5", "RULE-5", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-5", "RULE-5")
 def test_add_reports_a_path_that_is_not_in_the_source(workspace):
     result = _add(workspace, path='specs/absent.md')
     assert result['status'] == 'error'
@@ -266,7 +266,7 @@ def test_add_reports_a_path_that_is_not_in_the_source(workspace):
     assert not os.path.isfile(upstream.anchor_path(workspace.root, 'no_eval'))
 
 
-@pytest.mark.proof("upstream", "PROOF-6", "RULE-6", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-6", "RULE-6")
 def test_add_refuses_a_source_that_begins_with_a_dash(workspace):
     result = upstream.add(workspace.root, '--upload-pack=/bin/echo',
                           path='a.md', name='hostile')
@@ -275,7 +275,7 @@ def test_add_refuses_a_source_that_begins_with_a_dash(workspace):
     assert not os.path.isfile(upstream.anchor_path(workspace.root, 'hostile'))
 
 
-@pytest.mark.proof("upstream", "PROOF-6", "RULE-6", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-6", "RULE-6")
 def test_add_refuses_an_ext_transport(workspace):
     result = upstream.add(workspace.root, 'ext::sh -c touch', path='a.md',
                           name='hostile')
@@ -287,7 +287,7 @@ def test_add_refuses_an_ext_transport(workspace):
 # add: a free-text source
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("upstream", "PROOF-7", "RULE-7", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-7", "RULE-7")
 def test_add_of_free_text_writes_a_note_and_no_rules(workspace):
     source = os.path.join(workspace.root, 'policy.txt')
     _write(source, 'Every refund is countersigned by a second person.\n')
@@ -303,7 +303,7 @@ def test_add_of_free_text_writes_a_note_and_no_rules(workspace):
         workspace.root, source, name='refunds')['pinned']
 
 
-@pytest.mark.proof("upstream", "PROOF-7", "RULE-7", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-7", "RULE-7")
 def test_free_text_is_not_mistaken_for_a_repository(workspace):
     """An absolute path to a file satisfies the git-url test as well, so the
     file has to win: a text file is not a repository."""
@@ -319,7 +319,7 @@ def test_free_text_is_not_mistaken_for_a_repository(workspace):
 # sync --check
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("upstream", "PROOF-9", "RULE-9", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-9", "RULE-9")
 def test_check_on_a_current_pin_reports_current(workspace):
     _add(workspace)
     result = upstream.sync(workspace.root, check=True)
@@ -328,7 +328,7 @@ def test_check_on_a_current_pin_reports_current(workspace):
     assert upstream._exit_code(result) == 0
 
 
-@pytest.mark.proof("upstream", "PROOF-8", "RULE-8", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-8", "RULE-8")
 def test_check_when_behind_reports_and_changes_nothing(workspace):
     _add(workspace)
     before = _copy_text(workspace)
@@ -344,7 +344,7 @@ def test_check_when_behind_reports_and_changes_nothing(workspace):
     assert _copy_text(workspace) == before
 
 
-@pytest.mark.proof("upstream", "PROOF-10", "RULE-10", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-10", "RULE-10")
 def test_check_exit_code_and_json_from_the_command_line(workspace):
     _add(workspace)
     code, out = _cli(workspace, ['sync', '--check', '--json'])
@@ -365,8 +365,8 @@ def test_check_exit_code_and_json_from_the_command_line(workspace):
     assert 'purlin:anchor sync no_eval' in out
 
 
-@pytest.mark.proof("upstream", "PROOF-9", "RULE-9", tier="integration")
-@pytest.mark.proof("upstream", "PROOF-10", "RULE-10", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-9", "RULE-9")
+@pytest.mark.proof("upstream", "PROOF-10", "RULE-10")
 def test_check_exit_codes_from_a_child_process(workspace):
     """The exit codes a caller's shell sees, from the script run as a process."""
     _add(workspace)
@@ -391,14 +391,14 @@ def test_check_exit_codes_from_a_child_process(workspace):
     assert json.loads(out)['anchors'][0]['status'] == 'error'
 
 
-@pytest.mark.proof("upstream", "PROOF-9", "RULE-9", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-9", "RULE-9")
 def test_check_names_an_anchor_that_does_not_exist(workspace):
     result = upstream.sync(workspace.root, names=['absent'], check=True)
     assert result['anchors'][0]['status'] == 'error'
     assert upstream._exit_code(result) == 2
 
 
-@pytest.mark.proof("upstream", "PROOF-9", "RULE-9", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-9", "RULE-9")
 def test_check_reports_an_unreachable_source(workspace, tmp_path):
     _add(workspace)
     _rmtree(workspace.anchor_repo)
@@ -411,7 +411,7 @@ def test_check_reports_an_unreachable_source(workspace, tmp_path):
 # sync
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("upstream", "PROOF-11", "RULE-11", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-11", "RULE-11")
 def test_sync_advances_the_pin_and_names_the_rule_delta(workspace):
     _add(workspace)
     new_sha = _advance(workspace)
@@ -431,7 +431,7 @@ def test_sync_advances_the_pin_and_names_the_rule_delta(workspace):
     assert 'No exec() anywhere in the tree' in text
 
 
-@pytest.mark.proof("upstream", "PROOF-11", "RULE-11", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-11", "RULE-11")
 def test_sync_reports_a_removed_rule(workspace):
     _add(workspace)
     _advance(workspace, ANCHOR_V1.replace(
@@ -441,7 +441,7 @@ def test_sync_reports_a_removed_rule(workspace):
     assert row['summary'] == 'RULE-2 removed'
 
 
-@pytest.mark.proof("upstream", "PROOF-12", "RULE-12", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-12", "RULE-12")
 def test_sync_says_so_when_only_the_prose_moved(workspace):
     _add(workspace)
     _advance(workspace, ANCHOR_V1.replace('production code.',
@@ -451,7 +451,7 @@ def test_sync_says_so_when_only_the_prose_moved(workspace):
     assert row['pinned'] != workspace.first_sha
 
 
-@pytest.mark.proof("upstream", "PROOF-13", "RULE-13", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-13", "RULE-13")
 def test_sync_copies_the_designs_the_source_names(workspace):
     _add(workspace)
     _advance(workspace)
@@ -462,7 +462,7 @@ def test_sync_copies_the_designs_the_source_names(workspace):
         assert handle.read() == 'png'
 
 
-@pytest.mark.proof("upstream", "PROOF-13", "RULE-13", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-13", "RULE-13")
 def test_sync_leaves_designs_alone_when_the_source_names_none(workspace):
     _add(workspace)
     _advance(workspace, ANCHOR_V2.replace(
@@ -472,7 +472,7 @@ def test_sync_leaves_designs_alone_when_the_source_names_none(workspace):
     assert not os.path.isdir(os.path.join(workspace.root, 'designs'))
 
 
-@pytest.mark.proof("upstream", "PROOF-14", "RULE-14", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-14", "RULE-14")
 def test_sync_all_covers_every_git_sourced_anchor_and_no_others(workspace):
     _add(workspace)
     upstream.add(workspace.root, workspace.anchor_repo,
@@ -486,7 +486,7 @@ def test_sync_all_covers_every_git_sourced_anchor_and_no_others(workspace):
         'no_eval', 'no_secrets']
 
 
-@pytest.mark.proof("upstream", "PROOF-15", "RULE-15", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-15", "RULE-15")
 def test_sync_reaches_each_source_once_per_run(workspace, monkeypatch):
     """Two anchors from one repo is one `git ls-remote`, not two."""
     _add(workspace)
@@ -505,7 +505,7 @@ def test_sync_reaches_each_source_once_per_run(workspace, monkeypatch):
     assert calls == [workspace.anchor_repo]
 
 
-@pytest.mark.proof("upstream", "PROOF-11", "RULE-11", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-11", "RULE-11")
 def test_sync_from_the_command_line_prints_the_delta(workspace):
     _add(workspace)
     _advance(workspace)
@@ -519,7 +519,7 @@ def test_sync_from_the_command_line_prints_the_delta(workspace):
 # The command line itself
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("upstream", "PROOF-21", "RULE-21", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-21", "RULE-21")
 def test_help_and_a_bare_call_are_usable(workspace):
     result = subprocess.run([sys.executable, UPSTREAM_PY, '--help'],
                             capture_output=True, text=True)
@@ -538,7 +538,7 @@ def test_help_and_a_bare_call_are_usable(workspace):
     assert '--project-root' in inline.getvalue()
 
 
-@pytest.mark.proof("upstream", "PROOF-1", "RULE-1", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-1", "RULE-1")
 def test_add_from_the_command_line_writes_the_copy(workspace):
     code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path',
                                  'specs/no_eval.md', '--name', 'no_eval'])
@@ -547,7 +547,7 @@ def test_add_from_the_command_line_writes_the_copy(workspace):
     assert '> Pinned: %s' % workspace.first_sha in _copy_text(workspace)
 
 
-@pytest.mark.proof("upstream", "PROOF-22", "RULE-22", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-22", "RULE-22")
 def test_nothing_written_outside_the_project_root(workspace):
     """Every path the module writes is under the project root it was given."""
     _add(workspace)

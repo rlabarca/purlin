@@ -295,89 +295,90 @@ class TestSpecFormatConventions:
 class TestTagParsing:
     """RULE-9 / RULE-10: the tag grammar.
 
-    A trailing @word is only a tag when it is metadata. schema_proof_format
-    PROOF-4's description ends "...documents @integration, @e2e, and @windows",
-    and reading that as a tier truncated the description at the final clause.
-    A tag may not follow a list connector, which is what separates the two.
+    A trailing @word is only a tag when it is `@manual` or `@env(...)`, and
+    only when it is metadata. A description that ends "...documents @manual,
+    @env, and @windows" is prose, and reading its last word as a tag would
+    truncate it at the final clause. A tag may not follow a list connector,
+    which is what separates the two.
     """
 
     @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
     def test_prose_ending_in_an_at_word_is_not_a_tag(self):
         split = purlin_specs.split_proof_tags
-        cases = [
-            ('Grep the file; verify present @e2e', 'e2e', None),
-            ('Run it against a database @integration', 'integration', None),
-            ('Lock the file @unit @env(windows)', 'unit', 'windows'),
-            ('Lock the file @env(macos) @integration', 'integration', 'macos'),
-            # `@env` alone: the tier defaults to unit.
-            ('Lock the file @env(linux)', 'unit', 'linux'),
-            # Prose that merely ends in an @word is not a tag at all.
-            ('verify `spec_format.md` documents @integration, @e2e, and @windows',
-             'unit', None),
-            ('Check the documented tiers @integration, @e2e', 'unit', None),
-            ('Accepts either @e2e or @integration', 'unit', None),
+        tagged = [
+            ('Check it by hand @manual', 'Check it by hand', True, None),
+            ('Lock the file @manual @env(windows)', 'Lock the file', True,
+             'windows'),
+            ('Lock the file @env(macos) @manual', 'Lock the file', True,
+             'macos'),
+            ('Lock the file @env(linux)', 'Lock the file', False, 'linux'),
         ]
-        for desc, tier, env in cases:
-            clean, got_tier, got_env, unknown = split(desc)
-            assert got_tier == tier, f"{desc!r}: tier {got_tier!r}, wanted {tier!r}"
-            assert got_env == env, f"{desc!r}: env {got_env!r}, wanted {env!r}"
+        for desc, text, manual, env in tagged:
+            clean, got_manual, got_env, unknown = split(desc)
+            assert (clean, got_manual, got_env) == (text, manual, env), desc
             assert not unknown, f"{desc!r}: unexpected unknown tags {unknown!r}"
-            if tier != 'unit' or env:
-                assert ' @' not in clean, f"{desc!r}: tags not stripped: {clean!r}"
-
-        prose = 'verify `spec_format.md` documents @integration, @e2e, and @windows'
-        assert split(prose)[0] == prose, \
-            "a description with no tag must not be truncated"
+        # A word that is not a tag, and prose that merely ends in an @word,
+        # come back whole.
+        untagged = [
+            'Grep the file; verify present @smoke',
+            'verify `spec_format.md` documents @manual, @env, and @windows',
+            'Check the documented tags @manual, @env',
+            'Accepts either @env or @manual',
+        ]
+        for desc in untagged:
+            assert split(desc) == (desc, False, None, []), desc
 
         # Either order is one grammar: the tuple must not depend on tag order.
-        assert (split('Lock the file @unit @env(windows)')
-                == split('Lock the file @env(windows) @unit'))
+        assert (split('Lock the file @manual @env(windows)')
+                == split('Lock the file @env(windows) @manual'))
 
     @pytest.mark.proof("schema_spec_format", "PROOF-10", "RULE-10")
     def test_env_takes_three_values_and_nothing_else(self):
         split = purlin_specs.split_proof_tags
         for good in ('windows', 'macos', 'linux'):
-            clean, tier, env, unknown = split('Lock the file @unit @env(%s)' % good)
-            assert (clean, tier, env, unknown) == ('Lock the file', 'unit', good, [])
+            clean, manual, env, unknown = split('Lock the file @env(%s)' % good)
+            assert (clean, manual, env, unknown) == ('Lock the file', False,
+                                                     good, [])
         # windows-2022 is a runner name, not one of the three values, so it is
         # ignored and named rather than read as a fourth operating system.
         for bad in ('windows-2022', 'ubuntu-24.04', 'Windows'):
-            clean, tier, env, unknown = split('Lock the file @unit @env(%s)' % bad)
+            clean, manual, env, unknown = split('Lock the file @env(%s)' % bad)
             assert env is None, f"{bad!r} must not be read as an environment"
             assert unknown == ['@env(%s)' % bad], unknown
-            assert (clean, tier) == ('Lock the file', 'unit')
+            assert (clean, manual) == ('Lock the file', False)
         # A retired tag is ignored and named, never read.
-        clean, tier, env, unknown = split('Lock the file @unit @on(windows-2022)')  # retired
-        assert (clean, tier, env) == ('Lock the file', 'unit', None)
+        clean, manual, env, unknown = split('Lock the file @on(windows-2022)')  # retired
+        assert (clean, manual, env) == ('Lock the file', False, None)
         assert unknown == ['@on(windows-2022)'], unknown  # retired
 
     @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
     def test_real_spec_is_parsed_correctly(self):
         """The two shapes, read off this repository's own specs.
 
-        PROOF-9 of this anchor quotes several tier and environment tags in
-        backticks and carries no tag of its own; PROOF-11 carries one real
-        trailing tier tag. A parser that read a quoted tag would give the
-        first a tier or an environment it never declared and truncate its
+        PROOF-9 of this anchor quotes several tags in backticks and carries
+        no tag of its own; scaffold's PROOF-36 carries one real trailing
+        `@env` tag. A parser that read a quoted tag would give the first an
+        environment or a manual mark it never declared and truncate its
         description at the last quote."""
-        info = purlin_specs.scan_specs(PROJECT_ROOT)['schema_spec_format']
+        features = purlin_specs.scan_specs(PROJECT_ROOT)
 
-        quoted = info['proofs']['PROOF-9']
-        assert '`Lock the file @env(macos) @integration`' in quoted['text'], \
+        quoted = features['schema_spec_format']['proofs']['PROOF-9']
+        assert '`Lock the file @env(macos) @manual`' in quoted['text'], \
             "PROOF-9 no longer quotes a tag, so this pins nothing"
-        assert quoted['tier'] == 'unit', \
-            "a quoted tag mid-description is not the proof's tier"
+        assert quoted['manual'] is False, \
+            "a quoted tag mid-description does not make the proof manual"
         assert quoted['env'] is None, \
             "a quoted environment tag mid-description is not an environment"
         assert quoted['text'].rstrip().endswith('identical tuples'), \
             "the description's final clause must not be truncated"
 
-        tagged = info['proofs']['PROOF-11']
-        assert tagged['tier'] == 'integration', \
-            "PROOF-11's one trailing tag is its tier"
-        assert tagged['env'] is None, tagged['env']
-        assert tagged['text'].rstrip().endswith('still parses'), \
-            "the tier tag is stripped off the description, nothing else is"
+        tagged = features['scaffold']['proofs']['PROOF-36']
+        assert tagged['env'] == 'linux', \
+            "scaffold PROOF-36's one trailing tag is its environment"
+        assert tagged['manual'] is False, tagged['manual']
+        assert tagged['text'].rstrip().endswith(
+            'Walk both the python and the typescript fixture'), \
+            "the tag is stripped off the description, nothing else is"
 
 
 class TestAnchorNoteMetadata:
@@ -397,7 +398,7 @@ class TestAnchorNoteMetadata:
     def teardown_method(self):
         shutil.rmtree(self.project_root)
 
-    @pytest.mark.proof("schema_spec_format", "PROOF-11", "RULE-11", tier="integration")
+    @pytest.mark.proof("schema_spec_format", "PROOF-11", "RULE-11")
     def test_note_field_is_ignored_by_the_parser(self):
         path = os.path.join(self.spec_dir, 'policy.md')
         with open(path, 'w') as f:

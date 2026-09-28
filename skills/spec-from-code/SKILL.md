@@ -58,8 +58,8 @@ Every rule this skill writes carries `[origin: eng]` and `[bar: passed]`:
 
 ## Proof
 
-- PROOF-1 (RULE-1): Send 61 requests in one minute from one client; verify the 61st returns 429 @integration
-- PROOF-2 (RULE-2): Read the 429 response headers; verify Retry-After is present and is a positive integer @integration
+- PROOF-1 (RULE-1): Send 61 requests in one minute from one client; verify the 61st returns 429
+- PROOF-2 (RULE-2): Read the 429 response headers; verify Retry-After is present and is a positive integer
 ```
 
 `eng` is correct because you derived the rule, not a PM: `purlin:drift pm` then shows these as
@@ -76,7 +76,7 @@ When a test already exercises the behaviour, write the proof to describe what th
 asserts and say so, so `purlin:build` can add the marker instead of writing a new test:
 
 ```
-- PROOF-4 (RULE-4): tests/test_rate_limit.py::test_burst already asserts this @integration
+- PROOF-4 (RULE-4): tests/test_rate_limit.py::test_burst already asserts this
 ```
 
 When nothing tests it, write the proof as if the test existed. The rule then lands in the

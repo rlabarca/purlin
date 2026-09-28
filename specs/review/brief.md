@@ -40,41 +40,41 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Build the brief for a `[bar: passed]` rule in a project holding a record; verify its layers are exactly `test strength` @integration
-- PROOF-2 (RULE-1): Build the brief for that same `[bar: passed]` rule; verify its layers do not name the AI audit and that its AI audit field is `none` @integration
-- PROOF-3 (RULE-2): Retag the rule `[bar: strong]`, run the tests and write a record, then build the brief; verify its layers add `AI audit` after `test strength` @integration
-- PROOF-4 (RULE-3): Build the brief for a `[bar: strong]` rule; verify its layers are `test strength`, `AI audit` in that order @integration
-- PROOF-5 (RULE-4): Build a brief for `RULE-99`, which the spec does not declare; verify nothing comes back @integration
-- PROOF-8 (RULE-7): Build the brief for a rule a record covers; verify it names the file `tests/test_login.py`, the test `test_valid_credentials_return_200`, and shows the asserting line of that test's source @integration
-- PROOF-9 (RULE-8): Retag the proof `@manual` and build the brief; verify the test entry names no file and no source and reads `manual` true @integration
-- PROOF-10 (RULE-9): Write a record whose test strength is 90 and build the brief for a `[bar: strong]` rule; verify the brief reads 90 against a minimum of 50 @integration
-- PROOF-11 (RULE-9): Write a record with no test strength and render the brief; verify the rendering reads `Test strength: n/a` @integration
-- PROOF-12 (RULE-10): Build the brief for a `[bar: passed]` rule a record covers; verify its field names are exactly the 23 the module writes, its schema is `purlin-brief/5` and its observations list is empty @integration
+- PROOF-1 (RULE-1): Build the brief for a `[bar: passed]` rule in a project holding a record; verify its layers are exactly `test strength`
+- PROOF-2 (RULE-1): Build the brief for that same `[bar: passed]` rule; verify its layers do not name the AI audit and that its AI audit field is `none`
+- PROOF-3 (RULE-2): Retag the rule `[bar: strong]`, run the tests and write a record, then build the brief; verify its layers add `AI audit` after `test strength`
+- PROOF-4 (RULE-3): Build the brief for a `[bar: strong]` rule; verify its layers are `test strength`, `AI audit` in that order
+- PROOF-5 (RULE-4): Build a brief for `RULE-99`, which the spec does not declare; verify nothing comes back
+- PROOF-8 (RULE-7): Build the brief for a rule a record covers; verify it names the file `tests/test_login.py`, the test `test_valid_credentials_return_200`, and shows the asserting line of that test's source
+- PROOF-9 (RULE-8): Retag the proof `@manual` and build the brief; verify the test entry names no file and no source and reads `manual` true
+- PROOF-10 (RULE-9): Write a record whose test strength is 90 and build the brief for a `[bar: strong]` rule; verify the brief reads 90 against a minimum of 50
+- PROOF-11 (RULE-9): Write a record with no test strength and render the brief; verify the rendering reads `Test strength: n/a`
+- PROOF-12 (RULE-10): Build the brief for a `[bar: passed]` rule a record covers; verify its field names are exactly the 23 the module writes, its schema is `purlin-brief/5` and its observations list is empty
 - PROOF-17 (RULE-13): Read the observations out of `settled: yes` and out of `settled: no` followed by `- PROOF-1 never runs the code.`; verify the first settles with nothing observed and the second does not settle and carries that one sentence
-- PROOF-19 (RULE-15): Build the model prompt for a `[bar: strong]` rule at gate `strong`; verify it opens with `references/review_criteria.md` byte for byte and then names `RULE-2`, the rule text, the test `test_a_bad_password_is_denied` and `Test strength: 90 percent (minimum 70)` @integration
-- PROOF-20 (RULE-16): Build the brief for a rule that asks for an AI audit without passing `--ai`; verify the review it carries reads `not available`, no observation comes back and the rendering reads `Settled: not answered` @integration
-- PROOF-21 (RULE-16): With no `claude` on the path, build the brief with `--ai`; verify the review it carries reads `not available` @integration
-- PROOF-22 (RULE-16): Build the brief for a `[bar: passed]` rule with `--ai` and a probe that raises if the path is searched; verify no model is reached, the review it carries is `none` and the rendering holds no `Observations` heading @integration
-- PROOF-23 (RULE-12): Replace the model launch with the answer `settled: no` followed by `- PROOF-2 asserts the status but never the body the rule names.`; verify one `claude -p` call is made, the brief carries that one observation and it did not settle @integration
+- PROOF-19 (RULE-15): Build the model prompt for a `[bar: strong]` rule at gate `strong`; verify it opens with `references/review_criteria.md` byte for byte and then names `RULE-2`, the rule text, the test `test_a_bad_password_is_denied` and `Test strength: 90 percent (minimum 70)`
+- PROOF-20 (RULE-16): Build the brief for a rule that asks for an AI audit without passing `--ai`; verify the review it carries reads `not available`, no observation comes back and the rendering reads `Settled: not answered`
+- PROOF-21 (RULE-16): With no `claude` on the path, build the brief with `--ai`; verify the review it carries reads `not available`
+- PROOF-22 (RULE-16): Build the brief for a `[bar: passed]` rule with `--ai` and a probe that raises if the path is searched; verify no model is reached, the review it carries is `none` and the rendering holds no `Observations` heading
+- PROOF-23 (RULE-12): Replace the model launch with the answer `settled: no` followed by `- PROOF-2 asserts the status but never the body the rule names.`; verify one `claude -p` call is made, the brief carries that one observation and it did not settle
 - PROOF-24 (RULE-17): Read the observations out of `It looks fine to me.`, `not available` and an empty answer; verify each observes nothing and leaves the question not answered
-- PROOF-25 (RULE-18): Write a mock at `designs/login/sign-in.png` and a screenshot for `PROOF-1`, then build the brief for an `[origin: design]` rule; verify both paths are shown and the pinned hash reads `3f2a1b0c9d8e7f6a` @integration
-- PROOF-26 (RULE-18): Build the same design rule's brief with no screenshot on disk; verify the mock is shown as the glob `designs/login/*.png` and the screenshot list is empty @integration
-- PROOF-27 (RULE-19): Write the brief for a rule; verify the path is `.purlin/briefs/login/RULE-1.<hash8>.brief.json` for the rule's own triple, that a `.txt` rendering sits beside it, and that the JSON carries schema `purlin-brief/5` @integration
-- PROOF-28 (RULE-19): Write the brief for `RULE-1`, then edit the rule text and build it again; verify the file written first is still on disk and the new triple differs from it @integration
-- PROOF-29 (RULE-21): Write a CI record in a project at gate `strong`, then write briefs with no list named; verify exactly 1 path comes back, it names `RULE-2` and it opens `.purlin/briefs/local/login/`, the folder a run with no source named writes into @integration
-- PROOF-30 (RULE-21): Write briefs for the single pair `login RULE-1`; verify exactly 1 path comes back and it names `RULE-1` @integration
-- PROOF-31 (RULE-22): Render the brief for a `[bar: strong]` rule at gate `strong`; verify the text names `login RULE-2`, the rule text, `PROOF-2`, `Test strength: 90 percent   minimum 70`, an `Observations` heading and a `Settled:` line, and carries no emoji or emoticon @integration
-- PROOF-32 (RULE-23): Run the command with `--help`, with `--nope` and with no argument; verify the exit codes are 0, 2 and 2 @integration
-- PROOF-33 (RULE-23): Run the command for the feature `nothing`, which no spec declares; verify it exits 1 @integration
-- PROOF-34 (RULE-24): Run the command for `--feature login --rule RULE-1`; verify it exits 0, prints `login RULE-1` and creates the `.purlin/briefs/login` directory @integration
-- PROOF-35 (RULE-24): Run the command for `--feature login` with no rule named; verify it exits 0 and prints both `login RULE-1` and `login RULE-2` @integration
-- PROOF-36 (RULE-23): Run `brief.py` as a command in a separate process against a project holding a record; verify it exits 0 and its output names `login RULE-1` @integration
-- PROOF-38 (RULE-26): Mark `test_valid_credentials_return_200` and a second test `test_a_token_comes_back` with `PROOF-1`, write both into the record, and build the brief; verify the first entry's body holds `def test_valid_credentials_return_200` and `== 200` and not `def test_a_token_comes_back`, and the second entry's body holds `def test_a_token_comes_back` and `token` and not `def test_valid_credentials_return_200` @integration
-- PROOF-40 (RULE-26): Write a third name `test_renamed_away` into the record for `PROOF-1` that the file no longer holds; verify its body is empty while the other two still show their own source @integration
+- PROOF-25 (RULE-18): Write a mock at `designs/login/sign-in.png` and a screenshot for `PROOF-1`, then build the brief for an `[origin: design]` rule; verify both paths are shown and the pinned hash reads `3f2a1b0c9d8e7f6a`
+- PROOF-26 (RULE-18): Build the same design rule's brief with no screenshot on disk; verify the mock is shown as the glob `designs/login/*.png` and the screenshot list is empty
+- PROOF-27 (RULE-19): Write the brief for a rule; verify the path is `.purlin/briefs/login/RULE-1.<hash8>.brief.json` for the rule's own triple, that a `.txt` rendering sits beside it, and that the JSON carries schema `purlin-brief/5`
+- PROOF-28 (RULE-19): Write the brief for `RULE-1`, then edit the rule text and build it again; verify the file written first is still on disk and the new triple differs from it
+- PROOF-29 (RULE-21): Write a CI record in a project at gate `strong`, then write briefs with no list named; verify exactly 1 path comes back, it names `RULE-2` and it opens `.purlin/briefs/local/login/`, the folder a run with no source named writes into
+- PROOF-30 (RULE-21): Write briefs for the single pair `login RULE-1`; verify exactly 1 path comes back and it names `RULE-1`
+- PROOF-31 (RULE-22): Render the brief for a `[bar: strong]` rule at gate `strong`; verify the text names `login RULE-2`, the rule text, `PROOF-2`, `Test strength: 90 percent   minimum 70`, an `Observations` heading and a `Settled:` line, and carries no emoji or emoticon
+- PROOF-32 (RULE-23): Run the command with `--help`, with `--nope` and with no argument; verify the exit codes are 0, 2 and 2
+- PROOF-33 (RULE-23): Run the command for the feature `nothing`, which no spec declares; verify it exits 1
+- PROOF-34 (RULE-24): Run the command for `--feature login --rule RULE-1`; verify it exits 0, prints `login RULE-1` and creates the `.purlin/briefs/login` directory
+- PROOF-35 (RULE-24): Run the command for `--feature login` with no rule named; verify it exits 0 and prints both `login RULE-1` and `login RULE-2`
+- PROOF-36 (RULE-23): Run `brief.py` as a command in a separate process against a project holding a record; verify it exits 0 and its output names `login RULE-1`
+- PROOF-38 (RULE-26): Mark `test_valid_credentials_return_200` and a second test `test_a_token_comes_back` with `PROOF-1`, write both into the record, and build the brief; verify the first entry's body holds `def test_valid_credentials_return_200` and `== 200` and not `def test_a_token_comes_back`, and the second entry's body holds `def test_a_token_comes_back` and `token` and not `def test_valid_credentials_return_200`
+- PROOF-40 (RULE-26): Write a third name `test_renamed_away` into the record for `PROOF-1` that the file no longer holds; verify its body is empty while the other two still show their own source
 - PROOF-41 (RULE-26): Read the names a record carries, `Acme.LoginTests.Denied(user: "x")`, `test_found[jest-[proof:f:PROOF-1:RULE-1]]`, `TestLogin::test_found` and `works [proof:login:PROOF-1:RULE-1]` against the source names `Allowed`, `Denied`, `test_found` and `works [proof:login:PROOF-1:RULE-1]`; verify each finds its own source name and nothing else, and `test_gone` finds none
-- PROOF-42 (RULE-27): Write the brief for `RULE-1`, then write a copy whose `generated_at` and `record` differ; verify the JSON on disk is byte for byte the first write @integration
-- PROOF-43 (RULE-27): Write the brief for `RULE-1`, then write a copy carrying the observation `PROOF-1 never names the token.`; verify the JSON on disk now carries that sentence and reads settled @integration
-- PROOF-44 (RULE-15): Build the model prompt for a `[bar: strong]` rule; verify it holds `settled: yes`, `one line per observation`, `Do not recommend a change` and `do not grade the rule` @integration
-- PROOF-45 (RULE-21): Write briefs with no list named in a project at gate `signed` whose only record is under `.purlin/records/local/`; verify one brief comes back for the `[bar: strong]` rule, because a local record counts there too. Write briefs in a project where nothing has run at all and verify nothing is written @integration
-- PROOF-46 (RULE-28): Read the source out of a TypeScript file whose first test passes an options object to a call and whose second title carries an apostrophe; verify both proofs come back and the first body holds the `expect(` after the options object @integration
-- PROOF-47 (RULE-28): Read the source out of one file whose first test divides across a line break after `"a" +`, whose second builds `/[}/"']+/g`, whose third builds `/\/}/`, whose fourth holds a `}` in a `//` comment and in a `/* */` comment, and whose fifth and sixth sit on one line dividing `4 / 2` and `8 / 4`; verify exactly the 6 proofs come back and each body holds its `expect(` @integration
+- PROOF-42 (RULE-27): Write the brief for `RULE-1`, then write a copy whose `generated_at` and `record` differ; verify the JSON on disk is byte for byte the first write
+- PROOF-43 (RULE-27): Write the brief for `RULE-1`, then write a copy carrying the observation `PROOF-1 never names the token.`; verify the JSON on disk now carries that sentence and reads settled
+- PROOF-44 (RULE-15): Build the model prompt for a `[bar: strong]` rule; verify it holds `settled: yes`, `one line per observation`, `Do not recommend a change` and `do not grade the rule`
+- PROOF-45 (RULE-21): Write briefs with no list named in a project at gate `signed` whose only record is under `.purlin/records/local/`; verify one brief comes back for the `[bar: strong]` rule, because a local record counts there too. Write briefs in a project where nothing has run at all and verify nothing is written
+- PROOF-46 (RULE-28): Read the source out of a TypeScript file whose first test passes an options object to a call and whose second title carries an apostrophe; verify both proofs come back and the first body holds the `expect(` after the options object
+- PROOF-47 (RULE-28): Read the source out of one file whose first test divides across a line break after `"a" +`, whose second builds `/[}/"']+/g`, whose third builds `/\/}/`, whose fourth holds a `}` in a `//` comment and in a `/* */` comment, and whose fifth and sixth sit on one line dividing `4 / 2` and `8 / 4`; verify exactly the 6 proofs come back and each body holds its `expect(`

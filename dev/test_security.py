@@ -224,8 +224,7 @@ def _write_anchor(anchors_dir, name, source, pinned):
 class TestGitArgvHardening:
     """RULE-6: nothing repository-supplied reaches git in option position."""
 
-    @pytest.mark.proof("security_no_dangerous_patterns", "PROOF-6", "RULE-6",
-                       tier="integration")
+    @pytest.mark.proof("security_no_dangerous_patterns", "PROOF-6", "RULE-6")
     def test_source_url_never_reaches_git_in_option_position(self, tmp_path,
                                                              monkeypatch):
         project = tmp_path / 'project'

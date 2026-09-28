@@ -217,14 +217,11 @@ def timed_out_feature(engine, feature, scope_files, tests_by_rule):
                           'unavailable')[feature]
 
 
-def run_breaks(project_root, engine, scope_by_feature, tests_by_rule, tier=None):
+def run_breaks(project_root, engine, scope_by_feature, tests_by_rule):
     """Break the scope files of every feature and report what the tests caught.
 
     `scope_by_feature` is `{feature: [scope file paths]}` and `tests_by_rule`
-    is `{(feature, "RULE-N"): [{"file", "name", "plugin"}]}`. `tier` is the
-    tier the run covered; the log holds it and it changes nothing else,
-    because every engine selects its tests from its own config rather than
-    from a tier.
+    is `{(feature, "RULE-N"): [{"file", "name", "plugin"}]}`.
 
     An engine name outside `ENGINES`, or a binary that is not installed,
     answers `engine: none` with the reason in words rather than raising.
@@ -237,15 +234,15 @@ def run_breaks(project_root, engine, scope_by_feature, tests_by_rule, tier=None)
     name = str(engine or 'none').strip().lower()
     module = importlib.import_module('.none', __name__)
     if name not in ENGINES:
-        answer = module.run(project_root, scope_by_feature, tests_by_rule, tier,
+        answer = module.run(project_root, scope_by_feature, tests_by_rule,
                             reason='unknown engine "%s": no breaks were made'
                                    % engine)
     elif name == 'none':
-        answer = module.run(project_root, scope_by_feature, tests_by_rule, tier)
+        answer = module.run(project_root, scope_by_feature, tests_by_rule)
     else:
         engine_module = importlib.import_module('.' + name, __name__)
         answer = engine_module.run(project_root, scope_by_feature,
-                                   tests_by_rule, tier)
+                                   tests_by_rule)
     return normalise(answer, scope_by_feature, tests_by_rule)
 
 

@@ -147,8 +147,8 @@ def _passed_word(root, feature, rule_id):
     return _rule(root, feature, rule_id)['cells']['passed']['word']
 
 
-def _proofs(root, feature, tier='unit'):
-    path = root / PROOF_REL / ('%s.%s.json' % (feature, tier))
+def _proofs(root, feature):
+    path = root / PROOF_REL / ('%s.json' % feature)
     if not path.exists():
         return None
     return json.loads(path.read_text(encoding='utf-8'))
@@ -189,7 +189,6 @@ class TestTheCommandLine:
         ('--all', '--feature', 'x', '--test'),
         ('--all', '--audit', '--remote'),     # --remote belongs to --test
         ('--all', '--audit', '--tag', '1.0'),  # nothing pins a record now
-        ('--all', '--test', '--tier', 'wide'),
         ('--all', '--test', '--nonsense'),
         ('--all', '--test', '--feature'),     # a flag with no value
         ('--all', '--quick'),  # retired
@@ -230,13 +229,13 @@ class TestTheTestArmRunsEachFramework:
         code, output = _run(root, '--all', '--test')
         data = _proofs(root, 'feat')
         assert data is not None, output
-        assert data['tier'] == 'unit'
+        assert set(data) == {'proofs'}
         assert [e['id'] for e in data['proofs']] == ['PROOF-1']
         entry = data['proofs'][0]
         assert entry['test_file'] == 'tests/test_feat.py'
         assert entry['status'] == 'pass'
         assert set(entry) == {'feature', 'id', 'rule', 'test_file',
-                              'test_name', 'status', 'tier'}
+                              'test_name', 'status'}
         assert code == 0, output
 
     @pytest.mark.proof("run_script", "PROOF-3", "RULE-3")
@@ -271,7 +270,7 @@ class TestTheTestArmRunsEachFramework:
         _spec(root, 'feat')
         (root / 'tests').mkdir()
         (root / 'tests' / 'test_feat.sql').write_text(
-            "-- @purlin feat PROOF-1 RULE-1 unit\n"
+            "-- @purlin feat PROOF-1 RULE-1\n"
             "-- Test: the select passes\n"
             "SELECT 'PASS';\n", encoding='utf-8')
         code, output = _run(root, '--all', '--test')
@@ -300,13 +299,12 @@ class TestTheTestArmRunsEachFramework:
         _spec(root, 'feat')
         stale_dir = root / PROOF_REL
         stale_dir.mkdir(parents=True)
-        (stale_dir / 'ghost.unit.json').write_text(
-            json.dumps({'tier': 'unit', 'proofs': [
+        (stale_dir / 'ghost.json').write_text(
+            json.dumps({'proofs': [
                 {'feature': 'ghost', 'id': 'PROOF-1', 'rule': 'RULE-1',
-                 'test_file': 'gone.py', 'test_name': 't', 'status': 'pass',
-                 'tier': 'unit'}]}), encoding='utf-8')
+                 'test_file': 'gone.py', 'test_name': 't', 'status': 'pass'}]}), encoding='utf-8')
         _run(root, '--all', '--test')
-        assert not (stale_dir / 'ghost.unit.json').exists()
+        assert not (stale_dir / 'ghost.json').exists()
 
 
 # ---------------------------------------------------------------------------
@@ -558,8 +556,8 @@ def record_run(monkeypatch, tmp_path):
     def select_engine(config, frameworks):
         return 'mutmut'
 
-    def run_breaks(project_root, engine, scope, tests, tier):
-        calls['breaks'].append((engine, scope, tests, tier))
+    def run_breaks(project_root, engine, scope, tests):
+        calls['breaks'].append((engine, scope, tests))
         return {
             'engine': engine, 'available': True, 'reason': '',
             'features': {'feat': {
@@ -703,13 +701,12 @@ class TestRecordBuildsThePurlinRecord:
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
-        _code, calls = record_run(root, '--all', '--audit', '--tier', 'unit')
+        _code, calls = record_run(root, '--all', '--audit')
         capsys.readouterr()
-        engine, scope, tests, tier = calls['breaks'][0]
+        engine, scope, tests = calls['breaks'][0]
         assert engine == 'mutmut'
         assert scope == {'feat': ['src/']}
         assert tests[('feat', 'RULE-1')][0]['file'] == 'tests/test_feat.py'
-        assert tier == 'unit'
 
 
 class TestRecordCommitsAndTags:
@@ -1024,14 +1021,14 @@ class TestTheMarkerScanReadsEveryFrameworkSMarker:
         ('pytest', 'test_a.py',
          '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")'),
         ('jest', 'a.test.js',
-         'it("does [proof:feat:PROOF-1:RULE-1:unit]", () => {});'),
+         'it("does [proof:feat:PROOF-1:RULE-1]", () => {});'),
         ('vitest', 'a.test.ts',
          'it("does [proof:feat:PROOF-1:RULE-1]", () => {});'),
         ('xunit', 'A.cs',
-         '[Trait("PurlinProof", "feat:PROOF-1:RULE-1:unit")]'),
+         '[Trait("PurlinProof", "feat:PROOF-1:RULE-1")]'),
         ('shell', 'a.test.sh',
          'purlin_proof "feat" "PROOF-1" "RULE-1" pass "x"'),
-        ('sql', 'test_a.sql', '-- @purlin feat PROOF-1 RULE-1 unit'),
+        ('sql', 'test_a.sql', '-- @purlin feat PROOF-1 RULE-1'),
     ])
     @pytest.mark.proof("run_script", "PROOF-19", "RULE-19")
     def test_one_marker_is_found(self, tmp_path, framework, name, source):
@@ -1071,7 +1068,7 @@ class TestTheAuditGateLine:
         _git_repo(root)
         return root
 
-    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48", tier="integration")
+    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48")
     def test_a_failing_test_leaves_the_gate_not_met_and_exits_one(self,
                                                                   tmp_path):
         root = self._project(tmp_path, body=(
@@ -1083,14 +1080,14 @@ class TestTheAuditGateLine:
         assert 'gate not met: 0 of 1' in out, out
         assert code == 1, out
 
-    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48", tier="integration")
+    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48")
     def test_a_strong_rule_ends_the_run_at_gate_strong(self, tmp_path):
         root = self._project(tmp_path)
         code, out = _run(root, '--all', '--audit')
         assert 'gate strong: 1 of 1' in out, out
         assert code == 0, out
 
-    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48", tier="integration")
+    @pytest.mark.proof("run_script", "PROOF-69", "RULE-48")
     def test_under_passed_the_line_names_the_passed_cell(self, tmp_path):
         root = self._project(tmp_path)
         _gate(root, 'passed')

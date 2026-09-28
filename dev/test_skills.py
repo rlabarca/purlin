@@ -357,7 +357,7 @@ class TestSkillBuild:
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('build') == []
 
-    @pytest.mark.proof("skill_build", "PROOF-5", "RULE-5", tier="integration")
+    @pytest.mark.proof("skill_build", "PROOF-5", "RULE-5")
     def test_the_commit_body_contract_holds(self):
         result = subprocess.run(
             [BASH, 'dev/test_e2e_build_changeset.sh'], cwd=str(ROOT),

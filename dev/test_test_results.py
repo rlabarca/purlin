@@ -64,7 +64,7 @@ def _spec(root, name='feat', rules=1, proofs=(('PROOF-1', 'RULE-1', ''),)):
                      '[origin: eng]' % (index, index))
     lines.extend(['', '## Proof', ''])
     for proof_id, rule_id, tail in proofs:
-        lines.append('- %s (%s): Call it with 2; verify it answers 4%s @unit'
+        lines.append('- %s (%s): Call it with 2; verify it answers 4%s'
                      % (proof_id, rule_id, tail))
     (folder / ('%s.md' % name)).write_text('\n'.join(lines) + '\n',
                                            encoding='utf-8')
@@ -147,17 +147,17 @@ def test_the_file_carries_the_run_and_the_commit(tmp_path):
 
 @pytest.mark.proof("test_results", "PROOF-2", "RULE-2")
 @pytest.mark.parametrize('proofs,observed,host,word', [
-    ({'PROOF-1': {'tier': 'unit', 'env': None}}, {'PROOF-1': 'pass'},
+    ({'PROOF-1': {'env': None}}, {'PROOF-1': 'pass'},
      'linux', 'passed'),
-    ({'PROOF-1': {'tier': 'unit', 'env': None},
-      'PROOF-2': {'tier': 'unit', 'env': None}},
+    ({'PROOF-1': {'env': None},
+      'PROOF-2': {'env': None}},
      {'PROOF-1': 'pass', 'PROOF-2': 'fail'}, 'linux', 'failed'),
-    ({'PROOF-1': {'tier': 'unit', 'env': None},
-      'PROOF-2': {'tier': 'unit', 'env': 'windows'}},
+    ({'PROOF-1': {'env': None},
+      'PROOF-2': {'env': 'windows'}},
      {'PROOF-1': 'pass'}, 'linux', 'not run'),
-    ({'PROOF-1': {'tier': 'unit', 'env': None}}, {}, 'linux', 'no test'),
+    ({'PROOF-1': {'env': None}}, {}, 'linux', 'no test'),
     ({}, {}, 'linux', 'no test'),
-    ({'PROOF-1': {'tier': 'manual', 'env': None}}, {}, 'linux', 'passed'),
+    ({'PROOF-1': {'manual': True, 'env': None}}, {}, 'linux', 'passed'),
 ])
 def test_the_word_a_rule_reads(proofs, observed, host, word):
     assert writer.rule_word(sorted(proofs), proofs, observed, host) == word
@@ -175,7 +175,7 @@ def test_every_proof_entry_names_its_test_or_says_it_saw_none(tmp_path):
     entries = {entry['id']: entry for entry in _results(root)['proofs']}
     assert sorted(entries) == ['PROOF-1', 'PROOF-2']
     for entry in entries.values():
-        assert sorted(entry) == ['env', 'id', 'result', 'rule', 'test', 'tier']
+        assert sorted(entry) == ['env', 'id', 'result', 'rule', 'test']
     assert entries['PROOF-1']['result'] == 'pass'
     assert entries['PROOF-1']['rule'] == 'RULE-1'
     assert entries['PROOF-1']['test'] == 'tests/test_feat.py::test_ok'
@@ -328,8 +328,8 @@ def _write_results(root, feature, at, statuses):
     (folder / ('%s.json' % feature)).write_text(json.dumps({
         'schema': 'purlin-tests/1', 'feature': feature, 'commit': 'a' * 40,
         'at': at, 'os': 'linux', 'rules': {}, 'proofs': [
-            {'id': proof, 'rule': 'RULE-1', 'result': status, 'tier': 'unit',
-             'env': None, 'test': 'tests/test_feat.py::test_ok'}
+            {'id': proof, 'rule': 'RULE-1', 'result': status, 'env': None,
+             'test': 'tests/test_feat.py::test_ok'}
             for proof, status in sorted(statuses.items())]}) + '\n',
         encoding='utf-8')
 
@@ -342,7 +342,7 @@ def test_the_newer_of_the_two_answers_for_a_feature(tmp_path):
                          'status': 'fail'}]}
     proofs_dir = root / '.purlin' / 'runtime' / 'proofs'
     proofs_dir.mkdir(parents=True)
-    (proofs_dir / 'feat.unit.json').write_text('{"proofs": []}\n',
+    (proofs_dir / 'feat.json').write_text('{"proofs": []}\n',
                                                encoding='utf-8')
 
     # The runtime file was written now, which is after the results file.
@@ -396,7 +396,7 @@ def test_the_format_file_is_the_contract():
         assert '| `%s` |' % field in text, field
     for word in ('passed', 'failed', 'no test', 'not run'):
         assert '| `%s` |' % word in text, word
-    for field in ('id', 'rule', 'result', 'tier', 'env', 'test'):
+    for field in ('id', 'rule', 'result', 'env', 'test'):
         assert '| `%s` |' % field in text, field
 
 
@@ -416,7 +416,7 @@ def test_a_ci_run_writes_into_its_own_folder_and_a_person_s_file_stays(tmp_path)
     written = writer.write_results(root, writer.build_results(
         'feat', {'rule_order': ['RULE-1'],
                  'proofs_by_rule': {'RULE-1': ['PROOF-1']},
-                 'proofs': {'PROOF-1': {'tier': 'unit', 'env': 'windows'}}},
+                 'proofs': {'PROOF-1': {'env': 'windows'}}},
         {'PROOF-1': 'pass'}, {'PROOF-1': 'tests/test_feat.py::test_ok'},
         'b' * 40, 'windows', '2126-09-26T12:00:00Z', 'ci', 'c' * 64))
 
@@ -431,7 +431,7 @@ def test_a_ci_run_writes_into_its_own_folder_and_a_person_s_file_stays(tmp_path)
 def test_the_ci_results_reach_the_passed_cell_as_that_platform_s_run(tmp_path):
     """A proof nobody here can run is answered by the runner's own results."""
     root = _project(tmp_path)
-    _spec(root, proofs=[('PROOF-1', 'RULE-1', ' @unit @env(windows)')])
+    _spec(root, proofs=[('PROOF-1', 'RULE-1', ' @env(windows)')])
     _test_file(root)
     _repo(root)
 
@@ -441,7 +441,7 @@ def test_the_ci_results_reach_the_passed_cell_as_that_platform_s_run(tmp_path):
     writer.write_results(root, writer.build_results(
         'feat', {'rule_order': ['RULE-1'],
                  'proofs_by_rule': {'RULE-1': ['PROOF-1']},
-                 'proofs': {'PROOF-1': {'tier': 'unit', 'env': 'windows'}}},
+                 'proofs': {'PROOF-1': {'env': 'windows'}}},
         {'PROOF-1': 'pass'}, {'PROOF-1': 'tests/test_feat.py::test_ok'},
         _git(root, 'rev-parse', 'HEAD').strip(), 'windows', None, 'ci',
         _scope_tree(root)))

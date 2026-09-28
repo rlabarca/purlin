@@ -2,8 +2,8 @@
 # The shell arm of a Purlin run executes every `*.test.sh` in the project.
 # This repository's suites under `dev/` are named `test_*.sh`, which the arm
 # does not pick up, so this file is how the end-to-end walk of `purlin:init`
-# is reached from a run, and how the two
-# `@e2e` proofs of the `scaffold` spec get written.
+# is reached from a run, and how the two end-to-end proofs of the `scaffold`
+# spec get written.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

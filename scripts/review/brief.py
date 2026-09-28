@@ -134,7 +134,7 @@ def build_brief(project_root, payload, feature, rule, ai=False):
     min_strength = gate.get('min_strength') or 0
     feature_entry = _feature_entry(payload, feature)
 
-    proofs = [{'id': proof.get('id'), 'tier': proof.get('tier'),
+    proofs = [{'id': proof.get('id'), 'manual': bool(proof.get('manual')),
                'env': proof.get('env'), 'text': proof.get('text')}
               for proof in entry.get('proofs') or ()]
 
@@ -192,12 +192,20 @@ def _feature_entry(payload, feature):
     return {}
 
 
+def _proof_tags(proof):
+    """The tags a proof line carries, as the spec writes them, or ''."""
+    tags = ' @manual' if proof.get('manual') else ''
+    if proof.get('env'):
+        tags += ' @env(%s)' % proof['env']
+    return tags
+
+
 def _test_layer(project_root, feature, entry):
     """One record per test backing the rule, with its source."""
     seen = set()
     tests = []
     for proof in entry.get('proofs') or ():
-        if proof.get('tier') == 'manual':
+        if proof.get('manual'):
             tests.append({'proof': proof.get('id'), 'file': None, 'name': None,
                           'body': None, 'manual': True})
             continue
@@ -298,8 +306,8 @@ def model_prompt(project_root, brief):
            brief.get('origin')),
         'Rule: %s' % (brief.get('rule_text') or '')])
     for proof in brief.get('proofs') or ():
-        parts.append('%s (@%s): %s' % (proof.get('id'), proof.get('tier'),
-                                       proof.get('text')))
+        parts.append('%s%s: %s' % (proof.get('id'), _proof_tags(proof),
+                                   proof.get('text')))
     for test in brief.get('tests') or ():
         parts.append('')
         parts.append('Test for %s: %s::%s'
@@ -481,10 +489,8 @@ def render_brief(brief):
     lines.append('')
     lines.append('Proof')
     for proof in brief.get('proofs') or ():
-        lines.append('  %s (@%s%s): %s'
-                     % (proof.get('id'), proof.get('tier'),
-                        ', %s' % proof['env'] if proof.get('env') else '',
-                        proof.get('text')))
+        lines.append('  %s%s: %s' % (proof.get('id'), _proof_tags(proof),
+                                     proof.get('text')))
     lines.append('')
     lines.append('Test')
     if not brief.get('tests'):

@@ -223,7 +223,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
         with open(os.path.join(root, rel), encoding='utf-8') as f:
             return json.load(f)['version']
 
-    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7", tier="integration")
+    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7")
     def test_bump_propagates_everywhere_and_check_reports_drift(self, tmp_path):
         """bump_version.sh <semver> writes VERSION and every derived location;
         --check exits 1 naming the drifted file, and 0 on a matching tree."""
@@ -275,7 +275,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
         assert 'templates/config.json' in bad.stdout
         assert '.claude-plugin/plugin.json' in bad.stdout
 
-    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7", tier="integration")
+    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7")
     def test_bump_rejects_non_semver_and_tolerates_absent_optional_file(self, tmp_path):
         """A non-semver argument is refused before anything is written, and an
         absent .purlin/config.json is skipped rather than failing the run."""
@@ -382,8 +382,7 @@ class TestTheSweepRecordsItself:
     plugin rewrites as it finishes. The record is runtime state a reader can
     open; nothing compares `RELEASE_NOTES.md` against it."""
 
-    @pytest.mark.proof("purlin_version", "PROOF-10", "RULE-10",
-                       tier="integration")
+    @pytest.mark.proof("purlin_version", "PROOF-10", "RULE-10")
     def test_sweep_exit_trap_writes_its_own_sweep_record(self, tmp_path):
         """Drive the sweep's real writer and verify it writes last_sweep.json,
         unmerged, beside the shared test_run.json."""

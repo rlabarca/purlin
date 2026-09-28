@@ -50,8 +50,8 @@ cat > "$TMPDIR_E2E/specs/schema/api_conventions.md" << 'SPEC'
 
 ## Proof
 
-- PROOF-1 (RULE-1): GET /health; verify the Content-Type header is "application/json" @e2e
-- PROOF-2 (RULE-2): GET /missing; verify 404 and the fields "code" and "message" @e2e
+- PROOF-1 (RULE-1): GET /health; verify the Content-Type header is "application/json"
+- PROOF-2 (RULE-2): GET /missing; verify 404 and the fields "code" and "message"
 SPEC
 
 cat > "$TMPDIR_E2E/specs/_anchors/security_no_eval.md" << 'SPEC'
@@ -82,8 +82,8 @@ cat > "$TMPDIR_E2E/specs/auth/login.md" << 'SPEC'
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200 and a token @e2e
-- PROOF-2 (RULE-2): POST /login with a bad password; verify 401 and the body "denied" @e2e
+- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200 and a token
+- PROOF-2 (RULE-2): POST /login with a bad password; verify 401 and the body "denied"
 SPEC
 
 echo 'function login() { return 200; }' > "$TMPDIR_E2E/src/auth/login.js"
@@ -131,18 +131,18 @@ write_proofs() {
   local dir="$TMPDIR_E2E/.purlin/runtime/proofs"
   mkdir -p "$dir"
   {
-    printf '{"tier": "unit", "proofs": ['
+    printf '{"proofs": ['
     local first=1
     for pair in "$@"; do
       local pid="${pair%%:*}"
       local rid="${pair##*:}"
       [ $first -eq 1 ] || printf ','
       first=0
-      printf '{"feature":"%s","id":"%s","rule":"%s","test_file":"dev/test_e2e_required_rules.sh","test_name":"%s","status":"pass","tier":"unit"}' \
+      printf '{"feature":"%s","id":"%s","rule":"%s","test_file":"dev/test_e2e_required_rules.sh","test_name":"%s","status":"pass"}' \
         "$feature" "$pid" "$rid" "$pid"
     done
     printf ']}'
-  } > "$dir/$feature.unit.json"
+  } > "$dir/$feature.json"
 }
 
 # ── phase A: the count ────────────────────────────────────────────────

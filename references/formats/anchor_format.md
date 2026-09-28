@@ -111,7 +111,7 @@ A design anchor pins files in the project instead of a repo:
 
 ## Proof
 
-- PROOF-1 (RULE-1): Load /checkout with one item in the basket; verify the text "Order total" appears above the button labelled "Pay" @e2e
+- PROOF-1 (RULE-1): Load /checkout with one item in the basket; verify the text "Order total" appears above the button labelled "Pay"
 ```
 
 `> Pinned:` is the hash of the named files. A new export changes it, which

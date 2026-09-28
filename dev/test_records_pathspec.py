@@ -54,7 +54,7 @@ def test_git_is_handed_a_forward_slash_pathspec(tmp_path, monkeypatch):
         assert '.purlin/records' in specs, (command, specs)
 
 
-@pytest.mark.proof("records", "PROOF-27", "RULE-24", tier="integration")
+@pytest.mark.proof("records", "PROOF-27", "RULE-24")
 def test_the_commit_carries_the_new_record_and_the_deletion(tmp_path,
                                                             monkeypatch):
     """The tree the CI commit builds adds the new record and drops the old.

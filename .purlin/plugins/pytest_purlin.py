@@ -1,9 +1,9 @@
 """Purlin proof plugin for pytest.
 
 The plugin reads `@pytest.mark.proof` markers during a run and writes what it
-observed to `.purlin/runtime/proofs/<feature>.<tier>.json`. Proof files are
-runtime: they are gitignored, so two runs on two branches never conflict and
-nothing about a run is committed. The record `purlin:audit` writes is what
+observed to `.purlin/runtime/proofs/<feature>.json`. Proof files are runtime:
+they are gitignored, so two runs on two branches never conflict and nothing
+about a run is committed. The record `purlin:audit` writes is what
 says where a run happened, and it says it once per run.
 
 Usage in tests:
@@ -11,10 +11,6 @@ Usage in tests:
     @pytest.mark.proof("my_feature", "PROOF-1", "RULE-1")
     def test_something():
         assert login("alice", "secret") == 200
-
-    @pytest.mark.proof("my_feature", "PROOF-2", "RULE-2", tier="integration")
-    def test_integration_thing():
-        assert ...
 
 The operating system a proof must be proved on is a property of the spec, not
 of the test: write `@env(windows)`, `@env(macos)` or `@env(linux)` on the
@@ -38,12 +34,6 @@ import os
 import pytest
 
 
-# The three tiers a proof marker can name. Each is registered as a pytest
-# marker of its own so that `-m` can select on it: a caller asking for
-# `-m "not integration and not e2e"` gets the unit-tier proofs and nothing
-# else, without every test file having to carry a second hand-written marker.
-_TIERS = ("unit", "integration", "e2e")
-
 PROOF_DIR = os.path.join(".purlin", "runtime", "proofs")
 
 # The retired keyword and what replaced it. A marker that still carries it is
@@ -55,15 +45,8 @@ _RETIRED_KWARG = "platforms"
 def pytest_configure(config):
     config.addinivalue_line(
         "markers",
-        'proof(feature, proof_id, rule_id, *, tier="unit"): mark test as proof '
-        "for a spec rule",
+        "proof(feature, proof_id, rule_id): mark test as proof for a spec rule",
     )
-    for tier in _TIERS:
-        config.addinivalue_line(
-            "markers",
-            "%s: proof tier, added to every test whose proof marker names it"
-            % tier,
-        )
     collector = ProofCollector()
     config.pluginmanager.register(collector, "purlin_proof")
 
@@ -138,7 +121,7 @@ class ProofCollector:
         # Resolved once, from the working directory pytest was started in, and
         # used for the existence check and every `test_file` this run writes.
         self.root = _project_root()
-        self.proofs = {}   # keyed by (feature, tier)
+        self.proofs = {}   # keyed by feature
         # (feature, id, test_file) for every marked test this run skipped, so
         # an existing entry for it survives the write-scoped overwrite instead
         # of being reaped by a sibling test in the same file.
@@ -149,23 +132,6 @@ class ProofCollector:
         # Markers carrying the retired `platforms=` keyword, named in the one
         # line the run fails with.
         self.retired = []
-
-    def pytest_collection_modifyitems(self, config, items):
-        """Give every marked test the pytest marker its proof tier names.
-
-        The tier already decides which proof file the entry lands in; adding
-        it as a marker as well makes it selectable with `-m`, so a fast arm
-        can deselect the slow tiers. The marker is added, never substituted:
-        whatever markers the test already carries stay, and a test whose proof
-        markers name two tiers gets both. A tier outside `_TIERS` is added
-        under its own name verbatim rather than dropped or rewritten, so the
-        plugin never silently renames a caller's tier.
-        """
-        for item in items:
-            for marker in item.iter_markers("proof"):
-                if len(marker.args) < 3:
-                    continue
-                item.add_marker(marker.kwargs.get("tier", "unit"))
 
     def pytest_runtest_makereport(self, item, call):
         # A skip surfaces as a Skipped exception: raised during setup by a
@@ -184,7 +150,6 @@ class ProofCollector:
             feature = marker.args[0]
             proof_id = marker.args[1]
             rule_id = marker.args[2]
-            tier = marker.kwargs.get("tier", "unit")
             test_file = _relativize(self.root, str(item.fspath))
             self.seen_features.add(feature)
             if _RETIRED_KWARG in marker.kwargs:
@@ -195,15 +160,13 @@ class ProofCollector:
                 # have written is kept.
                 self.skipped.add((feature, proof_id, test_file))
                 continue
-            key = (feature, tier)
-            self.proofs.setdefault(key, []).append({
+            self.proofs.setdefault(feature, []).append({
                 "feature": feature,
                 "id": proof_id,
                 "rule": rule_id,
                 "test_file": test_file,
                 "test_name": item.name,
                 "status": "pass" if call.excinfo is None else "fail",
-                "tier": tier,
             })
 
     def pytest_sessionfinish(self, session, exitstatus):
@@ -228,8 +191,8 @@ class ProofCollector:
         directory = os.path.join(root, PROOF_DIR)
         os.makedirs(directory, exist_ok=True)
 
-        for (feature, tier), new_entries in self.proofs.items():
-            path = os.path.join(directory, "%s.%s.json" % (feature, tier))
+        for feature, new_entries in self.proofs.items():
+            path = os.path.join(directory, "%s.json" % feature)
 
             existing = []
             if os.path.exists(path):
@@ -239,11 +202,10 @@ class ProofCollector:
                 except (ValueError, OSError):
                     existing = []
 
-            # Write-scoped overwrite keyed by (feature, tier, test_file). The
-            # tier is carried by the file being written, so within it the key
-            # is (feature, test_file). Keep other features untouched; keep this
-            # feature's entries from test files this run did not execute, so
-            # two files covering one (feature, tier) can run in any order; reap
+            # Write-scoped overwrite keyed by (feature, test_file). Keep other
+            # features untouched; keep this feature's entries from test files
+            # this run did not execute, so two files covering one feature can
+            # run in any order; reap
             # entries whose test file is gone. The existence check resolves
             # each path it wrote from the project root, the same root it was
             # relativized against, so a run started from a subdirectory reads
@@ -273,7 +235,6 @@ class ProofCollector:
 
             kept = [e for e in existing if _keep(e)]
             payload = {
-                "tier": tier,
                 "proofs": sorted(kept + new_entries, key=_entry_order),
             }
 

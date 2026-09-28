@@ -25,7 +25,7 @@ def project():
     made.close()
 
 
-@pytest.mark.proof("states", "PROOF-11", "RULE-9", tier="integration")
+@pytest.mark.proof("states", "PROOF-11", "RULE-9")
 def test_a_failing_test_is_named_where_it_failed(project):
     project.proofs()
     project.record({'PROOF-1': 'fail', 'PROOF-2': 'pass'})

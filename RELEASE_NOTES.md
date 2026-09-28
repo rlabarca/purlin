@@ -261,6 +261,10 @@ Also gone, each without a replacement:
 - `scripts/report/scan.py`, which printed a repository's rollup from its URL without a
   checkout. `.purlin/tests.md`, which `purlin:test` commits, is what a reader without a checkout
   reads on the git host.
+- The kind of test on a proof line is gone: `@integration`, `@e2e` and `@unit`, the `--tier`
+  flag of `purlin_run.py`, the `tier` field of a proof file and `PURLIN_PROOF_TIER`.
+  `purlin:test` runs every tagged test of the features it runs, each plugin writes one proof
+  file per feature, and `purlin:init --update` drops the tag from a 0.9.5 proof line.
 
 ### The 0.10.0 line that never shipped
 

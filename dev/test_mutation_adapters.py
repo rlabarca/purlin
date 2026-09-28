@@ -345,7 +345,7 @@ def test_a_run_writes_the_scoped_config_and_reads_the_report(monkeypatch):
     monkeypatch.setattr(stryker, 'execute', execute)
     answer = stryker.run('/project', {'calc': ['src/calc.js']},
                          {('calc', 'RULE-1'): CALC_TESTS['RULE-1'],
-                          ('calc', 'RULE-2'): CALC_TESTS['RULE-2']}, 'unit')
+                          ('calc', 'RULE-2'): CALC_TESTS['RULE-2']})
     assert seen['config']['mutate'] == ['src/calc.js']
     assert seen['config']['coverageAnalysis'] == 'perTest'
     assert seen['config']['disableBail'] is True
@@ -365,7 +365,7 @@ def test_a_feature_with_no_scope_files_measures_nothing(monkeypatch):
     monkeypatch.setattr(stryker, 'test_runner', lambda root: 'jest')
     monkeypatch.setattr(stryker, 'execute', execute)
     answer = stryker.run('/project', {'calc': []},
-                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']}, None)
+                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']})
     assert answer['features']['calc']['scope_score']['score'] is None
     assert answer['features']['calc']['rules']['RULE-1']['score'] is None
     assert 'no scope files' in answer['log']
@@ -378,7 +378,7 @@ def test_a_run_that_wrote_no_report_says_so(monkeypatch):
     monkeypatch.setattr(stryker, 'execute',
                         lambda command, cwd, report_path=None: (1, 'boom'))
     answer = stryker.run('/project', {'calc': ['src/calc.js']},
-                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']}, None)
+                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']})
     assert answer['features']['calc']['rules']['RULE-1']['score'] is None
     assert 'wrote no report' in answer['log']
     assert 'boom' in answer['log']
@@ -388,7 +388,7 @@ def test_a_run_that_wrote_no_report_says_so(monkeypatch):
 def test_a_missing_binary_leaves_no_engine_and_says_what_to_install(monkeypatch):
     monkeypatch.setattr(stryker, 'binary', lambda root: None)
     answer = stryker.run('/project', {'calc': ['src/calc.js']},
-                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']}, None)
+                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']})
     assert answer['engine'] == 'none'
     assert answer['available'] is False
     assert 'stryker is not installed' in answer['reason']
@@ -475,8 +475,7 @@ def test_a_dotnet_run_reports_per_scope_when_no_killer_is_named(monkeypatch):
     monkeypatch.setattr(stryker_net, 'execute', execute)
     answer = stryker_net.run('/project', {'login': ['src/Login/Session.cs']},
                              {('login', 'RULE-1'): SESSION_TESTS['RULE-1'],
-                              ('login', 'RULE-2'): SESSION_TESTS['RULE-2']},
-                             'unit')
+                              ('login', 'RULE-2'): SESSION_TESTS['RULE-2']})
     assert answer['engine'] == 'stryker_net'
     assert answer['features']['login']['scope_score']['score'] == 60
     rules = answer['features']['login']['rules']
@@ -490,8 +489,7 @@ def test_a_dotnet_run_with_no_tool_installed_leaves_no_engine(monkeypatch):
     monkeypatch.setattr(stryker_net, 'available',
                         lambda root: (False, 'dotnet is not installed'))
     answer = stryker_net.run('/project', {'login': ['src/Login/Session.cs']},
-                             {('login', 'RULE-1'): SESSION_TESTS['RULE-1']},
-                             None)
+                             {('login', 'RULE-1'): SESSION_TESTS['RULE-1']})
     assert answer['engine'] == 'none'
     assert answer['reason'] == 'dotnet is not installed'
 
@@ -651,7 +649,7 @@ def test_a_mutmut_run_scores_every_rule_of_a_feature_the_same(tmp_path, monkeypa
                          'reports': ['src/reports/render.py']},
                         {('login', 'RULE-1'): [],
                          ('login', 'RULE-2'): [],
-                         ('reports', 'RULE-1'): []}, 'unit')
+                         ('reports', 'RULE-1'): []})
     assert seen[0] == ['mutmut', 'run']
     assert seen[1] == ['mutmut', 'results', '--all', 'true']
     assert answer['engine'] == 'mutmut'
@@ -669,7 +667,7 @@ def test_a_mutmut_run_scores_every_rule_of_a_feature_the_same(tmp_path, monkeypa
 def test_mutmut_missing_leaves_no_engine(monkeypatch):
     monkeypatch.setattr(mutmut, 'binary', lambda root=None: None)
     answer = mutmut.run('/project', {'login': ['src/login/session.py']},
-                        {('login', 'RULE-1'): []}, None)
+                        {('login', 'RULE-1'): []})
     assert answer['engine'] == 'none'
     assert 'pip install mutmut' in answer['reason']
     assert answer['features']['login']['rules']['RULE-1'][
@@ -684,7 +682,7 @@ def test_a_project_with_no_config_block_is_not_broken(tmp_path, monkeypatch):
     monkeypatch.setattr(mutmut, 'execute',
                         lambda *args, **kwargs: called.append(args) or (0, ''))
     answer = mutmut.run(str(tmp_path), {'login': ['src/login/session.py']},
-                        {('login', 'RULE-1'): []}, None)
+                        {('login', 'RULE-1'): []})
     assert called == []
     assert answer['engine'] == 'none'
     assert '[tool.mutmut]' in answer['reason']
@@ -728,7 +726,7 @@ def assert_answer_shape(answer, scope_by_feature, tests_by_rule):
 def test_run_breaks_answers_one_shape_for_no_engine():
     scope = {'deploy': ['deploy.sh']}
     tests = {('deploy', 'RULE-1'): []}
-    answer = mutation.run_breaks('/project', 'none', scope, tests, None)
+    answer = mutation.run_breaks('/project', 'none', scope, tests)
     assert_answer_shape(answer, scope, tests)
     assert answer['engine'] == 'none'
 
@@ -746,7 +744,7 @@ def test_run_breaks_answers_one_shape_for_a_real_engine(tmp_path, monkeypatch):
             else 'done'))
     scope = {'login': ['src/login/session.py']}
     tests = {('login', 'RULE-1'): [], ('login', 'RULE-2'): []}
-    answer = mutation.run_breaks(str(tmp_path), 'mutmut', scope, tests, 'unit')
+    answer = mutation.run_breaks(str(tmp_path), 'mutmut', scope, tests)
     assert_answer_shape(answer, scope, tests)
     assert answer['features']['login']['rules']['RULE-1']['score'] == 67
 
@@ -755,7 +753,7 @@ def test_run_breaks_answers_one_shape_for_a_real_engine(tmp_path, monkeypatch):
 def test_an_engine_nobody_ships_is_not_run():
     scope = {'login': ['src/login/session.py']}
     tests = {('login', 'RULE-1'): []}
-    answer = mutation.run_breaks('/project', 'cosmic-ray', scope, tests, None)
+    answer = mutation.run_breaks('/project', 'cosmic-ray', scope, tests)
     assert_answer_shape(answer, scope, tests)
     assert answer['engine'] == 'none'
     assert 'unknown engine' in answer['reason']
@@ -823,7 +821,7 @@ def test_a_mutmut_run_that_timed_out_measures_nothing(tmp_path, monkeypatch):
                          'reports': ['src/reports/render.py']},
                         {('login', 'RULE-1'): [],
                          ('login', 'RULE-2'): [],
-                         ('reports', 'RULE-1'): []}, 'unit')
+                         ('reports', 'RULE-1'): []})
     assert answer['engine'] == 'mutmut'
     assert answer['available'] is True
     assert_unmeasured(answer['features']['login'], 'mutmut',
@@ -853,7 +851,7 @@ def test_a_stryker_feature_that_timed_out_measures_nothing(monkeypatch):
                          {'calc': ['src/calc.js'], 'slow': ['src/calc.js']},
                          {('calc', 'RULE-1'): CALC_TESTS['RULE-1'],
                           ('calc', 'RULE-2'): CALC_TESTS['RULE-2'],
-                          ('slow', 'RULE-1'): CALC_TESTS['RULE-1']}, 'unit')
+                          ('slow', 'RULE-1'): CALC_TESTS['RULE-1']})
     assert answer['features']['calc']['scope_score']['score'] == 64
     assert_unmeasured(answer['features']['slow'], 'stryker', ('RULE-1',))
     assert_names_the_timeout(answer)
@@ -881,8 +879,7 @@ def test_a_dotnet_feature_that_timed_out_measures_nothing(monkeypatch):
                              {'login': ['src/Login/Session.cs'],
                               'slow': ['src/Login/Session.cs']},
                              {('login', 'RULE-1'): SESSION_TESTS['RULE-1'],
-                              ('slow', 'RULE-1'): SESSION_TESTS['RULE-1']},
-                             'unit')
+                              ('slow', 'RULE-1'): SESSION_TESTS['RULE-1']})
     assert answer['features']['login']['scope_score']['score'] == 60
     assert_unmeasured(answer['features']['slow'], 'stryker_net', ('RULE-1',))
     assert_names_the_timeout(answer)

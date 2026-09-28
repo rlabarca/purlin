@@ -13,9 +13,10 @@ Rule lines carry their tags at the end:
 The tags are read off the end and stripped, so `rule_text_hash` sees the claim
 alone and re-tagging a rule never stales a signature.
 
-Proof lines carry a tier and at most one operating system:
+Proof lines carry at most one operating system, and `@manual` where no test
+can settle the rule:
 
-    - PROOF-3 (RULE-3): POST /login with a token issued 25h ago; verify 401 @integration @env(linux)
+    - PROOF-3 (RULE-3): POST /login with a token issued 25h ago; verify 401 @env(linux)
 
 `@env` takes `windows`, `macos` or `linux` and nothing else. A proof with no
 `@env` is satisfied by a run on any operating system.
@@ -51,11 +52,11 @@ _RULE_TAG_RE = re.compile(
 BARS = ('passed', 'strong')
 DEFAULT_ORIGIN = 'eng'
 
-# A trailing tag is metadata appended after the description: ` @e2e`,
+# A trailing tag is metadata appended after the description: ` @manual`,
 # ` @env(linux)`. It must not match a description whose prose merely ends in
-# an @word, e.g. "verify the doc lists @integration, @e2e and @unit", so the
+# an @word, e.g. "verify the doc lists @manual, @env and @word", so the
 # tag may not follow a list connector (`,`, `and`, `or`).
-_TIER_TAG_RE = re.compile(r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\s*$')
+_PROOF_TAG_RE = re.compile(r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\s*$')
 
 ENVIRONMENTS = ('windows', 'macos', 'linux')
 
@@ -104,20 +105,21 @@ def split_rule_tags(text):
 
 
 def split_proof_tags(desc):
-    """`(clean_desc, tier, env, unknown)` for one proof line's description.
+    """`(clean_desc, manual, env, unknown)` for one proof line's description.
 
     Tags are read right to left. `@env(<os>)` names the operating system the
     proof must be proved on, at most once, one of `windows`, `macos`,
-    `linux`; any other `@<name>` is the tier. `unknown` lists the tags this
-    release does not read, so the caller can name the file once rather than
-    warning per line.
+    `linux`; `@manual` says no test settles the rule. Any other trailing
+    `@<name>` is not a tag: reading stops there and it stays in the text.
+    `unknown` lists the tags this release does not read, so the caller can
+    name the file once rather than warning per line.
     """
     desc = desc.rstrip()
-    tier = None
+    manual = False
     env = None
     unknown = []
     while True:
-        m = _TIER_TAG_RE.search(desc)
+        m = _PROOF_TAG_RE.search(desc)
         if not m:
             break
         name, args = m.group(1), m.group(2)
@@ -136,16 +138,15 @@ def split_proof_tags(desc):
             unknown.append('@windows')
         elif args:
             # A tag with arguments that is not @env is a stamp, and stamps
-            # are no longer part of the format. The tier survives it.
+            # are no longer part of the format.
             unknown.append('@%s(...)' % name)
-            if tier is None:
-                tier = name
-        elif tier is not None:
-            unknown.append('@%s' % name)
+            manual = manual or name == 'manual'
+        elif name == 'manual':
+            manual = True
         else:
-            tier = name
+            break
         desc = desc[:m.start()].rstrip()
-    return desc, tier or 'unit', env, unknown
+    return desc, manual, env, unknown
 
 
 # ---------------------------------------------------------------------------
@@ -355,7 +356,7 @@ def scan_specs(project_root):
     `specs/`), `name`, `is_anchor`, `is_global`, `description`, `stack`,
     `requires`, `scope`, `rules` (`{RULE-N: text}` with tags stripped),
     `rule_meta` (`{RULE-N: {bar, origin, criterion}}`), `rule_order`,
-    `proofs` (`{PROOF-N: {rules, text, tier, env}}`), `proof_env`,
+    `proofs` (`{PROOF-N: {rules, text, manual, env}}`), `proof_env`,
     `proofs_by_rule`, `source`, `source_path`, `source_globs`, `pinned`,
     `has_rules_section`, `unnumbered_lines` and `unknown_tags`.
     """
@@ -405,10 +406,10 @@ def _parse_spec(name, rel_path, content):
                 continue
             proof_id = m.group(1)
             rule_ids = _split_list(m.group(2))
-            text, tier, env, unknown = split_proof_tags(m.group(3).strip())
+            text, manual, env, unknown = split_proof_tags(m.group(3).strip())
             unknown_tags.extend(unknown)
             proofs[proof_id] = {'rules': rule_ids, 'text': text,
-                                'tier': tier, 'env': env}
+                                'manual': manual, 'env': env}
             proof_env[proof_id] = env
             for rule_id in rule_ids:
                 proofs_by_rule.setdefault(rule_id, []).append(proof_id)

@@ -32,25 +32,23 @@ def project():
 
 def _runtime(project, proof_one_names):
     entries = [{'feature': 'login', 'id': 'PROOF-1', 'rule': 'RULE-1',
-                'status': 'pass', 'tier': 'unit',
-                'test_file': 'tests/test_login.py', 'test_name': name}
+                'status': 'pass', 'test_file': 'tests/test_login.py', 'test_name': name}
                for name in proof_one_names]
     entries.append({'feature': 'login', 'id': 'PROOF-2', 'rule': 'RULE-2',
-                    'status': 'pass', 'tier': 'unit',
-                    'test_file': 'tests/test_login.py',
+                    'status': 'pass', 'test_file': 'tests/test_login.py',
                     'test_name': TEST_NAMES['PROOF-2']})
     write(os.path.join(project.root, '.purlin', 'runtime', 'proofs',
-                       'login.unit.json'),
-          json.dumps({'tier': 'unit', 'proofs': entries}))
+                       'login.json'),
+          json.dumps({'proofs': entries}))
 
 
 def _os_record(project, os_name, stamp, proof_one_names):
     proofs = [{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass',
-               'tier': 'unit', 'env': None,
+               'env': None,
                'test_file': 'tests/test_login.py', 'test_name': name}
               for name in proof_one_names]
     proofs.append({'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass',
-                   'tier': 'unit', 'env': None,
+                   'env': None,
                    'test_file': 'tests/test_login.py',
                    'test_name': TEST_NAMES['PROOF-2']})
     rel = '.purlin/records/local/login/%s-%s-ci-%s.json' % (
@@ -71,7 +69,7 @@ def _os_record(project, os_name, stamp, proof_one_names):
 
 class TestTheRecordsNameTheTests:
 
-    @pytest.mark.proof("states", "PROOF-40", "RULE-35", tier="integration")
+    @pytest.mark.proof("states", "PROOF-40", "RULE-35")
     def test_what_this_checkout_ran_does_not_move_the_hash(self, project):
         project.proofs()
         project.record()
@@ -83,14 +81,14 @@ class TestTheRecordsNameTheTests:
         assert project.rule('RULE-1')['test_hash'] == first, \
             'a test this checkout could not run moved the hash'
 
-    @pytest.mark.proof("states", "PROOF-41", "RULE-35", tier="integration")
+    @pytest.mark.proof("states", "PROOF-41", "RULE-35")
     def test_with_no_record_the_runtime_names_the_tests(self, project):
         project.proofs()
         before = project.rule('RULE-1')['test_hash']
         _runtime(project, [TEST_NAMES['PROOF-1'], EXTRA])
         assert project.rule('RULE-1')['test_hash'] != before
 
-    @pytest.mark.proof("states", "PROOF-42", "RULE-35", tier="integration")
+    @pytest.mark.proof("states", "PROOF-42", "RULE-35")
     def test_every_operating_system_s_record_counts(self, project):
         project.proofs()
         _os_record(project, 'linux', '20260913T120000Z',

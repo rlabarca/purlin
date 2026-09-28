@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End to end: the write-scoped overwrite, keyed by (feature, tier, test_file).
+# End to end: the write-scoped overwrite, keyed by (feature, test_file).
 #
 # A real temp project with two specs and two shell suites: a write for one
 # feature never touches another, two test files covering one feature coexist in
@@ -48,8 +48,8 @@ make_repo() {
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200 @e2e
-- PROOF-2 (RULE-2): POST /login with bad credentials; verify 401 @e2e
+- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200
+- PROOF-2 (RULE-2): POST /login with bad credentials; verify 401
 SPEC
 
   cat > "$dir/specs/auth/signup.md" <<'SPEC'
@@ -64,8 +64,8 @@ SPEC
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /signup with a fresh email; verify the account exists @e2e
-- PROOF-2 (RULE-2): POST /signup twice with one email; verify 409 @e2e
+- PROOF-1 (RULE-1): POST /signup with a fresh email; verify the account exists
+- PROOF-2 (RULE-2): POST /signup twice with one email; verify 409
 SPEC
 
   echo "$dir"
@@ -77,7 +77,6 @@ suite() {
   shift 3
   {
     echo "source \"$HARNESS\""
-    echo 'export PURLIN_PROOF_TIER=e2e'
     for entry in "$@"; do
       local proof_id rule_id status
       proof_id="$(cut -d'|' -f1 <<<"$entry")"
@@ -94,7 +93,7 @@ read_ids() {
   local dir="$1" feature="$2"
   python3 -c "
 import json, sys
-path = '$dir/.purlin/runtime/proofs/$feature.e2e.json'
+path = '$dir/.purlin/runtime/proofs/$feature.json'
 try:
     data = json.load(open(path, encoding='utf-8'))
 except OSError:
@@ -146,7 +145,7 @@ phase_three() {
   [[ "$(read_ids "$dir" login)" == "PROOF-1@tests/login_a.test.sh,PROOF-2@tests/login_b.test.sh" ]] || return 1
   python3 -c "
 import json
-data = json.load(open('$dir/.purlin/runtime/proofs/login.e2e.json', encoding='utf-8'))
+data = json.load(open('$dir/.purlin/runtime/proofs/login.json', encoding='utf-8'))
 by = {e['id']: e['status'] for e in data['proofs']}
 assert by == {'PROOF-1': 'pass', 'PROOF-2': 'pass'}, by
 " || return 1

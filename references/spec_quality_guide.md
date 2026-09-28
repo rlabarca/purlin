@@ -26,7 +26,7 @@ Every rule must pass one question: **if an engineer rebuilt this feature from on
 spec, would they get this wrong without this rule?**
 
 If the answer is "no, they would figure it out" or "QA would catch it immediately", it
-is not a rule. Cut it. This question comes before everything else: coverage, tier tags
+is not a rule. Cut it. This question comes before everything else: coverage, tags
 and proof text are all wasted on a rule that does not earn its line.
 
 Two more questions for every candidate rule:
@@ -43,7 +43,7 @@ Two more questions for every candidate rule:
 |---|---|---|
 | Wrong behaviour | The engineer builds the wrong thing: wrong data source, wrong conditional gate, wrong calculation | Must be a rule. The rebuild produces wrong numbers. |
 | Broken functionality | The feature works, then degrades under real conditions: crashes on missing data, one failure cascades | Must be a rule. An engineer would likely miss it. |
-| Wrong layout | The feature is correct but unusable: content overlaps, controls are hidden | Should be a rule, proved `@e2e` or `@manual`. |
+| Wrong layout | The feature is correct but unusable: content overlaps, controls are hidden | Should be a rule, proved by a flow through the running app or `@manual`. |
 | Visual polish | Spacing, exact pixel values, animation timing, icon sizing | Not a rule. QA catches it. |
 
 ### Too few rules, too many rules
@@ -109,7 +109,7 @@ read straight into a test without interpretation. Five things make it one:
    one, almost any assertion satisfies the proof.
 3. **A negative case.** When the rule says reject, block, limit or expire, one proof
    exercises the rejection. The accepted case alone proves the rule in one direction.
-4. **A tier.** See "Tier assignment" below.
+4. **`@manual`, when no test can settle it.** See "Manual proofs" below.
 5. **An `@env` tag, when the operating system matters.** `@env(windows)`, `@env(macos)`
    or `@env(linux)`, at most one per proof. Those three are the whole vocabulary. Use
    it only when the behaviour genuinely cannot be observed elsewhere: a native file
@@ -145,14 +145,14 @@ Describe what a person would see, never the DOM. The agent picks the tool.
 Bad: "Count the table rows with class `fr`; verify the count is 8." Good: "Load the
 dashboard with 3 features (3 of 3 strong, 2 of 6 passing, 0 of 4 untested); verify the
 table shows 3 rows, the tiles read Untested 0, Passing 2 and Strong 3, and the first
-row's Tests cell reads `2 of 6`; take a screenshot @e2e".
+row's Tests cell reads `2 of 6`; take a screenshot".
 
 No selectors, no class names, no `querySelector`. The proof says what is on screen, so
 it survives a refactor of the markup.
 
-### `@e2e` proofs are flows
+### Flow proofs
 
-An `@e2e` proof reads as arrange, act, observe through the real running app.
+A proof that drives the running app reads as arrange, act, observe.
 
 - **Arrange:** seed the state a user would meet, navigate to a URL, stub an upstream
   response.
@@ -160,19 +160,17 @@ An `@e2e` proof reads as arrange, act, observe through the real running app.
 - **Observe:** assert what is visible at a boundary: on-screen text, the outbound
   request that fired, the storage state after the flow. Never a source constant.
 
-Bad: "Assert `loginRedirect` uses the `access_as_user` scope @e2e". That names an
-internal function, so the test imports internals and asserts a declaration, and the
-AI audit observes that the proof is tagged `@e2e` and reads as a function call.
+Bad: "Assert `loginRedirect` uses the `access_as_user` scope". That names an internal
+function, so the test imports internals and asserts a declaration, and the AI audit
+observes that a proof about a sign-in flow reads as a function call.
 
 Good: "Open the app, enter an email, click Sign in; observe that the redirect to the
 identity provider carries scope `access_as_user`; complete login with a test account;
-verify `localStorage.loginEmail` equals the entered email. @e2e"
+verify `localStorage.loginEmail` equals the entered email."
 
-The tag and the description must agree in both directions. A proof tagged `@e2e` that
-could pass without launching the app is mis-tagged; retag it. A proof that needs
-rendering, routing or storage state after a flow and carries no tag is under-tagged;
-tag it `@e2e`. Name the flow, never the runner: the description must be executable by
-whatever end-to-end tooling the project has.
+A proof about a flow that could pass without launching the app does not describe the
+flow; rewrite it. Name the flow, never the runner: the description must be executable by
+whatever browser tooling the project has.
 
 ### Grep proofs
 
@@ -194,27 +192,17 @@ expected output.
 - Good: "Call parse_id() with `RULE-`, the number missing; verify it raises ValueError
   naming the input"
 
-## Tier assignment
+## Manual proofs
 
-Assign the tier by what the proof needs to execute. A proof with no tag is unit tier.
-
-| What it needs | Tier | Example |
-|---|---|---|
-| Pure logic, memory only, or a grep over local files | none | Validate an input format, compute a hash, parse a config |
-| A database, the network, the filesystem or an external service | `@integration` | An API roundtrip, a query, a file written and read back |
-| A browser, the full stack or a rendered interface | `@e2e` | A login flow, a screenshot, a full page render |
-| Human judgment: visual, wording, brand voice | `@manual` | Read the error messages against the brand voice guide |
-
-When in doubt, tag `@integration`. A fast test carrying that tag is harmless; a slow
-test with no tag blocks the unit tier. Tier tags are not optional: they decide which
-tests run in which CI stage, so review them before you commit.
+A proof carries no tag when a test settles it, whatever that test needs to run:
+`purlin:test` runs every tagged test of the features it runs. Human judgment, such as
+visual polish, wording or brand voice, is the one case for `@manual`: "Read the error
+messages against the brand voice guide @manual".
 
 Source files under `views/`, `pages/`, `templates/` or `layouts/`, components with
-layout logic, and code producing HTML are a signal that the proofs are `@e2e` or
-`@manual`. Do not write an automated proof description for something that cannot be
-automated.
-
-### `@manual`
+layout logic, and code producing HTML are a signal that the proofs drive the running app
+or are `@manual`. Do not write an automated proof description for something that cannot
+be automated.
 
 `@manual` means there is no test, so nothing can run and there is no test body for the AI
 audit to read. The rule's strong cell reads `manual test` with the reason `manual proof`.
@@ -232,7 +220,7 @@ first three, under `signed` all four.
 
 | Cell | Word | What it means | What moves it |
 |---|---|---|---|
-| spec | `drafted` | No proof line names the rule. Nothing else holds a rule here: what a proof is worth is the audit's question. | Write the proof under `## Proof` so it names a trigger and an expected value at a tier it can reach. `purlin:spec`. |
+| spec | `drafted` | No proof line names the rule. Nothing else holds a rule here: what a proof is worth is the audit's question. | Write the proof under `## Proof` so it names a trigger and an expected value a test can reach. `purlin:spec`. |
 | passed | `no test` | The spec status is `ready` and no test carries the proof marker. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
 | passed | `not run` | Nothing has run the rule's tests yet. | Run `purlin:test`, which counts at every gate. |

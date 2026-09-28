@@ -5,8 +5,8 @@
 # hooks the reporter exposes are its whole contract.
 #
 #   a title marker produces a proof entry
-#   the entry carries the seven fields
-#   the file is .purlin/runtime/proofs/<feature>.<tier>.json
+#   the entry carries the six fields
+#   the file is .purlin/runtime/proofs/<feature>.json
 #   a title with no marker is ignored
 #   a second run replaces this file's entries
 #   a skipped test writes nothing and keeps the entry it had
@@ -63,30 +63,21 @@ echo "=== jest proof reporter tests ==="
 
 test_marker_produces_an_entry() {
   local d; d="$(make_project)"
-  drive "$d" '[{"title": "does it [proof:feat:PROOF-1:RULE-1:unit]", "status": "passed"},
-               {"title": "breaks [proof:feat:PROOF-2:RULE-2:unit]", "status": "failed"}]' \
+  drive "$d" '[{"title": "does it [proof:feat:PROOF-1:RULE-1]", "status": "passed"},
+               {"title": "breaks [proof:feat:PROOF-2:RULE-2]", "status": "failed"}]' \
     >/dev/null 2>&1
   python3 -c "
 import json
-data = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))
+data = json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))
 by = {e['id']: e for e in data['proofs']}
 assert by['PROOF-1']['status'] == 'pass', by
 assert by['PROOF-2']['status'] == 'fail', by
-assert set(by['PROOF-1']) == {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}, by
+assert set(by['PROOF-1']) == {'feature', 'id', 'rule', 'test_file', 'test_name', 'status'}, by
 assert by['PROOF-1']['test_file'] == 'tests/a.test.js', by
 " >/dev/null 2>&1
   local rc=$?; rm -rf "$d"; return $rc
 }
-run_test "a title marker produces an entry with the seven fields" test_marker_produces_an_entry
-
-test_tier_names_the_file() {
-  local d; d="$(make_project)"
-  drive "$d" '[{"title": "does it [proof:feat:PROOF-1:RULE-1:e2e]", "status": "passed"}]' \
-    >/dev/null 2>&1
-  [[ -f "$d/.purlin/runtime/proofs/feat.e2e.json" ]]
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run_test "the marker's tier names the file" test_tier_names_the_file
+run_test "a title marker produces an entry with the six fields" test_marker_produces_an_entry
 
 test_unmarked_title_ignored() {
   local d; d="$(make_project)"
@@ -105,7 +96,7 @@ test_rerun_replaces() {
     >/dev/null 2>&1
   python3 -c "
 import json
-ids = [e['id'] for e in json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs']]
+ids = [e['id'] for e in json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))['proofs']]
 assert ids == ['PROOF-1'], ids
 " >/dev/null 2>&1
   local rc=$?; rm -rf "$d"; return $rc
@@ -119,16 +110,16 @@ test_skipped_keeps_its_entry() {
 import json
 entries = [{'feature': 'feat', 'id': 'PROOF-2', 'rule': 'RULE-2',
             'test_file': 'tests/a.test.js', 'test_name': 'kept name',
-            'status': 'pass', 'tier': 'unit'}]
-json.dump({'tier': 'unit', 'proofs': entries},
-          open('$d/.purlin/runtime/proofs/feat.unit.json', 'w', encoding='utf-8'), indent=2)
+            'status': 'pass'}]
+json.dump({'proofs': entries},
+          open('$d/.purlin/runtime/proofs/feat.json', 'w', encoding='utf-8'), indent=2)
 "
   drive "$d" '[{"title": "a [proof:feat:PROOF-1:RULE-1]", "status": "passed"},
                {"title": "b [proof:feat:PROOF-2:RULE-2]", "status": "skipped"}]' \
     >/dev/null 2>&1
   python3 -c "
 import json
-by = {e['id']: e for e in json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs']}
+by = {e['id']: e for e in json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))['proofs']}
 assert by['PROOF-2']['test_name'] == 'kept name', by
 assert by['PROOF-1']['status'] == 'pass', by
 " >/dev/null 2>&1
@@ -139,7 +130,7 @@ run_test "a skipped test writes nothing and keeps the entry it had" test_skipped
 test_retired_keyword_refused() {
   local d; d="$(make_project)"
   local out
-  out="$(drive "$d" '[{"title": "a [proof:feat:PROOF-1:RULE-1:unit:on(windows)]", "status": "passed"}]' 2>&1)" \
+  out="$(drive "$d" '[{"title": "a [proof:feat:PROOF-1:RULE-1:on(windows)]", "status": "passed"}]' 2>&1)" \
     && { rm -rf "$d"; return 1; }
   grep -q "@env(windows)" <<<"$out" && \
     { [[ ! -d "$d/.purlin/runtime/proofs" ]] || [[ -z "$(ls -A "$d/.purlin/runtime/proofs")" ]]; }

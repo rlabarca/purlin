@@ -45,7 +45,7 @@ whose `> Source:` names local file globs instead of a repository:
 
 ## Proof
 
-- PROOF-1 (RULE-1): Load /checkout with one item in the basket; verify the text "Order total" appears above the button labelled "Pay" @e2e
+- PROOF-1 (RULE-1): Load /checkout with one item in the basket; verify the text "Order total" appears above the button labelled "Pay"
 ```
 
 `> Pinned:` is the hash of the named files, not a commit. Feature specs name the anchor with

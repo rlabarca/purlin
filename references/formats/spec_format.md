@@ -1,4 +1,4 @@
-> Format-Version: 13
+> Format-Version: 14
 
 # Spec format
 
@@ -29,7 +29,7 @@ specs/<category>/<name>.md
 
 ## Proof
 
-- PROOF-1 (RULE-1): <Observable assertion> @integration @env(linux)
+- PROOF-1 (RULE-1): <Observable assertion> @env(linux)
 - PROOF-2 (RULE-2): <Observable assertion>
 ```
 
@@ -130,32 +130,28 @@ A proof describes what a test asserts, not how it is written. Every rule needs
 at least one proof; several proofs can name the same rule, and one proof can
 name several rules when it drives a flow through all of them.
 
-### Tier tags
+### The manual tag
 
-Append a tier tag to a proof that is not a unit test:
+Append `@manual` to a proof that no test can settle:
 
 ```
 - PROOF-1 (RULE-1): Parse the config and verify the default values
-- PROOF-2 (RULE-2): POST /api/users against the database; verify 201 @integration
-- PROOF-3 (RULE-3): Load the checkout page in a browser; verify the 3-click flow @e2e
-- PROOF-4 (RULE-4): Read the error messages against the brand voice guide @manual
+- PROOF-2 (RULE-2): POST /api/users against the database; verify 201
+- PROOF-3 (RULE-3): Read the error messages against the brand voice guide @manual
 ```
 
 | Tag | When to use |
 |-----|-------------|
-| (none) | Pure logic, in memory, or a grep over local files |
-| `@integration` | Needs a database, the network, the filesystem or an external service |
-| `@e2e` | Needs a browser, the full stack or a rendered interface |
+| (none) | A tagged test settles the proof, whatever it needs to run |
 | `@manual` | A person's judgment is the only instrument. No test, so the rule's strong cell reads `manual test`; the evidence is a signature file carrying a one-line note, always written by a person |
 
-Any `@<name>` other than `@env` is read as a tier, and its results are read
-from `.purlin/runtime/proofs/<feature>.<name>.json`. The four above are the
-common ones.
+`@manual` and `@env` are the only tags a proof line carries. Any other trailing
+`@<name>` is not a tag: it stays in the proof text. `purlin:test` runs every
+tagged test of the features it runs.
 
 ### Operating system tags
 
-A tier says what kind of test a proof is. `@env` says which operating system
-it must be proved on:
+`@env` says which operating system a proof must be proved on:
 
 ```
 - PROOF-53 (RULE-29): Lock a file and verify a second process cannot open it @env(windows)
@@ -174,14 +170,14 @@ status says so.
 
 ### Retired tags
 
-`@on(<id>)`, a bare `@windows` tier and a stamped                    <!-- retired -->
+`@on(<id>)`, a bare `@windows` and a stamped                         <!-- retired -->
 `@manual(<email>, <date>, <sha>)` are retired. A spec that still carries one
 parses; the tag is ignored and the file is named once in the run's warnings.
 Rewrite `@on(windows)` as `@env(windows)`.                          <!-- retired -->
 
 A tag is recognised only when it does not follow a list connector (`,`, `and`,
-`or`), so a description whose prose ends in `@unit, @integration and @e2e` has
-no tag and is not truncated.
+`or`), so a description whose prose ends in `@manual, @env and @word` has no
+tag and is not truncated.
 
 ## Rules that forbid something
 

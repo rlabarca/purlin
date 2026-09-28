@@ -105,7 +105,7 @@
                 }
               ],
               "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule1log",
@@ -170,7 +170,7 @@
                 }
               ],
               "text": "POST /session five times with a wrong password, then once more with the right one, and read 423.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule2log",
@@ -235,7 +235,7 @@
                 }
               ],
               "text": "Lock an account and read 1 message in the outbox.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule3log",
@@ -357,7 +357,7 @@
                 }
               ],
               "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule1inv",
@@ -419,7 +419,7 @@
               "id": "PROOF-2",
               "tests": [],
               "text": "Build an invoice with zero lines and read the total 0.00.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule2inv",
@@ -543,7 +543,7 @@
                 }
               ],
               "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\".",
-              "tier": "e2e"
+              "manual": false
             }
           ],
           "rule_hash": "rrule1che",

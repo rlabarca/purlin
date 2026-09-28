@@ -2,14 +2,13 @@
  * Purlin proof reporter for Jest.
  *
  * The reporter reads proof markers from test titles during a run and writes
- * what it observed to `.purlin/runtime/proofs/<feature>.<tier>.json`. Proof
+ * what it observed to `.purlin/runtime/proofs/<feature>.json`. Proof
  * files are runtime: they are gitignored, so two runs on two branches never
  * conflict and nothing about a run is committed. The record `purlin:audit`
  * writes is what says where a run happened, and it says it once per run.
  *
  * Marker syntax in test titles:
- *   [proof:feature:PROOF-N:RULE-N]               tier "unit"
- *   [proof:feature:PROOF-N:RULE-N:integration]   explicit tier
+ *   [proof:feature:PROOF-N:RULE-N]
  *
  * The operating system a proof must be proved on is a property of the spec,
  * not of the test: write @env(windows), @env(macos) or @env(linux) on the
@@ -33,7 +32,7 @@ const fs = require("fs");
 const path = require("path");
 
 const PROOF_MARKER_RE =
-  /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?(?::on\(([^)]*)\))?\]/;
+  /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::on\(([^)]*)\))?\]/;
 
 const PROOF_DIR = path.join(".purlin", "runtime", "proofs");
 
@@ -125,7 +124,7 @@ class PurlinProofReporter {
     // process's working directory; `rootDir` is not itself the project root
     // when jest was started from a subdirectory, which is what the walk is for.
     this.root = projectRoot((globalConfig && globalConfig.rootDir) || process.cwd());
-    this.proofs = {}; // keyed by `${feature}:${tier}`
+    this.proofs = {}; // keyed by feature
     // skipKey(feature, id, test_file) for every marked test this run skipped,
     // so an existing entry for it survives the write-scoped overwrite instead
     // of being reaped by a sibling test in the same file.
@@ -142,7 +141,7 @@ class PurlinProofReporter {
       const match = result.title.match(PROOF_MARKER_RE);
       if (!match) continue;
 
-      const [, feature, proofId, ruleId, tier = "unit", onList] = match;
+      const [, feature, proofId, ruleId, onList] = match;
       const testFile = relativeTestFile(this.root, testResult.testFilePath);
       this.seenFeatures.add(feature);
 
@@ -158,16 +157,14 @@ class PurlinProofReporter {
         continue;
       }
 
-      const key = `${feature}:${tier}`;
-      if (!this.proofs[key]) this.proofs[key] = [];
-      this.proofs[key].push({
+      if (!this.proofs[feature]) this.proofs[feature] = [];
+      this.proofs[feature].push({
         feature,
         id: proofId,
         rule: ruleId,
         test_file: testFile,
         test_name: result.title,
         status: result.status === "passed" ? "pass" : "fail",
-        tier,
       });
     }
   }
@@ -196,9 +193,8 @@ class PurlinProofReporter {
     const directory = path.join(root, PROOF_DIR);
     fs.mkdirSync(directory, { recursive: true });
 
-    for (const [key, newEntries] of Object.entries(this.proofs)) {
-      const [feature, tier] = key.split(":");
-      const filePath = path.join(directory, `${feature}.${tier}.json`);
+    for (const [feature, newEntries] of Object.entries(this.proofs)) {
+      const filePath = path.join(directory, `${feature}.json`);
 
       let existing = [];
       if (fs.existsSync(filePath)) {
@@ -209,9 +205,8 @@ class PurlinProofReporter {
         }
       }
 
-      // Write-scoped overwrite keyed by (feature, tier, test_file); the file
-      // carries the tier, so within it the key is (feature, test_file). Entries
-      // whose test file no longer exists are reaped. Each path it wrote is
+      // Write-scoped overwrite keyed by (feature, test_file). Entries whose
+      // test file no longer exists are reaped. Each path it wrote is
       // resolved from the project root, the same root it was relativized
       // against.
       const runFiles = new Set(newEntries.map((e) => e.test_file));
@@ -231,7 +226,7 @@ class PurlinProofReporter {
         );
       });
 
-      const payload = { tier, proofs: sortProofEntries([...kept, ...newEntries]) };
+      const payload = { proofs: sortProofEntries([...kept, ...newEntries]) };
 
       // Atomic write: tmp + rename. The temp name carries this process id, so
       // two plugins writing the same file concurrently never share a temp path.

@@ -35,7 +35,7 @@ they all read instead.
             "cleared": true, "signable": false,
             "blocked_by": null, "flags": {...},
             "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
-            "proofs": [{"id": "PROOF-1", "tier": "unit", "env": null,
+            "proofs": [{"id": "PROOF-1", "manual": false, "env": null,
                         "text": "...", "tests": [...]}]}
          ]}
       ],
@@ -206,7 +206,7 @@ def proof_counts(rule_entries):
                 continue
             seen.add(key)
             total += 1
-            if not proof.get('tests') and (proof.get('tier') or '') != 'manual':
+            if not proof.get('tests') and not proof.get('manual'):
                 without.append(proof.get('id'))
     return {'proofs': total, 'proofs_without_test': len(without),
             'proofs_without_test_ids': without}
@@ -352,7 +352,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         proof = owner_info['proofs'][proof_id]
         proof_dicts.append({
             'id': proof_id,
-            'tier': proof['tier'],
+            'manual': proof['manual'],
             'env': proof['env'],
             'text': proof['text'],
             'tests': [{'file': f, 'name': n}

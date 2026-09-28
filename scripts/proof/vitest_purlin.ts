@@ -2,7 +2,7 @@
  * Purlin proof reporter for Vitest (TypeScript-native).
  *
  * The reporter reads proof markers from test names during a run and writes
- * what it observed to `.purlin/runtime/proofs/<feature>.<tier>.json`. Proof
+ * what it observed to `.purlin/runtime/proofs/<feature>.json`. Proof
  * files are runtime: they are gitignored, so two runs on two branches never
  * conflict and nothing about a run is committed. The record `purlin:audit`
  * writes is what says where a run happened, and it says it once per run.
@@ -14,8 +14,7 @@
  * the work done and returns.
  *
  * Marker syntax in test files:
- *   it("validates credentials [proof:auth_login:PROOF-1:RULE-1:unit]", ...)
- *   it("validates credentials [proof:auth_login:PROOF-1:RULE-1]", ...)  // unit
+ *   it("validates credentials [proof:auth_login:PROOF-1:RULE-1]", ...)
  *
  * The operating system a proof must be proved on is a property of the spec,
  * not of the test: write @env(windows), @env(macos) or @env(linux) on the
@@ -51,7 +50,6 @@ interface ProofEntry {
   test_file: string;
   test_name: string;
   status: "pass" | "fail";
-  tier: string;
 }
 
 const PROOF_DIR = path.join(".purlin", "runtime", "proofs");
@@ -170,7 +168,7 @@ interface Reporter {
 }
 
 const PROOF_MARKER_RE =
-  /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?(?::on\(([^)]*)\))?\]/;
+  /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::on\(([^)]*)\))?\]/;
 
 // The identity of a skipped marked test: (feature, id, test_file).
 function skipKey(feature: string, proofId: string, testFile: string): string {
@@ -248,7 +246,7 @@ class PurlinVitestReporter implements Reporter {
     const match = name.match(PROOF_MARKER_RE);
     if (!match) return;
 
-    const [, feature, proofId, ruleId, tier = "unit", onList] = match;
+    const [, feature, proofId, ruleId, onList] = match;
     const testFile = filepath ? relativeTestFile(this.root, filepath) : "unknown";
     this.seenFeatures.add(feature);
 
@@ -267,16 +265,14 @@ class PurlinVitestReporter implements Reporter {
       return;
     }
 
-    const key = `${feature}:${tier}`;
-    if (!this.proofs.has(key)) this.proofs.set(key, []);
-    this.proofs.get(key)!.push({
+    if (!this.proofs.has(feature)) this.proofs.set(feature, []);
+    this.proofs.get(feature)!.push({
       feature,
       id: proofId,
       rule: ruleId,
       test_file: testFile,
       test_name: name,
       status: passed ? "pass" : "fail",
-      tier,
     });
   }
 
@@ -306,9 +302,8 @@ class PurlinVitestReporter implements Reporter {
     const directory = path.join(root, PROOF_DIR);
     fs.mkdirSync(directory, { recursive: true });
 
-    for (const [key, newEntries] of this.proofs.entries()) {
-      const [feature, tier] = key.split(":");
-      const filePath = path.join(directory, `${feature}.${tier}.json`);
+    for (const [feature, newEntries] of this.proofs.entries()) {
+      const filePath = path.join(directory, `${feature}.json`);
 
       let existing: ProofEntry[] = [];
       if (fs.existsSync(filePath)) {
@@ -319,11 +314,10 @@ class PurlinVitestReporter implements Reporter {
         }
       }
 
-      // Write-scoped overwrite keyed by (feature, tier, test_file); the file
-      // carries the tier, so within it the key is (feature, test_file).
-      // Entries whose test file no longer exists are reaped. Each path it
-      // wrote is resolved from the project root, the same root it was
-      // relativized against.
+      // Write-scoped overwrite keyed by (feature, test_file). Entries whose
+      // test file no longer exists are reaped. Each path it wrote is
+      // resolved from the project root, the same root it was relativized
+      // against.
       const runFiles = new Set(newEntries.map((e) => e.test_file));
       // What this run wrote, so a skipped test's protection never keeps an
       // entry the run has just replaced: only an executed test replaces its
@@ -341,7 +335,7 @@ class PurlinVitestReporter implements Reporter {
         );
       });
 
-      const payload = { tier, proofs: sortProofEntries([...kept, ...newEntries]) };
+      const payload = { proofs: sortProofEntries([...kept, ...newEntries]) };
 
       // Atomic write: tmp + rename. The temp name carries this process id, so
       // two plugins writing the same file concurrently never share a temp path.

@@ -79,7 +79,7 @@ def rule_word(proof_ids, proofs, observed, host_os):
     if not written:
         return 'no test'
     runnable = [pid for pid in written
-                if (proofs.get(pid) or {}).get('tier') != 'manual']
+                if not (proofs.get(pid) or {}).get('manual')]
     if not runnable:
         return 'passed'
     if any(observed.get(pid) == 'fail' for pid in runnable):
@@ -119,7 +119,6 @@ def build_results(feature, info, observed, tests, commit, host_os, when=None,
                 'id': proof_id,
                 'rule': rule_id,
                 'result': observed.get(proof_id) or 'missing',
-                'tier': proof.get('tier') or '',
                 'env': proof.get('env'),
                 'test': tests.get(proof_id) or '',
             })

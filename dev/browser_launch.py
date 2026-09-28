@@ -3,7 +3,7 @@
 `playwright install chromium` downloads a ~150MB browser, which fails on any
 machine behind a TLS-inspecting proxy (the Node downloader reports
 UNABLE_TO_GET_ISSUER_CERT_LOCALLY) or without network access. Every dashboard
-proof then becomes unrunnable, which is how purlin_report's @e2e proofs came to
+proof then becomes unrunnable, which is how purlin_report's browser proofs came to
 be committed from one machine and never re-executed anywhere else.
 
 Playwright can drive an already-installed Google Chrome instead, so try the

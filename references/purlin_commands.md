@@ -58,7 +58,6 @@ Purlin
   ──────
   purlin:build [name]             Implement a spec's rules and their tests
   purlin:test [feature ...]       Run the tagged tests, write and commit the results
-  purlin:test --all               Run every tier
   purlin:test --remote            Let the git host's runner do the run
 
   Proving

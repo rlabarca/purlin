@@ -138,7 +138,7 @@ create_feature() {
     echo ""
     echo "## Proof"
     echo ""
-    echo "- PROOF-1 (RULE-1): Load the page; verify it renders @e2e"
+    echo "- PROOF-1 (RULE-1): Load the page; verify it renders"
   } > "$tmpdir/specs/core/$name.md"
 }
 

@@ -3,17 +3,15 @@
 #
 # Runs SQL test files against the project's SQL engine, parses proof markers
 # from comments, and writes what it observed to
-# .purlin/runtime/proofs/<feature>.<tier>.json. Proof files are runtime: they
-# are gitignored, so two runs on two branches never conflict and nothing about
-# a run is committed.
+# .purlin/runtime/proofs/<feature>.json. Proof files are runtime: they are
+# gitignored, so two runs on two branches never conflict and nothing about a
+# run is committed.
 #
 # Marker syntax in SQL files:
-#   -- @purlin feature_name PROOF-1 RULE-1 unit
+#   -- @purlin feature_name PROOF-1 RULE-1
 #   -- Test: description of what this tests
 #   SELECT CASE WHEN (SELECT count(*) FROM users WHERE email='test@x.com') = 1
 #          THEN 'PASS' ELSE 'FAIL' END;
-#
-#   -- @purlin feature_name PROOF-2 RULE-2        (tier omitted: unit)
 #
 # Each test block ends at the next @purlin marker or EOF. The block must
 # produce a result starting with 'PASS' or 'FAIL'.
@@ -141,14 +139,14 @@ with open(test_file, encoding='utf-8') as f:
 
 # Find all proof markers. A trailing on(...) is the retired keyword naming
 # an operating system; it is captured so the run can refuse it by name.
-marker_re = re.compile(r'^-- @purlin\s+(\w+)\s+(PROOF-\d+)\s+(RULE-\d+)(?:[ \t]+(?!on\()(\w+))?(?:[ \t]+on\(([^)]*)\))?', re.MULTILINE)
+marker_re = re.compile(r'^-- @purlin\s+(\w+)\s+(PROOF-\d+)\s+(RULE-\d+)(?:[ \t]+on\(([^)]*)\))?', re.MULTILINE)
 markers = list(marker_re.finditer(content))
 
 if not markers:
     print(json.dumps({'proofs': []}, indent=2))
     sys.exit(0)
 
-retired = ['%s %s' % (m.group(1), m.group(2)) for m in markers if m.group(5)]
+retired = ['%s %s' % (m.group(1), m.group(2)) for m in markers if m.group(4)]
 if retired:
     print('purlin: the on(...) marker keyword is not read any more; write '
           '@env(windows), @env(macos) or @env(linux) on the proof line in the '
@@ -174,7 +172,6 @@ for i, m in enumerate(markers):
         'feature': m.group(1),
         'id': m.group(2),
         'rule': m.group(3),
-        'tier': m.group(4) or 'unit',
         'test_name': test_name,
         'sql': sql_exec,
     })
@@ -193,14 +190,13 @@ for block in blocks:
     except Exception:
         passed = False
 
-    proofs_by_key.setdefault((block['feature'], block['tier']), []).append({
+    proofs_by_key.setdefault(block['feature'], []).append({
         'feature': block['feature'],
         'id': block['id'],
         'rule': block['rule'],
         'test_file': recorded_file,
         'test_name': block['test_name'],
         'status': 'pass' if passed else 'fail',
-        'tier': block['tier'],
     })
 
 if not proofs_by_key:
@@ -212,8 +208,8 @@ if not proofs_by_key:
 directory = os.path.join(root, '.purlin', 'runtime', 'proofs')
 os.makedirs(directory, exist_ok=True)
 
-for (feature, tier), new_entries in proofs_by_key.items():
-    path = os.path.join(directory, '%s.%s.json' % (feature, tier))
+for feature, new_entries in proofs_by_key.items():
+    path = os.path.join(directory, '%s.json' % feature)
     existing = []
     if os.path.exists(path):
         try:
@@ -221,9 +217,8 @@ for (feature, tier), new_entries in proofs_by_key.items():
                 existing = json.load(f).get('proofs', [])
         except (ValueError, OSError):
             existing = []
-    # Write-scoped overwrite keyed by (feature, tier, test_file); the file
-    # carries the tier, so within it the key is (feature, test_file). Entries
-    # whose test file no longer exists are reaped. Each path it wrote is
+    # Write-scoped overwrite keyed by (feature, test_file). Entries whose
+    # test file no longer exists are reaped. Each path it wrote is
     # resolved from the project root, the same root it was relativized
     # against. A SQL block that is never reached emits no marker, so the
     # harness has no skip signal.
@@ -235,7 +230,7 @@ for (feature, tier), new_entries in proofs_by_key.items():
             and bool(e.get('test_file'))
             and os.path.exists(os.path.join(root, e.get('test_file') or '')))
     ]
-    payload = {'tier': tier}
+    payload = {}
     # Sorted by (id, test_file, test_name), ordinal, after the merge, so the
     # collection order never reaches the file.
     payload['proofs'] = sorted(

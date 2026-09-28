@@ -54,7 +54,7 @@ PUBLISHED_V1='# Anchor: ext_security
 
 ## Proof
 
-- PROOF-1 (RULE-1): Call the api with no credentials; verify 401 @integration
+- PROOF-1 (RULE-1): Call the api with no credentials; verify 401
 - PROOF-2 (RULE-2): Grep the tree for secret literals; verify zero matches
 '
 
@@ -71,9 +71,9 @@ PUBLISHED_V2='# Anchor: ext_security
 
 ## Proof
 
-- PROOF-1 (RULE-1): Call the api with no credentials; verify 401 @integration
+- PROOF-1 (RULE-1): Call the api with no credentials; verify 401
 - PROOF-2 (RULE-2): Grep the tree for secret literals; verify zero matches
-- PROOF-3 (RULE-3): Sign in with a wrong password; verify one log line @integration
+- PROOF-3 (RULE-3): Sign in with a wrong password; verify one log line
 '
 
 LOCAL_ANCHOR='# Anchor: local_security
@@ -87,7 +87,7 @@ LOCAL_ANCHOR='# Anchor: local_security
 
 ## Proof
 
-- PROOF-1 (RULE-1): Post a script tag in every text field; verify it is stored escaped @e2e
+- PROOF-1 (RULE-1): Post a script tag in every text field; verify it is stored escaped
 '
 
 create_anchor_repo() {
@@ -221,7 +221,7 @@ with open(path, encoding='utf-8') as handle:
 text = text.replace(
     '## Proof',
     '- RULE-2: Every response carries a request id [bar: passed]\n\n## Proof')
-text += '- PROOF-2 (RULE-2): Read the response headers; verify X-Request-Id @e2e\n'
+text += '- PROOF-2 (RULE-2): Read the response headers; verify X-Request-Id\n'
 with open(path, 'w', encoding='utf-8') as handle:
     handle.write(text)
 PY
@@ -261,7 +261,7 @@ with open(path, encoding='utf-8') as handle:
 text = text.replace(
     '## Proof',
     '- RULE-2: Spacing uses the four pixel grid [bar: passed]\n\n## Proof')
-text += '- PROOF-2 (RULE-2): Measure the gutters; verify each is a multiple of four @e2e\n'
+text += '- PROOF-2 (RULE-2): Measure the gutters; verify each is a multiple of four\n'
 with open(path, 'w', encoding='utf-8') as handle:
     handle.write(text)
 PY

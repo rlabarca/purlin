@@ -49,7 +49,7 @@ LANGUAGES = {
                '<Project><ItemGroup><PackageReference Include="xunit" '
                'Version="2.6.0" /></ItemGroup></Project>'},
               '.purlin/plugins/xunit_purlin.cs'),
-    'sql': ({'tests/test_login.sql': '-- @purlin login PROOF-1 RULE-1 unit\n'},
+    'sql': ({'tests/test_login.sql': '-- @purlin login PROOF-1 RULE-1\n'},
             '.purlin/plugins/sql_purlin.sh'),
     'shell': ({'run.sh': 'echo hello\n'},
               '.purlin/plugins/purlin-proof.sh'),
@@ -66,7 +66,7 @@ SPEC = """# Feature: login
 
 ## Proof
 
-- PROOF-1 (RULE-1): Call `sign_in` with a known pair and verify it returns a session @unit
+- PROOF-1 (RULE-1): Call `sign_in` with a known pair and verify it returns a session
 """
 
 
@@ -554,7 +554,8 @@ class TestTheWorkflow:
         other = [name for name in ('linux', 'macos', 'windows')
                  if name != host]
         write(made.path('specs/core/login.md'),
-              SPEC.replace('@unit', '@unit @env(%s)' % other[0]))
+              SPEC.replace('returns a session\n',
+                           'returns a session @env(%s)\n' % other[0]))
         return other[0]
 
     @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")

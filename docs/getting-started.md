@@ -101,9 +101,9 @@ That sentence carries three claims, so it becomes three rules, each with one pro
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /login with a known user; verify 200 and a Set-Cookie header @integration
-- PROOF-2 (RULE-2): POST /login with the wrong password; verify 401 and no cookie @integration
-- PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423 @integration
+- PROOF-1 (RULE-1): POST /login with a known user; verify 200 and a Set-Cookie header
+- PROOF-2 (RULE-2): POST /login with the wrong password; verify 401 and no cookie
+- PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423
 ```
 
 No rule carries a `[bar: ...]` tag here, because at `passed` the bar is never read;

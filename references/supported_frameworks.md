@@ -9,11 +9,11 @@ frameworks and scaffolds the plugins that match.
 
 | Framework | Display name | Languages | Plugin file | Installed as | Detection | Marker syntax | Runner setup |
 |-----------|-------------|-----------|------------|--------------|-----------|---------------|--------------|
-| **pytest** | pytest (Python) | Python | `scripts/proof/pytest_purlin.py` | `pytest_purlin.py` | `conftest.py` at the root, or `[tool.pytest` in `pyproject.toml` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")`; the marker's tier is also added as a registered pytest marker, so `-m "not integration and not e2e"` selects the unit tier | `pip install pytest` |
-| **Vitest** | vitest (JS/TS) | JavaScript, TypeScript | `scripts/proof/vitest_purlin.ts` | `vitest_purlin.ts` | `vitest` under `dependencies` or `devDependencies` in `package.json`, or a `vitest.config.*` file beside it | `[proof:feature:PROOF-1:RULE-1:unit]` in the test title (a native TypeScript reporter: Vitest loads `.ts` reporters through Vite, so it covers JavaScript and TypeScript projects alike) | `npm ci` |
-| **Jest** | jest (JS/TS) | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `jest_purlin.js` | `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file beside it | `[proof:feature:PROOF-1:RULE-1:unit]` in the test title | `npm ci` |
-| **xUnit** | xunit (.NET) | C# | `scripts/proof/xunit_purlin.cs` | `xunit_purlin.cs` | any `*.csproj` referencing the `xunit` package | `[Trait("PurlinProof", "feature:PROOF-1:RULE-1:unit")]` test trait | `dotnet restore` |
-| **SQL** | sql (sqlite3) | SQL | `scripts/proof/sql_purlin.sh` | `sql_purlin.sh` | a `test_*.sql`, `*_test.sql` or `*.test.sql` file in `tests/` | `-- @purlin feature PROOF-1 RULE-1 unit` comment | the engine named by `sql_engine` in `.purlin/config.json`, `sqlite3` by default, plus `python3` |
+| **pytest** | pytest (Python) | Python | `scripts/proof/pytest_purlin.py` | `pytest_purlin.py` | `conftest.py` at the root, or `[tool.pytest` in `pyproject.toml` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` | `pip install pytest` |
+| **Vitest** | vitest (JS/TS) | JavaScript, TypeScript | `scripts/proof/vitest_purlin.ts` | `vitest_purlin.ts` | `vitest` under `dependencies` or `devDependencies` in `package.json`, or a `vitest.config.*` file beside it | `[proof:feature:PROOF-1:RULE-1]` in the test title (a native TypeScript reporter: Vitest loads `.ts` reporters through Vite, so it covers JavaScript and TypeScript projects alike) | `npm ci` |
+| **Jest** | jest (JS/TS) | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `jest_purlin.js` | `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file beside it | `[proof:feature:PROOF-1:RULE-1]` in the test title | `npm ci` |
+| **xUnit** | xunit (.NET) | C# | `scripts/proof/xunit_purlin.cs` | `xunit_purlin.cs` | any `*.csproj` referencing the `xunit` package | `[Trait("PurlinProof", "feature:PROOF-1:RULE-1")]` test trait | `dotnet restore` |
+| **SQL** | sql (sqlite3) | SQL | `scripts/proof/sql_purlin.sh` | `sql_purlin.sh` | a `test_*.sql`, `*_test.sql` or `*.test.sql` file in `tests/` | `-- @purlin feature PROOF-1 RULE-1` comment | the engine named by `sql_engine` in `.purlin/config.json`, `sqlite3` by default, plus `python3` |
 | **Shell** | shell (Bash) | Bash | `scripts/proof/shell_purlin.sh` | `purlin-proof.sh` | none: shell is the fallback when nothing else is detected, and is otherwise selected by hand | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` | nothing beyond `python3` |
 
 The **Installed as** column is the basename each plugin file takes inside a project's
@@ -64,36 +64,31 @@ suite is invoked:
 
 | Framework | Arm |
 |-----------|-----|
-| pytest | `python3 -m pytest -q`, with `-m "not integration and not e2e"` at `--tier unit`; an exit code of 5 (nothing collected) is not a failure |
-| jest | `npx jest --passWithNoTests`, with `--testPathPattern=unit` at `--tier unit` |
+| pytest | `python3 -m pytest -q`; an exit code of 5 (nothing collected) is not a failure |
+| jest | `npx jest --passWithNoTests` |
 | vitest | `npx vitest run --passWithNoTests` |
 | xunit | `dotnet test --logger purlin` |
 | shell | `bash <path>` for each `*.test.sh` in the project, the root and every subdirectory but hidden ones, `node_modules`, `bin`, `obj` and `mutants/`, in sorted order from the root, stopping at the first failure |
 | sql | `bash sql_purlin.sh tests/<name>.sql` for each `.sql` file in `tests/`, against `sql_engine` |
 
-## End-to-end (browser) proofs
+## Browser proofs
 
-No dedicated e2e proof reporter ships with Purlin. `@e2e` proof descriptions are tool-agnostic by
-design: they describe observable flows (arrange, act, observe; see `spec_quality_guide.md`, "E2E
-proof descriptions"), so any runner that can execute the flow qualifies: Playwright, Cypress, an
-agent-driven browser, or a screenshot compared by eye. The description never references a
-specific runner's API.
+No dedicated browser proof reporter ships with Purlin. A proof that drives a browser describes an
+observable flow (arrange, act, observe; see `spec_quality_guide.md`, "Flow proofs"), so any runner
+that can execute the flow qualifies: Playwright, Cypress, an agent-driven browser, or a screenshot
+compared by eye. The description never references a specific runner's API.
 
-`@e2e` proofs emit through the existing plugins:
+A browser test emits through the existing plugins:
 
 - **Through Vitest or Jest:** drive the browser from a test (Playwright's library API inside a
-  test body, for example) and put the standard marker in the test title with the `e2e` tier:
-  `[proof:feature:PROOF-1:RULE-1:e2e]`.
-- **Through shell:** wrap any e2e runner's invocation in a shell test that calls
-  `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` based on the runner's exit status, with
-  `PURLIN_PROOF_TIER=e2e` set.
+  test body, for example) and put the standard marker in the test title:
+  `[proof:feature:PROOF-1:RULE-1]`.
+- **Through shell:** wrap any browser runner's invocation in a shell test that calls
+  `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` based on the runner's exit status.
 
 A test that captures a screenshot writes it to
 `.purlin/runtime/attachments/<feature>/<PROOF-N>.png`; `purlin:audit` hashes it into the record
 and CI keeps it as an artifact.
-
-A project whose specs carry `@e2e` proofs but has no e2e-capable runner installed cannot record
-those proofs: `purlin:spec-from-code` warns when it detects this.
 
 ## Adding more frameworks
 

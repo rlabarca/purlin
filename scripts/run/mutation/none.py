@@ -13,7 +13,7 @@ DEFAULT_REASON = ('no engine breaks shell or sql code, so test strength is '
                   'not measured for these rules')
 
 
-def run(project_root, scope_by_feature, tests_by_rule, tier=None, reason=None):
+def run(project_root, scope_by_feature, tests_by_rule, reason=None):
     """The empty answer, with `reason` naming what is missing."""
     features = empty_features(scope_by_feature, tests_by_rule, 'none',
                               'unavailable')

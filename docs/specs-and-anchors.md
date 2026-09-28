@@ -33,9 +33,9 @@ specs/<category>/<name>.md
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /login with a known user; verify 200 and a Set-Cookie header @integration
-- PROOF-2 (RULE-2): POST /login with the wrong password; verify 401 and no cookie @integration
-- PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423 @integration
+- PROOF-1 (RULE-1): POST /login with a known user; verify 200 and a Set-Cookie header
+- PROOF-2 (RULE-2): POST /login with the wrong password; verify 401 and no cookie
+- PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423
 ```
 
 You do not type this by hand. `purlin:spec` writes it from a sentence in chat, a ticket, a
@@ -111,15 +111,11 @@ and the observable that settles the claim.
 Every rule needs at least one proof. Several proofs may name one rule, and one proof may name
 several rules when it drives a flow through all of them.
 
-### Tiers
+### Manual proofs
 
-A tier tag says what kind of test the proof is. A proof with no tag is a plain unit test.
-
-| Tag | When to use |
-|-----|-------------|
-| `@integration` | Needs a database, the network, the filesystem or an external service |
-| `@e2e` | Needs a browser, the full stack or a rendered interface |
-| `@manual` | Needs human judgment |
+A proof carries no tag when a test settles it, whatever that test needs to run: `purlin:test`
+runs every tagged test of the features it runs. Tag a proof `@manual` when only human judgment
+settles it.
 
 A `@manual` proof has no test. Its evidence is a signature carrying a one-line note, always
 written by a person, never by a machine.
@@ -210,7 +206,7 @@ local anchor that says `> Requires: <the pinned one>`.
 ## Retired fields
 
 `> Visual-Reference:`, `> Visual-Hash:`, the visual hash comparison, live design-tool sources,
-the older operating-system tag, a bare `@windows` tier and a stamped
+the older operating-system tag, a bare `@windows` and a stamped
 `@manual(<email>, <date>, <sha>)` are all retired. A spec that still carries one parses, the
 field or tag is ignored, and the file is named once in the run's warnings. `purlin:init
 --update` rewrites the old operating-system tags as `@env(windows)`, `@env(macos)` and

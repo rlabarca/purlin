@@ -1,4 +1,4 @@
-> Format-Version: 5
+> Format-Version: 6
 
 # Record Format
 
@@ -58,7 +58,6 @@ never collide and a matrix job never overwrites another job's observations.
       "id": "PROOF-1",
       "rule": "RULE-1",
       "status": "pass",
-      "tier": "unit",
       "env": null,
       "test_file": "tests/test_login.py",
       "test_name": "test_rejects_a_wrong_password"
@@ -114,7 +113,6 @@ Each `proofs` entry:
 | `id` | string | `PROOF-N` |
 | `rule` | string | the `RULE-N` the proof covers |
 | `status` | string | `pass` or `fail`. A test the run skipped writes no entry, so the one an earlier run wrote is kept |
-| `tier` | string | `unit`, `integration`, `e2e` or `manual` |
 | `env` | string or null | the operating system the proof's `@env` tag named, or null |
 | `test_file` | string | the file holding the tagged test |
 | `test_name` | string | the test's name inside that file |

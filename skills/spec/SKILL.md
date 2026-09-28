@@ -73,9 +73,9 @@ the first two here. The third is a person's decision, so name the rules and leav
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /login with a known user; verify 200 and a Set-Cookie header @integration
-- PROOF-2 (RULE-2): POST /login with the wrong password; verify 401 and no cookie @integration
-- PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423 @integration
+- PROOF-1 (RULE-1): POST /login with a known user; verify 200 and a Set-Cookie header
+- PROOF-2 (RULE-2): POST /login with the wrong password; verify 401 and no cookie
+- PROOF-3 (RULE-3): POST /login 5 times with a wrong password, then once with the right one; verify 423
 ```
 
 `> Scope:` earns its place: a record carries the git tree hash of those files, which is what
@@ -115,9 +115,7 @@ observable that settles the claim. Every rule needs at least one proof. Several 
 name one rule, and one proof may name several rules when it drives a flow through all of them:
 `- PROOF-7 (RULE-2, RULE-3, RULE-4): ...`.
 
-Tag a proof that is not a plain unit test: `@integration` for a database, the network, the
-filesystem or an external service; `@e2e` for a browser or the full stack; `@manual` for human
-judgment. A `@manual` proof has no test: its rule reads `manual test` until a signature
+Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has no test: its rule reads `manual test` until a signature
 carrying a one-line note settles it, and that note is always written by a person.
 
 Add `@env(windows)`, `@env(macos)` or `@env(linux)` when the claim can only be proved on one

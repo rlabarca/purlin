@@ -186,7 +186,7 @@ committed. A rule that is signed is headed `Signed` and names who signed it. Whe
 signs from `strong` and this rule's bar is `passed`, the panel says no signature is required
 and that one written anyway still counts.
 
-The **Proofs** are last, each with its tier and the tests that ran it.
+The **Proofs** are last, each with its `@manual` and `@env` tags where it carries them, and the tests that ran it.
 
 `← Review` at the top closes the rule and returns to the tab it was opened from; from the Sign
 tab the same link reads `← Sign`, and from the board `← Board`.

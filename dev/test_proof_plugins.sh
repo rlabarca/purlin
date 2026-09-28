@@ -2,7 +2,7 @@
 # The behaviour every proof plugin shares, driven through pytest, the jest
 # reporter and the shell harness.
 #
-# What is checked here: the runtime proof file's location and name, the seven
+# What is checked here: the runtime proof file's location and name, the six
 # fields, the no-marker no-op, the write-scoped merge, orphan reaping, ordinal
 # order after the merge, and the loud failure when markers were seen and
 # nothing was written.
@@ -34,8 +34,7 @@ command -v node >/dev/null 2>&1 && NODE_READY=1 || \
 record() {
   local feature="$1" proof_id="$2" rule_id="$3" name="$4" status="$5"
   echo "  $([[ "$status" == "pass" ]] && echo PASS || echo FAIL): $name"
-  PURLIN_PROOF_TIER=e2e purlin_proof "$feature" "$proof_id" "$rule_id" \
-    "$status" "$name"
+  purlin_proof "$feature" "$proof_id" "$rule_id" "$status" "$name"
   [[ "$status" == "pass" ]] && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
 }
 
@@ -80,29 +79,15 @@ import pytest
 def test_it(): assert True
 PY
   run_pytest "$d" || true
-  [[ -f "$d/.purlin/runtime/proofs/feat.unit.json" ]] || { rm -rf "$d"; return 1; }
+  [[ -f "$d/.purlin/runtime/proofs/feat.json" ]] || { rm -rf "$d"; return 1; }
   # Nothing is written under specs/.
   [[ -z "$(find "$d/specs" -name '*.json')" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
 run "proof_common" "PROOF-1" "RULE-1" "the proof file is written to the runtime directory" test_runtime_location
 
-test_file_name_carries_feature_and_tier() {
-  local d; d="$(make_project)"
-  cat > "$d/tests/t.sh" <<EOF
-source "$SHELL_HARNESS"
-export PURLIN_PROOF_TIER=integration
-purlin_proof "feat" "PROOF-1" "RULE-1" pass "a case"
-purlin_proof_finish
-EOF
-  (cd "$d" && bash tests/t.sh)
-  [[ -f "$d/.purlin/runtime/proofs/feat.integration.json" ]]
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_common" "PROOF-14" "RULE-14" "the file name carries the feature and the tier" test_file_name_carries_feature_and_tier
-
-# --- The seven fields -------------------------------------------------------
-test_seven_fields() {
+# --- The six fields ---------------------------------------------------------
+test_six_fields() {
   local d; d="$(make_project)"
   cat > "$d/tests/t.sh" <<EOF
 source "$SHELL_HARNESS"
@@ -112,14 +97,14 @@ EOF
   (cd "$d" && bash tests/t.sh)
   python3 -c "
 import json, sys
-entry = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs'][0]
-want = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}
+entry = json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))['proofs'][0]
+want = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status'}
 assert set(entry) == want, entry
 assert entry['test_file'] == 'tests/t.sh', entry
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "proof_common" "PROOF-4" "RULE-4" "every entry carries the seven fields and no eighth" test_seven_fields
+run "proof_common" "PROOF-4" "RULE-4" "every entry carries the six fields and no seventh" test_six_fields
 
 # --- No marker, no file -----------------------------------------------------
 test_no_markers_no_file() {
@@ -144,14 +129,14 @@ test_merge_keeps_other_features_and_files() {
 import json
 entries = [
   {'feature': 'other', 'id': 'PROOF-1', 'rule': 'RULE-1',
-   'test_file': 'tests/kept.sh', 'test_name': 'other', 'status': 'pass', 'tier': 'unit'},
+   'test_file': 'tests/kept.sh', 'test_name': 'other', 'status': 'pass'},
   {'feature': 'feat', 'id': 'PROOF-2', 'rule': 'RULE-2',
-   'test_file': 'tests/kept.sh', 'test_name': 'second', 'status': 'pass', 'tier': 'unit'},
+   'test_file': 'tests/kept.sh', 'test_name': 'second', 'status': 'pass'},
   {'feature': 'feat', 'id': 'PROOF-3', 'rule': 'RULE-2',
-   'test_file': 'tests/gone.sh', 'test_name': 'gone', 'status': 'pass', 'tier': 'unit'},
+   'test_file': 'tests/gone.sh', 'test_name': 'gone', 'status': 'pass'},
 ]
-json.dump({'tier': 'unit', 'proofs': entries},
-          open('$d/.purlin/runtime/proofs/feat.unit.json', 'w', encoding='utf-8'), indent=2)
+json.dump({'proofs': entries},
+          open('$d/.purlin/runtime/proofs/feat.json', 'w', encoding='utf-8'), indent=2)
 "
   cat > "$d/tests/t.sh" <<EOF
 source "$SHELL_HARNESS"
@@ -161,7 +146,7 @@ EOF
   (cd "$d" && bash tests/t.sh)
   python3 -c "
 import json
-data = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))
+data = json.load(open('$d/.purlin/runtime/proofs/feat.json', encoding='utf-8'))
 keys = {(e['feature'], e['id'], e['test_file']) for e in data['proofs']}
 assert ('other', 'PROOF-1', 'tests/kept.sh') in keys, keys
 assert ('feat', 'PROOF-2', 'tests/kept.sh') in keys, keys
@@ -201,8 +186,8 @@ EOF
   (cd "$d/reversed" && bash tests/t.sh)
   python3 -c "
 import json
-a = open('$d/forward/.purlin/runtime/proofs/feat.unit.json', 'rb').read()
-b = open('$d/reversed/.purlin/runtime/proofs/feat.unit.json', 'rb').read()
+a = open('$d/forward/.purlin/runtime/proofs/feat.json', 'rb').read()
+b = open('$d/reversed/.purlin/runtime/proofs/feat.json', 'rb').read()
 assert a == b, 'the two runs wrote different bytes'
 ids = [e['id'] for e in json.loads(a.decode())['proofs']]
 want = ['PROOF-1', 'PROOF-10', 'PROOF-11', 'PROOF-2']
@@ -241,11 +226,11 @@ const path = require("path");
 const Reporter = require("$JEST_REPORTER");
 const r = new Reporter({rootDir: "$d"});
 r.onTestResult({}, {testFilePath: path.join("$d", "tests/a.test.js"),
-  testResults: [{title: "ok [proof:feat:PROOF-1:RULE-1:unit]", status: "passed"}]});
+  testResults: [{title: "ok [proof:feat:PROOF-1:RULE-1]", status: "passed"}]});
 r.onRunComplete();
 EOF
   (cd "$d" && node harness.cjs)
-  [[ -f "$d/.purlin/runtime/proofs/feat.unit.json" ]]
+  [[ -f "$d/.purlin/runtime/proofs/feat.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
 run "proof_common" "PROOF-1" "RULE-1" "the jest reporter writes the runtime proof file" test_jest_writes_the_runtime_file

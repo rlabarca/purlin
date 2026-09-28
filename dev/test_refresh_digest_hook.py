@@ -28,19 +28,19 @@ SPEC = (
     '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
     '- RULE-1: login rejects a bad password\n'
     '- RULE-2: login locks after five failures\n\n## Proof\n\n'
-    '- PROOF-1 (RULE-1): call login with a bad password and verify 401 @unit\n'
-    '- PROOF-2 (RULE-2): fail five times and verify the sixth call is 423 @unit\n'
+    '- PROOF-1 (RULE-1): call login with a bad password and verify 401\n'
+    '- PROOF-2 (RULE-2): fail five times and verify the sixth call is 423\n'
 )
 ANCHOR = (
     '# Anchor: shared_rules\n\n> Source: https://github.com/example/rules.git\n'
     '> Pinned: abc1234\n\n## Rules\n\n- RULE-1: no secrets in logs\n\n'
-    '## Proof\n\n- PROOF-1 (RULE-1): grep the logs @unit\n'
+    '## Proof\n\n- PROOF-1 (RULE-1): grep the logs\n'
 )
 
 
 def _entry(pid, rule):
     return {'feature': 'login', 'id': pid, 'rule': rule, 'status': 'pass',
-            'tier': 'unit', 'test_file': 'tests/test_login.py',
+            'test_file': 'tests/test_login.py',
             'test_name': 'test_' + pid.lower().replace('-', '_')}
 
 
@@ -77,8 +77,8 @@ def _project(tmp, digest='auto', git=True, anchor=False, config=None):
 def _write_proofs(tmp, proofs):
     directory = os.path.join(tmp, '.purlin', 'runtime', 'proofs')
     os.makedirs(directory, exist_ok=True)
-    with open(os.path.join(directory, 'login.unit.json'), 'w') as f:
-        json.dump({'tier': 'unit', 'proofs': proofs}, f)
+    with open(os.path.join(directory, 'login.json'), 'w') as f:
+        json.dump({'proofs': proofs}, f)
 
 
 def _passing(digest):
@@ -173,7 +173,7 @@ def _age(path, seconds=120):
 
 class TestSilentAndNonBlocking:
 
-    @pytest.mark.proof("server", "PROOF-13", "RULE-13", tier="integration")
+    @pytest.mark.proof("server", "PROOF-13", "RULE-13")
     def test_every_path_exits_zero_and_prints_nothing(self, tmp_path):
         project = _project(str(tmp_path / 'p'))
         _assert_silent_zero(_run(project, child=True), 'fresh project')
@@ -213,8 +213,8 @@ class TestSilentAndNonBlocking:
 
 class TestDirtyCheck:
 
-    @pytest.mark.proof("server", "PROOF-14", "RULE-14", tier="integration")
-    @pytest.mark.proof("server", "PROOF-15", "RULE-15", tier="integration")
+    @pytest.mark.proof("server", "PROOF-14", "RULE-14")
+    @pytest.mark.proof("server", "PROOF-15", "RULE-15")
     def test_regenerates_only_when_an_input_is_newer(self, tmp_path):
         project = _project(str(tmp_path))
         _assert_silent_zero(_run(project), 'first')
@@ -269,7 +269,7 @@ class TestDirtyCheck:
 
 class TestSingleFlight:
 
-    @pytest.mark.proof("server", "PROOF-16", "RULE-16", tier="integration")
+    @pytest.mark.proof("server", "PROOF-16", "RULE-16")
     def test_a_held_lock_means_leave(self, tmp_path):
         project = _project(str(tmp_path))
         os.makedirs(os.path.join(project, '.purlin', 'runtime'), exist_ok=True)
@@ -289,7 +289,7 @@ class TestSingleFlight:
 
 class TestRecheckAfterWriting:
 
-    @pytest.mark.proof("server", "PROOF-17", "RULE-17", tier="integration")
+    @pytest.mark.proof("server", "PROOF-17", "RULE-17")
     def test_a_write_during_generation_is_picked_up(self, tmp_path, monkeypatch):
         project = _project(str(tmp_path))
         module = _load_hook_module()
@@ -331,7 +331,7 @@ class TestRecheckAfterWriting:
 
 class TestSkipConditions:
 
-    @pytest.mark.proof("server", "PROOF-18", "RULE-18", tier="integration")
+    @pytest.mark.proof("server", "PROOF-18", "RULE-18")
     def test_each_skip_condition_writes_nothing(self, tmp_path):
         no_config = _project(str(tmp_path / 'no-config'))
         os.remove(os.path.join(no_config, '.purlin', 'config.json'))
@@ -359,7 +359,7 @@ class TestSkipConditions:
         _assert_silent_zero(_run(committing), 'index.lock gone')
         assert os.path.isfile(_digest_path(committing))
 
-    @pytest.mark.proof("server", "PROOF-19", "RULE-19", tier="integration")
+    @pytest.mark.proof("server", "PROOF-19", "RULE-19")
     def test_a_config_in_the_template_shape_refreshes(self, tmp_path):
         """The skip conditions are the only skip conditions.
 
@@ -385,7 +385,7 @@ class TestSkipConditions:
 
 class TestGenerationContract:
 
-    @pytest.mark.proof("server", "PROOF-20", "RULE-20", tier="integration")
+    @pytest.mark.proof("server", "PROOF-20", "RULE-20")
     def test_no_network_named_producer_and_touch_instead_of_rewrite(self, tmp_path, monkeypatch):
         project = _project(str(tmp_path), anchor=True)
         module = _load_hook_module()

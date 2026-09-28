@@ -19,9 +19,8 @@ is one answer to how a test is run. Both run on your machine, and neither pushes
 ## purlin:test
 
 ```
-purlin:test                     Every feature, unit tier
+purlin:test                     Every feature
 purlin:test <feature> [...]     One feature, or several
-purlin:test --all               Every tier, not just unit
 purlin:test --remote            Let the git host's runner do the run
 ```
 
@@ -246,7 +245,7 @@ Eight fields are required, and every other one is optional:
 | `runner` | `ci` or the slug of whoever ran it, matching the file name |
 | `gate` | the gate in force when the run happened: `passed`, `strong` or `signed` |
 | `source` | `ci` or `local`, and it must match the folder the file sits in |
-| `proofs` | one entry per proof: its rule, `pass` or `fail`, its tier, its `@env`, and the test that ran it. A test the run skipped writes no entry at all |
+| `proofs` | one entry per proof: its rule, `pass` or `fail`, its `@env`, and the test that ran it. A test the run skipped writes no entry at all |
 | `os` | the operating system of this matrix job, or null |
 | `test_strength` | the percentage of the deliberate breaks the tests caught, or null |
 | `scope_tree` | the git tree hash of the spec's `> Scope:` files |

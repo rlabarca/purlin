@@ -95,7 +95,7 @@ def _rows(payload):
     return [(row['rule'], row['cell'], tuple(row['why'])) for row in both]
 
 
-@pytest.mark.proof("states", "PROOF-33", "RULE-29", tier="integration")
+@pytest.mark.proof("states", "PROOF-33", "RULE-29")
 def test_review_holds_the_rules_whose_next_step_is_a_person(listed):
     payload = listed.payload()
     rows = {row['rule']: row for row in payload['review_list']}
@@ -113,7 +113,7 @@ def test_review_holds_the_rules_whose_next_step_is_a_person(listed):
         'not audited')
 
 
-@pytest.mark.proof("states", "PROOF-63", "RULE-54", tier="integration")
+@pytest.mark.proof("states", "PROOF-63", "RULE-54")
 def test_sign_holds_the_signable_rules(listed):
     payload = listed.payload()
     rows = {row['rule']: row for row in payload['sign_list']}
@@ -128,7 +128,7 @@ def test_sign_holds_the_signable_rules(listed):
     assert listed.payload()['sign_list'] == []
 
 
-@pytest.mark.proof("states", "PROOF-33", "RULE-29", tier="integration")
+@pytest.mark.proof("states", "PROOF-33", "RULE-29")
 def test_the_lists_are_empty_under_the_passed_gate(listed):
     listed.config_value('gate', 'passed')
     payload = listed.payload()
@@ -137,7 +137,7 @@ def test_the_lists_are_empty_under_the_passed_gate(listed):
     assert 'strong' not in payload['features'][0]['rules'][0]['cells']
 
 
-@pytest.mark.proof("states", "PROOF-34", "RULE-30", tier="integration")
+@pytest.mark.proof("states", "PROOF-34", "RULE-30")
 def test_every_kind_is_one_of_its_list_own_words(listed):
     payload = listed.payload()
     at_strong = {'manual test', 'unsettled', 'held'}
@@ -153,7 +153,7 @@ def test_every_kind_is_one_of_its_list_own_words(listed):
     assert rows['RULE-5'] == ('unsigned',)
 
 
-@pytest.mark.proof("states", "PROOF-35", "RULE-31", tier="integration")
+@pytest.mark.proof("states", "PROOF-35", "RULE-31")
 def test_both_lists_read_the_strong_bar_first_then_feature_and_number(listed):
     payload = listed.payload()
     assert [row['rule'] for row in payload['review_list']] == [
@@ -162,7 +162,7 @@ def test_both_lists_read_the_strong_bar_first_then_feature_and_number(listed):
         'RULE-1', 'RULE-5']
 
 
-@pytest.mark.proof("states", "PROOF-36", "RULE-31", tier="integration")
+@pytest.mark.proof("states", "PROOF-36", "RULE-31")
 def test_a_global_anchor_rule_is_named_once():
     made = Project(gate='strong')
     try:

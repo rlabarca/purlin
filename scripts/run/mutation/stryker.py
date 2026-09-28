@@ -191,17 +191,16 @@ def read_report(path):
         return None
 
 
-def run(project_root, scope_by_feature, tests_by_rule, tier=None):
+def run(project_root, scope_by_feature, tests_by_rule):
     """Break every feature's scope files and report what the tests caught."""
     command = binary(project_root)
     if command is None:
-        return none.run(project_root, scope_by_feature, tests_by_rule, tier,
+        return none.run(project_root, scope_by_feature, tests_by_rule,
                         reason='stryker is not installed: run '
                                '"npm install --save-dev @stryker-mutator/core"')
     runner = test_runner(project_root)
     rules = rules_by_feature(tests_by_rule)
-    lines = ['engine stryker, test runner %s, tier %s'
-             % (runner, tier or 'all')]
+    lines = ['engine stryker, test runner %s' % runner]
     features = {}
     reason = ''
     work = tempfile.mkdtemp(prefix='purlin-breaks-')

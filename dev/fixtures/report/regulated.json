@@ -123,7 +123,7 @@
                 }
               ],
               "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule1log",
@@ -209,7 +209,7 @@
                 }
               ],
               "text": "POST /session five times with a wrong password, then once more with the right one, and read 423.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule2log",
@@ -297,7 +297,7 @@
                 }
               ],
               "text": "Lock an account and read 1 message in the outbox.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule3log",
@@ -386,7 +386,7 @@
                 }
               ],
               "text": "On Windows, open http://localhost/session and read that no cookie is set.",
-              "tier": "e2e"
+              "manual": false
             },
             {
               "env": null,
@@ -398,7 +398,7 @@
                 }
               ],
               "text": "Read the Set-Cookie header of a 200 response and verify it carries Secure.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule4log",
@@ -542,7 +542,7 @@
                 }
               ],
               "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule1inv",
@@ -631,7 +631,7 @@
                 }
               ],
               "text": "Build an invoice with zero lines and read the total 0.00.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule2inv",
@@ -702,7 +702,7 @@
               "id": "PROOF-4",
               "tests": [],
               "text": "Raise a credit note against a paid invoice and read the printed note: it names the original invoice number and the reason",
-              "tier": "manual"
+              "manual": true
             }
           ],
           "rule_hash": "c3d4e5f6aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -833,7 +833,7 @@
                 }
               ],
               "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\".",
-              "tier": "e2e"
+              "manual": false
             }
           ],
           "rule_hash": "rrule1che",
@@ -967,7 +967,7 @@
                 }
               ],
               "text": "Export September with 3 invoices dated the 3rd, the 1st and the 9th and read them in the order 1st, 3rd, 9th.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule1exp",
@@ -1048,7 +1048,7 @@
                 }
               ],
               "text": "Export one invoice and read the header row `date,number,total` before the first line.",
-              "tier": "unit"
+              "manual": false
             }
           ],
           "rule_hash": "rrule2exp",

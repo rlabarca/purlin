@@ -114,10 +114,12 @@ function proofPanel(proof) {
   var tests = (proof.tests || []).map(function (t) {
     return esc(t.file) + ' :: ' + esc(t.name);
   }).join('\n') || 'no tagged test yet';
+  var tags = (proof.manual ? ['@manual'] : [])
+    .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   return '<div class="panel"><dl class="kv">'
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
-    + '<dt>Tier</dt><dd>' + tag(proof.tier + (proof.env ? ' · ' + proof.env : ''), true)
-    + '</dd>'
+    + (tags.length ? '<dt>Tags</dt><dd>' + tag(tags.join(' '), true) + '</dd>'
+      : '')
     + '<dt>Tests</dt><dd><pre class="code">' + tests + '</pre></dd>'
     + '</dl></div>';
 }

@@ -73,15 +73,15 @@ def find_report(output_dir):
     return best
 
 
-def run(project_root, scope_by_feature, tests_by_rule, tier=None):
+def run(project_root, scope_by_feature, tests_by_rule):
     """Break every feature's scope files and report what the tests caught."""
     installed, reason = available(project_root)
     if not installed:
-        return none.run(project_root, scope_by_feature, tests_by_rule, tier,
+        return none.run(project_root, scope_by_feature, tests_by_rule,
                         reason=reason)
     command = binary(project_root)
     rules = rules_by_feature(tests_by_rule)
-    lines = ['engine stryker_net, tier %s' % (tier or 'all')]
+    lines = ['engine stryker_net']
     features = {}
     reason = ''
     work = tempfile.mkdtemp(prefix='purlin-breaks-')

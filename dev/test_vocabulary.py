@@ -55,7 +55,10 @@ LITERALS = ("@on(",                     # not a word: the retired scope tag
             "config.local.json",
             "anchor propose", "upstream-check",
             "tools/PM", "tools/QA", "pack_tools", "scan.py",
-            "purlin:find", "purlin:rename", "--resolve")
+            "purlin:find", "purlin:rename", "--resolve",
+            # decision 38: a proof says less. No kind of test on a proof
+            # line, and no flag or variable that filtered by one
+            "@integration", "@e2e", "@unit", "--tier", "PURLIN_PROOF_TIER")
 
 # The review list is the one place a person is needed, and its header is the
 # one sentence that may still say so. A line is stepped over only when every

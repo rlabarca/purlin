@@ -1,15 +1,14 @@
 """Read the proof files a test run leaves behind.
 
-A test run writes one file per feature per tier under
-`.purlin/runtime/proofs/`, which is gitignored: proof files are runtime, so
-two runs on two branches never conflict and nothing about a run is committed.
+A test run writes one file per feature under `.purlin/runtime/proofs/`, which
+is gitignored: proof files are runtime, so two runs on two branches never
+conflict and nothing about a run is committed.
 
-    .purlin/runtime/proofs/<feature>.<tier>.json
+    .purlin/runtime/proofs/<feature>.json
 
 Each file is:
 
     {
-      "tier": "unit",
       "proofs": [
         {
           "feature": "login",
@@ -17,8 +16,7 @@ Each file is:
           "rule": "RULE-1",
           "test_file": "tests/test_login.py",
           "test_name": "test_rejects_expired_token",
-          "status": "pass",
-          "tier": "unit"
+          "status": "pass"
         }
       ]
     }
@@ -34,7 +32,6 @@ The proof plugins write exactly what this reads.
 
 import json
 import os
-import re
 import sys
 
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,21 +40,9 @@ if _MCP_DIR not in sys.path:
 
 PROOF_DIR = os.path.join('.purlin', 'runtime', 'proofs')
 
-# `<feature>.<tier>.json`. The feature stem may carry dots; the tier may not,
-# so the tier is the last dotted segment before `.json`.
-_PROOF_FILE_RE = re.compile(r'^(.+)\.([A-Za-z0-9_]+)\.json$')
-
 
 def proof_dir(project_root):
     return os.path.join(project_root, PROOF_DIR)
-
-
-def proof_file_parts(basename):
-    """`(feature_stem, tier)` for a proof filename, or None."""
-    m = _PROOF_FILE_RE.match(basename)
-    if not m:
-        return None
-    return m.group(1), m.group(2)
 
 
 def load_proofs(project_root):
@@ -76,10 +61,6 @@ def load_proofs(project_root):
     for name in names:
         if not name.endswith('.json'):
             continue
-        parts = proof_file_parts(name)
-        if parts is None:
-            continue
-        _stem, tier = parts
         path = os.path.join(directory, name)
         try:
             with open(path, 'r', encoding='utf-8') as handle:
@@ -91,7 +72,6 @@ def load_proofs(project_root):
         for entry in data.get('proofs', []):
             if not isinstance(entry, dict):
                 continue
-            entry.setdefault('tier', tier)
             feature = entry.get('feature', '')
             results.setdefault(feature, []).append(entry)
     return results

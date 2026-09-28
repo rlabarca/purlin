@@ -18,8 +18,7 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 from purlin import payload as purlin_payload
 from purlin import proofs as purlin_proofs
 
-REQUIRED_FIELDS = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status',
-                   'tier'}
+REQUIRED_FIELDS = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status'}
 
 
 class TestProofFormatEnforcement:
@@ -38,12 +37,12 @@ class TestProofFormatEnforcement:
                   encoding='utf-8') as handle:
             handle.write(content)
 
-    def _write_proofs(self, name, entries, tier='unit'):
+    def _write_proofs(self, name, entries):
         directory = purlin_proofs.proof_dir(self.project_root)
         os.makedirs(directory, exist_ok=True)
-        path = os.path.join(directory, '%s.%s.json' % (name, tier))
+        path = os.path.join(directory, '%s.json' % name)
         with open(path, 'w', encoding='utf-8') as handle:
-            json.dump({'tier': tier, 'proofs': entries}, handle)
+            json.dump({'proofs': entries}, handle)
         return path
 
     def _word(self, feature, rule_id):
@@ -65,21 +64,21 @@ class TestProofFormatEnforcement:
         self._write_proofs('foo', [
             {'feature': 'foo', 'id': 'PROOF-1', 'rule': 'RULE-1',
              'test_file': 'tests/test_foo.py', 'test_name': 'test_it',
-             'status': 'pass', 'tier': 'unit'},
+             'status': 'pass'},
         ])
         assert self._word('foo', 'RULE-1') == 'passed', \
             'a passing entry in .purlin/runtime/proofs/ meets level 1'
 
     @pytest.mark.proof("schema_proof_format", "PROOF-2", "RULE-2")
-    def test_every_entry_carries_the_seven_fields(self):
+    def test_every_entry_carries_the_six_fields(self):
         path = self._write_proofs('foo', [
             {'feature': 'foo', 'id': 'PROOF-1', 'rule': 'RULE-1',
              'test_file': 'tests/test_foo.py', 'test_name': 'test_it',
-             'status': 'pass', 'tier': 'unit'},
+             'status': 'pass'},
         ])
         with open(path, encoding='utf-8') as handle:
             data = json.load(handle)
-        assert 'tier' in data and 'proofs' in data
+        assert set(data) == {'proofs'}
         for entry in data['proofs']:
             missing = REQUIRED_FIELDS - set(entry)
             assert not missing, 'missing fields %s in %s' % (missing, path)
@@ -102,11 +101,9 @@ class TestProofFormatEnforcement:
         for bad in ('error', 'fail', 'skipped', None):
             self._write_proofs('bar', [
                 {'feature': 'bar', 'id': 'PROOF-1', 'rule': 'RULE-1',
-                 'test_file': 't.py', 'test_name': 't', 'status': bad,
-                 'tier': 'unit'},
+                 'test_file': 't.py', 'test_name': 't', 'status': bad},
                 {'feature': 'bar', 'id': 'PROOF-2', 'rule': 'RULE-2',
-                 'test_file': 't.py', 'test_name': 't2', 'status': 'pass',
-                 'tier': 'unit'},
+                 'test_file': 't.py', 'test_name': 't2', 'status': 'pass'},
             ])
             assert self._word('bar', 'RULE-1') != 'passed', (
                 'status %r must not count as proved' % bad)
@@ -122,11 +119,9 @@ class TestProofFormatEnforcement:
         ))
         self._write_proofs('baz', [
             {'feature': 'baz', 'id': 'PROOF-1', 'rule': 'RULE-1',
-             'test_file': 'a.py', 'test_name': 'ok', 'status': 'pass',
-             'tier': 'unit'},
+             'test_file': 'a.py', 'test_name': 'ok', 'status': 'pass'},
             {'feature': 'baz', 'id': 'PROOF-1', 'rule': 'RULE-1',
-             'test_file': 'b.py', 'test_name': 'broken', 'status': 'fail',
-             'tier': 'unit'},
+             'test_file': 'b.py', 'test_name': 'broken', 'status': 'fail'},
         ])
         assert self._word('baz', 'RULE-1') != 'passed', (
             'a proof that failed in any test claiming it is not proved')
@@ -136,16 +131,6 @@ class TestProofFormatEnforcement:
         assert purlin_proofs.load_proofs(self.project_root) == {}
         os.makedirs(purlin_proofs.proof_dir(self.project_root))
         assert purlin_proofs.load_proofs(self.project_root) == {}
-
-    @pytest.mark.proof("schema_proof_format", "PROOF-6", "RULE-6")
-    def test_the_filename_names_the_feature_and_the_tier(self):
-        assert purlin_proofs.proof_file_parts('login.unit.json') == ('login',
-                                                                    'unit')
-        assert purlin_proofs.proof_file_parts(
-            'login.integration.json') == ('login', 'integration')
-        assert purlin_proofs.proof_file_parts('login.md') is None
-        # A file with no tier segment names nothing readable.
-        assert purlin_proofs.proof_file_parts('login.json') is None
 
 
 class TestProofFormatConventions:
@@ -162,11 +147,11 @@ class TestProofFormatConventions:
             '.purlin/runtime/')
 
     @pytest.mark.proof("schema_proof_format", "PROOF-8", "RULE-8")
-    def test_the_spec_format_documents_the_tiers(self):
+    def test_the_spec_format_documents_the_proof_tags(self):
         with open(os.path.join(PROJECT_ROOT, 'references', 'formats',
                                'spec_format.md'), encoding='utf-8') as handle:
             fmt = handle.read()
-        for tag in ('@integration', '@e2e', '@manual', '@env('):
+        for tag in ('@manual', '@env('):
             assert tag in fmt, '%s is not documented' % tag
         assert '@on(' not in fmt.split('### Retired tags')[0], (  # retired
             'the retired scope tag must appear only under Retired tags')

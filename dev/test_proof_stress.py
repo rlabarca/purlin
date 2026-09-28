@@ -1,6 +1,6 @@
 """Stress tests for the proof merge.
 
-Multi-feature, multi-tier, multi-language merges. Real plugins write the
+Multi-feature, multi-file, multi-language merges. Real plugins write the
 files, in the order a real project would run them, and the reader the rest of
 Purlin uses (`scripts/mcp/purlin/proofs.py`) reads them back.
 
@@ -49,26 +49,24 @@ def _project(tmp_path):
     return tmp_path
 
 
-def _seed(root, feature, tier, entries):
+def _seed(root, feature, entries):
     directory = root / PROOF_REL
     directory.mkdir(parents=True, exist_ok=True)
-    path = directory / ('%s.%s.json' % (feature, tier))
-    path.write_text(json.dumps({'tier': tier, 'proofs': entries}, indent=2)
+    path = directory / ('%s.json' % feature)
+    path.write_text(json.dumps({'proofs': entries}, indent=2)
                     + '\n', encoding='utf-8')
     return path
 
 
-def _entry(feature, proof_id, rule_id, status='pass', tier='unit',
+def _entry(feature, proof_id, rule_id, status='pass',
            test_file='tests/test.py', test_name='test_func'):
     return {'feature': feature, 'id': proof_id, 'rule': rule_id,
             'test_file': test_file, 'test_name': test_name,
-            'status': status, 'tier': tier}
+            'status': status}
 
 
-def _shell_run(root, script_rel, feature, calls, tier=None):
+def _shell_run(root, script_rel, feature, calls):
     lines = ['source %s' % SHELL_HARNESS]
-    if tier:
-        lines.append('export PURLIN_PROOF_TIER=%s' % tier)
     for proof_id, rule_id, status, name in calls:
         lines.append('purlin_proof "%s" "%s" "%s" %s "%s"'
                      % (feature, proof_id, rule_id, status, name))
@@ -122,12 +120,12 @@ class TestMultiFeatureMerge:
         root = _project(tmp_path)
         (root / 'tests').mkdir()
         (root / 'tests' / 'kept.sh').write_text('# kept\n', encoding='utf-8')
-        _seed(root, 'alpha', 'unit', [
+        _seed(root, 'alpha', [
             _entry('beta', 'PROOF-9', 'RULE-9', test_file='tests/kept.sh')])
         _shell_run(root, 'tests/alpha.test.sh', 'alpha',
                    [('PROOF-1', 'RULE-1', 'pass', 'fresh')])
         features = {e['feature'] for e in
-                    json.loads((root / PROOF_REL / 'alpha.unit.json')
+                    json.loads((root / PROOF_REL / 'alpha.json')
                                .read_text(encoding='utf-8'))['proofs']}
         assert features == {'alpha', 'beta'}
 
@@ -143,34 +141,22 @@ class TestMultiFeatureMerge:
                                                      'tests/two.test.sh'}
 
 
-class TestMultiTierAggregation:
-    """One feature across three tiers is three files and one reading."""
+class TestOneProofManyTests:
+    """One proof claimed by tests in two files reads as one proof."""
 
-    @pytest.mark.proof("proof_common", "PROOF-14", "RULE-14")
-    def test_three_tiers_read_back_as_one_feature(self, tmp_path):
-        root = _project(tmp_path)
-        for index, tier in enumerate(('unit', 'integration', 'e2e'), start=1):
-            _shell_run(root, 'tests/%s.test.sh' % tier, 'alpha',
-                       [('PROOF-%d' % index, 'RULE-%d' % index, 'pass', tier)],
-                       tier=tier)
-        entries = _read(root)['alpha']
-        assert {e['tier'] for e in entries} == {'unit', 'integration', 'e2e'}
-        assert len(entries) == 3
-
-    def test_a_failing_tier_wins_over_a_passing_one(self, tmp_path):
-        """One proof, two tiers, one failing: the proof is not proved."""
+    def test_a_failing_test_wins_over_a_passing_one(self, tmp_path):
+        """One proof, two test files, one failing: the proof is not proved."""
         root = _project(tmp_path)
         _shell_run(root, 'tests/u.test.sh', 'alpha',
-                   [('PROOF-1', 'RULE-1', 'pass', 'unit run')])
+                   [('PROOF-1', 'RULE-1', 'pass', 'first run')])
         _shell_run(root, 'tests/i.test.sh', 'alpha',
-                   [('PROOF-1', 'RULE-1', 'fail', 'integration run')],
-                   tier='integration')
+                   [('PROOF-1', 'RULE-1', 'fail', 'second run')])
         statuses = proofs_module.status_by_proof(_read(root)['alpha'])
         assert statuses[('alpha', 'PROOF-1')] == 'fail'
 
 
 class TestMultiLanguageSameFeature:
-    """Two plugins writing one feature at one tier merge rather than collide."""
+    """Two plugins writing one feature merge rather than collide."""
 
     @pytest.mark.proof("proof_common", "PROOF-1", "RULE-1")
     def test_pytest_and_shell_both_land(self, tmp_path):
@@ -193,7 +179,7 @@ class TestMultiLanguageSameFeature:
         _shell_run(root, 'tests/alpha.test.sh', 'alpha',
                    [('PROOF-1', 'RULE-1', 'pass', 'shell case')])
         (root / 'tests' / 'test_alpha.sql').write_text(
-            "-- @purlin alpha PROOF-2 RULE-2 unit\n"
+            "-- @purlin alpha PROOF-2 RULE-2\n"
             "-- Test: sql case\n"
             "SELECT 'PASS';\n", encoding='utf-8')
         subprocess.run([BASH,
@@ -210,7 +196,7 @@ class TestCollisionWithAnEarlierRun:
     @pytest.mark.proof("proof_common", "PROOF-6", "RULE-6")
     def test_an_entry_whose_test_file_is_gone_is_reaped(self, tmp_path):
         root = _project(tmp_path)
-        _seed(root, 'alpha', 'unit', [
+        _seed(root, 'alpha', [
             _entry('alpha', 'PROOF-9', 'RULE-9',
                    test_file='tests/deleted.test.sh')])
         _shell_run(root, 'tests/alpha.test.sh', 'alpha',
@@ -219,7 +205,7 @@ class TestCollisionWithAnEarlierRun:
 
     def test_an_entry_with_an_empty_test_file_is_reaped(self, tmp_path):
         root = _project(tmp_path)
-        _seed(root, 'alpha', 'unit', [
+        _seed(root, 'alpha', [
             _entry('alpha', 'PROOF-9', 'RULE-9', test_file='')])
         _shell_run(root, 'tests/alpha.test.sh', 'alpha',
                    [('PROOF-1', 'RULE-1', 'pass', 'fresh')])
@@ -229,7 +215,7 @@ class TestCollisionWithAnEarlierRun:
         root = _project(tmp_path)
         directory = root / PROOF_REL
         directory.mkdir(parents=True)
-        (directory / 'alpha.unit.json').write_text('{not json',
+        (directory / 'alpha.json').write_text('{not json',
                                                    encoding='utf-8')
         result = _shell_run(root, 'tests/alpha.test.sh', 'alpha',
                             [('PROOF-1', 'RULE-1', 'pass', 'fresh')])

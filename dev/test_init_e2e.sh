@@ -225,7 +225,7 @@ spec_file() {  # dir feature scope
 
 ## Proof
 
-- PROOF-1 (RULE-1): Call \`greet("Ada")\` and verify it returns exactly \`Hello, Ada!\` @unit
+- PROOF-1 (RULE-1): Call \`greet("Ada")\` and verify it returns exactly \`Hello, Ada!\`
 EOF
 }
 
@@ -455,7 +455,7 @@ import { expect, test } from 'vitest';
 
 import { greet } from '../greeting';
 
-test('[proof:greeting:PROOF-1:RULE-1:unit] greets by name', () => {
+test('[proof:greeting:PROOF-1:RULE-1] greets by name', () => {
   expect(greet('Ada')).toBe('Hello, Ada!');
 });
 EOF
@@ -540,7 +540,6 @@ walk_marketplace
 # so its own shell settings never reach the walk above.
 # shellcheck source=../scripts/proof/shell_purlin.sh
 . "$ROOT/scripts/proof/shell_purlin.sh"
-export PURLIN_PROOF_TIER=e2e
 if [ "$GATE_FAIL" -eq 0 ]; then GATE_STATUS=pass; else GATE_STATUS=fail; fi
 if [ "$WIRE_FAIL" -eq 0 ]; then WIRE_STATUS=pass; else WIRE_STATUS=fail; fi
 purlin_proof "scaffold" "PROOF-36" "RULE-36" "$GATE_STATUS" \

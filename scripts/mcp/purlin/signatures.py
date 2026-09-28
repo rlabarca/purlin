@@ -135,7 +135,7 @@ def test_hash_kind(proofs):
     """
     kinds = set()
     for proof in proofs or ():
-        if proof.get('tier') == 'manual':
+        if proof.get('manual'):
             kinds.add('manual')
             continue
         if proof.get('tests'):

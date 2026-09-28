@@ -2,7 +2,7 @@
 
     purlin_run.py (--feature NAME ... | --all)
                   (--test [--remote] | --audit | --ci)
-                  [--tier unit|all] [--arm-timeout SECONDS]
+                  [--arm-timeout SECONDS]
                   [--project-root DIR]
 
 `--test` is what `purlin:test` runs: the plugins run the tagged tests into
@@ -91,7 +91,7 @@ LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 USAGE = (
     'Usage: purlin_run.py (--feature NAME ... | --all) '
     '(--test [--remote] | --audit | --ci) '
-    '[--tier unit|all] [--arm-timeout SECONDS] [--project-root DIR]')
+    '[--arm-timeout SECONDS] [--project-root DIR]')
 
 # The one line `purlin:test --remote` gets. A remote runner runs the tests,
 # so the flag belongs to the test and nowhere else.
@@ -104,8 +104,6 @@ FOREIGN_PROOF = ('%s %s needs %s; this machine is %s. A remote runner runs '
 
 # What a `--ci` run says where the gate asks for no record at all.
 NO_RECORD_AT_PASSED = 'The gate is passed, so this run writes no record.'
-
-TIERS = ('unit', 'all')
 
 # How long one arm may take before it is killed. An hour is longer than any
 # shipped suite and far shorter than a hosted runner's six-hour job limit, so
@@ -137,7 +135,6 @@ class Args(object):
         self.all = False
         self.action = None          # 'test', 'audit' or 'ci'
         self.remote = False
-        self.tier = 'all'
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
         self.error = None
@@ -161,12 +158,6 @@ def parse_args(argv):
             actions.append(token[2:])
         elif token == '--remote':
             args.remote = True
-        elif token == '--tier':
-            index += 1
-            if index >= len(argv) or argv[index] not in TIERS:
-                args.error = '--tier is unit or all'
-                return args
-            args.tier = argv[index]
         elif token == '--arm-timeout':
             index += 1
             value = argv[index] if index < len(argv) else ''
@@ -417,7 +408,7 @@ def print_arm_output(framework, text):
     sys.stdout.flush()
 
 
-def run_framework(project_root, framework, tier, config, log,
+def run_framework(project_root, framework, config, log,
                   timeout=ARM_TIMEOUT_DEFAULT):
     """Run one framework's tagged tests. The exit code its runner gave.
 
@@ -432,19 +423,13 @@ def run_framework(project_root, framework, tier, config, log,
         # test runs, so the copy is never collected.
         command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
                    '--ignore=mutants']
-        if tier == 'unit':
-            # The tier a proof marker names is also a pytest marker on the
-            # test, so this expression actually deselects something.
-            command.extend(['-m', 'not integration and not e2e'])
         code = _run(command, project_root, log, timeout)
         # pytest exits 5 when it collected nothing. No tests is not a failure
         # here; the two loud failures below are what report that.
         return 0 if code == 5 else code
     if framework == 'jest':
-        command = ['npx', 'jest', '--passWithNoTests']
-        if tier == 'unit':
-            command.append('--testPathPattern=unit')
-        return _run(command, project_root, log, timeout)
+        return _run(['npx', 'jest', '--passWithNoTests'], project_root, log,
+                    timeout)
     if framework == 'vitest':
         return _run(['npx', 'vitest', 'run', '--passWithNoTests'],
                     project_root, log, timeout)
@@ -681,7 +666,6 @@ def build_record(project_root, args, features, selected, index, plugins,
                             'id': proof_id,
                             'rule': rule_id,
                             'status': entry.get('status', ''),
-                            'tier': proof.get('tier', ''),
                             'env': proof.get('env'),
                             'test_file': entry.get('test_file', ''),
                             'test_name': entry.get('test_name', ''),
@@ -814,7 +798,7 @@ def main(argv=None):
         # is while it is still running.
         print('Running the %s arm.' % framework)
         mark = len(log)
-        code = run_framework(project_root, framework, args.tier, config,
+        code = run_framework(project_root, framework, config,
                              log, args.arm_timeout)
         arm_logs[framework] = '\n'.join(log[mark:])
         after = set(proof_index(project_root))
@@ -852,8 +836,8 @@ def main(argv=None):
         failures.append('%d marker(s) produced no proof entry: %s%s'
                         % (len(missing_markers), shown, more))
 
-    print('Ran %s on %d feature(s) at tier %s.'
-          % (', '.join(ran) or 'nothing', len(selected), args.tier))
+    print('Ran %s on %d feature(s).'
+          % (', '.join(ran) or 'nothing', len(selected)))
     if foreign:
         print('')
         for feature, proof_id, env in foreign:
@@ -1202,7 +1186,7 @@ def _run_breaks(project_root, args, features, selected, index):
     print('Measuring the breaks with the %s engine.' % engine)
     answer = run_breaks(project_root, engine,
                         scope_by_feature(features, selected),
-                        tests_by_rule(features, selected, index), args.tier)
+                        tests_by_rule(features, selected, index))
     # An installed engine answers a reason only when it measured nothing it
     # set out to, a timeout being the one case, so the person sees why the
     # strength reads n/a rather than finding it in the log.

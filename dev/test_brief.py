@@ -88,24 +88,24 @@ def build(project, rule='RULE-1', ai=False):
 
 class TestTheLayers:
 
-    @pytest.mark.proof("brief", "PROOF-1", "RULE-1", tier="integration")
-    @pytest.mark.proof("brief", "PROOF-3", "RULE-2", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("brief", "PROOF-3", "RULE-2")
     def test_a_passed_bar_stops_after_the_test_strength(self, proved):
         assert build(proved, 'RULE-1')['layers'] == ['test strength']
         assert build(proved, 'RULE-2')['layers'][-1] == 'AI audit'
 
-    @pytest.mark.proof("brief", "PROOF-4", "RULE-3", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-4", "RULE-3")
     def test_a_strong_bar_runs_every_layer(self, proved):
         assert build(proved, 'RULE-2')['layers'] == [
             'test strength', 'AI audit']
 
-    @pytest.mark.proof("brief", "PROOF-2", "RULE-1", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-2", "RULE-1")
     def test_a_passed_bar_asks_for_no_model(self, proved):
         built = build(proved, 'RULE-1')
         assert 'AI audit' not in built['layers']
         assert built['ai_review'] is None
 
-    @pytest.mark.proof("brief", "PROOF-5", "RULE-4", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-5", "RULE-4")
     def test_a_rule_that_is_not_there_has_no_brief(self, proved):
         assert build(proved, 'RULE-99') is None
 
@@ -116,17 +116,17 @@ class TestTheLayers:
 
 class TestTheTests:
 
-    @pytest.mark.proof("brief", "PROOF-8", "RULE-7", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-8", "RULE-7")
     def test_the_test_body_is_shown_beside_the_rule(self, proved):
         test = build(proved, 'RULE-1')['tests'][0]
         assert test['file'] == 'tests/test_login.py'
         assert test['name'] == 'test_valid_credentials_return_200'
         assert 'assert login("ada", "secret") == 200' in test['body']
 
-    @pytest.mark.proof("brief", "PROOF-9", "RULE-8", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-9", "RULE-8")
     def test_a_manual_proof_has_a_note_where_a_test_would_be(self):
         made = Project(spec=SPEC.replace(
-            'verify 200 and a token @integration',
+            'verify 200 and a token',
             'verify 200 and a token @manual'))
         try:
             test = build(made, 'RULE-1')['tests'][0]
@@ -136,7 +136,7 @@ class TestTheTests:
         finally:
             made.close()
 
-    @pytest.mark.proof("brief", "PROOF-12", "RULE-10", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-12", "RULE-10")
     def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):
         built = build(proved, 'RULE-1')
         assert set(built) == {
@@ -156,7 +156,7 @@ class TestTheJavaScriptReader:
         return {proof: body for proof, _rule, _name, body
                 in marked_tests._iter_js_proof_bodies(text, feature)}
 
-    @pytest.mark.proof("brief", "PROOF-46", "RULE-28", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-46", "RULE-28")
     def test_braces_and_apostrophes_do_not_cut_a_body(self, tmp_path):
         text = """import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
@@ -182,7 +182,7 @@ describe("repro", () => {
         assert 'expect(out).toMatch' in first, first
         assert 'expect(1).toBe(1)' in second, second
 
-    @pytest.mark.proof("brief", "PROOF-47", "RULE-28", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-47", "RULE-28")
     def test_regex_literals_comments_and_division_do_not_cut_a_body(self):
         text = r"""import { it, expect } from "vitest";
 
@@ -223,17 +223,17 @@ it("division [proof:rx:PROOF-5:RULE-5]", () => { const q = 4 / 2; expect(q).toBe
 
 class TestTheTestStrength:
 
-    @pytest.mark.proof("brief", "PROOF-10", "RULE-9", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-10", "RULE-9")
     def test_it_comes_off_the_latest_record(self, at_strong):
         assert build(at_strong, 'RULE-2')['test_strength'] == 90
         assert build(at_strong, 'RULE-2')['min_strength'] == 70
 
-    @pytest.mark.proof("brief", "PROOF-10", "RULE-9", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-10", "RULE-9")
     def test_a_passed_bar_still_reads_the_strength(self, proved):
         assert build(proved, 'RULE-1')['test_strength'] == 90, (
             'the strength layer runs at either bar')
 
-    @pytest.mark.proof("brief", "PROOF-11", "RULE-9", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-11", "RULE-9")
     def test_no_engine_reads_as_n_a(self):
         made = Project()
         try:
@@ -251,7 +251,7 @@ class TestTheTestStrength:
 
 class TestTheModelReview:
 
-    @pytest.mark.proof("brief", "PROOF-19", "RULE-15", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-19", "RULE-15")
     def test_the_prompt_is_the_criteria_file_verbatim(self, at_strong):
         built = build(at_strong, 'RULE-2')
         prompt = brief_module.model_prompt(at_strong.root, built)
@@ -263,7 +263,7 @@ class TestTheModelReview:
         assert 'test_a_bad_password_is_denied' in prompt
         assert 'Test strength: 90 percent (minimum 70)' in prompt
 
-    @pytest.mark.proof("brief", "PROOF-44", "RULE-15", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-44", "RULE-15")
     def test_the_prompt_asks_for_observations_and_bars_a_recommendation(
             self, at_strong):
         prompt = brief_module.model_prompt(at_strong.root,
@@ -273,21 +273,21 @@ class TestTheModelReview:
         assert 'Do not recommend a change' in prompt
         assert 'do not grade the rule' in prompt
 
-    @pytest.mark.proof("brief", "PROOF-20", "RULE-16", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-20", "RULE-16")
     def test_without_ai_the_brief_says_not_available(self, at_strong):
         built = build(at_strong, 'RULE-2')
         assert built['ai_review'] == 'not available'
         assert built['observations'] == [] and built['settled'] is None
         assert 'Settled: not answered' in brief_module.render_brief(built)
 
-    @pytest.mark.proof("brief", "PROOF-21", "RULE-16", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-21", "RULE-16")
     def test_with_no_claude_on_the_path_it_says_not_available(
             self, at_strong, monkeypatch):
         monkeypatch.setattr(brief_module.shutil, 'which', lambda name: None)
         assert build(at_strong, 'RULE-2', ai=True)['ai_review'] == (
             'not available')
 
-    @pytest.mark.proof("brief", "PROOF-22", "RULE-16", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-22", "RULE-16")
     def test_a_rule_whose_bar_is_passed_never_calls_a_model(
             self, at_strong, monkeypatch):
         def fail(*args, **kwargs):
@@ -305,7 +305,7 @@ class TestTheModelReview:
 
 class TestTheObservations:
 
-    @pytest.mark.proof("brief", "PROOF-23", "RULE-12", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-23", "RULE-12")
     def test_the_answer_becomes_one_observation_per_sentence(
             self, at_strong, monkeypatch):
         calls = []
@@ -361,13 +361,13 @@ DESIGN_SPEC = (
     '[origin: design] [bar: passed]\n\n'
     '## Proof\n\n'
     '- PROOF-1 (RULE-1): Open /sign-in; verify the heading "Sign in" and that '
-    'no error is shown @e2e\n'
+    'no error is shown\n'
 )
 
 
 class TestDesignRules:
 
-    @pytest.mark.proof("brief", "PROOF-25", "RULE-18", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-25", "RULE-18")
     def test_the_mock_and_the_screenshot_stand_beside_each_other(self):
         made = Project(spec=DESIGN_SPEC)
         try:
@@ -384,7 +384,7 @@ class TestDesignRules:
         finally:
             made.close()
 
-    @pytest.mark.proof("brief", "PROOF-26", "RULE-18", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-26", "RULE-18")
     def test_a_glob_that_matches_nothing_is_shown_as_the_glob(self):
         made = Project(spec=DESIGN_SPEC)
         try:
@@ -401,7 +401,7 @@ class TestDesignRules:
 
 class TestWriting:
 
-    @pytest.mark.proof("brief", "PROOF-27", "RULE-19", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-27", "RULE-19")
     def test_the_brief_lands_beside_the_records_named_for_the_triple(
             self, proved):
         built = build(proved, 'RULE-1')
@@ -414,7 +414,7 @@ class TestWriting:
                   encoding='utf-8') as handle:
             assert json.load(handle)['schema'] == 'purlin-brief/5'
 
-    @pytest.mark.proof("brief", "PROOF-28", "RULE-19", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-28", "RULE-19")
     def test_a_brief_is_found_again_only_while_the_text_stands(self, proved):
         built = build(proved, 'RULE-1')
         brief_module.write_brief(proved.root, built)
@@ -427,7 +427,7 @@ class TestWriting:
         assert again['triple_hash'] != built['triple_hash'], (
             'a brief for text that has since changed is not a brief for it')
 
-    @pytest.mark.proof("brief", "PROOF-29", "RULE-21", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-29", "RULE-21")
     def test_write_briefs_covers_the_rules_a_review_is_owed_for(self):
         made = Project(gate=REVIEW_GATE, config={'min_strength': 50})
         try:
@@ -442,13 +442,13 @@ class TestWriting:
         finally:
             made.close()
 
-    @pytest.mark.proof("brief", "PROOF-45", "RULE-21", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-45", "RULE-21")
     def test_a_local_record_is_a_counting_pass_at_signed_too(self, at_signed):
         written = brief_module.write_briefs(at_signed.root)
         assert [path.rsplit('/', 1)[1].split('.')[0] for path in written] \
             == ['RULE-2'], written
 
-    @pytest.mark.proof("brief", "PROOF-45", "RULE-21", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-45", "RULE-21")
     def test_a_rule_with_no_run_at_all_gets_no_brief(self):
         made = Project(gate=REVIEW_GATE)
         try:
@@ -458,13 +458,13 @@ class TestWriting:
         finally:
             made.close()
 
-    @pytest.mark.proof("brief", "PROOF-30", "RULE-21", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-30", "RULE-21")
     def test_write_briefs_takes_a_narrower_list(self, proved):
         written = brief_module.write_briefs(
             proved.root, rules=[('login', 'RULE-1')])
         assert len(written) == 1 and 'RULE-1' in written[0]
 
-    @pytest.mark.proof("brief", "PROOF-31", "RULE-22", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-31", "RULE-22")
     def test_the_rendering_names_the_rule_the_proof_and_what_was_found(
             self, at_strong):
         rendered = brief_module.render_brief(build(at_strong, 'RULE-2'))
@@ -482,13 +482,13 @@ class TestWriting:
 
 class TestTheCommandLine:
 
-    @pytest.mark.proof("brief", "PROOF-32", "RULE-23", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-32", "RULE-23")
     def test_help_exits_zero_and_a_bad_option_exits_two(self):
         assert brief_module.main(['--help']) == 0
         assert brief_module.main(['--nope']) == 2
         assert brief_module.main([]) == 2
 
-    @pytest.mark.proof("brief", "PROOF-34", "RULE-24", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-34", "RULE-24")
     def test_one_rule_prints_its_brief_and_writes_it(self, proved, capsys):
         code = brief_module.main(['--feature', 'login', '--rule', 'RULE-1',
                                   '--project-root', proved.root])
@@ -498,7 +498,7 @@ class TestTheCommandLine:
         assert os.path.isdir(os.path.join(proved.root, '.purlin', 'briefs', 'local',
                                           'login'))
 
-    @pytest.mark.proof("brief", "PROOF-35", "RULE-24", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-35", "RULE-24")
     def test_a_feature_with_no_rule_named_covers_every_rule(self, proved,
                                                             capsys):
         code = brief_module.main(['--feature', 'login',
@@ -507,14 +507,14 @@ class TestTheCommandLine:
         assert code == 0
         assert 'login RULE-1' in output and 'login RULE-2' in output
 
-    @pytest.mark.proof("brief", "PROOF-33", "RULE-23", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-33", "RULE-23")
     def test_an_unknown_feature_exits_one(self, proved, capsys):
         code = brief_module.main(['--feature', 'nothing',
                                   '--project-root', proved.root])
         capsys.readouterr()
         assert code == 1
 
-    @pytest.mark.proof("brief", "PROOF-36", "RULE-23", tier="integration")
+    @pytest.mark.proof("brief", "PROOF-36", "RULE-23")
     def test_the_script_runs_as_a_command(self, proved):
         result = subprocess.run(
             [sys.executable, BRIEF_PY, '--feature', 'login', '--rule',
