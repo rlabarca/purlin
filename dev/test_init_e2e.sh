@@ -25,8 +25,9 @@
 # signing keys are generated into the temp repository and deleted with it.
 #
 # Fixtures: python (always), typescript (when npm can install vitest, from its
-# cache or a registry), xunit (when dotnet resolves; init wiring only, because
-# the logger needs an assembly built by hand).
+# cache or a registry), and C# with xunit. The C# walk builds the logger
+# assembly init tells a person to build, the way that person would, and skips
+# only on a machine with no `dotnet` at all.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -472,16 +473,35 @@ walk_xunit() {
   dir="$(tmp_dir purlin-e2e-cs)" || exit 1
   TMPDIRS="$TMPDIRS $dir"
   echo "--- xunit ---"
+  export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
   new_repo "$dir"
-  mkdir -p "$dir/App.Tests"
+  mkdir -p "$dir/App" "$dir/App.Tests"
+  cat > "$dir/App/Greeting.cs" <<'EOF'
+namespace App {
+  public static class Greeting {
+    public static string Greet(string name) { return "Hello, " + name + "!"; }
+  }
+}
+EOF
   cat > "$dir/App.Tests/App.Tests.csproj" <<'EOF'
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="xunit" Version="2.6.0" />
+    <Compile Include="../App/Greeting.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
 </Project>
 EOF
+  printf 'bin/\nobj/\n' > "$dir/.gitignore"
   add_remote "$dir"
+
   init_at "$dir" passed
   mark
   expect_file "xunit: the logger is copied" \
@@ -491,7 +511,63 @@ EOF
   expect_in "xunit: the summary names the runner flag" \
     'dotnet test --logger purlin' "$dir/.purlin-init.log"
   wire_since_mark
-  note "xunit: the gate walk needs the logger assembly built by hand"
+
+  # What the summary tells a person to do: compile the copied logger into a
+  # `*.TestLogger.dll` beside the tests, so `dotnet test --logger purlin`
+  # finds it. A solution at the root lets the run script's plain
+  # `dotnet test` reach the test project.
+  mkdir -p "$dir/logger"
+  cat > "$dir/logger/logger.csproj" <<'EOF'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Purlin.TestLogger</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../.purlin/plugins/xunit_purlin.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="17.11.1" />
+  </ItemGroup>
+</Project>
+EOF
+  (cd "$dir" \
+    && dotnet add App.Tests/App.Tests.csproj reference logger/logger.csproj \
+    && dotnet new sln -n App \
+    && dotnet sln App.sln add App.Tests/App.Tests.csproj logger/logger.csproj) \
+    > "$dir/.purlin-dotnet.log" 2>&1
+  if (cd "$dir" && dotnet build -nologo -v q) >> "$dir/.purlin-dotnet.log" 2>&1; then
+    pass "xunit: the logger builds beside the tests"
+  else
+    bad "xunit: the logger builds beside the tests" \
+      "$(tail -20 "$dir/.purlin-dotnet.log")"
+  fi
+
+  spec_file "$dir" greeting App/Greeting.cs
+  cat > "$dir/App.Tests/GreetingTests.cs" <<'EOF'
+using Xunit;
+
+namespace App.Tests {
+  public class GreetingTests {
+    [Fact]
+    [Trait("PurlinProof", "greeting:PROOF-1:RULE-1")]
+    public void GreetsByName() {
+      Assert.Equal("Hello, Ada!", App.Greeting.Greet("Ada"));
+    }
+  }
+}
+EOF
+  commit_all "$dir" "the first spec and its test"
+  mark
+  python3 "$RUN" --feature greeting --test --project-root "$dir" \
+    > "$dir/.purlin-test.log" 2>&1
+  expect_in "xunit: the tagged test runs through purlin_run.py --test" \
+    'gate passed: 1 of 1' "$dir/.purlin-test.log"
+  gate_walk "$dir" xunit
+  gate_since_mark
 }
 
 # --- the marketplace install ----------------------------------------------

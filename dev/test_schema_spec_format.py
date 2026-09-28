@@ -378,7 +378,7 @@ class TestTagParsing:
             "scaffold PROOF-36's one trailing tag is its environment"
         assert tagged['manual'] is False, tagged['manual']
         assert tagged['text'].rstrip().endswith(
-            'Walk both the python and the typescript fixture'), \
+            'only a machine with no `dotnet` skips it, with a note'), \
             "the tag is stripped off the description, nothing else is"
 
 
