@@ -16,42 +16,42 @@
 
 ## Rules
 
-- RULE-1: A project with code to detect is asked the gate question, and at `passed` with a remote one more: whether to run the tests on a remote runner too [bar: strong]
-- RULE-2: Each gate answer derives its own settings: `passed` has no minimum test strength and asks for no signature, `strong` sets the minimum to 70, and `signed` sets it to 80 [bar: strong]
-- RULE-3: `--gate` answers the question without asking it, and a later run with no flag keeps the gate the config already names [bar: strong]
-- RULE-4: An answer that is not one of the three gates is read as `passed` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently [bar: strong]
-- RULE-5: The config init writes carries exactly `ci`, `gate`, `min_strength`, `mutation_engine`, `sql_engine`, `test_framework`, `trust` and `version` at every gate, and no key this release stopped reading; `templates/config.json` carries the same eight keys [bar: strong]
-- RULE-6: A tree with nothing to detect is asked which framework its tests use, that answer is the one installed, and a name this release ships no plugin for is reported and read as `shell` [bar: strong]
-- RULE-7: The framework detected in the tree gets its proof plugin copied into `.purlin/plugins/` byte for byte, under the file name the framework registry gives it [bar: strong]
-- RULE-8: The test runner's own configuration is written for pytest, jest and vitest, naming that framework's plugin, and a configuration the project wrote itself is kept rather than replaced [bar: strong]
-- RULE-9: A framework whose tooling init cannot wire is told what to do instead: an xunit project that its logger needs a `*.TestLogger.dll` assembly and `dotnet test --logger purlin`, and a node project that Stryker is what measures the breaks [bar: passed]
-- RULE-10: No gate asks who may sign and init writes no key naming anyone, because signing is logged rather than policed; `signed` prints the one-time commit-signing setup each signer runs [bar: strong]
-- RULE-12: Raising the gate adds what the higher level needs and keeps every file an earlier run wrote; lowering it writes the setting and deletes nothing [bar: strong]
-- RULE-13: A workflow is written for two reasons and no others, whatever the gate: a proof in `specs/` is tagged `@env` for an operating system this machine is not, or the project's trust is `remote`; each reason is printed as one sentence, a project with neither is told none is needed and gets no workflow, and a project with a reason and no remote is told there is no remote [bar: strong]
-- RULE-14: The git host is read from the remote URL as `github`, `azure` or nothing at all, and a project with no remote reads no host [bar: strong]
-- RULE-15: The workflow carries one job per operating system the `@env` tags in `specs/` name, one linux job when they name none, and the Purlin release pinned as `v<version>` [bar: strong]
-- RULE-42: The workflow triggers on a push to a `run/*` branch and on a push of a `signed/*` tag, and on nothing else; its last step runs `scripts/ci/gate_check.py --check --verify`, so the job fails when the gate is not met or the committed evidence does not match the tagged code [bar: strong]
-- RULE-17: No branch rule is printed at any gate: the marker of proven code is the tag `purlin:sign` writes, and a tag is a marker rather than a barrier [bar: strong]
-- RULE-18: The summary names every path init wrote, kept, copied or skipped, and each path it says it wrote is on disk afterwards [bar: strong]
-- RULE-19: A block init appends to a file the project also owns is appended once and never twice, whatever else that file already held [bar: strong]
-- RULE-20: A second run at the same gate writes no file [bar: strong]
-- RULE-21: No file init writes into a project names the directory the plugin ran from, so the project is the same on every machine [bar: strong]
-- RULE-22: A copy of the plugin installed from the marketplace sets a project up the same way this checkout does [bar: strong]
-- RULE-23: No file init writes into a project points at this repository's own development folder, which a consumer's checkout does not carry [bar: strong]
-- RULE-24: init installs no git hook at all, leaves a hook someone else wrote untouched, and the plugin ships no hook script: nothing runs at commit time and nothing runs at push time [bar: strong]
-- RULE-25: The shim names no machine, no checkout and no release, so the file is right for every clone and everything machine-specific is resolved when it runs [bar: strong]
-- RULE-44: Before any workflow is written the prerequisites are checked, and there are two: a remote exists, and its URL names GitHub or Azure DevOps; the first that fails is printed in one line naming what to do and no workflow is written. No branch is checked, because a signature counts on whatever commit carries it, so a remote that holds no branch yet still gets the workflow. The host CLI, `gh` or `az`, is reported as present or absent either way [bar: strong]
-- RULE-30: `--dry-run` prints the plan and writes nothing, inside a git repository or outside one [bar: strong]
-- RULE-31: A real run outside a git repository exits 2 saying to run git init and leaves the directory empty, and a project root that does not exist exits 2 [bar: strong]
-- RULE-32: `--add <framework>` keeps what was detected and records the framework once however many times it is added [bar: passed]
-- RULE-33: `--update` hands the project to `scripts/init/update.py`, and `--update --dry-run` asks it what is pending instead of applying anything [bar: strong]
-- RULE-34: The last line of a run is the next step, computed from the state the project is now in [bar: passed]
-- RULE-35: Nothing init prints carries an emoji or a term this release retired [bar: passed]
-- RULE-36: A project init set up walks the three gates: the `--test --commit` run passes and commits its evidence, which meets `passed`; raising to `strong` refuses the project until `--audit --commit` writes an audit into that evidence, and then accepts it; a `ci/` evidence file the build identity committed reads as CI's; a `--ci` run on a tag writes nothing and one on a run branch writes; and `signed` refuses a rule whose level is `signed` until a signature is written in a signed commit [bar: strong]
-- RULE-37: Each language init supports is wired the same way in a real project, and an install from the marketplace leaves no file in the project naming the install [bar: strong]
-- RULE-38: A `test_framework` name the config carries that detection does not find and the tree carries no wiring for is dropped and the drop is printed, so no runner is wired for a language the project does not have; a name the tree does carry is kept [bar: strong]
-- RULE-39: The mutmut block names as source every top-level directory holding a `.py` file at any depth and no test file at its top level, and names as the test selection the directories that do hold one, with `src`, `lib` and `app` preferred as source and `tests` and `test` as the selection; a project with no such directory names each non-test `.py` module at its root, and names `.` only when there is none [bar: strong]
-- RULE-40: Writing the mutmut block also appends `mutants/` to the project's `.gitignore`, once and never twice, so the copy mutmut breaks is never committed [bar: strong]
+- RULE-1: A project with code to detect is asked the gate question, and at `passed` with a remote one more: whether to run the tests on a remote runner too
+- RULE-2: Each gate answer derives its own settings: `passed` has no minimum test strength and asks for no signature, `strong` sets the minimum to 70, and `signed` sets it to 80
+- RULE-3: `--gate` answers the question without asking it, and a later run with no flag keeps the gate the config already names
+- RULE-4: An answer that is not one of the three gates is read as `passed` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently
+- RULE-5: The config init writes carries exactly `ci`, `gate`, `min_strength`, `mutation_engine`, `sql_engine`, `test_framework`, `trust` and `version` at every gate, and no key this release stopped reading; `templates/config.json` carries the same eight keys
+- RULE-6: A tree with nothing to detect is asked which framework its tests use, that answer is the one installed, and a name this release ships no plugin for is reported and read as `shell`
+- RULE-7: The framework detected in the tree gets its proof plugin copied into `.purlin/plugins/` byte for byte, under the file name the framework registry gives it
+- RULE-8: The test runner's own configuration is written for pytest, jest and vitest, naming that framework's plugin, and a configuration the project wrote itself is kept rather than replaced
+- RULE-9: A framework whose tooling init cannot wire is told what to do instead: an xunit project that its logger needs a `*.TestLogger.dll` assembly and `dotnet test --logger purlin`, and a node project that Stryker is what measures the breaks [level: passed]
+- RULE-10: No gate asks who may sign and init writes no key naming anyone, because signing is logged rather than policed; `signed` prints the one-time commit-signing setup each signer runs
+- RULE-12: Raising the gate adds what the higher level needs and keeps every file an earlier run wrote; lowering it writes the setting and deletes nothing
+- RULE-13: A workflow is written for two reasons and no others, whatever the gate: a proof in `specs/` is tagged `@env` for an operating system this machine is not, or the project's trust is `remote`; each reason is printed as one sentence, a project with neither is told none is needed and gets no workflow, and a project with a reason and no remote is told there is no remote
+- RULE-14: The git host is read from the remote URL as `github`, `azure` or nothing at all, and a project with no remote reads no host
+- RULE-15: The workflow carries one job per operating system the `@env` tags in `specs/` name, one linux job when they name none, and the Purlin release pinned as `v<version>`
+- RULE-42: The workflow triggers on a push to a `run/*` branch and on a push of a `signed/*` tag, and on nothing else; its last step runs `scripts/ci/gate_check.py --check --verify`, so the job fails when the gate is not met or the committed evidence does not match the tagged code
+- RULE-17: No branch rule is printed at any gate: the marker of proven code is the tag `purlin:sign` writes, and a tag is a marker rather than a barrier
+- RULE-18: The summary names every path init wrote, kept, copied or skipped, and each path it says it wrote is on disk afterwards
+- RULE-19: A block init appends to a file the project also owns is appended once and never twice, whatever else that file already held
+- RULE-20: A second run at the same gate writes no file
+- RULE-21: No file init writes into a project names the directory the plugin ran from, so the project is the same on every machine
+- RULE-22: A copy of the plugin installed from the marketplace sets a project up the same way this checkout does
+- RULE-23: No file init writes into a project points at this repository's own development folder, which a consumer's checkout does not carry
+- RULE-24: init installs no git hook at all, leaves a hook someone else wrote untouched, and the plugin ships no hook script: nothing runs at commit time and nothing runs at push time
+- RULE-25: The shim names no machine, no checkout and no release, so the file is right for every clone and everything machine-specific is resolved when it runs
+- RULE-44: Before any workflow is written the prerequisites are checked, and there are two: a remote exists, and its URL names GitHub or Azure DevOps; the first that fails is printed in one line naming what to do and no workflow is written. No branch is checked, because a signature counts on whatever commit carries it, so a remote that holds no branch yet still gets the workflow. The host CLI, `gh` or `az`, is reported as present or absent either way
+- RULE-30: `--dry-run` prints the plan and writes nothing, inside a git repository or outside one
+- RULE-31: A real run outside a git repository exits 2 saying to run git init and leaves the directory empty, and a project root that does not exist exits 2
+- RULE-32: `--add <framework>` keeps what was detected and records the framework once however many times it is added [level: passed]
+- RULE-33: `--update` hands the project to `scripts/init/update.py`, and `--update --dry-run` asks it what is pending instead of applying anything
+- RULE-34: The last line of a run is the next step, computed from the state the project is now in [level: passed]
+- RULE-35: Nothing init prints carries an emoji or a term this release retired [level: passed]
+- RULE-36: A project init set up walks the three gates: the `--test --commit` run passes and commits its evidence, which meets `passed`; raising to `strong` refuses the project until `--audit --commit` writes an audit into that evidence, and then accepts it; a `ci/` evidence file the build identity committed reads as CI's; a `--ci` run on a tag writes nothing and one on a run branch writes; and `signed` refuses a rule whose level is `signed` until a signature is written in a signed commit
+- RULE-37: Each language init supports is wired the same way in a real project, and an install from the marketplace leaves no file in the project naming the install
+- RULE-38: A `test_framework` name the config carries that detection does not find and the tree carries no wiring for is dropped and the drop is printed, so no runner is wired for a language the project does not have; a name the tree does carry is kept
+- RULE-39: The mutmut block names as source every top-level directory holding a `.py` file at any depth and no test file at its top level, and names as the test selection the directories that do hold one, with `src`, `lib` and `app` preferred as source and `tests` and `test` as the selection; a project with no such directory names each non-test `.py` module at its root, and names `.` only when there is none
+- RULE-40: Writing the mutmut block also appends `mutants/` to the project's `.gitignore`, once and never twice, so the copy mutmut breaks is never committed
 
 ## Proof
 

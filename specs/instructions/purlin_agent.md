@@ -8,13 +8,13 @@
 
 ## Rules
 
-- RULE-1: `agents/purlin.md` opens with a frontmatter block carrying `name: purlin`, a non-empty `description` and an `effort` value [bar: strong]
-- RULE-2: The agent states the core loop once, as `purlin:drift`, `purlin:spec`, `purlin:build`, `purlin:test`, `purlin:audit`, `purlin:sign`, in that order [bar: strong]
-- RULE-3: The agent carries four numbered NEVERs, and they are: a proof file, a record or a signature is never written by hand, no signature is ever written on a person's behalf, nothing is pushed and no pull request is opened except the run branch `purlin:test --remote` owns, and a retired term is never used [bar: strong]
-- RULE-4: The routing table gives at least one row for each of the four roles PM, Designer, Engineer and QA, and every `purlin:` command it names is one of the commands `references/purlin_commands.md` lists [bar: strong]
-- RULE-5: The agent says to call `sync_status` before answering any question about state, and names the two spec statuses `drafted` and `ready`, the three evidence levels `passed`, `strong` and `signed`, and the `out of date` word that means the spec, the code or the tests moved since the run [bar: strong]
-- RULE-6: The whole of `agents/purlin.md` is at most 135 lines [bar: passed]
-- RULE-7: The agent says what carries a feature's name and moves together on a rename: the spec file and its `# Feature:` line, the `> Requires:` entries, the proof markers, the signature directory and the evidence files, then `sync_status` to find what was missed [bar: strong]
+- RULE-1: `agents/purlin.md` opens with a frontmatter block carrying `name: purlin`, a non-empty `description` and an `effort` value
+- RULE-2: The agent states the core loop once, as `purlin:drift`, `purlin:spec`, `purlin:build`, `purlin:test`, `purlin:audit`, `purlin:sign`, in that order
+- RULE-3: The agent carries four numbered NEVERs, and they are: a proof file, a record or a signature is never written by hand, no signature is ever written on a person's behalf, nothing is pushed and no pull request is opened except the run branch `purlin:test --remote` owns, and a retired term is never used
+- RULE-4: The routing table gives at least one row for each of the four roles PM, Designer, Engineer and QA, and every `purlin:` command it names is one of the commands `references/purlin_commands.md` lists
+- RULE-5: The agent says to call `sync_status` before answering any question about state, and names the two spec statuses `drafted` and `ready`, the three evidence levels `passed`, `strong` and `signed`, and the `out of date` word that means the spec, the code or the tests moved since the run
+- RULE-6: The whole of `agents/purlin.md` is at most 135 lines [level: passed]
+- RULE-7: The agent says what carries a feature's name and moves together on a rename: the spec file and its `# Feature:` line, the `> Requires:` entries, the proof markers, the signature directory and the evidence files, then `sync_status` to find what was missed
 
 ## Proof
 

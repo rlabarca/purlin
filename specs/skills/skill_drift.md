@@ -8,10 +8,10 @@
 
 ## Rules
 
-- RULE-1: `skills/drift/SKILL.md` opens with a frontmatter block whose `name` is `drift` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:drift` [bar: strong]
-- RULE-2: The skill takes its data from the `drift` tool and points at `references/drift_criteria.md` for the file classification rather than restating it, and it invents no category the tool does not return [bar: strong]
-- RULE-3: The last section of `skills/drift/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong]
-- RULE-4: The whole of `skills/drift/SKILL.md` is at most 150 lines [bar: passed]
+- RULE-1: `skills/drift/SKILL.md` opens with a frontmatter block whose `name` is `drift` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:drift`
+- RULE-2: The skill takes its data from the `drift` tool and points at `references/drift_criteria.md` for the file classification rather than restating it, and it invents no category the tool does not return
+- RULE-3: The last section of `skills/drift/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome
+- RULE-4: The whole of `skills/drift/SKILL.md` is at most 150 lines [level: passed]
 
 ## Proof
 

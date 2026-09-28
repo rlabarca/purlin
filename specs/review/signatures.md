@@ -16,38 +16,38 @@
 
 ## Rules
 
-- RULE-1: The three hashes a signature binds come back together with the kind of the test hash [bar: strong]
-- RULE-2: A rule the project does not declare has no hashes at all [bar: passed]
-- RULE-3: Reflowing a rule's whitespace or changing its level tag leaves the triple where it was, because the triple binds the rule text with its tag stripped [bar: strong]
-- RULE-4: Editing the rule text, the proof text or the test body moves the triple [bar: strong]
-- RULE-5: A rule proved only by a `@manual` proof records `manual` as the kind of its test hash instead of naming a test file [bar: strong]
-- RULE-6: A signature stays current only while the rule text, the proof text, the test body and what the audit observed still hash to what it bound; the level it records is not compared, so marking a rule differently leaves it current [bar: strong]
-- RULE-7: A signature whose triple no longer matches still comes back from the reader, so the signed cell can read `stale` rather than `unsigned` [bar: strong]
-- RULE-8: A signature file is named for the rule, the first eight characters of the triple and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen [bar: strong]
-- RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the audit hash, the level, the signer, the note, the timestamp, the gate and the evidence file [bar: strong]
-- RULE-10: The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec [bar: strong]
-- RULE-11: With no feature named the command opens with `Review: <n> rules. Sign: <n> rules.`, walks the two lists one brief at a time, taking one of the four answers sign, case, hold or skip at each stop, and writes nothing until the walk closes [bar: strong]
-- RULE-12: `--batch` signs, in one signed commit, every rule on the Review list at the gate `strong`, and every rule on the Review list and then the Sign list at the gate `signed`; a bare feature signs the same rules of that feature alone [bar: strong]
-- RULE-13: `--note` puts one line on the signature, for a `@manual` proof or a review the model could not settle; `--note` with no rule named, or with no line, exits 2 [bar: strong]
-- RULE-14: Under `passed` the command writes no signature, names what `purlin:init --gate strong` would add and exits 2 [bar: strong]
-- RULE-15: Under `strong` a signature on a named rule that is not on the Review list says a signature is required only under `signed`, and writes it anyway; a rule on the Review list is signed without that line [bar: strong]
-- RULE-16: What a bare feature and `--batch` sign is read off the payload's own lists, the Review list and then, at `signed`, the Sign list, the order the walk reads them in; the Sign list holds the signable rules [bar: strong]
-- RULE-17: With no signing configured the command writes no signature, exits 1 and prints the three git config commands that set signing up [bar: strong]
-- RULE-18: One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule signed [bar: strong]
-- RULE-19: A batch spanning more than one feature names each feature with its own rules in the subject [bar: passed]
-- RULE-20: Under `signed` a signature counts when the commit that added it is signed and verifies, whoever its author is and whoever last committed to the test file; an unsigned signing commit is refused with the reason `the signing commit is not signed`; under `strong` a committed signature counts [bar: strong]
-- RULE-21: The command refuses nobody for who they are: a person with signing configured signs, and no config key names who may sign [bar: strong]
-- RULE-22: The command exits 0 for `--help`, and an unknown option exits 2 whether or not a feature is named [bar: passed]
-- RULE-23: A signature counts on whatever commit carries it: one committed signed on a side branch counts at the gate `signed` on that branch, before any merge [bar: strong]
-- RULE-40: `<feature> RULE-N --hold "<the missing case>"` writes `<RULE-N>.<hash8>.<holder-slug>.hold.json` binding the rule's hashes, with schema `purlin-hold/1`, the holder's email and the missing case as `reason`, and commits it signed as `hold(<feature>): RULE-N`; `--hold` with no reason, or with no rule named, exits 2 and writes nothing [bar: strong]
-- RULE-41: A signature records under `level` the rule's level when it was signed, and logs it rather than locking it: marking the rule differently afterwards leaves the signed cell reading `signed` [bar: strong]
-- RULE-42: The evidence a signature or a hold names is the feature's own evidence file, `.purlin/evidence/local/<feature>.json` where it exists and the `ci` one otherwise, and it is null where the feature has none [bar: strong]
-- RULE-43: The audit hash a signature binds is taken over the feature's test strength and the `verdict` and sorted `findings` of the audit entry for the rule's current hashes, and over nothing that moves on its own, so re-running the same audit over the same code stales nothing and an audit that finds something new stales the signature; a rule with no audit entry binds the hash of the empty string [bar: strong]
-- RULE-44: A hold binds the triple and not the audit, because a hold is a statement about the rule, the proof and the test that a re-audit does not answer [bar: strong]
-- RULE-45: When the walk closes and every rule meets the gate the command writes the annotated tag `signed/<version>`, taking the version from the `VERSION` file at the project root and falling back to the config's, with a message naming the commit and the gate, and prints `Run: git push origin signed/<version>`; it pushes nothing [bar: strong]
-- RULE-46: No tag is written while any rule falls short of the gate, and the command says how many of how many; no tag is written over one that is already there, and `--release <name>` names another [bar: strong]
-- RULE-48: Under the gate `signed`, naming a rule whose `[level: ...]` tag is `passed` or `strong` refuses it with `sign: <feature> <RULE-N> is marked [level: <level>]; it asks for no signature.` and writes no signature for it; with nothing else named, the command exits 1 [bar: strong]
-- RULE-47: With `trust: remote` the command refuses a rule with a proof that has a test when its feature's `ci` evidence holds no section current for this code, printing `sign: <feature> RULE-N has no ci test run for this code; run purlin:test --remote first`; a rule whose proofs are all `@manual` is not refused, and with `trust: local`, the default, it signs what this machine ran [bar: strong]
+- RULE-1: The three hashes a signature binds come back together with the kind of the test hash
+- RULE-2: A rule the project does not declare has no hashes at all [level: passed]
+- RULE-3: Reflowing a rule's whitespace or changing its level tag leaves the triple where it was, because the triple binds the rule text with its tag stripped
+- RULE-4: Editing the rule text, the proof text or the test body moves the triple
+- RULE-5: A rule proved only by a `@manual` proof records `manual` as the kind of its test hash instead of naming a test file
+- RULE-6: A signature stays current only while the rule text, the proof text, the test body and what the audit observed still hash to what it bound; the level it records is not compared, so marking a rule differently leaves it current
+- RULE-7: A signature whose triple no longer matches still comes back from the reader, so the signed cell can read `stale` rather than `unsigned`
+- RULE-8: A signature file is named for the rule, the first eight characters of the triple and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen
+- RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the audit hash, the level, the signer, the note, the timestamp, the gate and the evidence file
+- RULE-10: The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec
+- RULE-11: With no feature named the command opens with `Review: <n> rules. Sign: <n> rules.`, walks the two lists one brief at a time, taking one of the four answers sign, case, hold or skip at each stop, and writes nothing until the walk closes
+- RULE-12: `--batch` signs, in one signed commit, every rule on the Review list at the gate `strong`, and every rule on the Review list and then the Sign list at the gate `signed`; a bare feature signs the same rules of that feature alone
+- RULE-13: `--note` puts one line on the signature, for a `@manual` proof or a review the model could not settle; `--note` with no rule named, or with no line, exits 2
+- RULE-14: Under `passed` the command writes no signature, names what `purlin:init --gate strong` would add and exits 2
+- RULE-15: Under `strong` a signature on a named rule that is not on the Review list says a signature is required only under `signed`, and writes it anyway; a rule on the Review list is signed without that line
+- RULE-16: What a bare feature and `--batch` sign is read off the payload's own lists, the Review list and then, at `signed`, the Sign list, the order the walk reads them in; the Sign list holds the signable rules
+- RULE-17: With no signing configured the command writes no signature, exits 1 and prints the three git config commands that set signing up
+- RULE-18: One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule signed
+- RULE-19: A batch spanning more than one feature names each feature with its own rules in the subject [level: passed]
+- RULE-20: Under `signed` a signature counts when the commit that added it is signed and verifies, whoever its author is and whoever last committed to the test file; an unsigned signing commit is refused with the reason `the signing commit is not signed`; under `strong` a committed signature counts
+- RULE-21: The command refuses nobody for who they are: a person with signing configured signs, and no config key names who may sign
+- RULE-22: The command exits 0 for `--help`, and an unknown option exits 2 whether or not a feature is named [level: passed]
+- RULE-23: A signature counts on whatever commit carries it: one committed signed on a side branch counts at the gate `signed` on that branch, before any merge
+- RULE-40: `<feature> RULE-N --hold "<the missing case>"` writes `<RULE-N>.<hash8>.<holder-slug>.hold.json` binding the rule's hashes, with schema `purlin-hold/1`, the holder's email and the missing case as `reason`, and commits it signed as `hold(<feature>): RULE-N`; `--hold` with no reason, or with no rule named, exits 2 and writes nothing
+- RULE-41: A signature records under `level` the rule's level when it was signed, and logs it rather than locking it: marking the rule differently afterwards leaves the signed cell reading `signed`
+- RULE-42: The evidence a signature or a hold names is the feature's own evidence file, `.purlin/evidence/local/<feature>.json` where it exists and the `ci` one otherwise, and it is null where the feature has none
+- RULE-43: The audit hash a signature binds is taken over the feature's test strength and the `verdict` and sorted `findings` of the audit entry for the rule's current hashes, and over nothing that moves on its own, so re-running the same audit over the same code stales nothing and an audit that finds something new stales the signature; a rule with no audit entry binds the hash of the empty string
+- RULE-44: A hold binds the triple and not the audit, because a hold is a statement about the rule, the proof and the test that a re-audit does not answer
+- RULE-45: When the walk closes and every rule meets the gate the command writes the annotated tag `signed/<version>`, taking the version from the `VERSION` file at the project root and falling back to the config's, with a message naming the commit and the gate, and prints `Run: git push origin signed/<version>`; it pushes nothing
+- RULE-46: No tag is written while any rule falls short of the gate, and the command says how many of how many; no tag is written over one that is already there, and `--release <name>` names another
+- RULE-48: Under the gate `signed`, naming a rule whose `[level: ...]` tag is `passed` or `strong` refuses it with `sign: <feature> <RULE-N> is marked [level: <level>]; it asks for no signature.` and writes no signature for it; with nothing else named, the command exits 1
+- RULE-47: With `trust: remote` the command refuses a rule with a proof that has a test when its feature's `ci` evidence holds no section current for this code, printing `sign: <feature> RULE-N has no ci test run for this code; run purlin:test --remote first`; a rule whose proofs are all `@manual` is not refused, and with `trust: local`, the default, it signs what this machine ran
 
 ## Proof
 

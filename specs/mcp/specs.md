@@ -10,20 +10,20 @@
 
 ## Rules
 
-- RULE-1: A rule line's one tag is `[level: ...]`, read off the end of the line; any other bracketed text at the end is not a tag and stays in the claim [bar: strong]
-- RULE-2: A rule naming no tag carries empty metadata, with no `level` key at all [bar: strong]
-- RULE-3: The rule and proof text hashes normalise runs of whitespace to one space, so reflowing a line or changing its tag returns the hash it already had [bar: strong]
-- RULE-4: A proof line's trailing `@manual` marks a proof no test settles; any other trailing `@<name>` that is not `@env` is not a tag, so reading stops there and the word stays in the proof text [bar: strong]
-- RULE-5: `@env` takes `windows`, `macos` and `linux` and nothing else; any other value is read as no operating system at all and is listed as an unknown tag [bar: strong]
-- RULE-6: At most one `@env` per proof: the trailing one is the one read and the earlier one is listed as an unknown tag rather than merged with it [bar: strong]
-- RULE-7: Tags this release does not read (the retired operating-system tag `@env` replaced, a bare `@windows`, a stamped `@manual(...)` carrying an email, a date and a sha) and the retired fields `> Visual-Reference:` and `> Visual-Hash:` are ignored rather than refused, and every spec carrying one lists it under `unknown_tags` [bar: strong]
-- RULE-8: The unknown-tag warning is one line naming at most five carrying files and counting the rest, and is absent when no spec carries such a tag [bar: passed]
-- RULE-9: A `> Source:` value is read two ways: a git URL followed by a path in that repository gives the two separately, and anything else comes back whole as the source rather than split on its first word [bar: strong]
-- RULE-10: A `> Path:` line supplies the path in the source repository when `> Source:` carries the URL alone [bar: passed]
-- RULE-11: A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha [bar: strong]
-- RULE-13: A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`; an anchor proves its own rules and nothing else [bar: strong]
-- RULE-14: Every spec is keyed by its filename stem, and a file that cannot be read or decoded is skipped while the rest of the scan still answers [bar: strong]
-- RULE-15: The `[level: ...]` tag is read off the end of a rule line as `passed`, `strong` or `signed`, stripped from the text the rule text hash is taken over, and carried in the rule's metadata under `level` [bar: strong]
+- RULE-1: A rule line's one tag is `[level: ...]`, read off the end of the line; any other bracketed text at the end is not a tag and stays in the claim
+- RULE-2: A rule naming no tag carries empty metadata, with no `level` key at all
+- RULE-3: The rule and proof text hashes normalise runs of whitespace to one space, so reflowing a line or changing its tag returns the hash it already had
+- RULE-4: A proof line's trailing `@manual` marks a proof no test settles; any other trailing `@<name>` that is not `@env` is not a tag, so reading stops there and the word stays in the proof text
+- RULE-5: `@env` takes `windows`, `macos` and `linux` and nothing else; any other value is read as no operating system at all and is listed as an unknown tag
+- RULE-6: At most one `@env` per proof: the trailing one is the one read and the earlier one is listed as an unknown tag rather than merged with it
+- RULE-7: Tags this release does not read (the retired operating-system tag `@env` replaced, a bare `@windows`, a stamped `@manual(...)` carrying an email, a date and a sha) and the retired fields `> Visual-Reference:` and `> Visual-Hash:` are ignored rather than refused, and every spec carrying one lists it under `unknown_tags`
+- RULE-8: The unknown-tag warning is one line naming at most five carrying files and counting the rest, and is absent when no spec carries such a tag [level: passed]
+- RULE-9: A `> Source:` value is read two ways: a git URL followed by a path in that repository gives the two separately, and anything else comes back whole as the source rather than split on its first word
+- RULE-10: A `> Path:` line supplies the path in the source repository when `> Source:` carries the URL alone [level: passed]
+- RULE-11: A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha
+- RULE-13: A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`; an anchor proves its own rules and nothing else
+- RULE-14: Every spec is keyed by its filename stem, and a file that cannot be read or decoded is skipped while the rest of the scan still answers
+- RULE-15: The `[level: ...]` tag is read off the end of a rule line as `passed`, `strong` or `signed`, stripped from the text the rule text hash is taken over, and carried in the rule's metadata under `level`
 
 ## Proof
 

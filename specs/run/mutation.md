@@ -13,28 +13,28 @@
 
 ## Rules
 
-- RULE-1: With `mutation_engine` set to `auto`, jest and vitest select `stryker`, xunit selects `stryker_net`, pytest selects `mutmut`, and shell and sql select `none`; the first detected framework that has an engine decides, and a project with no framework selects `none` [bar: strong]
-- RULE-2: A `mutation_engine` naming an engine wins over the detected frameworks, a name outside the four shipped engines reads as `none` rather than being guessed at, and a missing key reads as `auto` [bar: strong]
-- RULE-3: Test strength is `killed / (killed + survived)` as an integer percent rounded half up, and is None when no break ran at all [bar: strong]
-- RULE-4: The rules of a feature are reported in rule-number order, so `RULE-2` comes before `RULE-10` [bar: passed]
-- RULE-5: Stryker runs once per feature against that feature's scope files alone, under a generated config naming `coverageAnalysis: "perTest"`, `disableBail: true`, the `json` reporter and the report path [bar: strong]
-- RULE-6: The Stryker test runner is `vitest` when the project's `package.json` declares vitest as a dependency, and `jest` otherwise [bar: strong]
-- RULE-7: The project's own `node_modules/.bin/stryker` is preferred over one on the PATH, and neither present leaves no engine with a line naming the package to install [bar: strong]
-- RULE-8: A break whose status is `killed` or `timeout` counts caught, one whose status is `survived` or `nocoverage` counts missed, and a break that never reached a test counts for neither [bar: strong]
-- RULE-9: A rule's number is what its own tests caught: a break only another rule's test caught counts missed for this one, and a rule whose tests the report never lists measures nothing [bar: strong]
-- RULE-10: A test in the report is matched to a rule's test by the proof marker in its name when both names carry one, and never across two files of the same name [bar: strong]
-- RULE-11: Attribution is `per_test` when any break names the test that caught it and `per_scope` when none does, and every rule then carries the feature's scope number [bar: strong]
-- RULE-12: A run that wrote no report, or whose report cannot be read, measures nothing for that feature and says so in the log rather than raising [bar: strong]
-- RULE-13: Stryker.NET is run as `dotnet stryker` with one `--mutate` per scope file, `--coverage-analysis perTest`, `--disable-bail`, `--reporter json` and `--output`, and its report is found by walking that output directory for `mutation-report.json` [bar: strong]
-- RULE-14: Without `dotnet` on the PATH there is no engine for C#, and with `dotnet` but no Stryker.NET installed the reason names the `dotnet tool install` command; the install check is `dotnet stryker --version` answering 0 [bar: strong]
-- RULE-15: mutmut needs a config block naming the source paths and the test selection, written to `pyproject.toml` as `[tool.mutmut]` when that file exists and to `setup.cfg` as `[mutmut]` with one value a line otherwise; without the block no breaks are made and the reason names the block and the file [bar: strong]
-- RULE-16: The output of `mutmut results --all true` is read one line per break, and a line whose status is not one mutmut writes is not counted as a break [bar: strong]
-- RULE-17: A mutmut break is attributed to the scope entry whose last path segments match the most of the break's module name, a break no scope entry covers is left out, and every rule of a feature carries that feature's scope number with `attribution: "per_scope"` [bar: strong]
-- RULE-18: Without mutmut installed there is no engine and the reason names `pip install mutmut` [bar: strong]
-- RULE-19: The empty engine measures nothing: every rule carries a score of None and `attribution: "unavailable"`, and the reason is a sentence saying why [bar: strong]
-- RULE-20: Every engine answers the same shape, so a caller reads one: an engine name outside the four is not run, a rule the engine never reported is filled in with `attribution: "unavailable"`, and a feature the engine never reached is still listed [bar: strong]
-- RULE-21: A mutmut break in a package's `__init__.py` is attributed to the scope entry naming that `__init__.py`, and a scope entry holding `*` is matched as a glob against the file the break changed, losing to any entry that names the file or its directory [bar: strong]
-- RULE-22: An engine invocation that runs past `--arm-timeout` measures nothing: every rule it was breaking and that feature's scope score carry a score of None with `attribution: "unavailable"` whatever report it left, mutmut's one run leaving every feature unmeasured and a Stryker or Stryker.NET run leaving only the feature it was breaking, and the answer's reason and log name the seconds and `--arm-timeout` [bar: strong]
+- RULE-1: With `mutation_engine` set to `auto`, jest and vitest select `stryker`, xunit selects `stryker_net`, pytest selects `mutmut`, and shell and sql select `none`; the first detected framework that has an engine decides, and a project with no framework selects `none`
+- RULE-2: A `mutation_engine` naming an engine wins over the detected frameworks, a name outside the four shipped engines reads as `none` rather than being guessed at, and a missing key reads as `auto`
+- RULE-3: Test strength is `killed / (killed + survived)` as an integer percent rounded half up, and is None when no break ran at all
+- RULE-4: The rules of a feature are reported in rule-number order, so `RULE-2` comes before `RULE-10` [level: passed]
+- RULE-5: Stryker runs once per feature against that feature's scope files alone, under a generated config naming `coverageAnalysis: "perTest"`, `disableBail: true`, the `json` reporter and the report path
+- RULE-6: The Stryker test runner is `vitest` when the project's `package.json` declares vitest as a dependency, and `jest` otherwise
+- RULE-7: The project's own `node_modules/.bin/stryker` is preferred over one on the PATH, and neither present leaves no engine with a line naming the package to install
+- RULE-8: A break whose status is `killed` or `timeout` counts caught, one whose status is `survived` or `nocoverage` counts missed, and a break that never reached a test counts for neither
+- RULE-9: A rule's number is what its own tests caught: a break only another rule's test caught counts missed for this one, and a rule whose tests the report never lists measures nothing
+- RULE-10: A test in the report is matched to a rule's test by the proof marker in its name when both names carry one, and never across two files of the same name
+- RULE-11: Attribution is `per_test` when any break names the test that caught it and `per_scope` when none does, and every rule then carries the feature's scope number
+- RULE-12: A run that wrote no report, or whose report cannot be read, measures nothing for that feature and says so in the log rather than raising
+- RULE-13: Stryker.NET is run as `dotnet stryker` with one `--mutate` per scope file, `--coverage-analysis perTest`, `--disable-bail`, `--reporter json` and `--output`, and its report is found by walking that output directory for `mutation-report.json`
+- RULE-14: Without `dotnet` on the PATH there is no engine for C#, and with `dotnet` but no Stryker.NET installed the reason names the `dotnet tool install` command; the install check is `dotnet stryker --version` answering 0
+- RULE-15: mutmut needs a config block naming the source paths and the test selection, written to `pyproject.toml` as `[tool.mutmut]` when that file exists and to `setup.cfg` as `[mutmut]` with one value a line otherwise; without the block no breaks are made and the reason names the block and the file
+- RULE-16: The output of `mutmut results --all true` is read one line per break, and a line whose status is not one mutmut writes is not counted as a break
+- RULE-17: A mutmut break is attributed to the scope entry whose last path segments match the most of the break's module name, a break no scope entry covers is left out, and every rule of a feature carries that feature's scope number with `attribution: "per_scope"`
+- RULE-18: Without mutmut installed there is no engine and the reason names `pip install mutmut`
+- RULE-19: The empty engine measures nothing: every rule carries a score of None and `attribution: "unavailable"`, and the reason is a sentence saying why
+- RULE-20: Every engine answers the same shape, so a caller reads one: an engine name outside the four is not run, a rule the engine never reported is filled in with `attribution: "unavailable"`, and a feature the engine never reached is still listed
+- RULE-21: A mutmut break in a package's `__init__.py` is attributed to the scope entry naming that `__init__.py`, and a scope entry holding `*` is matched as a glob against the file the break changed, losing to any entry that names the file or its directory
+- RULE-22: An engine invocation that runs past `--arm-timeout` measures nothing: every rule it was breaking and that feature's scope score carry a score of None with `attribution: "unavailable"` whatever report it left, mutmut's one run leaving every feature unmeasured and a Stryker or Stryker.NET run leaving only the feature it was breaking, and the answer's reason and log name the seconds and `--arm-timeout`
 
 ## Proof
 

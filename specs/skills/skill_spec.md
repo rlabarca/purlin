@@ -8,10 +8,10 @@
 
 ## Rules
 
-- RULE-1: `skills/spec/SKILL.md` opens with a frontmatter block whose `name` is `spec` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec` [bar: strong]
-- RULE-2: The skill allocates rule and proof ids against `origin/main`, read with `git show origin/main:<spec>`, never against the working tree [bar: strong]
-- RULE-3: The skill closes by offering the build in one fixed sentence, `Spec created: <name>. Build it now?`, with nothing printed after it [bar: strong]
-- RULE-4: The whole of `skills/spec/SKILL.md` is at most 210 lines [bar: passed]
+- RULE-1: `skills/spec/SKILL.md` opens with a frontmatter block whose `name` is `spec` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec`
+- RULE-2: The skill allocates rule and proof ids against `origin/main`, read with `git show origin/main:<spec>`, never against the working tree
+- RULE-3: The skill closes by offering the build in one fixed sentence, `Spec created: <name>. Build it now?`, with nothing printed after it
+- RULE-4: The whole of `skills/spec/SKILL.md` is at most 210 lines [level: passed]
 
 ## Proof
 

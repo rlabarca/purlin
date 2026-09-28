@@ -15,25 +15,25 @@
 
 ## Rules
 
-- RULE-1: A brief for a rule whose level is `passed` runs the test-strength layer and no other, so no AI audit is asked for [bar: strong]
-- RULE-2: A brief for a rule whose level is `strong` or `signed` runs both layers, the test strength first and the AI audit last [bar: strong]
-- RULE-3: The layers a brief ran are named in its `layers` field, so a reader can tell what was and was not looked at [bar: strong]
-- RULE-4: Building a brief for a rule the project does not hold returns nothing rather than an empty brief [bar: passed]
-- RULE-7: The brief shows the marked test's file, its name and its source beside the rule [bar: strong]
-- RULE-8: A `@manual` proof's test entry reads `manual` true and names no test file and no source, because its evidence is the signer's note [bar: strong]
-- RULE-9: The test strength comes off the feature's evidence and is shown against the configured minimum, reading `n/a` when no engine measured one [bar: strong]
-- RULE-10: The brief carries no recommendation, no grade, no state and no schema: its fields are the evidence, the observations and the numbers, and nothing else [bar: strong]
-- RULE-12: A model answer becomes one observation per sentence, each naming the proof it concerns [bar: strong]
-- RULE-13: The brief records whether the review settled the question, as yes, no, or not answered at all [bar: strong]
-- RULE-15: The model prompt is `references/review_criteria.md` verbatim, then this rule's rule text, proof text, test bodies and test strength, and it asks for observations rather than a recommendation or a score [bar: strong]
-- RULE-16: The AI audit runs only when the caller passes `--ai` and the rule's level is `strong` or `signed`; without it, and with no model on the path, the brief records `not available` [bar: strong]
-- RULE-17: An answer in no shape the brief can read observes nothing and leaves the question not answered [bar: strong]
-- RULE-19: Building a brief, rendering it and running the command write no file anywhere under `.purlin/`, and the triple a brief names moves whenever the rule, the proof or the test moves [bar: strong]
-- RULE-22: The text rendering names the rule, its proofs, the test strength beside the minimum, the observations and whether the review settled, and carries no emoji [bar: passed]
-- RULE-23: `brief.py --help` exits 0, an unknown option or a missing `--feature` exits 2, and a feature with no rule in the project exits 1 [bar: passed]
-- RULE-24: `brief.py --feature <name>` with no `--rule` builds and prints a brief for every rule of that feature [bar: passed]
-- RULE-26: When several tests back one proof, each test in the brief shows its own source; a test whose source cannot be found shows none rather than another test's [bar: strong]
-- RULE-28: The test source is read out of JavaScript and TypeScript by balancing braces, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test [bar: strong]
+- RULE-1: A brief for a rule whose level is `passed` runs the test-strength layer and no other, so no AI audit is asked for
+- RULE-2: A brief for a rule whose level is `strong` or `signed` runs both layers, the test strength first and the AI audit last
+- RULE-3: The layers a brief ran are named in its `layers` field, so a reader can tell what was and was not looked at
+- RULE-4: Building a brief for a rule the project does not hold returns nothing rather than an empty brief [level: passed]
+- RULE-7: The brief shows the marked test's file, its name and its source beside the rule
+- RULE-8: A `@manual` proof's test entry reads `manual` true and names no test file and no source, because its evidence is the signer's note
+- RULE-9: The test strength comes off the feature's evidence and is shown against the configured minimum, reading `n/a` when no engine measured one
+- RULE-10: The brief carries no recommendation, no grade, no state and no schema: its fields are the evidence, the observations and the numbers, and nothing else
+- RULE-12: A model answer becomes one observation per sentence, each naming the proof it concerns
+- RULE-13: The brief records whether the review settled the question, as yes, no, or not answered at all
+- RULE-15: The model prompt is `references/review_criteria.md` verbatim, then this rule's rule text, proof text, test bodies and test strength, and it asks for observations rather than a recommendation or a score
+- RULE-16: The AI audit runs only when the caller passes `--ai` and the rule's level is `strong` or `signed`; without it, and with no model on the path, the brief records `not available`
+- RULE-17: An answer in no shape the brief can read observes nothing and leaves the question not answered
+- RULE-19: Building a brief, rendering it and running the command write no file anywhere under `.purlin/`, and the triple a brief names moves whenever the rule, the proof or the test moves
+- RULE-22: The text rendering names the rule, its proofs, the test strength beside the minimum, the observations and whether the review settled, and carries no emoji [level: passed]
+- RULE-23: `brief.py --help` exits 0, an unknown option or a missing `--feature` exits 2, and a feature with no rule in the project exits 1 [level: passed]
+- RULE-24: `brief.py --feature <name>` with no `--rule` builds and prints a brief for every rule of that feature [level: passed]
+- RULE-26: When several tests back one proof, each test in the brief shows its own source; a test whose source cannot be found shows none rather than another test's
+- RULE-28: The test source is read out of JavaScript and TypeScript by balancing braces, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 
 ## Proof
 

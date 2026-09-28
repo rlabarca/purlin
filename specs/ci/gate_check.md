@@ -16,27 +16,27 @@
 
 ## Rules
 
-- RULE-1: The gate reads the structured payload and never a rendered table, and a caller may hand it a payload it already built [bar: strong]
-- RULE-2: A rule is counted once, under the feature that owns it, and it is met when the payload reads `meets_gate` true [bar: strong]
-- RULE-3: A rule blocked at the passed cell is named under `Not passed` with the blocking word and its reasons, a rule no proof line names reading `no test (no proof written)`, except where the passed cell's word is `partial`, which has its own section between `Not passed` and `Weak` [bar: strong]
-- RULE-4: A rule blocked at the strong cell is named with the cell's word and its reasons, under `Weak` where that word is `weak`, under `Not audited` where it is `not audited` and under `To review` where it is `manual test`, `unsettled` or `held`, because no build moves those three [bar: strong]
-- RULE-5: A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons [bar: strong]
-- RULE-6: Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists [bar: strong]
-- RULE-7: A section names at most 20 rules and counts the rest, pointing at `--json` for every one [bar: passed]
-- RULE-8: Under `signed` the gate grades every rule whether or not the config names anyone, because no list says who may sign [bar: strong]
-- RULE-9: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes [bar: strong]
-- RULE-10: `gate_check.py` needs `--check` and a directory that exists; either missing exits 2 [bar: passed]
-- RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, every section under its own key, the result and the exit code [bar: strong]
-- RULE-12: The gate creates and changes no file at any gate value [bar: strong]
-- RULE-13: Every line the gate prints either carries the `gate:` prefix or is an indented finding under a section heading [bar: passed]
-- RULE-14: The report's sections are `Not passed`, `Partial`, `Weak`, `Not audited`, `To review`, `To sign` and `Evidence`, in that order, and a section with no line in it is not printed [bar: strong]
-- RULE-15: `--verify` names under `Evidence` every signature and every hold that no longer binds the rule, proof, test and audit it names, so a tag cannot stand over code that changed after it was signed, and a file naming a rule the project no longer declares is named too [bar: strong]
-- RULE-16: `--verify` names under `Evidence` every file under `.purlin/evidence/ci/` whose last commit is not the runner's own, read on GitHub, and on a project whose runner variables and `origin` name no Azure DevOps, as `provenance.committed_by` reads it; without `--verify` neither check runs at all [bar: strong]
-- RULE-17: On Azure DevOps the tag run reads its own identity as `authenticatedUser.id` from `{SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}_apis/connectionData?api-version=7.0`, finds the commit that last changed each `ci/` file with git, reads that commit's `push.pushedBy.id` from `{collection}{SYSTEM_TEAMPROJECT}/_apis/git/repositories/{BUILD_REPOSITORY_ID}/commits/{sha}?api-version=7.0`, and passes the file only when the two ids are the same; the committer's name is never read [bar: strong]
-- RULE-18: On an Azure DevOps runner the check fails closed: a `pushedBy` id that is not the run's own, a commit answer with no `push`, HTTP 401 or 403 or any other refusal on either request, no answer within 30 seconds, a file no commit changed, and a run with no `SYSTEM_ACCESSTOKEN` each name the file under `Evidence` with the reason in one plain sentence, and the gate exits 1 [bar: strong]
-- RULE-19: Off a runner, where no `SYSTEM_TEAMFOUNDATIONCOLLECTIONURI` is set and `origin` is an Azure DevOps URL, the check sends no request, prints `ci/ provenance is checked by the tag run; this machine has no token.` and the count of files not checked, lists them under `not_checked` in `--json`, and neither names them under `Evidence` nor changes the exit code [bar: strong]
-- RULE-20: Every request to Azure DevOps carries a 30-second timeout and the token from `SYSTEM_ACCESSTOKEN` in its `Authorization` header and nowhere else, and the token appears in no line the gate prints and in no field of its JSON [bar: strong]
-- RULE-21: The rendered Azure DevOps pipeline's `Check the gate` step hands the run's token to the gate as `SYSTEM_ACCESSTOKEN: $(System.AccessToken)` [bar: strong]
+- RULE-1: The gate reads the structured payload and never a rendered table, and a caller may hand it a payload it already built
+- RULE-2: A rule is counted once, under the feature that owns it, and it is met when the payload reads `meets_gate` true
+- RULE-3: A rule blocked at the passed cell is named under `Not passed` with the blocking word and its reasons, a rule no proof line names reading `no test (no proof written)`, except where the passed cell's word is `partial`, which has its own section between `Not passed` and `Weak`
+- RULE-4: A rule blocked at the strong cell is named with the cell's word and its reasons, under `Weak` where that word is `weak`, under `Not audited` where it is `not audited` and under `To review` where it is `manual test`, `unsettled` or `held`, because no build moves those three
+- RULE-5: A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons
+- RULE-6: Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists
+- RULE-7: A section names at most 20 rules and counts the rest, pointing at `--json` for every one [level: passed]
+- RULE-8: Under `signed` the gate grades every rule whether or not the config names anyone, because no list says who may sign
+- RULE-9: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes
+- RULE-10: `gate_check.py` needs `--check` and a directory that exists; either missing exits 2 [level: passed]
+- RULE-11: `--json` prints the gate, the minimum, the commit, the rule counts, every section under its own key, the result and the exit code
+- RULE-12: The gate creates and changes no file at any gate value
+- RULE-13: Every line the gate prints either carries the `gate:` prefix or is an indented finding under a section heading [level: passed]
+- RULE-14: The report's sections are `Not passed`, `Partial`, `Weak`, `Not audited`, `To review`, `To sign` and `Evidence`, in that order, and a section with no line in it is not printed
+- RULE-15: `--verify` names under `Evidence` every signature and every hold that no longer binds the rule, proof, test and audit it names, so a tag cannot stand over code that changed after it was signed, and a file naming a rule the project no longer declares is named too
+- RULE-16: `--verify` names under `Evidence` every file under `.purlin/evidence/ci/` whose last commit is not the runner's own, read on GitHub, and on a project whose runner variables and `origin` name no Azure DevOps, as `provenance.committed_by` reads it; without `--verify` neither check runs at all
+- RULE-17: On Azure DevOps the tag run reads its own identity as `authenticatedUser.id` from `{SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}_apis/connectionData?api-version=7.0`, finds the commit that last changed each `ci/` file with git, reads that commit's `push.pushedBy.id` from `{collection}{SYSTEM_TEAMPROJECT}/_apis/git/repositories/{BUILD_REPOSITORY_ID}/commits/{sha}?api-version=7.0`, and passes the file only when the two ids are the same; the committer's name is never read
+- RULE-18: On an Azure DevOps runner the check fails closed: a `pushedBy` id that is not the run's own, a commit answer with no `push`, HTTP 401 or 403 or any other refusal on either request, no answer within 30 seconds, a file no commit changed, and a run with no `SYSTEM_ACCESSTOKEN` each name the file under `Evidence` with the reason in one plain sentence, and the gate exits 1
+- RULE-19: Off a runner, where no `SYSTEM_TEAMFOUNDATIONCOLLECTIONURI` is set and `origin` is an Azure DevOps URL, the check sends no request, prints `ci/ provenance is checked by the tag run; this machine has no token.` and the count of files not checked, lists them under `not_checked` in `--json`, and neither names them under `Evidence` nor changes the exit code
+- RULE-20: Every request to Azure DevOps carries a 30-second timeout and the token from `SYSTEM_ACCESSTOKEN` in its `Authorization` header and nowhere else, and the token appears in no line the gate prints and in no field of its JSON
+- RULE-21: The rendered Azure DevOps pipeline's `Check the gate` step hands the run's token to the gate as `SYSTEM_ACCESSTOKEN: $(System.AccessToken)`
 
 ## Proof
 

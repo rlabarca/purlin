@@ -7,11 +7,11 @@
 
 ## Rules
 
-- RULE-1: `skills/status/SKILL.md` opens with a frontmatter block whose `name` is `status` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:status` [bar: strong]
-- RULE-2: The skill prints the numbers `sync_status` returned and never recounts them, so the command line and the dashboard cannot disagree [bar: strong]
-- RULE-3: The last section of `skills/status/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong]
-- RULE-4: The whole of `skills/status/SKILL.md` is at most 100 lines [bar: passed]
-- RULE-5: `purlin:status <name>` shows one spec, its rules and their cells, and both `skills/status/SKILL.md` and `references/purlin_commands.md` name that form [bar: strong]
+- RULE-1: `skills/status/SKILL.md` opens with a frontmatter block whose `name` is `status` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:status`
+- RULE-2: The skill prints the numbers `sync_status` returned and never recounts them, so the command line and the dashboard cannot disagree
+- RULE-3: The last section of `skills/status/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome
+- RULE-4: The whole of `skills/status/SKILL.md` is at most 100 lines [level: passed]
+- RULE-5: `purlin:status <name>` shows one spec, its rules and their cells, and both `skills/status/SKILL.md` and `references/purlin_commands.md` name that form
 
 ## Proof
 

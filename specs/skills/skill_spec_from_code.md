@@ -8,11 +8,11 @@
 
 ## Rules
 
-- RULE-1: `skills/spec-from-code/SKILL.md` opens with a frontmatter block whose `name` is `spec-from-code` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec-from-code` [bar: strong]
-- RULE-2: The skill calls `sync_status` before it surveys anything and sends the reader to `purlin:init` when the project carries no `.purlin/config.json` [bar: strong]
-- RULE-3: The last section of `skills/spec-from-code/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong]
-- RULE-4: The whole of `skills/spec-from-code/SKILL.md` is at most 130 lines [bar: passed]
-- RULE-5: Every rule the skill writes carries `[bar: passed]`, and the skill forbids `[bar: strong]` [bar: strong]
+- RULE-1: `skills/spec-from-code/SKILL.md` opens with a frontmatter block whose `name` is `spec-from-code` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec-from-code`
+- RULE-2: The skill calls `sync_status` before it surveys anything and sends the reader to `purlin:init` when the project carries no `.purlin/config.json`
+- RULE-3: The last section of `skills/spec-from-code/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome
+- RULE-4: The whole of `skills/spec-from-code/SKILL.md` is at most 130 lines [level: passed]
+- RULE-5: Every rule the skill writes carries `[bar: passed]`, and the skill forbids `[bar: strong]`
 
 ## Proof
 

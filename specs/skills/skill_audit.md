@@ -8,13 +8,13 @@
 
 ## Rules
 
-- RULE-1: `skills/audit/SKILL.md` opens with a frontmatter block whose `name` is `audit` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:audit` [bar: strong]
-- RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--audit`, and states that a remote runner runs the same script in an arm of its own that nobody runs by hand [bar: strong]
-- RULE-3: The last section of `skills/audit/SKILL.md` names the next step and computes it from the cells the skill found, giving a `→` directive for each outcome [bar: strong]
-- RULE-4: The whole of `skills/audit/SKILL.md` is at most 105 lines [bar: passed]
-- RULE-5: The skill states which evidence counts under which gate, naming both folders: a `ci` file and a `local` file each count under `passed`, `strong` and `signed` [bar: strong]
-- RULE-6: The skill states that under `passed` the run does the tests only and says `Strength n/a: the gate is passed.`, that under `strong` and `signed` it runs the breaks and prints the strength beside the minimum, that with `--commit` it commits the evidence as `purlin: evidence at <sha7>`, that it ends with `gate strong: <n> of <rules>`, and that evidence either source wrote counts at every gate [bar: strong]
-- RULE-7: The skill states that the run writes the audit into `.purlin/evidence/local/<feature>.json`, that a file keeps the newest section per operating system and the newest audit entry per rule, and that `--remote` belongs to `purlin:test` [bar: strong]
+- RULE-1: `skills/audit/SKILL.md` opens with a frontmatter block whose `name` is `audit` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:audit`
+- RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--audit`, and states that a remote runner runs the same script in an arm of its own that nobody runs by hand
+- RULE-3: The last section of `skills/audit/SKILL.md` names the next step and computes it from the cells the skill found, giving a `→` directive for each outcome
+- RULE-4: The whole of `skills/audit/SKILL.md` is at most 105 lines [level: passed]
+- RULE-5: The skill states which evidence counts under which gate, naming both folders: a `ci` file and a `local` file each count under `passed`, `strong` and `signed`
+- RULE-6: The skill states that under `passed` the run does the tests only and says `Strength n/a: the gate is passed.`, that under `strong` and `signed` it runs the breaks and prints the strength beside the minimum, that with `--commit` it commits the evidence as `purlin: evidence at <sha7>`, that it ends with `gate strong: <n> of <rules>`, and that evidence either source wrote counts at every gate
+- RULE-7: The skill states that the run writes the audit into `.purlin/evidence/local/<feature>.json`, that a file keeps the newest section per operating system and the newest audit entry per rule, and that `--remote` belongs to `purlin:test`
 
 ## Proof
 

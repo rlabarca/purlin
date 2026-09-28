@@ -8,11 +8,11 @@
 
 ## Rules
 
-- RULE-1: `skills/init/SKILL.md` opens with a frontmatter block whose `name` is `init` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:init` [bar: strong]
-- RULE-2: The skill runs `scripts/init/scaffold.py` inside `${CLAUDE_PLUGIN_ROOT}`, passing `--project-root` and `--gate`, and names the `--update`, `--add` and `--dry-run` forms, which are every flag the script takes [bar: strong]
-- RULE-3: The last section of `skills/init/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [bar: strong]
-- RULE-4: The whole of `skills/init/SKILL.md` is at most 250 lines [bar: passed]
-- RULE-5: The skill asks one question, what must be true of every rule before a version is proven, and names exactly three answers, `passed`, `strong` and `signed`, with what each one asks of a rule; the only two further questions are the language of an empty repository and whether to run the tests on a remote runner at `passed` [bar: strong]
+- RULE-1: `skills/init/SKILL.md` opens with a frontmatter block whose `name` is `init` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:init`
+- RULE-2: The skill runs `scripts/init/scaffold.py` inside `${CLAUDE_PLUGIN_ROOT}`, passing `--project-root` and `--gate`, and names the `--update`, `--add` and `--dry-run` forms, which are every flag the script takes
+- RULE-3: The last section of `skills/init/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome
+- RULE-4: The whole of `skills/init/SKILL.md` is at most 250 lines [level: passed]
+- RULE-5: The skill asks one question, what must be true of every rule before a version is proven, and names exactly three answers, `passed`, `strong` and `signed`, with what each one asks of a rule; the only two further questions are the language of an empty repository and whether to run the tests on a remote runner at `passed`
 
 ## Proof
 

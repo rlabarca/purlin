@@ -13,26 +13,26 @@
 
 ## Rules
 
-- RULE-1: `pending()` returns one entry per migration a project still needs, each carrying an id, one line saying what it does and the files it touches; it returns nothing for a root with no `.purlin/`, and `--json` prints that same list [bar: strong]
-- RULE-2: The detectors read the layout v0.9.5 left, and what that layout leaves behind is what they report; a project that carries a hook v0.9.5 installed has the hook migration reported too [bar: strong]
-- RULE-3: `--check` prints the pending list with the command that applies it, exits 1 while anything is pending, writes nothing at all, and exits 0 saying nothing is pending once nothing is [bar: strong]
-- RULE-4: A project root with no `.purlin/` exits 2 saying there is nothing to update and naming the command that sets a project up [bar: passed]
-- RULE-5: `--yes` answers yes to every question and applies every pending migration, and a second run finds nothing left to do and changes neither the commit nor the tree [bar: strong]
-- RULE-6: Every migration asks before it writes; a declined one is reported as skipped and left pending, and declining one never stops the others [bar: strong]
-- RULE-7: Every file a migration rewrites is copied beside itself as `<name>.local-<sha8>.bak` holding the bytes it had before, and a second run does not write the copy again [bar: strong]
-- RULE-8: No proof file and no run file is left beside a spec, on disk or tracked; the dashboard data and the cache are untracked, left on disk, and named in `.gitignore` [bar: strong]
-- RULE-9: The pre-commit and pre-push hooks v0.9.5 installed under `.git/hooks/` are deleted, and a hook another tool wrote is left alone: this release runs nothing at commit time and nothing at push time [bar: strong]
-- RULE-10: The config the run leaves is the gate and what the gate derives, carrying `version`, `gate`, `ci`, `min_strength`, `sql_engine`, `mutation_engine`, `test_framework`, `digest` and `trust` at every gate, and none of the keys this release stopped reading [bar: strong]
-- RULE-11: The rewritten config carries no key nothing reads: the dashboard switch an older release carried is not written back [bar: strong]
-- RULE-12: The gate question is asked once more on an update, defaulting to the gate the project already named, then to `strong` when the old pre-push setting was the blocking one and to `passed` otherwise, taking the answer typed when it is one of the three gates and leaving the default when it is not [bar: strong]
-- RULE-13: The retired Windows tag at the end of a proof line becomes `@env(windows)`, and the same spelling in the middle of a line is left alone [bar: strong]
-- RULE-15: The workflow v0.9.5 used to commit proof files back beside the specs is removed; one `purlin.yml` is offered in its place, carrying the matrix the `@env` tags name, the pinned release, the triggers on run branches and signing tags and the gate check every run ends with; declining it leaves the file unwritten and says to run `purlin:init` again; the same prerequisites init checks are checked first, and a missing one leaves the workflow unwritten [bar: strong]
-- RULE-16: Every copy under `.purlin/plugins/` matches the plugin this release ships again, keeping the file name the project gave it, and a copy this release does not ship is left alone [bar: strong]
-- RULE-18: One commit carries the whole run, its subject naming the release and every migration id applied; a run that applies nothing writes no commit; nothing is left uncommitted afterwards but the backup copies [bar: strong]
-- RULE-19: `sync_status` prints the directive to run the update while anything is pending, including when the config alone is already clean, and stops printing it once nothing is [bar: strong]
-- RULE-20: What the run prints carries no emoji, and its last line names the next step: the update again while something is left, otherwise `purlin:status` [bar: passed]
-- RULE-21: A `test_framework` name the config carries that detection does not find and the tree carries no wiring for is dropped and the drop is printed, while a name the tree does carry is kept [bar: strong]
-- RULE-23: A proof line that ends with the tag naming the kind of test it is, the tag v0.9.5 wrote, loses that tag, an `@env` tag after it is kept, and the rest of the line is untouched [bar: strong]
+- RULE-1: `pending()` returns one entry per migration a project still needs, each carrying an id, one line saying what it does and the files it touches; it returns nothing for a root with no `.purlin/`, and `--json` prints that same list
+- RULE-2: The detectors read the layout v0.9.5 left, and what that layout leaves behind is what they report; a project that carries a hook v0.9.5 installed has the hook migration reported too
+- RULE-3: `--check` prints the pending list with the command that applies it, exits 1 while anything is pending, writes nothing at all, and exits 0 saying nothing is pending once nothing is
+- RULE-4: A project root with no `.purlin/` exits 2 saying there is nothing to update and naming the command that sets a project up [level: passed]
+- RULE-5: `--yes` answers yes to every question and applies every pending migration, and a second run finds nothing left to do and changes neither the commit nor the tree
+- RULE-6: Every migration asks before it writes; a declined one is reported as skipped and left pending, and declining one never stops the others
+- RULE-7: Every file a migration rewrites is copied beside itself as `<name>.local-<sha8>.bak` holding the bytes it had before, and a second run does not write the copy again
+- RULE-8: No proof file and no run file is left beside a spec, on disk or tracked; the dashboard data and the cache are untracked, left on disk, and named in `.gitignore`
+- RULE-9: The pre-commit and pre-push hooks v0.9.5 installed under `.git/hooks/` are deleted, and a hook another tool wrote is left alone: this release runs nothing at commit time and nothing at push time
+- RULE-10: The config the run leaves is the gate and what the gate derives, carrying `version`, `gate`, `ci`, `min_strength`, `sql_engine`, `mutation_engine`, `test_framework`, `digest` and `trust` at every gate, and none of the keys this release stopped reading
+- RULE-11: The rewritten config carries no key nothing reads: the dashboard switch an older release carried is not written back
+- RULE-12: The gate question is asked once more on an update, defaulting to the gate the project already named, then to `strong` when the old pre-push setting was the blocking one and to `passed` otherwise, taking the answer typed when it is one of the three gates and leaving the default when it is not
+- RULE-13: The retired Windows tag at the end of a proof line becomes `@env(windows)`, and the same spelling in the middle of a line is left alone
+- RULE-15: The workflow v0.9.5 used to commit proof files back beside the specs is removed; one `purlin.yml` is offered in its place, carrying the matrix the `@env` tags name, the pinned release, the triggers on run branches and signing tags and the gate check every run ends with; declining it leaves the file unwritten and says to run `purlin:init` again; the same prerequisites init checks are checked first, and a missing one leaves the workflow unwritten
+- RULE-16: Every copy under `.purlin/plugins/` matches the plugin this release ships again, keeping the file name the project gave it, and a copy this release does not ship is left alone
+- RULE-18: One commit carries the whole run, its subject naming the release and every migration id applied; a run that applies nothing writes no commit; nothing is left uncommitted afterwards but the backup copies
+- RULE-19: `sync_status` prints the directive to run the update while anything is pending, including when the config alone is already clean, and stops printing it once nothing is
+- RULE-20: What the run prints carries no emoji, and its last line names the next step: the update again while something is left, otherwise `purlin:status` [level: passed]
+- RULE-21: A `test_framework` name the config carries that detection does not find and the tree carries no wiring for is dropped and the drop is printed, while a name the tree does carry is kept
+- RULE-23: A proof line that ends with the tag naming the kind of test it is, the tag v0.9.5 wrote, loses that tag, an `@env` tag after it is kept, and the rest of the line is untouched
 
 ## Proof
 
