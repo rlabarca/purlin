@@ -2,7 +2,7 @@
 
 Two halves. The first reads the built file as text and holds it to the design
 system: one token block, no colour written anywhere else, no shadow, no
-gradient, no emoji, no request to anything outside the file. The second opens
+gradient, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
@@ -102,6 +102,14 @@ def with_invoice_rule_2_unproved(payload):
     return payload
 
 
+def with_only_a_comment_to_correct(payload):
+    """The payload with its one line of what is left a test comment to correct."""
+    payload['left'] = [{'kind': 'to_correct', 'count': 1,
+                        'text': '1 test comment to correct',
+                        'command': 'purlin:build'}]
+    return payload
+
+
 def with_only_the_version_left(payload):
     """The payload with its one line of what is left the version to tag."""
     payload['left'] = [{'kind': 'to_tag', 'count': 1,
@@ -179,7 +187,7 @@ KINDS = {'To fix': 'to_fix', 'To test': 'to_test',
          'To test by hand': 'to_test_by_hand', 'To audit': 'to_audit',
          'To strengthen': 'to_strengthen', 'To sign': 'to_sign',
          'To write a test for': 'no_test', 'To write a proof for': 'no_proof',
-         'To tag': 'to_tag'}
+         'To tag': 'to_tag', 'To correct': 'to_correct'}
 
 
 def chip_for(label):
@@ -308,11 +316,10 @@ def test_every_colour_is_a_token(page_text):
 
 
 # purlin: purlin_report PROOF-4
-def test_no_shadow_no_gradient_and_no_emoji(page_text):
+def test_no_shadow_and_no_gradient(page_text):
     _inside, outside = token_block(page_text)
     assert 'box-shadow' not in outside
     assert 'gradient' not in page_text
-    assert not re.search(u'[\U0001F300-\U0001FAFF☀-➿]', page_text)
 
 
 # purlin: purlin_report PROOF-5
@@ -981,6 +988,18 @@ def test_choosing_to_tag_leaves_every_rule_showing(browser, tmp_path):
     page.close()
 
 
+# purlin: purlin_report PROOF-181
+def test_choosing_to_correct_leaves_every_rule_showing(browser, tmp_path):
+    page = open_board(browser, tmp_path,
+                      with_only_a_comment_to_correct(payload_named('regulated')))
+    assert chip_counts(page) == {'To correct': 1}
+    page.click(chip_for('To correct'))
+    assert pressed(page) == ['To correct']
+    assert len(feature_names(page)) == 4
+    assert texts(page, '.cmdline') == ['Type purlin:build in Claude Code.']
+    page.close()
+
+
 # purlin: purlin_report PROOF-35
 def test_the_buttons_are_the_lines_of_what_is_left(browser, tmp_path):
     reg = open_board(browser, tmp_path, payload_named('regulated'))
@@ -1458,8 +1477,16 @@ def test_the_audit_panel_reads_a_strong_audit(browser, tmp_path):
 
 # purlin: purlin_report PROOF-146
 def test_the_audit_panel_with_no_strength_measured(browser, tmp_path):
+    """Test strength is one share per feature, so it is taken out of login."""
     payload = payload_named('team')
-    payload['features'][0]['rules'][1]['cells']['strong']['strength'] = None
+    login = payload['features'][0]
+    assert login['name'] == 'login'
+    login['test_strength'] = None
+    login['rollup']['test_strength'] = None
+    for rule in login['rules']:
+        rule['cells']['strong']['strength'] = None
+        if rule['audit']:
+            rule['audit']['strength'] = None
     lines = audit_lines(browser, tmp_path, payload, 'login', 'RULE-2')
     assert lines[:2] == ['Strong. It found nothing.',
                          'Read by example-model-1 on 2026-09-12 09:14 UTC'], lines

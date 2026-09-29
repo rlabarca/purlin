@@ -8,10 +8,10 @@
    the payload gives that kind, and one line under the buttons names the
    command that clears them, typed in Claude Code. The page runs nothing. */
 
-/* The kind of work that counts the version rather than any rule: choosing
-   it names the command and leaves every rule showing, because no rule
-   carries it. */
-var VERSION_KINDS = ['to_tag'];
+/* The kinds of work that count no rule, the version to tag and the test
+   comments to correct: choosing one names the command and leaves every rule
+   showing, because no rule carries it. */
+var VERSION_KINDS = ['to_tag', 'to_correct'];
 
 /* The words of one line of what is left, without its count and noun, in
    sentence case: `1 rule to fix` reads `To fix`, `2 rules to test on
