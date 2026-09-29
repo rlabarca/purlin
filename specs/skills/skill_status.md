@@ -2,14 +2,14 @@
 
 > Description: What `skills/status/SKILL.md` must say. Status prints where every feature stands, or one named spec's rules, and
 >   ends on the summary and `Left to do`; the command line and the dashboard show one answer from one computation.
-> Scope: skills/status/SKILL.md
+> Scope: skills/status/SKILL.md, scripts/mcp/purlin/status.py, scripts/mcp/purlin/summary.py, scripts/mcp/purlin/report_data.py
 > Stack: markdown, Claude Code skill definition
 
 ## Rules
 
 - RULE-1: `skills/status/SKILL.md` opens with a frontmatter block whose `name` is `status` and whose `description` is one non-empty line, and the table of commands in `references/purlin_commands.md` carries a row for `purlin:status` whose purpose cell is not empty
-- RULE-2: `skills/status/SKILL.md` tells the agent to print the sentence and the `Left to do` lines `sync_status` returned and never to recount them, so the command line and the dashboard cannot disagree
-- RULE-3: The last section of `skills/status/SKILL.md` names the next step, the first line of `Left to do`, and gives a `→` directive for each kind of line but `Nothing left to do.`, which names none
+- RULE-2: `skills/status/SKILL.md` tells the agent to print the sentence and the `Left to do` lines `sync_status` returned and never to recount them; those lines and the data the dashboard reads come from one computation, so the two cannot disagree
+- RULE-3: The last section of `skills/status/SKILL.md` names the next step, the first line of `Left to do`; its table names every kind of `Left to do` line with a `→` directive to the command that line names, and every row gives a `→` directive but `Nothing left to do.`, which names none
 - RULE-4: The whole of `skills/status/SKILL.md` is at most 100 lines
 - RULE-5: `skills/status/SKILL.md` says that `purlin:status <name>` shows one spec, its rules and their cells, and what it does when several specs or none match the name, and `references/purlin_commands.md` names that form `purlin:status [name]`
 
@@ -27,6 +27,7 @@
 - PROOF-20 (RULE-1): A copy of the plugin's command reference whose `purlin:status [name]` row has an empty second cell fails, saying the reference carries no row for `purlin:status`
 - PROOF-2 (RULE-2): The status skill, its line breaks ignored, carries these two sentences in a row: ``Print the sentence and the `Left to do` lines `sync_status` returned. Never recount them: the command line and the dashboard must show one answer from one computation.``
 - PROOF-6 (RULE-2): A copy of the status skill whose first of those two sentences reads `Count the rules in the table yourself.` fails, naming the passage ``Print the sentence and the `Left to do` lines`` it no longer finds
+- PROOF-21 (RULE-2): At the gate `strong`, of 2 rules one passes its test and one has no test. `sync_status` ends on `2 rules. 1 passes its tests. 0 are strong.`, `Left to do:`, `1 rule to write a test for: purlin:build`, `1 rule to audit: purlin:audit`; the dashboard data counts 2 rules, 1 passing, 0 strong, and those two lines, 1 each
 - PROOF-3 (RULE-3): The last section of the status skill is headed `Step 4: name the next step`
 - PROOF-7 (RULE-3): A copy of the status skill with its last section removed fails, naming `With a name`, the heading of the section then last
 - PROOF-22 (RULE-3): The last section of the status skill says ``The next step is the first line of `Left to do`.``
@@ -35,6 +36,9 @@
 - PROOF-8 (RULE-3): A copy of the status skill with every `→` in its last section written as `->` fails as giving no directive
 - PROOF-9 (RULE-3): A copy of the status skill whose last section is cut after the table's first row fails with the count 1 beside the 2 expected
 - PROOF-10 (RULE-3): A copy of the status skill whose row for `<n> rules to audit` loses its `→` fails, naming that row
+- PROOF-24 (RULE-3): Every kind of line `Left to do` can print, from `rules to write a proof for` to `the version to tag`, is named in a row of the status skill's closing table whose directive runs the command the line itself names, such as `to strengthen` with `→ Run: purlin:build`
+- PROOF-25 (RULE-3): A copy of the status skill whose row for `<n> rules to audit` gives `→ Run: purlin:test` fails, naming `rules to audit` and `purlin:audit`, the command the line names
+- PROOF-26 (RULE-3): A copy of the status skill whose closing table no longer names `to strengthen` fails, naming `rules to strengthen` as a line with no row
 - PROOF-4 (RULE-4): The status skill as shipped is at most 100 lines long
 - PROOF-27 (RULE-4): A copy of the status skill made exactly 100 lines long passes the ceiling of 100
 - PROOF-28 (RULE-4): A copy of the status skill made 101 lines long fails, reporting `101 lines, ceiling 100`

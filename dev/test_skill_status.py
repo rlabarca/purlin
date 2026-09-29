@@ -6,11 +6,17 @@ other skill test files are in `dev/skill_checks.py`; the checks only this spec
 needs are at the bottom of this file.
 
 A refused case points a check at a copy of the file with one thing broken; the
-file on disk is never touched.
+file on disk is never touched. RULE-2's last proof runs the real status tool
+against a throwaway project and reads back the data file the dashboard reads.
 """
 
+import json
+import os
 import re
 
+from mcp_project import Project, _commit_tests, _entry
+from purlin import status as purlin_status
+from purlin import summary as purlin_summary
 from skill_checks import (COMMAND_REF, carries, closing_outcomes,
                           command_rows, field, flat, frontmatter,
                           frontmatter_problems, next_step_problems, on_copy,
@@ -149,6 +155,27 @@ class TestPrintWhatTheToolReturned:
              "does not carry 'Print the sentence and the `Left to do` lines"),
         ]) == []
 
+    # purlin: skill_status PROOF-21
+    def test_the_status_text_and_the_dashboard_data_carry_one_answer(self):
+        made = Project(gate='strong')
+        try:
+            _commit_tests(made, 'PROOF-1')
+            made.evidence([_entry('PROOF-1', 'RULE-1')], audited=False)
+            text = purlin_status.sync_status(made.root)
+            data = dashboard_data(made.root)
+        finally:
+            made.close()
+        sentence = '2 rules. 1 passes its tests. 0 are strong.'
+        assert text.splitlines()[-4:] == [
+            sentence, 'Left to do:',
+            '  1 rule to write a test for: purlin:build',
+            '  1 rule to audit: purlin:audit'], text
+        assert data['summary']['rules'] == 2
+        assert data['summary']['steps'] == {'passed': 1, 'strong': 0}
+        assert [(item['text'], item['command'], item['count'])
+                for item in data['left']] == [
+            ('1 rule to write a test for', 'purlin:build', 1),
+            ('1 rule to audit', 'purlin:audit', 1)]
 
 
 def status_number_problems():
@@ -156,6 +183,15 @@ def status_number_problems():
         PRINTS + ' Never recount them: the command line and the dashboard '
         'must show one answer from one computation.'])
 
+
+def dashboard_data(root):
+    """The payload `.purlin/report-data.js` holds, as the page reads it."""
+    path = os.path.join(root, '.purlin', 'report-data.js')
+    with open(path, encoding='utf-8') as handle:
+        text = handle.read()
+    prefix, suffix = 'const PURLIN_DATA = ', ';\n'
+    assert text.startswith(prefix) and text.endswith(suffix), text[:80]
+    return json.loads(text[len(prefix):-len(suffix)])
 
 
 # ---------------------------------------------------------------------------
@@ -226,6 +262,29 @@ class TestNextStep:
             '%s closing outcome gives no %s directive: %s'
             % (REL, ARROW, AUDIT_ROW.replace(ARROW + ' ', ''))) == []
 
+    # purlin: skill_status PROOF-24
+    def test_every_kind_of_left_to_do_line_has_a_row_running_its_command(
+            self):
+        assert kind_row_problems() == []
+
+    # purlin: skill_status PROOF-25
+    def test_the_audit_row_running_another_command_is_refused(
+            self, monkeypatch):
+        assert refusals(monkeypatch, kind_row_problems, [
+            (REL, replace(AUDIT_ROW, AUDIT_ROW.replace('purlin:audit',
+                                                       'purlin:test')),
+             "%s closing table row for 'rules to audit' runs 'purlin:test', "
+             "but the line names 'purlin:audit'" % REL),
+        ]) == []
+
+    # purlin: skill_status PROOF-26
+    def test_a_table_that_no_longer_names_to_strengthen_is_refused(
+            self, monkeypatch):
+        assert refusals(monkeypatch, kind_row_problems, [
+            (REL, replace(' or `to strengthen`'),
+             "%s closing table names no row for the line 'rules to "
+             "strengthen'" % REL),
+        ]) == []
 
 
 AUDIT_ROW = '| `<n> rules to audit` | `%s Run: purlin:audit` |' % ARROW
@@ -244,6 +303,33 @@ def first_line_problems():
         return []
     return ['%s closing section does not carry %r' % (REL, FIRST_LINE)]
 
+
+def kind_row_problems():
+    """Each kind of `Left to do` line the tool prints with no row in the
+    closing table, or whose row runs a command other than the line's own.
+
+    A row's first cell names its lines in backticks, `<n> rules to fix`,
+    `to write a test for`; its second cell carries `→ Run: <command>`.
+    """
+    rows = []
+    for row in closing_outcomes(sections(read(REL))[-1][1]):
+        cells = [cell.strip() for cell in row.strip().strip('|').split('|')]
+        named = [re.sub(r'^<n> rules ', '', phrase)
+                 for phrase in re.findall(r'`([^`]*)`', cells[0])]
+        command = re.search(r'%s Run: ([^`]+)`' % ARROW, cells[-1])
+        rows.append((named, command.group(1) if command else None))
+    problems = []
+    for _kind, _one, many, command in purlin_summary.KINDS:
+        line = many.replace('%s', '<systems>')
+        phrase = re.sub(r'^rules ', '', line)
+        found = [run for named, run in rows if phrase in named]
+        if not found:
+            problems.append('%s closing table names no row for the line %r'
+                            % (REL, line))
+        elif found[0] != command:
+            problems.append('%s closing table row for %r runs %r, but the '
+                            'line names %r' % (REL, line, found[0], command))
+    return problems
 
 
 # ---------------------------------------------------------------------------
