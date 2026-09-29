@@ -349,6 +349,15 @@ def unknown_tag_warning(features):
                                ', '.join(shown), more))
 
 
+def spec_mistakes(project_root, features):
+    """One line per mistake Purlin can see in a spec, each naming its fix.
+
+    `features` is `scan_specs`' answer. The lines are warned of and nothing
+    is refused. None are read yet, so the answer is empty.
+    """
+    return []
+
+
 def global_anchors(features):
     """The anchors whose rules apply to every feature without `> Requires:`."""
     return {name: info for name, info in features.items()

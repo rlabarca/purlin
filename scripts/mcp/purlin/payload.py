@@ -174,6 +174,8 @@ def build_payload(project_root, generated_by='sync_status', config=None):
                 'WARNING: %d lines under ## Rules in %s are not numbered; a '
                 'rule is `- RULE-N: <text>`.'
                 % (len(unnumbered), features[name]['spec_path']))
+    for line in specs_module.spec_mistakes(project_root, features):
+        warnings.append(line)
 
     # Every feature's evidence, checked against a fingerprint taken now. A
     # section decides a cell only while it is current, so this is read once
