@@ -948,3 +948,58 @@ the clause of summary RULE-8 and RULE-9 that counts a cell a rule does not carry
 file (L5). The helper modules `dev/skill_checks.py`, `dev/mcp_project.py`,
 `dev/sign_project.py`, `dev/run_project.py` and `dev/reports_project.py` are frozen for the
 fan-out: no lane edits them.
+
+## 9. Rulings for integration
+
+Made by the orchestrator on the calls the lanes did not make (`phase1-lanes-report.md`). Each
+is the smallest reading consistent with decisions 60 to 84. The owner reviews the words a user
+reads afterwards and may change any of them.
+
+1. **The frozen helpers.** Integration edits `dev/sign_project.py` and the other helper modules
+   so that no rule is marked lower and every rule of a signed project is audited and signed.
+2. **The evidence schema string** goes to `purlin-evidence/2` everywhere at once: the reader,
+   the writer, the format file, the rules and proofs that quote it, the helper modules and every
+   test file that writes evidence.
+3. **Step R also edits the specs and tests** that name the payload keys it deletes (states
+   RULE-24, RULE-25, RULE-27 and their proofs), so that they describe the payload as it is.
+4. **An anchor's rule with no consumer** is signed under the anchor's own listing, as today. A
+   hand check of an anchor's rule waits for every consumer, as L1 built it.
+5. **The first test run suggests the first framework detected**, in the order of the list.
+   `--add <framework>` stays a flag of setup.
+6. **`purlin:audit --commit` makes the same two commits as `purlin:test --commit`**, through
+   the same function.
+7. **`references/review_criteria.md`**, "What a person does with what the audit found", is cut
+   to what the walk now does: a rule the audit found weak is build work and shows under
+   `to strengthen`; the walk reads rules to test by hand and to sign.
+8. **`purlin:sign` with nothing waiting** prints `Nothing is waiting for someone to test by
+   hand or to sign.`, then the ending, and exits 0. Naming a rule no spec has prints
+   `<feature> <RULE-N> is not a rule any spec has.` and exits 1.
+9. **The package's refusal reason** reads `the committed evidence still has work left to do`.
+   `signed_commit` is true or false.
+10. **The runner's machine** comes from one function in the runner's own module, which returns
+    `remote runner, ` and the system's display word; the run calls it for a run on a runner.
+11. **The tag run's line** reads `Tag run: nothing is written. This run reruns the tests on
+    <ref>.` **The no-runner reason** reads `every proof runs on this operating system, so
+    nothing has to run remotely` (`every test` at the gate `passed`). The runner reason keeps
+    the system as typed in the `@env` tag.
+12. **Setup's two notes on a workflow it wrote** read `  the matrix is <systems>, the systems
+    the @env tags in specs/ name.` and `  it runs on a push to a run/* branch and on a push of
+    a signed/* tag.` `Git host not read from a remote.` stays for both cases.
+13. **The upgrade ends as every command ends**: on the summary and `Left to do` of the project
+    it upgraded, with no arrow line. Where migrations are still pending, the first line of
+    `Left to do` is the status's own `→ Run: purlin:init --update` line, as the status prints
+    it.
+14. **The dashboard's third screenshot goes.** Integration deletes
+    `docs/images/dashboard-queue.png` and the line of `docs/dashboard.md` that embeds it, and
+    retakes the other two with `dev/capture_doc_screenshots.py` once the page is rebuilt. The
+    rest of `docs/` waits for the docs phase. The words L10 chose for the `No proof` box, the
+    signed panel and the hand check stay.
+15. **Drift's QA view carries a `left` key**: the payload's `left` items of the kinds
+    `to_test_by_hand` and `to_sign`.
+16. **The purpose of `purlin:sign`** reads `Sign a rule, a feature or every rule that waits for
+    a person, as a signed commit`, in `references/purlin_commands.md` and in the skill's
+    description, word for word.
+17. **Drift's `rev-parse --verify -q <sha>^`** gets `--end-of-options`, and the test of the
+    guard also runs drift with a date and with a count.
+18. **`dev/test_specs_reader.py`** loses the test of `trust` and the `trust` entry of the list
+    of settings.
