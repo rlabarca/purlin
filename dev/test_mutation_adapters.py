@@ -16,10 +16,12 @@ is the same grammar over a project laid out under `src/`.
 No real engine is ever started. Each run test puts a stand-in program where
 the real one would be found, `node_modules/.bin/stryker`, or `dotnet` or
 `mutmut` in a folder that is the whole of PATH beside `/usr/bin` and `/bin`.
-The stand-in writes the captured report where it is told, records how it was
+On Windows a stand-in is `<name>.cmd`, which starts the same script. The
+stand-in writes the captured report where it is told, records how it was
 started, and, when asked, sleeps past the limit so the real stop is
 observed. Everything between the engine's answer and the program is the
-code under test.
+code under test. A mutmut break counts for the files git tracks, so each
+mutmut test builds a git repository holding the files its scope reaches.
 """
 
 import json
@@ -46,23 +48,11 @@ def read_fixture(name):
         return handle.read()
 
 
-CALC_TESTS = {
-    'RULE-1': [{'file': 'test/calc.test.js',
-                'name': 'adds two numbers'}],
-    'RULE-2': [{'file': 'test/calc.test.js',
-                'name': 'leaves small values alone'}],
-}
-
-SESSION_TESTS = {
-    'RULE-1': [{'file': 'tests/Login/SessionTests.cs',
-                'name': 'LoginTests.LocksAfterFiveFailures'}],
-    'RULE-2': [{'file': 'tests/Login/SessionTests.cs',
-                'name': 'LoginTests.UnlocksAfterFifteenMinutes'}],
-}
-
-TIMEOUT_REASON = ('the engine timed out after %d s, so the breaks it made are '
-                  'partial and measure nothing: raise --arm-timeout to give it '
-                  'longer')
+TIMEOUT_REASON = ('the engine timed out after %d s, so the breaks it made '
+                  'measure nothing: run purlin:audit --arm-timeout <seconds> '
+                  'to give it longer')
+NO_STRYKER = ('stryker is not installed: run '
+              '"npm install --save-dev @stryker-mutator/core"')
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +120,9 @@ if feature in SETUP.get('slow', []):
 sys.exit(0)
 '''
 
+# The same, writing its report under another name, `other.json`.
+_DOTNET_OTHER = _DOTNET.replace("'mutation-report.json'", "'other.json'")
+
 # `mutmut run` and `mutmut results --all true`; anything else prints nothing.
 _MUTMUT = r'''
 argv = sys.argv[1:]
@@ -147,14 +140,23 @@ sys.exit(0)
 
 
 def install_program(where, name, body, **setup):
-    """Write an executable stand-in `name` into the folder `where`. Its path."""
+    """Write a stand-in `name` into the folder `where`. The script's path.
+
+    Elsewhere the script is the program, with the exec bit set. On Windows
+    the program is `<name>.cmd`, which starts the script with this Python.
+    """
     where.mkdir(parents=True, exist_ok=True)
     (where / (name + '.setup.json')).write_text(json.dumps(setup),
                                                  encoding='utf-8')
     program = where / name
     program.write_text('#!%s\n%s\n%s' % (sys.executable, _PRELUDE, body),
                        encoding='utf-8')
-    program.chmod(0o755)
+    if os.name == 'nt':
+        (where / (name + '.cmd')).write_text(
+            '@"%s" "%%~dp0%s" %%*\r\n' % (sys.executable, name),
+            encoding='utf-8')
+    else:
+        program.chmod(0o755)
     return program
 
 
@@ -210,40 +212,37 @@ def with_block(project):
         encoding='utf-8')
 
 
-def feature_tests(feature, tests):
-    return dict(((feature, rule), value) for rule, value in tests.items())
+def tracked(project, *paths):
+    """Write each of `paths` under `project` and add it to git's index."""
+    if not (project / '.git').exists():
+        subprocess.run(['git', 'init', '-q', str(project)], check=True)
+    for path in paths:
+        target = project / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text('', encoding='utf-8')
+    if paths:
+        subprocess.run(['git', '-C', str(project), 'add', '--'] + list(paths),
+                       check=True)
 
 
-def calc_run(project, report, tests):
+def calc_run(project, report):
     """One Stryker run of `calc`, scoped to `src/calc.js`, over `report`."""
     install_stryker(project, report=report)
-    return stryker.run(str(project), {'calc': ['src/calc.js']},
-                       feature_tests('calc', tests))
+    return stryker.run(str(project), {'calc': ['src/calc.js']})
 
 
-def login_run(tools, project, report, tests, **setup):
+def login_run(tools, project, report, **setup):
     """One Stryker.NET run of `login`, scoped to `src/Login/Session.cs`."""
     install_dotnet(tools, report=report, **setup)
-    return stryker_net.run(str(project), {'login': ['src/Login/Session.cs']},
-                           feature_tests('login', tests))
+    return stryker_net.run(str(project), {'login': ['src/Login/Session.cs']})
 
 
-def mutmut_run(tools, project, listing, scope_by_feature, tests_by_rule):
+def mutmut_run(tools, project, listing, scope_by_feature, files=()):
+    """A mutmut run over `listing`, in a git repository holding `files`."""
     with_block(project)
+    tracked(project, *files)
     install_mutmut(tools, listing=listing)
-    return mutmut.run(str(project), scope_by_feature, tests_by_rule)
-
-
-def one_break_report(mutants, tests):
-    """A Stryker report of breaks to `src/a.js` and tests in `test/a.test.js`."""
-    return {'files': {'src/a.js': {'mutants': mutants}},
-            'testFiles': {'test/a.test.js': {'tests': [
-                {'id': str(index), 'name': name}
-                for index, name in enumerate(tests)]}}}
-
-
-def a_test(name, path='test/a.test.js'):
-    return [{'file': path, 'name': name}]
+    return mutmut.run(str(project), scope_by_feature)
 
 
 # ---------------------------------------------------------------------------
@@ -253,21 +252,39 @@ def a_test(name, path='test/a.test.js'):
 AUTO = {'mutation_engine': 'auto'}
 
 
-@pytest.mark.parametrize('framework,engine', [
-    ('jest', 'stryker'),
-    ('vitest', 'stryker'),
-    ('dotnet', 'stryker_net'),
-    ('pytest', 'mutmut'),
-])
 # purlin: mutation PROOF-1
-def test_auto_picks_the_engine_of_the_one_framework(framework, engine):
-    assert mutation.select_engine(AUTO, [framework]) == engine
+def test_auto_picks_stryker_for_jest():
+    assert mutation.select_engine(AUTO, ['jest']) == 'stryker'
 
 
-@pytest.mark.parametrize('framework', ['go', 'shell', 'sql'])
+# purlin: mutation PROOF-68
+def test_auto_picks_stryker_for_vitest():
+    assert mutation.select_engine(AUTO, ['vitest']) == 'stryker'
+
+
+# purlin: mutation PROOF-69
+def test_auto_picks_stryker_net_for_dotnet():
+    assert mutation.select_engine(AUTO, ['dotnet']) == 'stryker_net'
+
+
+# purlin: mutation PROOF-70
+def test_auto_picks_mutmut_for_pytest():
+    assert mutation.select_engine(AUTO, ['pytest']) == 'mutmut'
+
+
 # purlin: mutation PROOF-23
-def test_auto_picks_no_engine_for_go_shell_or_sql(framework):
-    assert mutation.select_engine(AUTO, [framework]) == 'none'
+def test_auto_picks_no_engine_for_go():
+    assert mutation.select_engine(AUTO, ['go']) == 'none'
+
+
+# purlin: mutation PROOF-71
+def test_auto_picks_no_engine_for_shell():
+    assert mutation.select_engine(AUTO, ['shell']) == 'none'
+
+
+# purlin: mutation PROOF-72
+def test_auto_picks_no_engine_for_sql():
+    assert mutation.select_engine(AUTO, ['sql']) == 'none'
 
 
 # purlin: mutation PROOF-24
@@ -310,11 +327,17 @@ def test_an_engine_name_nobody_ships_reads_as_none():
 
 @pytest.mark.parametrize('config', [{'gate': 'strong'}, {}, None])
 # purlin: mutation PROOF-30
-def test_settings_that_name_no_engine_read_as_none(config):
+def test_settings_that_name_no_engine_read_as_none_for_pytest(config):
     assert mutation.select_engine(config, ['pytest']) == 'none'
-    assert mutation.select_engine(config, ['jest']) == 'none'
     # The same project turned on picks its engine, so the key decided.
     assert mutation.select_engine(AUTO, ['pytest']) == 'mutmut'
+
+
+@pytest.mark.parametrize('config', [{'gate': 'strong'}, {}, None])
+# purlin: mutation PROOF-73
+def test_settings_that_name_no_engine_read_as_none_for_jest(config):
+    assert mutation.select_engine(config, ['jest']) == 'none'
+    assert mutation.select_engine(AUTO, ['jest']) == 'stryker'
 
 
 # ---------------------------------------------------------------------------
@@ -347,15 +370,6 @@ def test_no_break_counted_reads_none_not_zero():
     assert mutation.score_percent(0, 0) is None
 
 
-# purlin: mutation PROOF-4
-def test_a_features_rules_are_answered_in_number_order(project):
-    answer = mutation.run_breaks(
-        str(project), 'none', {'f': ['f.sh']},
-        {('f', 'RULE-10'): [], ('f', 'RULE-2'): [], ('f', 'RULE-1'): []})
-    assert list(answer['features']['f']['rules']) == [
-        'RULE-1', 'RULE-2', 'RULE-10']
-
-
 # ---------------------------------------------------------------------------
 # Stryker: how it is started
 # ---------------------------------------------------------------------------
@@ -363,8 +377,7 @@ def test_a_features_rules_are_answered_in_number_order(project):
 # purlin: mutation PROOF-5
 def test_stryker_is_given_a_config_scoped_to_the_features_files(project):
     program = install_stryker(project)
-    stryker.run(str(project), {'calc': ['src/calc.js', 'src/util.js']},
-                feature_tests('calc', CALC_TESTS))
+    stryker.run(str(project), {'calc': ['src/calc.js', 'src/util.js']})
     config = calls(program)[0]['config']
     report_path = config['jsonReporter']['fileName']
     assert os.path.isabs(report_path)
@@ -381,8 +394,7 @@ def test_stryker_is_given_a_config_scoped_to_the_features_files(project):
 # purlin: mutation PROOF-33
 def test_a_stryker_run_reads_the_report_its_config_names(project):
     program = install_stryker(project)
-    answer = stryker.run(str(project), {'calc': ['src/calc.js']},
-                         feature_tests('calc', CALC_TESTS))
+    answer = stryker.run(str(project), {'calc': ['src/calc.js']})
     started = calls(program)
     assert len(started) == 1
     assert started[0]['argv'][0] == 'run'
@@ -391,7 +403,6 @@ def test_a_stryker_run_reads_the_report_its_config_names(project):
     assert answer['engine'] == 'stryker'
     assert answer['available'] is True
     assert answer['features']['calc']['scope_score']['score'] == 64
-    assert answer['features']['calc']['rules']['RULE-2']['score'] == 71
     assert 'calc' in answer['log']
 
 
@@ -399,9 +410,7 @@ def test_a_stryker_run_reads_the_report_its_config_names(project):
 def test_a_run_over_two_features_starts_stryker_once_for_each(project):
     program = install_stryker(project)
     stryker.run(str(project), {'calc': ['src/calc.js'],
-                               'util': ['src/util.js', 'src/fmt.js']},
-                {('calc', 'RULE-1'): CALC_TESTS['RULE-1'],
-                 ('util', 'RULE-1'): CALC_TESTS['RULE-1']})
+                               'util': ['src/util.js', 'src/fmt.js']})
     assert [call['config']['mutate'] for call in calls(program)] == [
         ['src/calc.js'], ['src/util.js', 'src/fmt.js']]
 
@@ -411,8 +420,7 @@ def runner_for(project, manifest):
         (project / 'package.json').write_text(json.dumps(manifest),
                                               encoding='utf-8')
     program = install_stryker(project)
-    stryker.run(str(project), {'calc': ['src/calc.js']},
-                feature_tests('calc', CALC_TESTS))
+    stryker.run(str(project), {'calc': ['src/calc.js']})
     return calls(program)[0]['config']['testRunner']
 
 
@@ -445,8 +453,7 @@ def test_the_projects_own_stryker_is_started_over_one_on_the_path(tools,
     own = install_stryker(project)
     on_path = install_program(tools, 'stryker', _STRYKER,
                               report=read_fixture('stryker_report.json'))
-    stryker.run(str(project), {'calc': ['src/calc.js']},
-                feature_tests('calc', CALC_TESTS))
+    stryker.run(str(project), {'calc': ['src/calc.js']})
     assert len(calls(own)) == 1
     assert calls(on_path) == []
 
@@ -454,15 +461,19 @@ def test_the_projects_own_stryker_is_started_over_one_on_the_path(tools,
 # purlin: mutation PROOF-38
 def test_no_stryker_anywhere_leaves_no_engine_and_says_what_to_install(
         tools, project):
-    answer = stryker.run(str(project), {'calc': ['src/calc.js']},
-                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']})
-    assert answer['engine'] == 'none'
-    assert answer['available'] is False
-    assert answer['reason'] == ('stryker is not installed: run '
-                                '"npm install --save-dev @stryker-mutator/core"')
-    rule = answer['features']['calc']['rules']['RULE-1']
-    assert rule['attribution'] == 'unavailable'
-    assert rule['score'] is None
+    answer = stryker.run(str(project), {'calc': ['src/calc.js']})
+    assert (answer['engine'], answer['available']) == ('stryker', False)
+    assert answer['reason'] == NO_STRYKER
+
+
+# purlin: mutation PROOF-81
+def test_no_stryker_gives_every_feature_the_install_sentence(tools, project):
+    answer = mutation.run_breaks(str(project), 'stryker',
+                                 {'calc': ['src/calc.js'],
+                                  'util': ['src/util.js']})
+    assert answer['features']['calc']['missing'] == NO_STRYKER
+    assert answer['features']['util']['missing'] == NO_STRYKER
+    assert answer['features']['calc']['scope_score']['score'] is None
 
 
 # ---------------------------------------------------------------------------
@@ -475,7 +486,7 @@ def test_a_compile_error_counts_neither_caught_nor_missed(project):
     statuses = sorted(m['status'] for m in report['files']['src/calc.js']['mutants'])
     assert statuses == ['CompileError'] + ['Killed'] * 6 + ['NoCoverage'] * 2 \
         + ['Survived'] * 2 + ['Timeout']
-    entry = calc_run(project, report, CALC_TESTS)['features']['calc']
+    entry = calc_run(project, report)['features']['calc']
     assert entry['scope_score'] == {'score': 64, 'killed': 7, 'survived': 4}
 
 
@@ -487,139 +498,20 @@ def test_mutmuts_statuses_count_caught_missed_or_neither(tools, project):
     listing = ''.join('    calc.ops.x_add__mutmut_%d: %s\n' % (index, status)
                       for index, status in enumerate(statuses, 1))
     answer = mutmut_run(tools, project, listing, {'calc': ['src/calc/ops.py']},
-                        {('calc', 'RULE-1'): []})
+                        ['src/calc/ops.py'])
     assert answer['features']['calc']['scope_score'] == {
         'score': 60, 'killed': 3, 'survived': 2}
-
-
-# ---------------------------------------------------------------------------
-# Stryker: a rule's own number
-# ---------------------------------------------------------------------------
-
-# purlin: mutation PROOF-9
-def test_each_rule_carries_what_its_own_tests_caught(project):
-    rules = calc_run(project, read_fixture('stryker_report.json'),
-                     CALC_TESTS)['features']['calc']['rules']
-    assert rules['RULE-1'] == {
-        'engine': 'stryker', 'score': 100, 'killed': 3, 'survived': 0,
-        'attribution': 'per_test'}
-    assert rules['RULE-2'] == {
-        'engine': 'stryker', 'score': 71, 'killed': 5, 'survived': 2,
-        'attribution': 'per_test'}
-
-
-# purlin: mutation PROOF-40
-def test_a_break_another_rules_test_caught_counts_missed_for_this_one(project):
-    report = one_break_report(
-        [{'id': '1', 'status': 'Killed', 'coveredBy': ['0', '1'],
-          'killedBy': ['0']}], ['locks', 'unlocks'])
-    rules = calc_run(project, report, {'RULE-1': a_test('locks'),
-                                       'RULE-2': a_test('unlocks')}
-                     )['features']['calc']['rules']
-    assert (rules['RULE-2']['killed'], rules['RULE-2']['survived'],
-            rules['RULE-2']['score']) == (0, 1, 0)
-    assert (rules['RULE-1']['killed'], rules['RULE-1']['survived']) == (1, 0)
-
-
-# purlin: mutation PROOF-41
-def test_a_break_that_timed_out_counts_caught_for_every_rule_that_reached_it(
-        project):
-    report = one_break_report(
-        [{'id': '1', 'status': 'Timeout', 'coveredBy': ['0', '1'],
-          'killedBy': []},
-         # A break caught by name elsewhere, so the report names catchers.
-         {'id': '2', 'status': 'Killed', 'coveredBy': ['2'],
-          'killedBy': ['2']}], ['locks', 'unlocks', 'other'])
-    rules = calc_run(project, report, {'RULE-1': a_test('locks'),
-                                       'RULE-2': a_test('unlocks')}
-                     )['features']['calc']['rules']
-    for rule in ('RULE-1', 'RULE-2'):
-        assert (rules[rule]['killed'], rules[rule]['survived']) == (1, 0)
-        assert rules[rule]['attribution'] == 'per_test'
-
-
-# purlin: mutation PROOF-42
-def test_a_rule_whose_tests_the_report_never_lists_measures_nothing(project):
-    rules = calc_run(project, read_fixture('stryker_report.json'),
-                     {'RULE-9': a_test('unrelated', 'test/other.test.js')}
-                     )['features']['calc']['rules']
-    assert (rules['RULE-9']['score'], rules['RULE-9']['killed'],
-            rules['RULE-9']['survived']) == (None, 0, 0)
-
-
-# purlin: mutation PROOF-10
-def test_a_name_that_begins_another_does_not_claim_its_break(project):
-    report = one_break_report(
-        [{'id': '1', 'status': 'Killed', 'coveredBy': ['0'],
-          'killedBy': ['0']},
-         {'id': '2', 'status': 'Survived', 'coveredBy': ['1'],
-          'killedBy': []}], ['locks', 'locks after five'])
-    rules = calc_run(project, report, {'RULE-1': a_test('locks'),
-                                       'RULE-2': a_test('locks after five')}
-                     )['features']['calc']['rules']
-    assert (rules['RULE-1']['killed'], rules['RULE-1']['survived']) == (1, 0)
-    assert (rules['RULE-2']['killed'], rules['RULE-2']['survived']) == (0, 1)
-
-
-# purlin: mutation PROOF-43
-def test_titles_written_with_a_separator_match_titles_joined_by_spaces(
-        project):
-    report = one_break_report(
-        [{'id': '1', 'status': 'Killed', 'coveredBy': ['0'],
-          'killedBy': ['0']}], ['login locks'])
-    rules = calc_run(project, report, {'RULE-1': a_test('login > locks')}
-                     )['features']['calc']['rules']
-    assert (rules['RULE-1']['killed'], rules['RULE-1']['score']) == (1, 100)
-
-
-# purlin: mutation PROOF-44
-def test_a_test_of_the_same_name_in_another_file_is_not_this_rules_test(
-        project):
-    report = {'files': {'src/a.js': {'mutants': [
-        {'id': '1', 'status': 'Killed', 'coveredBy': ['0'],
-         'killedBy': ['0']}]}},
-        'testFiles': {'test/other.test.js': {'tests': [
-            {'id': '0', 'name': 'locks the account'}]}}}
-    rules = calc_run(project, report,
-                     {'RULE-1': a_test('locks the account',
-                                       'test/login.test.js')}
-                     )['features']['calc']['rules']
-    assert rules['RULE-1']['killed'] == 0
 
 
 # ---------------------------------------------------------------------------
 # Stryker.NET
 # ---------------------------------------------------------------------------
 
-# purlin: mutation PROOF-11
-def test_a_dotnet_report_naming_no_catcher_gives_every_rule_the_scope_number(
-        tools, project):
-    answer = login_run(tools, project, read_fixture('stryker_net_report.json'),
-                       SESSION_TESTS)
-    entry = answer['features']['login']
-    assert entry['scope_score'] == {'score': 60, 'killed': 3, 'survived': 2}
-    for rule in ('RULE-1', 'RULE-2'):
-        assert entry['rules'][rule] == {
-            'engine': 'stryker_net', 'score': 60, 'killed': 3, 'survived': 2,
-            'attribution': 'per_scope'}
-    assert 'attribution per_scope' in answer['log']
-
-
-# purlin: mutation PROOF-45
-def test_a_dotnet_report_naming_its_catchers_is_read_per_test(tools, project):
-    answer = login_run(tools, project, read_fixture('stryker_report.json'),
-                       CALC_TESTS)
-    rule = answer['features']['login']['rules']['RULE-1']
-    assert (rule['engine'], rule['attribution'], rule['score']) == (
-        'stryker_net', 'per_test', 100)
-
-
 # purlin: mutation PROOF-13
 def test_stryker_net_is_started_with_the_scoped_command_line(tools, project):
     program = install_dotnet(tools)
     stryker_net.run(str(project),
-                    {'login': ['src/Login/Session.cs', 'src/Api.cs']},
-                    feature_tests('login', SESSION_TESTS))
+                    {'login': ['src/Login/Session.cs', 'src/Api.cs']})
     started = calls(program)
     assert started[0]['argv'] == ['stryker', '--version']
     argv = started[1]['argv']
@@ -635,42 +527,47 @@ def test_stryker_net_is_started_with_the_scoped_command_line(tools, project):
 # purlin: mutation PROOF-46
 def test_a_report_in_a_reports_folder_under_the_output_is_read(tools, project):
     answer = login_run(tools, project, read_fixture('stryker_net_report.json'),
-                       SESSION_TESTS, folder=['reports'])
+                       folder=['reports'])
     assert answer['features']['login']['scope_score']['score'] == 60
 
 
 # purlin: mutation PROOF-47
 def test_a_report_several_folders_down_is_read(tools, project):
     answer = login_run(tools, project, read_fixture('stryker_net_report.json'),
-                       SESSION_TESTS,
                        folder=['StrykerOutput', '2026-09-28', 'reports'])
     assert answer['features']['login']['scope_score']['score'] == 60
 
 
 # purlin: mutation PROOF-48
 def test_an_empty_output_folder_measures_nothing(tools, project):
-    answer = login_run(tools, project, None, SESSION_TESTS)
-    entry = answer['features']['login']
-    assert entry['scope_score']['score'] is None
-    assert entry['rules']['RULE-1']['score'] is None
+    answer = login_run(tools, project, None)
+    assert answer['features']['login']['scope_score']['score'] is None
+    assert 'login: dotnet stryker exited 0 and wrote no report' in answer['log']
+
+
+# purlin: mutation PROOF-74
+def test_a_json_file_of_another_name_is_not_the_report(tools, project):
+    install_program(tools, 'dotnet', _DOTNET_OTHER,
+                    report=read_fixture('stryker_net_report.json'))
+    answer = stryker_net.run(str(project), {'login': ['src/Login/Session.cs']})
+    assert answer['features']['login']['scope_score']['score'] is None
     assert 'login: dotnet stryker exited 0 and wrote no report' in answer['log']
 
 
 # purlin: mutation PROOF-14
 def test_no_dotnet_on_the_path_leaves_no_engine(tools, project):
-    answer = stryker_net.run(str(project), {'login': ['src/Login/Session.cs']},
-                             feature_tests('login', SESSION_TESTS))
-    assert (answer['engine'], answer['available']) == ('none', False)
-    assert answer['reason'] == ('dotnet is not installed, so no engine breaks '
-                                'C# code')
+    answer = stryker_net.run(str(project), {'login': ['src/Login/Session.cs']})
+    assert (answer['engine'], answer['available']) == ('stryker_net', False)
+    assert answer['reason'] == ('dotnet is not installed: install the .NET SDK, '
+                                'then run "dotnet tool install -g '
+                                'dotnet-stryker"')
 
 
 # purlin: mutation PROOF-49
 def test_dotnet_without_stryker_net_says_how_to_install_it(tools, project):
     program = install_dotnet(tools, version_exit=1)
-    answer = stryker_net.run(str(project), {'login': ['src/Login/Session.cs']},
-                             feature_tests('login', SESSION_TESTS))
-    assert (answer['engine'], answer['available']) == ('none', False)
+    answer = stryker_net.run(str(project), {'login': ['src/Login/Session.cs']})
+    assert (answer['engine'], answer['available']) == ('stryker_net', False)
     assert answer['reason'] == ('dotnet stryker is not installed: run '
                                 '"dotnet tool install -g dotnet-stryker"')
     assert [call['argv'] for call in calls(program)] == [
@@ -680,8 +577,7 @@ def test_dotnet_without_stryker_net_says_how_to_install_it(tools, project):
 # purlin: mutation PROOF-50
 def test_stryker_net_answering_its_version_is_installed(tools, project):
     program = install_dotnet(tools)
-    answer = stryker_net.run(str(project), {'login': ['src/Login/Session.cs']},
-                             feature_tests('login', SESSION_TESTS))
+    answer = stryker_net.run(str(project), {'login': ['src/Login/Session.cs']})
     started = calls(program)
     assert started[0]['argv'] == ['stryker', '--version']
     assert '--mutate' in started[1]['argv']
@@ -695,19 +591,24 @@ def test_stryker_net_answering_its_version_is_installed(tools, project):
 
 # purlin: mutation PROOF-12
 def test_a_report_that_is_not_json_measures_nothing(project):
-    answer = calc_run(project, 'not json', CALC_TESTS)
+    answer = calc_run(project, 'not json')
     assert answer['features']['calc']['scope_score']['score'] is None
-    assert answer['features']['calc']['rules']['RULE-1']['score'] is None
     assert 'calc: stryker exited 0 and wrote no report' in answer['log']
+
+
+# purlin: mutation PROOF-75
+def test_a_run_that_wrote_no_report_says_what_to_do(project):
+    answer = calc_run(project, None)
+    assert answer['features']['calc']['scope_score']['score'] is None
+    assert answer['features']['calc']['missing'] == (
+        'stryker ran and wrote no report: run purlin:audit again')
 
 
 # purlin: mutation PROOF-51
 def test_a_run_that_failed_and_wrote_no_report_says_so(project):
     install_stryker(project, report=None, exit=1, print='boom\n')
-    answer = stryker.run(str(project), {'calc': ['src/calc.js']},
-                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']})
+    answer = stryker.run(str(project), {'calc': ['src/calc.js']})
     assert answer['features']['calc']['scope_score']['score'] is None
-    assert answer['features']['calc']['rules']['RULE-1']['score'] is None
     assert 'calc: stryker exited 1 and wrote no report' in answer['log']
     assert 'boom' in answer['log']
 
@@ -715,11 +616,11 @@ def test_a_run_that_failed_and_wrote_no_report_says_so(project):
 # purlin: mutation PROOF-52
 def test_a_feature_with_no_scope_files_is_not_broken(project):
     program = install_stryker(project)
-    answer = stryker.run(str(project), {'calc': []},
-                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']})
+    answer = stryker.run(str(project), {'calc': []})
     assert calls(program) == []
-    assert answer['features']['calc']['scope_score']['score'] is None
-    assert answer['features']['calc']['rules']['RULE-1']['score'] is None
+    assert answer['features']['calc'] == {
+        'scope_score': {'score': None, 'killed': 0, 'survived': 0},
+        'missing': ''}
     assert 'calc: no scope files, nothing to break' in answer['log']
 
 
@@ -758,8 +659,7 @@ def test_a_pyproject_without_the_block_is_not_broken(tools, project):
     (project / 'pyproject.toml').write_text('[project]\nname = "demo"\n',
                                             encoding='utf-8')
     program = install_mutmut(tools)
-    answer = mutmut.run(str(project), {'login': ['src/login/session.py']},
-                        {('login', 'RULE-1'): []})
+    answer = mutmut.run(str(project), {'login': ['src/login/session.py']})
     assert calls(program) == []
     assert answer['engine'] == 'none'
     assert answer['reason'] == (
@@ -772,8 +672,7 @@ def test_a_setup_cfg_without_the_block_is_not_broken(tools, project):
     (project / 'setup.cfg').write_text('[metadata]\nname = demo\n',
                                        encoding='utf-8')
     program = install_mutmut(tools)
-    answer = mutmut.run(str(project), {'login': ['src/login/session.py']},
-                        {('login', 'RULE-1'): []})
+    answer = mutmut.run(str(project), {'login': ['src/login/session.py']})
     assert calls(program) == []
     assert answer['engine'] == 'none'
     assert answer['reason'] == (
@@ -786,8 +685,8 @@ def test_the_listing_read_is_what_mutmut_results_all_prints(tools, project):
     program = install_mutmut(tools,
                              listing=read_fixture('mutmut_results_smoke.txt'))
     with_block(project)
-    answer = mutmut.run(str(project), {'calc': ['calc/ops.py']},
-                        {('calc', 'RULE-1'): []})
+    tracked(project, 'calc/ops.py')
+    answer = mutmut.run(str(project), {'calc': ['calc/ops.py']})
     assert [call['argv'] for call in calls(program)] == [
         ['run'], ['results', '--all', 'true']]
     assert '5 breaks read' in answer['log']
@@ -804,42 +703,39 @@ def test_the_lines_around_the_breaks_are_not_breaks(tools, project):
                '    login.session.x_lock_account__mutmut_2: survived\n')
     answer = mutmut_run(tools, project, listing,
                         {'login': ['src/login/session.py']},
-                        {('login', 'RULE-1'): []})
+                        ['src/login/session.py'])
     assert '2 breaks read' in answer['log']
     assert answer['features']['login']['scope_score'] == {
         'score': 50, 'killed': 1, 'survived': 1}
 
 
 # purlin: mutation PROOF-17
-def test_a_mutmut_run_gives_every_rule_its_features_number(tools, project):
+def test_a_mutmut_run_gives_each_feature_the_share_of_its_files(tools,
+                                                                project):
     with_block(project)
+    tracked(project, 'src/login/session.py', 'src/reports/render.py')
     program = install_mutmut(tools, listing=read_fixture('mutmut_results.txt'))
     answer = mutmut.run(str(project),
                         {'login': ['src/login/session.py'],
-                         'reports': ['src/reports/render.py']},
-                        {('login', 'RULE-1'): [],
-                         ('login', 'RULE-2'): [],
-                         ('reports', 'RULE-1'): []})
+                         'reports': ['src/reports/render.py']})
     assert [call['argv'] for call in calls(program)] == [
         ['run'], ['results', '--all', 'true']]
     assert (answer['engine'], answer['available']) == ('mutmut', True)
-    login = answer['features']['login']
-    assert login['scope_score'] == {'score': 67, 'killed': 4, 'survived': 2}
-    for rule in ('RULE-1', 'RULE-2'):
-        assert login['rules'][rule] == {
-            'engine': 'mutmut', 'score': 67, 'killed': 4, 'survived': 2,
-            'attribution': 'per_scope'}
-    assert answer['features']['reports']['rules']['RULE-1'] == {
-        'engine': 'mutmut', 'score': 0, 'killed': 0, 'survived': 1,
-        'attribution': 'per_scope'}
+    # `login.session.Session.x_reset__mutmut_1` names the module
+    # `login.session.Session`, which is no file, so it counts for neither.
+    assert answer['features']['login'] == {
+        'scope_score': {'score': 60, 'killed': 3, 'survived': 2},
+        'missing': ''}
+    assert answer['features']['reports']['scope_score'] == {
+        'score': 0, 'killed': 0, 'survived': 1}
 
 
 # purlin: mutation PROOF-57
-def test_a_break_no_scope_entry_covers_counts_for_no_feature(tools, project):
+def test_a_break_in_no_file_git_holds_counts_for_no_feature(tools, project):
     answer = mutmut_run(tools, project,
                         '    unrelated.tool.x_main__mutmut_1: survived\n',
                         {'login': ['src/login/session.py']},
-                        {('login', 'RULE-1'): []})
+                        ['src/login/session.py'])
     assert answer['features']['login']['scope_score'] == {
         'score': None, 'killed': 0, 'survived': 0}
 
@@ -849,7 +745,7 @@ def test_a_folder_scope_covers_the_modules_mutmut_names_under_it(tools,
                                                                    project):
     answer = mutmut_run(tools, project,
                         read_fixture('mutmut_results_smoke.txt'),
-                        {'calc': ['calc']}, {('calc', 'RULE-1'): []})
+                        {'calc': ['calc']}, ['calc/ops.py'])
     assert answer['features']['calc']['scope_score'] == {
         'score': 20, 'killed': 1, 'survived': 4}
 
@@ -861,7 +757,7 @@ def test_a_break_in_a_package_init_counts_for_the_scope_naming_it(tools,
         tools, project,
         '    scripts.run.mutation.x_score_percent__mutmut_1: killed\n',
         {'core': ['scripts/run/mutation/__init__.py']},
-        {('core', 'RULE-1'): []})
+        ['scripts/run/mutation/__init__.py'])
     assert answer['features']['core']['scope_score'] == {
         'score': 100, 'killed': 1, 'survived': 0}
 
@@ -873,20 +769,75 @@ def test_a_glob_scope_covers_the_files_it_matches(tools, project):
                '    dev.build_report.x_build__mutmut_1: survived\n')
     answer = mutmut_run(tools, project, listing,
                         {'scripts': ['scripts/**/*.py']},
-                        {('scripts', 'RULE-1'): []})
+                        ['scripts/run/host.py',
+                         'scripts/mcp/purlin/__init__.py',
+                         'dev/build_report.py'])
     assert answer['features']['scripts']['scope_score'] == {
         'score': 100, 'killed': 2, 'survived': 0}
 
 
+# purlin: mutation PROOF-76
+def test_a_scope_of_src_gets_the_breaks_of_a_file_under_it(tools, project):
+    answer = mutmut_run(tools, project,
+                        '    login.session.x_lock__mutmut_1: killed\n',
+                        {'login': ['src/']}, ['src/login/session.py'])
+    assert answer['features']['login']['scope_score'] == {
+        'score': 100, 'killed': 1, 'survived': 0}
+
+
+# purlin: mutation PROOF-77
+def test_a_scope_naming_a_package_init_does_not_get_its_siblings_breaks(
+        tools, project):
+    answer = mutmut_run(tools, project,
+                        '    pkg.other.x_run__mutmut_1: killed\n',
+                        {'pkg': ['pkg/__init__.py']},
+                        ['pkg/__init__.py', 'pkg/other.py'])
+    assert answer['features']['pkg']['scope_score'] == {
+        'score': None, 'killed': 0, 'survived': 0}
+
+
+# purlin: mutation PROOF-78
+def test_a_module_at_the_root_wins_over_one_under_src(tools, project):
+    answer = mutmut_run(tools, project,
+                        '    login.session.x_lock__mutmut_1: killed\n',
+                        {'root': ['login/session.py'],
+                         'nested': ['src/login/session.py']},
+                        ['login/session.py', 'src/login/session.py'])
+    assert answer['features']['root']['scope_score']['killed'] == 1
+    assert answer['features']['nested']['scope_score'] == {
+        'score': None, 'killed': 0, 'survived': 0}
+
+
+# purlin: mutation PROOF-82
+def test_a_mutmut_run_that_lists_no_break_says_what_to_do(tools, project):
+    answer = mutmut_run(tools, project, 'started\n',
+                        {'login': ['src/login/session.py']},
+                        ['src/login/session.py'])
+    assert answer['features']['login']['scope_score']['score'] is None
+    assert answer['features']['login']['missing'] == (
+        'mutmut ran and wrote no report: run purlin:audit again')
+
+
 # purlin: mutation PROOF-18
-def test_no_mutmut_on_the_path_leaves_no_engine(tools, project):
+def test_no_mutmut_on_the_path_leaves_mutmut_not_installed(tools, project):
     with_block(project)
-    answer = mutmut.run(str(project), {'login': ['src/login/session.py']},
-                        {('login', 'RULE-1'): []})
-    assert (answer['engine'], answer['available']) == ('none', False)
+    answer = mutmut.run(str(project), {'login': ['src/login/session.py']})
+    assert (answer['engine'], answer['available']) == ('mutmut', False)
     assert answer['reason'] == 'mutmut is not installed: run "pip install mutmut"'
-    assert answer['features']['login']['rules']['RULE-1'][
-        'attribution'] == 'unavailable'
+
+
+# purlin: mutation PROOF-79
+def test_on_windows_mutmut_is_no_engine(tools, project):
+    with_block(project)
+    program = install_mutmut(tools, listing=read_fixture('mutmut_results.txt'))
+    answer = mutmut.run(str(project), {'login': ['src/login/session.py']},
+                        os_name='windows')
+    assert calls(program) == []
+    assert (answer['engine'], answer['available']) == ('none', False)
+    assert answer['reason'] == (
+        'mutmut does not run on Windows, so test strength is not measured '
+        'here and the AI audit alone decides')
+    assert answer['features']['login']['missing'] == ''
 
 
 # ---------------------------------------------------------------------------
@@ -895,55 +846,46 @@ def test_no_mutmut_on_the_path_leaves_no_engine(tools, project):
 
 # purlin: mutation PROOF-19
 def test_the_empty_engine_measures_nothing_and_says_why(project):
-    answer = mutation.run_breaks(
-        str(project), 'none', {'deploy': ['deploy.sh']},
-        {('deploy', 'RULE-1'): [], ('deploy', 'RULE-2'): []})
+    answer = mutation.run_breaks(str(project), 'none',
+                                 {'deploy': ['deploy.sh']})
     assert (answer['engine'], answer['available']) == ('none', False)
     assert answer['reason'] == ('no engine breaks go, shell or sql code, so '
                                 'test strength is not measured for these rules')
-    assert answer['features']['deploy']['scope_score'] == {
-        'score': None, 'killed': 0, 'survived': 0}
-    for rule in ('RULE-1', 'RULE-2'):
-        assert answer['features']['deploy']['rules'][rule] == {
-            'engine': 'none', 'score': None, 'killed': 0, 'survived': 0,
-            'attribution': 'unavailable'}
+    assert answer['features']['deploy'] == {
+        'scope_score': {'score': None, 'killed': 0, 'survived': 0},
+        'missing': ''}
 
 
-def assert_answer_shape(answer, scope_by_feature, tests_by_rule):
+def assert_answer_shape(answer, scope_by_feature):
     assert set(answer) == {'engine', 'available', 'reason', 'features', 'log'}
     assert answer['engine'] in mutation.ENGINES
     assert isinstance(answer['available'], bool)
     assert isinstance(answer['reason'], str)
     assert isinstance(answer['log'], str)
-    assert set(answer['features']) >= set(scope_by_feature)
-    for feature, rule in tests_by_rule:
-        entry = answer['features'][feature]
+    assert set(answer['features']) == set(scope_by_feature)
+    for entry in answer['features'].values():
+        assert set(entry) == {'scope_score', 'missing'}
         assert set(entry['scope_score']) == {'score', 'killed', 'survived'}
-        rule_score = entry['rules'][rule]
-        assert set(rule_score) == {'engine', 'score', 'killed', 'survived',
-                                   'attribution'}
-        assert rule_score['attribution'] in ('per_test', 'per_scope',
-                                             'unavailable')
+        assert isinstance(entry['missing'], str)
 
 
 # purlin: mutation PROOF-20
 def test_the_empty_engine_answers_the_one_shape(project):
     scope = {'deploy': ['deploy.sh'], 'infra': ['infra.sql']}
-    tests = {('deploy', 'RULE-1'): [], ('infra', 'RULE-1'): []}
-    answer = mutation.run_breaks(str(project), 'none', scope, tests)
-    assert_answer_shape(answer, scope, tests)
+    answer = mutation.run_breaks(str(project), 'none', scope)
+    assert_answer_shape(answer, scope)
     assert sorted(answer['features']) == ['deploy', 'infra']
 
 
 # purlin: mutation PROOF-60
 def test_the_mutmut_engine_answers_the_one_shape(tools, project):
     with_block(project)
+    tracked(project, 'src/login/session.py')
     install_mutmut(tools, listing=read_fixture('mutmut_results.txt'))
     scope = {'login': ['src/login/session.py']}
-    tests = {('login', 'RULE-1'): [], ('login', 'RULE-2'): []}
-    answer = mutation.run_breaks(str(project), 'mutmut', scope, tests)
-    assert_answer_shape(answer, scope, tests)
-    assert answer['features']['login']['rules']['RULE-1']['score'] == 67
+    answer = mutation.run_breaks(str(project), 'mutmut', scope)
+    assert_answer_shape(answer, scope)
+    assert answer['features']['login']['scope_score']['score'] == 60
 
 
 # purlin: mutation PROOF-61
@@ -953,70 +895,57 @@ def test_an_engine_nobody_ships_is_not_run(tools, project):
     started = [install_mutmut(tools, listing=read_fixture('mutmut_results.txt')),
                install_dotnet(tools), install_stryker(project)]
     scope = {'login': ['src/login/session.py']}
-    tests = {('login', 'RULE-1'): []}
-    answer = mutation.run_breaks(str(project), 'cosmic-ray', scope, tests)
+    answer = mutation.run_breaks(str(project), 'cosmic-ray', scope)
     assert [calls(program) for program in started] == [[], [], []]
-    assert_answer_shape(answer, scope, tests)
+    assert_answer_shape(answer, scope)
     assert answer['engine'] == 'none'
     assert answer['reason'] == ('unknown engine "cosmic-ray": no breaks were '
                                 'made')
 
 
 # purlin: mutation PROOF-62
-def test_a_rule_an_engine_answer_left_out_is_filled_in():
+def test_a_missing_an_engine_answer_left_out_is_filled_in():
     answer = mutation.normalise(
         {'engine': 'stryker', 'available': True, 'reason': '',
-         'features': {'calc': {'scope_score': mutation.scope_entry(3, 1),
-                               'rules': {}}},
+         'features': {'calc': {'scope_score': mutation.scope_entry(3, 1)}},
          'log': ''},
-        {'calc': ['src/calc.js']},
-        {('calc', 'RULE-1'): [], ('calc', 'RULE-2'): []})
-    assert answer['features']['calc']['scope_score']['score'] == 75
-    for rule in ('RULE-1', 'RULE-2'):
-        assert answer['features']['calc']['rules'][rule]['score'] is None
-        assert answer['features']['calc']['rules'][rule][
-            'attribution'] == 'unavailable'
+        {'calc': ['src/calc.js']})
+    assert answer['features']['calc'] == {
+        'scope_score': {'score': 75, 'killed': 3, 'survived': 1},
+        'missing': ''}
 
 
 # purlin: mutation PROOF-63
 def test_a_feature_the_engine_never_reached_is_still_listed(tools, project):
     with_block(project)
+    tracked(project, 'src/login/session.py')
     install_mutmut(tools, listing=read_fixture('mutmut_results.txt'))
     answer = mutation.run_breaks(str(project), 'mutmut',
-                                 {'login': ['src/login/session.py']},
-                                 {('login', 'RULE-1'): [],
-                                  ('audit', 'RULE-1'): []})
-    audit = answer['features']['audit']
-    assert audit['scope_score']['score'] is None
-    assert audit['rules']['RULE-1'] == {
-        'engine': 'mutmut', 'score': None, 'killed': 0, 'survived': 0,
-        'attribution': 'unavailable'}
+                                 {'login': ['src/login/session.py'],
+                                  'audit': []})
+    assert answer['features']['audit'] == {
+        'scope_score': {'score': None, 'killed': 0, 'survived': 0},
+        'missing': ''}
 
 
 # ---------------------------------------------------------------------------
 # An engine that runs past --arm-timeout
 # ---------------------------------------------------------------------------
 
-def assert_unmeasured(entry, engine, rules):
-    assert entry['scope_score']['score'] is None
-    for rule in rules:
-        assert entry['rules'][rule] == {
-            'engine': engine, 'score': None, 'killed': 0, 'survived': 0,
-            'attribution': 'unavailable'}
+def assert_unmeasured(entry):
+    assert entry['scope_score'] == {'score': None, 'killed': 0, 'survived': 0}
 
 
 def slow_mutmut_run(tools, project, monkeypatch):
     """A mutmut run over `login` and `reports` still going at a 1 s limit."""
     monkeypatch.setattr(mutation, 'ARM_TIMEOUT', 1)
     with_block(project)
+    tracked(project, 'src/login/session.py', 'src/reports/render.py')
     program = install_mutmut(tools, slow=True,
                              listing=read_fixture('mutmut_results.txt'))
     answer = mutmut.run(str(project),
                         {'login': ['src/login/session.py'],
-                         'reports': ['src/reports/render.py']},
-                        {('login', 'RULE-1'): [],
-                         ('login', 'RULE-2'): [],
-                         ('reports', 'RULE-1'): []})
+                         'reports': ['src/reports/render.py']})
     return answer, program
 
 
@@ -1025,9 +954,8 @@ def test_a_mutmut_run_that_timed_out_measures_nothing(tools, project,
                                                       monkeypatch):
     answer, program = slow_mutmut_run(tools, project, monkeypatch)
     assert (answer['engine'], answer['available']) == ('mutmut', True)
-    assert_unmeasured(answer['features']['login'], 'mutmut',
-                      ('RULE-1', 'RULE-2'))
-    assert_unmeasured(answer['features']['reports'], 'mutmut', ('RULE-1',))
+    assert_unmeasured(answer['features']['login'])
+    assert_unmeasured(answer['features']['reports'])
     assert [call['argv'] for call in calls(program)] == [['run']]
 
 
@@ -1038,21 +966,30 @@ def test_a_mutmut_run_that_timed_out_says_so(tools, project, monkeypatch):
     assert TIMEOUT_REASON % 1 in answer['log'].splitlines()
 
 
+def slow_stryker_run(project, monkeypatch):
+    """A Stryker run of `calc` and `slow`, `slow` still going at 3 s."""
+    monkeypatch.setattr(mutation, 'ARM_TIMEOUT', 3)
+    install_stryker(project, slow=['slow'])
+    return stryker.run(str(project),
+                       {'calc': ['src/calc.js'], 'slow': ['src/calc.js']})
+
+
 # purlin: mutation PROOF-65
 def test_a_stryker_feature_that_timed_out_measures_nothing(project,
                                                            monkeypatch):
-    monkeypatch.setattr(mutation, 'ARM_TIMEOUT', 3)
-    install_stryker(project, slow=['slow'])
-    answer = stryker.run(str(project),
-                         {'calc': ['src/calc.js'], 'slow': ['src/calc.js']},
-                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1'],
-                          ('calc', 'RULE-2'): CALC_TESTS['RULE-2'],
-                          ('slow', 'RULE-1'): CALC_TESTS['RULE-1']})
+    answer = slow_stryker_run(project, monkeypatch)
     assert answer['features']['calc']['scope_score']['score'] == 64
-    assert_unmeasured(answer['features']['slow'], 'stryker', ('RULE-1',))
+    assert_unmeasured(answer['features']['slow'])
     for text in (answer['reason'], answer['log']):
         assert 'timed out after 3 s' in text
         assert '--arm-timeout' in text
+
+
+# purlin: mutation PROOF-80
+def test_the_feature_that_timed_out_says_what_to_do(project, monkeypatch):
+    answer = slow_stryker_run(project, monkeypatch)
+    assert answer['features']['slow']['missing'] == TIMEOUT_REASON % 3
+    assert answer['features']['calc']['missing'] == ''
 
 
 # purlin: mutation PROOF-66
@@ -1062,11 +999,9 @@ def test_a_dotnet_feature_that_timed_out_measures_nothing(tools, project,
     install_dotnet(tools, slow=['slow'])
     answer = stryker_net.run(str(project),
                              {'login': ['src/Login/Session.cs'],
-                              'slow': ['src/Login/Session.cs']},
-                             {('login', 'RULE-1'): SESSION_TESTS['RULE-1'],
-                              ('slow', 'RULE-1'): SESSION_TESTS['RULE-1']})
+                              'slow': ['src/Login/Session.cs']})
     assert answer['features']['login']['scope_score']['score'] == 60
-    assert_unmeasured(answer['features']['slow'], 'stryker_net', ('RULE-1',))
+    assert_unmeasured(answer['features']['slow'])
     for text in (answer['reason'], answer['log']):
         assert 'timed out after 3 s' in text
         assert '--arm-timeout' in text

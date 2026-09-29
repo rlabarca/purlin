@@ -1,12 +1,12 @@
 """mutmut: the engine that breaks pytest code.
 
 mutmut breaks the whole project in one run rather than one feature at a time,
-and it reports a break by the name of the function it changed, never by the
-test that caught it. So this engine runs once and groups what it reads by
-source file, and every rule of a feature carries that feature's scope number
-with `attribution: per_scope`. A rule of a pytest project is never credited
-with its own tests' catches; the number beside it is the number for the files
-its spec scopes.
+and it reports a break by the name of the function it changed. So this engine
+runs once and counts each break for every feature whose scope reaches the
+file the break is in: test strength is one share per feature.
+
+mutmut does not run on Windows, so there it is no engine: the answer is
+`engine: none`, and the AI audit alone decides.
 
 The config mutmut reads is a block in the project's own config file, which
 `purlin:init` writes with the developer's consent:
@@ -24,19 +24,24 @@ names the block rather than breaking the wrong files.
 
         calc.ops.x_scale__mutmut_1: survived
 
-The dotted name before the mutant is the module mutmut imported, which is
-rarely the repository path: a file at `src/login/session.py` is imported as
-`login.session`. So a break is attributed to the scope entry whose last path
-segments match the most of the name's first segments.
+The dotted name before the function's `x_` is the module mutmut imported,
+`calc.ops` here. The module `a.b` is the file `a/b.py` or `a/b/__init__.py`,
+looked for at the project root and then under `src/`, the root winning where
+both are in git. A module that is no file git tracks counts for no feature.
 """
 
-import fnmatch
 import os
 import re
 import shutil
+import sys
 
-from . import (TIMED_OUT, empty_features, execute, none, result, rule_entry,
-               rules_by_feature, scope_entry, timeout_reason)
+from . import (TIMED_OUT, empty_features, execute, feature_entry,
+               no_report_reason, none, not_installed, result, runs_here,
+               timeout_reason)
+
+NOT_INSTALLED = 'mutmut is not installed: run "pip install mutmut"'
+NOT_HERE = ('mutmut does not run on Windows, so test strength is not measured '
+            'here and the AI audit alone decides')
 
 # What mutmut's statuses mean for test strength. `no tests` is mutmut's name
 # for a break no test covers, which counts survived the way `NoCoverage` does
@@ -122,118 +127,84 @@ def parse_results(text):
     return found
 
 
-def _segments(entry):
-    """A scope entry as the module segments it covers.
-
-    `src/login/session.py` is `['src', 'login', 'session']`; a directory keeps
-    its segments as they are.
-    """
-    path = str(entry or '').replace('\\', '/').strip()
-    while path.startswith('./'):
-        path = path[2:]
-    if path.endswith('.py'):
-        path = path[:-3]
-    parts = [part for part in path.strip('/').split('/') if part]
-    # mutmut names a break in `pkg/__init__.py` after the package, `pkg`.
-    if parts and parts[-1] == '__init__':
-        parts.pop()
-    return parts
-
-
-def _module_parts(key_parts):
-    """The module segments of a break's name, before the function's `x_`."""
-    for index, part in enumerate(key_parts):
+def _module(key):
+    """The module a break's name names: the segments before the `x_` one."""
+    parts = [part for part in str(key or '').split('.') if part]
+    for index, part in enumerate(parts):
         if part.startswith('x_') or part.startswith(u'xǁ'):
-            return key_parts[:index]
-    return key_parts[:-1]
+            return '.'.join(parts[:index])
+    return '.'.join(parts[:-1])
 
 
-def _glob_covers(entry, key_parts):
-    """True when a glob scope entry such as `scripts/**/*.py` names the file."""
-    path = '/'.join(_module_parts(key_parts))
-    if not path:
-        return False
-    pattern = str(entry).replace('\\', '/').strip()
-    while pattern.startswith('./'):
-        pattern = pattern[2:]
-    candidates = (path + '.py', path + '/__init__.py',
-                  'src/' + path + '.py', 'src/' + path + '/__init__.py')
-    return any(fnmatch.fnmatchcase(candidate, pattern)
-               for candidate in candidates)
+def module_files(module):
+    """The files the module `a.b` may be, in the order they are looked for."""
+    path = module.replace('.', '/')
+    return [path + '.py', path + '/__init__.py',
+            'src/' + path + '.py', 'src/' + path + '/__init__.py']
 
 
-def _overlap(key_parts, scope_parts):
-    """How many segments of a break's name the scope entry's tail matches.
+def _fingerprint():
+    here = os.path.dirname(os.path.abspath(__file__))
+    mcp = os.path.join(os.path.dirname(os.path.dirname(here)), 'mcp')
+    if mcp not in sys.path:
+        sys.path.insert(0, mcp)
+    from purlin import fingerprint
+    return fingerprint
 
-    mutmut names a break by the module it imported, and a project's import
-    root is rarely the repository root: a file at `src/login/session.py` is
-    imported as `login.session`, so the scope entry's last segments are
-    matched against the name's first segments and the longest match wins.
+
+def file_by_module(project_root, modules):
+    """`{module: tracked file}` for each module that is a file git tracks."""
+    modules = sorted(set(module for module in modules if module))
+    if not modules:
+        return {}
+    wanted = [path for module in modules for path in module_files(module)]
+    tracked = set(_fingerprint().expand_scope(project_root, wanted)[0])
+    found = {}
+    for module in modules:
+        for path in module_files(module):
+            if path in tracked:
+                found[module] = path
+                break
+    return found
+
+
+def score_by_feature(project_root, entries, scope_by_feature):
+    """`{feature: {"killed", "survived"}}` from one project-wide run.
+
+    A break counts for every feature whose scope reaches its file.
     """
-    limit = min(len(key_parts), len(scope_parts))
-    for length in range(limit, 0, -1):
-        if scope_parts[-length:] == key_parts[:length]:
-            return length
-    return 0
-
-
-def source_file(key, scope_entries):
-    """The scope entry a break belongs to, or None when none covers it.
-
-    The longest match wins, so `src/login/session.py` beats `src` for a break
-    in the session module.
-    """
-    key_parts = [part for part in str(key or '').split('.') if part]
-    best, best_length = None, 0
-    for entry in scope_entries or ():
-        if '*' in str(entry):
-            # A glob covers the file but names nothing deeper, so any entry
-            # that names the file or its directory wins over it.
-            length = 0.5 if _glob_covers(entry, key_parts) else 0
-        else:
-            length = _overlap(key_parts, _segments(entry))
-        if length > best_length:
-            best, best_length = entry, length
-    return best
-
-
-def group_by_file(entries, scope_entries):
-    """`{scope entry: {"killed", "survived"}}` for the breaks it covers."""
-    counts = {}
-    for entry in entries or ():
-        owner = source_file(entry['key'], scope_entries)
-        if owner is None:
-            continue
-        pair = counts.setdefault(owner, {'killed': 0, 'survived': 0})
-        if entry['status'] in KILLED_STATUSES:
-            pair['killed'] += 1
-        elif entry['status'] in SURVIVED_STATUSES:
-            pair['survived'] += 1
-    return counts
-
-
-def score_by_feature(entries, scope_by_feature):
-    """`{feature: {"killed", "survived"}}` from one project-wide run."""
+    files = file_by_module(project_root,
+                           [_module(entry['key']) for entry in entries or ()])
+    expand = _fingerprint().expand_scope
     totals = {}
     for feature in scope_by_feature or {}:
-        files = [path for path in scope_by_feature[feature] or () if path]
-        counts = group_by_file(entries, files)
-        killed = sum(pair['killed'] for pair in counts.values())
-        survived = sum(pair['survived'] for pair in counts.values())
-        totals[feature] = {'killed': killed, 'survived': survived}
+        scope = [path for path in scope_by_feature[feature] or () if path]
+        reached = set(expand(project_root, scope)[0]) if scope else set()
+        pair = {'killed': 0, 'survived': 0}
+        for entry in entries or ():
+            if files.get(_module(entry['key'])) not in reached:
+                continue
+            if entry['status'] in KILLED_STATUSES:
+                pair['killed'] += 1
+            elif entry['status'] in SURVIVED_STATUSES:
+                pair['survived'] += 1
+        totals[feature] = pair
     return totals
 
 
-def run(project_root, scope_by_feature, tests_by_rule):
-    """Break the project once and report each feature's scope number."""
+def run(project_root, scope_by_feature, os_name=None):
+    """Break the project once and report each feature's share.
+
+    `os_name` is the system as `runs_here` reads it, this one when None.
+    """
+    if not runs_here('mutmut', os_name):
+        return none.run(project_root, scope_by_feature, reason=NOT_HERE)
     if binary(project_root) is None:
-        return none.run(project_root, scope_by_feature, tests_by_rule,
-                        reason='mutmut is not installed: run '
-                               '"pip install mutmut"')
+        return not_installed('mutmut', scope_by_feature, NOT_INSTALLED)
     path, _, section = config_target(project_root)
     if not has_config(project_root):
         return none.run(
-            project_root, scope_by_feature, tests_by_rule,
+            project_root, scope_by_feature,
             reason='%s carries no %s block, so mutmut would break files no '
                    'spec scopes: run "purlin:init" to write it'
                    % (path, section))
@@ -246,25 +217,22 @@ def run(project_root, scope_by_feature, tests_by_rule):
         reason = timeout_reason()
         lines.append(reason)
         return result('mutmut', True, reason,
-                      empty_features(scope_by_feature, tests_by_rule, 'mutmut',
-                                     'unavailable'),
+                      empty_features(scope_by_feature, reason),
                       '\n'.join(lines))
     listing = execute(RESULTS_COMMAND, project_root)[1]
     entries = parse_results(listing)
     lines.append('%d breaks read' % len(entries))
-    totals = score_by_feature(entries, scope_by_feature)
-    rules = rules_by_feature(tests_by_rule)
+    if not entries:
+        return result('mutmut', True, '',
+                      empty_features(scope_by_feature,
+                                     no_report_reason('mutmut')),
+                      '\n'.join(lines))
+    totals = score_by_feature(project_root, entries, scope_by_feature)
     features = {}
     for feature in sorted(scope_by_feature or {}):
         pair = totals.get(feature, {'killed': 0, 'survived': 0})
-        entry = scope_entry(pair['killed'], pair['survived'])
-        features[feature] = {
-            'scope_score': entry,
-            'rules': dict((rule, rule_entry('mutmut', 'per_scope',
-                                            pair['killed'], pair['survived']))
-                          for rule in rules.get(feature, ())),
-        }
+        features[feature] = feature_entry(pair['killed'], pair['survived'])
         lines.append('%s: %d breaks, %d%% caught'
                      % (feature, pair['killed'] + pair['survived'],
-                        entry['score'] or 0))
+                        features[feature]['scope_score']['score'] or 0))
     return result('mutmut', True, '', features, '\n'.join(lines))

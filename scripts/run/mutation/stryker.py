@@ -7,21 +7,15 @@ config in a temporary directory:
      "disableBail": true, "reporters": ["json"], "testRunner": "jest",
      "jsonReporter": {"fileName": "<temp>/login.json"}}
 
-`coverageAnalysis: perTest` is what makes the report say which test caught
-which break; `disableBail: true` keeps the run going after the first failure,
-so a break that two tests catch is credited to both.
+`coverageAnalysis: perTest` runs only the tests that reach a break against
+it; `disableBail: true` keeps the run going after the first failure.
 
 The report is the schema Stryker writes for every language:
 
-    {"files": {"src/login.js": {"mutants": [{"id", "status", "coveredBy",
-                                             "killedBy"}]}},
-     "testFiles": {"test/login.test.js": {"tests": [{"id", "name"}]}}}
+    {"files": {"src/login.js": {"mutants": [{"id", "status"}]}}}
 
-A test's `name` is the name the test framework saw: its describe titles and
-its own title. The evidence names each rule's tests the same way, the titles
-joined by ` > `, so the two are compared with the separators set aside.
-Intersecting the report's `killedBy` and `coveredBy` ids with the ids of a
-rule's own tests is what turns a file total into a number beside a rule.
+Every break in it counts toward the feature's one share: test strength is
+one share per feature, whichever tests caught the break.
 """
 
 import json
@@ -29,9 +23,8 @@ import os
 import shutil
 import tempfile
 
-from . import (TIMED_OUT, execute, feature_tests, none, result, rule_entry,
-               rules_by_feature, scope_entry, timed_out_feature,
-               timeout_reason)
+from . import (TIMED_OUT, execute, feature_entry, no_report_reason,
+               not_installed, result, timeout_reason)
 
 # What the statuses mean for test strength. A timeout is a catch: the break
 # made the test hang, and the test noticed. A break no test covers is a miss
@@ -40,15 +33,19 @@ from . import (TIMED_OUT, execute, feature_tests, none, result, rule_entry,
 KILLED_STATUSES = ('killed', 'timeout')
 SURVIVED_STATUSES = ('survived', 'nocoverage')
 
+NOT_INSTALLED = ('stryker is not installed: run '
+                 '"npm install --save-dev @stryker-mutator/core"')
 
 
 def binary(project_root):
     """The command that runs Stryker, or None when it is not installed.
 
     The project's own `node_modules/.bin/stryker` wins over one on PATH: a
-    project pins the version it generates its config for.
+    project pins the version it generates its config for. On Windows npm
+    writes that copy as `stryker.cmd`, so that name is the one looked for.
     """
-    local = os.path.join(project_root or '.', 'node_modules', '.bin', 'stryker')
+    name = 'stryker.cmd' if os.name == 'nt' else 'stryker'
+    local = os.path.join(project_root or '.', 'node_modules', '.bin', name)
     if os.path.isfile(local):
         return [local]
     found = shutil.which('stryker')
@@ -85,97 +82,22 @@ def build_config(scope_files, runner, report_path):
     }
 
 
-def _clean_name(text):
-    return ' '.join(str(text or '').replace(' > ', ' ').split())
-
-
-def _same_file(report_path, test_file):
-    """True when the report's test file and the evidence's are the same file."""
-    if not test_file:
-        return True
-    left = str(report_path or '').replace('\\', '/').lstrip('./')
-    right = str(test_file).replace('\\', '/').lstrip('./')
-    if not left or not right:
-        return True
-    return left.endswith(right) or right.endswith(left)
-
-
-def _same_test(report_name, test_name):
-    """True when the report's test and the evidence's test are the same test.
-
-    The names are compared whole, the titles joined by single spaces, so a
-    test whose title is a prefix of another's never claims its breaks.
-    """
-    left, right = _clean_name(report_name), _clean_name(test_name)
-    if not left or not right:
-        return False
-    return left == right
-
-
-def test_ids_by_rule(report, tests_for_feature):
-    """`{RULE-N: set of report test ids}` for one feature's rules."""
-    listed = []
-    for path, entry in sorted((report.get('testFiles') or {}).items()):
-        for test in (entry or {}).get('tests') or []:
-            listed.append((path, str(test.get('id')), test.get('name')))
-    found = {}
-    for rule, tests in (tests_for_feature or {}).items():
-        ids = set()
-        for test in tests or ():
-            name = test.get('name') if isinstance(test, dict) else None
-            path = test.get('file') if isinstance(test, dict) else None
-            for report_path, test_id, report_name in listed:
-                if _same_file(report_path, path) and _same_test(report_name, name):
-                    ids.add(test_id)
-        found[rule] = ids
-    return found
-
-
 def _mutants(report):
     for _, entry in sorted((report.get('files') or {}).items()):
         for mutant in (entry or {}).get('mutants') or []:
             yield mutant
 
 
-def parse_report(report, tests_for_feature, engine='stryker', attribution=None):
-    """One feature's entry, from one report.
-
-    `attribution` defaults to `per_test` when any break names the test that
-    caught it, and to `per_scope` when none does, in which case every rule
-    carries the scope number. Stryker.NET is the engine that needs the
-    fallback; StrykerJS with `perTest` coverage always names the test.
-    """
-    report = report or {}
-    ids_by_rule = test_ids_by_rule(report, tests_for_feature)
-    counts = dict((rule, [0, 0]) for rule in (tests_for_feature or {}))
+def parse_report(report):
+    """One feature's entry, from one report: the share of its breaks caught."""
     killed = survived = 0
-    named_killer = False
-    for mutant in _mutants(report):
+    for mutant in _mutants(report or {}):
         status = str(mutant.get('status') or '').strip().lower()
-        covered = set(str(x) for x in (mutant.get('coveredBy') or ()))
-        killers = set(str(x) for x in (mutant.get('killedBy') or ()))
-        if killers:
-            named_killer = True
         if status in KILLED_STATUSES:
             killed += 1
         elif status in SURVIVED_STATUSES:
             survived += 1
-        else:
-            continue
-        for rule, rule_ids in ids_by_rule.items():
-            if killers & rule_ids or (status == 'timeout' and covered & rule_ids):
-                counts[rule][0] += 1
-            elif covered & rule_ids:
-                counts[rule][1] += 1
-    if attribution is None:
-        attribution = 'per_test' if named_killer else 'per_scope'
-    rules = {}
-    for rule, pair in counts.items():
-        if attribution == 'per_scope':
-            rules[rule] = rule_entry(engine, attribution, killed, survived)
-        else:
-            rules[rule] = rule_entry(engine, attribution, pair[0], pair[1])
-    return {'scope_score': scope_entry(killed, survived), 'rules': rules}
+    return feature_entry(killed, survived)
 
 
 def read_report(path):
@@ -187,26 +109,21 @@ def read_report(path):
         return None
 
 
-def run(project_root, scope_by_feature, tests_by_rule):
+def run(project_root, scope_by_feature):
     """Break every feature's scope files and report what the tests caught."""
     command = binary(project_root)
     if command is None:
-        return none.run(project_root, scope_by_feature, tests_by_rule,
-                        reason='stryker is not installed: run '
-                               '"npm install --save-dev @stryker-mutator/core"')
+        return not_installed('stryker', scope_by_feature, NOT_INSTALLED)
     runner = test_runner(project_root)
-    rules = rules_by_feature(tests_by_rule)
     lines = ['engine stryker, test runner %s' % runner]
     features = {}
     reason = ''
     work = tempfile.mkdtemp(prefix='purlin-breaks-')
     try:
         for feature in sorted(scope_by_feature or {}):
-            tests_for_feature = feature_tests(feature, rules.get(feature, ()),
-                                              tests_by_rule)
             files = [path for path in scope_by_feature[feature] or () if path]
             if not files:
-                features[feature] = _nothing(tests_for_feature)
+                features[feature] = feature_entry()
                 lines.append('%s: no scope files, nothing to break' % feature)
                 continue
             report_path = os.path.join(work, '%s.report.json' % feature)
@@ -216,31 +133,27 @@ def run(project_root, scope_by_feature, tests_by_rule):
             code, output = execute(command + ['run', config_path],
                                    project_root, report_path)
             if code == TIMED_OUT:
+                # A partial run's number would read as a measurement it is
+                # not, whatever report the engine left behind.
                 reason = timeout_reason()
-                features[feature] = timed_out_feature('stryker', feature,
-                                                       files, tests_by_rule)
+                features[feature] = feature_entry(missing=reason)
                 lines.append('%s: %s' % (feature, reason))
                 continue
             report = read_report(report_path)
             if report is None:
-                features[feature] = _nothing(tests_for_feature)
+                features[feature] = feature_entry(
+                    missing=no_report_reason('stryker'))
                 lines.append('%s: stryker exited %d and wrote no report'
                              % (feature, code))
                 lines.append(_tail(output))
                 continue
-            features[feature] = parse_report(report, tests_for_feature)
+            features[feature] = parse_report(report)
             lines.append('%s: %d files broken, %d%% caught'
                          % (feature, len(files),
                             features[feature]['scope_score']['score'] or 0))
     finally:
         shutil.rmtree(work, ignore_errors=True)
     return result('stryker', True, reason, features, '\n'.join(lines))
-
-
-def _nothing(tests_for_feature):
-    return {'scope_score': scope_entry(),
-            'rules': dict((rule, rule_entry('stryker', 'per_test'))
-                          for rule in tests_for_feature or {})}
 
 
 def _tail(output, limit=20):
