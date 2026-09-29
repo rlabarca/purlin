@@ -95,6 +95,7 @@
 - PROOF-116 (RULE-12): That run hands the git host one commit of exactly the path `.purlin/evidence/ci/feat.json`, with the subject `purlin: evidence at <sha7>` for HEAD
 - PROOF-117 (RULE-12): When the branch's copy of `.purlin/evidence/ci/feat.json` holds only another system's section, the merge that run hands the git host returns a file holding both that section and this machine's
 - PROOF-118 (RULE-12): At the gate `passed` the same run hands the git host the same one path and prints `Evidence committed.`
+- PROOF-223 (RULE-12): At the gate `signed` the same run hands the git host the same one path and prints `Evidence committed.`
 - PROOF-119 (RULE-12): `--all --ci` over one marked test that fails, whose proof is tagged for this machine's system, exits 1
 - PROOF-120 (RULE-12): `--all --ci` over passing tests, one tied to a proof tagged for this machine's system and one marked for the feature `nosuch`, which no spec has, prints a line with `names nosuch PROOF-1, which no spec has` and exits 0
 - PROOF-207 (RULE-12): `feat`'s PROOF-1 (RULE-1) carries no tag and its PROOF-2 (RULE-2) is tagged for this machine's system, both tests passing in one file; `--all --ci` writes a `ci` section whose `proofs` list PROOF-2 alone, reading `pass`, and whose `rules` hold `RULE-2` `passed` alone

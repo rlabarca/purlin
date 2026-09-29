@@ -753,6 +753,15 @@ class TestTheCiArmCommitsItsSection:
             ['.purlin/evidence/ci/feat.json']]
         assert 'Evidence committed.' in output.splitlines(), output
 
+    # purlin: run_script PROOF-223
+    def test_at_signed_the_ci_arm_does_the_same(
+            self, tmp_path, evidence_run, capsys):
+        _root, _code, calls, output = self._ci(tmp_path, evidence_run,
+                                                capsys, gate='signed')
+        assert [paths for paths, _m, _merge in calls['commit']] == [
+            ['.purlin/evidence/ci/feat.json']]
+        assert 'Evidence committed.' in output.splitlines(), output
+
     # purlin: run_script PROOF-119
     def test_a_failing_test_fails_the_ci_arm(
             self, tmp_path, evidence_run, capsys):
