@@ -51,7 +51,7 @@ DEFAULT_GATE = 'passed'
 # gate -> min_strength
 #
 # `min_strength` is None under `passed`: nothing compares test strength there,
-# so there is no number to compare and the audit reads `n/a`.
+# so there is no number to compare and the audit states no minimum.
 _DERIVED = {
     'passed': None,
     'strong': 70,
@@ -121,8 +121,10 @@ def resolve_gate(config):
         try:
             min_strength = int(config['min_strength'])
         except (TypeError, ValueError):
-            warnings.append('"min_strength" is not a number; using %s'
-                            % ('n/a' if min_strength is None else min_strength))
+            warnings.append(
+                '"min_strength" is not a number; no minimum applies'
+                if min_strength is None else
+                '"min_strength" is not a number; using %s' % min_strength)
 
     mutation_engine = config.get('mutation_engine') or DEFAULT_MUTATION_ENGINE
     audit_parallel = _audit_parallel(config, warnings)

@@ -70,8 +70,8 @@ question, answered by a model that read the test beside it.
 
 Test strength is the share of deliberate breaks made to the code that the tests
 caught, as an integer percent. It reads `test_strength` from the evidence, is
-compared against `min_strength` from `.purlin/config.json`, and shows as `n/a` when no
-engine ran.
+compared against `min_strength` from `.purlin/config.json`. When no engine ran, test
+strength is not measured, and nothing is shown for it.
 
 It says one thing: the tests noticed when the behaviour changed. It does not say the
 tests prove the right rule, that the proof text matches the test, or that the rule is
@@ -97,8 +97,9 @@ is written, and the cell reads `not audited` until an audit reaches the rule. At
 
 The audit reports. It recommends nothing, and it never names a next action. Four things:
 
-- **The strength, beside the minimum.** `Test strength: 71 percent (minimum 80)`, or
-  `Test strength: n/a (minimum 80)` when no break engine ran.
+- **The strength, beside the minimum, where it was measured.** `Test strength: 71 percent
+  (minimum 80)`. Where no break engine ran the report says nothing of strength, and the
+  model reading the rule is told `Test strength: not measured`.
 - **The observations.** What the AI audit saw the test observe, against what the proof
   names, one sentence each. The audit is asked to state what it saw and to say when it
   cannot tell. It is never asked what to do.

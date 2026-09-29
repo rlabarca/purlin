@@ -261,13 +261,21 @@ def model_prompt(project_root, reading, criteria=None):
                      % (test.get('proof'), test.get('file'), test.get('name')))
         if test.get('body'):
             parts.append(test['body'])
-    strength = reading.get('test_strength')
     parts.append('')
-    parts.append('Test strength: %s (minimum %s)'
-                 % ('n/a' if strength is None else '%d percent' % strength,
-                    'n/a' if reading.get('min_strength') is None
-                    else reading.get('min_strength')))
+    parts.append('Test strength: %s'
+                 % _strength_words(reading, '(minimum %s)'))
     return '\n'.join(parts)
+
+
+def _strength_words(reading, minimum):
+    """The strength in words: `not measured`, or the percent and `minimum`."""
+    strength = reading.get('test_strength')
+    if strength is None:
+        return 'not measured'
+    words = '%d percent' % strength
+    if reading.get('min_strength') is not None:
+        words += ' ' + minimum % reading['min_strength']
+    return words
 
 
 # ---------------------------------------------------------------------------
@@ -450,12 +458,11 @@ def render(reading):
             lines.append('  %s  manual' % test.get('proof'))
         for line in (test.get('body') or '').splitlines():
             lines.append('    %s' % line)
-    strength = reading.get('test_strength')
-    lines.extend(['', 'Test strength: %s   minimum %s'
-                  % ('n/a' if strength is None else '%d percent' % strength,
-                     'n/a' if reading.get('min_strength') is None
-                     else reading.get('min_strength')),
-                  '', 'What the audit found'])
+    # A person is told nothing of strength where none was measured.
+    if reading.get('test_strength') is not None:
+        lines.extend(['', 'Test strength: %s'
+                      % _strength_words(reading, '  minimum %s')])
+    lines.extend(['', 'What the audit found'])
     audit = reading.get('audit') or {}
     if not audit:
         lines.append("  Nothing yet: no audit has read this rule's text, "

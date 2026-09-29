@@ -1,8 +1,8 @@
 """Tests for `scripts/review/ai_audit.py`: the prompt, the call, the answer.
 
-The throwaway project is `dev/sign_project.py`'s, so a spec, a test file, a
-runtime proof file and the evidence are written by the test and nothing reads
-this repository's own specs. No test reaches the real model: every call lands
+The throwaway project is `dev/sign_project.py`'s, so a spec, a test file and
+the evidence are written by the test and nothing reads this repository's own
+specs. No test reaches the real model: every call lands
 on the fake `claude` that `dev/fake_claude.py` writes, first on PATH, or on a
 runner handed in its place.
 
@@ -58,7 +58,6 @@ def passing_project(gate=REVIEW_GATE, spec=SPEC, statuses=None,
     """A project at `gate` whose tests ran with `statuses`, closed after."""
     made = Project(spec=spec, gate=gate)
     try:
-        made.proofs(statuses)
         made.evidence(statuses, strength=strength)
         yield made
     finally:
@@ -264,12 +263,13 @@ class TestWhatOneRuleIsReadWith:
         assert (reading['test_strength'], reading['min_strength']) == (90, 70)
 
     # purlin: ai_audit PROOF-63
-    def test_no_measured_strength_prints_n_a(self, capsys):
+    def test_no_measured_strength_prints_nothing_of_strength(self, capsys):
         with passing_project(strength=None) as made:
             code, printed = command(made, capsys, '--feature', 'login',
                                     '--rule', 'RULE-2')
         assert code == 0
-        assert 'Test strength: n/a   minimum 70' in printed, printed
+        assert 'login RULE-2' in printed, printed
+        assert 'strength' not in printed.lower(), printed
 
 
 class TestTheJavaScriptReader:
@@ -379,6 +379,15 @@ class TestThePrompt:
         assert 'test_a_bad_password_is_denied' in after
         assert 'assert login("ada", "wrong") == 401' in after
         assert 'Test strength: 90 percent (minimum 70)' in after
+
+    # purlin: ai_audit PROOF-79
+    def test_the_prompt_says_in_words_that_no_strength_was_measured(self):
+        with passing_project(strength=None) as made:
+            prompt = audit_module.model_prompt(made.root,
+                                               read(made, 'RULE-2'))
+        told = [line for line in prompt.splitlines()
+                if line.startswith('Test strength:')]
+        assert told == ['Test strength: not measured'], told
 
     # purlin: ai_audit PROOF-12
     def test_the_prompt_asks_for_observations_and_bars_a_recommendation(
@@ -692,6 +701,11 @@ class TestWriting:
 
     # purlin: ai_audit PROOF-27
     def test_reading_a_rule_writes_no_file(self, at_strong):
+        # A run's log sits under `.purlin/runtime/`, so the walk reaches it.
+        log = os.path.join(at_strong.root, '.purlin', 'runtime', 'run.log')
+        os.makedirs(os.path.dirname(log), exist_ok=True)
+        with open(log, 'w', encoding='utf-8') as handle:
+            handle.write('a run\n')
         before = self._files(at_strong.root)
         assert any('runtime' in path for path in before), before
         assert read(at_strong, 'RULE-2') is not None

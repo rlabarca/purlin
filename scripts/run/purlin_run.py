@@ -1271,8 +1271,8 @@ def _run_breaks(project_root, args, features, selected):
                         scope_by_feature(features, selected),
                         tests_by_rule(project_root, selected))
     # An installed engine answers a reason only when it measured nothing it
-    # set out to, a timeout being the one case, so the person sees why the
-    # strength reads n/a rather than finding it in the log.
+    # set out to, a timeout being the one case, so the person sees why test
+    # strength was not measured rather than finding it in the log.
     if answer.get('available') and answer.get('reason'):
         print('purlin: %s' % answer['reason'])
     return answer

@@ -26,7 +26,7 @@ the same shape:
 `unavailable`  no engine ran, so nothing was measured
 
 `score` is an integer percent, or None when no break ran at all. A caller
-displaying None writes `n/a`.
+shows None as no strength at all.
 
 `select_engine` picks the engine and `run_breaks` runs it. Selection never
 touches the filesystem or a binary: it answers from the config and the

@@ -15,7 +15,7 @@
 ## Rules
 
 - RULE-1: The audit reads a rule that is its feature's own, has at least one proof with a test, whose passed cell reads `passed` and that has no audit entry for its current rule, proof and test, the same rules at every gate, and reading again ignores an existing entry
-- RULE-2: The prompt is `references/review_criteria.md` verbatim, then the rule's text, its proofs, the source of each test and the test strength, and it asks for what was observed rather than a recommendation, a grade or a score
+- RULE-2: The prompt is `references/review_criteria.md` verbatim, then the rule's text, its proofs, the source of each test and the test strength, `Test strength: not measured` where none was measured, and it asks for what was observed rather than a recommendation, a grade or a score
 - RULE-3: The call is `claude -p --output-format json` with the prompt written to its standard input, which is closed after the prompt, and never on the command line, and it is given 300 seconds
 - RULE-4: One call is made per rule, and as many calls run at once as the number the caller names, or as there are rules when there are fewer
 - RULE-5: An answer that settled with no finding is `strong`, one that settled with findings is `weak` with each line a finding, and one that did not settle is `undecided` with its lines as the reason; an answer that says neither is no answer
@@ -27,7 +27,7 @@
 - RULE-11: The test source is read out of JavaScript and TypeScript by balancing the brackets of the test's call, with strings, comments and regex literals stepped over, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 - RULE-12: Reading a rule, asking the model and printing the result write no file anywhere under `.purlin/`
 - RULE-13: `ai_audit.py --help` exits 0, an unknown option or a missing `--feature` exits 2, a feature with no rule in the project, or a rule the project does not hold, exits 1, and the command calls no model
-- RULE-14: `ai_audit.py --feature <name>` prints what the audit reads for one rule named with `--rule`, or for every rule of the feature without it: the rule, its proofs, each test, the test strength beside the minimum and what the last audit found, its verdict, model, time and each finding, and no emoji
+- RULE-14: `ai_audit.py --feature <name>` prints what the audit reads for one rule named with `--rule`, or for every rule of the feature without it: the rule, its proofs, each test, the test strength beside the minimum where one was measured and nothing of strength where none was, and what the last audit found, its verdict, model, time and each finding, and no emoji
 - RULE-15: Reading a rule the project does not hold returns nothing rather than an empty reading
 - RULE-16: The lines an answer holds under `notes:` are its notes, where the prompt asks for a proof longer than 60 words or holding more than one case, and a note never makes the answer `weak`
 
@@ -46,6 +46,7 @@
 - PROOF-54 (RULE-1): In a project under the gate `strong`, `RULE-2` carries an audit entry; its test's line is changed from `login("ada", "wrong")` to `login("ada", "bad")` and passes again; the rule now carries no audit entry and the audit reads it
 - PROOF-11 (RULE-2): Under the gate `strong`, the prompt for `RULE-2` begins with the text of `references/review_criteria.md`, byte for byte; after it come `login RULE-2`, the rule's text, its proof `POST /login with a bad password; verify 401 and the body "denied"`, the test `test_a_bad_password_is_denied`, its line `assert login("ada", "wrong") == 401` and `Test strength: 90 percent (minimum 70)`
 - PROOF-12 (RULE-2): Under the gate `strong`, the prompt for `RULE-2` asks for what was observed and bars a recommendation, a grade and a score: it holds `settled: yes`, `one line per observation`, `Do not recommend a change`, `do not grade the rule` and `do not score it`
+- PROOF-79 (RULE-2): Under the gate `strong`, with evidence that measured no test strength, the prompt for `RULE-2` carries the line `Test strength: not measured` and no other line beginning `Test strength:`
 - PROOF-13 (RULE-3): Under the gate `strong`, the audit asks `claude` about `RULE-2`; `claude` is started exactly once, with exactly the arguments `-p`, `--output-format` and `json`, none of which holds the rule's text; it reads the whole prompt from its standard input, to the end, and the answer reads `strong`
 - PROOF-14 (RULE-3): The audit asks about `RULE-2` with `claude` found at `/bin/claude`; the program started is exactly `/bin/claude -p --output-format json`, it is given 300 seconds, the prompt is handed over as the whole of its standard input, and no other standard input is left open to it
 - PROOF-15 (RULE-4): The audit is handed six rules to ask about four at a time, and each `claude` call takes 0.4 seconds to answer `settled: yes`; `claude` is started 6 times, 6 answers come back reading `strong`, and at most 4 calls run at the same moment, with 4 running together at one moment
@@ -70,7 +71,6 @@
 - PROOF-62 (RULE-7): `claude` answers the first question about `RULE-2` with `It looks fine to me.` and the second with `settled: yes`; it is asked exactly 2 times, and the audit's answer reads `strong`
 - PROOF-5 (RULE-8): In a project whose evidence names the test `test_valid_credentials_return_200` for `RULE-1`, what the audit reads for `RULE-1` names the file `tests/test_login.py`, that test, and carries its line `assert login("ada", "secret") == 200`
 - PROOF-8 (RULE-8): Under the gate `strong`, with evidence that measured the feature's test strength at 90 and a project minimum of 70, what the audit reads for `RULE-2` carries the strength 90 beside the minimum 70
-- PROOF-63 (RULE-8): Under the gate `strong`, with evidence that measured no test strength, the command prints `RULE-2` with the line `Test strength: n/a   minimum 70`
 - PROOF-6 (RULE-9): The proof of `RULE-1` is tagged `@manual` while the project's test file still holds a test marked for that proof; what the audit reads for `RULE-1` has a test entry reading `manual` true, with no test file and no source
 - PROOF-34 (RULE-10): The tests `test_valid_credentials_return_200` and `test_a_token_comes_back` in one file are both marked for `PROOF-1` and both passed; what the audit reads for `RULE-1` lists exactly those two, the first shown with its own source, `== 200`, and the second with its own, `token`, neither holding the other's
 - PROOF-35 (RULE-10): The evidence names a third test for `PROOF-1`, `test_renamed_away`, which the test file no longer holds; what the audit reads for `RULE-1` shows no source under `test_renamed_away`, and still shows `def test_valid_credentials_return_200` under that test and `def test_a_token_comes_back` under that one
@@ -96,6 +96,7 @@
 - PROOF-33 (RULE-13): The command run as its own process for `--feature login --rule RULE-1` exits 0 and prints `login RULE-1`, and no `claude` is started
 - PROOF-29 (RULE-14): Under the gate `strong`, with an audit entry for `RULE-2` finding `PROOF-2 asserts the status but never the body the rule names.`, the command run for that rule prints `login RULE-2`, its text, its proof, its test's line, `Test strength: 90 percent   minimum 70`, `What the audit found`, `Weak, by unknown at 2026-09-13T12:05:00Z.` and the finding, with no emoji
 - PROOF-77 (RULE-14): Under the gate `strong`, with no audit entry for `RULE-2`, the command run for that rule prints, under `What the audit found`, `Nothing yet: no audit has read this rule's text, proof and test.`
+- PROOF-63 (RULE-14): Under the gate `strong`, with evidence that measured no test strength, the command run for `RULE-2` prints `login RULE-2` and no line naming test strength
 - PROOF-32 (RULE-14): The command run for `--feature login --rule RULE-1` exits 0 and prints `login RULE-1` and not `login RULE-2`
 - PROOF-78 (RULE-14): The command run for `--feature login` alone exits 0 and prints both `login RULE-1` and `login RULE-2`
 - PROOF-7 (RULE-15): What the audit reads for `RULE-99`, which the spec of `login` does not declare, is nothing at all, not a reading with an empty rule

@@ -3,7 +3,7 @@
 This is the answer for a go, shell or sql project, for a project whose config
 names no engine, and for a project whose engine is not installed. Every rule
 carries `attribution: unavailable` and a score of None, which a caller
-displays as `n/a`. The reason is a sentence, because it is printed to a person
+shows as no strength at all. The reason is a sentence, because it is printed to a person
 who is deciding whether to install the engine.
 """
 
