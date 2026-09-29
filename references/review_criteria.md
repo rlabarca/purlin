@@ -71,10 +71,10 @@ question, answered by a model that read the test beside it.
 Test strength is one share per feature, in every language: of the deliberate breaks made
 to the feature's code, the share its tests caught, as an integer percent. The model is shown
 that one share for the feature the rule belongs to, beside `min_strength` from
-`.purlin/config.json`, as `Test strength: 71 percent (minimum 80)`; a rule has no number of
-its own. Where nothing was measured, or the engine cannot run on this system, the model is
-shown `Test strength: not measured`; `references/hard_gates.md`, "The three steps", says when
-that leaves a rule `weak`.
+`.purlin/config.json`, as `Test strength: 71 percent (minimum 80)`. Where nothing was
+measured, or the engine cannot run on this system, the model is shown
+`Test strength: not measured`; `references/hard_gates.md`, "The three steps", says when that
+leaves a rule `weak`.
 
 It says one thing: the feature's tests noticed when its behaviour changed. It does not say
 the tests prove the right rule, that the proof text matches the test, or that the rule is
@@ -88,8 +88,8 @@ it beside what the audit observed, never instead of it.
 audit reads every rule whose tests pass, and what it finds holds nothing back.
 
 **`strong`** and **`signed`.** The strong cell is the evidence. The AI audit must have run on
-the current rule, proof and test, observed nothing and settled, and where mutation testing is
-on its feature's test strength must reach `min_strength`. Until it has run the strong cell
+the current rule, proof and test, observed nothing and settled, and, where mutation testing is
+on, its feature's test strength must reach `min_strength`. Until it has run the strong cell
 reads `not audited`; where it ran and could not tell it reads `weak` with the reason
 `the AI audit could not decide: <its sentence>`; where it settled and still observed something
 the cell reads `weak` with that sentence as the reason. Where no model could be reached nothing
