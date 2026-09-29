@@ -217,7 +217,7 @@ class TestSkillSign:
 
 
 # ---------------------------------------------------------------------------
-# RULE-1
+# RULE-1 and RULE-11
 # ---------------------------------------------------------------------------
 
 NO_DESCRIPTION = '%s frontmatter carries no one-line description' % SKILL
@@ -248,7 +248,7 @@ def description_line():
 
 
 # ---------------------------------------------------------------------------
-# RULE-2
+# RULE-2 and RULE-12
 # ---------------------------------------------------------------------------
 
 # The script that shows what the audit found, and the one that signs.
@@ -313,7 +313,7 @@ def lengthen_to(count):
 
 
 # ---------------------------------------------------------------------------
-# RULE-5
+# RULE-5 and RULE-13
 # ---------------------------------------------------------------------------
 
 # The two things that make a signature count.
@@ -387,7 +387,7 @@ def sign_gate_problems():
 
 
 # ---------------------------------------------------------------------------
-# RULE-8 and RULE-9: the section on the tag
+# RULE-8, RULE-9 and RULE-14 to RULE-17: the section on the tag
 # ---------------------------------------------------------------------------
 
 SIGN_PACKAGE_LINE = ('Evidence package committed: '

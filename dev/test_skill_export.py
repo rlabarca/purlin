@@ -186,7 +186,7 @@ class TestSkillExport:
 
 
 # ---------------------------------------------------------------------------
-# RULE-1: the frontmatter and the command reference's row
+# RULE-1 and RULE-7: the frontmatter and the command reference's row
 # ---------------------------------------------------------------------------
 
 NO_DESCRIPTION = '%s frontmatter carries no one-line description' % SKILL
@@ -213,7 +213,7 @@ def description_line():
 
 
 # ---------------------------------------------------------------------------
-# RULE-2: the usage lines and the line that runs the script
+# RULE-2 and RULE-8: the line that runs the script and the usage lines
 # ---------------------------------------------------------------------------
 
 RUN = ('sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" '
@@ -251,7 +251,7 @@ def no_claim_problems():
 
 
 # ---------------------------------------------------------------------------
-# RULE-4: the two states
+# RULE-4 and RULE-10: the two states and what `left` holds
 # ---------------------------------------------------------------------------
 
 STATES = ['`finished`', '`not finished`']
@@ -278,7 +278,7 @@ def left_problems():
 
 
 # ---------------------------------------------------------------------------
-# RULE-5: the closing section
+# RULE-5 and RULE-11: the closing section
 # ---------------------------------------------------------------------------
 
 # The outcomes of the closing table where the export stopped short, and the
