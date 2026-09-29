@@ -2083,3 +2083,217 @@ decision 97 (call 75); sanity check 3 reads them with every other message.
     ```
     - An anchor is copied only from a spec in Purlin's format kept in a git repository. `purlin:anchor add` refuses a text file, a description in words or a file with no rule, and `purlin:drift` and `purlin:anchor sync --check` report an anchor made from plain text as `error`.
     ```
+
+## Wave W
+
+Integration of wave W, 2026-09-29. The 14 marking lanes were each rebased onto `main`, their own
+test files rerun and merged by fast-forward in the order settings, anchors, core, drift, run,
+host, mutation, reports, scaffold, update, signing, review, package, upstream. None conflicted,
+none failed its tests and none was left out. `main` went from `070c8a942` to `9c9cf4e30` with 18
+lane commits, then `267d42f5f` (the evidence) and `d8fa97dcf` (the runner file).
+
+No row was left for integration: the one row a lane could not mark in a file it did not own,
+update PROOF-31 `@env(macos)`, which lane scaffold named, was marked by lane update.
+
+### Proofs marked, by spec: 86 tagged `@env(windows)`
+
+Each is one past the highest id its spec has held (`git log -p --follow`), worded as the list's
+draft unless named under "Wording that differs from the list", and tied by a second
+`purlin: <feature> PROOF-<n>` comment to the test the list's row names.
+
+| Lane | Spec | Rule: new proof |
+|---|---|---|
+| `settings` | `config_engine` | RULE-1: PROOF-36, RULE-2: PROOF-37, RULE-8: PROOF-38, RULE-10: PROOF-39, RULE-13: PROOF-40 |
+| `settings` | `server` | RULE-5: PROOF-159, RULE-6: PROOF-160, RULE-22: PROOF-161 |
+| `anchors` | `evidence` | RULE-1: PROOF-71, RULE-24: PROOF-72, RULE-7: PROOF-73, RULE-8: PROOF-74, RULE-27: PROOF-75 |
+| `anchors` | `specs` | RULE-11: PROOF-42, RULE-20: PROOF-43 |
+| `core` | `states` | RULE-28: PROOF-215, RULE-32: PROOF-216, RULE-47: PROOF-217, RULE-90: PROOF-218 |
+| `drift` | `drift` | RULE-17: PROOF-60 |
+| `run` | `evidence_writer` | RULE-1: PROOF-80, RULE-4: PROOF-81, RULE-7: PROOF-82, RULE-16: PROOF-83 |
+| `run` | `run_script` | RULE-4: PROOF-225, RULE-10: PROOF-226, RULE-12: PROOF-227, RULE-21: PROOF-228, RULE-39: PROOF-229, RULE-40: PROOF-230, RULE-43: PROOF-231, RULE-55: PROOF-232, RULE-58: PROOF-233, RULE-63: PROOF-234 |
+| `host` | `host` | RULE-5: PROOF-116, RULE-12: PROOF-117, RULE-24: PROOF-118, RULE-27: PROOF-119, RULE-31: PROOF-120 |
+| `mutation` | `mutation` | RULE-5: PROOF-86, RULE-7: PROOF-87, RULE-30: PROOF-88, RULE-14: PROOF-89, RULE-32: PROOF-90, RULE-22: PROOF-91 |
+| `reports` | `reports` | RULE-3: PROOF-99, RULE-10: PROOF-100, RULE-15: PROOF-101, RULE-16: PROOF-102, RULE-17: PROOF-103, RULE-21: PROOF-104 |
+| `scaffold` | `scaffold` | RULE-13: PROOF-129, RULE-19: PROOF-130, RULE-20: PROOF-131, RULE-21: PROOF-132, RULE-22: PROOF-133, RULE-23: PROOF-134, RULE-60: PROOF-135, RULE-47: PROOF-136 |
+| `update` | `update` | RULE-5: PROOF-117, RULE-7: PROOF-118, RULE-34: PROOF-119, RULE-35: PROOF-120, RULE-18: PROOF-121, RULE-28: PROOF-122, RULE-29: PROOF-123, RULE-13: PROOF-124, RULE-23: PROOF-125, RULE-24: PROOF-126 |
+| `signing` | `signatures` | RULE-17: PROOF-153, RULE-18: PROOF-154, RULE-20: PROOF-155, RULE-45: PROOF-156, RULE-50: PROOF-157, RULE-60: PROOF-158 |
+| `review` | `ai_audit` | RULE-3: PROOF-82, RULE-19: PROOF-83 |
+| `package` | `package` | RULE-1: PROOF-38, RULE-8: PROOF-39, RULE-9: PROOF-40 |
+| `upstream` | `upstream` | RULE-1: PROOF-46, RULE-3: PROOF-47, RULE-8: PROOF-48, RULE-27: PROOF-49, RULE-11: PROOF-50, RULE-22: PROOF-51 |
+
+### The 13 proofs tagged `@env(macos)`
+
+Their tests and comments did not change. All 13 pass on this Mac.
+
+- `scaffold` RULE-36: PROOF-36, 90, 91, 92, 93, 117, 118, 119 (lane `scaffold`).
+- `scaffold` RULE-37: PROOF-37, 94, 95, 96 (lane `scaffold`).
+- `update` RULE-31: PROOF-31 (lane `update`).
+
+### Wording that differs from the list
+
+- `config_engine` PROOF-38: `its lines ending with no carriage return` in place of the draft's
+  `with no carriage return`.
+- `config_engine` PROOF-39: `stops with the system's error and leaves the file reading exactly`
+  in place of the draft's `leaves it reading exactly`.
+- `update` PROOF-124: the draft's `every other line of that spec is byte for byte as it was`
+  became `every line of that spec that does not end with an `@` tag is byte for byte as it was,
+  line endings included`, since the same run also rewrites lines ending `@e2e`, `@integration`
+  and `PROOF-54`'s `@windows`.
+- `upstream` PROOF-46: the draft's `no downloaded folder is left in the temporary folder` became
+  `no downloaded file is left under `.purlin/runtime/anchors/``, where `add` downloads.
+- `scaffold` PROOF-129 quotes the printed line as the code prints it, `A test is tagged @env for
+  macos, ...`, where the draft said `macOS`.
+- `scaffold` PROOF-133 also sets `.purlin/report-data.js` aside, as its test does.
+
+### Tests changed or added for Windows
+
+New tests, each skipped off Windows except the last:
+
+- `dev/test_config_engine.py::TestAtomicWrite::test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole`
+  (PROOF-39): a second Python process holds the settings file open during the write.
+- `dev/test_evidence_reader.py::test_on_windows_the_reader_names_its_own_machine_windows`
+  (PROOF-75), skip reason `only a Windows machine can show its own name`.
+- `dev/test_run_script.py::test_this_windows_machine_reads_windows` (PROOF-228).
+- `dev/test_backing_tests.py::TestTheEvidenceNamesTheTests::test_a_checkout_with_windows_line_endings_keeps_the_hash`
+  (PROOF-218), not skipped: `core.autocrlf true` writes `\r\n` on a Mac too, so it runs here.
+
+Changed:
+
+- `settings`: the settings file and the server's output are compared as bytes; `_child` reads
+  the server's output as UTF-8; the manifest test says `sh is not on the search path` when no
+  `sh` is found.
+- `anchors`: the fingerprint is taken under `core.autocrlf false` and `true` and `code` compared;
+  the fixture's `write` writes line feeds alone; on Windows the unreadable spec is locked by a
+  child process through `msvcrt.locking`, `chmod` elsewhere.
+- `core`: the data file's ending is read as bytes; the signature commit is dated
+  `2026-09-20T17:30:00+05:00` and the cell must read `2026-09-20T12:30:00Z`.
+- `drift`: the repository is made with `core.autocrlf true`, the specs written with CRLF, and
+  their mtime moved 5 s forward.
+- `run`: fixture files and shell scripts are written as bytes; the RULE-4 test swaps `windows`
+  and `linux` by system; `_other_os` gives `macos` on Windows; the cp1252 test uses the real
+  default character set on Windows.
+- `host`: paths are joined by the system's separator; `gh.cmd` and `az.cmd` are asserted to be
+  what was found on Windows; `GITHUB_WORKSPACE` is written with `os.path.normpath`.
+- `mutation`: PROOF-90's test asks the real system on Windows; PROOF-87's checks the project's
+  own `stryker.cmd` is chosen; PROOF-91's checks the run ends within 30 s.
+- `reports`: the Jest report is given the system's separator; the exit suite's scripts are
+  written with bare line feeds.
+- `scaffold`: the starting `.gitignore` carries `\r\n` on Windows and is compared as bytes; the
+  plugin's path is looked for spelled with `\`, `/` and JSON-doubled `\\`; `\dev\` and a
+  relative `dev\` are looked for; the `gh.cmd` stand-in is written as bytes.
+- `update`: `_read_bytes` and `_write_bytes`; the conftest is written with `os.linesep`; the old
+  test files are written as bytes; the rewritten shell script is run with
+  `purlin_run.bash_command()`; spec lines are compared as bytes, each with its own ending.
+- `signing`: `owner_only(private_key)` runs `icacls <key> /inheritance:r /grant:r <USERNAME>:F`
+  on Windows; PROOF-158's key path is written with `\`.
+- `review`: the call test sets `PYTHONUTF8=1`, and on Windows asserts the stand-in found is
+  `claude.cmd`.
+- `package`: the clone is made with `-c core.autocrlf=true` and the file compared to the tag's
+  blob as bytes; the command's output is read as UTF-8.
+- `upstream`: `.purlin/runtime/anchors/` is asserted empty after `add`; the synced copy is read
+  as bytes.
+
+### Product changes
+
+- `scripts/mcp/config_engine.py`: `update_config` writes with `newline='\n'`.
+- `scripts/mcp/purlin/server.py`: `main()` sets `sys.stdout.reconfigure(newline='\n')`.
+- `scripts/mcp/purlin/payload.py`: `write_report_data` writes with `newline='\n'`.
+- `scripts/run/evidence.py`: the evidence file, `.purlin/tests.md` and the could-not-run file are
+  written with `newline='\n'`.
+- `scripts/run/mutation/__init__.py`: at the time limit on Windows, `taskkill /F /T /PID` stops
+  the engine and what it started before `process.kill()`. No row's Needs named it.
+- `scripts/init/scaffold.py`: `write_evidence` writes the evidence README from the shipped bytes.
+- `scripts/anchor/upstream.py`: `add` removes its download under `.purlin/runtime/anchors/` on
+  every way out.
+
+### Acceptance on this Mac
+
+`bash dev/run_tests.sh`: `1978 passed, 3 skipped in 571.60s`, `Suites: 5 passed, 0 failed`. The
+three skips include the three Windows-only tests.
+
+`python3 scripts/run/purlin_run.py --test --all --commit` exited 0 and printed:
+
+```
+Markers: 2026 tied to a test, 0 not tied.
+Ran pytest, shell on 35 features.
+
+86 proofs need Windows; this machine is macOS. Run purlin:test --remote.
+
+752 rules. 666 pass their tests. 0 are strong. 0 are signed.
+Left to do:
+  86 rules to test on Windows: purlin:test --remote
+  666 rules to audit: purlin:audit
+```
+
+Every rule's passed cell reads `passed` but 86, which read `not run` with the one reason
+`windows: no run yet`; none reads `partial`, `failed` or `no test`.
+
+### The runner file
+
+`sh scripts/purlin_python.sh scripts/init/scaffold.py --project-root . --yes` wrote
+`.github/workflows/purlin.yml`, the template with `os: [windows-latest]` and the ref `v0.10.0`,
+and printed `  the matrix is windows-latest, the systems the @env tags in specs/ name that this
+machine is not.` Checked against a GitHub `windows-latest` runner: each step names
+`shell: bash`, which GitHub starts as Git's bash there; `python3` comes from
+`actions/setup-python`; `requirements.txt` installs pytest and playwright; the test step runs
+`purlin_run.py --all --ci`, which runs only the tests tied to proofs tagged for the runner's
+system; `.gitattributes` keeps every checkout at LF. No step fails for a reason seen by reading,
+so the template and the code that renders it did not change. `sqlite3` is not known to be on
+the image; call 50 leaves the template as it is until the first run shows it.
+
+### Likely to fail on Windows
+
+- `server` PROOF-161: Git's `sh` running `"$PURLIN_PYTHON"` given a `C:\...\python.exe` path, on
+  a script path mixing `\` and `/`.
+- `config_engine` PROOF-39: the test asserts only that an `OSError` is raised by the move.
+- `specs` PROOF-43: that an `msvcrt.locking` lock held by another process makes the scanner's
+  read raise `OSError`.
+- `evidence` PROOF-71, `states` PROOF-218, `update` PROOF-117 and 121, `drift` PROOF-60,
+  `run_script` PROOF-232, `package` PROOF-39: how git treats line endings under the runner's
+  `core.autocrlf`.
+- `states` PROOF-217: whether Git for Windows honours `TZ=UTC` for `format-local` dates (a UTC
+  runner cannot show it).
+- `signatures` PROOF-154 to 157, `states` PROOF-217, `package` PROOF-39: which `ssh-keygen` makes
+  the key and which signs, and whether the key's permissions are accepted.
+- `run_script` PROOF-225: skips, and so reads not run, if `sqlite3` is not on the image.
+- `run_script` PROOF-229: a runner in UTF-8 mode would pass without showing the cp1252 case.
+- `run_script` PROOF-230, `ai_audit` PROOF-83, `mutation` PROOF-91: stopping a program at its
+  limit stops `bash` or `cmd.exe` and may wait for what it started.
+- `reports` PROOF-100 to 103: the Jest spelling is built, not captured; quoting through
+  `list2cmdline` to Git's `bash.exe`; `usr/bin` on the search path of a non-login bash.
+- `scaffold` PROOF-133, 135 and the GitHub remote read from a temp path holding `github`.
+- `host` PROOF-119: `os.path.realpath` turning `RUNNER~1` into the long form on both sides.
+- `package` PROOF-38: a temporary worktree left behind if Windows holds a file open.
+- `upstream` PROOF-46: download paths near 260 characters; `shutil.rmtree(onerror=)`.
+- `ai_audit`: on Python 3.12.0 alone, `shutil.which('claude')` may find the stand-in with no
+  ending.
+- The run's length: the files tied to Windows proofs take about 12 minutes on this Mac, and the
+  job is capped at 90.
+
+### Calls left
+
+- `scripts/run/workflow.py` `FOREIGN_OS_REASON` and `FOREIGN_OS_REASON_AT_PASSED` print the
+  stored word, `macos` or `windows`, where `references/writing_style.md` asks for `macOS` and
+  `Windows`.
+- `templates/purlin.yml` and `templates/purlin.azure-pipelines.yml` still say `The matrix holds
+  one job for each operating system the @env tags in specs/ name, and no other.`, which C14 made
+  false (the machine running setup is left out). The runner file committed here carries it.
+- Stopping a whole process tree at a time limit on Windows (`run_script` RULE-40, `ai_audit`
+  RULE-19, `host` RULE-38); mutation alone does it.
+- `signatures.commit_date` reads `--date=format-local` under `TZ=UTC`; `--format=%at` formatted
+  in Python would not depend on Git for Windows.
+- `states` PROOF-218 sits under RULE-90, whose words begin `Where no section is current`; its
+  claim is RULE-35's.
+- The server reads its input in the console's code page on Windows.
+- `upstream` `sync` still leaves its downloads under `.purlin/runtime/anchors/`.
+- `package`: clearing the read-only bit and retrying the temporary worktree's removal.
+- `dev/fake_claude.py` counts calls with `fcntl`, which Windows lacks (PROOF-62's test).
+- `drift._specs_uncommitted` strips the first path's leading character.
+- `run_script` PROOF-126's test expects `python3 -m pytest` and fails on Windows, where it is
+  not counted.
+- The nine other `update` Windows proofs say `sample 0.9.5 project` where the older ones say
+  `sample v0.9.5 project`.
+- With `--commit` the run prints two blank lines between the `need Windows` line and `Evidence
+  written`; without it, one.
+- Setup on this repository prints `kept .gitignore` twice and the line `dotnet: Stryker
+  measures the breaks. Without it test strength is not measured.`
