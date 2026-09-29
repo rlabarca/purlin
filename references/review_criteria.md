@@ -68,16 +68,19 @@ question, answered by a model that read the test beside it.
 
 ## What test strength says
 
-Test strength is the share of deliberate breaks made to the code that the tests
-caught, as an integer percent. It reads `test_strength` from the evidence, is
-compared against `min_strength` from `.purlin/config.json`. When no engine ran, test
-strength is not measured, and nothing is shown for it.
+Test strength is one share per feature, in every language: of the deliberate breaks made
+to the feature's code, the share its tests caught, as an integer percent. The model is shown
+that one share for the feature the rule belongs to, beside `min_strength` from
+`.purlin/config.json`, as `Test strength: 71 percent (minimum 80)`; a rule has no number of
+its own. Where nothing was measured, or the engine cannot run on this system, the model is
+shown `Test strength: not measured`; `references/hard_gates.md`, "The three steps", says when
+that leaves a rule `weak`.
 
-It says one thing: the tests noticed when the behaviour changed. It does not say the
-tests prove the right rule, that the proof text matches the test, or that the rule is
-worth having. A rule can reach 90 percent strength on a proof that observes the wrong
-thing, and a correct proof of a small rule can sit at 0 percent because nothing broke.
-Read it beside what the audit observed, never instead of it.
+It says one thing: the feature's tests noticed when its behaviour changed. It does not say
+the tests prove the right rule, that the proof text matches the test, or that the rule is
+worth having. A feature can reach 90 percent while one of its proofs observes the wrong thing,
+and a rule proved correctly can belong to a feature at 0 percent because nothing broke. Read
+it beside what the audit observed, never instead of it.
 
 ## What each gate asks of the audit
 
@@ -86,8 +89,8 @@ audit reads every rule whose tests pass, and what it finds holds nothing back.
 
 **`strong`** and **`signed`.** The strong cell is the evidence. The AI audit must have run on
 the current rule, proof and test, observed nothing and settled, and where mutation testing is
-on the strength must reach `min_strength`. Until it has run the strong cell reads
-`not audited`; where it ran and could not tell it reads `weak` with the reason
+on its feature's test strength must reach `min_strength`. Until it has run the strong cell
+reads `not audited`; where it ran and could not tell it reads `weak` with the reason
 `the AI audit could not decide: <its sentence>`; where it settled and still observed something
 the cell reads `weak` with that sentence as the reason. Where no model could be reached nothing
 is written, and the cell reads `not audited` until an audit reaches the rule. At the gate
@@ -97,9 +100,9 @@ is written, and the cell reads `not audited` until an audit reaches the rule. At
 
 The audit reports. It recommends nothing, and it never names a next action. Four things:
 
-- **The strength, beside the minimum, where it was measured.** `Test strength: 71 percent
-  (minimum 80)`. Where no break engine ran the report says nothing of strength, and the
-  model reading the rule is told `Test strength: not measured`.
+- **The feature's test strength, beside the minimum, where it was measured.** `Test
+  strength: 71 percent (minimum 80)`. Where nothing was measured the report says nothing of
+  strength, and the model reading the rule is shown `Test strength: not measured`.
 - **The observations.** What the AI audit saw the test observe, against what the proof
   names, one sentence each. The audit is asked to state what it saw and to say when it
   cannot tell. It is never asked what to do.
@@ -110,7 +113,8 @@ The audit reports. It recommends nothing, and it never names a next action. Four
   something is a different answer: it could tell, and what it saw is build work, so the cell
   reads `weak` with each observation sentence among its reasons.
 - **The notes.** A proof longer than the standard, or holding two cases, one sentence each
-  under `notes:`. They are written beside what the audit found and change no cell.
+  under `notes:`. They are written beside what the audit found, printed after the findings,
+  each on a line of its own starting `Note:`, and change no cell.
 
 What the audit found is written into the evidence with the name of the model that found it,
 and a person reads it beside the rule, each proof and the source of each test, which is what
