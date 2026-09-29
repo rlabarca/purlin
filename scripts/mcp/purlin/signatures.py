@@ -4,57 +4,53 @@ One signature is one file, so two signatures never conflict:
 
     specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json
 
-`hash8` is the first eight characters of the triple hash the signature binds,
-and the slug is the signer's email local part, lowercased, with every
-non-alphanumeric character replaced by `-`. Every file in the directory was
-written by a person: CI writes no signature, ever.
+`hash8` is the first eight characters of `signed_hash`, the one hash the
+signature is made over, and the slug is the signer's email local part,
+lowercased, with every non-alphanumeric character replaced by `-`. Every file
+in the directory was written by a person: a run writes no signature, ever.
 
 The file, field by field in `references/formats/signature_format.md`:
 
     {
-      "schema": "purlin-signature/1",
+      "schema": "purlin-signature/2",
       "feature": "login",
       "rule": "RULE-3",
-      "triple": "<the first 16 characters of the triple hash>",
+      "applies_to": "login",
+      "signed_hash": "<sha256 over the seven lines below>",
       "rule_hash": "<sha256 of the rule text>",
       "proof_hash": "<sha256 of the proof text>",
       "test_hash": "<sha256 of the test files' blob ids>",
-      "test_hash_kind": "file",
+      "code_hash": "<sha256 of the files the feature lists>",
       "audit_hash": "<sha256 of what the audit found>",
-      "level": "signed",
+      "machines": {"macos": "jane-laptop"},
       "signer": "jane@acme.com",
-      "machine": "jane-laptop",
-      "os": "macos",
+      "signer_name": "Jane",
+      "key_fingerprint": "SHA256:...",
+      "test_hash_kind": "file",
       "note": null,
       "timestamp": "2026-09-13T12:00:00Z",
       "gate": "signed",
       "evidence": ".purlin/evidence/local/login.json"
     }
 
-A signature is **current** when the hashes it binds still equal the
-recomputed ones. Anything else is a signature stale, and a person has to
-look. `level` logs the rule's level when it was signed; it is logged, not
-compared, so marking a rule differently stales nothing. `machine` and `os`
-log where it was made, the host's name and `windows`, `macos` or `linux`;
-neither is hashed or compared.
+A signature is **current** while `signed_hash` recomputed from the rule's
+entry equals the one stored: the feature it applies to, the rule, its proof,
+its test, the code that feature lists, what the audit found, and the machine
+each system's tests ran on. A result from a system the signature does not name
+is left out of the comparison, so a first run on a new system ends nothing.
 
-`audit_hash` is what locks the audit in beside the rule, the proof and the
-test. It is taken over what the audit found: the test strength, the audit
-entry's `verdict` and its `findings` sorted. A re-audit that finds something
-different stales the signature, because what was signed was a rule whose
-tests an audit had read. Timestamps and commit ids are not hashed, so running
-the same audit again over the same code changes nothing. A rule with no audit
-entry carries the hash of the empty string, and one whose first audit writes
-an entry is stale from that moment, which is the honest answer: there is
-evidence now that there was not before.
+`audit_hash` is taken over what the audit found: the test strength, the audit
+entry's `verdict` and its `findings` sorted. Timestamps and commit ids are not
+hashed, so running the same audit again over the same code changes nothing. A
+rule with no audit entry carries the hash of the empty string.
 
-A signature **counts** under the `signed` gate when the commit that added it
-is signed and the signature verifies (`%G?` is `G`), and its hashes are
-current. Who signed is logged, not policed: the file names the signer and
-git names the commit's author, and neither is compared with anything. Below
-`signed` a committed signature counts.
+A signature **counts** when the last commit that touched its file carries a
+signature, made with any key. Purlin checks that the commit is signed and
+looks no further: who signed is recorded, not checked.
 """
 
+import base64
+import binascii
 import hashlib
 import json
 import os
@@ -68,7 +64,7 @@ if _MCP_DIR not in sys.path:
 
 SIGNATURE_NAME_RE = re.compile(r'^(RULE-\d+)\.([0-9a-f]{8})\.([a-z0-9-]+)\.json$')
 
-# What the T of the triple was taken from, in the order one wins over another.
+# What the test hash was taken from, in the order one wins over another.
 TEST_HASH_KINDS = ('file', 'manual', 'none')
 
 
@@ -80,7 +76,7 @@ def signer_slug(email):
 
 
 def triple_hash(rule_hash, proof_hash, test_hash):
-    """The one hash a signature binds: rule text, proof text and test files."""
+    """sha256 over the rule, proof and test hashes, one per line."""
     digest = hashlib.sha256()
     digest.update(('%s\n%s\n%s' % (rule_hash or '', proof_hash or '',
                                    test_hash or '')).encode('utf-8'))
@@ -88,15 +84,15 @@ def triple_hash(rule_hash, proof_hash, test_hash):
 
 
 def audit_hash(entry, strength=None):
-    """The A a signature binds: what the audit found, and nothing else.
+    """What the audit found, and nothing else, as a signature is made over it.
 
     `entry` is the evidence's audit entry for the rule's current hashes and
     `strength` the feature's test strength. The strength, the `verdict` and
     the `findings` in a fixed order. Nothing that moves on its own goes in: a
-    timestamp, a commit id or a path would stale every signature on the next
+    timestamp, a commit id or a path would end every signature on the next
     run of the same audit over the same code. A rule with no entry hashes the
-    empty string, so a rule whose first audit writes one goes stale, which is
-    what a person should be asked about.
+    empty string, so a rule whose first audit writes one needs signing again,
+    which is what a person should be asked about.
     """
     if not entry:
         return hashlib.sha256(b'').hexdigest()
@@ -110,7 +106,7 @@ def audit_hash(entry, strength=None):
 
 
 def test_hash_kind(proofs):
-    """What the T of the triple was taken from, for the signature to record.
+    """What the test hash was taken from, for the signature to record.
 
     `file` is a test file git tracks, which is what a hash over the tests
     reads. `manual` is a proof with no test at all: the evidence is the
@@ -166,9 +162,16 @@ def load_signatures(project_root, features):
     return found
 
 
-# The fields of a rule entry `is_current` compares, in the order they are
-# read. `signed_hash` is the one hash format 11 of the signature stores.
-BOUND_FIELDS = ('rule_hash', 'proof_hash', 'test_hash', 'audit_hash')
+
+
+# ---------------------------------------------------------------------------
+# What a signature is made over
+# ---------------------------------------------------------------------------
+
+# The six fields `signed_hash` reads one per line before the machines, in
+# that order.
+SIGNED_FIELDS = ('applies_to', 'rule_hash', 'proof_hash', 'test_hash',
+                 'code_hash', 'audit_hash')
 
 
 def signed_hash(entry):
@@ -182,9 +185,7 @@ def signed_hash(entry):
     machines = entry.get('machines') or {}
     pairs = ','.join(sorted('%s=%s' % (name, machines[name] or '')
                             for name in machines))
-    lines = [str(entry.get(key) or '') for key in (
-        'applies_to', 'rule_hash', 'proof_hash', 'test_hash', 'code_hash',
-        'audit_hash')]
+    lines = [str(entry.get(key) or '') for key in SIGNED_FIELDS]
     lines.append(pairs)
     digest = hashlib.sha256()
     digest.update('\n'.join(lines).encode('utf-8'))
@@ -192,26 +193,29 @@ def signed_hash(entry):
 
 
 def is_current(signature, entry):
-    """True when a signature still binds the rule entry it is compared with.
+    """True while a signature is still made over the rule entry it is compared with.
 
-    `entry` is the payload's rule entry, or any dict carrying its hashes.
-    Every part of the triple is compared, so changing a rule, rewording a
-    proof or editing a test all stale the signature. So is the audit's own
-    evidence: a re-audit that observes something different is a new answer
-    to the question the signer was answering, compared wherever the entry
-    carries an `audit_hash`. The level the signature logs is not compared.
+    `entry` is the payload's rule entry for the feature the signature applies
+    to. The hash is taken again from the entry and compared with the stored
+    `signed_hash`, the machines restricted to the systems the signature
+    names: a system the signature names that the entry no longer has, or has
+    under another machine, ends it, and a system the entry has and the
+    signature does not name is left out of the comparison.
     """
     if not signature or entry is None:
         return False
-    for key in BOUND_FIELDS[:3]:
-        if signature.get(key) != entry.get(key):
-            return False
-    audit = entry.get('audit_hash')
-    if audit is not None and str(signature.get('audit_hash') or '') != str(
-            audit):
+    named = signature.get('machines') or {}
+    machines = entry.get('machines') or {}
+    if any(name not in machines for name in named):
         return False
-    return True
+    restricted = {name: machines[name] for name in named}
+    return signature.get('signed_hash') == signed_hash(
+        dict(entry, machines=restricted))
 
+
+# ---------------------------------------------------------------------------
+# How it was committed
+# ---------------------------------------------------------------------------
 
 def commit_is_signed(project_root, rel_path):
     """True when the last commit touching a path is signed (`%G?` is `G`)."""
@@ -244,30 +248,102 @@ def commit_date(project_root, rel_path):
     return result.stdout.strip() or None
 
 
+# The reason a signature does not count.
+NOT_SIGNED = 'the commit that added it is not signed'
+
+# The commit headers that carry a signature, SHA-1 and SHA-256 repositories.
+_SIGNATURE_HEADERS = ('gpgsig ', 'gpgsig-sha256 ')
+
+
 def counts(project_root, signature):
     """`(True, '')` when a signature counts, or `(False, reason)`.
 
-    Whether the hashes still match is `is_current`; this answers how the file
-    was committed. Below the project's gate `signed` a committed signature
-    counts. At `signed` the commit that added it must be signed and verify,
-    and that is all: the signature counts on whatever commit carries it,
-    whoever wrote it and whoever last committed to the test file. The gate
-    is read from the project's `.purlin/config.json`.
+    Whether it is still made over the rule is `is_current`; this answers how
+    the file was committed. The file is tracked, and the last commit touching
+    it carries a signature header, made with any key. Nothing about the key
+    or the author is read, and the answer is the same at every gate.
     """
-    if not signature:
-        return False, 'no signature'
-    path = signature.get('path')
-    if not path:
-        return False, 'the signature is not committed'
-    if _project_gate(project_root) != 'signed':
+    path = (signature or {}).get('path')
+    if path and _tracked(project_root, path) and _signed_commit(project_root,
+                                                                path):
         return True, ''
-    if not commit_is_signed(project_root, path):
-        return False, 'the signing commit is not signed'
-    return True, ''
+    return False, NOT_SIGNED
 
 
-def _project_gate(project_root):
-    """The gate `.purlin/config.json` resolves to."""
-    from config_engine import resolve_config
-    from purlin import gate as gate_module
-    return gate_module.resolve_gate(resolve_config(project_root)).gate
+def _tracked(project_root, rel_path):
+    try:
+        result = subprocess.run(
+            ['git', 'ls-files', '--error-unmatch', '--', rel_path],
+            capture_output=True, text=True, cwd=project_root, timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return False
+    return result.returncode == 0
+
+
+def _signed_commit(project_root, rel_path):
+    """True when the last commit touching a path carries a signature header."""
+    try:
+        result = subprocess.run(
+            ['git', 'log', '-1', '--pretty=raw', '--', rel_path],
+            capture_output=True, text=True, cwd=project_root, timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return False
+    if result.returncode != 0:
+        return False
+    for line in result.stdout.splitlines():
+        if not line:
+            return False
+        if line.startswith(_SIGNATURE_HEADERS):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# The key a signer signs with
+# ---------------------------------------------------------------------------
+
+_KEY_LITERAL = 'key::'
+
+
+def key_fingerprint(project_root):
+    """`SHA256:<base64>` of the SSH key `user.signingkey` names, or None.
+
+    `user.signingkey` is a `key::` literal, the path of a public key, or the
+    path of a private key whose public half sits beside it as `<path>.pub`.
+    The fingerprint is the unpadded base64 of the sha256 of the key blob,
+    as `ssh-keygen -l` prints it. None when no SSH key can be read.
+    """
+    try:
+        result = subprocess.run(['git', 'config', '--get', 'user.signingkey'],
+                                capture_output=True, text=True,
+                                cwd=project_root, timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return None
+    named = result.stdout.strip() if result.returncode == 0 else ''
+    if not named:
+        return None
+    if named.startswith(_KEY_LITERAL):
+        return _fingerprint_of(named[len(_KEY_LITERAL):])
+    path = os.path.expanduser(named)
+    if not os.path.isabs(path):
+        path = os.path.join(project_root, path)
+    if not path.endswith('.pub'):
+        path += '.pub'
+    try:
+        with open(path, 'r', encoding='utf-8') as handle:
+            return _fingerprint_of(handle.read())
+    except (IOError, OSError, UnicodeDecodeError):
+        return None
+
+
+def _fingerprint_of(public_key):
+    """The fingerprint of one `<type> <base64 blob> [comment]` line, or None."""
+    parts = public_key.strip().split()
+    if len(parts) < 2 or not parts[0].startswith(('ssh-', 'ecdsa-', 'sk-')):
+        return None
+    try:
+        blob = base64.b64decode(parts[1], validate=True)
+    except (ValueError, binascii.Error):
+        return None
+    digest = base64.b64encode(hashlib.sha256(blob).digest()).decode('ascii')
+    return 'SHA256:' + digest.rstrip('=')

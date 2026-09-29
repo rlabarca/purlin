@@ -2,102 +2,56 @@
 """Write the signatures a person attests, and commit them signed.
 
     sign.py [--release NAME] [--project-root DIR]
-    sign.py <feature> [RULE-N ...] [--batch] [--project-root DIR]
+    sign.py <feature> [RULE-N ...] [--project-root DIR]
+    sign.py --all [--project-root DIR]
     sign.py <feature> RULE-N [RULE-N ...] --note "<what you saw>"
 
-A signature is one named person's attestation that a rule, its proof and its
-test belong together. It is one file, so two signatures never conflict:
+A signature is one person's attestation that a rule, its proof, its test, the
+code its feature lists and what the audit found belong together, over the
+results of the machine each system's tests ran on. It is one file, so two
+signatures never conflict:
 
     specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json
 
-`hash8` is the first eight characters of the triple the signature binds, and
-the slug is the signer's email local part, lowercased, with every character
-that is not a letter or a digit replaced by `-`. Every file here is a person's:
-CI writes no signature, ever.
+`hash8` is the first eight characters of `signed_hash`, and the slug is the
+signer's email local part, lowercased, with every character that is not a
+letter or a digit replaced by `-`. Every file here is a person's: a run writes
+no signature, ever.
 
-With no argument this walks the queue one rule at a time: the payload's one
-list of the rules that wait on a person, each saying what it needs. A `hand
-check` is a rule whose strong cell reads `manual test`; a
-`signature` is a rule whose level is `signed`, whose tests and audit are met
-and that has no counting signature. At each stop the answer is one of three:
-sign the rule, add a case (a proof line to write into the spec), or skip it.
-Signing a hand check asks for one line saying what the person saw, which the
-signature carries as its note. The walk writes nothing until it closes, and
-then it makes one signed commit for the signatures.
+With no argument this walks the rules that wait for a person, one at a time:
+the rules whose work left is `to_test_by_hand` or `to_sign`. It opens on those
+two lines of `Left to do`. At each stop the answer is one of three: sign the
+rule, add a case (a proof line to write into the spec), or skip it. Signing a
+hand check asks what the person saw, which the signature carries as its note
+when one is given. The walk writes nothing until it closes, and then it makes
+one signed commit for the signatures. It works at every gate.
 
-A bare feature signs every rule of that feature in the queue, and `--batch`
-every rule in the queue, in one signed commit and with no stop.
+A bare feature signs every waiting rule of that feature, and `--all` every
+waiting rule, in one signed commit and with no stop. A rule named by id is
+signed whatever it waits on. An anchor's rule is signed once in each feature
+it applies to: one file per feature, each made over that feature's code.
 
-**The tag is the marker of proven code.** At the gate `signed`, when the walk
-closes and every rule meets the gate, it writes the signed tag
-`signed/<version>` with `git tag -s`
-and the key the signer signs commits with, where the version is the
-`VERSION` file at the project root or the one in `.purlin/config.json`;
-`--release <name>` names another. The tag's message names the commit and the
-gate. No tag is written while any rule falls short, and none is written over
-a tag that is already there. Nothing is pushed: the last line names the push
-for a person to run. Below `signed` no tag and no package is written, and the
-walk's closing lines say nothing about a tag: at `strong` it clears hand
-checks and stops there.
-
-**The tag carries the evidence package.** Before it writes the tag it writes
-`.purlin/evidence/package/<version>.json` from the committed evidence, with
-the state `signed`, commits it as a signed commit, and tags that commit. If
-the package cannot be written or committed, no tag is written and the line
-says why.
-
-**Evidence is committed before anything is signed over it.** A rule whose
-feature has evidence that is written and not committed is refused, and so is
-the tag while any feature has such evidence, with one line per feature:
-`sign: <feature> has evidence that is not committed. Run: purlin:test
---commit`.
-
-**A spec that names no files is not signed at `signed`.** Under the gate
-`signed` a rule of a feature spec with no `> Scope:` line, or one that
-reaches no file, is refused with `sign: <feature> names no files in > Scope:,
-so a signature cannot be tied to the code it governs. Run: purlin:spec
-<feature>`, and the tag is not written while any such spec exists. Below
-`signed` nothing is refused for it. Anchors are exempt.
-
-**The tag waits on current evidence.** A rule meets the gate only while its
-passed cell reads over evidence current for its spec, code and tests, so a
-feature whose evidence is older than any of them holds the tag back, and the
-refusal names it: `No tag: login is out of date (code changed since
-a1b2c3d).`
-
-**Trust.** With `trust: remote` in `.purlin/config.json` a rule with a proof
-that has a test, whose feature has no current section in its `ci` evidence,
-is refused, and the line says to run `purlin:test --remote` first. A rule
-whose proofs are all `@manual` has no test for a runner to run, so it is not
-refused. With `trust: local`, the default, your own run is the evidence.
-
-`--note` carries the one line a signer writes where no test can be read: a
-rule reading `manual test`. A reviewer
-who finds the test does not prove the proof adds the missing case as a proof
-line instead, which is the walk's `case`.
-
-**A rule marked below `signed` asks for no signature.** Under the gate
-`signed`, a rule whose `[level: ...]` tag names `passed` or `strong` has that
-level, and naming it is refused with one line saying so; nothing is written
-for it.
-
-**Who signs is logged, not policed.** The signature names the signer, the
-machine it was made on and that machine's operating system, and git names
-the commit's author; no list says who may sign, and nothing
-compares the signer with whoever last committed to the test file.
+**The tag.** At the gate `signed`, when the walk closes and nothing is left
+to do but the tag, it writes the evidence package, commits it signed, and
+writes the signed tag `signed/<version>` on that commit with `git tag -s`.
+The version is read from the `VERSION` file, then `package.json`, then
+`pyproject.toml`, then the first `*.csproj` at the root; `--release <name>`
+names another. No tag is written while work is left, while the working tree
+or any feature's results are not committed, over a tag that already exists,
+or with no version. Nothing is pushed.
 
 `references/formats/signature_format.md` holds the file shape field by field.
-The three hashes come from the payload, which is the one place they are
-computed, so a signature this script writes is current the moment it lands.
+The hashes come from the payload, which is the one place they are computed,
+so a signature this script writes is current the moment it lands.
 
-Exit codes: 0 the signatures were written and committed, 1 nothing could be
-signed or the commit is not signed, 2 the command line was wrong or the gate
-asks for no signature.
+Exit codes: 0 the signatures were written and committed, or the walk closed;
+1 there is no key to sign with, or the commit was not made; 2 the command line
+was wrong.
 """
 
 import json
 import os
-import platform
+import re
 import subprocess
 import sys
 
@@ -108,55 +62,62 @@ for _path in (_MCP_DIR, _HERE):
         sys.path.insert(0, _path)
 
 from purlin import report_data                                 # noqa: E402
-from purlin import (board as board_module,                     # noqa: E402
-                    console as console_module,
-                    evidence as evidence_module,
+from purlin import (console as console_module,                 # noqa: E402
                     gate as gate_module,
                     payload as payload_module,
                     signatures as signatures_module,
                     specs as specs_module,
-                    states)
+                    summary as summary_module)
 
-SCHEMA = 'purlin-signature/1'
-USAGE = ('Usage: sign.py [<feature> [RULE-N ...]] [--batch] [--note TEXT] '
+SCHEMA = 'purlin-signature/2'
+USAGE = ('Usage: sign.py [<feature> [RULE-N ...]] [--all] [--note TEXT] '
          '[--release NAME] [--project-root DIR]')
 
-# The tag `purlin:sign` writes at the gate `signed` when every rule meets it,
-# and the one ref besides a run branch that starts a CI run.
+# The tag `purlin:sign` writes at the gate `signed` when nothing is left but
+# the tag itself.
 TAG_PREFIX = 'signed/'
-NO_TAG_SHORT = 'No tag: %d of %d rules do not meet the gate %s.'
+TAGGED = 'Tagged %s at %s.'
 NO_TAG_EXISTS = ('No tag: %s is already written. Name another with '
                  '--release <name>.')
-TAGGED = 'Tagged %s at %s: every rule meets the gate %s.'
-PUSH_THE_TAG = 'Run: git push origin %s'
-NO_CI_RUN = ('sign: %s %s has no ci test run for this code; run '
-             'purlin:test --remote first')
-MARKED_BELOW = 'sign: %s %s is marked [level: %s]; it asks for no signature.'
-NOT_COMMITTED = ('sign: %s has evidence that is not committed. Run: '
-                 'purlin:test --commit')
-NAMES_NO_FILES = ('sign: %s names no files in > Scope:, so a signature cannot '
-                  'be tied to the code it governs. Run: purlin:spec %s')
-NO_TAG_NO_FILES = ('No tag: %s names no files in > Scope:, so a signature '
-                   'cannot be tied to the code it governs.')
-NO_TAG_OUT_OF_DATE = 'No tag: %s is out of date (%s).'
+NO_TAG_WORK = ('No tag: the working tree holds changes that are not '
+               'committed, so the results do not describe a commit. Commit '
+               'them, then run purlin:sign.')
+NO_TAG_EVIDENCE = ('No tag: %s has results that are not committed. Run '
+                   'purlin:test --commit.')
+NO_VERSION = ('No version: nothing in this project states one. Name it with '
+              '--release <version>, or write it to a VERSION file.')
 NO_TAG_PACKAGE = 'No tag: the evidence package was not committed: %s.'
 PACKAGE_COMMITTED = 'Evidence package committed: %s.'
+
+# The key a signer signs with, and the commands that set one up.
+NO_KEY = 'No key to sign with. These commands set one up:'
+DEFAULT_KEY = '~/.ssh/id_ed25519'
+KEYGEN = 'ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""'
+SIGNING_SETUP = (
+    'git config gpg.format ssh',
+    'git config user.signingkey ~/.ssh/id_ed25519.pub',
+)
+SIGNED_AS = 'Signed %s as %s with the key ending ...%s.'
+
+NOTHING_WAITING = 'Nothing is waiting for someone to test by hand or to sign.'
+NOTHING_TO_SIGN = ('sign: nothing here needs a signature. Run purlin:status to '
+                   'see what blocks the gate.')
+NOT_MADE = ('sign: the signature commit was not made. Check that signing '
+            'works and that the files are not already committed.')
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
 EXIT_BAD_INVOCATION = 2
 
-# The one-time setup a signer runs, in the order they run it.
-SIGNING_SETUP = (
-    'git config gpg.format ssh',
-    'git config user.signingkey ~/.ssh/id_ed25519.pub',
-    'git config commit.gpgsign true',
-)
-
 # The three answers the walk takes, and the letters that reach each one.
 ANSWERS = ('sign', 'case', 'skip')
 
-ARROW = '→'
+# The version files a project already states its version in, read in order.
+_PACKAGE_JSON = 'package.json'
+_PYPROJECT = 'pyproject.toml'
+_PYPROJECT_TABLES = ('project', 'tool.poetry')
+_TOML_VERSION = re.compile(r'''^version\s*=\s*(["'])(.*?)\1\s*(#.*)?$''')
+_CSPROJ_VERSION = re.compile(r'<Version>\s*([^<]*?)\s*</Version>')
 
 
 # ---------------------------------------------------------------------------
@@ -170,23 +131,48 @@ def load_payload(project_root, payload=None):
     return payload_module.build_payload(project_root, generated_by='sign')
 
 
-def rule_entry(payload, feature, rule):
-    """The rule dict for `<feature> <rule>`, or None.
-
-    A feature entry lists the rules it must prove, which includes the ones it
-    requires from an anchor. The rule that belongs to `feature` is the one
-    whose own `feature` field names it, so signing a required rule signs it
-    where it lives and not once per consumer.
-    """
+def _listings(payload, feature, rule):
+    """Every entry for `<feature> <rule>`, one per feature that lists it."""
+    found = []
     for entry in (payload or {}).get('features') or ():
         for item in entry.get('rules') or ():
             if item.get('feature') == feature and item.get('id') == rule:
-                return item
-    return None
+                found.append(item)
+    return found
+
+
+def _applies_to(item):
+    return item.get('applies_to') or item.get('feature')
+
+
+def rule_entry(payload, feature, rule):
+    """The rule dict for `<feature> <rule>` as its own feature lists it, or None.
+
+    A rule an anchor declares is listed under the anchor and again under
+    every feature that uses it; the anchor's own listing answers first.
+    """
+    found = _listings(payload, feature, rule)
+    for item in found:
+        if _applies_to(item) == feature:
+            return item
+    return found[0] if found else None
+
+
+def listings_to_sign(payload, feature, rule):
+    """The entries one signature each goes to for `<feature> <rule>`.
+
+    An anchor's rule is signed once in each feature it applies to, so it is
+    one entry per feature that lists it; any other rule is its own entry.
+    """
+    found = _listings(payload, feature, rule)
+    elsewhere = [item for item in found if _applies_to(item) != feature]
+    if elsewhere:
+        return elsewhere
+    return [item for item in found if _applies_to(item) == feature][:1]
 
 
 def triple_for(entry):
-    """The triple hash of one rule entry."""
+    """The hash of one rule entry's rule, proof and test hashes."""
     return signatures_module.triple_hash(
         entry.get('rule_hash'), entry.get('proof_hash'), entry.get('test_hash'))
 
@@ -195,43 +181,46 @@ def triple_for(entry):
 # Writing one signature
 # ---------------------------------------------------------------------------
 
-def signature_path(project_root, feature, rule, triple, signer_slug):
+def signature_path(project_root, feature, rule, signed, signer_slug):
     """Where the signature for one rule goes, beside the spec that holds it."""
     info = specs_module.scan_specs(project_root).get(feature)
     directory = signatures_module.signatures_dir(project_root, info or {})
     if not directory:
         return None
     return os.path.join(directory,
-                        '%s.%s.%s.json' % (rule, str(triple)[:8], signer_slug))
+                        '%s.%s.%s.json' % (rule, str(signed)[:8], signer_slug))
 
 
-def write_signature(project_root, feature, rule, signer_email, evidence_path,
-                    gate, level, payload=None, entry=None, note=None):
-    """Write one signature file and return its project-relative path."""
-    entry = entry or rule_entry(load_payload(project_root, payload), feature,
-                                rule)
-    if entry is None:
-        return None
-    slug = signatures_module.signer_slug(signer_email)
-    triple = triple_for(entry)
-    path = signature_path(project_root, feature, rule, triple, slug)
+def write_signature(project_root, entry, signer_email, evidence_path=None,
+                    gate=None, note=None, signer_name=None, key=None):
+    """Write one signature file for a rule entry. Its project-relative path.
+
+    `entry` is the payload's rule entry for the feature the signature applies
+    to, which carries every hash the signature is made over. `key` is the
+    signing key's fingerprint.
+    """
+    feature, rule = entry.get('feature'), entry.get('id')
+    signed = signatures_module.signed_hash(entry)
+    path = signature_path(project_root, feature, rule, signed,
+                          signatures_module.signer_slug(signer_email))
     if not path:
         return None
-
     body = {
         'schema': SCHEMA,
         'feature': feature,
         'rule': rule,
-        'triple': triple[:16],
+        'applies_to': _applies_to(entry),
+        'signed_hash': signed,
         'rule_hash': entry.get('rule_hash'),
         'proof_hash': entry.get('proof_hash'),
         'test_hash': entry.get('test_hash'),
-        'test_hash_kind': entry.get('test_hash_kind'),
+        'code_hash': entry.get('code_hash'),
         'audit_hash': entry.get('audit_hash'),
-        'level': level if level is not None else entry.get('level'),
+        'machines': dict(entry.get('machines') or {}),
         'signer': str(signer_email),
-        'machine': machine_name(),
-        'os': evidence_module.host_os(),
+        'signer_name': signer_name or None,
+        'key_fingerprint': key,
+        'test_hash_kind': entry.get('test_hash_kind'),
         'note': str(note).strip() if str(note or '').strip() else None,
         'timestamp': payload_module.now_iso(),
         'gate': gate,
@@ -239,11 +228,6 @@ def write_signature(project_root, feature, rule, signer_email, evidence_path,
     }
     _write_json(path, body)
     return os.path.relpath(path, project_root).replace(os.sep, '/')
-
-
-def machine_name():
-    """The host's name as the operating system reports it, or `unknown`."""
-    return platform.node() or 'unknown'
 
 
 def evidence_for(payload, feature):
@@ -272,98 +256,49 @@ def _write_json(path, body):
 
 
 # ---------------------------------------------------------------------------
-# What a person may sign now
+# What waits for a person
 # ---------------------------------------------------------------------------
 
-def queued(payload, feature=None, rules=None):
-    """Every `(feature, rule)` a bare feature or `--batch` signs, in order.
+def waiting(payload, feature=None, rules=None):
+    """The rule entries that wait for a person, by feature and rule number.
 
-    The payload works out the queue, so this reads what it wrote rather than
-    asking the question again: the hand checks, rules reading `manual test`,
-    and the signatures, rules whose level is `signed`, whose
-    tests and audit are met and that have no counting signature. Everything
-    else is build work and stays on the board.
+    A rule waits for a person when its work left is `to_test_by_hand` or
+    `to_sign`, read off the payload rather than worked out again. Each rule
+    is read once, as the feature that owns it lists it.
     """
     found = []
-    for row in (payload or {}).get('queue') or ():
-        name, rule = row.get('owner'), row.get('rule')
-        if feature and name != feature:
-            continue
-        if rules and rule not in rules:
-            continue
-        if name and rule and (name, rule) not in found:
-            found.append((name, rule))
-    return found
+    for entry in (payload or {}).get('features') or ():
+        for item in entry.get('rules') or ():
+            if item.get('feature') != entry.get('name'):
+                continue
+            if item.get('left') not in summary_module.FOR_A_PERSON:
+                continue
+            if feature and item.get('feature') != feature:
+                continue
+            if rules and item.get('id') not in rules:
+                continue
+            found.append(item)
+    return sorted(found, key=lambda item: (item.get('feature') or '',
+                                           _rule_number(item.get('id'))))
 
 
-def in_queue(payload, targets):
-    """The targets the queue carries, which a signature clears at `strong`."""
-    rows = {(row.get('owner'), row.get('rule'))
-            for row in (payload or {}).get('queue') or ()}
-    return [pair for pair in targets or () if pair in rows]
+def queued(payload, feature=None, rules=None):
+    """Every `(feature, rule)` a bare feature or `--all` signs, in order."""
+    return [(item['feature'], item['id'])
+            for item in waiting(payload, feature, rules)]
 
 
-# ---------------------------------------------------------------------------
-# Trust: whether this machine's own test run is evidence enough to sign on
-# ---------------------------------------------------------------------------
+def _rule_number(rule_id):
+    digits = str(rule_id).rsplit('-', 1)[-1]
+    return int(digits) if digits.isdigit() else 0
 
-def has_a_ci_run(payload, entry):
-    """True when the rule's `ci` evidence holds a section current for this code.
-
-    The rule's own feature's `ci` file is read, and one current section of
-    it is a run the runner made over this spec, this code and these tests. A
-    project that trusts this machine never asks; one that does not asks here,
-    and a rule with no such run is refused until `purlin:test --remote` has
-    been run. A rule whose proofs are all `@manual` has no test for a runner
-    to run, so the question is not asked of it.
-    """
-    if not any(not proof.get('manual')
-               for proof in (entry or {}).get('proofs') or ()):
-        return True
-    for feature in (payload or {}).get('features') or ():
-        if feature.get('name') != (entry or {}).get('feature'):
-            continue
-        ci = (feature.get('evidence') or {}).get('ci') or {}
-        return any((platform or {}).get('current')
-                   for platform in (ci.get('platforms') or {}).values())
-    return False
-
-
-def untrusted(payload, targets):
-    """`[(feature, rule)]` this project's trust setting refuses to sign.
-
-    Empty under `trust: local`, which is the default and is a project saying
-    its own runs count. Under `trust: remote` it is every named rule with a
-    proof that has a test, whose `ci` evidence holds no section current for
-    this code.
-    """
-    if (payload.get('gate') or {}).get('trust') != 'remote':
-        return []
-    refused = []
-    for feature, rule in targets or ():
-        if not has_a_ci_run(payload, rule_entry(payload, feature, rule)):
-            refused.append((feature, rule))
-    return refused
-
-
-def _allowed(payload, targets, out=None):
-    """The targets trust allows, printing one line for each it refuses."""
-    refused = untrusted(payload, targets)
-    for feature, rule in refused:
-        print(NO_CI_RUN % (feature, rule), file=out or sys.stdout)
-    return [pair for pair in targets if pair not in refused]
-
-
-# ---------------------------------------------------------------------------
-# Evidence that is not committed
-# ---------------------------------------------------------------------------
 
 def uncommitted(payload, features=None):
     """The features, sorted, whose evidence is written and not committed.
 
-    `features` narrows the question to the ones a signature reads; None asks
-    it of every feature, which is what the tag reads. A feature with no
-    evidence file has nothing to commit and is not named.
+    `features` narrows the question; None asks it of every feature, which is
+    what the tag reads. A feature with no evidence file has nothing to commit
+    and is not named.
     """
     found = []
     for entry in (payload or {}).get('features') or ():
@@ -377,108 +312,102 @@ def uncommitted(payload, features=None):
     return sorted(set(found))
 
 
-def _committed_only(payload, targets, out=None):
-    """The targets whose feature's evidence is committed, printing the rest.
-
-    One line per feature, so a batch of ten rules over one uncommitted file
-    says it once.
-    """
-    refused = uncommitted(payload, {feature for feature, _rule in targets})
-    for feature in refused:
-        print(NOT_COMMITTED % feature, file=out or sys.stdout)
-    return [pair for pair in targets if pair[0] not in refused]
-
-
-def names_no_files(payload, features=None):
-    """The feature specs, sorted, that name no files, at the gate `signed`.
-
-    Below `signed` nothing is refused for it and the answer is empty.
-    `features` narrows the question to the ones a signature reads; None asks
-    it of every feature, which is what the tag reads. An anchor is never
-    one: the code behind its rules belongs to the features that use it.
-    """
-    if (payload.get('gate') or {}).get('gate') != gate_module.GATES[-1]:
+def uncommitted_work(project_root):
+    """The paths outside `.purlin/` that `git status` lists, sorted."""
+    try:
+        result = subprocess.run(['git', 'status', '--porcelain', '-z'],
+                                capture_output=True, text=True,
+                                cwd=project_root, timeout=30)
+    except (subprocess.SubprocessError, OSError):
         return []
-    return sorted(entry.get('name')
-                  for entry in (payload or {}).get('features') or ()
-                  if entry.get('incomplete')
-                  and (features is None or entry.get('name') in features))
-
-
-def _tied_only(payload, targets, out=None):
-    """The targets whose spec names its files, printing one line per other."""
-    refused = names_no_files(payload, {feature for feature, _rule in targets})
-    for feature in refused:
-        print(NAMES_NO_FILES % (feature, feature), file=out or sys.stdout)
-    return [pair for pair in targets if pair[0] not in refused]
-
-
-def out_of_date(payload):
-    """`[(feature, reasons)]` whose evidence is older than its spec, code or tests.
-
-    Read off each feature's own rules: a passed cell reading `out of date`
-    names what changed since its newest run. Sorted by feature, the reasons
-    in the order the cells give them, each once.
-    """
-    found = {}
-    for feature in (payload or {}).get('features') or ():
-        for entry in feature.get('rules') or ():
-            if entry.get('feature') != feature.get('name'):
-                continue
-            cell = (entry.get('cells') or {}).get('passed') or {}
-            if cell.get('word') != states.OUT_OF_DATE:
-                continue
-            reasons = found.setdefault(feature['name'], [])
-            for reason in cell.get('reasons') or ():
-                if reason not in reasons:
-                    reasons.append(reason)
-    return sorted(found.items())
-
-
-def marked_below(payload, targets):
-    """`[(feature, rule, level)]` whose `[level: ...]` tag asks for no signature.
-
-    Only the gate `signed` asks for a signature, so this is empty below it.
-    There a rule's level is `signed` unless its tag names `passed` or
-    `strong`, and such a rule meets the gate without a signature.
-    """
-    if (payload.get('gate') or {}).get('gate') != gate_module.GATES[-1]:
+    if result.returncode != 0:
         return []
     found = []
-    for feature, rule in targets or ():
-        entry = rule_entry(payload, feature, rule) or {}
-        marked = entry.get('level_marked')
-        if marked in gate_module.GATES[:-1]:
-            found.append((feature, rule, marked))
-    return found
+    fields = result.stdout.split('\0')
+    while fields:
+        field = fields.pop(0)
+        if len(field) < 4:
+            continue
+        if field[0] in 'RC' and fields:
+            fields.pop(0)
+        path = field[3:]
+        if not path.startswith('.purlin/'):
+            found.append(path)
+    return sorted(found)
 
 
 # ---------------------------------------------------------------------------
-# The tag
+# The version and the tag
 # ---------------------------------------------------------------------------
 
 def project_version(project_root):
-    """The version a tag is named for: the `VERSION` file, else the config."""
-    path = os.path.join(project_root, 'VERSION')
+    """The version the project states, or ''. The first of these that names one.
+
+    The `VERSION` file at the root, `package.json`'s `version`,
+    `pyproject.toml`'s `[project]` then `[tool.poetry]` `version`, and the
+    `<Version>` of the root `*.csproj` files, read in name order.
+    """
+    for reader in (_version_file, _package_json, _pyproject, _csproj):
+        named = reader(project_root)
+        if named:
+            return named
+    return ''
+
+
+def _read(project_root, name):
     try:
-        with open(path, 'r', encoding='utf-8') as handle:
-            named = handle.read().strip()
-    except (IOError, OSError, UnicodeDecodeError):
-        named = ''
-    if named:
-        return named
-    try:
-        with open(os.path.join(project_root, '.purlin', 'config.json'), 'r',
+        with open(os.path.join(project_root, name), 'r',
                   encoding='utf-8') as handle:
-            return str(json.load(handle).get('version') or '').strip()
-    except (IOError, OSError, ValueError, UnicodeDecodeError):
+            return handle.read()
+    except (IOError, OSError, UnicodeDecodeError):
         return ''
 
 
+def _version_file(project_root):
+    return _read(project_root, 'VERSION').strip()
+
+
+def _package_json(project_root):
+    try:
+        data = json.loads(_read(project_root, _PACKAGE_JSON) or '{}')
+    except ValueError:
+        return ''
+    version = data.get('version') if isinstance(data, dict) else None
+    return version.strip() if isinstance(version, str) else ''
+
+
+def _pyproject(project_root):
+    text = _read(project_root, _PYPROJECT)
+    for table in _PYPROJECT_TABLES:
+        inside = False
+        for raw in text.splitlines():
+            line = raw.strip()
+            if line.startswith('['):
+                inside = line.split('#', 1)[0].strip() == '[%s]' % table
+                continue
+            found = _TOML_VERSION.match(line) if inside else None
+            if found and found.group(2).strip():
+                return found.group(2).strip()
+    return ''
+
+
+def _csproj(project_root):
+    try:
+        names = sorted(name for name in os.listdir(project_root)
+                       if name.endswith('.csproj'))
+    except OSError:
+        return ''
+    for name in names:
+        found = _CSPROJ_VERSION.search(_read(project_root, name))
+        if found and found.group(1):
+            return found.group(1)
+    return ''
+
+
 def tag_name(project_root, release=None):
-    """`signed/<version>`, or `signed/<name>` where `--release` named one."""
+    """`signed/<version>`, `signed/<name>` where `--release` named one, or None."""
     named = str(release or '').strip() or project_version(project_root)
-    return TAG_PREFIX + (named or 'unversioned')
+    return TAG_PREFIX + named if named else None
 
 
 def tag_exists(project_root, name):
@@ -489,28 +418,11 @@ def tag_exists(project_root, name):
     return result.returncode == 0
 
 
-def tag_message(commit, gate):
-    """What the tag says: the commit it stands for, and the gate it met."""
-    return ('Every rule meets the gate %s.\n\nCommit: %s\nGate: %s\n'
+def tag_message(commit):
+    """What the tag says: that nothing was left, and the commit it stands for."""
+    gate = gate_module.GATES[-1]
+    return ('Nothing left to do at the gate %s.\n\nCommit: %s\nGate: %s\n'
             % (gate, commit or 'unknown', gate))
-
-
-def short_of_the_gate(payload):
-    """`(rules that do not meet the gate, rules in the project)`.
-
-    Each rule is counted once, under the feature that owns it, which is how
-    the gate check counts them, so the two can never disagree about whether
-    a tag is owed.
-    """
-    short = total = 0
-    for feature in payload.get('features') or ():
-        for entry in feature.get('rules') or ():
-            if entry.get('feature') != feature.get('name'):
-                continue
-            total += 1
-            if not entry.get('meets_gate'):
-                short += 1
-    return short, total
 
 
 def _package_module():
@@ -523,51 +435,41 @@ def _package_module():
 
 
 def tag_if_met(project_root, out=None, release=None, payload=None):
-    """Write `signed/<version>` at the gate `signed` when every rule meets it.
+    """Write `signed/<version>` at the gate `signed` when nothing else is left.
 
-    Returns the tag's name, or None. Below `signed` it writes nothing, no tag
-    and no package, and prints nothing: only a project at `signed` is ever
-    tagged.
-
-    This is the marker of proven code: the rule, the proof, the test and the
-    audit are locked into a signature for every rule that asks for one, and
-    the tag says so about one commit. It is a signed tag, made with the key
-    the signer signs commits with, so git can show who wrote it as surely as
-    it shows who signed. It is written after the walk's own commits, so the payload is
-    read again rather than reused. The evidence package is committed first
-    and the tag names that commit. Nothing is pushed.
+    Returns the tag's name, or None. Below `signed` it writes nothing and
+    prints nothing. At `signed` it prints the summary ending while any work
+    but the tag is left, and one line saying why when the working tree or a
+    feature's results are not committed, when no version is stated, or when
+    the tag already exists. Otherwise it commits the evidence package, signed,
+    writes a signed tag on that commit, and names the push. Nothing is pushed.
     """
     out = sys.stdout if out is None else out
     payload = load_payload(project_root, payload)
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
     if gate != gate_module.GATES[-1]:
         return None
-    short, total = short_of_the_gate(payload)
-    stale = out_of_date(payload)
-    untied = names_no_files(payload)
-    if short or untied:
-        # Every feature the tag waits on is named with its reason, then the
-        # count, so the refusal says what to run and not only how far off.
-        for feature, reasons in stale:
-            print(NO_TAG_OUT_OF_DATE % (feature, ', '.join(reasons)),
-                  file=out)
-        for feature in untied:
-            print(NO_TAG_NO_FILES % feature, file=out)
-        if short:
-            print(NO_TAG_SHORT % (short, total, gate), file=out)
+    if any(item.get('kind') != 'to_tag' for item in payload.get('left') or ()):
+        print(summary_module.ending(payload), file=out)
+        return None
+    if uncommitted_work(project_root):
+        print(NO_TAG_WORK, file=out)
         return None
     refused = uncommitted(payload)
     if refused:
         for feature in refused:
-            print(NOT_COMMITTED % feature, file=out)
+            print(NO_TAG_EVIDENCE % feature, file=out)
         return None
     name = tag_name(project_root, release)
+    if name is None:
+        print(NO_VERSION, file=out)
+        return None
     if tag_exists(project_root, name):
         print(NO_TAG_EXISTS % name, file=out)
         return None
     # The package goes into the commit the tag names, so the tagged code
-    # carries the evidence that describes it. The evidence commit is the one
-    # below it, which is the commit the tag's message names.
+    # carries the evidence that describes it. The commit below it is the one
+    # the tag's message names.
     commit = payload.get('commit') or ''
     rel, why = _package_module().write_for_tag(project_root, release)
     if rel is None:
@@ -575,14 +477,14 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
         return None
     print(PACKAGE_COMMITTED % rel, file=out)
     written = subprocess.run(
-        ['git', 'tag', '-s', name, '-m', tag_message(commit, gate)],
+        ['git', 'tag', '-s', name, '-m', tag_message(commit)],
         capture_output=True, text=True, cwd=project_root, timeout=30)
     if written.returncode != 0:
         print(NO_TAG_EXISTS % name, file=out)
         return None
     tagged = payload_module.head_sha(project_root) or commit
-    print(TAGGED % (name, tagged[:7] or 'HEAD', gate), file=out)
-    print('%s %s' % (ARROW, PUSH_THE_TAG % name), file=out)
+    print(TAGGED % (name, tagged[:7] or 'HEAD'), file=out)
+    print(summary_module.RELEASE % name, file=out)
     return name
 
 
@@ -591,8 +493,9 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
 # ---------------------------------------------------------------------------
 
 def signing_configured(project_root):
-    """True when this checkout is set up to sign a commit."""
-    return bool(_config(project_root, 'user.signingkey'))
+    """True when this checkout names an SSH key to sign a commit with."""
+    return (_config(project_root, 'gpg.format') == 'ssh'
+            and signatures_module.key_fingerprint(project_root) is not None)
 
 
 def _config(project_root, name):
@@ -605,34 +508,39 @@ def _config(project_root, name):
     return result.stdout.strip() if result.returncode == 0 else ''
 
 
-def signing_help():
-    """The lines to print when a person has no signing set up yet."""
-    lines = ['Commit signing is not configured, so a signature you write '
-             'would not count. Run:']
+def no_key_lines():
+    """The lines to print when there is no key to sign with.
+
+    `ssh-keygen` is named only while the key it would write does not exist.
+    """
+    lines = [NO_KEY]
+    if not os.path.exists(os.path.expanduser(DEFAULT_KEY)):
+        lines.append('  %s' % KEYGEN)
     lines.extend('  %s' % command for command in SIGNING_SETUP)
-    lines.append('Then upload the public key to the git host, under signing '
-                 'keys, so it reads the commit as signed.')
     return lines
+
+
+def signed_line(project_root, count, signer_email):
+    """`Signed <n> rules as <email> with the key ending ...<last 4>.`"""
+    key = signatures_module.key_fingerprint(project_root) or ''
+    return SIGNED_AS % ('%d rule%s' % (count, '' if count == 1 else 's'),
+                        signer_email, key[-4:])
 
 
 def commit_message(targets):
     """The subject for one signature commit, from `commit_conventions.md`."""
-    return _subject('sign', targets)
-
-
-def _subject(prefix, targets):
     features = []
     for feature, _rule in targets:
         if feature not in features:
             features.append(feature)
     if len(features) == 1:
         rules = [rule for _feature, rule in targets]
-        return '%s(%s): %s' % (prefix, features[0], ' '.join(rules))
+        return 'sign(%s): %s' % (features[0], ' '.join(rules))
     parts = []
     for feature in features:
         rules = [rule for name, rule in targets if name == feature]
         parts.append('%s %s' % (feature, ' '.join(rules)))
-    return '%s(batch): %s' % (prefix, ', '.join(parts))
+    return 'sign(batch): %s' % ', '.join(parts)
 
 
 def sign_and_commit(project_root, targets, signer_email, note=None,
@@ -640,27 +548,30 @@ def sign_and_commit(project_root, targets, signer_email, note=None,
     """Write every signature in `targets` and commit them once, signed.
 
     `targets` is `[(feature, rule), ...]`. One invocation is one commit
-    whether it carries one rule or forty. `note` is the one line every
-    signature carries, and `notes` maps a `(feature, rule)` to a line of its
-    own, which is how the walk records what a person saw at each hand check.
-    Returns the commit sha, or None when nothing was written.
+    whether it carries one rule or forty, and an anchor's rule adds one file
+    per feature it applies to. `note` is the one line every signature
+    carries, and `notes` maps a `(feature, rule)` to a line of its own, which
+    is how the walk records what a person saw at each hand check. Returns the
+    commit sha, or None when nothing was written or committed.
     """
     notes = notes or {}
     payload = load_payload(project_root, payload)
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
+    key = signatures_module.key_fingerprint(project_root)
+    name = _config(project_root, 'user.name')
     paths = []
     written = []
     for feature, rule in targets:
-        entry = rule_entry(payload, feature, rule)
-        if entry is None:
-            continue
-        path = write_signature(
-            project_root, feature, rule, signer_email,
-            evidence_for(payload, feature), gate, entry.get('level'),
-            entry=entry, note=notes.get((feature, rule), note))
-        if path:
-            paths.append(path)
-            written.append((feature, rule))
+        for entry in listings_to_sign(payload, feature, rule):
+            path = write_signature(
+                project_root, entry, signer_email,
+                evidence_for(payload, feature), gate,
+                note=notes.get((feature, rule), note), signer_name=name,
+                key=key)
+            if path:
+                paths.append(path)
+                if (feature, rule) not in written:
+                    written.append((feature, rule))
     if not paths:
         return None
     return _commit(project_root, paths, commit_message(written))
@@ -686,14 +597,10 @@ def _commit(project_root, paths, message):
 # The walk
 # ---------------------------------------------------------------------------
 
-def _count(number, word):
-    """`1 rule` or `4 rules`: one place, so no line prints `1 rules`."""
-    return '%d %s%s' % (number, word, '' if number == 1 else 's')
-
-
-def opening_line(payload):
-    """What the walk prints before the first rule: how long the queue is."""
-    return board_module.queue_line((payload or {}).get('summary') or {})
+def opening_lines(payload):
+    """What the walk prints first: the two lines of `Left to do` it walks."""
+    lines = summary_module.left_lines(payload, summary_module.FOR_A_PERSON)
+    return lines or [NOTHING_WAITING]
 
 
 def _proof_tags(proof):
@@ -728,12 +635,10 @@ def audit_lines(entry):
     return ["  Nothing yet: no audit has read this rule's text, proof and test."]
 
 
-def render_row(row, entry):
+def render_row(entry):
     """One stop of the walk: the rule, its proofs and what the audit found."""
-    head = '%s %s   level %s   %s' % (row.get('owner'), row.get('rule'),
-                                      row.get('level'), row.get('need'))
-    if row.get('need') == states.SIGNATURE and row.get('word') == 'stale':
-        head += '   stale: %s' % '; '.join(row.get('reasons') or ())
+    head = '%s %s   %s' % (entry.get('feature'), entry.get('id'),
+                           str(entry.get('left') or '').replace('_', ' '))
     lines = [head, 'Rule', '  %s' % (entry.get('text') or '')]
     lines.append('Proof')
     for proof in entry.get('proofs') or ():
@@ -746,41 +651,37 @@ def render_row(row, entry):
 
 def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
          release=None):
-    """Walk the queue, one rule at a time. Returns what happened.
+    """Walk the rules that wait for a person, one at a time. Returns what happened.
 
-    `answer` is called once per stop with the rule entry, carrying the
-    row's `need`, and the rendered row, and returns one of `sign`, `case` or `skip`, optionally as
+    `answer` is called once per stop with the rule entry and the rendered
+    stop, and returns one of `sign`, `case` or `skip`, optionally as
     `(answer, text)`: the text is what the person saw, for a hand check they
     sign, or the case a reviewer wrote. The default reads a line from stdin.
 
     Nothing is written until the walk closes, and then one signed commit
-    carries the signatures. A skipped rule is in the queue again next time,
-    which is the intended behaviour: nothing is marked as seen by being seen.
+    carries the signatures. A skipped rule waits again next time: nothing is
+    marked as seen by being seen. The walk ends on the summary ending, or at
+    the gate `signed` on what the tag says.
     """
     out = sys.stdout if out is None else out
     payload = load_payload(project_root, payload)
     answer = _prompt if answer is None else answer
-    email = (signer_email or _config(project_root, 'user.email')).lower()
+    email = signer_email or _config(project_root, 'user.email')
 
-    rows = []
-    for row in payload.get('queue') or ():
-        entry = rule_entry(payload, row.get('owner'), row.get('rule'))
-        if entry is not None:
-            rows.append((row, entry))
+    rows = waiting(payload)
     result = {'rules': len(rows), 'signed': [], 'cases': [], 'skipped': [],
-              'notes': {}, 'commits': [], 'tag': None}
-    print(opening_line(payload), file=out)
+              'notes': {}, 'commits': [], 'not_made': False, 'tag': None}
+    for line in opening_lines(payload):
+        print(line, file=out)
     if not rows:
-        print('Nothing is waiting for a person.', file=out)
-        result['tag'] = tag_if_met(project_root, out, release, payload)
+        result['tag'] = _finish(project_root, out, release, payload)
         return result
 
-    for row, entry in rows:
-        rendered = render_row(row, entry)
+    for entry in rows:
+        rendered = render_row(entry)
         print('', file=out)
         print(rendered, file=out)
-        given, text = _one_answer(answer, dict(entry, need=row.get('need')),
-                                  rendered)
+        given, text = _one_answer(answer, entry, rendered)
         pair = (entry['feature'], entry['id'])
         if given == 'sign':
             result['signed'].append(pair)
@@ -792,20 +693,26 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
             result['skipped'].append(pair)
 
     if result['signed']:
-        allowed = _committed_only(payload, _tied_only(
-            payload, _allowed(payload, result['signed'], out), out), out)
-        result['skipped'].extend(pair for pair in result['signed']
-                                 if pair not in allowed)
-        result['signed'] = allowed
-    if result['signed']:
         sha = sign_and_commit(project_root, result['signed'], email,
                               payload=payload, notes=result['notes'])
         if sha:
             result['commits'].append(sha)
+        else:
+            result['not_made'] = True
 
-    _close(out, result)
-    result['tag'] = tag_if_met(project_root, out, release)
+    _close(project_root, out, result, email)
+    result['tag'] = _finish(project_root, out, release)
     return result
+
+
+def _finish(project_root, out, release, payload=None):
+    """The walk's last lines: the tag at `signed`, the summary ending below."""
+    payload = load_payload(project_root, payload)
+    gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
+    if gate == gate_module.GATES[-1]:
+        return tag_if_met(project_root, out, release, payload)
+    print(summary_module.ending(payload), file=out)
+    return None
 
 
 def _one_answer(answer, entry, rendered):
@@ -824,7 +731,7 @@ def _prompt(entry, _rendered):
     """Read one answer from the person running the walk.
 
     Signing a hand check asks what the person saw, which the signature
-    carries as its note; adding a case asks for the case.
+    carries as its note when one is given; adding a case asks for the case.
     """
     try:
         given = input('%s %s   sign / case / skip: '
@@ -833,7 +740,7 @@ def _prompt(entry, _rendered):
         return 'skip'
     given = given.strip().lower()
     if given.startswith('s') and not given.startswith('sk') and (
-            entry.get('need') == states.HAND_CHECK):
+            entry.get('left') == 'to_test_by_hand'):
         question = 'What did you see, in one line: '
     elif given.startswith('c'):
         question = '  in one line: '
@@ -845,7 +752,7 @@ def _prompt(entry, _rendered):
         return 'skip', None
 
 
-def _close(out, result):
+def _close(project_root, out, result, email):
     print('', file=out)
     print('Walked %d rule%s: %d signed, %d case%s added, %d skipped.'
           % (result['rules'], '' if result['rules'] == 1 else 's',
@@ -856,12 +763,12 @@ def _close(out, result):
         print('  %s %s   add this proof line: %s'
               % (feature, rule, text or 'the reviewer named no case'), file=out)
     if result['commits']:
+        print(signed_line(project_root, len(result['signed']), email),
+              file=out)
         print('Commits: %s' % ', '.join(sha[:7] for sha in result['commits']),
               file=out)
-    if result['cases']:
-        print('%s Run: purlin:build' % ARROW, file=out)
-    if result['skipped']:
-        print('%s Run: purlin:sign' % ARROW, file=out)
+    if result['not_made']:
+        print(NOT_MADE, file=out)
 
 
 # ---------------------------------------------------------------------------
@@ -871,13 +778,13 @@ def _close(out, result):
 class _Args(object):
     """One parsed invocation, or the reason it could not be parsed."""
 
-    __slots__ = ('feature', 'rules', 'batch', 'note', 'release',
+    __slots__ = ('feature', 'rules', 'all', 'note', 'release',
                  'project_root', 'error', 'help')
 
     def __init__(self):
         self.feature = None
         self.rules = []
-        self.batch = False
+        self.all = False
         self.note = None
         self.release = None
         self.project_root = '.'
@@ -894,8 +801,8 @@ def _parse(argv):
         if item in ('-h', '--help'):
             args.help = True
             return args
-        if item == '--batch':
-            args.batch = True
+        if item == '--all':
+            args.all = True
         elif item == '--note':
             if not rest or not rest[0].strip() or rest[0].startswith('--'):
                 args.error = '--note needs the line you want on the signature.'
@@ -921,16 +828,9 @@ def _parse(argv):
         else:
             args.error = 'unexpected argument %s' % item
             return args
-    if args.note is not None and (args.batch or not args.rules):
+    if args.note is not None and (args.all or not args.rules):
         args.error = '--note names a feature and the rules it carries.'
     return args
-
-
-def _gate_is_too_low(gate):
-    """The two lines `passed` prints in place of writing a signature."""
-    return ['sign: the gate is %s, which asks for no signature.' % gate,
-            'sign: purlin:init --gate strong adds the test strength, the AI '
-            'audit and the queue.']
 
 
 def main(argv=None):
@@ -948,66 +848,40 @@ def main(argv=None):
         print('sign.py: not a directory: %r' % project_root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
-    payload = load_payload(project_root)
-    gate_fields = payload.get('gate') or {}
-    gate = gate_fields.get('gate') or gate_module.DEFAULT_GATE
-    if gate == gate_module.GATES[0]:
-        for line in _gate_is_too_low(gate):
-            print(line)
-        return EXIT_BAD_INVOCATION
-
-    email = _config(project_root, 'user.email').lower()
-
     if not signing_configured(project_root):
-        for line in signing_help():
+        for line in no_key_lines():
             print(line)
         return EXIT_NOTHING
 
-    if args.feature is None and not args.batch:
-        walk(project_root, payload, signer_email=email, release=args.release)
+    payload = load_payload(project_root)
+    email = _config(project_root, 'user.email')
+
+    if args.feature is None and not args.all:
+        result = walk(project_root, payload, signer_email=email,
+                      release=args.release)
         report_data.refresh(project_root)
-        return EXIT_OK
+        return EXIT_NOTHING if result['not_made'] else EXIT_OK
 
     if args.feature and args.rules:
         targets = [(args.feature, rule) for rule in args.rules
                    if rule_entry(payload, args.feature, rule) is not None]
-        lowered = marked_below(payload, targets)
-        for feature, rule, marked in lowered:
-            print(MARKED_BELOW % (feature, rule, marked))
-        targets = [pair for pair in targets
-                   if pair not in [(f, r) for f, r, _level in lowered]]
-        if lowered and not targets:
-            return EXIT_NOTHING
     else:
-        targets = queued(payload, args.feature, None)
-    # A rule in the queue is what a signature clears at `strong`, so only a
-    # named rule outside it is told it needs none.
-    if gate == 'strong' and len(in_queue(payload, targets)) < len(targets):
-        print('sign: a signature is required only under the gate signed. '
-              'Writing it anyway.')
-    targets = _committed_only(payload, _tied_only(payload,
-                                                  _allowed(payload, targets)))
+        targets = queued(payload, args.feature)
     if not targets:
-        print('sign: nothing here needs a signature. Run purlin:status to see '
-              'what blocks the gate.')
+        print(NOTHING_TO_SIGN)
         return EXIT_NOTHING
 
     sha = sign_and_commit(project_root, targets, email, note=args.note,
                           payload=payload)
     if not sha:
-        print('sign: the signature commit was not made. Check that signing '
-              'works and that the files are not already committed.')
+        print(NOT_MADE)
         return EXIT_NOTHING
-    print('Signed %s in %s.' % (_count(len(targets), 'rule'), sha[:7]))
+    print(signed_line(project_root, len(targets), email))
     for name, rule in targets:
         print('  %s %s' % (name, rule))
-    # The tag is the no-argument walk's to write, and only at `signed`. A
-    # run there that named its rules says whether the walk would now write
-    # one, so the last signature of a release is not a dead end.
     after = load_payload(project_root)
     report_data.refresh(project_root, after)
-    if gate == gate_module.GATES[-1] and not short_of_the_gate(after)[0]:
-        print('%s Run: purlin:sign' % ARROW)
+    print(summary_module.ending(after))
     return EXIT_OK
 
 

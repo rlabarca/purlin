@@ -1,22 +1,24 @@
-"""The tag `purlin:sign` writes.
+"""The tag `purlin:sign` writes, and the audit hash a signature is made over.
 
-The tag is the marker of proven code: the rule, the proof, the test and the
-audit are locked into a signature for every rule whose level asks for one,
-and one signed tag says so about one commit. Nothing here pushes, and nothing here writes a
-tag outside the temporary project the test made.
+The tag says a version is finished: nothing is left to do at the gate
+`signed`, every rule is signed, and every result came from committed work.
+Nothing here pushes, and nothing here writes a tag outside the temporary
+project the test made.
 
 What each group holds:
 
-*the tag*       the name, the message, the signature, the refusals and the
-                line a person runs
-*trust*         what `trust: remote` refuses, and what `trust: local` allows
-*the audit*     the hash a signature binds over what the audit found
+*the tag*       the name, the message, the signature and the lines printed
+*no tag*        each reason the tag is not written, and the line it prints
+*the version*   where the version the tag is named for is read from
+*the package*   the evidence package the tagged commit carries
+*below signed*  no tag and no package at `strong`
+*the audit*     the hash a signature is made over what the audit found
 """
 
+import hashlib
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 
@@ -24,32 +26,56 @@ import pytest
 
 DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
-sys.path.insert(0, DEV)
-sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
-sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
+for _path in (os.path.join(ROOT, 'scripts', 'mcp'),
+              os.path.join(ROOT, 'scripts', 'review'),
+              os.path.join(ROOT, 'scripts', 'export'), DEV):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
+import package as package_module                            # noqa: E402
 import sign as sign_module                                   # noqa: E402
 from purlin import signatures as purlin_signatures           # noqa: E402
-from sign_project import (SIGNING_GATE, SPEC, Project,      # noqa: E402
-                          _Out, _read, _signed_project, commit_as_ci, git,
-                          signing_key, write)
-from sign_project import sign_the_queue as _sign_every_rule  # noqa: E402
+from purlin import summary as purlin_summary                 # noqa: E402
+from sign_project import REVIEW_GATE, _Out, git, write      # noqa: E402
+from test_signatures import MANUAL_SPEC, ready, record  # noqa: E402
 
 
-def _read_spec():
-    return SPEC
+def sign_all(made):
+    """Sign every rule that waits for a person, in one signed commit."""
+    payload = made.payload()
+    targets = sign_module.queued(payload)
+    assert targets, 'nothing waits to be signed'
+    assert sign_module.sign_and_commit(made.root, targets, 'jane@acme.com',
+                                       payload=payload)
 
 
-def _audit_again_later(made, rule, at='2026-09-27T09:00:00Z'):
-    """The same audit entry written again, with a new `at` and this `commit`."""
-    rel = made.audit(rule)
-    path = os.path.join(made.root, *rel.split('/'))
-    data = json.loads(_read(made.root, rel))
-    entry = data['audit']['rules'][rule]
-    assert entry['commit'] == made.head() and entry['verdict'] == 'strong'
-    entry['at'] = at
-    write(path, json.dumps(data, indent=2, sort_keys=True))
-    return entry
+def no_tag_and_no_package(made):
+    """True when the project holds no `signed/*` tag and no package folder."""
+    tags = git(made.root, 'tag', '-l', 'signed/*').stdout.strip()
+    folder = os.path.join(made.root, '.purlin', 'evidence', 'package')
+    return tags == '' and not os.path.exists(folder)
+
+
+@pytest.fixture
+def finished():
+    """A project at `signed` whose every rule is signed: only the tag is left."""
+    made = ready()
+    sign_all(made)
+    yield made
+    made.close()
+
+
+@pytest.fixture
+def tagged():
+    """A finished project whose tag `purlin:sign` has written."""
+    made = ready()
+    sign_all(made)
+    made.walked_from = made.head()
+    out = _Out()
+    assert sign_module.tag_if_met(made.root, out) == 'signed/2.1.0', out.text()
+    made.tag_output = out.text()
+    yield made
+    made.close()
 
 
 # ---------------------------------------------------------------------------
@@ -59,240 +85,268 @@ def _audit_again_later(made, rule, at='2026-09-27T09:00:00Z'):
 class TestTheTag:
 
     # purlin: signatures PROOF-67
-    def test_a_walk_with_nothing_left_writes_the_tag(self):
-        made = _signed_project()
-        try:
-            _sign_every_rule(made)
-            started_at = made.head()
-            out = _Out()
-            result = sign_module.walk(made.root, out=out,
-                                      signer_email='jane@acme.com')
-            printed = out.text()
-            assert ('Queue: 0 rules. 0 hand checks, 0 signatures.'
-                    in printed), printed
-            assert result['tag'] == 'signed/2.1.0', printed
-            # A signed tag, not an annotated one: its object carries the
-            # signature, and git verifies it against the signer's key.
-            body = git(made.root, 'cat-file', 'tag', 'signed/2.1.0').stdout
-            assert '-----BEGIN SSH SIGNATURE-----' in body, body
-            assert git(made.root, 'tag', '-v', 'signed/2.1.0').returncode == 0
-            message = git(made.root, 'tag', '-n99', '-l',
-                          'signed/2.1.0').stdout
-            assert 'Every rule meets the gate signed.' in message, message
-            assert made.head()[:7] in message or 'Commit:' in message, message
-            # The message names in full the commit the walk began at, which
-            # is the one the tagged commit, carrying the package, sits on.
-            tagged = git(made.root, 'rev-parse',
+    def test_the_tag_is_signed_and_names_the_commit_and_the_gate(self,
+                                                                 tagged):
+        body = git(tagged.root, 'cat-file', 'tag', 'signed/2.1.0').stdout
+        assert '-----BEGIN SSH SIGNATURE-----' in body, body
+        message = [line.strip() for line in git(
+            tagged.root, 'tag', '-n99', '-l', 'signed/2.1.0').stdout
+            .replace('signed/2.1.0', '', 1).splitlines()]
+        assert message[:1] == ['Nothing left to do at the gate signed.'], \
+            message
+        assert 'Commit: %s' % tagged.walked_from in message, message
+        assert 'Gate: signed' in message, message
+
+    # purlin: signatures PROOF-100
+    def test_it_prints_the_tag_and_the_push(self, tagged):
+        tag_commit = git(tagged.root, 'rev-parse',
                          'signed/2.1.0^{commit}').stdout.strip()
-            assert git(made.root, 'rev-parse',
-                       tagged + '^').stdout.strip() == started_at
-            lines = [line.strip() for line in message.splitlines()]
-            assert 'Commit: %s' % started_at in lines, message
-            assert 'Gate: signed' in lines, message
-            assert 'Run: git push origin signed/2.1.0' in printed, printed
-            assert printed.splitlines()[-1] == (
-                '%s Run: git push origin signed/2.1.0'
-                % sign_module.ARROW), printed
-        finally:
-            made.close()
+        assert tagged.tag_output.splitlines()[-2:] == [
+            'Tagged signed/2.1.0 at %s.' % tag_commit[:7],
+            'Nothing left to do. Push the tag to release it: git push origin '
+            'signed/2.1.0']
 
-    # purlin: signatures PROOF-74
-    def test_no_tag_over_evidence_that_is_not_committed(self):
-        made = _signed_project()
-        try:
-            _sign_every_rule(made)
-            made.evidence(strength=90, runner='ci', source='ci',
-                          commit_it=False, at='2026-09-14T12:00:00Z')
-            out = _Out()
-            assert sign_module.tag_if_met(made.root, out) is None
-            assert out.text().splitlines() == [
-                'sign: login has evidence that is not committed. Run: '
-                'purlin:test --commit'], out.text()
-            assert git(made.root, 'tag', '-l').stdout.strip() == ''
-            git(made.root, 'add', '-A')
-            git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
-            again = _Out()
-            assert sign_module.tag_if_met(made.root, again) == 'signed/2.1.0', \
-                again.text()
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-67
-    def test_the_version_comes_from_the_config_with_no_version_file(self):
-        made = _signed_project()
-        try:
-            os.remove(os.path.join(made.root, 'VERSION'))
-            made.config(version='0.9.9')
-            assert sign_module.tag_name(made.root) == 'signed/0.9.9'
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-68
-    def test_no_tag_while_a_rule_falls_short(self):
-        made = _signed_project()
-        try:
-            out = _Out()
-            sign_module.tag_if_met(made.root, out)
-            printed = out.text()
-            assert printed.startswith('No tag: 1 of 2 rules do not meet the '
-                                      'gate signed.'), printed
-            assert git(made.root, 'tag', '-l').stdout.strip() == ''
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-68
-    def test_release_names_another_tag_and_a_second_one_is_refused(self):
-        made = _signed_project()
-        try:
-            _sign_every_rule(made)
-            first = _Out()
-            assert sign_module.tag_if_met(made.root, first,
-                                          release='beta') == 'signed/beta'
-            second = _Out()
-            assert sign_module.tag_if_met(made.root, second,
-                                          release='beta') is None
-            assert 'No tag: signed/beta is already written.' in second.text()
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-67
-    def test_the_tag_is_written_and_nothing_is_pushed(self):
-        """The last line names the push; the command makes none."""
-        made = _signed_project()
-        try:
-            _sign_every_rule(made)
-            out = _Out()
-            sign_module.tag_if_met(made.root, out)
-            # No remote exists, so a push would have failed loudly; the point
-            # is that the command never reaches for one.
-            assert git(made.root, 'remote').stdout.strip() == ''
-            assert 'Run: git push origin signed/2.1.0' in out.text()
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-67
-    def test_a_remote_is_left_as_it_was(self):
-        """With an `origin` to push to, the tag is written here alone."""
-        made = _signed_project()
+    # purlin: signatures PROOF-101
+    def test_a_remote_is_left_as_it_was(self, finished):
         remote = tempfile.mkdtemp()
         try:
             git(remote, 'init', '-q', '--bare')
-            git(made.root, 'remote', 'add', 'origin', remote)
-            _sign_every_rule(made)
-            assert git(made.root, 'push', '-q', 'origin',
+            git(finished.root, 'remote', 'add', 'origin', remote)
+            assert git(finished.root, 'push', '-q', 'origin',
                        'main').returncode == 0
-            before = git(made.root, 'ls-remote', 'origin').stdout
-            assert 'refs/heads/main' in before, before
+            before = git(finished.root, 'ls-remote', 'origin').stdout
             out = _Out()
-            assert sign_module.tag_if_met(made.root, out) == 'signed/2.1.0', \
-                out.text()
-            assert git(made.root, 'tag', '-l').stdout.split() == [
-                'signed/2.1.0']
-            after = git(made.root, 'ls-remote', 'origin').stdout
-            assert after == before, after
-            assert 'signed/2.1.0' not in after, after
-            assert 'Run: git push origin signed/2.1.0' in out.text()
+            assert sign_module.tag_if_met(finished.root, out) == \
+                'signed/2.1.0', out.text()
+            assert git(finished.root, 'ls-remote', 'origin').stdout == before
         finally:
             shutil.rmtree(remote, ignore_errors=True)
+
+    # purlin: signatures PROOF-81
+    def test_the_walk_signs_the_last_rules_and_writes_the_tag(self, capsys):
+        made = ready()
+        try:
+            out = _Out()
+            result = sign_module.walk(made.root, out=out,
+                                      answer=lambda _entry, _text: 'sign')
+            assert result['signed'] == [('login', 'RULE-1'),
+                                        ('login', 'RULE-2')], out.text()
+            assert result['tag'] == 'signed/2.1.0', out.text()
+            assert git(made.root, 'tag', '-l').stdout.split() == [
+                'signed/2.1.0']
+        finally:
             made.close()
+
+    # purlin: signatures PROOF-102
+    def test_release_names_another_tag(self, finished, capsys):
+        assert sign_module.main(['--release', 'beta', '--project-root',
+                                 finished.root]) == 0
+        capsys.readouterr()
+        assert git(finished.root, 'tag', '-l').stdout.split() == [
+            'signed/beta']
+
+
+# ---------------------------------------------------------------------------
+# No tag
+# ---------------------------------------------------------------------------
+
+class TestNoTag:
 
     # purlin: signatures PROOF-68
-    def test_the_release_option_names_the_tag(self, capsys):
-        made = _signed_project()
+    def test_while_work_is_left_it_prints_the_summary_ending(self):
+        made = ready()
         try:
-            _sign_every_rule(made)
-            argv = ['--release', 'beta', '--project-root', made.root]
-            assert sign_module.main(argv) == sign_module.EXIT_OK
-            printed = capsys.readouterr().out
-            assert git(made.root, 'tag', '-l').stdout.split() == [
-                'signed/beta'], printed
-            assert git(made.root, 'tag', '-v', 'signed/beta').returncode == 0
-            assert sign_module.main(argv) == sign_module.EXIT_OK
-            again = capsys.readouterr().out
-            assert 'No tag: signed/beta is already written.' in again, again
-            assert git(made.root, 'tag', '-l').stdout.split() == [
-                'signed/beta']
+            out = _Out()
+            assert sign_module.tag_if_met(made.root, out) is None
+            ending = purlin_summary.ending(made.payload())
+            assert out.text() == ending + '\n', out.text()
+            assert ending.splitlines()[-1] == '  2 rules to sign: purlin:sign'
+            assert git(made.root, 'tag', '-l').stdout.strip() == ''
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-103
+    def test_no_tag_over_one_already_written(self, finished):
+        assert sign_module.tag_if_met(finished.root, _Out(),
+                                      release='beta') == 'signed/beta'
+        again = _Out()
+        assert sign_module.tag_if_met(finished.root, again,
+                                      release='beta') is None
+        assert again.text().splitlines() == [
+            'No tag: signed/beta is already written. Name another with '
+            '--release <name>.']
+        assert git(finished.root, 'tag', '-l').stdout.split() == [
+            'signed/beta']
+
+    # purlin: signatures PROOF-74
+    def test_no_tag_over_results_that_are_not_committed(self, finished):
+        record(finished, at='2026-09-14T12:00:00Z')
+        out = _Out()
+        assert sign_module.tag_if_met(finished.root, out) is None
+        assert out.text().splitlines() == [
+            'No tag: login has results that are not committed. Run '
+            'purlin:test --commit.'], out.text()
+        assert git(finished.root, 'tag', '-l').stdout.strip() == ''
+
+    # purlin: signatures PROOF-105
+    def test_no_tag_over_work_that_is_not_committed(self, finished):
+        write(os.path.join(finished.root, 'notes.txt'), 'a draft\n')
+        out = _Out()
+        assert sign_module.tag_if_met(finished.root, out) is None
+        assert out.text().splitlines() == [
+            'No tag: the working tree holds changes that are not committed, '
+            'so the results do not describe a commit. Commit them, then run '
+            'purlin:sign.'], out.text()
+        assert git(finished.root, 'tag', '-l').stdout.strip() == ''
+
+    # purlin: signatures PROOF-111
+    def test_no_tag_with_no_version(self):
+        made = ready(version=None)
+        try:
+            sign_all(made)
+            out = _Out()
+            assert sign_module.tag_if_met(made.root, out) is None
+            assert out.text().splitlines() == [
+                'No version: nothing in this project states one. Name it with '
+                '--release <version>, or write it to a VERSION file.'], \
+                out.text()
+            assert git(made.root, 'tag', '-l').stdout.strip() == ''
         finally:
             made.close()
 
 
 # ---------------------------------------------------------------------------
-# Trust
+# The version
 # ---------------------------------------------------------------------------
 
-class TestTrust:
+@pytest.fixture
+def bare():
+    """An empty directory to state a version in."""
+    folder = tempfile.mkdtemp()
+    yield folder
+    shutil.rmtree(folder, ignore_errors=True)
 
-    # purlin: signatures PROOF-69
-    def test_remote_refuses_a_rule_with_no_ci_run_for_this_code(self, capsys):
-        made = Project(gate=SIGNING_GATE,
-                       config={'min_strength': 50, 'trust': 'remote'})
-        try:
-            made.proofs()
-            made.evidence(strength=90, runner='ada', source='local')
-            made.audit('RULE-2')
-            git(made.root, 'add', '-A')
-            git(made.root, 'commit', '-q', '-m', 'purlin: evidence')
-            payload = made.payload()
-            refused = sign_module.untrusted(payload, [('login', 'RULE-2')])
-            assert refused == [('login', 'RULE-2')], refused
-            assert sign_module._allowed(payload, [('login', 'RULE-2')]) == []
-            assert ('sign: login RULE-2 has no ci test run for this code; run '
-                    'purlin:test --remote first') in capsys.readouterr().out
-        finally:
-            made.close()
 
-    # purlin: signatures PROOF-69
-    def test_a_ci_run_out_of_date_for_this_code_is_refused_too(self):
-        made = _signed_project(trust='remote', key=False)
-        try:
-            write(os.path.join(made.root, 'src', 'login.py'),
-                  'def login(user, password):\n    return 401\n')
-            payload = made.payload()
-            assert sign_module.untrusted(payload, [('login', 'RULE-2')]) == [
-                ('login', 'RULE-2')]
-        finally:
-            made.close()
+class TestTheVersion:
 
-    # purlin: signatures PROOF-69
-    def test_a_rule_whose_proofs_are_all_manual_is_not_refused(self):
-        spec = _read_spec().replace('verify 401 and the body "denied"',
-                                    'verify 401 and the body "denied" @manual')
-        made = Project(spec=spec, gate=SIGNING_GATE,
-                       config={'trust': 'remote'})
-        try:
-            made.proofs({'PROOF-1': 'pass'})
-            made.evidence({'PROOF-1': 'pass'}, runner='ada', source='local')
-            payload = made.payload()
-            assert sign_module.untrusted(payload, [('login', 'RULE-2')]) == []
-            assert sign_module.untrusted(payload, [('login', 'RULE-1')]) == [
-                ('login', 'RULE-1')]
-        finally:
-            made.close()
+    # purlin: signatures PROOF-106
+    def test_the_version_file_comes_first(self, bare):
+        write(os.path.join(bare, 'VERSION'), '2.1.0\n')
+        write(os.path.join(bare, 'package.json'), '{"version": "3.0.0"}\n')
+        assert sign_module.tag_name(bare) == 'signed/2.1.0'
 
-    # purlin: signatures PROOF-69
-    def test_a_ci_run_for_this_commit_is_enough(self):
-        made = _signed_project(trust='remote', key=False)
-        try:
-            payload = made.payload()
-            assert sign_module.untrusted(payload, [('login', 'RULE-2')]) == []
-        finally:
-            made.close()
+    # purlin: signatures PROOF-107
+    def test_package_json_states_it(self, bare):
+        write(os.path.join(bare, 'package.json'),
+              '{"name": "shop", "version": "3.0.0"}\n')
+        assert sign_module.tag_name(bare) == 'signed/3.0.0'
 
-    # purlin: signatures PROOF-69
-    def test_local_asks_nothing_of_the_source(self):
-        made = Project(gate=SIGNING_GATE,
-                       config={'trust': 'local'})
-        try:
-            made.proofs()
-            made.evidence(strength=90, runner='ada', source='local')
-            payload = made.payload()
-            assert sign_module.untrusted(payload, [('login', 'RULE-2')]) == []
-        finally:
-            made.close()
+    # purlin: signatures PROOF-108
+    def test_the_project_table_of_pyproject_states_it(self, bare):
+        write(os.path.join(bare, 'pyproject.toml'),
+              '[tool.poetry]\nversion = "0.1.0"\n\n'
+              '[project]\nname = "shop"\nversion = "4.2.0"\n')
+        assert sign_module.tag_name(bare) == 'signed/4.2.0'
+
+    # purlin: signatures PROOF-109
+    def test_the_poetry_table_of_pyproject_states_it(self, bare):
+        write(os.path.join(bare, 'pyproject.toml'),
+              '[project]\nname = "shop"\n\n'
+              '[tool.poetry]\nversion = "0.5.1"\n')
+        assert sign_module.tag_name(bare) == 'signed/0.5.1'
+
+    # purlin: signatures PROOF-110
+    def test_a_csproj_states_it(self, bare):
+        write(os.path.join(bare, 'Shop.csproj'),
+              '<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup>\n'
+              '    <Version>1.4.0</Version>\n  </PropertyGroup>\n'
+              '</Project>\n')
+        assert sign_module.tag_name(bare) == 'signed/1.4.0'
 
 
 # ---------------------------------------------------------------------------
-# What the audit hash binds
+# The package the tagged commit carries
+# ---------------------------------------------------------------------------
+
+class TestThePackage:
+
+    # purlin: signatures PROOF-78
+    def test_the_package_is_committed_signed_and_tagged(self, tagged):
+        root = tagged.root
+        tag_commit = git(root, 'rev-parse', 'signed/2.1.0^{commit}').stdout \
+            .strip()
+        parent = git(root, 'rev-parse', 'signed/2.1.0^{commit}^').stdout \
+            .strip()
+        assert tag_commit == tagged.head() and parent == tagged.walked_from
+        assert git(root, 'show', '--name-only', '--format=%s',
+                   tag_commit).stdout.split() == [
+            'purlin:', 'evidence', 'at', parent[:7],
+            '.purlin/evidence/package/2.1.0.json']
+        raw = git(root, 'cat-file', 'commit', tag_commit).stdout
+        assert '-----BEGIN SSH SIGNATURE-----' in raw
+        shown = git(root, 'show',
+                    'signed/2.1.0:.purlin/evidence/package/2.1.0.json').stdout
+        assert json.loads(shown)['commit'] == parent
+        assert package_module.check_bytes(shown.encode('utf-8')) is None
+        assert ('Evidence package committed: '
+                '.purlin/evidence/package/2.1.0.json.') in \
+            tagged.tag_output.splitlines()
+        assert git(root, 'status', '--porcelain').stdout == ''
+
+    # purlin: signatures PROOF-79
+    def test_no_tag_when_the_package_cannot_be_written(self, finished):
+        write(os.path.join(finished.root, '.purlin', 'evidence', 'package'),
+              'in the way\n')
+        head = finished.head()
+        out = _Out()
+        assert sign_module.tag_if_met(finished.root, out) is None
+        assert out.text().startswith('No tag: the evidence package was not '
+                                     'committed: '), out.text()
+        assert git(finished.root, 'tag', '-l').stdout.strip() == ''
+        assert finished.head() == head
+
+
+# ---------------------------------------------------------------------------
+# Below signed
+# ---------------------------------------------------------------------------
+
+class TestBelowSigned:
+
+    # purlin: signatures PROOF-80
+    def test_a_walk_at_strong_with_nothing_waiting(self):
+        made = ready(gate=REVIEW_GATE)
+        try:
+            head = made.head()
+            out = _Out()
+            result = sign_module.walk(made.root, out=out)
+            printed = out.text().splitlines()
+            assert printed[0] == ('Nothing is waiting for someone to test by '
+                                  'hand or to sign.'), printed
+            assert printed[-1] == 'Nothing left to do.', printed
+            assert result['tag'] is None and no_tag_and_no_package(made)
+            assert made.head() == head
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-104
+    def test_a_walk_at_strong_signs_a_hand_check_and_ends_on_the_summary(
+            self):
+        made = ready(gate=REVIEW_GATE, spec=MANUAL_SPEC)
+        try:
+            out = _Out()
+            result = sign_module.walk(
+                made.root, out=out,
+                answer=lambda _entry, _text: ('sign', 'saw 401 and denied'))
+            assert len(result['commits']) == 1, out.text()
+            assert out.text().endswith(
+                purlin_summary.ending(made.payload()) + '\n'), out.text()
+            assert result['tag'] is None and no_tag_and_no_package(made)
+        finally:
+            made.close()
+
+
+# ---------------------------------------------------------------------------
+# What the audit hash is taken over
 # ---------------------------------------------------------------------------
 
 class TestTheAuditHash:
@@ -322,7 +376,6 @@ class TestTheAuditHash:
 
     # purlin: signatures PROOF-64
     def test_no_entry_hashes_the_empty_string(self):
-        import hashlib
         assert purlin_signatures.audit_hash(None) == \
             hashlib.sha256(b'').hexdigest()
 
@@ -333,101 +386,35 @@ class TestTheAuditHash:
         assert purlin_signatures.audit_hash(one) == \
             purlin_signatures.audit_hash(other)
 
+    def _signed_rule_2(self, made, capsys):
+        assert sign_module.main(['login', 'RULE-2', '--project-root',
+                                 made.root]) == 0
+        capsys.readouterr()
+        return made.load()[('login', 'RULE-2')][0]
+
     # purlin: signatures PROOF-65
-    def test_a_re_audit_that_observes_something_stales_the_signature(self):
-        made = _signed_project()
+    def test_the_same_audit_again_leaves_the_signature_current(self, capsys):
+        made = ready()
         try:
-            _sign_every_rule(made)
-            assert made.rule('RULE-2')['cells']['signed']['word'] == 'signed'
-            # The same audit again, at a later time and over the signature's
-            # own commit: what it observed is unchanged, so nothing stales.
-            _audit_again_later(made, 'RULE-2')
-            cell = made.rule('RULE-2')['cells']['signed']
-            assert cell['word'] == 'signed', cell
+            signature = self._signed_rule_2(made, capsys)
+            rel = made.audit('RULE-2')
+            path = os.path.join(made.root, *rel.split('/'))
+            with open(path, encoding='utf-8') as handle:
+                data = json.load(handle)
+            data['audit']['rules']['RULE-2']['at'] = '2026-09-27T09:00:00Z'
+            write(path, json.dumps(data, indent=2, sort_keys=True))
+            assert purlin_signatures.is_current(signature,
+                                                made.rule('RULE-2'))
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-99
+    def test_a_new_finding_ends_the_signature(self, capsys):
+        made = ready()
+        try:
+            signature = self._signed_rule_2(made, capsys)
             made.audit('RULE-2', findings=['PROOF-2 reads the status alone.'])
-            cell = made.rule('RULE-2')['cells']['signed']
-            assert cell['word'] == 'stale', cell
-        finally:
-            made.close()
-
-
-# ---------------------------------------------------------------------------
-# What holds the tag back, by name
-# ---------------------------------------------------------------------------
-
-NO_SCOPE = _read_spec().replace('> Scope: src/login.py\n', '')
-
-
-def _unscoped_project(gate):
-    made = Project(gate=gate, spec=NO_SCOPE.replace(' [level: passed]', ''),
-                   config={'min_strength': 50})
-    made.proofs()
-    made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
-    made.audit('RULE-1')
-    made.audit('RULE-2')
-    write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
-    commit_as_ci(made.root)
-    signing_key(made.root)
-    return made
-
-
-class TestWhatHoldsTheTagBack:
-
-    # purlin: signatures PROOF-76
-    def test_at_signed_a_spec_that_names_no_files_is_refused(self, capsys):
-        made = _unscoped_project('signed')
-        try:
-            assert sign_module.queued(made.payload()) == []
-            code = sign_module.main(['login', 'RULE-2', '--project-root',
-                                     made.root])
-            printed = capsys.readouterr().out
-            assert code == sign_module.EXIT_NOTHING, printed
-            assert ('sign: login names no files in > Scope:, so a signature '
-                    'cannot be tied to the code it governs. Run: purlin:spec '
-                    'login') in printed.splitlines(), printed
-            assert made.signatures() == []
-            out = _Out()
-            assert sign_module.tag_if_met(made.root, out) is None
-            assert out.text().splitlines() == [
-                'No tag: login names no files in > Scope:, so a signature '
-                'cannot be tied to the code it governs.',
-                'No tag: 2 of 2 rules do not meet the gate signed.'], \
-                out.text()
-            assert git(made.root, 'tag', '-l').stdout.strip() == ''
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-76
-    def test_at_strong_it_is_signed_like_any_other(self, capsys):
-        made = _unscoped_project('strong')
-        try:
-            code = sign_module.main(['login', 'RULE-2', '--project-root',
-                                     made.root])
-            printed = capsys.readouterr().out
-            assert code == sign_module.EXIT_OK, printed
-            assert 'names no files' not in printed, printed
-            assert len(made.signatures()) == 1, printed
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-77
-    def test_the_refusal_names_a_feature_whose_evidence_is_out_of_date(self):
-        made = _signed_project()
-        try:
-            _sign_every_rule(made)
-            section = next(iter(json.loads(_read(
-                made.root, '.purlin/evidence/ci/login.json'))[
-                    'platforms'].values()))
-            write(os.path.join(made.root, 'src', 'login.py'),
-                  'def login(user, password):\n    return 401\n')
-            git(made.root, 'commit', '-q', '-am', 'change the code')
-            out = _Out()
-            assert sign_module.tag_if_met(made.root, out) is None
-            assert out.text().splitlines() == [
-                'No tag: login is out of date (code changed since %s).'
-                % section['commit'][:7],
-                'No tag: 2 of 2 rules do not meet the gate signed.'], \
-                out.text()
-            assert git(made.root, 'tag', '-l').stdout.strip() == ''
+            assert not purlin_signatures.is_current(signature,
+                                                    made.rule('RULE-2'))
         finally:
             made.close()

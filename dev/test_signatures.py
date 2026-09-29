@@ -1,78 +1,54 @@
 """Tests for the signature reader and the command that writes one.
 
 Every fixture is written by the test in a throwaway project: a spec, a test
-file, a runtime proof file, the evidence, a signature. Nothing here reads this
-repository's own specs, reaches a network, or signs with a key that exists
-anywhere but the temporary directory the test made.
+file, the evidence, a signature. Nothing here reads this repository's own
+specs, reaches a network, or signs with a key that exists anywhere but the
+temporary directory the test made.
 
 What each group holds:
 
-*the triple*   the three hashes a signature binds, and what does and does not
-               change them: reflowing a rule and adding a tag do not, editing
-               the rule, the proof or the test do
-*stale*        a signature stops being current when any part of the triple
-               or the audit moves under it, and the level it records does
-               not stale it
-*the file*     the name, the fields, and the evidence file it names
-*the commit*   one signed commit for a batch, and the exact setup to print
-               when this checkout cannot sign
-*any branch*   a signature counts on whatever commit carries it
-*the tag*      `purlin:sign` commits the evidence package and tags that
-               commit
+*the hashes*   what a signature is made over, and what does and does not
+               move it
+*current*      a signature stops being current when any part of it moves,
+               and a new system ends nothing
+*the file*     the name, the fields, the signer and the key
+*the commit*   one signed commit, what makes a signature count, and the lines
+               to print when there is no key
+*the walk*     the rules that wait for a person, one at a time
+*anchors*      one signature per feature an anchor's rule applies to
 """
 
-import hashlib
 import json
 import os
 import shutil
 import subprocess
 import sys
-import tempfile
 
 import pytest
 
 DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
-sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
-sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
-sys.path.insert(0, os.path.join(ROOT, 'scripts', 'export'))
+for _path in (os.path.join(ROOT, 'scripts', 'mcp'),
+              os.path.join(ROOT, 'scripts', 'review'), DEV):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
-import package as package_module  # noqa: E402
 import sign as sign_module  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
-from purlin import gate as purlin_gate  # noqa: E402
-from purlin import payload as purlin_payload  # noqa: E402
-from purlin import signatures as purlin_signatures  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
-from purlin import specs as purlin_specs  # noqa: E402
+from purlin import signatures as purlin_signatures  # noqa: E402
 from sign_project import (  # noqa: E402
-    CI_COMMITTER,
-    CI_EMAIL,
-    CRITERIA,
     EVERY_RULE_SIGNED,
     FIRST_GATE,
-    MODEL,
-    Project,
     REVIEW_GATE,
     SIGNING_GATE,
     SIGN_PY,
-    SPEC,
     TEST_FILE,
     TEST_NAMES,
+    Project,
     _Out,
-    ci_signing_key,
-    commit_as_ci,
     git,
-    name_the_model,
     sha256,
-    sign_one,
-    sign_the_queue,
-    signed,
-    signed_project,
-    signing_key,
-    signing_project,
-    status,
-    tagged,
     write)
 
 
@@ -80,32 +56,145 @@ from sign_project import (  # noqa: E402
 # The throwaway project
 # ---------------------------------------------------------------------------
 
+# Both rules with no tag: every rule is asked what the gate asks.
+SPEC = EVERY_RULE_SIGNED
+MANUAL_SPEC = SPEC.replace('verify 401 and the body "denied"\n',
+                           'verify 401 and the body "denied" @manual\n')
+MACHINE = 'jane-laptop'
+EMAIL = 'jane@acme.com'
+
+
+def record(made, source='local', machine=MACHINE, os_name=None,
+           strength=90, at='2026-09-13T12:00:00Z'):
+    """Write one machine's passing results for both proofs. Its path.
+
+    The section carries the fingerprint taken now, so it is current until the
+    spec, the scoped code or the test changes, and it names the machine it
+    ran on. The schema is the one the evidence reader reads.
+    """
+    os_name = os_name or purlin_evidence.host_os()
+    rel = '.purlin/evidence/%s/login.json' % source
+    path = os.path.join(made.root, *rel.split('/'))
+    try:
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+    except (IOError, OSError, ValueError):
+        data = {'schema': purlin_evidence.SCHEMA, 'feature': 'login',
+                'source': source, 'spec': 'specs/auth/login.md',
+                'platforms': {}}
+    proofs = [{'id': proof_id, 'rule': 'RULE-%s' % proof_id[-1],
+               'result': 'pass', 'env': None, 'manual': False,
+               'test': 'tests/test_login.py::%s' % TEST_NAMES[proof_id]}
+              for proof_id in ('PROOF-1', 'PROOF-2')]
+    data['platforms'][os_name] = {
+        'commit': made.head(), 'dirty': False, 'at': at, 'runner': 'jane',
+        'machine': machine, 'hostname': machine,
+        'fingerprint': purlin_fingerprint.fingerprint(made.root, 'login'),
+        'rules': {}, 'proofs': proofs}
+    data.setdefault('audit', {'mutation': None, 'rules': {}})['mutation'] = {
+        'engine': 'mutmut', 'score': strength, 'at': at,
+        'commit': made.head()}
+    write(path, json.dumps(data, indent=2, sort_keys=True))
+    return rel
+
+
+def commit_all(made, message='purlin: evidence at abc1234'):
+    git(made.root, 'add', '-A')
+    git(made.root, 'commit', '-q', '-m', message)
+
+
+def key(root, email=EMAIL, name='Jane', file='signing-key'):
+    """A throwaway ssh key, named as this checkout's signing key. Its `.pub`."""
+    path = os.path.join(root, '.git', file)
+    subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C', email,
+                    '-f', path], check=True)
+    for setting, value in (('user.email', email), ('user.name', name),
+                           ('gpg.format', 'ssh'),
+                           ('user.signingkey', path + '.pub')):
+        git(root, 'config', setting, value)
+    return path + '.pub'
+
+
+def ready(gate=SIGNING_GATE, spec=SPEC, audited=('RULE-1', 'RULE-2'),
+          version='2.1.0', signer=True):
+    """A project whose rules pass and are audited, all committed, with a key."""
+    made = Project(spec=spec, gate=gate)
+    record(made)
+    for rule in audited:
+        made.audit(rule)
+    if version:
+        write(os.path.join(made.root, 'VERSION'), version + '\n')
+    commit_all(made)
+    if signer:
+        key(made.root)
+    return made
+
+
+def fingerprint_of(public_key_path):
+    """What `ssh-keygen -l` prints as the key's fingerprint."""
+    shown = subprocess.run(['ssh-keygen', '-l', '-f', public_key_path],
+                           capture_output=True, text=True, check=True).stdout
+    return shown.split()[1]
+
+
+def signed_by_last_commit(root):
+    """True when HEAD carries an SSH signature."""
+    raw = git(root, 'cat-file', 'commit', 'HEAD').stdout
+    return '-----BEGIN SSH SIGNATURE-----' in raw
+
+
+def read_json(root, rel):
+    with open(os.path.join(root, *rel.split('/')), encoding='utf-8') as handle:
+        return json.load(handle)
+
 
 @pytest.fixture
 def proved():
     """A project whose rules have evidence, so a signature has something to bind."""
-    made = Project()
-    made.proofs()
-    made.evidence()
+    made = Project(spec=SPEC)
+    record(made)
     yield made
     made.close()
 
 
+@pytest.fixture
+def at_signed():
+    made = ready()
+    yield made
+    made.close()
+
+
+@pytest.fixture
+def home(tmp_path, monkeypatch):
+    """A home directory holding nothing, so no key and no git settings leak in."""
+    monkeypatch.setenv('HOME', str(tmp_path))
+    monkeypatch.setenv('XDG_CONFIG_HOME', str(tmp_path / '.config'))
+    return tmp_path
+
+
+def sign_one(made, rule='RULE-1', email=EMAIL, note=None, gate='passed',
+             entry=None):
+    """Write one signature for a rule's own listing. Its project-relative path."""
+    return sign_module.write_signature(
+        made.root, entry or made.rule(rule), email, None, gate, note=note)
+
+
+def current(made, rule='RULE-1'):
+    entry = made.rule(rule)
+    return [signature for signature in made.load().get(('login', rule)) or ()
+            if purlin_signatures.is_current(signature, entry)]
+
+
 # ---------------------------------------------------------------------------
-# The triple
+# The hashes
 # ---------------------------------------------------------------------------
 
-class TestTheTriple:
+class TestTheHashes:
 
     # purlin: signatures PROOF-1
     def test_the_three_hashes_come_back_with_their_kind(self, proved):
         entry = sign_module.rule_entry(
             sign_module.load_payload(proved.root), 'login', 'RULE-1')
-        assert len(entry['rule_hash']) == 64
-        assert len(entry['proof_hash']) == 64
-        assert len(entry['test_hash']) == 64
-        assert entry['test_hash_kind'] == 'file'
-        # Each is the hash of its own text, so three values, not one twice.
         blob = git(proved.root, 'rev-parse',
                    'HEAD:tests/test_login.py').stdout.strip()
         assert entry['rule_hash'] == sha256(
@@ -115,6 +204,7 @@ class TestTheTriple:
             'and a token')
         assert entry['test_hash'] == sha256(
             'tests/test_login.py test_valid_credentials_return_200 ' + blob)
+        assert entry['test_hash_kind'] == 'file'
         assert len({entry['rule_hash'], entry['proof_hash'],
                     entry['test_hash']}) == 3
 
@@ -124,57 +214,36 @@ class TestTheTriple:
             sign_module.load_payload(proved.root), 'login', 'RULE-99') is None
 
     # purlin: signatures PROOF-3
-    def test_reflowing_a_rule_and_changing_its_level_keep_the_triple(self,
-                                                                     proved):
-        before = sign_module.triple_for(proved.rule('RULE-1'))
+    def test_reflowing_a_rule_keeps_the_signed_hash(self, proved):
+        before = purlin_signatures.signed_hash(proved.rule('RULE-1'))
         proved.spec(SPEC.replace(
-            '- RULE-1: Valid credentials return 200 with a session token '
-            '[level: passed]',
-            '- RULE-1: Valid   credentials  return 200  with a session token '
-            '[level: signed]'))
-        after = sign_module.triple_for(proved.rule('RULE-1'))
-        assert after == before, (
-            'the triple binds the rule text with its tag stripped')
-        # Each change on its own: the spaces alone, the tag alone, the tag
-        # taken off, and a tag added to the unmarked RULE-2.
-        line = ('- RULE-1: Valid credentials return 200 with a session token '
-                '[level: passed]')
-        second = sign_module.triple_for(proved.rule('RULE-2'))
-        for edited in (
-                SPEC.replace(line, line.replace(' credentials ',
-                                                '   credentials  ')),
-                SPEC.replace(line, line.replace('passed', 'signed')),
-                SPEC.replace(line, line.replace(' [level: passed]', '')),
-                SPEC.replace('"denied"\n', '"denied" [level: strong]\n', 1)):
-            proved.spec(edited)
-            assert sign_module.triple_for(proved.rule('RULE-1')) == before
-            assert sign_module.triple_for(proved.rule('RULE-2')) == second
+            '- RULE-1: Valid credentials return 200 with a session token',
+            '- RULE-1: Valid   credentials  return 200  with a session token'))
+        assert purlin_signatures.signed_hash(proved.rule('RULE-1')) == before
 
     # purlin: signatures PROOF-4
-    def test_editing_the_rule_the_proof_or_the_test_moves_the_triple(
-            self, proved):
-        before = sign_module.triple_for(proved.rule('RULE-1'))
-
+    def test_editing_the_rule_moves_the_signed_hash(self, proved):
+        before = purlin_signatures.signed_hash(proved.rule('RULE-1'))
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 201 with a session token'))
-        rule_changed = sign_module.triple_for(proved.rule('RULE-1'))
-        assert rule_changed != before
+        assert purlin_signatures.signed_hash(proved.rule('RULE-1')) != before
 
+    # purlin: signatures PROOF-82
+    def test_editing_the_proof_moves_the_signed_hash(self, proved):
+        before = purlin_signatures.signed_hash(proved.rule('RULE-1'))
         proved.spec(SPEC.replace('verify 200 and a token',
                                  'verify 200 and a token that expires'))
-        proof_changed = sign_module.triple_for(proved.rule('RULE-1'))
-        assert proof_changed != before
+        assert purlin_signatures.signed_hash(proved.rule('RULE-1')) != before
 
-        proved.spec(SPEC)
+    # purlin: signatures PROOF-83
+    def test_editing_the_test_moves_the_signed_hash(self, proved):
+        before = purlin_signatures.signed_hash(proved.rule('RULE-1'))
         proved.edit_test(TEST_FILE.replace('== 200', '== 200  # checked'))
-        test_changed = sign_module.triple_for(proved.rule('RULE-1'))
-        assert test_changed != before
+        assert purlin_signatures.signed_hash(proved.rule('RULE-1')) != before
 
     # purlin: signatures PROOF-5
     def test_a_manual_proof_says_so_instead_of_naming_a_file(self):
-        made = Project(spec=SPEC.replace(
-            'verify 401 and the body "denied"',
-            'verify 401 and the body "denied" @manual'))
+        made = Project(spec=MANUAL_SPEC)
         try:
             entry = sign_module.rule_entry(
                 sign_module.load_payload(made.root), 'login', 'RULE-2')
@@ -193,134 +262,150 @@ class TestTheTriple:
 
 
 # ---------------------------------------------------------------------------
-# Stale
+# Current
 # ---------------------------------------------------------------------------
 
-class TestStale:
-
-    def _current(self, project, rule='RULE-1'):
-        entry = project.rule(rule)
-        found = project.load().get(('login', rule)) or []
-        return [s for s in found
-                if purlin_signatures.is_current(s, entry)]
+class TestCurrent:
 
     # purlin: signatures PROOF-6
     def test_a_fresh_signature_is_current(self, proved):
         sign_one(proved)
-        assert len(self._current(proved)) == 1
-        # What the audit observed is bound too: a new finding stales it.
+        assert len(current(proved)) == 1
+        # What the audit observed is part of it too: a new finding ends it.
         proved.audit('RULE-1', findings=['PROOF-1 reads the status alone.'])
-        assert self._current(proved) == []
+        assert current(proved) == []
 
     # purlin: signatures PROOF-7
-    def test_the_rule_text_changing_stales_it(self, proved):
+    def test_the_rule_text_changing_ends_it(self, proved):
         sign_one(proved)
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with a signed session token'))
-        assert self._current(proved) == []
+        assert current(proved) == []
 
     # purlin: signatures PROOF-8
-    def test_the_proof_text_changing_stales_it(self, proved):
+    def test_the_proof_text_changing_ends_it(self, proved):
         sign_one(proved)
         proved.spec(SPEC.replace('verify 200 and a token',
                                  'verify 200, a token and a cookie'))
-        assert self._current(proved) == []
+        assert current(proved) == []
 
     # purlin: signatures PROOF-9
-    def test_the_test_changing_stales_it(self, proved):
+    def test_the_test_changing_ends_it(self, proved):
         sign_one(proved)
         proved.edit_test(TEST_FILE.replace('== 200', '== 200 or True'))
-        assert self._current(proved) == []
+        assert current(proved) == []
 
-    # purlin: signatures PROOF-10
-    def test_the_level_changing_leaves_it_current(self, proved):
+    # purlin: signatures PROOF-84
+    def test_the_code_the_feature_lists_changing_ends_it(self, proved):
         sign_one(proved)
-        assert len(self._current(proved)) == 1
-        proved.spec(SPEC.replace(
-            '- RULE-1: Valid credentials return 200 with a session token '
-            '[level: passed]',
-            '- RULE-1: Valid credentials return 200 with a session token '
-            '[level: strong]'))
-        assert len(self._current(proved)) == 1, (
-            'the level is logged in a signature, not locked')
+        assert len(current(proved)) == 1
+        write(os.path.join(proved.root, 'src', 'login.py'),
+              'def login(user, password):\n    return 401\n')
+        assert current(proved) == []
 
     # purlin: signatures PROOF-11
-    def test_a_stale_signature_still_comes_back_from_the_reader(self, proved):
+    def test_a_signature_that_ended_still_comes_back_from_the_reader(
+            self, proved):
         sign_one(proved)
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with two session tokens'))
         found = proved.load()[('login', 'RULE-1')]
         assert len(found) == 1, found
-        assert found[0]['signer'] == 'jane@acme.com'
-        assert self._current(proved) == [], (
-            'the signed cell reads stale only while the file is still there')
+        assert found[0]['signer'] == EMAIL
+        assert current(proved) == []
 
-    # purlin: signatures PROOF-11
-    def test_a_stale_signature_reads_stale_in_the_signed_cell(self, capsys):
-        made = signing_project(every_rule=False)
-        try:
-            assert sign_module.main(['login', 'RULE-2', '--project-root',
-                                     made.root]) == 0
-            capsys.readouterr()
-            assert made.rule('RULE-2')['cells']['signed']['word'] == 'signed'
-            made.spec(SPEC.replace('return 401 and the body "denied"',
-                                   'return 403 and the body "denied"'))
-            cell = made.rule('RULE-2')['cells']['signed']
-            assert cell['word'] == 'stale', cell
-            assert cell['signer'] == 'jane@acme.com', cell
-        finally:
-            made.close()
+    # purlin: signatures PROOF-85
+    def test_a_rule_whose_signature_ended_is_to_sign_again(self, at_signed,
+                                                           capsys):
+        assert sign_module.main(['login', 'RULE-2', '--project-root',
+                                 at_signed.root]) == 0
+        capsys.readouterr()
+        at_signed.spec(SPEC.replace('return 401 and the body "denied"',
+                                    'return 403 and the body "denied"'))
+        record(at_signed)
+        at_signed.audit('RULE-2')
+        commit_all(at_signed)
+        assert at_signed.rule('RULE-2')['left'] == 'to_sign'
+
+
+class TestTheMachines:
+    """A signature is made over the machine each system's tests ran on."""
+
+    def _signed_over(self, made, machines):
+        entry = dict(made.rule('RULE-1'), machines=machines)
+        rel = sign_one(made, entry=entry)
+        return read_json(made.root, rel), entry
+
+    # purlin: signatures PROOF-119
+    def test_the_same_machine_again_ends_nothing(self, proved):
+        signature, entry = self._signed_over(proved, {'macos': 'jane-laptop'})
+        assert purlin_signatures.is_current(
+            signature, dict(entry, machines={'macos': 'jane-laptop'}))
+
+    # purlin: signatures PROOF-120
+    def test_another_machine_for_a_system_it_names_ends_it(self, proved):
+        signature, entry = self._signed_over(proved, {'macos': 'jane-laptop'})
+        assert not purlin_signatures.is_current(
+            signature, dict(entry, machines={'macos': 'omar-desktop'}))
+
+    # purlin: signatures PROOF-121
+    def test_a_new_system_ends_nothing(self, proved):
+        signature, entry = self._signed_over(proved, {'macos': 'jane-laptop'})
+        assert purlin_signatures.is_current(signature, dict(
+            entry, machines={'macos': 'jane-laptop',
+                             'windows': 'remote runner, Windows'}))
+
+    # purlin: signatures PROOF-122
+    def test_a_system_it_names_that_is_gone_ends_it(self, proved):
+        signature, entry = self._signed_over(
+            proved, {'macos': 'jane-laptop',
+                     'windows': 'remote runner, Windows'})
+        assert not purlin_signatures.is_current(
+            signature, dict(entry, machines={'macos': 'jane-laptop'}))
 
 
 # ---------------------------------------------------------------------------
 # The file
 # ---------------------------------------------------------------------------
 
+# The fields signature format 11 names, required and optional.
+FIELDS = {'schema', 'feature', 'rule', 'applies_to', 'signed_hash',
+          'rule_hash', 'proof_hash', 'test_hash', 'code_hash', 'audit_hash',
+          'machines', 'signer', 'key_fingerprint', 'timestamp',
+          'signer_name', 'test_hash_kind', 'note', 'gate', 'evidence'}
+
+
 class TestTheFile:
 
     # purlin: signatures PROOF-12
-    def test_the_name_carries_the_rule_the_triple_and_the_slug(self, proved):
-        triple = sign_module.triple_for(proved.rule('RULE-1'))
+    def test_the_name_carries_the_rule_the_hash_and_the_slug(self, proved):
+        signed = purlin_signatures.signed_hash(proved.rule('RULE-1'))
         sign_one(proved, email='Rich.LaBarca+purlin@example.com')
         assert proved.signatures() == [
-            'RULE-1.%s.rich-labarca-purlin.json' % triple[:8]]
+            'RULE-1.%s.rich-labarca-purlin.json' % signed[:8]]
 
     # purlin: signatures PROOF-13
     def test_the_fields_are_the_ones_the_format_names(self, proved):
-        evidence = proved.evidence()
-        proved.audit('RULE-1', findings=['PROOF-1 reads the status alone.'])
-        path = sign_one(proved, evidence=evidence, gate='strong')
-        with open(os.path.join(proved.root, path), encoding='utf-8') as handle:
-            data = json.load(handle)
-        assert data['schema'] == 'purlin-signature/1'
-        assert set(data) == {
-            'schema', 'feature', 'rule', 'triple', 'rule_hash', 'proof_hash',
-            'test_hash', 'test_hash_kind', 'audit_hash', 'level',
-            'signer', 'machine', 'os', 'note', 'timestamp', 'gate',
-            'evidence'}
-        assert data['feature'] == 'login' and data['rule'] == 'RULE-1'
-        assert data['triple'] == sign_module.triple_for(
-            proved.rule('RULE-1'))[:16]
-        assert data['signer'] == 'jane@acme.com'
-        assert data['note'] is None
-        assert data['level'] == 'passed'
-        assert data['evidence'] == '.purlin/evidence/local/login.json'
-        assert data['timestamp'].endswith('Z')
-        assert data['gate'] == 'strong'
+        rel = sign_one(proved, gate='strong')
+        data = read_json(proved.root, rel)
+        assert data['schema'] == 'purlin-signature/2'
+        assert set(data) == FIELDS, sorted(set(data) ^ FIELDS)
         rule = proved.rule('RULE-1')
-        assert (data['rule_hash'], data['proof_hash'], data['test_hash']) == (
-            rule['rule_hash'], rule['proof_hash'], rule['test_hash'])
-        assert data['test_hash_kind'] == 'file'
-        # The test strength, the verdict and the finding, one per line.
-        assert data['audit_hash'] == sha256(
-            '90\nweak\nPROOF-1 reads the status alone.')
+        lines = '\n'.join([rule['applies_to'], rule['rule_hash'],
+                           rule['proof_hash'], rule['test_hash'],
+                           rule['code_hash'], rule['audit_hash'],
+                           ','.join('%s=%s' % pair for pair in sorted(
+                               rule['machines'].items()))])
+        assert data['signed_hash'] == sha256(lines)
+        assert data['note'] is None
+        assert data['timestamp'].endswith('Z')
 
     # purlin: signatures PROOF-63
     def test_the_evidence_it_names_is_the_file_the_run_wrote(self, proved):
         """A signature names the evidence file a reader can open."""
         assert sign_module.evidence_for(proved.payload(), 'login') == \
             '.purlin/evidence/local/login.json'
-        proved.evidence(source='ci', commit_it=False)
+        record(proved, source='ci')
         assert sign_module.evidence_for(proved.payload(), 'login') == \
             '.purlin/evidence/local/login.json', 'the local file comes first'
         os.remove(os.path.join(proved.root, '.purlin', 'evidence', 'local',
@@ -331,8 +416,8 @@ class TestTheFile:
 
     # purlin: signatures PROOF-63
     def test_a_written_signature_names_the_ci_file_or_none(self, proved):
-        signing_key(proved.root)
-        proved.evidence(source='ci', commit_it=False)
+        key(proved.root)
+        record(proved, source='ci')
         evidence = os.path.join(proved.root, '.purlin', 'evidence')
         os.remove(os.path.join(evidence, 'local', 'login.json'))
         written = []
@@ -340,11 +425,10 @@ class TestTheFile:
             if gone == 'ci':
                 os.remove(os.path.join(evidence, 'ci', 'login.json'))
             assert sign_module.sign_and_commit(
-                proved.root, [('login', 'RULE-1')], 'jane@acme.com')
+                proved.root, [('login', 'RULE-1')], EMAIL)
             path, = git(proved.root, 'show', '--name-only', '--format=',
                         'HEAD').stdout.split()
-            with open(os.path.join(proved.root, path), encoding='utf-8') as f:
-                written.append(json.load(f)['evidence'])
+            written.append(read_json(proved.root, path)['evidence'])
         assert written == ['.purlin/evidence/ci/login.json', None], written
 
     # purlin: signatures PROOF-14
@@ -352,7 +436,7 @@ class TestTheFile:
         sign_one(proved)
         loaded = proved.load()
         assert len(loaded[('login', 'RULE-1')]) == 1
-        assert loaded[('login', 'RULE-1')][0]['signer'] == 'jane@acme.com'
+        assert loaded[('login', 'RULE-1')][0]['signer'] == EMAIL
         path = loaded[('login', 'RULE-1')][0]['path']
         assert path.startswith('specs/auth/login.signatures/RULE-1.'), path
         # The same file anywhere but beside the spec is not read.
@@ -367,19 +451,71 @@ class TestTheFile:
         os.remove(os.path.join(proved.root, path))
         assert ('login', 'RULE-1') not in proved.load()
 
+    # purlin: signatures PROOF-75
+    def test_it_records_the_signer_as_git_holds_them_and_the_key(
+            self, capsys):
+        made = ready(signer=False)
+        try:
+            public = key(made.root, email='Jane.Doe@Acme.com', name='Jane Doe')
+            assert sign_module.main(['login', 'RULE-2', '--project-root',
+                                     made.root]) == 0
+            capsys.readouterr()
+            data = read_json(made.root,
+                             made.load()[('login', 'RULE-2')][0]['path'])
+            assert (data['signer'], data['signer_name'],
+                    data['key_fingerprint']) == (
+                'Jane.Doe@Acme.com', 'Jane Doe', fingerprint_of(public))
+        finally:
+            made.close()
+
+
+# ---------------------------------------------------------------------------
+# The key a signer signs with
+# ---------------------------------------------------------------------------
+
+class TestTheKey:
+
+    # purlin: signatures PROOF-115
+    def test_a_public_key_path_gives_its_fingerprint(self, proved):
+        public = key(proved.root)
+        assert purlin_signatures.key_fingerprint(proved.root) == \
+            fingerprint_of(public)
+
+    # purlin: signatures PROOF-116
+    def test_a_private_key_path_reads_the_public_key_beside_it(self, proved):
+        public = key(proved.root)
+        git(proved.root, 'config', 'user.signingkey', public[:-len('.pub')])
+        assert purlin_signatures.key_fingerprint(proved.root) == \
+            fingerprint_of(public)
+
+    # purlin: signatures PROOF-117
+    def test_a_key_literal_gives_its_fingerprint(self, proved):
+        public = key(proved.root)
+        with open(public, encoding='utf-8') as handle:
+            literal = handle.read().strip()
+        git(proved.root, 'config', 'user.signingkey', 'key::' + literal)
+        assert purlin_signatures.key_fingerprint(proved.root) == \
+            fingerprint_of(public)
+
+    # purlin: signatures PROOF-118
+    def test_a_key_that_is_not_ssh_is_no_key(self, proved, home, capsys):
+        git(proved.root, 'config', 'gpg.format', 'ssh')
+        git(proved.root, 'config', 'user.signingkey', '3AA5C34371567BD2')
+        code = sign_module.main(['login', 'RULE-1', '--project-root',
+                                 proved.root])
+        assert code == 1
+        assert capsys.readouterr().out.splitlines()[0] == (
+            'No key to sign with. These commands set one up:')
+
 
 # ---------------------------------------------------------------------------
 # The signed commit
 # ---------------------------------------------------------------------------
 
-@pytest.fixture
-def at_strong():
-    """The same project at the gate that turns the queue on."""
-    made = Project(gate=REVIEW_GATE)
-    made.proofs()
-    made.evidence()
-    yield made
-    made.close()
+NO_KEY_LINES = ['No key to sign with. These commands set one up:',
+                '  ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""',
+                '  git config gpg.format ssh',
+                '  git config user.signingkey ~/.ssh/id_ed25519.pub']
 
 
 def add_billing(made):
@@ -393,110 +529,53 @@ def add_billing(made):
               '- PROOF-1 (RULE-1): An invoice of two lines of 50.00 at 10 '
               'percent tax shows 110.00 @manual\n', name='billing',
               category='pay')
-    git(made.root, 'add', '-A')
-    git(made.root, 'commit', '-q', '-m', 'spec(billing): invoices')
+    commit_all(made, 'spec(billing): invoices')
 
 
 class TestTheSignedCommit:
 
     # purlin: signatures PROOF-21
-    def test_without_signing_the_setup_is_printed_and_nothing_is_written(
-            self, at_strong, capsys):
-        code = sign_module.main(['login', '--project-root', at_strong.root])
-        output = capsys.readouterr().out
+    def test_without_a_key_the_commands_are_printed_and_nothing_is_written(
+            self, proved, home, capsys):
+        code = sign_module.main(['login', '--project-root', proved.root])
         assert code == 1
-        assert 'git config gpg.format ssh' in output
-        assert 'git config user.signingkey ~/.ssh/id_ed25519.pub' in output
-        assert 'git config commit.gpgsign true' in output
-        assert at_strong.signatures() == []
+        assert capsys.readouterr().out.splitlines() == NO_KEY_LINES
+        assert proved.signatures() == []
+
+    # purlin: signatures PROOF-95
+    def test_an_existing_key_file_is_not_made_again(self, proved, home,
+                                                     capsys):
+        write(str(home / '.ssh' / 'id_ed25519'), 'a private key\n')
+        code = sign_module.main(['login', '--project-root', proved.root])
+        assert code == 1
+        assert capsys.readouterr().out.splitlines() == [
+            NO_KEY_LINES[0]] + NO_KEY_LINES[2:]
+
+    # purlin: signatures PROOF-22
+    def test_the_script_runs_as_a_command(self, proved, home):
+        result = subprocess.run(
+            [sys.executable, SIGN_PY, 'login', '--project-root', proved.root],
+            capture_output=True, text=True, timeout=120)
+        assert result.returncode == 1, result.stdout + result.stderr
+        assert result.stdout.splitlines() == NO_KEY_LINES, result.stdout
+        assert proved.signatures() == []
 
     # purlin: signatures PROOF-23
-    def test_one_signed_commit_carries_the_batch(self, capsys):
-        made = signing_project()
-        try:
-            before = made.head()
-            code = sign_module.main(['login', '--project-root', made.root])
-            capsys.readouterr()
-            assert code == 0
-            assert len(made.signatures()) == 2
-            log = git(made.root, 'log', '-1', '--format=%G?%n%s').stdout
-            signature, subject = log.strip().splitlines()
-            assert signature == 'G', log
-            assert subject == 'sign(login): RULE-1 RULE-2', subject
-            # One commit was added, and it carries both files.
-            assert git(made.root, 'rev-list', '--count',
-                       before + '..HEAD').stdout.strip() == '1'
-            carried = git(made.root, 'show', '--name-only', '--format=',
-                          'HEAD').stdout.split()
-            assert sorted(carried) == [
-                'specs/auth/login.signatures/' + name
-                for name in made.signatures()], carried
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-25
-    def test_what_a_counting_signature_is_at_each_gate(self, at_strong):
-        signing_key(at_strong.root)
-        # The signer is the last person to touch the test, and that is
-        # logged, not policed: git names both authors.
-        at_strong.edit_test(TEST_FILE + '\n')
-        assert git(at_strong.root, 'log', '-1', '--format=%ae', '--',
-                   'tests/test_login.py').stdout.strip() == 'jane@acme.com'
-        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])
-        found = at_strong.load()[('login', 'RULE-1')][0]
-
-        at_strong.config(gate='signed')
-        counted, reason = purlin_signatures.counts(at_strong.root, found)
-        assert counted, reason
-        at_strong.config(gate='strong')
-        counted, reason = purlin_signatures.counts(at_strong.root, found)
-        assert counted, reason
-
-        unsigned = sign_one(at_strong, 'RULE-2')
-        git(at_strong.root, 'add', '-A')
-        git(at_strong.root, '-c', 'commit.gpgsign=false', 'commit', '-q',
-            '-m', 'sign(login): RULE-2')
-        assert git(at_strong.root, 'log', '-1', '--format=%G?').stdout \
-            .strip() == 'N'
-        found = next(item for item in at_strong.load()[('login', 'RULE-2')]
-                     if item['path'] == unsigned)
-        at_strong.config(gate='signed')
-        counted, reason = purlin_signatures.counts(at_strong.root, found)
-        assert not counted and reason == 'the signing commit is not signed'
-        at_strong.config(gate='strong')
-        counted, reason = purlin_signatures.counts(at_strong.root, found)
-        assert counted, (
-            'below signed a committed signature counts: %s' % reason)
-
-        # Signed by a key the project does not trust: git reads `U`, and it
-        # does not count at signed.
-        stranger = os.path.join(at_strong.root, '.git', 'stranger-key')
-        subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C',
-                        'mallory@else.org', '-f', stranger], check=True)
-        untrusted = sign_one(at_strong, 'RULE-2', email='mallory@else.org')
-        git(at_strong.root, 'add', '-A')
-        git(at_strong.root, '-c', 'user.signingkey=' + stranger + '.pub',
-            'commit', '-q', '-S', '-m', 'sign(login): RULE-2')
-        assert git(at_strong.root, 'log', '-1', '--format=%G?').stdout \
-            .strip() == 'U'
-        found = next(item for item in at_strong.load()[('login', 'RULE-2')]
-                     if item['path'] == untrusted)
-        at_strong.config(gate='signed')
-        counted, reason = purlin_signatures.counts(at_strong.root, found)
-        assert not counted, 'a key the project does not trust verifies nothing'
-
-        # Signed by the trusted key, with someone else as the commit's
-        # author: it counts, whoever the author is.
-        other = sign_one(at_strong, 'RULE-2', email='bob@else.org')
-        git(at_strong.root, 'add', '-A')
-        git(at_strong.root, 'commit', '-q', '-S', '--author',
-            'Bob <bob@else.org>', '-m', 'sign(login): RULE-2')
-        assert git(at_strong.root, 'log', '-1', '--format=%G? %ae').stdout \
-            .strip() == 'G bob@else.org'
-        found = next(item for item in at_strong.load()[('login', 'RULE-2')]
-                     if item['path'] == other)
-        counted, reason = purlin_signatures.counts(at_strong.root, found)
-        assert counted, reason
+    def test_one_signed_commit_carries_the_feature(self, at_signed, capsys):
+        before = at_signed.head()
+        code = sign_module.main(['login', '--project-root', at_signed.root])
+        capsys.readouterr()
+        assert code == 0
+        assert len(at_signed.signatures()) == 2
+        assert git(at_signed.root, 'rev-list', '--count',
+                   before + '..HEAD').stdout.strip() == '1'
+        assert git(at_signed.root, 'log', '-1', '--format=%s').stdout \
+            .strip() == 'sign(login): RULE-1 RULE-2'
+        assert signed_by_last_commit(at_signed.root)
+        carried = git(at_signed.root, 'show', '--name-only', '--format=',
+                      'HEAD').stdout.split()
+        assert sorted(carried) == ['specs/auth/login.signatures/' + name
+                                   for name in at_signed.signatures()]
 
     # purlin: signatures PROOF-24
     def test_a_batch_across_features_names_each_one(self):
@@ -507,337 +586,222 @@ class TestTheSignedCommit:
             [('login', 'RULE-1'), ('billing', 'RULE-3')]) == (
             'sign(batch): login RULE-1, billing RULE-3')
 
-    # purlin: signatures PROOF-27
-    def test_the_signing_gate_names_nobody_and_signs(self, capsys):
-        made = signing_project(every_rule=False)
-        try:
-            code = sign_module.main(['--batch', '--project-root', made.root])
-            output = capsys.readouterr().out
-            assert code == 0, output
-            assert any(name.startswith('RULE-2.')
-                       for name in made.signatures()), made.signatures()
-            assert 'purlin:init --gate signed' not in output, output
-        finally:
-            made.close()
+    # purlin: signatures PROOF-112
+    def test_it_closes_by_naming_the_signer_and_the_key(self, at_signed,
+                                                        capsys):
+        code = sign_module.main(['login', 'RULE-2', '--project-root',
+                                 at_signed.root])
+        assert code == 0
+        last4 = purlin_signatures.key_fingerprint(at_signed.root)[-4:]
+        assert ('Signed 1 rule as jane@acme.com with the key ending ...%s.'
+                % last4) in capsys.readouterr().out.splitlines()
 
     # purlin: signatures PROOF-27
-    def test_a_second_person_signs_whatever_the_settings_name(self, capsys):
-        made = signing_project(every_rule=False, signer='omar@example.org')
+    def test_anyone_with_a_key_signs(self, capsys):
+        made = ready(signer=False)
         try:
-            made.config(signers=['jane@acme.com'],
-                        allowed_signers=['jane@acme.com'])
-            git(made.root, 'add', '-A')
-            git(made.root, 'commit', '-q', '-m', 'chore: name a signer')
-            code = sign_module.main(['--batch', '--project-root', made.root])
-            output = capsys.readouterr().out
-            assert code == 0, output
-            assert [name.split('.')[0] + '.' + name.split('.')[2]
-                    for name in made.signatures()] == ['RULE-2.omar'], \
-                made.signatures()
+            key(made.root, email='omar@example.org', name='Omar')
+            code = sign_module.main(['--all', '--project-root', made.root])
+            assert code == 0, capsys.readouterr().out
+            assert sorted(name.split('.')[0] + '.' + name.split('.')[2]
+                          for name in made.signatures()) == [
+                'RULE-1.omar', 'RULE-2.omar']
         finally:
             made.close()
 
-    # purlin: signatures PROOF-15
-    def test_a_batch_signs_everything_in_the_queue(self, capsys):
-        made = signing_project(every_rule=False)
-        try:
-            before = made.head()
-            code = sign_module.main(['--batch', '--project-root', made.root])
-            output = capsys.readouterr().out
-            assert code == 0, output
-            assert made.signatures() == [
-                name for name in made.signatures() if name.startswith('RULE-2.')
-            ], made.signatures()
-            assert len(made.signatures()) == 1, made.signatures()
-            assert 'Signed 1 rule in' in output, output
-            assert git(made.root, 'rev-list', '--count',
-                       before + '..HEAD').stdout.strip() == '1'
-            assert git(made.root, 'log', '-1', '--format=%G? %s').stdout \
-                .strip() == 'G sign(login): RULE-2'
-        finally:
-            made.close()
 
-    # purlin: signatures PROOF-15
-    def test_a_batch_signs_a_queue_across_two_features_in_one_commit(
-            self, capsys):
-        made = signing_project(every_rule=False)
-        try:
-            add_billing(made)
-            before = made.head()
-            code = sign_module.main(['--batch', '--project-root', made.root])
-            output = capsys.readouterr().out
-            assert code == 0, output
-            assert 'Signed 2 rules in' in output, output
-            assert len(made.signatures()) == 1, made.signatures()
-            assert len(os.listdir(os.path.join(
-                made.root, 'specs', 'pay', 'billing.signatures'))) == 1
-            assert git(made.root, 'rev-list', '--count',
-                       before + '..HEAD').stdout.strip() == '1'
-            assert git(made.root, 'log', '-1', '--format=%G? %s').stdout \
-                .strip() == 'G sign(batch): billing RULE-1, login RULE-2'
-        finally:
-            made.close()
+class TestWhatCounts:
+
+    def _committed(self, made, rule, *commit_args, email=EMAIL):
+        rel = sign_one(made, rule, email=email)
+        git(made.root, 'add', '-A')
+        git(made.root, *(list(commit_args[:-1]) + [
+            'commit', '-q', '-m', commit_args[-1]]))
+        found = next(item for item in made.load()[('login', rule)]
+                     if item['path'] == rel)
+        return purlin_signatures.counts(made.root, found)
+
+    # purlin: signatures PROOF-25
+    def test_a_commit_signed_with_the_signers_key_counts(self, proved):
+        key(proved.root)
+        assert self._committed(proved, 'RULE-1', '-c', 'commit.gpgsign=true',
+                               'sign(login): RULE-1') == (True, '')
+
+    # purlin: signatures PROOF-96
+    def test_an_unsigned_commit_does_not_count(self, proved):
+        key(proved.root)
+        assert self._committed(proved, 'RULE-1', '-c', 'commit.gpgsign=false',
+                               'sign(login): RULE-1') == (
+            False, 'the commit that added it is not signed')
+
+    # purlin: signatures PROOF-97
+    def test_a_key_nobody_registered_counts(self, proved):
+        key(proved.root)
+        stranger = os.path.join(proved.root, '.git', 'stranger-key')
+        subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C',
+                        'mallory@else.org', '-f', stranger], check=True)
+        assert self._committed(
+            proved, 'RULE-1', '-c', 'user.signingkey=' + stranger + '.pub',
+            '-c', 'commit.gpgsign=true', 'sign(login): RULE-1',
+            email='mallory@else.org') == (True, '')
+
+    # purlin: signatures PROOF-98
+    def test_a_signed_commit_by_another_author_counts(self, proved):
+        key(proved.root)
+        rel = sign_one(proved, 'RULE-1')
+        git(proved.root, 'add', '-A')
+        git(proved.root, 'commit', '-q', '-S', '--author',
+            'Bob <bob@else.org>', '-m', 'sign(login): RULE-1')
+        assert git(proved.root, 'log', '-1', '--format=%ae').stdout.strip() \
+            == 'bob@else.org'
+        found = proved.load()[('login', 'RULE-1')][0]
+        assert found['path'] == rel
+        assert purlin_signatures.counts(proved.root, found) == (True, '')
+
+
+class TestTheNote:
 
     # purlin: signatures PROOF-16
-    def test_a_note_records_what_the_signer_checked(self, capsys):
-        made = signing_project()
-        try:
-            code = sign_module.main(
-                ['login', 'RULE-2', '--note', 'I ran the lockout by hand.',
-                 '--project-root', made.root])
-            capsys.readouterr()
-            assert code == 0
-            path = made.load()[('login', 'RULE-2')][0]['path']
-            with open(os.path.join(made.root, path), encoding='utf-8') as f:
-                assert json.load(f)['note'] == 'I ran the lockout by hand.'
-        finally:
-            made.close()
+    def test_a_note_records_what_the_signer_checked(self, at_signed, capsys):
+        code = sign_module.main(
+            ['login', 'RULE-2', '--note', 'I ran the lockout by hand.',
+             '--project-root', at_signed.root])
+        capsys.readouterr()
+        assert code == 0
+        path = at_signed.load()[('login', 'RULE-2')][0]['path']
+        assert read_json(at_signed.root, path)['note'] == \
+            'I ran the lockout by hand.'
+
+    def _refused(self, made, capsys, argv):
+        before = made.head()
+        code = sign_module.main(['--project-root', made.root] + argv)
+        error = capsys.readouterr().err
+        assert made.signatures() == [] and made.head() == before
+        return code, error.splitlines()
 
     # purlin: signatures PROOF-17
-    def test_a_note_needs_a_rule_and_a_line(self):
-        for argv in (['login', 'RULE-1', '--note'],
-                     ['login', '--note', 'a line'],
-                     ['--batch', '--note', 'a line']):
-            assert sign_module.main(argv + ['--project-root', '.']) == 2, argv
+    def test_a_note_with_no_line_is_refused(self, at_signed, capsys):
+        assert self._refused(at_signed, capsys, ['login', 'RULE-1', '--note']) \
+            == (2, [sign_module.USAGE,
+                    'sign.py: --note needs the line you want on the '
+                    'signature.'])
 
-    # purlin: signatures PROOF-17
-    def test_a_refused_note_says_why_and_writes_nothing(self, capsys):
-        made = signing_project()
-        try:
-            before = made.head()
-            for argv, why in (
-                    (['login', 'RULE-1', '--note'],
-                     '--note needs the line you want on the signature.'),
-                    (['login', '--note', 'a line'],
-                     '--note names a feature and the rules it carries.'),
-                    (['--batch', '--note', 'a line'],
-                     '--note names a feature and the rules it carries.')):
-                code = sign_module.main(['--project-root', made.root] + argv)
-                error = capsys.readouterr().err
-                assert made.signatures() == [], (argv, made.signatures())
-                assert code == 2, argv
-                assert 'sign.py: %s' % why in error.splitlines(), error
-            assert made.head() == before
-        finally:
-            made.close()
+    # purlin: signatures PROOF-93
+    def test_a_note_on_a_feature_with_no_rule_is_refused(self, at_signed,
+                                                         capsys):
+        assert self._refused(at_signed, capsys,
+                             ['login', '--note', 'a line']) == (
+            2, [sign_module.USAGE,
+                'sign.py: --note names a feature and the rules it carries.'])
+
+    # purlin: signatures PROOF-94
+    def test_a_note_on_all_is_refused(self, at_signed, capsys):
+        assert self._refused(at_signed, capsys, ['--all', '--note', 'a line']) \
+            == (2, [sign_module.USAGE,
+                    'sign.py: --note names a feature and the rules it '
+                    'carries.'])
 
 
 # ---------------------------------------------------------------------------
-# What the gate lets the command do
+# What is signed without a stop
 # ---------------------------------------------------------------------------
 
-class TestTheGateScales:
+class TestWhatIsSigned:
 
-    # purlin: signatures PROOF-18
-    def test_under_the_first_gate_it_writes_nothing_and_exits_two(
-            self, proved, capsys):
-        signing_key(proved.root)
-        code = sign_module.main(['login', 'RULE-1', '--project-root',
-                                 proved.root])
-        output = capsys.readouterr().out
-        assert code == 2
-        assert 'the gate is passed, which asks for no signature.' in output
-        assert 'purlin:init --gate strong' in output
-        assert ('sign: purlin:init --gate strong adds the test strength, the '
-                'AI audit and the queue.') in output.splitlines(), output
-        assert proved.signatures() == []
-
-    # purlin: signatures PROOF-19
-    def test_under_the_review_gate_a_bare_signature_says_so_and_is_written(
-            self, at_strong, capsys):
-        signing_key(at_strong.root)
-        code = sign_module.main(['login', 'RULE-1', '--project-root',
-                                 at_strong.root])
+    # purlin: signatures PROOF-15
+    def test_all_signs_every_waiting_rule_in_one_commit(self, at_signed,
+                                                        capsys):
+        before = at_signed.head()
+        code = sign_module.main(['--all', '--project-root', at_signed.root])
         output = capsys.readouterr().out
         assert code == 0, output
-        assert 'required only under the gate signed' in output
-        assert len(at_strong.signatures()) == 1
+        assert output.startswith('Signed 2 rules as jane@acme.com with the '
+                                 'key ending ...'), output
+        assert [name.split('.')[0] for name in at_signed.signatures()] == [
+            'RULE-1', 'RULE-2']
+        assert git(at_signed.root, 'rev-list', '--count',
+                   before + '..HEAD').stdout.strip() == '1'
+        assert signed_by_last_commit(at_signed.root)
 
-
-MANUAL_SPEC = SPEC.replace('verify 401 and the body "denied"',
-                           'verify 401 and the body "denied" @manual')
-
-
-def manual_at_strong():
-    """A project at `strong` whose unmarked rule is a hand check in the queue.
-
-    Its one proof is `@manual`, so no test backs it and a person signs it
-    with a note.
-    """
-    made = Project(gate=REVIEW_GATE, spec=MANUAL_SPEC)
-    made.proofs()
-    made.evidence()
-    git(made.root, 'add', '-A')
-    git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
-    signing_key(made.root)
-    return made
-
-
-class TestTheQueueAtStrong:
+    # purlin: signatures PROOF-90
+    def test_all_across_two_features_is_one_commit(self, at_signed, capsys):
+        add_billing(at_signed)
+        assert sign_module.main(['--all', '--project-root',
+                                 at_signed.root]) == 0
+        capsys.readouterr()
+        assert git(at_signed.root, 'log', '-1', '--format=%s').stdout \
+            .strip() == 'sign(batch): billing RULE-1, login RULE-1 RULE-2'
+        assert len(os.listdir(os.path.join(
+            at_signed.root, 'specs', 'pay', 'billing.signatures'))) == 1
 
     # purlin: signatures PROOF-70
-    def test_a_batch_and_a_bare_feature_sign_the_queue(self, capsys):
-        for argv in (['--batch'], ['login']):
-            made = manual_at_strong()
-            try:
-                assert [row['rule'] for row in made.payload()['queue']] \
-                    == ['RULE-2']
-                code = sign_module.main(argv + ['--project-root', made.root])
-                output = capsys.readouterr().out
-                assert code == 0, (argv, output)
-                assert 'Signed 1 rule in' in output, output
-                names = made.signatures()
-                assert len(names) == 1 and names[0].startswith('RULE-2.'), (
-                    argv, names)
-                assert 'required only' not in output, output
-            finally:
-                made.close()
-
-    # purlin: signatures PROOF-71
-    def test_a_named_rule_in_the_queue_is_not_told_it_needs_none(
-            self, capsys):
-        made = manual_at_strong()
+    def test_at_strong_all_signs_the_hand_check(self, capsys):
+        made = ready(gate=REVIEW_GATE, spec=MANUAL_SPEC)
         try:
-            code = sign_module.main(['login', 'RULE-2', '--project-root',
-                                     made.root])
-            output = capsys.readouterr().out
-            assert code == 0, output
-            assert len(made.signatures()) == 1
-            assert 'required only under the gate signed' not in output, output
-        finally:
-            made.close()
-
-
-# ---------------------------------------------------------------------------
-# What a person may sign now
-# ---------------------------------------------------------------------------
-
-class TestWhatIsQueued:
-
-    # purlin: signatures PROOF-20
-    def test_it_is_the_queue_the_payload_wrote(self):
-        made = signing_project(every_rule=False)
-        try:
-            assert sign_module.queued(made.payload()) == [
-                ('login', 'RULE-2')], (
-                'only the rule whose level is signed needs a signature')
-            sign_module.main(['login', 'RULE-2', '--project-root', made.root])
-            assert sign_module.queued(made.payload()) == []
-            made.spec(SPEC.replace('return 401 and the body "denied"',
-                                   'return 403 and the body "denied"'))
-            made.evidence(runner='ci', commit_it=False, source='ci')
-            made.audit('RULE-2')
-            assert sign_module.queued(made.payload()) == [
-                ('login', 'RULE-2')], 'a stale signature is queued again'
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-20
-    def test_a_batch_signs_in_the_order_the_walk_shows(self, capsys):
-        made = signing_project()
-        try:
-            add_billing(made)
-            shown = []
-            sign_module.walk(made.root, answer=lambda entry, _text: (
-                shown.append((entry['feature'], entry['id'])) or 'skip'))
-            assert shown == [('billing', 'RULE-1'), ('login', 'RULE-1'),
-                             ('login', 'RULE-2')], shown
-            assert sign_module.queued(made.payload()) == shown
-            capsys.readouterr()
-            assert sign_module.main(['--batch', '--project-root',
+            assert sign_module.queued(made.payload()) == [('login', 'RULE-2')]
+            assert sign_module.main(['--all', '--project-root',
                                      made.root]) == 0
-            output = capsys.readouterr().out
-            assert git(made.root, 'log', '-1', '--format=%s').stdout.strip() \
-                == 'sign(batch): billing RULE-1, login RULE-1 RULE-2'
-            assert [line.strip() for line in output.splitlines()
-                    if line.startswith('  ')] == [
-                'billing RULE-1', 'login RULE-1', 'login RULE-2'], output
+            capsys.readouterr()
+            assert [name.split('.')[0] for name in made.signatures()] == [
+                'RULE-2']
         finally:
             made.close()
+
+    # purlin: signatures PROOF-91
+    def test_a_bare_feature_signs_its_waiting_rules(self, capsys):
+        made = ready(gate=REVIEW_GATE, spec=MANUAL_SPEC)
+        try:
+            assert sign_module.main(['login', '--project-root', made.root]) \
+                == 0
+            capsys.readouterr()
+            assert [name.split('.')[0] for name in made.signatures()] == [
+                'RULE-2']
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-92
+    def test_at_passed_all_signs_the_hand_check(self, capsys):
+        made = ready(gate=FIRST_GATE, spec=MANUAL_SPEC, audited=())
+        try:
+            assert sign_module.main(['--all', '--project-root',
+                                     made.root]) == 0
+            capsys.readouterr()
+            assert [name.split('.')[0] for name in made.signatures()] == [
+                'RULE-2']
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-123
+    def test_a_named_rule_is_signed_at_any_gate(self, capsys):
+        made = ready(gate=FIRST_GATE, audited=())
+        try:
+            assert sign_module.main(['login', 'RULE-1', '--project-root',
+                                     made.root]) == 0
+            capsys.readouterr()
+            assert [name.split('.')[0] for name in made.signatures()] == [
+                'RULE-1']
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-20
+    def test_all_signs_in_the_order_the_walk_shows(self, at_signed, capsys):
+        add_billing(at_signed)
+        shown = []
+        sign_module.walk(at_signed.root, answer=lambda entry, _text: (
+            shown.append((entry['feature'], entry['id'])) or 'skip'))
+        capsys.readouterr()
+        assert shown == [('billing', 'RULE-1'), ('login', 'RULE-1'),
+                         ('login', 'RULE-2')], shown
+        assert sign_module.queued(at_signed.payload()) == shown
 
     # purlin: signatures PROOF-30
-    def test_a_rule_that_needs_both_is_one_hand_check(self):
-        made = signing_project(every_rule=False, audits=False)
+    def test_a_hand_check_waits_once(self):
+        made = ready(spec=MANUAL_SPEC)
         try:
-            payload = made.payload()
-            assert payload['queue'] == []
-            assert sign_module.queued(payload) == [], (
-                'the rule whose level is signed has no audit entry, so its '
-                'strong cell is not met')
-            made.audit('RULE-2', settled=False)
-            payload = made.payload()
-            assert payload['queue'] == [], (
-                'an audit that could not decide is build work, not a hand '
-                'check')
-            made.spec(MANUAL_SPEC)
-            payload = made.payload()
-            assert [(row['rule'], row['need']) for row in payload['queue']] \
-                == [('RULE-2', 'hand check')], payload['queue']
-            assert sign_module.queued(payload) == [('login', 'RULE-2')], (
-                'the queue is what a batch signs')
-            assert sign_module.queued(payload, 'login') == [
-                ('login', 'RULE-2')], 'a bare login signs the same'
-        finally:
-            made.close()
-
-
-# ---------------------------------------------------------------------------
-# The level
-# ---------------------------------------------------------------------------
-
-class TestTheLevel:
-
-    # purlin: signatures PROOF-62
-    def test_the_level_is_logged_and_not_locked(self, capsys):
-        made = signing_project(every_rule=False)
-        try:
-            code = sign_module.main(['login', 'RULE-2', '--project-root',
-                                     made.root])
-            capsys.readouterr()
-            assert code == 0
-            path = made.load()[('login', 'RULE-2')][0]['path']
-            with open(os.path.join(made.root, path), encoding='utf-8') as f:
-                assert json.load(f)['level'] == 'signed'
-            assert made.rule('RULE-2')['cells']['signed']['word'] == 'signed'
-            made.spec(SPEC.replace('"denied"\n', '"denied" [level: strong]\n',
-                                   1))
-            made.evidence(runner='ci', commit_it=False, source='ci')
             rule = made.rule('RULE-2')
-            assert rule['level'] == 'strong', rule
-            assert 'signed' not in rule['cells'], rule
-            assert rule['flags']['stale'] is False, rule
-            made.spec(SPEC)
-            made.evidence(runner='ci', commit_it=False, source='ci')
-            rule = made.rule('RULE-2')
-            assert rule['level'] == 'signed', rule
-            assert rule['cells']['signed']['word'] == 'signed', rule
-            assert len(made.load()[('login', 'RULE-2')]) == 1
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-72
-    def test_a_rule_marked_below_signed_is_refused_by_name(self, capsys):
-        made = signing_project(every_rule=False)
-        try:
-            code = sign_module.main(['login', 'RULE-1', '--project-root',
-                                     made.root])
-            output = capsys.readouterr().out
-            assert code == 1, output
-            assert ('sign: login RULE-1 is marked [level: passed]; it asks '
-                    'for no signature.') in output, output
-            assert made.signatures() == []
-            made.spec(SPEC.replace('[level: passed]', '[level: strong]'))
-            code = sign_module.main(['login', 'RULE-1', '--project-root',
-                                     made.root])
-            output = capsys.readouterr().out
-            assert code == 1, output
-            assert 'is marked [level: strong]' in output, output
-            code = sign_module.main(['login', 'RULE-1', 'RULE-2',
-                                     '--project-root', made.root])
-            output = capsys.readouterr().out
-            assert code == 0, output
-            assert [name.split('.')[0] for name in made.signatures()] == [
-                'RULE-2'], made.signatures()
+            assert rule['left'] == 'to_test_by_hand', rule['left']
+            assert sign_module.queued(made.payload(), 'login').count(
+                ('login', 'RULE-2')) == 1
         finally:
             made.close()
 
@@ -849,207 +813,181 @@ class TestTheLevel:
 class TestTheWalk:
 
     # purlin: signatures PROOF-31
-    def test_the_walk_opens_on_the_queue_and_signs_with_a_note(self, capsys):
-        made = signing_project(every_rule=False)
+    def test_the_walk_opens_on_what_waits_and_shows_each_rule(self, capsys):
+        made = ready(spec=MANUAL_SPEC, audited=('RULE-1',))
         try:
-            made.spec(SPEC.replace('verify 401 and the body "denied"\n',
-                                   'verify 401 and the body "denied" '
-                                   '@manual\n'))
-            git(made.root, 'add', '-A')
-            git(made.root, 'commit', '-q', '-m', 'docs: a proof by hand')
             seen = []
-
-            def answer(entry, rendered):
-                seen.append((entry['id'], entry['need'], rendered))
-                return ('sign', 'The lockout page read 401 and "denied".')
-
-            given = sign_module.walk(made.root, answer=answer)
+            sign_module.walk(made.root, answer=lambda entry, rendered: (
+                seen.append(rendered) or 'skip'))
             output = capsys.readouterr().out
-            assert output.startswith(
-                'Queue: 1 rule. 1 hand check, 0 signatures.'), output
-            assert [(rule, need) for rule, need, _text in seen] == [
-                ('RULE-2', 'hand check')], seen
-            rendered = seen[0][2].splitlines()
-            assert rendered[0] == 'login RULE-2   level signed   hand check'
-            assert rendered[1:3] == [
-                'Rule', '  Invalid credentials return 401 and the body '
-                '"denied"'], rendered
-            assert '  PROOF-2 (@manual): POST /login with a bad password; '\
-                'verify 401 and the body "denied"' in rendered, rendered
-            assert 'What the audit found' in rendered, rendered
-            assert given['signed'] == [('login', 'RULE-2')], given
-            assert len(given['commits']) == 1, given
+            assert output.splitlines()[:2] == [
+                '1 rule to test by hand: purlin:sign',
+                '1 rule to sign: purlin:sign'], output
+            stop = seen[-1].splitlines()
+            assert stop[:3] == ['login RULE-2   to test by hand', 'Rule',
+                                '  Invalid credentials return 401 and the '
+                                'body "denied"'], stop
+            assert '  PROOF-2 (@manual): POST /login with a bad password; ' \
+                'verify 401 and the body "denied"' in stop
+            assert 'What the audit found' in stop
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-86
+    def test_a_hand_check_signed_carries_what_was_seen(self, capsys):
+        made = ready(spec=MANUAL_SPEC, audited=('RULE-1',))
+        try:
+            given = sign_module.walk(made.root, answer=lambda entry, _text: (
+                ('sign', 'The lockout page read 401.')
+                if entry['id'] == 'RULE-2' else 'skip'))
+            output = capsys.readouterr().out
             path = made.load()[('login', 'RULE-2')][0]['path']
-            with open(os.path.join(made.root, path), encoding='utf-8') as f:
-                assert json.load(f)['note'] == (
-                    'The lockout page read 401 and "denied".')
-            assert ('Walked 1 rule: 1 signed, 0 cases added, 0 skipped.'
-                    in output), output
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-31
-    def test_the_walk_writes_nothing_until_it_closes(self, capsys):
-        made = signing_project()
-        try:
-            before = made.head()
-            at_each_stop = []
-
-            def answer(_entry, _rendered):
-                at_each_stop.append((made.signatures(), made.head()))
-                return 'sign'
-
-            given = sign_module.walk(made.root, answer=answer)
-            capsys.readouterr()
-            assert at_each_stop == [([], before), ([], before)], at_each_stop
-            assert len(made.signatures()) == 2, made.signatures()
-            # One signature commit, straight on top of where the walk began.
-            assert len(given['commits']) == 1, given
-            assert git(made.root, 'rev-parse',
-                       given['commits'][0] + '^').stdout.strip() == before
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-31
-    def test_a_signature_row_names_what_went_stale(self, capsys):
-        made = signing_project(every_rule=False)
-        try:
-            sign_module.main(['login', 'RULE-2', '--project-root', made.root])
-            made.spec(SPEC.replace('return 401 and the body "denied"',
-                                   'return 403 and the body "denied"'))
-            made.evidence(runner='ci', commit_it=False, source='ci')
-            made.audit('RULE-2')
-            commit_as_ci(made.root)
-            capsys.readouterr()
-            seen = []
-            sign_module.walk(made.root, answer=lambda entry, text: (
-                seen.append(text) or 'skip'))
-            assert seen[0].splitlines()[0] == (
-                'login RULE-2   level signed   signature   stale: hashes '
-                'changed after the signature'), seen
-            assert '  Strong. It found nothing.' in seen[0].splitlines(), seen
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-32
-    def test_a_skipped_rule_is_written_nothing_and_stays_in_the_queue(
-            self, capsys):
-        made = signing_project()
-        try:
-            given = sign_module.walk(made.root,
-                                     answer=lambda _entry, _text: 'skip')
-            output = capsys.readouterr().out
-            assert given['signed'] == []
-            assert len(given['skipped']) == 2
-            assert made.signatures() == []
-            assert 'Walked 2 rules: 0 signed, 0 cases added, 2 skipped.' in \
-                output, output
-            assert 'Run: purlin:sign' in output, output
-            assert len(made.payload()['queue']) == 2
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-33
-    def test_a_case_is_carried_to_the_close_and_written_nowhere(self, capsys):
-        made = signing_project()
-        try:
-            given = sign_module.walk(
-                made.root,
-                answer=lambda _entry, _text: ('case', 'it should also reject '
-                                              'an expired token'))
-            output = capsys.readouterr().out
-            assert len(given['cases']) == 2
-            assert made.signatures() == []
-            assert 'it should also reject an expired token' in output
-            assert 'Run: purlin:build' in output, output
-            assert ('Walked 2 rules: 0 signed, 2 cases added, 0 skipped.'
+            assert read_json(made.root, path)['note'] == \
+                'The lockout page read 401.'
+            assert given['signed'] == [('login', 'RULE-2')]
+            assert ('Walked 2 rules: 1 signed, 0 cases added, 1 skipped.'
                     in output.splitlines()), output
         finally:
             made.close()
 
-
-# ---------------------------------------------------------------------------
-# What a signature rests on, and where it was made
-# ---------------------------------------------------------------------------
-
-class TestWhatItRestsOn:
-
-    # purlin: signatures PROOF-73
-    def test_evidence_that_is_not_committed_is_signed_over_by_nobody(
-            self, capsys):
-        made = signing_project(every_rule=False)
+    # purlin: signatures PROOF-88
+    def test_a_hand_check_signed_with_no_line_is_signed(self, capsys):
+        made = ready(spec=MANUAL_SPEC, audited=('RULE-1',))
         try:
-            made.evidence(runner='ci', commit_it=False, source='ci',
-                          at='2026-09-14T12:00:00Z')
-            for argv in (['login', 'RULE-2'], ['--batch']):
-                code = sign_module.main(argv + ['--project-root', made.root])
-                output = capsys.readouterr().out
-                assert code == 1, (argv, output)
-                assert ('sign: login has evidence that is not committed. '
-                        'Run: purlin:test --commit') in output, output
-                assert made.signatures() == [], (argv, made.signatures())
-            given = sign_module.walk(made.root,
-                                     answer=lambda _entry, _text: 'sign')
-            output = capsys.readouterr().out
-            assert given['signed'] == [] and made.signatures() == [], given
-            assert 'login has evidence that is not committed' in output
-            git(made.root, 'add', '-A')
-            git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
-            code = sign_module.main(['login', 'RULE-2', '--project-root',
-                                     made.root])
-            output = capsys.readouterr().out
-            assert code == 0, output
-            assert 'not committed' not in output, output
-            assert len(made.signatures()) == 1
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-73
-    def test_a_feature_with_evidence_not_committed_is_named_once(
-            self, capsys):
-        made = signing_project()
-        try:
-            made.evidence(runner='ci', commit_it=False, source='ci',
-                          at='2026-09-14T12:00:00Z')
-            line = ('sign: login has evidence that is not committed. Run: '
-                    'purlin:test --commit')
-            code = sign_module.main(['--batch', '--project-root', made.root])
-            output = capsys.readouterr().out
-            assert code == 1, output
-            assert output.splitlines().count(line) == 1, output
-            given = sign_module.walk(made.root,
-                                     answer=lambda _entry, _text: 'sign')
-            output = capsys.readouterr().out
-            assert given['rules'] == 2, given
-            assert output.splitlines().count(line) == 1, output
-            assert made.signatures() == [], made.signatures()
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-75
-    def test_a_signature_names_the_machine_and_its_system_and_hashes_neither(
-            self, capsys):
-        import platform
-        made = signing_project(every_rule=False)
-        try:
-            code = sign_module.main(['login', 'RULE-2', '--project-root',
-                                     made.root])
+            given = sign_module.walk(made.root, answer=lambda entry, _text: (
+                ('sign', '') if entry['id'] == 'RULE-2' else 'skip'))
             capsys.readouterr()
-            assert code == 0
-            path = os.path.join(
-                made.root, made.load()[('login', 'RULE-2')][0]['path'])
-            with open(path, encoding='utf-8') as handle:
-                data = json.load(handle)
-            assert data['machine'] == platform.node(), data
-            assert data['os'] == purlin_evidence.host_os(), data
-            assert data['os'] in ('windows', 'macos', 'linux'), data
-            data.update(machine='another-machine', os='windows')
-            write(path, json.dumps(data))
-            git(made.root, 'add', '-A')
-            git(made.root, 'commit', '-q', '-m', 'sign(login): RULE-2')
-            assert made.rule('RULE-2')['cells']['signed']['word'] == 'signed'
+            assert len(given['commits']) == 1, given
+            path = made.load()[('login', 'RULE-2')][0]['path']
+            assert read_json(made.root, path)['note'] is None
         finally:
             made.close()
+
+    # purlin: signatures PROOF-87
+    def test_the_walk_writes_nothing_until_it_closes(self, at_signed, capsys):
+        before = at_signed.head()
+        at_each_stop = []
+
+        def answer(_entry, _rendered):
+            at_each_stop.append((at_signed.signatures(), at_signed.head()))
+            return 'sign'
+
+        given = sign_module.walk(at_signed.root, answer=answer)
+        capsys.readouterr()
+        assert at_each_stop == [([], before), ([], before)], at_each_stop
+        assert len(at_signed.signatures()) == 2
+        assert len(given['commits']) == 1
+        assert git(at_signed.root, 'rev-parse',
+                   given['commits'][0] + '^').stdout.strip() == before
+
+    # purlin: signatures PROOF-32
+    def test_a_skipped_rule_waits_again(self, at_signed, capsys):
+        given = sign_module.walk(at_signed.root,
+                                 answer=lambda _entry, _text: 'skip')
+        output = capsys.readouterr().out.splitlines()
+        assert given['signed'] == [] and at_signed.signatures() == []
+        assert 'Walked 2 rules: 0 signed, 0 cases added, 2 skipped.' in output
+        assert output[-1] == '  2 rules to sign: purlin:sign', output
+
+    # purlin: signatures PROOF-33
+    def test_a_case_is_carried_to_the_close_and_written_nowhere(
+            self, at_signed, capsys):
+        given = sign_module.walk(
+            at_signed.root, answer=lambda entry, _text: (
+                ('case', 'it should also reject an expired token')
+                if entry['id'] == 'RULE-2' else 'skip'))
+        output = capsys.readouterr().out.splitlines()
+        assert len(given['cases']) == 1 and at_signed.signatures() == []
+        assert ('  login RULE-2   add this proof line: it should also reject '
+                'an expired token') in output, output
+
+    # purlin: signatures PROOF-89
+    def test_a_walk_with_nothing_waiting_says_so(self, capsys):
+        made = ready(gate=REVIEW_GATE)
+        try:
+            out = _Out()
+            sign_module.walk(made.root, out=out)
+            assert out.text().splitlines()[0] == (
+                'Nothing is waiting for someone to test by hand or to sign.')
+        finally:
+            made.close()
+
+
+# ---------------------------------------------------------------------------
+# Anchors
+# ---------------------------------------------------------------------------
+
+ANCHOR = ('# Anchor: secure\n\n'
+          '> Description: What every feature does with a password.\n\n'
+          '## Rules\n\n'
+          '- RULE-1: A password is never written to a log\n\n'
+          '## Proof\n\n'
+          '- PROOF-1 (RULE-1): A sign-in with the password "secret" leaves '
+          'no line holding "secret" in the log @manual\n')
+
+
+def with_anchor(made):
+    """`secure`, an anchor both `login` and `billing` require, committed."""
+    write(os.path.join(made.root, 'specs', '_anchors', 'secure.md'), ANCHOR)
+    made.spec(SPEC.replace('> Scope: src/login.py\n',
+                           '> Scope: src/login.py\n> Requires: secure\n'))
+    made.spec('# Feature: billing\n\n'
+              '> Description: Invoices.\n'
+              '> Scope: src/billing.py\n'
+              '> Requires: secure\n\n'
+              '## Rules\n\n'
+              '- RULE-1: An invoice shows its total with tax\n\n'
+              '## Proof\n\n'
+              '- PROOF-1 (RULE-1): An invoice of two lines of 50.00 at 10 '
+              'percent tax shows 110.00 @manual\n', name='billing',
+              category='pay')
+    write(os.path.join(made.root, 'src', 'billing.py'),
+          'def total(lines):\n    return sum(lines) * 1.1\n')
+    commit_all(made, 'spec(secure): the anchor and its two features')
+
+
+def listed(made, feature, applies_to, rule='RULE-1'):
+    payload = made.payload()
+    entry = next(item for item in payload['features']
+                 if item['name'] == applies_to)
+    return next(item for item in entry['rules']
+                if item['feature'] == feature and item['id'] == rule)
+
+
+class TestAnchors:
+
+    # purlin: signatures PROOF-113
+    def test_an_anchor_rule_is_signed_once_per_feature(self, at_signed,
+                                                       capsys):
+        with_anchor(at_signed)
+        before = at_signed.head()
+        assert sign_module.main(['secure', 'RULE-1', '--project-root',
+                                 at_signed.root]) == 0
+        capsys.readouterr()
+        folder = os.path.join(at_signed.root, 'specs', '_anchors',
+                              'secure.signatures')
+        applies = sorted(read_json(folder, name)['applies_to']
+                         for name in os.listdir(folder))
+        assert applies == ['billing', 'login'], applies
+        assert git(at_signed.root, 'rev-list', '--count',
+                   before + '..HEAD').stdout.strip() == '1'
+
+    # purlin: signatures PROOF-114
+    def test_one_features_code_ends_that_signature_alone(self, at_signed,
+                                                         capsys):
+        with_anchor(at_signed)
+        sign_module.main(['secure', 'RULE-1', '--project-root',
+                          at_signed.root])
+        capsys.readouterr()
+        write(os.path.join(at_signed.root, 'src', 'billing.py'),
+              'def total(lines):\n    return sum(lines)\n')
+        found = at_signed.load()[('secure', 'RULE-1')]
+        standing = sorted(
+            signature['applies_to'] for signature in found
+            if purlin_signatures.is_current(
+                signature, listed(at_signed, 'secure',
+                                  signature['applies_to'])))
+        assert standing == ['login'], standing
 
 
 # ---------------------------------------------------------------------------
@@ -1059,28 +997,22 @@ class TestWhatItRestsOn:
 class TestAnyBranch:
 
     # purlin: signatures PROOF-29
-    def test_a_signature_on_a_side_branch_counts_there(self, capsys):
-        made = signing_project(every_rule=False)
-        try:
-            git(made.root, 'checkout', '-q', '-b', 'side')
-            code = sign_module.main(['login', 'RULE-2', '--project-root',
-                                     made.root])
-            capsys.readouterr()
-            assert code == 0
-            on_main = git(made.root, 'ls-tree', '-r', '--name-only', 'main',
-                          'specs/auth/login.signatures').stdout.strip()
-            assert on_main == '', 'main does not carry the signature'
-            cell = made.rule('RULE-2')['cells']['signed']
-            assert cell['word'] == 'signed', cell
-            assert not any('branch' in reason or ' on main' in reason
-                           for reason in cell.get('reasons') or ()), cell
-            # Back on main, which does not carry it, the rule is not signed.
-            git(made.root, 'checkout', '-q', 'main')
-            assert made.signatures() == []
-            cell = made.rule('RULE-2')['cells']['signed']
-            assert cell['word'] == 'unsigned', cell
-        finally:
-            made.close()
+    def test_a_signature_on_a_side_branch_counts_there(self, at_signed,
+                                                       capsys):
+        git(at_signed.root, 'checkout', '-q', '-b', 'side')
+        assert sign_module.main(['login', 'RULE-2', '--project-root',
+                                 at_signed.root]) == 0
+        capsys.readouterr()
+        on_main = git(at_signed.root, 'ls-tree', '-r', '--name-only', 'main',
+                      'specs/auth/login.signatures').stdout.strip()
+        assert on_main == '', 'main does not carry the signature'
+        cell = at_signed.rule('RULE-2')['cells']['signed']
+        assert cell['word'] == 'signed', cell
+        assert not any('branch' in reason or 'main' in reason
+                       for reason in cell.get('reasons') or ()), cell
+        git(at_signed.root, 'checkout', '-q', 'main')
+        assert at_signed.rule('RULE-2')['cells']['signed']['word'] == \
+            'unsigned'
 
 
 # ---------------------------------------------------------------------------
@@ -1094,126 +1026,3 @@ class TestTheCommandLine:
         assert sign_module.main(['--help']) == 0
         assert sign_module.main(['login', '--nope']) == 2
         assert sign_module.main(['--nope']) == 2
-
-    # purlin: signatures PROOF-22
-    def test_the_script_runs_as_a_command(self, at_strong):
-        result = subprocess.run(
-            [sys.executable, SIGN_PY, 'login', '--project-root',
-             at_strong.root], capture_output=True, text=True, timeout=120)
-        assert result.returncode == 1, result.stdout + result.stderr
-        assert 'git config gpg.format ssh' in result.stdout
-        assert 'git config user.signingkey ~/.ssh/id_ed25519.pub' in \
-            result.stdout, result.stdout
-        assert 'git config commit.gpgsign true' in result.stdout, result.stdout
-        assert at_strong.signatures() == []
-
-
-# ---------------------------------------------------------------------------
-# A signed project with its package, shared with dev/test_export.py
-# ---------------------------------------------------------------------------
-
-
-def no_tag_and_no_package(made):
-    """True when the project holds no `signed/*` tag and no package folder."""
-    tags = git(made.root, 'tag', '-l', 'signed/*').stdout.strip()
-    folder = os.path.join(made.root, '.purlin', 'evidence', 'package')
-    return tags == '' and not os.path.exists(folder)
-
-
-# ---------------------------------------------------------------------------
-# The tag
-# ---------------------------------------------------------------------------
-
-class TestTheTag:
-
-    # purlin: signatures PROOF-78
-    def test_sign_commits_the_package_and_tags_that_commit(self, tagged):
-        root = tagged.root
-        tag_commit = git(root, 'rev-parse', 'signed/2.1.0^{commit}').stdout \
-            .strip()
-        parent = git(root, 'rev-parse', 'signed/2.1.0^{commit}^').stdout \
-            .strip()
-        assert tag_commit == tagged.head()
-        assert git(root, 'show', '--name-only', '--format=%s',
-                   tag_commit).stdout.split() == [
-            'purlin:', 'evidence', 'at', parent[:7],
-            '.purlin/evidence/package/2.1.0.json']
-        assert git(root, 'log', '-1', '--format=%G?',
-                   tag_commit).stdout.strip() == 'G'
-        shown = git(root, 'show',
-                    'signed/2.1.0:.purlin/evidence/package/2.1.0.json').stdout
-        package = json.loads(shown)
-        assert (package['state'], package['not_for_approval'],
-                package['commit']) == ('signed', False, parent)
-        assert package_module.check_bytes(shown.encode('utf-8')) is None
-        assert ('Evidence package committed: '
-                '.purlin/evidence/package/2.1.0.json.') in tagged.tag_output
-        assert status(root) == ''
-
-    # purlin: signatures PROOF-79
-    def test_no_tag_when_the_package_cannot_be_written(self, signed):
-        sign_the_queue(signed)
-        write(os.path.join(signed.root, '.purlin', 'evidence', 'package'),
-              'in the way\n')
-        head = signed.head()
-        out = _Out()
-        assert sign_module.tag_if_met(signed.root, out) is None
-        assert out.text().startswith('No tag: the evidence package was not '
-                                     'committed: '), out.text()
-        assert git(signed.root, 'tag', '-l').stdout.strip() == ''
-        assert signed.head() == head
-
-    # purlin: signatures PROOF-80
-    def test_at_strong_the_walk_writes_no_tag_and_no_package(self):
-        made = signed_project(gate='strong')
-        try:
-            assert all(rule['meets_gate'] for feature in made.payload()[
-                'features'] for rule in feature['rules'])
-            head = made.head()
-            out = _Out()
-            result = sign_module.walk(made.root, out=out,
-                                      signer_email='jane@acme.com')
-            printed = out.text().splitlines()
-            assert printed == ['Queue: 0 rules. 0 hand checks, 0 signatures.',
-                               'Nothing is waiting for a person.'], printed
-            assert result['tag'] is None
-            assert no_tag_and_no_package(made)
-            assert made.head() == head
-        finally:
-            made.close()
-
-        made = manual_at_strong()
-        try:
-            out = _Out()
-            result = sign_module.walk(
-                made.root, out=out, signer_email='jane@acme.com',
-                answer=lambda entry, rendered: ('sign', 'saw 401 and denied'))
-            printed = out.text()
-            assert ('Walked 1 rule: 1 signed, 0 cases added, 0 skipped.'
-                    in printed), printed
-            assert result['commits'] and ('Commits: %s'
-                                          % result['commits'][0][:7]
-                                          in printed), printed
-            assert 'tag' not in printed.lower(), printed
-            assert result['tag'] is None
-            assert all(rule['meets_gate'] for feature in made.payload()[
-                'features'] for rule in feature['rules'])
-            assert no_tag_and_no_package(made)
-        finally:
-            made.close()
-
-    # purlin: signatures PROOF-81
-    def test_the_same_project_at_signed_gets_the_tag_and_the_package(self):
-        made = signed_project()
-        try:
-            out = _Out()
-            result = sign_module.walk(
-                made.root, out=out, signer_email='jane@acme.com',
-                answer=lambda entry, rendered: 'sign')
-            assert result['signed'] == [('login', 'RULE-2')], out.text()
-            assert result['tag'] == 'signed/2.1.0', out.text()
-            shown = git(made.root, 'show', 'signed/2.1.0:.purlin/evidence/'
-                        'package/2.1.0.json').stdout
-            assert json.loads(shown)['state'] == 'signed'
-        finally:
-            made.close()
