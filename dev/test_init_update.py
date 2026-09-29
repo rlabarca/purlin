@@ -1477,22 +1477,32 @@ def test_what_the_update_prints_carries_no_emoji(tmp_path, capsys):
 
 
 # purlin: update PROOF-52
-def test_the_run_ends_by_naming_the_next_step(tmp_path, capsys):
+def test_the_run_ends_as_the_status_ends(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _apply(root)
     printed = capsys.readouterr().out.rstrip().splitlines()
-    assert printed[-1] == ('→ Next: run purlin:status to see where every '
-                           'rule stands.')
+    ending = _status_ending(root)
+    assert printed[-len(ending):] == ending, printed
+    assert not printed[-len(ending) - 1].startswith('→'), printed
 
 
 # purlin: update PROOF-53
-def test_a_run_that_leaves_work_names_it(tmp_path, capsys, monkeypatch):
+def test_a_run_that_leaves_work_names_the_update_above_the_summary(
+        tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
     _answers(monkeypatch, [('Apply plugins', 'n')])
     _apply(root, argv=())
     printed = capsys.readouterr().out.rstrip().splitlines()
-    assert printed[-1] == ('→ Next: run purlin:init --update again for '
-                           'plugins.')
+    ending = _status_ending(root)
+    assert printed[-len(ending):] == ending, printed
+    assert printed[-len(ending) - 1] == '→ Run: purlin:init --update', printed
+
+
+def _status_ending(root):
+    """The summary sentence and `Left to do` lines the status ends on."""
+    from purlin import payload as purlin_payload, summary as purlin_summary
+    return purlin_summary.ending(
+        purlin_payload.build_payload(str(root))).splitlines()
 
 
 # --- a project 0.9.5 set up and nobody upgraded -------------------------------

@@ -104,7 +104,6 @@ SCOPE_ADVICE = ('%d spec%s no > Scope: line: %s. Run purlin:spec <name> to '
                 'add one. The line is optional below the gate signed and '
                 'required at signed.')
 WORKFLOW_DIR = '.github/workflows'
-ARROW = '→'
 DROPPED_FRAMEWORK = 'dropped %s from the tests: nothing in the tree runs it'
 TEST_EXTENSIONS = ('.py', '.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.cs',
                    '.sh', '.bash', '.sql')
@@ -527,7 +526,7 @@ def _apply_workflows(root, files, args, out):
     flow = _flow()
     from purlin import evidence as evidence_module
     tags = flow.env_tags_in_specs(root)
-    write_one, reasons = flow.wanted(tags, None, evidence_module.host_os(),
+    write_one, reasons = flow.wanted(tags, evidence_module.host_os(),
                                      _config(root).get('gate'))
     if not write_one:
         out.say('wrote no workflow: %s'
@@ -1071,6 +1070,7 @@ def main(argv=None):
         print('Nothing is pending: this project is at %s.' % _version())
         if advice:
             print(advice)
+        _print_ending(root)
         return EXIT_OK
     _print_pending(items, root)
     print('')
@@ -1092,11 +1092,24 @@ def main(argv=None):
               % (sha, _COMMIT % (_version(), ', '.join(applied))))
     if advice:
         print('  %s' % advice)
-    left = [item['id'] for item in pending(root)]
-    print('%s Next: run %s' % (ARROW, 'purlin:init --update again for %s.'
-          % ', '.join(left) if left else
-          'purlin:status to see where every rule stands.'))
+    _print_ending(root)
     return EXIT_OK
+
+
+def _print_ending(root):
+    """End as `purlin:status` ends: the update line while one is pending, the summary.
+
+    Read from the payload alone, so the run writes nothing a person declined.
+    """
+    status = _plugin_module('mcp', 'purlin.status').status
+    payload = _plugin_module('mcp', 'purlin.payload').payload
+    data = payload.build_payload(root)
+    print('')
+    if not data['features']:
+        print(status.NO_SPECS)
+        return
+    for line in status.ending_lines(data, root):
+        print(line)
 
 
 if __name__ == '__main__':
