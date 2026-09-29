@@ -30,7 +30,7 @@
 - RULE-53: A project with no proof tagged `@env` for an operating system this machine is not is told it needs no remote runner and gets no workflow
 - RULE-54: A project with a proof tagged `@env` for an operating system this machine is not and no git remote is told there is no remote and gets no workflow
 - RULE-14: The git host is read from the remote URL as `github` or `azure`, written as `ci`, and named on the summary line `Gate <gate>. Suites <names>. Git host <host>.`
-- RULE-55: A project whose remote names neither GitHub nor Azure DevOps has `ci` written `none`, and the line after `Gate <gate>. Suites <names>.` reads `This git host cannot run tests remotely. Everything on this machine works.`
+- RULE-55: A project whose remote names a git host Purlin cannot use, one other than GitHub and Azure DevOps, has `ci` written `none`, and the line after `Gate <gate>. Suites <names>.` reads `This git host cannot run tests remotely. Everything on this machine works.`
 - RULE-56: A project with no remote has `ci` written `none`, and the line after `Gate <gate>. Suites <names>.` reads `No git host found.`
 - RULE-57: A project on Azure DevOps gets `purlin.azure-pipelines.yml` in place of `.github/workflows/purlin.yml`
 - RULE-15: The workflow carries one job per operating system the `@env` tags in `specs/` name that the machine running setup is not, and no other, and the Purlin release pinned as `v<version>`
