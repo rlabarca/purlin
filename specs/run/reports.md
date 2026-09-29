@@ -35,7 +35,7 @@
 - RULE-21: `markers.py --near-misses --project-root <dir>` prints one JSON array holding `{"file", "line", "text", "fix", "why"}` for each comment that is nearly a marker, in a file one suite's globs match, and exits 0; any other command line exits 2
 - RULE-22: A comment whose `purlin` is misspelled by one letter or written in capitals, or that has no space after the colon, is a near miss whose fix is the marker it meant, and a marker naming what a spec has is none
 - RULE-23: A `purlin:` comment that cannot be read as a feature and a PROOF or RULE id is a near miss with no fix
-- RULE-24: A marker whose feature, or whose PROOF or RULE id, is one character from exactly one that exists is a near miss whose fix names only an id a comment may name: that feature, that proof, that rule where it has no proof, or its one proof where it has exactly one; one character from a rule with two or more proofs, or from two or more that exist, is none
+- RULE-24: A marker whose feature, or whose PROOF or RULE id, is one character from exactly one that exists is a near miss whose fix names that feature, that proof, that rule where it has no proof, or the rule's one proof where it has exactly one; one character from a rule with two or more proofs, or from two or more that exist, is none
 - RULE-25: A suite's command runs through bash
 - RULE-26: A suite's command runs from the project root
 - RULE-27: A report path that is a folder is read file by file
