@@ -41,7 +41,7 @@
 - PROOF-30 (RULE-3): A copy of the audit skill whose closing section no longer says ``the first line of `Left to do` `` is the next step is reported as a closing section that does not name those words
 - PROOF-4 (RULE-4): The audit skill, its lines counted, is at most 105 lines long
 - PROOF-31 (RULE-4): A copy of the audit skill made exactly 105 lines long is not reported
-- PROOF-32 (RULE-4): A copy of the audit skill made 106 lines long is reported as `106 lines, ceiling 105`
+- PROOF-32 (RULE-4): A copy of the audit skill made 106 lines long is reported as 106 lines long against a ceiling of 105
 - PROOF-5 (RULE-5): A reader of the audit skill finds a table headed `Source` with a `ci` row and a `local` row, the last cell of each naming `passed`, `strong` and `signed`
 - PROOF-33 (RULE-5): A reader of the audit skill finds both evidence folders named, `.purlin/evidence/ci/` and `.purlin/evidence/local/`
 - PROOF-34 (RULE-5): A copy of the audit skill with `strong` dropped from the `local` row is reported as a local row that does not count under `strong`
