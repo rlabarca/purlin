@@ -325,18 +325,28 @@ def test_an_engine_name_nobody_ships_reads_as_none():
                                   ['pytest']) == 'none'
 
 
-@pytest.mark.parametrize('config', [{'gate': 'strong'}, {}, None])
 # purlin: mutation PROOF-30
-def test_settings_that_name_no_engine_read_as_none_for_pytest(config):
-    assert mutation.select_engine(config, ['pytest']) == 'none'
+def test_settings_with_other_keys_and_no_engine_read_as_none_for_pytest():
+    assert mutation.select_engine({'gate': 'strong'}, ['pytest']) == 'none'
     # The same project turned on picks its engine, so the key decided.
     assert mutation.select_engine(AUTO, ['pytest']) == 'mutmut'
 
 
-@pytest.mark.parametrize('config', [{'gate': 'strong'}, {}, None])
 # purlin: mutation PROOF-73
-def test_settings_that_name_no_engine_read_as_none_for_jest(config):
-    assert mutation.select_engine(config, ['jest']) == 'none'
+def test_settings_with_other_keys_and_no_engine_read_as_none_for_jest():
+    assert mutation.select_engine({'gate': 'strong'}, ['jest']) == 'none'
+    assert mutation.select_engine(AUTO, ['jest']) == 'stryker'
+
+
+# purlin: mutation PROOF-83
+def test_settings_with_no_key_read_as_none_for_pytest():
+    assert mutation.select_engine({}, ['pytest']) == 'none'
+    assert mutation.select_engine(AUTO, ['pytest']) == 'mutmut'
+
+
+# purlin: mutation PROOF-84
+def test_settings_with_no_key_read_as_none_for_jest():
+    assert mutation.select_engine({}, ['jest']) == 'none'
     assert mutation.select_engine(AUTO, ['jest']) == 'stryker'
 
 
@@ -459,7 +469,7 @@ def test_the_projects_own_stryker_is_started_over_one_on_the_path(tools,
 
 
 # purlin: mutation PROOF-38
-def test_no_stryker_anywhere_leaves_no_engine_and_says_what_to_install(
+def test_no_stryker_anywhere_leaves_stryker_not_installed(
         tools, project):
     answer = stryker.run(str(project), {'calc': ['src/calc.js']})
     assert (answer['engine'], answer['available']) == ('stryker', False)
@@ -555,7 +565,7 @@ def test_a_json_file_of_another_name_is_not_the_report(tools, project):
 
 
 # purlin: mutation PROOF-14
-def test_no_dotnet_on_the_path_leaves_no_engine(tools, project):
+def test_no_dotnet_on_the_path_names_the_sdk_to_install(tools, project):
     answer = stryker_net.run(str(project), {'login': ['src/Login/Session.cs']})
     assert (answer['engine'], answer['available']) == ('stryker_net', False)
     assert answer['reason'] == ('dotnet is not installed: install the .NET SDK, '
@@ -808,6 +818,17 @@ def test_a_module_at_the_root_wins_over_one_under_src(tools, project):
         'score': None, 'killed': 0, 'survived': 0}
 
 
+# purlin: mutation PROOF-85
+def test_a_break_in_a_class_method_counts_for_its_file(tools, project):
+    answer = mutmut_run(tools, project,
+                        u'    login.session.x\u01c1Session\u01c1reset__mutmut_1: '
+                        u'killed\n',
+                        {'login': ['src/login/session.py']},
+                        ['src/login/session.py'])
+    assert answer['features']['login']['scope_score'] == {
+        'score': 100, 'killed': 1, 'survived': 0}
+
+
 # purlin: mutation PROOF-82
 def test_a_mutmut_run_that_lists_no_break_says_what_to_do(tools, project):
     answer = mutmut_run(tools, project, 'started\n',
@@ -904,7 +925,7 @@ def test_an_engine_nobody_ships_is_not_run(tools, project):
 
 
 # purlin: mutation PROOF-62
-def test_a_missing_an_engine_answer_left_out_is_filled_in():
+def test_a_missing_the_engine_left_out_is_filled_in_empty():
     answer = mutation.normalise(
         {'engine': 'stryker', 'available': True, 'reason': '',
          'features': {'calc': {'scope_score': mutation.scope_entry(3, 1)}},
