@@ -402,6 +402,11 @@ def example_problems():
     problems.extend('%s example line %r is not RULE-N → file:line'
                     % (CONVENTIONS, lines[n]) for n in mapped
                     if not re.match(r'RULE-\d+ → \S+:\d+(\s|$)', lines[n]))
+    named = re.findall(r'RULE-\d+', lines[0])
+    problems.extend('%s example names %s in its subject and maps it nowhere'
+                    % (CONVENTIONS, rule) for rule in named
+                    if not any(lines[n].startswith(rule + ' ')
+                               for n in mapped))
     for heading in ('Decisions:', 'Review:'):
         if heading not in lines or (mapped and
                                     lines.index(heading) < mapped[-1]):
