@@ -44,11 +44,11 @@ each cell. A reader who has learned one has learned the other.
 a proof's marker, run or not; at `passed` the column is there only where the project writes a proof line.
 `Tests` is `<passed> of <rules>`, then `· <k> partial` and `· <k> failing` when either is not
 zero; `partial` means the tests pass on one operating system and not on another. `Strong` reads
-`<n> of <rules> · <strength>` and `Signed` `<n> of <rules>`.
+`<n> of <rules>`, then `· <strength>%` where strength was measured; `Signed` reads `<n> of <rules>`.
 
 ## Step 3: print the summary and `Left to do`
 
-The tool ends on one sentence and `Left to do`, the words every surface ends on:
+The tool ends on one sentence and `Left to do`, the words every command ends on in the terminal:
 
 ```
 40 rules. 35 pass their tests. 30 are strong. 20 are signed.
