@@ -40,6 +40,8 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import markers as markers_module                  # noqa: E402
+from purlin.markers import (                                  # noqa: E402
+    NAMES_NOTHING, RULE_HAS_PROOFS, marker_problems)
 
 # What a case's outcome is read as.
 PASS, FAIL, SKIP = 'pass', 'fail', 'skip'
@@ -51,10 +53,6 @@ NOT_RUN = 'not run'
 # a feature, a proof or a rule no spec has fails the run, and its line says
 # what to do.
 TIED_TO_NO_TEST = 'purlin: %s %s at %s:%d is tied to no test'
-NAMES_NOTHING = ('%s:%d names %s %s, which no spec has. Correct the comment, '
-                 'or run purlin:build to repair it.')
-RULE_HAS_PROOFS = ('purlin: %s %s at %s:%d names a rule that has proofs; '
-                   'name one of them')
 AMBIGUOUS = ("purlin: the report's %s matches %d tests in %s, so its result "
              'is not counted')
 
@@ -461,31 +459,6 @@ def test_name(path, test, fmt):
 # ---------------------------------------------------------------------------
 # What the markers say
 # ---------------------------------------------------------------------------
-
-def marker_problems(scan, features):
-    """One line per marker whose id counts for nothing, by file and line.
-
-    A marker naming a feature, a proof or a rule no spec has, or naming a
-    rule that has proofs, ties no result to any rule, and each one fails the
-    run. `scan` is `markers.scan`'s answer and `features`
-    `specs.scan_specs`'.
-    """
-    lines = []
-    for path in sorted(scan):
-        for marker in scan[path].markers:
-            info = features.get(marker.feature)
-            known = ({} if info is None else
-                     (info.get('proofs') if marker.id.startswith('PROOF-')
-                      else info.get('rules')) or {})
-            if marker.id not in known:
-                lines.append(NAMES_NOTHING % (path, marker.line,
-                                              marker.feature, marker.id))
-            elif (not marker.id.startswith('PROOF-')
-                  and (info.get('proofs_by_rule') or {}).get(marker.id)):
-                lines.append(RULE_HAS_PROOFS % (marker.feature, marker.id,
-                                                path, marker.line))
-    return lines
-
 
 def untied_lines(scan):
     """One line per marker no test follows, in file and line order."""

@@ -920,6 +920,43 @@ def marker_index(project_root):
 
 
 # ---------------------------------------------------------------------------
+# Comments that name nothing
+# ---------------------------------------------------------------------------
+
+# A marker naming a feature, a proof or a rule no spec has fails the run, and
+# its line says what to do.
+NAMES_NOTHING = ('%s:%d names %s %s, which no spec has. Correct the comment, '
+                 'or run purlin:build to repair it.')
+RULE_HAS_PROOFS = ('purlin: %s %s at %s:%d names a rule that has proofs; '
+                   'name one of them')
+
+
+def marker_problems(scan, features):
+    """One line per marker whose id counts for nothing, by file and line.
+
+    A marker naming a feature, a proof or a rule no spec has, or naming a
+    rule that has proofs, ties no result to any rule, and each one fails the
+    run. `scan` is `markers.scan`'s answer and `features`
+    `specs.scan_specs`'.
+    """
+    lines = []
+    for path in sorted(scan):
+        for marker in scan[path].markers:
+            info = features.get(marker.feature)
+            known = ({} if info is None else
+                     (info.get('proofs') if marker.id.startswith('PROOF-')
+                      else info.get('rules')) or {})
+            if marker.id not in known:
+                lines.append(NAMES_NOTHING % (path, marker.line,
+                                              marker.feature, marker.id))
+            elif (not marker.id.startswith('PROOF-')
+                  and (info.get('proofs_by_rule') or {}).get(marker.id)):
+                lines.append(RULE_HAS_PROOFS % (marker.feature, marker.id,
+                                                path, marker.line))
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # Comments that are nearly a marker
 # ---------------------------------------------------------------------------
 
