@@ -41,7 +41,8 @@ function cellRow(rule, name) {
   }).join('; ');
   var beside = name === 'passed' ? platformBoxes(cell)
     : name === 'signed' && cell.signer ? '<span class="mono sec">'
-      + esc(cell.signer + ' \u00b7 ' + when(cell.at)) + '</span>' : '';
+      + unbroken(cell.signer) + ' \u00b7 ' + unbroken(when(cell.at))
+      + '</span>' : '';
   return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
     + (beside ? ' ' + beside : '')
     + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
@@ -82,7 +83,7 @@ function auditPanel(rule) {
   if (audit) {
     lines.push('<p class="sec">Read by <span class="mono">'
       + esc(audit.model || 'unknown') + '</span> on '
-      + esc(moment(audit.at)) + '</p>');
+      + unbroken(moment(audit.at)) + '</p>');
     if (audit.path) {
       lines.push('<p class="sec">' + hostLink(audit.path, audit.path) + '</p>');
     }
@@ -91,6 +92,12 @@ function auditPanel(rule) {
 }
 
 function line(text) { return '<p class="sec">' + esc(text) + '</p>'; }
+
+/* A value set on one line, so a date or an address never breaks inside
+   itself; the sentence around it still wraps. */
+function unbroken(text) {
+  return '<span class="nowrap">' + esc(text) + '</span>';
+}
 
 /* The signature files that bind this rule. One is named
    <RULE-N>.<hash8>.<signer-slug>.json, so the third part names who. */
@@ -113,9 +120,11 @@ function signPanel(feature, rule) {
     var who = [cell.signer_name, cell.signer].filter(Boolean).join(', ')
       || 'a person';
     var key = String(cell.key_fingerprint || '');
-    var lines = ['Signed by ' + who + (cell.signer_name ? ',' : '') + ' on '
-      + moment(cell.at)
-      + (key ? ' with the key ending ...' + key.slice(-4) : '') + '.'];
+    var first = '<p class="sec">' + esc('Signed by ' + who
+      + (cell.signer_name ? ',' : '') + ' on ') + unbroken(moment(cell.at))
+      + esc(key ? ' with the key ending ...' + key.slice(-4) + '.' : '.')
+      + '</p>';
+    var lines = [];
     var machines = rule.machines || {};
     Object.keys(machines).sort().forEach(function (os) {
       lines.push('On ' + systemWords(os).word + ' the tests ran on '
@@ -124,8 +133,8 @@ function signPanel(feature, rule) {
     lines.push('The signature covers the rule, its proof, its test, the '
       + 'code the spec lists, what the audit found and the machine the '
       + 'tests ran on, as this screen shows them.');
-    return '<div class="panel"><h2>Signed</h2>' + lines.map(line).join('')
-      + '</div>';
+    return '<div class="panel"><h2>Signed</h2>' + first
+      + lines.map(line).join('') + '</div>';
   }
   var hand = rule.left === 'to_test_by_hand';
   return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
