@@ -4,12 +4,9 @@
 sets one top-level key in it. One test per proof: each shows one case.
 """
 
-import contextlib
 import errno
-import io
 import json
 import os
-import subprocess
 import sys
 from unittest import mock
 
@@ -17,12 +14,10 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
 import config_engine
-from config_engine import (PROJECT_ROOT_SOURCES, find_project_root,
+from config_engine import (PROJECT_ROOT_SOURCES, ConfigUnreadable,
+                           config_problem, find_project_root,
                            resolve_config, resolve_project_root,
                            update_config)
-
-SCRIPT = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp',
-                      'config_engine.py')
 
 
 @pytest.fixture
@@ -265,7 +260,7 @@ class TestAtomicWrite:
         _write(project, {"key": "val"})
         with mock.patch.object(config_engine.os, 'replace',
                                side_effect=OSError("the move failed")):
-            with contextlib.suppress(OSError):
+            with pytest.raises(OSError, match='^the move failed$'):
                 update_config(project, "key", "other")
         assert _read(project) == {"key": "val"}
         assert _purlin_files(project) == ['config.json']
@@ -281,77 +276,73 @@ class TestAtomicWrite:
 
         with mock.patch.object(config_engine.json, 'dump',
                                side_effect=fill_the_disk):
-            with contextlib.suppress(OSError):
+            with pytest.raises(OSError) as stopped:
                 update_config(project, "key", "other")
+        assert stopped.value.strerror == 'No space left on device'
         assert _read(project) == {"key": "val"}
         assert _purlin_files(project) == ['config.json']
 
 
-# -- The command line --------------------------------------------------------
 
-def _main(project, *args):
-    """The command line's `main()` in this process: (exit code, out, err).
+# -- A settings file that cannot be read ------------------------------------
 
-    In-process is what lets a mutation run see which case caught a break; the
-    first case below also starts the script as a child.
-    """
-    out, err = io.StringIO(), io.StringIO()
-    code = 0
-    with mock.patch.object(sys, 'argv', ['config_engine.py'] + list(args)), \
-            mock.patch.dict(os.environ, {'PURLIN_PROJECT_ROOT': project}), \
-            contextlib.redirect_stdout(out), \
-            contextlib.redirect_stderr(err):
-        try:
-            config_engine.main()
-        except SystemExit as stop:
-            code = stop.code if isinstance(stop.code, int) else 1
-    return code, out.getvalue(), err.getvalue()
+TRAILING_COMMA = '{\n  "gate": "passed",}\n'
 
 
-class TestCommandLine:
+def _write_bytes(project, raw):
+    with open(_settings(project), 'wb') as f:
+        f.write(raw)
 
-    # purlin: config_engine PROOF-5
-    def test_key_prints_the_value_as_its_own_process(self, project):
-        _write(project, {"version": "0.9.0"})
-        r = subprocess.run(
-            [sys.executable, SCRIPT, '--key', 'version'],
-            capture_output=True, text=True, cwd=project,
-            env={**os.environ, 'PURLIN_PROJECT_ROOT': project},
-        )
-        assert r.returncode == 0
-        assert r.stdout == "0.9.0\n"
 
-    # purlin: config_engine PROOF-5
-    def test_key_prints_the_value(self, project):
-        _write(project, {"version": "0.9.0"})
-        assert _main(project, '--key', 'version')[:2] == (0, "0.9.0\n")
+def _read_bytes(project):
+    with open(_settings(project), 'rb') as f:
+        return f.read()
 
-    # purlin: config_engine PROOF-19
-    def test_dump_prints_the_whole_settings_as_json(self, project):
-        _write(project, {"team": "default", "shared": "base"})
-        code, out, _ = _main(project, '--dump')
-        assert code == 0
-        assert json.loads(out) == {"team": "default", "shared": "base"}
 
-    # purlin: config_engine PROOF-20
-    def test_key_the_settings_do_not_hold_prints_an_empty_line(self, project):
-        _write(project, {"version": "0.9.0"})
-        assert _main(project, '--key', 'missing')[:2] == (0, "\n")
+def _cannot_be_read(cause):
+    return ('.purlin/config.json cannot be read: %s. Fix the file by hand; '
+            'nothing ran and nothing was saved.' % cause)
 
-    # purlin: config_engine PROOF-21
-    def test_no_argument_is_refused_with_the_usage(self, project):
-        _write(project, {"version": "0.9.0"})
-        assert _main(project) == (
-            1, "", "Usage: config_engine.py [--dump | --key <name>]\n")
 
-    # purlin: config_engine PROOF-22
-    def test_key_with_no_name_is_refused_with_its_usage(self, project):
-        _write(project, {"version": "0.9.0"})
-        assert _main(project, '--key') == (
-            1, "", "Usage: config_engine.py --key <name>\n")
+def _readers_message(text):
+    """The JSON reader's own message for `text`, and the line it names."""
+    with pytest.raises(json.JSONDecodeError) as refused:
+        json.loads(text)
+    return refused.value.msg, refused.value.lineno
 
-    # purlin: config_engine PROOF-23
-    def test_an_unknown_argument_is_refused_and_named(self, project):
-        _write(project, {"version": "0.9.0"})
-        assert _main(project, '--show') == (
-            1, "", "Unknown argument: --show\n")
+
+class TestASettingsFileThatCannotBeRead:
+
+    # purlin: config_engine PROOF-32
+    def test_a_trailing_comma_is_named_with_the_readers_message_and_line(
+            self, project):
+        _write_bytes(project, TRAILING_COMMA.encode('utf-8'))
+        message, line = _readers_message(TRAILING_COMMA)
+        assert line == 2
+        assert message
+        assert config_problem(project) == _cannot_be_read(
+            '%s at line 2' % message)
+
+    # purlin: config_engine PROOF-33
+    def test_bytes_that_are_not_utf8_are_named(self, project):
+        _write_bytes(project, b'{"gate": "\xff"}')
+        assert config_problem(project) == _cannot_be_read(
+            'it is not UTF-8 text')
+
+    # purlin: config_engine PROOF-34
+    def test_a_list_where_an_object_belongs_is_named(self, project):
+        _write_bytes(project, b'["gate", "passed"]')
+        assert config_problem(project) == _cannot_be_read(
+            'it holds a list where an object belongs')
+
+    # purlin: config_engine PROOF-35
+    def test_a_write_is_refused_and_the_file_left_as_it_was(self, project):
+        _write_bytes(project, TRAILING_COMMA.encode('utf-8'))
+        before = _read_bytes(project)
+        message, _line = _readers_message(TRAILING_COMMA)
+        with pytest.raises(ConfigUnreadable) as refused:
+            update_config(project, 'gate', 'strong')
+        assert str(refused.value) == _cannot_be_read(
+            '%s at line 2' % message)
+        assert _read_bytes(project) == before
+        assert _purlin_files(project) == ['config.json']

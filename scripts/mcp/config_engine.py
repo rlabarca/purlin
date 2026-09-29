@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
 """Config resolver for Purlin projects.
 
 A project has one settings file, `.purlin/config.json`, committed to git.
 resolve_config reads it whole; update_config sets one top-level key in it
-and keeps every other key it held.
+and keeps every other key it held. A file that exists and cannot be read is
+never read as empty: both raise ConfigUnreadable with the sentence
+config_problem gives, so a save never overwrites a file a person can still fix.
 """
 
 import json
 import os
-import sys
 
 
 # How `resolve_project_root` found the root it returned, in the order it
@@ -51,20 +51,6 @@ def find_project_root(start_dir=None):
     return resolve_project_root(start_dir)[0]
 
 
-def _read_json(path):
-    """Read a JSON file, returning its contents or None on any error."""
-    if not os.path.isfile(path):
-        return None
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        if isinstance(data, dict):
-            return data
-        return None
-    except (json.JSONDecodeError, IOError, OSError):
-        return None
-
-
 def _config_path(project_root):
     return os.path.join(project_root, '.purlin', 'config.json')
 
@@ -75,6 +61,10 @@ CONFIG_CANNOT_BE_READ = ('.purlin/config.json cannot be read: %s. Fix the file '
 # The JSON value that stands where an object belongs, in the cause's words.
 _NOT_AN_OBJECT = ((bool, 'a boolean'), (list, 'a list'), (str, 'a string'),
                   ((int, float), 'a number'))
+
+
+class ConfigUnreadable(ValueError):
+    """`.purlin/config.json` exists and cannot be read; the message is the sentence."""
 
 
 def config_problem(project_root):
@@ -112,19 +102,37 @@ def config_problem(project_root):
     return CONFIG_CANNOT_BE_READ % ('it holds %s where an object belongs' % what)
 
 
+def _read_json(project_root):
+    """The settings as a dict, or None when the file is absent.
+
+    A file that exists and cannot be read raises ConfigUnreadable carrying
+    config_problem's sentence; it is never folded into "absent".
+    """
+    problem = config_problem(project_root)
+    if problem:
+        raise ConfigUnreadable(problem)
+    path = _config_path(project_root)
+    if not os.path.isfile(path):
+        return None
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
 def resolve_config(project_root):
     """Return `.purlin/config.json` as a dict, or {} when it is absent."""
-    return _read_json(_config_path(project_root)) or {}
+    return _read_json(project_root) or {}
 
 
 def update_config(project_root, key, value):
     """Set a top-level key in `.purlin/config.json`, keeping every other key.
 
-    The whole file is written beside the target and moved onto it, so an
-    interrupted write leaves the previous contents.
+    Refused with ConfigUnreadable, the file untouched, while the file cannot
+    be read. The whole file is written beside the target and moved onto it;
+    a write or move that fails removes the file written beside it and raises
+    the error, so the caller can say the setting was not saved.
     """
     path = _config_path(project_root)
-    config = _read_json(path) or {}
+    config = _read_json(project_root) or {}
     config[key] = value
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -134,41 +142,7 @@ def update_config(project_root, key, value):
             json.dump(config, f, indent=2)
             f.write('\n')
         os.replace(tmp_path, path)
-    except (IOError, OSError):
+    except OSError:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
-
-
-def main():
-    project_root = find_project_root()
-
-    if len(sys.argv) < 2:
-        print("Usage: config_engine.py [--dump | --key <name>]", file=sys.stderr)
-        sys.exit(1)
-
-    arg = sys.argv[1]
-
-    if arg == '--dump':
-        config = resolve_config(project_root)
-        print(json.dumps(config, indent=4))
-    elif arg == '--key':
-        if len(sys.argv) < 3:
-            print("Usage: config_engine.py --key <name>", file=sys.stderr)
-            sys.exit(1)
-        config = resolve_config(project_root)
-        value = config.get(sys.argv[2])
-        if value is None:
-            print('')
-        elif isinstance(value, (dict, list)):
-            print(json.dumps(value))
-        elif isinstance(value, bool):
-            print('true' if value else 'false')
-        else:
-            print(value)
-    else:
-        print(f"Unknown argument: {arg}", file=sys.stderr)
-        sys.exit(1)
-
-
-if __name__ == '__main__':
-    main()
+        raise
