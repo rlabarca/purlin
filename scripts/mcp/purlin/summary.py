@@ -13,7 +13,8 @@ the steps up to the gate, each containing the next:
 
 `Left to do` follows it: one line per kind of work, in the order the work is
 done, each with its count and the command that clears it. A kind at zero is
-left out, and each rule is counted under one kind, the first that applies:
+left out, and each rule is counted under one kind, the first that applies;
+`test comments to correct` counts comments above tests, not rules:
 
     Left to do:
       5 rules to audit: purlin:audit
@@ -37,14 +38,19 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import evidence as evidence_module                 # noqa: E402
+from purlin import states                                      # noqa: E402
 
 # The kinds of work left, in the order the work is done and the lines read.
 # Each is `(kind, one, many, command)`: the words after the count for one
-# rule and for any other count, and the command that clears it. `%s` in the
-# words of `to_test_remote` is the systems it waits for.
+# and for any other count, and the command that clears it. `%s` in the
+# words of `to_test_remote` is the systems it waits for. `to_correct` counts
+# the comments above tests that name nothing a spec has, and `to_tag` the
+# version; every other kind counts rules.
 KINDS = (
     ('no_proof', 'rule to write a proof for', 'rules to write a proof for',
      'purlin:spec'),
+    ('to_correct', 'test comment to correct', 'test comments to correct',
+     'purlin:build'),
     ('to_fix', 'rule to fix', 'rules to fix', 'purlin:build'),
     ('no_test', 'rule to write a test for', 'rules to write a test for',
      'purlin:build'),
@@ -54,6 +60,7 @@ KINDS = (
     ('to_test_by_hand', 'rule to test by hand', 'rules to test by hand',
      'purlin:sign'),
     ('to_audit', 'rule to audit', 'rules to audit', 'purlin:audit'),
+    ('to_measure', 'rule to measure', 'rules to measure', 'purlin:audit'),
     ('to_strengthen', 'rule to strengthen', 'rules to strengthen',
      'purlin:build'),
     ('no_scope', 'rule to tie to its files', 'rules to tie to their files',
@@ -119,7 +126,7 @@ def rule_kind(rule, gate, here_os, incomplete=None):
 
     strong = cells.get('strong') or {}
     if strong.get('word') == 'weak':
-        return 'to_strengthen'
+        return _weak_kind(strong.get('reasons') or [])
     if strong.get('word') != 'strong':
         return 'to_audit'
     if gate != 'signed':
@@ -130,6 +137,25 @@ def rule_kind(rule, gate, here_os, incomplete=None):
     if incomplete:
         return 'no_scope'
     return 'to_sign'
+
+
+def _weak_kind(reasons):
+    """The kind of a weak rule: measured nothing, or its tests are weak.
+
+    A rule weak only because its spec names no code files is tied to them
+    with `purlin:spec`; one weak only because the engine measured nothing
+    for its feature is measured again with `purlin:audit`; any other reason
+    asks for a stronger test.
+    """
+    prefix = states.NOT_MEASURED % ''
+    if not reasons or not all(str(reason).startswith(prefix)
+                              for reason in reasons):
+        return 'to_strengthen'
+    code_files = states.NO_CODE_FILES.split(':')[0]
+    if any(str(reason)[len(prefix):].startswith(code_files)
+           for reason in reasons):
+        return 'no_scope'
+    return 'to_measure'
 
 
 def steps(own_rules, gate):
@@ -184,24 +210,27 @@ def sentence(summary, gate):
 
 
 def systems_text(systems):
-    """The systems in display words, Linux/Unix, macOS, Windows, joined `, ` and ` and `."""
+    """The systems in display words, Linux/Unix, macOS, Windows, joined ` and `.
+
+    This machine's own system is never among them, so there are one or two.
+    """
     known = [name for name in SYSTEM_ORDER if name in systems]
-    words = [evidence_module.os_word(name) for name in known]
-    if len(words) <= 1:
-        return ''.join(words)
-    return '%s and %s' % (', '.join(words[:-1]), words[-1])
+    return ' and '.join(evidence_module.os_word(name) for name in known)
 
 
-def left(features, gate, here_os, tag=None):
+def left(features, gate, here_os, tag=None, corrections=0):
     """`[{kind, count, text, command}]`: the work left, in the order it is done.
 
     `features` is the payload's feature entries; each rule is counted once,
     under the feature that owns it, so only a rule labelled `own` is read.
-    `tag` is the payload's `tag`, the `signed/*` tag on HEAD or None. A kind
-    at zero is left out. At the gate `signed`, with no other kind left and
-    no tag on HEAD, the one line is `the version to tag`.
+    `tag` is the payload's `tag`, the `signed/*` tag on HEAD or None.
+    `corrections` is how many comments above tests name nothing a spec has,
+    at every gate. A kind at zero is left out. At the gate `signed`, with no
+    other kind left and no tag on HEAD, the one line is `the version to tag`.
     """
     counts = {}
+    if corrections:
+        counts['to_correct'] = corrections
     systems = set()
     for feature in features or ():
         for rule in feature.get('rules') or ():

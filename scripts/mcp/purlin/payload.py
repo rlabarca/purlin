@@ -107,7 +107,8 @@ gate `signed` such a spec's rules read `unsigned` in the signed cell.
 `summary.steps` counts the rules that reached each step up to the gate, each
 step containing the next, and `summary.sentence` says it in one line.
 `left` is the work left, one entry per kind in the order it is done, each
-with its count, its text and the command that clears it; `finished` is true
+with its count, its text and the command that clears it, `to_correct`
+counting the comments above tests that name nothing a spec has; `finished` is true
 when `left` is empty, and `last_line` is then the line said in its place.
 Each rule carries its own `left`, the one kind it is counted under, or null.
 `scripts/mcp/purlin/summary.py` is the one place those words are written.
@@ -214,7 +215,12 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     own_results = {}
     # Which proofs have a test is read from the markers in the test files,
     # not from the evidence: a marked test that has not run yet is a test.
-    tied = markers_module.tied_ids(project_root)
+    suites = markers_module.read_suites(project_root, config)[0]
+    scanned = markers_module.scan(project_root, suites)
+    tied = markers_module.tied_ids(project_root, scanned)
+    # Every comment above a test that names nothing a spec has, or names a
+    # rule that has proofs, fails the run, so `Left to do` counts it too.
+    corrections = len(markers_module.marker_problems(scanned, features))
 
     for name in sorted(features):
         info = features[name]
@@ -237,7 +243,8 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     summary.update(proof_counts(own_rules, tied))
     summary['steps'] = summary_module.steps(own_rules, cfg.gate)
     summary['sentence'] = summary_module.sentence(summary, cfg.gate)
-    left = summary_module.left(feature_entries, cfg.gate, here_os, tag)
+    left = summary_module.left(feature_entries, cfg.gate, here_os, tag,
+                               corrections)
 
     payload = {
         'schema_version': SCHEMA_VERSION,
@@ -334,7 +341,7 @@ def _feature_entry(project_root, name, info, features, evidence,
         result = _rule_entry(
             project_root, owner, owner_info, rule_id, label, owner_evidence,
             all_signatures, cfg, blob_cache,
-            owner_mutation.get('score') if owner_mutation else None,
+            owner_mutation,
             counted_cache, could_not_run, incomplete.get(owner),
             {marked for feature, marked in (tied or ()) if feature == owner},
             name, code_hashes, here_os,
@@ -490,10 +497,11 @@ def _evidence_map(evidence):
 
 def _rule_entry(project_root, owner, owner_info, rule_id, label,
                 owner_evidence, all_signatures, cfg, blob_cache,
-                test_strength=None, counted_cache=None, could_not_run=None,
+                mutation=None, counted_cache=None, could_not_run=None,
                 incomplete=None, marked=None, applies_to=None,
                 code_hashes=None, here_os=None, consumers=None):
     text = owner_info['rules'].get(rule_id, '')
+    test_strength = (mutation or {}).get('score')
     applies_to = applies_to or owner
     code_hashes = code_hashes or {}
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -562,6 +570,10 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         # measures a scope, not one rule, and the strong cell compares what
         # was measured rather than assuming nothing was.
         'test_strength': test_strength,
+        # Why the engine the settings chose measured nothing for the
+        # feature, where it said.
+        'strength_missing': (mutation or {}).get('missing') or '',
+        'feature': owner,
         # Why the rule's own spec names no files, or None.
         'incomplete': incomplete,
         # The owner's proof and rule ids a marker ties to a test declaration,

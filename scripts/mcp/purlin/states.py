@@ -10,10 +10,11 @@ cell above the gate is absent, not empty.
             `passed`, `partial`, `failed`, `no test`, `not run`,
             `out of date`. A rule no proof line names is answered by the
             tests marked with the rule's own id, and reads `no test` with
-            the reason `no proof written` when there are none. The cell carries `platforms`, one
-            entry per operating system a current section covers, and reads
-            `partial` when the tests passed on some of them and failed or did
-            not run on others. `partial` is not met.
+            the reason `no proof written` when there are none. A rule some
+            of whose proofs no test backs reads `no test`, naming them. The
+            cell carries `platforms`, one entry per operating system a
+            current section covers, and reads `partial` where two systems
+            that each have a current section disagree. `partial` is not met.
 
     strong  Met when the tests are worth trusting: the AI audit read the
             rule's current text, proof and test and found nothing, and, where
@@ -90,6 +91,15 @@ COULD_NOT_RUN = 'the AI audit could not run: %s'
 COULD_NOT_DECIDE = 'the AI audit could not decide'
 NO_SCORE = 'no mutation score measured'
 
+# The strong cell's reason where mutation testing is on and measured nothing
+# for the rule's feature: the engine's own sentence, or the spec naming no
+# code files for it to break.
+NOT_MEASURED = 'strength not measured: %s'
+NO_CODE_FILES = 'the spec names no code files: run purlin:spec %s'
+
+# The passed cell's reason for the proofs of a rule no test backs.
+NO_TEST_FOR = 'no test for %s'
+
 # Where a pass came from. An evidence file's source is the folder it sits
 # in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`; a cell names
 # `local` whenever a person's own run is among its sources.
@@ -163,6 +173,10 @@ def rule_cells(inp, cfg):
     `could_not_run` why the last audit could not reach the model for this
                     rule's current hashes, or None
     `test_strength` an integer percent, or None when nothing measured it
+    `strength_missing` why the engine the settings chose measured nothing
+                    for the feature, or '' where nothing is said
+    `feature`       the feature that owns the rule, named in the reason a
+                    spec with no code files gives
     `incomplete`    why the rule's own spec names no files, or None; at the
                     gate `signed` the signed cell then reads `unsigned` with
                     `NAMES_NO_FILES`, because a signature cannot be tied to
@@ -287,7 +301,10 @@ def _passed_cell(inp, cfg):
     ran = [entry for entry in inp.get('sections') or () if entry.get('current')]
     platforms = _platforms(proofs, current)
     cell['platforms'] = platforms
-    words = [entry['word'] for entry in platforms.values()]
+    # Only systems that each have a current section can disagree: a system
+    # a proof is tagged for and no section covers is waited for, not failed.
+    words = [entry['word'] for entry in platforms.values()
+             if entry.get('source') is not None]
     if 'passed' in words and any(word != 'passed' for word in words):
         # The platforms disagree, so neither `passed` nor `failed` is true of
         # the rule. `partial` is the only honest word, and it is not met.
@@ -309,6 +326,15 @@ def _passed_cell(inp, cfg):
         cell['counts'] = True
         return cell
 
+    # A proof no marker ties to a test and no current section lists has no
+    # test at all, tagged for this system or another: running again cannot
+    # clear it, so the rule reads `no test` and names each such proof.
+    if inp.get('proofs'):
+        untested = _untested(proofs, ran, inp.get('marked') or ())
+        if untested:
+            cell['reasons'] = [NO_TEST_FOR % ', '.join(untested)]
+            return cell
+
     passes, missing_env, used = _section_passes(proofs, ran)
     if passes or missing_env:
         cell['source'] = _named_source(entry['source'] for entry in used)
@@ -328,6 +354,15 @@ def _passed_cell(inp, cfg):
     if any(proof.get('tests') or proof.get('id') in marked for proof in proofs):
         cell['word'] = 'not run'
     return cell
+
+
+def _untested(proofs, current, marked):
+    """The ids of the proofs no marker ties to a test and no current section lists."""
+    listed = set()
+    for entry in current or ():
+        listed.update(evidence_module.proof_results(entry['section']))
+    return [proof.get('id') for proof in proofs
+            if proof.get('id') not in marked and proof.get('id') not in listed]
 
 
 def proof_result(proof, sections, marked=()):
@@ -398,15 +433,16 @@ def _word_from_statuses(proofs, statuses, os_name):
     """`passed`, `failed` or `not run` for one platform, or None when it is idle.
 
     A proof tagged `@env` for another operating system is not this platform's
-    to answer, so it is left out. A platform with nothing of the rule's to
-    observe answers None and is not listed at all.
+    to answer, so it is left out. A section answers only for the proofs it
+    lists: one it does not list is neither passed, failed nor `not run`
+    there. A platform with nothing of the rule's to observe answers None and
+    is not listed at all.
     """
     mine = [proof for proof in proofs
             if not proof.get('env') or proof.get('env') == os_name]
-    if not mine:
-        return None
-    seen = [statuses.get(proof.get('id')) for proof in mine]
-    if not any(seen):
+    seen = [statuses[proof.get('id')] for proof in mine
+            if statuses.get(proof.get('id'))]
+    if not seen:
         return None
     if 'fail' in seen:
         return 'failed'
@@ -513,11 +549,15 @@ def _strong_cell(inp, cfg, passed, counting_signatures):
     test whose `verdict` is `strong` meets the cell; `weak` carries each
     finding as a reason; `undecided` is build work too, and reads `weak` with
     the audit's own sentence. With mutation testing on and a score measured,
-    the score must also reach `min_strength`; with it off, or where nothing
-    measured a score, the audit alone decides and the cell says no score was
-    measured. A rule the audit has not read reads `not audited`.
+    the score must also reach `min_strength`; with it on and nothing measured,
+    because the engine said why or the spec names no code files, the cell
+    reads `weak` with `strength not measured: <why>`. With it off, or with an
+    engine that cannot run here and so gave no reason, the audit alone
+    decides and the cell says no score was measured. A rule the audit has not
+    read reads `not audited`.
     """
     strength = inp.get('test_strength')
+    gate = cfg.gate if cfg else None
     cell = {'word': 'weak', 'strength': strength, 'findings': [],
             'evidence': None, 'reasons': []}
 
@@ -576,6 +616,12 @@ def _strong_cell(inp, cfg, passed, counting_signatures):
             and strength < min_strength):
         reasons.append('strength %d%% under %d%%'
                        % (round(strength), min_strength))
+    if mutation_on and gate in ('strong', 'signed') and inp.get('incomplete'):
+        # Nothing names the code to break, so nothing was measured, and
+        # with breaking on nothing measured is not strong.
+        reasons.append(NOT_MEASURED % (NO_CODE_FILES % inp.get('feature')))
+    elif mutation_on and strength is None and inp.get('strength_missing'):
+        reasons.append(NOT_MEASURED % inp.get('strength_missing'))
 
     if reasons:
         cell['word'] = 'weak'

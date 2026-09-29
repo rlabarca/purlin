@@ -29,6 +29,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
+from config_engine import config_problem
 from purlin import (board as board_module, drift as drift_module,
                     payload as payload_module, report_data,
                     specs as specs_module, summary as summary_module)
@@ -47,7 +48,14 @@ def columns_for(gate, proofs=1):
 
 
 def sync_status(project_root):
-    """The whole status report for a project root, as text."""
+    """The whole status report for a project root, as text.
+
+    A settings file that cannot be read stops it before anything is read or
+    written: the report is that one sentence.
+    """
+    problem = config_problem(project_root)
+    if problem:
+        return problem
     data = payload_module.build_payload(project_root, generated_by='sync_status')
     # The dashboard reads what the table reads: every command that ends on
     # this table refreshes the page's data file with the same payload.
