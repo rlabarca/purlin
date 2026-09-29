@@ -19,7 +19,7 @@
 - RULE-5: A marker no test follows is reported as `purlin: <feature> <id> at <file>:<line> is tied to no test` and its result is `not run`, which the evidence writes as `missing`
 - RULE-6: A test is declared by a Python function whose name starts with `test`, at module level or in a class; a JavaScript or TypeScript `it` or `test` call with a literal title, inside any number of `describe` calls; a C# method carrying `[Fact]`, `[Theory]`, `[Test]`, `[TestCase]`, `[TestCaseSource]`, `[TestMethod]`, `[DataTestMethod]`, `[SkippableFact]` or `[SkippableTheory]`; a Go `func TestX(t *testing.T)`
 - RULE-7: A `junit` report is read case by case: a case with a `failure` or `error` child fails, one with a `skipped` child is skipped, and any other passes; its `classname`, `name` and `file` are what the tie reads
-- RULE-8: A `trx` report is read result by result, each joined through its `testId` to the class and method it ran: `Passed` passes, `Failed`, `Error`, `Timeout` and `Aborted` fail, and any other outcome is skipped
+- RULE-8: A `trx` report is read result by result, each joined through its `testId` to the class and method it ran: `Passed`, `Warning`, `Completed` and `PassedButRunAborted` pass, `Failed`, `Error`, `Timeout` and `Aborted` fail, and any other outcome is skipped
 - RULE-9: A `gotest` report is the JSON stream a Go test run prints on its standard output, read event by event: an event naming a test whose action is `pass`, `fail` or `skip` is that test's result, and every other event, and every line that is not JSON, is left alone
 - RULE-10: A case's file is its `file` attribute where the report writes one, else its class name where that is a path, else the Python module its dotted class name names among the suite's marked files; a `trx` case is found by its class chain, narrowed by namespace, and a `gotest` case by its package, read against the module line of `go.mod`
 - RULE-11: The cases of one parametrised test, `test_x[a]` and `test_x[b]`, `TestX/a`, `Method(x: 1)`, or the rows of an `it.each` table, all belong to that one test, and the test passes only when every one of them passes
@@ -27,15 +27,19 @@
 - RULE-13: A case that matches more than one test is counted for none of them, and the run prints `purlin: the report's <name> matches <n> tests in <file>, so its result is not counted`
 - RULE-14: A test whose cases all passed reads `pass`; one with any failed or errored case reads `fail`; any other, its cases all or partly skipped with none failed, or none of them in the report, reads `not run`, which the evidence writes as `missing`
 - RULE-15: In an `exit` suite each test file is one test: the command runs once per file, with `{files}` that one file, and the file passes when the command exits 0; every marker in the file takes the file's result
-- RULE-16: `{files}` in a suite's command becomes the test files that carry a marker of a feature the run covers, each quoted, on a run over some features, and nothing on a run over every feature; `{report}` becomes the report path; the command runs through bash from the project root
-- RULE-17: A suite's report is deleted before the suite runs, file or folder, so a report from an earlier run is never read; a report path that is a folder is read file by file, and a report path of `-` is read from the command's standard output
+- RULE-16: `{files}` in a suite's command becomes the test files that carry a marker of a feature the run covers, each quoted, on a run over some features, and nothing on a run over every feature; `{report}` becomes the report path
+- RULE-17: A suite's report is deleted before the suite runs, file or folder, so a report from an earlier run is never read
 - RULE-18: A suite that leaves no report to read makes the run say `Evidence is missing: the <name> suite wrote no report at <path>.`, or `in <path>` where it left a folder with no report in it, and exit 1
 - RULE-19: A marker naming a feature no spec has, or a proof or a rule its feature's spec does not have, is printed as `<file>:<line> names <feature> <ID>, which no spec has. Correct the comment, or run purlin:build to repair it.`, and one naming a rule that has proofs as `purlin: <feature> <id> at <file>:<line> names a rule that has proofs; name one of them`; either exits the run 1 whatever its tests did
 - RULE-20: A `tests` entry with no `run`, a `format` other than `junit`, `trx`, `gotest` and `exit`, or no `files` is left out with one line naming the suite and why
 - RULE-21: `markers.py --near-misses --project-root <dir>` prints one JSON array holding `{"file", "line", "text", "fix", "why"}` for each comment that is nearly a marker, in a file one suite's globs match, and exits 0; any other command line exits 2
 - RULE-22: A comment whose `purlin` is misspelled by one letter or written in capitals, or that has no space after the colon, is a near miss whose fix is the marker it meant, and a marker naming what a spec has is none
 - RULE-23: A `purlin:` comment that cannot be read as a feature and a PROOF or RULE id is a near miss with no fix
-- RULE-24: A marker whose feature, or whose PROOF or RULE id, is one character from exactly one that exists is a near miss whose fix names that one; one character from two or more is none
+- RULE-24: A marker whose feature, or whose PROOF or RULE id, is one character from exactly one that exists is a near miss whose fix names only an id a comment may name: that feature, that proof, that rule where it has no proof, or its one proof where it has exactly one; one character from a rule with two or more proofs, or from two or more that exist, is none
+- RULE-25: A suite's command runs through bash
+- RULE-26: A suite's command runs from the project root
+- RULE-27: A report path that is a folder is read file by file
+- RULE-28: A report path of `-` is read from the command's standard output
 
 ## Proof
 
@@ -69,6 +73,9 @@
 - PROOF-7 (RULE-7): The JUnit report written by running four Python tests, one passing, one failing an assertion, one skipped and one whose setup raises an error, reads as four cases in that order: `test_passes` `pass`, `test_fails` `fail`, `test_skipped` `skip` and `test_errors` `fail`, each with the class name `tests.test_login`
 - PROOF-8 (RULE-8): The TRX report `dotnet test --logger trx` wrote reads, in its order, as `GreetsByName` `pass`, `Param` `pass` for the row `x: 2`, `Param` `fail` for the row `x: 1`, `Skipped` `skip` from `NotExecuted`, `Inner` `pass` in `App.Tests.GreetingTests+Nested`, and `GreetsByName` `fail` in `Other.Tests.GreetingTests`, the first four in `App.Tests.GreetingTests`
 - PROOF-59 (RULE-8): A TRX report of four results whose outcomes are `Error`, `Timeout`, `Aborted` and `Inconclusive` reads as `fail`, `fail`, `fail` and `skip`
+- PROOF-94 (RULE-8): A TRX report of one result whose outcome is `Warning` reads as `pass`
+- PROOF-95 (RULE-8): A TRX report of one result whose outcome is `Completed` reads as `pass`
+- PROOF-96 (RULE-8): A TRX report of one result whose outcome is `PassedButRunAborted` reads as `pass`
 - PROOF-9 (RULE-9): The stream `go test -json` printed for two packages reads as exactly eight cases: `TestRate` `pass` and `TestLookupPanics` `fail` in `example.com/shop/tax`, then `TestTotal` `pass`, `TestParse/empty` `fail`, `TestParse/one` `pass`, `TestParse` `fail`, `TestDiscount` `skip` and `TestTotalIsWrong` `fail` in `example.com/shop/cart`
 - PROOF-60 (RULE-9): The same stream with a line that is not JSON, `ok`, the module and a time, added at its end reads as the same eight cases, in the same order
 - PROOF-10 (RULE-10): A passing Python case whose class reads `tests.test_login.TestGroup` gives `pass` to the marked method `test_same` of the class `TestGroup` in `tests/test_login.py`
@@ -100,15 +107,15 @@
 - PROOF-16 (RULE-16): `login` and `signup` each have one marked test file, and the suite's command writes down its arguments; a run over `login` alone gives it exactly `tests/test_login.py` and the report path `.purlin/runtime/reports/pytest.xml`
 - PROOF-81 (RULE-16): `login` and `signup` each have one marked test file, and the suite's command writes down its arguments; a run over every feature gives it the report path alone, with no test file
 - PROOF-82 (RULE-16): The marked test file of `signup` is `tests/test_sign up.py`, whose name holds a space; a run over `signup` alone gives the command that path as one argument, then the report path
-- PROOF-83 (RULE-16): A suite's command, asked which shell runs it, answers bash
-- PROOF-84 (RULE-16): A run started from a folder outside the project runs the suite's command in the project root: the command, asked the folder it runs in, answers the project root
+- PROOF-83 (RULE-25): A suite's command, asked which shell runs it, answers bash
+- PROOF-84 (RULE-26): A run started from a folder outside the project runs the suite's command in the project root: the command, asked the folder it runs in, answers the project root
 - PROOF-17 (RULE-17): A report left from an earlier run, holding one passing case, sits at the suite's report path, and the suite's command writes nothing; the run exits 1 saying `wrote no report`, and the old report is gone
 - PROOF-85 (RULE-17): The suite's report path is a folder holding an old report of one passing case, and the command writes nothing; the run exits 1 saying `wrote no report at .purlin/runtime/reports/out`, and the folder is gone
-- PROOF-86 (RULE-17): A suite's report path is a folder, and its command writes two TRX reports into it, one passing the test `A` and one failing the test `B`; the evidence holds `A`'s proof `pass` and `B`'s `fail`
-- PROOF-87 (RULE-17): A suite whose report path is `-` and whose command prints the stream of a Go run gives every Go test in the evidence its result from that stream: `TestTotal` `pass`, `TestLookupPanics` `fail` and `TestDiscount` `missing`
+- PROOF-86 (RULE-27): A suite's report path is a folder, and its command writes two TRX reports into it, one passing the test `A` and one failing the test `B`; the evidence holds `A`'s proof `pass` and `B`'s `fail`
+- PROOF-87 (RULE-28): A suite whose report path is `-` and whose command prints the stream of a Go run gives every Go test in the evidence its result from that stream: `TestTotal` `pass`, `TestLookupPanics` `fail` and `TestDiscount` `missing`
 - PROOF-18 (RULE-18): A suite whose command exits 0 and writes no report ends the run with `Evidence is missing: the pytest suite wrote no report at .purlin/runtime/reports/pytest.xml.` and exit code 1
 - PROOF-93 (RULE-18): A `trx` suite whose command makes its report folder and leaves it empty ends the run with `Evidence is missing: the dotnet suite wrote no report in .purlin/runtime/reports/out.` and exit code 1
-- PROOF-19 (RULE-19): Every rule of `login` has a passing test, and one more passing test, on line 13, is marked `purlin: nosuch PROOF-1`; the run prints `tests/test_login.py:13 names nosuch PROOF-1, which no spec has. Correct the comment, or run purlin:build to repair it.`, still ends on `Nothing left to do.`, and exits 1
+- PROOF-19 (RULE-19): Every rule of `login` has a passing test, and one more passing test, on line 13, is marked `purlin: nosuch PROOF-1`; the run prints `tests/test_login.py:13 names nosuch PROOF-1, which no spec has. Correct the comment, or run purlin:build to repair it.` and exits 1
 - PROOF-21 (RULE-19): `login` has `PROOF-1` to `PROOF-3`, each with a passing test, and one more passing test, on line 13, is marked `purlin: login PROOF-9`; the run prints `tests/test_login.py:13 names login PROOF-9, which no spec has. Correct the comment, or run purlin:build to repair it.` and exits 1
 - PROOF-22 (RULE-19): `login` has `RULE-1` to `RULE-3`, each with a passing test, and one more passing test, on line 13, is marked `purlin: login RULE-9`; the run prints `tests/test_login.py:13 names login RULE-9, which no spec has. Correct the comment, or run purlin:build to repair it.` and exits 1
 - PROOF-23 (RULE-19): Every rule of `login` has a passing test, and one more passing test, on line 13, is marked `purlin: login RULE-1`, a rule that has `PROOF-1`; the run prints `purlin: login RULE-1 at tests/test_login.py:13 names a rule that has proofs; name one of them` and exits 1
@@ -129,6 +136,8 @@
 - PROOF-35 (RULE-24): Where the spec `login` exists, a test file carrying `# purlin: logn PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and why names `logn` and `login`
 - PROOF-36 (RULE-24): Where `login` has `PROOF-1`, `PROOF-2` and `PROOF-3`, a test file carrying `# purlin: login PROOF-30` is listed with the fix `# purlin: login PROOF-3`
 - PROOF-39 (RULE-24): Where `login` has `PROOF-2`, a test file carrying `# purlin: login PROF-2` is listed with the fix `# purlin: login PROOF-2`
-- PROOF-91 (RULE-24): Where `login` has `RULE-1`, `RULE-2` and `RULE-3`, a test file carrying `# purlin: login RULE-30` is listed with the fix `# purlin: login RULE-3`
+- PROOF-91 (RULE-24): Where `login`'s `RULE-3` has the one proof `PROOF-3`, a test file carrying `# purlin: login RULE-30` is listed with the fix `# purlin: login PROOF-3`, and its why is the one sentence saying `RULE-30` is one character from `RULE-3`, which login has, and that a comment names its one proof, `PROOF-3`
+- PROOF-97 (RULE-24): Where `login`'s `RULE-3` has two proofs, `PROOF-3` and `PROOF-4`, a test file carrying `# purlin: login RULE-30` is not listed: the array is empty
+- PROOF-98 (RULE-24): Where `login`'s `RULE-3` has no proof, a test file carrying `# purlin: login RULE-30` is listed with the fix `# purlin: login RULE-3`
 - PROOF-37 (RULE-24): Where `login` has `PROOF-1`, `PROOF-2` and `PROOF-3`, a test file carrying `# purlin: login PROOF-4`, one character from all three, is not listed: the array is empty
 - PROOF-92 (RULE-24): Where the specs `login` and `logon` both exist, a test file carrying `# purlin: logn PROOF-1`, one character from each, is not listed: the array is empty

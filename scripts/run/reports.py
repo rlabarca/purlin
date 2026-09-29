@@ -57,7 +57,7 @@ AMBIGUOUS = ("purlin: the report's %s matches %d tests in %s, so its result "
              'is not counted')
 
 # The outcomes TRX writes that mean the test ran and did not pass, and those
-# that mean it did not run at all.
+# that mean the test itself ran and passed; any other outcome is a skip.
 _TRX_FAIL = ('failed', 'error', 'timeout', 'aborted')
 _TRX_PASS = ('passed', 'passedbutrunaborted', 'warning', 'completed')
 

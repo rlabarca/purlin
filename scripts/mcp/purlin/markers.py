@@ -1001,6 +1001,8 @@ def near_miss(line, features):
 
     `features` is `specs.scan_specs`' answer. `fix` is the line as it should
     read, or None where the comment cannot be read; `why` is one sentence.
+    An id one character from a rule offers the rule where it has no proof,
+    its proof where it has one, and nothing where it has two or more.
     """
     found = _LOOSE_RE.match(line)
     if not found:
@@ -1043,9 +1045,18 @@ def near_miss(line, features):
         if marker_id not in known:
             fixed = _only(sorted(name for name in known
                                  if one_edit(marker_id, name)))
-            if fixed is not None:
-                why.append('`%s` is one character from `%s`, which %s has'
-                           % (marker_id, fixed, feature))
+            proofs = [] if fixed is None or fixed.startswith('PROOF-') else \
+                list((info.get('proofs_by_rule') or {}).get(fixed) or ())
+            if fixed is not None and len(proofs) < 2:
+                # A comment may name a proof, or a rule that has none; a
+                # rule with one proof is named by that proof.
+                reason = ('`%s` is one character from `%s`, which %s has'
+                          % (marker_id, fixed, feature))
+                if proofs:
+                    reason += '; a comment names its one proof, `%s`' % (
+                        proofs[0])
+                    fixed = proofs[0]
+                why.append(reason)
                 marker_id = fixed
     if not why:
         return None

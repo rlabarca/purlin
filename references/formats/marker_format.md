@@ -89,9 +89,11 @@ list with one entry per suite:
 `run` takes two optional placeholders:
 
 - `{report}` becomes the `report` path.
-- `{files}` becomes the test files, each quoted, that carry a marker of a
-  feature the run covers, on a run over some features; on a run over every
-  feature it becomes nothing, and the suite runs whole. A suite with no
+- `{files}` becomes the test files, each quoted, that carry the markers of
+  the proofs the run selected (which proofs a remote runner selects:
+  `references/hard_gates.md`, "Where a runner runs"). On a run over some
+  features these are their test files; on a run over every feature on your
+  own machine it becomes nothing, and the suite runs whole. A suite with no
   `{files}` runs whole every time it runs. A run over some features starts no
   suite with none of their test files.
 
@@ -103,7 +105,8 @@ first.
 
 An entry with no `run`, a `format` outside the four, or no `files` is left out,
 and the run says so in one line. With no entry left, the run runs nothing and
-suggests one (`references/supported_frameworks.md`). Purlin writes reports under
+suggests one for each test tool it recognises
+(`references/supported_frameworks.md`). Purlin writes reports under
 `.purlin/runtime/reports/`, which git ignores, and deletes a suite's report
 before the suite runs, so a report from an earlier run is never read. An entry
 that names no `report` gets `.purlin/runtime/reports/<name>.xml` for `junit`,
@@ -131,7 +134,7 @@ What `dotnet test --logger trx` writes. Purlin reads each `UnitTestResult`:
 
 | Read | From |
 |------|------|
-| the outcome | `outcome`: `Passed` passes; `Failed`, `Error`, `Timeout` and `Aborted` fail; any other value is skipped |
+| the outcome | `outcome`: `Passed`, `Warning`, `Completed` and `PassedButRunAborted` pass; `Failed`, `Error`, `Timeout` and `Aborted` fail; any other value is skipped |
 | the class and method | the `TestMethod` of the `UnitTest` whose `id` is the result's `testId`: its `className` (a nested class after `+`) and its `name` |
 
 ### `gotest`
@@ -208,7 +211,7 @@ read, or when a marker of a feature it covers has no `pass` or `fail`.
 A test run does not look for them. `purlin:build` does, through
 
 ```
-python3 scripts/mcp/purlin/markers.py --near-misses [--project-root DIR]
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/markers.py" --near-misses [--project-root DIR]
 ```
 
 which reads every file one suite's `files` globs match, prints one JSON array and
@@ -225,5 +228,11 @@ exits 0; a wrong command line exits 2. Each entry is one comment:
 A comment is a near miss when `purlin` is misspelled by one letter or written in
 capitals, when there is no space after the colon, when a `purlin:` comment names
 no feature and PROOF or RULE id that can be read, or when its feature, or its
-PROOF or RULE id, is one character from exactly one that exists. One character
-from two or more is not a near miss: Purlin never guesses.
+PROOF or RULE id, is one character from exactly one that exists. A suggestion
+names only an id a comment may name: a proof, or a rule that has no proof. A
+comment one character from a rule with exactly one proof is offered that
+proof, and its `why` says both steps: for `RULE-30`, where `login`'s `RULE-3`
+has the one proof `PROOF-3`, it reads
+`` `RULE-30` is one character from `RULE-3`, which login has; a comment names its one proof, `PROOF-3`. ``
+One character from a rule with two or more proofs, or from two or more ids
+that exist, is not a near miss: Purlin never guesses.

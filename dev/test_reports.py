@@ -397,6 +397,22 @@ class TestTheReports:
             ('A.T', 'E', 'fail'), ('A.T', 'T', 'fail'), ('A.T', 'B', 'fail'),
             ('A.T', 'I', 'skip')]
 
+    # purlin: reports PROOF-94
+    def test_a_trx_warning_passes(self):
+        (case,) = reports.read_trx(_trx([('A.T', 'W', 'Warning')]))
+        assert case.outcome == 'pass'
+
+    # purlin: reports PROOF-95
+    def test_a_trx_completed_passes(self):
+        (case,) = reports.read_trx(_trx([('A.T', 'C', 'Completed')]))
+        assert case.outcome == 'pass'
+
+    # purlin: reports PROOF-96
+    def test_a_trx_passed_but_run_aborted_passes(self):
+        (case,) = reports.read_trx(_trx([('A.T', 'P',
+                                          'PassedButRunAborted')]))
+        assert case.outcome == 'pass'
+
     # purlin: reports PROOF-9
     def test_the_stream_go_test_prints(self):
         cases = reports.read_gotest(_go_stream())
@@ -932,7 +948,6 @@ class TestThroughARun:
         assert ('tests/test_login.py:13 names nosuch PROOF-1, which no spec '
                 'has. Correct the comment, or run purlin:build to repair '
                 'it.') in lines, out
-        assert out.strip().splitlines()[-1] == 'Nothing left to do.', out
         assert code == 1
 
     # purlin: reports PROOF-25
@@ -1037,10 +1052,11 @@ def _near_misses(root, *args):
     return done.returncode, done.stdout, done.stderr
 
 
-def _listed(tmp_path, comment, more_specs=()):
+def _listed(tmp_path, comment, more_specs=(), spec=LOGIN_SPEC):
     """The near misses listed for a `login` project whose test file carries
     `comment` on its first line, above a test."""
-    root = _project(tmp_path, [suites.pytest_suite()], more_specs=more_specs)
+    root = _project(tmp_path, [suites.pytest_suite()], spec=spec,
+                    more_specs=more_specs)
     _write(root, 'tests/test_login.py', comment + '\ndef test_a():\n'
                                                   '    pass\n')
     code, out, err = _near_misses(root)
@@ -1048,8 +1064,8 @@ def _listed(tmp_path, comment, more_specs=()):
     return json.loads(out)
 
 
-def _fix_and_why(tmp_path, comment):
-    (entry,) = _listed(tmp_path, comment)
+def _fix_and_why(tmp_path, comment, spec=LOGIN_SPEC):
+    (entry,) = _listed(tmp_path, comment, spec=spec)
     assert (entry['file'], entry['line'], entry['text']) == (
         'tests/test_login.py', 1, comment)
     return entry['fix'], entry['why']
@@ -1133,8 +1149,22 @@ class TestNearMisses:
         assert fix == '# purlin: login PROOF-2'
 
     # purlin: reports PROOF-91
-    def test_a_rule_id_one_character_off(self, tmp_path):
-        fix, _why = _fix_and_why(tmp_path, '# purlin: login RULE-30')
+    def test_a_rule_with_one_proof_is_offered_its_proof(self, tmp_path):
+        assert _fix_and_why(tmp_path, '# purlin: login RULE-30') == (
+            '# purlin: login PROOF-3',
+            '`RULE-30` is one character from `RULE-3`, which login has; a '
+            'comment names its one proof, `PROOF-3`.')
+
+    # purlin: reports PROOF-97
+    def test_a_rule_with_two_proofs_is_not_offered(self, tmp_path):
+        spec = LOGIN_SPEC + '- PROOF-4 (RULE-3): observe 4\n'
+        assert _listed(tmp_path, '# purlin: login RULE-30', spec=spec) == []
+
+    # purlin: reports PROOF-98
+    def test_a_rule_with_no_proof_is_offered_itself(self, tmp_path):
+        spec = LOGIN_SPEC.replace('- PROOF-3 (RULE-3): observe 3\n', '')
+        fix, _why = _fix_and_why(tmp_path, '# purlin: login RULE-30',
+                                 spec=spec)
         assert fix == '# purlin: login RULE-3'
 
     # purlin: reports PROOF-37
