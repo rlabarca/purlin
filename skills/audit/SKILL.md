@@ -5,9 +5,9 @@ description: Run the tests, the breaks where mutation testing is on, and the AI 
 
 Run the marked tests, break the code on purpose where mutation testing is on to measure how much
 the tests catch, have a model read each rule's proof beside its test, and write what it found
-into the evidence. An audit is level 2: it reports how good the tests are. What it writes counts
-at every gate, whoever ran it: the strong cell reads the audit entry for each rule's current
-text, proof and test.
+into the evidence. An audit reports how good the tests are. What it writes counts at every
+gate, whoever ran it: the strong cell reads the audit entry for each rule's current text, proof
+and test.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -39,20 +39,24 @@ on, then the AI audit: one `claude -p` call per rule whose tests pass, that has 
 test, and whose text, proof or test changed since its last audit, `audit_parallel` at once,
 announced by `AI audit: <n> rules to read, <k> at a time.` The answer names the model that gave
 it. The run writes each feature's section and its `audit` into
-`.purlin/evidence/local/<feature>.json`, prints the status table, `AI audit: <n> rules read, <n>
-strong, <n> weak.` and a `Test strength:` line, one line per cause for any rule the model could
-not be reached for, and `Evidence written to .purlin/evidence/local/<feature>.json.`. It commits
-nothing unless you add `--commit`, which commits the evidence under your own identity with the
-subject `purlin: evidence at <sha7>`. It ends on `Audit: <n> strong, <n> weak.` and the gate line
-`purlin:test` ends on, `gate strong met: <n> of <rules> rules` at `strong` or `gate <gate> not met: <n> of <rules> rules meet it`,
-counting the rules that meet the gate, and it never pushes.
+`.purlin/evidence/local/<feature>.json` and prints
+`Evidence written to .purlin/evidence/local/<feature>.json.`. It commits nothing unless you add
+`--commit`, which commits under your own identity and ends on the evidence, with the subject
+`purlin: evidence at <sha7>`, and it never pushes. It then prints one line of its own,
+`AI audit: <n> rules read, <s> strong, <w> weak.`, and one line per cause for any rule the model
+could not be reached for, and ends on the status table, the summary and `Left to do`, as every
+run does.
 
-Exit codes: `0` no test failed and no rule is short of its tests or its audit, `1` a test failed, evidence is missing, a marker names nothing a spec has, a rule could not be audited, or above `passed` a rule is short of its tests or its audit, `2` the command line was wrong. An audit cannot make a signature appear, so a rule waiting on one does not set the code.
+Exit codes: `0` everything asked happened; `1` a tied test failed or did not run, evidence is
+missing, a marker names nothing a spec has, `.purlin/config.json` is missing, the project was
+set up by 0.9.5 and not upgraded, no test command is set, or at `strong` and `signed` a rule
+read is weak or could not be audited; `2` the command line was wrong. An audit cannot make a
+signature appear, so a rule waiting on one does not set the code.
 
 The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call
 it too. A remote runner runs the same script in an arm of its own, which writes its section
 under `.purlin/evidence/ci/` and runs no audit; you never run it by hand. A project has a runner
-for two reasons only, and `references/hard_gates.md` says which.
+for one reason, a rule that must hold on another operating system.
 
 ## Step 2: read what came back
 
@@ -64,15 +68,16 @@ audit alone decides the strong cell.
 The AI audit reads each proof beside the source of its test, against
 `references/review_criteria.md`, and what comes back is what it observed, in its own words. A
 finding is build work: it names what the test does not yet observe, and the rule reads `weak`
-with that sentence as the reason.
+with that sentence as the reason. A proof longer than 60 words, or holding two cases, is noted
+beside the findings, and a note does not make the rule weak.
 
 ## Step 3: what the gate changes
 
 | Gate | What this run does |
 |------|--------------------|
-| `passed` | Runs the tests and the AI audit, and no breaks: `Test strength: not measured; the gate is passed.` Nothing blocks: `Audit: <n> strong, <n> weak. Nothing blocks at the gate passed.` |
-| `strong` | Runs the breaks too where mutation testing is on, and prints the strength beside the minimum |
-| `signed` | The same as `strong`. Evidence either source wrote counts here too; a project that wants CI's word before a signature sets `trust: remote`, which `purlin:sign` reads |
+| `passed` | Runs the tests and the AI audit, and no breaks: test strength is not measured, and what the audit finds holds nothing back |
+| `strong` | Runs the breaks too where mutation testing is on; a rule whose strength is under the minimum reads `weak` |
+| `signed` | The same as `strong`. Evidence either source wrote counts here too |
 
 ## Step 4: the folder is the source
 
@@ -81,7 +86,7 @@ the same word. A file where the two disagree is ignored, with one warning naming
 
 | Source | The folder | Counts under |
 |--------|------------|--------------|
-| ci | `.purlin/evidence/ci/<feature>.json`, written by the CI identity through the git host's API | `passed`, `strong`, `signed` |
+| ci | `.purlin/evidence/ci/<feature>.json`, written by a remote runner | `passed`, `strong`, `signed` |
 | local | `.purlin/evidence/local/<feature>.json`, written by this command and `purlin:test` on anyone's machine | `passed`, `strong`, `signed` |
 
 ## Step 5: retention
@@ -92,14 +97,9 @@ the tag holds the whole tree, every evidence file in it included.
 
 ## Step 6: name the next step
 
-| What the run shows | The line to print |
-|--------------------|-------------------|
-| A test failed | `→ Run: purlin:build <feature>` |
-| Test strength below `min_strength` | `→ Run: purlin:build <feature>` (add the case the break escaped) |
-| A finding on a rule | `→ Run: purlin:build <feature>` (write the case it names) |
-| A rule needs another operating system | `→ Run: purlin:test --remote` |
-| Every rule met the gate | `→ Run: git push` |
-| A current `ci` run is missing under `trust: remote` | `→ Run: purlin:test --remote` |
-| A rule could not be audited: the model could not be reached | `→ Run: purlin:audit` |
-| A rule's tests pass on one operating system and not another | `→ Run: purlin:build <feature>` (the passed cell reads `partial` and names the platform) |
-| A rule is in the queue: it reads `manual test`, or waits for a signature | `→ Run: purlin:sign` |
+Show the ending as the run printed it; the first line of `Left to do` is the next step:
+
+- `Left to do:` lists work: `→ Run:` the command its first line names, such as `purlin:build`
+  after `2 rules to strengthen: purlin:build`.
+- `Nothing left to do.`: say so and name no command. At the gate `signed` the line goes on to
+  name the release step, `git push origin signed/<version>`.

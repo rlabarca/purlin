@@ -5,11 +5,15 @@ checks and the broken copies this file shares with the other skill test files
 are in `dev/skill_checks.py`.
 """
 
-from skill_checks import (carries, flat, frontmatter_problems,
+from skill_checks import (carries, frontmatter_problems,
                           frontmatter_refusals, next_step_problems,
-                          next_step_refusals, read, refusals, replace, resub,
-                          same_line, sentence_with, skill_ceiling_problems,
-                          skill_path, table_rows, undirected_outcome_problems)
+                          read, refusals, replace, resub, same_line,
+                          sections, sentence_with,
+                          skill_ceiling_problems, skill_path, table_rows,
+                          undirected_outcome_problems)
+
+LEFT_TO_DO = ('- `Left to do:` lists work: `→ Run:` the command its first line '
+              'names')
 
 
 class TestSkillAudit:
@@ -41,15 +45,33 @@ class TestSkillAudit:
         ]) == []
 
     # purlin: skill_audit PROOF-3
-    def test_it_closes_by_naming_the_next_step(self):
-        assert (next_step_problems('audit')
-                + undirected_outcome_problems('audit')) == []
+    def test_it_closes_on_the_first_line_of_left_to_do(self):
+        assert audit_next_step_problems() == []
 
-    # purlin: skill_audit PROOF-3
-    def test_a_broken_closing_section_is_refused(self, monkeypatch):
-        assert next_step_refusals(
-            monkeypatch, 'audit', '| Test strength below',
-            '| A test failed | `→ Run: purlin:build <feature>` |') == []
+    # purlin: skill_audit PROOF-8
+    def test_a_deleted_closing_section_is_refused(self, monkeypatch):
+        rel = skill_path('audit')
+        last = read(rel).rindex('\n## ')
+        assert refusals(monkeypatch, audit_next_step_problems, [
+            (rel, lambda t: t[:last + 1],
+             "%s closes with the section 'Step 5: retention'" % rel),
+        ]) == []
+
+    # purlin: skill_audit PROOF-9
+    def test_an_undirected_left_to_do_outcome_is_refused(self, monkeypatch):
+        rel = skill_path('audit')
+        assert refusals(monkeypatch, audit_next_step_problems, [
+            (rel, replace(LEFT_TO_DO, LEFT_TO_DO.replace('→ ', '')),
+             '%s closing outcome gives no → directive' % rel),
+        ]) == []
+
+    # purlin: skill_audit PROOF-10
+    def test_a_missing_nothing_left_outcome_is_refused(self, monkeypatch):
+        rel = skill_path('audit')
+        assert refusals(monkeypatch, audit_next_step_problems, [
+            (rel, resub(r'^- `Nothing left to do\.`.*\Z'),
+             "%s closing section does not name 'Nothing left to do.'" % rel),
+        ]) == []
 
     # purlin: skill_audit PROOF-4
     def test_it_stays_under_its_ceiling(self):
@@ -60,31 +82,55 @@ class TestSkillAudit:
         assert evidence_source_problems() == []
 
     # purlin: skill_audit PROOF-6
-    def test_the_gate_decides_the_breaks_and_the_audit_writes_the_evidence(self):
+    def test_the_gate_decides_the_breaks(self):
         assert audit_gate_problems() == []
 
-    # purlin: skill_audit PROOF-6
-    def test_a_gate_row_or_a_gate_sentence_broken_is_refused(
-            self, monkeypatch):
+    # purlin: skill_audit PROOF-11
+    def test_the_audit_line_comes_before_the_ending(self):
+        assert audit_ending_problems() == []
+
+    # purlin: skill_audit PROOF-12
+    def test_the_commit_and_the_exit_code_are_stated(self):
+        assert audit_commit_problems() == []
+
+    # purlin: skill_audit PROOF-13
+    def test_a_passed_row_without_the_ai_audit_is_refused(self, monkeypatch):
         rel = skill_path('audit')
         assert refusals(monkeypatch, audit_gate_problems, [
-            (rel, replace('not measured; '),
-             "%s passed row does not name 'not measured'" % rel),
             (rel, replace('Runs the tests and the AI audit, and no breaks',
                           'Runs the tests, and no breaks'),
              '%s passed row does not say the run reads the rules with the '
              'AI audit' % rel),
+        ]) == []
+
+    # purlin: skill_audit PROOF-14
+    def test_a_signed_row_that_differs_from_strong_is_refused(
+            self, monkeypatch):
+        rel = skill_path('audit')
+        assert refusals(monkeypatch, audit_gate_problems, [
             (rel, replace('| The same as `strong`.', '| Runs the tests.'),
              '%s signed row does not run what the strong row runs' % rel),
-            (rel, replace('`--commit`, which commits', '`--commit`. That '
-                          'commits'),
-             "%s has no sentence carrying all of 'you add `--commit`'" % rel),
-            (rel, replace(', so a rule waiting on one does not set the code.',
-                          '.'),
+        ]) == []
+
+    # purlin: skill_audit PROOF-15
+    def test_an_audit_line_without_the_ending_is_refused(self, monkeypatch):
+        rel = skill_path('audit')
+        assert refusals(monkeypatch, audit_ending_problems, [
+            (rel, resub(r'and ends on the status table,\s+the summary and '
+                        r'`Left to do`'),
+             "%s has no sentence carrying all of 'AI audit: <n> rules read, "
+             "<s> strong, <w> weak.'" % rel),
+        ]) == []
+
+    # purlin: skill_audit PROOF-16
+    def test_a_signature_sentence_without_the_exit_code_is_refused(
+            self, monkeypatch):
+        rel = skill_path('audit')
+        assert refusals(monkeypatch, audit_commit_problems, [
+            (rel, resub(r', so a rule waiting on one does not set\s+the '
+                        r'code\.', '.'),
              "%s has no sentence carrying all of 'An audit cannot make a "
              "signature appear'" % rel),
-            (rel, replace('counts here too', 'counts'),
-             "%s does not say 'counts here too'" % rel),
         ]) == []
 
     # purlin: skill_audit PROOF-7
@@ -145,6 +191,20 @@ def evidence_source_problems():
     return problems
 
 
+def audit_next_step_problems():
+    """The closing section names the next step, the first line of `Left to
+    do`, with a directive, and lets `Nothing left to do.` through."""
+    rel = skill_path('audit')
+    problems = (next_step_problems('audit')
+                + undirected_outcome_problems('audit'))
+    body = sections(read(rel))[-1][1]
+    problems += ['%s closing section does not name %r' % (rel, needle)
+                 for needle in ('the first line of `Left to do`',
+                                'Nothing left to do.')
+                 if needle not in ' '.join(body.split())]
+    return problems
+
+
 def audit_gate_problems():
     rel = skill_path('audit')
     rows = {cells[0]: cells[-1] for cells in table_rows(read(rel), '| Gate |')}
@@ -154,9 +214,8 @@ def audit_gate_problems():
             problems.append('%s gate table has no %s row' % (rel, gate))
     if problems:
         return problems
-    for needle in ('not measured', 'Nothing blocks at the gate passed.'):
-        if needle not in rows['`passed`']:
-            problems.append('%s passed row does not name %r' % (rel, needle))
+    if 'not measured' not in rows['`passed`']:
+        problems.append("%s passed row does not name 'not measured'" % rel)
     if 'the AI audit' not in rows['`passed`']:
         problems.append('%s passed row does not say the run reads the rules '
                         'with the AI audit' % rel)
@@ -166,18 +225,24 @@ def audit_gate_problems():
     if 'The same as `strong`' not in rows['`signed`']:
         problems.append('%s signed row does not run what the strong row runs'
                         % rel)
-    for needle in ('counts here too', 'Audit: <n> strong, <n> weak.',
-                   'gate strong met: <n> of <rules> rules',
-                   'cannot make a signature appear',
-                   'purlin: evidence at <sha7>'):
-        if needle not in flat(read(rel)):
-            problems.append('%s does not say %r' % (rel, needle))
-    problems += sentence_with(rel, ['you add `--commit`',
-                                    'the subject `purlin: evidence at <sha7>`'])
-    problems += sentence_with(rel, ['An audit cannot make a signature appear',
-                                    'a rule waiting on one does not set the '
-                                    'code'])
+    if 'counts here too' not in rows['`signed`']:
+        problems.append("%s signed row does not say 'counts here too'" % rel)
     return problems
+
+
+def audit_ending_problems():
+    return sentence_with(skill_path('audit'), [
+        'AI audit: <n> rules read, <s> strong, <w> weak.',
+        'ends on the status table, the summary and `Left to do`'])
+
+
+def audit_commit_problems():
+    rel = skill_path('audit')
+    return (sentence_with(rel, ['you add `--commit`',
+                                'the subject `purlin: evidence at <sha7>`'])
+            + sentence_with(rel, ['An audit cannot make a signature appear',
+                                  'a rule waiting on one does not set the '
+                                  'code']))
 
 
 def audit_evidence_problems():
