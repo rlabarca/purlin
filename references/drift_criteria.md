@@ -1,4 +1,4 @@
-> Criteria-Version: 9
+> Criteria-Version: 10
 
 # Drift criteria
 
@@ -66,14 +66,16 @@ and kept its rules changed nothing.
 | `anchors_behind` | One `git ls-remote` per anchor source, below | `anchor proof_common is behind its source (now 3c4d5e6). Run: purlin:anchor sync proof_common.` |
 | `out_of_date` | Features that have evidence and whose evidence is not current | `3 features are out of date: login, export, cart.` |
 
-A file deleted in the range is not on disk and is in neither list.
+A file deleted in the range counts as changed. It joins `code_changed` under every spec whose
+`> Scope:` entry covers it: a file entry equal to its path, a folder entry it lies under, or a
+glob that matches it. A deleted file no entry covers joins `unscoped`, with that list's
+exclusions.
 
 ### `qa`
 
 | Key | From | Line |
 |-----|------|------|
 | `tests_changed` | The changed test files that carry a marker, and the features those markers name | `6 test files changed, covering export, login.` |
-| `not_audited` | Rules whose strong cell reads `not audited`, at the gates `strong` and `signed`, as `<feature>/<RULE-N>` | No line |
 | `left` | The status's own items of `Left to do` of the kinds `to_test_by_hand` and `to_sign` | The lines below |
 
 After those lines the view prints the two lines of `Left to do` that wait for a person, in the
@@ -86,7 +88,9 @@ hand can wait for a person.
 
 For every anchor carrying a `> Source:`, drift runs one cached `git ls-remote` against that
 source and compares its `> Pinned:` sha. A source that begins with `-`, names an `ext::` or an
-`fd::` transport, or carries a NUL byte or a newline is refused before any process starts.
+`fd::` transport, or carries a NUL byte or a newline is refused before any process starts. A
+source that names no repository, a description in words or a file on disk, is reported without
+one: no process is handed it. An anchor with no `> Source:` is a local anchor and is not checked.
 
 | Condition | Line |
 |-----------|------|
@@ -94,6 +98,7 @@ source and compares its `> Pinned:` sha. A source that begins with `-`, names an
 | The pin is behind | `anchor <name> is behind its source (now <sha7>). Run: purlin:anchor sync <name>.` |
 | A `> Source:` with no `> Pinned:` | `anchor <name> names a source and no pin. Run: purlin:anchor sync <name>.` |
 | The source cannot be read | `anchor <name>: its source could not be read (<reason>).` |
+| The source names no repository: words, or a file on disk | `anchor <name>: its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.` |
 
 Drift never advances a pin on its own. A change that came from somewhere else gets read before
 it is adopted.

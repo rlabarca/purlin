@@ -626,6 +626,67 @@ class TestEngView:
         assert report['roles']['eng']['out_of_date'] == ['login']
 
 
+# A file deleted in the range counts under every scope entry that covers it,
+# and a deleted file no entry covers joins the files no spec covers.
+
+ONE_DELETED = ("1 file changed under login's scope: RULE-1, RULE-2 are "
+               "behind it.")
+
+
+def _deleted_under(tmp_path, scope, path):
+    """The engineer view after a pull deletes `path`, with `login`'s scope
+    reading `scope`."""
+    start = dict(LOGIN_FILES)
+    start['specs/auth/login.md'] = _spec(
+        'login', {'RULE-1': 'Signs a person in',
+                  'RULE-2': 'Refuses a wrong password'}, scope=scope)
+    start['src/auth/old.py'] = 'old = 1\n'
+    _up, checkout, _before = _pulled(tmp_path, start, [{path: None}])
+    return _report(checkout)
+
+
+class TestDeletedFiles:
+
+    # purlin: drift PROOF-51
+    def test_a_deleted_file_a_file_entry_names_counts(self, tmp_path):
+        report = _deleted_under(
+            tmp_path, 'src/auth/login.py, src/auth/old.py', 'src/auth/old.py')
+        assert ONE_DELETED in _lines(report, 'eng'), _lines(report, 'eng')
+        assert report['roles']['eng']['code_changed'] == [
+            {'feature': 'login', 'files': ['src/auth/old.py'],
+             'rules': ['RULE-1', 'RULE-2']}]
+
+    # purlin: drift PROOF-52
+    def test_a_deleted_file_under_a_folder_entry_counts(self, tmp_path):
+        report = _deleted_under(tmp_path, 'src/auth/', 'src/auth/token.py')
+        assert ONE_DELETED in _lines(report, 'eng'), _lines(report, 'eng')
+        assert report['roles']['eng']['code_changed'] == [
+            {'feature': 'login', 'files': ['src/auth/token.py'],
+             'rules': ['RULE-1', 'RULE-2']}]
+
+    # purlin: drift PROOF-53
+    def test_a_deleted_file_a_glob_matches_counts(self, tmp_path):
+        report = _deleted_under(tmp_path, 'src/**/*.py', 'src/auth/token.py')
+        assert ONE_DELETED in _lines(report, 'eng'), _lines(report, 'eng')
+        assert report['roles']['eng']['code_changed'] == [
+            {'feature': 'login', 'files': ['src/auth/token.py'],
+             'rules': ['RULE-1', 'RULE-2']}]
+
+    # purlin: drift PROOF-54
+    def test_a_deleted_file_no_scope_covers_joins_the_uncovered(self,
+                                                                tmp_path):
+        start = dict(LOGIN_FILES)
+        start['src/gone.py'] = 'gone = 1\n'
+        _up, checkout, _before = _pulled(
+            tmp_path, start, [{'src/gone.py': None, 'src/x.py': 'x = 1\n'}])
+        report = _report(checkout)
+        assert ("2 changed files are under no spec's scope: src/gone.py, "
+                "src/x.py.") in _lines(report, 'eng'), _lines(report, 'eng')
+        assert report['roles']['eng']['unscoped'] == ['src/gone.py',
+                                                      'src/x.py']
+        assert report['roles']['eng']['code_changed'] == []
+
+
 # ---------------------------------------------------------------------------
 # RULE-10: anchors that are not current
 # ---------------------------------------------------------------------------
@@ -802,6 +863,75 @@ class TestAnchorsBehind:
         assert not [line for line in _lines(report, 'eng')
                     if 'anchor' in line], _lines(report, 'eng')
 
+    # purlin: drift PROOF-55
+    def test_an_azure_devops_source_out_of_reach_reads_error(self, tmp_path,
+                                                             monkeypatch):
+        # Git refuses every transport but a local file here, so the address
+        # is asked for real and no network is reached.
+        monkeypatch.setenv('GIT_ALLOW_PROTOCOL', 'file')
+        source = 'https://dev.azure.com/acme/p/_git/policies'
+        report, calls = _one_anchor(tmp_path, monkeypatch, source)
+
+        assert [call for call in _handed(calls, source)
+                if 'ls-remote' in call], calls
+        rows = report['roles']['eng']['anchors_behind']
+        assert len(rows) == 1, rows
+        assert rows[0]['status'] == 'error', rows
+        assert 'remote_sha' not in rows[0], rows
+        assert ('anchor policy: its source could not be read (%s).'
+                % rows[0]['error']) in _lines(report, 'eng'), \
+            _lines(report, 'eng')
+
+
+# ---------------------------------------------------------------------------
+# RULE-20: a source that names no repository
+# ---------------------------------------------------------------------------
+
+def _not_a_spec(tmp_path, monkeypatch, source, files=None):
+    """`(report, calls)` for a project whose anchor `refunds` is pinned to
+    `source`, and the line and row drift should give it."""
+    tree = {'specs/_anchors/refunds.md': _anchor_text('refunds', source,
+                                                      'abc1234')}
+    tree.update(files or {})
+    root = _repo(str(tmp_path / 'proj'), tree)
+    calls = _spied(monkeypatch)
+    return _report(root), calls
+
+
+class TestSourceNamesNoRepository:
+
+    # purlin: drift PROOF-56
+    def test_a_text_file_in_the_project_reads_error(self, tmp_path,
+                                                    monkeypatch):
+        report, calls = _not_a_spec(tmp_path, monkeypatch, 'policy.txt',
+                                    {'policy.txt': 'Refunds within 30 days.\n'})
+        reason = purlin_drift.not_a_spec_source('refunds', 'policy.txt')
+        assert report['roles']['eng']['anchors_behind'] == [
+            {'anchor': 'refunds', 'source': 'policy.txt', 'pinned': 'abc1234',
+             'status': 'error', 'not_a_spec': True, 'error': reason}]
+        assert (
+            "anchor refunds: its source, policy.txt, is not a spec in "
+            "Purlin's format kept in a git repository, so it cannot be "
+            "checked. Run purlin:spec refunds to take out its > Source: and "
+            "> Pinned: lines and keep it as this project's own anchor."
+        ) in _lines(report, 'eng'), _lines(report, 'eng')
+        assert _handed(calls, 'policy.txt') == [], calls
+
+    # purlin: drift PROOF-57
+    def test_a_description_in_words_reads_error(self, tmp_path, monkeypatch):
+        source = "the finance team's refund policy"
+        report, calls = _not_a_spec(tmp_path, monkeypatch, source)
+        rows = report['roles']['eng']['anchors_behind']
+        assert [(row['status'], row.get('not_a_spec')) for row in rows] == [
+            ('error', True)], rows
+        assert (
+            "anchor refunds: its source, the finance team's refund policy, is "
+            "not a spec in Purlin's format kept in a git repository, so it "
+            "cannot be checked. Run purlin:spec refunds to take out its > "
+            "Source: and > Pinned: lines and keep it as this project's own "
+            "anchor.") in _lines(report, 'eng'), _lines(report, 'eng')
+        assert _handed(calls, 'refund policy') == [], calls
+
 
 # ---------------------------------------------------------------------------
 # RULE-11: a source that is not safe is refused before any process starts
@@ -905,7 +1035,7 @@ class TestAnchorRows:
 
 
 # ---------------------------------------------------------------------------
-# RULE-15: the QA view
+# RULE-15 and RULE-22: the QA view, and RULE-24: its `left`
 # ---------------------------------------------------------------------------
 
 class TestQaView:
@@ -1036,7 +1166,7 @@ def _edited_spec(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# RULE-18 and RULE-19: the shape of the answer
+# RULE-18, RULE-19, RULE-23 and RULE-25: the shape of the answer
 # ---------------------------------------------------------------------------
 
 def _pulled_source_change(tmp_path):
@@ -1069,8 +1199,7 @@ class TestReportShape:
             'anchors_behind', 'code_changed', 'lines', 'out_of_date',
             'rules_without_test', 'specs_uncommitted', 'unscoped']
         assert sorted(report['roles']['qa']) == [
-            'left', 'lines', 'not_audited', 'specs_uncommitted',
-            'tests_changed']
+            'left', 'lines', 'specs_uncommitted', 'tests_changed']
 
     # purlin: drift PROOF-50
     def test_the_qa_role_narrows_the_answer_to_its_view(self, tmp_path,
@@ -1110,3 +1239,28 @@ class TestReportShape:
         data = json.loads(text)
         assert sorted(data) == ['roles', 'since'], sorted(data)
         assert len(text) < len(json.dumps(data, indent=2))
+
+
+# ---------------------------------------------------------------------------
+# RULE-21: a settings file that cannot be read
+# ---------------------------------------------------------------------------
+
+class TestSettingsCannotBeRead:
+
+    # purlin: drift PROOF-58
+    def test_a_trailing_comma_answers_the_sentence_alone(self, tmp_path,
+                                                         monkeypatch):
+        root = _repo(str(tmp_path / 'proj'), LOGIN_FILES)
+        _write(os.path.join(root, '.purlin', 'config.json'),
+               '{\n  "gate": "passed",\n}\n')
+        calls = _spied(monkeypatch)
+
+        answer = purlin_drift.drift(root)
+
+        # The JSON reader's own message and line differ between versions of
+        # Python, so they are read as any message and any line.
+        assert re.match(r'^\.purlin/config\.json cannot be read: \S.* at line '
+                        r'\d+\. Fix the file by hand; nothing ran and nothing '
+                        r'was saved\.$', answer), answer
+        assert 'comma' in answer.lower() or 'property name' in answer, answer
+        assert calls == [], calls

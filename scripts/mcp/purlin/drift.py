@@ -29,6 +29,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
+from config_engine import config_problem
 from purlin import (fingerprint as fingerprint_module, payload as payload_module,
                     specs as specs_module, summary as summary_module)
 
@@ -99,12 +100,48 @@ def source_url_is_safe(url):
     return True, ''
 
 
+# The reason an anchor whose `> Source:` names no repository cannot be
+# checked: the source as written, then the anchor's name.
+NOT_A_SPEC_SOURCE = (
+    "its source, %s, is not a spec in Purlin's format kept in a git "
+    "repository, so it cannot be checked. Run purlin:spec %s to take out its "
+    "> Source: and > Pinned: lines and keep it as this project's own anchor.")
+
+
+def not_a_spec_source(name, source):
+    """`NOT_A_SPEC_SOURCE` filled in for the anchor `name`."""
+    return NOT_A_SPEC_SOURCE % (source, name)
+
+
+def source_is_repository(project_root, source):
+    """False when a `> Source:` value names no repository, True otherwise.
+
+    A value holding whitespace is a description in words, and a value naming
+    a file that exists, joined to the project root or as written, is a file
+    on disk. Every other value is taken as a repository and asked with git.
+    """
+    source = source or ''
+    if re.search(r'\s', source):
+        return False
+    candidates = [source]
+    if project_root:
+        candidates.append(os.path.join(project_root, source))
+    for candidate in candidates:
+        try:
+            if os.path.isfile(candidate):
+                return False
+        except (ValueError, OSError):
+            continue
+    return True
+
+
 def check_pin(project_root, source_url, pinned, cache=None):
     """`{'status', 'remote_sha', ...}` for one pinned anchor, or None.
 
     `status` is `current`, `behind`, `unpinned` or `error`. One
     `git ls-remote` per source per run: the cache is keyed on the url, so an
-    anchor repo serving six anchors is reached once.
+    anchor repo serving six anchors is reached once. A source that names no
+    repository is `error` with `not_a_spec`, and no process is handed it.
     """
     if not source_url:
         return None
@@ -112,8 +149,8 @@ def check_pin(project_root, source_url, pinned, cache=None):
     if not safe:
         return {'status': 'error', 'remote_sha': None,
                 'error': 'rejected source url', 'reason': reason}
-    if not _looks_like_git(source_url):
-        return None
+    if not source_is_repository(project_root, source_url):
+        return {'status': 'error', 'remote_sha': None, 'not_a_spec': True}
     if not pinned:
         return {'status': 'unpinned', 'remote_sha': None}
 
@@ -135,8 +172,8 @@ def check_pin(project_root, source_url, pinned, cache=None):
 
 
 # An absolute path on Windows: a drive letter, or a UNC share. Neither begins
-# with a slash, so the POSIX test below sees them as free text and an anchor
-# sourced from a local clone is never checked on that operating system.
+# with a slash, so the test below names both, to read a local clone on that
+# operating system as a git repository.
 _ABSOLUTE_WINDOWS_PATH = re.compile(r'^(?:[A-Za-z]:[\\/]|\\\\[^\\/])')
 
 
@@ -183,6 +220,9 @@ def pin_report(project_root, features, network=True, cache=None):
                'pinned': info.get('pinned'), 'status': result['status']}
         if result.get('remote_sha'):
             row['remote_sha'] = result['remote_sha'][:7]
+        if result.get('not_a_spec'):
+            row['not_a_spec'] = True
+            row['error'] = not_a_spec_source(name, info['source'])
         if result.get('error'):
             row['error'] = result['error']
         if result.get('reason'):
@@ -455,14 +495,17 @@ def _eng_view(project_root, rng, changed, data, raw_features, markers,
               network):
     present = set(_lines(_git(project_root, ['ls-files'])))
     changed_present = [path for path in changed if path in present]
+    deleted = {path for path in changed if path not in present}
 
     code_changed = []
     scoped = set()
     for feature in data.get('features', []):
-        files, _unmatched = fingerprint_module.expand_scope(
-            project_root, feature.get('scope') or [])
+        scope = feature.get('scope') or []
+        files, _unmatched = fingerprint_module.expand_scope(project_root, scope)
         in_scope = set(files)
         hits = [path for path in changed_present if path in in_scope]
+        hits = sorted(hits + _deleted_in_scope(project_root, rng, scope,
+                                               deleted))
         if not hits:
             continue
         scoped.update(hits)
@@ -472,7 +515,7 @@ def _eng_view(project_root, rng, changed, data, raw_features, markers,
                              'rules': sorted(rules, key=_rule_number)})
 
     marked = {path for paths in markers.values() for path in paths}
-    unscoped = [path for path in changed_present
+    unscoped = [path for path in changed
                 if path not in scoped and path not in marked
                 and not path.startswith(_SPECS_DIR)
                 and not path.startswith('.purlin/')]
@@ -525,6 +568,24 @@ def _eng_view(project_root, rng, changed, data, raw_features, markers,
     return view, lines
 
 
+def _deleted_in_scope(project_root, rng, scope, deleted):
+    """The paths of `deleted` that a `> Scope:` entry covers.
+
+    A file entry covers the path it names, a folder entry every path under
+    it and a glob every path it matches. A deleted path is not on disk, so
+    git matches the entries against the range's own list of deletions.
+    """
+    entries = [entry.strip() for entry in scope if entry.strip()]
+    if not deleted or not entries or not rng['from']:
+        return []
+    found = _lines(_git(project_root, [
+        'diff', '--name-only', '--no-renames', '--diff-filter=D',
+        '--end-of-options', rng['from'], rng['to'], '--']
+        + [fingerprint_module.pathspec(entry) for entry in entries],
+        timeout=30))
+    return [path for path in found if path in deleted]
+
+
 def _has_evidence(feature):
     evidence = feature.get('evidence') or {}
     return any(entry and entry.get('platforms')
@@ -533,6 +594,8 @@ def _has_evidence(feature):
 
 def _anchor_line(row):
     name = row['anchor']
+    if row.get('not_a_spec'):
+        return 'anchor %s: %s' % (name, row['error'])
     if row['status'] == 'behind':
         return ('anchor %s is behind its source (now %s). Run: '
                 'purlin:anchor sync %s.' % (name, row.get('remote_sha'), name))
@@ -551,13 +614,8 @@ def _qa_view(data, changed, markers):
     test_files = [path for path in changed if path in covering]
     covered = sorted({name for path in test_files for name in covering[path]})
 
-    rules = [(feature, rule) for feature in data.get('features', [])
-             for rule in feature.get('rules', []) if rule['label'] == 'own']
     view = {
         'tests_changed': {'files': test_files, 'features': covered},
-        'not_audited': ['%s/%s' % (feature['name'], rule['id'])
-                        for feature, rule in rules
-                        if rule['flags'].get('not_audited')],
         'left': [item for item in data.get('left') or ()
                  if item.get('kind') in summary_module.FOR_A_PERSON],
     }
@@ -624,7 +682,14 @@ def compute_drift(project_root, since=None, network=True, data=None):
 
 
 def drift(project_root, since=None, role=None):
-    """The drift report as JSON text. A role narrows it to that role's view."""
+    """The drift report as JSON text. A role narrows it to that role's view.
+
+    A settings file that cannot be read stops it before anything is read:
+    the answer is the sentence saying so, in place of the JSON.
+    """
+    problem = config_problem(project_root)
+    if problem:
+        return problem
     result = compute_drift(project_root, since)
     if role and role in ROLES and 'roles' in result:
         result = {'since': result['since'], 'role': role,
