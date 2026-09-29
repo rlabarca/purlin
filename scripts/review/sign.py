@@ -28,8 +28,10 @@ one signed commit for the signatures. It works at every gate.
 
 A bare feature signs every waiting rule of that feature, and `--all` every
 waiting rule, in one signed commit and with no stop. A rule named by id is
-signed whatever it waits on. An anchor's rule is signed once in each feature
-it applies to: one file per feature, each made over that feature's code.
+signed whatever it waits on; one no spec has is named, and the rules named
+beside it are signed all the same. An anchor's rule is signed once in each
+feature it applies to: one file per feature, each made over that feature's
+code.
 
 **The tag.** At the gate `signed`, when the walk closes and nothing is left
 to do but the tag, it writes the evidence package, commits it signed, and
@@ -45,8 +47,8 @@ The hashes come from the payload, which is the one place they are computed,
 so a signature this script writes is current the moment it lands.
 
 Exit codes: 0 the signatures were written and committed, or the walk closed;
-1 there is no key to sign with, or the commit was not made; 2 the command line
-was wrong.
+1 there is no key to sign with, the commit was not made, or a rule named is not
+one any spec has; 2 the command line was wrong.
 """
 
 import json
@@ -849,14 +851,18 @@ def main(argv=None):
         report_data.refresh(project_root)
         return EXIT_NOTHING if result['not_made'] else EXIT_OK
 
+    unknown = []
     if args.feature and args.rules:
+        # A rule no spec has is named, and the rules named beside it are
+        # signed all the same; the exit says something asked for was not done.
         unknown = [rule for rule in args.rules
                    if rule_entry(payload, args.feature, rule) is None]
-        if unknown:
-            for rule in unknown:
-                print(NOT_A_RULE % (args.feature, rule))
+        for rule in unknown:
+            print(NOT_A_RULE % (args.feature, rule))
+        targets = [(args.feature, rule) for rule in args.rules
+                   if rule not in unknown]
+        if not targets:
             return EXIT_NOTHING
-        targets = [(args.feature, rule) for rule in args.rules]
     else:
         targets = [(item['feature'], item['id'])
                    for item in waiting(payload, args.feature)]
@@ -877,7 +883,7 @@ def main(argv=None):
     after = load_payload(project_root)
     report_data.refresh(project_root, after)
     print(summary_module.ending(after))
-    return EXIT_OK
+    return EXIT_NOTHING if unknown else EXIT_OK
 
 
 if __name__ == '__main__':

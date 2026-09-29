@@ -813,6 +813,25 @@ class TestWhatIsSigned:
         finally:
             made.close()
 
+    # purlin: signatures PROOF-144
+    def test_the_rules_beside_one_no_spec_has_are_signed(self, capsys):
+        made = ready(gate=REVIEW_GATE)
+        try:
+            before = made.head()
+            code = sign_module.main(['login', 'RULE-1', 'RULE-9',
+                                     '--project-root', made.root])
+            lines = capsys.readouterr().out.splitlines()
+            assert 'login RULE-9 is not a rule any spec has.' in lines, lines
+            assert [name.split('.')[0] for name in made.signatures()] == [
+                'RULE-1']
+            assert git(made.root, 'rev-list', '--count',
+                       before + '..HEAD').stdout.strip() == '1'
+            assert git(made.root, 'log', '-1', '--format=%s').stdout.strip() \
+                == 'sign(login): RULE-1'
+            assert code == 1
+        finally:
+            made.close()
+
     # purlin: signatures PROOF-20
     def test_all_signs_in_the_order_the_walk_shows(self, at_signed, capsys):
         add_billing(at_signed)

@@ -51,7 +51,7 @@
 - RULE-61: A signature is made over the machine each system's tests ran on: another machine for a system it names ends it, a system it names that is gone ends it, and a system it does not name ends nothing
 - RULE-62: A rule named by id is signed at every gate, whatever work it has left
 - RULE-63: `--all`, or a bare feature, with nothing waiting for a person prints `Nothing is waiting for someone to test by hand or to sign.`, then the summary ending, writes no signature and exits 0
-- RULE-64: A rule named by id that no spec has prints `<feature> <RULE-N> is not a rule any spec has.`, writes no signature and exits 1
+- RULE-64: A rule named by id that no spec has is named in the line `<feature> <RULE-N> is not a rule any spec has.` and gets no signature; the rules named beside it that a spec has are signed, and the command exits 1
 
 ## Proof
 
@@ -139,4 +139,5 @@
 - PROOF-122 (RULE-61): A signature made over `macos` results from `jane-laptop` and `windows` results from `remote runner, Windows` is compared with the `macos` results alone; it is not current
 - PROOF-123 (RULE-62): At the gate `passed`, with no audit written, `login RULE-1` is signed by name; the command exits 0 and writes one signature, for `RULE-1`
 - PROOF-124 (RULE-63): At the gate `strong`, with both rules passing and audited strong, `--all` is run; it prints `Nothing is waiting for someone to test by hand or to sign.`, then `2 rules. 2 pass their tests. 2 are strong.` and `Nothing left to do.`, writes no signature and exits 0
-- PROOF-125 (RULE-64): `login RULE-9`, which the spec does not have, is signed by name; the command prints `login RULE-9 is not a rule any spec has.`, writes no signature and exits 1
+- PROOF-125 (RULE-64): At the gate `strong`, `login RULE-9`, which the spec does not have, is signed by name; the command prints only `login RULE-9 is not a rule any spec has.`, writes no signature and exits 1
+- PROOF-144 (RULE-64): At the gate `strong`, `login RULE-1 RULE-9` is run; it prints `login RULE-9 is not a rule any spec has.`, writes one signature, for `RULE-1`, in one commit titled `sign(login): RULE-1`, and exits 1
