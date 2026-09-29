@@ -11,13 +11,15 @@ import io
 import json
 import os
 import re
+import shutil
 import sys
+
+import pytest
 
 from mcp_project import (NO_PROOF_SPEC, ONE_RULE_SPEC, PROJECT_ROOT,
                          Project, SPEC, _commit_tests, _entry, _git, _listed,
                          _marked_tests, _rpc, _write, project)
 # `mcp_project` puts `scripts/mcp` on the path.
-from purlin import board as purlin_board
 from purlin import evidence as purlin_evidence
 from purlin import fingerprint as purlin_fingerprint
 from purlin import gate as purlin_gate
@@ -119,53 +121,65 @@ class TestARuleWithNoProof:
         assert rule['flags']['no_proof'] is True
         assert project.rule('RULE-2')['flags']['no_proof'] is False
 
+    TWO_RULES_NO_PROOF = ('# Feature: login\n\n> Scope: src/login.py\n\n'
+                          '## Rules\n\n- RULE-1: It works\n- RULE-2: It fails'
+                          '\n\n## Proof\n\n')
+
     # purlin: states PROOF-77
     def test_a_test_marked_with_the_rule_answers_the_passed_cell(self,
                                                                  project):
-        project.spec('# Feature: login\n\n> Scope: src/login.py\n\n'
-                     '## Rules\n\n- RULE-1: It works\n- RULE-2: It fails\n\n'
-                     '## Proof\n\n')
+        project.spec(self.TWO_RULES_NO_PROOF)
         project.evidence([{'id': 'RULE-1', 'rule': 'RULE-1', 'status': 'pass'},
                           {'id': 'RULE-2', 'rule': 'RULE-2', 'status': 'fail'}],
                          commit_it=False)
         assert project.cell('RULE-1', 'passed')['word'] == 'passed'
         assert project.cell('RULE-2', 'passed')['word'] == 'failed'
+
+    # purlin: states PROOF-173
+    def test_a_section_listing_no_marked_test_leaves_no_proof_written(
+            self, project):
+        project.spec(self.TWO_RULES_NO_PROOF)
         project.evidence([], commit_it=False)
         cell = project.cell('RULE-1', 'passed')
         assert cell['word'] == 'no test', cell
         assert cell['reasons'] == ['no proof written'], cell
 
+    @staticmethod
+    def _no_proof_rule(gate):
+        """The one rule of a spec with no proof line, its marked test passing."""
+        project = Project(spec=NO_PROOF_SPEC, gate=gate)
+        try:
+            project.evidence([{'id': 'RULE-1', 'rule': 'RULE-1',
+                               'status': 'pass'}], commit_it=False)
+            return project.rule('RULE-1')
+        finally:
+            project.close()
+
     # purlin: states PROOF-78
+    def test_at_strong_a_rule_with_a_test_and_no_proof_reads_no_proof(self):
+        rule = self._no_proof_rule('strong')
+        assert rule['cells']['passed']['word'] == 'passed', rule
+        assert rule['cells']['strong']['word'] == 'no proof', rule
+        assert rule['cells']['strong']['reasons'] == [
+            'the rule has a test and no proof'], rule
+        assert rule['left'] == 'no_proof', rule['left']
+
     # purlin: states PROOF-139
-    def test_above_passed_a_rule_with_a_test_and_no_proof_reads_no_proof(
-            self):
-        for gate in ('strong', 'signed'):
-            project = Project(spec=NO_PROOF_SPEC, gate=gate)
-            try:
-                project.evidence([{'id': 'RULE-1', 'rule': 'RULE-1',
-                                   'status': 'pass'}], commit_it=False)
-                rule = project.rule('RULE-1')
-                assert rule['cells']['passed']['word'] == 'passed'
-                assert rule['cells']['strong']['word'] == 'no proof', gate
-                assert rule['cells']['strong']['reasons'] == [
-                    'the rule has a test and no proof']
-                assert rule['left'] == 'no_proof', (gate, rule['left'])
-            finally:
-                project.close()
+    def test_at_signed_a_rule_with_a_test_and_no_proof_reads_no_proof(self):
+        rule = self._no_proof_rule('signed')
+        assert rule['cells']['passed']['word'] == 'passed', rule
+        assert rule['cells']['strong']['word'] == 'no proof', rule
+        assert rule['cells']['strong']['reasons'] == [
+            'the rule has a test and no proof'], rule
+        assert rule['left'] == 'no_proof', rule['left']
 
     # purlin: states PROOF-140
     def test_at_passed_a_rule_with_a_test_and_no_proof_waits_for_nothing(
             self):
-        project = Project(spec=NO_PROOF_SPEC, gate='passed')
-        try:
-            project.evidence([{'id': 'RULE-1', 'rule': 'RULE-1',
-                               'status': 'pass'}], commit_it=False)
-            rule = project.rule('RULE-1')
-            assert sorted(rule['cells']) == ['passed'], rule
-            assert rule['cells']['passed']['word'] == 'passed', rule
-            assert rule['left'] is None, rule
-        finally:
-            project.close()
+        rule = self._no_proof_rule('passed')
+        assert sorted(rule['cells']) == ['passed'], rule
+        assert rule['cells']['passed']['word'] == 'passed', rule
+        assert rule['left'] is None, rule
 
 
 class TestThePassedCell:
@@ -178,14 +192,16 @@ class TestThePassedCell:
         assert cell['word'] == 'passed'
         assert (cell['source'], cell['current'], cell['counts']) == (
             'local', True, True)
-        # A section taken over other code is not current, so it decides
-        # nothing.
+
+    # purlin: states PROOF-150
+    def test_a_section_taken_over_other_code_is_out_of_date(self, project):
         project.evidence([_entry('PROOF-2', 'RULE-2')], commit_it=False,
                          fingerprint={'spec': 's', 'code': 'moved on',
                                       'tests': 't'})
         assert project.cell('RULE-2', 'passed')['word'] == 'out of date'
-        # Every proof must pass: a second proof of RULE-2 the section does not
-        # show passing keeps the cell short of `passed`.
+
+    # purlin: states PROOF-151
+    def test_every_proof_of_the_rule_must_pass(self, project):
         project.spec(SPEC + '- PROOF-3 (RULE-2): POST /login with no '
                      'password; verify 401\n')
         project.evidence([_entry('PROOF-2', 'RULE-2')], commit_it=False)
@@ -218,8 +234,7 @@ class TestThePassedCell:
                 made.close()
 
     # purlin: states PROOF-7
-    def test_an_uncommitted_run_counts_and_a_report_alone_does_not(
-            self):
+    def test_a_test_report_alone_is_not_evidence(self):
         made = Project(gate='signed')
         try:
             _write(os.path.join(made.root, '.purlin', 'runtime', 'reports',
@@ -228,11 +243,13 @@ class TestThePassedCell:
                    'name="test_proof_2"/></testsuite>')
             assert made.cell('RULE-2', 'passed')['word'] == 'no test', (
                 'a report is not evidence')
-            _write(os.path.join(made.root, '.purlin', 'runtime', 'proofs',
-                                'login.json'),
-                   json.dumps({'proofs': [_entry('PROOF-2', 'RULE-2')]}))
-            assert made.cell('RULE-2', 'passed')['word'] == 'no test', (
-                'a runtime proof file is not evidence')
+        finally:
+            made.close()
+
+    # purlin: states PROOF-152
+    def test_an_uncommitted_run_counts_at_signed(self):
+        made = Project(gate='signed')
+        try:
             made.evidence([_entry('PROOF-2', 'RULE-2')], commit_it=False)
             cell = made.cell('RULE-2', 'passed')
             assert cell['word'] == 'passed', cell
@@ -242,28 +259,37 @@ class TestThePassedCell:
         finally:
             made.close()
 
+    WINDOWS_LOCK_SPEC = (
+        '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
+        '- RULE-1: Files lock\n\n'
+        '## Proof\n\n- PROOF-1 (RULE-1): Lock a file; verify a second open '
+        'returns 0 handles @env(windows)\n')
+
     # purlin: states PROOF-8
     def test_an_env_proof_needs_a_section_from_that_operating_system(
             self, project):
-        project.spec(
-            '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
-            '- RULE-1: Files lock\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Lock a file; verify a second open '
-            'returns 0 handles @env(windows)\n')
+        project.spec(self.WINDOWS_LOCK_SPEC)
         project.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
                            'status': 'pass'}], os_name='linux')
         cell = project.cell('RULE-1', 'passed')
         assert cell['word'] == 'not run'
         assert cell['missing_env'] == ['windows'], cell
         assert 'windows: no run yet' in cell['reasons'], cell
-        project.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
-                           'status': 'pass'}], os_name='windows',
-                         at='2026-09-13T13:00:00Z')
+
+    # purlin: states PROOF-153
+    def test_an_env_proof_passed_on_its_own_system_reads_passed(
+            self, project):
+        project.spec(self.WINDOWS_LOCK_SPEC)
+        for os_name, at in (('linux', '2026-09-13T12:00:00Z'),
+                            ('windows', '2026-09-13T13:00:00Z')):
+            project.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                               'status': 'pass'}], os_name=os_name, at=at)
         assert project.cell('RULE-1', 'passed')['word'] == 'passed'
 
-    # purlin: states PROOF-9
-    # purlin: states PROOF-117
-    def test_out_of_date_when_the_code_moved(self, project):
+    @staticmethod
+    def _code_rewritten_after_a_pass(project):
+        """A committed passing section, then the scoped code rewritten and
+        committed. The section's commit."""
         project.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
                            'status': 'pass'}])
         seen = _git(project.root, 'rev-parse', 'HEAD~1').stdout.strip()
@@ -272,6 +298,11 @@ class TestThePassedCell:
                'def login():\n    return 200  # rewritten\n')
         _git(project.root, 'add', '-A')
         _git(project.root, 'commit', '-q', '-m', 'refactor: login')
+        return seen
+
+    # purlin: states PROOF-9
+    def test_out_of_date_when_the_code_moved(self, project):
+        seen = self._code_rewritten_after_a_pass(project)
         rule = project.rule('RULE-1')
         cell = rule['cells']['passed']
         assert cell['word'] == 'out of date', cell
@@ -279,17 +310,19 @@ class TestThePassedCell:
         assert cell['current'] is False, cell
         assert rule['flags']['out_of_date'] is True
         assert rule['left'] == 'to_test', rule['left']
-        # The next run clears it.
+
+    # purlin: states PROOF-117
+    def test_the_next_run_clears_out_of_date(self, project):
+        self._code_rewritten_after_a_pass(project)
         project.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
                            'status': 'pass'}])
         rule = project.rule('RULE-1')
         assert rule['cells']['passed']['word'] == 'passed', rule
         assert rule['flags']['out_of_date'] is False, rule
 
-    # purlin: states PROOF-118
-    # purlin: states PROOF-119
-    def test_a_spec_edit_and_a_test_edit_leave_it_out_of_date_too(self,
-                                                                  project):
+    @staticmethod
+    def _an_uncommitted_pass_over_a_marked_test(project):
+        """A person's own passing section, left uncommitted. HEAD's sha."""
         _write(os.path.join(project.root, 'tests', 'test_login.py'),
                'import pytest\n\n# purlin: login PROOF-1\n'
                'def test_proof_1():\n    assert True\n')
@@ -297,12 +330,20 @@ class TestThePassedCell:
         _git(project.root, 'commit', '-q', '-m', 'test(login): proof 1')
         project.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
                            'status': 'pass'}], commit_it=False)
-        seen = project.head()
+        return project.head()
+
+    # purlin: states PROOF-118
+    def test_a_spec_edit_leaves_it_out_of_date(self, project):
+        seen = self._an_uncommitted_pass_over_a_marked_test(project)
         project.spec(SPEC.replace('return 200 with a session token',
                                   'return 200 and a session token'))
         cell = project.cell('RULE-1', 'passed')
+        assert cell['word'] == 'out of date', cell
         assert cell['reasons'] == ['spec changed since %s' % seen[:7]], cell
-        project.spec(SPEC)
+
+    # purlin: states PROOF-119
+    def test_a_test_edit_leaves_it_out_of_date(self, project):
+        seen = self._an_uncommitted_pass_over_a_marked_test(project)
         _write(os.path.join(project.root, 'tests', 'test_login.py'),
                'import pytest\n\n# purlin: login PROOF-1\n'
                'def test_proof_1():\n    assert 1\n')
@@ -336,29 +377,34 @@ class TestTheStrongCell:
         finally:
             made.close()
 
-    # purlin: states PROOF-14
-    def test_a_strength_under_the_minimum_is_weak_and_says_so(self):
+    @staticmethod
+    def _strength_measured(strength):
+        """RULE-1's strong cell at `strong` with mutation testing on, both
+        proofs passing in a committed `ci` section that measured `strength`,
+        and an audit that found nothing."""
         made = Project(gate='strong', extra_config={'mutation_engine': 'auto'})
         try:
             made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
                             'status': 'pass'},
                            {'id': 'PROOF-2', 'rule': 'RULE-2',
-                            'status': 'pass'}], ci=True, strength=48)
+                            'status': 'pass'}], ci=True, strength=strength)
             made.audit('RULE-1')
-            cell = made.cell('RULE-1', 'strong')
-            assert cell['word'] == 'weak'
-            assert cell['reasons'] == ['strength 48% under 70%'], cell
-            assert cell['findings'] == [], cell
-            # A strength of exactly the minimum is not under it.
-            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
-                            'status': 'pass'},
-                           {'id': 'PROOF-2', 'rule': 'RULE-2',
-                            'status': 'pass'}], ci=True, strength=70)
-            at_minimum = made.cell('RULE-1', 'strong')
-            assert at_minimum['word'] == 'strong', at_minimum
-            assert at_minimum['reasons'] == [], at_minimum
+            return made.cell('RULE-1', 'strong')
         finally:
             made.close()
+
+    # purlin: states PROOF-14
+    def test_a_strength_under_the_minimum_is_weak_and_says_so(self):
+        cell = self._strength_measured(48)
+        assert cell['word'] == 'weak'
+        assert cell['reasons'] == ['strength 48% under 70%'], cell
+        assert cell['findings'] == [], cell
+
+    # purlin: states PROOF-157
+    def test_a_strength_of_exactly_the_minimum_is_not_under_it(self):
+        at_minimum = self._strength_measured(70)
+        assert at_minimum['word'] == 'strong', at_minimum
+        assert at_minimum['reasons'] == [], at_minimum
 
     # purlin: states PROOF-15
     def test_with_no_score_the_cell_says_no_mutation_score_was_measured(self):
@@ -370,11 +416,15 @@ class TestTheStrongCell:
             cell = made.cell('RULE-2', 'strong')
             assert cell['word'] == 'strong', cell
             assert cell['reasons'] == ['no mutation score measured'], cell
-            # A loosely worded proof decides nothing by its wording: the
-            # strong cell is the audit's.
-            made.spec(SPEC.replace(
-                'POST /login with a bad password; verify 401 and the '
-                'body "denied"', 'Check that the login handles it properly'))
+        finally:
+            made.close()
+
+    # purlin: states PROOF-158
+    def test_a_loosely_worded_proof_decides_nothing_by_its_wording(self):
+        made = Project(gate='strong', spec=SPEC.replace(
+            'POST /login with a bad password; verify 401 and the '
+            'body "denied"', 'Check that the login handles it properly'))
+        try:
             made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
                             'status': 'pass'}], ci=True, strength=None)
             made.audit('RULE-2')
@@ -385,25 +435,36 @@ class TestTheStrongCell:
 
     # purlin: states PROOF-16
     def test_a_field_the_format_does_not_name_decides_nothing(self):
-        # An entry carrying a field the evidence format does not name, here
-        # a sentence about the test body, is read for its `verdict` and its
-        # `findings` alone, so an entry that found nothing leaves the cell
-        # strong.
-        cell = _strong(audit=_audit(
-            tests=[{'proof': 'PROOF-1',
-                    'notes': ['The marked test body holds no assertion.']}]))
-        assert cell['word'] == 'strong', cell
-        assert cell['findings'] == [], cell
-        assert cell['evidence'] == '.purlin/evidence/local/login.json', cell
-        found = _strong(audit=_audit('weak', [
-            'The test reads the status code alone.']))
-        assert found['word'] == 'weak', found
-        assert found['reasons'] == [
-            'The test reads the status code alone.'], found
-        assert found['findings'] == [
-            'The test reads the status code alone.'], found
+        made = Project(gate='strong')
+        try:
+            made.evidence([_entry('PROOF-2', 'RULE-2')], ci=True)
+            made.audit('RULE-2', tests=[{
+                'proof': 'PROOF-2',
+                'notes': ['The marked test body holds no assertion.']}])
+            cell = made.cell('RULE-2', 'strong')
+            assert cell['word'] == 'strong', cell
+            assert cell['findings'] == [], cell
+            assert cell['evidence'] == '.purlin/evidence/local/login.json', cell
+        finally:
+            made.close()
 
-    # purlin: states PROOF-16
+    # purlin: states PROOF-159
+    def test_a_weak_entry_carries_its_finding_as_the_reason(self):
+        made = Project(gate='strong')
+        try:
+            made.evidence([_entry('PROOF-2', 'RULE-2')], ci=True)
+            made.audit('RULE-2',
+                       observations=['The test reads the status code alone.'])
+            found = made.cell('RULE-2', 'strong')
+            assert found['word'] == 'weak', found
+            assert found['reasons'] == [
+                'The test reads the status code alone.'], found
+            assert found['findings'] == [
+                'The test reads the status code alone.'], found
+        finally:
+            made.close()
+
+    # purlin: states PROOF-160
     def test_an_entry_for_other_hashes_is_not_read(self):
         made = Project(gate='strong')
         try:
@@ -413,24 +474,25 @@ class TestTheStrongCell:
             cell = made.cell('RULE-2', 'strong')
             assert cell['word'] == 'not audited', cell
             assert cell['findings'] == [], cell
-            made.audit('RULE-2',
-                       observations=['The test reads the status code alone.'])
-            assert made.cell('RULE-2', 'strong')['word'] == 'weak'
         finally:
             made.close()
 
     # purlin: states PROOF-17
-    # purlin: states PROOF-120
-    # purlin: states PROOF-121
-    def test_the_audit_entry_settles_the_strong_cell(self):
+    def test_a_rule_no_audit_read_is_not_audited(self):
         assert _strong()['word'] == 'not audited'
         assert _strong()['reasons'] == ['no audit has run on this code']
+
+    # purlin: states PROOF-120
+    def test_an_undecided_entry_gives_its_sentence(self):
         open_question = _strong(audit=_audit('undecided', [
             'The test body is not shown, so PROOF-1 cannot be read.']))
         assert open_question['word'] == 'weak', open_question
         assert open_question['reasons'] == [
             'the AI audit could not decide: The test body is not shown, so '
             'PROOF-1 cannot be read.'], open_question
+
+    # purlin: states PROOF-121
+    def test_an_undecided_entry_that_says_nothing(self):
         silent = _strong(audit=_audit('undecided'))
         assert silent['word'] == 'weak', silent
         assert silent['reasons'] == ['the AI audit could not decide'], silent
@@ -461,7 +523,6 @@ class TestTheStrongCell:
         assert result['flags']['not_audited'] is True, result
 
     # purlin: states PROOF-19
-    # purlin: states PROOF-123
     def test_a_manual_proof_asks_for_a_manual_test(self):
         cfg = purlin_gate.resolve_gate({'gate': 'strong'})
         result = purlin_states.rule_cells(dict(STRONG_INPUT, proofs=[
@@ -471,6 +532,10 @@ class TestTheStrongCell:
         assert cell['word'] == 'manual test'
         assert cell['reasons'] == ['manual proof'], cell
         assert result['flags']['manual'] is True, result
+
+    # purlin: states PROOF-123
+    def test_a_proof_with_a_test_raises_no_manual_flag(self):
+        cfg = purlin_gate.resolve_gate({'gate': 'strong'})
         tested = purlin_states.rule_cells(STRONG_INPUT, cfg)
         assert tested['flags']['manual'] is False, tested
 
@@ -504,24 +569,37 @@ class TestTheAuditOnTheRule:
         finally:
             made.close()
 
+    @staticmethod
+    def _could_not_run(made):
+        """RULE-2 passes, and the last audit could not reach the model for it."""
+        made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
+                        'status': 'pass'}], ci=True)
+        rule = made.rule('RULE-2')
+        _write(os.path.join(made.root, '.purlin', 'runtime',
+                            'audit_could_not_run.json'),
+               json.dumps({'login': {'RULE-2': {
+                   'rule_hash': rule['rule_hash'],
+                   'proof_hash': rule['proof_hash'],
+                   'test_hash': rule['test_hash'],
+                   'why': 'claude is not on PATH'}}}))
+
     # purlin: states PROOF-71
     def test_a_rule_the_model_could_not_be_reached_for_says_why(self):
         made = Project(gate='strong')
         try:
-            made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
-                            'status': 'pass'}], ci=True)
-            rule = made.rule('RULE-2')
-            _write(os.path.join(made.root, '.purlin', 'runtime',
-                                'audit_could_not_run.json'),
-                   json.dumps({'login': {'RULE-2': {
-                       'rule_hash': rule['rule_hash'],
-                       'proof_hash': rule['proof_hash'],
-                       'test_hash': rule['test_hash'],
-                       'why': 'claude is not on PATH'}}}))
+            self._could_not_run(made)
             cell = made.cell('RULE-2', 'strong')
             assert cell['word'] == 'not audited', cell
             assert cell['reasons'] == [
                 'the AI audit could not run: claude is not on PATH'], cell
+        finally:
+            made.close()
+
+    # purlin: states PROOF-172
+    def test_a_could_not_run_record_ends_when_the_rule_changes(self):
+        made = Project(gate='strong')
+        try:
+            self._could_not_run(made)
             made.spec(SPEC.replace('return 401 and the body "denied"',
                                    'return 403 and the body "denied"'))
             made.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
@@ -550,18 +628,23 @@ class TestTheAuditOnTheRule:
         finally:
             made.close()
 
+    @staticmethod
+    def _audited_weak(gate, **named):
+        """Both rules pass at `gate`, and the audit found RULE-2 weak.
+
+        The project, still open; `named` adds fields to the audit entry.
+        """
+        made = Project(gate=gate)
+        made.evidence(PASSING)
+        made.audit('RULE-2', observations=['PROOF-2 reads 401 alone.'],
+                   **named)
+        return made
+
     # purlin: states PROOF-73
-    # purlin: states PROOF-106
-    # purlin: states PROOF-107
     def test_every_rule_carries_its_audit_at_every_gate(self):
         for gate in ('passed', 'strong', 'signed'):
-            made = Project(gate=gate)
+            made = self._audited_weak(gate)
             try:
-                made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
-                                'status': 'pass'},
-                               {'id': 'PROOF-2', 'rule': 'RULE-2',
-                                'status': 'pass'}])
-                made.audit('RULE-2', observations=['PROOF-2 reads 401 alone.'])
                 audit = made.rule('RULE-2')['audit']
                 assert sorted(audit) == ['at', 'commit', 'findings', 'model',
                                          'notes', 'path', 'strength',
@@ -574,15 +657,29 @@ class TestTheAuditOnTheRule:
                 assert audit['path'] == '.purlin/evidence/local/login.json'
                 assert audit['at'] == '2026-09-13T12:05:00Z', audit
                 assert audit['commit'] == made.head(), audit
+            finally:
+                made.close()
+
+    # purlin: states PROOF-106
+    def test_a_rule_no_audit_entry_answers_carries_none(self):
+        for gate in ('passed', 'strong', 'signed'):
+            made = self._audited_weak(gate)
+            try:
                 assert made.rule('RULE-1')['audit'] is None, gate
-                # An entry that names its model, its time and its commit is
-                # carried with its own.
-                made.audit('RULE-2', observations=['PROOF-2 reads 401 alone.'],
-                           model='claude-opus-5-5', at='2026-09-20T08:30:00Z',
-                           commit='b' * 40)
+            finally:
+                made.close()
+
+    # purlin: states PROOF-107
+    def test_an_entry_naming_its_model_time_and_commit_is_carried(self):
+        for gate in ('passed', 'strong', 'signed'):
+            made = self._audited_weak(gate, model='claude-opus-5-5',
+                                      at='2026-09-20T08:30:00Z',
+                                      commit='b' * 40)
+            try:
                 audit = made.rule('RULE-2')['audit']
                 assert (audit['model'], audit['at'], audit['commit']) == (
-                    'claude-opus-5-5', '2026-09-20T08:30:00Z', 'b' * 40), audit
+                    'claude-opus-5-5', '2026-09-20T08:30:00Z', 'b' * 40), (
+                        gate, audit)
             finally:
                 made.close()
 
@@ -856,37 +953,45 @@ class TestThePlatformsInThePassedCell:
             named = [w for w in data['warnings'] if path in w]
             assert len(named) == 1, data['warnings']
             assert 'it is ignored' in named[0], named
-            # The same file with its field agreeing is read.
-            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
-                            'status': 'pass'}], source='ci')
-            assert made.cell('RULE-1', 'passed')['word'] == 'passed'
         finally:
             made.close()
+
+    # purlin: states PROOF-166
+    def test_a_file_whose_source_field_agrees_is_read(self):
+        made = Project(gate='strong')
+        try:
+            path = made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                                   'status': 'pass'}], source='ci')
+            assert made.cell('RULE-1', 'passed')['word'] == 'passed'
+            assert not [w for w in made.payload()['warnings']
+                        if '.purlin/evidence/' in w], path
+        finally:
+            made.close()
+
+    @staticmethod
+    def _passed_cell(gate, sections):
+        """The passed cell of a rule of one proof, read from `sections`."""
+        return purlin_states.rule_cells({
+            'proofs': STRONG_INPUT['proofs'], 'sections': sections,
+        }, purlin_gate.resolve_gate({'gate': gate}))['cells']['passed']
 
     # purlin: states PROOF-66
     def test_a_persons_own_section_answers_for_its_platform_at_every_gate(
             self):
-        """A local section is a platform's answer at `signed` as at `strong`.
-
-        Both sources count at every gate, so a red macOS section beside a
-        green Linux one reads `partial` wherever the gate is set, and a local
-        section alone reads `passed`.
-        """
-        def cells(gate, sections):
-            return purlin_states.rule_cells({
-                'proofs': STRONG_INPUT['proofs'], 'sections': sections,
-            }, purlin_gate.resolve_gate({'gate': gate}))['cells']['passed']
-
+        """A failing macOS section beside a passing Linux one reads
+        `partial` wherever the gate is set."""
         linux = _section('ci', 'linux', {'PROOF-1': 'pass'},
                          at='2026-09-25T12:00:00Z')
         macos = _section('local', 'macos', {'PROOF-1': 'fail'},
                          at='2026-09-26T12:00:00Z')
         for gate in ('passed', 'strong', 'signed'):
-            cell = cells(gate, [linux, macos])
+            cell = self._passed_cell(gate, [linux, macos])
             assert cell['word'] == 'partial', (gate, cell)
             assert sorted(cell['platforms']) == ['linux', 'macos'], cell
 
-        alone = cells('signed', [_section('local', 'macos')])
+    # purlin: states PROOF-167
+    def test_a_persons_own_section_alone_passes_at_signed(self):
+        alone = self._passed_cell('signed', [_section('local', 'macos')])
         assert alone['word'] == 'passed', alone
         assert alone['counts'] is True, alone
         assert alone['reasons'] == [], alone
@@ -905,12 +1010,17 @@ class TestBucketsAndTheGate:
         finally:
             made.close()
 
-    # purlin: states PROOF-27
-    def test_partial_sits_between_failing_and_passed(self):
-        assert purlin_states.bucket_keys('signed') == [
-            'untested', 'failing', 'partial', 'passed', 'strong', 'signed']
-        assert purlin_states.bucket_keys('passed') == [
-            'untested', 'failing', 'partial', 'passed']
+    # purlin: states PROOF-161
+    def test_at_signed_the_rollup_counts_the_six_buckets_in_order(self):
+        made = _five_bucket_project()
+        try:
+            rollup = _feature(made.payload(), 'ledger')['rollup']
+            buckets = ('untested', 'failing', 'partial', 'passed', 'strong',
+                       'signed')
+            assert [key for key in rollup if key in buckets] == list(
+                buckets), rollup
+        finally:
+            made.close()
 
 
 class TestEveryRuleIsAskedWhatTheGateAsks:
@@ -942,7 +1052,8 @@ class TestEveryRuleIsAskedWhatTheGateAsks:
         rollup = {'rules': 4, 'untested': 0, 'failing': 0, 'partial': 0,
                   'passed': 2, 'strong': 1, 'signed': 1, 'proofs': 4,
                   'test_strength': 86}
-        row = purlin_board.row_cells('login', rollup, 'signed')
+        row = purlin_status._row({'name': 'login', 'is_anchor': False,
+                                  'rollup': rollup, 'rules': []}, 'signed')
         assert row[-2:] == ('2 of 4 · 86%', '1 of 4'), row
 
     # purlin: states PROOF-92
@@ -1039,9 +1150,11 @@ class TestPayload:
         assert data['generated_at'].endswith('Z')
 
     # purlin: states PROOF-95
-    def test_the_remote_url_is_the_origin_or_null(self, project):
-        # A project with no remote gets null rather than a broken link.
+    def test_a_project_with_no_remote_has_a_null_remote_url(self, project):
         assert project.payload()['remote_url'] is None
+
+    # purlin: states PROOF-162
+    def test_the_remote_url_is_the_origin(self, project):
         _git(project.root, 'remote', 'add', 'origin',
              'https://github.com/acme/ledger.git')
         assert project.payload()['remote_url'] == (
@@ -1071,13 +1184,15 @@ class TestPayload:
         project.audit('RULE-1', observations=['PROOF-1 reads 200 alone.'])
         assert project.rule('RULE-1')['audit_hash'] != before
 
-    # purlin: states PROOF-128
-    # purlin: states PROOF-129
-    # purlin: states PROOF-130
-    def test_a_feature_says_whether_its_evidence_is_current_and_committed(
-            self, project):
+    @staticmethod
+    def _an_uncommitted_linux_section(project):
         project.evidence([_entry('PROOF-2', 'RULE-2')], commit_it=False,
                          os_name='linux')
+
+    # purlin: states PROOF-128
+    def test_a_feature_says_its_evidence_is_current_and_uncommitted(
+            self, project):
+        self._an_uncommitted_linux_section(project)
         feature = _feature(project.payload())
         assert feature['current'] is True
         local = feature['evidence']['local']
@@ -1087,10 +1202,18 @@ class TestPayload:
             'commit': project.head(), 'at': '2026-09-13T12:00:00Z',
             'current': True}}
         assert feature['evidence']['ci'] is None
+
+    # purlin: states PROOF-129
+    def test_a_feature_says_its_evidence_is_committed(self, project):
+        self._an_uncommitted_linux_section(project)
         _git(project.root, 'add', '-A')
         _git(project.root, 'commit', '-q', '-m', 'purlin: evidence')
         feature = _feature(project.payload())
         assert feature['evidence']['local']['committed'] is True
+
+    # purlin: states PROOF-130
+    def test_a_feature_says_its_evidence_is_no_longer_current(self, project):
+        self._an_uncommitted_linux_section(project)
         _write(os.path.join(project.root, 'src', 'login.py'), 'x = 1\n')
         feature = _feature(project.payload())
         assert feature['current'] is False
@@ -1153,8 +1276,10 @@ class TestPayload:
                  for f in data['features'] for rule in f['rules']}
         assert words == {'RULE-1': 'not run', 'RULE-2': 'no test'}, words
 
-        # A marker below the last test is tied to none, so it backs nothing.
-        _write(path, 'def test_x():\n    pass\n\n# purlin: login PROOF-1\n')
+    # purlin: states PROOF-175
+    def test_a_marker_below_the_last_test_backs_nothing(self, project):
+        _write(os.path.join(project.root, 'tests', 'test_login.py'),
+               'def test_x():\n    pass\n\n# purlin: login PROOF-1\n')
         rollup = next(f for f in project.payload()['features']
                       if f['name'] == 'login')['rollup']
         assert rollup['proofs_without_test'] == 2, rollup
@@ -1178,18 +1303,26 @@ class TestPayload:
             made.close()
 
     # purlin: states PROOF-131
-    # purlin: states PROOF-132
     def test_the_signed_cell_carries_the_name_and_the_key(self):
         made = Project(gate='signed')
         try:
             made.sign_commits()
             made.signature('RULE-2', signer_name='Jane Doe',
-                  key_fingerprint='SHA256:q4Xy')
+                           key_fingerprint='SHA256:q4Xy')
             cell = made.cell('RULE-2', 'signed')
             assert (cell['signer_name'], cell['key_fingerprint']) == (
                 'Jane Doe', 'SHA256:q4Xy'), cell
+        finally:
+            made.close()
+
+    # purlin: states PROOF-132
+    def test_a_signature_recording_no_name_or_key_gives_none(self):
+        made = Project(gate='signed')
+        try:
+            made.sign_commits()
             made.signature('RULE-1')
             other = made.cell('RULE-1', 'signed')
+            assert other['signer'] == 'jane@acme.com', other
             assert (other['signer_name'], other['key_fingerprint']) == (
                 None, None), other
         finally:
@@ -1360,18 +1493,30 @@ class TestPayload:
         finally:
             made.close()
 
-    # purlin: states PROOF-146
-    # purlin: states PROOF-147
-    def test_at_passed_a_hand_check_is_the_rules_passing(self):
+    @staticmethod
+    def _hand_check_at_passed():
+        """At `passed`, RULE-1 passes and RULE-2's only proof is `@manual`."""
         made = Project(gate='passed', spec=SPEC.replace(
             'body "denied"\n', 'body "denied" @manual\n'))
+        made.sign_commits()
+        made.evidence([_entry('PROOF-1', 'RULE-1')])
+        return made
+
+    # purlin: states PROOF-146
+    def test_at_passed_a_hand_check_not_made_is_not_passing(self):
+        made = self._hand_check_at_passed()
         try:
-            made.sign_commits()
-            made.evidence([_entry('PROOF-1', 'RULE-1')])
             data = made.payload()
             assert _listed(data, 'RULE-2')['left'] == 'to_test_by_hand'
             assert data['summary']['sentence'] == (
                 '2 rules. 1 passes its tests.'), data['summary']
+        finally:
+            made.close()
+
+    # purlin: states PROOF-147
+    def test_at_passed_a_hand_check_is_the_rules_passing(self):
+        made = self._hand_check_at_passed()
+        try:
             made.signature('RULE-2')
             data = made.payload()
             assert _listed(data, 'RULE-2')['left'] is None
@@ -1380,38 +1525,51 @@ class TestPayload:
         finally:
             made.close()
 
-    # purlin: states PROOF-148
-    # purlin: states PROOF-149
-    def test_an_anchor_rule_is_signed_once_in_each_feature(self):
+    @staticmethod
+    def _anchor_signed_under_login():
+        """At `signed`, `login` and `billing` both prove a global anchor's
+        audited rule, and only `login` has signed it."""
         made = Project(gate='signed')
-        try:
-            made.sign_commits()
-            made.spec(SPEC.replace('login', 'billing'), name='billing',
-                      category='billing')
-            _write(os.path.join(made.root, 'src', 'billing.py'), 'X = 1\n')
-            _git(made.root, 'add', '-A')
-            _git(made.root, 'commit', '-q', '-m', 'feat: billing')
-            made.spec('# Anchor: security\n\n> Global: true\n\n'
-                      '## Rules\n\n- RULE-1: No eval anywhere\n\n'
-                      '## Proof\n\n- PROOF-1 (RULE-1): Search the code for '
-                      'eval; verify 0 matches\n', name='security',
-                      category='_anchors')
-            made.evidence([_entry('PROOF-1', 'RULE-1', feature='security')],
-                          feature='security')
-            made.audit('RULE-1', feature='security')
-            made.signature('RULE-1', feature='security', category='_anchors',
-                  listed_under='login')
-            data = made.payload()
+        made.sign_commits()
+        made.spec(SPEC.replace('login', 'billing'), name='billing',
+                  category='billing')
+        _write(os.path.join(made.root, 'src', 'billing.py'), 'X = 1\n')
+        _git(made.root, 'add', '-A')
+        _git(made.root, 'commit', '-q', '-m', 'feat: billing')
+        made.spec('# Anchor: security\n\n> Global: true\n\n'
+                  '## Rules\n\n- RULE-1: No eval anywhere\n\n'
+                  '## Proof\n\n- PROOF-1 (RULE-1): Search the code for '
+                  'eval; verify 0 matches\n', name='security',
+                  category='_anchors')
+        made.evidence([_entry('PROOF-1', 'RULE-1', feature='security')],
+                      feature='security')
+        made.audit('RULE-1', feature='security')
+        made.signature('RULE-1', feature='security', category='_anchors',
+                       listed_under='login')
+        return made
 
-            def word(under):
-                return _listed(data, 'RULE-1', 'security', under)['cells'][
-                    'signed']['word']
-            assert (word('login'), word('billing'), word('security')) == (
-                'signed', 'unsigned', 'unsigned')
+    @staticmethod
+    def _anchor_word(made, under):
+        return _listed(made.payload(), 'RULE-1', 'security', under)['cells'][
+            'signed']['word']
+
+    # purlin: states PROOF-148
+    def test_an_anchor_rule_is_signed_once_in_each_feature(self):
+        made = self._anchor_signed_under_login()
+        try:
+            assert tuple(self._anchor_word(made, under) for under in (
+                'login', 'billing', 'security')) == (
+                    'signed', 'unsigned', 'unsigned')
+        finally:
+            made.close()
+
+    # purlin: states PROOF-149
+    def test_an_anchor_rule_signed_in_every_feature_reads_signed(self):
+        made = self._anchor_signed_under_login()
+        try:
             made.signature('RULE-1', feature='security', category='_anchors',
-                  listed_under='billing')
-            data = made.payload()
-            assert word('security') == 'signed'
+                           listed_under='billing')
+            assert self._anchor_word(made, 'security') == 'signed'
         finally:
             made.close()
 
@@ -1499,7 +1657,6 @@ class TestTheFixturesAreTheContract:
         assert sorted(built - fixtures) == [], 'no fixture carries these'
 
     # purlin: states PROOF-96
-    # purlin: states PROOF-29
     def test_every_fixture_has_the_key_set_the_builder_writes(self):
         for name, gate in (('solo', 'passed'), ('team', 'strong'),
                            ('regulated', 'signed')):
@@ -1527,7 +1684,7 @@ class TestTheFixturesAreTheContract:
             assert sorted(rule['flags']) == sorted(
                 built['features'][0]['rules'][0]['flags']), name
 
-    # purlin: states PROOF-68
+    # purlin: states PROOF-171
     def test_the_tag_key_is_present_in_every_fixture(self):
         """The board's chip reads this key, so a fixture without it is a lie."""
         for name in ('solo', 'team'):
@@ -1547,15 +1704,22 @@ class TestProofResult:
         return {proof['id']: proof for rule in rules for proof in rule['proofs']}
 
     # purlin: states PROOF-85
-    def test_each_proof_carries_its_own_result_and_its_tests(self, project):
+    def test_a_proof_before_any_run_reads_not_run_or_no_test(self, project):
         _commit_tests(project, 'PROOF-1')
         proofs = self._proofs(project)
         assert proofs['PROOF-1']['result'] == 'not run', proofs['PROOF-1']
         assert proofs['PROOF-1']['tests'] == []
         assert proofs['PROOF-2']['result'] == 'no test', proofs['PROOF-2']
 
+    @staticmethod
+    def _one_passes_one_fails(project):
+        _commit_tests(project, 'PROOF-1')
         project.evidence([_entry('PROOF-1', 'RULE-1'),
                           _entry('PROOF-2', 'RULE-2', status='fail')])
+
+    # purlin: states PROOF-176
+    def test_each_proof_carries_its_own_result_and_its_tests(self, project):
+        self._one_passes_one_fails(project)
         proofs = self._proofs(project)
         assert proofs['PROOF-1']['result'] == 'passed', proofs['PROOF-1']
         assert proofs['PROOF-1']['tests'] == [
@@ -1565,6 +1729,9 @@ class TestProofResult:
         assert [test['result'] for test in proofs['PROOF-2']['tests']] == [
             'fail'], proofs['PROOF-2']['tests']
 
+    # purlin: states PROOF-177
+    def test_a_manual_proof_reads_hand_check(self, project):
+        self._one_passes_one_fails(project)
         project.spec(SPEC.replace('body "denied"\n', 'body "denied" @manual\n'))
         proofs = self._proofs(project)
         assert proofs['PROOF-2']['result'] == 'hand check'
@@ -1573,7 +1740,10 @@ class TestProofResult:
             {'file': 'tests/test_login.py', 'name': 'test_proof_1',
              'result': 'not run'}], proofs['PROOF-1']['tests']
 
-        # A proof tagged for Linux reads Linux's sections alone.
+    # purlin: states PROOF-178
+    def test_an_env_proof_reads_its_own_systems_sections_alone(self,
+                                                               project):
+        _commit_tests(project, 'PROOF-1')
         project.spec(SPEC.replace('body "denied"\n', 'body "denied" '
                                   '@env(linux)\n'))
         project.evidence([_entry('PROOF-1', 'RULE-1'),
@@ -1592,55 +1762,144 @@ class TestProofResult:
 # The status table
 # ---------------------------------------------------------------------------
 
+DASHBOARD_PAGE = os.path.join(PROJECT_ROOT, 'scripts', 'report',
+                              'purlin-report.html')
+
+# The dashboard's spec table as a reader sees it: its column headings, and
+# each spec's name and the text of each of its cells, one line each.
+DASHBOARD_ROWS = r"""els => {
+  const head = Array.from(document.querySelectorAll('.th > div'))
+    .map(d => d.textContent.trim());
+  return [head, els.map(e => ({
+    name: e.querySelector('.name .n').textContent.trim(),
+    cells: head.map((label, i) =>
+      e.children[i].innerText.trim().replace(/\s+/g, ' '))}))];
+}"""
+
+
+@pytest.fixture(scope='module')
+def browser():
+    playwright = pytest.importorskip('playwright.sync_api')
+    from browser_launch import launch_browser
+    with playwright.sync_playwright() as driver:
+        instance = launch_browser(driver, headless=True)
+        yield instance
+        instance.close()
+
+
+def _dashboard(browser, folder, payload):
+    """`(headings, {spec: cells})` of the dashboard opened over `payload`."""
+    os.makedirs(os.path.join(folder, '.purlin'))
+    shutil.copyfile(DASHBOARD_PAGE, os.path.join(folder, 'purlin-report.html'))
+    _write(os.path.join(folder, '.purlin', 'report-data.js'),
+           'const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
+    page = browser.new_page(viewport={'width': 1440, 'height': 1000})
+    try:
+        page.goto('file://' + os.path.join(folder, 'purlin-report.html'))
+        page.wait_for_selector('.topbar', timeout=10000)
+        head, rows = page.eval_on_selector_all('.tr', DASHBOARD_ROWS)
+    finally:
+        page.close()
+    return head, {row['name']: row['cells'] for row in rows}
+
+
+def _table_cells(lines):
+    """`(headings, {spec: cells})` of a printed status table."""
+    header = lines[0]
+    headings = header.split()
+    starts = [header.index(heading) for heading in headings]
+    rows = {}
+    for line in lines[2:-1]:
+        cells = [line[start:end].strip() for start, end in
+                 zip(starts, starts[1:] + [len(line)])]
+        rows[cells[0].replace(' (anchor)', '')] = cells
+    return headings, rows
+
+
+def _status_lines(root):
+    return purlin_status.sync_status(root).splitlines()
+
+
+def _header(lines):
+    return next(line for line in lines if line.startswith('Spec'))
+
+
+def _row_of(lines, name):
+    return next(line for line in lines if line.startswith(name + ' '))
+
+
+def _cell_under(lines, name, heading):
+    """The text of spec `name`'s cell under `heading`, from its left edge."""
+    header = _header(lines)
+    return _row_of(lines, name)[header.index(heading):].split('  ')[0]
+
+
+def _table_rows(lines):
+    """The table's rows, between the two rules under the header."""
+    top = lines.index(_header(lines)) + 1
+    return lines[top + 1:lines.index(lines[top], top + 1)]
+
+
+SECURITY_ANCHOR = (
+    '# Anchor: security\n\n> Global: true\n\n'
+    '## Rules\n\n- RULE-1: No eval anywhere\n\n'
+    '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n')
+
+
+def _requiring_api(project):
+    """`login` requires `api`, an anchor of one rule that is not global."""
+    project.spec(
+        '# Anchor: api\n\n## Rules\n\n- RULE-1: Responses carry a type\n'
+        '\n## Proof\n\n- PROOF-1 (RULE-1): GET /x; verify the header\n',
+        name='api', category='_anchors')
+    project.spec(SPEC.replace('# Feature: login\n',
+                              '# Feature: login\n\n> Requires: api\n'))
+
+
 class TestStatusTable:
 
     # purlin: states PROOF-58
-    def test_the_table_and_the_board_render_the_same_cells(self):
-        """One module renders both, so a cell cannot read two ways."""
+    def test_the_table_and_the_dashboard_show_the_same_cells(
+            self, browser, tmp_path):
         for name, gate in (('solo', 'passed'), ('team', 'strong'),
                            ('regulated', 'signed')):
-            fixture = TestTheFixturesAreTheContract._fixture(name)
-            columns = purlin_status.columns_for(gate)
-            assert columns == purlin_board.columns_for(gate), name
-            for feature in fixture['features']:
-                row = purlin_status._row(feature, gate)
-                board = purlin_board.row_cells(
-                    feature['name'], feature['rollup'], gate,
-                    shared=purlin_board.shared_counts(feature['rules']))
-                assert row[1:] == board[1:], (name, feature['name'], row)
-                assert len(row) == len(columns), (name, row)
+            sample = TestTheFixturesAreTheContract._fixture(name)
+            headings, table = _table_cells(purlin_status._table(sample))
+            shown, dashboard = _dashboard(browser, str(tmp_path / name),
+                                          sample)
+            assert shown == headings, (name, shown, headings)
+            assert sorted(dashboard) == sorted(table), (name, dashboard)
+            for spec, cells in table.items():
+                assert dashboard[spec][1:] == cells[1:], (
+                    name, spec, dashboard[spec], cells)
 
     # purlin: states PROOF-86
     def test_the_rules_cell_names_the_shared_rules(self, project):
-        project.spec(
-            '# Anchor: security\n\n> Global: true\n\n'
-            '## Rules\n\n- RULE-1: No eval anywhere\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
-            name='security', category='_anchors')
-        lines = purlin_status.sync_status(project.root).splitlines()
-        header = next(line for line in lines if line.startswith('Spec'))
-        login = next(line for line in lines if line.startswith('login '))
-        anchor = next(line for line in lines if line.startswith('security '))
-        column = header.index('Rules')
-        assert login[column:].startswith('2 (+1 shared)'), (header,
-                                                                     login)
-        assert anchor[column:].split('  ')[0] == '1', (header, anchor)
+        project.spec(SECURITY_ANCHOR, name='security', category='_anchors')
+        lines = _status_lines(project.root)
+        header = _header(lines)
+        login = _row_of(lines, 'login')
+        assert login[header.index('Rules'):].startswith('2 (+1 shared)'), (
+            header, login)
+        assert _cell_under(lines, 'security', 'Rules') == '1', lines
 
-        os.remove(os.path.join(project.root, 'specs', '_anchors',
-                               'security.md'))
-        lines = purlin_status.sync_status(project.root).splitlines()
-        header = next(line for line in lines if line.startswith('Spec'))
-        login = next(line for line in lines if line.startswith('login '))
-        assert login[header.index('Rules'):].split('  ')[0] == '2', login
+    # purlin: states PROOF-179
+    def test_a_spec_proving_no_shared_rule_reads_its_own_count(self,
+                                                              project):
+        lines = _status_lines(project.root)
+        assert _cell_under(lines, 'login', 'Rules') == '2', lines
         assert not [line for line in lines if 'shared' in line], lines
 
-        # An anchor the spec requires, not a global one, is shared too.
-        project.spec(
-            '# Anchor: api\n\n## Rules\n\n- RULE-1: Responses carry a type\n'
-            '\n## Proof\n\n- PROOF-1 (RULE-1): GET /x; verify the header\n',
-            name='api', category='_anchors')
-        project.spec(SPEC.replace('# Feature: login\n',
-                                  '# Feature: login\n\n> Requires: api\n'))
+    # purlin: states PROOF-180
+    def test_a_required_anchor_that_is_not_global_is_shared_too(self,
+                                                                project):
+        _requiring_api(project)
+        lines = _status_lines(project.root)
+        assert _cell_under(lines, 'login', 'Rules') == '2 (+1 shared)', lines
+
+    # purlin: states PROOF-181
+    def test_every_cell_starts_at_its_headings_left_edge(self, project):
+        _requiring_api(project)
         # Every proof marked, one test passing and one failing, so under every
         # heading one row's cell is narrower than its column.
         _write(os.path.join(project.root, 'tests', 'test_login.py'),
@@ -1651,14 +1910,9 @@ class TestStatusTable:
         _git(project.root, 'commit', '-q', '-m', 'test: marked tests')
         project.evidence([_entry('PROOF-1', 'RULE-1'),
                           _entry('PROOF-2', 'RULE-2', status='fail')])
-        lines = purlin_status.sync_status(project.root).splitlines()
-        header = next(line for line in lines if line.startswith('Spec'))
-        login = next(line for line in lines if line.startswith('login '))
-        assert login[header.index('Rules'):].split('  ')[0] == (
-            '2 (+1 shared)'), (header, login)
-        # Every cell of every row starts at its heading's left edge.
-        top = lines.index(header) + 1
-        rows = lines[top + 1:lines.index(lines[top], top + 1)]
+        lines = _status_lines(project.root)
+        header = _header(lines)
+        rows = _table_rows(lines)
         assert len(rows) == 2, rows
         for heading in header.split():
             at = header.index(heading)
@@ -1670,61 +1924,73 @@ class TestStatusTable:
                 assert row[at] != ' ' and (at == 0 or row[at - 1] == ' '), (
                     heading, header, row)
 
-    # purlin: states PROOF-43
-    # purlin: states PROOF-100
-    # purlin: states PROOF-101
-    # purlin: states PROOF-103
-    def test_the_columns_scale_with_the_gate(self, project):
+    @staticmethod
+    def _one_of_two_passing(project):
         _commit_tests(project, 'PROOF-2')
         project.evidence([_entry('PROOF-2', 'RULE-2')])
-        text = purlin_status.sync_status(project.root)
-        header = next(line for line in text.splitlines()
-                      if line.startswith('Spec'))
-        for column in ('Spec', 'Rules', 'Proofs', 'Tests'):
-            assert column in header, (column, header)
-        assert 'Strong' not in header and 'Signed' not in header, header
-        row = next(line for line in text.splitlines()
-                   if line.startswith('login '))
-        assert '1 of 2' in row, row
-        assert '2 · 1 no test' in row, row
-        # `Tests` appends the failing count, and then the partial one: the
-        # rule fails here and passes on another operating system.
-        other = 'windows' if purlin_evidence.host_os() != 'windows' else 'linux'
-        for os_name, cell in ((None, '1 of 2 · 1 failing'),
-                              (other, '1 of 2 · 1 partial')):
-            project.evidence([_entry('PROOF-1', 'RULE-1',
-                                     'pass' if os_name else 'fail'),
-                              _entry('PROOF-2', 'RULE-2')], os_name=os_name,
-                             at='2026-09-13T13:00:00Z' if os_name else
-                             '2026-09-13T12:00:00Z')
-            row = next(line for line in
-                       purlin_status.sync_status(project.root).splitlines()
-                       if line.startswith('login '))
-            assert row.split('  ')[-1].strip() == cell, row
 
-        for gate, expected in (('strong', ('Strong',)),
-                               ('signed', ('Strong', 'Signed'))):
-            made = Project(gate=gate)
-            try:
-                text = purlin_status.sync_status(made.root)
-                header = next(line for line in text.splitlines()
-                              if line.startswith('Spec'))
-                for column in expected:
-                    assert column in header, (gate, header)
-                row = next(line for line in text.splitlines()
-                           if line.startswith('login '))
-                assert 'n/a' in row, 'no audit, so no test strength'
-            finally:
-                made.close()
+    # purlin: states PROOF-43
+    def test_at_passed_the_table_shows_proofs_and_tests(self, project):
+        self._one_of_two_passing(project)
+        lines = _status_lines(project.root)
+        header = _header(lines)
+        assert header.split() == ['Spec', 'Rules', 'Proofs', 'Tests'], header
+        assert _cell_under(lines, 'login', 'Proofs') == '2 · 1 no test', lines
+        assert _cell_under(lines, 'login', 'Tests') == '1 of 2', lines
+
+    # purlin: states PROOF-100
+    def test_the_tests_cell_counts_a_failing_rule(self, project):
+        self._one_of_two_passing(project)
+        project.evidence([_entry('PROOF-1', 'RULE-1', 'fail'),
+                          _entry('PROOF-2', 'RULE-2')])
+        lines = _status_lines(project.root)
+        assert _cell_under(lines, 'login', 'Tests') == (
+            '1 of 2 · 1 failing'), lines
+
+    # purlin: states PROOF-101
+    def test_the_tests_cell_counts_a_partial_rule(self, project):
+        self._one_of_two_passing(project)
+        other = ('windows' if purlin_evidence.host_os() != 'windows'
+                 else 'linux')
+        project.evidence([_entry('PROOF-1', 'RULE-1', 'fail'),
+                          _entry('PROOF-2', 'RULE-2')])
+        project.evidence([_entry('PROOF-1', 'RULE-1'),
+                          _entry('PROOF-2', 'RULE-2')], os_name=other,
+                         at='2026-09-13T13:00:00Z')
+        lines = _status_lines(project.root)
+        assert _cell_under(lines, 'login', 'Tests') == (
+            '1 of 2 · 1 partial'), lines
+
+    # purlin: states PROOF-103
+    def test_at_strong_the_table_adds_the_strong_column(self):
+        made = Project(gate='strong')
+        try:
+            lines = _status_lines(made.root)
+            assert _header(lines).split() == [
+                'Spec', 'Rules', 'Proofs', 'Tests', 'Strong'], lines
+            assert _cell_under(lines, 'login', 'Strong') == '0 of 2 · n/a'
+        finally:
+            made.close()
+
+    # purlin: states PROOF-165
+    def test_at_signed_the_table_adds_the_signed_column(self):
+        made = Project(gate='signed')
+        try:
+            lines = _status_lines(made.root)
+            assert _header(lines).split() == [
+                'Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'], lines
+            assert _cell_under(lines, 'login', 'Strong') == '0 of 2 · n/a'
+            assert _cell_under(lines, 'login', 'Signed') == '0 of 2'
+        finally:
+            made.close()
 
     # purlin: states PROOF-102
     def test_a_passed_project_with_no_proof_line_is_shown_no_proof_count(
             self):
         made = Project(spec=NO_PROOF_SPEC)
         try:
-            lines = purlin_status.sync_status(made.root).splitlines()
-            header = next(line for line in lines if line.startswith('Spec'))
-            assert header.split() == ['Spec', 'Rules', 'Tests'], header
+            lines = _status_lines(made.root)
+            assert _header(lines).split() == ['Spec', 'Rules', 'Tests'], lines
             assert not [line for line in lines if 'proof' in line], lines
         finally:
             made.close()
@@ -1742,22 +2008,32 @@ class TestStatusTable:
         finally:
             made.close()
 
-    # purlin: states PROOF-104
-    # purlin: states PROOF-105
-    def test_an_updated_project_prints_it_only_once_a_key_returns(self):
-        # A project `purlin:init --update` has brought up to date prints no
-        # such line until a retired key is written back into its settings.
+    @staticmethod
+    def _brought_up_to_date():
+        """A project `purlin:init --update` has brought up to date."""
         sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'init'))
         import update as purlin_update
         made = Project()
+        with contextlib.redirect_stdout(io.StringIO()):
+            assert purlin_update.main(['--yes', '--project-root',
+                                       made.root]) == 0
+        return made
+
+    # purlin: states PROOF-104
+    def test_an_updated_project_prints_no_update_line(self):
+        made = self._brought_up_to_date()
         try:
-            with contextlib.redirect_stdout(io.StringIO()):
-                assert purlin_update.main(['--yes', '--project-root',
-                                           made.root]) == 0
             text = purlin_status.sync_status(made.root)
             assert 'purlin:init --update' not in text, text
+        finally:
+            made.close()
+
+    # purlin: states PROOF-105
+    def test_an_updated_project_prints_it_once_a_key_returns(self):
+        made = self._brought_up_to_date()
+        try:
             made.config_value('spec_dir', 'elsewhere')
-            lines = purlin_status.sync_status(made.root).splitlines()
+            lines = _status_lines(made.root)
             sentence = made.payload()['summary']['sentence']
             assert lines[lines.index(sentence) - 1] == (
                 '→ Run: purlin:init --update'), lines
@@ -1768,20 +2044,17 @@ class TestStatusTable:
     def test_an_empty_project_says_what_to_run(self):
         made = Project(spec=None)
         try:
-            text = purlin_status.sync_status(made.root)
-            assert 'No specs found' in text and 'purlin:init' in text
+            assert _status_lines(made.root) == [
+                'No specs found under specs/.',
+                '→ Run: purlin:init to set this project up, or purlin:spec '
+                'to write the first one.']
         finally:
             made.close()
 
     # purlin: states PROOF-47
-    def test_no_emoji_and_only_the_four_glyphs(self, project):
-        text = purlin_status.sync_status(project.root)
+    def test_no_emoji_and_only_the_four_glyphs(self):
         allowed = set('→▶▼─')
-        for char in text:
-            assert ord(char) < 0x2000 or char in allowed, repr(char)
-        # At `strong` and `signed` the Strong and Signed columns and the
-        # lines of `Left to do` print too, and hold to the same set.
-        for gate in ('strong', 'signed'):
+        for gate in ('passed', 'strong', 'signed'):
             made = Project(gate=gate)
             try:
                 made.evidence(PASSING)
@@ -1789,11 +2062,11 @@ class TestStatusTable:
                 made.audit('RULE-2')
                 text = purlin_status.sync_status(made.root)
                 lines = text.splitlines()
+                # At `signed` the Signed column and the lines of `Left to do`
+                # print too, and hold to the same set.
                 if gate == 'signed':
                     assert '  2 rules to sign: purlin:sign' in lines, text
-                header = next(line for line in lines if line.startswith('Spec'))
-                assert 'Strong' in header, header
-                assert ('Signed' in header) is (gate == 'signed'), header
+                    assert 'Signed' in _header(lines), text
                 for char in text:
                     assert ord(char) < 0x2000 or char in allowed, (gate,
                                                                    repr(char))
@@ -1835,10 +2108,17 @@ class TestTheSignedTag:
     """The payload names the `signed/*` tag pointing at HEAD, or nothing."""
 
     # purlin: states PROOF-68
-    def test_no_tag_reads_none_and_a_tag_on_head_reads_its_name(self):
+    def test_no_tag_reads_none(self):
         made = Project(gate='signed')
         try:
             assert made.payload()['tag'] is None
+        finally:
+            made.close()
+
+    # purlin: states PROOF-168
+    def test_a_tag_on_head_reads_its_name_and_head(self):
+        made = Project(gate='signed')
+        try:
             _git(made.root, 'tag', '-a', 'signed/1.2.0', '-m', 'a release')
             tag = made.payload()['tag']
             assert tag['name'] == 'signed/1.2.0', tag
@@ -1846,7 +2126,7 @@ class TestTheSignedTag:
         finally:
             made.close()
 
-    # purlin: states PROOF-68
+    # purlin: states PROOF-169
     def test_a_tag_that_is_not_on_head_says_nothing_about_this_code(self):
         made = Project(gate='signed')
         try:
@@ -1858,7 +2138,7 @@ class TestTheSignedTag:
         finally:
             made.close()
 
-    # purlin: states PROOF-68
+    # purlin: states PROOF-170
     def test_the_newest_version_wins_where_several_point_at_head(self):
         made = Project(gate='signed')
         try:
@@ -1875,11 +2155,16 @@ class TestTheSignedTag:
             try:
                 _git(made.root, 'tag', '-a', 'signed/1.2.0', '-m', 'a release')
                 assert made.payload()['tag'] is None, gate
-                config = os.path.join(made.root, '.purlin', 'config.json')
-                with open(config, encoding='utf-8') as handle:
-                    settings = json.load(handle)
-                settings['gate'] = 'signed'
-                _write(config, json.dumps(settings))
+            finally:
+                made.close()
+
+    # purlin: states PROOF-174
+    def test_raising_the_gate_to_signed_names_the_tag(self):
+        for gate in ('strong', 'passed'):
+            made = Project(gate=gate)
+            try:
+                _git(made.root, 'tag', '-a', 'signed/1.2.0', '-m', 'a release')
+                made.config_value('gate', 'signed')
                 assert made.payload()['tag']['name'] == 'signed/1.2.0', gate
             finally:
                 made.close()
@@ -1901,31 +2186,44 @@ def _feature(payload, name='login'):
 class TestASpecThatNamesNoFiles:
     """Its tests still run and pass; only a signature needs its files named."""
 
+    @staticmethod
+    def _passing_payload(spec):
+        """The payload of a project whose two rules pass, under `spec`."""
+        made = Project(spec=spec)
+        try:
+            made.evidence(PASSING)
+            return made.payload()
+        finally:
+            made.close()
+
     # purlin: states PROOF-74
+    def test_a_spec_with_no_scope_line_is_incomplete(self):
+        data = self._passing_payload(NO_SCOPE_SPEC)
+        feature = _feature(data)
+        assert feature['incomplete'] is True, feature
+        assert feature['incomplete_reason'] == 'no > Scope: line', feature
+        assert feature['rollup']['incomplete'] is True, feature['rollup']
+        assert data['summary']['incomplete'] == 1, data['summary']
+        # Its tests pass all the same.
+        assert [rule['cells']['passed']['word']
+                for rule in feature['rules']] == ['passed', 'passed']
+
     # purlin: states PROOF-134
+    def test_a_scope_naming_nothing_that_exists_is_incomplete(self):
+        feature = _feature(self._passing_payload(
+            SPEC.replace('src/login.py', 'src/nowhere.py')))
+        assert feature['incomplete'] is True, feature
+        assert feature['incomplete_reason'] == (
+            '> Scope: names nothing that exists'), feature
+
     # purlin: states PROOF-135
-    def test_the_payload_names_why_it_is_incomplete(self):
-        for spec, reason in (
-                (NO_SCOPE_SPEC, 'no > Scope: line'),
-                (SPEC.replace('src/login.py', 'src/nowhere.py'),
-                 '> Scope: names nothing that exists'),
-                (SPEC, None)):
-            made = Project(spec=spec)
-            try:
-                made.evidence(PASSING)
-                data = made.payload()
-                feature = _feature(data)
-                assert feature['incomplete'] is (reason is not None), spec
-                assert feature['incomplete_reason'] == reason, feature
-                assert feature['rollup']['incomplete'] is (
-                    reason is not None), feature['rollup']
-                assert data['summary']['incomplete'] == (
-                    1 if reason else 0), data['summary']
-                # Its tests pass all the same.
-                assert [rule['cells']['passed']['word']
-                        for rule in feature['rules']] == ['passed', 'passed']
-            finally:
-                made.close()
+    def test_a_scope_naming_a_file_that_exists_is_complete(self):
+        data = self._passing_payload(SPEC)
+        feature = _feature(data)
+        assert (feature['incomplete'], feature['incomplete_reason']) == (
+            False, None), feature
+        assert feature['rollup']['incomplete'] is False, feature['rollup']
+        assert data['summary']['incomplete'] == 0, data['summary']
 
     # purlin: states PROOF-136
     def test_an_anchor_is_never_incomplete(self):
@@ -1992,9 +2290,7 @@ class TestASpecThatNamesNoFiles:
             made.close()
 
     # purlin: states PROOF-76
-    # purlin: states PROOF-109
-    # purlin: states PROOF-110
-    def test_status_names_it_at_every_gate(self):
+    def test_status_names_one_spec_at_every_gate(self):
         for gate in ('passed', 'strong', 'signed'):
             made = Project(spec=NO_SCOPE_SPEC, gate=gate)
             try:
@@ -2003,6 +2299,9 @@ class TestASpecThatNamesNoFiles:
                         'login.') in lines, (gate, lines)
             finally:
                 made.close()
+
+    # purlin: states PROOF-109
+    def test_status_names_two_specs_at_every_gate(self):
         for gate in ('passed', 'strong', 'signed'):
             made = Project(gate=gate)
             try:
@@ -2014,6 +2313,10 @@ class TestASpecThatNamesNoFiles:
                         'time: export, login.') in lines, (gate, lines)
             finally:
                 made.close()
+
+    # purlin: states PROOF-110
+    def test_status_says_nothing_when_every_spec_names_its_files(self):
+        for gate in ('passed', 'strong', 'signed'):
             made = Project(gate=gate)
             try:
                 text = purlin_status.sync_status(made.root)

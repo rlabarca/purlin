@@ -26,10 +26,20 @@ def project():
     made.close()
 
 
+def _other(here):
+    """An operating system that is not this machine's."""
+    return 'windows' if here != 'windows' else 'linux'
+
+
+def _tagged_for(project, os_name):
+    """`PROOF-1` tagged `@env` for `os_name`."""
+    project.spec(SPEC.replace('and a token\n',
+                              'and a token @env(%s)\n' % os_name))
+
+
 # purlin: states PROOF-11
 def test_a_failing_test_is_named_where_it_failed(project):
     here = purlin_evidence.host_os()
-    project.proofs()
     project.evidence({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
     one, two = project.rule('RULE-1'), project.rule('RULE-2')
     assert one['cells']['passed']['word'] == 'failed', one
@@ -39,7 +49,11 @@ def test_a_failing_test_is_named_where_it_failed(project):
     assert one['bucket'] == 'failing', one
     assert project.payload()['summary']['failing'] == 1
 
-    other = 'windows' if here != 'windows' else 'linux'
+
+# purlin: states PROOF-154
+def test_failures_from_two_sources_and_two_systems_are_each_named(project):
+    here = purlin_evidence.host_os()
+    other = _other(here)
     project.evidence({'PROOF-1': 'fail', 'PROOF-2': 'fail'})
     project.evidence({'PROOF-1': 'fail', 'PROOF-2': 'fail'}, runner='ci',
                      source='ci', os_name=other)
@@ -50,13 +64,10 @@ def test_a_failing_test_is_named_where_it_failed(project):
     assert project.payload()['summary']['failing'] == 2
 
 
-# purlin: states PROOF-11
-def test_an_env_proof_is_read_only_from_its_own_system(project):
-    here = purlin_evidence.host_os()
-    other = 'windows' if here != 'windows' else 'linux'
-    project.spec(SPEC.replace('and a token\n',
-                              'and a token @env(%s)\n' % other))
-    project.proofs()
+# purlin: states PROOF-155
+def test_an_env_proof_failing_on_another_system_here_is_not_run(project):
+    other = _other(purlin_evidence.host_os())
+    _tagged_for(project, other)
     project.evidence({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
     one = project.rule('RULE-1')
     assert one['cells']['passed']['word'] == 'not run', one
@@ -65,6 +76,12 @@ def test_an_env_proof_is_read_only_from_its_own_system(project):
     assert one['flags']['failing'] is False, one
     assert project.payload()['summary']['failing'] == 0
 
+
+# purlin: states PROOF-156
+def test_an_env_proof_failing_on_its_own_system_is_failed(project):
+    other = _other(purlin_evidence.host_os())
+    _tagged_for(project, other)
+    project.evidence({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
     project.evidence({'PROOF-1': 'fail', 'PROOF-2': 'pass'}, runner='ci',
                      source='ci', os_name=other)
     one = project.rule('RULE-1')
