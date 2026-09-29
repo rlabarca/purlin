@@ -109,10 +109,13 @@ Each `rules` value:
 
 | Word | What it means |
 |---|---|
-| `passed` | every test tied to every proof of the rule that could run here ran and passed; for a rule with no proof, every test marked with the rule's own id passed |
-| `failed` | a test claiming one of the rule's proofs, or marked with the rule's id, failed |
-| `no test` | no proof names the rule and no test is marked with its id, or no test is tied to any of its proofs |
-| `not run` | a test tied to the rule did not run, or a proof of the rule is tagged `@env` for another operating system, so this machine could not answer |
+| `failed` | a tied test of a proof that could run here failed, or a test marked with the rule's id failed |
+| `no test` | else, a proof of the rule that is not `@manual`, tagged `@env` or not, has no test tied to it; or no proof names the rule and no test is marked with its id |
+| `not run` | else, a tied test did not run, or a proof of the rule is tagged `@env` for another operating system, so this machine could not answer |
+| `passed` | else: every test tied to every proof of the rule that could run here ran and passed; for a rule with no proof, every test marked with the rule's own id passed |
+
+The words are read in that order. A rule whose proofs are all `@manual`
+reads `passed`, since no run was ever going to observe one.
 
 Each `proofs` entry:
 

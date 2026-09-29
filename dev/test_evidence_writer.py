@@ -324,6 +324,12 @@ def test_a_rule_whose_proof_has_no_test_reads_no_test():
     assert _rule_word({'PROOF-1': PLAIN}, {}) == 'no test'
 
 
+# purlin: evidence_writer PROOF-77
+def test_a_rule_with_one_proof_tested_and_one_not_reads_no_test():
+    assert _rule_word({'PROOF-1': PLAIN, 'PROOF-2': PLAIN},
+                      {'PROOF-1': [_seen('pass')]}) == 'no test'
+
+
 # purlin: evidence_writer PROOF-21
 def test_a_rule_whose_one_proof_is_manual_reads_passed():
     assert _rule_word({'PROOF-1': {'manual': True, 'env': None}},

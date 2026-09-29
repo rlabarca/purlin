@@ -98,11 +98,13 @@ def rule_word(proof_ids, proofs, observed, host_os):
 
     `observed` holds each proof's worst test: `fail`, then `not run`, then
     `pass`, so a rule reads `passed` only when every test tied to every
-    proof that could run here ran and passed. A `@manual` proof declares
-    that no test is written for it, so a rule whose proofs are all manual
-    has nothing for a run to observe and reads `passed`, as its passed cell
-    does. A proof another operating system owns was not run here, so the
-    rule reads `not run` rather than claiming there is no test.
+    proof that could run here ran and passed. In order: `failed` where a
+    test of a proof that could run here failed; `no test` where a proof that
+    is not `@manual`, tagged or not, has no test tied to it; `not run` where
+    a tied test did not run or a proof another operating system owns waits
+    on it; else `passed`. A `@manual` proof declares that no test is written
+    for it, so a rule whose proofs are all manual has nothing for a run to
+    observe and reads `passed`, as its passed cell does.
     """
     written = list(proof_ids or ())
     if not written:
@@ -119,15 +121,13 @@ def rule_word(proof_ids, proofs, observed, host_os):
     # whatever it did, so only a proof that could run here can fail the rule.
     if any(observed.get(pid) == 'fail' for pid in here):
         return 'failed'
-    # A proof another system owns with no test tied to it waits on a test
-    # to be written, not on a run over there.
-    if any(pid not in observed for pid in foreign):
+    # A proof with no test tied to it, here or on another system, waits on
+    # a test to be written, and running again never clears it.
+    if any(pid not in observed for pid in runnable):
         return 'no test'
     if here and all(observed.get(pid) == 'pass' for pid in here):
         return 'passed' if not foreign else 'not run'
-    if any(observed.get(pid) for pid in runnable):
-        return 'not run'
-    return 'no test'
+    return 'not run'
 
 
 _WORST = {'fail': 2, 'not run': 1, 'pass': 0}

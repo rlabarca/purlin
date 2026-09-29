@@ -2647,6 +2647,19 @@ class TestEachRuleThatFailsOrHasNoTest:
             next(text for text in lines if text.startswith('Purlin status:')))
         assert not [text for text in lines if text.startswith('feat RULE-1 ')]
 
+    # purlin: run_script PROOF-212
+    def test_a_rule_with_a_proof_no_test_carries_names_that_proof(
+            self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
+                                    ('PROOF-2', 'RULE-1', '')))
+        _code, output = _run(root, '--all', '--test')
+        line = 'feat RULE-1 has no test for PROOF-2. Run purlin:build feat.'
+        lines = output.splitlines()
+        assert line in lines, output
+        assert lines.index(line) < lines.index(
+            next(text for text in lines if text.startswith('Purlin status:')))
+
     # purlin: run_script PROOF-210
     def test_a_proof_for_another_system_with_no_test_is_named(self, tmp_path):
         other = 'windows' if HERE_OS != 'windows' else 'linux'

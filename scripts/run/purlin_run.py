@@ -197,6 +197,7 @@ NO_TEST_TOOL = ('No test command is set in .purlin/config.json, and no test '
 # has no test, before the status.
 RULE_FAILS = '%s %s fails: %s. Run purlin:build %s.'
 RULE_HAS_NO_TEST = '%s %s has no test. Run purlin:build %s.'
+RULE_HAS_NO_TEST_FOR = '%s %s has no test for %s. Run purlin:build %s.'
 
 # What the run says about the markers it read, once per run.
 TIED_LINE = 'Markers: %d tied to a test, %d not tied.'
@@ -695,7 +696,8 @@ def rule_problems(features, sections, index):
 
     Read from the words this run's sections give each rule, so the lines,
     the evidence and the exit code say the same. A failing rule names each
-    of its tests that failed here.
+    of its tests that failed here. A rule that has no test names each of
+    its proofs no test is tied to, where another of its proofs has one.
     """
     lines = []
     for name, section in sections.items():
@@ -715,7 +717,19 @@ def rule_problems(features, sections, index):
                 lines.append(RULE_FAILS % (name, rule_id, ', '.join(failing),
                                            name))
             elif word == 'no test':
-                lines.append(RULE_HAS_NO_TEST % (name, rule_id, name))
+                listed = [entry for entry in section.get('proofs') or ()
+                          if entry.get('rule') == rule_id
+                          and entry.get('id') != rule_id
+                          and not entry.get('manual')]
+                untested = []
+                for entry in listed:
+                    if not entry.get('test') and entry['id'] not in untested:
+                        untested.append(entry['id'])
+                if untested and any(entry.get('test') for entry in listed):
+                    lines.append(RULE_HAS_NO_TEST_FOR % (
+                        name, rule_id, ', '.join(untested), name))
+                else:
+                    lines.append(RULE_HAS_NO_TEST % (name, rule_id, name))
     return lines
 
 
