@@ -1,6 +1,6 @@
 # Lane `package`
 
-You are lane `package` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `package` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -33,9 +33,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Decision 94, split by claim, package RULE-6** (Q35): read each proof, then split into:
    RULE-6 (its words, the one kind of work, its proofs, its tests: PROOF-9, 18); a new rule for
@@ -55,20 +54,18 @@ report it. Build every other item.
    | `to_measure` | `1 rule to measure`, `<n> rules to measure` | `purlin:audit` |
    ```
 
-   The `to_correct` row is **PENDING OQ3** and the `to_measure` row **PENDING OQ9**. The
-   sentence above the table, "Each rule is counted under one kind, the first that applies, and
-   a kind at zero has no line:", reads, where `to_correct` stands, word for word
+   The two rows are OQ3's and OQ9's. The sentence above the table, "Each rule is counted under
+   one kind, the first that applies, and a kind at zero has no line:", reads, word for word
    (`phase3-plan.md` section 12, item 4):
 
    ```
    Each rule is counted under one kind, the first that applies, and a kind at zero has no line. `to_correct` counts test comments, not rules, and is carried by the project:
    ``` `package.py` copies `left` as today;
-   no code change for them. RULE-4 does not list kinds and stays. If OQ3 and OQ9 both remove
-   their kind, nothing in the format changes and there is no bump.
+   no code change for them. RULE-4 does not list kinds and stays.
 3. **Split by claim and one case per proof** (C11) for the other rules: candidate RULE-1.
 4. The package's `warnings` carry the spec mistakes as they carry every payload warning; nothing
    to build.
-5. **Q65, `purlin:export`** (C1.9, C3.4; **PENDING OQ1**): `package.py` `main`, after the
+5. **Q65, `purlin:export`** (C1.9, C3.4; OQ1): `package.py` `main`, after the
    command line is read and before anything else is read or written (`--check` included),
    prints `config_engine.config_problem(project_root)`'s sentence when it answers, writes
    nothing and exits 1. One new rule, or one proof under an existing rule that already says what

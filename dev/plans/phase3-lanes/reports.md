@@ -1,6 +1,6 @@
 # Lane `reports`
 
-You are lane `reports` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `reports` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -34,9 +34,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q22, the report side:** P1 moved `marker_problems` into `markers.py`. PROOF-19 drops
    "still ends on `Nothing left to do.`": "... the run prints
@@ -47,7 +46,7 @@ report it. Build every other item.
    outcome is skipped, as the code already reads; one new proof for each of the three rarer
    passing outcomes (test near line 395); `references/formats/marker_format.md` (around line
    134) says the same, with no Format-Version bump (clarified wording).
-3. **Q24** (C3.9; **PENDING OQ18**): `markers.near_miss` (around lines 1003 to 1012) suggests
+3. **Q24** (C3.9; OQ18): `markers.near_miss` (around lines 1003 to 1012) suggests
    only ids a comment may name. Where the nearest id is a rule with exactly one proof, the fix
    names that proof and the `why` reads
    `` `RULE-30` is one character from `RULE-3`, which login has; a comment names its one proof, `PROOF-3` ``;
@@ -69,12 +68,10 @@ report it. Build every other item.
    - "Comments that are nearly a marker" (line 206 onward), Q24 (decision 94): the paragraph
      that says when a comment is a near miss says that a suggestion names only an id a comment
      may name; that a comment one character from a rule with exactly one proof is offered that
-     proof, with the `why` of C3.9 (**PENDING OQ18**; with its third option no suggestion is
-     made for a comment one character from a rule id, and the section says so); and that one
+     proof, with the `why` of C3.9 (OQ18); and that one
      character from a rule with two or more proofs is not a near miss. The field table stays.
    - Line 106, "With no entry left, the run runs nothing and suggests one": it suggests one
-     for each test tool it recognises (decision 94, C3.7 R4; **PENDING OQ5**; with OQ5's third
-     option the line stays).
+     for each test tool it recognises (decision 94, C3.7 R4; OQ5).
 
 **You consume** P1's move. **You produce** C3.9's near misses, read by `purlin:build`.
 

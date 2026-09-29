@@ -1,6 +1,6 @@
 # Lane `run`
 
-You are lane `run` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `run` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -39,9 +39,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Decision 95, a remote run runs only the tests tied to proofs tagged for its system.**
    - `--ci`, with or without `--all` or a feature named, selects in each feature the proofs whose
@@ -49,8 +48,7 @@ report it. Build every other item.
    - `{files}` holds the test files carrying those proofs' markers; a suite with no such file is
      not started.
    - Only those markers count for missing evidence and for the exit code (around lines 836 to
-     857). **PENDING OQ21** (recommended): a file holding tagged and untagged tests is started
-     whole; results of tests tied to no selected proof are neither written nor counted; a suite
+     857). OQ21: a file holding tagged and untagged tests is started whole; results of tests tied to no selected proof are neither written nor counted; a suite
      whose command takes no `{files}` runs whole under the same rule.
    - The `ci` section lists only the selected proofs and the rules they prove (C4.3); `_ci`'s
      `merge_for_host` gets only those rules.
@@ -63,15 +61,15 @@ report it. Build every other item.
      `host_os()`): PROOF-12, 15, 59, 68, 102, 116 to 121, 171, 174, 175 and 194.
    - New proofs: a `--ci` run over a feature whose PROOF-1 is untagged and PROOF-2 tagged for
      this system writes a `ci` section listing PROOF-2 alone; a feature with no tagged proof
-     gets no `ci` file; (OQ21's first option) an untagged test that fails in the same file as a
-     tagged test that passes leaves the job's exit 0.
+     gets no `ci` file; an untagged test that fails in the same file as a tagged test that
+     passes leaves the job's exit 0 (OQ21).
 2. **Decision 95, the foreign result** (C4.4): `evidence.build_section` writes `not run` for a
    proof tagged for another system whatever its tied test did here; evidence_writer RULE-3 says
    so; new proof: one test carries a Mac proof's marker and a Windows proof's marker and passes
    on the Mac; the local section reads the Mac proof `pass` and the Windows proof `not run`.
 3. **Q7** and fault `run_script` (C4.5): `rule_word` gives `no test` for a rule with a proof,
    tagged for another system or not, that no test is tied to; such a proof gets no `needs`
-   line. **PENDING OQ20**: the per-proof `FOREIGN_PROOF` line becomes one line per system (R3):
+   line. OQ20: the per-proof `FOREIGN_PROOF` line becomes one line per system (R3):
    `1 proof needs <System>; this machine is <System>. Run purlin:test --remote.` /
    `<n> proofs need <System>; this machine is <System>. Run purlin:test --remote.`; RULE-10 and
    its proofs follow. PROOF-10's fixture today gives the foreign `PROOF-2` no marked test, which
@@ -81,7 +79,7 @@ report it. Build every other item.
    with no test prints `<feature> <RULE-N> has no test. Run purlin:build <feature>.` (or R1 if
    the rule has another proof with a test). The ending lines (`Left to do`) are lane `core`'s
    proofs; do not assert them here.
-4. **Q20** and fault `evidence_writer` (C4.5, C3.7 R1; **PENDING OQ4**): `rule_word` gives
+4. **Q20** and fault `evidence_writer` (C4.5, C3.7 R1; OQ4): `rule_word` gives
    `no test` where any proof that is not `@manual` has no test tied to it, after `failed`;
    `rule_problems` prints `<feature> <RULE-N> has no test for <PROOF-N>[, <PROOF-M>...]. Run purlin:build <feature>.`
    for a rule some of whose proofs have a test, and R2 unchanged for one where none has. New
@@ -117,7 +115,7 @@ report it. Build every other item.
    keys are five), each a real run that stops, built with `dev/run_project.py`'s `_project` and
    `_spec` in `dev/test_run_script.py`.
 9. **Decision 94, the first test run suggests a command for every test tool it recognises**
-   (C3.7 R4; **PENDING OQ5**, **PENDING OQ6**): `frameworks.suggest(project_root)` returns the
+   (C3.7 R4; OQ5, OQ6): `frameworks.suggest(project_root)` returns the
    list of entries of every tool found, in the order pytest, vitest, jest, dotnet, go, sql,
    shell (empty when none); `no_test_command_lines` prints `No test command is set in .purlin/config.json, so nothing ran.`,
    then per tool `Suggested for <name>: <run>` and that tool's needs line where it has one, then
@@ -128,14 +126,14 @@ report it. Build every other item.
    lines 7 to 14 and "A project that carries several frameworks is suggested the first" say
    every recognised tool is suggested, and give the Windows form. Keep `ENTRIES`, `entry_for`,
    `entries_for` and `detect_frameworks`: other lanes' code and tests use them.
-10. **Decision 94, a spec mistake seen in a run** (after P2; **PENDING OQ2**): one run_script
+10. **Decision 94, a spec mistake seen in a run** (after P2; OQ2): one run_script
     proof: a test run over a spec whose `> Scope:` names `src/gone.py`, which is not in git,
     prints `login: > Scope: names src/gone.py, which finds no file in git. Run purlin:spec login.`
     and runs its tests, exiting 0 when they pass.
 11. **Run_script RULE-12 at `signed`** (gaps left): new proof, `--all --ci` at the gate `signed`
     hands the git host one path and prints `Evidence committed.`, through the existing
     `self._ci(..., gate='signed')` helper, its proof tagged per item 1.
-12. **Q65, the run** (C1.9, C3.4; **PENDING OQ1**): `settings_stop` returns
+12. **Q65, the run** (C1.9, C3.4; OQ1): `settings_stop` returns
     `config_engine.config_problem(project_root)`'s sentence as its third case; the run prints it,
     writes nothing and exits 1; new proof with a settings file holding a trailing comma.
 13. **Q9:** run_script RULE-22 and PROOF-22 go with the test (C10).

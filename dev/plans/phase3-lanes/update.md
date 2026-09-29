@@ -1,6 +1,6 @@
 # Lane `update`
 
-You are lane `update` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `update` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -34,9 +34,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q17:** RULE-11 goes; PROOF-11 and PROOF-44 are re-pointed to RULE-10, text unchanged.
 2. **Q18** (L3): `_ask_gate` (around lines 391 to 404) prints `scaffold.NOT_A_GATE % (answer, gate)`
@@ -47,12 +46,11 @@ report it. Build every other item.
    loses its last sentence.
 4. **Decision 94 and Q37, a tool that cannot run here counts as none** (C1.3): `_ask_mutation`
    asks `mutation.runs_here(engine)`; on Windows a pytest project is not asked the breaking
-   question and prints `init.NO_ENGINE_HERE` (landed by P2, C1.11; **PENDING OQ12**) in place of
-   `init.NO_ENGINE`; with OQ12's removal option it prints no mutation line. New proof with the
-   system given as Windows.
+   question and prints `init.NO_ENGINE_HERE` (landed by P2, C1.11; OQ12) in place of
+   `init.NO_ENGINE`. New proof with the system given as Windows.
 5. **Q9:** RULE-20 drops "What the run prints carries no emoji," and PROOF-20 goes (test around
    line 1630).
-6. **Q65, the upgrade** (C1.9, C3.4; **PENDING OQ1**): `_config` stops answering `{}` for a file
+6. **Q65, the upgrade** (C1.9, C3.4; OQ1): `_config` stops answering `{}` for a file
    that cannot be read; the upgrade prints `config_problem`'s sentence, writes nothing and exits
    1. New rule and proof.
 7. **Line endings:** `_read` and `_write` open with `newline=''`, so a rewrite of spec lines keeps
@@ -60,10 +58,22 @@ report it. Build every other item.
    this). Existing tests hold.
 8. **Split by claim and one case per proof** (C11): candidates RULE-8, 15, 16, 26, 29.
 9. The file-link test (PROOF-31) is left as it stands: its `@env(macos)` tag is wave W's (plan
-   section 6), after the owner reads the Windows list and answers OQ24.
+   section 6), straight after integration (decision 97: the owner accepted the Windows list).
 10. P1 set the unknown-host line PROOF-51 quotes; leave it.
+11. **Decision 97, the runner file names only the systems this machine is not** (C1.12, C14):
+    where the upgrade offers the runner file (around lines 526 to 556), it hands
+    `flow.render_workflow` the tags `flow.foreign_tags(tags, evidence_module.host_os())` (P2
+    added `foreign_tags`), so the file names one job per system some proof is tagged for that
+    the machine running the upgrade is not, and its `covering` line names those systems. The
+    question reads, word for word (`phase3-plan.md` section 12, item 7),
+    `Write <path>, one job per operating system your specs name that this machine is not?`.
+    RULE-15's "carrying the matrix the `@env` tags name" reads "carrying one job per operating
+    system the `@env` tags name that the machine running the update is not"; one new proof: the
+    sample 0.9.5 project with one proof tagged for this machine's own system and one for
+    another, updated with `--yes`, writes a runner file naming the other system's image
+    alone.
 
-**You consume** P1's `NOT_A_GATE` and `runs_here`, P2's `config_problem`. Lane `run` must stop
+**You consume** P1's `NOT_A_GATE` and `runs_here`, P2's `config_problem` and `foreign_tags`. Lane `run` must stop
 calling `update.set_up_by_095`; it merges before you.
 
 

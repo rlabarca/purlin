@@ -1,6 +1,6 @@
 # Lane `settings`
 
-You are lane `settings` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `settings` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -38,11 +38,10 @@ The manifest's `version` field is not yours: it changes only through the bump sc
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
-1. **Q65** (C1.9, C3.4; **PENDING OQ1**): P2 landed `config_problem`. Now `_read_json` stops
+1. **Q65** (C1.9, C3.4; OQ1): P2 landed `config_problem`. Now `_read_json` stops
    folding a read, decode or parse failure into "absent"; `update_config` refuses to save while
    `config_problem` answers, raising with its sentence and leaving the file byte for byte; each
    of the three server tools answers the sentence in place of the workspace check (around lines
@@ -50,14 +49,14 @@ report it. Build every other item.
    the cause and the line; a save is refused while the file cannot be read. One proof per
    cause: a trailing comma (`at line <n>`), bytes that are not UTF-8, JSON that is a list, a
    save refused (file unchanged). New server proof: each tool answers the sentence.
-2. **Q66** (C3.5, **PENDING OQ8**): `update_config` removes its temporary file and raises when
+2. **Q66** (C3.5, OQ8): `update_config` removes its temporary file and raises when
    the move or write fails (today it swallows the error, around lines 97 to 99);
    `handle_purlin_config` answers `The setting was not saved: <cause>.`. Config_engine RULE-10
    adds "and says so"; PROOF-26 and PROOF-27 assert the raise; a new server proof under RULE-9.
 3. **Q67.** `main()`, `if __name__ == '__main__'`, the shebang and any import only they use go
    from `config_engine.py`; RULE-5 and PROOF-5, 19, 20, 21, 22 and 23 go with their tests (around
    lines 290 to 330, the process-level test included).
-4. **Q68 and Q69** (C3.5, **PENDING OQ8**, whose first option shows the owner the six accepted-value phrases below): a write of a known key with no `value` argument is
+4. **Q68 and Q69** (C3.5, OQ8): a write of a known key with no `value` argument is
    refused with `A change needs a value; nothing was saved.`; a value outside C3.5's accepted set
    with `"<value>" is not accepted for <key>; it takes <accepted>. Nothing was saved.`; the file
    is left byte for byte. Accepted: `gate` passed, strong or signed; `mutation_engine` none,
@@ -65,9 +64,9 @@ report it. Build every other item.
    (explicit null accepted for it alone); `audit_parallel` a whole number from 1 to 16; `tests`
    a list (entries not read); `ci` github, azure or none. Unknown keys are written as today.
    Server RULE-10 is reworded, or split one rule per claim, with one proof per refusal.
-5. **The version write** (**PENDING OQ8**): a write of `version` is refused with
+5. **The version write** (OQ8): a write of `version` is refused with
    `version is written by purlin:init from Purlin's own version; nothing was saved.`, file
-   unchanged. With OQ8's second option, `version` is written like any key.
+   unchanged.
 6. **Q70:** a read of a key that is absent or stored as null answers
    `json.dumps({"<key>": None}, indent=2)`, the shape of a found key. Server RULE-9 says so; new
    proof.

@@ -1,6 +1,6 @@
 # Lane `skills-author`
 
-You are lane `skills-author` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `skills-author` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -38,9 +38,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q61:** a build commit's changeset opens with its heading line `Changeset:`, as `Decisions:`
    and `Review:` do. `references/commit_conventions.md` "The build commit body" example gains
@@ -62,8 +61,8 @@ report it. Build every other item.
      failed on another; the row for `not run, with <os>: no run yet` covers a system that has
      not run;
    - "When a rule is stuck", Q20: the `no test` row says one of the rule's proofs has no test
-     carrying its marker comment (**PENDING OQ4** for the reason's words, `no test for <PROOF-N>`);
-   - "When a rule is stuck", Q37 (**PENDING OQ9**): a new `strong` row, `weak`,
+     carrying its marker comment, with the reason `no test for <PROOF-N>` (OQ4);
+   - "When a rule is stuck", Q37 (OQ9): a new `strong` row, `weak`,
      `strength not measured: <reason>`: do what the reason names, then `purlin:audit`. The row
      says how to read the cell and what to do, and points at the S2 paragraph of
      `references/hard_gates.md` (C12) instead of restating when the cell reads so;
@@ -82,10 +81,8 @@ report it. Build every other item.
 4b. **The build skill's "Running them"** (lines 96 to 102; decision 94, Q7): line 98's "where no
    test command is set it suggests one and writes it once the person confirms" says it
    suggests one for each test tool it recognises and writes them once the person confirms
-   (**PENDING OQ5**; with OQ5's third option it stays); lines 101 to 102, "the run says it
-   `needs <os>`", say the run counts such proofs in one line per system that names
-   `purlin:test --remote` (**PENDING OQ20**; with OQ20's second option they stay; with its
-   third, the list of work left counts them as `rules to test on <System>`). No line is added
+   (OQ5); lines 101 to 102, "the run says it `needs <os>`", say the run counts such proofs in
+   one line per system that names `purlin:test --remote` (OQ20). No line is added
    (130 of 130); skill_build's proofs that quote these words follow.
 5. **The interpreter lookup** (C9): `skills/build/SKILL.md` line 84 and `skills/anchor/SKILL.md`
    lines 42 and 65 read
@@ -94,13 +91,27 @@ report it. Build every other item.
 6. **Decision 94, instruction rules:** skill_spec RULE-2, 3, 5, 6, 7; skill_spec_from_code RULE-2,
    3, 6 to 9; skill_anchor RULE-2 and 5, and every other rule of the four specs, say what the
    skill tells the agent.
-7. **Q40's reason, applied** (C11, **PENDING OQ13**): the damaged-copy proofs of skill_anchor
-   (about 21), skill_build (about 20), skill_spec_from_code (about 23) and skill_spec (about 26)
-   leave the specs, each kept as a second assertion in its guarded test. With OQ13's second or
-   third option they stay as they are.
+7. **Q40's reason, applied** (C11, OQ13): the damaged-copy proofs of skill_anchor (about 21),
+   skill_build (about 20), skill_spec_from_code (about 23) and skill_spec (about 26) leave the
+   specs, each kept as a second assertion in its guarded test.
 8. **Split by claim** (C11): candidates skill_spec RULE-5 and 6, skill_anchor RULE-5, skill_build
    RULE-5, and each RULE-1.
 9. Q77: the checks stand; nothing to do.
+10. **Decision 97, an anchor is a spec in Purlin's format** (contracts C13): in
+    `skills/anchor/SKILL.md` the paragraph of the `add` section that begins "When the source
+    file is free text" (lines 56 to 59) goes, and in its place stands, word for word
+    (`phase3-plan.md` section 12, item 9):
+    ```
+    The file is a spec in Purlin's format that holds at least one rule, kept in a git repository. Any other source, a text file, a description in words or a file with no rule, is refused and nothing is written; the refusal names `purlin:anchor create <name>`, which writes the rules in this project instead.
+    ```
+    The closing section gains the outcome "Anchor refused, its source not a spec:
+    `→ Run: purlin:anchor create <name>`". The skill stays within 160 lines (98 now).
+    `specs/skills/skill_anchor.md` gains one rule from the next free id, "The skill tells the
+    agent that an anchor's source is a spec in Purlin's format with at least one rule, kept in a
+    git repository, and that any other source is refused and written with
+    `purlin:anchor create`", with one proof that reads the sentence across its line breaks, and
+    its test in `dev/test_skill_anchor.py`. The refusal's own words are `upstream`'s (C13); the
+    skill does not quote them. Nothing in the skill or its spec says what was taken out.
 
 
 ## How to number, split and write proofs

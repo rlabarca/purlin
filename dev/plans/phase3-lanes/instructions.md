@@ -1,6 +1,6 @@
 # Lane `instructions`
 
-You are lane `instructions` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `instructions` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -36,9 +36,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q9, the one rule on emoji** (C10): write `specs/instructions/purlin_output.md`:
    `# Feature: purlin_output`, `> Scope: scripts/**, templates/**`, a Description saying it holds
@@ -52,13 +51,12 @@ report it. Build every other item.
 2. **Q57:** `agents/purlin.md` line 61's sentence "`no proof written` means no proof line names
    the rule." goes; purlin_agent RULE-5 drops that clause, PROOF-5 is reworded, PROOF-37 goes;
    `dev/test_purlin_agent.py` around lines 264 to 266 and 411 to 420.
-3. **Decision 94, the agent's line** (**PENDING OQ5**; with OQ5's third option it stays):
+3. **Decision 94, the agent's line** (OQ5):
    `agents/purlin.md` lines 49 to 50, "suggests the test
    command", becomes "suggests a command for each test tool it recognises"; no line is added.
 4. **Decision 94, instruction rules:** purlin_agent RULE-1 to RULE-8 take "The agent definition"
    as their subject.
-5. **Q40's reason, applied** (C11, **PENDING OQ13**; with OQ13's second or third option this item
-   is left as it stands): purlin_agent's damaged-copy proofs (about 35) and
+5. **Q40's reason, applied** (C11, OQ13): purlin_agent's damaged-copy proofs (about 35) and
    purlin_version's proofs whose case is a damaged copy of a file the spec covers leave the
    specs, each kept as a second assertion in its guarded test. purlin_version's proofs about a
    bump-script input that is refused, or `VERSION`'s content, stay.

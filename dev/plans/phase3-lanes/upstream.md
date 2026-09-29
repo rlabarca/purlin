@@ -1,6 +1,6 @@
 # Lane `upstream`
 
-You are lane `upstream` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `upstream` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,14 +13,15 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
    `dev/plans/phase2-report.md` the numbered questions named below (line 61 onward).
 5. Reading Q41 and report question 41; the fault list item for `upstream` (report line 54);
-   the report's Windows point 4, the backslash `--path`.
+   the report's Windows point 4, the backslash `--path`; `phase3-contracts.md` C13, which is
+   the whole of item 6 below, and `phase3-plan.md` section 7, calls 67 to 73.
 
 ## The files you own
 
@@ -31,12 +32,12 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 - `scripts/anchor/upstream.py`
 - `specs/anchor/upstream.md`
 - `dev/test_upstream.py`, `dev/test_upstream_notes.py`
+- `references/formats/anchor_format.md` (moved to you from lane `anchors`, plan call 72)
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q41** and fault RULE-15: a plain `sync` fetches each distinct source once per run: `sync`
    and `_sync_one` share a fetch cache `{url: (checkout, head, error)}` beside the `ls-remote`
@@ -58,9 +59,65 @@ report it. Build every other item.
    `\r\n` endings is synced, and the copy's bytes hold no carriage return.
 4. `drift._looks_like_git` and `drift._ls_remote` keep their behaviour (C8); do not copy them.
 5. **Split by claim and one case per proof** (C11) across the spec.
-
-An Azure DevOps address reads as free text in `is_repository` today; no reading covers `add`, so
-leave it and do not report it again (plan section 11).
+6. **Decision 97, an anchor is a spec in Purlin's format; anchors made from plain text go**
+   (contracts C13, word for word; OQ19 and OQ25). Lane `drift` merged before you with
+   `drift.source_is_repository`, `drift.NOT_A_SPEC_SOURCE` and `drift.not_a_spec_source`; import
+   them, do not copy them.
+   - **Delete outright:** `FREE_TEXT_NOTE`, `_free_text`, `is_repository` (its callers use
+     `drift.source_is_repository`), the `no_rules` status and its printed line in `_render`,
+     the module docstring's sentence "A source that is not a repository is free text ...",
+     `add`'s help "or a file of free text" (it reads `a git url`); in `specs/anchor/upstream.md`
+     RULE-7 with PROOF-7, 24, 28 and 29, and RULE-14 with PROOF-14, their numbers never reused,
+     and the Description's clause "and a source that is free text rather than a repository is
+     copied in as an anchor with no rules yet instead"; their tests in `dev/test_upstream.py`
+     (the free-text helper around line 245, the tests around lines 359 to 410, and the text-file
+     anchor of the test around line 563). No test that any of it is absent.
+   - **`add` refuses** a source that is not a spec in Purlin's format kept in a git repository,
+     in C13's three cases: a file on disk and a description in words before any process starts;
+     a file in a repository at `--path` whose text `parse_rules` reads as holding no rule after
+     the fetch, the checkout removed before `add` returns. It returns
+     `{"command": "add", "anchor": <name>, "source": <source>, "path": <path>, "status": "error", "error": <text>}`,
+     prints the one line `<name>: <text>` and exits 2; nothing is written or changed under
+     `specs/`, `specs/_anchors/` is not created, and no file is left under
+     `.purlin/runtime/anchors/` by the call. `NOT_A_SPEC`, word for word, with two `%s` (what,
+     then the name):
+     ```
+     not added. %s is not a spec in Purlin's format kept in a git repository. Run purlin:anchor create %s to write its rules in this project.
+     ```
+     where what is the source as given for a file on disk, the `--path` as given for a file in a
+     repository, and `The description given` for words; so the line reads, for example,
+     `refunds: not added. policy.txt is not a spec in Purlin's format kept in a git repository. Run purlin:anchor create refunds to write its rules in this project.`
+     The check of an unsafe source (RULE-6) still comes first.
+   - **`sync`:** `pinned_anchors` covers every anchor carrying a `> Source:`. One whose source
+     `drift.source_is_repository` rejects gets the row
+     `{"anchor", "source", "path", "pinned", "status": "error", "not_a_spec": true, "error": drift.not_a_spec_source(name, source)}`,
+     starts no process, writes nothing, and is printed `<name>: <error>`, for example
+     `refunds: its source, policy.txt, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec refunds to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.`;
+     the command exits 2, as for any source that cannot be read (RULE-9). This holds for
+     `sync --check`, `sync <name>` and `sync` with no name. A local anchor, with no `> Source:`,
+     is not listed.
+   - **New rules** from the next free id (C11), one proof and one marked test per case:
+     `add` refuses a source that is not a spec in Purlin's format kept in a git repository,
+     prints the refusal, writes nothing and exits 2 (a text file in the project; a description
+     in words; a file in a repository with no rule); `sync --check`, `sync <name>` and `sync`
+     with no name report an anchor whose `> Source:` names no repository as `error` with the
+     reason, start no process for it, write nothing and exit 2 (three proofs; the one for
+     `sync` with no name holds two repository anchors and one from a text file, the case
+     PROOF-14 had). The Description says an anchor's source is a spec in Purlin's format kept in
+     a git repository.
+   - **`references/formats/anchor_format.md`**, in the same commit as the code that makes `add`
+     refuse (CLAUDE.md "Format reference versioning", step 5): `> Format-Version:` 9 to 10, and
+     in "The source: a git URL plus a path", after its first paragraph, word for word
+     (`phase3-plan.md` section 12, item 8):
+     ```
+     The file at the path is a spec in this format that holds at least one rule. `purlin:anchor add` refuses any other source, a file on disk, a description in words or a file with no rule, and writes nothing. A copy whose `> Source:` names no repository reads `error` in `purlin:drift` and in `purlin:anchor sync --check`. A local anchor carries no `> Source:` and is never checked.
+     ```
+     Grep `docs/`, `skills/`, `references/` and `agents/purlin.md` for the format (CLAUDE.md
+     step 4): the lines that change are lanes `skills-author`'s and `words`'s (C13); report any
+     other you find.
+   - `dev/test_upstream_notes.py`'s "free text" is a `> Note:`'s own words and stays.
+   - A sync whose repository file, at the new head, holds no rule is written as today (plan
+     section 11); do not build a refusal for it.
 
 
 ## How to number, split and write proofs

@@ -1,6 +1,6 @@
 # Lane `scaffold`
 
-You are lane `scaffold` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `scaffold` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -37,9 +37,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q14** (decisions 70, 80): a later run of setup asks nothing before each file: the per-file
    `[Y/n]` goes (`Console.confirm`, `Plan.gated`, `Plan.allowed`, the comment around lines 573 to
@@ -61,34 +60,29 @@ report it. Build every other item.
    `specs/skills/skill_init.md` RULE-2 drops `--add`, PROOF-23 is reworded, PROOF-8 goes;
    `dev/test_skill_init.py` around lines 122 and 376 to 386. The skill's lines 76 to 78 say the
    first test run suggests a command for each test tool it recognises, confirmed together
-   (**PENDING OQ5**: it prints
+   (OQ5: it prints
    `Suggested tests setting: <the entries as one JSON array on one line>`, which the agent
    writes).
 6. **Decision 94 and Q37, a tool that cannot run here counts as none** (C1.3): `engine_for` and
    `resolve_mutation` ask `mutation.runs_here(engine)`; on Windows a pytest project is not asked
    the breaking question and, in place of `NO_ENGINE` (which would say no engine breaks pytest
-   code, untrue there), prints C3.2's setup line (**PENDING OQ12**):
+   code, untrue there), prints C3.2's setup line (OQ12):
    `Mutation testing is off: mutmut does not run on Windows, so the AI audit alone judges test strength.`
-   With OQ12's second option it prints `Mutation testing is off: mutmut does not run on Windows.`;
-   with its removal option it prints no mutation line for such a project. P2 landed the sentence
+   P2 landed the sentence
    as `scaffold.NO_ENGINE_HERE` (C1.11); print that constant. New proof with the system given as
    Windows. `_STRYKER_NOTE` stays as it reads (decision 96).
 7. **Q9:** RULE-35 and PROOF-35 go with the test (around line 1120).
-8. **Decision 96, both host lines, in one place** (C3.1 L1 and L2; **PENDING OQ7**): with no
+8. **Decision 96, both host lines, in one place** (C3.1 L1 and L2; OQ7): with no
    remote, the summary line reads `Gate <gate>. Suites <names>.` and the next line
    `No git host found.`; with a remote on a git host Purlin cannot use, the summary line reads
    `Gate <gate>. Suites <names>.` and the next line
    `This git host cannot run tests remotely. Everything on this machine works.`
    (`workflow.UNKNOWN_HOST`, which P1 set; print the constant); with GitHub or Azure DevOps it
    reads as today, `Gate <gate>. Suites <names>. Git host <host>.` The words
-   `Git host not read from a remote` leave the file. With OQ7's option 2 each line closes the
-   summary line instead (`Gate strong. Suites pytest. No git host found.`); with option 3 the
-   no-remote case is as in option 1 and the upgrade's line is lane `update`'s; with option 4
-   setup prints nothing for no remote and the unknown-host line stays on a line of its own after
-   the summary line. RULE-14 and its proofs (PROOF-69, PROOF-70, and PROOF-44's line) quote
+   `Git host not read from a remote` leave the file. RULE-14 and its proofs (PROOF-69, PROOF-70, and PROOF-44's line) quote
    what is printed; `skills/init/SKILL.md` lines 107 to 110 quote the two lines of decision 96.
    `workflow.NO_REMOTE` and `REMOTE_NO_REMOTE` stay.
-9. **Q65, setup** (C1.9, C3.4; **PENDING OQ1**): `_existing_config` stops turning an unreadable
+9. **Q65, setup** (C1.9, C3.4; OQ1): `_existing_config` stops turning an unreadable
    file into "no settings"; setup prints `config_problem`'s sentence, writes nothing, exits 1.
    New rule and proof.
 10. **Decision 95, the six tests.** The `gh` test (around line 946): its `os.name == 'nt'` skip
@@ -109,8 +103,8 @@ report it. Build every other item.
     and the fallback sentence at lines 11 to 12 goes; decision 94: skill_init's rules say what the
     skill tells the agent (RULE-2: "gives the line that runs `scaffold.py`"); PROOF-24 (every flag
     the skill names is in `scaffold.py --help`) and PROOF-32 to 35 and 38 stay; Q40's reason
-    (C11, **PENDING OQ13**): skill_init's damaged-copy proofs (about 23) leave the spec, each
-    kept in its guarded test; with OQ13's second or third option they stay as they are.
+    (C11, OQ13): skill_init's damaged-copy proofs (about 23) leave the spec, each kept in its
+    guarded test.
 13. **Split by claim and one case per proof** (C11): candidates scaffold RULE-5, 13, 14, 44, 45;
     skill_init RULE-1, 6, 7.
 
@@ -119,9 +113,28 @@ report it. Build every other item.
     them. Each cell points at `references/hard_gates.md`, "Where a runner runs", for which tests
     a runner runs, in place of "the marked tests", and restates nothing. Cut as many lines as
     you add (250).
+15. **Decision 97, the runner file names only the systems this machine is not** (C1.12, C14):
+    `write_workflow` hands `render_workflow` and `runners_for` the tags
+    `workflow_module.foreign_tags(env_tags, evidence_module.host_os())` (P2 added
+    `foreign_tags`) in place of every tag, so the matrix names one job per system some proof is
+    tagged for that the machine running setup is not. RULE-13 already writes the file for that
+    reason alone; RULE-15 reads "The workflow carries one job per operating system the `@env`
+    tags in `specs/` name that the machine running setup is not, and no other, and the Purlin
+    release pinned as `v<version>`". PROOF-15 becomes: a project with one proof tagged
+    `@env(windows)` and one tagged `@env(macos)`, set up on a Mac at `--gate strong`, has the
+    matrix `os: [windows-latest]` (its test names the running system's case, so on Windows it
+    reads `os: [macos-latest]`); PROOF-72 holds. The note under the written file reads, word for
+    word (`phase3-plan.md` section 12, item 6),
+    `  the matrix is <images>, the systems the @env tags in specs/ name that this machine is not.`
+    `skills/init/SKILL.md` lines 134 to 136 ("a matrix of one job per operating system the
+    `@env` tags in `specs/` name, each running the same tests and writing its own section") say
+    one job per operating system the `@env` tags name that this machine is not, each writing its
+    own section, and point at `references/hard_gates.md`, "Where a runner runs", for which tests
+    each runs (C12, S1) in place of "the same tests"; no line is added (250). The 13 `@env(macos)` tags of wave W then
+    add no Mac job to this repository's runner file.
 
 **You consume** P1's `UNKNOWN_HOST`, `NOT_A_GATE`, template and `runs_here`; P2's
-`config_problem`. **You produce** C8's walk fixture.
+`config_problem` and `foreign_tags`. **You produce** C8's walk fixture.
 
 
 ## How to number, split and write proofs

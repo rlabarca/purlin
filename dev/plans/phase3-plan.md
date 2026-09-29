@@ -1,8 +1,8 @@
-# Phase 3: decisions 94, 95 and 96, cut by ownership of files
+# Phase 3: decisions 94 to 97, cut by ownership of files
 
-Written by the planning agent on 2026-09-29. Two steps run alone first (P1, then P2), then 20
-lanes run together, then one integration agent alone, then the owner reads the Windows list,
-then one marking wave. `phase3-contracts.md` is the contract between lanes: every agent builds
+Written by the planning agent on 2026-09-29; the owner's answers of decision 97 are written in
+the same day. Two steps run alone first (P1, then P2), then 20 lanes run together, then one
+integration agent alone, then one marking wave, then the first remote run on Windows. `phase3-contracts.md` is the contract between lanes: every agent builds
 to it and none chooses. One brief per lane is under `phase3-lanes/`.
 
 A workflow runs about ten agents at a time and queues the rest, so the 20 lanes run as two
@@ -52,19 +52,22 @@ in section 4.
 
 ## 2. The order
 
-1. **Owner questions** (section 8, questions 1 to 23) are asked with the question UI, in their
-   order. P1 does not depend on them and may run while they are open. Question 24 is asked with
-   the Windows list (step 6).
+1. **Owner questions** (section 8, questions 1 to 25): answered on 2026-09-29, decision 97.
 2. **P1 `interfaces`**, alone: shared interfaces with no owner words.
-3. The orchestrator writes the owner's answers into `phase3-contracts.md` and the briefs,
-   replacing each `PENDING OQ<n>`.
+3. The answers are written into `phase3-contracts.md`, this plan and the briefs (done).
 4. **P2 `warnings`**, alone: the lines several surfaces print or assert, with the owner's words.
 5. **The fan-out**: 20 lanes at once, each on disjoint files. Merge order in section 10.
-6. **Integration**, alone (section 9). It ends by remapping `phase3-windows-list.md` to the rule
-   ids the splits left and showing the list to the owner with question 24 (decision 82).
-7. **Marking wave W**, after the owner's answer: each lane that owns a spec on the list adds the
-   `@env(windows)` proofs and second markers (section 6).
-8. Then the prompt's later steps: the remote run on Windows, sanity check 3, the pages, handoff.
+6. **Integration**, alone (section 9). It ends by bringing `phase3-windows-list.md` up to date
+   with the rule, proof and test names the splits left. The owner accepted the list as it
+   stands (decision 97), so nothing waits for the owner.
+7. **Marking wave W**, straight after: each lane that owns a spec on the list adds the
+   `@env(windows)` proofs and second markers, and `scaffold` and `update` tag the 13 Mac-only
+   proofs `@env(macos)` (section 6). Integration reports what was marked.
+8. **The first remote run on Windows**, authorised by the owner (decision 97): setup writes this
+   repository's runner file, with one Windows job and no Mac job, and `purlin:test --remote`
+   runs once. It pushes one temporary run branch and nothing else: no tag, and `main` stays
+   local.
+9. Then the prompt's later steps: sanity check 3, the pages, handoff.
 
 ## 3. The steps before the fan-out
 
@@ -106,8 +109,7 @@ Acceptance: the named test files, then `--fast`. Report ids and test counts.
 
 ### P2 `warnings` (alone, after the owner's answers; it uses OQ1, OQ2, OQ12 and OQ15)
 
-Worktree `purlin-wt/p2-warnings`, branch `lane/p2-warnings`. An item whose question was answered
-with its removal option is skipped.
+Worktree `purlin-wt/p2-warnings`, branch `lane/p2-warnings`. No question removed an item.
 
 1. **The five spec mistakes** (decision 94; Q33, Q43, Q53, Q54, Q55; the reused-number fault;
    the evidence RULE-5 gap): `specs.spec_mistakes` returns C3.3's lines. Their rules live in the
@@ -125,7 +127,7 @@ with its removal option is skipped.
    bump (no field or structure changes), plus in "Rules format" the sentence of section 12,
    item 5 (Q46, Q48, C11).
 2. **The two plurals** L8 and L9 (`payload.py`, `specs.py`), and L8's closing
-   ` Run purlin:spec <feature>.` (**PENDING OQ2**: options 1 and 2 add it, 3 and 4 do not).
+   ` Run purlin:spec <feature>.` (OQ2).
 3. **`config_engine.config_problem`** and its constant (C1.9, C3.4). Its rule and proofs are
    lane `settings`'s.
 4. **`sign.NOT_A_RULE`** takes C3.6's first line, and `sign.not_a_rule(feature, rule)` returns
@@ -134,12 +136,15 @@ with its removal option is skipped.
    872–895) follow.
 5. **`scaffold.NO_ENGINE_HERE`** (C1.11, OQ12): setup's line for a pytest project on Windows,
    added beside `NO_ENGINE` and used by lanes `scaffold` and `update`; nothing else in
-   `scripts/init/scaffold.py` changes. Skipped with OQ12's removal option.
-6. Run `--fast` and fix every test in the tree the new warning lines disturb (a fixture whose
+   `scripts/init/scaffold.py` changes.
+6. **`workflow.foreign_tags(env_tags, host_os)`** (C1.12, decision 97): the tags that name a
+   system other than `host_os`, lower-cased and sorted; `wanted()` computes its foreign set
+   through it. Nothing else in `scripts/run/workflow.py` changes; no behaviour changes.
+7. Run `--fast` and fix every test in the tree the new warning lines disturb (a fixture whose
    scope names a file it never creates now prints a line). List each file touched.
 
 Acceptance: `dev/test_schema_spec_format.py`, `dev/test_specs_reader.py`, `dev/test_states.py`,
-`dev/test_signatures.py`, `dev/test_config_engine.py`, then `--fast`.
+`dev/test_signatures.py`, `dev/test_config_engine.py`, `dev/test_consumer_ci.py`, then `--fast`.
 
 ## 4. The lanes
 
@@ -148,25 +153,25 @@ Each file that changes has one owner. "Owns" lists every file the lane may write
 | Lane | Owns | Items |
 |---|---|---|
 | `core` | `scripts/mcp/purlin/{states,payload,status,summary,board,gate,console}.py`; `specs/mcp/{states,summary}.md`; `dev/test_{states,summary,backing_tests,failing}.py`; `skills/status/SKILL.md`; `specs/skills/skill_status.md`; `dev/test_skill_status.py` | Q1, Q2, Q7 (cell), Q20 (cell), Q22 (kind, count, status row), Q37 (strong cell, `to_measure`), d94 nothing measured when the spec names no code files (OQ10), Q65 (status), Q72 (both ends), Q9 (states RULE-40), three-name join, d95 (a section answers for the proofs it lists), d94 bullets 1 and 4 for its specs, Q40 for skill_status |
-| `anchors` | `scripts/mcp/purlin/{specs,fingerprint,evidence}.py`; `specs/mcp/{specs,evidence}.md`; `specs/_anchors/*.md`; `dev/test_{specs_reader,schema_spec_format,security,fingerprint,evidence_reader}.py`; `references/formats/{spec_format,anchor_format}.md` | Q44, Q49, Q50 (check), Q51, d95 six tests (the unreadable file, a Windows lock), d94 bullet 4 and Q8 for its specs |
+| `anchors` | `scripts/mcp/purlin/{specs,fingerprint,evidence}.py`; `specs/mcp/{specs,evidence}.md`; `specs/_anchors/*.md`; `dev/test_{specs_reader,schema_spec_format,security,fingerprint,evidence_reader}.py`; `references/formats/spec_format.md` | Q44, Q49, Q50 (check), Q51, d95 six tests (the unreadable file, a Windows lock), d94 bullet 4 and Q8 for its specs |
 | `settings` | `scripts/mcp/config_engine.py`; `scripts/mcp/purlin/server.py`; `scripts/purlin_python.sh`; `.claude-plugin/plugin.json`; `specs/mcp/{config_engine,server}.md`; `dev/test_{config_engine,mcp_server}.py` | Q65 (reader, tools, refusal to save), Q66, Q67, Q68, Q69, Q70, version write (OQ8), the lookup exits 1 and the server start asks for the soft exit (C9, decision 69), d94 bullet 4 |
-| `drift` | `scripts/mcp/purlin/drift.py`; `specs/mcp/drift.md`; `dev/test_drift.py`; `references/drift_criteria.md`; `skills/drift/SKILL.md`; `specs/skills/skill_drift.md`; `dev/test_skill_drift.py` | Q30, Q31, Q32 (+ OQ19), Q78, Q65 (the drift tool), d94 bullets 1 and 4, Q40 for skill_drift |
+| `drift` | `scripts/mcp/purlin/drift.py`; `specs/mcp/drift.md`; `dev/test_drift.py`; `references/drift_criteria.md`; `skills/drift/SKILL.md`; `specs/skills/skill_drift.md`; `dev/test_skill_drift.py` | Q30, Q31, Q32, d97 an anchor is a spec in Purlin's format (C13: `source_is_repository`, the `error` row and line, the criteria row), Q78, Q65 (the drift tool), d94 bullets 1 and 4, Q40 for skill_drift |
 | `run` | `scripts/run/{purlin_run,evidence}.py`; `scripts/mcp/purlin/frameworks.py`; `specs/run/{run_script,evidence_writer}.md`; `dev/test_{run_script,evidence_writer}.py`; `references/formats/evidence_format.md`; `references/supported_frameworks.md` | Q7 (run), Q20 (run), Q21, Q37 (write and print), Q10, Q19, Q9 (RULE-22 goes), d94 suggest every tool, d94 warning seen in a run, d95 remote run of tagged tests, d95 foreign result, run_script RULE-12 at `signed`, Q65 (run), OQ20, OQ6, evidence format 5, d94 bullet 4 |
-| `host` | `scripts/run/{host,ci,remote,workflow}.py`; `templates/purlin.yml`; `templates/purlin.azure-pipelines.yml`; `dev/fixtures/consumer-ci/**`; `specs/run/host.md`; `dev/test_{host,remote,host_pathspec,consumer_ci}.py` | Q27, Q28, Q29, d95 fault 1 (`gh`/`az` lookup) and stand-ins, d95 descriptions, d95 S1 pointer in both templates' header comments, Q65 (remote), Q8, d94 bullet 4 |
+| `host` | `scripts/run/{host,ci,remote,workflow}.py`; `templates/purlin.yml`; `templates/purlin.azure-pipelines.yml`; `dev/fixtures/consumer-ci/**`; `specs/run/host.md`; `dev/test_{host,remote,host_pathspec,consumer_ci}.py` | Q27, Q28, Q29, d95 fault 1 (`gh`/`az` lookup) and stand-ins, d95 descriptions, d95 S1 pointer in both templates' header comments, d97 the matrix is the systems it is handed (C14: host RULE-19, `workflow.py`'s docstring), Q65 (remote), Q8, d94 bullet 4 |
 | `mutation` | `scripts/run/mutation/*.py`; `specs/run/mutation.md`; `dev/test_mutation_adapters.py` | d94 one share per feature (per-rule working goes), Q37 (engine answer), d94/Windows Q4 (mutmut on Windows is no engine), Q38, Q39, d95 fault 2 (`stryker.cmd`) and `.cmd` stand-ins, Q8, d94 bullet 4; clears the mutation file-matching fault |
 | `reports` | `scripts/run/reports.py`; `scripts/mcp/purlin/markers.py`; `specs/run/reports.md`; `dev/test_reports.py`; `references/formats/marker_format.md` | Q22 (PROOF-19), Q23, Q24 (the near-miss section of `marker_format.md`, OQ18), `marker_format.md` line 106 (OQ5), d95 `{files}` wording, C9 example, Q8, d94 bullet 4 |
-| `scaffold` | `scripts/init/scaffold.py`; `templates/{config.json,gitignore.purlin,evidence-readme.md}`; `specs/init/scaffold.md`; `dev/test_init_scaffold.py`; `dev/test_init_e2e_wiring.sh`; `dev/test_init_e2e_gates.sh`; `dev/init_e2e_walk.sh`; `dev/test_e2e_build_changeset.sh`; `dev/run_tests.sh`; `dev/windows_skip.sh`; `skills/init/SKILL.md`; `specs/skills/skill_init.md`; `dev/test_skill_init.py` | Q14, Q15, Q16, Q60, d94 setup's flag goes, d94/Q37 no tool here, Q9 (RULE-35), d96 both host lines in one place (OQ7), Q65 (setup), d95 six tests (the `gh` test, the walks), C8 walk fixture, init skill: C9, Q14, d96 (both lines, OQ7), d95 S1 pointer in "What the runner runs", d94 bullet 1, Q40, d94 bullet 4 |
-| `update` | `scripts/init/update.py`; `specs/init/update.md`; `dev/test_init_update.py`; `dev/fixtures/upgrade-0.9.5/**` | Q17, Q18, Q19 (its side), d94/Q37 no tool here, Q9 (RULE-20), Q65 (upgrade), line endings kept, d94 bullet 4 |
+| `scaffold` | `scripts/init/scaffold.py`; `templates/{config.json,gitignore.purlin,evidence-readme.md}`; `specs/init/scaffold.md`; `dev/test_init_scaffold.py`; `dev/test_init_e2e_wiring.sh`; `dev/test_init_e2e_gates.sh`; `dev/init_e2e_walk.sh`; `dev/test_e2e_build_changeset.sh`; `dev/run_tests.sh`; `dev/windows_skip.sh`; `skills/init/SKILL.md`; `specs/skills/skill_init.md`; `dev/test_skill_init.py` | Q14, Q15, Q16, Q60, d94 setup's flag goes, d94/Q37 no tool here, Q9 (RULE-35), d96 both host lines in one place (OQ7), Q65 (setup), d95 six tests (the `gh` test, the walks), C8 walk fixture, d97 the runner file names only systems this machine is not (C14: RULE-15, PROOF-15, the matrix note), init skill: C9, Q14, d96 (both lines, OQ7), d95 S1 pointer in "What the runner runs", d94 bullet 1, Q40, d94 bullet 4 |
+| `update` | `scripts/init/update.py`; `specs/init/update.md`; `dev/test_init_update.py`; `dev/fixtures/upgrade-0.9.5/**` | Q17, Q18, Q19 (its side), d94/Q37 no tool here, Q9 (RULE-20), Q65 (upgrade), line endings kept, d97 the runner file names only systems this machine is not (C14: RULE-15, the question), d94 bullet 4 |
 | `signing` | `scripts/review/sign.py`; `scripts/mcp/purlin/signatures.py`; `specs/review/signatures.md`; `dev/test_{signatures,tag}.py` | Q11, Q12 (order, tag line), Q13, d95 fault 4 (the home folder), Q65 (signing), d94 bullet 4 |
 | `review` | `scripts/review/{ai_audit,marked_tests}.py`; `specs/review/ai_audit.md`; `dev/test_ai_audit.py`; `dev/test_ai_audit_tests_named.py`; `references/review_criteria.md` | Q12/Q26 (audit reader), Q25, Q9 (RULE-14), ai_audit RULE-15 folded (Q13's reason, OQ14), d94 what the model is shown of strength (C12), Q65 (audit reader), d94 bullet 4 |
 | `package` | `scripts/export/package.py`; `specs/export/package.md`; `dev/test_export.py`; `references/formats/package_format.md` | d94 bullet 4 (package RULE-6, Q35), Q22 and Q37 kinds (format 4; OQ3, OQ9), Q34 kept, Q65 (export) |
-| `upstream` | `scripts/anchor/upstream.py`; `specs/anchor/upstream.md`; `dev/test_upstream.py`; `dev/test_upstream_notes.py` | Q41, d95 fault 3 (backslash `--path`), line endings kept, d94 bullet 4 |
+| `upstream` | `scripts/anchor/upstream.py`; `specs/anchor/upstream.md`; `dev/test_upstream.py`; `dev/test_upstream_notes.py`; `references/formats/anchor_format.md` | Q41, d95 fault 3 (backslash `--path`), line endings kept, d97 an anchor is a spec in Purlin's format (C13: the refusal, the `error` rows, free-text anchors go, anchor format 10), d94 bullet 4 |
 | `dashboard` | `scripts/report/src/**`; `scripts/mcp/purlin/report_data.py`; `dev/build_report.py`; `dev/capture_doc_screenshots.py`; `specs/dashboard/purlin_report.md`; `dev/test_purlin_report.py`; `dev/test_purlin_report_board_layout.py`; `dev/test_report_refresh.py`; `dev/fixtures/report/*.json` | Q22 (`To correct` button), Q9 (RULE-4), d94 PROOF-146, Q3–Q6 as built |
 | `instructions` | `agents/purlin.md`; `specs/instructions/{purlin_agent,purlin_version,purlin_output}.md`; `dev/test_{purlin_agent,purlin_version,purlin_output}.py`; `dev/bump_version.sh`; `.github/workflows/version-check.yml` | Q9 (the one rule), Q57, Q58 (none), Q74, d94 agent wording, d94 bullets 1 and 4, Q40 for both specs |
 | `skills-run` | `skills/{test,audit}/SKILL.md`; `specs/skills/{skill_test,skill_audit}.md`; `dev/test_skill_{test,audit}.py` | Q42, Q45, d94 suggest every tool (row), Q37/d94 strength lines, Q25 (audit skill), Q65 (stop rows), d95 remote run of tagged tests, the test skill's Step 5 (OQ20, S1 pointer), C9, d94 bullet 1, Q40 |
-| `skills-author` | `skills/{spec,spec-from-code,build,anchor}/SKILL.md`; `specs/skills/{skill_spec,skill_spec_from_code,skill_build,skill_anchor}.md`; `dev/test_skill_{spec,spec_from_code,build,anchor}.py`; `references/commit_conventions.md`; `references/spec_quality_guide.md`; `references/rule_examples.md` | Q61, Q62, Q64, Q7/Q20/Q37 guide rows, d95 the guide's "The operating system" (CLAUDE.md format step 3), the build skill's "Running them" (OQ5, OQ20), C9, d94 bullets 1 and 4, Q40 (OQ13) |
+| `skills-author` | `skills/{spec,spec-from-code,build,anchor}/SKILL.md`; `specs/skills/{skill_spec,skill_spec_from_code,skill_build,skill_anchor}.md`; `dev/test_skill_{spec,spec_from_code,build,anchor}.py`; `references/commit_conventions.md`; `references/spec_quality_guide.md`; `references/rule_examples.md` | Q61, Q62, Q64, Q7/Q20/Q37 guide rows, d95 the guide's "The operating system" (CLAUDE.md format step 3), the build skill's "Running them" (OQ5, OQ20), d97 the anchor skill's source sentence and its free-text paragraph gone (C13), C9, d94 bullets 1 and 4, Q40 (OQ13) |
 | `skills-sign` | `skills/{sign,export}/SKILL.md`; `specs/skills/{skill_sign,skill_export}.md`; `dev/test_skill_{sign,export}.py` | Q40, Q52, Q12 row, Q11 clause, C9, d94 bullets 1 and 4 |
-| `words` | `references/{glossary,purlin_commands,hard_gates,writing_style}.md`; `CLAUDE.md`; `RELEASE_NOTES.md`; `README.md`; `docs/{running-and-evidence,dashboard,how-purlin-works,getting-started,raising-the-gate-and-upgrading,review-and-signing,specs-and-anchors}.md` | the lines the other lanes hand over (brief), the two one-home paragraphs of C12 in `hard_gates.md`, the unknown-host sentence of `hard_gates.md` (d96), the exit table (C6), `purlin:test`'s row (d94), `--arm-timeout` syntax (OQ11), Q79, C9's one home, `RELEASE_NOTES.md` for 94–96, the `docs/` lines of section 11 that the format changes and this phase make false (CLAUDE.md format step 4) |
+| `words` | `references/{glossary,purlin_commands,hard_gates,writing_style}.md`; `CLAUDE.md`; `RELEASE_NOTES.md`; `README.md`; `docs/{running-and-evidence,dashboard,how-purlin-works,getting-started,raising-the-gate-and-upgrading,review-and-signing,specs-and-anchors}.md` | the lines the other lanes hand over (brief), the two one-home paragraphs of C12 in `hard_gates.md`, the unknown-host sentence of `hard_gates.md` (d96), the exit table (C6), `purlin:test`'s row (d94), `--arm-timeout` syntax (OQ11), Q79, C9's one home, `RELEASE_NOTES.md` for 94–97, d97 an anchor is a spec in Purlin's format (C13: `docs/specs-and-anchors.md`'s `add` paragraph, the release notes), the `docs/` lines of section 11 that the format changes and this phase make false (CLAUDE.md format step 4) |
 
 `docs/`: lane `words` owns the seven pages above and changes in them exactly the lines of
 section 11's list that evidence format 5, package format 4 and the other changes of this phase
@@ -188,7 +193,7 @@ sanity check 3.
 | Q10 | `run` |
 | Q11 | `signing` (and OQ16 for git failing); `skills-sign` (clause); `words` (exit table) |
 | Q12 and Q26 | P2 (the words, OQ15), `signing` (order), `review` (audit reader), `skills-sign` (row), `words` |
-| Q13 | `signing`; its reason applied to ai_audit RULE-15 by `review` only if the owner says so (OQ14); the guide already says it (call 55) |
+| Q13 | `signing`; its reason applied to ai_audit RULE-15 by `review` (OQ14); the guide already says it (call 55) |
 | Q15 | `scaffold` |
 | Q16 | `scaffold` |
 | Q17 | `update` |
@@ -208,7 +213,7 @@ sanity check 3.
 | Q37 and Windows Q4 | P1 (`runs_here`), P2 (setup's Windows line, OQ12), `mutation` (OQ10, OQ11, OQ12), `run`, `core` (OQ9, OQ10's empty spec), `scaffold`, `update`, `review` (criteria), `skills-run`, `skills-author` (guide), `words` (the one home, C12) |
 | Q38 | `mutation` |
 | Q39 | `mutation` |
-| Q40 | `skills-sign` (the reading, skill_sign); the same reason for the 12 other instruction specs in `core`, `drift`, `scaffold`, `skills-run`, `skills-author`, `skills-sign` (skill_export), `instructions` only if the owner says so (OQ13); the guide already says it (call 55) |
+| Q40 | `skills-sign` (the reading, skill_sign); the same reason for the 12 other instruction specs in `core`, `drift`, `scaffold`, `skills-run`, `skills-author`, `skills-sign` (skill_export), `instructions` (OQ13); the guide already says it (call 55) |
 | Q41 and fault `upstream` RULE-15 | `upstream` |
 | Q44 | `anchors` |
 | Q46 and Q48 | every lane (C11); P2 (one sentence in the spec format) |
@@ -281,9 +286,9 @@ after the split); Q56 none (135 stays); Q62 `skills-author`.
 | Bullet | Where |
 |---|---|
 | A remote run on a system runs only the tests tied to proofs tagged for it | `run` (selection, sections, exit; OQ21), `core` (a section answers for what it lists), `host` (descriptions), `words` (the one home in `hard_gates.md`, C12, and the exit table), and pointers to it from `reports` (`{files}`), `skills-run` (the test skill's Step 5, the audit skill), `skills-author` (the guide's "The operating system"), `scaffold` (the init skill's "What the runner runs"), `host` (both templates' header comments), `words` (`hard_gates.md` lines 116, 140 and 207) |
-| The list: 90, trimmed and extended | integration remaps `phase3-windows-list.md`; the owner reads it with OQ24 |
+| The list: 90, trimmed and extended | the owner accepted it as it stands, less upstream RULE-7 (decision 97); integration brings its names up to date |
 | One more proof per rule, tagged `@env(windows)`, tied by a second comment | wave W (section 6) |
-| The six tests: walks and file link Mac only; `gh`, SQLite and the unreadable file run on Windows | `scaffold` (the wiring check stops reporting success; the `gh` test runs on Windows), `anchors` (a Windows lock), wave W (the 13 proofs tagged `@env(macos)`, as W3's first option decided; OQ24 asks only whether the Mac machine it brings is wanted), integration step 8 (SQLite on the runner) |
+| The six tests: walks and file link Mac only; `gh`, SQLite and the unreadable file run on Windows | `scaffold` (the wiring check stops reporting success; the `gh` test runs on Windows), `anchors` (a Windows lock), wave W (the 13 proofs tagged `@env(macos)`, proven on this Mac; the runner file gets no Mac job, decision 97), the first remote run (SQLite on the runner) |
 | The four probable faults fixed first, stand-ins with Windows endings | `host` (`gh`, `az`), `mutation` (`stryker.cmd`), `upstream` (backslash), `signing` (home folder); stand-ins in `host`, `mutation`, `scaffold` |
 | The skills start scripts through the interpreter lookup | `scaffold` (init), `skills-run`, `skills-author`, `skills-sign`, `words` (one home), `reports` (example), `settings` (the lookup exits 1; the server start asks for exit 0, C9) |
 | The whole path on Windows is not walked; the release notes say so | `words` |
@@ -297,6 +302,17 @@ after the split); Q56 none (135 stays); Q62 `skills-author`.
 | The signed panel and `Nothing is waiting for someone to test by hand or to sign.` stay | none |
 | The other wordings stand; sanity check 3 reads them | none now |
 
+### Decision 97
+
+| Bullet | Where |
+|---|---|
+| The answers with printed words (settings file, spec mistakes, `to_correct`, the proof with no test, suggested tests, `py -3`, the host lines, the settings tool, `to_measure`, the two more ways to measure nothing, the breaking tool's reasons and `--arm-timeout`, mutmut on Windows, the unknown rule, the tag git could not write, the notes, the near miss, one line per system, mixed files, the two runner lines) | the contracts' C1 to C6, and each lane named in section 5's rows for the reading the answer settles |
+| Broken-copy proofs leave every instruction spec | `core`, `drift`, `scaffold`, `skills-run`, `skills-author`, `skills-sign`, `instructions` (C11) |
+| The audit printout's program-only rule folds | `review` |
+| An anchor is a spec in Purlin's format; free-text anchors go | `drift` (`source_is_repository`, the reason, the `error` row and line, the criteria row), `upstream` (the refusal, the `error` rows of `sync`, RULE-7 and RULE-14 go, anchor format 10), `skills-author` (the anchor skill and skill_anchor), `words` (`docs/specs-and-anchors.md`, `RELEASE_NOTES.md`), integration (the Windows list's row); C13 |
+| Each proof is proven where its tag says; the runner file names only systems the machine running setup is not | P2 (`foreign_tags`, C1.12), `scaffold` (RULE-15, PROOF-15, the note), `update` (RULE-15, the question), `host` (RULE-19, the docstring), `skills-run` (Step 5 keeps `An untagged proof runs anywhere.`), `words` (S1, C12), wave W (the 13 `@env(macos)` tags); C14 |
+| The Windows list accepted; the first remote run authorised | integration (section 9), wave W, section 2 step 8 |
+
 ## 6. Windows
 
 ### In this fan-out, with no marking
@@ -305,8 +321,8 @@ after the split); Q56 none (135 stays); Q62 `skills-author`.
   selects the proofs whose `@env` names this runner's system; `{files}` holds the test files
   carrying their markers; only their markers count for missing evidence and the exit code; the
   `ci` section holds only those proofs and their rules (C4.3); a feature with none is not run;
-  no `needs <System>` line is printed on a runner. With OQ21's recommended answer a test file
-  holding tagged and untagged tests is started whole and only the tagged tests' results are
+  no `needs <System>` line is printed on a runner. A test file
+  holding tagged and untagged tests is started whole (OQ21) and only the tagged tests' results are
   recorded or counted; a suite whose command takes no `{files}` runs whole under the same rule.
   A tag run (`signed/*`) selects the same way.
 - **The four faults** and the **stand-ins** (section 5, decision 95).
@@ -317,20 +333,21 @@ after the split); Q56 none (135 stays); Q62 `skills-author`.
   builds its search path without a link; `anchors` locks the unreadable spec the Windows way
   (`msvcrt` or `CreateFileW` with share mode 0) where `os.name == 'nt'`, keeping `chmod`
   elsewhere; the link test and the walk are left as they are until wave W; SQLite is checked at
-  the first real Windows run (integration step 8).
+  the first real Windows run (section 2, step 8).
 - **The interpreter lookup** (C9).
 
-### Wave W, after the owner reads the list and answers OQ24
+### Wave W, straight after integration
 
-Integration first remaps each row of `phase3-windows-list.md` to the rule and proof ids the
-splits left, updates each row's test name, and shows the owner the final list. Nothing is marked
-before the answer. Then each lane below adds, for each of its rules on the list, one proof
+The owner accepted `phase3-windows-list.md` as it stands (decision 97). Integration first brings
+each row up to date with the rule and proof ids the splits left and each row's test name, and
+waits for nothing. Then each lane below adds, for each of its rules on the list, one proof
 ending `@env(windows)`, worded as the list's draft (at most 60 words), and a second
 `purlin: <feature> PROOF-<n>` comment above the named test, plus the "Needs" work of each row.
-`scaffold` and `update` also tag the 13 Mac-only proofs `@env(macos)` (decision 95, W3's first
-option): scaffold PROOF-36, 90 to 93, 117 to 119, 37, 94, 95 and 96 in `specs/init/scaffold.md`,
-update PROOF-31 in `specs/init/update.md` (ids as remapped); their tests and markers do not
-change. With OQ24's second option they are left untagged.
+`scaffold` and `update` also tag the 13 Mac-only proofs `@env(macos)` (decisions 95 and 97):
+scaffold PROOF-36, 90 to 93, 117 to 119, 37, 94, 95 and 96 in `specs/init/scaffold.md`, update
+PROOF-31 in `specs/init/update.md` (ids as brought up to date); their tests and markers do not
+change. They are proven on this Mac, and the runner file gets no Mac job for them (C14).
+Integration reports every proof marked, by lane.
 
 | Lane | Specs | Test files |
 |---|---|---|
@@ -352,19 +369,21 @@ change. With OQ24's second option they are left untagged.
 Acceptance of wave W: on the Mac, `purlin_run.py --test --all` ties every marker, and every rule
 on the list reads `not run` with `windows: no run yet`, counted
 `<n> rules to test on Windows: purlin:test --remote`; none reads `partial` or `to fix`; the 13
-Mac-only proofs (if tagged) pass on the Mac. Then
-`purlin:init` writes this repository's runner file (decision 83) and the owner is asked before
-the first remote run.
+Mac-only proofs, tagged `@env(macos)`, pass on the Mac. Then, as the owner authorised
+(decision 97), `purlin:init` writes this repository's runner file (decision 83), whose matrix
+is `windows-latest` alone, and `purlin:test --remote` runs once: it pushes one temporary run
+branch and nothing else, no tag is pushed, and `main` stays local.
 
 ## 7. Technical calls, ruled
 
 1. `marker_problems` moves into `markers.py` in P1 so the payload can count Q22's comments.
-2. `to_correct` is the kind's name in the payload (no person reads it). Its place in the list,
-   and whether a comment naming a rule that has proofs counts, are OQ3's. Its payload `text` and
+2. `to_correct` is the kind's name in the payload (no person reads it). It stands second in the
+   list and counts every comment that fails the run, one naming a rule that has proofs included
+   (OQ3). Its payload `text` and
    its line take the singular for one (`1 test comment to correct`) through `summary._words`,
    as every kind does. It holds back `to_tag` as any line does (decision 75).
 3. (Moved into OQ3.)
-4. `to_measure`'s existence and place are OQ9's.
+4. `to_measure` exists and stands just before `to_strengthen` (OQ9).
 5. The engine's answer keeps `scope_score` and gains `missing` per feature (C1.2); the evidence
    gains optional `audit.mutation.missing` (C4.2); evidence Format-Version 4 to 5, one bump for
    Q21, Q37, decision 95 and the `no test` meaning.
@@ -372,7 +391,7 @@ the first remote run.
    section; nothing rewrites a file for it alone.
 7. The local section's `rules` word for "all that could run here passed, a foreign proof waits"
    stays `not run`, as evidence_writer RULE-2 already says; only the cell and the kind change.
-8. `FOREIGN_PROOF` (or OQ20's count line) leaves out a foreign proof with no test tied to it: it
+8. OQ20's count line (R3), which replaces `FOREIGN_PROOF`, leaves out a foreign proof with no test tied to it: it
    has the no-test line instead.
 9. A foreign proof's result in a section is `not run` whatever its tied test did there (C4.4).
 10. The eight 0.9.5 signs become run_script proofs with tests in `dev/test_run_script.py`, built
@@ -391,20 +410,20 @@ the first remote run.
 14. A doubled proof id and a first line of neither form are not warned of: decision 94 names
     five mistakes.
 15. The existing unnumbered-rule warning is a mistake Purlin sees in a spec, so decision 94's
-    headline ("warned of, with its fix") reaches it: whether it gains ` Run purlin:spec <feature>.`
-    is asked inside OQ2 with the five new lines (L8). The unread-tags warning (L9) is left
+    headline ("warned of, with its fix") reaches it: it gains ` Run purlin:spec <feature>.` (OQ2,
+    L8). The unread-tags warning (L9) is left
     without a command: the tags are an older release's, not a mistake in writing the spec, and
     the upgrade already removes them.
 16. Q44: specs RULE-4, 5 and 6 and their proofs go; a case the anchor's proofs do not already
     show (specs PROOF-5 and PROOF-21, the unknown tag read through a full scan) moves into the
     anchor as a proof of its own.
-17. Q40's reason beyond skill_sign is the owner's (OQ13): about 280 proofs in 12 specs.
-18. Q13's reason applied to ai_audit RULE-15 is the owner's (OQ14).
+17. Q40's reason reaches every instruction spec (OQ13): about 280 proofs leave 12 specs.
+18. Q13's reason folds ai_audit RULE-15 into RULE-13 (OQ14).
 19. Split by claim applies to every rule that meets C11's test; each lane lists its splits for
     the owner's reading of the readings.
 20. Decision 94's "a tool that cannot run on this system counts as no tool" reaches setup and
-    the upgrade: on Windows a pytest project is not asked the breaking question. What they
-    print then is OQ12's (the existing line would say no engine breaks pytest code, untrue
+    the upgrade: on Windows a pytest project is not asked the breaking question. They print
+    C1.11's line (OQ12; the existing line would say no engine breaks pytest code, untrue
     there); the constant lands in P2 (C1.11) because both lanes print it.
 21. Setup's `Without it test strength is not measured.` stays (decision 96); sanity check 3 reads it.
 22. Q65 covers setup and the upgrade: each is a command that saves, so each stops (C1.9).
@@ -444,7 +463,7 @@ the first remote run.
     Lane `settings` owns the lookup, the manifest and `specs/mcp/server.md`, whose scope covers
     the manifest; the lookup joins that scope.
 37. Q11: git failing to write the tag exits 1 (the reading's "the ending and the exit code
-    agree"); its words are OQ16's.
+    agree"); its words are C3.6's (OQ16).
 38. Q12: when every named rule is unknown, signing prints the line(s) and the summary ending.
 39. Q25: notes show in the audit reader only; the sign walk's audit block is unchanged.
 40. Q52: the frame is `→ Run:`, the one every closing row uses.
@@ -481,8 +500,8 @@ the first remote run.
     reuses one", which `spec_format.md` line 80 also says; it gains only the warning for a number
     written twice.
 58. The two-specs-one-name line ends on `git mv`, the command that renames a file, since
-    decision 94 wants each warning to name the command that fixes it (OQ2 shows it).
-59. `purlin:audit --arm-timeout` exists only with OQ11's first option; the run script already
+    decision 94 wants each warning to name the command that fixes it (OQ2).
+59. `purlin:audit --arm-timeout` exists (OQ11); the run script already
     reads the flag, so the skill passes it on, and `purlin_commands.md` gains its syntax.
 60. `design/readme.md` has no owner in this phase: nothing in it changes.
 61. `.claude-plugin/plugin.json` is lane `settings`'s (call 36): it gains the `env` entry and
@@ -506,21 +525,56 @@ the first remote run.
     lines of section 11's list that they make false, `docs/dashboard.md`'s stale lines
     included. Nothing else in `docs/` changes: decision 63's reading of every page comes last,
     after sanity check 3.
-66. The empty-spec case of OQ10's first option is lane `core`'s alone: `core` owns the strong
+66. The empty-spec case of OQ10 is lane `core`'s alone: `core` owns the strong
     cell and the kinds and already reads whether a spec names no files, so the engine and the
     evidence gain nothing for it.
+67. A spec in Purlin's format, for an anchor's source, is a text that the spec reader every spec
+    goes through reads as holding at least one rule (C13). It is the simplest test the code
+    already has, `upstream.parse_rules`; no heading form or field is asked.
+68. A `> Source:` names no repository when its value holds whitespace (words) or names a file on
+    disk; every other value is asked with git as today (C13). The test lives once, in
+    `drift.source_is_repository`, since `drift` already owns the checks of a source and
+    `upstream` already imports them; `drift` merges before `upstream`. `_looks_like_git` is no
+    longer asked for it, so an Azure DevOps address can be added (the note that stood in
+    section 11 is closed by this).
+69. The refusal of `add` exits 2 and prints one line, as every refusal of `add` does; it leaves
+    nothing under `specs/` and removes the checkout it fetched (C13).
+70. An anchor already in a project whose `> Source:` names no repository reads `error` in drift,
+    `sync --check`, `sync <name>` and `sync` with no name, with C13's reason; its row keeps
+    `status` `error` and gains `not_a_spec: true` so each surface prints the reason's line and
+    not the could-not-be-read line. The status, the run, the audit and signing read its rules as
+    today.
+71. A local anchor, with no `> Source:`, is never checked and is not touched; a `> Source:` a
+    person wrote with words reads as call 70, and the reason names the fix, taking out the
+    `> Source:` and `> Pinned:` lines, through `purlin:spec <name>`.
+72. `references/formats/anchor_format.md` moves from lane `anchors` to lane `upstream`, which has
+    the code it describes: CLAUDE.md "Format reference versioning" step 5 puts the format change
+    in the same commit as the code. Format-Version 9 to 10, since what `> Source:` may hold
+    narrows and a source file must hold a rule, in the `upstream` commit that makes `add`
+    refuse. Drift's criteria take the new row under Q31's one bump, 9 to 10.
+73. `references/glossary.md` ("anchor", "pinned anchor") and `references/purlin_commands.md`
+    (`purlin:anchor add <url> --path <file>`) say nothing of plain text and stay; `README.md`
+    likewise. `docs/specs-and-anchors.md` gains one sentence in its `add` paragraph (C13), and
+    `RELEASE_NOTES.md` says anchors made from plain text are gone.
+74. The runner file's matrix is the systems some proof is tagged for that the machine running
+    setup or the upgrade is not (decision 97, C14). `workflow.foreign_tags` lands in P2
+    because `scaffold` merges before `host` and `update` after, and both call it; `host` owns
+    the rest of `workflow.py`.
+75. The two printed lines C14 changes, setup's matrix note and the upgrade's question, take
+    the words of section 12, items 6 and 7, chosen here so that neither says the matrix names
+    every tagged system; sanity check 3 reads them with the rest.
 
 ## 8. Owner questions
 
 Most basic first: what a person meets on their own machine every day comes first, then the
 breaking tool, then Purlin's own specs, then signing and the audit's printout, then shared
-rule sets, and the remote runners last. Each blocks only the items named; every other item of a
-blocked lane is built. The recommended option is first, and every question has an option that
-removes the thing asked about. Questions 1 to 23 are asked before P2; question 24 with the
-Windows list (step 6). In the options, `login` stands for any feature and `3600` for the limit in
-use.
+rule sets, and the remote runners last. The recommended option is first, and every question
+has an option that removes the thing asked about. In the options, `login` stands for any feature
+and `3600` for the limit in use. The owner answered all 25 on 2026-09-29 (decision 97); each
+question below is kept with its answer marked after its title, and the contracts and briefs
+carry the chosen words alone.
 
-**OQ1. A settings file that cannot be read.** Blocks: P2 item 3, and that item in `settings`,
+**OQ1. A settings file that cannot be read.** **Answered: option 1, with the three other causes and `purlin:test`'s closing line as the option shows them.** Blocks: P2 item 3, and that item in `settings`,
 `core`, `run`, `host`, `scaffold`, `update`, `signing`, `package`, `drift`, `review`,
 `skills-run`, `words`.
 What it is for: every Purlin command reads the project's settings file, where Purlin keeps the
@@ -545,7 +599,7 @@ Question: what should they print, and what should `purlin:test` then tell you to
 3. No stop: commands carry on as if the file were empty and say nothing; only a save is refused,
    with option 1's line. This reverses most of the reading.
 
-**OQ2. Six mistakes in a spec.** Blocks: P2 items 1 and 2 (L8's ending), and `run` (the proof
+**OQ2. Six mistakes in a spec.** **Answered: option 1.** Blocks: P2 items 1 and 2 (L8's ending), and `run` (the proof
 that a run prints one).
 What it is for: a spec is the file of rules and proofs for one feature. Decision 94 says that
 when Purlin can see a mistake in a spec, the status and every test run print one line naming the
@@ -568,7 +622,7 @@ Question: which words should the lines use?
 4. None of them: nothing new is printed and today's line stays as it is. This reverses
    decision 94's warning.
 
-**OQ3. Comments above tests that name nothing.** Blocks: `core` (the line), `dashboard` (its
+**OQ3. Comments above tests that name nothing.** **Answered: option 1.** Blocks: `core` (the line), `dashboard` (its
 button), `package` (its row in the evidence package), `words`.
 What it is for: a test is tied to a proof by a comment directly above it, such as
 `# purlin: login PROOF-3`. A comment that names something no spec has, or names a rule where a
@@ -589,7 +643,7 @@ Question: where does the line stand, and what does it count?
 3. No line: the run fails and names each comment, and the list says nothing. This reverses the
    reading.
 
-**OQ4. A proof with no test, named.** Blocks: `run` (R1), `core` (the reason on the rule's
+**OQ4. A proof with no test, named.** **Answered: option 1.** Blocks: `run` (R1), `core` (the reason on the rule's
 page), `skills-run`, `skills-author`, `words`.
 What it is for: a rule can have several proofs, each shown by a test tied to it by a comment.
 When some have a test and one has none, the approved reading makes the rule read `no test`, the
@@ -601,7 +655,7 @@ Question: how should the run and the rule's page name the proof with no test?
 2. A second line: today's line, then `login PROOF-7 has no test.`; the page as in 1.
 3. Not named: today's line alone and no reason on the page; the proof is found by reading the spec.
 
-**OQ5. Suggesting a command for each test tool.** Blocks: `run` (R4), `skills-run` (the test
+**OQ5. Suggesting a command for each test tool.** **Answered: option 1.** Blocks: `run` (R4), `skills-run` (the test
 command's row), `scaffold` (the setup instructions' line), `skills-author` (the build command's
 line), `reports` (the marker format's line), `instructions`, `words`.
 What it is for: Purlin runs your tests with the test command kept in the settings. When a project
@@ -618,7 +672,7 @@ Question: with two tools, say pytest and vitest, what should the run print?
 3. First tool only, as today; a second is added by editing the settings. This reverses that part
    of decision 94.
 
-**OQ6. The Python command suggested on Windows.** Blocks: `run` (the Windows entry).
+**OQ6. The Python command suggested on Windows.** **Answered: option 1.** Blocks: `run` (the Windows entry).
 What it is for: the command suggested for a Python project starts `python3 -m pytest`. Python
 installed on Windows from python.org has no `python3` command; it always has the launcher `py`,
 and has `python` only when that box was ticked at install.
@@ -629,7 +683,7 @@ Question: what should the suggestion say on Windows?
 4. No Python suggestion on Windows: the run says it found pytest and asks you to set the
    command yourself.
 
-**OQ7. Where setup says there is no git host.** Blocks: `scaffold` (the places of L1 and L2,
+**OQ7. Where setup says there is no git host.** **Answered: option 1; the line for a host Purlin cannot use stands in the same place.** Blocks: `scaffold` (the places of L1 and L2,
 and the setup instructions' lines).
 What it is for: the git host is where your code is pushed; Purlin can run tests remotely only
 on GitHub and Azure DevOps. Setup ends with a line such as `Gate strong. Suites pytest. Git host github.`
@@ -648,7 +702,7 @@ Question: where does `No git host found.` stand?
 3. Its own line in setup and in the upgrade, whose line then no longer names `git remote add`.
 4. No line: setup says nothing when there is no remote. This reverses decision 96's first line.
 
-**OQ8. The answers of the tool that changes one setting.** Blocks: `settings` (Q66, Q68, Q69, the
+**OQ8. The answers of the tool that changes one setting.** **Answered: option 1.** Blocks: `settings` (Q66, Q68, Q69, the
 version write).
 What it is for: Purlin gives the agent a tool to read or change one setting. The approved
 readings: a save that fails says the setting was not saved and why; a change with no value, or
@@ -673,7 +727,7 @@ Question: what should the tool answer, and may it change `version`?
 3. Only the failed save: only a save that fails is answered; any value is taken, as today. This
    reverses readings Q68 and Q69.
 
-**OQ9. Strength not measured, in the list of work left.** Blocks: `core` (`to_measure`, the weak
+**OQ9. Strength not measured, in the list of work left.** **Answered: option 1.** Blocks: `core` (`to_measure`, the weak
 cell), `dashboard` (its button), `words`, `skills-run`, `skills-author`, `package` (its row in the
 evidence package).
 What it is for: at the gates `strong` and `signed`, Purlin can break your code on purpose and
@@ -694,7 +748,7 @@ measured?
 3. Not weak: the AI audit alone judges such a rule, as today, and only the run's printed line
    says strength was not measured. This reverses that part of decision 94.
 
-**OQ10. Two more ways to measure nothing.** Blocks: `mutation` (the no-report case), `core`
+**OQ10. Two more ways to measure nothing.** **Answered: option 1.** Blocks: `mutation` (the no-report case), `core`
 (the empty-spec case and where it is counted), `words` (the table of work left).
 What it is for: decision 94 says that with the code broken on purpose, nothing measured means the
 rule is not strong. Besides a breaking tool that is not installed or ran out of time, two more
@@ -716,7 +770,7 @@ Question: how should these two cases read, and where are they counted?
 4. Neither: only a tool not installed or out of time makes the rule weak, the letter of reading
    Q37. This departs from decision 94 for both cases.
 
-**OQ11. When the breaking tool finds no .NET, or runs out of time.** Blocks: `mutation` (the two
+**OQ11. When the breaking tool finds no .NET, or runs out of time.** **Answered: option 1.** Blocks: `mutation` (the two
 sentences), `skills-run` (the audit command's new option), `words` (its syntax).
 What it is for: when the breaking tool cannot measure, the run prints why and the rule's reason
 repeats it, and decision 94 wants that reason to name the command that fixes it. Three reasons
@@ -736,7 +790,7 @@ Question: which words, and should `purlin:audit` take a time limit?
    once may run out again.
 3. Today's words for both, and no new option. This keeps a reason that names no fix.
 
-**OQ12. Python's breaking tool on Windows.** Blocks: P2 item 5, `mutation` (the reason),
+**OQ12. Python's breaking tool on Windows.** **Answered: option 1.** Blocks: P2 item 5, `mutation` (the reason),
 `scaffold` and `update` (their line).
 What it is for: the breaking tool for Python, mutmut, installs on Windows but does not run there.
 Decision 94 says such a tool counts as no tool, and the AI audit alone judges test strength.
@@ -750,7 +804,7 @@ Question: what should setup, the upgrade and the test run say on Windows?
 2. Short: `Mutation testing is off: mutmut does not run on Windows.` and `mutmut does not run on Windows`.
 3. Nothing: on Windows setup, the upgrade and the run print no line about it.
 
-**OQ13. Proofs that describe a broken copy of the instructions.** Blocks: that item in `core`,
+**OQ13. Proofs that describe a broken copy of the instructions.** **Answered: option 1.** Blocks: that item in `core`,
 `drift`, `scaffold`, `skills-run`, `skills-author`, `skills-sign` (the export command's spec),
 `instructions`.
 What it is for: each Purlin command is a file of instructions the agent follows, and a spec of
@@ -767,7 +821,7 @@ Question: should the reading apply to those specs too?
 2. The sign command's spec only, as the reading says: the 12 others keep their proofs as they are.
 3. None: the sign command's spec keeps them too. This reverses the reading.
 
-**OQ14. A rule of the audit printout that only a program sees.** Blocks: `review` (that one rule).
+**OQ14. A rule of the audit printout that only a program sees.** **Answered: option 1.** Blocks: `review` (that one rule).
 What it is for: the command that prints what the AI audit found for one rule has a rule of
 Purlin's own about what happens inside the program when you ask about a rule the project does
 not have: one step hands the next a blank where it could have handed an empty record. No person
@@ -778,7 +832,7 @@ Question: should this rule fold into the rule about what the command prints?
 1. Fold it: one rule fewer to sign; its one proof moves under the rule about the printout.
 2. Keep it as a rule of its own.
 
-**OQ15. Naming a rule that does not exist.** Blocks: P2 item 4, `signing`, `review`,
+**OQ15. Naming a rule that does not exist.** **Answered: option 1.** Blocks: P2 item 4, `signing`, `review`,
 `skills-sign`, `words`.
 What it is for: when you name a rule no spec has, signing prints
 `login RULE-9 is not a rule any spec has.`, signs the others and reports failure, and printing
@@ -790,7 +844,7 @@ Question: which words?
 3. No next step: today's line, printed last and by the audit printout. This drops that part of
    the reading.
 
-**OQ16. A signed tag git could not write.** Blocks: `signing` (that line), `words`.
+**OQ16. A signed tag git could not write.** **Answered: option 1.** Blocks: `signing` (that line), `words`.
 What it is for: at the gate `signed`, once nothing is left to do, signing writes the signed tag,
 `signed/<version>`, the mark on the commit of a finished version that you push to release it.
 When git itself fails to write it, for example because the signing key cannot be read, signing
@@ -802,7 +856,7 @@ Question: what should signing print?
    and it reports failure.
 3. No line of Purlin's: git's own message alone, and it reports failure.
 
-**OQ17. The heading above the audit's notes.** Blocks: `review` (Q25), `skills-run`.
+**OQ17. The heading above the audit's notes.** **Answered: option 3, no heading: each note follows the findings, starting `Note:`.** Blocks: `review` (Q25), `skills-run`.
 What it is for: when the AI audit reads a rule it may leave a note, for example that a proof is
 longer than 60 words; a note never makes a rule weak. The approved reading prints the notes when
 you print what the audit found for one rule, after the part headed `What the audit found`.
@@ -812,7 +866,7 @@ Question: what heading goes above the notes?
 3. No heading: each note follows the findings, starting `Note:`.
 4. Not printed: the notes stay in the evidence alone, as today. This reverses the reading.
 
-**OQ18. The reason given for a nearly right comment.** Blocks: `reports` (Q24's why), `words`.
+**OQ18. The reason given for a nearly right comment.** **Answered: option 1.** Blocks: `reports` (Q24's why), `words`.
 What it is for: `purlin:build` finds comments above tests that are nearly right, suggests the
 fix and says why. The approved reading: a comment naming `RULE-30`, one character from `RULE-3`,
 is offered `PROOF-3` when RULE-3 has exactly one proof, and nothing when it has several. Today
@@ -822,7 +876,7 @@ Question: what should the why say when the fix is the rule's one proof?
 2. `` `RULE-30` is one character from `RULE-3`, whose one proof is `PROOF-3` ``
 3. No suggestion for a comment one character from a rule id.
 
-**OQ19. Drift and a shared rule set kept in a text file.** Blocks: `drift` (the text-file part
+**OQ19. Drift and a shared rule set kept in a text file.** **Answered: in the owner's words, "anchors can only be specs in purlin format.. others are an error", at its full reach: anchors made from plain text are removed everywhere; a source that is not a spec in Purlin's format is refused with an error saying so, whether a file of plain text, a description in words, or a file in a repository not in the format; drift and `purlin:anchor sync --check` report `error` for such an anchor a project already has (contracts C13). The words are OQ25's.** Blocks: `drift` (the text-file part
 of Q32).
 What it is for: an anchor is a set of shared rules copied into your project from a source and
 pinned to one version; drift tells you when a source has moved on. The approved reading makes
@@ -837,7 +891,7 @@ Question: what should drift do with an anchor whose source is a text file?
 2. Skip it, as today, and the rule says drift checks repositories only.
 3. Report `error`, since it is not a repository.
 
-**OQ20. Proofs waiting for Windows, on the Mac.** Blocks: `run` (R3), `skills-run` (the test
+**OQ20. Proofs waiting for Windows, on the Mac.** **Answered: option 1.** Blocks: `run` (R3), `skills-run` (the test
 command's instructions quote the line), `skills-author` (the build command's instructions name
 it).
 What it is for: a proof can be tagged for one system, `@env(windows)`, when what it checks
@@ -850,7 +904,7 @@ Question: what should a run on the Mac print about proofs waiting for Windows?
 2. One line per proof, as today: about 87 lines on every full run.
 3. No line: the list of work left alone says it.
 
-**OQ21. What a Windows runner does with a file of mixed tests.** Blocks: `run` (decision 95's
+**OQ21. What a Windows runner does with a file of mixed tests.** **Answered: option 1.** Blocks: `run` (decision 95's
 selection only).
 What it is for: a remote run sends your tests to a machine the git host lends, such as a Windows
 one (a runner), and brings the results home. Decision 95 says a runner runs only the tests tied
@@ -866,7 +920,7 @@ Windows runner do with the others?
 3. Count everything: every result the file gives is recorded and can fail the run, so a Windows
    failure in a test nobody tagged for Windows blocks its rule. This drops the sorting of results.
 
-**OQ22. A remote run that cannot name its branch.** Blocks: `host` (Q28's refusal).
+**OQ22. A remote run that cannot name its branch.** **Answered: option 1.** Blocks: `host` (Q28's refusal).
 What it is for: a remote run commits its results to the branch it ran on, reading the branch's
 name from the git host. The approved reading removes the guess used when nothing names the
 branch: the commit goes on the branch the checkout is on, or is refused with a line saying no
@@ -878,7 +932,7 @@ Question: what should the refusal say?
 2. `No branch: nothing was committed.`
 3. No line: the results are not committed and nothing is printed.
 
-**OQ23. A remote run on another branch.** Blocks: `host` (Q29), `words`.
+**OQ23. A remote run on another branch.** **Answered: option 1.** Blocks: `host` (Q29), `words`.
 What it is for: the runner file Purlin writes, which tells the git host when to run the tests
 remotely, starts only on a run branch (the branch Purlin pushes for each remote run, named
 `run/<your branch>-<commit>`) or on a signed tag. Someone can change that file or start it by hand
@@ -890,21 +944,50 @@ Question: what should such a run print?
 3. The tag run's line, as today.
 4. No line about it.
 
-**OQ24. A Mac machine in this repository's runner file** (asked with the Windows list). Blocks:
-the `@env(macos)` marking in wave W (`scaffold`, `update`).
-What it is for: decision 95 made three checks Mac only: the walk that takes a new project from
-setup to the signed tag, the check that setup adds nothing to a C# project's tests, and the check
-that an old dashboard page linked into an install is replaced by a copy. It chose to tag their
-13 proofs for macOS, `@env(macos)`, as W3's first option said. The runner file is the file
-Purlin writes into a project to tell the git host when to run its tests remotely and on which
-machines; it gets one machine for each system any proof is tagged for, so this repository's runner file would run a Mac
-machine beside the Windows one, running these 13 on every remote run; your own Mac proves them
-too. A Windows runner never starts them either way, since it runs only tests tagged for Windows.
-Question: tag the 13 for macOS?
-1. Tag them, as decided: every remote run also runs the 13 on a Mac machine the host lends,
-   which adds time and uses the host's Mac minutes.
-2. Leave them untagged: no Mac machine; only your Mac proves them. This reverses that part of
-   decision 95.
+**OQ24. The Mac-only proofs and this repository's runner file.** **Answered without being
+asked, in the owner's own words: "an untagged proof can run anywhere.. a mac tag ONLY should be
+tested on mac. If there are specific mac tests, and the local system is mac, then just test them
+on the local system. If a local system is windows and the tags are windows, test them locally.
+Both types of systems can test non-tagged tests".** What it settles: a person's own machine, Mac
+or Windows, proves every untagged proof and every proof tagged for its own system, and never one
+tagged for another; the 13 proofs decision 95 made Mac only (the walk from setup to the signed
+tag, the check that setup adds nothing to a C# project's tests, the check that a linked
+dashboard page is replaced by a copy) are tagged `@env(macos)` in wave W and proven on this
+Mac; a runner file names a remote machine only for a system some proof is tagged for that the
+machine running setup is not, so this repository's runner file, written on a Mac, holds one
+Windows job (contracts C14).
+
+**OQ25. The words when an anchor's source is not a spec.** **Answered: option 1, accepted by the
+owner without being asked (decision 97).** Blocks: `upstream` (the refusal, the check's line),
+`drift` (the line), `words` (none: the docs name no printed line).
+What it is for: an anchor is a set of rules several projects share, copied into your project
+from another repository and pinned to one version of it. You decided an anchor is always a spec
+in Purlin's format: a file of rules and proofs. Adding one from anything else, a text file, a
+description in words, or a file in a repository with no rules in it, is refused, and nothing is
+written. An anchor a project already has that was made from plain text, or whose source line
+holds only words, can no longer be checked against a source; the report of what changed and the
+anchor check report it as an error. Every message says what to do next.
+Question: what should the refusal say, and what should the report and the check say about such
+an anchor already in your project? In each option `refunds` is the anchor and `policy.txt` the
+source.
+1. Say why, and the next step for each: adding prints
+   `refunds: not added. policy.txt is not a spec in Purlin's format kept in a git repository. Run purlin:anchor create refunds to write its rules in this project.`
+   (for words, `The description given` stands in place of `policy.txt`; for a file in a
+   repository, the file's path in it). The report of what changed prints
+   `anchor refunds: its source, policy.txt, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec refunds to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.`
+   and the anchor check prints the same after `refunds: `. You learn why and what to type.
+2. Short: adding prints
+   `refunds: not added: policy.txt is not a spec in Purlin's format. Run purlin:anchor create refunds.`
+   The report prints `anchor refunds: its source is not a spec in Purlin's format. Run purlin:spec refunds.`
+   and the check the same after `refunds: `. Shorter; it does not say what the fix in the
+   spec is.
+3. In the error line you already know: adding prints option 2's line; the report prints
+   `anchor refunds: its source could not be read (not a spec in Purlin's format).` and the check
+   `refunds: the source could not be read (not a spec in Purlin's format).`, the lines used today
+   for a source that cannot be reached. It names no command, so you find the fix yourself.
+4. No line: adding is refused with its failure code and prints nothing; the report and the check
+   count the anchor as an error and print no line for it. You see that something failed and not
+   what.
 
 ## 9. Integration (alone, after every lane merged)
 
@@ -922,9 +1005,10 @@ Question: tag the 13 for macOS?
    `test_it_allocates_ids_against_the_default_branch` in `dev/test_skill_spec.py`, and where
    `.purlin/evidence/**` and `.purlin/tests.md` list that test); `not_audited` in `scripts/mcp/purlin/drift.py`;
    `set_up_by_095` in `scripts/init`; `def main` in `scripts/mcp/config_engine.py`;
-   `python3 "${CLAUDE_PLUGIN_ROOT}` in `skills/`; `Git host not read` (under every option of
-   OQ7 the summary line names no git host where none is read, for no remote and for a host
-   Purlin cannot use alike, C3.1);
+   `python3 "${CLAUDE_PLUGIN_ROOT}` in `skills/`; `Git host not read` (the summary line names no git host where none is read, for no remote
+   and for a host Purlin cannot use alike, C3.1); `FREE_TEXT`, `no_rules`, `free text` and
+   `free-text` in `scripts/anchor/`, `skills/anchor/` and `specs/anchor/` (C13; the `> Note:`
+   field's own words in `upstream.py`'s `local_notes` docstring may stay);
    `neither GitHub nor Azure DevOps`; `init_e2e_walk`; `test_e2e_build_changeset`;
    `test_init_e2e_gates`; `Process.Start` in `dev/test_security.py`; `"version"` in
    `templates/config.json`. And C12: under `references/` and `skills/`, the S1 and S2 sentences
@@ -934,10 +1018,11 @@ Question: tag the 13 for macOS?
    copied as it stands under the heading "Words chosen for the owner to read", and a section
    "Docs and the formats" naming evidence format 5 and package format 4, the `docs/` lines lane
    `words` changed for them (call 65), and any line of section 11's list it left, with why.
-8. Remap `phase3-windows-list.md` to the new ids and test names; its drafts already say
-   `gh.cmd` for scaffold RULE-44 and host RULE-12 (C8), and upstream RULE-11's "no carriage
-   return" stands (call 34). Show it to the owner with OQ24; after the answer, run wave W
-   (section 6), then the prompt's step 3.
+8. Bring `phase3-windows-list.md` up to date with the new ids and test names; its drafts
+   already say `gh.cmd` for scaffold RULE-44 and host RULE-12 (C8), and upstream RULE-11's "no
+   carriage return" stands (call 34). The owner accepted the list (decision 97): nothing waits.
+   Run wave W (section 6) and report every proof it marked, by lane; then the first remote run
+   on Windows (section 2, step 8), then the prompt's later steps.
 
 ## 10. Merge order
 
@@ -950,7 +1035,9 @@ merges: `core` first, so later lanes adjust their own tests to its cells (C7); `
 `run`, because C8's walk fixture tags the greeting proof `@env(<this machine's system>)`, which
 holds before and after decision 95, and must be on `main` before `run`'s `--ci` selects only
 tagged proofs (C7); `run` before `update`, because `update` deletes the 0.9.5 detection `run`
-stops calling; `mutation` after `run`; `words` last, since it describes what the others built.
+stops calling; `mutation` after `run`; `drift` before `upstream`, because `upstream` imports
+C13's `source_is_repository` and reason from `drift`; `words` last, since it describes what the
+others built.
 
 ## 11. Not placed in this phase
 
@@ -961,7 +1048,8 @@ stops calling; `mutation` after `run`; `words` last, since it describes what the
   67; `docs/how-purlin-works.md` 102 and 160–162; `docs/getting-started.md` 177;
   `docs/raising-the-gate-and-upgrading.md` 24 and 63; `docs/review-and-signing.md` 80;
   `docs/specs-and-anchors.md` 91–94 (a number written twice is now warned of; a new id) and
-  140–144 (which run proves a proof with no `@env`). Line numbers are those of `main` at
+  140–144 (which run proves a proof with no `@env`), and its `add` paragraph, 181–187 (an
+  anchor's source is a spec in Purlin's format, C13). Line numbers are those of `main` at
   `b172b3c1c`.
 - schema_spec_format PROOF-2's other half: rule ids written out of order are not warned of and
   are not tested. Decision 94 names five mistakes and this is not one of them; no decision
@@ -969,8 +1057,9 @@ stops calling; `mutation` after `run`; `words` last, since it describes what the
 - `dev/sign_project.py` `Project.proofs()` writes a retired runtime file, and
   `dev/test_vocabulary.py` is a table of retired words: both for decision 44's sweep; the first
   is a frozen helper.
-- `upstream.is_repository` reads an Azure DevOps address as free text, so an anchor cannot be
-  added from one: no reading covers `add`; seen, not changed.
+- A sync whose repository file, at the new head, holds no rule: decision 97 says an anchor is a
+  spec in Purlin's format and does not say what a sync does when the source stops being one.
+  It writes the copy as today; seen, not changed.
 - A package checked out with CRLF fails `--check` on Windows: no decision; seen.
 - `scripts/report/src/rule.js` draws `←`, outside CLAUDE.md's glyph list: no reading.
 - scaffold's gap (a), the runner job's result as a scaffold promise; host RULE-17 and RULE-30
@@ -983,10 +1072,11 @@ Reference prose that describes behaviour a decision or reading settles is not an
 the owner reads every page in the docs pass (decision 63). These sentences were chosen by the
 planning agent; each lane writes its sentence exactly as below, and integration copies this
 section into `phase3-interfaces.md` (section 9, step 7) so the owner reads them there. A mark
-**PENDING OQ<n>** means the sentence is written only as that question's answer leaves it.
+`(OQ<n>)` names the answer a sentence carries. Items 6 and 7 are printed lines that follow from
+decision 97 (call 75); sanity check 3 reads them with every other message.
 
 1. `references/purlin_commands.md`, "Exit codes", the whole table (lane `words`; contracts C6,
-   whose notes give each cell's source and its marks, **PENDING OQ1** and **PENDING OQ16**):
+   whose notes give each cell's source; OQ1 and OQ16):
 
    | Command | 0 | 1 | 2 |
    |---------|---|---|---|
@@ -1000,7 +1090,7 @@ section into `phase3-interfaces.md` (section 9, step 7) so the owner reads them 
    | `scripts/mcp/purlin/markers.py --near-misses` | always | never | a bad command line |
 
 2. `references/hard_gates.md`, the `Left to do` table, the `no_scope` row's "When it applies"
-   cell (lane `words`; **PENDING OQ10**, option 1; with options 2 to 4 the row stays):
+   cell (lane `words`; OQ10):
 
    ```
    at `signed`, the rule is not signed and its spec names no files; at `strong` and `signed` with mutation testing on, its strong cell reads `weak` because its spec names no code files
@@ -1014,8 +1104,7 @@ section into `phase3-interfaces.md` (section 9, step 7) so the owner reads them 
    ```
 
 4. `references/formats/package_format.md`, "What is left", the sentence above the table of
-   kinds (lane `package`; **PENDING OQ3**; with OQ3's removal option the sentence stays as it
-   is):
+   kinds (lane `package`; OQ3):
 
    ```
    Each rule is counted under one kind, the first that applies, and a kind at zero has no line. `to_correct` counts test comments, not rules, and is carried by the project:
@@ -1026,3 +1115,44 @@ section into `phase3-interfaces.md` (section 9, step 7) so the owner reads them 
    ```
    A new id is one more than the highest the file has held since it was last written whole; a number deleted since then is never used again.
    ```
+
+6. Setup's note under a written runner file (lane `scaffold`; C14), in place of
+   `  the matrix is <images>, the systems the @env tags in specs/ name.`:
+
+   ```
+     the matrix is <images>, the systems the @env tags in specs/ name that this machine is not.
+   ```
+
+7. The upgrade's question before it writes a runner file (lane `update`; C14), in place of
+   `Write <path>, one job per operating system your specs name?`:
+
+   ```
+   Write <path>, one job per operating system your specs name that this machine is not?
+   ```
+
+8. `references/formats/anchor_format.md`, "The source: a git URL plus a path", after its first
+   paragraph (lane `upstream`; C13):
+
+   ```
+   The file at the path is a spec in this format that holds at least one rule. `purlin:anchor add` refuses any other source, a file on disk, a description in words or a file with no rule, and writes nothing. A copy whose `> Source:` names no repository reads `error` in `purlin:drift` and in `purlin:anchor sync --check`. A local anchor carries no `> Source:` and is never checked.
+   ```
+
+9. `skills/anchor/SKILL.md`, the `add` section, in place of the paragraph that begins "When the
+   source file is free text" (lane `skills-author`; C13):
+
+   ```
+   The file is a spec in Purlin's format that holds at least one rule, kept in a git repository. Any other source, a text file, a description in words or a file with no rule, is refused and nothing is written; the refusal names `purlin:anchor create <name>`, which writes the rules in this project instead.
+   ```
+
+10. `docs/specs-and-anchors.md`, "An anchor repo", after the `add` paragraph's code block (lane
+    `words`; C13):
+
+    ```
+    The file is a spec in Purlin's format that holds at least one rule. `add` refuses any other source, a text file, a description in words or a file with no rule, and writes nothing.
+    ```
+
+11. `RELEASE_NOTES.md`, "Unreleased — 0.10.0", one line under what changed (lane `words`; C13):
+
+    ```
+    - An anchor is copied only from a spec in Purlin's format kept in a git repository. `purlin:anchor add` refuses a text file, a description in words or a file with no rule, and `purlin:drift` and `purlin:anchor sync --check` report an anchor made from plain text as `error`.
+    ```

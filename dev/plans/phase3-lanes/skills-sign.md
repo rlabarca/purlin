@@ -1,6 +1,6 @@
 # Lane `skills-sign`
 
-You are lane `skills-sign` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `skills-sign` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -34,9 +34,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q40:** skill_sign's damaged-copy proofs leave the spec: PROOF-9, 10, 11, 12, 13, 15, 16, 17,
    18, 20, 22, 24, 25, 26, 27, 28, 29, 32, 33, 34, 35, 36, 37 and 39, with their marker lines. Each
@@ -64,10 +63,9 @@ report it. Build every other item.
    line 83) directs
    `→ Run: git show signed/<version>:.purlin/evidence/package/<version>.json`. skill_export
    PROOF-29 and PROOF-12's wording follow; tests around lines 234 and 359.
-3. **Q12** (C3.6, **PENDING OQ15**): the sign skill's closing table gets a row for
+3. **Q12** (C3.6, OQ15): the sign skill's closing table gets a row for
    `` `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.` ``
-   (C3.6, word for word) directing `→ Run: purlin:status <feature>`. With OQ15's third option
-   the row quotes `` `<feature> <RULE-N> is not a rule any spec has.` ``.
+   (C3.6, word for word) directing `→ Run: purlin:status <feature>`.
 4. **Q11** (C6): one clause in the sign skill's Step 6: the command exits 1 when the tag was
    refused for a reason to fix (uncommitted work or results, no version, a package not
    committed, git failing to write the tag), and 0 when the tag already exists.
@@ -77,10 +75,8 @@ report it. Build every other item.
    `sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh"`; its test around line 290.
 6. **Decision 94, instruction rules:** skill_sign RULE-2 ("tells the agent to read what waits from
    `sync_status`") and every other rule of both specs say what the skill tells the agent.
-7. **Q40's reason, applied to skill_export** (about 20 damaged-copy proofs), as item 1
-   (**PENDING OQ13**; with OQ13's second or third option they stay as they are). Item 1, for
-   skill_sign, is the approved reading itself; with OQ13's third option it is left as it stands
-   too.
+7. **Q40's reason, applied to skill_export** (about 20 damaged-copy proofs), as item 1 (OQ13).
+   Item 1, for skill_sign, is the approved reading itself.
 8. **Split by claim** (C11): candidates skill_sign RULE-5 and RULE-8, and each RULE-1.
 
 

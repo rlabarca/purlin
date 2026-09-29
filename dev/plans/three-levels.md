@@ -875,6 +875,117 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     The signed panel on a rule's page and the line `Nothing is waiting for someone to test by
     hand or to sign.` stay as written. The other wordings listed in `handoff.md` stand, and
     sanity check 3 reads every message against the rules and the writing style.
+97. **The answers before the third fan-out** (added 2026-09-29), to the questions of
+    `phase3-plan.md` section 8.
+    - **A settings file that cannot be read stops every command.** It prints
+      `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`
+      The cause is the file reader's own words and line, such as
+      `Expecting ',' delimiter at line 4`; or `it is not UTF-8 text`; or
+      `it holds a list where an object belongs` (or `a string`, `a number`); or the operating
+      system's own message where the file could not be opened. `purlin:test` then ends on
+      `→ Fix the settings file by hand, then run: purlin:test`.
+    - **A mistake in a spec is named with the spec first and the command last:**
+      `login: > Scope: names src/gone.py, which finds no file in git. Run purlin:spec login.`,
+      `specs/auth/login.md and specs/admin/login.md are both named login; only specs/auth/login.md is read. Rename one: git mv specs/admin/login.md specs/admin/<new name>.md`,
+      `login: RULE-2 is written twice; the second is read. Run purlin:spec login.`,
+      `login: a line under ## Proof cannot be read: - PROOF-7 shows the lockout. Run purlin:spec login.`
+      and
+      `login: the first line names checkout, but the file is login.md, so it is read as login. Run purlin:spec login.`
+      The line for rule lines with no number gains the same ending:
+      ``WARNING: 1 line under ## Rules in specs/auth/login.md is not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec login.``
+    - **Comments above tests that name nothing are the second line of `Left to do`**, after
+      `rules to write a proof for`, and every comment that fails the run is counted:
+      `1 test comment to correct: purlin:build`, `3 test comments to correct: purlin:build`.
+      The dashboard has a `To correct` button.
+    - **A proof with no test is named in its rule's line:**
+      `login RULE-3 has no test for PROOF-7. Run purlin:build login.`, several joined
+      `PROOF-7, PROOF-9`. The rule's page gives the reason `no test for PROOF-7`.
+    - **The first test run suggests a command for each test tool it finds:** one line
+      `Suggested for pytest: <command>` per tool, each followed by what that tool needs added,
+      then one line `Suggested tests setting: [<pytest entry>, <vitest entry>]`, which the agent
+      writes as it stands. On Windows the Python command starts `py -3 -m pytest`, and
+      elsewhere `python3 -m pytest`.
+    - **Setup names a missing git host on a line of its own:** `Gate strong. Suites pytest.`
+      then `No git host found.` A git host Purlin cannot use is named in the same place,
+      `This git host cannot run tests remotely. Everything on this machine works.` The upgrade
+      keeps `No git remote, so there is no runner to read this workflow. Add one with: git remote add origin <url>`.
+    - **The tool that changes one setting answers** `The setting was not saved: <cause>.`,
+      `A change needs a value; nothing was saved.`,
+      `"gold" is not accepted for gate; it takes passed, strong or signed. Nothing was saved.`
+      and `version is written by purlin:init from Purlin's own version; nothing was saved.`
+      The tool does not change `version`. What each setting takes: `gate`
+      `passed, strong or signed`; `mutation_engine` `none, auto, mutmut, stryker or stryker_net`;
+      `min_strength` `a whole number from 0 to 100, or null`; `audit_parallel`
+      `a whole number from 1 to 16`; `tests` `a list`; `ci` `github, azure or none`.
+    - **A rule weak only because strength was not measured has a line of its own**,
+      `3 rules to measure: purlin:audit`, just before `rules to strengthen`. Its reason follows
+      the words `strength not measured: `, as in
+      `strength not measured: mutmut is not installed: run "pip install mutmut"`.
+    - **Two more ways to measure nothing leave a rule weak**, each counted where its fix is:
+      `strength not measured: mutmut ran and wrote no report: run purlin:audit again` with the
+      rules to measure, and
+      `strength not measured: the spec names no code files: run purlin:spec login` under
+      `rules to tie to their files: purlin:spec`, a line that then also stands at the gate
+      `strong` when the code is broken on purpose.
+    - **The breaking tool's reasons name the fix:**
+      `dotnet is not installed: install the .NET SDK, then run "dotnet tool install -g dotnet-stryker"`
+      and
+      `the engine timed out after 3600 s, so the breaks it made measure nothing: run purlin:audit --arm-timeout <seconds> to give it longer`.
+      `purlin:audit` takes `--arm-timeout <seconds>`, how many seconds the breaking tool may
+      run for one feature. Its usage line reads
+      `purlin:audit --arm-timeout <seconds>  Give the breaking tool longer per feature`.
+    - **On Windows the reason Python's code is not broken is given:** setup and the upgrade
+      print
+      `Mutation testing is off: mutmut does not run on Windows, so the AI audit alone judges test strength.`,
+      and the run prints
+      `mutmut does not run on Windows, so test strength is not measured here and the AI audit alone decides`.
+    - **Proofs that describe a broken copy of the instructions leave every spec of that
+      kind:** about 280 proofs leave 12 specs, and each broken-copy check stays inside the test
+      of the proof it guards.
+    - **The audit printout's rule that only a program sees folds into the rule about what the
+      printout shows.**
+    - **A rule no spec has is named with the next step:**
+      `login RULE-9 is not a rule any spec has. Run purlin:status login to see its rules.`
+    - **A signed tag git could not write** is one line,
+      `No tag: git could not write signed/1.2.0: <git's own message>.`, and signing reports
+      failure.
+    - **The audit's notes follow its findings with no heading**, each starting `Note:`.
+    - **The reason given for a nearly right comment says both steps:**
+      `` `RULE-30` is one character from `RULE-3`, which login has; a comment names its one proof, `PROOF-3` ``.
+    - **An anchor is a spec in Purlin's format.** A source that is anything else is refused
+      with an error that says so, whether it is a file of plain text, a description in words,
+      or a file in a repository that is not in the format, and nothing is written. Drift and
+      `purlin:anchor sync --check` report `error` for such an anchor a project already has.
+      Anchors made from plain text go everywhere, with their rules, the instructions and the
+      lines of the references and docs about them. The refusal reads
+      `refunds: not added. policy.txt is not a spec in Purlin's format kept in a git repository. Run purlin:anchor create refunds to write its rules in this project.`
+      Drift reads
+      `anchor refunds: its source, policy.txt, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec refunds to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.`,
+      and the anchor check the same after `refunds: `. A local anchor, which has no
+      `> Source:`, is not touched.
+    - **Proofs waiting for another system are counted in one line per system** on a person's
+      machine: `87 proofs need Windows; this machine is macOS. Run purlin:test --remote.`
+    - **A remote runner starts a file of mixed tests whole**, and only the tests of proofs
+      tagged for its system are recorded and can fail the run.
+    - **A remote run that cannot name its branch** prints
+      `No branch could be read from the git host or from git, so the results were not committed.`
+    - **A remote run on a branch that is neither a run branch nor a signed tag** prints
+      `This run is on feature/x, which is neither a run branch nor a signed tag: the tests ran and nothing is written.`
+    - **Each proof is proven where its tag says.** A person's own machine, Mac or Windows,
+      proves every untagged proof and every proof tagged for its own system, and never one
+      tagged for another: a proof tagged for macOS is proven only on a Mac, and one tagged for
+      Windows only on Windows. A remote machine is written into the runner file only for a
+      system some proof is tagged for that the machine running setup is not. The 13 Mac-only
+      proofs are tagged `@env(macos)`, and this repository's runner file, written on a Mac,
+      has no Mac machine. A remote machine runs only the tests tied to proofs tagged for its
+      system, as decision 95 says.
+    - **The Windows list stands as `phase3-windows-list.md` holds it**, less the row for the
+      anchor made from a text file, and meets decision 82. Wave W marks from it, with rule,
+      proof and test names brought up to date after the lanes merge, and reports what it
+      marked; nothing waits for the owner to read the list again.
+    - **The first remote run on Windows goes ahead without asking again.** After wave W, setup
+      writes this repository's runner file and `purlin:test --remote` runs once. It pushes one
+      temporary run branch and nothing else: no tag is pushed, and `main` stays on this machine.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

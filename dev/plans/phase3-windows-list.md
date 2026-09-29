@@ -1,12 +1,16 @@
 # The Windows list
 
-For the owner to read before any rule is marked (decisions 82 and 95). Nothing in `specs/` or in
-the tests has been changed. "Question <n>" is owner question OQ<n> of `phase3-plan.md` section 8.
+The owner accepted this list as it stands on 2026-09-29 (decisions 82, 95 and 97), less the row
+for upstream RULE-7, which went with anchors made from plain text. Wave W marks from it, with
+rule, proof and test names brought up to date after the lanes merge. Nothing in `specs/` or in
+the tests has been changed yet. "Question <n>" is owner question OQ<n> of `phase3-plan.md`
+section 8, now answered (decision 97).
 
 ## Summary
 
 - The sort found 90 rules. 7 are left off, 5 are added, and 2 of the kept rules become one when
-  the approved readings are applied. **87 rules are on the list.**
+  the approved readings are applied, and upstream RULE-7 went with anchors made from plain text
+  (decision 97). **86 rules are on the list.**
 - Left off: 1 rule whose every test reads a text file, 1 rule only Purlin's maintainers run, the
   2 rules about console characters that another rule covers, and the 3 rules decision 95 makes
   Mac only.
@@ -17,14 +21,15 @@ the tests has been changed. "Question <n>" is owner question OQ<n> of `phase3-pl
 - 13 proofs get `@env(macos)` (decision 95, which took W3's first option: each test that cannot
   run on Windows has its proof tagged for macOS): the 11 proofs of the walk from setup to a
   signed tag, the 1 proof of the C# wiring check, and the 1 proof of the file link. The
-  TypeScript and C# walk is deleted by reading Q16 and was tied to no proof. What the tag does to
-  this repository's runner file is question 24.
+  TypeScript and C# walk is deleted by reading Q16 and was tied to no proof. They are proven on
+  this Mac, and this repository's runner file, written on a Mac, gets no Mac machine (decision
+  97).
 - Every rule id and every rule's words below were checked against `specs/` as it stands. The
   ids of the 90 have not moved since the sort; some rules were reworded since, and the rows use
   today's words.
-- 48 of the 87 rows carry a note under "Needs": a stand-in program with a Windows ending, a
+- 48 of the 86 rows carry a note under "Needs": a stand-in program with a Windows ending, a
   program the runner must have, a check of bytes or of the `\` spelling, or a new case. The
-  other 39 tests run on Windows as written.
+  other 38 tests run on Windows as written.
 
 In the tables, "Test" is the file and the test the new proof would be tied to. "Draft proof" is
 the new line, at most 60 words, one case. "Needs" is empty where the test runs on Windows as
@@ -44,13 +49,12 @@ Readings that touch this spec: Q67 removes RULE-5, the command line that prints 
 not on the list. Q65 and Q66 change what happens when the settings file cannot be read or a save
 fails; RULE-8 and RULE-10 keep their numbers and may gain proofs of their own.
 
-## `upstream` (specs/anchor/upstream.md): 7 on the list
+## `upstream` (specs/anchor/upstream.md): 6 on the list
 
 | Rule | In plain words | Why Windows could differ | Test | Draft proof | Needs |
 |---|---|---|---|---|---|
 | RULE-1 | Adding a shared set of rules from another repository writes a copy with its source and the exact version it came from. | Purlin starts git, and git marks the files of the copy it downloads read-only, which Windows then refuses to delete. | `dev/test_upstream.py::test_an_added_anchor_keeps_the_author_text_under_source_and_pin` | On Windows, the anchor `no_eval` is added from another repository's `specs/no_eval.md`; the answer reads `added`, the copy carries `> Source:` and `> Pinned:` lines naming that repository and its sha, and no downloaded folder is left in the temporary folder | Check that the temporary download is gone. |
 | RULE-3 | With no name given, the shared rules are named after their file. | Probable fault 3: the name is cut at `/` only, so a path typed with `\` gives a wrong name. | `dev/test_upstream.py::test_with_no_name_the_anchor_is_named_after_its_file` | On Windows, an anchor is added from `specs\no_secrets.md`, typed with a backslash, with no name given; the answer names it `no_secrets`, and `specs/_anchors/` then holds `no_secrets.md` alone | Today the test types `/`. Add the `\` spelling; it fails until fault 3 is fixed. |
-| RULE-7 | A plain text file can be added as a source; its version is the hash of its text, so rewording it moves the version. | A file named by a drive-letter path can look like a repository address, and line endings change a hash. | `dev/test_upstream.py::test_a_text_file_named_by_its_full_path_is_free_text` | On Windows, a text file named by its full path, `C:\...\policy.txt`, is added as the anchor `refunds`; the answer reads `no_rules`, the copy carries the file's sentence, and no program was started | |
 | RULE-8 | A check writes nothing and says whether each copy is current or behind. | Purlin starts git to ask the source; how programs are started differs. | `dev/test_upstream.py::test_check_when_behind_reports_and_changes_no_file` | On Windows, an anchor is pinned and a new version of it is published; `sync --check` reports the row `behind` with both shas, counts 1 behind, and leaves every file in the project byte for byte as it was | |
 | RULE-9 | The check ends with 0, 1 or 2: current, behind, or a source that cannot be read. | A deleted source holds read-only files Windows will not remove; exit codes pass through a different shell. | `dev/test_upstream.py::test_check_exits_2_when_the_source_is_gone` | On Windows, an anchor is pinned and its source repository is then deleted; `sync --check --json` exits 2, and the row reads `error` | |
 | RULE-11 | Bringing a copy up to date rewrites it from the source and names the rules added, removed and changed. | Purlin downloads into a temporary folder and rewrites a file, both of which Windows handles differently. | `dev/test_upstream.py::test_sync_advances_the_pin_and_names_the_rule_delta` | On Windows, a new version of `no_eval` rewords `RULE-2` and adds `RULE-3`, and `sync no_eval` runs; the row reads `synced`, the summary `RULE-2 changed, RULE-3 added`, and the copy carries the new pin with no carriage return | Compare the copy's bytes. |
@@ -231,8 +235,8 @@ runs on the runner but reads text, so it is not on the list.
 | RULE-7 | The project's own copy of the JavaScript breaking tool is used before one on the search path. | Probable fault 2: the project's copy is looked for as `stryker`, and on Windows it is `stryker.cmd`. | `dev/test_mutation_adapters.py::test_the_projects_own_stryker_is_started_over_one_on_the_path` | On Windows, with `stryker.cmd` in the project's `node_modules/.bin/` and another Stryker on the search path, a run starts the project's own once and never starts the one on the search path | Name the stand-in `stryker.cmd`; it fails until fault 2 is fixed. |
 | RULE-13 | The .NET breaking tool is given the feature's files and its report is found in its output folder. | The output folder and the files are paths spelled the Windows way. | `dev/test_mutation_adapters.py::test_a_report_several_folders_down_is_read` | On Windows, a Stryker.NET run that writes `mutation-report.json` three folders down, in `StrykerOutput\2026-09-28\reports`, is measured from that report: the feature reads 60 | Stand-ins need a `.cmd` form. |
 | RULE-14 | Without `dotnet`, or without the .NET breaking tool installed, there is no engine, with the command to install it. | `dotnet` is `dotnet.exe` on Windows. | `dev/test_mutation_adapters.py::test_stryker_net_answering_its_version_is_installed` | On Windows, with a `dotnet` whose `dotnet stryker --version` exits 0, a Stryker.NET run asks that first, then breaks the code, and answers engine `stryker_net`, available, with an empty reason | Stand-ins need a `.cmd` form. |
-| RULE-18 | Without the Python breaking tool there is no engine, with the command to install it. After Q37 a tool that cannot run on this system counts as no tool, and the Python tool does not run on Windows. | The Python tool installs on Windows and does not run there. | A new test in `dev/test_mutation_adapters.py`; the existing one empties the search path, which shows nothing about Windows | On Windows, with mutmut installed and on the search path, a run over `login` answers engine `none`, not available, with the reason that mutmut does not run on Windows, and the feature's `missing` empty | A new test, once Q37's wording is built; the reason's words are question 12. |
-| RULE-22 | A breaking run past its time limit measures nothing and says to raise the limit. | Stopping a program and the programs it started works differently on Windows. | `dev/test_mutation_adapters.py::test_a_stryker_feature_that_timed_out_measures_nothing` | On Windows, with the limit at 3 seconds, a Stryker run of `calc` and `slow`, only `slow` still going at the limit, gives `calc` 64 and `slow` a score of None, and `slow`'s `missing` carries `timed out after 3 s` | Stand-ins need a `.cmd` form. The rest of the sentence is question 11. |
+| RULE-18 | Without the Python breaking tool there is no engine, with the command to install it. After Q37 a tool that cannot run on this system counts as no tool, and the Python tool does not run on Windows. | The Python tool installs on Windows and does not run there. | A new test in `dev/test_mutation_adapters.py`; the existing one empties the search path, which shows nothing about Windows | On Windows, with mutmut installed and on the search path, a run over `login` answers engine `none`, not available, with the reason `mutmut does not run on Windows, so test strength is not measured here and the AI audit alone decides`, and the feature's `missing` empty | A new test, once Q37's wording is built. |
+| RULE-22 | A breaking run past its time limit measures nothing and says to raise the limit. | Stopping a program and the programs it started works differently on Windows. | `dev/test_mutation_adapters.py::test_a_stryker_feature_that_timed_out_measures_nothing` | On Windows, with the limit at 3 seconds, a Stryker run of `calc` and `slow`, only `slow` still going at the limit, gives `calc` 64 and `slow` a score of None, and `slow`'s `missing` carries `timed out after 3 s` | Stand-ins need a `.cmd` form. The sentence reads `the engine timed out after 3 s, so the breaks it made measure nothing: run purlin:audit --arm-timeout <seconds> to give it longer` (question 11). |
 
 Changes from the readings and decisions: decision 94 makes strength one share per feature, so
 the rules that work out a share per rule go (RULE-4, RULE-10, RULE-11 and the attribution in
@@ -260,7 +264,7 @@ RULE-21.
 | Rule | In plain words | Why Windows could differ | Test | Draft proof | Needs |
 |---|---|---|---|---|---|
 | RULE-4 | A SQL script run through SQLite is one test, passing when every statement succeeds. | Starting SQLite, and the bash redirection that feeds it the script, on Windows. | `dev/test_run_script.py::test_a_sql_script_whose_statements_succeed_passes` | On Windows, in a project whose one suite runs each SQL script through `sqlite3 -bail`, a marked script creates a table and inserts one row; after `--all --test` its proof reads `pass` in the evidence and the run exits 0 | Decision 95 runs it on Windows. SQLite must be on the Windows runner's search path; today the test skips without it. |
-| RULE-10 | A proof marked for another system is not counted here, and the run says it needs that system. | On Windows the other systems are macOS and Linux/Unix. | `dev/test_run_script.py::test_a_foreign_env_proof_is_listed_as_needing_its_os` | On Windows, a spec's `PROOF-2` is tagged `@env(macos)` and its marked test is skipped here; `--all --test` prints `1 proof needs macOS; this machine is Windows. Run purlin:test --remote.` and no `Evidence is missing` | The line's form is question 20. A proof tagged for another system with no marked test is `no test` (reading Q7), so the fixture gives `PROOF-2` a marked, skipped test. |
+| RULE-10 | A proof marked for another system is not counted here, and the run says it needs that system. | On Windows the other systems are macOS and Linux/Unix. | `dev/test_run_script.py::test_a_foreign_env_proof_is_listed_as_needing_its_os` | On Windows, a spec's `PROOF-2` is tagged `@env(macos)` and its marked test is skipped here; `--all --test` prints `1 proof needs macOS; this machine is Windows. Run purlin:test --remote.` and no `Evidence is missing` | The line's form is question 20's, one line per system. A proof tagged for another system with no marked test is `no test` (reading Q7), so the fixture gives `PROOF-2` a marked, skipped test. |
 | RULE-12 | A runner writes its own section of the evidence and commits it; it fails only when a test failed or could not run. | The runner's system is named, and paths are handed to the commit, on Windows. | `dev/test_run_script.py::test_the_ci_arm_writes_its_section_and_commits` | On Windows, in a git checkout at the gate `strong`, on a ref that keeps evidence, `--all --ci` writes `.purlin/evidence/ci/feat.json` with one section, `windows`, whose machine is `remote runner, Windows`, prints `Evidence committed.`, and exits 0 | |
 | RULE-21 | The run names its system `windows`, `macos` or `linux`. | This is the one machine where the answer must be `windows`. | `dev/test_run_script.py::test_win32_reads_windows` | On Windows, with nothing simulated, the run reads its own system as `windows` | Today the test pretends to be Windows. Add a check that asks the real system. |
 | RULE-39 | The run switches its output to UTF-8 first, so a Windows console prints the table's lines instead of stopping with an error. | A Windows console defaults to a character set that has no `─` or `→`. | `dev/test_run_script.py::test_a_cp1252_console_gets_the_glyphs_and_no_traceback` | On Windows, with the console's default character set, `--all --test` over one spec and one passing marked test prints no `UnicodeEncodeError`, prints the status table's rule line `─`, and exits 0 | On Windows the default set is real; the test may drop the forced setting. |
@@ -268,7 +272,7 @@ RULE-21.
 | RULE-43 | No comment is read from the copy the Python breaking tool leaves in `mutants/`. | The folder is found in paths spelled with `\`. | `dev/test_run_script.py::test_the_copy_mutmut_leaves_is_never_collected` | On Windows, a project's one marked test also has a copy under `mutants\`, and the suite's pattern `**/test_*.py` reaches both; `--all --test` exits 0 and the evidence lists exactly one test, `tests/test_feat.py::test_ok` | |
 | RULE-55 | A run with no feature named runs only features whose spec, code or tests changed, or that have files git does not track. | The comparison runs through git on paths spelled with `\`. | `dev/test_run_script.py::test_an_untracked_file_selects_the_feature_and_is_named` | On Windows, `login` and `export` have current committed evidence, `login`'s scope names `src/auth/`, and `src/auth/token.py` is written and not added to git; the next `--test` selects `login` alone, with the reason `a file is not tracked` | |
 | RULE-58 | A run over some features hands each suite only those features' test files. | The file list goes to bash as Windows paths. | `dev/test_run_script.py::test_a_named_feature_runs_only_its_test_files` | On Windows, in a project whose one suite runs two shell scripts, one marked for `login` and one for `export`, each writing its feature's name to a shared file, `--feature login --test` exits 0 and leaves the file reading only `login` | |
-| RULE-63 | The first test run suggests a test command for the test tool it finds. After decision 94 it suggests one for every tool it recognises. | The suggestion for pytest starts with `python3`, which a python.org install on Windows does not provide. | `dev/test_run_script.py::test_pytest_is_suggested_its_own_entry` | On Windows, in a project with no test command set and holding only a `conftest.py`, the entry the run suggests is named `pytest` | What the suggested command says on Windows is question 6; see "Least sure" below. |
+| RULE-63 | The first test run suggests a test command for the test tool it finds. After decision 94 it suggests one for every tool it recognises. | The suggestion for pytest starts with `python3`, which a python.org install on Windows does not provide. | `dev/test_run_script.py::test_pytest_is_suggested_its_own_entry` | On Windows, in a project with no test command set and holding only a `conftest.py`, the entry the run suggests is named `pytest` | On Windows the suggested command starts `py -3 -m pytest` (question 6); a second proof may show it. |
 
 Readings Q7, Q20 and Q22 change the lines of `Left to do`; RULE-10 keeps its line. Q19 moves the
 check that a project still reads as set up by 0.9.5 into this spec.
@@ -308,10 +312,11 @@ starts it; only a person running the suites by hand on Windows sees the failure.
 
 1. **run_script RULE-63.** The suggested pytest command starts with `python3`. On a python.org
    install on Windows that name does not exist, so the suggestion would not run. Whether the
-   suggestion should read `python -m pytest` or go through the interpreter lookup on Windows is a
-   change to what the product does, and no decision makes it: question 6.
+   suggestion should read otherwise on Windows was question 6: it starts `py -3 -m pytest`.
 2. **mutation RULE-18.** After Q37 the Windows case is "installed, and still no engine". The
-   reason's words are question 12, and the existing test shows nothing about Windows.
+   reason's words were question 12 (`mutmut does not run on Windows, so test strength is not
+   measured here and the AI audit alone decides`), and the existing test shows nothing about
+   Windows.
 3. **scaffold RULE-37 PROOF-52**, the Go module. It is not part of the walk, so it is left
    without `@env(macos)`. Tag it if "RULE-37 is Mac only" means every proof of the rule.
 4. **update RULE-31 PROOF-112 and PROOF-113.** They make no link, so they are left untagged.

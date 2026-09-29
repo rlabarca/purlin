@@ -1,6 +1,6 @@
 # Lane `dashboard`
 
-You are lane `dashboard` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `dashboard` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -51,17 +51,15 @@ result, as decision 85 has them. `docs/dashboard.md` is lane `words`'s.
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
-1. **Q22, the `To correct` button** (C2 row 2; **PENDING OQ3**, with whose removal option there
-   is no button): `to_correct` joins `VERSION_KINDS` in
+1. **Q22, the `To correct` button** (C2 row 2; OQ3): `to_correct` joins `VERSION_KINDS` in
    `filters.js`: no rule carries it, and choosing it names `purlin:build` and leaves every rule
    showing, as `To tag` does. RULE-13 and RULE-14 name `To correct` beside `To tag`; one proof,
    built from a payload whose `left` holds
    `{"kind": "to_correct", "count": 1, "text": "1 test comment to correct", "command": "purlin:build"}`.
-   `to_measure` (**PENDING OQ9**) is a rule kind: its button is named from its text like any
+   `to_measure` (OQ9) is a rule kind: its button is named from its text like any
    other; check it reads `To measure` and add no code for it unless it does not.
 2. **Q9:** RULE-4 keeps "no shadow, no gradient" and drops "no emoji"; PROOF-4 drops "no
    character of it is an emoji" and the check behind it (C10 holds the one rule).

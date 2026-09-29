@@ -1,6 +1,6 @@
 # Lane `core`
 
-You are lane `core` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `core` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -37,9 +37,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q2.** States RULE-5 folds into RULE-4: RULE-4 takes RULE-5's clauses (committed or not, the
    passed cell reads `passed` with the source named, `counts` true and no reason, at every gate;
@@ -59,7 +58,7 @@ report it. Build every other item.
 4. **Q20, the cell** (C4.1, third bullet): after the failure check and before the pass check,
    where a proof that is not `@manual` has no marker tied to a test and no test listed in any
    current section, the cell reads `no test` with the reason
-   `no test for <PROOF-N>[, <PROOF-M>]` (**PENDING OQ4**). RULE-8 says "a rule some of whose
+   `no test for <PROOF-N>[, <PROOF-M>]` (OQ4). RULE-8 says "a rule some of whose
    proofs no test backs reads `no test`". PROOF-151 (RULE-3) keeps its case: mark PROOF-3 in its
    fixture so the rule still reads `not run`. New proof for the mixed case (PROOF-1 passing,
    PROOF-2 tied to no test: `no test`, reason `no test for PROOF-2`) and a summary proof that it
@@ -69,13 +68,12 @@ report it. Build every other item.
    (`_word_from_statuses`, `_failing_where`, `_section_passes`, `proof_result`). New proof: "A
    Windows `ci` section lists only PROOF-2, tagged `@env(windows)`, and passes it; the Mac's
    local section passes PROOF-1; the passed cell reads `passed`."
-6. **Q22** (C2 row 2; **PENDING OQ3**, its place and what it counts): `to_correct` joins `summary.KINDS` second, `('to_correct', 'test comment
+6. **Q22** (C2 row 2; OQ3: second in the list, every comment that fails the run): `to_correct` joins `summary.KINDS` second, `('to_correct', 'test comment
    to correct', 'test comments to correct', 'purlin:build')`, carried by the project like
    `to_tag`. The payload counts `markers.marker_problems(scan, features)` (moved there by P1)
    with `scan = markers.scan(project_root, suites)` and the suites of
    `markers.read_suites(project_root, config)`, counting both the lines for a comment naming
-   something no spec has and those for a comment naming a rule that has proofs (with OQ3's
-   second option only the first); `left` gets the item through `summary._words` as every kind
+   something no spec has and those for a comment naming a rule that has proofs; `left` gets the item through `summary._words` as every kind
    does, so its `text` is `"1 test comment to correct"` for one and
    `"<n> test comments to correct"` otherwise:
    `{"kind": "to_correct", "count": 1, "text": "1 test comment to correct", "command": "purlin:build"}`;
@@ -90,27 +88,26 @@ report it. Build every other item.
    `audit.mutation.score` is null and `audit.mutation.missing` is not empty, the strong cell
    reads `weak`, reason `strength not measured: <missing>` after any findings. States RULE-13 is
    reworded to the case with no engine or an engine that cannot run here; a new rule says the
-   missing-or-timed-out case reads weak with the reason. `to_measure` (C2 row 9,
-   **PENDING OQ9**) joins `KINDS` just before `to_strengthen`,
+   missing-or-timed-out case reads weak with the reason. `to_measure` (C2 row 9, OQ9) joins
+   `KINDS` just before `to_strengthen`,
    `('to_measure', 'rule to measure', 'rules to measure', 'purlin:audit')`, for a rule weak only
    for that reason; summary proof `  1 rule to measure: purlin:audit`; the status skill gets its
    row. Build the tests by writing the evidence JSON by hand with
    `"audit": {"mutation": {"engine": "mutmut", "score": null, "missing": "mutmut is not installed: run \"pip install mutmut\"", "at": ..., "commit": ...}}`
    and `mutation_engine: auto` in the settings: no other lane's code is needed.
 7b. **Decision 94, nothing measured when the spec names no code files** (C4.2, C2 `no_scope`;
-   **PENDING OQ10**): with OQ10's option 1, where `mutation_engine` is not `none` and the gate is
+   OQ10): where `mutation_engine` is not `none` and the gate is
    `strong` or `signed`, a rule whose feature spec names no code files (the payload's
    `incomplete` for its owner, from `fingerprint.incomplete_reason`; an anchor is never such a
    spec) reads `weak` with the reason
    `strength not measured: the spec names no code files: run purlin:spec <feature>`, and
    `summary.rule_kind` counts it under `no_scope` (at `strong` as well as `signed`) rather than
-   `to_measure` or `to_strengthen`. With option 2 the reason is the same and it counts under
-   `to_measure`; with options 3 and 4 nothing here is built. States gains one rule with one proof
+   `to_measure` or `to_strengthen`. States gains one rule with one proof
    per gate; summary gains one proof that at `strong` the line reads
    `  1 rule to tie to its files: purlin:spec`. The status skill's row for
    `rules to tie to their files` stays; if it says "at the gate signed", it says "at strong
    and signed when the code is broken on purpose" instead.
-8. **Q65, the status** (C1.9, C3.4; **PENDING OQ1**): `status.sync_status` returns
+8. **Q65, the status** (C1.9, C3.4; OQ1): `status.sync_status` returns
    `config_engine.config_problem(project_root)`'s sentence alone when it answers. New rule and
    proof: the settings file holds `{"gate": "strong",` and the status prints exactly
    `.purlin/config.json cannot be read: Expecting property name enclosed in double quotes at line 1. Fix the file by hand; nothing ran and nothing was saved.`
@@ -129,9 +126,8 @@ report it. Build every other item.
 12. **Decision 94, instruction rules:** skill_status's rules say what the skill tells the agent
     (RULE-5: "tells the agent what to print for `purlin:status <name>` and what to do when
     several specs or none match").
-13. **Q40's reason, applied** (C11, **PENDING OQ13**): skill_status's damaged-copy proofs (about
-    22) leave the spec; each damaged copy stays as a second assertion in the test of the proof
-    it guards. With OQ13's second or third option they stay as they are.
+13. **Q40's reason, applied** (C11, OQ13): skill_status's damaged-copy proofs (about 22) leave
+    the spec; each damaged copy stays as a second assertion in the test of the proof it guards.
 14. **Split by claim** (C11) across states, summary and skill_status. Candidates the survey
     named: states RULE-25, 27, 28, 36, 74; summary RULE-4, 8; each skill_status RULE-1.
 

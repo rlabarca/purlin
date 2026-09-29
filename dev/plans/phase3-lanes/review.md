@@ -1,6 +1,6 @@
 # Lane `review`
 
-You are lane `review` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `review` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -35,25 +35,24 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
-1. **Q12 and Q26** (C1.10, **PENDING OQ15**): `ai_audit.py --feature <f> --rule <RULE-N>`, where
+1. **Q12 and Q26** (C1.10, OQ15): `ai_audit.py --feature <f> --rule <RULE-N>`, where
    `reading_for` finds no such rule (around lines 537 to 551), prints
    `sign.not_a_rule(feature, rule)` (C1.10) and never formats `sign.NOT_A_RULE` itself: import
    `not_a_rule` from `scripts/review/sign.py`, which P2 wrote, since the number of values the
    line takes depends on the owner's words. It exits 1. RULE-13 says it "prints the line and
    exits 1"; PROOF-76 is reworded (test around line 771).
-2. **Q25** (C3.10, **PENDING OQ17**): `render` (around lines 465 to 480) prints, after the
-   findings, a blank line, `What the audit noted`, and each note indented two spaces; nothing
-   where there are no notes. RULE-14 reads "... each finding, and its notes under their own
-   heading after the findings"; a new proof. The sign walk's audit block does not change.
+2. **Q25** (C3.10, OQ17: no heading): `render` (around lines 465 to 480) prints, directly
+   after the findings, with no heading and no blank line, each note on a line of its own,
+   indented two spaces as the findings are, reading `  Note: <the note>`; nothing where there
+   are no notes. RULE-14 reads "... each finding, and after the findings each note, starting
+   `Note:`"; a new proof. The sign walk's audit block does not change.
 3. **Q9:** RULE-14 drops "and no emoji"; PROOF-29 drops "with no emoji"; the `_emoji`
    assertions in its test go (around line 791).
-4. **Q13's reason, applied** (**PENDING OQ14**): RULE-15 (an internal "returns nothing" shown
-   only through RULE-13) folds into RULE-13, PROOF-7 re-pointed. With OQ14's second option
-   RULE-15 and PROOF-7 stay as they are.
+4. **Q13's reason, applied** (OQ14): RULE-15 (an internal "returns nothing" shown only through
+   RULE-13) folds into RULE-13, PROOF-7 re-pointed; RULE-15's number is never reused.
 5. **`references/review_criteria.md`** (the one home of what the model is sent; C12, S2):
    - decision 94: what the model is shown about strength is the feature's one share, in every
      language; no per-rule number (around lines 71 to 74, 88 to 89, 98 to 100);
@@ -61,11 +60,12 @@ report it. Build every other item.
      shown `test strength: not measured`; when that leaves a rule weak is said once, in
      `references/hard_gates.md` (the paragraph under the gate table), and this file points at it
      in one clause rather than restating it;
-   - Q25: the notes are printed after the findings (around lines 112 to 113).
+   - Q25: the notes are printed after the findings, each starting `Note:` (around lines 112 to
+     113).
    Tests of other lanes read this file's hash at run time; check none asserts the lines you
    change.
 6. Confirm nothing in `scripts/review/` prints `n/a` (decision 93, fixed in `6f8a54cc2`).
-7. **Q65, the audit reader** (C1.9, C3.4; **PENDING OQ1**): `ai_audit.py` `main`, after the
+7. **Q65, the audit reader** (C1.9, C3.4; OQ1): `ai_audit.py` `main`, after the
    command line is read and before the payload is built (around line 537), prints
    `config_engine.config_problem(project_root)`'s sentence when it answers, writes nothing and
    exits 1. One new rule, or one proof under RULE-13 if it already says what the reader does

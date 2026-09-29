@@ -1,6 +1,6 @@
 # Lane `mutation`
 
-You are lane `mutation` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `mutation` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -35,9 +35,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Decision 94, test strength is one share per feature** (clears the fault that matched a
    test by the end of its path): the per-rule working goes.
@@ -56,22 +55,19 @@ report it. Build every other item.
    `features[f]['scope_score']` and gains `features[f]['missing']`.
    - Not installed: `engine` names the selected engine, `available` false, `reason` its
      not-installed sentence (the three kept word for word), every feature's `missing` the same.
-     **PENDING OQ11** for .NET itself missing:
+     For .NET itself missing (OQ11):
      `dotnet is not installed: install the .NET SDK, then run "dotnet tool install -g dotnet-stryker"`.
-   - Timed out: that feature's `missing` is **PENDING OQ11**
+   - Timed out: that feature's `missing` is (OQ11)
      `the engine timed out after <seconds> s, so the breaks it made measure nothing: run purlin:audit --arm-timeout <seconds> to give it longer`
-     (the first `<seconds>` filled with `ARM_TIMEOUT`, the second literal). OQ11's other
-     options are in C3.2: the second ends `measure nothing: run purlin:audit again`, the third
-     keeps today's words for both reasons.
-   - Wrote no report (RULE-12): **PENDING OQ10** (options 1 and 2), that feature's `missing` is
+     (the first `<seconds>` filled with `ARM_TIMEOUT`, the second literal).
+   - Wrote no report (RULE-12; OQ10): that feature's `missing` is
      `<engine> ran and wrote no report: run purlin:audit again`
-     (`mutmut`, `stryker` or `dotnet stryker`). With OQ10's options 3 and 4 it stays `''`.
+     (`mutmut`, `stryker` or `dotnet stryker`).
    - A feature whose spec names no code files: nothing changes here. It is not handed to the
      engine, as today, and gets no `missing`; lane `core` reads that case from the spec (C4.2).
    - mutmut on Windows: `mutmut.run` asks `runs_here('mutmut')` (P1, C1.3); when false it answers
-     `engine: none`, `available: false`, `reason` **PENDING OQ12**
-     `mutmut does not run on Windows, so test strength is not measured here and the AI audit alone decides`
-     (OQ12's second option: `mutmut does not run on Windows`; its removal option: `''`),
+     `engine: none`, `available: false`, `reason` (OQ12)
+     `mutmut does not run on Windows, so test strength is not measured here and the AI audit alone decides`,
      every `missing` `''`. RULE-18 gains the Windows clause; a new proof with the system given as
      Windows (monkeypatch `os.name` or pass the system) reads that answer.
    - New proofs: not installed gives each feature that `missing`; timed out gives it to the

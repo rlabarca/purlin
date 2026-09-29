@@ -1,6 +1,6 @@
 # Lane `p2-warnings`
 
-You are lane `p2-warnings` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `p2-warnings` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -24,8 +24,8 @@ files below are where its words come from.
    `evidence`, `specs` and `schema_spec_format`.
 
 You run alone, after P1 merged and after the orchestrator wrote the owner's answers to every
-question into `phase3-contracts.md` (you use OQ1, OQ2, OQ12 and OQ15). An item whose question was answered with its removal option
-is skipped.
+question into `phase3-contracts.md` (you use OQ1, OQ2, OQ12 and OQ15, and decision 97's runner
+file for item 7). No answer removed an item.
 
 ## The files you own
 
@@ -35,17 +35,17 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 You run alone, so you may write any file an item below names, and any test file item 6 needs:
 - `scripts/mcp/purlin/specs.py`, `scripts/mcp/purlin/payload.py`, `scripts/mcp/config_engine.py`,
-  `scripts/review/sign.py`, `scripts/init/scaffold.py` (item 5 alone)
+  `scripts/review/sign.py`, `scripts/init/scaffold.py` (item 5 alone), `scripts/run/workflow.py`
+  (item 7 alone)
 - `specs/_anchors/schema_spec_format.md`, `references/formats/spec_format.md`
 - `dev/test_schema_spec_format.py`, `dev/test_signatures.py`, and the test files item 6 touches
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
-1. **The five spec mistakes** (decision 94; C3.3, **PENDING OQ2**): `specs.spec_mistakes` returns
+1. **The five spec mistakes** (decision 94; C3.3, OQ2): `specs.spec_mistakes` returns
    one line per mistake, in the words of C3.3: a `> Scope:` entry that finds no tracked file
    (through `fingerprint.expand_scope`, imported inside the function; a spec whose every entry
    finds nothing gets only the existing line), two specs with one name (the reader keeps the
@@ -73,23 +73,27 @@ report it. Build every other item.
 2. **The two plurals** (L8, L9): the unnumbered-rule warning in `payload.py` and the unread-tags
    warning in `specs.py` read `1 line ... is not numbered` and `1 spec file carries tags ...`
    for one; the plural stays. The unnumbered-rule warning, singular and plural, also ends
-   ` Run purlin:spec <feature>.` (C3.1 L8; **PENDING OQ2**: options 1 and 2 add it, options 3
-   and 4 leave it off). The payload's rule already knows its feature's name.
-3. **`config_engine.config_problem(project_root)`** (C1.9, C3.4; **PENDING OQ1**) and its
+   ` Run purlin:spec <feature>.` (C3.1 L8; OQ2). The payload's rule already knows its
+   feature's name.
+3. **`config_engine.config_problem(project_root)`** (C1.9, C3.4; OQ1) and its
    constant: the sentence when `.purlin/config.json` exists and cannot be read (not UTF-8, not
    JSON, JSON that is not an object, an open that failed), None otherwise. No caller yet; lane
    `settings` writes its rule and proofs.
-4. **`sign.NOT_A_RULE`** (C3.6, **PENDING OQ15**) reads
+4. **`sign.NOT_A_RULE`** (C3.6, OQ15) reads
    `%s %s is not a rule any spec has. Run purlin:status %s to see its rules.` (feature, rule,
-   feature). Add beside it `def not_a_rule(feature, rule)`, which returns the line filled in
-   (with OQ15's third option the constant has two `%s` and the function passes two values), and
+   feature). Add beside it `def not_a_rule(feature, rule)`, which returns the line filled in, and
    make every existing print of the line call it (C1.10); the tests in
    `dev/test_signatures.py` quoting it (around lines 872 to 895) follow.
-5. **Setup's line for an engine that cannot run here** (C1.11; **PENDING OQ12**): add
-   `NO_ENGINE_HERE` beside `NO_ENGINE` in `scripts/init/scaffold.py`, in OQ12's chosen words, and
-   nothing else in that file; with OQ12's removal option skip this item. Lanes `scaffold` and
-   `update` print it.
-6. **The tree stays green:** run `--fast`; a fixture whose `> Scope:` names a file it never
+5. **Setup's line for an engine that cannot run here** (C1.11; OQ12): add
+   `NO_ENGINE_HERE = 'Mutation testing is off: mutmut does not run on Windows, so the AI audit alone judges test strength.'`
+   beside `NO_ENGINE` in `scripts/init/scaffold.py`, and nothing else in that file. Lanes
+   `scaffold` and `update` print it.
+6. **The systems a runner file names** (C1.12; decision 97): add
+   `foreign_tags(env_tags, host_os)` to `scripts/run/workflow.py`, returning the `@env` tags,
+   lower-cased and sorted, that name a system other than `host_os`, and have `wanted()` compute
+   its foreign set through it. Nothing else in that file changes and no behaviour changes; lanes
+   `scaffold` and `update` call it, and lane `host` owns the rest of the file.
+7. **The tree stays green:** run `--fast`; a fixture whose `> Scope:` names a file it never
    creates now prints a warning line; fix every test the new lines disturb, and list each file
    you touched.
 
@@ -116,7 +120,7 @@ report it. Build every other item.
 ```
 export PATH=/opt/homebrew/opt/dotnet@8/bin:$PATH
 cd /Users/richlabarca/LocalCode/purlin-wt/p2-warnings
-.venv/bin/python -m pytest dev/test_schema_spec_format.py dev/test_specs_reader.py dev/test_states.py dev/test_signatures.py dev/test_config_engine.py -q      # your own files, whole
+.venv/bin/python -m pytest dev/test_schema_spec_format.py dev/test_specs_reader.py dev/test_states.py dev/test_signatures.py dev/test_config_engine.py dev/test_consumer_ci.py -q      # your own files, whole
 bash dev/run_tests.sh --fast                     # the fast sweep, in your worktree
 ```
 

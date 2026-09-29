@@ -1,6 +1,6 @@
 # Lane `words`
 
-You are lane `words` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `words` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -46,33 +46,33 @@ lane owns a file under `docs/`, and no page under `docs/` but these seven change
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 C12 is binding: the two new facts S1 (a remote runner runs only the tests tied to proofs tagged
-for its own system) and S2 (test strength is one share per feature; with mutation testing on,
+for its own system; a person's own machine proves the untagged proofs and its own system's) and S2 (test strength is one share per feature; with mutation testing on,
 nothing measured leaves the rule weak) are each stated once, in `references/hard_gates.md`, and
 every other file you own points at that home instead of restating them.
 
 1. **`references/hard_gates.md`, the two homes (C12):**
-   - S1, one paragraph in "Where a runner runs, and when a project has one" (line 123): a remote
-     runner runs only the tests tied to proofs tagged `@env` for its own system; a proof with no
-     `@env` is proven by a run on a person's machine (decision 95).
+   - S1, one paragraph in "Where a runner runs, and when a project has one" (line 123), from
+     C12's row (decisions 95 and 97): a remote runner runs only the tests tied to proofs tagged
+     `@env` for its own system; a person's own machine, Mac or Windows, proves every proof with
+     no `@env` and every proof tagged for its own system, and never one tagged for another; a
+     runner file names a remote machine only for a system some proof is tagged for that the
+     machine running setup is not.
    - S2, one paragraph directly under the gate table (after line 28): test strength is one
      share per feature, in every language (decision 94); with mutation testing on, a feature
      whose share could not be measured leaves its rules `weak` with the reason
-     `strength not measured: <reason>` (**PENDING OQ9**); an engine that cannot run on this
+     `strength not measured: <reason>` (OQ9); an engine that cannot run on this
      system counts as none and the AI audit alone decides. Line 27's `strong` row keeps its
      words.
-   - The `Left to do` table's `no_scope` row (line 79), **PENDING OQ10**: with OQ10's option 1
-     its "When it applies" cell reads, word for word (`phase3-plan.md` section 12, item 2):
+   - The `Left to do` table's `no_scope` row (line 79), OQ10: its "When it applies" cell reads,
+     word for word (`phase3-plan.md` section 12, item 2):
 
      ```
      at `signed`, the rule is not signed and its spec names no files; at `strong` and `signed` with mutation testing on, its strong cell reads `weak` because its spec names no code files
      ```
-
-     With options 2 to 4 the row stays.
    - Lines 116 to 117: the clause "The tests a person ran are the tests a runner runs" goes,
      with nothing restated in its place. Line 140, the tag run's cell ("It runs the marked tests
      on a clean machine and nothing else"), and line 207, "A runner runs the marked tests", each
@@ -83,9 +83,9 @@ every other file you own points at that home instead of restating them.
      `not run` with `<os>: no run yet` (C4.1). Lines 238 to 239 ("Test strength is independent
      of the system ...") point at the S2 paragraph instead of saying it again.
    - Lines 69 to 81, the table of `Left to do` kinds: C2's kinds, with `to_correct`
-     (**PENDING OQ3**) and `to_measure` (**PENDING OQ9**) in their C2 places; line 72,
+     (OQ3) and `to_measure` (OQ9) in their C2 places; line 72,
      `to_fix`, keeps `partial`.
-   - Lines 137 to 140: a run on another ref prints C3.8's line (**PENDING OQ23**).
+   - Lines 137 to 140: a run on another ref prints C3.8's line (OQ23).
    - Lines 128 to 129: the sentence that begins "A project whose git host is neither GitHub nor
      Azure DevOps" is replaced by this one, word for word (decision 96; `phase3-plan.md`
      section 12, item 3), so the words `neither GitHub nor Azure DevOps` leave the file
@@ -96,9 +96,9 @@ every other file you own points at that home instead of restating them.
      ```
 2. **`references/glossary.md`:**
    - lines 28 to 31, **suite**: the first test run suggests an entry for each test tool it
-     recognises, confirmed together (**PENDING OQ5**);
+     recognises, confirmed together (OQ5);
    - lines 42 to 46, **Left to do**: the printed kinds of C2, with `to correct`
-     (**PENDING OQ3**) and `to measure` (**PENDING OQ9**) in their places;
+     (OQ3) and `to measure` (OQ9) in their places;
    - lines 58 to 59, **partial**: the tests passed on one system and failed on another; a
      system that has not run reads `not run`;
    - lines 75 to 78, **test strength**: the share of one feature's breaks the tests caught, as a
@@ -109,10 +109,10 @@ every other file you own points at that home instead of restating them.
      section answers for the proofs it lists.
 3. **`references/purlin_commands.md`:**
    - line 33, the `purlin:test` row: "The first run in a project with no test command suggests
-     one" becomes "suggests one for each test tool it recognises" (decision 94, **PENDING OQ5**);
+     one" becomes "suggests one for each test tool it recognises" (decision 94, OQ5);
    - line 34, the `purlin:audit` row, and the usage block lines 70 to 72: `[--arm-timeout <seconds>]`
      is added to `purlin:audit`'s syntax, and the usage block gains the usage line of C3.2
-     (**PENDING OQ11**; with OQ11's second or third option nothing is added), which is,
+     (OQ11), which is,
      character for character,
      `purlin:audit --arm-timeout <seconds>  Give the breaking tool longer per feature`,
      written after the two spaces every line of that block starts with;
@@ -123,17 +123,17 @@ every other file you own points at that home instead of restating them.
      order and every cell copied from C6 character for character, no word added or dropped
      (the new rows for `scripts/export/package.py`, `scripts/review/ai_audit.py` and
      `scripts/init/scaffold.py` included). Its marks are C6's: every
-     `the settings file cannot be read` clause is **PENDING OQ1**, `sign.py`'s
-     `git could not write the tag` **PENDING OQ16**;
+     `the settings file cannot be read` clause is OQ1's, `sign.py`'s
+     `git could not write the tag` OQ16's;
    - lines 143 to 150: the run that stops before running anything also stops on C3.4's line
-     (**PENDING OQ1**); with no test command it prints C3.7 R4 (**PENDING OQ5**), which ends on
+     (OQ1); with no test command it prints C3.7 R4 (OQ5), which ends on
      `Suggested tests setting: <the entries as one JSON array on one line>`, in place of
      `Suggested for <name>: <run>` and `Suggested entry: <one-line JSON>`;
-   - lines 152 to 156: the run's lines R1 (**PENDING OQ4**) and R2, and the unknown-rule line
+   - lines 152 to 156: the run's lines R1 (OQ4) and R2, and the unknown-rule line
      `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`
-     (**PENDING OQ15**);
+     (OQ15);
    - lines 158 to 162: a near miss to a rule with one proof suggests that proof (C3.9,
-     **PENDING OQ18**);
+     OQ18);
    - "Path resolution": the one home of C9, one sentence: every Purlin script a skill runs is
      started as `sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/<path>" <args>`,
      which finds Python 3 the way the plugin's server does, `py -3` on Windows included.
@@ -148,16 +148,18 @@ every other file you own points at that home instead of restating them.
      for that system; test strength is one share per feature; with breaking on, nothing measured
      leaves a rule weak; the first test run suggests a command for every test tool it
      recognises; a mistake Purlin can see in a spec is warned of with its fix; a settings file
-     that cannot be read stops every command (**PENDING OQ1**); `purlin:sign` exits 1 when it
+     that cannot be read stops every command (OQ1); `purlin:sign` exits 1 when it
      refused the tag for a reason to fix; the skills start Purlin's scripts through the
-     interpreter lookup; each only as the owner's answers leave it;
+     interpreter lookup; an anchor is copied only from a spec in Purlin's format, in the line of
+     `phase3-plan.md` section 12, item 11, word for word (decision 97, C13); a runner file names
+     a remote machine only for a system the machine running setup is not (C14);
    - what is gone: the shell command line that printed settings
      (`python3 scripts/mcp/config_engine.py`, Q67), which 0.9.5 shipped. Setup's `--add` is not
      listed: 0.9.5 never shipped it (it came and went inside 0.10.0), and the notes say what is,
      not what was (decision 44); the existing line on `--add-plugin` stays as it is;
    - Windows: the parts are proven on Windows and the whole path on the Mac; the whole path on
      Windows is not walked for 0.10.0;
-   - correct every line of the section that decisions 60 to 96 made false, among them the
+   - correct every line of the section that decisions 60 to 97 made false, among them the
      trust question, the queue, `[level: ...]` and the per-rule strength, so the section says
      what 0.10.0 does. The owner reviews the section after (handoff step 6).
 6. `README.md` and `references/writing_style.md`: read for anything these decisions made false;
@@ -167,10 +169,10 @@ every other file you own points at that home instead of restating them.
    files with their code; you fix what they, and this phase, make false in these lines and no
    others (line numbers as on `main` at `b172b3c1c`; read your worktree's copy, since an
    earlier merge may not have touched `docs/` but your own edits shift lines):
-   - `docs/running-and-evidence.md` 102 to 113 (the `needs` line, R3, **PENDING OQ20**; which run
+   - `docs/running-and-evidence.md` 102 to 113 (the `needs` line, R3, OQ20; which run
      proves an untagged proof, a pointer to the S1 paragraph; `partial`, C4.1), 228 to 235
      (strength is one share per feature; `n/a` is printed nowhere; the time limit's reason,
-     **PENDING OQ11**), 296 to 395, the section "When a project has a runner", with 348 in it
+     OQ11), 296 to 395, the section "When a project has a runner", with 348 in it
      (what a runner runs and writes, a pointer to S1, and the `ci` section's proofs of evidence
      format 5; the separate gate-check step at 348, which decision 83 removed);
    - `docs/dashboard.md` 13 (a later setup asks nothing before each file, Q14) and 67 (the
@@ -181,11 +183,18 @@ every other file you own points at that home instead of restating them.
      nothing before each write, Q14), and 63 (the `--add` row goes, decision 94);
    - `docs/review-and-signing.md` 80 (the command starts through the interpreter lookup, C9);
    - `docs/specs-and-anchors.md` 91 to 94 (a number written twice is warned of, C3.3; the new-id
-     sentence of `phase3-plan.md` section 12, item 5) and 140 to 144 (which run proves a proof
-     with no `@env`, a pointer to the S1 paragraph).
+     sentence of `phase3-plan.md` section 12, item 5), 140 to 144 (which run proves a proof
+     with no `@env`, a pointer to the S1 paragraph), and in "An anchor repo", after the `add`
+     paragraph's code block (around line 187), the sentence of `phase3-plan.md` section 12, item
+     10, word for word (decision 97, C13: an anchor's source is a spec in Purlin's format).
    Each change says what is, in the writing style; the pages point at `references/` rather than
    restating S1 or S2. Decision 63's reading of every page, after sanity check 3, reads the rest.
    The screenshots are not retaken now.
+8. **Decision 97, anchors made from plain text go** (C13; plan call 73): the `docs/` sentence
+   of item 7 and the release-notes line of item 5 are yours. `references/glossary.md`
+   ("anchor", "pinned anchor"), `references/purlin_commands.md`
+   (`purlin:anchor add <url> --path <file>`) and `README.md` say nothing of plain text and stay
+   as they are; if you find a line that does, report it and change it to what is.
 
 There are no test files of your own; run `--fast` to see that the skill tests reading
 `references/purlin_commands.md` still pass.

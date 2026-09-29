@@ -1,6 +1,6 @@
 # Lane `skills-run`
 
-You are lane `skills-run` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `skills-run` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -35,9 +35,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q42, the test skill's rules split by claim** (decision 94). Read each proof first, then:
    RULE-2 keeps "runs `purlin_run.py` with `--test`" (PROOF-2, 9); a new rule for the exit-code
@@ -55,16 +54,16 @@ report it. Build every other item.
    and `Left to do`, and with `--commit` the subject `purlin: evidence at <sha7>` (PROOF-11, 12,
    15, 43); a new rule "an audit cannot make a signature appear, so a rule waiting on one does not
    set the exit code" (PROOF-39, 16).
-3. **Decision 94, every tool suggested** (C3.7 R4; **PENDING OQ5**): the test skill's row for the
+3. **Decision 94, every tool suggested** (C3.7 R4; OQ5): the test skill's row for the
    run that stops with a suggestion (around line 57) reads the line
    `Suggested tests setting: <the entries as one JSON array on one line>`: show the person each suggested command, ask once,
    and on yes write that array as the `tests` setting with the `purlin_config` tool, then run
    Step 1 again. skill_test RULE-7 and PROOF-12 follow, and `SUGGESTED_ROW` in the test.
-4. **Q20** (C3.7 R1; **PENDING OQ4**): where the test skill tells the agent what a rule with no
+4. **Q20** (C3.7 R1; OQ4): where the test skill tells the agent what a rule with no
    test prints (around lines 80, 81 and 88), it names the form
    `<feature> <RULE-N> has no test for <PROOF-N>[, <PROOF-M>...]. Run purlin:build <feature>.`
    (C3.7 R1: every proof with no test, joined `, `) beside the existing one.
-5. **Q65** (C3.4; **PENDING OQ1**, whose first option shows the owner this row's words): the
+5. **Q65** (C3.4; OQ1): the
    test skill's Step 2 table gets a row for the line beginning `.purlin/config.json cannot be read:`
    directing `→ Fix the settings file by hand, then run: purlin:test`; its exit-code line (around line 47)
    and the audit skill's (around lines 50 to 53) add "the settings file cannot be read" to the
@@ -74,40 +73,40 @@ report it. Build every other item.
    remote runner (around line 57) point at `references/hard_gates.md`, "Where a runner runs",
    in a clause, and do not restate the rule. Where a line now says something false (for
    example that a runner runs the same tests a person ran), that clause goes. In Step 5 the
-   sentence `An untagged proof runs anywhere.` goes, and the pointer stands in its place.
+   sentence `An untagged proof runs anywhere.` stays: it is true (decision 97: a person's own
+   machine, Mac or Windows, proves every untagged proof and every proof tagged for its own
+   system, and a proof tagged for another system only there). The pointer follows it.
 6b. **The test skill's Step 5, the line for a proof tagged for another system** (C3.7 R3;
-   **PENDING OQ20**): Step 5 quotes today's per-proof line
+   OQ20): Step 5 quotes today's per-proof line
    `<feature> PROOF-N needs Windows; this machine is macOS. Run purlin:test --remote.`
    (lines 99 to 100). It quotes R3's one line per system instead, word for word:
    `<n> proofs need <System>; this machine is <System>. Run purlin:test --remote.` (for one,
-   `1 proof needs <System>; this machine is <System>. Run purlin:test --remote.`). With OQ20's second option the quoted line stays;
-   with its third (no line), Step 5 says the list of work left counts such rules as
-   `rules to test on <System>: purlin:test --remote` and quotes no line. Its sentence on
+   `1 proof needs <System>; this machine is <System>. Run purlin:test --remote.`). Its sentence on
    `partial` says a rule reads `partial` where two systems that each ran disagree (C4.1).
    skill_test's proofs that quote the old line follow. Cut as many lines as you add (120).
-7. **Decision 94 and Q37, strength** (C12, S2; **PENDING OQ9**, **PENDING OQ11**): the audit
+7. **Decision 94 and Q37, strength** (C12, S2; OQ9, OQ11): the audit
    skill's Step 2 (around lines 63 to 66) drops any sentence that says strength is worked out per
    rule, and points at `references/hard_gates.md` (the paragraph under the gate table) for what
-   the strong cell reads when nothing was measured, in one clause; where OQ9 kept
-   `to_measure`, it names the line `rules to measure: purlin:audit` among the lines an audit
-   clears. With OQ11's first option the audit skill's usage block gains the usage line of
+   the strong cell reads when nothing was measured, in one clause; it names the line
+   `rules to measure: purlin:audit` among the lines an audit clears. The audit skill's usage
+   block gains the usage line of
    C3.2, which is, character for character,
    `purlin:audit --arm-timeout <seconds>  Give the breaking tool longer per feature`,
    starting in the first column as the block's other lines do, and Step 1 says
    to pass `--arm-timeout <seconds>` on to the run script when the person gave it (the run
    script already reads it); skill_audit gains a rule and one proof for it. Cut as many lines
    as you add (105).
-8. **Q25** (C3.10, **PENDING OQ17**): the audit skill (around lines 71 to 72) says the audit
-   reader prints the notes under `What the audit noted`, after the findings.
+8. **Q25** (C3.10, OQ17): the audit skill (around lines 71 to 72) says the audit reader prints
+   each note after the findings, starting `Note:`, with no heading.
 9. **The interpreter lookup** (C9): test skill line 29 and audit skill line 33 read
    `sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test`
    (and `--audit`). The proofs that quote the script path on one line still hold; any that quotes
    `python3` follows.
 10. **Decision 94, instruction rules:** skill_test RULE-2 and RULE-7, skill_audit RULE-2, and every
     other rule of both specs, say what the skill tells the agent.
-11. **Q40's reason, applied** (C11, **PENDING OQ13**): the damaged-copy proofs of skill_test
-    (about 24) and skill_audit (about 32) leave the specs, each kept as a second assertion in
-    its guarded test. With OQ13's second or third option they stay as they are.
+11. **Q40's reason, applied** (C11, OQ13): the damaged-copy proofs of skill_test (about 24) and
+    skill_audit (about 32) leave the specs, each kept as a second assertion in its guarded
+    test.
 12. **Split by claim** (C11) for the other rules, each RULE-1 included.
 
 

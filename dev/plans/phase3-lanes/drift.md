@@ -1,6 +1,6 @@
 # Lane `drift`
 
-You are lane `drift` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `drift` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -34,9 +34,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q30.** `_eng_view` (around lines 454 to 525) counts a path deleted in the range under every
    spec whose `> Scope:` entry covers it: a file entry equal to the path, a folder entry that is
@@ -51,25 +50,50 @@ report it. Build every other item.
    line 1072; its row in `references/drift_criteria.md` (around line 76) goes.
    `Criteria-Version` goes from 9 to 10.
 3. **Q32** and fault `drift` RULE-10: `check_pin` (around line 115) stops returning None for a
-   source `_looks_like_git` rejects: every source that passes `source_url_is_safe` is asked with
-   one cached `git ls-remote`, and one that cannot be read gives an `error` row. New proof under
-   RULE-10: an anchor pinned to `https://dev.azure.com/acme/p/_git/policies`, which cannot be
-   reached, reads `error`. Keep `_looks_like_git(url)` and `_ls_remote(project_root, url)` with
-   today's names and behaviour: `scripts/anchor/upstream.py` imports both (C8).
-   **PENDING OQ19**, a text-file source: drift reads the file, and reports `behind` when the
-   fingerprint of its text no longer matches the pin, the way `purlin:anchor sync --check` pins
-   free text (read `scripts/anchor/upstream.py` for how the pin is taken, and take it the same
-   way without importing that module); a source that is only words, with no file, is left out.
-   One proof each for `current` and `behind`.
+   source `_looks_like_git` rejects: every source that passes `source_url_is_safe` and that
+   `source_is_repository` (item 3b) accepts is asked with one cached `git ls-remote`, and one
+   that cannot be read gives an `error` row. New proof under RULE-10: an anchor pinned to
+   `https://dev.azure.com/acme/p/_git/policies`, which cannot be reached, reads `error`. Keep
+   `_looks_like_git(url)` and `_ls_remote(project_root, url)` with today's names and behaviour:
+   `scripts/anchor/upstream.py` imports both (C8). The comment above `_ABSOLUTE_WINDOWS_PATH`
+   (around line 138) that calls a Windows path "free text" is reworded to what the pattern is
+   for, or goes with the filter.
+3b. **Decision 97, an anchor is a spec in Purlin's format** (contracts C13, OQ19 and OQ25). You
+   produce, for lane `upstream`, which imports them (C8):
+   - `source_is_repository(project_root, source) -> bool`: false when the value holds whitespace
+     (a description in words) or names a file that exists, joined to the project root or as
+     written (a file on disk); true otherwise.
+   - `NOT_A_SPEC_SOURCE`, word for word, with two `%s` (the `> Source:` value as written, then
+     the anchor's name):
+     ```
+     its source, %s, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec %s to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.
+     ```
+     and `not_a_spec_source(name, source) -> str`, which returns it filled in.
+   - `check_pin` answers `{"status": "error", "remote_sha": None, "not_a_spec": True}` for a
+     source `source_is_repository` rejects, before any process is handed it; `pin_report`'s row
+     carries `not_a_spec: True` and `error: not_a_spec_source(name, source)`; `_anchor_line`
+     prints `anchor <name>: <error>` for such a row, so the engineer view reads, for example,
+     `anchor refunds: its source, policy.txt, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec refunds to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.`
+   - `specs/mcp/drift.md`: a rule from the next free id, "The engineer view reports an anchor
+     whose `> Source:` names no repository, words or a file on disk, as `error` with the line
+     that names `purlin:spec`, and no process is handed the source", with two proofs, one for a
+     text file in the project and one for a description in words; `dev/test_drift.py` their
+     tests.
+   - `references/drift_criteria.md`, "Anchors behind": the table gains, after "The source cannot
+     be read", the row
+     `| The source names no repository: words, or a file on disk | `anchor <name>: its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.` |`,
+     under the one Criteria-Version bump, 9 to 10, of item 2. The paragraph above the table
+     ("For every anchor carrying a `> Source:`, drift runs one cached `git ls-remote`") says a
+     source that names no repository is reported without one.
+   A local anchor, with no `> Source:`, is never asked (C13).
 4. **Q78** and fault `skill_drift` (the 40-character sha): the sample views, the pm, eng and qa
    blocks and their sentences (around lines 54 to 88 of `skills/drift/SKILL.md`), go; the skill
    points at `references/drift_criteria.md`, which it already names in Step 1.
 5. **Decision 94, instruction rules:** skill_drift RULE-2 says "the skill tells the agent to take
    its data from the `drift` tool and to show the lines it returns".
-6. **Q40's reason, applied** (C11, **PENDING OQ13**): skill_drift's damaged-copy proofs (about
-   21) leave the spec, each kept as a second assertion in the test it guards. With OQ13's second
-   or third option they stay as they are.
-7. **Q65, the drift tool** (C1.9, C3.4; **PENDING OQ1**): `drift.drift`, before anything is
+6. **Q40's reason, applied** (C11, OQ13): skill_drift's damaged-copy proofs (about 21) leave
+   the spec, each kept as a second assertion in the test it guards.
+7. **Q65, the drift tool** (C1.9, C3.4; OQ1): `drift.drift`, before anything is
    read, returns `config_engine.config_problem(project_root)`'s sentence alone as the tool's
    text, in place of the JSON, when it answers, and writes nothing (a tool has no exit code;
    lane `settings`'s server check answers the same sentence first for a call through the

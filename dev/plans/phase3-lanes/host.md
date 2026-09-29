@@ -1,6 +1,6 @@
 # Lane `host`
 
-You are lane `host` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `host` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -35,15 +35,14 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q27.** Host RULE-26 is retired and its number never reused; RULE-27 keeps the five proofs
    (PROOF-30, 32, 96, 97, 98), re-pointed where needed, text and markers unchanged, and reads as
    one rule: a CI commit from a folder that is not the one the job checked out is refused, and
    with no such folder named every project commits.
-2. **Q28** (**PENDING OQ22**): `default_branch()` (around lines 130 to 158) and its use (around
+2. **Q28** (OQ22): `default_branch()` (around lines 130 to 158) and its use (around
    187 to 189) go. `current_branch()` reads the git host's variables, then HEAD's branch, and
    answers nothing on a detached head (`git rev-parse --abbrev-ref HEAD` answers `HEAD`
    there). With nothing named, `_commit_github` and `_commit_azure` commit nothing and print
@@ -51,7 +50,7 @@ report it. Build every other item.
    the job's exit code stays the tests' (decision 68). RULE-21, PROOF-21, PROOF-88 and PROOF-89
    go; a new rule from the next free id, "an API commit with no branch named is refused", with
    one proof. Tests around lines 1276 to 1301.
-3. **Q29** (**PENDING OQ23**): `no_commit_line` gives, for a ref that is neither a `run/*`
+3. **Q29** (OQ23): `no_commit_line` gives, for a ref that is neither a `run/*`
    branch nor a `signed/*` tag,
    `This run is on <ref>, which is neither a run branch nor a signed tag: the tests ran and nothing is written.`;
    the tag line `Tag run: nothing is written. This run reruns the tests on <ref>.` is unchanged.
@@ -67,7 +66,7 @@ report it. Build every other item.
    fixture's `dev/fixtures/consumer-ci/specs/core/greeting.md` Description say the runner runs
    the tests of proofs tagged for its system (RULE-1's untagged proof is proven on the person's
    machine; RULE-2's `@env(linux)` proof on a Linux runner).
-6. **Q65, the remote run** (C1.9, **PENDING OQ1**): where `remote.py` reads the settings
+6. **Q65, the remote run** (C1.9, OQ1): where `remote.py` reads the settings
    (around line 116), a `config_problem` answer is printed and the command exits 1.
 7. **One case per proof** (Q8): PROOF-67 (three gates), PROOF-36 (three URLs), PROOF-74 (two
    URLs), PROOF-79 (three results) become one proof per case. **Split by claim** (C11):
@@ -81,8 +80,17 @@ report it. Build every other item.
     `references/hard_gates.md in the Purlin plugin, "Where a runner runs"` (C12's form for a
     file that is not Markdown), and restates nothing. The consumer-CI fixture's copies under
     `dev/fixtures/consumer-ci/**` follow where a test compares them with the templates.
+11. **Decision 97, the matrix is the systems it is handed** (C1.12, C14): lanes `scaffold` and
+    `update` now hand `render_workflow` and `runners_for` only the tags of systems the machine
+    running them is not, through `foreign_tags`, which P2 added to `workflow.py`. Host RULE-19
+    reads "The matrix is one job per operating system it is handed, in the order Linux, macOS,
+    Windows, and no other"; its proofs, which hand tags to `runners_for`, hold as written.
+    `workflow.py`'s module docstring (lines 18 to 22) says the matrix names the systems some
+    proof is tagged for that the machine writing the file is not, and its sentence "an untagged
+    proof is satisfied by any operating system, so whichever job runs proves it too" goes
+    (decision 95: a runner runs only tagged tests). `foreign_tags` keeps its name and shape.
 
-**You consume** P1's `UNKNOWN_HOST` and P2's `config_problem`. **You produce** C3.8's lines and
+**You consume** P1's `UNKNOWN_HOST`, P2's `config_problem` and P2's `foreign_tags`. **You produce** C3.8's lines and
 the `shutil.which` lookup of C8.
 
 

@@ -1,6 +1,6 @@
 # Lane `signing`
 
-You are lane `signing` of phase 3 of Purlin 0.10.0 (decisions 94, 95 and 96). Purlin is a Claude
+You are lane `signing` of phase 3 of Purlin 0.10.0 (decisions 94 to 97). Purlin is a Claude
 Code plugin for spec-driven development that uses itself. This brief is complete in itself; the
 files below are where its words come from.
 
@@ -13,8 +13,8 @@ files below are where its words come from.
 ## Read first
 
 1. `CLAUDE.md`, `references/writing_style.md`, `references/spec_quality_guide.md`.
-2. `dev/plans/three-levels.md` lines 831 to 877 (decisions 94, 95, 96); a later decision amends
-   an earlier one.
+2. `dev/plans/three-levels.md` lines 831 to 988 (decisions 94 to 97; decision 97 holds the
+   owner's answers); a later decision amends an earlier one.
 3. `dev/plans/phase3-plan.md` sections 1, 4 (your row), 6 and 7, and
    `dev/plans/phase3-contracts.md` whole.
 4. `dev/plans/phase2-questions.md`, the readings named below, and in
@@ -34,9 +34,8 @@ included: `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
 
 ## The work
 
-Each item names its source and the change. Where an item carries a `PENDING OQ<n>` mark that the
-orchestrator has not replaced, or reads `REMOVED BY OQ<n>`, leave that item as it stands and
-report it. Build every other item.
+Each item names its source and the change. The owner's answers are written in (decision 97);
+build every item.
 
 1. **Q11** (C6): `tag_if_met` returns the refusal's kind; `walk` keeps it in its result; `_finish`
    passes it on; `main` exits 1 for uncommitted work (`NO_TAG_WORK`), uncommitted results
@@ -46,12 +45,11 @@ report it. Build every other item.
    follows. A new rule from the next free id: "`purlin:sign` exits 1 when the tag is refused for
    a reason the person must fix, and 0 when the tag already exists", with one proof per reason
    (tests call `sign.main` or a subprocess, in the "no tag" group of `dev/test_tag.py`).
-2. **git failing to write the tag** (C3.6, **PENDING OQ16**): where `git tag -s` fails after the
+2. **git failing to write the tag** (C3.6, OQ16): where `git tag -s` fails after the
    package was committed (around line 471), print
    `No tag: git could not write signed/<version>: <git's own message, first line>.` in place of
-   `NO_TAG_EXISTS`, and exit 1. One proof. OQ16's other options are in C3.6; in every option
-   `NO_TAG_EXISTS` is no longer printed for this case and the exit is 1.
-3. **Q12** (C1.10; **PENDING OQ15**): P2 set `NOT_A_RULE` to
+   `NO_TAG_EXISTS`, and exit 1. One proof.
+3. **Q12** (C1.10; OQ15): P2 set `NOT_A_RULE` to
    `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`
    and added `not_a_rule(feature, rule)`, which returns it filled in; print it only through
    `not_a_rule`.
@@ -65,7 +63,7 @@ report it. Build every other item.
    `sign.no_key_lines`'s default key path and `signatures.py`'s key path (around line 308) use
    it. The `home` fixture of `dev/test_signatures.py` (around lines 173 to 176) sets `HOME`, and
    `USERPROFILE` too on Windows; PROOF-21, 95 and 22 hold.
-6. **Q65, signing** (C1.9, C3.4; **PENDING OQ1**): `main`, after the command line is read and
+6. **Q65, signing** (C1.9, C3.4; OQ1): `main`, after the command line is read and
    before anything else is read or written, prints `config_engine.config_problem(project_root)`'s
    sentence when it answers, writes nothing and exits 1. One new rule, or one proof under an
    existing rule that already says what `purlin:sign` does when it cannot start, with a test
