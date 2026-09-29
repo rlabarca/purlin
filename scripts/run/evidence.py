@@ -400,7 +400,7 @@ def write_could_not_run(project_root, failures, cleared):
             pass
         return
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as handle:
+    with open(path, 'w', encoding='utf-8', newline='\n') as handle:
         handle.write(dump(table))
 
 
@@ -424,7 +424,12 @@ def dump(data):
 
 
 def write_file(project_root, source, feature, data):
-    """Write one file when its text changed. Its project-relative path."""
+    """Write one file when its text changed. Its project-relative path.
+
+    Every line ends in `\\n` on every system: a file written as text on
+    Windows would otherwise end each line in `\\r\\n`, and the sections
+    another system wrote would no longer be the bytes they were.
+    """
     rel = reader.evidence_path(source, feature)
     path = full_path(project_root, rel)
     text = dump(data)
@@ -435,7 +440,7 @@ def write_file(project_root, source, feature, data):
     except (IOError, OSError, UnicodeDecodeError):
         pass
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as handle:
+    with open(path, 'w', encoding='utf-8', newline='\n') as handle:
         handle.write(text)
     return rel
 
@@ -582,7 +587,7 @@ def write_table(project_root):
     except (IOError, OSError, UnicodeDecodeError):
         pass
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as handle:
+    with open(path, 'w', encoding='utf-8', newline='\n') as handle:
         handle.write(text)
     return TABLE_PATH
 

@@ -49,8 +49,8 @@ def _project(tmp_path, gate='passed', name='project'):
                     'mutation_engine': 'none'}) + '\n', encoding='utf-8')
     (root / 'src').mkdir()
     (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
-    (root / '.gitignore').write_text('.purlin/runtime/\n__pycache__/\n',
-                                     encoding='utf-8')
+    # As bytes, so git reads the same two patterns on every system.
+    (root / '.gitignore').write_bytes(b'.purlin/runtime/\n__pycache__/\n')
     (root / 'tests').mkdir()
     return root
 
@@ -144,7 +144,9 @@ def _file(source='local', platforms=None, audit=None, feature='feat'):
 def _put(root, data, source='local', feature='feat'):
     path = root / '.purlin' / 'evidence' / source / ('%s.json' % feature)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(writer.dump(data), encoding='utf-8')
+    # As bytes: a file written as text on Windows would end each line in
+    # `\r\n`, and the comparisons of bytes below would start from that.
+    path.write_bytes(writer.dump(data).encode('utf-8'))
     return path
 
 
@@ -185,6 +187,7 @@ PLAIN = {'manual': False, 'env': None}
 # ---------------------------------------------------------------------------
 
 # purlin: evidence_writer PROOF-1
+# purlin: evidence_writer PROOF-80
 def test_a_test_run_writes_the_feature_file_with_one_section(tmp_path):
     root = _project(tmp_path)
     _spec(root)
@@ -254,6 +257,7 @@ def test_the_runner_is_the_slug_of_the_git_email(tmp_path):
 
 
 # purlin: evidence_writer PROOF-41
+# purlin: evidence_writer PROOF-83
 def test_a_run_names_the_machine_its_tests_ran_on(tmp_path):
     root = _project(tmp_path)
     _spec(root)
@@ -522,15 +526,24 @@ QUOTED_AUDIT = {'mutation': None, 'rules': {'RULE-1': {
     'at': 'x', 'commit': 'y'}}}
 WINDOWS = _section(at='2026-08-01T00:00:00Z')
 
+# The section a file already holds and the one a run writes into it. On
+# Windows the run writes the `windows` section, so the file holds a `linux`
+# one; everywhere else the file holds a `windows` section and the run
+# writes `linux`.
+ON_WINDOWS = os.name == 'nt'
+HELD = 'linux' if ON_WINDOWS else 'windows'
+WRITTEN = 'windows' if ON_WINDOWS else 'linux'
 
-def _kept_as_text(before, path):
-    """The `windows` section and the `audit` object read as the file held them.
 
-    Each part is compared as text, so a write that re-encodes the curly
-    quotes of the finding, while the parsed content stays equal, is seen.
+def _kept_as_bytes(before, path, held='windows'):
+    """The `held` section and the `audit` object as the file held them.
+
+    Each part is compared in the file's bytes, so a write that re-encodes
+    the curly quotes of the finding, or ends its lines in `\\r\\n`, while
+    the parsed content stays equal, is seen.
     """
-    text = path.read_text(encoding='utf-8')
-    for key, value, indent in (('windows', WINDOWS, '    '),
+    text = path.read_bytes().decode('utf-8')
+    for key, value, indent in ((held, WINDOWS, '    '),
                                ('audit', QUOTED_AUDIT, '  ')):
         part = '"%s": %s' % (key, json.dumps(
             value, indent=2, sort_keys=True).replace('\n', '\n' + indent))
@@ -539,17 +552,17 @@ def _kept_as_text(before, path):
 
 
 # purlin: evidence_writer PROOF-4
+# purlin: evidence_writer PROOF-81
 def test_a_run_writes_its_section_beside_the_others_as_they_were(tmp_path):
     root = tmp_path
-    path = _put(root, _file(platforms={'windows': WINDOWS},
-                            audit=QUOTED_AUDIT))
-    before = path.read_text(encoding='utf-8')
+    path = _put(root, _file(platforms={HELD: WINDOWS}, audit=QUOTED_AUDIT))
+    before = path.read_bytes().decode('utf-8')
 
-    writer.write_section(str(root), 'local', 'feat', _info(), 'linux',
+    writer.write_section(str(root), 'local', 'feat', _info(), WRITTEN,
                          _section())
 
-    assert _evidence(root)['platforms']['linux'] == _section()
-    _kept_as_text(before, path)
+    assert _evidence(root)['platforms'][WRITTEN] == _section()
+    _kept_as_bytes(before, path, HELD)
 
 
 # purlin: evidence_writer PROOF-55
@@ -558,13 +571,13 @@ def test_a_run_replaces_its_own_section_and_no_other(tmp_path):
     path = _put(root, _file(platforms={'windows': WINDOWS,
                                        'linux': _section()},
                             audit=QUOTED_AUDIT))
-    before = path.read_text(encoding='utf-8')
+    before = path.read_bytes().decode('utf-8')
     failed = _section(result='fail', at='2026-09-02T00:00:00Z')
 
     writer.write_section(str(root), 'local', 'feat', _info(), 'linux', failed)
 
     assert _evidence(root)['platforms']['linux'] == failed
-    _kept_as_text(before, path)
+    _kept_as_bytes(before, path)
 
 
 DROPPED_ENTRY = {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't',
@@ -672,6 +685,7 @@ def test_an_audit_run_removes_the_evidence_of_a_feature_with_no_spec(
 
 
 # purlin: evidence_writer PROOF-7
+# purlin: evidence_writer PROOF-82
 def test_a_second_run_that_saw_the_same_thing_leaves_the_file_alone(tmp_path):
     root = _project(tmp_path)
     _spec(root)
