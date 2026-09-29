@@ -44,23 +44,22 @@ Every step runs on the person's own machine, at every gate. Nothing in the loop 
 runner, and a project at `signed` with no CI at all is the ordinary case.
 
 Run `purlin:drift` after a pull, a merge, a rebase or a checkout: it says what that brought in.
-Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and
-the marked tests; it ends by running `purlin:test`. Run `purlin:test` while you work; it takes
-seconds and writes the evidence, and on a project's first run it suggests the test command and
-runs once the person confirms it. Run `purlin:audit` next: a model reads each rule, its proof
-and its test and reports what it observed, and where mutation testing is on the run breaks the
-code on purpose to measure test strength. `--commit` on either commits the specs, tests and
-settings, then the evidence that names them. A rule with a `@manual` proof is checked by hand
-through `purlin:sign`, at any gate. At `signed` a person runs `purlin:sign`, which walks the
-rules waiting for someone to test by hand or to sign and, once nothing is left to do, commits
-the evidence package and writes the tag `signed/<version>` on that commit. Then hand the push
-over: `git push`, and `git push origin signed/<version>` for the tag.
+Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and the
+marked tests; it ends by running `purlin:test`. Run `purlin:test` while you work; it takes
+seconds and writes the evidence, and on a project's first run it suggests a command for each
+test tool it recognises and runs once the person confirms them. Run `purlin:audit` next: a model
+reads each rule, its proof and its test and reports what it observed, and where mutation testing
+is on the run breaks the code on purpose to measure test strength. `--commit` on either commits
+the specs, tests and settings, then the evidence that names them. A rule with a `@manual` proof
+is checked by hand through `purlin:sign`, at any gate. At `signed` a person runs `purlin:sign`,
+which walks the rules waiting for someone to test by hand or to sign and, once nothing is left
+to do, commits the evidence package and writes the tag `signed/<version>` on that commit. Then
+hand the push over: `git push`, and `git push origin signed/<version>` for the tag.
 
 Call `sync_status` before you answer any question about state. It returns the cells of every
-rule, `passed`, `strong` and `signed` as far as the gate reaches, each cell carrying the
-reasons behind its word. `no proof written` means no proof line names the rule.
-`out of date` means the spec, the code or the tests moved since the run, and the next run
-clears it.
+rule, `passed`, `strong` and `signed` as far as the gate reaches, each cell carrying the reasons
+behind its word. `out of date` means the spec, the code or the tests moved since the run, and
+the next run clears it.
 
 Every run ends on the summary, `40 rules. 35 pass their tests. 30 are strong. 20 are signed.`,
 and `Left to do`, one line per kind of work with its count and its command. The first line of
