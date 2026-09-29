@@ -69,6 +69,49 @@ def _config_path(project_root):
     return os.path.join(project_root, '.purlin', 'config.json')
 
 
+CONFIG_CANNOT_BE_READ = ('.purlin/config.json cannot be read: %s. Fix the file '
+                         'by hand; nothing ran and nothing was saved.')
+
+# The JSON value that stands where an object belongs, in the cause's words.
+_NOT_AN_OBJECT = ((bool, 'a boolean'), (list, 'a list'), (str, 'a string'),
+                  ((int, float), 'a number'))
+
+
+def config_problem(project_root):
+    """The sentence saying `.purlin/config.json` cannot be read, or None.
+
+    None when the file reads as a JSON object or does not exist. Otherwise
+    the cause is the first that applies: the text is not UTF-8, the JSON
+    reader's own message and line, the kind of value standing where an object
+    belongs, or the operating system's own message for an open that failed.
+    """
+    path = _config_path(project_root)
+    if not os.path.lexists(path):
+        return None
+    try:
+        with open(path, 'rb') as f:
+            raw = f.read()
+    except OSError as error:
+        return CONFIG_CANNOT_BE_READ % (error.strerror or str(error))
+    try:
+        text = raw.decode('utf-8')
+    except UnicodeDecodeError:
+        return CONFIG_CANNOT_BE_READ % 'it is not UTF-8 text'
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as error:
+        return CONFIG_CANNOT_BE_READ % ('%s at line %d'
+                                        % (error.msg, error.lineno))
+    if isinstance(data, dict):
+        return None
+    what = 'null'
+    for kind, words in _NOT_AN_OBJECT:
+        if isinstance(data, kind):
+            what = words
+            break
+    return CONFIG_CANNOT_BE_READ % ('it holds %s where an object belongs' % what)
+
+
 def resolve_config(project_root):
     """Return `.purlin/config.json` as a dict, or {} when it is absent."""
     return _read_json(_config_path(project_root)) or {}
