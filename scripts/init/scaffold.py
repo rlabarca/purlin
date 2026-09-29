@@ -100,6 +100,8 @@ MUTATION_QUESTION = ('Measure test strength by breaking the code on purpose? '
                      'It needs %s and takes minutes to hours per run. [y/N]')
 NO_ENGINE = ('Mutation testing is off: no engine breaks %s code, so the AI '
              'audit alone judges test strength.')
+NO_ENGINE_HERE = ('Mutation testing is off: mutmut does not run on Windows, so '
+                  'the AI audit alone judges test strength.')
 ENGINE_NAMES = {'mutmut': 'mutmut', 'stryker': 'Stryker',
                 'stryker_net': 'Stryker.NET'}
 
