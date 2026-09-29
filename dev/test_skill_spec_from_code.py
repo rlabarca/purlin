@@ -1,7 +1,8 @@
 """Text checks for the spec-from-code skill, `skills/spec-from-code/SKILL.md`.
 
 Every rule of `specs/skills/skill_spec_from_code.md` is proved here, one
-case to a test. The readers, the checks and the broken copies this file shares
+case to a test, and each test also points its check at copies of the skill
+with one thing broken, which the check must refuse. The readers, the checks and the broken copies this file shares
 with the other skill test files are in `dev/skill_checks.py`; the checks that
 belong to this skill alone, and the broken copies each test makes, are below.
 """
@@ -18,14 +19,8 @@ NAME = 'spec-from-code'
 SKILL = skill_path(NAME)
 
 
-def refused(monkeypatch, check, rel, edit, expected):
-    """The one broken copy of `rel` that `edit` makes must report `expected`;
-    an empty list when it does."""
-    return refusals(monkeypatch, check, [(rel, edit, expected)])
-
-
 # ---------------------------------------------------------------------------
-# RULE-1: the frontmatter and the command reference's row
+# RULE-1: the frontmatter; RULE-11: the command reference's row
 # ---------------------------------------------------------------------------
 
 def skill_frontmatter_problems():
@@ -56,62 +51,34 @@ class TestFrontmatterAndCommandRow:
 
     # purlin: skill_spec_from_code PROOF-1
     def test_the_frontmatter_names_the_skill_and_describes_it_on_one_line(
-            self):
+            self, monkeypatch):
         assert skill_frontmatter_problems() == []
+        line = description_line()
+        value = line[len('description: '):]
+        assert refusals(monkeypatch, all_frontmatter_problems, [
+            (SKILL, replace('name: %s\n' % NAME),
+             "%s frontmatter name is None, expected %r" % (SKILL, NAME)),
+            (SKILL, replace(line, 'description:'), NO_DESCRIPTION),
+            (SKILL, replace(line, 'description:\n' + value), NO_DESCRIPTION),
+            (SKILL, replace(line, 'description: |\n  ' + value),
+             NO_DESCRIPTION),
+            (SKILL, replace(line, line + '\n  and a second line'),
+             NO_DESCRIPTION),
+        ]) == []
 
     # purlin: skill_spec_from_code PROOF-125
-    def test_the_command_reference_has_a_row_with_the_purpose(self):
+    def test_the_command_reference_has_a_row_with_the_purpose(
+            self, monkeypatch):
         assert command_row_problems() == []
-
-    # purlin: skill_spec_from_code PROOF-126
-    def test_a_skill_with_no_name_line_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, all_frontmatter_problems, SKILL,
-                       replace('name: %s\n' % NAME),
-                       "%s frontmatter name is None, expected %r"
-                       % (SKILL, NAME)) == []
-
-    # purlin: skill_spec_from_code PROOF-127
-    def test_an_empty_description_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, all_frontmatter_problems, SKILL,
-                       replace(description_line(), 'description:'),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_spec_from_code PROOF-128
-    def test_a_description_on_the_line_below_is_refused(self, monkeypatch):
-        line = description_line()
-        value = line[len('description: '):]
-        assert refused(monkeypatch, all_frontmatter_problems, SKILL,
-                       replace(line, 'description:\n' + value),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_spec_from_code PROOF-129
-    def test_a_description_opened_as_a_block_is_refused(self, monkeypatch):
-        line = description_line()
-        value = line[len('description: '):]
-        assert refused(monkeypatch, all_frontmatter_problems, SKILL,
-                       replace(line, 'description: |\n  ' + value),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_spec_from_code PROOF-130
-    def test_a_description_run_on_to_a_second_line_is_refused(
-            self, monkeypatch):
-        line = description_line()
-        assert refused(monkeypatch, all_frontmatter_problems, SKILL,
-                       replace(line, line + '\n  and a second line'),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_spec_from_code PROOF-131
-    def test_a_command_reference_without_the_row_is_refused(
-            self, monkeypatch):
         row = command_row()
         without = read(COMMAND_REF).replace(row + '\n', '', 1)
         # The name stays elsewhere in the reference, so only a row check
         # can tell the row is gone.
         assert 'purlin:%s' % NAME in without
-        assert refused(monkeypatch, all_frontmatter_problems, COMMAND_REF,
-                       replace(row + '\n'),
-                       '%s carries no row for purlin:%s'
-                       % (COMMAND_REF, NAME)) == []
+        assert refusals(monkeypatch, all_frontmatter_problems, [
+            (COMMAND_REF, replace(row + '\n'),
+             '%s carries no row for purlin:%s' % (COMMAND_REF, NAME)),
+        ]) == []
 
 
 # ---------------------------------------------------------------------------
@@ -149,43 +116,24 @@ class TestBeforeYouStart:
 
     # purlin: skill_spec_from_code PROOF-2
     def test_it_calls_sync_status_and_sends_a_bare_project_to_init_first(
-            self):
+            self, monkeypatch):
         assert spec_from_code_start_problems() == []
-
-    # purlin: skill_spec_from_code PROOF-132
-    def test_a_skill_without_the_start_section_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, spec_from_code_start_problems, SKILL,
-                       replace(start_section()),
-                       '%s has no section that runs before the survey'
-                       % SKILL) == []
-
-    # purlin: skill_spec_from_code PROOF-133
-    def test_a_start_section_after_the_procedure_is_refused(
-            self, monkeypatch):
         start = start_section()
-        assert refused(monkeypatch, spec_from_code_start_problems, SKILL,
-                       lambda t: t.replace(start, '').replace(
-                           '## What the rules look like',
-                           start + '## What the rules look like'),
-                       '%s start section comes after the Procedure section'
-                       % SKILL) == []
+        assert refusals(monkeypatch, spec_from_code_start_problems, [
+            (SKILL, replace(start),
+             '%s has no section that runs before the survey' % SKILL),
+            (SKILL, lambda t: t.replace(start, '').replace(
+                '## What the rules look like',
+                start + '## What the rules look like'),
+             '%s start section comes after the Procedure section' % SKILL),
+            (SKILL, replace('When the project has no `.purlin/config.json`,'
+                            ' run', 'Read `.purlin/config.json`, then run'),
+             '%s start section does not send the reader to purlin:init when '
+             '.purlin/config.json is missing' % SKILL),
+            (SKILL, replace('Call `sync_status`. '),
+             "%s start section does not name 'sync_status'" % SKILL),
+        ]) == []
 
-    # purlin: skill_spec_from_code PROOF-134
-    def test_an_unconditional_init_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, spec_from_code_start_problems, SKILL,
-                       replace('When the project has no `.purlin/config.json`,'
-                               ' run', 'Read `.purlin/config.json`, then run'),
-                       '%s start section does not send the reader to '
-                       'purlin:init when .purlin/config.json is missing'
-                       % SKILL) == []
-
-    # purlin: skill_spec_from_code PROOF-135
-    def test_a_start_section_that_skips_sync_status_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, spec_from_code_start_problems, SKILL,
-                       replace('Call `sync_status`. '),
-                       "%s start section does not name 'sync_status'"
-                       % SKILL) == []
 
 
 # ---------------------------------------------------------------------------
@@ -215,59 +163,38 @@ def last_heading_offset(text):
 class TestWhenYouAreDone:
 
     # purlin: skill_spec_from_code PROOF-3
-    def test_it_names_the_next_step_from_the_state_for_each_outcome(self):
-        assert closing_problems() == []
-
-    # purlin: skill_spec_from_code PROOF-136
-    def test_a_skill_without_its_closing_section_is_refused(
+    def test_it_names_the_next_step_from_the_state_for_each_outcome(
             self, monkeypatch):
+        assert closing_problems() == []
         before = sections(read(SKILL))[-2][0]
         assert before == 'What not to do'
-        assert refused(monkeypatch, closing_problems, SKILL,
-                       lambda t: t[:last_heading_offset(t) + 1],
-                       '%s closes with the section %r, which does not name '
-                       'the next step' % (SKILL, before)) == []
-
-    # purlin: skill_spec_from_code PROOF-137
-    def test_a_closing_section_with_no_arrow_is_refused(self, monkeypatch):
-        def edit(t):
-            last = last_heading_offset(t)
-            return t[:last] + t[last:].replace('→', '->')
-        assert refused(monkeypatch, closing_problems, SKILL, edit,
-                       '%s closing section gives no directive'
-                       % SKILL) == []
-
-    # purlin: skill_spec_from_code PROOF-138
-    def test_a_closing_section_of_one_outcome_is_refused(self, monkeypatch):
         second = '- Rules with no test at all'
-
-        def edit(t):
-            return t[:t.index(second, last_heading_offset(t))]
-        assert refused(monkeypatch, closing_problems, SKILL, edit,
-                       '%s closing section names 1 outcomes, expected at '
-                       'least 2' % SKILL) == []
-
-    # purlin: skill_spec_from_code PROOF-139
-    def test_an_outcome_without_its_arrow_is_refused(self, monkeypatch):
-        directed = ('- Rules with no test at all: `→ Run: purlin:build '
+        directed = ('- Rules with no test at all: `\u2192 Run: purlin:build '
                     '<name>` on the feature with the most of')
-        undirected = directed.replace('→ ', '')
         outcome = [o for o in closing_outcomes(sections(read(SKILL))[-1][1])
-                   if o.startswith('- Rules with no test at all')]
+                   if o.startswith(second)]
         assert len(outcome) == 1
-        assert refused(monkeypatch, closing_problems, SKILL,
-                       replace(directed, undirected),
-                       '%s closing outcome gives no → directive: '
-                       '%s' % (SKILL, outcome[0].replace('→ ', ''))) == []
 
-    # purlin: skill_spec_from_code PROOF-140
-    def test_a_next_step_not_named_from_the_state_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, closing_problems, SKILL,
-                       replace('then name the next step from the state:',
-                               'then name the next step:'),
-                       '%s closing section does not name the next step from '
-                       'the state' % SKILL) == []
+        def no_arrow(t):
+            last = last_heading_offset(t)
+            return t[:last] + t[last:].replace('\u2192', '->')
+        assert refusals(monkeypatch, closing_problems, [
+            (SKILL, lambda t: t[:last_heading_offset(t) + 1],
+             '%s closes with the section %r, which does not name the next '
+             'step' % (SKILL, before)),
+            (SKILL, no_arrow, '%s closing section gives no directive' % SKILL),
+            (SKILL, lambda t: t[:t.index(second, last_heading_offset(t))],
+             '%s closing section names 1 outcomes, expected at least 2'
+             % SKILL),
+            (SKILL, replace(directed, directed.replace('\u2192 ', '')),
+             '%s closing outcome gives no \u2192 directive: %s'
+             % (SKILL, outcome[0].replace('\u2192 ', ''))),
+            (SKILL, replace('then name the next step from the state:',
+                            'then name the next step:'),
+             '%s closing section does not name the next step from the state'
+             % SKILL),
+        ]) == []
+
 
 
 # ---------------------------------------------------------------------------
@@ -290,18 +217,17 @@ def padded_to(lines):
 class TestCeiling:
 
     # purlin: skill_spec_from_code PROOF-4
-    def test_it_stays_under_its_ceiling(self):
+    def test_it_stays_under_its_ceiling(self, monkeypatch):
         assert ceiling_problems() == []
+        assert refusals(monkeypatch, ceiling_problems, [
+            (SKILL, padded_to(131), '%s is 131 lines, ceiling 130' % SKILL),
+        ]) == []
 
     # purlin: skill_spec_from_code PROOF-141
     def test_a_skill_of_exactly_130_lines_is_accepted(self, monkeypatch):
         assert on_copy(monkeypatch, SKILL, padded_to(130),
                        ceiling_problems) == []
 
-    # purlin: skill_spec_from_code PROOF-142
-    def test_a_skill_of_131_lines_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, ceiling_problems, SKILL, padded_to(131),
-                       '%s is 131 lines, ceiling 130' % SKILL) == []
 
 
 # ---------------------------------------------------------------------------
@@ -328,23 +254,17 @@ def spec_from_code_marker_problems():
 class TestAnExistingTestIsTied:
 
     # purlin: skill_spec_from_code PROOF-6
-    def test_it_offers_the_marker_and_writes_no_new_test(self):
+    def test_it_offers_the_marker_and_writes_no_new_test(self, monkeypatch):
         assert spec_from_code_marker_problems() == []
+        assert refusals(monkeypatch, spec_from_code_marker_problems, [
+            (SKILL, replace('never names the test. Then tie the two:',
+                            'never names the test.\n\nThen tie the two:'),
+             '%s does not offer the marker, and write no new test, in the '
+             'paragraph on a test that already shows the proof' % SKILL),
+            (SKILL, resub(r',\s+and write no new test'),
+             "%s does not carry 'write no new test'" % SKILL),
+        ]) == []
 
-    # purlin: skill_spec_from_code PROOF-10
-    def test_an_offer_outside_its_paragraph_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, spec_from_code_marker_problems, SKILL,
-                       replace('never names the test. Then tie the two:',
-                               'never names the test.\n\nThen tie the two:'),
-                       '%s does not offer the marker, and write no new test, '
-                       'in the paragraph on a test that already shows the '
-                       'proof' % SKILL) == []
-
-    # purlin: skill_spec_from_code PROOF-143
-    def test_a_skill_that_may_write_a_new_test_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, spec_from_code_marker_problems, SKILL,
-                       resub(r',\s+and write no new test'),
-                       "%s does not carry 'write no new test'" % SKILL) == []
 
 
 # ---------------------------------------------------------------------------
@@ -361,16 +281,15 @@ def spec_from_code_files_problems():
 class TestEverySourceFile:
 
     # purlin: skill_spec_from_code PROOF-7
-    def test_the_report_ends_on_the_files_with_no_rule(self):
+    def test_the_report_ends_on_the_files_with_no_rule(self, monkeypatch):
         assert spec_from_code_files_problems() == []
+        assert refusals(monkeypatch, spec_from_code_files_problems, [
+            (SKILL, resub(r'end the report by listing the source files that '
+                          r'got\s+none', 'end the report'),
+             "%s has no sentence carrying all of 'Give every source file a "
+             "rule where you can'" % SKILL),
+        ]) == []
 
-    # purlin: skill_spec_from_code PROOF-11
-    def test_a_report_without_the_files_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, spec_from_code_files_problems, SKILL,
-                       resub(r'end the report by listing the source files '
-                             r'that got\s+none', 'end the report'),
-                       "%s has no sentence carrying all of 'Give every source "
-                       "file a rule where you can'" % SKILL) == []
 
 
 # ---------------------------------------------------------------------------
@@ -389,15 +308,14 @@ def spec_from_code_untied_problems():
 class TestUntiedTests:
 
     # purlin: skill_spec_from_code PROOF-8
-    def test_a_test_is_left_untied_for_three_reasons(self):
+    def test_a_test_is_left_untied_for_three_reasons(self, monkeypatch):
         assert spec_from_code_untied_problems() == []
+        assert refusals(monkeypatch, spec_from_code_untied_problems, [
+            (SKILL, resub(r', or it tests code the project\s+does not own'),
+             "%s has no sentence carrying all of 'A test is left untied for "
+             "one of three reasons'" % SKILL),
+        ]) == []
 
-    # purlin: skill_spec_from_code PROOF-12
-    def test_a_missing_reason_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, spec_from_code_untied_problems, SKILL,
-                       resub(r', or it tests code the project\s+does not own'),
-                       "%s has no sentence carrying all of 'A test is left "
-                       "untied for one of three reasons'" % SKILL) == []
 
 
 # ---------------------------------------------------------------------------
@@ -414,21 +332,35 @@ def spec_from_code_expects_problems():
 class TestRulesFromWhatTheTestsExpect:
 
     # purlin: skill_spec_from_code PROOF-9
-    def test_every_rule_is_written_from_what_its_test_expects(self):
+    def test_every_rule_is_written_from_what_its_test_expects(
+            self, monkeypatch):
         assert spec_from_code_expects_problems() == []
+        assert refusals(monkeypatch, spec_from_code_expects_problems, [
+            (SKILL, resub(r', and\s+no test is run first'),
+             "%s has no sentence carrying all of %r" % (SKILL, EXPECTS)),
+            (SKILL, replace(', passing or not'),
+             "%s has no sentence carrying all of %r" % (SKILL, EXPECTS)),
+        ]) == []
 
-    # purlin: skill_spec_from_code PROOF-13
-    def test_a_skill_that_may_run_the_tests_first_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, spec_from_code_expects_problems, SKILL,
-                       resub(r', and\s+no test is run first'),
-                       "%s has no sentence carrying all of %r"
-                       % (SKILL, EXPECTS)) == []
 
-    # purlin: skill_spec_from_code PROOF-144
-    def test_a_skill_that_writes_rules_only_for_passing_tests_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, spec_from_code_expects_problems, SKILL,
-                       replace(', passing or not'),
-                       "%s has no sentence carrying all of %r"
-                       % (SKILL, EXPECTS)) == []
+# ---------------------------------------------------------------------------
+# RULE-10: no rule for a private helper
+# ---------------------------------------------------------------------------
+
+PRIVATE_HELPER = ('Do not write a rule for a private helper.',
+                  'Rules describe behaviour someone outside the module can see')
+
+
+def private_helper_problems():
+    return carries(SKILL, PRIVATE_HELPER)
+
+
+class TestNoRuleForAPrivateHelper:
+
+    # purlin: skill_spec_from_code PROOF-145
+    def test_it_writes_no_rule_for_a_private_helper(self, monkeypatch):
+        assert private_helper_problems() == []
+        assert refusals(monkeypatch, private_helper_problems, [
+            (SKILL, replace('Do not write a rule for a private helper. '),
+             "%s does not carry %r" % (SKILL, PRIVATE_HELPER[0])),
+        ]) == []
