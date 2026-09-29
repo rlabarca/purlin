@@ -1,4 +1,4 @@
-> Format-Version: 2
+> Format-Version: 3
 
 # Marker format
 
@@ -60,7 +60,7 @@ A test is declared by:
 |----------|-------------|
 | Python | a function whose name starts with `test`, at module level or in a class |
 | JavaScript, TypeScript | an `it` or `test` call with a literal title, inside any number of `describe` calls; `it.each(table)(title, ...)` too |
-| C# | a method carrying `[Fact]`, `[Theory]`, `[Test]`, `[TestCase]`, `[TestCaseSource]`, `[TestMethod]` or `[DataTestMethod]` |
+| C# | a method carrying `[Fact]`, `[Theory]`, `[Test]`, `[TestCase]`, `[TestCaseSource]`, `[TestMethod]`, `[DataTestMethod]`, `[SkippableFact]` or `[SkippableTheory]` |
 | Go | `func TestX(t *testing.T)` |
 
 ## The `tests` setting
