@@ -14,19 +14,32 @@ DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
+from purlin import evidence as purlin_evidence  # noqa: E402
+from purlin import status as purlin_status  # noqa: E402
 from purlin import summary  # noqa: E402
+from mcp_project import (Project, _commit_tests, _entry,  # noqa: E402
+                         _write)
 
 HERE = 'macos'
+TWO_PROOFS_SPEC = (
+    '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
+    '- RULE-1: Valid credentials return 200 with a session token\n\n'
+    '## Proof\n\n'
+    '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200\n'
+    '- PROOF-2 (RULE-1): POST /login with valid credentials; verify a '
+    'token\n')
+NO_SCOPE_SPEC = TWO_PROOFS_SPEC.replace('> Scope: src/login.py\n\n', '')
 TAG = {'name': 'signed/1.4.0', 'commit': 'a' * 40}
 
 
 def rule(passed='passed', strong=None, signed=None, proofs=1, manual=False,
-         missing_env=(), hand_checked=False, label='own', feature='login'):
+         missing_env=(), hand_checked=False, label='own', feature='login',
+         strong_reasons=()):
     """One payload rule entry with the cells named; a cell left None is absent,
     as it is above the gate."""
     cells = {'passed': {'word': passed, 'missing_env': list(missing_env)}}
     if strong:
-        cells['strong'] = {'word': strong}
+        cells['strong'] = {'word': strong, 'reasons': list(strong_reasons)}
     if signed:
         cells['signed'] = {'word': signed}
     return {'feature': feature, 'label': label, 'cells': cells,
@@ -45,20 +58,21 @@ def feature(rules, name='login', incomplete=None):
     return {'name': name, 'incomplete': incomplete, 'rules': rules}
 
 
-def payload(features, gate, tag=None, here=HERE):
+def payload(features, gate, tag=None, here=HERE, corrections=0):
     """The part of a payload the ending reads, composed as the builder does."""
     own = [entry for item in features for entry in item['rules']
            if entry.get('label') == 'own']
     counted = {'rules': len(own), 'steps': summary.steps(own, gate)}
     counted['sentence'] = summary.sentence(counted, gate)
-    left = summary.left(features, gate, here, tag)
+    left = summary.left(features, gate, here, tag, corrections)
     return {'summary': counted, 'left': left, 'finished': not left,
             'last_line': summary.last_line(left, gate, tag)}
 
 
-def ending(rules, gate, tag=None, here=HERE, incomplete=None):
+def ending(rules, gate, tag=None, here=HERE, incomplete=None, corrections=0):
     """The ending's lines for one feature's rules."""
-    made = payload([feature(rules, incomplete=incomplete)], gate, tag, here)
+    made = payload([feature(rules, incomplete=incomplete)], gate, tag, here,
+                   corrections)
     return summary.ending(made).splitlines()
 
 
@@ -127,6 +141,9 @@ class TestOneAndNone:
 # Left to do
 # ---------------------------------------------------------------------------
 
+NOT_INSTALLED = 'mutmut is not installed: run "pip install mutmut"'
+NOT_MEASURED = 'strength not measured: ' + NOT_INSTALLED
+
 # One rule of each kind, at the gate `signed`, on macOS. The rule to tie to
 # its files sits in a spec that names no files.
 EACH_KIND = (
@@ -138,6 +155,8 @@ EACH_KIND = (
                                     missing_env=['windows'])),
     ('to_test_by_hand', lambda: rule(manual=True, strong='manual test')),
     ('to_audit', lambda: rule(strong='not audited', signed='waiting')),
+    ('to_measure', lambda: rule(strong='weak', signed='waiting',
+                                strong_reasons=[NOT_MEASURED])),
     ('to_strengthen', lambda: rule(strong='weak', signed='waiting')),
     ('no_scope', lambda: rule(strong='strong', signed='unsigned')),
     ('to_sign', lambda: rule(strong='strong', signed='unsigned')),
@@ -162,6 +181,7 @@ class TestTheLines:
             '  2 rules to test on Windows: purlin:test --remote',
             '  2 rules to test by hand: purlin:sign',
             '  2 rules to audit: purlin:audit',
+            '  2 rules to measure: purlin:audit',
             '  2 rules to strengthen: purlin:build',
             '  2 rules to tie to their files: purlin:spec',
             '  2 rules to sign: purlin:sign',
@@ -179,6 +199,27 @@ class TestTheLines:
                  rule(passed='failed', strong='waiting', signed='waiting')]
         assert ending(rules, 'signed')[2:] == [
             '  1 rule to fix: purlin:build', '  1 rule to sign: purlin:sign']
+
+    # purlin: summary PROOF-29
+    def test_a_comment_naming_nothing_is_a_line_of_its_own(self):
+        made = Project()
+        try:
+            _commit_tests(made, 'PROOF-1', 'PROOF-2', 'PROOF-9')
+            made.evidence([_entry('PROOF-1', 'RULE-1'),
+                           _entry('PROOF-2', 'RULE-2')])
+            lines = purlin_status.sync_status(made.root).splitlines()
+        finally:
+            made.close()
+        assert lines[-2:] == ['Left to do:',
+                              '  1 test comment to correct: purlin:build'], \
+            lines
+
+    # purlin: summary PROOF-35
+    def test_a_comment_to_correct_comes_before_a_rule_to_fix(self):
+        lines = ending([rule(passed='failed')], 'passed', corrections=1)
+        assert lines[1:] == ['Left to do:',
+                             '  1 test comment to correct: purlin:build',
+                             '  1 rule to fix: purlin:build'], lines
 
     # purlin: summary PROOF-11
     def test_a_kind_at_zero_has_no_line(self):
@@ -240,6 +281,54 @@ class TestOneKindPerRule:
         assert ending([entry], 'strong')[2:] == [
             '  1 rule to test: purlin:test']
 
+    # purlin: summary PROOF-31
+    def test_a_rule_weak_only_for_want_of_a_measure_is_to_measure(self):
+        entry = rule(strong='weak', strong_reasons=[NOT_MEASURED])
+        assert ending([entry], 'strong')[2:] == [
+            '  1 rule to measure: purlin:audit']
+
+    # purlin: summary PROOF-32
+    def test_at_strong_a_spec_naming_no_code_files_is_to_tie(self):
+        made = Project(spec=NO_SCOPE_SPEC, gate='strong',
+                       extra_config={'mutation_engine': 'auto'})
+        try:
+            made.evidence([_entry('PROOF-1', 'RULE-1'),
+                           _entry('PROOF-2', 'RULE-1')], strength=None)
+            made.audit('RULE-1')
+            lines = purlin_status.sync_status(made.root).splitlines()
+        finally:
+            made.close()
+        assert lines[-1] == '  1 rule to tie to its files: purlin:spec', lines
+
+    # purlin: summary PROOF-33
+    def test_a_rule_waiting_only_on_windows_is_to_test_there(
+            self, monkeypatch):
+        monkeypatch.setattr(purlin_evidence, 'host_os', lambda: 'macos')
+        made = Project(spec=TWO_PROOFS_SPEC.replace(
+            'a token\n', 'a token @env(windows)\n'))
+        try:
+            _commit_tests(made, 'PROOF-1', 'PROOF-2')
+            made.evidence([_entry('PROOF-1', 'RULE-1'),
+                           _entry('PROOF-2', 'RULE-1', status='not run')],
+                          os_name='macos')
+            lines = purlin_status.sync_status(made.root).splitlines()
+        finally:
+            made.close()
+        assert lines[-1] == ('  1 rule to test on Windows: '
+                             'purlin:test --remote'), lines
+
+    # purlin: summary PROOF-34
+    def test_a_rule_one_proof_of_which_no_test_backs_wants_a_test(self):
+        made = Project(spec=TWO_PROOFS_SPEC)
+        try:
+            _commit_tests(made, 'PROOF-1')
+            made.evidence([_entry('PROOF-1', 'RULE-1')])
+            lines = purlin_status.sync_status(made.root).splitlines()
+        finally:
+            made.close()
+        assert lines[-1] == '  1 rule to write a test for: purlin:build', \
+            lines
+
     # purlin: summary PROOF-23
     def test_a_rule_this_machine_can_run_part_of_is_to_test(self):
         entry = rule(passed='not run', missing_env=['macos', 'windows'])
@@ -300,6 +389,16 @@ class TestTheTag:
         assert summary.ending(made).splitlines()[1:] == [
             'Left to do:', '  the version to tag: purlin:sign']
         assert made['finished'] is False
+
+    # purlin: summary PROOF-30
+    def test_a_comment_to_correct_holds_back_the_tag(self):
+        made = payload([feature([done('signed')] * 2)], 'signed', tag=None,
+                       corrections=1)
+        lines = summary.ending(made).splitlines()
+        assert lines[1:] == ['Left to do:',
+                             '  1 test comment to correct: purlin:build'], \
+            lines
+        assert not any('the version to tag' in line for line in lines)
 
     # purlin: summary PROOF-25
     def test_below_signed_no_tag_is_asked_for(self):
