@@ -7,7 +7,9 @@
                   [--arm-timeout SECONDS] [--project-root DIR]
 
 **Before anything runs.** With no `.purlin/config.json` the run says so,
-names `purlin:init`, writes nothing and exits 1. In a project Purlin 0.9.5
+names `purlin:init`, writes nothing and exits 1. A settings file that cannot
+be read is named with its cause the same way (`config_problem`). In a
+project Purlin 0.9.5
 set up and nobody upgraded (`set_up_by_095`) it names `purlin:init --update`
 the same way. With the `tests` setting empty it
 writes nothing and exits 1: where it detects test tools it knows, it prints
@@ -88,10 +90,10 @@ carries on.
 
 Exit codes for `--test` and `--audit`: 0 everything asked happened; 1 a tied
 test failed or did not run, evidence is missing, a marker names nothing a
-spec has, there is no settings file, an older Purlin set the project up and
-it was not upgraded, no test command is set, or, for `--audit` above the
-gate `passed`, a rule it read is weak or could not be audited; 2 the command
-line was wrong. `--ci` exits 1 only when a test tied to a proof tagged for
+spec has, there is no settings file or it cannot be read, an older Purlin
+set the project up and it was not upgraded, no test command is set, or, for
+`--audit` above the gate `passed`, a rule it read is weak or could not be
+audited; 2 the command line was wrong. `--ci` exits 1 only when a test tied to a proof tagged for
 its system failed or could not run.
 
 The flow is one pass. Resolve the configuration and the suites, scan the
@@ -125,7 +127,7 @@ for _path in (_MCP_DIR, _REVIEW_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-from config_engine import resolve_config                      # noqa: E402
+from config_engine import config_problem, resolve_config      # noqa: E402
 from purlin import (console as console_module,                # noqa: E402
                     evidence as evidence_reader,
                     fingerprint as fingerprint_module,
@@ -1006,11 +1008,16 @@ def main(argv=None):
 def settings_stop(project_root):
     """The line a run stops on before anything runs, or None.
 
-    No settings file, or a project an older Purlin set up that was not
-    upgraded: each names the command that puts it right.
+    No settings file, a settings file that cannot be read, or a project an
+    older Purlin set up that was not upgraded: each names what puts it
+    right. A file that cannot be read is named before the older Purlin is
+    looked for, since that look reads the file.
     """
     if not os.path.isfile(os.path.join(project_root, SETTINGS_PATH)):
         return NO_SETTINGS
+    problem = config_problem(project_root)
+    if problem:
+        return problem
     if set_up_by_095(project_root):
         return SET_UP_BY_AN_OLDER_PURLIN
     return None

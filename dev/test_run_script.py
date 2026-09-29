@@ -2679,6 +2679,25 @@ class TestTheSettingsFile:
         assert tree() == before
         assert code == 1, output
 
+    # purlin: run_script PROOF-224
+    def test_a_settings_file_that_cannot_be_read_stops_the_run(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        text = '{\n  "gate": "passed",\n  "tests": [],\n}\n'
+        (root / '.purlin' / 'config.json').write_text(text, encoding='utf-8')
+        # The cause is the JSON reader's own message and line, which differ
+        # between versions of Python.
+        with pytest.raises(json.JSONDecodeError) as reading:
+            json.loads(text)
+        code, output = _run(root, '--all', '--test')
+        assert output.strip().splitlines() == [
+            '.purlin/config.json cannot be read: %s at line %d. Fix the file '
+            'by hand; nothing ran and nothing was saved.'
+            % (reading.value.msg, reading.value.lineno)], output
+        assert _purlin_files(root) == [
+            os.path.join('.purlin', 'config.json')], output
+        assert code == 1, output
+
     # purlin: run_script PROOF-138
     def test_a_project_an_older_purlin_set_up_stops_the_run(self, tmp_path):
         root = _pytest_project(tmp_path)
