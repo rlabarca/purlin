@@ -1335,6 +1335,7 @@ class TestPayload:
             'https://github.com/acme/ledger.git')
 
     # purlin: states PROOF-32
+    # purlin: states PROOF-215
     def test_a_feature_with_no_evidence_names_its_spec(self, project):
         feature = _feature(project.payload())
         assert feature['spec_path'] == 'specs/auth/login.md'
@@ -1459,10 +1460,14 @@ class TestPayload:
         assert rollup['proofs_without_test'] == 2, rollup
 
     # purlin: states PROOF-56
-    def test_the_signed_cell_carries_when_it_was_signed(self):
+    # purlin: states PROOF-217
+    def test_the_signed_cell_carries_when_it_was_signed(self, monkeypatch):
         made = Project(gate='signed')
         try:
             made.sign_commits()
+            # The commit is dated five hours east of UTC, so an `at` read in
+            # the commit's own zone, or in this machine's, cannot pass.
+            monkeypatch.setenv('GIT_AUTHOR_DATE', '2026-09-20T17:30:00+05:00')
             made.signature('RULE-2')
             cell = made.cell('RULE-2', 'signed')
             assert cell['signer'] == 'jane@acme.com'
@@ -1472,6 +1477,7 @@ class TestPayload:
             assert cell['at'] == datetime.datetime.fromtimestamp(
                 int(added), datetime.timezone.utc).strftime(
                     '%Y-%m-%dT%H:%M:%SZ'), (cell, added)
+            assert cell['at'] == '2026-09-20T12:30:00Z', cell
             assert cell['at'] != '2026-09-13T12:00:00Z', cell
         finally:
             made.close()
@@ -1547,9 +1553,15 @@ class TestPayload:
             assert entry['path'] == '.purlin/evidence/local/login.json'
 
     # purlin: states PROOF-37
+    # purlin: states PROOF-216
     def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):
         data = project.payload()
         path = purlin_payload.write_report_data(project.root, data)
+        # The bytes, before a text read on Windows folds `\r\n` into `\n`.
+        with open(path, 'rb') as handle:
+            raw = handle.read()
+        assert raw.endswith(b';\n'), raw[-8:]
+        assert b'\r' not in raw, 'the data file holds a carriage return'
         with open(path, encoding='utf-8') as handle:
             text = handle.read()
         assert text.startswith('const PURLIN_DATA = ') and text.endswith(';\n')

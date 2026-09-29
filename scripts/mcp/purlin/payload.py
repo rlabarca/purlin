@@ -904,7 +904,8 @@ def write_report_data(project_root, payload):
     text = _PREFIX + body + ';\n'
 
     tmp_path = path + '.tmp'
-    with open(tmp_path, 'w', encoding='utf-8') as handle:
+    # `newline='\n'` keeps every line ending a line feed on Windows too.
+    with open(tmp_path, 'w', encoding='utf-8', newline='\n') as handle:
         handle.write(text)
     os.replace(tmp_path, path)
     return path
