@@ -3,8 +3,8 @@ name: status
 description: Show every rule's cells and what blocks the gate
 ---
 
-Show where every feature stands: how many of its rules meet the gate, what blocks the rest,
-and what to do next. This skill writes nothing.
+Show where every feature stands: how many rules reached each step, what is left to do, and
+what to do next. This skill writes nothing.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -16,20 +16,17 @@ purlin:status                   Every feature and anchor
 purlin:status <name>            One spec: its rules and their cells
 ```
 
-Plain language reaches the same place: "where are we", "what is left", "show the board",
-"where is the login spec".
+Plain language reaches the same place: "where are we", "what is left", "show the board".
 
 ## Step 1: call the tool
 
-```
-sync_status()
-```
+Call `sync_status()`.
 
 ## Step 2: print the table
 
 The tool opens with `Purlin status: <project>, plugin <version>, gate <gate>`, then the table.
-Every spec and every anchor gets a row, sorted attention first: the most rules short of the
-gate at the top. Anchors carry `(anchor)` after the name. Columns exist only when the gate
+Every spec and every anchor gets a row, sorted attention first: the most rules with work left
+at the top. Anchors carry `(anchor)` after the name. Columns exist only when the gate
 creates the cell behind them, so a project at `passed` has no strong and no signed column.
 
 The table is the dashboard's board, rendered as text: the same columns, the same text in
@@ -46,23 +43,30 @@ each cell. A reader who has learned one has learned the other.
 `Proofs` counts every proof line and appends `· <k> no test` when no test in the source carries
 a proof's marker, run or not; at `passed` the column is there only where the project writes a proof line.
 `Tests` is `<passed> of <rules>`, then `· <k> partial` and `· <k> failing` when either is not
-zero; `partial` means the tests pass on one operating system and not on another. `Strong`
-(`strong` up) reads `<n> of <m> · <strength>` and `Signed` (`signed`) `<n> of <m>`, `<m>` the
-rules whose level asks for that cell, and each is empty where `<m>` is 0.
+zero; `partial` means the tests pass on one operating system and not on another. `Strong` reads
+`<n> of <rules> · <strength>` and `Signed` `<n> of <rules>`.
 
-Print the numbers `sync_status` returned. Never recount them: the command line and the
-dashboard must show one answer from one computation.
+## Step 3: print the summary and `Left to do`
 
-## Step 3: print the summary line and what stands in the way
+The tool ends on one sentence and `Left to do`, the words every surface ends on:
 
-The summary is three lines: `<met> of <rules> rules meet the gate <gate>.`, then the buckets
-the gate reaches in the tiles' own words and order (`Untested <n> · Failing <n> · Partial <n>
-· Passing <n> · Strong <n> · Signed <n>`), then the feature and proof counts with whatever the
-gate creates beside them. Print them with their denominators intact.
+```
+40 rules. 35 pass their tests. 30 are strong. 20 are signed.
+Left to do:
+  5 rules to audit: purlin:audit
+  10 rules to sign: purlin:sign
+```
 
-Anything the tool prints after the table and before the directives is its own: an anchor whose
-pin is behind, uncommitted spec changes, and its warnings. Print them verbatim, or nothing
-when the tool returned nothing.
+The sentence names the steps up to the gate, each containing the next. `Left to do` holds one
+line per kind of work, in the order it is done, with its count and its command. When nothing
+is left, `Nothing left to do.` follows the sentence instead, at `signed` with the tag's push.
+
+Print the sentence and the `Left to do` lines `sync_status` returned. Never recount them: the
+command line and the dashboard must show one answer from one computation.
+
+Anything the tool prints between the table and the sentence is its own: the specs that name
+no files, an anchor whose pin is behind, uncommitted spec changes, its warnings and
+`→ Run: purlin:init --update`. Print them verbatim, or nothing when the tool returned nothing.
 
 ## With a name
 
@@ -72,29 +76,25 @@ does, print the whole table. Read the spec, call `sync_status`, and print its pa
 header, and one line per rule with the cells the gate creates and the proof lines behind it:
 
 ```
-specs/auth/login.md: 8 rules, 6 meet the gate signed
+specs/auth/login.md: 8 rules
   RULE-1  passed  strong  signed      PROOF-1  tests/test_login.py::test_rejects_bad_password
   RULE-3  no test                     PROOF-3  no test carries this marker
 ```
 
-The next step is the Step 4 line for the lowest cell this spec's rules leave unmet.
+The next step is the Step 4 row for the first kind of work this spec's rules wait for.
 
 ## Step 4: name the next step
 
-Print the tool's `→` lines, adding none: one `→ Next:`, one step and one reason from the first
-row that applies; `→ Queue:` for a queue; `→ Run: purlin:init --update` for a migration.
+The next step is the first line of `Left to do`. Add no line of your own; a
+`→ Run: purlin:init --update` the tool printed comes first.
 
-| What blocks the gate | The line the tool prints |
-|----------------------|--------------------------|
-| A rule waits for a proof: no proof line names it | `→ Next: run purlin:spec.` with the count |
-| A rule has a failing test | `→ Next: run purlin:build.` with the count |
-| A rule's tests pass on one operating system and not another | `→ Next: run purlin:build.` with the `partial` count |
-| A rule has a proof and no passing test | `→ Next: run purlin:build.` with the count |
-| A rule reads `out of date`, or `not run` on this machine's system | `→ Next: run purlin:test.` with the count; `purlin:test --remote` under `trust: remote` |
-| A rule's proofs need a system this machine is not | `→ Next: run purlin:test --remote. <n> rules need <os>, which this machine is not.` |
-| No rule waits on a test run, and no audit has read one | `→ Next: run purlin:audit. <n> rules are not audited.` |
-| A rule is weak | `→ Next: run purlin:build. <n> rules are weak.` |
-| A rule is in the queue: it reads `manual test`, or waits for a signature | `→ Next: run purlin:sign.` with the count |
-| At `signed`, a spec names no files in `> Scope:` | `→ Next: run purlin:spec <name>.` |
-| Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |
-| The queue is not empty | `→ Queue: <n> rules need a person. Run purlin:sign.` |
+| The first line after the sentence | Next step |
+|-----------------------------------|-----------|
+| `<n> rules to write a proof for`, or `to tie to their files` | `→ Run: purlin:spec` |
+| `<n> rules to fix`, `to write a test for` or `to strengthen` | `→ Run: purlin:build` |
+| `<n> rules to test` | `→ Run: purlin:test` |
+| `<n> rules to test on <systems>` | `→ Run: purlin:test --remote` |
+| `<n> rules to audit` | `→ Run: purlin:audit` |
+| `<n> rules to test by hand`, `to sign`, or `the version to tag` | `→ Run: purlin:sign` |
+| `Nothing left to do. Push the tag to release it: ...` | `→ Run: git push origin signed/<version>` |
+| `Nothing left to do.` | None: every rule reached every step the gate asks. |

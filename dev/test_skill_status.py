@@ -8,8 +8,8 @@ are in `dev/skill_checks.py`.
 from skill_checks import (carries, flat, frontmatter_problems,
                           frontmatter_refusals, next_step_problems,
                           next_step_refusals, read, refusals, replace, resub,
-                          section, skill_ceiling_problems, skill_path,
-                          undirected_outcome_problems)
+                          section, sections, skill_ceiling_problems,
+                          skill_path, undirected_outcome_problems)
 
 
 class TestSkillStatus:
@@ -31,27 +31,38 @@ class TestSkillStatus:
     def test_it_prints_the_numbers_the_tool_returned(self):
         assert status_number_problems() == []
 
-    # purlin: skill_status PROOF-2
+    # purlin: skill_status PROOF-6
     def test_a_recount_is_refused(self, monkeypatch):
         rel = skill_path('status')
         assert refusals(monkeypatch, status_number_problems, [
-            (rel, replace('Print the numbers `sync_status` returned.',
-                          'Count the rules in the table yourself.'),
-             "does not carry 'Print the numbers `sync_status` returned. "
-             "Never recount them"),
+            (rel, replace(PRINTS, 'Count the rules in the table yourself.'),
+             "does not carry 'Print the sentence and the `Left to do` lines"),
         ]) == []
 
     # purlin: skill_status PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
         assert (next_step_problems('status')
-                + undirected_outcome_problems('status')) == []
+                + undirected_outcome_problems('status')
+                + status_next_step_problems()) == []
 
-    # purlin: skill_status PROOF-3
+    # purlin: skill_status PROOF-7
+    # purlin: skill_status PROOF-8
+    # purlin: skill_status PROOF-9
+    # purlin: skill_status PROOF-10
     def test_a_broken_closing_section_is_refused(self, monkeypatch):
         assert next_step_refusals(
-            monkeypatch, 'status', '| A rule has a failing test',
-            '| A rule is weak | `→ Next: run purlin:build. <n> rules are '
-            'weak.` |') == []
+            monkeypatch, 'status', '| `<n> rules to fix`',
+            '| `<n> rules to audit` | `→ Run: purlin:audit` |') == []
+
+    # purlin: skill_status PROOF-11
+    def test_a_closing_section_that_names_no_first_line_is_refused(
+            self, monkeypatch):
+        rel = skill_path('status')
+        assert refusals(monkeypatch, status_next_step_problems, [
+            (rel, replace('The next step is the first line of `Left to do`.',
+                          'The next step is yours to choose.'),
+             'closing section does not carry %r' % FIRST_LINE),
+        ]) == []
 
     # purlin: skill_status PROOF-4
     def test_it_stays_under_its_ceiling(self):
@@ -80,12 +91,23 @@ class TestSkillStatus:
         ]) == []
 
 
+PRINTS = 'Print the sentence and the `Left to do` lines `sync_status` returned.'
+FIRST_LINE = 'The next step is the first line of `Left to do`.'
+
+
 def status_number_problems():
     return carries(skill_path('status'), [
         'sync_status', 'Never recount them', 'one answer from one computation',
-        'Print the numbers `sync_status` returned. Never recount them: the '
-        'command line and the dashboard must show one answer from one '
-        'computation.'])
+        PRINTS + ' Never recount them: the command line and the dashboard '
+        'must show one answer from one computation.'])
+
+
+def status_next_step_problems():
+    rel = skill_path('status')
+    body = flat(sections(read(rel))[-1][1])
+    if FIRST_LINE in body:
+        return []
+    return ['%s closing section does not carry %r' % (rel, FIRST_LINE)]
 
 
 def status_name_problems():
