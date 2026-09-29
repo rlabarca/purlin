@@ -315,7 +315,8 @@ def test_a_rule_with_a_failing_proof_reads_failed():
 def test_a_rule_waiting_on_another_system_reads_not_run():
     assert _rule_word({'PROOF-1': PLAIN,
                        'PROOF-2': {'manual': False, 'env': OTHER}},
-                      {'PROOF-1': [_seen('pass')]}) == 'not run'
+                      {'PROOF-1': [_seen('pass')],
+                       'PROOF-2': [_seen('not run', 'test_w')]}) == 'not run'
 
 
 # purlin: evidence_writer PROOF-20

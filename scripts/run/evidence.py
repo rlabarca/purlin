@@ -119,6 +119,10 @@ def rule_word(proof_ids, proofs, observed, host_os):
     # whatever it did, so only a proof that could run here can fail the rule.
     if any(observed.get(pid) == 'fail' for pid in here):
         return 'failed'
+    # A proof another system owns with no test tied to it waits on a test
+    # to be written, not on a run over there.
+    if any(pid not in observed for pid in foreign):
+        return 'no test'
     if here and all(observed.get(pid) == 'pass' for pid in here):
         return 'passed' if not foreign else 'not run'
     if any(observed.get(pid) for pid in runnable):

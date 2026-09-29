@@ -150,10 +150,12 @@ USAGE = (
 REMOTE_IS_A_TEST = ('a remote runner runs the tests, so --remote belongs to '
                     '--test. Run: purlin:test --remote')
 
-# What the run says about a proof tagged for an operating system it is not
-# on, each system in the words a person reads.
-FOREIGN_PROOF = ('%s %s needs %s; this machine is %s. Run purlin:test '
-                 '--remote.')
+# What the run says about the proofs tagged for an operating system it is
+# not on, one line per system, each in the words a person reads. A proof
+# with no test tied to it is not counted: it has its rule's no-test line.
+NEEDS_ONE = '1 proof needs %s; this machine is %s. Run purlin:test --remote.'
+NEEDS_MANY = ('%d proofs need %s; this machine is %s. Run purlin:test '
+              '--remote.')
 
 # The one line `--commit` gets anywhere but `--test` and `--audit`. A runner
 # always commits, and a remote run commits nothing here.
@@ -304,6 +306,28 @@ def foreign_env_proofs(features, selected, os_name):
             if env and env != os_name:
                 out.append((name, proof_id, env))
     return out
+
+
+def needs_lines(foreign, index, os_name):
+    """One line per other system that proofs with a tied test wait on.
+
+    `foreign` is `foreign_env_proofs`' answer and `index` the markers this
+    run tied to tests. The systems come in the reader's order.
+    """
+    counts = {}
+    for feature, proof_id, env in foreign:
+        if index.get((feature, proof_id)):
+            counts[env] = counts.get(env, 0) + 1
+    here = evidence_reader.os_word(os_name)
+    lines = []
+    for env in evidence_reader.PLATFORMS:
+        count = counts.get(env)
+        if count == 1:
+            lines.append(NEEDS_ONE % (evidence_reader.os_word(env), here))
+        elif count:
+            lines.append(NEEDS_MANY % (count, evidence_reader.os_word(env),
+                                       here))
+    return lines
 
 
 def tagged_here(features, selected, os_name):
@@ -896,12 +920,12 @@ def main(argv=None):
           % (', '.join(ran) or 'nothing',
              '1 feature' if len(selected) == 1
              else '%d features' % len(selected)))
-    if foreign and remote_proofs is None:
+    needs = [] if remote_proofs is not None else needs_lines(foreign, index,
+                                                             os_name)
+    if needs:
         print('')
-        for feature, proof_id, env in foreign:
-            print(FOREIGN_PROOF % (feature, proof_id,
-                                   evidence_reader.os_word(env),
-                                   evidence_reader.os_word(os_name)))
+        for line in needs:
+            print(line)
 
     # A failing test is a result the evidence records, so it fails the run
     # without being called missing; only a suite that left nothing to read,

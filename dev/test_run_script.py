@@ -447,16 +447,26 @@ class TestEnvScopedProofs:
     def _other_os(self):
         return 'windows' if not sys.platform.startswith('win') else 'linux'
 
+    SKIPPED_HERE = (
+        'import pytest\n\n'
+        '# purlin: feat PROOF-1\n'
+        'def test_ok():\n'
+        '    assert True\n\n'
+        '# purlin: feat PROOF-2\n'
+        '@pytest.mark.skip(reason="wrong host")\n'
+        'def test_elsewhere():\n'
+        '    assert True\n')
+
     # purlin: run_script PROOF-10
     def test_a_foreign_env_proof_is_listed_as_needing_its_os(self, tmp_path):
         other = self._other_os()
-        root = _pytest_project(tmp_path)
+        root = _pytest_project(tmp_path, body=self.SKIPPED_HERE)
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
                                     ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))
         purlin_run = _load_run_script()
         here = purlin_run.host_os()
         code, output = _run(root, '--all', '--test')
-        assert ('feat PROOF-2 needs %s; this machine is %s. Run purlin:test '
+        assert ('1 proof needs %s; this machine is %s. Run purlin:test '
                 '--remote.' % (purlin_evidence.os_word(other),
                                purlin_evidence.os_word(here))
                 in output.splitlines()), output
@@ -467,18 +477,28 @@ class TestEnvScopedProofs:
         cell = _rule(root, 'feat', 'RULE-1')['cells']['passed']
         assert cell['platforms'][here]['word'] == 'passed', cell
 
+    # purlin: run_script PROOF-211
+    def test_several_foreign_proofs_are_counted_in_one_line(self, tmp_path):
+        other = self._other_os()
+        root = _pytest_project(tmp_path, body=self.SKIPPED_HERE + (
+            '\n# purlin: feat PROOF-3\n'
+            '@pytest.mark.skip(reason="wrong host")\n'
+            'def test_elsewhere_too():\n'
+            '    assert True\n'))
+        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
+                                    ('PROOF-2', 'RULE-1', ' @env(%s)' % other),
+                                    ('PROOF-3', 'RULE-1', ' @env(%s)' % other)))
+        code, output = _run(root, '--all', '--test')
+        needs = [line for line in output.splitlines() if ' need' in line]
+        assert needs == [
+            '2 proofs need %s; this machine is %s. Run purlin:test --remote.'
+            % (purlin_evidence.os_word(other),
+               purlin_evidence.os_word(HERE_OS))], output
+
     # purlin: run_script PROOF-114
     def test_a_foreign_env_proof_is_not_reported_missing(self, tmp_path):
         other = self._other_os()
-        root = _pytest_project(tmp_path, body=(
-            'import pytest\n\n'
-            '# purlin: feat PROOF-1\n'
-            'def test_ok():\n'
-            '    assert True\n\n'
-            '# purlin: feat PROOF-2\n'
-            '@pytest.mark.skip(reason="wrong host")\n'
-            'def test_elsewhere():\n'
-            '    assert True\n'))
+        root = _pytest_project(tmp_path, body=self.SKIPPED_HERE)
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
                                     ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))
         code, output = _run(root, '--all', '--test')
@@ -2626,6 +2646,19 @@ class TestEachRuleThatFailsOrHasNoTest:
         assert lines.index(line) < lines.index(
             next(text for text in lines if text.startswith('Purlin status:')))
         assert not [text for text in lines if text.startswith('feat RULE-1 ')]
+
+    # purlin: run_script PROOF-210
+    def test_a_proof_for_another_system_with_no_test_is_named(self, tmp_path):
+        other = 'windows' if HERE_OS != 'windows' else 'linux'
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat', rules=2, proofs=(
+            ('PROOF-1', 'RULE-1', ''),
+            ('PROOF-2', 'RULE-2', ' @env(%s)' % other)))
+        _code, output = _run(root, '--all', '--test')
+        lines = output.splitlines()
+        assert 'feat RULE-2 has no test. Run purlin:build feat.' in lines, \
+            output
+        assert not [text for text in lines if ' need' in text], output
 
     # purlin: run_script PROOF-141
     def test_a_feature_not_run_is_not_named(self, tmp_path):
