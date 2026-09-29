@@ -89,12 +89,7 @@ def rule_kind(rule, gate, here_os, incomplete=None):
     its `hand_checked`. `here_os` is this machine's system, `windows`,
     `macos` or `linux`. `incomplete` is true, or the reason, when the spec
     that owns the rule names no files. The first kind that applies wins, in
-    the order of `KINDS`.
-
-    A cell the rule does not carry is one it is not asked for, and reads as
-    reached: a rule marked `[level: passed]` has no strong cell and waits
-    for nothing once its tests pass. Once every rule takes the gate, every
-    rule carries every cell up to it and this never applies.
+    the order of `KINDS`. Every rule carries every cell up to the gate.
     """
     cells = rule.get('cells') or {}
     passed = cells.get('passed') or {}
@@ -122,9 +117,7 @@ def rule_kind(rule, gate, here_os, incomplete=None):
     if not upper:
         return None
 
-    strong = cells.get('strong')
-    if strong is None:
-        return None
+    strong = cells.get('strong') or {}
     if strong.get('word') == 'weak':
         return 'to_strengthen'
     if strong.get('word') != 'strong':
@@ -132,8 +125,7 @@ def rule_kind(rule, gate, here_os, incomplete=None):
     if gate != 'signed':
         return None
 
-    signed = cells.get('signed')
-    if signed is None or signed.get('word') == 'signed':
+    if (cells.get('signed') or {}).get('word') == 'signed':
         return None
     if incomplete:
         return 'no_scope'
@@ -146,8 +138,7 @@ def steps(own_rules, gate):
     `p` counts the rules whose passed cell reads `passed` and, where a proof
     is `@manual`, whose `hand_checked` is true; `s` the rules in `p` whose
     strong cell reads `strong`; `g` the rules in `s` whose signed cell reads
-    `signed`. Only the steps up to the gate are named. A cell the rule does
-    not carry is one it is not asked for, and counts as reached.
+    `signed`. Only the steps up to the gate are named.
     """
     reached = {'passed': 0, 'strong': 0, 'signed': 0}
     for rule in own_rules or ():
@@ -158,12 +149,10 @@ def steps(own_rules, gate):
                 and not rule.get('hand_checked')):
             continue
         reached['passed'] += 1
-        strong = cells.get('strong')
-        if strong is not None and strong.get('word') != 'strong':
+        if (cells.get('strong') or {}).get('word') != 'strong':
             continue
         reached['strong'] += 1
-        signed = cells.get('signed')
-        if signed is None or signed.get('word') == 'signed':
+        if (cells.get('signed') or {}).get('word') == 'signed':
             reached['signed'] += 1
     names = ('passed',) + tuple(name for name in _UPPER
                                 if _UPPER.index(name) < _gate_depth(gate))

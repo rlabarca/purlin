@@ -22,7 +22,8 @@ TAG = {'name': 'signed/1.4.0', 'commit': 'a' * 40}
 
 def rule(passed='passed', strong=None, signed=None, proofs=1, manual=False,
          missing_env=(), hand_checked=False, label='own', feature='login'):
-    """One payload rule entry with the cells named; a cell left None is absent."""
+    """One payload rule entry with the cells named; a cell left None is absent,
+    as it is above the gate."""
     cells = {'passed': {'word': passed, 'missing_env': list(missing_env)}}
     if strong:
         cells['strong'] = {'word': strong}
@@ -268,12 +269,6 @@ class TestTheSteps:
     def test_a_hand_check_made_passes(self):
         assert ending([rule(manual=True, hand_checked=True)], 'passed') == [
             '1 rule. 1 passes its tests.', 'Nothing left to do.']
-
-    # purlin: summary PROOF-27
-    def test_a_cell_the_rule_is_not_asked_for_counts_as_reached(self):
-        assert ending([rule()], 'signed') == [
-            '1 rule. 1 passes its tests. 1 is strong. 1 is signed.',
-            'Left to do:', '  the version to tag: purlin:sign']
 
 
 class TestTheSystems:
