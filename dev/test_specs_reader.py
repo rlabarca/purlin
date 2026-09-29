@@ -3,6 +3,7 @@
 The throwaway project and its helpers are in `dev/mcp_project.py`.
 """
 
+import contextlib
 import json
 import os
 import shutil
@@ -41,6 +42,32 @@ def _anchor(project, *fields, **where):
                  'zero matches\n' % '\n'.join(fields),
                  name='policy', category=where.get('category', '_anchors'))
     return purlin_specs.scan_specs(project.root)['policy']
+
+
+@contextlib.contextmanager
+def _refused_to_readers(path):
+    """Hold `path` so that any other open of it for reading fails.
+
+    On Windows the file is locked, the whole of it, through a handle held
+    for the duration; elsewhere its mode is set to 0. Either way the next
+    reader gets an `OSError`.
+    """
+    if os.name == 'nt':
+        import msvcrt
+        size = os.path.getsize(path)
+        with open(path, 'r+b') as handle:
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, size)
+            try:
+                yield
+            finally:
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, size)
+        return
+    os.chmod(path, 0)
+    try:
+        yield
+    finally:
+        os.chmod(path, 0o644)
 
 
 def _feature(name, rules, requires=None, heading='Feature', extra=''):
@@ -98,68 +125,6 @@ class TestRuleText:
     def test_a_changed_word_changes_a_proofs_hash(self):
         assert purlin_specs.proof_text_hash('Wait 12 hours; verify 401') != (
             purlin_specs.proof_text_hash('Wait 24 hours; verify 401'))
-
-
-class TestProofTags:
-
-    # purlin: specs PROOF-5
-    def test_manual_and_an_operating_system_are_both_read(self, project):
-        proof, _unknown = _one_proof(
-            project, 'Lock a file; verify a second open fails '
-                     '@manual @env(windows)')
-        assert proof['manual'] is True, proof
-        assert proof['env'] == 'windows', proof
-        assert proof['text'] == 'Lock a file; verify a second open fails', proof
-        info = purlin_specs.scan_specs(project.root)['login']
-        assert info['proof_env'] == {'PROOF-1': 'windows'}
-
-    # purlin: specs PROOF-20
-    def test_a_proof_with_no_tag_is_whole_and_not_manual(self, project):
-        proof, _unknown = _one_proof(project, 'Call login and verify 200')
-        assert proof['text'] == 'Call login and verify 200', proof
-        assert proof['manual'] is False, proof
-
-    # purlin: specs PROOF-21
-    def test_a_word_that_is_not_a_tag_stays_in_the_text(self, project):
-        proof, unknown = _one_proof(project,
-                                    'Call login and verify 200 @smoke')
-        assert proof['text'] == 'Call login and verify 200 @smoke', proof
-        assert proof['manual'] is False, proof
-        assert unknown == [], unknown
-
-    # purlin: specs PROOF-22
-    def test_reading_stops_at_a_word_that_is_not_a_tag(self, project):
-        proof, _unknown = _one_proof(project, 'Check it by hand @manual @smoke')
-        assert proof['text'] == 'Check it by hand @manual @smoke', proof
-        assert proof['manual'] is False, proof
-
-    # purlin: specs PROOF-6
-    def test_each_of_the_three_systems_is_read(self, project):
-        project.spec(
-            '# Feature: login\n\n## Rules\n\n- RULE-1: Files lock\n\n'
-            '## Proof\n\n'
-            '- PROOF-1 (RULE-1): Lock a file @env(windows)\n'
-            '- PROOF-2 (RULE-1): Lock a file @env(macos)\n'
-            '- PROOF-3 (RULE-1): Lock a file @env(linux)\n')
-        info = purlin_specs.scan_specs(project.root)['login']
-        assert {pid: proof['env'] for pid, proof in info['proofs'].items()} == {
-            'PROOF-1': 'windows', 'PROOF-2': 'macos', 'PROOF-3': 'linux'}
-        assert info['unknown_tags'] == [], info['unknown_tags']
-
-    # purlin: specs PROOF-23
-    def test_any_other_system_is_no_system_and_an_unknown_tag(self, project):
-        proof, unknown = _one_proof(project, 'Lock a file @env(bsd)')
-        assert proof['text'] == 'Lock a file', proof
-        assert proof['env'] is None, proof
-        assert unknown == ['@env(bsd)'], unknown
-
-    # purlin: specs PROOF-7
-    def test_a_second_system_is_listed_not_merged(self, project):
-        proof, unknown = _one_proof(project,
-                                    'Lock it @env(macos) @env(windows)')
-        assert proof['env'] == 'windows', 'the trailing tag is the one read'
-        assert proof['text'] == 'Lock it', proof
-        assert unknown == ['@env(macos)'], unknown
 
 
 class TestOldTagsAndFields:
@@ -388,16 +353,14 @@ class TestTheScan:
             shutil.rmtree(empty, ignore_errors=True)
 
     # purlin: specs PROOF-41
-    @pytest.mark.skipif(not hasattr(os, 'geteuid') or os.geteuid() == 0,
-                        reason='file modes do not refuse a read here')
+    @pytest.mark.skipif(os.name != 'nt' and (
+        not hasattr(os, 'geteuid') or os.geteuid() == 0),
+        reason='file modes do not refuse a read to this user')
     def test_a_spec_that_cannot_be_read_is_skipped(self, project):
         locked = os.path.join(project.root, 'specs', 'auth', 'locked.md')
         _write(locked, SPEC.replace('login', 'locked'))
-        os.chmod(locked, 0)
-        try:
+        with _refused_to_readers(locked):
             features = purlin_specs.scan_specs(project.root)
-        finally:
-            os.chmod(locked, 0o644)
         assert sorted(features) == ['login'], sorted(features)
 
 

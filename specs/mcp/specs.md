@@ -11,38 +11,33 @@
 
 ## Rules
 
-- RULE-3: A rule's text is everything after its id, bracketed text at the end included, and the rule and proof text hashes normalise runs of whitespace to one space, so reflowing a line returns the hash it already had
-- RULE-4: A proof line's trailing `@manual` marks a proof no test settles; any other trailing `@<name>` that is not `@env` is not a tag, so reading stops there and the word stays in the proof text
-- RULE-5: `@env` takes `windows`, `macos` and `linux` and nothing else; any other value is read as no operating system at all and is listed as an unknown tag
-- RULE-6: At most one `@env` per proof: the trailing one is the one read and the earlier one is listed as an unknown tag rather than merged with it
-- RULE-7: The tags 0.9.5 wrote that the format does not carry (a bare `@windows`, a stamped `@manual(...)` carrying an email, a date and a sha) and its fields `> Visual-Reference:` and `> Visual-Hash:` are ignored rather than refused, and every spec carrying one lists it under `unknown_tags`
+- RULE-3: A rule's text is everything after its id, bracketed text at the end included
+- RULE-7: The tags 0.9.5 wrote that the format does not carry (a bare `@windows`, a stamped `@manual(...)` carrying an email, a date and a sha) are ignored rather than refused, and every spec carrying one lists it under `unknown_tags`
 - RULE-8: The unknown-tag warning is one line naming at most five carrying files and counting the rest, and is absent when no spec carries such a tag
 - RULE-9: A `> Source:` value is read two ways: a git URL followed by a path in that repository gives the two separately, and anything else comes back whole as the source rather than split on its first word
 - RULE-10: A `> Path:` line supplies the path in the source repository when `> Source:` carries the URL alone
 - RULE-11: A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha
-- RULE-13: A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`; an anchor proves its own rules and nothing else
-- RULE-14: Every spec is keyed by its filename stem, a file that cannot be read or decoded is skipped while the rest of the scan still answers, and a project with no `specs/` folder has no specs
+- RULE-13: A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`
+- RULE-14: Every spec is keyed by its filename stem
+- RULE-17: The rule and proof text hashes normalise runs of whitespace to one space, so reflowing a line returns the hash it already had
+- RULE-18: The fields 0.9.5 wrote that the format does not carry, `> Visual-Reference:` and `> Visual-Hash:`, are ignored rather than refused, and every spec carrying one lists it under `unknown_tags`
+- RULE-19: An anchor proves its own rules and nothing else
+- RULE-20: A spec file that cannot be read or decoded is skipped while the rest of the scan still answers
+- RULE-21: A project with no `specs/` folder has no specs
 
 ## Proof
 
 - PROOF-1 (RULE-3): A spec holds the rule line `- RULE-1: Tokens expire [owner: qa]`; once the spec is read, the rule's text is exactly `Tokens expire [owner: qa]`, the bracket included
 - PROOF-2 (RULE-3): The rule texts `Tokens expire [owner: qa]` and `Tokens expire` give two different rule text hashes
-- PROOF-3 (RULE-3): The proof `Wait 24 hours; verify 401`, written again with doubled spaces and a line break, gives the same proof text hash
-- PROOF-4 (RULE-3): The rule `Tokens expire after 24 hours`, written again with doubled and tripled spaces between its words, gives the same rule text hash
-- PROOF-19 (RULE-3): The rule `Tokens expire after 24 hours`, written again broken across a line break after `expire`, gives the same rule text hash
-- PROOF-17 (RULE-3): The rule `Tokens expire after 12 hours`, one word changed from `Tokens expire after 24 hours`, gives a different rule text hash
-- PROOF-18 (RULE-3): The proof `Wait 12 hours; verify 401`, one word changed from `Wait 24 hours; verify 401`, gives a different proof text hash
-- PROOF-5 (RULE-4): A spec's proof line reads `Lock a file; verify a second open fails @manual @env(windows)`; once the spec is read, the proof is manual, to be proved on `windows`, and its text is `Lock a file; verify a second open fails`
-- PROOF-20 (RULE-4): A spec's proof line reads `Call login and verify 200`, with no tag; once the spec is read, the proof's text is that whole line and the proof is not manual
-- PROOF-21 (RULE-4): A spec's proof line reads `Call login and verify 200 @smoke`; once the spec is read, the proof's text is that whole line, `@smoke` included, the proof is not manual, and the spec has no unknown tag
-- PROOF-22 (RULE-4): A spec's proof line reads `Check it by hand @manual @smoke`; once the spec is read, the proof's text is that whole line and the proof is not manual, because reading stops at `@smoke` before `@manual` is reached
-- PROOF-6 (RULE-5): A spec holds three proof lines ending `@env(windows)`, `@env(macos)` and `@env(linux)`; once it is read, each proof is to be proved on that operating system, and the spec has no unknown tag
-- PROOF-23 (RULE-5): A spec's one proof line reads `Lock a file @env(bsd)`; once the spec is read, the proof's text is `Lock a file`, it is to be proved on no operating system at all, and the spec's unknown tags are exactly `@env(bsd)`
-- PROOF-7 (RULE-6): A spec's proof line reads `Lock it @env(macos) @env(windows)`; once the spec is read, the proof is to be proved on `windows`, the trailing tag, its text is `Lock it`, and the spec's unknown tags are exactly `@env(macos)`
+- PROOF-3 (RULE-17): The proof `Wait 24 hours; verify 401`, written again with doubled spaces and a line break, gives the same proof text hash
+- PROOF-4 (RULE-17): The rule `Tokens expire after 24 hours`, written again with doubled and tripled spaces between its words, gives the same rule text hash
+- PROOF-19 (RULE-17): The rule `Tokens expire after 24 hours`, written again broken across a line break after `expire`, gives the same rule text hash
+- PROOF-17 (RULE-17): The rule `Tokens expire after 12 hours`, one word changed from `Tokens expire after 24 hours`, gives a different rule text hash
+- PROOF-18 (RULE-17): The proof `Wait 12 hours; verify 401`, one word changed from `Wait 24 hours; verify 401`, gives a different proof text hash
 - PROOF-8 (RULE-7): A spec's proof line reads `Lock a file; verify 1 open fails @windows`; the spec is read rather than refused, the proof's text is `Lock a file; verify 1 open fails`, it is to be proved on no operating system, and the spec's unknown tags are exactly `@windows`
 - PROOF-24 (RULE-7): A spec's proof line reads `Look at it @manual(a@b.c, 2026-03-31, abc1234)`; the spec is read rather than refused, the proof's text is `Look at it`, the proof is manual, and the spec's unknown tags are exactly `@manual(...)`
-- PROOF-25 (RULE-7): A spec carrying `> Visual-Reference: ./mock.png` and the one rule `It renders` is read rather than refused, with exactly that rule, and its unknown tags are exactly `> Visual-Reference:`
-- PROOF-26 (RULE-7): A spec carrying `> Visual-Hash: 9f86d081` and the one rule `It renders` is read rather than refused, with exactly that rule, and its unknown tags are exactly `> Visual-Hash:`
+- PROOF-25 (RULE-18): A spec carrying `> Visual-Reference: ./mock.png` and the one rule `It renders` is read rather than refused, with exactly that rule, and its unknown tags are exactly `> Visual-Reference:`
+- PROOF-26 (RULE-18): A spec carrying `> Visual-Hash: 9f86d081` and the one rule `It renders` is read rather than refused, with exactly that rule, and its unknown tags are exactly `> Visual-Hash:`
 - PROOF-9 (RULE-8): A project holds `specs/auth/login.md`, whose proof ends with a bare `@windows`, and `specs/auth/mockup.md`, whose proof ends `@manual(a@b.c, 2026-03-31, abc1234)`; the status report carries exactly one warning, `2 spec files carry tags this release does not read (@manual(...), @windows); they are ignored: specs/auth/login.md, specs/auth/mockup.md`
 - PROOF-27 (RULE-8): Seven specs, `specs/auth/a.md` to `specs/auth/g.md`, each end a proof with a bare `@windows`; the status report carries exactly one warning, `7 spec files carry tags this release does not read (@windows); they are ignored: specs/auth/a.md, specs/auth/b.md, specs/auth/c.md, specs/auth/d.md, specs/auth/e.md, and 2 more`
 - PROOF-28 (RULE-8): A project whose one spec carries no tag and no field the format does not carry is read; the status report carries no warning at all
@@ -57,10 +52,10 @@
 - PROOF-34 (RULE-11): The spec `specs/schema/shared.md`, opening `# Anchor: shared`, is read as an anchor, by its first line alone
 - PROOF-35 (RULE-11): The spec `specs/auth/login.md`, opening `# Feature: login` and lying under no `_anchors/` folder, is read as a feature and not an anchor
 - PROOF-14 (RULE-13): The anchor `api` has one rule, the anchor `security` carries `> Global: true` and one rule, and the feature `login` has two rules and `> Requires: api`; `login` must prove exactly `login` RULE-1 and RULE-2 `own`, `api` RULE-1 `required` and `security` RULE-1 `global`, in that order
-- PROOF-36 (RULE-13): The anchor `security` carries `> Global: true` and one rule, beside the feature `login` with two rules; `security` must prove exactly its own RULE-1, labelled `own`
+- PROOF-36 (RULE-19): The anchor `security` carries `> Global: true` and one rule, beside the feature `login` with two rules; `security` must prove exactly its own RULE-1, labelled `own`
 - PROOF-37 (RULE-13): The feature `login` has two rules and `> Requires: api`, the anchor `api` has one rule and `> Requires: base`, and the feature `base` has one rule; `login` must prove exactly its RULE-1 and RULE-2 `own`, `api` RULE-1 `required` and `base` RULE-1 `required`, in that order
-- PROOF-38 (RULE-13): The anchor `api` has one rule and `> Requires: base`, and the feature `base` has one rule; `api` must prove exactly its own RULE-1, labelled `own`, and nothing of `base`
+- PROOF-38 (RULE-19): The anchor `api` has one rule and `> Requires: base`, and the feature `base` has one rule; `api` must prove exactly its own RULE-1, labelled `own`, and nothing of `base`
 - PROOF-15 (RULE-14): A project holds `specs/auth/login.md` and `specs/auth/sign_up.md`, both opening `# Feature: login`; it reads as the two specs `login` and `sign_up`, keyed by file name rather than title, with `sign_up` at `specs/auth/sign_up.md`
-- PROOF-39 (RULE-14): A project holds `specs/auth/login.md` and `specs/auth/broken.md`, whose bytes are not valid UTF-8; it reads as the one spec `login`, with no `broken`
-- PROOF-40 (RULE-14): A project with no `specs/` folder reads as no specs at all, rather than an error
-- PROOF-41 (RULE-14): On a system where file permissions can refuse a read, a project holding `specs/auth/login.md` and `specs/auth/locked.md`, which may not be read, reads as the one spec `login`
+- PROOF-39 (RULE-20): A project holds `specs/auth/login.md` and `specs/auth/broken.md`, whose bytes are not valid UTF-8; it reads as the one spec `login`, with no `broken`
+- PROOF-40 (RULE-21): A project with no `specs/` folder reads as no specs at all, rather than an error
+- PROOF-41 (RULE-20): A project holds `specs/auth/login.md` and `specs/auth/locked.md`, which the operating system refuses to read; it reads as the one spec `login`

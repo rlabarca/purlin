@@ -59,15 +59,21 @@ def _read(desc):
     return {'text': text, 'manual': manual, 'env': env, 'unknown': unknown}
 
 
-def _read_spec_proof(tmp_path, line):
-    """The one proof of a spec whose `## Proof` holds `line`, read from the
-    spec file."""
+def _read_spec(tmp_path, line):
+    """The spec `lock` whose `## Proof` holds `line`, read through a scan of
+    the project."""
     root = _project(tmp_path)
     _write(root, 'specs/files/lock.md',
            '# Feature: lock\n\n## Rules\n\n'
            '- RULE-1: An open file cannot be deleted\n\n'
            '## Proof\n\n- PROOF-1 (RULE-1): ' + line + '\n')
-    return purlin_specs.scan_specs(str(root))['lock']['proofs']['PROOF-1']
+    return purlin_specs.scan_specs(str(root))['lock']
+
+
+def _read_spec_proof(tmp_path, line):
+    """The one proof of a spec whose `## Proof` holds `line`, read from the
+    spec file."""
+    return _read_spec(tmp_path, line)['proofs']['PROOF-1']
 
 
 def _git_project(root, *tracked):
@@ -90,7 +96,7 @@ def _login(root, first_line='# Feature: login', scope=None, rules=None,
 
 
 # ---------------------------------------------------------------------------
-# RULE-1: two sections and no third
+# RULE-1 and RULE-15: two sections and no third
 # ---------------------------------------------------------------------------
 
 # purlin: schema_spec_format PROOF-1
@@ -129,7 +135,7 @@ def test_a_spec_with_a_heading_the_format_does_not_name_is_read_and_nothing_is_r
 
 
 # ---------------------------------------------------------------------------
-# RULE-2: rule ids, gaps and unnumbered lines
+# RULE-2, RULE-16 and RULE-17: rule ids, gaps, unnumbered and doubled lines
 # ---------------------------------------------------------------------------
 
 # purlin: schema_spec_format PROOF-2
@@ -201,7 +207,7 @@ def test_a_rule_number_written_twice_is_warned_of_and_read_once(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# RULE-3: the proof line
+# RULE-3 and RULE-18: the proof line
 # ---------------------------------------------------------------------------
 
 
@@ -388,7 +394,7 @@ def test_a_required_name_no_spec_carries_adds_no_rule(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# RULE-6: `> Scope:` and the fingerprint
+# RULE-6 and RULE-19: `> Scope:` and the fingerprint
 # ---------------------------------------------------------------------------
 
 def _scope_of(tmp_path, scope):
@@ -534,6 +540,30 @@ def test_env_then_manual_reads_the_same_as_the_other_order():
             'unknown': []}
 
 
+# purlin: schema_spec_format PROOF-56
+def test_a_spec_proof_ending_manual_and_env_is_read_as_both(tmp_path):
+    info = _read_spec(tmp_path, 'Lock a file; verify a second open fails '
+                                '@manual @env(windows)')
+    proof = info['proofs']['PROOF-1']
+    assert proof['manual'] is True, proof
+    assert proof['env'] == 'windows', proof
+    assert proof['text'] == 'Lock a file; verify a second open fails', proof
+    assert info['proof_env'] == {'PROOF-1': 'windows'}, info['proof_env']
+
+
+# ---------------------------------------------------------------------------
+# RULE-20 to RULE-23: two tags of a kind, and at-words that are no tag
+# ---------------------------------------------------------------------------
+
+# purlin: schema_spec_format PROOF-57
+def test_a_spec_proof_ending_in_a_word_that_is_not_a_tag_keeps_it(tmp_path):
+    info = _read_spec(tmp_path, 'Call login and verify 200 @smoke')
+    proof = info['proofs']['PROOF-1']
+    assert proof['text'] == 'Call login and verify 200 @smoke', proof
+    assert proof['manual'] is False, proof
+    assert info['unknown_tags'] == [], info['unknown_tags']
+
+
 # purlin: schema_spec_format PROOF-27
 def test_a_trailing_at_word_that_is_not_a_tag_is_left_in_the_text():
     desc = 'Grep the file; verify present @smoke'
@@ -605,7 +635,7 @@ def test_a_spec_proof_quoting_tags_mid_sentence_carries_no_tag(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# RULE-10: the three systems, and what is not read
+# RULE-10 and RULE-24: the three systems, and what is not read
 # ---------------------------------------------------------------------------
 
 # purlin: schema_spec_format PROOF-10
