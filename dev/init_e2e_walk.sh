@@ -12,30 +12,25 @@
 #
 # On each fixture:
 #
-#   1. purlin:init at gate passed
-#   2. a hand-written spec and one test carrying one marker comment
-#   3. purlin_run.py --test --commit    the tests, the evidence, the commit
-#   4. gate_check.py --check            exits 0 under passed
-#   5. purlin:init --gate strong        raises the gate
-#   6. gate_check.py --check            exits 1: no audit has measured it
-#   7. purlin_run.py --audit --commit   the audit, into the same evidence
-#   8. gate_check.py --check            exits 0: strong is met by that audit
-#   8a. a --ci section, committed under the build identity, reads as CI's
-#   8b. a --ci run on a signed/ tag, which commits nothing and says so
-#   8c. a --ci run on a run/* branch, which commits
-#   9. purlin:init --gate signed        raises again
-#  10. gate_check.py --check            exits 1: the rule has no signature
-#  11. sign.py, signed by a throwaway key that exists only in the temp repo
-#  12. gate_check.py --check            exits 0
+#   1. purlin:init at gate passed, which writes an empty `tests` setting
+#   2. a hand-written spec, one test carrying one marker comment, a VERSION
+#   3. the first purlin_run.py --test   suggests the entry, which is written
+#   4. purlin_run.py --test --commit    the work, then the evidence, committed
+#   5. purlin:init --gate strong        ends on one rule to audit
+#   6. purlin_run.py --audit --commit   the audit, into the same evidence
+#   7. a --ci run on a signed/ tag, which writes nothing and says so
+#   8. a --ci run on a run/* branch, which writes
+#   9. purlin:init --gate signed        ends on one rule to sign
+#  10. sign.py greeting RULE-1          signed by a throwaway key in the repo
+#  11. sign.py --all                    writes the signed tag
 #
-# Nothing here reaches a git host. The CI identity is a GIT_COMMITTER_NAME and
-# a signature on a local commit, which is what `committed_by` reads, and both
-# signing keys are generated into the temp repository and deleted with it.
+# Nothing here reaches a git host. The signing key is generated into the temp
+# repository and deleted with it.
 #
 # Fixtures: python (always), typescript (when npm can install vitest, from its
 # cache or a registry), and C# with xunit, which skips only on a machine with
 # no `dotnet` at all. Nothing of Purlin is installed in any fixture's tests:
-# each runs its own test command from the `tests` setting init wrote.
+# each runs its own test command, the entry its first test run suggested.
 set -uo pipefail
 
 PART="${1:-all}"
@@ -48,12 +43,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SCAFFOLD="$ROOT/scripts/init/scaffold.py"
 RUN="$ROOT/scripts/run/purlin_run.py"
-GATE="$ROOT/scripts/ci/gate_check.py"
 SIGN="$ROOT/scripts/review/sign.py"
 export PURLIN_ROOT="$ROOT"
-
-CI_NAME='github-actions[bot]'
-CI_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
 
 PASS=0
 FAIL=0
@@ -115,14 +106,9 @@ bad() {
 
 # --- assertions -----------------------------------------------------------
 
-expect_exit() {  # name expected command...
-  local name="$1" want="$2"
-  shift 2
-  local out
-  out="$("$@" 2>&1)"
-  local got=$?
-  if [ "$got" = "$want" ]; then pass "$name"; else
-    bad "$name (exit $got, wanted $want)" "$out"
+expect_code() {  # name expected got log
+  if [ "$3" = "$2" ]; then pass "$1"; else
+    bad "$1 (exit $3, wanted $2)" "$(tail -5 "$4" 2>/dev/null)"
   fi
 }
 
@@ -182,50 +168,47 @@ commit_all() {  # dir message
   git -C "$1" commit -q -m "$2"
 }
 
-commit_as_ci() {  # dir
-  # What CI's commit looks like to `committed_by`: the build identity as the
-  # committer, and a signature, because CI writes through the git host's API
-  # and the git host signs what it writes. An unsigned commit claiming that
-  # identity is a person's and the reader says so, so a fixture that left the
-  # signature out would be refused on any machine that can check one. Nothing
-  # here talks to a git host; the key is generated into the temp repository
-  # and the label is read from git.
-  local dir="$1" key="$1/.git/ci-signing-key"
-  if [ ! -f "$key.pub" ]; then
-    ssh-keygen -q -t ed25519 -N '' -C "$CI_EMAIL" -f "$key"
-    printf '%s %s\n' "$CI_EMAIL" "$(cut -d' ' -f1,2 "$key.pub")" \
-      > "$dir/.git/ci-allowed-signers"
-    git -C "$dir" config gpg.ssh.allowedSignersFile "$dir/.git/ci-allowed-signers"
-  fi
-  git -C "$dir" add -A
-  GIT_COMMITTER_NAME="$CI_NAME" GIT_COMMITTER_EMAIL="$CI_EMAIL" \
-    git -C "$dir" -c gpg.format=ssh -c "user.signingkey=$key.pub" \
-      commit -q -S -m "purlin: evidence at $(git -C "$dir" rev-parse --short=7 HEAD)"
-}
-
+# The key a person signs with: an SSH key named in git's own settings, set up
+# with the commands purlin:sign shows when there is none.
 signing_key() {  # dir email
   local dir="$1" email="$2"
   ssh-keygen -q -t ed25519 -N '' -C "$email" -f "$dir/.git/signing-key"
-  printf '%s %s\n' "$email" "$(cat "$dir/.git/signing-key.pub")" \
-    > "$dir/.git/allowed-signers"
   git -C "$dir" config user.email "$email"
   git -C "$dir" config user.name Signer
   git -C "$dir" config gpg.format ssh
   git -C "$dir" config user.signingkey "$dir/.git/signing-key.pub"
-  git -C "$dir" config commit.gpgsign true
-  git -C "$dir" config gpg.ssh.allowedSignersFile "$dir/.git/allowed-signers"
 }
 
-# `ci` or `local` for who committed the feature's `ci/` evidence file, read
-# the way the tag run reads it: from the commit that last changed it.
-committed_by() {  # dir
-  python3 - "$1" <<'PY'
+# The last four characters of the key's fingerprint, which the signing line
+# names the key by.
+key_ending() {  # dir
+  ssh-keygen -lf "$1/.git/signing-key.pub" | awk '{print $2}' | tail -c 5
+}
+
+# What purlin:test does with the entry a first run suggests: write it as the
+# `tests` setting, through the call the `purlin_config` tool makes.
+take_suggestion() {  # dir log
+  python3 - "$1" "$2" <<'PY'
+import json
 import os
 import sys
 sys.path.insert(0, os.path.join(os.environ['PURLIN_ROOT'], 'scripts', 'mcp'))
-from purlin import provenance
-print(provenance.committed_by(sys.argv[1], '.purlin/evidence/ci/greeting.json'))
+from config_engine import update_config
+prefix = 'Suggested entry: '
+with open(sys.argv[2], encoding='utf-8') as handle:
+    lines = [line for line in handle.read().splitlines()
+             if line.startswith(prefix)]
+if len(lines) != 1:
+    sys.exit('no one suggested entry in %s' % sys.argv[2])
+update_config(sys.argv[1], 'tests', [json.loads(lines[0][len(prefix):])])
 PY
+}
+
+# The version the project states, which the signed tag is named for, and the
+# logs the walk writes, which git is told to leave out.
+project_files() {  # dir
+  printf '0.1.0\n' > "$1/VERSION"
+  printf '.purlin-*.log\n' >> "$1/.gitignore"
 }
 
 spec_file() {  # dir feature scope
@@ -234,9 +217,7 @@ spec_file() {  # dir feature scope
 # Feature: $2
 
 > Scope: $3
-> Description: One rule that takes the gate's level: the machine settles it
->   at strong on the test strength, because no model is reachable here, and
->   the signed gate asks a person because the rule's level is signed there.
+> Description: One rule, walked from its first test run to the signed tag.
 
 ## Rules
 
@@ -253,10 +234,19 @@ EOF
 # Everything below is the same for every language: the fixture builder leaves a
 # project with a spec and a marked test, and this walks the gates.
 
-# The marked test runs through the project's own command, which is how a
-# language is shown to be wired.
-test_walk() {  # dir language
-  local dir="$1" language="$2"
+# The first test run finds no command and suggests one; with it written, the
+# marked test runs through the project's own command, which is how a language
+# is shown to be wired.
+test_walk() {  # dir language suite
+  local dir="$1" language="$2" suite="$3"
+  expect_in "$language: init writes an empty tests setting" \
+    '"tests": \[\]' "$dir/.purlin/config.json"
+  python3 "$RUN" --feature greeting --test --project-root "$dir" \
+    > "$dir/.purlin-first.log" 2>&1
+  expect_in "$language: the first test run suggests the $suite entry" \
+    "^Suggested entry: .*\"name\": \"$suite\"" "$dir/.purlin-first.log"
+  take_suggestion "$dir" "$dir/.purlin-first.log" \
+    || bad "$language: the suggested entry could not be written"
   python3 "$RUN" --feature greeting --test --project-root "$dir" \
     > "$dir/.purlin-test.log" 2>&1
   expect_in "$language: the marked test runs through purlin_run.py --test" \
@@ -269,27 +259,31 @@ gate_walk() {  # dir language
   local dir="$1" language="$2"
   [ "$PART" = wiring ] && return 0
 
-  expect_exit "$language: test run passes and meets the gate" 0 \
-    python3 "$RUN" --all --test --commit --project-root "$dir"
+  python3 "$RUN" --all --test --commit --project-root "$dir" \
+    > "$dir/.purlin-commit.log" 2>&1
+  expect_code "$language: the test run exits 0" 0 $? "$dir/.purlin-commit.log"
   expect_file "$language: the evidence is in the tree" \
     "$dir/.purlin/evidence/local/greeting.json"
   expect_file "$language: the table is in the tree" "$dir/.purlin/tests.md"
-  if git -C "$dir" log -1 --format=%s | grep -q '^purlin: evidence at '; then
-    pass "$language: purlin:test --commit committed the evidence"
-  else
-    bad "$language: purlin:test --commit committed the evidence" \
-      "$(git -C "$dir" log -1 --format=%s)"
-  fi
-  expect_exit "$language: passed is met by the evidence" 0 \
-    python3 "$GATE" --check --project-root "$dir"
+  local work evidence
+  work="$(git -C "$dir" log -1 --format=%s HEAD~1)"
+  evidence="$(git -C "$dir" log -1 --format=%s HEAD)"
+  if [ "$work" = "purlin: specs, tests and settings for greeting" ]; then
+    pass "$language: the work is committed first"
+  else bad "$language: the work is committed first" "$work"; fi
+  if [ "$evidence" = "purlin: evidence at $(git -C "$dir" rev-parse HEAD~1 | cut -c1-7)" ]; then
+    pass "$language: the evidence commit names the work"
+  else bad "$language: the evidence commit names the work" "$evidence"; fi
+  expect_in "$language: nothing is left at passed" \
+    '^Nothing left to do\.$' "$dir/.purlin-commit.log"
 
   init_at "$dir" strong
-  expect_in "$language: a trusted project gets no workflow" \
-    'every proof runs on this operating system' "$dir/.purlin-init.log"
+  expect_in "$language: no workflow without a foreign proof" \
+    '^No remote runner: ' "$dir/.purlin-init.log"
   expect_absent "$language: and no workflow file is written" \
     "$dir/.github/workflows/purlin.yml"
-  expect_exit "$language: strong refuses a project no audit has measured" 1 \
-    python3 "$GATE" --check --project-root "$dir"
+  expect_in "$language: strong leaves the rule to audit" \
+    '^  1 rule to audit: purlin:audit$' "$dir/.purlin-init.log"
 
   # An audit anyone runs counts at strong. It writes into the same evidence
   # file, under `audit`, and `--commit` commits it under this person's own
@@ -306,86 +300,59 @@ gate_walk() {  # dir language
     'Evidence committed.' "$dir/.purlin-audit.log"
   expect_in "$language: the audit ends on the summary at strong" \
     '1 rule. 1 passes its tests. 1 is strong.' "$dir/.purlin-audit.log"
-  expect_exit "$language: strong is met by an audit anyone ran" 0 \
-    python3 "$GATE" --check --project-root "$dir"
-
-  # `--ci` writes the runner's section under `ci/`; the commit it would make
-  # goes through the git host's API, which no temp repository has, so the
-  # walk commits it here under the build identity instead.
-  python3 "$RUN" --all --ci --project-root "$dir" \
-    > "$dir/.purlin-ci.log" 2>&1
-  expect_file "$language: the runner wrote its section under ci/" \
-    "$dir/.purlin/evidence/ci/greeting.json"
-  commit_as_ci "$dir"
-  if [ "$(committed_by "$dir")" = "ci" ]; then
-    pass "$language: a ci/ file the build identity committed reads ci"
-  else
-    bad "$language: a ci/ file the build identity committed reads ci" \
-      "$(committed_by "$dir")"
-  fi
-  expect_exit "$language: strong is still met beside CI's section" 0 \
-    python3 "$GATE" --check --project-root "$dir"
+  expect_in "$language: nothing is left at strong" \
+    '^Nothing left to do\.$' "$dir/.purlin-audit.log"
 
   # Where a CI run writes. The git host variables are what the run reads, so
   # the two cases are the two sets of variables; no request is made, because
-  # no token is set.
+  # no token is set. What the run branch wrote is put back afterwards: a
+  # runner commits it on its own branch, never on this one.
   env GITHUB_REPOSITORY=acme/demo GITHUB_REF=refs/tags/signed/0.1.0 \
       GITHUB_REF_NAME=signed/0.1.0 \
       python3 "$RUN" --all --ci --project-root "$dir" \
       > "$dir/.purlin-tagrun.log" 2>&1
   expect_in "$language: a tag run writes nothing" \
     'Tag run: nothing is written.' "$dir/.purlin-tagrun.log"
-
   env GITHUB_REPOSITORY=acme/demo GITHUB_REF_NAME=run/main-0000000 \
       python3 "$RUN" --all --ci --project-root "$dir" \
       > "$dir/.purlin-runbranch.log" 2>&1
   expect_not_in "$language: a run on a run branch writes its evidence" \
     'Tag run:' "$dir/.purlin-runbranch.log"
-  git -C "$dir" checkout -q -- . 2>/dev/null || true
+  git -C "$dir" checkout -q -- .purlin/evidence .purlin/tests.md 2>/dev/null || true
+  git -C "$dir" clean -q -f -d -- .purlin/evidence 2>/dev/null || true
 
   init_at "$dir" signed
+  expect_in "$language: signed leaves the rule to sign" \
+    '^  1 rule to sign: purlin:sign$' "$dir/.purlin-init.log"
   commit_all "$dir" "raise the gate to signed"
 
-  # A person's own evidence counts at signed too. With CI's out of the way
-  # the gate still reads the section the local run wrote, and what is left is
-  # the signature nobody has written.
-  mv "$dir/.purlin/evidence/ci" "$dir/.purlin/evidence-ci-aside"
-  python3 "$GATE" --check --project-root "$dir" \
-    > "$dir/.purlin-local.log" 2>&1
-  expect_not_in "$language: local evidence is not refused at signed" \
-    'Not passed' "$dir/.purlin-local.log"
-  expect_in "$language: what is left at signed is the signature" \
-    'Queue (1):' "$dir/.purlin-local.log"
-  mv "$dir/.purlin/evidence-ci-aside" "$dir/.purlin/evidence/ci"
-
-  expect_exit "$language: signed refuses a rule that needs a signature" 1 \
-    python3 "$GATE" --check --project-root "$dir"
-
   signing_key "$dir" jane@acme.com
-  expect_exit "$language: the signature is written in a signed commit" 0 \
-    python3 "$SIGN" greeting RULE-1 --project-root "$dir"
-  if [ "$(git -C "$dir" log -1 --format=%G\?)" = "G" ]; then
-    pass "$language: the signing commit is signed"
+  python3 "$SIGN" greeting RULE-1 --project-root "$dir" \
+    > "$dir/.purlin-sign.log" 2>&1
+  expect_code "$language: the rule is signed" 0 $? "$dir/.purlin-sign.log"
+  expect_in "$language: the signing line names the signer and the key" \
+    "^Signed 1 rule as jane@acme\.com with the key ending \.\.\.$(key_ending "$dir")\.$" \
+    "$dir/.purlin-sign.log"
+  if git -C "$dir" cat-file commit HEAD | grep -q '^gpgsig'; then
+    pass "$language: the signing commit carries a signature"
   else
-    bad "$language: the signing commit is signed" \
-      "$(git -C "$dir" log -1 --format='%G? %an')"
+    bad "$language: the signing commit carries a signature" \
+      "$(git -C "$dir" log -1 --format='%s')"
   fi
-  expect_exit "$language: signed is met" 0 \
-    python3 "$GATE" --check --project-root "$dir"
 
-  # The tag is the marker of proven code, and the walk writes it when every
-  # rule meets the gate. Nothing is pushed: the last line names the push.
-  python3 "$SIGN" --project-root "$dir" < /dev/null \
+  # The tag says the version is finished: the walk writes it when nothing is
+  # left. Nothing is pushed: the last line names the push.
+  python3 "$SIGN" --all --project-root "$dir" < /dev/null \
     > "$dir/.purlin-walk.log" 2>&1
-  expect_in "$language: the walk opens with the queue" \
-    'Queue: 0 rules. 0 hand checks, 0 signatures.' "$dir/.purlin-walk.log"
-  if git -C "$dir" tag -l | grep -q '^signed/'; then
+  if git -C "$dir" tag -l | grep -qx 'signed/0.1.0'; then
     pass "$language: the walk wrote the signed tag"
   else
-    bad "$language: the walk wrote the signed tag" "$(git -C "$dir" tag -l)"
+    bad "$language: the walk wrote the signed tag" \
+      "$(git -C "$dir" tag -l; tail -5 "$dir/.purlin-walk.log")"
   fi
   expect_in "$language: the walk names the push for a person to run" \
-    'Run: git push origin signed/' "$dir/.purlin-walk.log"
+    '^Nothing left to do\. Push the tag to release it: git push origin signed/0\.1\.0$' \
+    "$dir/.purlin-walk.log"
 
   # No git hook of any kind is installed, at commit time or at push time.
   expect_absent "$language: no pre-push hook" "$dir/.git/hooks/pre-push"
@@ -407,8 +374,6 @@ walk_python() {
   init_at "$dir" passed
   mark
   expect_file "python: the config is written" "$dir/.purlin/config.json"
-  expect_in "python: the config names the pytest suite" \
-    '"name": "pytest"' "$dir/.purlin/config.json"
   expect_absent "python: nothing is added to the test suite" \
     "$dir/conftest.py"
   expect_absent "python: no workflow under passed" \
@@ -425,8 +390,9 @@ def test_greet():
     assert greet("Ada") == "Hello, Ada!"
 EOF
   printf '__pycache__/\n' >> "$dir/.gitignore"
+  project_files "$dir"
   commit_all "$dir" "the first spec and its test"
-  test_walk "$dir" python
+  test_walk "$dir" python pytest
   wire_since_mark
   mark
   gate_walk "$dir" python
@@ -461,8 +427,6 @@ walk_typescript() {
 
   init_at "$dir" passed
   mark
-  expect_in "typescript: the config names the vitest suite" \
-    '"name": "vitest"' "$dir/.purlin/config.json"
   expect_absent "typescript: nothing is added to the runner's configuration" \
     "$dir/vitest.config.ts"
 
@@ -479,8 +443,9 @@ test('greets by name', () => {
 });
 EOF
   printf 'node_modules/\n' >> "$dir/.gitignore"
+  project_files "$dir"
   commit_all "$dir" "the first spec and its test"
-  test_walk "$dir" typescript
+  test_walk "$dir" typescript vitest
   wire_since_mark
   mark
   gate_walk "$dir" typescript
@@ -529,8 +494,6 @@ EOF
 
   init_at "$dir" passed
   mark
-  expect_in "xunit: the config names the dotnet suite" \
-    '"name": "dotnet"' "$dir/.purlin/config.json"
 
   # A solution at the root is what lets the suite's plain `dotnet test` reach
   # the test project.
@@ -553,8 +516,9 @@ namespace App.Tests {
   }
 }
 EOF
+  project_files "$dir"
   commit_all "$dir" "the first spec and its test"
-  test_walk "$dir" xunit
+  test_walk "$dir" xunit dotnet
   wire_since_mark
   mark
   gate_walk "$dir" xunit

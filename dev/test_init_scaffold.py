@@ -34,7 +34,6 @@ TEMPLATE_CONFIG = os.path.join(ROOT, 'templates', 'config.json')
 
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
 import scaffold as scaffold_module  # noqa: E402
-from purlin import frameworks as frameworks_module  # noqa: E402
 from reports_project import (GO_SPECS, REPO, _evidence,  # noqa: E402
                              _fixture, _run, _write)
 
@@ -54,9 +53,9 @@ LANGUAGES = {
     'shell': {'tests/login.test.sh': 'exit 0\n'},
 }
 
-# The eight settings a new project gets, and the only ones.
+# The seven settings a new project gets, and the only ones.
 CONFIG_KEYS = sorted(['version', 'gate', 'mutation_engine', 'min_strength',
-                      'audit_parallel', 'tests', 'ci', 'trust'])
+                      'audit_parallel', 'tests', 'ci'])
 
 SPEC = """# Feature: login
 
@@ -235,38 +234,72 @@ def asked(output):
             for part in re.split(r'\[[^\]\n]*\]: ', output)[:-1]]
 
 
+def foreign_system():
+    """Windows, or macOS on a Windows machine: a system this machine is not."""
+    here = scaffold_module.evidence_module.host_os()
+    return 'windows' if here != 'windows' else 'macos'
+
+
+def tag_foreign(made, *systems):
+    """A spec whose proofs are tagged `@env` for `systems`, one proof each."""
+    systems = systems or (foreign_system(),)
+    lines = ['- PROOF-%d (RULE-1): Sign in on this system @env(%s)'
+             % (index, name) for index, name in enumerate(systems, 1)]
+    write(made.path('specs/core/login.md'),
+          SPEC.split('## Proof\n')[0] + '## Proof\n\n' + '\n'.join(lines)
+          + '\n')
+    return systems[0]
+
+
+def reasons_under_heading(output):
+    """The indented lines under `A remote runner is written because:`."""
+    lines = output.splitlines()
+    start = lines.index(scaffold_module.REMOTE_INTRO)
+    reasons = []
+    for line in lines[start + 1:]:
+        if not line.startswith('  '):
+            break
+        reasons.append(line)
+    return reasons
+
+
+def changed_since(before, after):
+    """The paths of `before` that `after` lacks or holds other bytes for."""
+    return sorted(rel for rel in before
+                  if rel not in after or after[rel] != before[rel])
+
+
+# The dashboard's data file, which the status the run ends on refreshes
+# wherever a spec exists.
+REPORT_DATA = '.purlin/report-data.js'
+
+
 # ---------------------------------------------------------------------------
-# The one question
+# The questions
 # ---------------------------------------------------------------------------
 
-class TestTheOneQuestion:
+class TestTheQuestions:
 
     # purlin: scaffold PROOF-1
-    def test_a_project_with_code_is_asked_three_questions_and_no_others(self):
-        """Gate, mutation and trust, in that order, for a detectable project."""
+    def test_at_strong_a_project_with_code_is_asked_two_questions(self):
         made = Project('pytest')
         try:
-            done = subprocess.run(
-                [sys.executable, SCAFFOLD, '--project-root', made.root],
-                input='strong\n', capture_output=True, encoding='utf-8',
-                timeout=300)
-            assert done.returncode == 0, done.stdout + done.stderr
-            out = done.stdout
+            out = _answering(made, 'strong\n')
             mutation = scaffold_module.MUTATION_QUESTION % 'mutmut'
-            for question in (scaffold_module.GATE_QUESTION, mutation,
-                             scaffold_module.TRUST_QUESTION):
-                assert question in out, (question, out)
-            assert (out.index(scaffold_module.GATE_QUESTION)
-                    < out.index(mutation)
-                    < out.index(scaffold_module.TRUST_QUESTION)), out
-            # The three are the only questions: one answer prompt each.
-            assert asked(out) == [scaffold_module.GATE_QUESTION, mutation,
-                                  scaffold_module.TRUST_QUESTION], out
-            assert scaffold_module.COMMAND_QUESTION not in out
-            assert 'email' not in out.lower(), out
+            assert asked(out) == [scaffold_module.GATE_QUESTION, mutation], out
             assert made.config()['gate'] == 'strong'
             assert made.config()['mutation_engine'] == 'none'
-            assert made.config()['trust'] == 'local'
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-53
+    def test_at_passed_a_project_with_code_is_asked_the_gate_alone(self):
+        made = Project('pytest')
+        try:
+            out = _answering(made, 'passed\n')
+            assert asked(out) == [scaffold_module.GATE_QUESTION], out
+            assert made.config()['gate'] == 'passed'
+            assert made.config()['mutation_engine'] == 'none'
         finally:
             made.close()
 
@@ -294,6 +327,13 @@ class TestTheOneQuestion:
         output = project.run('--gate', 'passed')
         assert scaffold_module.GATE_QUESTION not in output
 
+    # purlin: scaffold PROOF-3
+    def test_the_gate_is_remembered_when_no_flag_names_one(self, project):
+        project.run('--gate', 'strong')
+        output = project.run()
+        assert scaffold_module.GATE_QUESTION not in output
+        assert project.config()['gate'] == 'strong'
+
     # purlin: scaffold PROOF-4
     def test_an_unreadable_answer_falls_back_to_passed(self):
         made = Project('pytest')
@@ -312,8 +352,15 @@ class TestTheOneQuestion:
         finally:
             made.close()
 
+
+# ---------------------------------------------------------------------------
+# The settings file
+# ---------------------------------------------------------------------------
+
+class TestTheSettings:
+
     # purlin: scaffold PROOF-5
-    def test_the_config_holds_the_shape(self, project):
+    def test_the_config_holds_the_seven_keys(self, project):
         output = project.run('--gate', 'strong')
         config = project.config()
         assert sorted(config) == CONFIG_KEYS
@@ -322,38 +369,90 @@ class TestTheOneQuestion:
         assert 'audit_parallel' not in output
         assert 'at a time' not in output
 
-    # purlin: scaffold PROOF-5
-    def test_audit_parallel_keeps_a_value_in_range_only(self, project):
-        project.run('--gate', 'passed')
-        for written, kept in ((9, 9), (40, 4)):
-            config = project.config()
-            config['audit_parallel'] = written
-            write(project.path('.purlin/config.json'), json.dumps(config))
-            project.run()
-            assert project.config()['audit_parallel'] == kept, written
+    # purlin: scaffold PROOF-54
+    def test_the_template_carries_the_same_seven_keys(self):
+        template = json.loads(read(TEMPLATE_CONFIG))
+        assert sorted(template) == CONFIG_KEYS
+        assert template['version'] == read(
+            os.path.join(ROOT, 'VERSION')).strip()
+        assert template['tests'] == []
+        assert template['ci'] == 'none'
 
-    # purlin: scaffold PROOF-5
+    # purlin: scaffold PROOF-55
+    def test_audit_parallel_keeps_a_value_in_range(self, project):
+        project.run('--gate', 'passed')
+        config = project.config()
+        config['audit_parallel'] = 9
+        write(project.path('.purlin/config.json'), json.dumps(config))
+        project.run()
+        assert project.config()['audit_parallel'] == 9
+
+    # purlin: scaffold PROOF-56
+    def test_audit_parallel_out_of_range_is_put_back_to_4(self, project):
+        project.run('--gate', 'passed')
+        config = project.config()
+        config['audit_parallel'] = 40
+        write(project.path('.purlin/config.json'), json.dumps(config))
+        project.run()
+        assert project.config()['audit_parallel'] == 4
+
+    # purlin: scaffold PROOF-57
     def test_a_child_run_and_an_in_process_run_agree(self):
-        """The command line and `main()` write the same config and summary."""
+        """The command line and `main()` write the same config and output."""
         child, inline = Project(), Project()
         try:
             child_out = child.run('--gate', 'strong', subprocess=True)
             inline_out = inline.run('--gate', 'strong')
             assert sorted(child.config()) == CONFIG_KEYS
             assert child.config() == inline.config()
-            assert summary_paths(child_out) == summary_paths(inline_out)
             assert (child_out.replace(child.root, '<root>')
                     == inline_out.replace(inline.root, '<root>'))
         finally:
             child.close()
             inline.close()
 
-    # purlin: scaffold PROOF-5
-    def test_the_template_carries_the_same_shape(self):
-        template = json.loads(read(TEMPLATE_CONFIG))
-        assert sorted(template) == CONFIG_KEYS
-        assert template['version'] == read(
-            os.path.join(ROOT, 'VERSION')).strip()
+    # purlin: scaffold PROOF-58
+    def test_a_key_outside_the_seven_is_not_written_back(self, project):
+        project.run('--gate', 'passed')
+        config = project.config()
+        config['colour'] = 'blue'
+        write(project.path('.purlin/config.json'), json.dumps(config))
+        project.run('--gate', 'passed')
+        assert sorted(project.config()) == CONFIG_KEYS
+
+    # purlin: scaffold PROOF-87
+    def test_a_project_with_tests_is_asked_nothing_about_them(self, project):
+        output = project.run('--gate', 'strong')
+        assert asked(output) == [scaffold_module.MUTATION_QUESTION % 'mutmut'
+                                 ], output
+        assert project.config()['tests'] == []
+
+    # purlin: scaffold PROOF-88
+    def test_an_empty_project_is_asked_nothing(self):
+        made = Project(None)
+        try:
+            done = subprocess.run(
+                [sys.executable, SCAFFOLD, '--project-root', made.root,
+                 '--gate', 'passed'], capture_output=True, encoding='utf-8',
+                timeout=300, stdin=subprocess.DEVNULL)
+            assert done.returncode == 0, done.stdout + done.stderr
+            assert asked(done.stdout) == [], done.stdout
+            assert made.config()['tests'] == []
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-48
+    def test_a_tests_setting_the_project_carries_is_kept(self, project):
+        project.run('--gate', 'passed')
+        written = project.config()
+        ours = [{'name': 'unit', 'run': 'make test REPORT={report}',
+                 'report': 'out/unit.xml', 'format': 'junit',
+                 'files': ['spec/**/*_spec.py']}]
+        written['tests'] = ours
+        write(project.path('.purlin/config.json'),
+              json.dumps(written, indent=2))
+        project.run('--gate', 'strong')
+        assert project.config()['tests'] == ours
 
 
 # ---------------------------------------------------------------------------
@@ -375,7 +474,7 @@ class TestMutationTesting:
     def test_yes_turns_it_on_and_wires_the_engine(self):
         made = Project('pytest')
         try:
-            out = _answering(made, 'y\n\n', '--gate', 'strong')
+            out = _answering(made, 'y\n', '--gate', 'strong')
             assert scaffold_module.MUTATION_QUESTION % 'mutmut' in out, out
             assert made.config()['mutation_engine'] == 'auto'
             assert made.config()['min_strength'] == 70
@@ -383,11 +482,11 @@ class TestMutationTesting:
         finally:
             made.close()
 
-    # purlin: scaffold PROOF-45
+    # purlin: scaffold PROOF-81
     def test_no_turns_it_off_and_wires_nothing(self):
         made = Project('pytest')
         try:
-            _answering(made, 'n\n\n', '--gate', 'strong')
+            _answering(made, 'n\n', '--gate', 'strong')
             assert made.config()['mutation_engine'] == 'none'
             assert made.config()['min_strength'] is None
             assert not made.has('setup.cfg')
@@ -395,25 +494,35 @@ class TestMutationTesting:
         finally:
             made.close()
 
-    # purlin: scaffold PROOF-45
-    def test_a_framework_with_no_engine_is_asked_nothing(self):
+    # purlin: scaffold PROOF-82
+    def test_at_strong_a_framework_with_no_engine_is_told_why(self):
         made = Project('shell')
         try:
-            out = _answering(made, '\n\n', '--gate', 'strong')
+            out = _answering(made, '\n', '--gate', 'strong')
             assert 'Measure test strength' not in out, out
             assert made.config()['mutation_engine'] == 'none'
-            assert made.config()['min_strength'] is None
             assert 'no engine breaks shell code' in out, out
         finally:
             made.close()
 
-    # purlin: scaffold PROOF-45
+    # purlin: scaffold PROOF-83
+    def test_at_passed_a_framework_with_no_engine_is_told_nothing(self):
+        made = Project('shell')
+        try:
+            out = _answering(made, '\n', '--gate', 'passed')
+            assert 'Measure test strength' not in out, out
+            assert made.config()['mutation_engine'] == 'none'
+            assert 'no engine breaks' not in out, out
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-84
     def test_a_value_the_config_carries_is_kept_without_asking(self, project):
         write(project.path('.purlin/config.json'),
               json.dumps({'mutation_engine': 'auto'}) + '\n')
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', project.root,
-             '--gate', 'passed'], capture_output=True, encoding='utf-8',
+             '--gate', 'strong'], capture_output=True, encoding='utf-8',
             timeout=300, stdin=subprocess.DEVNULL)
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'Measure test strength' not in done.stdout, done.stdout
@@ -427,18 +536,14 @@ class TestMutationTesting:
         assert project.config()['mutation_engine'] == 'none'
         assert project.config()['min_strength'] is None
         assert not project.has('setup.cfg')
-        # Every other question takes its default too.
-        assert '%s\n[y]: y' % scaffold_module.TRUST_QUESTION in output, output
-        assert project.config()['trust'] == 'local'
-        fresh = Project('pytest')
-        try:
-            output = fresh.run()
-            assert '[passed]: passed' in output.splitlines(), output
-            assert fresh.config()['gate'] == 'passed'
-        finally:
-            fresh.close()
 
-    # purlin: scaffold PROOF-46
+    # purlin: scaffold PROOF-85
+    def test_yes_with_no_gate_takes_passed(self, project):
+        output = project.run()
+        assert '[passed]: passed' in output.splitlines(), output
+        assert project.config()['gate'] == 'passed'
+
+    # purlin: scaffold PROOF-86
     def test_the_flag_turns_it_on_without_asking(self, project):
         output = project.run('--gate', 'strong', '--mutation')
         assert 'Measure test strength' not in output
@@ -468,85 +573,32 @@ class TestTheEvidenceFolder:
         assert summary_paths(third)['.purlin/evidence/README.md'] == 'kept'
 
 
+class TestTheAnchorsFolder:
+
+    # purlin: scaffold PROOF-89
+    def test_no_folder_for_anchors_is_made(self, project):
+        output = project.run('--gate', 'strong')
+        assert os.path.isdir(project.path('specs'))
+        assert not os.path.exists(project.path('specs/_anchors'))
+        assert 'specs/_anchors' not in output, output
+
+
 # ---------------------------------------------------------------------------
-# Languages
+# Nothing in the tests
 # ---------------------------------------------------------------------------
 
-_JS_GLOBS = ['**/*.%s.%s' % (kind, ext) for kind in ('test', 'spec')
-             for ext in ('js', 'jsx', 'mjs', 'cjs', 'ts', 'tsx')]
+class TestNothingInTheTests:
 
-# Where each framework's report lands and the globs its tests live under,
-# written out here so a wrong value in the framework table is seen.
-REPORTS_AND_GLOBS = {
-    'pytest': ('.purlin/runtime/reports/pytest.xml',
-               ['**/test_*.py', '**/*_test.py']),
-    'vitest': ('.purlin/runtime/reports/vitest.xml', _JS_GLOBS),
-    'jest': ('.purlin/runtime/reports/jest.xml', _JS_GLOBS),
-    'dotnet': ('.purlin/runtime/reports/dotnet', ['**/*.cs']),
-    'go': ('-', ['**/*_test.go']),
-    'sql': (None, ['**/test_*.sql', '**/*_test.sql', '**/*.test.sql']),
-    'shell': (None, ['**/*.test.sh']),
-}
-
-
-class TestEachLanguage:
-
-    @pytest.mark.parametrize('language', sorted(LANGUAGES))
-    # purlin: scaffold PROOF-7
-    def test_detection_writes_that_framework_s_suite(self, language):
-        made = Project(language)
-        try:
-            made.run('--gate', 'passed')
-            (suite,) = made.config()['tests']
-            assert suite == frameworks_module.entry_for(language)
-            assert suite['name'] == language
-            if suite['format'] in ('junit', 'trx'):
-                assert '{report}' in suite['run'], suite
-            assert (suite['report'], suite['files']) == \
-                REPORTS_AND_GLOBS[language], suite
-        finally:
-            made.close()
-
-    # purlin: scaffold PROOF-7
-    def test_each_command_carries_the_flag_that_writes_its_report(self):
-        expected = {
-            'pytest': ('--junitxml={report}', 'junit'),
-            'vitest': ('--outputFile.junit={report}', 'junit'),
-            'jest': ('--reporters=jest-junit', 'junit'),
-            'dotnet': ('--logger trx --results-directory {report}', 'trx'),
-            'go': ('go test -json', 'gotest'),
-            'sql': ('sqlite3 -bail', 'exit'),
-            'shell': ('bash {files}', 'exit'),
-        }
-        assert sorted(frameworks_module.ENTRIES) == sorted(expected)
-        for name, (flag, fmt) in expected.items():
-            entry = frameworks_module.entry_for(name)
-            assert flag in entry['run'], name
-            assert entry['format'] == fmt, name
-            assert entry['files'], name
-        # The page a reader meets shows the same entries, word for word.
-        page = read(os.path.join(ROOT, 'references', 'supported_frameworks.md'))
-        shown = [json.loads(block.split('```', 1)[0])
-                 for block in page.split('```json\n')[1:]]
-        assert shown == [frameworks_module.entry_for(name) for name in
-                         ('pytest', 'vitest', 'jest', 'dotnet', 'go', 'sql',
-                          'shell')]
-
-    @pytest.mark.parametrize('language,wiring',
-                             [('pytest', 'conftest.py'),
-                              ('vitest', 'vitest.config.ts'),
-                              ('jest', 'jest.config.js')])
     # purlin: scaffold PROOF-8
-    def test_nothing_is_written_into_the_test_suite(self, language, wiring):
-        made = Project(language)
+    def test_nothing_is_written_into_a_pytest_suite(self):
+        made = Project('pytest')
         try:
-            if language == 'pytest':
-                os.remove(made.path('conftest.py'))
-                write(made.path('pyproject.toml'), '[tool.pytest]\n')
+            os.remove(made.path('conftest.py'))
+            write(made.path('pyproject.toml'), '[tool.pytest]\n')
             before = tree(made.root)
             output = made.run('--gate', 'passed')
-            assert not made.has(wiring), output
-            assert wiring not in summary_paths(output)
+            assert not made.has('conftest.py'), output
+            assert 'conftest.py' not in summary_paths(output)
             # Every file the project held reads the same, and the only paths
             # added are Purlin's own: nothing lands among the tests.
             after = tree(made.root)
@@ -554,11 +606,25 @@ class TestEachLanguage:
             assert sorted(set(after) - set(before)) == [
                 '.gitignore', '.purlin', '.purlin/config.json',
                 '.purlin/evidence', '.purlin/evidence/README.md',
-                'purlin-report.html', 'specs', 'specs/_anchors'], output
+                'purlin-report.html', 'specs'], output
         finally:
             made.close()
 
-    # purlin: scaffold PROOF-8
+    @pytest.mark.parametrize('language,wiring',
+                             [('vitest', 'vitest.config.ts'),
+                              ('jest', 'jest.config.js')])
+    # purlin: scaffold PROOF-59
+    # purlin: scaffold PROOF-60
+    def test_nothing_is_written_into_a_node_suite(self, language, wiring):
+        made = Project(language)
+        try:
+            output = made.run('--gate', 'passed')
+            assert not made.has(wiring), output
+            assert wiring not in summary_paths(output)
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-61
     def test_a_runner_config_the_project_wrote_is_left_alone(self):
         made = Project('jest')
         try:
@@ -570,156 +636,73 @@ class TestEachLanguage:
             made.close()
 
     # purlin: scaffold PROOF-9
-    def test_a_framework_that_needs_something_added_is_told_what(self):
-        for language, line in (
-                ('jest', 'jest needs the package jest-junit to write its '
-                         'report: run npm install --save-dev jest-junit'),
-                ('sql', 'sql runs each test file through the sqlite3 '
-                        'command, and a test fails by raising an error')):
-            made = Project(language)
-            try:
-                assert line in made.run('--gate', 'passed'), language
-            finally:
-                made.close()
-        made = Project('pytest')
+    def test_a_node_project_is_told_about_stryker(self):
+        made = Project('vitest')
         try:
-            assert 'to write its report' not in made.run('--gate', 'passed')
-        finally:
-            made.close()
-
-
-class TestTheTwoQuestions:
-
-    # purlin: scaffold PROOF-6
-    def test_an_empty_tree_is_asked_for_its_command(self):
-        made = Project(None)
-        try:
-            output = made.run('--gate', 'passed')
-            assert scaffold_module.COMMAND_QUESTION in output
-            assert scaffold_module.NO_COMMAND in output
-            assert made.config()['tests'] == []
-        finally:
-            made.close()
-
-    # purlin: scaffold PROOF-6
-    def test_the_command_and_the_report_are_the_suite_written(self):
-        made = Project(None)
-        try:
-            out = _answering(made, 'make test\nbuild/report.xml\n\n',
-                             '--gate', 'passed')
-            assert (out.index(scaffold_module.COMMAND_QUESTION)
-                    < out.index(scaffold_module.REPORT_QUESTION)), out
-            assert made.config()['tests'] == [{
-                'name': 'tests', 'run': 'make test',
-                'report': 'build/report.xml', 'format': 'junit',
-                'files': scaffold_module.ASKED_FILES}]
-        finally:
-            made.close()
-
-    @pytest.mark.parametrize('command,report,fmt', [
-        ('dotnet test', 'out/results.trx', 'trx'),
-        ('go test -json ./...', '-', 'gotest')])
-    # purlin: scaffold PROOF-6
-    def test_a_trx_report_and_a_dash_name_their_formats(self, command,
-                                                        report, fmt):
-        made = Project(None)
-        try:
-            _answering(made, '%s\n%s\n\n' % (command, report),
-                       '--gate', 'passed')
-            assert made.config()['tests'] == [{
-                'name': 'tests', 'run': command, 'report': report,
-                'format': fmt,
-                'files': ['**/test_*', '**/*_test.*', '**/*.test.*',
-                          '**/*.spec.*']}]
-        finally:
-            made.close()
-
-    # purlin: scaffold PROOF-6
-    def test_no_report_makes_each_test_file_pass_by_its_exit_code(self):
-        made = Project(None)
-        try:
-            _answering(made, './run-one.sh\n\n\n', '--gate', 'passed')
-            (suite,) = made.config()['tests']
-            assert suite['format'] == 'exit'
-            assert suite['run'] == './run-one.sh {files}'
-            assert suite['report'] is None
+            output = made.run('--gate', 'passed', '--mutation')
+            assert ('vitest: Stryker measures the breaks. Without it the test '
+                    'strength reads n/a.' in output.splitlines()), output
         finally:
             made.close()
 
 
 # ---------------------------------------------------------------------------
-# Nobody is named
+# Nobody is named, and the gate moves
 # ---------------------------------------------------------------------------
 
-class TestNobodyIsNamed:
+class TestTheGateMoves:
 
     # purlin: scaffold PROOF-10
-    def test_no_gate_asks_who_may_sign(self):
-        for gate in ('strong', 'signed'):
-            made = Project('pytest')
-            try:
-                done = subprocess.run(
-                    [sys.executable, SCAFFOLD, '--project-root', made.root,
-                     '--gate', gate],
-                    input='\n', capture_output=True, encoding='utf-8',
-                    timeout=300)
-                assert done.returncode == 0, done.stdout + done.stderr
-                assert 'email' not in done.stdout.lower(), done.stdout
-                assert not [key for key in made.config() if 'signer' in key], (
-                    made.config())
-                if gate == 'signed':
-                    assert 'git config gpg.format ssh' in done.stdout
-                    assert 'git config commit.gpgsign true' in done.stdout
-                else:
-                    assert 'Each signer runs this once' not in done.stdout
-                    assert 'git config gpg.format ssh' not in done.stdout
-                    assert 'git config commit.gpgsign' not in done.stdout
-            finally:
-                made.close()
+    def test_signed_names_nobody_and_sets_up_no_signing(self):
+        made = Project('pytest')
+        try:
+            done = subprocess.run(
+                [sys.executable, SCAFFOLD, '--project-root', made.root,
+                 '--gate', 'signed'],
+                input='\n', capture_output=True, encoding='utf-8',
+                timeout=300)
+            assert done.returncode == 0, done.stdout + done.stderr
+            assert 'email' not in done.stdout.lower(), done.stdout
+            assert 'git config' not in done.stdout, done.stdout
+            assert not [key for key in made.config() if 'signer' in key], (
+                made.config())
+        finally:
+            made.close()
 
     # purlin: scaffold PROOF-12
     def test_raising_the_gate_writes_the_setting_and_no_workflow(self,
                                                                  project):
-        """A runner is decided by trust and the `@env` tags, not the gate."""
+        """A runner is decided by the `@env` tags, not the gate."""
         project.run('--gate', 'passed')
         assert not project.has('.github/workflows/purlin.yml')
         project.run('--gate', 'strong')
         assert not project.has('.github/workflows/purlin.yml')
         assert project.config()['gate'] == 'strong'
 
-    # purlin: scaffold PROOF-12
-    def test_raising_to_signed_keeps_the_workflow_trust_asked_for(self,
-                                                                  project):
-        write(project.path('.purlin/config.json'),
-              json.dumps({'trust': 'remote'}) + '\n')
+    # purlin: scaffold PROOF-62
+    def test_raising_to_signed_keeps_the_workflow(self, project):
+        tag_foreign(project)
         project.run('--gate', 'strong')
-        before = read(project.path('.github/workflows/purlin.yml'))
-        files = tree(project.root)
+        before = tree(project.root)
         output = project.run('--gate', 'signed')
-        assert read(project.path('.github/workflows/purlin.yml')) == before
         assert summary_paths(output)['.github/workflows/purlin.yml'] == 'kept'
         # Every file the earlier run wrote is there, and only the settings
-        # file differs.
-        after = tree(project.root)
-        assert [rel for rel in files if rel not in after] == []
-        assert [rel for rel in files if after[rel] != files[rel]] == [
-            '.purlin/config.json']
+        # file and the dashboard's data differ.
+        assert changed_since(before, tree(project.root)) == [
+            '.purlin/config.json', REPORT_DATA]
         assert project.config()['gate'] == 'signed'
 
-    # purlin: scaffold PROOF-12
+    # purlin: scaffold PROOF-63
     def test_lowering_writes_the_setting_and_deletes_nothing(self, project):
-        write(project.path('.purlin/config.json'),
-              json.dumps({'trust': 'remote'}) + '\n')
+        tag_foreign(project)
         project.run('--gate', 'signed')
-        files = tree(project.root)
+        before = tree(project.root)
         project.run('--gate', 'passed')
         assert project.config()['gate'] == 'passed'
         assert project.config()['min_strength'] is None
         assert project.has('.github/workflows/purlin.yml')
-        after = tree(project.root)
-        assert [rel for rel in files if rel not in after] == []
-        assert [rel for rel in files if after[rel] != files[rel]] == [
-            '.purlin/config.json']
+        assert changed_since(before, tree(project.root)) == [
+            '.purlin/config.json', REPORT_DATA]
 
     # purlin: scaffold PROOF-20
     def test_a_second_run_at_the_same_gate_changes_nothing(self, project):
@@ -730,158 +713,54 @@ class TestNobodyIsNamed:
         # Not a byte of the project changed, whatever the summary says.
         assert tree(project.root) == files
 
-    # purlin: scaffold PROOF-3
-    def test_the_gate_is_remembered_when_no_flag_names_one(self, project):
-        project.run('--gate', 'strong')
-        output = project.run()
-        assert scaffold_module.GATE_QUESTION not in output
-        assert project.config()['gate'] == 'strong'
-
 
 # ---------------------------------------------------------------------------
-# CI
+# The remote runner
 # ---------------------------------------------------------------------------
 
 class TestTheWorkflow:
-    """A workflow is written for two reasons and no others."""
-
-    @staticmethod
-    def _trust_remote(made):
-        """Answer the trust question `no` before the run, through the config."""
-        write(made.path('.purlin/config.json'),
-              json.dumps({'trust': 'remote'}) + '\n')
-
-    @staticmethod
-    def _foreign_env(made):
-        """A spec naming the two operating systems this machine is not."""
-        host = scaffold_module.evidence_module.host_os()
-        other = [name for name in ('linux', 'macos', 'windows')
-                 if name != host]
-        write(made.path('specs/core/login.md'),
-              SPEC.replace('returns a session\n',
-                           'returns a session @env(%s)\n' % other[0]))
-        return other[0]
-
-    # purlin: scaffold PROOF-49
-    def test_at_passed_the_trust_lines_name_tests_and_no_signing(self):
-        made = Project('pytest')
-        try:
-            done = subprocess.run(
-                [sys.executable, SCAFFOLD, '--project-root', made.root],
-                input='passed\n\n\n', capture_output=True,
-                encoding='utf-8', timeout=300)
-            assert done.returncode == 0, done.stdout + done.stderr
-            out = done.stdout
-            assert scaffold_module.TRUST_QUESTION_AT_PASSED in out, out
-            assert scaffold_module.TRUST_QUESTION not in out, out
-            lines = out.splitlines()
-            assert 'Trust local: your own runs count.' in lines, out
-            reason = ('every test runs on this operating system and you '
-                      'trust this machine, so nothing has to run remotely')
-            assert 'No remote runner: %s.' % reason in lines, out
-            assert 'skipped the runner file (%s)' % reason in lines, out
-            after = out[out.index(scaffold_module.TRUST_QUESTION_AT_PASSED):]
-            assert 'proof' not in after.lower(), after
-            assert 'sign' not in after.lower(), after
-        finally:
-            made.close()
+    """A workflow is written for one reason and no other."""
 
     # purlin: scaffold PROOF-13
-    def test_a_trusted_project_with_no_foreign_proof_gets_no_workflow(
-            self, project):
+    def test_a_project_with_no_foreign_proof_gets_no_workflow(self, project):
         output = project.run('--gate', 'strong')
         assert not project.has('.github/workflows/purlin.yml')
-        assert scaffold_module.workflow_module.NO_REASON in output, output
+        assert any(line.startswith('No remote runner: ')
+                   for line in output.splitlines()), output
 
-    # purlin: scaffold PROOF-13
-    def test_a_proof_this_machine_cannot_prove_writes_one(self, project):
-        named = self._foreign_env(project)
+    # purlin: scaffold PROOF-64
+    def test_at_passed_the_reason_names_the_test(self, project):
+        named = tag_foreign(project)
         output = project.run('--gate', 'passed')
         assert project.has('.github/workflows/purlin.yml'), output
-        assert scaffold_module.REMOTE_INTRO in output
-        # At `passed` the reason names the test and no proof.
-        assert ('  A test is tagged @env for %s, which this machine is not, '
-                'so only a runner can run it.' % named
-                in output.splitlines()), output
-        output = project.run('--gate', 'strong')
-        assert ('  A proof in specs/ is tagged @env for %s, which this '
-                'machine is not, so only a runner can prove it.' % named
-                in output.splitlines()), output
+        assert reasons_under_heading(output) == [
+            '  A test is tagged @env for %s, which this machine is not, so '
+            'only a runner can run it.' % named], output
 
-    # purlin: scaffold PROOF-13
-    def test_answering_no_to_trust_writes_one(self, project):
-        self._trust_remote(project)
+    # purlin: scaffold PROOF-65
+    def test_at_strong_the_reason_names_the_proof(self, project):
+        named = tag_foreign(project)
         output = project.run('--gate', 'strong')
         assert project.has('.github/workflows/purlin.yml'), output
-        assert project.config()['trust'] == 'remote'
-        assert ('  You chose not to trust this machine for signing, so the '
-                'tests a signature rests on run on a clean one.'
-                in output.splitlines()), output
+        assert reasons_under_heading(output) == [
+            '  A proof in specs/ is tagged @env for %s, which this machine '
+            'is not, so only a runner can prove it.' % named], output
 
     # purlin: scaffold PROOF-51
-    @pytest.mark.parametrize('foreign', (False, True))
-    def test_the_heading_is_true_for_any_count_of_reasons(self, project,
-                                                          foreign):
-        self._trust_remote(project)
-        named = self._foreign_env(project) if foreign else None
+    def test_two_foreign_systems_are_one_reason(self, project):
+        here = scaffold_module.evidence_module.host_os()
+        others = [name for name in ('linux', 'macos', 'windows')
+                  if name != here]
+        tag_foreign(project, *others)
         output = project.run('--gate', 'strong')
-        lines = output.splitlines()
-        start = lines.index('A remote runner is written because:')
-        reasons = []
-        for line in lines[start + 1:]:
-            if not line.startswith('  '):
-                break
-            reasons.append(line)
-        signing = ('  You chose not to trust this machine for signing, so '
-                   'the tests a signature rests on run on a clean one.')
-        if foreign:
-            assert len(reasons) == 2, reasons
-            assert named in reasons[0], reasons
-            assert reasons[1] == signing, reasons
-        else:
-            assert reasons == [signing], reasons
-        assert 'two reasons' not in output, output
+        (reason,) = reasons_under_heading(output)
+        assert all(name in reason for name in others), reason
 
-    # purlin: scaffold PROOF-50
-    @pytest.mark.parametrize('gate', ('passed', 'strong'))
-    def test_the_trust_reason_names_the_tests_at_passed(self, project, gate):
-        self._trust_remote(project)
-        output = project.run('--gate', gate)
-        assert project.has('.github/workflows/purlin.yml'), output
-        at_passed = ('  You chose not to trust this machine for the tests, '
-                     'so they run on a clean one.')
-        signing = ('  You chose not to trust this machine for signing, so '
-                   'the tests a signature rests on run on a clean one.')
-        lines = output.splitlines()
-        answer_at_passed = ('Trust remote: purlin:test --remote runs your '
-                            'tests on the remote runner, and your own runs '
-                            'count too.')
-        if gate == 'passed':
-            assert at_passed in lines, output
-            assert signing not in lines, output
-            assert answer_at_passed in lines, output
-            assert not any(line.startswith('Trust remote: purlin:sign')
-                           for line in lines), output
-            start = next(i for i, line in enumerate(lines)
-                         if line.startswith('A remote runner is written'))
-            reasons = []
-            for line in lines[start + 1:]:
-                if not line.startswith('  '):
-                    break
-                reasons.append(line)
-            assert reasons == [at_passed], reasons
-            assert not any('sign' in line for line in reasons), reasons
-        else:
-            assert signing in lines, output
-            assert at_passed not in lines, output
-            assert scaffold_module.TRUST_REMOTE in lines, output
-            assert answer_at_passed not in lines, output
-
-    # purlin: scaffold PROOF-13
+    # purlin: scaffold PROOF-66
     def test_with_no_remote_nothing_is_written(self):
         made = Project('pytest', host=None)
         try:
-            self._trust_remote(made)
+            tag_foreign(made)
             output = made.run('--gate', 'strong')
             assert not made.has('.github/workflows/purlin.yml')
             assert 'there is no git remote' in output
@@ -892,24 +771,21 @@ class TestTheWorkflow:
     def test_a_missing_prerequisite_is_named_and_nothing_is_written(self):
         made = Project('pytest', remote='https://example.invalid/x.git')
         try:
-            self._trust_remote(made)
+            tag_foreign(made)
             output = made.run('--gate', 'strong')
-            assert 'neither GitHub nor Azure DevOps' in output, output
             assert not made.has('.github/workflows/purlin.yml')
-            assert ('The origin remote is neither GitHub nor Azure DevOps, '
-                    'and those are the two hosts this release writes a '
-                    'workflow for.' in output.splitlines()), output
+            assert output.splitlines().count(UNKNOWN_HOST) == 1, output
             assert ('skipped the CI workflow (a prerequisite is missing)'
                     in output.splitlines()), output
         finally:
             made.close()
 
-    # purlin: scaffold PROOF-44
+    # purlin: scaffold PROOF-77
     def test_a_remote_with_no_branch_yet_still_gets_the_workflow(self):
         made = Project('pytest', host=None)
         bare = os.path.realpath(tempfile.mkdtemp(prefix='purlin-empty-remote-'))
         try:
-            self._trust_remote(made)
+            tag_foreign(made)
             url = os.path.join(bare, 'github-origin.git')
             git(bare, 'init', '--bare', '-q', '-b', 'main', url)
             git(made.root, 'remote', 'add', 'origin', url)
@@ -921,22 +797,15 @@ class TestTheWorkflow:
             shutil.rmtree(bare, ignore_errors=True)
             made.close()
 
-    # purlin: scaffold PROOF-44
-    def test_the_host_cli_is_reported_either_way(self, project):
-        self._trust_remote(project)
-        output = project.run('--gate', 'strong')
-        assert ('gh is installed' in output
-                or 'gh is not installed' in output), output
-        assert project.has('.github/workflows/purlin.yml'), output
-
     @pytest.mark.parametrize('gh', (True, False))
-    # purlin: scaffold PROOF-44
+    # purlin: scaffold PROOF-78
+    # purlin: scaffold PROOF-79
     def test_gh_present_or_absent_is_named_and_the_workflow_written(
             self, project, gh):
         """A PATH holding git, and `gh` or not, decides which line prints."""
         if os.name == 'nt':
             pytest.skip('a PATH of one linked git is built on POSIX only')
-        self._trust_remote(project)
+        tag_foreign(project)
         bin_dir = os.path.realpath(tempfile.mkdtemp(prefix='purlin-bin-'))
         try:
             os.symlink(shutil.which('git'), os.path.join(bin_dir, 'git'))
@@ -954,71 +823,38 @@ class TestTheWorkflow:
         finally:
             shutil.rmtree(bin_dir, ignore_errors=True)
 
-    # purlin: scaffold PROOF-14
-    def test_the_host_is_read_from_the_remote(self):
-        made = Project('pytest', remote='https://github.com/acme/demo.git')
-        try:
-            self._trust_remote(made)
-            made.run('--gate', 'strong')
-            assert made.config()['ci'] == 'github'
-            assert made.has('.github/workflows/purlin.yml')
-        finally:
-            made.close()
-
-    # purlin: scaffold PROOF-14
+    # purlin: scaffold PROOF-71
     def test_an_azure_remote_gets_the_pipeline(self):
         made = Project('pytest',
                        remote='https://dev.azure.com/acme/demo/_git/demo')
         try:
-            self._trust_remote(made)
+            tag_foreign(made)
             output = made.run('--gate', 'strong')
-            assert made.config()['ci'] == 'azure'
             assert made.has('purlin.azure-pipelines.yml'), output
-            assert ('Gate strong. Suites pytest. Git host azure.'
-                    in output.splitlines()), output
             assert 'wrote purlin.azure-pipelines.yml' in output.splitlines()
             assert not made.has('.github/workflows/purlin.yml'), output
         finally:
             made.close()
 
     # purlin: scaffold PROOF-15
-    def test_the_matrix_is_rendered_from_the_env_tags(self, project):
-        named = self._foreign_env(project)
-        output = project.run('--gate', 'strong')
-        workflow = read(project.path('.github/workflows/purlin.yml'))
-        assert '%s-latest' % ('ubuntu' if named == 'linux' else named) \
-            in workflow
-        assert 'ubuntu-latest' in workflow
-        assert 'ubuntu-latest' in output
-
-    # purlin: scaffold PROOF-15
-    def test_windows_and_macos_tags_each_add_their_runner(self, project):
-        """The same on every machine: trust `remote` writes the workflow."""
-        self._trust_remote(project)
-        write(project.path('specs/core/login.md'), SPEC.replace(
-            'returns a session\n',
-            'returns a session @env(windows)\n'
-            '- PROOF-2 (RULE-1): Sign in on a Mac @env(macos)\n'))
-        output = project.run('--gate', 'strong')
-        workflow = read(project.path('.github/workflows/purlin.yml'))
-        assert ('        os: [ubuntu-latest, macos-latest, windows-latest]\n'
-                in workflow), workflow
-        assert ('  the matrix is ubuntu-latest, macos-latest, windows-latest: '
-                'ubuntu-latest always, then the @env tags in specs/.'
-                in output.splitlines()), output
-
-    # purlin: scaffold PROOF-15
-    def test_no_env_tag_means_one_linux_job(self, project):
-        self._trust_remote(project)
-        project.spec()
+    def test_windows_and_macos_tags_are_the_matrix(self, project):
+        tag_foreign(project, 'windows', 'macos')
         project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
-        assert 'ubuntu-latest' in workflow
-        assert 'windows-latest' not in workflow
+        assert '        os: [macos-latest, windows-latest]\n' in workflow, (
+            workflow)
 
-    # purlin: scaffold PROOF-15
+    # purlin: scaffold PROOF-72
+    def test_one_foreign_system_is_the_whole_matrix(self, project):
+        named = tag_foreign(project)
+        project.run('--gate', 'strong')
+        workflow = read(project.path('.github/workflows/purlin.yml'))
+        assert '        os: [%s-latest]\n' % named in workflow, workflow
+        assert 'ubuntu-latest' not in workflow, workflow
+
+    # purlin: scaffold PROOF-73
     def test_the_purlin_release_is_pinned(self, project):
-        self._trust_remote(project)
+        tag_foreign(project)
         project.run('--gate', 'strong')
         version = read(os.path.join(ROOT, 'VERSION')).strip()
         assert 'v%s' % version in read(
@@ -1026,40 +862,115 @@ class TestTheWorkflow:
 
     # purlin: scaffold PROOF-42
     def test_the_triggers_are_a_run_branch_and_the_signing_tag(self, project):
-        self._trust_remote(project)
+        tag_foreign(project)
         project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         block = workflow.split('\non:\n', 1)[1].split('\npermissions:', 1)[0]
         assert block == ("  push:\n    branches: ['run/**']\n"
                          "    tags: ['signed/**']\n")
 
-    # purlin: scaffold PROOF-42
-    def test_the_last_step_checks_the_gate_and_verifies(self, project):
-        self._trust_remote(project)
+    # purlin: scaffold PROOF-74
+    def test_the_last_step_is_the_test_run(self, project):
+        tag_foreign(project)
         project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
-        assert 'name: Check the gate' in workflow
-        assert 'scripts/ci/gate_check.py" --check --verify' in workflow
+        assert 'gate_check.py' not in workflow
         assert 'actions/upload-artifact@v4' not in workflow
-        assert workflow.rstrip().endswith('--check --verify')
+        assert workflow.rstrip().endswith(
+            'scripts/run/purlin_run.py" --all --ci'), workflow
 
-    # purlin: scaffold PROOF-42
-    def test_the_azure_pipeline_carries_the_same_two(self):
+    # purlin: scaffold PROOF-75
+    def test_the_azure_pipeline_has_the_same_triggers(self):
         made = Project('pytest',
                        remote='https://dev.azure.com/acme/demo/_git/demo')
         try:
-            TestTheWorkflow._trust_remote(made)
+            tag_foreign(made)
             made.run('--gate', 'strong')
             pipeline = read(made.path('purlin.azure-pipelines.yml'))
             assert '      - run/*\n' in pipeline
             assert '      - signed/*\n' in pipeline
             assert 'pr: none\n' in pipeline
-            assert 'displayName: Check the gate' in pipeline
-            assert 'scripts/ci/gate_check.py" --check --verify' in pipeline
-            # It is the last step: no step follows it.
-            tail = pipeline.split('gate_check.py" --check --verify', 1)[1]
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-76
+    def test_the_azure_pipeline_ends_on_the_test_run(self):
+        made = Project('pytest',
+                       remote='https://dev.azure.com/acme/demo/_git/demo')
+        try:
+            tag_foreign(made)
+            made.run('--gate', 'strong')
+            pipeline = read(made.path('purlin.azure-pipelines.yml'))
+            assert 'gate_check.py' not in pipeline
+            # The test run is the last step: no step follows it.
+            tail = pipeline.split('scripts/run/purlin_run.py" --all --ci',
+                                  1)[1]
             assert not [line for line in tail.splitlines()
                         if line.lstrip().startswith('- ')], tail
+        finally:
+            made.close()
+
+
+# The line for a remote that names neither host, word for word.
+UNKNOWN_HOST = ('The origin remote is neither GitHub nor Azure DevOps. '
+                'Everything on this machine works with any host; only '
+                'purlin:test --remote needs one of those two.')
+
+
+class TestTheHost:
+
+    @pytest.mark.parametrize('url,host', [
+        ('https://github.com/acme/demo.git', 'github'),
+        ('git@github.com:acme/demo.git', 'github'),
+        ('https://dev.azure.com/acme/demo/_git/demo', 'azure'),
+        ('https://acme.visualstudio.com/demo/_git/demo', 'azure'),
+        ('https://git.example.com/acme/demo.git', None),
+    ])
+    # purlin: scaffold PROOF-14
+    def test_the_host_is_read_from_the_url(self, url, host):
+        made = Project('pytest', remote=url)
+        try:
+            assert scaffold_module.git_host(made.root) == host
+        finally:
+            made.close()
+
+    @pytest.mark.parametrize('url,host', [
+        ('https://github.com/acme/demo.git', 'github'),
+        ('https://dev.azure.com/acme/demo/_git/demo', 'azure')])
+    # purlin: scaffold PROOF-67
+    # purlin: scaffold PROOF-68
+    def test_a_known_host_is_printed_and_written(self, url, host):
+        made = Project('pytest', remote=url)
+        try:
+            output = made.run('--gate', 'strong')
+            assert ('Gate strong. Suites none. Git host %s.' % host
+                    in output.splitlines()), output
+            assert made.config()['ci'] == host
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-69
+    def test_a_host_that_is_neither_says_what_still_works(self):
+        made = Project('pytest', remote='https://git.example.com/acme/demo.git')
+        try:
+            lines = made.run('--gate', 'strong').splitlines()
+            at = lines.index('Gate strong. Suites none. Git host not read '
+                             'from a remote.')
+            assert lines[at + 1] == UNKNOWN_HOST, lines
+            assert made.config()['ci'] == 'none'
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-70
+    def test_no_remote_reads_no_host(self):
+        made = Project('pytest', host=None)
+        try:
+            assert scaffold_module.git_remote(made.root) is False
+            output = made.run('--gate', 'strong')
+            assert ('Gate strong. Suites none. Git host not read from a '
+                    'remote.' in output.splitlines()), output
+            assert 'neither GitHub nor Azure DevOps' not in output, output
+            assert made.config()['ci'] == 'none'
         finally:
             made.close()
 
@@ -1087,6 +998,12 @@ class TestWhatInitWrites:
         assert sorted(set(tree(project.root)) - set(before)) == written
         assert not [rel for rel in written
                     if 'design' in rel.lower().split('/')[-1]], written
+
+    # purlin: scaffold PROOF-18
+    def test_the_dashboard_is_copied(self, project):
+        project.run('--gate', 'passed')
+        source = os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html')
+        assert read(project.path('purlin-report.html')) == read(source)
 
     # purlin: scaffold PROOF-19
     def test_the_gitignore_block_is_added_once(self, project):
@@ -1116,6 +1033,12 @@ class TestWhatInitWrites:
         project.run('--gate', 'passed', '--mutation')
         assert '[mutmut]' in read(project.path('setup.cfg'))
 
+    # purlin: scaffold PROOF-19
+    def test_the_engine_block_is_added_once(self, project):
+        project.run('--gate', 'passed', '--mutation')
+        project.run('--gate', 'passed')
+        assert read(project.path('setup.cfg')).count('[mutmut]') == 1
+
     # purlin: scaffold PROOF-40
     def test_the_mutmut_copy_is_ignored_once(self, project):
         write(project.path('greeting.py'), 'def greet(name):\n    return name\n')
@@ -1125,37 +1048,18 @@ class TestWhatInitWrites:
         lines = read(project.path('.gitignore')).splitlines()
         assert lines.count('mutants/') == 1
 
-    # purlin: scaffold PROOF-19
-    def test_the_engine_block_is_added_once(self, project):
-        project.run('--gate', 'passed', '--mutation')
-        project.run('--gate', 'passed')
-        assert read(project.path('setup.cfg')).count('[mutmut]') == 1
-
-    # purlin: scaffold PROOF-9
-    def test_a_node_project_is_told_about_stryker(self):
-        made = Project('vitest')
-        try:
-            assert 'Stryker' in made.run('--gate', 'passed', '--mutation')
-        finally:
-            made.close()
-
-    # purlin: scaffold PROOF-18
-    def test_the_dashboard_is_copied(self, project):
-        project.run('--gate', 'passed')
-        source = os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html')
-        assert read(project.path('purlin-report.html')) == read(source)
-
     # purlin: scaffold PROOF-34
-    def test_the_next_step_is_the_last_line(self, project):
+    def test_with_no_spec_the_last_line_sends_you_to_write_one(self, project):
         lines = project.run('--gate', 'passed').strip().splitlines()
-        assert lines[-1].startswith('→')
-        assert 'purlin:spec' in lines[-1]
+        assert lines[-1] == '→ Next: run purlin:spec to write the first spec.'
 
-    # purlin: scaffold PROOF-34
-    def test_the_next_step_reads_the_state_once_specs_exist(self, project):
+    # purlin: scaffold PROOF-80
+    def test_with_a_spec_it_ends_on_what_is_left_to_do(self, project):
         project.spec()
         lines = project.run('--gate', 'passed').strip().splitlines()
-        assert lines[-1].startswith('→')
+        assert lines[-3:] == ['1 rule. 0 pass their tests.', 'Left to do:',
+                              '  1 rule to write a test for: purlin:build'], (
+            lines)
 
     # purlin: scaffold PROOF-35
     def test_no_emoji_in_the_output(self, project):
@@ -1190,62 +1094,21 @@ class TestNoHookIsInstalled:
 class TestTheFlags:
 
     # purlin: scaffold PROOF-32
-    def test_add_keeps_what_was_detected(self, project):
+    def test_add_appends_to_the_suites_already_there(self, project):
         project.run('--gate', 'passed')
+        project.run('--add', 'pytest')
         project.run('--add', 'vitest')
         assert [suite['name'] for suite in project.config()['tests']] == [
             'pytest', 'vitest']
 
-    # purlin: scaffold PROOF-32
+    # purlin: scaffold PROOF-98
     def test_add_twice_names_the_framework_once(self, project):
         project.run('--gate', 'passed')
+        project.run('--add', 'pytest')
         project.run('--add', 'vitest')
         project.run('--add', 'vitest')
         assert [suite['name'] for suite in project.config()['tests']] == [
             'pytest', 'vitest']
-
-    # purlin: scaffold PROOF-48
-    def test_a_tests_setting_the_project_carries_is_kept(self, project):
-        project.run('--gate', 'passed')
-        written = project.config()
-        ours = [{'name': 'unit', 'run': 'make test REPORT={report}',
-                 'report': 'out/unit.xml', 'format': 'junit',
-                 'files': ['spec/**/*_spec.py']}]
-        written['tests'] = ours
-        write(project.path('.purlin/config.json'),
-              json.dumps(written, indent=2))
-        project.run('--gate', 'strong')
-        assert project.config()['tests'] == ours
-
-    # purlin: scaffold PROOF-30
-    def test_dry_run_writes_nothing_and_prints_the_plan(self):
-        made = Project('pytest')
-        try:
-            output = made.run('--gate', 'strong', '--dry-run')
-            assert '.purlin/config.json' in summary_paths(output)
-            assert not made.has('.purlin')
-            assert not made.has('conftest.py') or read(
-                made.path('conftest.py')) == ''
-            assert not made.has('.github/workflows/purlin.yml')
-        finally:
-            made.close()
-
-    # purlin: scaffold PROOF-30
-    def test_dry_run_outside_a_repository_still_prints_the_plan(self):
-        directory = tempfile.mkdtemp(prefix='purlin-nogit-')
-        try:
-            done = subprocess.run(
-                [sys.executable, SCAFFOLD, '--project-root', directory,
-                 '--gate', 'strong', '--yes', '--dry-run'],
-                capture_output=True, encoding='utf-8', timeout=300,
-                stdin=subprocess.DEVNULL)
-            assert done.returncode == 0, done.stdout + done.stderr
-            assert scaffold_module.COMMAND_QUESTION in done.stdout
-            assert '.purlin/config.json' in summary_paths(done.stdout)
-            assert done.stdout.strip().splitlines()[-1].startswith('→')
-            assert os.listdir(directory) == []
-        finally:
-            shutil.rmtree(directory, ignore_errors=True)
 
     # purlin: scaffold PROOF-31
     def test_outside_a_repository_a_real_run_refuses(self):
@@ -1289,60 +1152,12 @@ class TestTheFlags:
         project.run('--gate', 'passed')
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', project.root,
-             '--update', '--yes'], capture_output=True, encoding='utf-8', timeout=300,
-            stdin=subprocess.DEVNULL)
-        if os.path.isfile(os.path.join(ROOT, 'scripts', 'init', 'update.py')):
-            assert done.returncode == 0, done.stdout + done.stderr
-            assert 'does not carry' not in done.stdout
-            assert ('Nothing is pending: this project is at %s.'
-                    % read(os.path.join(ROOT, 'VERSION')).strip()
-                    in done.stdout.splitlines()), done.stdout
-        else:
-            assert done.returncode == 1
-            assert 'scripts/init/update.py' in done.stdout
-
-    # purlin: scaffold PROOF-33
-    def test_update_with_dry_run_asks_the_upgrade_what_is_pending(self,
-                                                                  project):
-        project.run('--gate', 'passed')
-        done = subprocess.run(
-            [sys.executable, SCAFFOLD, '--project-root', project.root,
-             '--update', '--dry-run'], capture_output=True, encoding='utf-8',
+             '--update', '--yes'], capture_output=True, encoding='utf-8',
             timeout=300, stdin=subprocess.DEVNULL)
-        # A project this release just set up has nothing pending.
         assert done.returncode == 0, done.stdout + done.stderr
-        assert 'does not carry' not in done.stdout
         assert ('Nothing is pending: this project is at %s.'
                 % read(os.path.join(ROOT, 'VERSION')).strip()
                 in done.stdout.splitlines()), done.stdout
-
-    # purlin: scaffold PROOF-33
-    def test_update_with_dry_run_lists_what_an_older_project_needs(self):
-        """A project 0.9.5 set up has migrations pending, and none is applied."""
-        made = Project(None, host=None)
-        try:
-            fixture = os.path.join(DEV, 'fixtures', 'upgrade-0.9.5')
-            shutil.copytree(fixture, made.root, dirs_exist_ok=True)
-            os.rename(made.path('_gitignore'), made.path('.gitignore'))
-            git(made.root, 'add', '-A')
-            git(made.root, 'commit', '-q', '-m', 'as 0.9.5 left it')
-            files = tree(made.root)
-            done = subprocess.run(
-                [sys.executable, SCAFFOLD, '--project-root', made.root,
-                 '--update', '--dry-run'], capture_output=True,
-                encoding='utf-8', timeout=300, stdin=subprocess.DEVNULL)
-            assert done.returncode == 1, done.stdout + done.stderr
-            lines = done.stdout.splitlines()
-            assert re.match(r'\d+ migrations pending in %s:$'
-                            % re.escape(made.root), lines[0]), lines
-            assert ('  config: write .purlin/config.json at this shape and '
-                    'set the gate' in lines), lines
-            assert lines[-1] == '→ Run: purlin:init --update', lines
-            assert 'Nothing is pending' not in done.stdout
-            assert tree(made.root) == files
-            assert git(made.root, 'status', '--porcelain').stdout == ''
-        finally:
-            made.close()
 
 
 # ---------------------------------------------------------------------------
@@ -1372,24 +1187,22 @@ class TestTheMarketplacePath:
         cache, installed = self.copy_plugin()
         made = Project('pytest')
         try:
-            write(made.path('.purlin/config.json'),
-                  json.dumps({'trust': 'remote'}) + '\n')
+            tag_foreign(made)
             output = made.run('--gate', 'strong',
                               script=os.path.join(installed, 'scripts', 'init',
                                                   'scaffold.py'),
                               env={'CLAUDE_PLUGIN_ROOT': installed})
-            assert [suite['name'] for suite in made.config()['tests']] == [
-                'pytest']
             assert made.has('.github/workflows/purlin.yml'), output
-            assert '.purlin/config.json' in summary_paths(output)
             # The same project set up from this checkout ends the same, file
             # for file and line for line.
             here = Project('pytest')
             try:
-                write(here.path('.purlin/config.json'),
-                      json.dumps({'trust': 'remote'}) + '\n')
+                tag_foreign(here)
                 ours = here.run('--gate', 'strong', subprocess=True)
-                assert tree(made.root) == tree(here.root)
+                theirs, mine = tree(made.root), tree(here.root)
+                for files in (theirs, mine):
+                    files.pop(REPORT_DATA, None)
+                assert theirs == mine
                 assert (output.replace(made.root, '<root>')
                         == ours.replace(here.root, '<root>'))
             finally:
@@ -1454,41 +1267,6 @@ def _mutmut_block(project):
 
 
 class TestThePieces:
-
-    @pytest.mark.parametrize('url,host', [
-        ('https://github.com/acme/demo.git', 'github'),
-        ('git@github.com:acme/demo.git', 'github'),
-        ('https://dev.azure.com/acme/demo/_git/demo', 'azure'),
-        ('https://acme.visualstudio.com/demo/_git/demo', 'azure'),
-        ('https://git.example.com/acme/demo.git', None),
-    ])
-    # purlin: scaffold PROOF-14
-    def test_the_host_is_read_from_the_url(self, url, host):
-        made = Project('pytest', remote=url)
-        try:
-            assert scaffold_module.git_host(made.root) == host
-            # What init itself prints and writes for the same remote. With
-            # no host read, `ci` keeps the template's `github`.
-            output = made.run('--gate', 'strong')
-            assert ('Gate strong. Suites pytest. Git host %s.'
-                    % (host or 'not read from a remote')
-                    in output.splitlines()), output
-            assert made.config()['ci'] == (host or 'github')
-        finally:
-            made.close()
-
-    # purlin: scaffold PROOF-14
-    def test_no_remote_reads_no_host(self):
-        made = Project('pytest', host=None)
-        try:
-            assert scaffold_module.git_host(made.root) is None
-            assert scaffold_module.git_remote(made.root) is False
-            output = made.run('--gate', 'strong')
-            assert ('Gate strong. Suites pytest. Git host not read from a '
-                    'remote.' in output.splitlines()), output
-            assert made.config()['ci'] == 'github'
-        finally:
-            made.close()
 
     # purlin: scaffold PROOF-19
     def test_the_source_paths_prefer_src(self, project):
@@ -1557,13 +1335,27 @@ class TestThePieces:
 
 
 # ---------------------------------------------------------------------------
-# A Go module through the command init writes
+# A Go module through the command its first test run suggests
 # ---------------------------------------------------------------------------
 
+SUGGESTED = 'Suggested entry: '
+
+
+def take_the_suggestion(root, output):
+    """Write the entry a first test run suggested, as `purlin:test` does."""
+    (line,) = [line for line in output.splitlines()
+               if line.startswith(SUGGESTED)]
+    path = root / '.purlin' / 'config.json'
+    config = json.loads(path.read_text(encoding='utf-8'))
+    config['tests'] = [json.loads(line[len(SUGGESTED):])]
+    path.write_text(json.dumps(config, indent=2) + '\n', encoding='utf-8')
+
+
 # purlin: scaffold PROOF-52
-def test_a_go_module_runs_through_the_command_init_writes(tmp_path):
+def test_a_go_module_runs_through_the_command_its_first_run_suggests(tmp_path):
     """Go itself, not a sample of what it prints: init sets the module up,
-    the module's own command runs, and each marker reads what Go said."""
+    the first run suggests the module's own command, and each marker reads
+    what Go said."""
     if not shutil.which('go'):
         pytest.skip('go is not on this machine')
     root = _fixture(tmp_path, 'go')
@@ -1578,19 +1370,14 @@ def test_a_go_module_runs_through_the_command_init_writes(tmp_path):
          '--project-root', str(root), '--gate', 'passed', '--yes'],
         capture_output=True, encoding='utf-8', stdin=subprocess.DEVNULL)
     assert init.returncode == 0, init.stdout + init.stderr
-    assert not [line for line in init.stdout.splitlines() if 'needs' in line], (
-        init.stdout)
-    config = json.loads((root / '.purlin' / 'config.json').read_text(
-        encoding='utf-8'))
-    assert config['tests'] == [{'name': 'go', 'run': 'go test -json ./...',
-                                'report': '-', 'format': 'gotest',
-                                'files': ['**/*_test.go']}], config
     for name, text in GO_SPECS.items():
         _write(root, 'specs/shop/%s.md' % name, text)
     subprocess.run(['git', 'add', '-A'], cwd=str(root), check=True)
     subprocess.run(['git', 'commit', '-q', '-m', 'the module'], cwd=str(root),
                    check=True)
 
+    _code, first = _run(root, '--all', '--test')
+    take_the_suggestion(root, first)
     code, out = _run(root, '--all', '--test')
     assert 'Markers: 7 tied to a test, 0 not tied.' in out, out
     seen = {}

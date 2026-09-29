@@ -5,6 +5,5 @@
   "min_strength": null,
   "audit_parallel": 4,
   "tests": [],
-  "ci": "github",
-  "trust": "local"
+  "ci": "none"
 }

@@ -1,41 +1,38 @@
 #!/usr/bin/env python3
-"""purlin:init: four questions at most, then every file a project needs.
+"""purlin:init: two questions at most, then every file a project needs.
 
     scaffold.py [--gate passed|strong|signed] [--mutation]
-                [--add <language>] [--update] [--dry-run]
+                [--add <language>] [--update]
                 [--project-root DIR] [--plugin-root DIR] [--yes]
 
 Init asks these, in this order, and nothing else:
 
     What must be true of every rule before a version is proven?
-    The command that runs the tests and where its report lands, only where
-      nothing in the tree says which framework they use
-    Measure test strength by breaking the code on purpose? [y/N], only
-      where an engine exists for a detected framework
-    Do you trust your own machine for the tests and the signing? [y/n]
+    Measure test strength by breaking the code on purpose? [y/N], only at
+      the gates `strong` and `signed`, and only where an engine exists for a
+      framework the tree carries
 
-Everything else is derived from those answers or read from the tree: the
-language from detection, the git host from the remote URL, and the minimum
-test strength from the gate when mutation testing is on. `--yes` takes every
-default, so mutation testing stays off; `--mutation` turns it on without the
-question. `audit_parallel` is written as 4 and is not asked.
+Everything else is derived from those answers or read from the tree: the git
+host from the remote URL, and the minimum test strength from the gate when
+mutation testing is on. Nothing is asked about how the tests run: a project
+with no `tests` setting gets an empty one, and the first test run suggests
+the command. `--yes` takes every default, so mutation testing stays off;
+`--mutation` turns it on without the question. `audit_parallel` is written as
+4 and is not asked.
 
 It then writes, in this order and naming every one in the summary: the config,
-whose `tests` setting holds one entry per detected framework with the report
-flag already in its command, the engine's config block where mutation testing
-is on, the `.gitignore` entries, `.purlin/evidence/` with its README, the
-dashboard, and, where one is wanted, the workflow CI runs. It says in one line
-what a framework needs added before it can write its report. Nothing is
-written into the project's test suite or its test runner's configuration. It
-ends with the next step computed from the state.
+the engine's config block where mutation testing is on, the `.gitignore`
+entries, `.purlin/evidence/` with its README, the dashboard, and, where one is
+wanted, the workflow a remote runner runs. Nothing is written into the
+project's test suite or its test runner's configuration. It ends on the
+summary and `Left to do` of the project as it now is.
 
-A workflow is written for two reasons and no others: a proof in `specs/` is
-tagged `@env` for an operating system this machine is not, or you answered no
-to the trust question. A project with neither gets no workflow and no runner:
-at the gate `signed` `purlin:sign` writes the tag, you push it, and nothing
-runs remotely. Where
-one is wanted the prerequisites are checked first, and a missing one is named
-with the command that fixes it; nothing is written then.
+A workflow is written for one reason and no other: a proof in `specs/` is
+tagged `@env` for an operating system this machine is not. A project with no
+such proof gets no workflow and no runner: at the gate `signed` `purlin:sign`
+writes the tag, you push it, and nothing runs remotely. Where one is wanted
+the prerequisites are checked first, and a missing one is named with the
+command that fixes it; nothing is written then.
 
 Both ways of loading Purlin work, and neither is written into a project: this
 checkout under `--plugin-dir`, and the marketplace copy under the plugin cache.
@@ -78,38 +75,6 @@ GATE_CHOICES = (
     'strong  tests pass and the audit finds them sound',
     'signed  strong, and a person signs each rule',
 )
-# What init asks where it detects no framework: the two things a run needs.
-COMMAND_QUESTION = ('There is nothing here to detect a test framework from. '
-                    'What command runs the tests?')
-REPORT_QUESTION = ('Where does that command write its report? A JUnit XML '
-                   'file, a .trx file or folder, - for a go test -json '
-                   'stream on standard output, or nothing when each test '
-                   'file passes by exiting 0.')
-NO_COMMAND = ('No test command was given, so no suite is written. Add one '
-              'under "tests" in .purlin/config.json.')
-# The globs a suite init could not detect reads its test files from.
-ASKED_FILES = ['**/test_*', '**/*_test.*', '**/*.test.*', '**/*.spec.*']
-
-# The one question that is not derived from the gate. A project that trusts
-# this machine runs its tests and writes its signatures here; one that does
-# not has purlin:sign refuse a rule whose tests have no run from the remote
-# runner for the commit being signed.
-TRUST_QUESTION = ('Do you trust your own machine for the tests and the '
-                  'signing? [y/n]')
-TRUST_LOCAL = ('Trust local: your own runs count, and purlin:sign signs what '
-               'you ran.')
-# The question and the answer at the gate `passed`, which signs nothing.
-TRUST_QUESTION_AT_PASSED = 'Do you trust your own machine for the tests? [y/n]'
-TRUST_LOCAL_AT_PASSED = 'Trust local: your own runs count.'
-TRUST_REMOTE = ('Trust remote: purlin:sign refuses a rule whose tests have no '
-                'run from the remote runner for this commit, so '
-                'purlin:test --remote runs first.')
-# The same answer at the gate `passed`, which signs nothing. There the trust
-# setting adds a remote runner and sends a rule waiting on a run to it; a run
-# on this machine still counts.
-TRUST_REMOTE_AT_PASSED = ('Trust remote: purlin:test --remote runs your tests '
-                          'on the remote runner, and your own runs count '
-                          'too.')
 
 REMOTE_INTRO = 'A remote runner is written because:'
 REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
@@ -121,20 +86,12 @@ MUTANTS_IGNORE = ('# The copy mutmut breaks, rebuilt on every run, never committ
 _STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
                  'strength reads n/a.')
 
-_TRUST_WORDS = {'local': TRUST_LOCAL, 'remote': TRUST_REMOTE}
-
 
 def trust_question(gate):
     """The trust question in the words the gate uses."""
-    return TRUST_QUESTION_AT_PASSED if gate == 'passed' else TRUST_QUESTION
-
-
-def trust_words(trust, gate):
-    """The line init prints for the trust answer, in the gate's words."""
     if gate == 'passed':
-        return (TRUST_REMOTE_AT_PASSED if trust == 'remote'
-                else TRUST_LOCAL_AT_PASSED)
-    return _TRUST_WORDS[trust]
+        return 'Do you trust your own machine for the tests? [y/n]'
+    return 'Do you trust your own machine for the tests and the signing? [y/n]'
 
 
 def runner_label(gate):
@@ -142,8 +99,9 @@ def runner_label(gate):
     return 'the runner file' if gate == 'passed' else 'the CI workflow'
 
 # Mutation testing is optional and off by default. The question is asked only
-# where an engine exists for a framework the tree carries; a yes writes
-# `mutation_engine: auto` and the gate's minimum strength, a no writes `none`.
+# at the gates `strong` and `signed`, and only where an engine exists for a
+# framework the tree carries; a yes writes `mutation_engine: auto` and the
+# gate's minimum strength, a no writes `none`.
 MUTATION_QUESTION = ('Measure test strength by breaking the code on purpose? '
                      'It needs %s and takes minutes to hours per run. [y/N]')
 NO_ENGINE = ('Mutation testing is off: no engine breaks %s code, so the AI '
@@ -194,10 +152,15 @@ def git_remote(root):
     return bool(ok and listed.strip())
 
 
+def origin_url(root):
+    """The URL of the `origin` remote, or '' when there is none."""
+    ok, url = _git(root, 'remote', 'get-url', 'origin')
+    return url if ok else ''
+
+
 def git_host(root):
     """`github`, `azure` or None, read from the remote URL."""
-    ok, url = _git(root, 'remote', 'get-url', 'origin')
-    lowered = url.lower() if ok else ''
+    lowered = origin_url(root).lower()
     if 'github' in lowered:
         return 'github'
     if 'dev.azure.com' in lowered or 'visualstudio.com' in lowered:
@@ -297,9 +260,8 @@ class Console(object):
 class Plan(object):
     """Every write, as one line, in the order the summary prints it."""
 
-    def __init__(self, root, dry_run, console, gated):
+    def __init__(self, root, console, gated):
         self.root = root
-        self.dry_run = dry_run
         self.console = console
         self.gated = gated
         self.lines = []
@@ -315,8 +277,7 @@ class Plan(object):
         if os.path.isdir(path):
             return self.note('kept %s/' % rel)
         if self.allowed(rel, 'create %s/' % rel):
-            if not self.dry_run:
-                os.makedirs(path, exist_ok=True)
+            os.makedirs(path, exist_ok=True)
             self.note('wrote %s/' % rel)
 
     def write(self, rel, text, own=False, perm=None, source=None,
@@ -335,16 +296,15 @@ class Plan(object):
                 return self.note('kept %s' % rel)
         if not self.allowed(rel, 'write %s' % rel):
             return
-        if not self.dry_run:
-            os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
-            if exact:
-                with open(path, 'wb') as handle:
-                    handle.write(text)
-            else:
-                with open(path, 'w', encoding='utf-8') as handle:
-                    handle.write(text)
-            if perm is not None:
-                os.chmod(path, perm)
+        os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+        if exact:
+            with open(path, 'wb') as handle:
+                handle.write(text)
+        else:
+            with open(path, 'w', encoding='utf-8') as handle:
+                handle.write(text)
+        if perm is not None:
+            os.chmod(path, perm)
         self.note('copied %s -> %s' % (source, rel) if source
                   else 'wrote %s' % rel)
 
@@ -393,34 +353,26 @@ def min_strength_for(gate, mutation):
 
 
 def write_config(plan, plugin_root, existing, gate, host, tests,
-                 trust=None, mutation='none'):
-    """`.purlin/config.json`: the template, the answers, and what they derive.
+                 mutation='none'):
+    """`.purlin/config.json`: the template's keys and no other.
 
-    `tests` is the `tests` setting, one entry per suite.
+    Each value is the answer, what the answers derive, or what the project
+    already wrote. `tests` is the `tests` setting, one entry per suite, and
+    `ci` is the host read from the remote, or `none` where there is no remote
+    or it names neither host.
     """
-    config = json.loads(_read(plugin_root, 'templates', 'config.json'))
-    config.update(existing or {})
+    template = json.loads(_read(plugin_root, 'templates', 'config.json'))
+    config = dict(template)
+    config.update((key, value) for key, value in (existing or {}).items()
+                  if key in template)
     config.update({'version': _read(plugin_root, 'VERSION').strip(),
                    'gate': gate, 'mutation_engine': mutation,
                    'min_strength': min_strength_for(gate, mutation),
                    'audit_parallel': audit_parallel(existing),
-                   'trust': trust or gate_module.DEFAULT_TRUST})
-    if host:
-        config['ci'] = host
-    config['tests'] = tests
-    for key in gate_module.RETIRED_KEYS:
-        config.pop(key, None)
+                   'tests': tests, 'ci': host or 'none'})
     plan.write('.purlin/config.json', json.dumps(config, indent=2) + '\n',
                own=True)
     return config
-
-
-def print_needs(plan, selected):
-    """One line per framework that needs something added to write its report."""
-    for framework in selected:
-        needs = frameworks_module.NEEDS.get(framework)
-        if needs:
-            plan.note(needs)
 
 
 def write_engine(plan, root, selected):
@@ -452,22 +404,27 @@ def engine_for(selected):
     return None
 
 
-def resolve_mutation(console, existing, selected, turn_on):
+def resolve_mutation(console, existing, selected, turn_on, gate):
     """`(mutation_engine, the line to print or None)`.
 
     A value the project already wrote is kept and nothing is asked. With no
     engine for any framework the tree carries, nothing is asked either:
-    mutation testing stays off and one line says why. Otherwise `--mutation`
-    turns it on and the question decides, defaulting to no.
+    mutation testing stays off, and at `strong` and `signed` one line says
+    why. Otherwise `--mutation` turns it on, and at those two gates the
+    question decides, defaulting to no; at `passed` it stays off unasked.
     """
     engine = engine_for(selected)
     if engine is None:
-        return 'none', NO_ENGINE % ', '.join(selected)
+        if gate == 'passed':
+            return 'none', None
+        return 'none', NO_ENGINE % (', '.join(selected) or "this project's")
     written = str((existing or {}).get('mutation_engine') or '').strip()
     if written and not turn_on:
         return written, None
     if turn_on:
         return 'auto', None
+    if gate == 'passed':
+        return 'none', None
     answer = str(console.ask(MUTATION_QUESTION % ENGINE_NAMES.get(engine, engine),
                              'n') or '').strip().lower()
     return ('auto' if answer.startswith('y') else 'none'), None
@@ -478,21 +435,6 @@ def write_gitignore(plan, plugin_root):
     plan.append('.gitignore',
                 _read(plugin_root, 'templates', 'gitignore.purlin'),
                 '.purlin/runtime/')
-
-
-def ask_trust(console, existing, gate=None):
-    """`local` or `remote`: whether this machine's own runs count for signing.
-
-    The default is `local`, which is a yes: your own tests and your own
-    signature are the evidence. A no writes `remote`, and `purlin:sign` then
-    refuses a rule whose tests have no run from the remote runner for the
-    commit being signed.
-    """
-    named = str((existing or {}).get('trust') or '').strip().lower()
-    if named in gate_module.TRUST_VALUES:
-        return named
-    answer = str(console.ask(trust_question(gate), 'y') or '').strip().lower()
-    return 'local' if answer.startswith('y') else 'remote'
 
 
 def print_remote_reasons(reasons, gate=None):
@@ -514,8 +456,11 @@ def write_workflow(plan, root, purlin_ref, gate=None):
     a host that runs it. The triggers name no branch of the project's own.
     """
     ok, host, lines = workflow_module.prerequisites(root)
+    # The line naming a host that is neither of the two is already in the
+    # summary, beside the host; it is not said twice.
     for line in lines:
-        plan.note(line)
+        if line not in plan.lines:
+            plan.note(line)
     if not ok:
         return plan.skip(runner_label(gate), 'a prerequisite is missing')
     env_tags = workflow_module.env_tags_in_specs(root)
@@ -531,15 +476,20 @@ def write_workflow(plan, root, purlin_ref, gate=None):
 
 
 def next_step(root):
-    """The next step, computed from the state the project is now in."""
+    """How the project stands now: the lines `purlin:status` ends on.
+
+    That is the summary and `Left to do`, whose first line is the next step.
+    A project with no spec yet has neither, and is sent to write one.
+    """
     first = '%s Next: run purlin:spec to write the first spec.' % ARROW
     try:
         report = status_module.sync_status(root)
     except Exception:                                          # noqa: BLE001
         return [first]
-    lines = [] if report == status_module.NO_SPECS else [
-        line for line in report.splitlines() if line.startswith(ARROW)]
-    return lines or [first]
+    if report == status_module.NO_SPECS:
+        return [first]
+    # The report ends on its last block, after the one blank line before it.
+    return report.rsplit('\n\n', 1)[-1].splitlines()
 
 
 # --- Invocation ------------------------------------------------------------
@@ -551,7 +501,7 @@ def parse_args(argv):
     parser.add_argument('--add', default=None, help='one more framework')
     parser.add_argument('--project-root', default='.')
     parser.add_argument('--plugin-root', default=None)
-    for flag in ('--update', '--dry-run', '--yes', '--mutation'):
+    for flag in ('--update', '--yes', '--mutation'):
         parser.add_argument(flag, action='store_true')
     return parser.parse_args(argv)
 
@@ -561,61 +511,21 @@ def delegate_update(args):
     if _HERE not in sys.path:
         sys.path.insert(0, _HERE)
     import update                                              # noqa: PLC0415
-    # `--dry-run` is what the upgrade calls `--check`: say what is pending and
-    # write nothing. No other flag of this script means anything to it.
     return update.main(['--project-root', args.project_root]
-                       + (['--yes'] if args.yes else [])
-                       + (['--check'] if args.dry_run else []))
+                       + (['--yes'] if args.yes else []))
 
 
-def format_for(report):
-    """The report format a report path names: `.trx` or a folder is TRX, `-`
-    a Go JSON stream, nothing at all an exit code, and anything else JUnit."""
-    report = (report or '').strip()
-    if not report:
-        return 'exit'
-    if report == '-':
-        return 'gotest'
-    if report.lower().endswith('.trx') or report.endswith('/'):
-        return 'trx'
-    return 'junit'
+def resolve_tests(existing, add):
+    """`(the suites named, the tests setting to write)`.
 
-
-def asked_suite(console):
-    """The one suite a tree init could not detect is asked for, or None."""
-    command = str(console.ask(COMMAND_QUESTION, '') or '').strip()
-    if not command:
-        print(NO_COMMAND)
-        return None
-    report = str(console.ask(REPORT_QUESTION, '') or '').strip()
-    fmt = format_for(report)
-    run = command
-    if fmt == 'exit' and '{files}' not in run:
-        run += ' {files}'
-    return {'name': 'tests', 'run': run,
-            'report': report.rstrip('/') or None, 'format': fmt,
-            'files': list(ASKED_FILES)}
-
-
-def resolve_tests(root, console, existing, add):
-    """`(the frameworks named, the tests setting to write)`.
-
-    A `tests` setting the project already carries is kept as it is. Otherwise
-    detection answers on a project with code, and nothing is asked; a tree
-    with nothing to detect is asked for its command and its report, which is
-    the second exception. `--add` appends the entry of one more framework,
+    A `tests` setting the project already carries is kept as it is; a project
+    with none gets an empty one, and nothing is asked: the first test run
+    suggests the command. `--add` appends the entry of one more framework,
     once however many times it is added.
     """
     written = (existing or {}).get('tests')
     tests = [dict(entry) for entry in written] if isinstance(
-        written, list) else None
-    if tests is None:
-        detected = frameworks_module.detect_frameworks(root)
-        if detected:
-            tests = frameworks_module.entries_for(detected)
-        else:
-            asked = asked_suite(console)
-            tests = [asked] if asked else []
+        written, list) else []
     names = [entry.get('name') for entry in tests if isinstance(entry, dict)]
     for part in str(add or '').split(','):
         name = part.strip()
@@ -631,6 +541,12 @@ def resolve_tests(root, console, existing, add):
     return [name for name in names if name], tests
 
 
+def frameworks_carried(root, names):
+    """The frameworks the tree carries, then any other the suites name."""
+    carried = list(frameworks_module.detect_frameworks(root))
+    return carried + [name for name in names if name not in carried]
+
+
 def _existing_config(root):
     """The project's own `.purlin/config.json`, or None when it has none."""
     try:
@@ -638,21 +554,6 @@ def _existing_config(root):
     except ValueError:
         return None
     return value if isinstance(value, dict) else None
-
-
-def signing_setup():
-    """The one-time commit-signing setup, from the module that owns signing."""
-    import sign as sign_module                                 # noqa: PLC0415
-    return sign_module.SIGNING_SETUP
-
-
-def print_signed(root):
-    """What `signed` needs beyond the config: signed commits."""
-    print('')
-    print('Each signer runs this once, then uploads the public key to the git '
-          'host:')
-    for command in signing_setup():
-        print('  %s' % command)
 
 
 def main(argv=None):
@@ -671,16 +572,15 @@ def main(argv=None):
         print('not a Purlin plugin root: %s' % plugin_root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
-    in_git = is_repository(root)
-    if not in_git and not args.dry_run:
+    if not is_repository(root):
         print(NOT_A_REPOSITORY, file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
     existing = _existing_config(root)
     console = Console(args.yes)
-    # A first run's one question is its consent. A later run asks before each
+    # A first run's questions are its consent. A later run asks before each
     # write, because it changes something a person already answered.
-    plan = Plan(root, args.dry_run, console, gated=existing is not None)
+    plan = Plan(root, console, gated=existing is not None)
 
     gate = args.gate or (existing or {}).get('gate')
     if gate not in gate_module.GATES:
@@ -691,38 +591,35 @@ def main(argv=None):
                   % (gate, gate_module.DEFAULT_GATE))
             gate = gate_module.DEFAULT_GATE
 
-    selected, tests = resolve_tests(root, console, existing, args.add)
-    mutation, no_engine = resolve_mutation(console, existing, selected,
-                                           args.mutation)
-    trust = ask_trust(console, existing, gate)
+    names, tests = resolve_tests(existing, args.add)
+    carried = frameworks_carried(root, names)
+    mutation, no_engine = resolve_mutation(console, existing, carried,
+                                           args.mutation, gate)
     host = git_host(root)
 
-    if not in_git:
-        plan.note(NOT_A_REPOSITORY)
     plan.note('Gate %s. Suites %s. Git host %s.'
-              % (gate, ', '.join(selected) or 'none',
+              % (gate, ', '.join(names) or 'none',
                  host or 'not read from a remote'))
+    if host is None and origin_url(root):
+        plan.note(workflow_module.UNKNOWN_HOST)
     if no_engine:
         plan.note(no_engine)
-    plan.note(trust_words(trust, gate))
-    for name in ('.purlin', 'specs', 'specs/_anchors'):
+    for name in ('.purlin', 'specs'):
         plan.directory(name)
 
     config = write_config(plan, plugin_root, existing, gate, host, tests,
-                          trust, mutation)
-    print_needs(plan, selected)
+                          mutation)
     if mutation != 'none':
-        write_engine(plan, root, selected)
+        write_engine(plan, root, carried)
     write_gitignore(plan, plugin_root)
     write_evidence(plan, plugin_root)
     plan.copy(os.path.join(plugin_root, 'scripts', 'report',
                            'purlin-report.html'), 'purlin-report.html')
-    # A workflow is written for two reasons and no others: a proof this
-    # machine cannot prove, and a project that does not trust this machine
-    # for signing. A project with neither runs nothing remotely.
+    # A workflow is written for one reason and no other: a proof this
+    # machine cannot prove. A project with none runs nothing remotely.
     tags = workflow_module.env_tags_in_specs(root)
     wanted, reasons = workflow_module.wanted(
-        tags, trust, evidence_module.host_os(), gate)
+        tags, None, evidence_module.host_os(), gate)
     print_remote_reasons(reasons, gate)
     if wanted and not git_remote(root):
         wanted = False
@@ -734,8 +631,6 @@ def main(argv=None):
 
     for line in plan.lines:
         print(line)
-    if gate == 'signed':
-        print_signed(root)
 
     print('')
     for line in next_step(root):

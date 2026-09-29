@@ -3,8 +3,8 @@
 # end-to-end walk of purlin:init, which is the one place the answer is needed
 # and so the one place it is written.
 #
-# The walk needs a POSIX shell: they generate
-# ssh keys, sign commits and read `%G?` back, and Git Bash is not one for that.
+# The walk needs a POSIX shell: it generates an ssh key and signs commits and
+# a tag with it, and Git Bash is not one for that.
 # The proofs they serve name no operating system, so a run on macOS, or on any
 # other system with a POSIX shell, proves them. On Windows the suite says it
 # did not walk and exits 0, rather than reporting a failure that is about the

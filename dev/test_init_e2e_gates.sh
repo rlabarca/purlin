@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # purlin: scaffold PROOF-36
+# purlin: scaffold PROOF-90
+# purlin: scaffold PROOF-91
+# purlin: scaffold PROOF-92
+# purlin: scaffold PROOF-93
 #
 # A project purlin:init set up walks the three gates, on every language the
 # walk sets up. This file is one test: it passes when every gate step of the
-# walk in `dev/init_e2e_walk.sh` passed, and when the evidence commit and the
-# two CI refs below read as the rule says.
+# walk in `dev/init_e2e_walk.sh` passed, and when the two commits and the two
+# CI refs below read as the rule says.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,7 +22,7 @@ purlin_skip_on_windows
 
 bash "$HERE/init_e2e_walk.sh" gates || exit 1
 
-# --- what the evidence commit holds, and where a CI run writes -------------
+# --- the two commits, and where a CI run writes ----------------------------
 #
 # A python project of its own, set up at `passed`: the walk's temporary
 # projects are gone by the time it exits, so this one is built here.
@@ -31,7 +35,7 @@ base="${TMPDIR:-/tmp}"
 dir="$(mktemp -d "${base%/}/purlin-e2e-commit.XXXXXXXX" 2>/dev/null)" || dir=""
 [ -n "$dir" ] && [ -d "$dir" ] || { echo "  FAIL no temporary directory"; exit 1; }
 trap 'rm -rf "$dir"' EXIT
-echo "--- the evidence commit and the CI refs ---"
+echo "--- the two commits and the CI refs ---"
 git -C "$dir" init -q . && git -C "$dir" symbolic-ref HEAD refs/heads/main
 git -C "$dir" config user.email dev@example.com
 git -C "$dir" config user.name Dev
@@ -47,13 +51,35 @@ printf 'from greeting import greet\n\n\n# purlin: greeting PROOF-1\ndef test_gre
   > "$dir/tests/test_greeting.py"
 printf '__pycache__/\n.purlin-*.log\n' >> "$dir/.gitignore"
 git -C "$dir" add -A && git -C "$dir" commit -q -m "the first spec and its test"
-tested="$(git -C "$dir" rev-parse HEAD | cut -c1-7)"
+
+# The first run finds no test command and suggests one; purlin:test writes it
+# as the `tests` setting through the call the `purlin_config` tool makes.
+python3 "$ROOT/scripts/run/purlin_run.py" --all --test --project-root "$dir" \
+  > "$dir/.purlin-first.log" 2>&1
+python3 - "$dir" "$dir/.purlin-first.log" <<'PY' || bad "python: no suggested entry" "$(tail -5 "$dir/.purlin-first.log")"
+import json
+import os
+import sys
+sys.path.insert(0, os.path.join(os.environ['PURLIN_ROOT'], 'scripts', 'mcp'))
+from config_engine import update_config
+prefix = 'Suggested entry: '
+with open(sys.argv[2], encoding='utf-8') as handle:
+    lines = [line for line in handle.read().splitlines()
+             if line.startswith(prefix)]
+if len(lines) != 1:
+    sys.exit(1)
+update_config(sys.argv[1], 'tests', [json.loads(lines[0][len(prefix):])])
+PY
 
 if python3 "$ROOT/scripts/run/purlin_run.py" --all --test --commit --project-root "$dir" \
     > "$dir/.purlin-test.log" 2>&1; then ok "python: the test run exits 0"
 else bad "python: the test run exits 0" "$(tail -5 "$dir/.purlin-test.log")"; fi
+work="$(git -C "$dir" log -1 --format=%s HEAD~1)"
+if [ "$work" = "purlin: specs, tests and settings for greeting" ]; then ok "python: the work is committed first"
+else bad "python: the first commit is not the work" "$work"; fi
+tested="$(git -C "$dir" rev-parse HEAD~1 | cut -c1-7)"
 subject="$(git -C "$dir" log -1 --format=%s)"
-if [ "$subject" = "purlin: evidence at $tested" ]; then ok "python: the subject names the tested commit"
+if [ "$subject" = "purlin: evidence at $tested" ]; then ok "python: the evidence commit names the work"
 else bad "python: the subject is not 'purlin: evidence at $tested'" "$subject"; fi
 held="$(git -C "$dir" show --name-only --format= HEAD)"
 for path in .purlin/evidence/local/greeting.json .purlin/tests.md; do
@@ -81,5 +107,5 @@ if grep -qF 'Evidence written to .purlin/evidence/ci/greeting.json.' "$dir/.purl
   ok "python: a run on a run branch writes its ci/ evidence"
 else bad "python: a run on a run branch wrote no ci/ evidence" "$(tail -5 "$dir/.purlin-runbranch.log")"; fi
 
-[ "$FAIL" -eq 0 ] || { echo "the evidence commit and the CI refs: $FAIL failed"; exit 1; }
+[ "$FAIL" -eq 0 ] || { echo "the two commits and the CI refs: $FAIL failed"; exit 1; }
 echo "init e2e gates ok"

@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # purlin: scaffold PROOF-37
+# purlin: scaffold PROOF-94
+# purlin: scaffold PROOF-95
+# purlin: scaffold PROOF-96
+# purlin: scaffold PROOF-97
 #
-# Each language purlin:init supports is set up the same way in a real
-# project, its marked test runs through the project's own command, and an
-# install from the marketplace leaves no file naming the install. This file is
-# one test: it passes when every set-up step of the walk in
-# `dev/init_e2e_walk.sh` passed, and when init added nothing to a C# project's
-# tests, checked here first.
+# Each language is set up the same way in a real project, its marked test runs
+# through the command its first test run suggests, and an install from the
+# marketplace leaves no file naming the install. This file is one test: it
+# passes when every set-up step of the walk in `dev/init_e2e_walk.sh` passed,
+# and when init added nothing to a C# project's tests, checked here first.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -43,8 +46,8 @@ P="$CS_DIR/proj"
 if [ "$CS_FAIL" -eq 0 ]; then
   python3 "$ROOT/scripts/init/scaffold.py" --project-root "$P" --gate passed --yes \
     > "$CS_DIR/init.log" 2>&1 || cs_bad "init exited non-zero" "$(tail -5 "$CS_DIR/init.log")"
-  grep -q '"name": "dotnet"' "$P/.purlin/config.json" 2>/dev/null \
-    || cs_bad "the config names no dotnet suite"
+  grep -q '"tests": \[\]' "$P/.purlin/config.json" 2>/dev/null \
+    || cs_bad "the tests setting is not empty"
   touched="$(git -C "$P" status --porcelain --untracked-files=all \
     | cut -c4- | grep -E '^(App|App\.Tests)/|\.(cs|csproj|props|targets|sln|runsettings)$')"
   [ -z "$touched" ] || cs_bad "init changed or added to the tests" "$touched"
