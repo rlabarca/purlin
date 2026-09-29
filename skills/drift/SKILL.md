@@ -51,42 +51,6 @@ not return.
 Print `lines` as they come, one per line, the first naming the range. Do not reword a line, do
 not drop one, and do not add a judgement of whether a change is right: drift reports facts.
 
-**pm.** What happened to the rules.
-
-```
-Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
-3 rules added: login RULE-7, RULE-8; export RULE-2.
-2 rules changed: login RULE-3, billing RULE-1.
-1 rule removed: cart RULE-4.
-```
-
-With no rule moved, the second line reads `No rule was added, changed or removed since your
-last pull.`
-
-**eng.** What the code did, and what it leaves behind.
-
-```
-Since your last merge, 2 hours ago (9f8e7d6..4f5e6a7, 4 commits).
-4 files changed under login's scope: RULE-1, RULE-2, RULE-5 are behind them.
-2 changed files are under no spec's scope: src/x.py, src/y.py.
-5 rules have no test: login RULE-6; export RULE-1, RULE-2, RULE-3, RULE-4.
-anchor proof_common is behind its source (now 3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d). Run: purlin:anchor sync proof_common.
-3 features are out of date: login, export, cart.
-```
-
-**qa.** What the tests did, and what waits for a person.
-
-```
-Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
-6 test files changed, covering export, login.
-2 rules to test by hand: purlin:sign
-3 rules to sign: purlin:sign
-1 spec file has changes that are not committed.
-```
-
-The two middle lines are the ones `purlin:status` prints under `Left to do`, in the same words;
-at the gate `passed` nothing is signed, so only the first of them can show.
-
 ## Step 3: what drift never does
 
 It never edits a spec, a test or a signature, never advances an anchor pin, and never counts
