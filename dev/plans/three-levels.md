@@ -802,6 +802,11 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     which key, and the machine its tests ran on for each system. An unfolded row on the
     board shows what it showed before: the rule's proofs, each with its result, its tags and
     its tests, and nothing more. The docs carry two screenshots, the board and one rule.
+90. **A spec's shared rules on the dashboard** (added 2026-09-29). The `Rules` cell reads
+    `16 (+6)`, and its hover says what the second number is, `16 rules of its own, and 6 more
+    it must also meet, from shared rules:`, then each anchor with its count. The terminal
+    keeps `16 (+6 shared)`, since it has no hover. The two differ by that one word, which the
+    rule that the terminal and the dashboard mirror each other's words now allows.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
