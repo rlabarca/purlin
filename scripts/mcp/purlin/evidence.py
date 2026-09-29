@@ -60,6 +60,22 @@ def host_os():
     return sys.platform
 
 
+# What a person reads for each stored system word, in full and in a small
+# box. A word that is not one of the three is read as `linux`.
+OS_WORDS = {'windows': ('Windows', 'Win'), 'macos': ('macOS', 'Mac'),
+            'linux': ('Linux/Unix', 'Lin')}
+
+
+def os_word(key):
+    """`Windows`, `macOS` or `Linux/Unix` for a stored system word."""
+    return OS_WORDS.get(key, OS_WORDS['linux'])[0]
+
+
+def os_short(key):
+    """`Win`, `Mac` or `Lin` for a stored system word."""
+    return OS_WORDS.get(key, OS_WORDS['linux'])[1]
+
+
 def evidence_path(source, feature):
     """`.purlin/evidence/<source>/<feature>.json`, `/` separated."""
     return '%s/%s/%s.json' % (EVIDENCE_DIR, source, feature)
