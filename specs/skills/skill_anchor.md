@@ -8,9 +8,9 @@
 
 ## Rules
 
-- RULE-1: `skills/anchor/SKILL.md` opens with a frontmatter block whose `name` is `anchor` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:anchor`
-- RULE-2: The skill runs `scripts/anchor/upstream.py` inside `${CLAUDE_PLUGIN_ROOT}` for `add` and `sync`, and names `sync --check` as the read-only form `purlin:drift` runs as well
-- RULE-3: The last section of `skills/anchor/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome
+- RULE-1: `skills/anchor/SKILL.md` opens with a frontmatter block whose `name` is `anchor` and whose `description` is one non-empty line, and the `Command`, `Purpose` table of `references/purlin_commands.md` carries a row for `purlin:anchor` with its purpose
+- RULE-2: The skill runs `scripts/anchor/upstream.py` inside `${CLAUDE_PLUGIN_ROOT}` for `add` and `sync`, and its `sync` section says that `--check` reports without writing and that `purlin:drift` runs the same check
+- RULE-3: The last section of `skills/anchor/SKILL.md` names the next step for each state the skill can end in, at least two, and gives each its own `→` directive
 - RULE-4: The whole of `skills/anchor/SKILL.md` is at most 160 lines
 - RULE-5: A pin is a commit and never a branch, and a pinned rule is never edited in the consuming project: the skill sends a change to a pull request against the source repository or to a separate local anchor that requires the pinned one
 - RULE-6: The skill states that the folder `specs/_anchors/` is created with the first anchor, whether written by `create` or brought in by `add`
