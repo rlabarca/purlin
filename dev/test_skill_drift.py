@@ -46,7 +46,7 @@ class TestSkillDrift:
             (SKILL, lambda text: '\n' + text,
              '%s does not open with a frontmatter block' % SKILL)]) == []
 
-    # RULE-9: the command reference.
+    # RULE-5: the command reference.
 
     # purlin: skill_drift PROOF-9
     def test_the_command_reference_carries_a_row_for_drift(self, monkeypatch):

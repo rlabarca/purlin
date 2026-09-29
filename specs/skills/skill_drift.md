@@ -11,12 +11,12 @@
 - RULE-2: The skill tells the agent to take its data from the `drift` tool and to show the lines it returns, and points at `references/drift_criteria.md` for what each line means and where it comes from rather than restating it
 - RULE-3: The last section of `skills/drift/SKILL.md` names the next step in a table that gives, for each kind of line the three views print and for a view that shows no change, the `→` directive to print when the view shows it
 - RULE-4: The whole of `skills/drift/SKILL.md` is at most 150 lines
-- RULE-9: `references/purlin_commands.md` carries a row for `purlin:drift` in its command table, with its purpose
+- RULE-5: `references/purlin_commands.md` carries a row for `purlin:drift` in its command table, with its purpose
 
 ## Proof
 
 - PROOF-1 (RULE-1): The drift skill opens with a frontmatter block between two `---` lines that carries `name: drift` and a `description:` whose value sits whole on that same line, neither empty nor opening a `>` or `|` block
-- PROOF-9 (RULE-9): The command reference carries a row in its command table whose first cell is `purlin:drift [role]` and whose second cell gives its purpose
+- PROOF-9 (RULE-5): The command reference carries a row in its command table whose first cell is `purlin:drift [role]` and whose second cell gives its purpose
 - PROOF-2 (RULE-2): The drift skill's step that gets the data shows the call `drift(role="eng")` alone in a fenced block
 - PROOF-19 (RULE-2): The drift skill, read across its line breaks, says ``What each line means and which git facts it comes from live in `references/drift_criteria.md` ``
 - PROOF-20 (RULE-2): The drift skill, read across its line breaks, says `do not restate them here and do not invent a line the tool does not return`
