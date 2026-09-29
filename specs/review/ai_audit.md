@@ -17,17 +17,17 @@
 - RULE-1: The audit reads a rule that is its feature's own, has at least one proof with a test, whose passed cell reads `passed` and that has no audit entry for its current rule, proof and test, the same rules at every gate, and reading again ignores an existing entry
 - RULE-2: The prompt is `references/review_criteria.md` verbatim, then the rule's text, its proofs, the source of each test and the test strength, and it asks for what was observed rather than a recommendation, a grade or a score
 - RULE-3: The call is `claude -p --output-format json` with the prompt written to its standard input, which is closed after the prompt, and never on the command line, and it is given 300 seconds
-- RULE-4: One call is made per rule, and as many calls run at once as the number the caller names
+- RULE-4: One call is made per rule, and as many calls run at once as the number the caller names, or as there are rules when there are fewer
 - RULE-5: An answer that settled with no finding is `strong`, one that settled with findings is `weak` with each line a finding, and one that did not settle is `undecided` with its lines as the reason; an answer that says neither is no answer
 - RULE-6: Each answer names the model the command's JSON reports, the one that wrote the most where several are named, or `unknown` where none is, and carries the sha256 of the criteria as they were sent
 - RULE-7: The model cannot be reached when `claude` is not on the path, when it exits with an error, when it runs past its limit, or when its answer has no settled line after one retry; the answer is then only the reason, `claude is not on PATH`, `claude exited with an error`, `claude timed out after <n> s` or `claude answered without a settled line`, and with no `claude` on the path no call is made
 - RULE-8: What the audit reads for a rule names each marked test's file, its name and its source, and the feature's test strength beside the project minimum
 - RULE-9: A `@manual` proof's test entry reads `manual` true and names no test file and no source
 - RULE-10: When several tests back one proof, each test shows its own source; a test whose source cannot be found shows none rather than another test's
-- RULE-11: The test source is read out of JavaScript and TypeScript by balancing braces, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
+- RULE-11: The test source is read out of JavaScript and TypeScript by balancing the brackets of the test's call, with strings, comments and regex literals stepped over, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 - RULE-12: Reading a rule, asking the model and printing the result write no file anywhere under `.purlin/`
-- RULE-13: `ai_audit.py --help` exits 0, an unknown option or a missing `--feature` exits 2, a feature with no rule in the project exits 1, and the command calls no model
-- RULE-14: `ai_audit.py --feature <name>` prints what the audit reads for one rule named with `--rule`, or for every rule of the feature without it: the rule, its proofs, each test, the test strength beside the minimum and what the last audit found, with its `verdict`, model and time, and no emoji
+- RULE-13: `ai_audit.py --help` exits 0, an unknown option or a missing `--feature` exits 2, a feature with no rule in the project, or a rule the project does not hold, exits 1, and the command calls no model
+- RULE-14: `ai_audit.py --feature <name>` prints what the audit reads for one rule named with `--rule`, or for every rule of the feature without it: the rule, its proofs, each test, the test strength beside the minimum and what the last audit found, its verdict, model, time and each finding, and no emoji
 - RULE-15: Reading a rule the project does not hold returns nothing rather than an empty reading
 - RULE-16: The lines an answer holds under `notes:` are its notes, where the prompt asks for a proof longer than 60 words or holding more than one case, and a note never makes the answer `weak`
 
