@@ -782,6 +782,11 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     each command's instructions. `purlin:sign` given several rules of which one does not
     exist signs the rest and names the one. `CLAUDE.md` is read whole against the product
     and corrected; what is not obvious is asked.
+86. **One way to look closer at a rule** (added 2026-09-29). The full page for one rule
+    goes. Unfolding a rule's row on the board shows everything about it in place: why it has
+    not reached a step, what the audit found, who signed it and with which key, the machine
+    its tests ran on for each system, and its proofs with their tests. The docs carry one
+    screenshot of the dashboard, the board with a rule unfolded.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
