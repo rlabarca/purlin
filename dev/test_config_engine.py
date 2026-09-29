@@ -7,6 +7,7 @@ sets one top-level key in it. One test per proof: each shows one case.
 import errno
 import json
 import os
+import subprocess
 import sys
 from unittest import mock
 
@@ -45,6 +46,7 @@ def _marked(*parts):
 class TestProjectRoot:
 
     # purlin: config_engine PROOF-1
+    # purlin: config_engine PROOF-36
     def test_the_variable_naming_an_existing_folder_wins_over_a_marker(
             self, tmp, monkeypatch):
         chosen = _folder(tmp, 'chosen')
@@ -74,6 +76,7 @@ class TestProjectRoot:
         assert find_project_root(start_dir=start) == project
 
     # purlin: config_engine PROOF-2
+    # purlin: config_engine PROOF-37
     def test_the_climb_reaches_the_marker_above_the_start(self, tmp):
         root = _marked(tmp, 'a')
         start = _folder(root, 'b', 'c')
@@ -112,6 +115,7 @@ class TestHowTheRootWasFound:
         assert alone == project
 
     # purlin: config_engine PROOF-28
+    # purlin: config_engine PROOF-40
     def test_the_variable_is_found_by_env(self, tmp, monkeypatch):
         project = _marked(tmp, 'project')
         start = _folder(project, 'src')
@@ -195,10 +199,14 @@ class TestReading:
 class TestWriting:
 
     # purlin: config_engine PROOF-8
+    # purlin: config_engine PROOF-38
     def test_a_write_adds_its_key_to_the_settings_file(self, project):
         _write(project, {"team": "v1"})
         update_config(project, "user_pref", "dark")
         assert _read(project) == {"team": "v1", "user_pref": "dark"}
+        # The bytes, so a carriage return Windows adds to a line is seen.
+        assert _read_bytes(project) == (
+            b'{\n  "team": "v1",\n  "user_pref": "dark"\n}\n')
         assert _purlin_files(project) == ['config.json']
 
     # purlin: config_engine PROOF-24
@@ -227,6 +235,21 @@ class TestWriting:
         _write(project, {"existing": "keep", "shade": "old"})
         update_config(project, "shade", "new")
         assert _read(project) == {"existing": "keep", "shade": "new"}
+
+
+def _hold_open(path):
+    """Another program holding `path` open for reading until its input closes."""
+    holder = subprocess.Popen(
+        [sys.executable, '-c',
+         'import sys\n'
+         'f = open(sys.argv[1], "rb")\n'
+         'sys.stdout.write("open\\n")\n'
+         'sys.stdout.flush()\n'
+         'sys.stdin.read()\n'
+         'f.close()\n', path],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    assert holder.stdout.readline().strip() == b'open'
+    return holder
 
 
 class TestAtomicWrite:
@@ -264,6 +287,23 @@ class TestAtomicWrite:
                 update_config(project, "key", "other")
         assert _read(project) == {"key": "val"}
         assert _purlin_files(project) == ['config.json']
+
+    # purlin: config_engine PROOF-39
+    @pytest.mark.skipif(os.name != 'nt', reason=(
+        'only Windows refuses a move onto a file another program holds open'))
+    def test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole(
+            self, project):
+        _write(project, {"key": "val"})
+        holder = _hold_open(_settings(project))
+        try:
+            with pytest.raises(OSError):
+                update_config(project, "key", "other")
+            assert _purlin_files(project) == ['config.json']
+        finally:
+            holder.stdin.close()
+            holder.wait(timeout=60)
+            holder.stdout.close()
+        assert _read_bytes(project) == b'{"key": "val"}'
 
     # purlin: config_engine PROOF-27
     def test_a_disk_full_partway_leaves_the_previous_file_and_no_temporary(

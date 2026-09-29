@@ -138,7 +138,9 @@ def update_config(project_root, key, value):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp_path = path + '.tmp'
     try:
-        with open(tmp_path, 'w', encoding='utf-8') as f:
+        # newline='\n': the file reads the same on every system, and Windows
+        # does not add a carriage return to each line of a committed file.
+        with open(tmp_path, 'w', encoding='utf-8', newline='\n') as f:
             json.dump(config, f, indent=2)
             f.write('\n')
         os.replace(tmp_path, path)
