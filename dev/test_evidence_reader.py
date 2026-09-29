@@ -88,19 +88,34 @@ def test_a_source_with_no_file_reads_as_no_evidence(root):
     assert loaded['warnings'] == []
 
 
-# purlin: evidence PROOF-18
-@pytest.mark.parametrize('content', [
-    '{not json',
-    '[1, 2]',
-    json.dumps(_file('local', schema='purlin-evidence/1')),
-])
-def test_a_malformed_file_or_another_schema_is_ignored_with_one_warning(
-        root, content):
+def _ignored_local(root, content):
+    """Load `login` with `content` as its local file; the one warning."""
     _put(root, 'local', content)
     loaded = evidence.load(root, 'login')
     assert loaded['files']['local'] is None
-    assert len(loaded['warnings']) == 1
-    assert '.purlin/evidence/local/login.json' in loaded['warnings'][0]
+    (warning,) = loaded['warnings']
+    return warning
+
+
+# purlin: evidence PROOF-18
+def test_a_file_that_is_not_json_is_ignored_with_one_warning(root):
+    assert _ignored_local(root, '{not json') == (
+        '.purlin/evidence/local/login.json is not valid JSON; it is ignored.')
+
+
+# purlin: evidence PROOF-51
+def test_a_file_that_is_not_an_object_is_ignored_with_one_warning(root):
+    assert _ignored_local(root, '[1, 2]') == (
+        '.purlin/evidence/local/login.json is not a JSON object; '
+        'it is ignored.')
+
+
+# purlin: evidence PROOF-52
+def test_a_file_of_another_schema_is_ignored_with_one_warning(root):
+    content = json.dumps(_file('local', schema='purlin-evidence/1'))
+    assert _ignored_local(root, content) == (
+        '.purlin/evidence/local/login.json carries the schema '
+        '"purlin-evidence/1", not purlin-evidence/2; it is ignored.')
 
 
 # purlin: evidence PROOF-19
@@ -108,10 +123,9 @@ def test_a_source_that_disagrees_with_its_folder_is_ignored(root):
     _put(root, 'ci', _file('local', {'linux': _section()}))
     loaded = evidence.load(root, 'login')
     assert loaded['files']['ci'] is None
-    assert len(loaded['warnings']) == 1
-    warning = loaded['warnings'][0]
-    assert '.purlin/evidence/ci/login.json' in warning
-    assert '"local"' in warning and 'ci/' in warning
+    assert loaded['warnings'] == [
+        '.purlin/evidence/ci/login.json names the source "local" but sits '
+        'in ci/; it is ignored.']
 
 
 # purlin: evidence PROOF-20
@@ -126,26 +140,64 @@ def test_two_operating_systems_in_one_file_are_two_sections(root):
                       ('ci', 'windows')]
 
 
-# purlin: evidence PROOF-21
-def test_a_section_is_current_until_a_part_changes(root):
+# purlin: evidence PROOF-25
+def test_a_system_neither_windows_nor_macos_is_linux(monkeypatch):
+    monkeypatch.setattr(sys, 'platform', 'freebsd14')
+    assert evidence.host_os() == 'linux'
+
+
+# purlin: evidence PROOF-53
+def test_a_system_that_names_itself_win32_is_windows(monkeypatch):
+    monkeypatch.setattr(sys, 'platform', 'win32')
+    assert evidence.host_os() == 'windows'
+
+
+# purlin: evidence PROOF-54
+def test_a_system_that_names_itself_darwin_is_macos(monkeypatch):
+    monkeypatch.setattr(sys, 'platform', 'darwin')
+    assert evidence.host_os() == 'macos'
+
+
+def _stored_now(root):
+    """A local `macos` section storing the fingerprint of `login` taken now."""
     now = fingerprint.fingerprint(root, 'login')
     _put(root, 'local', _file('local', {'macos': _section(fp=dict(now))}))
 
-    def state():
-        (entry,) = evidence.checked_sections(
-            evidence.load(root, 'login'), fingerprint.fingerprint(root, 'login'))
-        return entry['current'], entry['out_of_date']
 
-    assert state() == (True, [])
+def _state(root):
+    (entry,) = evidence.checked_sections(
+        evidence.load(root, 'login'), fingerprint.fingerprint(root, 'login'))
+    return entry['current'], entry['out_of_date']
+
+
+# purlin: evidence PROOF-21
+def test_a_section_storing_the_fingerprint_taken_now_is_current(root):
+    _stored_now(root)
+    assert _state(root) == (True, [])
+
+
+# purlin: evidence PROOF-55
+def test_a_code_edit_puts_the_section_out_of_date_on_code(root):
+    _stored_now(root)
     _write(root, 'src/login.py', 'def login():\n    return 401\n')
-    assert state() == (False, ['code'])
+    assert _state(root) == (False, ['code'])
+
+
+# purlin: evidence PROOF-56
+def test_a_code_and_a_rule_edit_put_it_out_of_date_on_spec_and_code(root):
+    _stored_now(root)
+    _write(root, 'src/login.py', 'def login():\n    return 401\n')
     _write(root, 'specs/auth/login.md',
            SPEC.replace('return 200', 'return 201'))
-    assert state() == (False, ['spec', 'code'])
+    assert _state(root) == (False, ['spec', 'code'])
+
+
+# purlin: evidence PROOF-57
+def test_a_section_with_no_fingerprint_is_out_of_date_on_all_three(root):
     section = _section()
     del section['fingerprint']
     _put(root, 'local', _file('local', {'macos': section}))
-    assert state() == (False, ['spec', 'code', 'tests'])
+    assert _state(root) == (False, ['spec', 'code', 'tests'])
 
 
 def _audit(at, commit='b' * 40, test_hash='t'):
@@ -154,41 +206,79 @@ def _audit(at, commit='b' * 40, test_hash='t'):
         'verdict': 'strong', 'findings': [], 'at': at, 'commit': commit}}}
 
 
-# purlin: evidence PROOF-22
-def test_an_audit_entry_answers_only_while_its_three_hashes_match(root):
+def _audited(root):
+    """The local file of `login` holds an entry for RULE-1: `r`, `p`, `t`."""
     _put(root, 'local', _file('local', audit=_audit('2026-09-01T00:00:00Z')))
-    loaded = evidence.load(root, 'login')
-    entry = evidence.audit_entry(loaded, 'RULE-1', 'r', 'p', 't')
+    return evidence.load(root, 'login')
+
+
+# purlin: evidence PROOF-22
+def test_an_audit_entry_answers_while_its_three_hashes_match(root):
+    entry = evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p', 't')
     assert entry['source'] == 'local' and entry['verdict'] == 'strong'
     head = _git(root, 'rev-parse', 'HEAD')
     assert entry['commit'] == 'b' * 40 != head
-    assert evidence.audit_entry(loaded, 'RULE-1', 'r', 'p', 't2') is None
-    assert evidence.audit_entry(loaded, 'RULE-1', 'r2', 'p', 't') is None
-    assert evidence.audit_entry(loaded, 'RULE-1', 'r', 'p2', 't') is None
+
+
+# purlin: evidence PROOF-58
+def test_an_audit_entry_for_another_test_hash_does_not_answer(root):
+    assert evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p', 't2') is None
+
+
+# purlin: evidence PROOF-59
+def test_an_audit_entry_for_another_rule_hash_does_not_answer(root):
+    assert evidence.audit_entry(_audited(root), 'RULE-1', 'r2', 'p', 't') is None
+
+
+# purlin: evidence PROOF-60
+def test_an_audit_entry_for_another_proof_hash_does_not_answer(root):
+    assert evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p2', 't') is None
+
+
+def _both_audited(root, local_at):
+    _put(root, 'local', _file('local', audit=_audit(local_at)))
     _put(root, 'ci', _file('ci', audit=_audit('2026-09-02T00:00:00Z',
                                                commit='c' * 40)))
-    entry = evidence.audit_entry(evidence.load(root, 'login'),
-                                 'RULE-1', 'r', 'p', 't')
+    return evidence.audit_entry(evidence.load(root, 'login'),
+                                'RULE-1', 'r', 'p', 't')
+
+
+# purlin: evidence PROOF-61
+def test_a_later_ci_audit_entry_wins(root):
+    entry = _both_audited(root, '2026-09-01T00:00:00Z')
     assert entry['source'] == 'ci' and entry['commit'] == 'c' * 40
     assert entry['path'] == '.purlin/evidence/ci/login.json'
-    _put(root, 'local', _file('local', audit=_audit('2026-09-03T00:00:00Z')))
-    entry = evidence.audit_entry(evidence.load(root, 'login'),
-                                 'RULE-1', 'r', 'p', 't')
+
+
+# purlin: evidence PROOF-62
+def test_a_later_local_audit_entry_wins(root):
+    entry = _both_audited(root, '2026-09-03T00:00:00Z')
     assert entry['source'] == 'local' and entry['commit'] == 'b' * 40
     assert entry['path'] == '.purlin/evidence/local/login.json'
 
 
 # purlin: evidence PROOF-23
-def test_the_newest_section_across_both_sources(root):
+def test_with_no_evidence_there_is_no_newest_section(root):
     assert evidence.newest(evidence.load(root, 'login')) is None
-    _put(root, 'local', _file('local', {
-        'macos': _section('2026-09-01T00:00:00Z')}))
-    _put(root, 'ci', _file('ci', {'linux': _section('2026-09-03T00:00:00Z')}))
+
+
+def _newest(root, local_at, ci_at):
+    _put(root, 'local', _file('local', {'macos': _section(local_at)}))
+    _put(root, 'ci', _file('ci', {'linux': _section(ci_at)}))
     best = evidence.newest(evidence.load(root, 'login'))
-    assert (best['source'], best['os']) == ('ci', 'linux')
-    _put(root, 'ci', _file('ci', {'linux': _section('2026-09-01T00:00:00Z')}))
-    best = evidence.newest(evidence.load(root, 'login'))
-    assert (best['source'], best['os']) == ('local', 'macos')
+    return best['source'], best['os']
+
+
+# purlin: evidence PROOF-63
+def test_the_newest_section_is_the_latest_across_both_sources(root):
+    assert _newest(root, '2026-09-01T00:00:00Z', '2026-09-03T00:00:00Z') == (
+        'ci', 'linux')
+
+
+# purlin: evidence PROOF-64
+def test_local_wins_a_tie_for_the_newest_section(root):
+    assert _newest(root, '2026-09-01T00:00:00Z', '2026-09-01T00:00:00Z') == (
+        'local', 'macos')
 
 
 def _snapshot(root):
@@ -213,12 +303,6 @@ def test_reading_evidence_writes_nothing(root):
     evidence.audit_entry(loaded, 'RULE-1', 'r', 'p', 't')
     evidence.newest(loaded)
     assert _snapshot(root) == before
-
-
-# purlin: evidence PROOF-25
-def test_a_system_neither_windows_nor_macos_is_linux(monkeypatch):
-    monkeypatch.setattr(sys, 'platform', 'freebsd14')
-    assert evidence.host_os() == 'linux'
 
 
 # purlin: evidence PROOF-26

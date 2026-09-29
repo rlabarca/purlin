@@ -66,18 +66,31 @@ class Project(object):
     def fp(self, feature):
         return fingerprint.fingerprint(self.root, feature)
 
+    def login(self, scope='src/login.py', **kwargs):
+        """Write the `login` spec, with its one rule and proof, over `scope`."""
+        self.write('specs/auth/login.md', _login(scope=scope, **kwargs))
+
+
+LOGIN_RULE = 'Valid credentials return 200'
+LOGIN_PROOF = 'POST /login; verify 200'
+
+
+def _login(scope='src/login.py', rule=LOGIN_RULE, proof=LOGIN_PROOF,
+           **kwargs):
+    return _spec('login', [rule], [proof], scope=scope, **kwargs)
+
 
 LOGIN_TEST = ('import pytest\n\n'
               '# purlin: login PROOF-1\n'
               'def test_login():\n    assert True\n')
 
+JS_TEST = '// purlin: login PROOF-2\nit("works", () => {});\n'
+
 
 @pytest.fixture
 def project(tmp_path):
     p = Project(tmp_path)
-    p.write('specs/auth/login.md', _spec(
-        'login', ['Valid credentials return 200'],
-        ['POST /login; verify 200'], scope='src/login.py'))
+    p.login()
     p.write('src/login.py', 'def login():\n    return 200\n')
     p.write('src/other.py', 'x = 1\n')
     p.write('tests/test_login.py', LOGIN_TEST)
@@ -94,50 +107,61 @@ def _changed(before, after):
     return [part for part in fingerprint.PARTS if before[part] != after[part]]
 
 
+# --- RULE-1 -----------------------------------------------------------------
+
 # purlin: evidence PROOF-1
-def test_a_fingerprint_is_three_hashes_read_from_the_working_tree(project):
+def test_a_fingerprint_is_three_parts_of_64_hex_characters(project):
     first = project.fp('login')
     assert sorted(first) == ['code', 'spec', 'tests']
     for value in first.values():
         assert len(value) == 64 and all(c in '0123456789abcdef' for c in value)
+
+
+# purlin: evidence PROOF-32
+def test_an_edit_not_committed_changes_the_fingerprint(project):
+    first = project.fp('login')
     project.write('src/login.py', 'def login():\n    return 401\n')
     assert _changed(first, project.fp('login')) == ['code']
 
 
+# --- RULE-2 -----------------------------------------------------------------
+
 # purlin: evidence PROOF-2
-def test_a_rule_edit_changes_spec_and_a_description_edit_changes_nothing(
-        project):
+def test_a_reworded_rule_changes_spec_alone(project):
     first = project.fp('login')
-    original = _spec('login', ['Valid credentials return 200'],
-                     ['POST /login; verify 200'], scope='src/login.py')
-    project.write('specs/auth/login.md', original.replace(
-        'Valid credentials return 200', 'Valid credentials return 201'))
+    project.login(rule='Valid credentials return 201')
     assert _changed(first, project.fp('login')) == ['spec']
-    project.write('specs/auth/login.md', original.replace(
-        'What it does.', 'Something else entirely.'))
+
+
+# purlin: evidence PROOF-33
+def test_a_rewritten_description_changes_no_part(project):
+    first = project.fp('login')
+    project.login(description='Something else entirely.')
     assert project.fp('login') == first
 
 
-# purlin: evidence PROOF-3
-def test_a_required_proof_and_a_proof_tag_are_part_of_spec(project):
-    project.write('specs/auth/login.md', _spec(
-        'login', ['Valid credentials return 200'],
-        ['POST /login; verify 200'], scope='src/login.py', requires='api'))
+def _requiring_api(project, api_proof):
+    project.login(requires='api')
     project.write('specs/_anchors/api.md', _spec(
-        'api', ['Responses carry a request id'], ['GET /x; verify the header'],
-        anchor=True))
-    first = project.fp('login')
-    project.write('specs/_anchors/api.md', _spec(
-        'api', ['Responses carry a request id'], ['GET /y; verify the header'],
-        anchor=True))
-    second = project.fp('login')
-    assert _changed(first, second) == ['spec']
-    project.write('specs/auth/login.md', _spec(
-        'login', ['Valid credentials return 200'],
-        ['POST /login; verify 200 @manual'], scope='src/login.py',
-        requires='api'))
-    assert _changed(second, project.fp('login')) == ['spec']
+        'api', ['Responses carry a request id'], [api_proof], anchor=True))
 
+
+# purlin: evidence PROOF-3
+def test_a_changed_proof_of_a_required_anchor_changes_spec_alone(project):
+    _requiring_api(project, 'GET /x; verify the header')
+    first = project.fp('login')
+    _requiring_api(project, 'GET /y; verify the header')
+    assert _changed(first, project.fp('login')) == ['spec']
+
+
+# purlin: evidence PROOF-34
+def test_manual_added_to_a_proof_changes_spec_alone(project):
+    first = project.fp('login')
+    project.login(proof=LOGIN_PROOF + ' @manual')
+    assert _changed(first, project.fp('login')) == ['spec']
+
+
+# --- RULE-3 -----------------------------------------------------------------
 
 # purlin: evidence PROOF-4
 def test_an_anchor_rule_edit_reaches_every_feature_that_requires_it(tmp_path):
@@ -161,42 +185,49 @@ def test_an_anchor_rule_edit_reaches_every_feature_that_requires_it(tmp_path):
     assert after['billing'] == before['billing']
 
 
+def _security(project, rule, is_global):
+    project.write('specs/_anchors/security.md', _spec(
+        'security', [rule], ['Grep for eval(; verify 0'], anchor=True,
+        is_global=is_global))
+
+
 # purlin: evidence PROOF-5
 def test_a_global_anchor_rule_edit_reaches_a_feature_that_does_not_name_it(
         project):
-    project.write('specs/_anchors/security.md', _spec(
-        'security', ['No eval anywhere'], ['Grep for eval(; verify 0'],
-        anchor=True, is_global=True))
+    _security(project, 'No eval anywhere', is_global=True)
     first = project.fp('login')
-    project.write('specs/_anchors/security.md', _spec(
-        'security', ['No exec anywhere'], ['Grep for eval(; verify 0'],
-        anchor=True, is_global=True))
+    _security(project, 'No exec anywhere', is_global=True)
     assert _changed(first, project.fp('login')) == ['spec']
-    project.write('specs/_anchors/security.md', _spec(
-        'security', ['No exec anywhere'], ['Grep for eval(; verify 0'],
-        anchor=True))
-    not_global = project.fp('login')
-    project.write('specs/_anchors/security.md', _spec(
-        'security', ['No eval anywhere'], ['Grep for eval(; verify 0'],
-        anchor=True))
-    assert project.fp('login') == not_global
 
+
+# purlin: evidence PROOF-35
+def test_an_anchor_that_is_not_global_leaves_a_feature_that_does_not_name_it(
+        project):
+    _security(project, 'No eval anywhere', is_global=False)
+    first = project.fp('login')
+    _security(project, 'No exec anywhere', is_global=False)
+    assert project.fp('login') == first
+
+
+# --- RULE-4 -----------------------------------------------------------------
 
 # purlin: evidence PROOF-6
-def test_a_scoped_file_edit_changes_code_only(project):
+def test_an_edit_to_a_scoped_file_changes_code_alone(project):
     first = project.fp('login')
     project.write('src/login.py', 'def login():\n    return 204\n')
-    second = project.fp('login')
-    assert _changed(first, second) == ['code']
+    assert _changed(first, project.fp('login')) == ['code']
+
+
+# purlin: evidence PROOF-36
+def test_an_edit_to_a_file_outside_the_scope_changes_nothing(project):
+    first = project.fp('login')
     project.write('src/other.py', 'x = 2\n')
-    assert project.fp('login') == second
+    assert project.fp('login') == first
 
 
 # purlin: evidence PROOF-7
-def test_a_scoped_directory_reaches_every_tracked_file_under_it(project):
-    project.write('specs/auth/login.md', _spec(
-        'login', ['Valid credentials return 200'],
-        ['POST /login; verify 200'], scope='src'))
+def test_a_scoped_folder_reaches_a_tracked_file_one_folder_down(project):
+    project.login(scope='src')
     project.write('src/deep/token.py', 'TOKEN = 1\n')
     project.commit()
     first = project.fp('login')
@@ -204,125 +235,202 @@ def test_a_scoped_directory_reaches_every_tracked_file_under_it(project):
     assert _changed(first, project.fp('login')) == ['code']
 
 
-# purlin: evidence PROOF-8
-def test_a_glob_scope_changes_when_a_matching_file_changes(tmp_path):
+def _globbed(tmp_path, scope):
+    """A project whose `login` covers `scope`, over three tracked files."""
     p = Project(tmp_path)
-    p.write('specs/auth/login.md', _spec('login', ['Login works'],
-                                         ['POST; verify'],
-                                         scope='src/**/*.py'))
+    p.login(scope=scope)
     p.write('src/login.py', 'a = 1\n')
     p.write('src/deep/token.py', 'b = 1\n')
     p.write('src/notes.txt', 'notes\n')
     p.commit()
-    files, _unmatched = fingerprint.expand_scope(p.root, ['src/**/*.py'])
-    assert files == ['src/deep/token.py', 'src/login.py']
-    for entry in ('src/logi?.py', 'src/[l]ogin.py'):
-        assert fingerprint.expand_scope(p.root, [entry]) == (
-            ['src/login.py'], []), entry
+    return p
+
+
+def _after_edit(p, rel, text):
     first = p.fp('login')
-    p.write('src/deep/token.py', 'b = 2\n')
-    second = p.fp('login')
-    assert _changed(first, second) == ['code']
-    p.write('src/notes.txt', 'other notes\n')
-    assert p.fp('login') == second
+    p.write(rel, text)
+    return _changed(first, p.fp('login'))
+
+
+# purlin: evidence PROOF-8
+def test_a_glob_reaches_a_matching_file_one_folder_down(tmp_path):
+    p = _globbed(tmp_path, 'src/**/*.py')
+    assert _after_edit(p, 'src/deep/token.py', 'b = 2\n') == ['code']
+
+
+# purlin: evidence PROOF-37
+def test_a_glob_reaches_a_matching_file_directly_in_its_folder(tmp_path):
+    p = _globbed(tmp_path, 'src/**/*.py')
+    assert _after_edit(p, 'src/login.py', 'a = 2\n') == ['code']
+
+
+# purlin: evidence PROOF-38
+def test_a_glob_does_not_reach_a_file_it_does_not_match(tmp_path):
+    p = _globbed(tmp_path, 'src/**/*.py')
+    assert _after_edit(p, 'src/notes.txt', 'other notes\n') == []
+
+
+# purlin: evidence PROOF-39
+def test_an_entry_holding_a_question_mark_is_a_glob(tmp_path):
+    p = _globbed(tmp_path, 'src/logi?.py')
+    assert _after_edit(p, 'src/login.py', 'a = 2\n') == ['code']
+
+
+# purlin: evidence PROOF-40
+def test_an_entry_holding_a_bracket_is_a_glob(tmp_path):
+    p = _globbed(tmp_path, 'src/[l]ogin.py')
+    assert _after_edit(p, 'src/login.py', 'a = 2\n') == ['code']
+
+
+# --- RULE-5 -----------------------------------------------------------------
+
+UNMATCHED_SCOPE = 'src/login.py, src/gone.py, lib/*.rs'
 
 
 # purlin: evidence PROOF-9
-def test_a_scope_entry_that_reaches_nothing_is_listed_as_unmatched(project):
-    project.write('specs/auth/login.md', _spec(
-        'login', ['Valid credentials return 200'],
-        ['POST /login; verify 200'],
-        scope='src/login.py, src/gone.py, lib/*.rs'))
-    files, unmatched = fingerprint.expand_scope(
-        project.root, ['src/login.py', 'src/gone.py', 'lib/*.rs'])
-    assert unmatched == ['src/gone.py', 'lib/*.rs']
-    assert files == ['src/login.py']
-    assert fingerprint.incomplete_reason(project.root, 'login') is None
-    assert len(project.fp('login')['code']) == 64
-    project.write('src/draft.py', 'DRAFT = 1\n')
-    project.write('specs/auth/login.md', _spec(
-        'login', ['Valid credentials return 200'],
-        ['POST /login; verify 200'],
-        scope='src/login.py, src/gone.py, lib/*.rs, src/draft.py'))
-    own_scope = specs.scan_specs(project.root)['login']['scope']
-    files, unmatched = fingerprint.expand_scope(project.root, own_scope)
-    assert unmatched == ['src/gone.py', 'lib/*.rs', 'src/draft.py']
-    assert files == ['src/login.py']
+def test_entries_that_reach_nothing_are_listed_as_unmatched(project):
+    assert fingerprint.expand_scope(
+        project.root, ['src/login.py', 'src/gone.py', 'lib/*.rs']) == (
+        ['src/login.py'], ['src/gone.py', 'lib/*.rs'])
 
+
+# purlin: evidence PROOF-41
+def test_the_fingerprint_is_taken_over_what_the_other_entries_reach(project):
+    alone = project.fp('login')
+    project.login(scope=UNMATCHED_SCOPE)
+    with_unmatched = project.fp('login')
+    assert with_unmatched['code'] == alone['code']
+    assert fingerprint.incomplete_reason(project.root, 'login') is None
+
+
+# purlin: evidence PROOF-42
+def test_a_file_git_does_not_track_is_listed_as_unmatched(project):
+    project.write('src/draft.py', 'DRAFT = 1\n')
+    project.login(scope='src/login.py, src/draft.py')
+    own_scope = specs.scan_specs(project.root)['login']['scope']
+    assert fingerprint.expand_scope(project.root, own_scope) == (
+        ['src/login.py'], ['src/draft.py'])
+
+
+# --- RULE-6 -----------------------------------------------------------------
 
 # purlin: evidence PROOF-10
-def test_a_spec_with_no_scope_names_no_files(project):
-    project.write('specs/auth/login.md', _spec(
-        'login', ['Valid credentials return 200'],
-        ['POST /login; verify 200']))
+def test_a_spec_with_no_scope_is_incomplete_and_its_code_part_is_empty(
+        project):
+    project.login(scope=None)
     assert fingerprint.incomplete_reason(project.root, 'login') == (
         'no > Scope: line')
     fp = project.fp('login')
-    assert fp['code'] == EMPTY
+    assert fp['code'] == EMPTY == (
+        'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
     assert len(fp['spec']) == 64 and len(fp['tests']) == 64
 
 
+# --- RULE-7 -----------------------------------------------------------------
+
 # purlin: evidence PROOF-11
-def test_a_marked_test_edit_changes_tests_only(project):
+def test_an_edit_to_a_marked_test_file_changes_tests_alone(project):
+    first = project.fp('login')
+    project.write('tests/test_login.py', LOGIN_TEST + '\n# edited\n')
+    assert _changed(first, project.fp('login')) == ['tests']
+
+
+# purlin: evidence PROOF-43
+def test_a_test_file_marked_for_another_feature_is_not_counted(project):
     project.write('tests/test_other.py',
                   '# purlin: billing PROOF-1\n'
                   'def test_bill():\n    pass\n')
+    project.commit()
+    first = project.fp('login')
+    project.write('tests/test_other.py', '# rewritten\n')
+    assert project.fp('login') == first
+
+
+# purlin: evidence PROOF-44
+def test_a_marked_file_no_suite_names_is_not_counted(project):
     project.write('scripts/check_login.py', LOGIN_TEST)
     project.commit()
-    assert fingerprint.marker_files(project.root, 'login') == [
-        'tests/test_login.py']
     first = project.fp('login')
-    project.write('tests/test_login.py', LOGIN_TEST + '\n# edited\n')
-    second = project.fp('login')
-    assert _changed(first, second) == ['tests']
-    project.write('tests/test_other.py', '# rewritten\n')
-    assert project.fp('login') == second
     project.write('scripts/check_login.py', LOGIN_TEST + '\n# edited\n')
-    assert project.fp('login') == second
+    assert project.fp('login') == first
 
 
 # purlin: evidence PROOF-12
-def test_markers_of_every_framework_are_read_outside_skipped_folders(project):
-    marked = '// purlin: login PROOF-2\nit("works", () => {});\n'
-    project.write('web/login.test.js', marked)
-    project.write('node_modules/pkg/login.test.js', marked)
-    project.git('add', '-f', 'web', 'node_modules')
+def test_a_javascript_marker_is_counted(project):
+    project.write('web/login.test.js', JS_TEST)
+    project.commit()
+    first = project.fp('login')
+    project.write('web/login.test.js', JS_TEST + '// edited\n')
+    assert _changed(first, project.fp('login')) == ['tests']
+
+
+SKIPPED = ('node_modules/pkg', 'bin', 'obj', 'mutants', '.cache')
+
+
+# purlin: evidence PROOF-45
+def test_a_marked_file_in_a_skipped_folder_is_not_counted(project):
+    copies = ['%s/login.test.js' % folder for folder in SKIPPED]
+    for path in copies:
+        project.write(path, JS_TEST)
+    project.git('add', '-f', *copies)
     project.git('commit', '-q', '-m', 'test: fixture')
-    files = fingerprint.marker_files(project.root, 'login')
-    assert 'web/login.test.js' in files
-    assert not [path for path in files if path.startswith('node_modules/')]
+    first = project.fp('login')
+    for path in copies:
+        project.write(path, JS_TEST + '// edited\n')
+        assert project.fp('login') == first, path
+        project.write(path, JS_TEST)
+
+
+# --- RULE-8 -----------------------------------------------------------------
+
+@pytest.fixture
+def folder_scoped(project):
+    """`login` covering the folder `src`, committed."""
+    project.login(scope='src')
+    project.commit()
+    return project
 
 
 # purlin: evidence PROOF-13
-def test_an_untracked_file_is_reported_and_left_out(project):
-    project.write('specs/auth/login.md', _spec(
-        'login', ['Valid credentials return 200'],
-        ['POST /login; verify 200'], scope='src'))
-    project.write('.gitignore', 'src/*.log\n')
-    project.commit()
-    first = project.fp('login')
-    project.write('src/new_token.py', 'NEW = 1\n')
-    project.write('tests/helper.py', 'HELP = 1\n')
-    project.write('src/debug.log', 'noise\n')
-    project.write('docs/notes.md', 'Notes.\n')
-    assert project.fp('login') == first
-    assert fingerprint.untracked(project.root, 'login') == [
+def test_an_untracked_file_changes_no_part(folder_scoped):
+    first = folder_scoped.fp('login')
+    folder_scoped.write('src/new_token.py', 'NEW = 1\n')
+    folder_scoped.write('tests/helper.py', 'HELP = 1\n')
+    assert folder_scoped.fp('login') == first
+
+
+# purlin: evidence PROOF-46
+def test_untracked_files_in_the_scope_or_beside_a_marker_file_are_listed(
+        folder_scoped):
+    folder_scoped.write('src/new_token.py', 'NEW = 1\n')
+    folder_scoped.write('tests/helper.py', 'HELP = 1\n')
+    folder_scoped.write('docs/notes.md', 'Notes.\n')
+    assert fingerprint.untracked(folder_scoped.root, 'login') == [
         'src/new_token.py', 'tests/helper.py']
 
 
-# purlin: evidence PROOF-14
-def test_an_added_file_joins_the_fingerprint(project):
-    project.write('specs/auth/login.md', _spec(
-        'login', ['Valid credentials return 200'],
-        ['POST /login; verify 200'], scope='src'))
-    project.commit()
-    first = project.fp('login')
-    project.write('src/new_token.py', 'NEW = 1\n')
-    assert 'src/new_token.py' in fingerprint.untracked(project.root, 'login')
-    project.git('add', 'src/new_token.py')
-    assert _changed(first, project.fp('login')) == ['code']
-    assert fingerprint.untracked(project.root, 'login') == []
+# purlin: evidence PROOF-47
+def test_a_file_git_ignores_is_not_listed(folder_scoped):
+    folder_scoped.write('.gitignore', 'src/*.log\n')
+    folder_scoped.commit()
+    folder_scoped.write('src/debug.log', 'noise\n')
+    folder_scoped.write('src/new_token.py', 'NEW = 1\n')
+    assert fingerprint.untracked(folder_scoped.root, 'login') == [
+        'src/new_token.py']
 
+
+# purlin: evidence PROOF-14
+def test_an_added_file_joins_the_fingerprint(folder_scoped):
+    first = folder_scoped.fp('login')
+    folder_scoped.write('src/new_token.py', 'NEW = 1\n')
+    assert fingerprint.untracked(folder_scoped.root, 'login') == [
+        'src/new_token.py']
+    folder_scoped.git('add', 'src/new_token.py')
+    assert _changed(first, folder_scoped.fp('login')) == ['code']
+    assert fingerprint.untracked(folder_scoped.root, 'login') == []
+
+
+# --- RULE-9 -----------------------------------------------------------------
 
 # purlin: evidence PROOF-15
 def test_a_name_no_spec_defines_raises(project):
@@ -331,11 +439,28 @@ def test_a_name_no_spec_defines_raises(project):
     assert 'nosuch' in str(caught.value)
 
 
+# --- RULE-10 ----------------------------------------------------------------
+
+NOW = {'spec': 'a', 'code': 'x', 'tests': 'y'}
+
+
 # purlin: evidence PROOF-16
-def test_the_compare_names_the_parts_that_differ_in_order():
-    now = {'spec': 'a', 'code': 'x', 'tests': 'y'}
+def test_the_parts_that_differ_are_named_in_order():
     assert fingerprint.differing_parts(
-        {'spec': 'a', 'code': 'b', 'tests': 'c'}, now) == ['code', 'tests']
-    assert fingerprint.differing_parts(None, now) == ['spec', 'code', 'tests']
-    assert fingerprint.differing_parts('abc', now) == ['spec', 'code', 'tests']
-    assert fingerprint.differing_parts(dict(now), now) == []
+        {'spec': 'a', 'code': 'b', 'tests': 'c'}, NOW) == ['code', 'tests']
+
+
+# purlin: evidence PROOF-48
+def test_a_missing_stored_fingerprint_differs_on_all_three():
+    assert fingerprint.differing_parts(None, NOW) == ['spec', 'code', 'tests']
+
+
+# purlin: evidence PROOF-49
+def test_a_stored_fingerprint_that_is_text_differs_on_all_three():
+    assert fingerprint.differing_parts('abc', NOW) == [
+        'spec', 'code', 'tests']
+
+
+# purlin: evidence PROOF-50
+def test_two_equal_fingerprints_differ_on_no_part():
+    assert fingerprint.differing_parts(dict(NOW), NOW) == []
