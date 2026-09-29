@@ -771,6 +771,17 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     hand counts as the check, with or without a note. `purlin:sign` asks for the note and
     records it when given. This keeps the owner's earlier choice and reads decision 78's
     "writes what they saw" as what is asked, not what is required.
+85. **The dashboard's badges, filters and reasons** (added 2026-09-29). A rule's row shows a
+    badge only for a step it has reached, `PASSED`, `STRONG`, `SIGNED`, and `FAILED` where a
+    test fails; a step not reached shows nothing. The `Left to do` list leaves the dashboard.
+    In its place the filter buttons above the table are named as the lines of `Left to do`
+    and carry their counts, `To audit 5`; choosing one shows those rules and the command to
+    type in Claude Code. Why a rule has not reached a step, and what the audit found, shows
+    when the rule is unfolded and not when it is folded. The terminal keeps `Left to do`.
+    The line `→ Run: purlin:init --update` above the summary stays, and so do the arrows in
+    each command's instructions. `purlin:sign` given several rules of which one does not
+    exist signs the rest and names the one. `CLAUDE.md` is read whole against the product
+    and corrected; what is not obvious is asked.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
