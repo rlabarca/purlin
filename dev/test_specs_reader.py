@@ -7,6 +7,8 @@ import contextlib
 import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 
 import pytest
@@ -44,24 +46,45 @@ def _anchor(project, *fields, **where):
     return purlin_specs.scan_specs(project.root)['policy']
 
 
+# The other program that holds a file locked on Windows: it locks every byte
+# of the file named by its one argument, says `locked`, and holds the lock
+# until its input closes.
+_HOLD_LOCKED = '''
+import msvcrt, os, sys
+size = os.path.getsize(sys.argv[1])
+with open(sys.argv[1], 'r+b') as handle:
+    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, size)
+    print('locked', flush=True)
+    sys.stdin.read()
+    handle.seek(0)
+    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, size)
+'''
+
+
 @contextlib.contextmanager
 def _refused_to_readers(path):
-    """Hold `path` so that any other open of it for reading fails.
+    """Hold `path` so that any other read of it fails.
 
-    On Windows the file is locked, the whole of it, through a handle held
-    for the duration; elsewhere its mode is set to 0. Either way the next
-    reader gets an `OSError`.
+    On Windows another program locks the whole file for the duration;
+    elsewhere its mode is set to 0. Either way the next reader gets an
+    `OSError`.
     """
     if os.name == 'nt':
-        import msvcrt
-        size = os.path.getsize(path)
-        with open(path, 'r+b') as handle:
-            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, size)
-            try:
-                yield
-            finally:
-                handle.seek(0)
-                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, size)
+        holder = subprocess.Popen([sys.executable, '-c', _HOLD_LOCKED, path],
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+        try:
+            said = holder.stdout.readline().decode('ascii', 'replace')
+            assert said.strip() == 'locked', (
+                said + holder.stderr.read().decode('utf-8', 'replace'))
+            with pytest.raises(OSError):
+                with open(path, 'rb') as reader:
+                    reader.read()
+            yield
+        finally:
+            holder.stdin.close()
+            holder.wait(timeout=30)
         return
     os.chmod(path, 0)
     try:
@@ -253,6 +276,7 @@ class TestAnchors:
         assert info['pinned'] == 'abc1234def'
 
     # purlin: specs PROOF-33
+    # purlin: specs PROOF-42
     def test_the_anchors_folder_alone_makes_an_anchor(self, project):
         project.spec('# Feature: ruleset\n\n## Rules\n\n- RULE-1: A\n',
                      name='ruleset', category='_anchors')
@@ -353,6 +377,7 @@ class TestTheScan:
             shutil.rmtree(empty, ignore_errors=True)
 
     # purlin: specs PROOF-41
+    # purlin: specs PROOF-43
     @pytest.mark.skipif(os.name != 'nt' and (
         not hasattr(os, 'geteuid') or os.geteuid() == 0),
         reason='file modes do not refuse a read to this user')

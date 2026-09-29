@@ -49,6 +49,7 @@
 - PROOF-32 (RULE-10): An anchor carrying `> Source: https://github.com/acme/p.git specs/a.md` and `> Path: specs/b.md` is read with the path `specs/a.md`, the one its source line names, and not `specs/b.md`
 - PROOF-12 (RULE-11): The spec `specs/_anchors/policy.md`, opening `# Anchor: policy` and carrying `> Source: https://github.com/acme/p.git specs/no_eval.md` and `> Pinned: abc1234def`, is read as an anchor with the source `https://github.com/acme/p.git`, the path `specs/no_eval.md` and the pin `abc1234def`
 - PROOF-33 (RULE-11): The spec `specs/_anchors/ruleset.md`, opening `# Feature: ruleset`, is read as an anchor, by its folder alone
+- PROOF-42 (RULE-11): On Windows, the spec `specs\_anchors\ruleset.md`, opening `# Feature: ruleset`, is read as an anchor, by its folder alone @env(windows)
 - PROOF-34 (RULE-11): The spec `specs/schema/shared.md`, opening `# Anchor: shared`, is read as an anchor, by its first line alone
 - PROOF-35 (RULE-11): The spec `specs/auth/login.md`, opening `# Feature: login` and lying under no `_anchors/` folder, is read as a feature and not an anchor
 - PROOF-14 (RULE-13): The anchor `api` has one rule, the anchor `security` carries `> Global: true` and one rule, and the feature `login` has two rules and `> Requires: api`; `login` must prove exactly `login` RULE-1 and RULE-2 `own`, `api` RULE-1 `required` and `security` RULE-1 `global`, in that order
@@ -59,3 +60,4 @@
 - PROOF-39 (RULE-20): A project holds `specs/auth/login.md` and `specs/auth/broken.md`, whose bytes are not valid UTF-8; it reads as the one spec `login`, with no `broken`
 - PROOF-40 (RULE-21): A project with no `specs/` folder reads as no specs at all, rather than an error
 - PROOF-41 (RULE-20): A project holds `specs/auth/login.md` and `specs/auth/locked.md`, which the operating system refuses to read; it reads as the one spec `login`
+- PROOF-43 (RULE-20): On Windows, a project holds `specs/auth/login.md` and `specs/auth/locked.md`, which another program holds locked against reading; it reads as the one spec `login` @env(windows)
