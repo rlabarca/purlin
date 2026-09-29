@@ -386,12 +386,16 @@ function featureNamed(name) {
 
 /* --- chrome and router ------------------------------------------------ */
 
-/* How old the data is, and the tone that age reads in. One function, so the
-   minute tick and a full render agree on the threshold. */
+/* How old the data is, the tone that age reads in, and what the hover says
+   to do about it. One function, so the minute tick and a full render agree
+   on the threshold. The line carries the age alone; the instruction is the
+   hover's. */
 function ageLine() {
   var age = ageText(DATA && DATA.generated_at);
-  return {hue: age.old ? 'warn' : 'pass', text: 'Data: ' + age.text
-    + (age.old ? ' — run purlin:status to refresh' : '')};
+  return {hue: age.old ? 'warn' : 'pass', text: 'Data: ' + age.text,
+    how: (age.old ? 'This data is old. ' : '')
+      + 'To refresh it, type purlin:status in Claude Code. '
+      + 'Press here to reload the page.'};
 }
 
 /* The tag this commit carries, which is the marker that a version was signed
@@ -425,7 +429,8 @@ function topBar() {
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
   return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
     + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
-    + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
+    + '<button class="btn fresh" data-act="reload"' + hover([line.how])
+    + ' style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
     + (gate ? tag('gate: ' + gate, true) : '')
@@ -570,6 +575,7 @@ function tickAge() {
   if (!text) { return; }
   var line = ageLine();
   node.style.color = 'var(--state-' + line.hue + ')';
+  node.title = line.how;
   text.textContent = line.text;
 }
 
