@@ -37,13 +37,14 @@ import sign as sign_module                                   # noqa: E402
 from purlin import signatures as purlin_signatures           # noqa: E402
 from purlin import summary as purlin_summary                 # noqa: E402
 from sign_project import REVIEW_GATE, _Out, git, write      # noqa: E402
-from test_signatures import MANUAL_SPEC, ready, record  # noqa: E402
+from test_signatures import (MANUAL_SPEC, ready, record,  # noqa: E402
+                             waiting_pairs)
 
 
 def sign_all(made):
     """Sign every rule that waits for a person, in one signed commit."""
     payload = made.payload()
-    targets = sign_module.queued(payload)
+    targets = waiting_pairs(payload)
     assert targets, 'nothing waits to be signed'
     assert sign_module.sign_and_commit(made.root, targets, 'jane@acme.com',
                                        payload=payload)

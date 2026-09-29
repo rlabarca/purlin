@@ -100,8 +100,7 @@ SIGNING_SETUP = (
 SIGNED_AS = 'Signed %s as %s with the key ending ...%s.'
 
 NOTHING_WAITING = 'Nothing is waiting for someone to test by hand or to sign.'
-NOTHING_TO_SIGN = ('sign: nothing here needs a signature. Run purlin:status to '
-                   'see what blocks the gate.')
+NOT_A_RULE = '%s %s is not a rule any spec has.'
 NOT_MADE = ('sign: the signature commit was not made. Check that signing '
             'works and that the files are not already committed.')
 
@@ -169,12 +168,6 @@ def listings_to_sign(payload, feature, rule):
     if elsewhere:
         return elsewhere
     return [item for item in found if _applies_to(item) == feature][:1]
-
-
-def triple_for(entry):
-    """The hash of one rule entry's rule, proof and test hashes."""
-    return signatures_module.triple_hash(
-        entry.get('rule_hash'), entry.get('proof_hash'), entry.get('test_hash'))
 
 
 # ---------------------------------------------------------------------------
@@ -280,12 +273,6 @@ def waiting(payload, feature=None, rules=None):
             found.append(item)
     return sorted(found, key=lambda item: (item.get('feature') or '',
                                            _rule_number(item.get('id'))))
-
-
-def queued(payload, feature=None, rules=None):
-    """Every `(feature, rule)` a bare feature or `--all` signs, in order."""
-    return [(item['feature'], item['id'])
-            for item in waiting(payload, feature, rules)]
 
 
 def _rule_number(rule_id):
@@ -863,13 +850,21 @@ def main(argv=None):
         return EXIT_NOTHING if result['not_made'] else EXIT_OK
 
     if args.feature and args.rules:
-        targets = [(args.feature, rule) for rule in args.rules
-                   if rule_entry(payload, args.feature, rule) is not None]
+        unknown = [rule for rule in args.rules
+                   if rule_entry(payload, args.feature, rule) is None]
+        if unknown:
+            for rule in unknown:
+                print(NOT_A_RULE % (args.feature, rule))
+            return EXIT_NOTHING
+        targets = [(args.feature, rule) for rule in args.rules]
     else:
-        targets = queued(payload, args.feature)
+        targets = [(item['feature'], item['id'])
+                   for item in waiting(payload, args.feature)]
     if not targets:
-        print(NOTHING_TO_SIGN)
-        return EXIT_NOTHING
+        print(NOTHING_WAITING)
+        _finish(project_root, sys.stdout, args.release, payload)
+        report_data.refresh(project_root)
+        return EXIT_OK
 
     sha = sign_and_commit(project_root, targets, email, note=args.note,
                           payload=payload)

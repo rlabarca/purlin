@@ -32,7 +32,7 @@ every gate, `signed` included.
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset | A developer, on every change. With no name it reads `sync_status` and names the specs with rules that have no passing test. It repairs a marker comment that is nearly right, and ends by running `purlin:test` |
 | `purlin:test [feature ...] [--all]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only. The first run in a project with no test command suggests one and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:audit [feature ...] [--all]` | Run the tests, the breaks where mutation testing is on, and the AI audit, then write what it found into the evidence | A developer, any time. It writes the evidence, commits it with `--commit`, and never pushes |
-| `purlin:sign [feature] [RULE-N ...] [--all]` | Walk the queue, or sign a rule, a feature or a batch as a signed commit | Anyone with a key to sign with; the signature names them. With no argument it walks the rules waiting for someone to test by hand or to sign. It works at every gate |
+| `purlin:sign [feature] [RULE-N ...] [--all]` | Sign a rule, a feature or every rule that waits for a person, as a signed commit | Anyone with a key to sign with; the signature names them. With no argument it walks the rules waiting for someone to test by hand or to sign. It works at every gate |
 | `purlin:drift [role]` | Report what changed since your last pull, by role | Everyone, after a pull, a merge, a rebase, a checkout, a clone or a reset |
 
 ## Supporting

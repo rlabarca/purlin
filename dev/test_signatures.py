@@ -38,11 +38,11 @@ from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 from purlin import signatures as purlin_signatures  # noqa: E402
 from sign_project import (  # noqa: E402
-    EVERY_RULE_SIGNED,
     FIRST_GATE,
     REVIEW_GATE,
     SIGNING_GATE,
     SIGN_PY,
+    SPEC,
     TEST_FILE,
     TEST_NAMES,
     Project,
@@ -56,8 +56,7 @@ from sign_project import (  # noqa: E402
 # The throwaway project
 # ---------------------------------------------------------------------------
 
-# Both rules with no tag: every rule is asked what the gate asks.
-SPEC = EVERY_RULE_SIGNED
+
 MANUAL_SPEC = SPEC.replace('verify 401 and the body "denied"\n',
                            'verify 401 and the body "denied" @manual\n')
 MACHINE = 'jane-laptop'
@@ -113,6 +112,12 @@ def key(root, email=EMAIL, name='Jane', file='signing-key'):
                            ('user.signingkey', path + '.pub')):
         git(root, 'config', setting, value)
     return path + '.pub'
+
+
+def waiting_pairs(payload, feature=None):
+    """`(feature, rule)` for each rule the walk would stop at, in its order."""
+    return [(item['feature'], item['id'])
+            for item in sign_module.waiting(payload, feature)]
 
 
 def ready(gate=SIGNING_GATE, spec=SPEC, audited=('RULE-1', 'RULE-2'),
@@ -738,7 +743,7 @@ class TestWhatIsSigned:
     def test_at_strong_all_signs_the_hand_check(self, capsys):
         made = ready(gate=REVIEW_GATE, spec=MANUAL_SPEC)
         try:
-            assert sign_module.queued(made.payload()) == [('login', 'RULE-2')]
+            assert waiting_pairs(made.payload()) == [('login', 'RULE-2')]
             assert sign_module.main(['--all', '--project-root',
                                      made.root]) == 0
             capsys.readouterr()
@@ -783,6 +788,31 @@ class TestWhatIsSigned:
         finally:
             made.close()
 
+    # purlin: signatures PROOF-124
+    def test_all_with_nothing_waiting_says_so_and_ends(self, capsys):
+        made = ready(gate=REVIEW_GATE)
+        try:
+            code = sign_module.main(['--all', '--project-root', made.root])
+            assert capsys.readouterr().out.splitlines() == [
+                'Nothing is waiting for someone to test by hand or to sign.',
+                '2 rules. 2 pass their tests. 2 are strong.',
+                'Nothing left to do.']
+            assert (code, made.signatures()) == (0, [])
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-125
+    def test_a_rule_no_spec_has_is_named_and_nothing_is_signed(self, capsys):
+        made = ready(gate=REVIEW_GATE)
+        try:
+            code = sign_module.main(['login', 'RULE-9', '--project-root',
+                                     made.root])
+            assert capsys.readouterr().out.splitlines() == [
+                'login RULE-9 is not a rule any spec has.']
+            assert (code, made.signatures()) == (1, [])
+        finally:
+            made.close()
+
     # purlin: signatures PROOF-20
     def test_all_signs_in_the_order_the_walk_shows(self, at_signed, capsys):
         add_billing(at_signed)
@@ -792,7 +822,7 @@ class TestWhatIsSigned:
         capsys.readouterr()
         assert shown == [('billing', 'RULE-1'), ('login', 'RULE-1'),
                          ('login', 'RULE-2')], shown
-        assert sign_module.queued(at_signed.payload()) == shown
+        assert waiting_pairs(at_signed.payload()) == shown
 
     # purlin: signatures PROOF-30
     def test_a_hand_check_waits_once(self):
@@ -800,7 +830,7 @@ class TestWhatIsSigned:
         try:
             rule = made.rule('RULE-2')
             assert rule['left'] == 'to_test_by_hand', rule['left']
-            assert sign_module.queued(made.payload(), 'login').count(
+            assert waiting_pairs(made.payload(), 'login').count(
                 ('login', 'RULE-2')) == 1
         finally:
             made.close()

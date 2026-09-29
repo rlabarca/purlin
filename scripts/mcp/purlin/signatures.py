@@ -75,14 +75,6 @@ def signer_slug(email):
     return slug or 'unknown'
 
 
-def triple_hash(rule_hash, proof_hash, test_hash):
-    """sha256 over the rule, proof and test hashes, one per line."""
-    digest = hashlib.sha256()
-    digest.update(('%s\n%s\n%s' % (rule_hash or '', proof_hash or '',
-                                   test_hash or '')).encode('utf-8'))
-    return digest.hexdigest()
-
-
 def audit_hash(entry, strength=None):
     """What the audit found, and nothing else, as a signature is made over it.
 
@@ -216,17 +208,6 @@ def is_current(signature, entry):
 # ---------------------------------------------------------------------------
 # How it was committed
 # ---------------------------------------------------------------------------
-
-def commit_is_signed(project_root, rel_path):
-    """True when the last commit touching a path is signed (`%G?` is `G`)."""
-    try:
-        result = subprocess.run(
-            ['git', 'log', '-1', '--format=%G?', '--', rel_path],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
-    except (subprocess.SubprocessError, OSError):
-        return False
-    return result.returncode == 0 and result.stdout.strip() == 'G'
-
 
 def commit_date(project_root, rel_path):
     """When the last commit touching a path was authored, ISO 8601 UTC, or None.

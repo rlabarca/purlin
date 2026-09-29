@@ -31,7 +31,7 @@
 - RULE-18: One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule signed
 - RULE-19: A batch spanning more than one feature names each feature with its own rules in the subject
 - RULE-20: A signature counts when the last commit that touched its file carries a signature, made with any key and whoever its author; otherwise it does not count, with the reason `the commit that added it is not signed`; the gate plays no part
-- RULE-21: The command refuses nobody for who they are: a person with a key to sign with signs, and no setting names who may sign
+- RULE-21: The command signs for anyone with a key to sign with, whatever their name or email
 - RULE-22: The command exits 0 for `--help`, and an unknown option exits 2 whether or not a feature is named
 - RULE-23: A signature counts on whatever commit carries it: one committed signed on a side branch counts at the gate `signed` on that branch, before any merge
 - RULE-42: The evidence a signature names is the feature's own evidence file, `.purlin/evidence/local/<feature>.json` where it exists and the `ci` one otherwise, and it is null where the feature has none
@@ -50,6 +50,8 @@
 - RULE-60: The key fingerprint is read from `user.signingkey`, a public key path, a private key path with its `.pub` beside it, or a `key::` literal, and reads as `ssh-keygen -l` prints it; a key that is not an SSH key is no key
 - RULE-61: A signature is made over the machine each system's tests ran on: another machine for a system it names ends it, a system it names that is gone ends it, and a system it does not name ends nothing
 - RULE-62: A rule named by id is signed at every gate, whatever work it has left
+- RULE-63: `--all`, or a bare feature, with nothing waiting for a person prints `Nothing is waiting for someone to test by hand or to sign.`, then the summary ending, writes no signature and exits 0
+- RULE-64: A rule named by id that no spec has prints `<feature> <RULE-N> is not a rule any spec has.`, writes no signature and exits 1
 
 ## Proof
 
@@ -97,7 +99,7 @@
 - PROOF-96 (RULE-20): A signature for `login RULE-1` is committed with commit signing off; it does not count, with the reason `the commit that added it is not signed`
 - PROOF-97 (RULE-20): A signature for `login RULE-1` is committed signed with a key made for the check that no setting and no file names; it counts
 - PROOF-98 (RULE-20): A signature for `login RULE-1` is committed signed with Jane's key under the author `Bob <bob@else.org>`; it counts
-- PROOF-27 (RULE-21): At the gate `signed`, `omar@example.org`, whom no setting names, sets up a key and runs `--all`; it exits 0 and writes signatures for `RULE-1` and `RULE-2`, each file named for `omar`
+- PROOF-27 (RULE-21): At the gate `signed`, `omar@example.org`, who has not signed in this project before, sets up a key and runs `--all`; it exits 0 and writes signatures for `RULE-1` and `RULE-2`, each file named for `omar`
 - PROOF-28 (RULE-22): Run the command with `--help`, with `login --nope` and with `--nope` alone; the exit codes are 0, 2 and 2
 - PROOF-29 (RULE-23): At the gate `signed`, a branch `side` is made from `main` and `login RULE-2` is signed on it; the command exits 0, `main` holds no signature file, and on `side` the rule's signed cell reads `signed` with no reason naming a branch or `main`. Back on `main`, which does not carry the signature, the rule's signed cell reads `unsigned`
 - PROOF-63 (RULE-42): In a project whose test run wrote `.purlin/evidence/local/login.json`, the evidence a signature for `login` names is that path; with `.purlin/evidence/ci/login.json` written beside it, the local path is still named; with the local file removed, `.purlin/evidence/ci/login.json` is named; a feature with no evidence file names none, null. Signed and committed with only the `ci` file present, the signature file for `login RULE-1` reads `evidence` `.purlin/evidence/ci/login.json`; signed again with that file removed too, it reads `evidence` null
@@ -136,3 +138,5 @@
 - PROOF-121 (RULE-61): A signature made over `macos` results from `jane-laptop` is compared with those results beside `windows` results from `remote runner, Windows`; it is current
 - PROOF-122 (RULE-61): A signature made over `macos` results from `jane-laptop` and `windows` results from `remote runner, Windows` is compared with the `macos` results alone; it is not current
 - PROOF-123 (RULE-62): At the gate `passed`, with no audit written, `login RULE-1` is signed by name; the command exits 0 and writes one signature, for `RULE-1`
+- PROOF-124 (RULE-63): At the gate `strong`, with both rules passing and audited strong, `--all` is run; it prints `Nothing is waiting for someone to test by hand or to sign.`, then `2 rules. 2 pass their tests. 2 are strong.` and `Nothing left to do.`, writes no signature and exits 0
+- PROOF-125 (RULE-64): `login RULE-9`, which the spec does not have, is signed by name; the command prints `login RULE-9 is not a rule any spec has.`, writes no signature and exits 1

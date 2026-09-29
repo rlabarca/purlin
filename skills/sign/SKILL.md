@@ -1,6 +1,6 @@
 ---
 name: sign
-description: Walk the rules that wait for a person, or sign one rule, a feature or all of them as a signed commit
+description: Sign a rule, a feature or every rule that waits for a person, as a signed commit
 ---
 
 Attest that a rule, its proof, its test, the code its feature lists and what the audit found belong
