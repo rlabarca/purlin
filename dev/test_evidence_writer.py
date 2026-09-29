@@ -223,20 +223,31 @@ def test_the_section_names_the_commit_time_runner_and_fingerprint(tmp_path):
 
 
 # purlin: evidence_writer PROOF-17
-def test_a_changed_tree_is_dirty_and_the_runner_is_the_email_slug(tmp_path):
+def test_a_changed_tree_is_dirty(tmp_path):
     root = _project(tmp_path)
     _spec(root)
     _test_file(root)
     _repo(root)
     (root / 'src' / 'feat.py').write_text('VALUE = 3\n', encoding='utf-8')
+
+    code, out = _run(root, '--all', '--test')
+
+    assert code == 0, out
+    assert _evidence(root)['platforms'][HERE]['dirty'] is True
+
+
+# purlin: evidence_writer PROOF-74
+def test_the_runner_is_the_slug_of_the_git_email(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
     _git(root, 'config', 'user.email', 'Jane.Doe+ci@Example.com')
 
     code, out = _run(root, '--all', '--test')
 
     assert code == 0, out
-    section = _evidence(root)['platforms'][HERE]
-    assert section['dirty'] is True
-    assert section['runner'] == 'jane-doe-ci'
+    assert _evidence(root)['platforms'][HERE]['runner'] == 'jane-doe-ci'
 
 
 # purlin: evidence_writer PROOF-41
@@ -383,104 +394,137 @@ def test_a_manual_proof_is_listed_missing_and_manual():
             for entry in listed] == [('missing', True, '')]
 
 
-# purlin: evidence_writer PROOF-15
-def test_a_rule_with_no_proof_is_answered_by_its_rule_marked_test():
-    info = _info(rules=('RULE-1', 'RULE-2', 'RULE-3'), proofs={},
-                 by_rule={})
-    seen = {
-        'RULE-1': [{'status': 'pass', 'test_file': 'tests/a.py',
-                    'test_name': 'test_a'}],
-        'RULE-2': [{'status': 'fail', 'test_file': 'tests/b.py',
-                    'test_name': 'test_b'}]}
-    section = writer.build_section(info, seen, HERE, 'a' * 40, False, 'dev',
-                                   PRINT)
-    assert section['rules'] == {'RULE-1': 'passed', 'RULE-2': 'failed',
-                                'RULE-3': 'no test'}
-    assert [(e['id'], e['rule'], e['result'], e['test'])
-            for e in section['proofs']] == [
-        ('RULE-1', 'RULE-1', 'pass', 'tests/a.py::test_a'),
-        ('RULE-2', 'RULE-2', 'fail', 'tests/b.py::test_b')]
+def _no_proof(rule_id, seen):
+    """The section for a spec whose one rule has no proof, and what it lists."""
+    section = writer.build_section(
+        _info(rules=(rule_id,), proofs={}, by_rule={}), seen, HERE, 'a' * 40,
+        False, 'dev', PRINT)
+    return section['rules'], [(e['id'], e['rule'], e['result'], e['test'])
+                              for e in section['proofs']]
 
-    # Two tests marked with one rule's id, one passing and one failing.
-    two = writer.build_section(
-        _info(rules=('RULE-4',), proofs={}, by_rule={}),
-        {'RULE-4': [{'status': 'pass', 'test_file': 'tests/d.py',
-                     'test_name': 'test_d'},
-                    {'status': 'fail', 'test_file': 'tests/e.py',
-                     'test_name': 'test_e'}]},
-        HERE, 'a' * 40, False, 'dev', PRINT)
-    assert two['rules'] == {'RULE-4': 'failed'}
-    assert [(e['id'], e['rule'], e['result'], e['test'])
-            for e in two['proofs']] == [
-        ('RULE-4', 'RULE-4', 'pass', 'tests/d.py::test_d'),
-        ('RULE-4', 'RULE-4', 'fail', 'tests/e.py::test_e')]
+
+# purlin: evidence_writer PROOF-15
+def test_a_rule_with_no_proof_and_a_passing_marked_test_reads_passed():
+    assert _no_proof('RULE-1', {'RULE-1': [_seen('pass')]}) == (
+        {'RULE-1': 'passed'},
+        [('RULE-1', 'RULE-1', 'pass', 'tests/a.py::test_a')])
+
+
+# purlin: evidence_writer PROOF-71
+def test_a_rule_with_no_proof_and_a_failing_marked_test_reads_failed():
+    assert _no_proof('RULE-2', {'RULE-2': [
+        _seen('fail', 'test_b', 'tests/b.py')]}) == (
+        {'RULE-2': 'failed'},
+        [('RULE-2', 'RULE-2', 'fail', 'tests/b.py::test_b')])
+
+
+# purlin: evidence_writer PROOF-72
+def test_a_rule_with_no_proof_and_no_marked_test_reads_no_test():
+    assert _no_proof('RULE-3', {}) == ({'RULE-3': 'no test'}, [])
+
+
+# purlin: evidence_writer PROOF-73
+def test_a_rule_with_no_proof_and_one_failing_marked_test_of_two_fails():
+    assert _no_proof('RULE-4', {'RULE-4': [
+        _seen('pass', 'test_d', 'tests/d.py'),
+        _seen('fail', 'test_e', 'tests/e.py')]}) == (
+        {'RULE-4': 'failed'},
+        [('RULE-4', 'RULE-4', 'pass', 'tests/d.py::test_d'),
+         ('RULE-4', 'RULE-4', 'fail', 'tests/e.py::test_e')])
 
 
 # ---------------------------------------------------------------------------
 # The merge
 # ---------------------------------------------------------------------------
 
-# purlin: evidence_writer PROOF-4
-def test_a_run_replaces_only_its_own_section(tmp_path):
-    root = tmp_path
-    audit = {'mutation': None, 'rules': {'RULE-1': {
-        'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't',
-        'verdict': 'strong', 'findings': ['The test reads “4”.'],
-        'at': 'x', 'commit': 'y'}}}
-    windows = _section(at='2026-08-01T00:00:00Z')
-    path = _put(root, _file(platforms={'windows': windows}, audit=audit))
-    before = path.read_text(encoding='utf-8')
+QUOTED_AUDIT = {'mutation': None, 'rules': {'RULE-1': {
+    'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't',
+    'verdict': 'strong', 'findings': ['The test reads “4”.'],
+    'at': 'x', 'commit': 'y'}}}
+WINDOWS = _section(at='2026-08-01T00:00:00Z')
 
-    def unchanged_text():
-        # Each part's text as the file held it, compared as text.
-        text = path.read_text(encoding='utf-8')
-        for key, value, indent in (('windows', windows, '    '),
-                                   ('audit', audit, '  ')):
-            part = '"%s": %s' % (key, json.dumps(
-                value, indent=2, sort_keys=True).replace('\n', '\n' + indent))
-            assert part in before, key
-            assert part in text, (key, text)
+
+def _kept_as_text(before, path):
+    """The `windows` section and the `audit` object read as the file held them.
+
+    Each part is compared as text, so a write that re-encodes the curly
+    quotes of the finding, while the parsed content stays equal, is seen.
+    """
+    text = path.read_text(encoding='utf-8')
+    for key, value, indent in (('windows', WINDOWS, '    '),
+                               ('audit', QUOTED_AUDIT, '  ')):
+        part = '"%s": %s' % (key, json.dumps(
+            value, indent=2, sort_keys=True).replace('\n', '\n' + indent))
+        assert part in before, key
+        assert part in text, (key, text)
+
+
+# purlin: evidence_writer PROOF-4
+def test_a_run_writes_its_section_beside_the_others_as_they_were(tmp_path):
+    root = tmp_path
+    path = _put(root, _file(platforms={'windows': WINDOWS},
+                            audit=QUOTED_AUDIT))
+    before = path.read_text(encoding='utf-8')
 
     writer.write_section(str(root), 'local', 'feat', _info(), 'linux',
                          _section())
-    data = _evidence(root)
-    assert data['platforms']['windows'] == windows
-    assert data['audit'] == audit
-    assert data['platforms']['linux'] == _section()
-    unchanged_text()
 
+    assert _evidence(root)['platforms']['linux'] == _section()
+    _kept_as_text(before, path)
+
+
+# purlin: evidence_writer PROOF-55
+def test_a_run_replaces_its_own_section_and_no_other(tmp_path):
+    root = tmp_path
+    path = _put(root, _file(platforms={'windows': WINDOWS,
+                                       'linux': _section()},
+                            audit=QUOTED_AUDIT))
+    before = path.read_text(encoding='utf-8')
     failed = _section(result='fail', at='2026-09-02T00:00:00Z')
+
     writer.write_section(str(root), 'local', 'feat', _info(), 'linux', failed)
-    data = _evidence(root)
-    assert data['platforms']['linux'] == failed
-    assert data['platforms']['windows'] == windows
-    assert data['audit'] == audit
-    unchanged_text()
+
+    assert _evidence(root)['platforms']['linux'] == failed
+    _kept_as_text(before, path)
+
+
+DROPPED_ENTRY = {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't',
+                 'verdict': 'strong', 'findings': [], 'at': 'x',
+                 'commit': 'y'}
+
+
+def _with_a_dropped_rule(root):
+    """A file whose `windows` section and `audit.rules` hold RULE-1 and RULE-9."""
+    _put(root, _file(
+        platforms={'windows': _section(rules={'RULE-1': 'passed',
+                                              'RULE-9': 'passed'})},
+        audit={'mutation': None, 'rules': {'RULE-1': DROPPED_ENTRY,
+                                           'RULE-9': DROPPED_ENTRY}}))
 
 
 # purlin: evidence_writer PROOF-5
-def test_a_rule_the_spec_dropped_is_dropped_from_the_file(tmp_path):
+def test_a_section_write_drops_the_rules_the_spec_dropped(tmp_path):
     root = tmp_path
-    old = _section(rules={'RULE-1': 'passed', 'RULE-9': 'passed'})
-    entry = {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't',
-             'verdict': 'strong', 'findings': [], 'at': 'x', 'commit': 'y'}
-    _put(root, _file(platforms={'windows': old},
-                     audit={'mutation': None,
-                            'rules': {'RULE-1': entry, 'RULE-9': entry}}))
+    _with_a_dropped_rule(root)
 
     writer.write_section(str(root), 'local', 'feat', _info(), 'linux',
                          _section())
+
     data = _evidence(root)
+    assert sorted(data['platforms']) == ['linux', 'windows']
     for section in data['platforms'].values():
         assert sorted(section['rules']) == ['RULE-1']
     assert sorted(data['audit']['rules']) == ['RULE-1']
 
-    # An audit's write alone drops the removed rule too.
-    _put(root, _file(platforms={'windows': old},
-                     audit={'mutation': None,
-                            'rules': {'RULE-1': entry, 'RULE-9': entry}}))
+
+# purlin: evidence_writer PROOF-56
+def test_an_audit_write_drops_the_rules_the_spec_dropped(tmp_path):
+    root = tmp_path
+    _with_a_dropped_rule(root)
+
     writer.write_audit(str(root), 'local', 'feat', _info(),
-                       {'RULE-1': entry}, None, False)
+                       {'RULE-1': DROPPED_ENTRY}, None, False)
+
     data = _evidence(root)
     assert sorted(data['platforms']) == ['windows']
     assert sorted(data['platforms']['windows']['rules']) == ['RULE-1']
@@ -511,56 +555,98 @@ def test_a_run_removes_the_evidence_of_a_feature_with_no_spec(tmp_path):
             in out)
 
 
-# purlin: evidence_writer PROOF-6
-def test_a_feature_run_and_an_audit_run_remove_it_too(tmp_path):
+def _removed_by(tmp_path, *args):
+    """A `strong` project holding live `ci/` evidence and `local/gone.json`,
+    run with `args`: what the run printed, and whether each file is there."""
     root = _project(tmp_path, gate='strong')
     _spec(root)
     _test_file(root)
     live = _put(root, _file(source='ci', platforms={'linux': _section()}),
                 source='ci')
+    gone = _put(root, _file(feature='gone', platforms={'linux': _section()}),
+                feature='gone')
     _repo(root)
-    gone = root / '.purlin' / 'evidence' / 'local' / 'gone.json'
 
-    for args in (('--feature', 'feat', '--test'), ('--all', '--audit')):
-        _put(root, _file(feature='gone', platforms={'linux': _section()}),
-             feature='gone')
-        code, out = _run(root, *args)
-        assert not gone.exists(), args
-        assert ('Removed .purlin/evidence/local/gone.json: no spec defines '
-                'gone.' in out), (args, out)
-        assert live.exists(), args
+    _code, out = _run(root, *args)
+
+    return out, gone.exists(), live.exists()
+
+
+# purlin: evidence_writer PROOF-57
+def test_a_feature_run_removes_the_evidence_of_a_feature_with_no_spec(
+        tmp_path):
+    out, gone, live = _removed_by(tmp_path, '--feature', 'feat', '--test')
+    assert not gone, out
+    assert ('Removed .purlin/evidence/local/gone.json: no spec defines gone.'
+            in out.splitlines()), out
+    assert live
+
+
+# purlin: evidence_writer PROOF-58
+def test_an_audit_run_removes_the_evidence_of_a_feature_with_no_spec(
+        tmp_path):
+    out, gone, live = _removed_by(tmp_path, '--all', '--audit')
+    assert not gone, out
+    assert ('Removed .purlin/evidence/local/gone.json: no spec defines gone.'
+            in out.splitlines()), out
+    assert live
 
 
 # purlin: evidence_writer PROOF-7
-def test_a_run_that_saw_the_same_thing_leaves_the_file_alone(tmp_path):
+def test_a_second_run_that_saw_the_same_thing_leaves_the_file_alone(tmp_path):
     root = _project(tmp_path)
     _spec(root)
     _test_file(root)
     _repo(root)
     path = root / '.purlin' / 'evidence' / 'local' / 'feat.json'
-
     _run(root, '--all', '--test')
     first = path.read_bytes()
+
     _run(root, '--all', '--test')
+
     assert path.read_bytes() == first
 
-    held = _evidence(root)['platforms'][HERE]
-    again = dict(held, at='2030-01-01T00:00:00Z', commit='f' * 40,
-                 dirty=not held['dirty'])
-    writer.write_section(str(root), 'local', 'feat', _info(), HERE, again)
-    assert path.read_bytes() == first
 
-    # What it saw changed, or the fingerprint did: the file is rewritten.
-    failed = dict(held, at='2030-01-02T00:00:00Z', commit='e' * 40,
-                  rules={'RULE-1': 'failed'},
-                  proofs=[dict(held['proofs'][0], result='fail')])
-    writer.write_section(str(root), 'local', 'feat', _info(), HERE, failed)
-    assert path.read_bytes() != first
-    assert _evidence(root)['platforms'][HERE] == failed
-    moved = dict(failed, at='2030-01-03T00:00:00Z', commit='d' * 40,
-                 fingerprint=dict(held['fingerprint'], code='other'))
-    writer.write_section(str(root), 'local', 'feat', _info(), HERE, moved)
-    assert _evidence(root)['platforms'][HERE] == moved
+def _written_over(root, section):
+    """Write `section` over a file holding `_section()`. The bytes before."""
+    path = _put(root, _file(platforms={'linux': _section()}))
+    before = path.read_bytes()
+    writer.write_section(str(root), 'local', 'feat', _info(), 'linux',
+                         section)
+    return before, path.read_bytes()
+
+
+# purlin: evidence_writer PROOF-59
+def test_a_section_that_differs_only_in_when_it_ran_is_not_written(tmp_path):
+    before, after = _written_over(tmp_path, dict(
+        _section(), at='2030-01-01T00:00:00Z', commit='f' * 40, dirty=True))
+    assert after == before
+
+
+# purlin: evidence_writer PROOF-60
+def test_a_section_that_saw_a_failure_replaces_the_one_on_disk(tmp_path):
+    failed = _section(result='fail', at='2030-01-02T00:00:00Z',
+                      commit='e' * 40)
+
+    _written_over(tmp_path, failed)
+
+    held = _evidence(tmp_path)['platforms']['linux']
+    assert (held['rules'], held['proofs'][0]['result'], held['at'],
+            held['commit']) == ({'RULE-1': 'failed'}, 'fail',
+                                '2030-01-02T00:00:00Z', 'e' * 40)
+
+
+# purlin: evidence_writer PROOF-61
+def test_a_section_over_another_fingerprint_replaces_the_one_on_disk(
+        tmp_path):
+    moved = dict(_section(at='2030-01-03T00:00:00Z', commit='d' * 40),
+                 fingerprint=dict(PRINT, code='other'))
+
+    _written_over(tmp_path, moved)
+
+    held = _evidence(tmp_path)['platforms']['linux']
+    assert (held['fingerprint'], held['at'], held['commit']) == (
+        dict(PRINT, code='other'), '2030-01-03T00:00:00Z', 'd' * 40)
 
 
 # purlin: evidence_writer PROOF-43
@@ -1008,54 +1094,87 @@ def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
     assert entry['commit'] == _head(root)
 
 
-# purlin: evidence_writer PROOF-14
-def test_a_repeated_entry_keeps_its_time_and_a_new_model_replaces_it(tmp_path):
-    root = tmp_path
-    info = _info(rules=('RULE-1',))
-    _put(root, _file(platforms={'linux': _section()}))
-    found = {'verdict': 'strong', 'findings': [], 'model': 'claude-a',
-             'criteria': 'c' * 64}
-    rule = {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't'}
-    writer.write_audit(str(root), 'local', 'feat', info,
-                       {'RULE-1': writer.audit_entry(rule, found, 'y',
-                                                     at='x')}, None, False)
-    writer.write_audit(str(root), 'local', 'feat', info,
-                       {'RULE-1': writer.audit_entry(rule, found, 'y',
-                                                     at='later')}, None, False)
-    assert _evidence(root)['audit']['rules']['RULE-1']['at'] == 'x'
-    writer.write_audit(str(root), 'local', 'feat', info,
-                       {'RULE-1': writer.audit_entry(
-                           rule, dict(found, model='claude-b'), 'y',
-                           at='later')}, None, False)
-    entry = _evidence(root)['audit']['rules']['RULE-1']
-    assert (entry['model'], entry['at']) == ('claude-b', 'later'), entry
-
-    # A repeat under another commit keeps the commit too.
-    found = dict(found, model='claude-b')
-    writer.write_audit(str(root), 'local', 'feat', info,
-                       {'RULE-1': writer.audit_entry(rule, found, 'z',
-                                                     at='latest')}, None, False)
-    entry = _evidence(root)['audit']['rules']['RULE-1']
-    assert (entry['at'], entry['commit']) == ('later', 'y'), entry
-
-    # One difference, in any of the six other fields, replaces the entry.
-    for key, value in (('rule_hash', 'r2'), ('proof_hash', 'p2'),
-                       ('test_hash', 't2'), ('verdict', 'weak'),
-                       ('findings', ['The test checks nothing.']),
-                       ('criteria', 'd' * 64)):
-        if key.endswith('_hash'):
-            rule = dict(rule, **{key: value})
-        else:
-            found = dict(found, **{key: value})
-        writer.write_audit(str(root), 'local', 'feat', info,
-                           {'RULE-1': writer.audit_entry(rule, found, key,
-                                                         at=key)}, None, False)
-        entry = _evidence(root)['audit']['rules']['RULE-1']
-        assert (entry[key], entry['at'], entry['commit']) == (
-            value, key, key), entry
-
-
 HASHES = {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't'}
+FOUND = {'verdict': 'strong', 'findings': [], 'model': 'claude-a',
+         'criteria': 'c' * 64}
+FIRST_AT, FIRST_COMMIT = '2026-09-01T00:00:00Z', 'a' * 40
+LATER_AT, LATER_COMMIT = '2026-09-02T00:00:00Z', 'b' * 40
+
+
+def _audited(root, rule=HASHES, found=FOUND, commit=FIRST_COMMIT,
+             at=FIRST_AT):
+    """Write one audit entry for RULE-1. The entry the file then holds."""
+    writer.write_audit(str(root), 'local', 'feat', _info(),
+                       {'RULE-1': writer.audit_entry(rule, found, commit,
+                                                     at=at)}, None, False)
+    return _evidence(root)['audit']['rules']['RULE-1']
+
+
+def _on_file_then(root, rule=HASHES, found=FOUND):
+    """The first entry on file, then this one written later on another
+    commit. The entry the file then holds."""
+    _put(root, _file(platforms={'linux': _section()}))
+    _audited(root)
+    return _audited(root, rule, found, LATER_COMMIT, LATER_AT)
+
+
+def _one_field_differs(root, key, value):
+    """The entry the file holds after one that differs in `key` alone."""
+    if key.endswith('_hash'):
+        entry = _on_file_then(root, rule=dict(HASHES, **{key: value}))
+    else:
+        entry = _on_file_then(root, found=dict(FOUND, **{key: value}))
+    return entry[key], entry['at'], entry['commit']
+
+
+# purlin: evidence_writer PROOF-14
+def test_a_repeated_entry_keeps_its_time_and_commit(tmp_path):
+    entry = _on_file_then(tmp_path)
+    assert (entry['at'], entry['commit']) == (FIRST_AT, FIRST_COMMIT)
+
+
+# purlin: evidence_writer PROOF-64
+def test_an_entry_from_another_model_replaces_it(tmp_path):
+    entry = _on_file_then(tmp_path, found=dict(FOUND, model='claude-b'))
+    assert (entry['model'], entry['at'], entry['commit']) == (
+        'claude-b', LATER_AT, LATER_COMMIT)
+
+
+# purlin: evidence_writer PROOF-65
+def test_an_entry_with_another_rule_hash_replaces_it(tmp_path):
+    assert _one_field_differs(tmp_path, 'rule_hash', 'r2') == (
+        'r2', LATER_AT, LATER_COMMIT)
+
+
+# purlin: evidence_writer PROOF-66
+def test_an_entry_with_another_proof_hash_replaces_it(tmp_path):
+    assert _one_field_differs(tmp_path, 'proof_hash', 'p2') == (
+        'p2', LATER_AT, LATER_COMMIT)
+
+
+# purlin: evidence_writer PROOF-67
+def test_an_entry_with_another_test_hash_replaces_it(tmp_path):
+    assert _one_field_differs(tmp_path, 'test_hash', 't2') == (
+        't2', LATER_AT, LATER_COMMIT)
+
+
+# purlin: evidence_writer PROOF-68
+def test_an_entry_with_another_verdict_replaces_it(tmp_path):
+    assert _one_field_differs(tmp_path, 'verdict', 'weak') == (
+        'weak', LATER_AT, LATER_COMMIT)
+
+
+# purlin: evidence_writer PROOF-69
+def test_an_entry_with_other_findings_replaces_it(tmp_path):
+    assert _one_field_differs(tmp_path, 'findings',
+                              ['The test checks nothing.']) == (
+        ['The test checks nothing.'], LATER_AT, LATER_COMMIT)
+
+
+# purlin: evidence_writer PROOF-70
+def test_an_entry_sent_other_criteria_replaces_it(tmp_path):
+    assert _one_field_differs(tmp_path, 'criteria', 'd' * 64) == (
+        'd' * 64, LATER_AT, LATER_COMMIT)
 
 
 # purlin: evidence_writer PROOF-45
@@ -1091,18 +1210,30 @@ def test_an_audit_entry_with_no_notes_has_no_notes_field(tmp_path):
 # What is ignored
 # ---------------------------------------------------------------------------
 
-# purlin: evidence_writer PROOF-13
-def test_neither_the_evidence_nor_the_table_is_ignored():
-    for rel in ('templates/gitignore.purlin', '.gitignore'):
-        with open(os.path.join(REPO, rel), encoding='utf-8') as handle:
-            patterns = [line.strip() for line in handle
-                        if line.strip() and not line.startswith('#')]
-        for pattern in patterns:
-            assert '.purlin/evidence' not in pattern, (rel, pattern)
-            assert 'tests.md' not in pattern, (rel, pattern)
+def _ignore_patterns(rel):
+    """The lines of an ignore file that are neither blank nor a comment."""
+    with open(os.path.join(REPO, rel), encoding='utf-8') as handle:
+        return [line.strip() for line in handle
+                if line.strip() and not line.startswith('#')]
 
 
 # purlin: evidence_writer PROOF-13
+def test_the_ignore_lines_init_gives_name_neither_file():
+    patterns = _ignore_patterns('templates/gitignore.purlin')
+    assert patterns
+    assert [pattern for pattern in patterns
+            if '.purlin/evidence' in pattern or 'tests.md' in pattern] == []
+
+
+# purlin: evidence_writer PROOF-62
+def test_this_repositorys_own_ignore_file_names_neither_file():
+    patterns = _ignore_patterns('.gitignore')
+    assert patterns
+    assert [pattern for pattern in patterns
+            if '.purlin/evidence' in pattern or 'tests.md' in pattern] == []
+
+
+# purlin: evidence_writer PROOF-63
 def test_git_ignores_neither_file_after_init(tmp_path):
     root = tmp_path / 'fresh'
     root.mkdir()
