@@ -1,4 +1,4 @@
-"""Tests for `scripts/run/host.py` and `scripts/mcp/purlin/provenance.py`.
+"""Tests for `scripts/run/host.py`, `scripts/run/ci.py` and `scripts/run/remote.py`.
 
 Every git host call is mocked at the HTTP boundary (`urllib.request.urlopen`),
 and every git operation runs against a local repository with a local bare
@@ -12,11 +12,6 @@ What each group proves:
 *merge*       on every attempt each file is read again at the branch's head
               and this runner's section is merged into it; on Azure DevOps a
               file the branch holds is an `edit` and one it does not an `add`
-*sources*     `ci` for a commit the git host made, which on GitHub is the
-              committer `noreply@github.com` with the author
-              `github-actions[bot]` and a signature that does not
-              contradict it, and `local` for everything else: a file nobody
-              committed, and a file somebody else committed
 *remote*      `--remote` hands the run to the git host and brings it back
 """
 
@@ -42,7 +37,6 @@ import ci as ci_module  # noqa: E402
 import evidence as writer  # noqa: E402
 import host as host_module  # noqa: E402
 import remote as remote_module  # noqa: E402
-from purlin import provenance  # noqa: E402
 
 def _no_workspace(monkeypatch):
     """Take the job's own workspace out of a test's environment.
@@ -54,11 +48,6 @@ def _no_workspace(monkeypatch):
     """
     for variable in ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY'):
         monkeypatch.delenv(variable, raising=False)
-
-
-ACTIONS_BOT = 'github-actions[bot]'
-WEB_FLOW_EMAIL = 'noreply@github.com'
-AZURE_BUILD = 'Project Collection Build Service'
 
 
 # ---------------------------------------------------------------------------
@@ -117,12 +106,6 @@ def write_ci(root, feature='greeting', platforms=None):
     with open(full, 'w', encoding='utf-8') as handle:
         handle.write(writer.dump(evidence_file(feature, platforms)))
     return rel
-
-
-def _commit_by_hand(root, message):
-    """A person's own commit of whatever is in the tree."""
-    git(root, 'add', '-A')
-    git(root, 'commit', '--quiet', '-m', message)
 
 
 class Response(object):
@@ -769,256 +752,6 @@ def test_a_rule_the_spec_does_not_carry_is_dropped_in_the_merge(
     sent = json.loads(host.body_for('/git/trees', method='POST')['tree'][0][
         'content'])
     assert sent['platforms']['windows']['rules'] == {'RULE-1': 'passed'}
-
-
-# ---------------------------------------------------------------------------
-# Who committed a ci/ file, read from git
-# ---------------------------------------------------------------------------
-
-# purlin: host PROOF-9
-def test_a_file_that_is_not_committed_is_local(project):
-    path = write_ci(project)
-    assert provenance.committed_by(project, path) == 'local'
-
-
-# purlin: host PROOF-9
-def test_a_persons_commit_is_local(project):
-    path = write_ci(project)
-    _commit_by_hand(project, 'purlin: evidence at 4f1c2ab')
-    assert provenance.committed_by(project, path) == 'local'
-
-
-# purlin: host PROOF-9
-def test_a_build_service_name_alone_is_local(project):
-    """Anyone can type a committer name, so a name is never read as CI's."""
-    path = write_ci(project)
-    git(project, 'add', '-A')
-    git(project, '-c', 'user.name=' + AZURE_BUILD,
-        '-c', 'user.email=build@example.com',
-        'commit', '--quiet', '-m', 'purlin: evidence at 4f1c2ab')
-    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')
-    assert git(project, 'log', '-1', '--format=%cn').stdout.strip() == \
-        AZURE_BUILD
-    assert provenance.committed_by(project, path) == 'local'
-
-
-# purlin: host PROOF-9
-def test_a_signed_actions_commit_is_ci(project, tmp_path):
-    """A signed commit by the git host's build identity is what counts.
-
-    The signature is made with an ssh key generated here and trusted through
-    an allowed-signers file, so `git log --format=%G?` prints `G` exactly as
-    it does for a commit GitHub made through its API.
-    """
-    key = str(tmp_path / 'signing')
-    made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
-                           '-C', ACTIONS_BOT, '-f', key],
-                          capture_output=True, text=True)
-    if made.returncode != 0:
-        pytest.skip('ssh-keygen is not available: %s' % made.stderr.strip())
-
-    with open(key + '.pub', encoding='utf-8') as handle:
-        public = handle.read().strip()
-    allowed = str(tmp_path / 'allowed_signers')
-    with open(allowed, 'w', encoding='utf-8') as handle:
-        handle.write('bot@example.com %s\n' % ' '.join(public.split()[:2]))
-
-    path = write_ci(project)
-    git(project, 'add', '-A')
-    signed = subprocess.run(
-        ['git', '-c', 'gpg.format=ssh', '-c', 'user.signingkey=' + key + '.pub',
-         '-c', 'gpg.ssh.allowedSignersFile=' + allowed,
-         '-c', 'user.name=' + ACTIONS_BOT, '-c', 'user.email=bot@example.com',
-         'commit', '--quiet', '-S', '-m', 'purlin: evidence at 4f1c2ab'],
-        cwd=project, capture_output=True, text=True)
-    if signed.returncode != 0:
-        pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())
-
-    shown = subprocess.run(
-        ['git', '-c', 'gpg.format=ssh',
-         '-c', 'gpg.ssh.allowedSignersFile=' + allowed,
-         'log', '-1', '--format=%G?\t%cn'],
-        cwd=project, capture_output=True, text=True).stdout.strip()
-    assert shown.startswith('G\t'), shown
-    assert shown.endswith(ACTIONS_BOT)
-    assert provenance.committed_by(project, path) == 'ci'
-
-
-# purlin: host PROOF-9
-def test_a_signature_this_checkout_cannot_check_is_still_ci(project, tmp_path,
-                                                            monkeypatch):
-    """`N` on a commit that carries a signature is a reader that cannot check.
-
-    git prints `N` both for a commit with no signature and for one whose
-    signature it could not even try to check, which an ssh signature is in
-    any checkout with no allowed-signers file: a project CI writes evidence to
-    has no reason to hold one. Reading that `N` as an unsigned commit throws
-    away everything CI wrote on every machine that has gpg, so the commit
-    object is asked whether a signature is there at all.
-    """
-    monkeypatch.setattr(provenance.shutil, 'which',
-                        lambda name: '/usr/bin/gpg' if name == 'gpg' else None)
-    key = str(tmp_path / 'signing')
-    made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
-                           '-C', ACTIONS_BOT, '-f', key],
-                          capture_output=True, text=True)
-    if made.returncode != 0:
-        pytest.skip('ssh-keygen is not available: %s' % made.stderr.strip())
-
-    path = write_ci(project)
-    git(project, 'add', '-A')
-    signed = subprocess.run(
-        ['git', '-c', 'gpg.format=ssh',
-         '-c', 'user.signingkey=' + key + '.pub',
-         '-c', 'user.name=' + ACTIONS_BOT, '-c', 'user.email=bot@example.com',
-         'commit', '--quiet', '-S', '-m', 'purlin: evidence at 4f1c2ab'],
-        cwd=project, capture_output=True, text=True)
-    if signed.returncode != 0:
-        pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())
-
-    # No allowed-signers file is configured here, which is the ordinary state
-    # of a checkout, so this is what any reader of this commit sees.
-    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')
-    assert provenance.committed_by(project, path) == 'ci'
-
-
-def _web_flow_commit(project, key=None, allowed=None):
-    """Commit the way GitHub's API does: its web identity, the Actions author.
-
-    GitHub signs the commit with its own key, records `GitHub
-    <noreply@github.com>` as the committer and the Actions token as the
-    author. `key` and `allowed` sign it here the way GitHub signs it there.
-    """
-    git(project, 'add', '-A')
-    command = ['git']
-    if key:
-        command += ['-c', 'gpg.format=ssh', '-c', 'user.signingkey=' + key,
-                    '-c', 'gpg.ssh.allowedSignersFile=' + allowed]
-    command += ['-c', 'user.name=GitHub', '-c', 'user.email=' + WEB_FLOW_EMAIL,
-                'commit', '--quiet',
-                '--author=%s <41898282+github-actions[bot]@users.noreply.'
-                'github.com>' % ACTIONS_BOT]
-    if key:
-        command.append('-S')
-    command += ['-m', 'purlin: evidence at 4f1c2ab']
-    return subprocess.run(command, cwd=project, capture_output=True, text=True)
-
-
-# purlin: host PROOF-9
-def test_the_web_flow_committer_with_a_good_signature_is_ci(project, tmp_path):
-    """The identity GitHub's API actually writes, signed, is CI's.
-
-    The committer is `GitHub <noreply@github.com>`, not the Actions bot, so a
-    reader that looks only at the committer name calls this a person's commit
-    and nothing CI wrote counts under `strong` or `signed`.
-    """
-    key = str(tmp_path / 'signing')
-    made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
-                           '-C', ACTIONS_BOT, '-f', key],
-                          capture_output=True, text=True)
-    if made.returncode != 0:
-        pytest.skip('ssh-keygen is not available: %s' % made.stderr.strip())
-    with open(key + '.pub', encoding='utf-8') as handle:
-        public = handle.read().strip()
-    allowed = str(tmp_path / 'allowed_signers')
-    with open(allowed, 'w', encoding='utf-8') as handle:
-        handle.write('%s %s\n' % (WEB_FLOW_EMAIL,
-                                  ' '.join(public.split()[:2])))
-
-    path = write_ci(project)
-    signed = _web_flow_commit(project, key + '.pub', allowed)
-    if signed.returncode != 0:
-        pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())
-
-    shown = subprocess.run(
-        ['git', '-c', 'gpg.format=ssh',
-         '-c', 'gpg.ssh.allowedSignersFile=' + allowed,
-         'log', '-1', '--format=%G?\t%cn\t%ce\t%an'],
-        cwd=project, capture_output=True, text=True).stdout.strip()
-    assert shown.startswith('G\t'), shown
-    assert shown.endswith('\t%s\t%s' % (WEB_FLOW_EMAIL, ACTIONS_BOT)), shown
-    assert provenance.committed_by(project, path) == 'ci'
-
-
-# purlin: host PROOF-9
-def test_the_web_flow_committer_is_ci_when_the_machine_has_no_gpg(project,
-                                                                  monkeypatch):
-    """git prints `N` when it cannot run gpg, which is not an unsigned commit.
-
-    A checkout without gpg reports no signature for every commit, the git
-    host's included. The commit is still the git host's, so the identity
-    decides and the missing checker says nothing against it.
-    """
-    monkeypatch.setattr(provenance.shutil, 'which', lambda name: None)
-    path = write_ci(project)
-    assert _web_flow_commit(project).returncode == 0
-    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')
-    assert provenance.committed_by(project, path) == 'ci'
-
-
-# purlin: host PROOF-9
-def test_the_web_flow_committer_with_no_signature_and_gpg_is_local(
-        project, monkeypatch):
-    """With gpg installed, `N` means the commit really carries no signature.
-
-    Anyone can set those two names on a commit they make by hand. On a machine
-    that can check, an unsigned commit claiming the git host's identity is read
-    as a person's, so it never counts under `strong` or `signed`.
-    """
-    monkeypatch.setattr(provenance.shutil, 'which',
-                        lambda name: '/usr/bin/gpg' if name == 'gpg' else None)
-    path = write_ci(project)
-    assert _web_flow_commit(project).returncode == 0
-    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')
-    assert provenance.committed_by(project, path) == 'local'
-
-
-# purlin: host PROOF-9
-def test_the_web_flow_committer_with_a_bad_signature_is_local(project,
-                                                              tmp_path):
-    """A signature that no longer matches its commit says the commit changed.
-
-    The commit is signed the way GitHub signs it, then its message is
-    rewritten while the signature is kept, so git checks it as `B`.
-    """
-    key = str(tmp_path / 'signing')
-    made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
-                           '-C', ACTIONS_BOT, '-f', key],
-                          capture_output=True, text=True)
-    if made.returncode != 0:
-        pytest.skip('ssh-keygen is not available: %s' % made.stderr.strip())
-    with open(key + '.pub', encoding='utf-8') as handle:
-        public = handle.read().strip()
-    allowed = str(tmp_path / 'allowed_signers')
-    with open(allowed, 'w', encoding='utf-8') as handle:
-        handle.write('%s %s\n' % (WEB_FLOW_EMAIL,
-                                  ' '.join(public.split()[:2])))
-
-    path = write_ci(project)
-    signed = _web_flow_commit(project, key + '.pub', allowed)
-    if signed.returncode != 0:
-        pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())
-    # This checkout can check the signature, so git answers G or B, not N.
-    git(project, 'config', 'gpg.ssh.allowedSignersFile', allowed)
-    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() == 'G'
-
-    made = subprocess.run(['git', 'cat-file', 'commit', 'HEAD'], cwd=project,
-                          capture_output=True, text=True, check=True).stdout
-    assert 'purlin: evidence at 4f1c2ab' in made
-    rewritten = subprocess.run(
-        ['git', 'hash-object', '-t', 'commit', '-w', '--stdin'], cwd=project,
-        input=made.replace('purlin: evidence at 4f1c2ab', 'rewritten'),
-        capture_output=True, text=True, check=True).stdout.strip()
-    git(project, 'update-ref', 'HEAD', rewritten)
-
-    shown = git(project, 'log', '-1', '--format=%G?\t%ce\t%an').stdout.strip()
-    assert shown == 'B\t%s\t%s' % (WEB_FLOW_EMAIL, ACTIONS_BOT), shown
-    assert provenance.committed_by(project, path) == 'local'
-
-
-# ---------------------------------------------------------------------------
-# What a CI run publishes
-# ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------

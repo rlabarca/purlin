@@ -10,18 +10,16 @@ push of a `signed/*` tag. A push to any other branch starts nothing, and a
 pull request starts nothing.
 
 `wanted()` is what decides whether a project has a workflow at all. There
-are two reasons for one and no others: a proof in `specs/` is tagged `@env`
-for an operating system this machine is not, and a project that answered no
-to init's trust question. A project with neither gets no file: at the gate
-`signed` `purlin:sign` writes the tag, a person pushes it, and nothing runs
-remotely.
+is one reason for one: a proof in `specs/` is tagged `@env` for an operating
+system this machine is not, so only a runner can run its test. A project with
+no such tag gets no file: at the gate `signed` `purlin:sign` writes the tag, a
+person pushes it, and nothing runs remotely.
 
-The matrix always carries Linux, then the operating systems the `@env` tags in
-`specs/` name. A proof tagged `@env(windows)` adds a Windows job to prove it;
-an untagged proof is satisfied by any operating system, so the Linux job proves
-those and writes the section that counts. A project that tags nothing runs on
-Linux alone. Nothing else about the workflow varies, so two projects with the
-same tags get the same file.
+The matrix is one job per operating system the `@env` tags in `specs/` name,
+and no other. A proof tagged `@env(windows)` adds a Windows job to prove it;
+an untagged proof is satisfied by any operating system, so whichever job runs
+proves it too. Nothing else about the workflow varies, so two projects with
+the same tags get the same file.
 
 `prerequisites()` is what `purlin:init` asks before it writes any of this. A
 workflow is a file, a remote that holds it and a host that runs it. Writing
@@ -50,7 +48,6 @@ RUNNERS = {
     'macos': 'macos-latest',
     'windows': 'windows-latest',
 }
-DEFAULT_RUNNER = 'ubuntu-latest'
 ORDER = ('linux', 'macos', 'windows')
 
 
@@ -74,22 +71,15 @@ def workflow_path(host):
 def runners_for(env_tags):
     """The runner images for a set of `@env` tags, in a fixed order.
 
-    Linux always comes first, tagged or not: an untagged proof is satisfied by
-    any operating system, and the job that proves every untagged proof and
-    writes the section that counts has to exist. The tagged operating systems
-    follow in `ORDER`, deduplicated, so `['windows']` gives
-    `ubuntu-latest, windows-latest` and `['linux']` gives `ubuntu-latest` once.
+    One image per operating system the tags name, in `ORDER`, and no other:
+    `['windows']` gives `windows-latest` alone, and `['windows', 'linux']`
+    gives `ubuntu-latest, windows-latest`.
 
     An unknown tag is ignored rather than guessed at: the vocabulary is
-    windows, macos and linux and nothing else, and a project that names
-    something else still gets a workflow that runs.
+    windows, macos and linux and nothing else.
     """
     named = {str(tag).strip().lower() for tag in (env_tags or ()) if tag}
-    images = [DEFAULT_RUNNER]
-    for name in ORDER:
-        if name in named and RUNNERS[name] not in images:
-            images.append(RUNNERS[name])
-    return images
+    return [RUNNERS[name] for name in ORDER if name in named]
 
 
 def env_tags_in_specs(project_root):
@@ -118,18 +108,12 @@ def render_workflow(host, env_tags, purlin_ref):
     return text.replace('<<PURLIN_REF>>', str(purlin_ref or 'main'))
 
 
-# The two reasons a project has a workflow, in the words init prints them.
+# The one reason a project has a workflow, in the words init prints it.
 FOREIGN_OS_REASON = ('A proof in specs/ is tagged @env for %s, which this '
                      'machine is not, so only a runner can prove it.')
 # The same at the gate `passed`, whose words are rules and tests.
 FOREIGN_OS_REASON_AT_PASSED = ('A test is tagged @env for %s, which this '
                                'machine is not, so only a runner can run it.')
-TRUST_REASON = ('You chose not to trust this machine for signing, so the '
-                'tests a signature rests on run on a clean one.')
-# The trust reason at the gate `passed`, which signs nothing and asks
-# whether this machine is trusted for the tests.
-TRUST_REASON_AT_PASSED = ('You chose not to trust this machine for the tests, '
-                          'so they run on a clean one.')
 NO_REASON = ('every proof runs on this operating system and you trust this '
              'machine, so nothing has to run remotely')
 # The same at the gate `passed`, whose words are rules and tests.
@@ -147,18 +131,12 @@ def foreign_reason(gate):
     return FOREIGN_OS_REASON_AT_PASSED if gate == 'passed' else FOREIGN_OS_REASON
 
 
-def trust_reason(gate):
-    """The trust reason in the words the gate uses."""
-    return TRUST_REASON_AT_PASSED if gate == 'passed' else TRUST_REASON
-
-
 def wanted(env_tags, trust, host_os, gate=None):
     """`(write one, the reasons)` for a project's workflow, in the gate's words.
 
-    Two reasons and no others. A proof tagged `@env` for another operating
-    system cannot be proven here, and a project that answered no to init's
-    trust question wants the tests behind a signature run on a clean machine.
-    A project with neither gets no workflow at all.
+    One reason and no other: a proof tagged `@env` for another operating
+    system cannot be proven here. A project with none gets no workflow at
+    all. `trust` is not read.
     """
     reasons = []
     foreign = sorted({str(tag).strip().lower() for tag in (env_tags or ())
@@ -166,8 +144,6 @@ def wanted(env_tags, trust, host_os, gate=None):
                       and str(tag).strip().lower() != str(host_os or '')})
     if foreign:
         reasons.append(foreign_reason(gate) % ', '.join(foreign))
-    if str(trust or '') == 'remote':
-        reasons.append(trust_reason(gate))
     return bool(reasons), reasons
 
 

@@ -136,7 +136,7 @@ def test_the_fixture_workflow_is_what_the_template_renders():
         raise AssertionError('the two texts differ only in trailing bytes')
 
 
-# purlin: host PROOF-17
+# purlin: host PROOF-40
 def test_the_template_still_carries_the_placeholders():
     """A substitution that has become a no-op proves nothing."""
     template = read(os.path.join('templates', 'purlin.yml'), root=ROOT)
@@ -144,24 +144,21 @@ def test_the_template_still_carries_the_placeholders():
     assert '<<PURLIN_REF>>' in template
 
 
-# purlin: host PROOF-17
-def test_the_triggers_name_a_run_branch_and_the_signing_tag_and_nothing_else():
-    named = workflow_module.render_workflow('github', ['linux'], PURLIN_REF)
-    assert "branches: ['run/**']" in named
-    assert "tags: ['signed/**']" in named
-    assert 'pull_request' not in named
-
-
-# purlin: host PROOF-17
-def test_a_workflow_is_written_for_two_reasons_and_no_others():
+# purlin: host PROOF-41
+def test_a_project_with_no_env_tag_gets_no_workflow():
     wanted, reasons = workflow_module.wanted([], 'local', 'macos')
     assert wanted is False and reasons == []
+
+
+# purlin: host PROOF-42
+def test_a_proof_tagged_for_another_system_gets_a_workflow_for_that_reason():
     wanted, reasons = workflow_module.wanted(['windows'], 'local', 'macos')
-    assert wanted is True and len(reasons) == 1
+    assert wanted is True and len(reasons) == 1, reasons
     assert 'windows' in reasons[0]
-    wanted, reasons = workflow_module.wanted([], 'remote', 'macos')
-    assert wanted is True and len(reasons) == 1
-    assert 'trust' in reasons[0].lower() or 'signing' in reasons[0]
+
+
+# purlin: host PROOF-43
+def test_a_tag_naming_this_machines_own_system_gets_no_workflow():
     wanted, reasons = workflow_module.wanted(['macos'], 'local', 'macos')
     assert wanted is False, reasons
 
@@ -179,22 +176,22 @@ def test_the_workflow_is_shaped_like_a_workflow():
             '%s was left unfilled' % placeholder)
 
 
-# purlin: host PROOF-18
-def test_the_workflow_names_the_test_step_and_uploads_nothing():
+# purlin: host PROOF-45
+def test_the_workflow_ends_on_the_test_step_and_uploads_nothing():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     names = step_names(jobs.splitlines())
     assert 'actions/checkout@v4' in names
     assert 'Locate Purlin' in names
-    assert 'Run the tests' in names
     assert 'actions/upload-artifact@v4' not in names, (
         'a run uploads nothing: the two runs are a remote run and a tag run')
-    assert names[-1] == 'Check the gate', (
-        'the gate check is the last word of every run')
-    assert 'scripts/run/purlin_run.py" --all --ci' in jobs
-    assert 'scripts/ci/gate_check.py" --check --verify' in jobs
+    assert names[-1] == 'Run the tests', (
+        "the test step is the last word of every run: %s" % names)
+    last = jobs.split('- name: Run the tests', 1)[1]
+    assert 'scripts/run/purlin_run.py" --all --ci' in last
+    assert '- name:' not in last and '- uses:' not in last
 
 
-# purlin: host PROOF-18
+# purlin: host PROOF-44
 def test_the_job_is_named_purlin():
     jobs = parse_blocks(read(WORKFLOW_REL))['jobs']
     assert jobs[0].strip() == 'purlin:', jobs[0]
@@ -206,7 +203,25 @@ def test_the_job_is_named_purlin():
             '%r appears in the workflow; it runs on a push alone' % word)
 
 
-# purlin: host PROOF-19
+# purlin: host PROOF-47
+def test_the_azure_pipeline_has_the_same_triggers_and_ends_on_the_test_step():
+    pipeline = workflow_module.render_workflow('azure', ['windows'],
+                                               PURLIN_REF)
+    blocks = parse_blocks(pipeline)
+    assert '\n'.join(blocks['trigger']) == (
+        '  branches:\n    include:\n      - run/*\n'
+        '  tags:\n    include:\n      - signed/*')
+    assert 'pr: none' in pipeline.splitlines()
+    steps = [line.strip() for line in blocks['jobs']
+             if line.strip().startswith('- ')]
+    assert steps[-1] == ('- bash: python3 "$PURLIN_ROOT/scripts/run/'
+                         'purlin_run.py" --all --ci'), steps
+    tail = pipeline.split('purlin_run.py" --all --ci', 1)[1]
+    assert 'displayName: Run the tests' in tail
+    assert '- bash:' not in tail and '- task:' not in tail
+
+
+# purlin: host PROOF-51
 def test_the_matrix_is_the_one_operating_system_the_spec_names():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     assert 'os: [ubuntu-latest]' in jobs
@@ -215,27 +230,32 @@ def test_the_matrix_is_the_one_operating_system_the_spec_names():
 
 
 # purlin: host PROOF-19
-def test_the_matrix_is_one_job_per_named_operating_system():
-    """Linux always leads, the order is fixed, and an unknown name is ignored."""
+def test_the_matrix_follows_a_fixed_order():
     assert workflow_module.runners_for(['windows', 'linux']) == [
         'ubuntu-latest', 'windows-latest']
-    assert workflow_module.runners_for([]) == ['ubuntu-latest']
-    assert workflow_module.runners_for(['plan9']) == ['ubuntu-latest']
 
 
-# purlin: host PROOF-19
-def test_the_matrix_always_carries_linux_first():
-    """Every untagged proof is proved somewhere, so the Linux job always runs."""
-    assert workflow_module.runners_for(['windows']) == [
-        'ubuntu-latest', 'windows-latest']
-    assert workflow_module.runners_for(['linux']) == ['ubuntu-latest']
-    assert workflow_module.runners_for(['macos', 'windows']) == [
-        'ubuntu-latest', 'macos-latest', 'windows-latest']
-    rendered = workflow_module.render_workflow('github', ['windows'], PURLIN_REF)
-    assert 'os: [ubuntu-latest, windows-latest]' in rendered
+# purlin: host PROOF-48
+def test_a_project_that_names_windows_alone_gets_one_windows_job():
+    assert workflow_module.runners_for(['windows']) == ['windows-latest']
+    rendered = workflow_module.render_workflow('github', ['windows'],
+                                               PURLIN_REF)
+    assert 'os: [windows-latest]' in rendered
+    assert 'ubuntu-latest' not in rendered
 
 
-# purlin: host PROOF-18
+# purlin: host PROOF-49
+def test_two_named_systems_get_two_jobs_and_no_linux_one():
+    assert workflow_module.runners_for(['windows', 'macos']) == [
+        'macos-latest', 'windows-latest']
+
+
+# purlin: host PROOF-50
+def test_a_name_that_is_no_operating_system_adds_no_job():
+    assert workflow_module.runners_for(['plan9']) == []
+
+
+# purlin: host PROOF-46
 def test_the_workflow_clones_the_release_the_project_pins():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     assert 'ref="%s"' % PURLIN_REF in jobs, (

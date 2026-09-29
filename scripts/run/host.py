@@ -21,12 +21,8 @@ runner never overwrites what another wrote.
 **Where CI commits.** On a run branch, and nowhere else. A run branch is what
 `purlin:test --remote` creates for one run and deletes afterwards, so the
 evidence it writes is pulled home by the command that asked for it. The other
-run CI does is the tag run, and that one writes nothing at all: it reruns the
-tests on a clean machine and verifies what is already committed.
+run CI does is the tag run, and that one runs the tests and writes nothing.
 `commits_here()` is the one question the run asks.
-
-Who made a commit under `ci/` is `scripts/mcp/purlin/provenance.py`'s
-question, which the tag run asks.
 """
 
 import base64
@@ -204,10 +200,10 @@ def is_a_tag_run():
     """True when this run was started by a tag push rather than a branch push.
 
     A tag run is the one `purlin:sign` asks for by writing `signed/<version>`,
-    which it does at the gate `signed` alone, and a person pushing it. It writes nothing: what it does is rerun the
-    tests on a clean machine and check that the committed evidence still
-    hashes to the tagged code. Only that tag counts: a release tag a project
-    pushes for its own reasons is not a ref Purlin reads anything into.
+    which it does at the gate `signed` alone, and a person pushing it. It runs
+    the tests on a clean machine and writes nothing. Only that tag counts: a
+    release tag a project pushes for its own reasons is not a ref Purlin reads
+    anything into.
     """
     signing = REF_TAGS + SIGNED_TAG_PREFIX
     for name in ('GITHUB_REF', 'BUILD_SOURCEBRANCH'):
@@ -221,7 +217,7 @@ def commits_here(project_root):
 
     A run branch is the only ref CI commits on: `purlin:test --remote`
     created it for one run, pulls the evidence home and deletes it. A tag run
-    commits nothing, because it is there to verify rather than to write.
+    runs the tests and commits nothing.
 
     Off a runner the answer is True: there is no branch rule to speak for,
     and a test suite driving the arm asked for this commit by name.
@@ -304,8 +300,7 @@ def _commit_github(project_root, paths, message, merge=None):
 
     No `author` and no `committer` field is sent. GitHub then attributes the
     commit to the Actions token, signs it with its own key, and reports
-    `github-actions[bot]` as the author, which is what the tag run's
-    provenance check reads.
+    `github-actions[bot]` as the author.
     """
     repo = os.environ.get('GITHUB_REPOSITORY') or ''
     token = os.environ.get('GITHUB_TOKEN') or ''

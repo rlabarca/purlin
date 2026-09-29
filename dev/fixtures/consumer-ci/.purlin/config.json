@@ -16,6 +16,5 @@
       ]
     }
   ],
-  "ci": "github",
-  "trust": "local"
+  "ci": "github"
 }
