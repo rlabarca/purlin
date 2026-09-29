@@ -419,9 +419,18 @@ class TestThePrompt:
 class TestTheCall:
 
     # purlin: ai_audit PROOF-13
+    # purlin: ai_audit PROOF-82
     def test_the_prompt_goes_on_stdin_and_never_in_the_arguments(
-            self, at_strong, claude):
+            self, at_strong, claude, monkeypatch):
         _install, directory = claude
+        # The fake is Python: it reads its input as UTF-8, as `claude` does,
+        # and not in a Windows console's default character set.
+        monkeypatch.setenv('PYTHONUTF8', '1')
+        if os.name == 'nt':
+            # Windows finds the stand-in by its ending, `claude.cmd`.
+            found = audit_module.claude_path()
+            assert os.path.normcase(found) == os.path.normcase(
+                os.path.join(str(directory), 'claude.cmd')), found
         reading = read(at_strong, 'RULE-2')
         found = audit_module.audit_one(at_strong.root, reading,
                                        criteria_text())
@@ -658,6 +667,7 @@ class TestWhenTheModelCannotBeReached:
         assert ask(at_strong) == {'why': 'claude exited with an error'}
 
     # purlin: ai_audit PROOF-25
+    # purlin: ai_audit PROOF-83
     def test_a_call_past_its_limit_is_named(self, at_strong, claude,
                                             monkeypatch):
         install, _directory = claude
