@@ -58,6 +58,7 @@
 - RULE-66: A project set up by Purlin 0.9.5 and not upgraded stops the run: it prints `This project was set up by an older Purlin and not upgraded, so nothing ran. Run purlin:init --update.`, writes nothing and exits 1
 - RULE-67: Before the status, the run prints one line for each rule of the features it ran that fails here, `<feature> <RULE-N> fails: <file>::<test>. Run purlin:build <feature>.`, naming each of its tests that failed; for each some of whose proofs have a test and others none, `<feature> <RULE-N> has no test for <PROOF-N>[, <PROOF-M>...]. Run purlin:build <feature>.`, naming each proof no test is tied to; and for each that has no test at all, `<feature> <RULE-N> has no test. Run purlin:build <feature>.`
 - RULE-68: `--commit` makes two commits: first `purlin: specs, tests and settings for <features>`, holding the spec of each feature it ran, the test files carrying their markers and `.purlin/config.json` where any changed, printed as `Committed <sha7>, the work these results describe:` and each path on a line of its own; then the evidence and the table, whose subject `purlin: evidence at <sha7>` names the first, or HEAD where the first had nothing to commit
+- RULE-69: A mistake Purlin sees in a spec is printed as one line naming the spec, the mistake and the command that fixes it, and the run carries on: it runs that spec's tests, writes their evidence and exits on them
 
 ## Proof
 
@@ -235,3 +236,4 @@
 - PROOF-203 (RULE-68): In that checkout the same run's first commit has the subject `purlin: specs, tests and settings for feat`
 - PROOF-204 (RULE-68): In that checkout the same run prints `Committed <sha7>, the work these results describe:`, with the first commit's sha, and under it `.purlin/config.json`, `specs/a/feat.md` and `tests/test_feat.py`, each on a line of its own indented two spaces, and no other path
 - PROOF-143 (RULE-68): In a clean git checkout, `--all --test --commit` makes one commit, `purlin: evidence at <sha7 of HEAD>`, and git shows nothing uncommitted under `.purlin/evidence`
+- PROOF-222 (RULE-69): In a git checkout whose spec `login` scopes `src/login.py, src/gone.py`, and `src/gone.py` is not in git, `--all --test` prints `login: > Scope: names src/gone.py, which finds no file in git. Run purlin:spec login.`, runs the pytest suite, lists login's PROOF-1 as `pass` in the evidence, and exits 0

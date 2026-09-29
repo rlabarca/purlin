@@ -591,6 +591,27 @@ class TestEveryRunEndsOnTheSummary:
             '  1 rule to write a test for: purlin:build'], output
         assert code == 0, output
 
+    # purlin: run_script PROOF-222
+    def test_a_spec_mistake_is_named_and_the_tests_still_run(self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            '# purlin: login PROOF-1\n'
+            'def test_login():\n'
+            '    assert True\n'))
+        (root / 'src').mkdir()
+        (root / 'src' / 'login.py').write_text('VALUE = 1\n',
+                                               encoding='utf-8')
+        _spec(root, 'login', scope='src/login.py, src/gone.py')
+        _git_repo(root)
+        code, output = _run(root, '--all', '--test')
+        lines = output.splitlines()
+        assert ('login: > Scope: names src/gone.py, which finds no file in '
+                'git. Run purlin:spec login.') in lines, output
+        assert 'Running the pytest suite.' in lines, output
+        assert _proofs(root, 'login') == [{
+            'id': 'PROOF-1', 'rule': 'RULE-1', 'result': 'pass', 'env': None,
+            'manual': False, 'test': 'tests/test_feat.py::test_login'}], output
+        assert code == 0, output
+
     # purlin: run_script PROOF-104
     def test_a_project_with_no_specs_says_so(self, tmp_path):
         root = _project(tmp_path)
