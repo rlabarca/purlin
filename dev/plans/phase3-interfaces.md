@@ -2209,7 +2209,7 @@ Changed:
 ### Acceptance on this Mac
 
 `bash dev/run_tests.sh`: `1978 passed, 3 skipped in 571.60s`, `Suites: 5 passed, 0 failed`. The
-three skips include the three Windows-only tests.
+three skips are the three Windows-only tests.
 
 `python3 scripts/run/purlin_run.py --test --all --commit` exited 0 and printed:
 
