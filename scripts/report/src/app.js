@@ -421,7 +421,7 @@ function tagChip() {
   }
   return '<span class="tag"' + hover(['The signed tag on this commit'
       + (found.at ? DOT + found.at : '')]) + '>'
-    + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
+    + esc(found.name) + '</span>';
 }
 
 function topBar() {
@@ -435,9 +435,6 @@ function topBar() {
     + esc(line.text) + '</span></button><span class="spacer"></span>'
     + (gate ? tag('gate: ' + gate, true) : '')
     + (level('signed') ? tagChip() : '')
-    + (DATA && DATA.commit
-       ? '<span class="tag plain" title="The commit this data was generated at">at '
-         + esc(String(DATA.commit).slice(0, 7)) + '</span>' : '')
     + themeButton() + '</header>';
 }
 
