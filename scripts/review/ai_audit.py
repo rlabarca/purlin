@@ -19,10 +19,14 @@ or `unknown` where it names none.
 
     settled: yes
     - <one sentence per finding, naming the proof>
+    notes:
+    - <one sentence per note, naming the proof>
 
 Settled with no line is the `verdict` `strong`. Settled with lines is `weak`,
 and the lines are the findings. Not settled is `undecided`, and its lines are
-the reason it gives.
+the reason it gives. The lines under `notes:` are the notes: a proof longer
+than the standard, or holding two cases, is noted there and never makes the
+rule `weak`.
 
 **When the model cannot be reached** (no `claude` on PATH, a non-zero exit, a
 timeout, or an answer with no settled line after one retry) nothing comes
@@ -102,14 +106,14 @@ def rule_entry(payload, feature, rule):
     return None
 
 
-def is_read(entry, gate, again=False):
+def is_read(entry, gate=None, again=False):
     """True when the audit reads this rule.
 
     A rule is read when it is its feature's own, at least one of its proofs
     has a test, its passed cell reads `passed`, and it has no audit entry for
-    its current rule, proof and test hashes. Under a gate above `passed` a
-    rule whose level is `passed` is never read. `again` drops the condition
-    about an existing entry, which is what `--all` asks for.
+    its current rule, proof and test hashes. The same rules are read at every
+    gate, so `gate` changes nothing. `again` drops the condition about an
+    existing entry, which is what `--all` asks for.
     """
     entry = entry or {}
     if entry.get('label', 'own') != 'own':
@@ -119,8 +123,6 @@ def is_read(entry, gate, again=False):
         return False
     if not any(proof.get('tests') and not proof.get('manual')
                for proof in entry.get('proofs') or ()):
-        return False
-    if gate != 'passed' and entry.get('level') == 'passed':
         return False
     return again or not entry.get('audit')
 
@@ -138,7 +140,6 @@ def reading_for(project_root, payload, feature, rule):
     return {
         'feature': feature,
         'rule': rule,
-        'level': entry.get('level') or 'passed',
         'rule_text': entry.get('text'),
         'proofs': proofs,
         'rule_hash': entry.get('rule_hash'),
@@ -229,12 +230,18 @@ INSTRUCTION = (
     '',
     '    settled: yes',
     '    - <one sentence, naming the proof it concerns>',
+    '    notes:',
+    '    - <one sentence, naming the proof it concerns>',
     '',
     'Write `settled: yes` when you could tell what each test observes against '
     'what its proof names, and `settled: no` when you could not.',
     'Write one line per observation, each opening with `- `, each one sentence '
     'long, and each naming the proof it concerns. Write no line at all when '
     'you observed nothing.',
+    'Write a note, under notes:, for a proof longer than 60 words or one '
+    'holding more than one case, one sentence naming the proof, and never an '
+    'observation for it: a note does not make the rule weak. Leave out '
+    '`notes:` when you have no note.',
     'Do not recommend a change, do not grade the rule and do not score it. A '
     'person reads what you write and decides.',
 )
@@ -247,8 +254,7 @@ def model_prompt(project_root, reading, criteria=None):
     parts.extend(INSTRUCTION)
     parts.extend([
         '',
-        '%s %s (level %s)'
-        % (reading.get('feature'), reading.get('rule'), reading.get('level')),
+        '%s %s' % (reading.get('feature'), reading.get('rule')),
         'Rule: %s' % (reading.get('rule_text') or '')])
     for proof in reading.get('proofs') or ():
         parts.append('%s%s: %s' % (proof.get('id'), _proof_tags(proof),
@@ -273,26 +279,44 @@ def model_prompt(project_root, reading, criteria=None):
 # ---------------------------------------------------------------------------
 
 _SETTLED_RE = re.compile(r'^\s*settled\s*:\s*(yes|no|true|false)\s*$', re.I)
+_NOTES_RE = re.compile(r'^\s*notes\s*:\s*$', re.I)
 _FINDING_RE = re.compile(r'^\s*[-*]\s+(.*\S)\s*$')
+
+
+def _read_answer(answer):
+    """`(findings, settled, notes)`: each `- ` line is a finding until a
+    `notes:` line, and a note after it."""
+    settled = None
+    findings, notes = [], []
+    lines = findings
+    for line in str(answer or '').splitlines():
+        found = _SETTLED_RE.match(line)
+        if found:
+            settled = found.group(1).lower() in ('yes', 'true')
+            continue
+        if _NOTES_RE.match(line):
+            lines = notes
+            continue
+        found = _FINDING_RE.match(line)
+        if found:
+            lines.append(found.group(1))
+    return findings, settled, notes
 
 
 def parse_answer(answer):
     """`(findings, settled)` read out of one model answer.
 
     `settled` is True, False, or None for an answer that never says whether
-    it settled, which is not an answer the audit can record.
+    it settled, which is not an answer the audit can record. A line under
+    `notes:` is not a finding.
     """
-    settled = None
-    findings = []
-    for line in str(answer or '').splitlines():
-        found = _SETTLED_RE.match(line)
-        if found:
-            settled = found.group(1).lower() in ('yes', 'true')
-            continue
-        found = _FINDING_RE.match(line)
-        if found:
-            findings.append(found.group(1))
+    findings, settled, _notes = _read_answer(answer)
     return findings, settled
+
+
+def answer_notes(answer):
+    """The lines under `notes:` in one model answer, `[]` when there are none."""
+    return _read_answer(answer)[2]
 
 
 def verdict_of(findings, settled):
@@ -369,10 +393,11 @@ def ask_model(project_root, prompt, command=None, runner=None):
 def audit_one(project_root, reading, criteria, command=None, runner=None):
     """What the audit found for one rule, or why it could not ask.
 
-    `{'verdict', 'findings', 'model', 'criteria'}` when the model answered, where
-    `criteria` is the sha256 of the criteria it was sent; `{why}` when it
-    could not be reached. An answer with no settled line is asked once more
-    before it counts as no answer.
+    `{'verdict', 'findings', 'notes', 'model', 'criteria'}` when the model
+    answered, where `criteria` is the sha256 of the criteria it was sent and
+    `notes` never changes the verdict; `{why}` when it could not be reached.
+    An answer with no settled line is asked once more before it counts as no
+    answer.
     """
     prompt = model_prompt(project_root, reading, criteria)
     for _attempt in range(2):
@@ -382,7 +407,8 @@ def audit_one(project_root, reading, criteria, command=None, runner=None):
         findings, settled = parse_answer(answer)
         answered = verdict_of(findings, settled)
         if answered:
-            return {'verdict': answered, 'findings': findings, 'model': model,
+            return {'verdict': answered, 'findings': findings,
+                    'notes': answer_notes(answer), 'model': model,
                     'criteria': criteria_hash(criteria)}
     return {'why': NO_ANSWER}
 
@@ -411,8 +437,7 @@ def audit_all(project_root, readings, parallel, runner=None):
 
 def render(reading):
     """One rule as the audit reads it, and what the last audit found."""
-    lines = ['%s %s   level %s' % (reading.get('feature'), reading.get('rule'),
-                                     reading.get('level')),
+    lines = ['%s %s' % (reading.get('feature'), reading.get('rule')),
              '', 'Rule', '  %s' % (reading.get('rule_text') or ''), '',
              'Proof']
     for proof in reading.get('proofs') or ():

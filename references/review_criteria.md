@@ -33,11 +33,16 @@ checks each of these against the test the proof names:
   prints is output a caller sees, and naming it is not a finding.
 - The proof describes the test's mechanics, a call, an assertion, a mock, a fixture or a spy,
   instead of what is shown.
-- The proof shows more than one thing, so a failure could not say which one broke.
 - The proof would read the same if the rule were broken, or it restates the rule and adds no
   input, action or value.
 - A proof about a flow through the running app is described as a function call. Such a
   proof must read as arrange, act, observe, through the running app.
+
+**Notes, not findings.** A proof holds one case: one starting situation, one action and the
+results seen from it, in at most 60 words, as `references/spec_quality_guide.md`, "One proof,
+one case", says. A proof longer than 60 words, or one holding a second case, such as a refusal
+beside the case that is allowed, is written under `notes:`, one sentence naming the proof. A
+note never makes the rule `weak`: the rule is read against its test as it stands.
 
 **In the marked test body.** The audit reads the source of each marked test and checks:
 
@@ -74,17 +79,10 @@ worth having. A rule can reach 90 percent strength on a proof that observes the 
 thing, and a correct proof of a small rule can sit at 0 percent because nothing broke.
 Read it beside what the audit observed, never instead of it.
 
-## The three levels
+## What each gate asks of the audit
 
-A rule's **level** is what it must have to meet the gate, in the gate's own words: `passed`,
-`strong` or `signed`. A rule marked `[level: ...]` asks for what it names; a rule with no mark
-takes the project's gate, and a mark above the gate is read as the gate. The level is read at
-`strong` and above; under `passed` it is never shown and it changes nothing.
-
-**`passed`.** The tests are the evidence. A passing run from either source meets the level.
-Under a gate above `passed` the AI audit does not read the rule; under the gate `passed` it
-reads every rule and what it finds blocks nothing. The rule needs no signature, and it meets
-the gate on its tests.
+**`passed`.** The tests are the evidence. A passing run from either source is enough. The AI
+audit reads every rule whose tests pass, and what it finds holds nothing back.
 
 **`strong`** and **`signed`.** The strong cell is the evidence. The AI audit must have run on
 the current rule, proof and test, observed nothing and settled, and where mutation testing is
@@ -92,30 +90,12 @@ on the strength must reach `min_strength`. Until it has run the strong cell read
 `not audited`; where it ran and could not tell it reads `weak` with the reason
 `the AI audit could not decide: <its sentence>`; where it settled and still observed something
 the cell reads `weak` with that sentence as the reason. Where no model could be reached nothing
-is written, and the cell reads `not audited` until an audit reaches the rule. A rule whose
-level is `signed` also needs a current signature in a signed commit.
-
-## Who is in the queue
-
-One list holds the rules whose next step is a person, the queue, and nothing else holds any.
-Each row says what it needs.
-
-A **hand check** exists at `strong` and above: a rule whose level is `strong` or `signed` and
-whose strong cell reads `manual test`, because the proofs are `@manual` and no test can be
-written.
-
-A **signature** exists at the gate `signed`: a rule whose level is `signed`, whose passed and
-strong cells are met, and that does not have a counting signature. Its row reads `unsigned` or
-`stale`. A rule that needs both is one hand check.
-
-A rule blocked at its passed cell is not in the queue, a rule with no proof written included:
-it is build work and it stays on the board. A weak rule is build work too, and so is a rule
-reading `not audited`, whose next step is `purlin:audit` rather than a reader. A rule whose
-level is `passed` is never in it. The queue reads by feature, then by rule number.
+is written, and the cell reads `not audited` until an audit reaches the rule. At the gate
+`signed` the rule also needs a current signature in a signed commit.
 
 ## What the audit reports
 
-The audit reports. It recommends nothing, and it never names a next action. Three things:
+The audit reports. It recommends nothing, and it never names a next action. Four things:
 
 - **The strength, beside the minimum.** `Test strength: 71 percent (minimum 80)`, or
   `Test strength: n/a (minimum 80)` when no break engine ran.
@@ -128,6 +108,8 @@ The audit reports. It recommends nothing, and it never names a next action. Thre
   is written, and the rule reads `not audited`. An audit that settled and still observed
   something is a different answer: it could tell, and what it saw is build work, so the cell
   reads `weak` with each observation sentence among its reasons.
+- **The notes.** A proof longer than the standard, or holding two cases, one sentence each
+  under `notes:`. They are written beside what the audit found and change no cell.
 
 What the audit found is written into the evidence with the name of the model that found it,
 and a person reads it beside the rule, each proof and the source of each test, which is what

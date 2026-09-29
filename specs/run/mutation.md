@@ -16,7 +16,7 @@
 - RULE-1: With `mutation_engine` set to `auto`, jest and vitest select `stryker`, dotnet selects `stryker_net`, pytest selects `mutmut`, and go, shell and sql select `none`; the first detected framework that has an engine decides, and a project with no framework selects `none`
 - RULE-2: A `mutation_engine` naming an engine wins over the detected frameworks, a name outside the four shipped engines reads as `none` rather than being guessed at, and a missing key reads as `none`, so mutation testing is off until a project turns it on
 - RULE-3: Test strength is `killed / (killed + survived)` as an integer percent rounded half up, and is None when no break ran at all
-- RULE-4: The rules of a feature are reported in rule-number order, so `RULE-2` comes before `RULE-10` [level: passed]
+- RULE-4: The rules of a feature are reported in rule-number order, so `RULE-2` comes before `RULE-10`
 - RULE-5: Stryker runs once per feature against that feature's scope files alone, under a generated config naming `coverageAnalysis: "perTest"`, `disableBail: true`, the `json` reporter and the report path
 - RULE-6: The Stryker test runner is `vitest` when the project's `package.json` declares vitest as a dependency, and `jest` otherwise
 - RULE-7: The project's own `node_modules/.bin/stryker` is preferred over one on the PATH, and neither present leaves no engine with a line naming the package to install

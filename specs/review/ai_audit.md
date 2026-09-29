@@ -3,8 +3,9 @@
 > Description: The AI audit `purlin:audit` runs on each rule it reads. It sets the rule, its
 >   proofs and the source of each test that backs them beside `references/review_criteria.md`,
 >   sends that prompt to the model through the `claude` command, one call per rule and a set
->   number at once, and reads the answer back into a `verdict` and findings: settled with nothing
->   found is `strong`, settled with findings is `weak`, and not settled is `undecided`. Each
+>   number at once, and reads the answer back into a `verdict`, findings and notes: settled with
+>   nothing found is `strong`, settled with findings is `weak`, and not settled is `undecided`;
+>   a note, on a proof longer than the standard or holding two cases, changes no verdict. Each
 >   answer names the model that gave it and a fingerprint of the criteria it was sent. When the
 >   model cannot be reached the answer is only the reason, so nothing is written and the next
 >   audit tries again. It writes no file; the run writes what it found into the evidence.
@@ -13,7 +14,7 @@
 
 ## Rules
 
-- RULE-1: The audit reads a rule that is its feature's own, has at least one proof with a test, whose passed cell reads `passed` and that has no audit entry for its current rule, proof and test; under a gate above `passed` it never reads a rule whose level is `passed`, and reading again ignores an existing entry
+- RULE-1: The audit reads a rule that is its feature's own, has at least one proof with a test, whose passed cell reads `passed` and that has no audit entry for its current rule, proof and test, the same rules at every gate, and reading again ignores an existing entry
 - RULE-2: The prompt is `references/review_criteria.md` verbatim, then the rule's text, its proofs, the source of each test and the test strength, and it asks for what was observed rather than a recommendation, a grade or a score
 - RULE-3: The call is `claude -p --output-format json` with the prompt written to its standard input, which is closed after the prompt, and never on the command line, and it is given 300 seconds
 - RULE-4: One call is made per rule, and as many calls run at once as the number the caller names
@@ -25,15 +26,16 @@
 - RULE-10: When several tests back one proof, each test shows its own source; a test whose source cannot be found shows none rather than another test's
 - RULE-11: The test source is read out of JavaScript and TypeScript by balancing braces, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 - RULE-12: Reading a rule, asking the model and printing the result write no file anywhere under `.purlin/`, and the triple a reading names moves whenever the rule, the proof or the test moves
-- RULE-13: `ai_audit.py --help` exits 0, an unknown option or a missing `--feature` exits 2, a feature with no rule in the project exits 1, and the command calls no model [level: passed]
-- RULE-14: `ai_audit.py --feature <name>` prints what the audit reads for one rule named with `--rule`, or for every rule of the feature without it: the rule, its proofs, each test, the test strength beside the minimum and what the last audit found, with its `verdict`, model and time, and no emoji [level: passed]
-- RULE-15: Reading a rule the project does not hold returns nothing rather than an empty reading [level: passed]
+- RULE-13: `ai_audit.py --help` exits 0, an unknown option or a missing `--feature` exits 2, a feature with no rule in the project exits 1, and the command calls no model
+- RULE-14: `ai_audit.py --feature <name>` prints what the audit reads for one rule named with `--rule`, or for every rule of the feature without it: the rule, its proofs, each test, the test strength beside the minimum and what the last audit found, with its `verdict`, model and time, and no emoji
+- RULE-15: Reading a rule the project does not hold returns nothing rather than an empty reading
+- RULE-16: The lines an answer holds under `notes:` are its notes, where the prompt asks for a proof longer than 60 words or holding more than one case, and a note never makes the answer `weak`
 
 ## Proof
 
-- PROOF-1 (RULE-1): Under the gate `strong`, a rule of the feature's own at the level `strong`, whose passed cell reads `passed`, whose one proof has a test and which has no audit entry, is read
+- PROOF-1 (RULE-1): Under the gate `strong`, a rule of the feature's own whose passed cell reads `passed`, whose one proof has a test and which has no audit entry, is read
 - PROOF-2 (RULE-1): Under the gate `strong`, three rules with no audit entry are each not read: one whose passed cell reads `failed`, one whose passed cell reads `passed` and whose one proof is `@manual` with no test, and one with a passing test that is listed under a feature requiring it rather than under its own
-- PROOF-3 (RULE-1): A rule at the level `passed`, whose passed cell reads `passed`, whose proof has a test and which has no audit entry, is not read under the gate `strong` nor under the gate `signed`, and is read under the gate `passed`
+- PROOF-3 (RULE-1): Under the gate `passed`, a rule of the feature's own whose passed cell reads `passed`, whose one proof has a test and which has no audit entry, is read
 - PROOF-4 (RULE-1): Under the gate `strong`, a rule with a passing test whose status already carries an audit entry reading `strong` with no finding is not read; when the caller asks to read again, the same rule is read. In a project under the gate `strong`, `RULE-2` is read before any audit and not read once an audit entry is recorded for it; its text is then changed from `return 401 and the body` to `return 401 with the body` and its tests pass again, and it carries no audit entry and is read
 - PROOF-5 (RULE-8): In a project whose evidence names the test `test_valid_credentials_return_200` for `RULE-1`, what the audit reads for `RULE-1` names the file `tests/test_login.py`, that test, and carries the line `assert login("ada", "secret") == 200`
 - PROOF-6 (RULE-9): The proof of `RULE-1` is tagged `@manual` while the project's test file still holds a test marked for that proof; what the audit reads for `RULE-1` has a test entry reading `manual` true, with no test file and no source
@@ -67,3 +69,6 @@
 - PROOF-34 (RULE-10): The tests `test_valid_credentials_return_200` and `test_a_token_comes_back` in one file are both marked for `PROOF-1` and both passed; what the audit reads for `RULE-1` lists exactly those two tests, the source under the first holds `def test_valid_credentials_return_200` and `== 200` and not `def test_a_token_comes_back`, and the source under the second holds `def test_a_token_comes_back` and `token` and not `def test_valid_credentials_return_200`
 - PROOF-35 (RULE-10): The evidence names a third test for `PROOF-1`, `test_renamed_away`, which the test file no longer holds; what the audit reads for `RULE-1` shows no source under `test_renamed_away`, and still shows `def test_valid_credentials_return_200` under that test and `def test_a_token_comes_back` under that one
 - PROOF-36 (RULE-10): Among the declared test names `Allowed`, `Denied`, `test_found` and `works`, the recorded names `Acme.LoginTests.Denied(user: "x")`, `test_found[jest-case-1]`, `TestLogin::test_found` and `login > works` each match exactly one, `Denied`, `test_found`, `test_found` and `works` in turn, and the recorded name `test_gone` matches none
+- PROOF-37 (RULE-16): `claude` answers the question about `RULE-2` with `settled: yes`, then `notes:` and the line `- PROOF-2 holds two cases.`; the audit's answer reads `strong`, with no finding and the one note `PROOF-2 holds two cases.`
+- PROOF-38 (RULE-16): `claude` answers the question about `RULE-2` with `settled: yes`, the line `- PROOF-2 asserts the status but never the body the rule names.`, then `notes:` and `- PROOF-2 holds two cases.`; the answer reads `weak`, with that one finding and that one note
+- PROOF-39 (RULE-16): Under the gate `strong`, the prompt for `RULE-2` shows a `notes:` line in the shape of the answer, and holds the words `a note, under notes:, for a proof longer than 60 words or one holding more than one case`

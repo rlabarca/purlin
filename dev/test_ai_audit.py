@@ -15,7 +15,8 @@ What each group holds:
 *call*      one call per rule, the prompt on stdin and never in the arguments,
             `parallel` calls at once
 *answer*    settled with nothing is `strong`, settled with lines is `weak`,
-            not settled is `undecided`; the model and the criteria are named
+            not settled is `undecided`; the model and the criteria are named;
+            the lines under `notes:` are notes and change no verdict
 *failure*   the four ways the model cannot be reached, each with its reason
 *writing*   reading and printing a rule writes no file
 """
@@ -99,7 +100,7 @@ class TestWhichRulesAreRead:
 
     @staticmethod
     def _rule(**overrides):
-        rule = {'label': 'own', 'level': 'strong', 'audit': None,
+        rule = {'label': 'own', 'audit': None,
                 'cells': {'passed': {'word': 'passed'}},
                 'proofs': [{'id': 'PROOF-1', 'manual': False,
                             'tests': [{'file': 't.py', 'name': 'test_x'}]}]}
@@ -121,11 +122,8 @@ class TestWhichRulesAreRead:
                                     'strong') is False
 
     # purlin: ai_audit PROOF-3
-    def test_a_passed_level_is_read_only_at_the_gate_passed(self):
-        lower = self._rule(level='passed')
-        assert audit_module.is_read(lower, 'strong') is False
-        assert audit_module.is_read(lower, 'signed') is False
-        assert audit_module.is_read(lower, 'passed') is True
+    def test_a_passing_rule_is_read_at_the_gate_passed(self):
+        assert audit_module.is_read(self._rule(), 'passed') is True
 
     # purlin: ai_audit PROOF-4
     def test_an_entry_for_the_current_hashes_is_skipped_unless_again(self):
@@ -306,6 +304,16 @@ class TestThePrompt:
         assert 'do not grade the rule' in prompt
         assert 'do not score it' in prompt
 
+    # purlin: ai_audit PROOF-39
+    def test_the_prompt_asks_for_notes_on_a_long_or_double_proof(
+            self, at_strong):
+        prompt = audit_module.model_prompt(at_strong.root,
+                                           read(at_strong, 'RULE-2'))
+        after = prompt[len(criteria_text()):]
+        assert '\n    notes:\n' in after
+        assert ('a note, under notes:, for a proof longer than 60 words or '
+                'one holding more than one case') in after
+
 
 # ---------------------------------------------------------------------------
 # The call
@@ -377,7 +385,7 @@ class TestTheCall:
             returncode = 0
 
         def runner(command, **kwargs):
-            rule = re.search(r'^login (RULE-\d) ', kwargs['input'],
+            rule = re.search(r'^login (RULE-\d)$', kwargs['input'],
                              re.M).group(1)
             asked.append(rule)
             # The later the rule, the sooner it answers.
@@ -470,6 +478,27 @@ class TestTheAnswer:
         assert audit_module.model_name({'model': 'claude-x-1'}) == \
             'claude-x-1'
         assert audit_module.model_name({}) == 'unknown'
+
+    # purlin: ai_audit PROOF-37
+    def test_a_note_is_not_a_finding(self, at_strong, claude):
+        install, _directory = claude
+        install(answers=['settled: yes\nnotes:\n- PROOF-2 holds two cases.'])
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert (found['verdict'], found['findings'], found['notes']) == (
+            'strong', [], ['PROOF-2 holds two cases.']), found
+
+    # purlin: ai_audit PROOF-38
+    def test_a_finding_and_a_note_are_kept_apart(self, at_strong, claude):
+        install, _directory = claude
+        install(answers=['settled: yes\n- %s\nnotes:\n- PROOF-2 holds two '
+                         'cases.' % FINDING])
+        found = audit_module.audit_one(at_strong.root,
+                                       read(at_strong, 'RULE-2'),
+                                       criteria_text())
+        assert (found['verdict'], found['findings'], found['notes']) == (
+            'weak', [FINDING], ['PROOF-2 holds two cases.']), found
 
     # purlin: ai_audit PROOF-22
     def test_an_answer_in_no_shape_says_nothing(self):
