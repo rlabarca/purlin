@@ -63,7 +63,7 @@ def _section(at='2026-09-01T00:00:00Z', fp=None):
 
 
 def _file(source, platforms=None, audit=None, **overrides):
-    data = {'schema': 'purlin-evidence/1', 'feature': 'login',
+    data = {'schema': 'purlin-evidence/2', 'feature': 'login',
             'source': source, 'spec': 'specs/auth/login.md',
             'platforms': platforms or {}}
     if audit is not None:
@@ -92,7 +92,7 @@ def test_a_source_with_no_file_reads_as_no_evidence(root):
 @pytest.mark.parametrize('content', [
     '{not json',
     '[1, 2]',
-    json.dumps(_file('local', schema='purlin-evidence/2')),
+    json.dumps(_file('local', schema='purlin-evidence/1')),
 ])
 def test_a_malformed_file_or_another_schema_is_ignored_with_one_warning(
         root, content):

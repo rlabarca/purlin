@@ -39,7 +39,7 @@ operating system that ran the feature, one section each.
 
 ```json
 {
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "feature": "login",
   "source": "local",
   "spec": "specs/auth/login.md",
@@ -80,7 +80,7 @@ present only once an audit has run.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `schema` | string | `purlin-evidence/1`. A file carrying any other value is ignored with one warning |
+| `schema` | string | `purlin-evidence/2`. A file carrying any other value is ignored with one warning |
 | `feature` | string | the feature, the spec's name |
 | `source` | string | `local` or `ci`, the same word as the folder the file sits in |
 | `spec` | string | the spec's path, `/` separated |

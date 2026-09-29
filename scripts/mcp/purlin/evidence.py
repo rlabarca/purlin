@@ -38,7 +38,7 @@ if _MCP_DIR not in sys.path:
 
 from purlin import fingerprint as fingerprint_module          # noqa: E402
 
-SCHEMA = 'purlin-evidence/1'
+SCHEMA = 'purlin-evidence/2'
 SOURCES = ('local', 'ci')
 PLATFORMS = ('windows', 'macos', 'linux')
 EVIDENCE_DIR = '.purlin/evidence'

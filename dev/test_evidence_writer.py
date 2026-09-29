@@ -193,7 +193,7 @@ def test_a_test_run_writes_the_feature_file_with_one_section(tmp_path):
     assert code == 0, out
     data = _evidence(root)
     assert (data['schema'], data['feature'], data['source'],
-            data['spec']) == ('purlin-evidence/1', 'feat', 'local',
+            data['spec']) == ('purlin-evidence/2', 'feat', 'local',
                               'specs/a/feat.md')
     assert list(data['platforms']) == [HERE]
     assert sorted(data['platforms'][HERE]) == [
