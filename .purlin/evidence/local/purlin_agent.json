@@ -2,15 +2,14 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:47Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:04Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "22ddd184394aa6c357ddaf036bc0ce94d7458c69d612a893faf91b830dc538b7",
-        "spec": "dd108aa16c0ed3b078484c3a3c471c6fc30679f54ad828b1d9aa705b3b3f5b83",
-        "tests": "9f34e3bfd4e99510aa42b0c44a7b70e4c87c6975a6111ad49f7f50ac3ed6d0fe"
+        "code": "aa38889fa17526acb5ed849ff6a09b6e6cca9fde86f4d08cc8ffde13d9d29f50",
+        "spec": "58cc90de7884bca3c822466f0f37e29fec4d0407f1e39042779f8b166e744ce4",
+        "tests": "84fb3a19979c81008e8682951effafd5e8a0d9f98d10330f82950c5856029819"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -23,83 +22,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_agent.py::TestFrontmatter::test_a_copy_without_the_effort_line_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_agent.py::TestFrontmatter::test_a_copy_with_an_empty_effort_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_agent.py::TestFrontmatter::test_a_copy_named_helper_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_agent.py::TestFrontmatter::test_a_copy_with_an_empty_description_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_agent.py::TestFrontmatter::test_a_copy_with_prose_above_the_frontmatter_is_refused"
-        },
-        {
-          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_purlin_agent.py::TestCoreLoop::test_the_core_loop_is_stated_once_in_order"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_agent.py::TestCoreLoop::test_a_copy_with_audit_before_test_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_agent.py::TestCoreLoop::test_a_copy_without_sign_in_the_loop_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_agent.py::TestCoreLoop::test_a_copy_with_a_second_loop_block_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-24",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_agent.py::TestCoreLoop::test_a_copy_with_the_loop_again_in_prose_is_refused"
         },
         {
           "env": null,
@@ -111,70 +38,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_agent.py::TestNevers::test_a_copy_with_a_fifth_never_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_agent.py::TestNevers::test_a_copy_without_the_second_never_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_agent.py::TestNevers::test_a_copy_whose_first_never_is_reworded_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_agent.py::TestNevers::test_a_copy_whose_second_never_is_reworded_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-29",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_agent.py::TestNevers::test_a_copy_whose_third_never_allows_a_tag_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_agent.py::TestNevers::test_a_copy_with_the_remote_exception_in_the_fourth_never_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_agent.py::TestNevers::test_a_copy_naming_the_style_guide_for_names_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_agent.py::TestNevers::test_a_copy_whose_fourth_never_allows_emoji_is_refused"
-        },
-        {
-          "env": null,
           "id": "PROOF-4",
           "manual": false,
           "result": "pass",
@@ -183,75 +46,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_purlin_agent.py::TestRouting::test_a_copy_with_a_manager_row_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_purlin_agent.py::TestRouting::test_a_copy_routing_to_an_unlisted_command_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-35",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_purlin_agent.py::TestRouting::test_a_copy_without_a_qa_row_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_purlin_agent.py::TestRouting::test_a_command_dropped_from_the_command_reference_is_refused"
-        },
-        {
-          "env": null,
           "id": "PROOF-5",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_purlin_agent.py::TestState::test_it_reads_the_state_before_it_answers"
-        },
-        {
-          "env": null,
-          "id": "PROOF-8",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_purlin_agent.py::TestState::test_a_copy_that_calls_sync_status_when_it_answers_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_purlin_agent.py::TestState::test_a_copy_that_drops_strong_from_the_paragraph_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_purlin_agent.py::TestState::test_a_copy_that_gives_out_of_date_another_meaning_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_purlin_agent.py::TestState::test_a_copy_that_gives_no_proof_written_another_meaning_is_refused"
         },
         {
           "env": null,
@@ -271,14 +70,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-39",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_purlin_agent.py::TestCeiling::test_a_copy_of_136_lines_is_refused"
-        },
-        {
-          "env": null,
           "id": "PROOF-7",
           "manual": false,
           "result": "pass",
@@ -287,75 +78,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-40",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_purlin_agent.py::TestRename::test_a_copy_without_requires_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-41",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_purlin_agent.py::TestRename::test_a_copy_without_the_spec_path_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-42",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_purlin_agent.py::TestRename::test_a_copy_without_one_commit_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-43",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_purlin_agent.py::TestRename::test_a_copy_calling_sync_status_before_git_mv_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-44",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_purlin_agent.py::TestRename::test_a_copy_without_the_rename_section_is_refused"
-        },
-        {
-          "env": null,
           "id": "PROOF-11",
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_purlin_agent.py::TestLeftToDo::test_it_says_every_run_ends_on_left_to_do"
-        },
-        {
-          "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_purlin_agent.py::TestLeftToDo::test_a_copy_that_leaves_the_next_step_unnamed_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-45",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_purlin_agent.py::TestLeftToDo::test_a_copy_that_ends_on_other_words_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-46",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_purlin_agent.py::TestLeftToDo::test_a_copy_whose_summary_drops_a_step_is_refused"
         }
       ],
       "rules": {

@@ -2,15 +2,14 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:47Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:05Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "ca088ab4f788bfb8ab1493e45b26c3bed07f2b1734aabc73a749a3869597431e",
-        "spec": "e07709939d641736c63468bbbde07ab3ee962e388845bcebfebda4bfd3ed8830",
-        "tests": "8ac71fd035f16d49abda16495a6e08d4882610ce80ef1801a1bb42acb2cf543e"
+        "code": "ba6ab200b7605ca656d1ebe2c484acd43ea1c1ff7e10dec727a0d5c676566b51",
+        "spec": "cdd3086350e6ff34f1ff3a47fc22d4d86338fbaf3fff996fdb81360219f61795",
+        "tests": "ce83d0f99804f3f52da5b95fe2b300b0ef37d7a708bdf2b8cda40455f19933c9"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -23,107 +22,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_command_reference_carries_a_row_for_sign"
-        },
-        {
-          "env": null,
-          "id": "PROOF-24",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_frontmatter_with_no_name_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_an_empty_description_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_an_empty_description_followed_by_the_name_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_description_written_as_a_block_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_description_run_onto_a_second_line_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-29",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_command_reference_with_no_sign_row_is_reported"
-        },
-        {
-          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_skill_sign.py::TestSkillSign::test_what_waits_is_read_from_sync_status"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_signing_script_named_before_the_audit_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_no_sync_status_call_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_an_audit_path_outside_the_plugin_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_to_read_what_the_audit_found_before_writing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_audit_script_comes_before_the_signing_script"
         },
         {
           "env": null,
@@ -135,35 +38,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-32",
+          "id": "PROOF-44",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_file_with_no_closing_section_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_closing_section_with_no_arrow_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_closing_table_of_one_outcome_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-35",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_one_outcome_with_no_arrow_is_reported"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_an_unknown_rule_is_sent_to_the_status"
         },
         {
           "env": null,
@@ -175,59 +54,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_skill_of_exactly_185_lines_is_let_through"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_skill_of_186_lines_is_reported"
-        },
-        {
-          "env": null,
           "id": "PROOF-5",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_skill_sign.py::TestSkillSign::test_a_signature_counts_on_two_conditions"
-        },
-        {
-          "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_missing_condition_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-13",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_changed_clause_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_whose_signature_counts"
-        },
-        {
-          "env": null,
-          "id": "PROOF-39",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_third_condition_is_reported"
         },
         {
           "env": null,
@@ -247,43 +78,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-15",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_gate_table_with_no_passed_row_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_signed_row_that_asks_nothing_is_reported"
-        },
-        {
-          "env": null,
           "id": "PROOF-8",
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_skill_sign.py::TestSkillSign::test_at_signed_it_commits_the_package_and_tags_that_commit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_tag_line_before_the_package_line_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_tag_section_that_does_not_stop_below_signed_is_reported"
         },
         {
           "env": null,
@@ -295,43 +94,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-41",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_below_signed_it_writes_no_tag_and_no_package"
-        },
-        {
-          "env": null,
-          "id": "PROOF-42",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_never_pushes"
-        },
-        {
-          "env": null,
           "id": "PROOF-19",
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_where_the_version_comes_from"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_no_offer_to_write_the_version_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-43",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_with_no_version_it_asks_and_offers_to_write_one"
         },
         {
           "env": null,
@@ -343,16 +110,79 @@
         },
         {
           "env": null,
-          "id": "PROOF-22",
+          "id": "PROOF-23",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_no_offer_to_run_the_key_commands_is_reported"
+          "rule": "RULE-11",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_command_reference_carries_a_row_for_sign"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_to_read_what_the_audit_found_before_writing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_audit_script_comes_before_the_signing_script"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_whose_signature_counts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_below_signed_it_writes_no_tag_and_no_package"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_never_pushes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_with_no_version_it_asks_and_offers_to_write_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_what_a_refused_tag_exits_with"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-10": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
+        "RULE-13": "passed",
+        "RULE-14": "passed",
+        "RULE-15": "passed",
+        "RULE-16": "passed",
+        "RULE-17": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

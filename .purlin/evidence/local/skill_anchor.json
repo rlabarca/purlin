@@ -2,15 +2,14 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:47Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:05Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "961f6ed9402c9269dee732ad4d5b1ee07ed8aa7c26bd6ecfbe7143f4e623936e",
-        "spec": "0fd808a85d88f3df13861119d2aea001fca6cb83a900bc7164f76d864a8e13cb",
-        "tests": "c8a246cd03037c43b3025311c8acce163f5fde87642da089337bfc51d0fd3b4d"
+        "code": "016b31e2f89171c7c156f620a59562dab414c3a6a2c48b89ebfcf1ee36fbdfd9",
+        "spec": "1ed4cae7566b032506d904dc08454d0962939e35af36ce7527529c50cea9719c",
+        "tests": "7c5101db262f362a7b1dc0445a32f228eb019923c9ac6c74be1c7c5afffbf962"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -23,62 +22,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_the_command_reference_has_a_row_for_the_command"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_a_skill_with_no_name_line_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_an_empty_description_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_a_description_on_the_line_below_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-13",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_a_description_opened_as_a_block_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-14",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_a_description_running_on_to_a_second_line_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-15",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_a_command_reference_without_the_row_fails"
-        },
-        {
-          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
@@ -87,83 +30,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_anchor.py::TestTheScript::test_the_sync_section_names_the_check_drift_runs"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_anchor.py::TestTheScript::test_the_script_followed_by_address_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_anchor.py::TestTheScript::test_the_script_followed_by_syncall_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_anchor.py::TestTheScript::test_a_check_that_rewrites_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_anchor.py::TestTheScript::test_drift_running_its_own_check_fails"
-        },
-        {
-          "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_skill_anchor.py::TestTheNextStep::test_every_closing_outcome_names_the_next_step"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_anchor.py::TestTheNextStep::test_an_outcome_with_no_directive_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_anchor.py::TestTheNextStep::test_a_skill_with_no_closing_section_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_anchor.py::TestTheNextStep::test_a_closing_section_with_no_arrow_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_anchor.py::TestTheNextStep::test_a_closing_section_with_one_outcome_fails"
         },
         {
           "env": null,
@@ -183,75 +54,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_anchor.py::TestTheCeiling::test_a_skill_of_161_lines_fails"
-        },
-        {
-          "env": null,
           "id": "PROOF-5",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_skill_anchor.py::TestThePin::test_a_pin_is_a_commit_never_a_branch"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_pin_that_may_be_a_branch_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_pinned_rule_is_never_edited_in_place"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_editing_a_pinned_rule_in_place_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-29",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_change_goes_to_the_source_repository"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_change_committed_to_the_local_copy_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_local_rule_goes_in_an_anchor_that_requires_the_pin"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_local_rule_in_the_pinned_copy_fails"
         },
         {
           "env": null,
@@ -263,20 +70,66 @@
         },
         {
           "env": null,
-          "id": "PROOF-8",
+          "id": "PROOF-33",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_skill_anchor.py::TestTheFolder::test_a_folder_made_at_setup_fails"
+          "rule": "RULE-7",
+          "test": "dev/test_skill_anchor.py::TestTheSource::test_the_source_is_a_spec_in_a_repository"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_the_command_reference_has_a_row_for_the_command"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_skill_anchor.py::TestTheScript::test_the_sync_section_names_the_check_drift_runs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_skill_anchor.py::TestThePin::test_a_pinned_rule_is_never_edited_in_place"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_skill_anchor.py::TestThePin::test_a_change_goes_to_the_source_repository"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_skill_anchor.py::TestThePin::test_a_local_rule_goes_in_an_anchor_that_requires_the_pin"
         }
       ],
       "rules": {
         "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
-        "RULE-6": "passed"
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
       },
       "runner": "rich-labarca"
     }

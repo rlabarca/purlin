@@ -2,15 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:47Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:04Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "0ef382da6ce89051ed454b858c16a74c5d3cffcd8d900008cb0be83587cbfef9",
-        "spec": "7d9528a4bb00f66b51d6e62f1b72407958d73d91cc79c4bd198c001fe6114f17",
-        "tests": "a1ac7e3605df175fd4be86dfabd6343b4e89e71df80e19f49565f16c4219d212"
+        "code": "c2beb1a84ab275cefc0c0e96933fa36e145c1b134455f2dc98bc5dd3a7baaae7",
+        "spec": "14e79a2e886836942228114fd4dced7151a6ed6a191cdc0b6546f173e1d76809",
+        "tests": "68ca4fdd019f5676d099ea4a16780410736d4d23a717b3c52a8f147b89e5ec37"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -51,7 +50,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_purlin_report.py::test_no_shadow_no_gradient_and_no_emoji"
+          "test": "dev/test_purlin_report.py::test_no_shadow_and_no_gradient"
         },
         {
           "env": null,
@@ -332,6 +331,14 @@
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_purlin_report.py::test_choosing_to_tag_leaves_every_rule_showing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-181",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_purlin_report.py::test_choosing_to_correct_leaves_every_rule_showing"
         },
         {
           "env": null,
@@ -956,6 +963,14 @@
           "result": "pass",
           "rule": "RULE-46",
           "test": "dev/test_purlin_report.py::test_an_unfolded_rule_reads_each_proof"
+        },
+        {
+          "env": null,
+          "id": "PROOF-180",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_purlin_report.py::test_a_test_line_starts_with_a_dot_in_its_results_colour"
         },
         {
           "env": null,

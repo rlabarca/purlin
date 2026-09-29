@@ -1,0 +1,33 @@
+{
+  "feature": "purlin_output",
+  "platforms": {
+    "macos": {
+      "at": "2026-09-29T21:44:04Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
+      "dirty": true,
+      "fingerprint": {
+        "code": "b4ffb1e5ce90c4f281ae0752566900a6433b66786b8138168f87b9088f0b04c2",
+        "spec": "78be2877235cb791dbd195c3cd391783f22bc1204706c988b70eee236febcf14",
+        "tests": "d0e6081e988d307f6819d5ef6665e19d391b9e1fb9962fbc08cf0fcb037df8a0"
+      },
+      "machine": "Richs-MacBook-Pro.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_purlin_output.py::TestNoPictograph::test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/instructions/purlin_output.md"
+}

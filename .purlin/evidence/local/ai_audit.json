@@ -2,15 +2,14 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:46Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:04Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "a289d1d7ceba65c5ba4d083cf586a5c916764290ec73825d66ba30f83704a4ea",
-        "spec": "93f2e09cc0a87881985bbdf673797fe01460350db5a630f8e83a02e9c502aba4",
-        "tests": "940251878eec29d6ad8e6b85d71c63f778fd6bd60babd3a5a3cdaba43ebdba83"
+        "code": "f0b9864ea4f7763dc257025173db9770faeb69dd725b24c1e29d33a1784f3c1d",
+        "spec": "d92bee6b6f07ce448ac56de798f179baa80390b2f2559b90c449616a3678de16",
+        "tests": "0afbd0b5727639c35083338d01235a1a655878a4a67b886b5926d15d42f52824"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -271,38 +270,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-24",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_non_zero_exit_is_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_call_past_its_limit_is_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_an_answer_with_no_settled_line_twice_is_no_answer"
-        },
-        {
-          "env": null,
-          "id": "PROOF-62",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_second_answer_that_settles_is_the_answer"
-        },
-        {
-          "env": null,
           "id": "PROOF-5",
           "manual": false,
           "result": "pass",
@@ -503,27 +470,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-29",
+          "id": "PROOF-7",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_the_printed_rule_names_what_the_audit_found"
-        },
-        {
-          "env": null,
-          "id": "PROOF-77",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_rule_no_audit_has_read_says_so"
-        },
-        {
-          "env": null,
-          "id": "PROOF-63",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_no_measured_strength_prints_nothing_of_strength"
+          "rule": "RULE-13",
+          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_a_rule_that_is_not_there_is_not_read"
         },
         {
           "env": null,
@@ -540,14 +491,6 @@
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_feature_alone_prints_every_rule"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_a_rule_that_is_not_there_is_not_read"
         },
         {
           "env": null,
@@ -572,6 +515,78 @@
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_ai_audit.py::TestThePrompt::test_the_prompt_asks_for_notes_on_a_long_or_double_proof"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_the_printed_rule_names_what_the_audit_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_rule_no_audit_has_read_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_each_note_follows_the_findings"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_no_measured_strength_prints_nothing_of_strength"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_non_zero_exit_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_call_past_its_limit_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_an_answer_with_no_settled_line_twice_is_no_answer"
+        },
+        {
+          "env": null,
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_second_answer_that_settles_is_the_answer"
+        },
+        {
+          "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_settings_file_that_cannot_be_read_stops_it"
         }
       ],
       "rules": {
@@ -581,9 +596,13 @@
         "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
-        "RULE-15": "passed",
         "RULE-16": "passed",
+        "RULE-17": "passed",
+        "RULE-18": "passed",
+        "RULE-19": "passed",
         "RULE-2": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

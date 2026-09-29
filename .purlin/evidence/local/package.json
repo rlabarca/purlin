@@ -2,15 +2,14 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:47Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:04Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "cc2e82f31ac92eb994c224aa1eaccef30d7d70af729b8ce3af31569ca0c31ae8",
-        "spec": "217c1af40348eac973207780d97f31827f12eba38a58ecdc9bbbb928e0c2a5b3",
-        "tests": "f4f4a3b791dd5d731f5f1eee0b2242d64371853e00c965b490f456e5a2bbbbfc"
+        "code": "45ef658ee9b78204fce688b2e562748c3af030c6527f9400b0f630a11db3f10c",
+        "spec": "3ea5d8f95bfdca01fd02d6e627b059ef0a9daaecb59598f9faab2bf849e3abef",
+        "tests": "a9c29df6690c8721cd832c9adae759180be8cf3fbf6236fe3093d6e00a43ee64"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -20,14 +19,6 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_export.py::TestTheFile::test_it_writes_the_version_file_prints_the_state_and_commits_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_export.py::TestTheFile::test_with_no_version_it_writes_nothing_and_says_how_to_name_one"
         },
         {
           "env": null,
@@ -135,62 +126,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_its_result_and_the_machine"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_what_the_audit_found"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_who_signed_it_and_with_which_key"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_what_its_signature_locked"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_export.py::TestTheContent::test_at_signed_a_rule_carries_every_status"
-        },
-        {
-          "env": null,
-          "id": "PROOF-29",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_export.py::TestTheContent::test_at_passed_a_rule_carries_one_status"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_export.py::TestTheContent::test_nothing_names_who_last_changed_a_test"
-        },
-        {
-          "env": null,
           "id": "PROOF-18",
           "manual": false,
           "result": "pass",
@@ -228,14 +163,6 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_export.py::TestTheBytes::test_a_second_clone_at_the_tag_gives_the_committed_bytes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-15",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_export.py::TestTheBytes::test_every_time_is_utc"
         },
         {
           "env": null,
@@ -279,24 +206,121 @@
         },
         {
           "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_export.py::TestCommitting::test_a_second_commit_over_the_same_evidence_is_unchanged"
-        },
-        {
-          "env": null,
           "id": "PROOF-35",
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_export.py::TestCommitting::test_commit_leaves_a_change_staged_elsewhere_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_its_result_and_the_machine"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_what_the_audit_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_who_signed_it_and_with_which_key"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_what_its_signature_locked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_export.py::TestTheContent::test_at_signed_a_rule_carries_every_status"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_export.py::TestTheContent::test_at_passed_a_rule_carries_one_status"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_export.py::TestTheContent::test_nothing_names_who_last_changed_a_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_export.py::TestTheFile::test_with_no_version_it_writes_nothing_and_says_how_to_name_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_export.py::TestTheBytes::test_every_time_is_utc"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_export.py::TestCommitting::test_a_second_commit_over_the_same_evidence_is_unchanged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_export.py::TestTheSettings::test_a_settings_file_that_cannot_be_read_stops_the_export"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_export.py::TestTheSettings::test_a_settings_file_that_cannot_be_read_stops_the_check"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-10": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
+        "RULE-13": "passed",
+        "RULE-14": "passed",
+        "RULE-15": "passed",
+        "RULE-16": "passed",
+        "RULE-17": "passed",
+        "RULE-18": "passed",
+        "RULE-19": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

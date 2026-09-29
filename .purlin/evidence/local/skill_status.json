@@ -2,15 +2,14 @@
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:48Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:05Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "4138815ebc6167a9448b7d6e9e6d434439e4d90f56fea6935b6a8147e3b5547a",
-        "spec": "dd286057acca1cba650930d3e4ac469f39ef2c2a67c941bbcc794d0870faeb53",
-        "tests": "3389b30f27bbbb6981f810d7d88bef95f0883f19bedb0029445b3d70399f09af"
+        "code": "5fef8f9e594869993f3c1a2cb1955341f8cea6f6ddaf7a380b022639a733b850",
+        "spec": "bdada2c4087d71f81f32b9dfc005dd8768da92c2a4c3fed8ce436063a7253fd2",
+        "tests": "38d635d09855b34831bd471daecfd28281fdac9162a7a0b9aed4819969325e66"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -26,72 +25,8 @@
           "id": "PROOF-12",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-1",
+          "rule": "RULE-6",
           "test": "dev/test_skill_status.py::TestFrontmatter::test_the_command_reference_has_a_row_for_status_with_its_purpose"
-        },
-        {
-          "env": null,
-          "id": "PROOF-13",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_status.py::TestFrontmatter::test_a_skill_with_no_name_line_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-14",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_status.py::TestFrontmatter::test_an_empty_description_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-15",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_status.py::TestFrontmatter::test_a_description_written_as_empty_quotes_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_status.py::TestFrontmatter::test_a_description_opened_as_a_block_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_status.py::TestFrontmatter::test_a_description_on_the_line_below_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_status.py::TestFrontmatter::test_a_description_running_on_to_a_second_line_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_status.py::TestFrontmatter::test_a_command_reference_without_the_status_row_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_status.py::TestFrontmatter::test_a_status_row_with_an_empty_purpose_is_refused"
         },
         {
           "env": null,
@@ -103,35 +38,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_status.py::TestPrintWhatTheToolReturned::test_a_skill_that_says_to_count_the_rules_itself_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_status.py::TestPrintWhatTheToolReturned::test_the_status_text_and_the_dashboard_data_carry_one_answer"
-        },
-        {
-          "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_skill_status.py::TestNextStep::test_the_last_section_is_headed_as_the_next_step"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_status.py::TestNextStep::test_a_skill_with_its_last_section_removed_is_refused"
         },
         {
           "env": null,
@@ -143,67 +54,19 @@
         },
         {
           "env": null,
-          "id": "PROOF-11",
+          "id": "PROOF-24",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_status.py::TestNextStep::test_a_last_section_that_names_no_first_line_is_refused"
+          "rule": "RULE-7",
+          "test": "dev/test_skill_status.py::TestNextStep::test_every_kind_of_left_to_do_line_has_a_row_running_its_command"
         },
         {
           "env": null,
           "id": "PROOF-23",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-3",
+          "rule": "RULE-8",
           "test": "dev/test_skill_status.py::TestNextStep::test_every_row_gives_a_directive_but_nothing_left_to_do"
-        },
-        {
-          "env": null,
-          "id": "PROOF-8",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_status.py::TestNextStep::test_a_last_section_with_no_arrow_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_status.py::TestNextStep::test_a_last_section_cut_after_its_first_row_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_status.py::TestNextStep::test_the_audit_row_without_its_arrow_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-24",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_status.py::TestNextStep::test_every_kind_of_left_to_do_line_has_a_row_running_its_command"
-        },
-        {
-          "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_status.py::TestNextStep::test_the_audit_row_running_another_command_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_status.py::TestNextStep::test_a_table_that_no_longer_names_to_strengthen_is_refused"
         },
         {
           "env": null,
@@ -239,22 +102,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-29",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_status.py::TestWithAName::test_the_command_reference_names_the_form_with_a_name"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_status.py::TestWithAName::test_a_command_reference_without_the_name_is_refused"
-        },
-        {
-          "env": null,
           "id": "PROOF-31",
           "manual": false,
           "result": "pass",
@@ -263,27 +110,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-32",
+          "id": "PROOF-29",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_status.py::TestWithAName::test_a_name_section_that_takes_the_first_match_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_status.py::TestWithAName::test_a_name_section_that_prints_nothing_for_no_match_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_status.py::TestWithAName::test_a_name_section_that_prints_only_the_rule_lines_is_refused"
+          "rule": "RULE-9",
+          "test": "dev/test_skill_status.py::TestWithAName::test_the_command_reference_names_the_form_with_a_name"
         }
       ],
       "rules": {
@@ -291,7 +122,11 @@
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
-        "RULE-5": "passed"
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
       },
       "runner": "rich-labarca"
     }

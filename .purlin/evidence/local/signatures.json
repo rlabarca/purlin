@@ -2,15 +2,14 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:47Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:05Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "61db9821fb84423f57a262fc5f3d09581a1f770a414fbab15cf4cd5827db46bc",
-        "spec": "190af5353dbe2ba24fd8c7a48e068b387a3d2725205c67136c416e3997b6150d",
-        "tests": "4722c097884c66b3853ab9702bd9af06f73e591cf68728afcd7a442ec297051d"
+        "code": "40a9942914af60d09ca5814d3364277800ebfdaf8c9c1440b1b84307d00d470e",
+        "spec": "727f1fdd2492b5f9714e69f2eef3dc3ebcb9e6c8a5cb7322885d5341ebe58972",
+        "tests": "e66267d3528f6d5e84527c1bf34140b448d5fe8bc9ac2592c630ae5920d058c9"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -20,14 +19,6 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_signatures.py::TestTheHashes::test_the_three_hashes_come_back_with_their_kind"
-        },
-        {
-          "env": null,
-          "id": "PROOF-2",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_signatures.py::TestTheHashes::test_a_rule_that_is_not_there_has_no_hashes"
         },
         {
           "env": null,
@@ -191,46 +182,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-86",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_signatures.py::TestTheWalk::test_a_hand_check_signed_carries_what_was_seen"
-        },
-        {
-          "env": null,
-          "id": "PROOF-88",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_signatures.py::TestTheWalk::test_a_hand_check_signed_with_no_line_is_signed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-87",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_signatures.py::TestTheWalk::test_the_walk_writes_nothing_until_it_closes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_signatures.py::TestTheWalk::test_a_skipped_rule_waits_again"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_signatures.py::TestTheWalk::test_a_case_is_carried_to_the_close_and_written_nowhere"
-        },
-        {
-          "env": null,
           "id": "PROOF-89",
           "manual": false,
           "result": "pass",
@@ -292,30 +243,6 @@
           "result": "pass",
           "rule": "RULE-13",
           "test": "dev/test_signatures.py::TestTheNote::test_one_note_goes_on_each_rule_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_signatures.py::TestTheNote::test_a_note_with_no_line_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-93",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_signatures.py::TestTheNote::test_a_note_on_a_feature_with_no_rule_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-94",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_signatures.py::TestTheNote::test_a_note_on_all_is_refused"
         },
         {
           "env": null,
@@ -439,22 +366,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-132",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_signatures.py::TestTheCommandLine::test_an_unknown_option_after_a_feature_exits_two"
-        },
-        {
-          "env": null,
-          "id": "PROOF-133",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_signatures.py::TestTheCommandLine::test_an_unknown_option_alone_exits_two"
-        },
-        {
-          "env": null,
           "id": "PROOF-29",
           "manual": false,
           "result": "pass",
@@ -575,51 +486,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-100",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-45",
-          "test": "dev/test_tag.py::TestTheTag::test_it_prints_the_tag_and_the_push"
-        },
-        {
-          "env": null,
-          "id": "PROOF-101",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-45",
-          "test": "dev/test_tag.py::TestTheTag::test_a_remote_is_left_as_it_was"
-        },
-        {
-          "env": null,
-          "id": "PROOF-81",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-45",
-          "test": "dev/test_tag.py::TestTheTag::test_the_walk_signs_the_last_rules_and_writes_the_tag"
-        },
-        {
-          "env": null,
           "id": "PROOF-68",
           "manual": false,
           "result": "pass",
           "rule": "RULE-46",
           "test": "dev/test_tag.py::TestNoTag::test_while_work_is_left_it_prints_the_summary_ending"
-        },
-        {
-          "env": null,
-          "id": "PROOF-102",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-46",
-          "test": "dev/test_tag.py::TestTheTag::test_release_names_another_tag"
-        },
-        {
-          "env": null,
-          "id": "PROOF-103",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-46",
-          "test": "dev/test_tag.py::TestNoTag::test_no_tag_over_one_already_written"
         },
         {
           "env": null,
@@ -644,14 +515,6 @@
           "result": "pass",
           "rule": "RULE-53",
           "test": "dev/test_tag.py::TestThePackage::test_the_package_is_committed_signed_and_tagged"
-        },
-        {
-          "env": null,
-          "id": "PROOF-79",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-53",
-          "test": "dev/test_tag.py::TestThePackage::test_no_tag_when_the_package_cannot_be_written"
         },
         {
           "env": null,
@@ -852,6 +715,190 @@
           "result": "pass",
           "rule": "RULE-64",
           "test": "dev/test_signatures.py::TestWhatIsSigned::test_the_rules_beside_one_no_spec_has_are_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-146",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_tag.py::TestNoTag::test_work_not_committed_exits_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-147",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_tag.py::TestNoTag::test_results_not_committed_exit_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-148",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_tag.py::TestNoTag::test_no_version_exits_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-149",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_tag.py::TestNoTag::test_a_package_not_committed_exits_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-150",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_tag.py::TestNoTag::test_a_tag_already_written_exits_zero"
+        },
+        {
+          "env": null,
+          "id": "PROOF-151",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-66",
+          "test": "dev/test_tag.py::TestNoTag::test_git_failing_to_write_the_tag_exits_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-152",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-67",
+          "test": "dev/test_signatures.py::TestTheCommandLine::test_a_settings_file_that_cannot_be_read_stops_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_hand_check_signed_carries_what_was_seen"
+        },
+        {
+          "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_hand_check_signed_with_no_line_is_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_skipped_rule_waits_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_case_is_carried_to_the_close_and_written_nowhere"
+        },
+        {
+          "env": null,
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-69",
+          "test": "dev/test_signatures.py::TestTheWalk::test_the_walk_writes_nothing_until_it_closes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-100",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_tag.py::TestTheTag::test_it_prints_the_tag_and_the_push"
+        },
+        {
+          "env": null,
+          "id": "PROOF-101",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-71",
+          "test": "dev/test_tag.py::TestTheTag::test_a_remote_is_left_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-72",
+          "test": "dev/test_tag.py::TestTheTag::test_the_walk_signs_the_last_rules_and_writes_the_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-73",
+          "test": "dev/test_tag.py::TestThePackage::test_no_tag_when_the_package_cannot_be_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-103",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-74",
+          "test": "dev/test_tag.py::TestNoTag::test_no_tag_over_one_already_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-102",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_tag.py::TestTheTag::test_release_names_another_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-76",
+          "test": "dev/test_signatures.py::TestTheNote::test_a_note_with_no_line_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-93",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-76",
+          "test": "dev/test_signatures.py::TestTheNote::test_a_note_on_a_feature_with_no_rule_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-94",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-76",
+          "test": "dev/test_signatures.py::TestTheNote::test_a_note_on_all_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-132",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-77",
+          "test": "dev/test_signatures.py::TestTheCommandLine::test_an_unknown_option_after_a_feature_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-133",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-77",
+          "test": "dev/test_signatures.py::TestTheCommandLine::test_an_unknown_option_alone_exits_two"
         }
       ],
       "rules": {
@@ -864,7 +911,6 @@
         "RULE-17": "passed",
         "RULE-18": "passed",
         "RULE-19": "passed",
-        "RULE-2": "passed",
         "RULE-20": "passed",
         "RULE-21": "passed",
         "RULE-22": "passed",
@@ -891,7 +937,20 @@
         "RULE-62": "passed",
         "RULE-63": "passed",
         "RULE-64": "passed",
+        "RULE-65": "passed",
+        "RULE-66": "passed",
+        "RULE-67": "passed",
+        "RULE-68": "passed",
+        "RULE-69": "passed",
         "RULE-7": "passed",
+        "RULE-70": "passed",
+        "RULE-71": "passed",
+        "RULE-72": "passed",
+        "RULE-73": "passed",
+        "RULE-74": "passed",
+        "RULE-75": "passed",
+        "RULE-76": "passed",
+        "RULE-77": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },

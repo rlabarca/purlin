@@ -2,15 +2,14 @@
   "feature": "specs",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:48Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:05Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "9c7590cbde4b9d0464f799250ec4fc0779dcd423a9db79a94214a0cbfd9a0b5f",
-        "spec": "90fbb03ac1efe761b2b94c3bc333e76b990c5b68f9042bd4972603d19689e02b",
-        "tests": "fbc75c302b8af8c0499cabd7db5cda7b6429502ce1a7f13612133d4b8292718d"
+        "code": "44b5d6b0b76d6f975025858767eb0df0796c925f0ea71b926f29fb72115abd1c",
+        "spec": "1a8c1bf0d74dc0cb118672cdbca2d75442b7bbe612c1d665fae3fb23b68a788e",
+        "tests": "dfcdf727c007db2a4c5f2badb4edbcc417a2402553f750f26b402cfbd23b6ea0"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -31,102 +30,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_specs_reader.py::TestRuleText::test_reflowing_a_proof_keeps_its_hash"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_specs_reader.py::TestRuleText::test_extra_spaces_in_a_rule_keep_its_hash"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_specs_reader.py::TestRuleText::test_a_line_break_in_a_rule_keeps_its_hash"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_specs_reader.py::TestRuleText::test_a_changed_word_changes_a_rules_hash"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_specs_reader.py::TestRuleText::test_a_changed_word_changes_a_proofs_hash"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_specs_reader.py::TestProofTags::test_manual_and_an_operating_system_are_both_read"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_specs_reader.py::TestProofTags::test_a_proof_with_no_tag_is_whole_and_not_manual"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_specs_reader.py::TestProofTags::test_a_word_that_is_not_a_tag_stays_in_the_text"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_specs_reader.py::TestProofTags::test_reading_stops_at_a_word_that_is_not_a_tag"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_specs_reader.py::TestProofTags::test_each_of_the_three_systems_is_read"
-        },
-        {
-          "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_specs_reader.py::TestProofTags::test_any_other_system_is_no_system_and_an_unknown_tag"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_specs_reader.py::TestProofTags::test_a_second_system_is_listed_not_merged"
-        },
-        {
-          "env": null,
           "id": "PROOF-8",
           "manual": false,
           "result": "pass",
@@ -140,22 +43,6 @@
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_specs_reader.py::TestOldTagsAndFields::test_a_stamped_manual_still_reads_manual_and_is_listed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_specs_reader.py::TestOldTagsAndFields::test_a_visual_reference_field_is_ignored_and_listed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_specs_reader.py::TestOldTagsAndFields::test_a_visual_hash_field_is_ignored_and_listed"
         },
         {
           "env": null,
@@ -271,27 +158,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_specs_reader.py::TestWhatAFeatureProves::test_a_global_anchor_proves_its_own_rule_alone"
-        },
-        {
-          "env": null,
           "id": "PROOF-37",
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
           "test": "dev/test_specs_reader.py::TestWhatAFeatureProves::test_what_a_required_spec_requires_is_proved_too"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_specs_reader.py::TestWhatAFeatureProves::test_an_anchor_that_requires_a_spec_proves_its_own_rule_alone"
         },
         {
           "env": null,
@@ -303,27 +174,99 @@
         },
         {
           "env": null,
-          "id": "PROOF-39",
+          "id": "PROOF-3",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_specs_reader.py::TestTheScan::test_a_spec_that_cannot_be_decoded_is_skipped"
+          "rule": "RULE-17",
+          "test": "dev/test_specs_reader.py::TestRuleText::test_reflowing_a_proof_keeps_its_hash"
         },
         {
           "env": null,
-          "id": "PROOF-40",
+          "id": "PROOF-4",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_specs_reader.py::TestTheScan::test_a_project_with_no_specs_folder_has_no_specs"
+          "rule": "RULE-17",
+          "test": "dev/test_specs_reader.py::TestRuleText::test_extra_spaces_in_a_rule_keep_its_hash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_specs_reader.py::TestRuleText::test_a_line_break_in_a_rule_keeps_its_hash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_specs_reader.py::TestRuleText::test_a_changed_word_changes_a_rules_hash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_specs_reader.py::TestRuleText::test_a_changed_word_changes_a_proofs_hash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_specs_reader.py::TestOldTagsAndFields::test_a_visual_reference_field_is_ignored_and_listed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_specs_reader.py::TestOldTagsAndFields::test_a_visual_hash_field_is_ignored_and_listed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_specs_reader.py::TestWhatAFeatureProves::test_a_global_anchor_proves_its_own_rule_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_specs_reader.py::TestWhatAFeatureProves::test_an_anchor_that_requires_a_spec_proves_its_own_rule_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_specs_reader.py::TestTheScan::test_a_spec_that_cannot_be_decoded_is_skipped"
         },
         {
           "env": null,
           "id": "PROOF-41",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-14",
+          "rule": "RULE-20",
           "test": "dev/test_specs_reader.py::TestTheScan::test_a_spec_that_cannot_be_read_is_skipped"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_specs_reader.py::TestTheScan::test_a_project_with_no_specs_folder_has_no_specs"
         }
       ],
       "rules": {
@@ -331,10 +274,12 @@
         "RULE-11": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
+        "RULE-17": "passed",
+        "RULE-18": "passed",
+        "RULE-19": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
         "RULE-3": "passed",
-        "RULE-4": "passed",
-        "RULE-5": "passed",
-        "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"

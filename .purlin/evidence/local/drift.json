@@ -2,15 +2,14 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:46Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:04Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "175e766578a9c4cc2849b4b29c2ca4ef25fdbfa0b4f81fb3349394e7edd58d34",
-        "spec": "ad909b9c398ee6d7f7c922da2f6c6919a860da6ef10623acc14b7fcb60e6d9ed",
-        "tests": "45b0f02e874baa970f35038b148384b325151a2bd4c048eb3f4096c6dc94e930"
+        "code": "b67b30b12adb7e02567031ad878184c4bcf4ea0578a4064974ae25b4cab4dc3d",
+        "spec": "355dc5297b6656af1d8bbbca2ae711850b17533d14027c7138bccd0eeffbf11a",
+        "tests": "1483b1a982de58dfa7798dd5022f6e7edcf9d06b8b47765801d236823073cd54"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -175,11 +174,51 @@
         },
         {
           "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_drift.py::TestDeletedFiles::test_a_deleted_file_a_file_entry_names_counts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_drift.py::TestDeletedFiles::test_a_deleted_file_under_a_folder_entry_counts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_drift.py::TestDeletedFiles::test_a_deleted_file_a_glob_matches_counts"
+        },
+        {
+          "env": null,
           "id": "PROOF-15",
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_drift.py::TestEngView::test_changed_files_under_no_scope"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_drift.py::TestDeletedFiles::test_a_deleted_file_no_scope_covers_joins_the_uncovered"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_drift.py::TestDeletedFiles::test_a_covered_file_removed_after_the_pull_is_not_uncovered"
         },
         {
           "env": null,
@@ -236,6 +275,14 @@
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_drift.py::TestAnchorsBehind::test_an_anchor_still_at_its_pin_is_not_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_drift.py::TestAnchorsBehind::test_an_azure_devops_source_out_of_reach_reads_error"
         },
         {
           "env": null,
@@ -319,30 +366,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_drift.py::TestQaView::test_a_rule_to_test_by_hand"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_drift.py::TestQaView::test_the_rules_to_sign_and_not_the_rest"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_drift.py::TestQaView::test_nothing_waiting_for_a_person_prints_nothing"
-        },
-        {
-          "env": null,
           "id": "PROOF-26",
           "manual": false,
           "result": "pass",
@@ -375,35 +398,83 @@
         },
         {
           "env": null,
-          "id": "PROOF-49",
+          "id": "PROOF-28",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_drift.py::TestReportShape::test_each_view_carries_its_fixed_keys"
+          "rule": "RULE-19",
+          "test": "dev/test_drift.py::TestReportShape::test_the_report_text_has_no_indent_and_no_space_after_a_separator"
         },
         {
           "env": null,
-          "id": "PROOF-50",
+          "id": "PROOF-56",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_drift.py::TestReportShape::test_the_qa_role_narrows_the_answer_to_its_view"
+          "rule": "RULE-20",
+          "test": "dev/test_drift.py::TestSourceNamesNoRepository::test_a_text_file_in_the_project_reads_error"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_drift.py::TestSourceNamesNoRepository::test_a_description_in_words_reads_error"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_drift.py::TestSettingsCannotBeRead::test_a_trailing_comma_answers_the_sentence_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_drift.py::TestQaView::test_a_rule_to_test_by_hand"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_drift.py::TestQaView::test_the_rules_to_sign_and_not_the_rest"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_drift.py::TestQaView::test_nothing_waiting_for_a_person_prints_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_drift.py::TestReportShape::test_each_view_carries_its_fixed_keys"
         },
         {
           "env": null,
           "id": "PROOF-34",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-18",
+          "rule": "RULE-24",
           "test": "dev/test_drift.py::TestQaView::test_the_qa_view_carries_the_items_it_printed"
         },
         {
           "env": null,
-          "id": "PROOF-28",
+          "id": "PROOF-50",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_drift.py::TestReportShape::test_the_report_text_has_no_indent_and_no_space_after_a_separator"
+          "rule": "RULE-25",
+          "test": "dev/test_drift.py::TestReportShape::test_the_qa_role_narrows_the_answer_to_its_view"
         }
       ],
       "rules": {
@@ -418,6 +489,12 @@
         "RULE-18": "passed",
         "RULE-19": "passed",
         "RULE-2": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
+        "RULE-22": "passed",
+        "RULE-23": "passed",
+        "RULE-24": "passed",
+        "RULE-25": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

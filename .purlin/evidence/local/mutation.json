@@ -2,15 +2,14 @@
   "feature": "mutation",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:47Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:04Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "71d750cffafab2b3c42a10931fae7ee95a9e58e84486793565e98f7d663c0bbb",
-        "spec": "94130300fe3b3d4a37492594c5ef4ddc3ce9418e2ae43ea175d065d14d8d082f",
-        "tests": "37335c7a7ac25d634b534d8e8cbe0c675b2bfcc6b352f6051e1eabad593a0e06"
+        "code": "e36d756b4e7fa898de09339272b09a7430ddcf5cb185b899cf7f850d824a7c79",
+        "spec": "f8702a8eb49edadf59a21b7adab038c0f37d8d8c3e75465b162bc820047c96ed",
+        "tests": "8623b00f6c3aadc7afdef20acaa1e1a764941a73c64d48e869d8600a9c2f5b97"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -19,7 +18,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_mutation_adapters.py::test_auto_picks_the_engine_of_the_one_framework"
+          "test": "dev/test_mutation_adapters.py::test_auto_picks_stryker_for_jest"
         },
         {
           "env": null,
@@ -27,39 +26,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_mutation_adapters.py::test_auto_picks_no_engine_for_go_shell_or_sql"
+          "test": "dev/test_mutation_adapters.py::test_auto_picks_no_engine_for_go"
         },
         {
           "env": null,
-          "id": "PROOF-24",
+          "id": "PROOF-68",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_mutation_adapters.py::test_auto_with_pytest_first_picks_mutmut"
+          "test": "dev/test_mutation_adapters.py::test_auto_picks_stryker_for_vitest"
         },
         {
           "env": null,
-          "id": "PROOF-25",
+          "id": "PROOF-69",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_mutation_adapters.py::test_auto_with_jest_first_picks_stryker"
+          "test": "dev/test_mutation_adapters.py::test_auto_picks_stryker_net_for_dotnet"
         },
         {
           "env": null,
-          "id": "PROOF-26",
+          "id": "PROOF-70",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_mutation_adapters.py::test_auto_passes_over_a_framework_with_no_engine"
+          "test": "dev/test_mutation_adapters.py::test_auto_picks_mutmut_for_pytest"
         },
         {
           "env": null,
-          "id": "PROOF-27",
+          "id": "PROOF-71",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_mutation_adapters.py::test_auto_with_no_framework_picks_no_engine"
+          "test": "dev/test_mutation_adapters.py::test_auto_picks_no_engine_for_shell"
+        },
+        {
+          "env": null,
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_mutation_adapters.py::test_auto_picks_no_engine_for_sql"
         },
         {
           "env": null,
@@ -79,22 +86,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-29",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_mutation_adapters.py::test_an_engine_name_nobody_ships_reads_as_none"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_mutation_adapters.py::test_settings_that_name_no_engine_read_as_none"
-        },
-        {
-          "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
@@ -108,22 +99,6 @@
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_mutation_adapters.py::test_a_split_exactly_on_a_half_rounds_up"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_mutation_adapters.py::test_no_break_counted_reads_none_not_zero"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_mutation_adapters.py::test_a_features_rules_are_answered_in_number_order"
         },
         {
           "env": null,
@@ -191,14 +166,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_mutation_adapters.py::test_no_stryker_anywhere_leaves_no_engine_and_says_what_to_install"
-        },
-        {
-          "env": null,
           "id": "PROOF-8",
           "manual": false,
           "result": "pass",
@@ -212,78 +179,6 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_mutation_adapters.py::test_mutmuts_statuses_count_caught_missed_or_neither"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_mutation_adapters.py::test_each_rule_carries_what_its_own_tests_caught"
-        },
-        {
-          "env": null,
-          "id": "PROOF-40",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_mutation_adapters.py::test_a_break_another_rules_test_caught_counts_missed_for_this_one"
-        },
-        {
-          "env": null,
-          "id": "PROOF-41",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_mutation_adapters.py::test_a_break_that_timed_out_counts_caught_for_every_rule_that_reached_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-42",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_mutation_adapters.py::test_a_rule_whose_tests_the_report_never_lists_measures_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_mutation_adapters.py::test_a_name_that_begins_another_does_not_claim_its_break"
-        },
-        {
-          "env": null,
-          "id": "PROOF-43",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_mutation_adapters.py::test_titles_written_with_a_separator_match_titles_joined_by_spaces"
-        },
-        {
-          "env": null,
-          "id": "PROOF-44",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_mutation_adapters.py::test_a_test_of_the_same_name_in_another_file_is_not_this_rules_test"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_mutation_adapters.py::test_a_dotnet_report_naming_no_catcher_gives_every_rule_the_scope_number"
-        },
-        {
-          "env": null,
-          "id": "PROOF-45",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_mutation_adapters.py::test_a_dotnet_report_naming_its_catchers_is_read_per_test"
         },
         {
           "env": null,
@@ -311,6 +206,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_mutation_adapters.py::test_a_run_that_wrote_no_report_says_what_to_do"
+        },
+        {
+          "env": null,
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_mutation_adapters.py::test_a_mutmut_run_that_lists_no_break_says_what_to_do"
+        },
+        {
+          "env": null,
           "id": "PROOF-13",
           "manual": false,
           "result": "pass",
@@ -319,35 +230,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-46",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_mutation_adapters.py::test_a_report_in_a_reports_folder_under_the_output_is_read"
-        },
-        {
-          "env": null,
-          "id": "PROOF-47",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_mutation_adapters.py::test_a_report_several_folders_down_is_read"
-        },
-        {
-          "env": null,
-          "id": "PROOF-48",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_mutation_adapters.py::test_an_empty_output_folder_measures_nothing"
-        },
-        {
-          "env": null,
           "id": "PROOF-14",
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_mutation_adapters.py::test_no_dotnet_on_the_path_leaves_no_engine"
+          "test": "dev/test_mutation_adapters.py::test_no_dotnet_on_the_path_names_the_sdk_to_install"
         },
         {
           "env": null,
@@ -383,22 +270,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-54",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_mutation_adapters.py::test_a_pyproject_without_the_block_is_not_broken"
-        },
-        {
-          "env": null,
-          "id": "PROOF-55",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_mutation_adapters.py::test_a_setup_cfg_without_the_block_is_not_broken"
-        },
-        {
-          "env": null,
           "id": "PROOF-16",
           "manual": false,
           "result": "pass",
@@ -419,7 +290,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_mutation_adapters.py::test_a_mutmut_run_gives_every_rule_its_features_number"
+          "test": "dev/test_mutation_adapters.py::test_a_mutmut_run_gives_each_feature_the_share_of_its_files"
         },
         {
           "env": null,
@@ -427,7 +298,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_mutation_adapters.py::test_a_break_no_scope_entry_covers_counts_for_no_feature"
+          "test": "dev/test_mutation_adapters.py::test_a_break_in_no_file_git_holds_counts_for_no_feature"
         },
         {
           "env": null,
@@ -439,11 +310,59 @@
         },
         {
           "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_mutation_adapters.py::test_a_break_in_a_package_init_counts_for_the_scope_naming_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_mutation_adapters.py::test_a_glob_scope_covers_the_files_it_matches"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_mutation_adapters.py::test_a_scope_of_src_gets_the_breaks_of_a_file_under_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_mutation_adapters.py::test_a_scope_naming_a_package_init_does_not_get_its_siblings_breaks"
+        },
+        {
+          "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_mutation_adapters.py::test_a_module_at_the_root_wins_over_one_under_src"
+        },
+        {
+          "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_mutation_adapters.py::test_a_break_in_a_class_method_counts_for_its_file"
+        },
+        {
+          "env": null,
           "id": "PROOF-18",
           "manual": false,
           "result": "pass",
           "rule": "RULE-18",
-          "test": "dev/test_mutation_adapters.py::test_no_mutmut_on_the_path_leaves_no_engine"
+          "test": "dev/test_mutation_adapters.py::test_no_mutmut_on_the_path_leaves_mutmut_not_installed"
         },
         {
           "env": null,
@@ -471,19 +390,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-61",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_mutation_adapters.py::test_an_engine_nobody_ships_is_not_run"
-        },
-        {
-          "env": null,
           "id": "PROOF-62",
           "manual": false,
           "result": "pass",
           "rule": "RULE-20",
-          "test": "dev/test_mutation_adapters.py::test_a_rule_an_engine_answer_left_out_is_filled_in"
+          "test": "dev/test_mutation_adapters.py::test_a_missing_the_engine_left_out_is_filled_in_empty"
         },
         {
           "env": null,
@@ -492,22 +403,6 @@
           "result": "pass",
           "rule": "RULE-20",
           "test": "dev/test_mutation_adapters.py::test_a_feature_the_engine_never_reached_is_still_listed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_mutation_adapters.py::test_a_break_in_a_package_init_counts_for_the_scope_naming_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-59",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_mutation_adapters.py::test_a_glob_scope_covers_the_files_it_matches"
         },
         {
           "env": null,
@@ -548,12 +443,178 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_mutation_adapters.py::test_an_audit_given_arm_timeout_stops_a_running_engine"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_mutation_adapters.py::test_the_feature_that_timed_out_says_what_to_do"
+        },
+        {
+          "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_mutation_adapters.py::test_no_stryker_gives_every_feature_the_install_sentence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_mutation_adapters.py::test_auto_with_pytest_first_picks_mutmut"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_mutation_adapters.py::test_auto_with_jest_first_picks_stryker"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_mutation_adapters.py::test_auto_passes_over_a_framework_with_no_engine"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_mutation_adapters.py::test_auto_with_no_framework_picks_no_engine"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_mutation_adapters.py::test_an_engine_name_nobody_ships_reads_as_none"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_mutation_adapters.py::test_settings_with_other_keys_and_no_engine_read_as_none_for_pytest"
+        },
+        {
+          "env": null,
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_mutation_adapters.py::test_settings_with_other_keys_and_no_engine_read_as_none_for_jest"
+        },
+        {
+          "env": null,
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_mutation_adapters.py::test_settings_with_no_key_read_as_none_for_pytest"
+        },
+        {
+          "env": null,
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_mutation_adapters.py::test_settings_with_no_key_read_as_none_for_jest"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_mutation_adapters.py::test_no_break_counted_reads_none_not_zero"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_mutation_adapters.py::test_no_stryker_anywhere_leaves_stryker_not_installed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_mutation_adapters.py::test_a_report_in_a_reports_folder_under_the_output_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_mutation_adapters.py::test_a_report_several_folders_down_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_mutation_adapters.py::test_an_empty_output_folder_measures_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_mutation_adapters.py::test_a_json_file_of_another_name_is_not_the_report"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_mutation_adapters.py::test_a_pyproject_without_the_block_is_not_broken"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_mutation_adapters.py::test_a_setup_cfg_without_the_block_is_not_broken"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-32",
+          "test": "dev/test_mutation_adapters.py::test_on_windows_mutmut_is_no_engine"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_mutation_adapters.py::test_an_engine_nobody_ships_is_not_run"
         }
       ],
       "rules": {
         "RULE-1": "passed",
-        "RULE-10": "passed",
-        "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
@@ -564,15 +625,23 @@
         "RULE-19": "passed",
         "RULE-2": "passed",
         "RULE-20": "passed",
-        "RULE-21": "passed",
         "RULE-22": "passed",
+        "RULE-23": "passed",
+        "RULE-24": "passed",
+        "RULE-25": "passed",
+        "RULE-26": "passed",
+        "RULE-27": "passed",
+        "RULE-28": "passed",
+        "RULE-29": "passed",
         "RULE-3": "passed",
-        "RULE-4": "passed",
+        "RULE-30": "passed",
+        "RULE-31": "passed",
+        "RULE-32": "passed",
+        "RULE-33": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
-        "RULE-8": "passed",
-        "RULE-9": "passed"
+        "RULE-8": "passed"
       },
       "runner": "rich-labarca"
     }

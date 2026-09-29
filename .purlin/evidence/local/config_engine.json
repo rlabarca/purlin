@@ -2,15 +2,14 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:46Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:04Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "d6a9ff8a0990ffae6f54ff4d0c9f5a55f932bce0dbca276bee593fe14edbd07c",
-        "spec": "bb43c9b25d0c45c5b76ce2029e457025735289eb1b4fbb317f652e3329240ad9",
-        "tests": "48673566d3f4e18f090ff50fa957aec9ccbb7c44e9bf722c5b1471fad8d9e11e"
+        "code": "e9db759415f74e0d4692cce461b899179cc6ed5b69a76d36075e223fec260952",
+        "spec": "a0cc46c2c9853dfb425d098c2cb2254f931cf2f33de7e14e8892ecd88f3aa7ca",
+        "tests": "290d4c97ef577d535ec758b4ad934e8fd919c6e7c1828080c3bdfb66fcdd9670"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -68,62 +67,6 @@
           "result": "pass",
           "rule": "RULE-4",
           "test": "dev/test_config_engine.py::TestReading::test_the_settings_file_is_read_whole"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_config_engine.py::TestCommandLine::test_key_prints_the_value_as_its_own_process"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_config_engine.py::TestCommandLine::test_key_prints_the_value"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_config_engine.py::TestCommandLine::test_dump_prints_the_whole_settings_as_json"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_config_engine.py::TestCommandLine::test_key_the_settings_do_not_hold_prints_an_empty_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_config_engine.py::TestCommandLine::test_no_argument_is_refused_with_the_usage"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_config_engine.py::TestCommandLine::test_key_with_no_name_is_refused_with_its_usage"
-        },
-        {
-          "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_config_engine.py::TestCommandLine::test_an_unknown_argument_is_refused_and_named"
         },
         {
           "env": null,
@@ -236,16 +179,49 @@
           "result": "pass",
           "rule": "RULE-13",
           "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_each_way_has_its_own_sentence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_trailing_comma_is_named_with_the_readers_message_and_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_bytes_that_are_not_utf8_are_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_list_where_an_object_belongs_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_write_is_refused_and_the_file_left_as_it_was"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-10": "passed",
         "RULE-13": "passed",
+        "RULE-14": "passed",
+        "RULE-15": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
-        "RULE-5": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"

@@ -2,15 +2,14 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:48Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:05Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "cb8042fde6e8aff105b90698177c9f34311f5f7c22ad9ef24e86fdc99fe25ec9",
-        "spec": "4f028ca42a145e2c3066b3b46de5bfc761620603023ae12da063f5f3f2fc3eca",
-        "tests": "dea905bd3831e3d92367168971e4093de1e9fe56305fcf04301ba10790f9ae53"
+        "code": "54c43455e4d05f31a3ad3c77a47fbc102c226d3df85fa01a3bba686955634f84",
+        "spec": "ebc9241fd80af82b5fd96211c9c8782076c24bc016142edad84ccb8720afa6a9",
+        "tests": "d8e14ac5cc6d97fc2fc0a7e13723a6ed66b5a2e5f2b435eb116c4cea340ce6ab"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -87,38 +86,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_upstream.py::test_a_text_file_becomes_an_anchor_with_a_note_and_no_rules"
-        },
-        {
-          "env": null,
-          "id": "PROOF-24",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_upstream.py::test_adding_unchanged_text_again_keeps_the_pin"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_upstream.py::test_rewording_the_text_moves_the_pin"
-        },
-        {
-          "env": null,
-          "id": "PROOF-29",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_upstream.py::test_a_text_file_named_by_its_full_path_is_free_text"
-        },
-        {
-          "env": null,
           "id": "PROOF-8",
           "manual": false,
           "result": "pass",
@@ -135,30 +102,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_upstream.py::test_check_exits_1_to_the_shell_when_a_pin_is_behind"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_upstream.py::test_check_exits_2_for_an_anchor_that_does_not_exist"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_upstream.py::test_check_exits_2_when_the_source_is_gone"
-        },
-        {
-          "env": null,
           "id": "PROOF-10",
           "manual": false,
           "result": "pass",
@@ -172,14 +115,6 @@
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_upstream.py::test_json_when_behind_carries_both_shas"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_upstream.py::test_text_when_behind_names_the_sync_that_fixes_it"
         },
         {
           "env": null,
@@ -207,19 +142,19 @@
         },
         {
           "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_upstream.py::test_a_source_with_crlf_endings_syncs_to_a_copy_with_no_carriage_return"
+        },
+        {
+          "env": null,
           "id": "PROOF-12",
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_upstream.py::test_sync_says_so_when_only_the_prose_moved"
-        },
-        {
-          "env": null,
-          "id": "PROOF-14",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_upstream.py::test_sync_all_covers_every_repository_anchor_and_no_others"
         },
         {
           "env": null,
@@ -231,19 +166,19 @@
         },
         {
           "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_upstream.py::test_sync_fetches_a_shared_source_once"
+        },
+        {
+          "env": null,
           "id": "PROOF-21",
           "manual": false,
           "result": "pass",
           "rule": "RULE-21",
           "test": "dev/test_upstream.py::test_help_names_both_commands"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_upstream.py::test_a_call_with_no_arguments_exits_2_naming_the_project_root"
         },
         {
           "env": null,
@@ -260,6 +195,94 @@
           "result": "pass",
           "rule": "RULE-23",
           "test": "dev/test_upstream_notes.py::test_a_sync_keeps_the_notes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_upstream.py::test_add_refuses_a_text_file_in_the_project"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_upstream.py::test_add_refuses_a_description_in_words"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_upstream.py::test_add_refuses_a_repository_file_that_holds_no_rule"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_upstream.py::test_check_reports_an_anchor_from_a_text_file_as_error"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_upstream.py::test_sync_by_name_reports_an_anchor_from_words_as_error"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_upstream.py::test_sync_all_reports_the_text_file_anchor_and_syncs_the_others"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_upstream.py::test_check_exits_1_to_the_shell_when_a_pin_is_behind"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_upstream.py::test_check_exits_2_for_an_anchor_that_does_not_exist"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_upstream.py::test_check_exits_2_when_the_source_is_gone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_upstream.py::test_text_when_behind_names_the_sync_that_fixes_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_upstream.py::test_a_call_with_no_arguments_exits_2_naming_the_project_root"
         }
       ],
       "rules": {
@@ -267,17 +290,21 @@
         "RULE-10": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
-        "RULE-14": "passed",
         "RULE-15": "passed",
         "RULE-2": "passed",
         "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-23": "passed",
+        "RULE-24": "passed",
+        "RULE-25": "passed",
+        "RULE-26": "passed",
+        "RULE-27": "passed",
+        "RULE-28": "passed",
+        "RULE-29": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
-        "RULE-7": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },

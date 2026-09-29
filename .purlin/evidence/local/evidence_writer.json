@@ -2,15 +2,14 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T14:06:46Z",
-      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
+      "at": "2026-09-29T21:44:04Z",
+      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
       "dirty": true,
       "fingerprint": {
-        "code": "6530d8ea0ca8cc2afee0a4779a1acdd4e1cb47d0ae16bdd793efeb781e466e3f",
-        "spec": "e303fbcce6cbe2c5c33667539cdc69d673a49fcc0fa3d732aef80723a2cc3ba7",
-        "tests": "410209212a26d5441163052584bf37b342bccea15d3439e7bfad66a0e82b6201"
+        "code": "2d875f0afa71f42c826075054f3ffb4911552903a019002d181447601b7c7940",
+        "spec": "bd39816e863cb4dab7b24b751eec64039db078268b81b3e0301b4b7aeaaa2e61",
+        "tests": "f89b46ca7b2aa7d4dfb2a239d91475e401b93d642a76fdcd28a665639ecc4991"
       },
-      "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
@@ -76,6 +75,14 @@
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_evidence_writer.py::test_a_rule_whose_proof_has_no_test_reads_no_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_evidence_writer.py::test_a_rule_with_one_proof_tested_and_one_not_reads_no_test"
         },
         {
           "env": null,
@@ -175,6 +182,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_evidence_writer.py::test_a_ci_section_lists_only_the_proofs_tagged_for_its_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_evidence_writer.py::test_a_test_proves_only_the_proof_tagged_for_the_system_it_ran_on"
+        },
+        {
+          "env": null,
           "id": "PROOF-4",
           "manual": false,
           "result": "pass",
@@ -271,14 +294,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_evidence_writer.py::test_the_table_opens_on_the_newest_commit_and_its_columns"
-        },
-        {
-          "env": null,
           "id": "PROOF-33",
           "manual": false,
           "result": "pass",
@@ -300,6 +315,14 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_evidence_writer.py::test_a_rule_with_a_skipped_test_is_not_counted_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_evidence_writer.py::test_the_table_opens_on_the_newest_commit_and_its_columns"
         },
         {
           "env": null,
@@ -335,14 +358,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_evidence_writer.py::test_a_second_commit_run_with_nothing_new_commits_nothing"
-        },
-        {
-          "env": null,
           "id": "PROOF-39",
           "manual": false,
           "result": "pass",
@@ -356,6 +371,14 @@
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_evidence_writer.py::test_the_results_commit_names_the_work_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_evidence_writer.py::test_a_second_commit_run_with_nothing_new_commits_nothing"
         },
         {
           "env": null,
@@ -404,6 +427,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_evidence_writer.py::test_an_audit_run_writes_the_entry_for_the_rule_it_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_evidence_writer.py::test_a_score_that_differs_only_in_why_nothing_was_measured_replaces_it"
         },
         {
           "env": null,
@@ -543,6 +574,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_writer.py::test_a_ci_section_names_the_host_the_runner_was_lent"
+        },
+        {
+          "env": null,
           "id": "PROOF-43",
           "manual": false,
           "result": "pass",
@@ -619,6 +658,9 @@
         "RULE-18": "passed",
         "RULE-19": "passed",
         "RULE-2": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
+        "RULE-22": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
