@@ -495,7 +495,7 @@ def _eng_view(project_root, rng, changed, data, raw_features, markers,
               network):
     present = set(_lines(_git(project_root, ['ls-files'])))
     changed_present = [path for path in changed if path in present]
-    deleted = {path for path in changed if path not in present}
+    deleted = _deleted(project_root, rng) - present
 
     code_changed = []
     scoped = set()
@@ -516,7 +516,8 @@ def _eng_view(project_root, rng, changed, data, raw_features, markers,
 
     marked = {path for paths in markers.values() for path in paths}
     unscoped = [path for path in changed
-                if path not in scoped and path not in marked
+                if (path in present or path in deleted)
+                and path not in scoped and path not in marked
                 and not path.startswith(_SPECS_DIR)
                 and not path.startswith('.purlin/')]
 
@@ -568,6 +569,20 @@ def _eng_view(project_root, rng, changed, data, raw_features, markers,
     return view, lines
 
 
+def _deleted(project_root, rng, pathspecs=()):
+    """The paths the range deleted, limited to `pathspecs` when given.
+
+    A range that reaches the first commit starts from nothing, so it
+    deletes nothing.
+    """
+    if not rng['from']:
+        return set()
+    return set(_lines(_git(project_root, [
+        'diff', '--name-only', '--no-renames', '--diff-filter=D',
+        '--end-of-options', rng['from'], rng['to'], '--'] + list(pathspecs),
+        timeout=30)))
+
+
 def _deleted_in_scope(project_root, rng, scope, deleted):
     """The paths of `deleted` that a `> Scope:` entry covers.
 
@@ -576,14 +591,11 @@ def _deleted_in_scope(project_root, rng, scope, deleted):
     git matches the entries against the range's own list of deletions.
     """
     entries = [entry.strip() for entry in scope if entry.strip()]
-    if not deleted or not entries or not rng['from']:
+    if not deleted or not entries:
         return []
-    found = _lines(_git(project_root, [
-        'diff', '--name-only', '--no-renames', '--diff-filter=D',
-        '--end-of-options', rng['from'], rng['to'], '--']
-        + [fingerprint_module.pathspec(entry) for entry in entries],
-        timeout=30))
-    return [path for path in found if path in deleted]
+    found = _deleted(project_root, rng,
+                     [fingerprint_module.pathspec(entry) for entry in entries])
+    return sorted(path for path in found if path in deleted)
 
 
 def _has_evidence(feature):

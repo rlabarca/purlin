@@ -686,6 +686,18 @@ class TestDeletedFiles:
                                                       'src/x.py']
         assert report['roles']['eng']['code_changed'] == []
 
+    # purlin: drift PROOF-59
+    def test_a_covered_file_removed_after_the_pull_is_not_uncovered(
+            self, tmp_path):
+        _up, checkout, _before = _pulled(
+            tmp_path, LOGIN_FILES,
+            [{'src/auth/login.py': 'def login():\n    return 2\n'}])
+        _git(['rm', '-q', 'src/auth/login.py'], checkout)
+        report = _report(checkout)
+        assert not [line for line in _lines(report, 'eng')
+                    if "under no spec's scope" in line], _lines(report, 'eng')
+        assert report['roles']['eng']['unscoped'] == []
+
 
 # ---------------------------------------------------------------------------
 # RULE-10: anchors that are not current
