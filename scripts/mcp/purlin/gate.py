@@ -10,24 +10,17 @@ before it is proven, and every level above it is not asked for at all:
           rule's current text, proof and test and found nothing, and where
           mutation testing is on, the test strength reaches the minimum
 `signed`  every rule has a counting signature too: a person signed the
-          rule, proof, test and audit hashes in a signed commit. Who signed
-          is logged, not policed
+          rule, its proof, its test, its feature's code, what the audit
+          found and the machines the tests ran on, in a signed commit. Who
+          signed is logged, not policed
 
-A rule may ask for less than the gate with a `[level: ...]` tag, which takes
-the gate's own three words. The gate is the ceiling: a rule's level is the
-lower of its tag and the gate, and a rule with no tag takes the gate.
-
-One setting is not derived from the gate: `trust`, which `purlin:init` asks
-for once. `local`, the default, is a project that trusts this machine for
-the tests and the signing. `remote` is one that does not, and there
-`purlin:sign` refuses a rule whose tests have no `ci` run current for the
-code being signed.
+Every rule is asked what the gate asks.
 
 Everything else has a default, and every default can be overridden by naming
 the key:
 
     {"gate": "strong", "min_strength": 70, "mutation_engine": "none",
-     "audit_parallel": 4, "ci": "github", "trust": "local"}
+     "audit_parallel": 4, "ci": "github"}
 
 The test suites, under `tests`, are read where the tests run, by
 `markers.read_suites`, and are not part of the gate.
@@ -73,8 +66,6 @@ DEFAULT_MUTATION_ENGINE = 'none'
 DEFAULT_AUDIT_PARALLEL = 4
 AUDIT_PARALLEL_RANGE = (1, 16)
 
-# Whether a project trusts this machine for the tests and the signing.
-# `purlin:init` asks once and `purlin:init --update` asks again.
 TRUST_VALUES = ('local', 'remote')
 DEFAULT_TRUST = 'local'
 
@@ -88,8 +79,7 @@ class GateConfig(object):
     """The resolved settings one run reads, plus the warnings resolving raised."""
 
     __slots__ = ('gate', 'min_strength', 'breaks',
-                 'mutation_engine', 'audit_parallel', 'ci', 'trust',
-                 'warnings')
+                 'mutation_engine', 'audit_parallel', 'ci', 'warnings')
 
     # What a surface reads is the settings a project can name. `breaks` is
     # derived from `mutation_engine` and `warnings` from resolving, so
@@ -137,14 +127,6 @@ def resolve_gate(config):
             warnings.append('"min_strength" is not a number; using %s'
                             % ('n/a' if min_strength is None else min_strength))
 
-    trust = config.get('trust', DEFAULT_TRUST)
-    if trust not in TRUST_VALUES:
-        if 'trust' in config:
-            warnings.append(
-                '"trust" is %r, which is not one of %s; reading it as %r'
-                % (trust, ', '.join(TRUST_VALUES), DEFAULT_TRUST))
-        trust = DEFAULT_TRUST
-
     mutation_engine = config.get('mutation_engine') or DEFAULT_MUTATION_ENGINE
     audit_parallel = _audit_parallel(config, warnings)
 
@@ -162,7 +144,6 @@ def resolve_gate(config):
         mutation_engine=mutation_engine,
         audit_parallel=audit_parallel,
         ci=config.get('ci'),
-        trust=trust,
         warnings=warnings,
     )
     return resolved

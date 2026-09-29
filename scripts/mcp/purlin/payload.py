@@ -1,7 +1,7 @@
 """The structured project payload, schema 10.
 
-One reader assembles specs, evidence and signatures into the level and the
-cells of every rule, and every surface renders that: the
+One reader assembles specs, evidence and signatures into the cells of every
+rule, and every surface renders that: the
 status table, the dashboard, the gate check and the drift report. A surface
 that parsed the rendered table would be coupled to a layout; this is the shape
 they all read instead.
@@ -14,7 +14,7 @@ they all read instead.
       "version": "<the VERSION file>",
       "commit": "<sha>",
       "dirty": false,
-      "gate": {"gate": "strong", "min_strength": 70, "trust": "local", ...},
+      "gate": {"gate": "strong", "min_strength": 70, ...},
       "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 4, "strong": 1,
                   "signed": 1, "stale": 1, "manual": 0, "not_audited": 0,
@@ -98,12 +98,12 @@ must prove from an anchor it requires, `required`, or from a global anchor,
 rule is always addressed by its owner and its id: two features' `RULE-1` are
 two rules.
 
-A rule carries the cells its level asks for and no others: `passed` always,
-`strong` where its level is `strong` or `signed`, `signed` where it is
-`signed`. A cell it is not asked for is absent, not empty, and the level is
-never above the gate, so a `passed` project carries one cell per rule. A
-rollup at `strong` and above carries `asks_strong`, how many of its rules have
-a strong cell, and at `signed` `asks_signed`, how many have a signed cell.
+Every rule carries every cell up to the gate: `passed` always, `strong` at the
+gate `strong` and above, `signed` at `signed`. A cell above the gate is
+absent, not empty, so a `passed` project carries one cell per rule. A rule's
+`level` is the gate. A rollup at `strong` and above carries `asks_strong`, how
+many of its rules have a strong cell, and at `signed` `asks_signed`, how many
+have a signed cell.
 
 A feature spec that names no files, with no `> Scope:` line or a scope that
 reaches no tracked file, carries `incomplete: true` and `incomplete_reason`
@@ -123,7 +123,10 @@ Each rule carries its own `left`, the one kind it is counted under, or null.
 A rule carries `applies_to`, the feature it is listed under, `code_hash`,
 `fingerprint.code_hash` over that feature's `> Scope:`, `machines`, `{os:
 machine}` over the current sections that speak for it, and `hand_checked`,
-true when a signature that counts and still binds it carries a note.
+true when it has a `@manual` proof and a signature that counts still binds
+it, with or without a note. Those are what a signature is made over. An
+anchor's rule listed under the anchor itself is signed when every feature it
+applies to has signed it.
 
 `write_report_data` writes the payload to `.purlin/report-data.js` as
 `const PURLIN_DATA = {...};`, which is gitignored and is what the local
@@ -199,6 +202,12 @@ def build_payload(project_root, generated_by='sync_status', config=None):
 
     blob_cache = {}
     counted_cache = {}
+    # The code each feature's signatures are made over, and, for each
+    # anchor's rule, the features it applies to.
+    code_hashes = {name: fingerprint_module.code_hash(
+        project_root, features[name].get('scope') or [])
+        for name in sorted(features)}
+    consumers = _consumers(features)
     feature_entries = []
     queue = []
     rollups = {}
@@ -216,7 +225,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         entry, rollup = _feature_entry(
             project_root, name, info, features, evidence, all_signatures,
             cfg, blob_cache, queue, own_results, counted_cache, could_not_run,
-            incomplete, tied, here_os)
+            incomplete, tied, here_os, code_hashes, consumers)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -294,6 +303,21 @@ def proof_counts(rule_entries, tied=None):
             'proofs_without_test_ids': without}
 
 
+def _consumers(features):
+    """`{(anchor, rule_id): [feature, ...]}`: the features each anchor rule applies to.
+
+    A global anchor's rules apply to every feature, and any other anchor's
+    to each feature that requires it.
+    """
+    found = {}
+    for name in sorted(features):
+        for owner, rule_id, label in specs_module.rule_refs(name, features):
+            if label == 'own' or not features.get(owner, {}).get('is_anchor'):
+                continue
+            found.setdefault((owner, rule_id), []).append(name)
+    return found
+
+
 def _sorted_queue(rows):
     """The queue in the one order it is read in: by feature, then rule number."""
     return sorted(rows, key=lambda row: (row['owner'],
@@ -308,15 +332,13 @@ def _rule_number(rule_id):
 def _feature_entry(project_root, name, info, features, evidence,
                    all_signatures, cfg, blob_cache, queue,
                    own_results=None, counted_cache=None, could_not_run=None,
-                   incomplete=None, tied=None, here_os=None):
+                   incomplete=None, tied=None, here_os=None, code_hashes=None,
+                   consumers=None):
     incomplete = incomplete or {}
+    code_hashes = code_hashes or {}
     own = evidence.get(name) or _no_evidence(name)
     mutation = evidence_module.mutation(own['loaded'])
     test_strength = mutation.get('score') if mutation else None
-    # The code every rule listed under this feature is signed over: the
-    # files its own `> Scope:` names, whoever owns the rule.
-    code_hash = fingerprint_module.code_hash(project_root,
-                                             info.get('scope') or [])
 
     rule_entries = []
     rule_results = {}
@@ -332,7 +354,8 @@ def _feature_entry(project_root, name, info, features, evidence,
             owner_mutation.get('score') if owner_mutation else None,
             counted_cache, could_not_run, incomplete.get(owner),
             {marked for feature, marked in (tied or ()) if feature == owner},
-            name, code_hash, here_os)
+            name, code_hashes, here_os,
+            (consumers or {}).get((owner, rule_id)) if owner == name else None)
         need = result.pop('need')
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
@@ -511,10 +534,11 @@ def queue_row(feature, owner, rule, need):
 def _rule_entry(project_root, owner, owner_info, rule_id, label,
                 owner_evidence, all_signatures, cfg, blob_cache,
                 test_strength=None, counted_cache=None, could_not_run=None,
-                incomplete=None, marked=None, applies_to=None, code_hash=None,
-                here_os=None):
+                incomplete=None, marked=None, applies_to=None,
+                code_hashes=None, here_os=None, consumers=None):
     text = owner_info['rules'].get(rule_id, '')
-    meta = owner_info.get('rule_meta', {}).get(rule_id, {})
+    applies_to = applies_to or owner
+    code_hashes = code_hashes or {}
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
     sections = owner_evidence['sections']
 
@@ -539,11 +563,11 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         '\n'.join('%s %s' % (p['id'], p['text']) for p in proof_dicts))
     test_hash = _test_hash(project_root, proof_dicts, blob_cache)
     test_hash_kind = signatures_module.test_hash_kind(proof_dicts)
-    # The tag as the spec wrote it, where it is one of the three words. A
-    # rule with no tag, or with a value that is not a level, is unmarked.
-    level_marked = meta.get('level')
-    if level_marked not in gate_module.GATES:
-        level_marked = None
+    # What a signature is made over besides the rule, its proof and its
+    # test: the code the feature it is listed under names, and the machine
+    # each system's results came from.
+    code_hash = code_hashes.get(applies_to)
+    machines = _machines(sections, proof_dicts, rule_id)
 
     signatures = [_counted(project_root, signature, cfg, counted_cache)
                   for signature in all_signatures.get((owner, rule_id), [])]
@@ -555,9 +579,16 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
                                         rule_hash, proof_hash, test_hash)
     audit_hash = signatures_module.audit_hash(audit, test_strength)
     result = states.rule_cells({
-        # What the signature locks beside the triple: what the audit found,
-        # so a re-audit that finds something different stales it.
+        # What a signature is made over, what the audit found among it.
+        'applies_to': applies_to,
+        'code_hash': code_hash,
+        'machines': machines,
         'audit_hash': audit_hash,
+        # The features an anchor's own rule applies to, each of which signs
+        # it, with the code each is signed over.
+        'consumers': [{'applies_to': feature,
+                       'code_hash': code_hashes.get(feature)}
+                      for feature in consumers or ()],
         'proofs': proof_dicts,
         'rule_id': rule_id,
         'sections': sections,
@@ -565,7 +596,6 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
-        'level_marked': level_marked,
         'audit': audit,
         # Why the last audit could not reach the model for these hashes,
         # which is what the strong cell says while it reads `not audited`.
@@ -582,42 +612,41 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'marked': marked or set(),
     }, cfg)
 
-    hashes = {'rule_hash': rule_hash, 'proof_hash': proof_hash,
-              'test_hash': test_hash, 'audit_hash': audit_hash}
     entry = {
         'id': rule_id,
         'feature': owner,
-        'applies_to': applies_to or owner,
+        'applies_to': applies_to,
         'label': label,
         'text': text,
         'level': result['level'],
-        'level_marked': level_marked,
+        'level_marked': None,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
         'test_hash_kind': test_hash_kind,
         'code_hash': code_hash,
         'audit_hash': audit_hash,
-        'machines': _machines(sections, proof_dicts, rule_id),
+        'machines': machines,
         'audit': audit_summary(audit, test_strength),
         'cells': result['cells'],
         'bucket': result['bucket'],
         'meets_gate': result['meets_gate'],
-        'need': result['need'],
         'blocked_by': result['blocked_by'],
         'flags': result['flags'],
         # A person checked a `@manual` proof by hand: a signature that
-        # counts and still binds the rule carries what they saw.
-        'hand_checked': any(
-            signature.get('counts') and signature.get('note')
-            and signatures_module.is_current(signature, hashes)
-            for signature in signatures),
+        # counts still binds the rule.
+        'hand_checked': result['hand_checked'],
         'proofs': proof_dicts,
         'tests': _rule_tests(sections, rule_id),
     }
     entry['left'] = summary_module.rule_kind(entry, cfg.gate, here_os,
                                              incomplete)
+    # The queue, until it goes, holds the two kinds that wait on a person.
+    entry['need'] = _NEEDS.get(entry['left'])
     return entry
+
+
+_NEEDS = {'to_test_by_hand': states.HAND_CHECK, 'to_sign': states.SIGNATURE}
 
 
 def _machines(sections, proofs, rule_id):
@@ -698,8 +727,8 @@ def _backing_tests(sections, proof_id):
     and both sources together, because a section is the one list every
     checkout reads alike. Where no current section lists one, every section
     answers, so a code change that leaves a section out of date does not
-    change which tests back the proof: the signature binds the tests, and a
-    code change alone stales nothing.
+    change which tests back the proof, and the test hash moves only when a
+    test does.
     """
     for wanted in (True, False):
         observed = []
@@ -774,11 +803,11 @@ def _rule_tests(sections, rule_id):
 
 
 def _test_hash(project_root, proof_dicts, blob_cache):
-    """The T of the triple: the blob ids of the test files, with their names.
+    """The test hash: the blob ids of the test files, with their names.
 
     Reading the file's blob id rather than one function's body is coarse on
     purpose: a test file is the unit version control tracks, and a hash over it
-    stales a signature whenever the test that backs a rule changes, which is
+    ends a signature whenever the test that backs a rule changes, which is
     the behaviour the signature is meant to have. `signatures.test_hash_kind`
     names what was read beside the hash, so a signature says so on its face.
     Which tests back each proof is `_backing_tests`'s answer, read from the

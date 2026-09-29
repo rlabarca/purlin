@@ -8,9 +8,9 @@ spec owns and how many it proves from an anchor, as `15 (+6 shared)`, how
 many proofs it writes and how many of those have no test, and how many rules
 pass their tests. At `strong` the row adds how many rules are
 strong and the test strength; at `signed` it adds how many are signed. The
-table scales with the gate: a `passed` project is never shown a strength, a
-level or a signature it did not ask for, and is shown a proof count only
-where it writes a proof line.
+table scales with the gate: a `passed` project is never shown a strength or a
+signature it did not ask for, and is shown a proof count only where it writes
+a proof line.
 
 The report ends on the summary sentence and `Left to do`, which
 `scripts/mcp/purlin/summary.py` writes for every surface, with `→ Run:
@@ -123,11 +123,10 @@ def _table(data):
     gate = data['gate']['gate']
     proofs = _proof_lines(data)
     columns = columns_for(gate, proofs)
-    # The feature with the most rules short of the gate reads first: the table
+    # The feature with the most rules left to do reads first: the table
     # opens on the work rather than on the alphabet.
     features = sorted(data['features'],
-                      key=lambda f: (f['rollup']['met'] - f['rollup']['rules'],
-                                     f['name']))
+                      key=lambda f: (-_left_count(f), f['name']))
     rows = [_row(feature, gate, proofs) for feature in features]
     widths = [max(len(columns[i]), max((len(r[i]) for r in rows), default=0))
               for i in range(len(columns))]
@@ -136,6 +135,11 @@ def _table(data):
     lines.extend(_line(row, widths, columns) for row in rows)
     lines.append(rule)
     return lines
+
+
+def _left_count(feature):
+    """How many of the rules a feature lists wait for some kind of work."""
+    return sum(1 for rule in feature.get('rules') or () if rule.get('left'))
 
 
 def _line(cells, widths, columns):

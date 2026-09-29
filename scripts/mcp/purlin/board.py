@@ -16,11 +16,9 @@ The columns, left to right:
     Proofs   how many proof lines it writes, and how many have no test; at
              `passed` only where the project writes a proof line at all
     Tests    how many rules pass, and how many are partial or failing
-    Strong   how many rules are strong of those whose level asks for the
-             audit, and the test strength, at `strong`; empty where no rule's
-             level asks for it
-    Signed   how many rules are signed of those whose level asks for a
-             signature, at `signed`; empty where none does
+    Strong   how many of its rules are strong, and the test strength, at
+             `strong` and above
+    Signed   how many of its rules are signed, at `signed`
 
 Every when, who and platform detail lives in a hover on the dashboard and on
 the rule screen; a cell here carries counts and nothing else.
@@ -160,24 +158,20 @@ def tests_cell(rollup):
 
 
 def strong_cell(rollup):
-    """`<n> of <m> · <strength>`, `<m>` the rules whose level asks for the audit.
-
-    A rule whose level is `passed` is not asked, so it is in neither number,
-    and a spec none of whose rules is asked shows an empty cell.
-    """
-    asked = rollup.get('asks_strong') or 0
-    if not asked:
+    """`<n> of <rules> · <strength>`, or empty for a spec with no rules."""
+    total = rollup.get('rules') or 0
+    if not total:
         return ''
-    return '%d of %d%s%s' % (strong_met(rollup), asked, DOT,
+    return '%d of %d%s%s' % (strong_met(rollup), total, DOT,
                              strength_text(rollup.get('test_strength')))
 
 
 def signed_cell(rollup):
-    """`<n> of <m>`, `<m>` the rules whose level is `signed`, or empty where none is."""
-    asked = rollup.get('asks_signed') or 0
-    if not asked:
+    """`<n> of <rules>`, or empty for a spec with no rules."""
+    total = rollup.get('rules') or 0
+    if not total:
         return ''
-    return '%d of %d' % (signed_met(rollup), asked)
+    return '%d of %d' % (signed_met(rollup), total)
 
 
 def row_cells(name, rollup, gate, proofs=1, shared=()):
