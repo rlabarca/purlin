@@ -96,9 +96,9 @@ class TestPurlinAgent:
         export_row = next(line for line in read(COMMAND_REF).splitlines()
                           if line.startswith('| `purlin:export` |'))
         assert refusals(monkeypatch, routing_problems, [
-            (AGENT, replace('| QA | "what went stale?"', '| Manager | "how are '
-                            'we doing?" | `purlin:status` |\n| QA | "what '
-                            'went stale?"'),
+            (AGENT, replace('| QA | "what needs my eyes?"', '| Manager | '
+                            '"how are we doing?" | `purlin:status` |\n| QA | '
+                            '"what needs my eyes?"'),
              "%s routing table has a row for 'Manager'" % AGENT),
             (AGENT, replace('system of record?" | `purlin:export`',
                             'system of record?" | `purlin:release`'),
@@ -117,18 +117,28 @@ class TestPurlinAgent:
     def test_it_reads_the_state_before_it_answers(self):
         assert state_problems() == []
 
-    # purlin: purlin_agent PROOF-5
-    def test_a_state_paragraph_broken_is_refused(self, monkeypatch):
+    # purlin: purlin_agent PROOF-8
+    def test_the_sentence_worded_otherwise_is_refused(self, monkeypatch):
         assert refusals(monkeypatch, state_problems, [
             (AGENT, replace('Call `sync_status` before you answer',
                             'Call `sync_status` when you answer'),
              "%s does not carry 'Call `sync_status` before you answer any "
              "question about state.'" % AGENT),
-            # `strong` stays in backticks elsewhere in the file.
+        ]) == []
+
+    # purlin: purlin_agent PROOF-9
+    def test_a_step_dropped_from_the_paragraph_is_refused(self, monkeypatch):
+        # `strong` stays in backticks elsewhere in the file.
+        assert refusals(monkeypatch, state_problems, [
             (AGENT, replace('`passed`, `strong` and `signed` as far',
                             '`passed` and `signed` as far'),
              "%s sync_status paragraph does not carry '`passed`, `strong` "
              "and `signed`'" % AGENT),
+        ]) == []
+
+    # purlin: purlin_agent PROOF-10
+    def test_out_of_date_given_another_meaning_is_refused(self, monkeypatch):
+        assert refusals(monkeypatch, state_problems, [
             (AGENT, replace('`out of date` means the spec, the code or the '
                             'tests moved since the run',
                             '`out of date` means the run is old'),
@@ -162,6 +172,33 @@ class TestPurlinAgent:
                             'files with `git mv`:'),
              '%s rename section calls sync_status before git mv' % AGENT),
         ]) == []
+
+
+    # purlin: purlin_agent PROOF-11
+    def test_it_says_every_run_ends_on_left_to_do(self):
+        assert left_to_do_problems() == []
+
+    # purlin: purlin_agent PROOF-12
+    def test_the_next_step_left_unnamed_is_refused(self, monkeypatch):
+        assert refusals(monkeypatch, left_to_do_problems, [
+            (AGENT, replace('The first line of\n`Left to do` is the next step',
+                            'The next step\nis yours to choose'),
+             "%s does not carry 'The first line of `Left to do` is the next "
+             "step'" % AGENT),
+        ]) == []
+
+
+# What the agent says every run ends on, all in one paragraph.
+LEFT_TO_DO = ('40 rules. 35 pass their tests. 30 are strong. 20 are signed.',
+              'The first line of `Left to do` is the next step',
+              'Nothing left to do.')
+
+
+def left_to_do_problems():
+    paragraphs = [flat(p) for p in re.split(r'\n\s*\n', read(AGENT))]
+    paragraph = next((p for p in paragraphs if LEFT_TO_DO[0] in p), '')
+    return ['%s does not carry %r' % (AGENT, needle)
+            for needle in LEFT_TO_DO if needle not in paragraph]
 
 
 def rename_problems():

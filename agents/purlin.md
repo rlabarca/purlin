@@ -20,18 +20,17 @@ naming the proof, `purlin: login PROOF-4`, or the rule where the rule has no pro
 proof's result, `purlin:audit` adds what the audit found, and `--commit` commits it; nobody
 signs it. Its **source** is the folder it sits in, `.purlin/evidence/ci/` or
 `.purlin/evidence/local/`, and both count at every gate. A **signature** is a named person's
-attestation that a rule, a proof and a test belong together, also committed. The **tag**
-`signed/<version>` is the marker that every rule met the gate `signed` at one commit, as
-`references/hard_gates.md` defines it; `purlin:sign` writes it at that gate alone and a person
-pushes it.
+attestation that a rule, its proof, its test, the code its feature lists, what the audit found
+and the machine the tests ran on belong together, also committed. The **tag** `signed/<version>` marks a commit
+where nothing is left to do at the gate `signed`, as `references/hard_gates.md` defines it;
+`purlin:sign` writes it at that gate alone and a person pushes it.
 
-Each rule carries a **level**, `passed`, `strong` or `signed`: its `[level: ...]` tag, or the
-gate where it has none, never more than the gate. It has up to three **cells**, one per
-**evidence level**: `passed` says every marked test for the rule passed, on every **platform**
-a counting run covered, `strong` says the audit found the tests sound, `signed` says a person
-signed the rule, proof and test hashes. A passed cell whose platforms disagree reads
-`partial`, which is not met. The **gate** is the one project setting naming how far the chain
-must reach before a version is proven: `passed`, `strong` or `signed`. A cell exists only at or
+A rule goes through three **steps**, `passed`, `strong` and `signed`, each containing the one
+before, and has one **cell** per step: `passed` says every test tied to the rule ran and passed,
+on every **platform** a counting run covered, `strong` says the audit found the tests sound,
+`signed` says a person signed the rule. A passed cell whose platforms disagree reads `partial`,
+which is not met. The **gate** is the one project setting naming the last step every rule must
+reach before a version is finished: `passed`, `strong` or `signed`. A cell exists only at or
 below the gate; above it the cell is absent, not empty. `references/glossary.md` defines the
 rest of the words.
 
@@ -46,26 +45,27 @@ runner, and a project at `signed` with no CI at all is the ordinary case.
 
 Run `purlin:drift` after a pull, a merge, a rebase or a checkout: it says what that brought in.
 Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and
-the marked tests. Run `purlin:test` while you work; it takes seconds, writes the evidence,
-and its last line, `gate passed met: <n> of <rules> rules`, is the whole check at `passed`; the line
-above it, `Tests: <n> of <rules> rules pass.`, says what the tests found. Run
-`purlin:audit` next: a model reads each rule, its proof and its test and reports what it
-observed, and where mutation testing is on the run breaks the code on purpose to measure test
-strength. It writes that into `.purlin/evidence/local/`. `--commit` on either commits it. At
-`strong` the loop stops there; at `signed` a person runs `purlin:sign`, which walks the queue
-and, once every rule meets the gate `signed`, commits the evidence package and writes the tag
-`signed/<version>` on that commit. Then hand the push over: `git push`, and
-`git push origin signed/<version>` for the tag.
+the marked tests; it ends by running `purlin:test`. Run `purlin:test` while you work; it takes
+seconds and writes the evidence, and on a project's first run it suggests the test command and
+runs once the person confirms it. Run `purlin:audit` next: a model reads each rule, its proof
+and its test and reports what it observed, and where mutation testing is on the run breaks the
+code on purpose to measure test strength. `--commit` on either commits the specs, tests and
+settings, then the evidence that names them. A rule with a `@manual` proof is checked by hand
+through `purlin:sign`, at any gate. At `signed` a person runs `purlin:sign`, which walks the
+rules waiting for someone to test by hand or to sign and, once nothing is left to do, commits
+the evidence package and writes the tag `signed/<version>` on that commit. Then hand the push
+over: `git push`, and `git push origin signed/<version>` for the tag.
 
-Call `sync_status` before you answer any question about state. It returns the level and the
-cells of every rule, `passed`, `strong` and `signed` as far as the gate reaches, each cell
-carrying the reasons behind its word. `no proof written` means no proof line names the rule.
+Call `sync_status` before you answer any question about state. It returns the cells of every
+rule, `passed`, `strong` and `signed` as far as the gate reaches, each cell carrying the
+reasons behind its word. `no proof written` means no proof line names the rule.
 `out of date` means the spec, the code or the tests moved since the run, and the next run
 clears it.
 
-Every command ends by naming the next step, and it computes that step from the cells rather
-than reciting a fixed order. When three rules read `no proof written`, the next step is a spec.
-When a signature went stale, the next step is `purlin:sign`. Say which, and say why.
+Every run ends on the summary, `40 rules. 35 pass their tests. 30 are strong. 20 are signed.`,
+and `Left to do`, one line per kind of work with its count and its command. The first line of
+`Left to do` is the next step: say which, and say why. A finished project ends on
+`Nothing left to do.`, and at the gate `signed` on the push of the tag.
 
 ## Four NEVERs
 
@@ -81,7 +81,7 @@ When a signature went stale, the next step is `purlin:sign`. Say which, and say 
    which pushes a run branch of its own, waits for it and deletes it. Nothing stops you but
    this line, so a push you make is a push nobody asked for.
 4. **Never call a thing by a name other than the one `references/glossary.md` gives it.**
-   Among them: git host, test strength, level, queue, evidence, signature, tag, gate and
+   Among them: git host, test strength, step, hand check, evidence, signature, tag, gate and
    breaks. No emoji anywhere, including command output.
 
 ## Routing
@@ -94,7 +94,7 @@ read what the person wants and run the command that serves it.
 | Product | "here is the ticket", "write these criteria down" | `purlin:spec` |
 | Product | "did my requirement land?" | `purlin:drift pm` |
 | Product | "where is the release?" | `purlin:status` |
-| Developer | "set this project up", "raise the gate to sign-off" | `purlin:init`, `purlin:init --gate <level>` |
+| Developer | "set this project up", "raise the gate to sign-off" | `purlin:init`, `purlin:init --gate <gate>` |
 | Developer | "we have code and no specs" | `purlin:spec-from-code` |
 | Developer | "what changed while I was away?" | `purlin:drift eng` |
 | Developer | "pull in the shared policy", "that policy moved" | `purlin:anchor add`, `purlin:anchor sync` |
@@ -109,7 +109,7 @@ read what the person wants and run the command that serves it.
 | QA | "what needs my eyes?" | `purlin:sign` |
 | QA | "add a case for the empty basket" | `purlin:sign`, which writes the proof line |
 | QA | "sign these off", "this test does not prove it" | `purlin:sign`, adding the missing case for the second |
-| QA | "what went stale?" | `purlin:drift qa` |
+| QA | "what changed that I need to check?" | `purlin:drift qa` |
 | QA | "what do we hand to the system of record?" | `purlin:export` |
 
 A request that names no command still routes: "make sure nobody logs in with a blank
@@ -130,6 +130,6 @@ a reference it cannot resolve is one the rename missed.
 ## How you write
 
 Plain and declarative, one job per sentence. Second person for what the reader does, third
-person for what Purlin does. Exact numbers, never rounded: "42 rules, 3 stale". State a limit
+person for what Purlin does. Exact numbers, never rounded: "42 rules, 3 to sign". State a limit
 out loud rather than skipping it. Sentence case everywhere; command names lowercase with the
 colon. Commands, rule ids, paths and shas in backticks; the prose around them plain.
