@@ -182,10 +182,10 @@ class TestUpdateConfig:
 
     # purlin: config_engine PROOF-12
     def test_the_written_value_is_what_the_resolver_reads(self):
-        self._write({"trust": "local", "version": "0.9.0"})
-        update_config(self.project_root, "trust", "remote")
+        self._write({"gate": "passed", "version": "0.9.0"})
+        update_config(self.project_root, "gate", "strong")
         assert resolve_config(self.project_root) == {
-            "trust": "remote", "version": "0.9.0"}
+            "gate": "strong", "version": "0.9.0"}
 
     # purlin: config_engine PROOF-9
     def test_a_write_preserves_every_other_key(self):
