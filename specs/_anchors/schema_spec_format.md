@@ -33,7 +33,7 @@
 - RULE-19: The code part of the spec's fingerprint hashes exactly the files `> Scope:` names, so an edit to any other file leaves it unchanged and a code change is told from a rule change
 - RULE-20: A second `@manual` on a proof line reads as one
 - RULE-21: Of two `@env` tags on a proof line, the last written is the environment and the earlier is returned in the unknown list
-- RULE-22: Any other trailing at-word is not a tag and stops the reading
+- RULE-22: A trailing at-word that is not `@manual`, `@env` or a bare `@windows`, and carries no value in brackets, is not a tag and stops the reading
 - RULE-23: A tag that follows a list connector (a comma, `and`, `or`) is not a tag, so a description whose prose ends in an at-word is left whole
 - RULE-24: A bare `@windows` and any other at-word carrying a value in brackets are returned in the unknown list and set no environment; a `@manual` carrying a value still reads as `@manual`
 
