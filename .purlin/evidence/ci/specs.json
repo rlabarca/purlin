@@ -1,0 +1,43 @@
+{
+  "feature": "specs",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:52Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "44b5d6b0b76d6f975025858767eb0df0796c925f0ea71b926f29fb72115abd1c",
+        "spec": "80379df0cf4faad1ab0860bc5ea055318da6fd0371c65e45b5c57f37abd45f37",
+        "tests": "69fec256fb93b579c8cd9bc8fc7be231fd241c3e45471dab5a692f1fb2f9d276"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_specs_reader.py::TestAnchors::test_the_anchors_folder_alone_makes_an_anchor"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_specs_reader.py::TestTheScan::test_a_spec_that_cannot_be_read_is_skipped"
+        }
+      ],
+      "rules": {
+        "RULE-11": "passed",
+        "RULE-20": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/mcp/specs.md"
+}

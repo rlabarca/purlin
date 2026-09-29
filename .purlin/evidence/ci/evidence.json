@@ -1,0 +1,70 @@
+{
+  "feature": "evidence",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:51Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "230e1086e5bfeeb0bd0f4457b01c26a2d28f95caccb6f5e90e39b0e5b79f30d4",
+        "spec": "0285c45e2f87f2feacbfe4e23079e976d5b0b76088eadfe7ab8bd1c4ed27eb03",
+        "tests": "f51c37ae257cb94fed9c75f21ef6b967f014de1ab6a0ad0451da2c33280d65bc"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_fingerprint.py::test_a_fingerprint_is_three_parts_of_64_hex_characters"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_fingerprint.py::test_a_javascript_marker_is_counted"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_fingerprint.py::test_untracked_files_in_the_scope_or_beside_a_marker_file_are_listed"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_fingerprint.py::test_a_scoped_folder_reaches_a_tracked_file_one_folder_down"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_evidence_reader.py::test_on_windows_the_reader_names_its_own_machine_windows"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-24": "passed",
+        "RULE-27": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/mcp/evidence.md"
+}

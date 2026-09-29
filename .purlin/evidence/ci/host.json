@@ -1,0 +1,70 @@
+{
+  "feature": "host",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:51Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "4fedf883c63147f4d1cc1b7a2aaa1b6c5db772e9b5b79ef168c7863e93df666b",
+        "spec": "85fcd5c8d938c88f1679033ab801aed11edc6713adc0b09c9396eb50bdc349a1",
+        "tests": "6f382ca8613c78f5fd342bb067855a8435cf75d7bbb265050fd931d3fa92a5e9"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-116",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_host.py::test_the_tree_entry_carries_the_file_and_its_permission"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-117",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_host.py::test_a_green_run_pushes_watches_pulls_and_deletes"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-120",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_remote.py::test_a_succeeded_run_is_brought_home_green"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-118",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_host_pathspec.py::test_a_run_that_spells_paths_the_windows_way_commits_the_removal"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-119",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_host.py::test_the_project_that_is_the_workspace_commits"
+        }
+      ],
+      "rules": {
+        "RULE-12": "passed",
+        "RULE-24": "passed",
+        "RULE-27": "passed",
+        "RULE-31": "passed",
+        "RULE-5": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/run/host.md"
+}

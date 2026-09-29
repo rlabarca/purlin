@@ -1,0 +1,115 @@
+{
+  "feature": "update",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:52Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "4f7b411615431184e0c2b23c2626794ce05894274d29e4b10e4975d9d21a7845",
+        "spec": "b328044f83b0752da999f04ddf033ab18e8834598e55d0294c0b7355b6bed45f",
+        "tests": "edcc019cff5311023afbaaa3a4fea6d036a107723d2d7e780e97b2813c427f82"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-117",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_init_update.py::test_running_yes_twice_changes_nothing_the_second_time"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-118",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_init_update.py::test_every_backed_up_file_keeps_its_bytes_from_before_the_run"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-124",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_init_update.py::test_the_retired_windows_tag_becomes_env"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-121",
+          "manual": false,
+          "result": "fail",
+          "rule": "RULE-18",
+          "test": "dev/test_init_update.py::test_nothing_is_left_uncommitted_but_the_backups"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-125",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_init_update.py::test_an_env_tag_after_the_kind_of_test_is_kept"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-126",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_init_update.py::test_the_picture_reference_of_the_feature_is_removed"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-122",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_init_update.py::test_the_evidence_folder_gets_its_readme"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-123",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_init_update.py::test_the_shell_harness_calls_become_one_comment"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-119",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_init_update.py::test_a_committed_cache_is_deleted_from_git_and_from_disk"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-120",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_init_update.py::test_a_conftest_holding_more_keeps_the_rest"
+        }
+      ],
+      "rules": {
+        "RULE-13": "passed",
+        "RULE-18": "failed",
+        "RULE-23": "passed",
+        "RULE-24": "passed",
+        "RULE-28": "passed",
+        "RULE-29": "passed",
+        "RULE-34": "passed",
+        "RULE-35": "passed",
+        "RULE-5": "passed",
+        "RULE-7": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/init/update.md"
+}

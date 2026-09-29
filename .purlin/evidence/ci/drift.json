@@ -1,0 +1,34 @@
+{
+  "feature": "drift",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:51Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "b67b30b12adb7e02567031ad878184c4bcf4ea0578a4064974ae25b4cab4dc3d",
+        "spec": "d7c4f9142bbb40aac80936300689d3813b1463c73186ca1d60fcd958bc646b2d",
+        "tests": "53f486e3483654c09a52c47050817b54c02054000f36dee8240c03dade41680a"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_drift.py::TestSpecsNotCommitted::test_specs_all_committed_print_no_such_line"
+        }
+      ],
+      "rules": {
+        "RULE-17": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/mcp/drift.md"
+}

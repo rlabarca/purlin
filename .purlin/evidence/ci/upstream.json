@@ -1,0 +1,79 @@
+{
+  "feature": "upstream",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:52Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "3230ad65ea798e3f78bc2ca52e4f7d01c669518d02b95bd2a0d1ece0ea540c0b",
+        "spec": "34a6f369952bb0dc073e6adaccbb660564dd92d4af2c89abbf68c25d5c499f18",
+        "tests": "e6a8c0aa901239b27f7f31ec113adddc2c60a00069ef711370efc89a6a4348f1"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_upstream.py::test_an_added_anchor_keeps_the_author_text_under_source_and_pin"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_upstream.py::test_with_no_name_the_anchor_is_named_after_its_file"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_upstream.py::test_check_when_behind_reports_and_changes_no_file"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-50",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_upstream.py::test_sync_advances_the_pin_and_names_the_rule_delta"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_upstream.py::test_nothing_is_written_outside_the_project_root"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_upstream.py::test_check_exits_2_when_the_source_is_gone"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-11": "passed",
+        "RULE-22": "passed",
+        "RULE-27": "passed",
+        "RULE-3": "passed",
+        "RULE-8": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/anchor/upstream.md"
+}

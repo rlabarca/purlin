@@ -1,0 +1,52 @@
+{
+  "feature": "server",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:52Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "f4543891f34ffd29124061d7edf6fc4f494a86406d69e6020387b00968679d27",
+        "spec": "074415a3efbcfeeb5d31d474c929864c5035fc2ce7cfe1492afcc71da5e180c9",
+        "tests": "daf1bd5f98bc98112532ca6b780391b3d7b2f36359e54920375adc83e5279f3a"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-159",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_mcp_server.py::TestTransport::test_stdout_holds_the_answer_alone_and_the_startup_line_is_on_stderr"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-160",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_a_workspace_named_from_the_home_folder_is_found"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-161",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_manifest_command_starts_a_server_that_answers"
+        }
+      ],
+      "rules": {
+        "RULE-22": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/mcp/server.md"
+}

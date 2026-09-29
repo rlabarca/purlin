@@ -1,0 +1,115 @@
+{
+  "feature": "run_script",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:51Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "1978b9a4e0ca5800dbf585e520b02d54ac309c08c206149c165fbc2c30161509",
+        "spec": "eddd8edcecb075ecad1b514db534445ed983a9966fd3c2165b10e43e02ddd86f",
+        "tests": "ef08e22a92dcb6f28e5e24dd42dd357bc1eda13ce6a6c35903ee26d37e45561f"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-225",
+          "manual": false,
+          "result": "missing",
+          "rule": "RULE-4",
+          "test": "dev/test_run_script.py::TestTheTestArmRunsEachSuite::test_a_sql_script_whose_statements_succeed_passes"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-226",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_run_script.py::TestEnvScopedProofs::test_a_foreign_env_proof_is_listed_as_needing_its_os"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-227",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_run_script.py::TestTheCiArmCommitsItsSection::test_the_ci_arm_writes_its_section_and_commits"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-228",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_run_script.py::TestHostOs::test_this_windows_machine_reads_windows"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-229",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_run_script.py::TestTheConsoleCodecNeverEndsTheRun::test_a_cp1252_console_gets_the_glyphs_and_no_traceback"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-230",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_a_killed_suite_prints_its_tail"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-231",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_run_script.py::TestTheMutmutCopy::test_the_copy_mutmut_leaves_is_never_collected"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-232",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_an_untracked_file_selects_the_feature_and_is_named"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-233",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_named_feature_runs_only_its_test_files"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-234",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_pytest_is_suggested_its_own_entry"
+        }
+      ],
+      "rules": {
+        "RULE-10": "passed",
+        "RULE-12": "passed",
+        "RULE-21": "passed",
+        "RULE-39": "passed",
+        "RULE-4": "not run",
+        "RULE-40": "passed",
+        "RULE-43": "passed",
+        "RULE-55": "passed",
+        "RULE-58": "passed",
+        "RULE-63": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/run/run_script.md"
+}

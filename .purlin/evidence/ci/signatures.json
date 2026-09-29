@@ -1,0 +1,79 @@
+{
+  "feature": "signatures",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:52Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "40a9942914af60d09ca5814d3364277800ebfdaf8c9c1440b1b84307d00d470e",
+        "spec": "05f18857281c236c7fd558a4cd5b3a7e535071ab26732f69d20e30723a66a5a7",
+        "tests": "2e83764cbed036b6a1fff1f51e08bc49354196fbd6dbe80b526a5667b864426c"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-153",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_signatures.py::TestTheSignedCommit::test_an_existing_key_file_is_not_made_again"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-154",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_signatures.py::TestTheSignedCommit::test_one_signed_commit_carries_the_feature"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-155",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_signatures.py::TestWhatCounts::test_a_commit_signed_with_the_signers_key_counts"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-156",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_tag.py::TestTheTag::test_the_tag_is_signed_and_names_the_commit_and_the_gate"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-157",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-50",
+          "test": "dev/test_signatures.py::TestTheFile::test_it_records_the_signer_as_git_holds_them_and_the_key"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-158",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-60",
+          "test": "dev/test_signatures.py::TestTheKey::test_a_private_key_path_reads_the_public_key_beside_it"
+        }
+      ],
+      "rules": {
+        "RULE-17": "passed",
+        "RULE-18": "passed",
+        "RULE-20": "passed",
+        "RULE-45": "passed",
+        "RULE-50": "passed",
+        "RULE-60": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/review/signatures.md"
+}

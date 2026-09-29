@@ -1,0 +1,52 @@
+{
+  "feature": "package",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:51Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "45ef658ee9b78204fce688b2e562748c3af030c6527f9400b0f630a11db3f10c",
+        "spec": "7201b36eb225330cd79b0c3f224878c4e523618552311077e56be24a5a7701b1",
+        "tests": "41869baa29854a6269e1471008931445d57509688ffa5a4bc9fc1d78bb4219ee"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_export.py::TestTheFile::test_it_writes_the_version_file_prints_the_state_and_commits_nothing"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_export.py::TestTheBytes::test_a_second_clone_at_the_tag_gives_the_committed_bytes"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_export.py::TestTheFingerprint::test_check_passes_a_package_as_written"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/export/package.md"
+}

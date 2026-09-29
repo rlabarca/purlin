@@ -1,0 +1,70 @@
+{
+  "feature": "config_engine",
+  "platforms": {
+    "windows": {
+      "at": "2026-09-29T23:37:51Z",
+      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "dirty": false,
+      "fingerprint": {
+        "code": "3551ef9c3886ccd9c4fa053da404f80c3e29d09d79281cfd467489f59990c835",
+        "spec": "5b2d37ca0bcac36bc28224c027b9dea3b28e84bc741e6d6621f8352a4c50e11b",
+        "tests": "7302a354c7466f75dc8dfddad14caf54e24008d7938bb4fe4154c869aa7d2d1d"
+      },
+      "hostname": "runnervm99s1a",
+      "machine": "remote runner, Windows",
+      "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_an_existing_folder_wins_over_a_marker"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_reaches_the_marker_above_the_start"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_config_engine.py::TestWriting::test_a_write_adds_its_key_to_the_settings_file"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_config_engine.py::TestAtomicWrite::test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_the_variable_is_found_by_env"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-13": "passed",
+        "RULE-2": "passed",
+        "RULE-8": "passed"
+      },
+      "runner": "ci"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "ci",
+  "spec": "specs/mcp/config_engine.md"
+}
