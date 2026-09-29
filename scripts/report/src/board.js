@@ -257,39 +257,10 @@ function proofsToggle(rule, shown) {
     + '</span></button>';
 }
 
-/* Why an unfolded rule has not reached each step it has not reached: the
-   step, its cell's word and the reasons the payload gives, as the rule
-   screen reads them; then, where the gate asks for the audit, what the audit
-   found. A reason that repeats a finding is left to the audit's line. */
-function whyUnder(rule) {
-  var reached = reachedSteps(rule);
-  var findings = (rule.audit && rule.audit.findings) || [];
-  var rows = GATE_LEVELS.filter(function (name) {
-    return cellOf(rule, name) && reached.indexOf(name) < 0;
-  }).map(function (name) {
-    var cell = cellOf(rule, name);
-    var reasons = cellReasons(cell).filter(function (text) {
-      return !findings.some(function (found) {
-        return text.indexOf(found) >= 0;
-      });
-    }).join('; ');
-    return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
-      + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
-      + '</dd>';
-  });
-  if (cellOf(rule, 'strong')) {
-    rows.push('<dt>Audit</dt><dd>' + auditFound(rule).map(function (text) {
-      return '<p>' + esc(text) + '</p>';
-    }).join('') + '</dd>');
-  }
-  return rows.length ? '<div class="why"><dl class="kv">' + rows.join('')
-    + '</dl></div>' : '';
-}
-
-/* A rule unfolded beneath its row: why it has not reached a step and what
-   the audit found, then each proof as the rule screen draws it. A rule with
-   no proof shows the tests marked with its own id the same way, and one
-   with neither says no proof is written. */
+/* A rule unfolded beneath its row: each proof as the rule screen draws it.
+   Why the rule has not reached a step, and what the audit found, are on the
+   rule's own screen. A rule with no proof shows the tests marked with its
+   own id the same way, and one with neither says no proof is written. */
 function proofsUnder(rule) {
   var proofs = rule.proofs || [];
   var body = proofs.length ? proofs.map(function (proof) {
@@ -299,7 +270,7 @@ function proofsUnder(rule) {
       + '<dt>Tests</dt><dd class="ptests">' + testLines(rule.tests)
       + '</dd></dl></div>'
     : '<p class="sec">No proof written.</p>';
-  return '<div class="rule-proofs">' + whyUnder(rule) + body + '</div>';
+  return '<div class="rule-proofs">' + body + '</div>';
 }
 
 /* The band over a category's specs, one row with two ends. At the left the

@@ -106,9 +106,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .rule-proofs{padding:var(--space-4) var(--space-6) var(--space-4) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:default}
 .rule-proofs>p{margin:0;font-size:var(--ui-sm)}
 .specs>.desc{margin:0;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);font-size:var(--ui-base);color:var(--text-secondary);contain:inline-size}
-.why dd p{margin:0}
-.why dd p+p{margin-top:var(--space-2)}
-.why+.proof,.proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
+.proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}

@@ -35,7 +35,10 @@ function platformBoxes(cell) {
 function cellRow(rule, name) {
   var cell = cellOf(rule, name);
   if (!cell) { return ''; }
-  var reasons = cellReasons(cell).join('; ');
+  var reasons = (cell.reasons || []).filter(function (text) {
+    return text !== 'by ' + cell.signer
+      && (showsProofs() || text !== 'no proof written');
+  }).join('; ');
   var beside = name === 'passed' ? platformBoxes(cell)
     : name === 'signed' && cell.signer ? '<span class="mono sec">'
       + esc(cell.signer + ' \u00b7 ' + when(cell.at)) + '</span>' : '';
@@ -43,37 +46,6 @@ function cellRow(rule, name) {
     + (beside ? ' ' + beside : '')
     + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
     + '</dd>';
-}
-
-/* A cell's reasons as a person reads them: the signer is named beside the
-   signed cell rather than again as `by <signer>`, and a project at `passed`
-   that writes no proof line is told nothing about proofs. */
-function cellReasons(cell) {
-  return (cell.reasons || []).filter(function (text) {
-    return text !== 'by ' + cell.signer
-      && (showsProofs() || text !== 'no proof written');
-  });
-}
-
-/* What the audit found, as sentences: its answer, then each finding as the
-   audit wrote it, or that no audit has read the rule. The audit panel and a
-   rule unfolded on the board both read it. */
-function auditFound(rule) {
-  var audit = rule.audit;
-  var findings = (audit && audit.findings) || [];
-  var answer = audit ? audit['verdict'] : null;
-  var lines;
-  if (!audit) {
-    lines = ['No audit has read this rule\u2019s text, proof and test yet.'];
-  } else if (answer === 'strong' && !findings.length) {
-    lines = ['Strong. It found nothing.'];
-  } else if (answer === 'undecided') {
-    lines = ['Undecided. The AI audit could not decide, so the rule reads '
-      + 'weak until its proof or test changes.'];
-  } else {
-    lines = [answer === 'strong' ? 'Strong.' : 'Weak.'];
-  }
-  return lines.concat(findings);
 }
 
 /* What the audit found, and nothing about what to do with it, drawn where
@@ -87,7 +59,21 @@ function auditPanel(rule) {
   var cell = cellOf(rule, 'strong');
   if (!cell) { return ''; }
   var audit = rule.audit;
-  var lines = auditFound(rule).map(line);
+  var lines = [];
+  var findings = (audit && audit.findings) || [];
+  var answer = audit ? audit['verdict'] : null;
+  if (!audit) {
+    lines.push(line('No audit has read this rule\u2019s text, proof and '
+      + 'test yet.'));
+  } else if (answer === 'strong' && !findings.length) {
+    lines.push(line('Strong. It found nothing.'));
+  } else if (answer === 'undecided') {
+    lines.push(line('Undecided. The AI audit could not decide, so the rule '
+      + 'reads weak until its proof or test changes.'));
+  } else {
+    lines.push(line(answer === 'strong' ? 'Strong.' : 'Weak.'));
+  }
+  findings.forEach(function (text) { lines.push(line(text)); });
   lines.push(line(cell.strength == null ? 'no mutation score measured'
     : 'Test strength ' + Math.round(cell.strength) + '%, against a minimum '
       + 'of ' + minStrength() + '%.'));

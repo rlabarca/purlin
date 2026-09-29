@@ -1814,26 +1814,11 @@ def proof_lines(page, selector='.rule-proofs .proof'):
         r'els => els.map(e => e.textContent.trim().replace(/\s+/g, " "))')
 
 
-def why_lines(page):
-    """What an unfolded rule reads before its proofs, one line per row."""
-    return page.eval_on_selector_all(
-        '.rule-proofs .why .kv > *',
-        r'els => els.map(e => (e.tagName === "DT" ? e.textContent'
-        r' : e.innerText).trim().replace(/\s+/g, " "))')
-
-
 def login_open(browser, tmp_path, payload=None):
     """The regulated sample's board with login open."""
     page = open_board(browser, tmp_path, payload or payload_named('regulated'))
     page.click('[data-act="feature"][data-feature="login"]')
     return page
-
-
-# Whether the reasons beneath an unfolded rule come before its first proof.
-WHY_FIRST = """() => { const why = document.querySelector('.rule-proofs .why');
-  const proof = document.querySelector('.rule-proofs .proof');
-  return !!why && !!proof && !!(why.compareDocumentPosition(proof)
-    & Node.DOCUMENT_POSITION_FOLLOWING); }"""
 
 
 def unfolded(browser, tmp_path, feature, rule, name='regulated'):
@@ -2163,15 +2148,16 @@ def test_a_real_projects_two_rule_1s_open_their_own_screens(browser,
 
 
 # purlin: purlin_report PROOF-79
-def test_a_waiting_row_beneath_a_rule_is_neutral(browser, tmp_path):
-    page = unfolded(browser, tmp_path, 'login', 'RULE-4')
+def test_a_waiting_cell_is_neutral(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    open_rule(page, 'login', 'RULE-4')
     pills = page.eval_on_selector_all(
-        '.rule-proofs .why .pill',
+        '.kv dd .pill',
         'els => els.map(e => [e.innerText.trim(), getComputedStyle(e).color])')
-    assert [text for text, _ in pills] == ['PARTIAL', 'WAITING', 'WAITING']
+    waiting = [colour for text, colour in pills if text == 'WAITING']
     neutral = resolved(page, '--state-neutral')
     assert neutral != resolved(page, '--state-warn')
-    assert [colour for _, colour in pills[1:]] == [neutral, neutral], pills
+    assert waiting == [neutral, neutral], pills
     page.close()
 
 
@@ -2187,7 +2173,7 @@ def test_a_waiting_cell_says_what_it_waits_for(browser, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# A rule folded and unfolded
+# The badges on a rule's row
 # ---------------------------------------------------------------------------
 
 def row_badges(page, feature):
@@ -2241,51 +2227,8 @@ def test_a_failed_rule_at_passed_carries_failed_alone(browser, tmp_path):
 
 
 # purlin: purlin_report PROOF-169
-def test_a_folded_rule_shows_no_reason(browser, tmp_path):
+def test_a_step_not_reached_draws_no_badge(browser, tmp_path):
     page = login_open(browser, tmp_path)
-    row = page.inner_text('.rule[data-rule="RULE-3"]')
+    row = page.inner_text('.rule[data-rule="RULE-3"] .rp')
     page.close()
     assert 'WEAK' not in row and 'WAITING' not in row, row
-    assert 'reads the status code alone' not in row, row
-
-
-# purlin: purlin_report PROOF-170
-def test_an_unfolded_weak_rule_says_why_and_what_the_audit_found(browser,
-                                                                  tmp_path):
-    page = unfolded(browser, tmp_path, 'login', 'RULE-3')
-    assert why_lines(page) == [
-        'Strong', 'WEAK', 'Signed', 'WAITING waiting for the audit',
-        'Audit', 'Weak. PROOF-3 reads the status code alone; no test reads '
-        'when the lock expires.']
-    assert proof_lines(page)[0] == 'PROOF-3'
-    assert page.evaluate(WHY_FIRST)
-    page.close()
-
-
-# purlin: purlin_report PROOF-171
-def test_an_unfolded_rule_that_reached_every_step_reads_the_audit(browser,
-                                                                   tmp_path):
-    page = unfolded(browser, tmp_path, 'login', 'RULE-1')
-    assert why_lines(page) == ['Audit', 'Strong. It found nothing.']
-    assert proof_lines(page)[0] == 'PROOF-1'
-    assert page.evaluate(WHY_FIRST)
-    page.close()
-
-
-# purlin: purlin_report PROOF-172
-def test_an_unfolded_rule_no_audit_read_says_so(browser, tmp_path):
-    page = unfolded(browser, tmp_path, 'export', 'RULE-2')
-    assert why_lines(page) == [
-        'Strong', 'NOT AUDITED no audit has run on this code',
-        'Signed', 'WAITING waiting for the audit',
-        'Audit', 'No audit has read this rule’s text, proof and test yet.']
-    assert page.evaluate(WHY_FIRST)
-    page.close()
-
-
-# purlin: purlin_report PROOF-132
-def test_an_unfolded_rule_at_passed_has_no_audit_row(browser, tmp_path):
-    page = unfolded(browser, tmp_path, 'login', 'RULE-2', name='solo')
-    assert why_lines(page) == ['Passed', 'NO TEST']
-    assert page.evaluate(WHY_FIRST)
-    page.close()

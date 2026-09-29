@@ -406,9 +406,9 @@ function testFailed(rule) {
   });
 }
 
-/* The badges a folded rule carries: one per step it has reached, and
+/* The badges a rule's row carries: one per step it has reached, and
    `FAILED` where a test fails. A step not reached draws nothing; why it was
-   not reached is read with the rule unfolded. */
+   not reached is read on the rule's own screen. */
 function badges(rule) {
   return reachedSteps(rule).map(pill).join('')
     + (testFailed(rule) ? pill('failed') : '');

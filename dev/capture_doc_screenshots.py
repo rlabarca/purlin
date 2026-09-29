@@ -40,9 +40,9 @@ SCALE = 2
 
 # name -> (fixture, the clicks that reach the screen)
 SHOTS = (
-    # login open with RULE-4 unfolded beneath it: why it has not reached a
-    # step, then its two proofs, one failed on windows and one passed, which
-    # is what the folded count's warn tone stands for.
+    # login open with RULE-4 unfolded beneath it: its two proofs, one failed
+    # on windows and one passed, which is what the folded count's warn tone
+    # stands for.
     ('dashboard-board.png', 'regulated',
      ('[data-act="feature"][data-feature="login"]',
       '[data-act="proofs"][data-feature="login"][data-rule="RULE-4"]')),
