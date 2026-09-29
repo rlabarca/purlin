@@ -824,7 +824,10 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     reads `0 of 26` where no strength was measured, and `2 of 4 · 86%` where one was; `n/a`
     is printed nowhere, on the dashboard or in the terminal. On the dashboard the hover of a
     percentage says what it is: `Test strength: the tests caught 86 of every 100 deliberate
-    breaks of the code.`
+    breaks of the code.` The audit's report says nothing of strength where none was
+    measured. The model is told `test strength: not measured`, in words. Setup's line about
+    a missing tool is reworded, since the cell no longer reads `n/a`. The stand-in inside a
+    signature stays as it is: no person reads it, and changing it would end every signature.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
