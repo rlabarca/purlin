@@ -1162,11 +1162,7 @@ class TestTheAuditCallsTheModel:
         _config(root, audit_parallel=40)
         evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
-        # The run opens with the warning, as it opens with every warning
-        # resolving the settings raised, and the status repeats it.
-        assert output.splitlines()[0] == (
-            '"audit_parallel" is 40, which is not a whole number from 1 to '
-            '16; reading it as 4'), output
+        self._beside_the_table(output, '40')
         assert 'AI audit: 5 rules to read, 4 at a time.' in output, output
         calls = fake_claude.calls(directory)
         assert len(calls) == 5 and fake_claude.most_at_once(calls) == 4, calls
@@ -1180,10 +1176,19 @@ class TestTheAuditCallsTheModel:
         return capsys.readouterr().out
 
     @staticmethod
-    def _warned(output, shown):
-        assert output.splitlines()[0] == (
-            '"audit_parallel" is %s, which is not a whole number from 1 to '
-            '16; reading it as 4' % shown), output
+    def _beside_the_table(output, shown):
+        """The warning is printed once, with the status table, as every
+        warning resolving the settings raised is."""
+        lines = output.splitlines()
+        warning = ('"audit_parallel" is %s, which is not a whole number from '
+                   '1 to 16; reading it as 4' % shown)
+        assert lines.count(warning) == 1, output
+        assert lines.index(warning) > lines.index(next(
+            line for line in lines if line.startswith('Purlin status:'))), \
+            output
+
+    def _warned(self, output, shown):
+        self._beside_the_table(output, shown)
         assert 'AI audit: 5 rules to read, 4 at a time.' in output, output
 
     # purlin: run_script PROOF-178

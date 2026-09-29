@@ -809,9 +809,9 @@ def main(argv=None):
         return 1
 
     config = resolve_config(project_root)
+    # What resolving the settings warned of is printed once, beside the
+    # status table the run ends on.
     cfg = gate_module.resolve_gate(config)
-    for warning in cfg.warnings:
-        print(warning)
 
     if args.remote:
         return _remote(project_root, args, cfg)
