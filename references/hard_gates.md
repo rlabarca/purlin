@@ -23,9 +23,15 @@ question that sets it: `What must be true of every rule before a version is prov
 
 | Gate | Who it fits | Cells that exist | What every rule must have |
 |------|-------------|------------------|---------------------------|
-| `passed` | A developer working alone | passed | Every test tied to the rule ran and passed, on every system a current section covered. A pass from either source counts. A rule with a `@manual` proof is checked by hand |
+| `passed` | A developer working alone | passed | Every test tied to the rule ran and passed, each current section answering for the proofs it lists. A pass from either source counts. A rule with a `@manual` proof is checked by hand |
 | `strong` | A team: product, developers and QA | + strong | At least one proof, and a strong cell that is met: the AI audit read its current rule, proof and test and found nothing, and where mutation testing is on the test strength is at or above `min_strength`. Evidence from either source counts |
 | `signed` | The same team, with a person's signature on each rule | + signed | A counting signature |
+
+**Test strength is one share per feature**, in every language: the share of the feature's breaks
+its tests caught, and every rule of the feature is judged on it. With mutation testing on, a
+feature whose share could not be measured leaves its rules `weak` with the reason
+`strength not measured: <reason>`, and the reason names the command that fixes it. An engine
+that cannot run on this system counts as none, and the AI audit alone decides.
 
 Each gate derives a default you can override:
 
@@ -33,8 +39,8 @@ Each gate derives a default you can override:
 |---------|----------|----------|----------|
 | `min_strength`, with mutation testing on | unused | 70 | 80 |
 
-`purlin:init --gate <gate>` changes the gate later. Raising it adds what is missing and asks
-before each write. Lowering it changes the setting and deletes nothing.
+`purlin:init --gate <gate>` changes the gate later. Raising it adds what is missing. Lowering
+it changes the setting and deletes nothing.
 
 Under `passed` no strength is measured and no signature is asked for; a hand check is still
 signed, because it stands for the test. Mutation testing is asked about only at `strong` and
@@ -64,24 +70,28 @@ under the feature that owns it.
 
 **`Left to do`** gives each rule at most one kind, the first that applies, in this order. A
 line carries a count and a command and names no rule; a run names each rule where it reports
-the problem. A kind at zero is left out, and the first line is the next step.
+the problem. A kind at zero is left out, and the first line is the next step. `to_correct`
+counts test comments, not rules, and is carried by the project.
 
 | Kind | When it applies | The line | Command |
 |------|-----------------|----------|---------|
 | `no_proof` | at `strong` and `signed`, no proof line names the rule | `<n> rules to write a proof for` | `purlin:spec` |
+| `to_correct` | at every gate, a comment above a test names nothing a spec has, or names a rule that has proofs; each such comment counts once | `<n> test comments to correct` | `purlin:build` |
 | `to_fix` | the passed cell reads `failed` or `partial` | `<n> rules to fix` | `purlin:build` |
 | `no_test` | the passed cell reads `no test` | `<n> rules to write a test for` | `purlin:build` |
 | `to_test` | the passed cell reads `not run` or `out of date`, and this machine can run it | `<n> rules to test` | `purlin:test` |
 | `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `purlin:test --remote` |
 | `to_test_by_hand` | a proof is `@manual` and the rule is not checked by hand, at any gate | `<n> rules to test by hand` | `purlin:sign` |
 | `to_audit` | at `strong` and `signed`, the strong cell reads `not audited` | `<n> rules to audit` | `purlin:audit` |
+| `to_measure` | with mutation testing on, the strong cell reads `weak` only because its feature's strength could not be measured | `<n> rules to measure` | `purlin:audit` |
 | `to_strengthen` | the strong cell reads `weak` | `<n> rules to strengthen` | `purlin:build` |
-| `no_scope` | at `signed`, the rule is not signed and its spec names no files | `<n> rules to tie to their files` | `purlin:spec` |
+| `no_scope` | at `signed`, the rule is not signed and its spec names no files; at `strong` and `signed` with mutation testing on, its strong cell reads `weak` because its spec names no code files | `<n> rules to tie to their files` | `purlin:spec` |
 | `to_sign` | at `signed`, the signed cell does not read `signed` | `<n> rules to sign` | `purlin:sign` |
 | `to_tag` | at `signed`, every other kind is at zero and no `signed/*` tag points at HEAD | `the version to tag` | `purlin:sign` |
 
-A count of 1 reads `1 rule to fix`, `1 rule to tie to its files`, and so on. The systems read
-`Linux/Unix`, `macOS` and `Windows`, in that order, joined by `, ` and ` and `.
+A count of 1 reads `1 rule to fix`, `1 rule to tie to its files`, `1 test comment to correct`,
+and so on. The systems read `Linux/Unix`, `macOS` and `Windows`, in that order, joined by `, `
+and ` and `.
 
 **When nothing is left**, the summary is followed by one line. At `passed` and `strong` it is
 `Nothing left to do.` and names no command. At `signed` it names the release step:
@@ -113,8 +123,8 @@ folder it sits in, and a file where the two disagree is ignored with one warning
 
 **A result counts wherever it ran, and records where.** Each section names its machine: the
 host's name for a person's run, and `remote runner, <system>` for a remote runner's, with the
-name the host lent the runner kept beside it. The tests a person ran are the tests a runner
-runs, and the breaks they measured are the breaks a runner would measure.
+name the host lent the runner kept beside it. The breaks a person measured are the breaks a
+runner would measure.
 
 A section describes the checkout while its fingerprint, over the spec, the code the spec's
 `> Scope:` covers and the tests, is the one taken now. A pass that is not current makes the
@@ -123,11 +133,17 @@ passed cell read `out of date`, naming what changed, and the next run clears it.
 ## Where a runner runs, and when a project has one
 
 **A project has a remote runner for one reason:** a proof in `specs/` is tagged `@env` for a
-system your machine is not, so only a runner can prove it. The runner runs the systems the
-rules name and no others. A project with no such proof gets no workflow: at the gate `signed`,
-`purlin:sign` writes the tag, you push it, and nothing runs remotely. A project whose git host
-is neither GitHub nor Azure DevOps has `ci: none` in its settings, and everything on your own
-machine works as it does anywhere else.
+system your machine is not, so only a runner can prove it. A project with no such proof gets no
+workflow: at the gate `signed`, `purlin:sign` writes the tag, you push it, and nothing runs
+remotely.
+
+Purlin runs tests remotely on GitHub and Azure DevOps. On any other git host the settings read `ci: none`, and setup prints `This git host cannot run tests remotely. Everything on this machine works.`
+
+**Which machine proves which proof.** A remote runner runs only the tests tied to proofs tagged
+`@env` for its own system. A person's own machine, Mac or Windows, proves every proof with no
+`@env` and every proof tagged for its own system, and never one tagged for another. A runner
+file names a remote machine only for a system some proof is tagged for that the machine running
+setup is not.
 
 Where a workflow exists it triggers on two things: a push to a `run/*` branch, which is the
 branch `purlin:test --remote` creates and deletes around one run, and a push of a
@@ -137,7 +153,10 @@ run branch rather than the branch you are on. Every other push is yours.
 | The run | What starts it | What it writes |
 |---------|----------------|----------------|
 | A remote run | `purlin:test --remote` pushes `run/<branch>-<sha7>` | Its own section of each feature's `.purlin/evidence/ci/<feature>.json`, committed on that branch at every gate. `purlin:test --remote` pulls it home and deletes the branch |
-| A tag run | a person pushes `signed/<version>` | Nothing. It runs the marked tests on a clean machine and nothing else |
+| A tag run | a person pushes `signed/<version>` | Nothing. On a clean machine it runs the tests a remote runner runs, as the paragraph above says, and nothing else |
+
+A run on a ref that is neither a `run/*` branch nor a `signed/*` tag prints
+`This run is on <ref>, which is neither a run branch nor a signed tag: the tests ran and nothing is written.`
 
 The test step ends on the summary and `Left to do`, and that ending is what you read. The job
 fails only when a test fails or could not run; a rule not yet audited or signed never fails it.
@@ -204,8 +223,9 @@ person pushes it. Below `signed` `purlin:sign` writes no tag and no package.
 
 ## CI writes no signature file
 
-A runner runs the marked tests and, on a run branch, writes its section of the evidence. It
-signs nothing. A signature directory holds only files a person wrote.
+A runner runs the tests "Where a runner runs, and when a project has one" names and, on a run
+branch, writes its section of the evidence. It signs nothing. A signature directory holds only
+files a person wrote.
 
 What a runner cannot settle it says out loud. A `@manual` proof makes the strong cell read
 `manual test`, and the rule is left to do as `to test by hand` until a person checks it and
@@ -229,14 +249,15 @@ what moves it is `purlin:audit`, not a person.
 
 ## Platforms
 
-Each section of the evidence names the system it ran on. The passed cell lists one
-**platform** per system a current section covers, each with its own word, its source and when
-it ran, and the cell's own word rolls them up. Where the platforms disagree the cell reads
-`partial`: a rule whose tests pass on Linux/Unix and fail on Windows is neither passed nor
-failed, `partial` is not met, and the rule is left to do as `to fix`, as a failure is. A rule
-with a proof tagged `@env` for a system no current section covers reads `not run`, with the
-reason `<os>: no run yet`. Test strength is independent of the system, because the breaks are
-measured once per feature.
+Each section of the evidence names the system it ran on, and answers only for the proofs it
+lists: a proof a section does not list is neither passed, failed nor `not run` there. The passed
+cell lists one **platform** per system a current section covers, each with its own word, its
+source and when it ran, and the cell's own word rolls them up. Where two systems that each have
+a current section disagree the cell reads `partial`: a rule whose tests pass on Linux/Unix and
+fail on Windows is neither passed nor failed, `partial` is not met, and the rule is left to do
+as `to fix`, as a failure is. A system a proof is tagged `@env` for with no current section
+makes the cell read `not run`, with the reason `<os>: no run yet`. Test strength does not depend
+on the system: the paragraph under the gate table says how it is measured.
 
 ## What stands behind an instruction
 
