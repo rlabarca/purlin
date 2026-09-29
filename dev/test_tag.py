@@ -8,7 +8,8 @@ project the test made.
 What each group holds:
 
 *the tag*       the name, the message, the signature and the lines printed
-*no tag*        each reason the tag is not written, and the line it prints
+*no tag*        each reason the tag is not written, the line it prints and
+                the exit code
 *the version*   where the version the tag is named for is read from
 *the package*   the evidence package the tagged commit carries
 *below signed*  no tag and no package at `strong`
@@ -224,6 +225,71 @@ class TestNoTag:
             assert git(made.root, 'tag', '-l').stdout.strip() == ''
         finally:
             made.close()
+
+    # purlin: signatures PROOF-146
+    def test_work_not_committed_exits_one(self, finished, capsys):
+        write(os.path.join(finished.root, 'notes.txt'), 'a draft\n')
+        code, lines = run_command(finished, capsys)
+        assert lines[-1].startswith('No tag: the working tree holds'), lines
+        assert (code, tags(finished)) == (1, [])
+
+    # purlin: signatures PROOF-147
+    def test_results_not_committed_exit_one(self, finished, capsys):
+        record(finished, at='2026-09-14T12:00:00Z')
+        code, lines = run_command(finished, capsys)
+        assert lines[-1].startswith('No tag: login has results'), lines
+        assert (code, tags(finished)) == (1, [])
+
+    # purlin: signatures PROOF-148
+    def test_no_version_exits_one(self, capsys):
+        made = ready(version=None)
+        try:
+            sign_all(made)
+            code, lines = run_command(made, capsys, '--all')
+            assert lines[0] == NOTHING_WAITING, lines
+            assert lines[-1].startswith('No version: '), lines
+            assert (code, tags(made)) == (1, [])
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-149
+    def test_a_package_not_committed_exits_one(self, finished, capsys):
+        write(os.path.join(finished.root, '.purlin', 'evidence', 'package'),
+              'in the way\n')
+        code, lines = run_command(finished, capsys)
+        assert lines[-1].startswith('No tag: the evidence package was not '
+                                    'committed: '), lines
+        assert (code, tags(finished)) == (1, [])
+
+    # purlin: signatures PROOF-150
+    def test_a_tag_already_written_exits_zero(self, finished, capsys):
+        assert walked(finished, release='beta')[1] == 'signed/beta'
+        code, lines = run_command(finished, capsys, '--release', 'beta')
+        assert lines[-1] == ('No tag: signed/beta is already written. Name '
+                             'another with --release <name>.'), lines
+        assert (code, tags(finished)) == (0, ['signed/beta'])
+
+    # purlin: signatures PROOF-151
+    def test_git_failing_to_write_the_tag_exits_one(self, finished, capsys):
+        # A tag named `signed` leaves git no room for `signed/2.1.0`.
+        git(finished.root, 'tag', 'signed')
+        code, lines = run_command(finished, capsys)
+        assert lines[-1].startswith(
+            'No tag: git could not write signed/2.1.0: '), lines
+        assert 'refs/tags/signed' in lines[-1], lines
+        assert lines[-1].endswith('.') and not lines[-1].endswith('..'), lines
+        assert (code, tags(finished)) == (1, ['signed'])
+
+
+def run_command(made, capsys, *argv):
+    """`purlin:sign` as a person runs it. Its exit code and printed lines."""
+    code = sign_module.main(list(argv) + ['--project-root', made.root])
+    return code, capsys.readouterr().out.splitlines()
+
+
+def tags(made):
+    """Every tag the project holds, sorted."""
+    return sorted(git(made.root, 'tag', '-l').stdout.split())
 
 
 # ---------------------------------------------------------------------------

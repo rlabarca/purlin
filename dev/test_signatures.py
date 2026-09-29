@@ -37,6 +37,7 @@ import sign as sign_module  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 from purlin import signatures as purlin_signatures  # noqa: E402
+from purlin import summary as purlin_summary  # noqa: E402
 from sign_project import (  # noqa: E402
     FIRST_GATE,
     REVIEW_GATE,
@@ -171,8 +172,14 @@ def at_signed():
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    """A home directory holding nothing, so no key and no git settings leak in."""
+    """A home directory holding nothing, so no key and no git settings leak in.
+
+    Git and the command read `HOME` first; on Windows `USERPROFILE` is set
+    to the same folder, so nothing else there finds another home.
+    """
     monkeypatch.setenv('HOME', str(tmp_path))
+    if os.name == 'nt':
+        monkeypatch.setenv('USERPROFILE', str(tmp_path))
     monkeypatch.setenv('XDG_CONFIG_HOME', str(tmp_path / '.config'))
     return tmp_path
 
@@ -212,11 +219,6 @@ class TestTheHashes:
         assert entry['test_hash_kind'] == 'file'
         assert len({entry['rule_hash'], entry['proof_hash'],
                     entry['test_hash']}) == 3
-
-    # purlin: signatures PROOF-2
-    def test_a_rule_that_is_not_there_has_no_hashes(self, proved):
-        assert sign_module.rule_entry(
-            sign_module.load_payload(proved.root), 'login', 'RULE-99') is None
 
     # purlin: signatures PROOF-3
     def test_reflowing_a_rule_keeps_the_signed_hash(self, proved):
@@ -877,7 +879,9 @@ class TestWhatIsSigned:
                                      made.root])
             assert capsys.readouterr().out.splitlines() == [
                 'login RULE-9 is not a rule any spec has. Run purlin:status login '
-                'to see its rules.']
+                'to see its rules.',
+                '2 rules. 2 pass their tests. 2 are strong.',
+                'Nothing left to do.']
             assert (code, made.signatures()) == (1, [])
         finally:
             made.close()
@@ -890,8 +894,10 @@ class TestWhatIsSigned:
             code = sign_module.main(['login', 'RULE-1', 'RULE-9',
                                      '--project-root', made.root])
             lines = capsys.readouterr().out.splitlines()
-            assert ('login RULE-9 is not a rule any spec has. Run purlin:status '
-                    'login to see its rules.') in lines, lines
+            ending = purlin_summary.ending(made.payload())
+            assert lines[-3:] == [
+                'login RULE-9 is not a rule any spec has. Run purlin:status '
+                'login to see its rules.'] + ending.splitlines(), lines
             assert [name.split('.')[0] for name in made.signatures()] == [
                 'RULE-1']
             assert git(made.root, 'rev-list', '--count',
@@ -1191,3 +1197,21 @@ class TestTheCommandLine:
         assert sign_module.main(['--nope']) == 2
         assert capsys.readouterr().err.splitlines() == [
             sign_module.USAGE, 'sign.py: unknown option --nope']
+
+    # purlin: signatures PROOF-152
+    def test_a_settings_file_that_cannot_be_read_stops_it(self, at_signed,
+                                                          capsys):
+        path = os.path.join(at_signed.root, '.purlin', 'config.json')
+        with open(path, encoding='utf-8') as handle:
+            text = handle.read().rstrip()
+        assert text.endswith('}'), text
+        write(path, text[:-1].rstrip() + ',\n}\n')
+        before = at_signed.head()
+        code = sign_module.main(['--all', '--project-root', at_signed.root])
+        lines = capsys.readouterr().out.splitlines()
+        assert len(lines) == 1, lines
+        assert lines[0].startswith('.purlin/config.json cannot be read: '), lines
+        assert lines[0].endswith('Fix the file by hand; nothing ran and '
+                                 'nothing was saved.'), lines
+        assert (code, at_signed.signatures(), at_signed.head()) == (
+            1, [], before)

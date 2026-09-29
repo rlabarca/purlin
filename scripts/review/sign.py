@@ -28,8 +28,9 @@ one signed commit for the signatures. It works at every gate.
 
 A bare feature signs every waiting rule of that feature, and `--all` every
 waiting rule, in one signed commit and with no stop. A rule named by id is
-signed whatever it waits on; one no spec has is named, and the rules named
-beside it are signed all the same. An anchor's rule is signed once in each
+signed whatever it waits on; one no spec has is named last, just above the
+summary ending, and the rules named beside it are signed all the same. An
+anchor's rule is signed once in each
 feature it applies to: one file per feature, each made over that feature's
 code.
 
@@ -42,13 +43,19 @@ names another. No tag is written while work is left, while the working tree
 or any feature's results are not committed, over a tag that already exists,
 or with no version. Nothing is pushed.
 
+A `.purlin/config.json` that cannot be read stops the command before anything
+else is read or written: it prints the sentence saying so and writes nothing.
+
 `references/formats/signature_format.md` holds the file shape field by field.
 The hashes come from the payload, which is the one place they are computed,
 so a signature this script writes is current the moment it lands.
 
-Exit codes: 0 the signatures were written and committed, or the walk closed;
-1 there is no key to sign with, the commit was not made, or a rule named is not
-one any spec has; 2 the command line was wrong.
+Exit codes: 0 the signatures were written and committed, the walk closed,
+nothing was left to tag, or the tag already exists; 1 there is no key to sign
+with, the commit was not made, a rule named is not one any spec has, the tag
+was refused for work or results not committed, no version or a package not
+committed, git could not write the tag, or the settings file cannot be read;
+2 the command line was wrong.
 """
 
 import json
@@ -63,6 +70,7 @@ for _path in (_MCP_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+import config_engine                                           # noqa: E402
 from purlin import report_data                                 # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
                     gate as gate_module,
@@ -89,7 +97,19 @@ NO_TAG_EVIDENCE = ('No tag: %s has results that are not committed. Run '
 NO_VERSION = ('No version: nothing in this project states one. Name it with '
               '--release <version>, or write it to a VERSION file.')
 NO_TAG_PACKAGE = 'No tag: the evidence package was not committed: %s.'
+NO_TAG_GIT = 'No tag: git could not write %s: %s.'
 PACKAGE_COMMITTED = 'Evidence package committed: %s.'
+
+# Why no tag was written, as `tag_if_met` answers it. Each but `exists` is
+# something the person must fix, so the command exits 1 on it.
+REFUSED_WORK = 'work'
+REFUSED_EVIDENCE = 'evidence'
+REFUSED_VERSION = 'version'
+REFUSED_PACKAGE = 'package'
+REFUSED_GIT = 'git'
+REFUSED_EXISTS = 'exists'
+MUST_FIX = (REFUSED_WORK, REFUSED_EVIDENCE, REFUSED_VERSION, REFUSED_PACKAGE,
+            REFUSED_GIT)
 
 # The key a signer signs with, and the commands that set one up.
 NO_KEY = 'No key to sign with. These commands set one up:'
@@ -434,36 +454,39 @@ def _package_module():
 def tag_if_met(project_root, out=None, release=None, payload=None):
     """Write `signed/<version>` at the gate `signed` when nothing else is left.
 
-    Returns the tag's name, or None. Below `signed` it writes nothing and
-    prints nothing. At `signed` it prints the summary ending while any work
-    but the tag is left, and one line saying why when the working tree or a
-    feature's results are not committed, when no version is stated, or when
-    the tag already exists. Otherwise it commits the evidence package, signed,
-    writes a signed tag on that commit, and names the push. Nothing is pushed.
+    Returns `(name, refused)`: the tag's name, or None, and why no tag was
+    written, one of the `REFUSED_*` kinds, or None when a tag was written or
+    none was due. Below `signed` it writes nothing and prints nothing. At
+    `signed` it prints the summary ending while any work but the tag is left,
+    and one line saying why when the working tree or a feature's results are
+    not committed, when no version is stated, when the tag already exists, or
+    when git could not write it. Otherwise it commits the evidence package,
+    signed, writes a signed tag on that commit, and names the push. Nothing
+    is pushed.
     """
     out = sys.stdout if out is None else out
     payload = load_payload(project_root, payload)
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
     if gate != gate_module.GATES[-1]:
-        return None
+        return None, None
     if any(item.get('kind') != 'to_tag' for item in payload.get('left') or ()):
         print(summary_module.ending(payload), file=out)
-        return None
+        return None, None
     if uncommitted_work(project_root):
         print(NO_TAG_WORK, file=out)
-        return None
+        return None, REFUSED_WORK
     refused = uncommitted(payload)
     if refused:
         for feature in refused:
             print(NO_TAG_EVIDENCE % feature, file=out)
-        return None
+        return None, REFUSED_EVIDENCE
     name = tag_name(project_root, release)
     if name is None:
         print(NO_VERSION, file=out)
-        return None
+        return None, REFUSED_VERSION
     if tag_exists(project_root, name):
         print(NO_TAG_EXISTS % name, file=out)
-        return None
+        return None, REFUSED_EXISTS
     # The package goes into the commit the tag names, so the tagged code
     # carries the evidence that describes it. The commit below it is the one
     # the tag's message names.
@@ -471,18 +494,39 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
     rel, why = _package_module().write_for_tag(project_root, release)
     if rel is None:
         print(NO_TAG_PACKAGE % why, file=out)
-        return None
+        return None, REFUSED_PACKAGE
     print(PACKAGE_COMMITTED % rel, file=out)
     written = subprocess.run(
         ['git', 'tag', '-s', name, '-m', tag_message(commit)],
         capture_output=True, text=True, cwd=project_root, timeout=30)
     if written.returncode != 0:
-        print(NO_TAG_EXISTS % name, file=out)
-        return None
+        print(NO_TAG_GIT % (name, _first_line(written)), file=out)
+        return None, REFUSED_GIT
     tagged = payload_module.head_sha(project_root) or commit
     print(TAGGED % (name, tagged[:7] or 'HEAD'), file=out)
     print(summary_module.RELEASE % name, file=out)
-    return name
+    return name, None
+
+
+_GIT_ERRORS = ('fatal: ', 'error: ')
+
+
+def _first_line(result):
+    """The first line of git's own message for a failed command.
+
+    Git may print a note before its error, such as where it left the tag
+    message, so the first line that starts `fatal:` or `error:` answers, with
+    that word cut; otherwise the first line printed. The closing stop is cut,
+    since the line that carries it adds its own.
+    """
+    lines = [line.strip() for text in (result.stderr, result.stdout)
+             for line in str(text or '').splitlines() if line.strip()]
+    for line in lines:
+        if line.startswith(_GIT_ERRORS):
+            return line.split(': ', 1)[1].rstrip('.')
+    if lines:
+        return lines[0].rstrip('.')
+    return 'git exited with %d' % result.returncode
 
 
 # ---------------------------------------------------------------------------
@@ -511,7 +555,7 @@ def no_key_lines():
     `ssh-keygen` is named only while the key it would write does not exist.
     """
     lines = [NO_KEY]
-    if not os.path.exists(os.path.expanduser(DEFAULT_KEY)):
+    if not os.path.exists(signatures_module.expand_home(DEFAULT_KEY)):
         lines.append('  %s' % KEYGEN)
     lines.extend('  %s' % command for command in SIGNING_SETUP)
     return lines
@@ -667,11 +711,13 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
 
     rows = waiting(payload)
     result = {'rules': len(rows), 'signed': [], 'cases': [], 'skipped': [],
-              'notes': {}, 'commits': [], 'not_made': False, 'tag': None}
+              'notes': {}, 'commits': [], 'not_made': False, 'tag': None,
+              'refused': None}
     for line in opening_lines(payload):
         print(line, file=out)
     if not rows:
-        result['tag'] = _finish(project_root, out, release, payload)
+        result['tag'], result['refused'] = _finish(project_root, out, release,
+                                                   payload)
         return result
 
     for entry in rows:
@@ -698,18 +744,21 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
             result['not_made'] = True
 
     _close(project_root, out, result, email)
-    result['tag'] = _finish(project_root, out, release)
+    result['tag'], result['refused'] = _finish(project_root, out, release)
     return result
 
 
 def _finish(project_root, out, release, payload=None):
-    """The walk's last lines: the tag at `signed`, the summary ending below."""
+    """The walk's last lines: the tag at `signed`, the summary ending below.
+
+    Returns `(tag, refused)` as `tag_if_met` answers them.
+    """
     payload = load_payload(project_root, payload)
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
     if gate == gate_module.GATES[-1]:
         return tag_if_met(project_root, out, release, payload)
     print(summary_module.ending(payload), file=out)
-    return None
+    return None, None
 
 
 def _one_answer(answer, entry, rendered):
@@ -845,6 +894,13 @@ def main(argv=None):
         print('sign.py: not a directory: %r' % project_root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
+    # A settings file that cannot be read stops the command before anything
+    # else is read or written.
+    problem = config_engine.config_problem(project_root)
+    if problem:
+        print(problem)
+        return EXIT_NOTHING
+
     if not signing_configured(project_root):
         for line in no_key_lines():
             print(line)
@@ -857,37 +913,45 @@ def main(argv=None):
         result = walk(project_root, payload, signer_email=email,
                       release=args.release)
         report_data.refresh(project_root)
-        return EXIT_NOTHING if result['not_made'] else EXIT_OK
+        failed = result['not_made'] or result['refused'] in MUST_FIX
+        return EXIT_NOTHING if failed else EXIT_OK
 
     unknown = []
     if args.feature and args.rules:
-        # A rule no spec has is named, and the rules named beside it are
-        # signed all the same; the exit says something asked for was not done.
+        # A rule no spec has is named last, just above the summary ending,
+        # and the rules named beside it are signed all the same; the exit
+        # says something asked for was not done.
         unknown = [rule for rule in args.rules
                    if rule_entry(payload, args.feature, rule) is None]
-        for rule in unknown:
-            print(not_a_rule(args.feature, rule))
         targets = [(args.feature, rule) for rule in args.rules
                    if rule not in unknown]
         if not targets:
+            for rule in unknown:
+                print(not_a_rule(args.feature, rule))
+            print(summary_module.ending(payload))
             return EXIT_NOTHING
     else:
         targets = [(item['feature'], item['id'])
                    for item in waiting(payload, args.feature)]
     if not targets:
         print(NOTHING_WAITING)
-        _finish(project_root, sys.stdout, args.release, payload)
+        _tag, refused = _finish(project_root, sys.stdout, args.release,
+                                payload)
         report_data.refresh(project_root)
-        return EXIT_OK
+        return EXIT_NOTHING if refused in MUST_FIX else EXIT_OK
 
     sha = sign_and_commit(project_root, targets, email, note=args.note,
                           payload=payload)
     if not sha:
+        for rule in unknown:
+            print(not_a_rule(args.feature, rule))
         print(NOT_MADE)
         return EXIT_NOTHING
     print(signed_line(project_root, len(targets), email))
     for name, rule in targets:
         print('  %s %s' % (name, rule))
+    for rule in unknown:
+        print(not_a_rule(args.feature, rule))
     after = load_payload(project_root)
     report_data.refresh(project_root, after)
     print(summary_module.ending(after))

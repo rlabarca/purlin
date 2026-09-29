@@ -286,6 +286,28 @@ def _signed_commit(project_root, rel_path):
 _KEY_LITERAL = 'key::'
 
 
+def home_folder():
+    """The home folder as git finds it: `HOME`, then `USERPROFILE`, then Python's.
+
+    Python reads `USERPROFILE` first on Windows, where git reads `HOME`
+    first, so a key path under `~` would name two different files.
+    """
+    for name in ('HOME', 'USERPROFILE'):
+        found = os.environ.get(name)
+        if found:
+            return found
+    return os.path.expanduser('~')
+
+
+def expand_home(path):
+    """`path` with a leading `~` read as the home folder `home_folder` finds."""
+    if path == '~':
+        return home_folder()
+    if path.startswith(('~/', '~\\')):
+        return os.path.join(home_folder(), path[2:])
+    return os.path.expanduser(path)
+
+
 def key_fingerprint(project_root):
     """`SHA256:<base64>` of the SSH key `user.signingkey` names, or None.
 
@@ -305,7 +327,7 @@ def key_fingerprint(project_root):
         return None
     if named.startswith(_KEY_LITERAL):
         return _fingerprint_of(named[len(_KEY_LITERAL):])
-    path = os.path.expanduser(named)
+    path = expand_home(named)
     if not os.path.isabs(path):
         path = os.path.join(project_root, path)
     if not path.endswith('.pub'):
