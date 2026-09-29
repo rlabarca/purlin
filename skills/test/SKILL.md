@@ -26,7 +26,7 @@ purlin:test --remote            Let the git host's runner do the run
 ## Step 1: run the tests
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test
 ```
 
 Add `--all` for `purlin:test --all` and `--feature <name>` for each feature named. With neither, the
@@ -44,7 +44,7 @@ for another operating system. It refuses a detached head and a tree with changes
 committed, and pushes nothing then. It waits through `gh` on GitHub and `az` with `azure-devops`
 on Azure DevOps; a red run, no CLI, no run found or the wait over exits 1.
 
-Exit codes: `0` everything asked happened, `1` a tied test failed or did not run, evidence is missing, a marker names nothing a spec has, there is no settings file, an older Purlin set the project up, or no test command is set, `2` the invocation was wrong. A test run cannot make an audit or a signature appear, so the gate does not set the code.
+Exit codes: `0` everything asked happened, `1` a tied test failed or did not run, evidence is missing, a marker names nothing a spec has, there is no settings file, the settings file cannot be read, an older Purlin set the project up, or no test command is set, `2` the invocation was wrong. A test run cannot make an audit or a signature appear, so the gate does not set the code.
 
 ## Step 2: when the run stops before any test
 
@@ -54,32 +54,30 @@ It writes nothing and names what is missing:
 |----------------|-------------|
 | `No .purlin/config.json here, so nothing ran.` | Run `purlin:init`, then this skill again |
 | `This project was set up by an older Purlin and not upgraded` | Run `purlin:init --update`, then this skill again |
-| `No test command is set`, `Suggested for <name>: <run>`, `Suggested entry: <JSON>` | Show the person the command and ask. On yes, write `[<entry>]` with the `purlin_config` tool, key `tests`, and run Step 1 again |
+| `.purlin/config.json cannot be read:` | `→ Fix the settings file by hand, then run: purlin:test` |
+| `Suggested tests setting: <the entries as one JSON array on one line>` | Show the person each suggested command, with the line after it that says what the tool needs added first, such as jest's `jest-junit`, and ask once. On yes, write that array as the `tests` setting with the `purlin_config` tool, then run Step 1 again |
 | `no test tool Purlin knows was found` | Read the project, its manifest, its test folder and its CI files, and propose one entry in the shape `references/formats/marker_format.md` gives. Ask, write it the same way, and run Step 1 again |
-
-A line after the suggestion, such as jest's `jest-junit`, says what the tool needs added first.
 
 ## Step 3: the evidence, written and committed when asked
 
-The run writes this operating system's section of `.purlin/evidence/local/<feature>.json`
-(the commit, the time, the machine, the fingerprint of the spec, code and tests it saw, each
-rule's word, each proof's result and test) and `.purlin/tests.md`, one table for the whole
-project. It prints `Evidence written to .purlin/evidence/local/<feature>.json.`, or the folder
-and a count for several features, and commits nothing. With `--commit` it makes two commits under
-your own git identity. The first, `purlin: specs, tests and settings for <feature>`, holds the
-specs of the features run, the test files carrying their markers and `.purlin/config.json`, and
-the run prints `Committed <sha7>, the work these results describe:` and each path. The second,
-`purlin: evidence at <sha7>`, holds the evidence and names the first; the run prints `Evidence
-committed.`, or `Evidence unchanged.` when nothing new was seen. It never pushes. The folder is
-the source: yours are `local`, and a remote run's, under `.purlin/evidence/ci/`, are `ci`.
-`references/formats/evidence_format.md` is the contract.
+The run writes this operating system's section of `.purlin/evidence/local/<feature>.json` (the
+commit, the time, the machine, the fingerprint of the spec, code and tests it saw, each rule's word,
+each proof's result and test) and `.purlin/tests.md`, one table for the whole project. It prints
+`Evidence written to .purlin/evidence/local/<feature>.json.`, or the folder and a count for several
+features, and commits nothing. With `--commit` it makes two commits under your own git identity. The
+first, `purlin: specs, tests and settings for <feature>`, holds the specs of the features run, the
+test files carrying their markers and `.purlin/config.json`, and the run prints `Committed <sha7>,
+the work these results describe:` and each path. The second, `purlin: evidence at <sha7>`, holds the
+evidence and names the first; the run prints `Evidence committed.`, or `Evidence unchanged.` when
+nothing new was seen. It never pushes. `references/formats/evidence_format.md` is the contract.
 
 ## Step 4: read what the run found
 
 The run prints `Markers: <n> tied to a test, <k> not tied.` and `Ran <suite> on <n> features.`,
 then one line per rule that fails or has no test, `<feature> RULE-<n> fails: <file>::<test>. Run
-purlin:build <feature>.` or `<feature> RULE-<n> has no test. Run purlin:build <feature>.`, then the
-status table `purlin:status` builds. The `Tests` column counts the words a passed cell can read:
+purlin:build <feature>.`, `<feature> RULE-<n> has no test. Run purlin:build <feature>.` or
+`<feature> <RULE-N> has no test for <PROOF-N>[, <PROOF-M>...]. Run purlin:build <feature>.`, then
+the status table `purlin:status` builds. The `Tests` column counts the words a passed cell can read:
 
 | Word | What it means |
 |------|---------------|
@@ -96,17 +94,19 @@ A marker naming nothing a spec has reads `<file>:<line> names <feature> <ID>, wh
 ## Step 5: operating systems
 
 A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating
-system. On a host that does not match, the run prints `<feature> PROOF-N needs Windows; this
-machine is macOS. Run purlin:test --remote.` An untagged proof runs anywhere. A system that is
-neither Windows nor macOS is `linux`, shown as `Linux/Unix`. Each system a counting run covered
-is one platform in the passed cell; a rule that passes on one and fails on another reads
-`partial`. `--remote` pulls the runner's results home at every gate.
+system. On a host that does not match, the run prints one line per system, `<n> proofs need
+<System>; this machine is <System>. Run purlin:test --remote.` (for one, `1 proof needs <System>;
+this machine is <System>. Run purlin:test --remote.`). An untagged proof runs anywhere
+(`references/hard_gates.md`, "Where a runner runs"). A system that is neither Windows nor macOS is
+`linux`, shown as `Linux/Unix`. Each system a counting run covered is one platform in the passed
+cell; a rule reads `partial` where two systems that each ran disagree. `--remote` pulls the
+runner's results home at every gate.
 
 ## Step 6: name the next step
 
 The run ends on the summary sentence and `Left to do`, the lines `sync_status` returned, counted
-over every rule under `specs/`. Print them as they are; `references/hard_gates.md` defines the
-gates. The first line of `Left to do` is the next step:
+over every rule under `specs/`. Print them as they are. The first line of `Left to do` is the next
+step:
 
 | What the run ends on | The line to print |
 |----------------------|-------------------|
