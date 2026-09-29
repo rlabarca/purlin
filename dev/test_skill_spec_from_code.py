@@ -56,7 +56,7 @@ class TestSkillSpecFromCode:
     def test_a_broken_closing_section_is_refused(self, monkeypatch):
         assert next_step_refusals(
             monkeypatch, 'spec-from-code', '- Rules with no test at all',
-            '- Rules with no test at all: `→ Next: purlin:build <name>` on '
+            '- Rules with no test at all: `→ Run: purlin:build <name>` on '
             'the feature with the most of') == []
 
     # purlin: skill_spec_from_code PROOF-4

@@ -123,7 +123,7 @@ rewrite the line in the same commit as the code. Commit the code and the tests t
 `purlin:test` ended on the summary and `Left to do`. Name the next step from them:
 
 - Every rule has a passing test, gate `passed`: `→ Run: git push`
-- Every rule has a passing test, gate `strong` or `signed`: `→ Next: purlin:audit`, which has a
+- Every rule has a passing test, gate `strong` or `signed`: `→ Run: purlin:audit`, which has a
   model read each rule, proof and test, and breaks the code where mutation testing is on.
 - Some rules still have no test: name them and what is missing, `→ Run: purlin:build <feature>`
 - A `@manual` proof: a person checks it and signs, `→ Run: purlin:sign <feature> RULE-<n>`

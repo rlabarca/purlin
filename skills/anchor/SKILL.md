@@ -93,6 +93,6 @@ Name the next step from the state:
 
 - Anchor created, no feature requires it yet: name the features that should and offer to add
   `> Requires:` to each, `→ Run: purlin:spec <feature>`
-- Anchor added or synced, rules changed: `→ Next: purlin:test`, whose `Left to do` names what
+- Anchor added or synced, rules changed: `→ Run: purlin:test`, whose `Left to do` names what
   the change sent back to be audited or signed.
 - Pin current and nothing moved: say so in one line, `→ Run: purlin:status`

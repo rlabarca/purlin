@@ -34,11 +34,10 @@ TMP_BASE = os.environ.get('PURLIN_MANUAL_TMP',
 SENTENCE = ('Users sign in with email and password. After five failed attempts '
             'the account is locked for fifteen minutes.')
 PROMPT = 'purlin:spec "%s"' % SENTENCE
-CLOSING = 'Build it now?'
+CLOSING = 'Spec saved: '
 
 RULE_LINE = re.compile(r'^-\s+(RULE-\d+):')
 PROOF_LINE = re.compile(r'^-\s+(PROOF-\d+)\s*\(([^)]*)\):')
-TAG = re.compile(r'\[(level|origin|criterion):\s*([^\]]+)\]')
 
 SEED = {
     'pyproject.toml': '[tool.pytest.ini_options]\ntestpaths = ["tests"]\n',
@@ -147,14 +146,7 @@ def main(argv=None):
         match = PROOF_LINE.match(line)
         if match:
             proved.update(re.findall(r'RULE-\d+', match.group(2)))
-    tags = {}
-    for line in text.splitlines():
-        if RULE_LINE.match(line):
-            for key, value in TAG.findall(line):
-                tags.setdefault(key, []).append(value.strip())
     unproved = [r for r in rules if r not in proved]
-    tag_detail = ', '.join('%s on %d of %d' % (k, len(tags.get(k, [])), len(rules))
-                           for k in ('level', 'origin', 'criterion')) or 'none'
 
     code = report([
         ('a spec file was written', rel is not None, rel or 'nothing under specs/'),
@@ -164,9 +156,8 @@ def main(argv=None):
          '%d rules: %s' % (len(rules), ', '.join(rules) or 'none')),
         ('every rule carries a proof', bool(rules) and not unproved,
          'unproved: %s' % (', '.join(unproved) or 'none')),
-        ('the rules carry tags', bool(tags.get('origin')),
-         tag_detail),
-        ('the reply ends with the offer', reply.strip().endswith(CLOSING),
+        ('the reply ends on the saved line',
+         (reply.strip().splitlines() or [''])[-1].startswith(CLOSING),
          'last line: %s' % (reply.strip().splitlines() or [''])[-1][-60:]),
     ])
     if args.keep:

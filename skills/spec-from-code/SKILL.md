@@ -100,9 +100,9 @@ and note the behaviour in `> Description:`.
 
 Report the counts, then name the next step from the state:
 
-- Rules whose existing tests now carry their markers: `→ Next: purlin:test`, which runs
+- Rules whose existing tests now carry their markers: `→ Run: purlin:test`, which runs
   them and shows what passes.
-- Rules with no test at all: `→ Next: purlin:build <name>` on the feature with the most of
+- Rules with no test at all: `→ Run: purlin:build <name>` on the feature with the most of
   them.
 - Every rule written and the team wants the paper trail:
-  `→ Next: purlin:init --gate strong`.
+  `→ Run: purlin:init --gate strong`.

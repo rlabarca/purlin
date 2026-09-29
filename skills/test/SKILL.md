@@ -5,7 +5,7 @@ description: Run the marked tests and print each rule's passed cell
 
 Run the project's own test suites, tie each result to the marker comment above its test,
 write what they saw into `.purlin/evidence/local/` and `.purlin/tests.md`, and print the passed
-cell of every rule. This is level 1: no breaks, no audit, no signature.
+cell of every rule. This is the step `passed`: no breaks, no audit, no signature.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
