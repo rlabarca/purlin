@@ -53,6 +53,12 @@ WORKFLOW = 'purlin.yml'
 REMOTE = 'origin'
 RUN_BRANCH_PREFIX = 'run/'
 
+# The `ci` setting of a project with no supported git host, and the one line
+# `--remote` prints there.
+NO_CI = 'none'
+CI_NONE = ('purlin:test --remote needs a GitHub or Azure DevOps remote, and '
+           '.purlin/config.json says ci: none.')
+
 # How long to keep asking the git host which run this push started. A run
 # takes a few seconds to register, and asking once would miss it; a minute is
 # far longer than any host takes and short enough to fail while a person is
@@ -101,7 +107,15 @@ def run_branch_name(project_root, branch):
 
 
 def run_remote(project_root, args=None, cfg=None):
-    """Push a run branch, wait for CI, pull it back, delete it. Exit code."""
+    """Push a run branch, wait for CI, pull it back, delete it. Exit code.
+
+    A project whose settings say `ci: none` has no git host that runs a
+    workflow, so nothing is pushed.
+    """
+    from config_engine import resolve_config
+    if resolve_config(project_root).get('ci') == NO_CI:
+        print(CI_NONE)
+        return 1
     host = _host(project_root)
     branch = _branch(project_root)
     if not branch or branch == 'HEAD':

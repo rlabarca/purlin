@@ -10,7 +10,7 @@ machine with Azure DevOps access.
 |---|---|---|
 | `check_spec.py` | `purlin:spec` on two sentences of requirements | the spec file, its rule count, whether every rule carries a proof, the tags, and whether the reply ends with the offer to build |
 | `check_build.py` | `purlin:build` on that spec | the files created, whether the tests carry proof markers, the `--test` run, and the commit body's three sections |
-| `check_azure_remote.py` | the lookup and the poll of `scripts/run/remote.py` against a real Azure DevOps pipeline | each command, its raw output and a one-line ok or FAIL: the remote parsed, `az` and its extension present and signed in, the seconds a run takes to register, the shape of the status answer, and that `remote.py` reads the same id and result |
+| `check_azure_remote.py` | the lookup and the poll of `scripts/run/remote.py` against a real Azure DevOps pipeline | each command, its raw output and a one-line ok or FAIL: the remote parsed, `az` and its extension present and signed in, the seconds a run takes to register, the shape of the status answer, that `remote.py` reads the same id and result, and that the runner's commit lands on the run branch itself |
 
 Run those two from the repository root, in this order:
 

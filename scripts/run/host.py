@@ -168,22 +168,14 @@ def detect_host():
 
 
 def current_branch(project_root):
-    """The branch the run is on, read from the runner's own ref variables."""
-    for name in ('GITHUB_REF_NAME', 'BUILD_SOURCEBRANCHNAME'):
-        value = (os.environ.get(name) or '').strip()
-        if value:
-            return value
-    branch = (_git(project_root, ['rev-parse', '--abbrev-ref', 'HEAD'],
-                   check=False) or '').strip()
-    return branch or default_branch(project_root)
-
-
-def ref_branch(project_root):
     """The branch the ref this run was started for names, run branch and all.
 
-    `BUILD_SOURCEBRANCHNAME` is the last path part of an Azure DevOps ref, so
-    `run/main-4f1c2ab` reaches it as `main-4f1c2ab` alone. The full ref is in
+    The one reader of the run's branch: the commit is pushed to it, and
+    `commits_here()` asks whether it is a run branch. `BUILD_SOURCEBRANCHNAME`
+    is the last path part of an Azure DevOps ref, so `run/main-4f1c2ab`
+    reaches it as `main-4f1c2ab` alone. The full ref is in
     `BUILD_SOURCEBRANCH`, and that is read first for exactly that reason.
+    Off a runner the branch is the one HEAD is on.
     """
     for name in ('GITHUB_REF_NAME', 'BUILD_SOURCEBRANCH',
                  'BUILD_SOURCEBRANCHNAME'):
@@ -192,8 +184,9 @@ def ref_branch(project_root):
             if value.startswith(REF_HEADS):
                 return value[len(REF_HEADS):]
             return value
-    return (_git(project_root, ['rev-parse', '--abbrev-ref', 'HEAD'],
-                 check=False) or '').strip()
+    branch = (_git(project_root, ['rev-parse', '--abbrev-ref', 'HEAD'],
+                   check=False) or '').strip()
+    return branch or default_branch(project_root)
 
 
 def is_a_tag_run():
@@ -226,14 +219,14 @@ def commits_here(project_root):
         return True
     if is_a_tag_run():
         return False
-    return ref_branch(project_root).startswith(RUN_BRANCH_PREFIX)
+    return current_branch(project_root).startswith(RUN_BRANCH_PREFIX)
 
 
 def no_commit_line(project_root):
     """The one line a CI run prints where it commits nothing."""
     return ('Tag run: nothing is written. This run reruns the tests and '
             'checks the evidence already committed to %s.'
-            % (ref_branch(project_root) or 'this ref'))
+            % (current_branch(project_root) or 'this ref'))
 
 
 def _read_bytes(project_root, rel_path):

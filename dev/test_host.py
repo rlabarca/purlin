@@ -254,6 +254,7 @@ def azure_env(monkeypatch):
     monkeypatch.setenv('BUILD_REPOSITORY_ID', 'repo-id')
     _no_workspace(monkeypatch)
     monkeypatch.setenv('BUILD_SOURCEBRANCHNAME', 'main')
+    monkeypatch.delenv('BUILD_SOURCEBRANCH', raising=False)
     # An Azure build reads no GitHub variable. The run this suite runs inside
     # may itself be a GitHub Actions job, whose GITHUB_REF_NAME would
     # otherwise name the branch this fixture is here to decide.
@@ -632,6 +633,27 @@ def test_the_azure_push_retries_when_the_object_id_is_stale(project, azure_env,
 # purlin: host PROOF-8
 def test_the_host_is_read_from_the_build_variables(github_env, azure_env):
     assert host_module.detect_host() == 'azure'
+
+
+# purlin: host PROOF-52
+def test_the_azure_push_names_the_whole_run_branch(project, azure_env,
+                                                   monkeypatch):
+    """Azure DevOps puts only a ref's last part in `BUILD_SOURCEBRANCHNAME`."""
+    monkeypatch.setenv('BUILD_SOURCEBRANCH', 'refs/heads/run/main-4f1c2ab')
+    monkeypatch.setenv('BUILD_SOURCEBRANCHNAME', 'main-4f1c2ab')
+    host = FakeHost(azure=True)
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = write_ci(project)
+
+    sha = host_module.commit_files(project, [path],
+                                   'purlin: evidence at 4f1c2ab')
+
+    assert sha == 'c' * 40
+    pushes = [body for verb, url, body in host.calls
+              if verb == 'POST' and '/pushes?' in url]
+    assert len(pushes) == 1, pushes
+    assert [update['name'] for update in pushes[0]['refUpdates']] == [
+        'refs/heads/run/main-4f1c2ab']
 
 
 # purlin: host PROOF-8
@@ -1020,6 +1042,30 @@ def test_a_failed_push_starts_no_run(project, remote_run, capsys):
     printed = capsys.readouterr().out
     assert 'The push failed, so no run was started.' in printed
     assert 'Waiting for' not in printed
+
+
+# purlin: host PROOF-53
+def test_a_project_whose_settings_say_ci_none_pushes_nothing(project,
+                                                             monkeypatch,
+                                                             capsys):
+    os.makedirs(os.path.join(project, '.purlin'), exist_ok=True)
+    with open(os.path.join(project, '.purlin', 'config.json'), 'w',
+              encoding='utf-8') as handle:
+        json.dump({'gate': 'passed', 'tests': [], 'ci': 'none'}, handle)
+    git(project, 'add', '-A')
+    git(project, 'commit', '--quiet', '-m', 'the settings')
+    git(project, 'remote', 'add', 'origin',
+        'https://github.com/acme/widgets.git')
+    started = []
+    monkeypatch.setattr(remote_module.subprocess, 'run',
+                        lambda argv, **_kw: started.append(list(argv)))
+
+    assert remote_module.run_remote(project) == 1
+    printed = capsys.readouterr().out
+    assert printed.splitlines() == [
+        'purlin:test --remote needs a GitHub or Azure DevOps remote, and '
+        '.purlin/config.json says ci: none.'], printed
+    assert started == [], 'a project with ci: none started %r' % started
 
 
 # ---------------------------------------------------------------------------

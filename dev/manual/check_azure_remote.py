@@ -17,7 +17,10 @@ What it confirms:
 - `az pipelines runs show --query "[status,result]" --output tsv` answers in
   the shape `remote.py` reads, while the run is going and once it completes;
 - `remote.find_azure_run` and `remote.wait_azure_run` read the same id and
-  result from the live answers.
+  result from the live answers;
+- the runner's evidence commit lands on the run branch itself, whose full
+  name the runner reads from `BUILD_SOURCEBRANCH`, and no branch named after
+  the ref's last part alone is created.
 
 What it changes: one branch on `origin`, `run/purlin-azure-check-<sha7>`,
 which it creates from HEAD and deletes before it exits, whatever happened.
@@ -117,8 +120,9 @@ def main(argv=None):
     if not check(code == 0, 'pushed HEAD as %s' % branch):
         return 1
     try:
-        _find_and_wait(root, az, organization, project, branch,
-                       args.poll_minutes * 60)
+        if _find_and_wait(root, az, organization, project, branch,
+                          args.poll_minutes * 60):
+            _landed_on_the_run_branch(root, branch, sha.strip())
     finally:
         code, _out = show(['git', 'push', remote.REMOTE, '--delete', branch],
                           root)
@@ -141,7 +145,7 @@ def _find_and_wait(root, az, organization, project, branch, poll_seconds):
     if not check(bool(run_id),
                    'the run registered after %d seconds, id %r (limit %d)'
                    % (time.time() - started, run_id, remote.FIND_SECONDS)):
-        return
+        return False
     found = remote.find_azure_run(root, az, organization, project, branch,
                                   seconds=0)
     check(found == run_id.split()[0],
@@ -161,7 +165,7 @@ def _find_and_wait(root, az, organization, project, branch, poll_seconds):
         if time.time() - started >= poll_seconds:
             check(False, 'the run did not complete within %d seconds'
                     % poll_seconds)
-            return
+            return False
         time.sleep(remote.POLL_EVERY)
     check(len(words) > 1 and words[1] in RESULTS,
             'the completed run names a result `remote.py` knows: %r'
@@ -171,6 +175,22 @@ def _find_and_wait(root, az, organization, project, branch, poll_seconds):
             'remote.wait_azure_run reads the same result: %r' % result)
     print('The run took %d seconds after it registered.'
           % (time.time() - started))
+    return True
+
+
+def _landed_on_the_run_branch(root, branch, pushed):
+    """The runner committed onto `branch`, not onto a branch of its last part."""
+    code, out = show(['git', 'ls-remote', remote.REMOTE,
+                      'refs/heads/%s' % branch], root)
+    now = out.split()[0] if out.split() else ''
+    check(code == 0 and bool(now) and now != pushed,
+          'the runner committed onto %s: its head moved from %s to %s'
+          % (branch, pushed[:7], now[:7] or 'nothing'))
+    stray = branch.rsplit('/', 1)[-1]
+    code, out = show(['git', 'ls-remote', remote.REMOTE,
+                      'refs/heads/%s' % stray], root)
+    check(code == 0 and not out.strip(),
+          'no branch %s was created from the last part of the ref' % stray)
 
 
 if __name__ == '__main__':

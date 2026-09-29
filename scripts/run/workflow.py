@@ -173,9 +173,9 @@ REMOTE = 'origin'
 
 NO_REMOTE = ('No git remote, so there is no runner to read this workflow. '
              'Add one with: git remote add %s <url>' % REMOTE)
-UNKNOWN_HOST = ('The %s remote is neither GitHub nor Azure DevOps, and those '
-                'are the two hosts this release writes a workflow for.'
-                % REMOTE)
+UNKNOWN_HOST = ('The %s remote is neither GitHub nor Azure DevOps. Everything '
+                'on this machine works with any host; only purlin:test '
+                '--remote needs one of those two.' % REMOTE)
 CLI_PRESENT = '%s is installed, so a remote run can be watched from here.'
 CLI_ABSENT = ('%s is not installed, so purlin:test --remote cannot watch a '
               'run. Install it, or open the run on the git host instead.')
