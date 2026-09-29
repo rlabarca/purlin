@@ -50,7 +50,6 @@ operating system that ran the feature, one section each.
       "at": "2026-09-27T12:00:00Z",
       "runner": "jane",
       "machine": "jane-mbp",
-      "hostname": "jane-mbp",
       "fingerprint": {"spec": "<sha256>", "code": "<sha256>", "tests": "<sha256>"},
       "rules": {"RULE-1": "passed", "RULE-2": "no test"},
       "proofs": [
@@ -96,7 +95,7 @@ present only once an audit has run.
 | `at` | string | ISO 8601 UTC with `Z`, when the run finished |
 | `runner` | string | the slug of the runner's email, or `ci` |
 | `machine` | string | where the tests ran: the host's name, or `unknown` where it reports none, for a `local` section; `remote runner, <Windows\|macOS\|Linux/Unix>` for a `ci` section. Compared: a run on another machine replaces the section |
-| `hostname` | string | the host's own name, the one a remote runner's host lent it included. Kept and never compared |
+| `hostname` | string | a `ci` section alone: the name the host lent the runner, beside `machine` `remote runner, <System>`. A `local` section carries none. Kept and never compared |
 | `fingerprint` | object | `spec`, `code` and `tests`, three sha256 hex strings. See "The fingerprint" |
 | `rules` | object | `RULE-N` to one word for what this run saw |
 | `proofs` | array | one entry per (proof, test) pair |

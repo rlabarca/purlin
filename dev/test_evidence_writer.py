@@ -118,15 +118,18 @@ def _evidence(root, feature='feat', source='local'):
 
 
 def _section(result='pass', at='2026-09-01T00:00:00Z', commit='a' * 40,
-             rules=None, machine='build-1', hostname='build-1'):
-    return {'commit': commit, 'dirty': False, 'at': at, 'runner': 'dev',
-            'machine': machine, 'hostname': hostname,
-            'fingerprint': dict(PRINT),
-            'rules': rules or {'RULE-1': 'passed' if result == 'pass'
-                               else 'failed'},
-            'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1', 'result': result,
-                        'env': None, 'manual': False,
-                        'test': 'tests/test_feat.py::test_ok'}]}
+             rules=None, machine='build-1', hostname=None):
+    """A section as a run writes it; `hostname` only for a `ci` section."""
+    section = {'commit': commit, 'dirty': False, 'at': at, 'runner': 'dev',
+               'machine': machine, 'fingerprint': dict(PRINT),
+               'rules': rules or {'RULE-1': 'passed' if result == 'pass'
+                                  else 'failed'},
+               'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1',
+                           'result': result, 'env': None, 'manual': False,
+                           'test': 'tests/test_feat.py::test_ok'}]}
+    if hostname is not None:
+        section['hostname'] = hostname
+    return section
 
 
 def _file(source='local', platforms=None, audit=None, feature='feat'):
@@ -197,8 +200,8 @@ def test_a_test_run_writes_the_feature_file_with_one_section(tmp_path):
                               'specs/a/feat.md')
     assert list(data['platforms']) == [HERE]
     assert sorted(data['platforms'][HERE]) == [
-        'at', 'commit', 'dirty', 'fingerprint', 'hostname', 'machine',
-        'proofs', 'rules', 'runner']
+        'at', 'commit', 'dirty', 'fingerprint', 'machine', 'proofs', 'rules',
+        'runner']
 
 
 # purlin: evidence_writer PROOF-16
@@ -262,8 +265,27 @@ def test_a_run_names_the_machine_its_tests_ran_on(tmp_path):
     assert code == 0, out
     section = _evidence(root)['platforms'][HERE]
     assert platform.node()
-    assert (section['machine'], section['hostname']) == (
-        platform.node(), platform.node())
+    assert section['machine'] == platform.node()
+
+
+class _Args(object):
+    """The one part of a parsed command line the section reads."""
+
+    def __init__(self, action):
+        self.action = action
+
+
+# purlin: evidence_writer PROOF-78
+def test_a_ci_section_names_the_host_the_runner_was_lent(tmp_path):
+    import purlin_run
+    root = _project(tmp_path)
+    _spec(root)
+    from purlin import specs as specs_module
+    features = specs_module.scan_specs(str(root))
+    section = purlin_run.build_sections(str(root), _Args('ci'), features,
+                                        ['feat'], {}, HERE)['feat']
+    assert platform.node()
+    assert section['hostname'] == platform.node()
 
 
 NAMELESS_HOST = (
@@ -721,11 +743,11 @@ def test_a_section_from_another_machine_replaces_the_one_on_disk(tmp_path):
 # purlin: evidence_writer PROOF-44
 def test_a_section_that_differs_only_in_its_hostname_is_not_written(tmp_path):
     root = tmp_path
-    path = _put(root, _file(platforms={
-        'linux': _section(hostname='fv-az123')}))
+    path = _put(root, _file(source='ci', platforms={
+        'linux': _section(hostname='fv-az123')}), source='ci')
     before = path.read_bytes()
 
-    writer.write_section(str(root), 'local', 'feat', _info(), 'linux',
+    writer.write_section(str(root), 'ci', 'feat', _info(), 'linux',
                          _section(hostname='fv-az456'))
 
     assert path.read_bytes() == before

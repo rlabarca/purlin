@@ -167,8 +167,9 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     each rule is read from those proofs alone.
 
     `machine` is where the tests ran: the host's name on a person's machine,
-    `remote runner, <system>` on a remote runner. `hostname` is the host's
-    own name, kept and never compared. Each defaults to this host.
+    `remote runner, <system>` on a remote runner, and defaults to this host.
+    `hostname`, given on a remote runner alone, is the name the host lent
+    it, kept and never compared; a section given none carries no such key.
     """
     proofs = info.get('proofs') or {}
     by_rule = info.get('proofs_by_rule') or {}
@@ -214,17 +215,19 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
                                      entry.get('test_name', ''))))
             if not seen:
                 listed.append(dict(base, result=unseen, test=''))
-    return {
+    section = {
         'commit': commit or '',
         'dirty': bool(dirty),
         'at': at or now_iso(),
         'runner': runner,
         'machine': machine or local_machine(),
-        'hostname': platform.node() if hostname is None else hostname,
         'fingerprint': dict(fingerprint),
         'rules': rules,
         'proofs': listed,
     }
+    if hostname is not None:
+        section['hostname'] = hostname
+    return section
 
 
 def _rule_marked_word(status, seen):

@@ -673,7 +673,8 @@ def build_sections(project_root, args, features, selected, index, os_name,
             info, entries, os_name, commit, dirty, runner,
             fingerprint_module.fingerprint(project_root, name, features,
                                            markers),
-            machine=machine, hostname=platform.node(),
+            machine=machine,
+            hostname=platform.node() if args.action == 'ci' else None,
             only=(None if proofs is None else
                   {pid for feature, pid in proofs if feature == name}))
     return sections
