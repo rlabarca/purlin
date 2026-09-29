@@ -33,14 +33,14 @@ to `purlin:test --remote`.
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --audit
 ```
 
-Add `--all` for `purlin:audit --all`, `--feature <name>` for each feature named, and `--arm-timeout
-<seconds>` when the person gave it. With neither, `--audit` runs the tests `purlin:test` would
-select, then the breaks where mutation testing is on, then the AI audit: one `claude -p` call per
-rule whose tests pass, that has a proof with a test, and whose text, proof or test changed since its
-last audit, `audit_parallel` at once, announced by `AI audit: <n> rules to read, <k> at a time.` The
-run writes each feature's section and its `audit` into `.purlin/evidence/local/<feature>.json` and
-prints `Evidence written to .purlin/evidence/local/<feature>.json.`. It commits nothing unless you
-add `--commit`, which commits under your own identity and ends on the evidence, with the subject
+Add `--arm-timeout <seconds>` when the person gave it. Add `--all` for `purlin:audit --all` and
+`--feature <name>` for each feature named; with neither, `--audit` runs the tests `purlin:test`
+would select, then the breaks where mutation testing is on, then the AI audit: one `claude -p` call
+per rule whose tests pass, that has a proof with a test, and whose text, proof or test changed since
+its last audit, `audit_parallel` at once, announced by `AI audit: <n> rules to read, <k> at a time.`
+The run writes each feature's section and its `audit` into `.purlin/evidence/local/<feature>.json`
+and prints `Evidence written to .purlin/evidence/local/<feature>.json.`. It commits nothing unless
+you add `--commit`, which commits under your own identity and ends on the evidence, with the subject
 `purlin: evidence at <sha7>`, and it never pushes. It then prints one line of its own, `AI audit:
 <n> rules read, <s> strong, <w> weak.`, and one line per cause for any rule the model could not be
 reached for, and ends on the status table, the summary and `Left to do`, as every run does.

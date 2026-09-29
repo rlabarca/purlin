@@ -232,8 +232,8 @@ class TestSkillAudit:
         assert refusals(monkeypatch, arm_timeout_problems, [
             (SKILL, replace(ARM_TIMEOUT_USAGE + '\n'),
              '%s usage block has no line %r' % (SKILL, ARM_TIMEOUT_USAGE)),
-            (SKILL, resub(r',? and\s+`--arm-timeout\s+<seconds>`\s+when the '
-                          r'person\s+gave it'),
+            (SKILL, resub(r'Add\s+`--arm-timeout\s+<seconds>`\s+when the\s+'
+                          r'person\s+gave it\.\s+'),
              "%s step that runs the script does not carry %r"
              % (SKILL, ARM_TIMEOUT_PASSED)),
         ]) == []

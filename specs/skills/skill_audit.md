@@ -21,7 +21,7 @@
 - RULE-10: The skill tells the agent that `purlin:audit --arm-timeout <seconds>` gives the breaking tool longer per feature, and to pass `--arm-timeout <seconds>` on to the run script when the person gave it
 - RULE-11: `references/purlin_commands.md` carries a row for `purlin:audit` that states its purpose
 - RULE-12: The skill tells the agent that a remote runner runs the same script in an arm of its own that nobody runs by hand
-- RULE-13: The skill names both evidence folders, `.purlin/evidence/ci/` and `.purlin/evidence/local/`
+- RULE-13: The skill tells the agent the two evidence folders, `.purlin/evidence/ci/` and `.purlin/evidence/local/`
 - RULE-14: The skill tells the agent that a file keeps the newest section per operating system and the newest audit entry per rule
 - RULE-15: The skill tells the agent that `--remote` belongs to `purlin:test`
 
