@@ -14,8 +14,9 @@ copies the plugin into a temp directory, points `CLAUDE_PLUGIN_ROOT` at the
 copy and runs that copy's script, which is what an install from the
 marketplace is.
 
-The last section walks a real python, typescript and C# project from init to
-the signed tag with the commands a person runs, one case per step.
+The last section sets up a real python, typescript and C# project and runs
+each one's marked test, and walks the python project from init to the signed
+tag with the commands a person runs, one case per step.
 """
 
 import contextlib

@@ -4,7 +4,8 @@
 >   questions, in this order: the gate, "what must be true of every rule
 >   before a version is proven?"; and, at `strong` and `signed` only,
 >   whether to measure test strength by breaking the code on purpose, where
->   an engine exists for a framework the tree carries. Everything else is
+>   an engine that runs on this operating system exists for a framework the
+>   tree carries. Everything else is
 >   derived from those answers or read from the tree. It asks nothing about
 >   how the tests run and writes an empty `tests` setting, writes nothing
 >   into the project's test suite, writes each file in turn and names every
@@ -16,7 +17,7 @@
 
 ## Rules
 
-- RULE-1: A project is asked the gate question and, at `strong` or `signed` where an engine exists for a framework the tree carries, the mutation question, in that order, and nothing else
+- RULE-1: A project is asked the gate question and, at `strong` or `signed` where an engine that runs on this operating system exists for a framework the tree carries, the mutation question, in that order, and nothing else
 - RULE-2: With mutation testing on, each gate derives its own minimum test strength: none at `passed`, 70 at `strong` and 80 at `signed`; with it off the minimum is null at every gate
 - RULE-3: `--gate` answers the question without asking it, and a later run with no flag keeps the gate the config already names
 - RULE-4: An answer that is not one of the three gates is read as `passed` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently

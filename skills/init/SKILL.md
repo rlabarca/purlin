@@ -40,8 +40,9 @@ or a line naming Stryker for a jest, vitest or .NET project. A no writes
 `mutation_engine: none` and `min_strength: null` and wires nothing; the AI audit alone judges
 test strength. A config with no `mutation_engine` is read as `none`, which is off. Where no
 engine exists, or it cannot run on this operating system (mutmut on Windows), init asks nothing,
-writes `none` and, at `strong` and `signed`, prints one line saying so. `--yes` takes every default, so mutation testing stays off; `--mutation` turns it on
-without the question, at any gate.
+writes `none` and, at `strong` and `signed`, prints one line saying so. `--yes` takes every
+default, so mutation testing stays off; `--mutation` turns it on without the question, at any
+gate.
 
 ## Run it
 
@@ -100,8 +101,9 @@ the file, from 1 to 16.
 `ci` is the git host read from the remote URL, `github` or `azure`, and `none` where there is
 no remote or it names neither. Under its first summary line init prints `No git host found.`
 where there is no remote, and `This git host cannot run tests remotely. Everything on this
-machine works.` where the remote names neither. Read and change the file with the `purlin_config` tool
-rather than by hand, so a key the installed Purlin does not read is reported instead of kept.
+machine works.` where the remote names neither. Read and change the file with the
+`purlin_config` tool rather than by hand, so a key the installed Purlin does not read is
+reported instead of kept.
 
 ## The remote runner
 
@@ -142,8 +144,8 @@ Nobody types that arm; the workflow carries it.
 
 | The run | What it does |
 |---------|--------------|
-| a `signed/**` tag | Reruns the tests `references/hard_gates.md`, "Where a runner runs", names, on a clean machine, and commits nothing |
-| a `run/*` branch | Runs the tests `references/hard_gates.md`, "Where a runner runs", names, then commits its own section of each feature's `.purlin/evidence/ci/` file onto that branch through the git host's API, at every gate |
+| a `signed/**` tag | Reruns the tests it selects (`references/hard_gates.md`, "Where a runner runs") on a clean machine, and commits nothing |
+| a `run/*` branch | Runs the tests it selects (`references/hard_gates.md`, "Where a runner runs"), then commits its own section of each feature's `.purlin/evidence/ci/` file onto that branch through the git host's API, at every gate |
 
 The runner writes no signature.
 

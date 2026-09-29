@@ -406,8 +406,9 @@ def resolve_mutation(console, existing, selected, turn_on, gate):
     A value the project already wrote is kept and nothing is asked. With no
     engine for any framework the tree carries that can run on this operating
     system, nothing is asked either: mutation testing stays off, and at
-    `strong` and `signed` one line says why. Otherwise `--mutation` turns it on, and at those two gates the
-    question decides, defaulting to no; at `passed` it stays off unasked.
+    `strong` and `signed` one line says why. Otherwise `--mutation` turns it
+    on, and at those two gates the question decides, defaulting to no; at
+    `passed` it stays off unasked.
     """
     engine = engine_for(selected)
     if engine is None:
