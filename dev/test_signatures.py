@@ -876,7 +876,8 @@ class TestWhatIsSigned:
             code = sign_module.main(['login', 'RULE-9', '--project-root',
                                      made.root])
             assert capsys.readouterr().out.splitlines() == [
-                'login RULE-9 is not a rule any spec has.']
+                'login RULE-9 is not a rule any spec has. Run purlin:status login '
+                'to see its rules.']
             assert (code, made.signatures()) == (1, [])
         finally:
             made.close()
@@ -889,7 +890,8 @@ class TestWhatIsSigned:
             code = sign_module.main(['login', 'RULE-1', 'RULE-9',
                                      '--project-root', made.root])
             lines = capsys.readouterr().out.splitlines()
-            assert 'login RULE-9 is not a rule any spec has.' in lines, lines
+            assert ('login RULE-9 is not a rule any spec has. Run purlin:status '
+                    'login to see its rules.') in lines, lines
             assert [name.split('.')[0] for name in made.signatures()] == [
                 'RULE-1']
             assert git(made.root, 'rev-list', '--count',

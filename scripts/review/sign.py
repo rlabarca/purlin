@@ -102,7 +102,15 @@ SIGNING_SETUP = (
 SIGNED_AS = 'Signed %s as %s with the key ending ...%s.'
 
 NOTHING_WAITING = 'Nothing is waiting for someone to test by hand or to sign.'
-NOT_A_RULE = '%s %s is not a rule any spec has.'
+NOT_A_RULE = ('%s %s is not a rule any spec has. Run purlin:status %s to see '
+              'its rules.')
+
+
+def not_a_rule(feature, rule):
+    """The line naming a rule no spec has, filled in for `feature` and `rule`."""
+    return NOT_A_RULE % (feature, rule, feature)
+
+
 NOT_MADE = ('sign: the signature commit was not made. Check that signing '
             'works and that the files are not already committed.')
 
@@ -858,7 +866,7 @@ def main(argv=None):
         unknown = [rule for rule in args.rules
                    if rule_entry(payload, args.feature, rule) is None]
         for rule in unknown:
-            print(NOT_A_RULE % (args.feature, rule))
+            print(not_a_rule(args.feature, rule))
         targets = [(args.feature, rule) for rule in args.rules
                    if rule not in unknown]
         if not targets:
