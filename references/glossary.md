@@ -27,8 +27,8 @@ other page points here rather than defining it again.
   always did and Purlin ignores it.
 - **suite**: one entry of the `tests` setting: the project's own test command, where its
   **report** lands, the report's format and the globs its test files live under. Setup leaves
-  the setting empty; the first test run suggests an entry, and it is written once a person
-  confirms it.
+  the setting empty; the first test run suggests an entry for each test tool it recognises, and
+  they are written together once a person confirms them.
 - **step**: `passed`, `strong` or `signed`, in that order, each containing the one before.
   `passed`: every test tied to the rule ran and passed. `strong`: those tests passed and the
   audit found them sound. `signed`: both, and a person signed the rule.
@@ -42,8 +42,9 @@ other page points here rather than defining it again.
 - **Left to do**: the list under the summary, one line per kind of remaining work, in the order
   the work is done, each with its count and the command that does it; a kind at zero is left
   out. The first line is the next step. The kinds, as printed: `to write a proof for`,
-  `to fix`, `to write a test for`, `to test`, `to test on <systems>`, `to test by hand`,
-  `to audit`, `to strengthen`, `to tie to its files`, `to sign` and `the version to tag`.
+  `to correct`, `to fix`, `to write a test for`, `to test`, `to test on <systems>`,
+  `to test by hand`, `to audit`, `to measure`, `to strengthen`, `to tie to its files`,
+  `to sign` and `the version to tag`.
   `references/hard_gates.md` says when each applies. **finished**: a version with nothing left
   to do.
 - **run**: one execution of the project's suites by `purlin:test` or `purlin:audit`.
@@ -56,7 +57,8 @@ other page points here rather than defining it again.
   remote runner's). Both count at every gate. **the table**: `.purlin/tests.md`, one row per
   feature, written with the evidence.
 - **platform**: one system a current section covered. **partial**: the passed cell's word when
-  a rule's tests passed on some platforms and failed or did not run on others. It is not met.
+  a rule's tests passed on one system and failed on another. It is not met. A system that has
+  not run reads `not run`.
 - **fingerprint**: a hash over the spec, the covered code and the tests, taken when a run
   writes a section. **current**: a section whose fingerprint matches the tree now. **out of
   date**: the passed cell's word when the newest section is not current, naming what changed,
@@ -74,8 +76,9 @@ other page points here rather than defining it again.
   cell `waiting for the audit`. It is never met and it is not `weak`.
 - **mutation testing**, **the breaks**: deliberate changes to the code, to see whether the tests
   catch them. Optional, off by default, asked about only at the gates `strong` and `signed`,
-  set by `mutation_engine`. **test strength**: the share of the breaks the tests caught, as a
-  percentage, compared with `min_strength`.
+  set by `mutation_engine`. **test strength**: the share of one feature's breaks the tests
+  caught, as a percentage, compared with `min_strength`. `references/hard_gates.md`, under the
+  gate table, says how it reaches a rule.
 - **hand check**: the check of a rule with a `@manual` proof. A person carries the proof out
   and signs the rule with `purlin:sign`, at any gate, with a **note** saying what they saw when
   they give one. That one act stands for the test, the audit and the signature of the rule.
@@ -105,7 +108,8 @@ other page points here rather than defining it again.
 - **git host**: GitHub or Azure DevOps. With neither, the settings say `ci: none`, and
   everything on a person's own machine still works. **remote runner**: the git host's CI
   running the same run script a person runs. A project has one for one reason: a proof tagged
-  `@env` for a system this machine is not. It runs only the systems the rules name. **remote
+  `@env` for a system this machine is not. What it runs is in `references/hard_gates.md`,
+  "Where a runner runs". **remote
   run**: `purlin:test --remote`, which pushes a **run branch**, `run/<branch>-<sha7>`, waits
   for the runner and pulls its evidence back. **tag run**: the run a pushed `signed/*` tag
   starts, which runs the tests and nothing else.
@@ -123,7 +127,7 @@ For one rule, top to bottom. Each row is a cell; the gate decides how many rows 
 
 | Step | Reached when | Words the cell can read |
 |------|--------------|-------------------------|
-| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, on every platform a current section covers | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
+| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
 | strong | passed, and an AI audit of the current rule, proof and test found nothing, with the test strength at or above `min_strength` where mutation testing is on | `strong`, `weak`, `waiting`, `not audited`, `manual test`, `no proof` |
 | signed | a counting signature for the current rule, proof, test, code, audit and machines | `signed`, `unsigned`, `waiting` |
 
