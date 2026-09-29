@@ -53,9 +53,11 @@ ROOT = os.path.dirname(DEV)
 UPDATE = os.path.join(ROOT, 'scripts', 'init', 'update.py')
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
+sys.path.insert(0, os.path.join(ROOT, 'scripts', 'run'))
 
 import scaffold  # noqa: E402
 import update  # noqa: E402
+from purlin_run import bash_command  # noqa: E402
 from purlin import status as status_module  # noqa: E402
 
 V095 = 'upgrade-0.9.5'
@@ -123,6 +125,21 @@ def _write(root, rel, text):
         os.makedirs(folder)
     with open(path, 'w', encoding='utf-8') as handle:
         handle.write(text)
+
+
+def _read_bytes(root, rel):
+    with open(os.path.join(root, rel), 'rb') as handle:
+        return handle.read()
+
+
+def _write_bytes(root, rel, data):
+    """`data` exactly, with no line ending turned into another on any system."""
+    path = os.path.join(root, rel)
+    folder = os.path.dirname(path)
+    if not os.path.isdir(folder):
+        os.makedirs(folder)
+    with open(path, 'wb') as handle:
+        handle.write(data)
 
 
 def _tracked(root):
@@ -270,6 +287,7 @@ def test_yes_asks_nothing_and_applies_every_migration(tmp_path, capsys,
 
 
 # purlin: update PROOF-33
+# purlin: update PROOF-117
 def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _apply(root)
@@ -360,6 +378,7 @@ def test_an_ignored_cache_is_deleted(tmp_path):
 
 
 # purlin: update PROOF-36
+# purlin: update PROOF-119
 def test_a_committed_cache_is_deleted_from_git_and_from_disk(tmp_path):
     """The v0.9.5 fixture ignores its cache, so commit one the way a project would."""
     root = _project(tmp_path, V095)
@@ -718,8 +737,10 @@ ONE_TEST_NOW = '; the file is one test now, and passes when it exits 0'
 
 
 def _old_tests(root):
+    # Each file holds exactly the line feeds it is given, on every system, as
+    # a checkout whose files end their lines in a line feed holds them.
     for rel, (old, _new) in OLD_TESTS.items():
-        _write(root, rel, old)
+        _write_bytes(root, rel, old.encode('utf-8'))
     _git(root, 'add', '-A')
     _git(root, 'commit', '-qm', 'the tests 0.9.5 marked')
 
@@ -754,11 +775,19 @@ def test_the_xunit_trait_becomes_a_comment(tmp_path, capsys):
 
 
 # purlin: update PROOF-109
+# purlin: update PROOF-123
 def test_the_shell_harness_calls_become_one_comment(tmp_path, capsys):
     root, printed = _rewritten(tmp_path, capsys)
     assert _read(root, 'tests/login.test.sh') == NEW_SHELL
     assert ('rewrote 1 marker in tests/login.test.sh as comments'
             + ONE_TEST_NOW) in printed
+    # bash refuses a line that ends in a carriage return, so the bytes are
+    # read, and the script is run by the bash a suite runs it with: on
+    # Windows, Git's own bash, found from git.
+    assert b'\r' not in _read_bytes(root, 'tests/login.test.sh')
+    done = subprocess.run([bash_command(), 'tests/login.test.sh'], cwd=root,
+                          capture_output=True, text=True, timeout=60)
+    assert done.returncode == 0, done.stdout + done.stderr
 
 
 # purlin: update PROOF-110
@@ -863,11 +892,21 @@ def test_a_conftest_holding_only_the_wiring_is_deleted(tmp_path, capsys):
 
 
 # purlin: update PROOF-83
+# purlin: update PROOF-120
 def test_a_conftest_holding_more_keeps_the_rest(tmp_path):
+    """Written with this system's own line ending, as an editor here writes it.
+
+    On Windows that is a carriage return and a line feed, and the lines the
+    update keeps have to keep it: the bytes are compared, not the text.
+    """
     root = _project(tmp_path, V095)
-    _write(root, 'conftest.py', 'import os\n\n' + OLD_CONFTEST)
+    eol = os.linesep
+    kept = ('import os' + eol + eol).encode('utf-8')
+    _write_bytes(root, 'conftest.py',
+                 kept + OLD_CONFTEST.replace('\n', eol).encode('utf-8'))
     _apply(root)
     assert _read(root, 'conftest.py') == 'import os\n\n'
+    assert _read_bytes(root, 'conftest.py') == kept
 
 
 # purlin: update PROOF-84
@@ -927,6 +966,12 @@ def _without(text, prefixes):
             if not any(line.startswith(p) for p in prefixes)]
 
 
+def _bytes_without(data, prefixes):
+    """`_without` over bytes: each line kept with its own line ending."""
+    return [line for line in data.splitlines(True)
+            if not line.startswith(prefixes)]
+
+
 # purlin: update PROOF-24
 def test_every_design_line_of_the_anchor_is_removed(tmp_path, capsys):
     root = _project(tmp_path, V095)
@@ -950,9 +995,11 @@ def test_every_design_line_of_the_anchor_is_removed(tmp_path, capsys):
 
 
 # purlin: update PROOF-99
+# purlin: update PROOF-126
 def test_the_picture_reference_of_the_feature_is_removed(tmp_path, capsys):
     root = _project(tmp_path, V095)
     before = _read(root, DESIGN_FEATURE)
+    was = _read_bytes(root, DESIGN_FEATURE)
     assert '> Visual-Reference: figma://' in before
     _apply(root)
     printed = capsys.readouterr().out
@@ -961,6 +1008,10 @@ def test_the_picture_reference_of_the_feature_is_removed(tmp_path, capsys):
                 if line.startswith('> Visual-Reference:')]
     assert _without(after, ('- PROOF-',)) == _without(
         before, ('> Visual-Reference:', '- PROOF-'))
+    # The same lines as bytes, each with its own line ending.
+    now = _read_bytes(root, DESIGN_FEATURE)
+    assert _bytes_without(now, (b'- PROOF-',)) == _bytes_without(
+        was, (b'> Visual-Reference:', b'- PROOF-'))
     assert ('removed the design reference from %s: > Visual-Reference:\n'
             % DESIGN_FEATURE) in printed
 
@@ -1235,6 +1286,7 @@ def test_an_anchor_with_no_scope_gets_no_advice(tmp_path, capsys):
 # --- the evidence folder ------------------------------------------------------
 
 # purlin: update PROOF-28
+# purlin: update PROOF-122
 def test_the_evidence_folder_gets_its_readme(tmp_path):
     root = _project(tmp_path, V095)
     assert not os.path.exists(os.path.join(root, '.purlin', 'evidence'))
@@ -1262,6 +1314,8 @@ def test_a_readme_already_there_is_left_alone(tmp_path):
 # --- operating-system tags ---------------------------------------------------
 
 WINDOWS_SPEC = 'specs/audit/static_checks.md'
+# A line of a spec, read as bytes with its ending, that ends in an `@` tag.
+ENDS_IN_A_TAG = re.compile(rb'@[\w()]+[ \t]*\r?\n?$')
 
 # A spec where the Windows tag's spelling is prose in the middle of a line rather
 # than a tag at its end: the rewrite has to leave it exactly as it is.
@@ -1280,11 +1334,13 @@ PROSE_SPEC = """# Feature: runners
 
 
 # purlin: update PROOF-13
+# purlin: update PROOF-124
 def test_the_retired_windows_tag_becomes_env(tmp_path):
     root = _project(tmp_path, V095)
     assert _spec_holding(root, 'msvcrt.locking') == WINDOWS_SPEC
     assert [line for line in _read(root, WINDOWS_SPEC).splitlines()
             if line.startswith('- PROOF-53 ')][0].endswith(' @windows')
+    before = _read_bytes(root, WINDOWS_SPEC)
     _apply(root)
     text = _read(root, WINDOWS_SPEC)
     proofs = [line for line in text.splitlines()
@@ -1294,6 +1350,17 @@ def test_the_retired_windows_tag_becomes_env(tmp_path):
     assert '@unit' not in proofs[0]  # retired
     assert not [line for line in text.splitlines()
                 if line.endswith('@windows')]
+    # The spec is rewritten as text; every line that ends in no tag, the
+    # migrations having no reason to touch it, keeps its bytes, line
+    # endings included.
+    was = before.splitlines(True)
+    now = _read_bytes(root, WINDOWS_SPEC).splitlines(True)
+    assert len(now) == len(was)
+    untagged = [number for number, line in enumerate(was)
+                if not ENDS_IN_A_TAG.search(line)]
+    assert len(untagged) > 10
+    assert [now[number] for number in untagged] == [
+        was[number] for number in untagged]
 
 
 # purlin: update PROOF-79
@@ -1321,15 +1388,21 @@ def test_the_kind_of_test_is_dropped_from_every_proof_line(tmp_path):
 
 
 # purlin: update PROOF-98
+# purlin: update PROOF-125
 def test_an_env_tag_after_the_kind_of_test_is_kept(tmp_path):
     root = _project(tmp_path, V095)
     rel = 'specs/_anchors/proof_common.md'
-    with open(os.path.join(root, rel), 'a', encoding='utf-8') as handle:
-        handle.write('- PROOF-14 (RULE-1): Lock a file @e2e @env(linux)\n')  # retired
+    # Appended as bytes, so the line ends in a line feed on every system.
+    with open(os.path.join(root, rel), 'ab') as handle:
+        handle.write(b'- PROOF-14 (RULE-1): Lock a file @e2e @env(linux)\n')  # retired
     _apply(root)
     added = [line for line in _read(root, rel).splitlines()
              if line.startswith('- PROOF-14 ')]
     assert added == ['- PROOF-14 (RULE-1): Lock a file @env(linux)']
+    # The bytes: a line feed alone ends it, with no carriage return before.
+    assert [line for line in _read_bytes(root, rel).splitlines(True)
+            if line.startswith(b'- PROOF-14 ')] == [
+                b'- PROOF-14 (RULE-1): Lock a file @env(linux)\n']
 
 
 # --- hooks -------------------------------------------------------------------
@@ -1576,6 +1649,7 @@ def test_every_backup_is_named_for_the_bytes_it_holds(tmp_path):
 
 
 # purlin: update PROOF-71
+# purlin: update PROOF-118
 def test_every_backed_up_file_keeps_its_bytes_from_before_the_run(tmp_path):
     root, before, backups = _backed_up(tmp_path)
     held = {}
@@ -1636,6 +1710,7 @@ def test_one_commit_carries_every_migration_id(tmp_path):
 
 
 # purlin: update PROOF-89
+# purlin: update PROOF-121
 def test_nothing_is_left_uncommitted_but_the_backups(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
