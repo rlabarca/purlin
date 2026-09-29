@@ -1,7 +1,8 @@
 """Text checks for the audit skill, `skills/audit/SKILL.md`.
 
 Every rule of `specs/skills/skill_audit.md` is proved here, one test per
-proof. The readers, the checks and the broken copies this file shares with
+proof; a broken copy of the skill is a second assertion inside the test of
+the proof it guards. The readers, the checks and the broken copies this file shares with
 the other skill test files are in `dev/skill_checks.py`; the checks that
 only this skill needs, each reading one part of the skill, are below the
 tests.
@@ -10,7 +11,7 @@ tests.
 import re
 
 import skill_checks
-from skill_checks import (COMMAND_REF, carries, field, frontmatter,
+from skill_checks import (COMMAND_REF, carries, field, flat, frontmatter,
                           frontmatter_problems, next_step_problems,
                           read, refusals, replace, resub, same_line,
                           sections, sentence_with, skill_ceiling_problems,
@@ -38,142 +39,84 @@ def description():
 
 class TestSkillAudit:
 
-    # --- RULE-1: the frontmatter and the command reference's row ---------
+    # --- RULE-1: the frontmatter -----------------------------------------
 
     # purlin: skill_audit PROOF-1
-    def test_the_frontmatter_names_the_skill_on_one_line(self):
+    def test_the_frontmatter_names_the_skill_on_one_line(self, monkeypatch):
         assert skill_frontmatter_problems() == []
+        line = description_line()
+        assert refusals(monkeypatch, skill_frontmatter_problems, [
+            (SKILL, replace('name: audit\n'),
+             "%s frontmatter name is None, expected 'audit'" % SKILL),
+            (SKILL, replace(line, 'description:'), NO_DESCRIPTION),
+            (SKILL, replace(line, 'description:\n  ' + description()),
+             NO_DESCRIPTION),
+            (SKILL, replace(line, 'description: |\n  ' + description()),
+             NO_DESCRIPTION),
+            (SKILL, replace(line, 'description: >-\n  ' + description()),
+             NO_DESCRIPTION),
+            (SKILL, replace(line, line + '\n  and a second line'),
+             NO_DESCRIPTION),
+        ]) == []
+
+    # --- RULE-11: the command reference's row ----------------------------
 
     # purlin: skill_audit PROOF-17
-    def test_the_command_reference_has_a_row_with_a_purpose(self):
+    def test_the_command_reference_has_a_row_with_a_purpose(
+            self, monkeypatch):
         assert command_row_problems() == []
-
-    # purlin: skill_audit PROOF-18
-    def test_a_deleted_name_line_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace('name: audit\n'),
-                       "%s frontmatter name is None, expected 'audit'"
-                       % SKILL) == []
-
-    # purlin: skill_audit PROOF-19
-    def test_an_empty_description_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace(description_line(), 'description:'),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_audit PROOF-20
-    def test_a_description_moved_to_the_line_below_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace(description_line(),
-                               'description:\n  ' + description()),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_audit PROOF-21
-    def test_a_description_written_as_a_bar_block_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace(description_line(),
-                               'description: |\n  ' + description()),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_audit PROOF-22
-    def test_a_description_written_as_a_folded_block_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace(description_line(),
-                               'description: >-\n  ' + description()),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_audit PROOF-23
-    def test_a_description_run_on_to_a_second_line_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace(description_line(),
-                               description_line() + '\n  and a second line'),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_audit PROOF-24
-    def test_a_deleted_command_row_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, command_row_problems,
-                       replace(command_row() + '\n'), NO_ROW,
-                       rel=COMMAND_REF) == []
-
-    # purlin: skill_audit PROOF-25
-    def test_a_command_row_with_no_purpose_is_refused(self, monkeypatch):
         row = command_row()
         cells = row.split('|')
         cells[2] = ' '
-        assert refused(monkeypatch, command_row_problems,
-                       replace(row, '|'.join(cells)), NO_ROW,
-                       rel=COMMAND_REF) == []
+        assert refusals(monkeypatch, command_row_problems, [
+            (COMMAND_REF, replace(row + '\n'), NO_ROW),
+            (COMMAND_REF, replace(row, '|'.join(cells)), NO_ROW),
+        ]) == []
 
-    # --- RULE-2: the run script, and the remote runner's arm -------------
+    # --- RULE-2: the run script ------------------------------------------
 
     # purlin: skill_audit PROOF-2
-    def test_one_line_runs_the_run_script_with_audit(self):
+    def test_one_line_runs_the_run_script_with_audit(self, monkeypatch):
         assert run_line_problems() == []
-
-    # purlin: skill_audit PROOF-26
-    def test_one_sentence_says_nobody_runs_the_runner_arm(self):
-        assert runner_sentence_problems() == []
-
-    # purlin: skill_audit PROOF-27
-    def test_audit_moved_off_the_run_line_is_refused(self, monkeypatch):
         assert refused(monkeypatch, run_line_problems,
                        replace('purlin_run.py" --audit',
                                'purlin_run.py"\n--audit'),
                        '%s has no single line carrying all of' % SKILL) == []
 
-    # purlin: skill_audit PROOF-28
-    def test_a_runner_sentence_without_by_hand_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, runner_sentence_problems,
-                       replace('; you never run it by hand.', '.'),
-                       RUNNER_SENTENCE) == []
+    # --- RULE-12: the remote runner's arm --------------------------------
 
-    # purlin: skill_audit PROOF-29
-    def test_by_hand_in_a_sentence_of_its_own_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, runner_sentence_problems,
-                       replace('runs no audit; you never run it by hand.',
-                               'runs no audit. Then you never run it by '
-                               'hand.'),
-                       RUNNER_SENTENCE) == []
+    # purlin: skill_audit PROOF-26
+    def test_one_sentence_says_nobody_runs_the_runner_arm(self, monkeypatch):
+        assert runner_sentence_problems() == []
+        assert refusals(monkeypatch, runner_sentence_problems, [
+            (SKILL, resub(r'; you never\s+run it by hand\.', '.'),
+             RUNNER_SENTENCE),
+            (SKILL, resub(r'runs no audit; you never\s+run it by hand\.',
+                          'runs no audit. Then you never run it by hand.'),
+             RUNNER_SENTENCE),
+        ]) == []
 
     # --- RULE-3: the closing section names the next step -----------------
 
     # purlin: skill_audit PROOF-3
-    def test_it_closes_on_the_first_line_of_left_to_do(self):
+    def test_it_closes_on_the_first_line_of_left_to_do(self, monkeypatch):
         assert audit_next_step_problems() == []
-
-    # purlin: skill_audit PROOF-8
-    def test_a_deleted_closing_section_is_refused(self, monkeypatch):
-        last = read(SKILL).rindex('\n## ')
-        assert refused(monkeypatch, audit_next_step_problems,
-                       lambda t: t[:last + 1],
-                       "%s closes with the section 'Step 5: retention'"
-                       % SKILL) == []
-
-    # purlin: skill_audit PROOF-9
-    def test_an_undirected_left_to_do_outcome_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, audit_next_step_problems,
-                       replace(LEFT_TO_DO, LEFT_TO_DO.replace('→ ', '')),
-                       '%s closing outcome gives no → directive' % SKILL) == []
-
-    # purlin: skill_audit PROOF-10
-    def test_a_missing_nothing_left_outcome_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, audit_next_step_problems,
-                       resub(r'^- `Nothing left to do\.`.*\Z'),
-                       "%s closing section does not name 'Nothing left to "
-                       "do.'" % SKILL) == []
-
-    # purlin: skill_audit PROOF-30
-    def test_a_closing_section_without_the_first_line_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, audit_next_step_problems,
-                       replace('; the first line of `Left to do` is the next '
-                               'step:', ':'),
-                       "%s closing section does not name 'the first line of "
-                       "`Left to do`'" % SKILL) == []
+        text = read(SKILL)
+        last = text.rindex('\n## ')
+        before = sections(text)[-2][0]
+        assert refusals(monkeypatch, audit_next_step_problems, [
+            (SKILL, lambda t: t[:last + 1],
+             '%s closes with the section %r' % (SKILL, before)),
+            (SKILL, replace(LEFT_TO_DO, LEFT_TO_DO.replace('→ ', '')),
+             '%s closing outcome gives no → directive' % SKILL),
+            (SKILL, resub(r'^- `Nothing left to do\.`.*\Z'),
+             "%s closing section does not name 'Nothing left to do.'"
+             % SKILL),
+            (SKILL, replace('; the first line of `Left to do` is the next '
+                            'step:', ':'),
+             "%s closing section does not name 'the first line of "
+             "`Left to do`'" % SKILL),
+        ]) == []
 
     # --- RULE-4: the ceiling ---------------------------------------------
 
@@ -193,167 +136,141 @@ class TestSkillAudit:
     # --- RULE-5: which evidence counts under which gate ------------------
 
     # purlin: skill_audit PROOF-5
-    def test_both_sources_count_under_every_gate(self):
+    def test_both_sources_count_under_every_gate(self, monkeypatch):
         assert source_table_problems() == []
+        assert refusals(monkeypatch, source_table_problems, [
+            (SKILL, resub(r'(^\| local \|[^\n]*)`strong`, ', r'\1'),
+             "%s local row does not count under 'strong'" % SKILL),
+            (SKILL, resub(r'^\| ci \|[^\n]*\n'),
+             "%s source table has no 'ci' row" % SKILL),
+        ]) == []
+
+    # --- RULE-13: both evidence folders ----------------------------------
 
     # purlin: skill_audit PROOF-33
-    def test_both_evidence_folders_are_named(self):
+    def test_both_evidence_folders_are_named(self, monkeypatch):
         assert evidence_folder_problems() == []
-
-    # purlin: skill_audit PROOF-34
-    def test_a_local_row_without_strong_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, source_table_problems,
-                       resub(r'(^\| local \|[^\n]*)`strong`, ', r'\1'),
-                       "%s local row does not count under 'strong'"
-                       % SKILL) == []
-
-    # purlin: skill_audit PROOF-35
-    def test_a_missing_ci_row_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, source_table_problems,
-                       resub(r'^\| ci \|[^\n]*\n'),
-                       "%s source table has no 'ci' row" % SKILL) == []
-
-    # purlin: skill_audit PROOF-36
-    def test_a_skill_naming_no_ci_folder_is_refused(self, monkeypatch):
         assert refused(monkeypatch, evidence_folder_problems,
                        lambda t: t.replace('.purlin/evidence/ci/',
                                            '.purlin/evidence/remote/'),
                        "%s does not name '.purlin/evidence/ci/'"
                        % SKILL) == []
 
-    # --- RULE-6: what the gate changes, the audit's line and its ending --
+    # --- RULE-6: what each gate runs -------------------------------------
 
     # purlin: skill_audit PROOF-6
     def test_the_passed_row_reads_with_the_ai_audit_and_measures_nothing(
-            self):
+            self, monkeypatch):
         assert passed_row_problems() == []
+        assert refusals(monkeypatch, passed_row_problems, [
+            (SKILL, replace('Runs the tests and the AI audit, and no breaks',
+                            'Runs the tests, and no breaks'),
+             '%s passed row does not say the run reads the rules with the '
+             'AI audit' % SKILL),
+            (SKILL, replace('test strength is not measured, and '),
+             "%s passed row does not name 'not measured'" % SKILL),
+        ]) == []
 
     # purlin: skill_audit PROOF-37
-    def test_the_strong_row_runs_the_breaks_against_the_minimum(self):
+    def test_the_strong_row_runs_the_breaks_against_the_minimum(
+            self, monkeypatch):
         assert strong_row_problems() == []
-
-    # purlin: skill_audit PROOF-38
-    def test_the_signed_row_runs_what_strong_runs_and_counts_both(self):
-        assert signed_row_problems() == []
-
-    # purlin: skill_audit PROOF-11
-    def test_the_audit_line_comes_before_the_ending(self):
-        assert audit_ending_problems() == []
-
-    # purlin: skill_audit PROOF-12
-    def test_the_commit_sentence_names_the_evidence_subject(self):
-        assert commit_sentence_problems() == []
-
-    # purlin: skill_audit PROOF-39
-    def test_a_signature_does_not_set_the_exit_code(self):
-        assert signature_sentence_problems() == []
-
-    # purlin: skill_audit PROOF-13
-    def test_a_passed_row_without_the_ai_audit_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, passed_row_problems,
-                       replace('Runs the tests and the AI audit, and no breaks',
-                               'Runs the tests, and no breaks'),
-                       '%s passed row does not say the run reads the rules '
-                       'with the AI audit' % SKILL) == []
-
-    # purlin: skill_audit PROOF-40
-    def test_a_passed_row_without_not_measured_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, passed_row_problems,
-                       replace('test strength is not measured, and '),
-                       "%s passed row does not name 'not measured'"
-                       % SKILL) == []
-
-    # purlin: skill_audit PROOF-41
-    def test_a_strong_row_without_the_breaks_is_refused(self, monkeypatch):
         assert refused(monkeypatch, strong_row_problems,
                        replace('Runs the breaks too where mutation testing is '
                                'on; a rule', 'A rule'),
                        "%s strong row does not name 'breaks'" % SKILL) == []
 
-    # purlin: skill_audit PROOF-14
-    def test_a_signed_row_that_differs_from_strong_is_refused(
+    # purlin: skill_audit PROOF-38
+    def test_the_signed_row_runs_what_strong_runs_and_counts_both(
             self, monkeypatch):
-        assert refused(monkeypatch, signed_row_problems,
-                       replace('| The same as `strong`.', '| Runs the tests.'),
-                       '%s signed row does not run what the strong row runs'
-                       % SKILL) == []
+        assert signed_row_problems() == []
+        assert refusals(monkeypatch, signed_row_problems, [
+            (SKILL, replace('| The same as `strong`.', '| Runs the tests.'),
+             '%s signed row does not run what the strong row runs' % SKILL),
+            (SKILL, replace('Evidence either source wrote counts here too'),
+             "%s signed row does not say 'counts here too'" % SKILL),
+        ]) == []
 
-    # purlin: skill_audit PROOF-42
-    def test_a_signed_row_without_counts_here_too_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, signed_row_problems,
-                       replace('Evidence either source wrote counts here too'),
-                       "%s signed row does not say 'counts here too'"
-                       % SKILL) == []
+    # --- RULE-8: the audit's line, its ending, its commit ----------------
 
-    # purlin: skill_audit PROOF-15
-    def test_an_audit_line_without_the_ending_is_refused(self, monkeypatch):
+    # purlin: skill_audit PROOF-11
+    def test_the_audit_line_comes_before_the_ending(self, monkeypatch):
+        assert audit_ending_problems() == []
         assert refused(monkeypatch, audit_ending_problems,
                        resub(r'and ends on the status table,\s+the summary and '
                              r'`Left to do`'),
                        "%s has no sentence carrying all of 'AI audit: <n> "
                        "rules read, <s> strong, <w> weak.'" % SKILL) == []
 
-    # purlin: skill_audit PROOF-43
-    def test_a_commit_sentence_with_another_subject_is_refused(
+    # purlin: skill_audit PROOF-12
+    def test_the_commit_sentence_names_the_evidence_subject(
             self, monkeypatch):
+        assert commit_sentence_problems() == []
         assert refused(monkeypatch, commit_sentence_problems,
                        replace('`purlin: evidence at <sha7>`',
                                '`purlin: evidence for <sha7>`'),
                        "%s has no sentence carrying all of 'you add "
                        "`--commit`'" % SKILL) == []
 
-    # purlin: skill_audit PROOF-16
-    def test_a_signature_sentence_without_the_exit_code_is_refused(
-            self, monkeypatch):
+    # --- RULE-9: an audit cannot make a signature appear -----------------
+
+    # purlin: skill_audit PROOF-39
+    def test_a_signature_does_not_set_the_exit_code(self, monkeypatch):
+        assert signature_sentence_problems() == []
         assert refused(monkeypatch, signature_sentence_problems,
                        resub(r', so a rule waiting on one does not set\s+the '
                              r'code\.', '.'),
                        "%s has no sentence carrying all of 'An audit cannot "
                        "make a signature appear'" % SKILL) == []
 
-    # --- RULE-7: where the audit lands, what a file keeps, --remote ------
+    # --- RULE-10: the breaking tool's time limit -------------------------
+
+    # purlin: skill_audit PROOF-50
+    def test_the_arm_timeout_is_in_the_usage_and_passed_on(
+            self, monkeypatch):
+        assert arm_timeout_problems() == []
+        assert refusals(monkeypatch, arm_timeout_problems, [
+            (SKILL, replace(ARM_TIMEOUT_USAGE + '\n'),
+             '%s usage block has no line %r' % (SKILL, ARM_TIMEOUT_USAGE)),
+            (SKILL, resub(r',? and\s+`--arm-timeout\s+<seconds>`\s+when the '
+                          r'person\s+gave it'),
+             "%s step that runs the script does not carry %r"
+             % (SKILL, ARM_TIMEOUT_PASSED)),
+        ]) == []
+
+    # --- RULE-7: where the audit lands -----------------------------------
 
     # purlin: skill_audit PROOF-7
-    def test_the_audit_is_written_into_the_local_file(self):
+    def test_the_audit_is_written_into_the_local_file(self, monkeypatch):
         assert local_file_problems() == []
-
-    # purlin: skill_audit PROOF-44
-    def test_one_sentence_says_what_a_file_keeps(self):
-        assert retention_problems() == []
-
-    # purlin: skill_audit PROOF-45
-    def test_remote_belongs_to_purlin_test(self):
-        assert remote_problems() == []
-
-    # purlin: skill_audit PROOF-46
-    def test_a_deleted_retention_sentence_is_refused(self, monkeypatch):
-        assert refused(monkeypatch, retention_problems,
-                       resub(r'^A file keeps the newest section.*?git log`\. '),
-                       "%s does not carry 'the newest section per operating "
-                       "system'" % SKILL) == []
-
-    # purlin: skill_audit PROOF-47
-    def test_a_retention_sentence_without_the_audit_entry_is_refused(
-            self, monkeypatch):
-        assert refused(monkeypatch, retention_problems,
-                       replace(' and the newest audit entry per rule'),
-                       "%s has no sentence carrying all of 'A file keeps the "
-                       "newest section per operating system', 'the newest "
-                       "audit entry per rule'" % SKILL) == []
-
-    # purlin: skill_audit PROOF-48
-    def test_an_audit_written_into_the_ci_file_is_refused(self, monkeypatch):
         assert refused(monkeypatch, local_file_problems,
-                       replace('into\n`.purlin/evidence/local/',
-                               'into\n`.purlin/evidence/ci/'),
+                       resub(r'into(\s+)`\.purlin/evidence/local/',
+                             r'into\1`.purlin/evidence/ci/'),
                        "%s does not carry 'into `.purlin/evidence/local/"
                        "<feature>.json`'" % SKILL) == []
 
-    # purlin: skill_audit PROOF-49
-    def test_remote_not_given_to_purlin_test_is_refused(self, monkeypatch):
+    # --- RULE-14: what a file keeps --------------------------------------
+
+    # purlin: skill_audit PROOF-44
+    def test_one_sentence_says_what_a_file_keeps(self, monkeypatch):
+        assert retention_problems() == []
+        assert refusals(monkeypatch, retention_problems, [
+            (SKILL, resub(r'^A file keeps the newest section.*?git log`\. '),
+             "%s does not carry 'the newest section per operating system'"
+             % SKILL),
+            (SKILL, replace(' and the newest audit entry per rule'),
+             "%s has no sentence carrying all of 'A file keeps the newest "
+             "section per operating system', 'the newest audit entry per "
+             "rule'" % SKILL),
+        ]) == []
+
+    # --- RULE-15: --remote belongs to purlin:test ------------------------
+
+    # purlin: skill_audit PROOF-45
+    def test_remote_belongs_to_purlin_test(self, monkeypatch):
+        assert remote_problems() == []
         assert refused(monkeypatch, remote_problems,
-                       replace('so `--remote` belongs to', 'so use'),
+                       resub(r'`--remote` belongs\s+to', 'use'),
                        "%s does not carry '`--remote` belongs to `purlin:test "
                        "--remote`'" % SKILL) == []
 
@@ -516,3 +433,25 @@ def retention_problems():
 
 def remote_problems():
     return carries(SKILL, ['`--remote` belongs to `purlin:test --remote`'])
+
+
+# The usage line of `--arm-timeout`, character for character, and what the
+# step that runs the script says of it.
+ARM_TIMEOUT_USAGE = ('purlin:audit --arm-timeout <seconds>  Give the breaking '
+                     'tool longer per feature')
+ARM_TIMEOUT_PASSED = '`--arm-timeout <seconds>` when the person gave it'
+
+
+def arm_timeout_problems():
+    text = read(SKILL)
+    problems = []
+    usage = re.search(r'^## Usage\n+```\n(.*?)\n```', text, re.S | re.M)
+    if usage is None or ARM_TIMEOUT_USAGE not in usage.group(1).split('\n'):
+        problems.append('%s usage block has no line %r'
+                        % (SKILL, ARM_TIMEOUT_USAGE))
+    step = next((body for heading, body in sections(text)
+                 if heading.startswith('Step 1')), '')
+    if ARM_TIMEOUT_PASSED not in flat(step):
+        problems.append('%s step that runs the script does not carry %r'
+                        % (SKILL, ARM_TIMEOUT_PASSED))
+    return problems
