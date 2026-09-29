@@ -2,14 +2,16 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "59c903e8f0bef93f7b83cd862be6ed325a6c7431351cee195a7177bdfe048d2d",
-        "spec": "e6f41645e69964ff0b02494ded9de4466a89014f8b94a85df7ad535d83276453",
-        "tests": "4c434aa38b2216c54101b1ced36f2947e09fc42e13a6d929090d9da5d47cc5e4"
+        "code": "dcbb44c5e1185039b50192a053bfddb0e38f6ef8ebae23a95bff14af48db4a7e",
+        "spec": "8120e91c623af70dfd49526bc4813afd0954268b0f04e1f12f45ccb93d7d0a2e",
+        "tests": "d060f58606f99b20934a740171fd287bde307165e8d09a40d5389da84cca7414"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -149,7 +151,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/_anchors/schema_spec_format.md"
 }

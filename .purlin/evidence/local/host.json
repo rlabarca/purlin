@@ -2,14 +2,16 @@
   "feature": "host",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "6ce6e9b5b71f1139cf426f325ea36dba278a5d442c194f64eafa426b2c1933ce",
-        "spec": "0c4f79ceb2c1ca0527e29d23f8e586e60725e39b8dee08589da594db78a13797",
-        "tests": "c5380130d943f31cc2d20e868a335d96a942afac260f13838078f6f784869992"
+        "code": "aee9b1f3400428c24b81c4812202267de36ef7b8e4b3c3d8b06527095b49f4e4",
+        "spec": "04003e1d8b53fd115391eb078804fdabe5db63f1a3452a063c9b5ec616d00a73",
+        "tests": "8baea9c569586789a1203ff4b476ab398ff54a7e032be66455d6776dbf512ccf"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -117,75 +119,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-9",
+          "id": "PROOF-52",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_host.py::test_a_file_that_is_not_committed_is_local"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_host.py::test_a_persons_commit_is_local"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_host.py::test_a_build_service_name_alone_is_local"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_host.py::test_a_signed_actions_commit_is_ci"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_host.py::test_a_signature_this_checkout_cannot_check_is_still_ci"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_host.py::test_the_web_flow_committer_with_a_good_signature_is_ci"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_host.py::test_the_web_flow_committer_is_ci_when_the_machine_has_no_gpg"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_host.py::test_the_web_flow_committer_with_no_signature_and_gpg_is_local"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_host.py::test_the_web_flow_committer_with_a_bad_signature_is_local"
+          "rule": "RULE-8",
+          "test": "dev/test_host.py::test_the_azure_push_names_the_whole_run_branch"
         },
         {
           "env": null,
@@ -389,7 +327,7 @@
         },
         {
           "env": null,
-          "id": "PROOF-17",
+          "id": "PROOF-40",
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
@@ -397,19 +335,27 @@
         },
         {
           "env": null,
-          "id": "PROOF-17",
+          "id": "PROOF-41",
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_consumer_ci.py::test_the_triggers_name_a_run_branch_and_the_signing_tag_and_nothing_else"
+          "test": "dev/test_consumer_ci.py::test_a_project_with_no_env_tag_gets_no_workflow"
         },
         {
           "env": null,
-          "id": "PROOF-17",
+          "id": "PROOF-42",
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_consumer_ci.py::test_a_workflow_is_written_for_two_reasons_and_no_others"
+          "test": "dev/test_consumer_ci.py::test_a_proof_tagged_for_another_system_gets_a_workflow_for_that_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_consumer_ci.py::test_a_tag_naming_this_machines_own_system_gets_no_workflow"
         },
         {
           "env": null,
@@ -421,15 +367,7 @@
         },
         {
           "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_consumer_ci.py::test_the_workflow_names_the_test_step_and_uploads_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
+          "id": "PROOF-44",
           "manual": false,
           "result": "pass",
           "rule": "RULE-18",
@@ -437,7 +375,15 @@
         },
         {
           "env": null,
-          "id": "PROOF-18",
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_consumer_ci.py::test_the_workflow_ends_on_the_test_step_and_uploads_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
           "manual": false,
           "result": "pass",
           "rule": "RULE-18",
@@ -445,27 +391,51 @@
         },
         {
           "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_consumer_ci.py::test_the_azure_pipeline_has_the_same_triggers_and_ends_on_the_test_step"
+        },
+        {
+          "env": null,
           "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_consumer_ci.py::test_the_matrix_follows_a_fixed_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_consumer_ci.py::test_a_project_that_names_windows_alone_gets_one_windows_job"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_consumer_ci.py::test_two_named_systems_get_two_jobs_and_no_linux_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-50",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_consumer_ci.py::test_a_name_that_is_no_operating_system_adds_no_job"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
           "manual": false,
           "result": "pass",
           "rule": "RULE-19",
           "test": "dev/test_consumer_ci.py::test_the_matrix_is_the_one_operating_system_the_spec_names"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_consumer_ci.py::test_the_matrix_is_one_job_per_named_operating_system"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_consumer_ci.py::test_the_matrix_always_carries_linux_first"
         },
         {
           "env": null,
@@ -698,6 +668,14 @@
           "result": "pass",
           "rule": "RULE-28",
           "test": "dev/test_host.py::test_the_azure_ref_is_read_whole"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_host.py::test_a_project_whose_settings_say_ci_none_pushes_nothing"
         }
       ],
       "rules": {
@@ -715,16 +693,16 @@
         "RULE-30": "passed",
         "RULE-31": "passed",
         "RULE-32": "passed",
+        "RULE-33": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
-        "RULE-8": "passed",
-        "RULE-9": "passed"
+        "RULE-8": "passed"
       },
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/run/host.md"
 }

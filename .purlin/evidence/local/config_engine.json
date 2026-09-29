@@ -2,14 +2,16 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:36Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
         "code": "d6a9ff8a0990ffae6f54ff4d0c9f5a55f932bce0dbca276bee593fe14edbd07c",
-        "spec": "e5f309b92463dcc2295593aa1ab7f2dc8a65c89e2581cf97fe23e8c6f890c435",
-        "tests": "ef7feaf9d215521732122ae11a7ec0fc9e356b99e3b583005e13baf9553ccd28"
+        "spec": "b037a97e466f23db9ea62cbc35e2929f8f9226bdfd0b2f4d1e55f4dd2d500ec4",
+        "tests": "7834a3a64fc3ca3d52fbcf306f2af6e3ae00778636486bfc8f16838a1e1e7e0f"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -139,7 +141,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/mcp/config_engine.md"
 }

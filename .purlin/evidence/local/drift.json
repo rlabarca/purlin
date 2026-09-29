@@ -2,14 +2,16 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "a7af64ca9de83910f2f9df2f55566b51ff5f4ff7249b81d41b82ace1461d2ed4",
-        "spec": "0d0bcefc00aa743d1e0399bd9e99631c02b20dd270c779ac3c3580331f5b1956",
-        "tests": "6ed4ccbce9cd744a4bcee1e6a11c0427647163ec0b52e1d0e77ed982ce97f698"
+        "code": "175e766578a9c4cc2849b4b29c2ca4ef25fdbfa0b4f81fb3349394e7edd58d34",
+        "spec": "67f7deb85660283e8dc35e9e3bbc4b8121625b72578029bd825b2881ed8e392e",
+        "tests": "7e0c705a413839ab410090fd9d1a1978f8febdf6127739a2c8759527883248e0"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -221,11 +223,27 @@
         },
         {
           "env": null,
-          "id": "PROOF-25",
+          "id": "PROOF-31",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_drift.py::TestQaView::test_signatures_stale_and_the_queue"
+          "rule": "RULE-15",
+          "test": "dev/test_drift.py::TestQaView::test_a_rule_to_test_by_hand"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_drift.py::TestQaView::test_the_rules_to_sign_and_not_the_rest"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_drift.py::TestQaView::test_nothing_waiting_for_a_person_prints_nothing"
         },
         {
           "env": null,
@@ -245,6 +263,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_drift.py::TestQaView::test_the_qa_view_carries_the_items_it_printed"
+        },
+        {
+          "env": null,
           "id": "PROOF-28",
           "manual": false,
           "result": "pass",
@@ -260,7 +286,6 @@
         "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-15": "passed",
-        "RULE-16": "passed",
         "RULE-17": "passed",
         "RULE-18": "passed",
         "RULE-19": "passed",
@@ -276,7 +301,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/mcp/drift.md"
 }

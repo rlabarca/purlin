@@ -2,14 +2,16 @@
   "feature": "mutation",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
         "code": "bd7bb2b47c3b3530c756d050c9eb9bb21c41315a5e3127960b1cee8228b5dd33",
-        "spec": "0989e7a1e75a4b327ca4a84a5c984e7cf28c7601de47b279634a69bb6dfe20f9",
+        "spec": "d64f39cb97b47ec7ce3ef88493250d146601263480585302c3d24acb8a573857",
         "tests": "a5b7b1799284e853c93c09b4090f7fcdf93e8a9d068e52612786da10a4acc8bf"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -583,7 +585,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/run/mutation.md"
 }

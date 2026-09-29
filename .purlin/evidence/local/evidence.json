@@ -2,14 +2,16 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "418f8db0afae12e6c1fe6c2542bd72ec810ecc22e6ee85b72b5740225c41cada",
-        "spec": "b49f3d7301adb8c65248c89fabf1ed794646d82e01acd6bcafe612e4c210909a",
-        "tests": "a4988104575bfbee4b5bbe1034f05125714ff036cef1287ffe74e0c8d9cb2976"
+        "code": "230e1086e5bfeeb0bd0f4457b01c26a2d28f95caccb6f5e90e39b0e5b79f30d4",
+        "spec": "e4eb118a4737e3af631461c8e400d92eb14df28b4a612c3d5197173f208875e2",
+        "tests": "020ee9995cec8ff40b343481915eb26ffb0d93033e53f20df89d07ce47ada05a"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -173,6 +175,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_reader.py::test_a_system_neither_windows_nor_macos_is_linux"
+        },
+        {
+          "env": null,
           "id": "PROOF-21",
           "manual": false,
           "result": "pass",
@@ -202,6 +212,54 @@
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_evidence_reader.py::test_reading_evidence_writes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_evidence_reader.py::test_the_words_a_person_reads_for_each_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_evidence_reader.py::test_an_unknown_system_word_reads_as_linux"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_evidence_reader.py::test_a_proof_with_a_test_that_did_not_run_has_not_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_evidence_reader.py::test_a_failing_test_outweighs_one_that_did_not_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_evidence_reader.py::test_a_proof_whose_tests_all_passed_has_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_evidence_reader.py::test_a_proof_not_run_here_reads_not_run"
         }
       ],
       "rules": {
@@ -215,7 +273,9 @@
         "RULE-16": "passed",
         "RULE-17": "passed",
         "RULE-18": "passed",
+        "RULE-19": "passed",
         "RULE-2": "passed",
+        "RULE-20": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
@@ -227,7 +287,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/mcp/evidence.md"
 }

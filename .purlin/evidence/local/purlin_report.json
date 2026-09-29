@@ -2,14 +2,16 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "3435bc15c9d746e5175df3be60bbad18177e2fdcfa5407475ee0af6f240f52e1",
-        "spec": "107ba434212889eb13a0a6b8ad8aee8f713fe393b9a790c28b835deb4f0980ea",
-        "tests": "6676fff41e7a33e138fa85683db196a9b5deaefdbe706a8ee88ea619d6441bd4"
+        "code": "47a5de92e4791d1069e10313357842cd93c58a8832931740128d58e8d5ab1271",
+        "spec": "25865e8ac2ab20aa12c0a1c5396c5b635b8210d94b86f3aa3470260563412b82",
+        "tests": "b231cb2390f820c4737f9108890a45ba11af3295736bef9c71a27e82521f4c06"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -65,15 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_purlin_report.py::test_the_board_renders_for_each_process"
-        },
-        {
-          "env": null,
-          "id": "PROOF-78",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_purlin_report.py::test_the_gate_and_its_count_are_two_chips"
+          "test": "dev/test_purlin_report.py::test_the_board_opens_on_the_boxes_under_the_gate"
         },
         {
           "env": null,
@@ -81,7 +75,39 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_purlin_report.py::test_the_tiles_scale_with_the_gate"
+          "test": "dev/test_purlin_report.py::test_a_step_box_counts_the_rules_that_reached_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_report.py::test_the_passed_gate_has_one_box"
+        },
+        {
+          "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_report.py::test_a_step_every_rule_reached_is_green"
+        },
+        {
+          "env": null,
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_report.py::test_left_to_do_lists_the_payloads_lines_in_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_report.py::test_with_nothing_left_the_last_line_stands_in_its_place"
         },
         {
           "env": null,
@@ -98,6 +124,14 @@
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_purlin_report.py::test_every_count_carries_the_word_it_counts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_purlin_report.py::test_a_proof_no_test_runs_is_named_beside_the_total"
         },
         {
           "env": null,
@@ -129,7 +163,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_purlin_report.py::test_each_filter_narrows_the_board"
+          "test": "dev/test_purlin_report.py::test_the_weak_filter_leaves_the_weak_rules"
+        },
+        {
+          "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_purlin_report.py::test_the_not_audited_filter_leaves_the_unread_rules"
         },
         {
           "env": null,
@@ -137,7 +179,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_purlin_report.py::test_a_filter_above_the_gate_is_not_offered"
+          "test": "dev/test_purlin_report.py::test_the_filters_offered_from_strong_up"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_purlin_report.py::test_the_passed_gate_offers_no_filter"
         },
         {
           "env": null,
@@ -153,7 +203,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_purlin_report.py::test_filters_compose_and_clear"
+          "test": "dev/test_purlin_report.py::test_filters_compose"
+        },
+        {
+          "env": null,
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_purlin_report.py::test_unsetting_the_filters_restores_every_row"
         },
         {
           "env": null,
@@ -169,7 +227,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
-          "test": "dev/test_purlin_report.py::test_the_rule_screen_names_the_level_and_where_it_came_from"
+          "test": "dev/test_purlin_report.py::test_the_rule_screen_has_one_row_per_cell_the_gate_reaches"
         },
         {
           "env": null,
@@ -205,38 +263,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_purlin_report.py::test_the_queue_tab_lists_what_each_rule_needs"
-        },
-        {
-          "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_purlin_report.py::test_the_queue_tab_names_its_six_columns"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_purlin_report.py::test_a_tab_above_the_gate_is_not_offered"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_purlin_report.py::test_an_empty_queue_tab_says_what_puts_a_rule_on_it"
-        },
-        {
-          "env": null,
           "id": "PROOF-20",
           "manual": false,
           "result": "pass",
@@ -257,7 +283,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-22",
-          "test": "dev/test_purlin_report.py::test_the_working_tree_notice_only_shows_on_the_board"
+          "test": "dev/test_purlin_report.py::test_the_working_tree_notice_is_not_on_a_rule_screen"
+        },
+        {
+          "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_purlin_report.py::test_the_working_tree_notice_shows_on_the_board"
         },
         {
           "env": null,
@@ -281,7 +315,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-25",
-          "test": "dev/test_purlin_report.py::test_the_link_back_closes_the_rule_where_it_was_opened"
+          "test": "dev/test_purlin_report.py::test_the_link_back_closes_the_rule"
         },
         {
           "env": null,
@@ -293,19 +327,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_purlin_report.py::test_a_rule_to_test_by_hand_names_the_hand_check"
+        },
+        {
+          "env": null,
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_purlin_report.py::test_a_signed_rule_names_its_signer_key_and_machines"
+        },
+        {
+          "env": null,
           "id": "PROOF-39",
           "manual": false,
           "result": "pass",
           "rule": "RULE-26",
           "test": "dev/test_purlin_report.py::test_the_sign_panel_is_absent_below_the_signed_gate"
-        },
-        {
-          "env": null,
-          "id": "PROOF-52",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_purlin_report.py::test_a_rule_that_needs_no_signature_shows_none"
         },
         {
           "env": null,
@@ -333,35 +375,35 @@
         },
         {
           "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_purlin_report.py::test_a_queue_row_states_the_level_the_need_and_the_command"
-        },
-        {
-          "env": null,
           "id": "PROOF-32",
           "manual": false,
           "result": "pass",
           "rule": "RULE-31",
-          "test": "dev/test_purlin_report.py::test_the_rule_screen_says_what_each_platform_found"
+          "test": "dev/test_purlin_report.py::test_the_rule_screen_says_what_each_system_found"
         },
         {
           "env": null,
-          "id": "PROOF-34",
+          "id": "PROOF-91",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-32",
-          "test": "dev/test_purlin_report_board_layout.py::test_the_stale_card_carries_the_count"
+          "rule": "RULE-31",
+          "test": "dev/test_purlin_report.py::test_a_rule_that_ran_on_linux_and_macos_shows_both"
         },
         {
           "env": null,
-          "id": "PROOF-49",
+          "id": "PROOF-92",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-32",
-          "test": "dev/test_purlin_report.py::test_the_queue_card_counts_the_rules_waiting_for_a_person"
+          "rule": "RULE-31",
+          "test": "dev/test_purlin_report.py::test_a_rule_that_ran_nowhere_shows_no_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-93",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_purlin_report.py::test_the_board_draws_no_system_box"
         },
         {
           "env": null,
@@ -401,7 +443,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_purlin_report.py::test_a_band_has_two_ends_and_counts_each_rule_once"
+          "test": "dev/test_purlin_report.py::test_a_band_has_two_ends_on_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-94",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_purlin_report.py::test_a_band_counts_a_shared_rule_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-95",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_purlin_report.py::test_a_narrow_band_puts_its_count_beneath_its_name"
+        },
+        {
+          "env": null,
+          "id": "PROOF-96",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_purlin_report.py::test_a_band_folds_from_the_keyboard"
         },
         {
           "env": null,
@@ -413,19 +479,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-97",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_purlin_report.py::test_a_proofs_hover_names_the_proof_no_test_runs"
+        },
+        {
+          "env": null,
           "id": "PROOF-45",
           "manual": false,
           "result": "pass",
           "rule": "RULE-37",
-          "test": "dev/test_purlin_report.py::test_every_tile_carries_its_hover"
+          "test": "dev/test_purlin_report.py::test_every_step_box_carries_its_hover"
         },
         {
           "env": null,
-          "id": "PROOF-67",
+          "id": "PROOF-98",
           "manual": false,
           "result": "pass",
           "rule": "RULE-37",
-          "test": "dev/test_purlin_report.py::test_the_untested_tile_says_which_have_no_test_and_which_have_not_run"
+          "test": "dev/test_purlin_report.py::test_the_no_proof_box_names_the_specs_it_counts"
         },
         {
           "env": null,
@@ -509,6 +583,46 @@
         },
         {
           "env": null,
+          "id": "PROOF-99",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_purlin_report.py::test_a_failed_rule_at_passed_shows_no_higher_word"
+        },
+        {
+          "env": null,
+          "id": "PROOF-100",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_purlin_report.py::test_a_partial_rule_at_passed_shows_no_higher_word"
+        },
+        {
+          "env": null,
+          "id": "PROOF-101",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_purlin_report.py::test_a_rule_not_run_at_passed_shows_no_higher_word"
+        },
+        {
+          "env": null,
+          "id": "PROOF-102",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_purlin_report.py::test_a_rule_out_of_date_at_passed_shows_no_higher_word"
+        },
+        {
+          "env": null,
+          "id": "PROOF-103",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_purlin_report.py::test_a_passed_project_with_no_proof_line_never_reads_proof"
+        },
+        {
+          "env": null,
           "id": "PROOF-65",
           "manual": false,
           "result": "pass",
@@ -521,7 +635,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-45",
-          "test": "dev/test_purlin_report.py::test_neutral_text_measures_7_to_1_in_both_themes"
+          "test": "dev/test_purlin_report.py::test_neutral_text_measures_7_to_1_in_the_dark_theme"
+        },
+        {
+          "env": null,
+          "id": "PROOF-104",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_purlin_report.py::test_neutral_text_measures_7_to_1_in_the_light_theme"
+        },
+        {
+          "env": null,
+          "id": "PROOF-105",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_purlin_report.py::test_the_contrast_check_names_a_text_under_7_to_1"
         },
         {
           "env": null,
@@ -545,7 +675,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-46",
-          "test": "dev/test_purlin_report.py::test_a_filter_hides_a_rules_proofs_and_the_rule_screen_agrees"
+          "test": "dev/test_purlin_report.py::test_a_filter_that_hides_a_rule_hides_its_proofs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-106",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_purlin_report.py::test_the_rule_screen_draws_the_proofs_the_board_drew"
         },
         {
           "env": null,
@@ -553,7 +691,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-47",
+          "test": "dev/test_purlin_report.py::test_a_shared_rule_counts_toward_the_spec_that_proves_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-107",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
           "test": "dev/test_purlin_report.py::test_a_shared_rule_is_listed_once_under_its_owner"
+        },
+        {
+          "env": null,
+          "id": "PROOF-108",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_purlin_report.py::test_a_features_own_rule_opens_its_own_screen"
+        },
+        {
+          "env": null,
+          "id": "PROOF-109",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_purlin_report.py::test_an_anchors_rule_opens_the_anchors_screen"
         },
         {
           "env": null,
@@ -561,23 +723,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-47",
+          "test": "dev/test_purlin_report.py::test_a_real_projects_shared_rules_count_toward_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-110",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
           "test": "dev/test_purlin_report.py::test_a_real_projects_shared_rules_are_listed_once"
         },
         {
           "env": null,
-          "id": "PROOF-73",
+          "id": "PROOF-111",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-48",
-          "test": "dev/test_purlin_report.py::test_a_rule_row_draws_only_the_badges_its_level_asks_for"
-        },
-        {
-          "env": null,
-          "id": "PROOF-74",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-48",
-          "test": "dev/test_purlin_report.py::test_a_rule_screen_shows_only_what_its_level_asks_for"
+          "rule": "RULE-47",
+          "test": "dev/test_purlin_report.py::test_a_real_projects_two_rule_1s_open_their_own_screens"
         },
         {
           "env": null,
@@ -585,7 +747,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-49",
-          "test": "dev/test_purlin_report_board_layout.py::test_every_screen_fits_every_width_and_no_value_breaks"
+          "test": "dev/test_purlin_report_board_layout.py::test_every_screen_fits_every_width_in_the_dark_theme"
+        },
+        {
+          "env": null,
+          "id": "PROOF-112",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_purlin_report_board_layout.py::test_every_screen_fits_every_width_in_the_light_theme"
+        },
+        {
+          "env": null,
+          "id": "PROOF-113",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_purlin_report_board_layout.py::test_a_shared_count_is_one_line_at_every_width"
         },
         {
           "env": null,
@@ -602,6 +780,70 @@
           "result": "pass",
           "rule": "RULE-50",
           "test": "dev/test_purlin_report.py::test_a_waiting_cell_is_neutral_and_says_what_it_waits_for"
+        },
+        {
+          "env": null,
+          "id": "PROOF-114",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_purlin_report.py::test_a_rule_with_no_proof_is_counted_in_its_own_box"
+        },
+        {
+          "env": null,
+          "id": "PROOF-115",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_purlin_report.py::test_the_no_proof_box_at_zero_is_green"
+        },
+        {
+          "env": null,
+          "id": "PROOF-116",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_purlin_report.py::test_the_no_proof_filter_leaves_the_rules_with_no_proof"
+        },
+        {
+          "env": null,
+          "id": "PROOF-117",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_purlin_report.py::test_an_open_spec_shows_its_description"
+        },
+        {
+          "env": null,
+          "id": "PROOF-118",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_purlin_report.py::test_a_spec_with_no_description_shows_none"
+        },
+        {
+          "env": null,
+          "id": "PROOF-119",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_purlin_report.py::test_each_line_left_shows_the_command_to_type"
+        },
+        {
+          "env": null,
+          "id": "PROOF-120",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_purlin_report.py::test_nothing_on_the_list_is_ticked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-121",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_purlin_report.py::test_the_summary_sentence_stands_above_the_boxes"
         }
       ],
       "rules": {
@@ -613,8 +855,6 @@
         "RULE-15": "passed",
         "RULE-16": "passed",
         "RULE-17": "passed",
-        "RULE-18": "passed",
-        "RULE-19": "passed",
         "RULE-2": "passed",
         "RULE-20": "passed",
         "RULE-21": "passed",
@@ -627,9 +867,7 @@
         "RULE-28": "passed",
         "RULE-29": "passed",
         "RULE-3": "passed",
-        "RULE-30": "passed",
         "RULE-31": "passed",
-        "RULE-32": "passed",
         "RULE-33": "passed",
         "RULE-34": "passed",
         "RULE-35": "passed",
@@ -645,10 +883,13 @@
         "RULE-45": "passed",
         "RULE-46": "passed",
         "RULE-47": "passed",
-        "RULE-48": "passed",
         "RULE-49": "passed",
         "RULE-5": "passed",
         "RULE-50": "passed",
+        "RULE-51": "passed",
+        "RULE-52": "passed",
+        "RULE-53": "passed",
+        "RULE-54": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
@@ -657,7 +898,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/dashboard/purlin_report.md"
 }

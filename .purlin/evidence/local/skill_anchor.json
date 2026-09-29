@@ -2,14 +2,16 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:32Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "64c0cd3bb8087c3ebc04122deb555d36e2632c3da654f215c662c37c385fb024",
-        "spec": "1e58258cb6d7a12de08aed20132b1195fb02511353f8cca902214e3739c80d60",
-        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
+        "code": "961f6ed9402c9269dee732ad4d5b1ee07ed8aa7c26bd6ecfbe7143f4e623936e",
+        "spec": "835aaf7e996c379854ec193aabcbca68fec27d3a14591e09ede18cf6547ac5de",
+        "tests": "6515b62fd18be6536e7599cbf8b8ff554d15747b067c01760f9674ee5a141a7c"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -17,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestSkillAnchor::test_the_frontmatter_names_the_skill"
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_the_frontmatter_names_the_skill"
         },
         {
           "env": null,
@@ -25,7 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestSkillAnchor::test_a_broken_frontmatter_is_refused"
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_a_broken_frontmatter_is_refused"
         },
         {
           "env": null,
@@ -33,7 +35,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestSkillAnchor::test_it_runs_the_upstream_script_for_two_subcommands"
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_it_runs_the_upstream_script_for_two_subcommands"
         },
         {
           "env": null,
@@ -41,7 +43,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestSkillAnchor::test_a_broken_command_or_check_sentence_is_refused"
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_a_broken_command_or_check_sentence_is_refused"
         },
         {
           "env": null,
@@ -49,7 +51,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skills.py::TestSkillAnchor::test_it_closes_by_naming_the_next_step"
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_it_closes_by_naming_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_an_outcome_with_no_directive_is_refused"
         },
         {
           "env": null,
@@ -57,7 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skills.py::TestSkillAnchor::test_it_stays_under_its_ceiling"
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_it_stays_under_its_ceiling"
         },
         {
           "env": null,
@@ -65,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestSkillAnchor::test_a_pin_is_a_commit_and_a_pinned_rule_is_never_edited"
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_a_pin_is_a_commit_and_a_pinned_rule_is_never_edited"
         },
         {
           "env": null,
@@ -73,7 +83,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestSkillAnchor::test_a_local_anchor_that_requires_nothing_is_refused"
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_a_local_anchor_that_requires_nothing_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_the_first_anchor_creates_the_folder"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_anchor.py::TestSkillAnchor::test_a_folder_made_at_setup_is_refused"
         }
       ],
       "rules": {
@@ -81,12 +107,13 @@
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
-        "RULE-5": "passed"
+        "RULE-5": "passed",
+        "RULE-6": "passed"
       },
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/skills/skill_anchor.md"
 }

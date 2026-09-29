@@ -2,14 +2,16 @@
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:32Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:38Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "26adc8a959505e7cd87ae64fc98f909d4830377dda529287f835976c5e5fd35c",
-        "spec": "649730bb265c87f105eca9a82d7b566ee3b99dfb34b00f8af8c065d2fa7d2fb4",
-        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
+        "code": "bb9b89b5270e4216f49f009a8c433601d9b0270b63ee88ef10e17f7a36b7bc2d",
+        "spec": "1cc205ab50159655285e4a0e5ef56381311bd5623415dd0070819d95eef59860",
+        "tests": "1a9223747635a94f3068aac653305d55853696516766368d820036a9bc3afd14"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -17,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestSkillStatus::test_the_frontmatter_names_the_skill"
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_the_frontmatter_names_the_skill"
         },
         {
           "env": null,
@@ -25,7 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestSkillStatus::test_a_broken_frontmatter_is_refused"
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_a_broken_frontmatter_is_refused"
         },
         {
           "env": null,
@@ -33,15 +35,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestSkillStatus::test_it_prints_the_numbers_the_tool_returned"
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_it_prints_the_numbers_the_tool_returned"
         },
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-6",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestSkillStatus::test_a_recount_is_refused"
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_a_recount_is_refused"
         },
         {
           "env": null,
@@ -49,15 +51,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skills.py::TestSkillStatus::test_it_closes_by_naming_the_next_step"
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_it_closes_by_naming_the_next_step"
         },
         {
           "env": null,
-          "id": "PROOF-3",
+          "id": "PROOF-7",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skills.py::TestSkillStatus::test_a_broken_closing_section_is_refused"
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_a_broken_closing_section_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_a_broken_closing_section_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_a_broken_closing_section_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_a_broken_closing_section_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_a_closing_section_that_names_no_first_line_is_refused"
         },
         {
           "env": null,
@@ -65,7 +99,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skills.py::TestSkillStatus::test_it_stays_under_its_ceiling"
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_it_stays_under_its_ceiling"
         },
         {
           "env": null,
@@ -73,7 +107,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestSkillStatus::test_naming_a_spec_shows_its_rules"
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_naming_a_spec_shows_its_rules"
         },
         {
           "env": null,
@@ -81,7 +115,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestSkillStatus::test_a_name_that_matches_several_or_none_is_refused_as_unhandled"
+          "test": "dev/test_skill_status.py::TestSkillStatus::test_a_name_that_matches_several_or_none_is_refused_as_unhandled"
         }
       ],
       "rules": {
@@ -94,7 +128,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/skills/skill_status.md"
 }

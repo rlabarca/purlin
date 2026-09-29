@@ -2,14 +2,16 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:32Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:38Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
         "code": "cb8042fde6e8aff105b90698177c9f34311f5f7c22ad9ef24e86fdc99fe25ec9",
-        "spec": "71f954e4a8a8f93b7cfed395240aad798c1c278b945edc4781c0659fffea069c",
+        "spec": "305d16ec33ecb1a48f84ae60baed62dbdcfc5ab0831dad5b738aec1d18218320",
         "tests": "c575ddadd8b35307e1fb84df0182903e9ba53b0b9f67a575c92edfaa3be0722d"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -258,7 +260,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/anchor/upstream.md"
 }

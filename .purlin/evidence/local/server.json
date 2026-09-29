@@ -2,14 +2,16 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
         "code": "a15c95efeb4bb6a35a7c62ec71fe4d6946e93338f04b30123c26f7079c5d44bf",
-        "spec": "660df4b29e236d27d6c6b37606a596c365b805597207f5332b1f85cac57ec077",
-        "tests": "b18705dc1ecc31d73b82a1295d0097eee7873d6e3fdec26eee665c116a25a5e6"
+        "spec": "f9f998b6593c683f7a882a3843e76741fd90973dbf2a9be2478898286ddd84c9",
+        "tests": "f16461febcc728917bdd61c8e6a82b24adfa67f0817623e1aa3823eece182f4f"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -116,7 +118,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/mcp/server.md"
 }

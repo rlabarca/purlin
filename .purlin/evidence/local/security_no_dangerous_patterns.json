@@ -2,14 +2,16 @@
   "feature": "security_no_dangerous_patterns",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "7964004b04b579df82efb7f0d49967f82326954327cda0036d2a30ac069681d0",
-        "spec": "aed44c40fa32503458e7bc6f0b1e420bf4e2da182ac0ebf89dca2da8d10984d8",
-        "tests": "c379b16b70e84f275596089334654525ef1418a13de9c773163e22cce9be49b2"
+        "code": "62b178e2915fd91792f7ff6eb9deaf47def2e2fe7e201afe7b6b063e356de8bd",
+        "spec": "a5cc3d2893224cf1d77d905ac099955a4c85ddb02c465f55d224fde42a526e47",
+        "tests": "6932336be1d1e3ab818fb006fef67afdd3eedc05554eaacf8125832439c4ce57"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -69,11 +71,19 @@
         },
         {
           "env": null,
-          "id": "PROOF-4",
+          "id": "PROOF-7",
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
           "test": "dev/test_security.py::TestSecurityPatterns::test_planted_credential_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_security.py::TestSecurityPatterns::test_an_empty_value_a_comparison_or_a_test_file_is_not_counted"
         },
         {
           "env": null,
@@ -97,7 +107,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_security.py::TestGitArgvHardening::test_source_url_never_reaches_git_in_option_position"
+          "test": "dev/test_security.py::TestGitArgvHardening::test_a_hostile_source_is_refused_before_any_command"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_security.py::TestGitArgvHardening::test_a_source_reaches_ls_remote_after_end_of_options"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_security.py::TestGitArgvHardening::test_every_revision_follows_end_of_options"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_security.py::TestGitArgvHardening::test_every_path_follows_a_double_dash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_security.py::TestGitArgvHardening::test_a_date_hands_its_commit_after_end_of_options"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_security.py::TestGitArgvHardening::test_a_count_hands_its_commits_after_end_of_options"
         }
       ],
       "rules": {
@@ -111,7 +161,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/_anchors/security_no_dangerous_patterns.md"
 }

@@ -2,14 +2,16 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:32Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:38Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "dd7bed4c5a79fde93a28109a8b9b872e450350a83d6901e6eaefc5c37bf2cef1",
-        "spec": "8028dfd5d5cb46a283ce5fa8e701b45342edcc9501338d5c19788d6ebc0688fc",
-        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
+        "code": "c8cd42b143e0d20b514c3cc9598df7238caf134c33b3ec53057c644831d5364c",
+        "spec": "789709cdba4deb4e2517b5f9aa18a39eb797d5298224b8d801f80862c45ddc1d",
+        "tests": "904a23da004709daa8329e2dcf67a9b2af1b3de02a32494b3d99d803f9c3603a"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -17,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestSkillInit::test_the_frontmatter_names_the_skill"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_the_frontmatter_names_the_skill"
         },
         {
           "env": null,
@@ -25,7 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestSkillInit::test_a_broken_frontmatter_is_refused"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_a_broken_frontmatter_is_refused"
         },
         {
           "env": null,
@@ -33,15 +35,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestSkillInit::test_it_runs_the_scaffold_script"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_it_runs_the_scaffold_script"
         },
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-8",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestSkillInit::test_a_flag_missing_or_foreign_is_refused"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_a_flag_left_out_of_the_table_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_init.py::TestSkillInit::test_a_flag_the_script_does_not_take_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_init.py::TestSkillInit::test_a_run_line_without_the_gate_is_refused"
         },
         {
           "env": null,
@@ -49,7 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skills.py::TestSkillInit::test_it_closes_by_naming_the_next_step"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_it_closes_by_naming_the_next_step"
         },
         {
           "env": null,
@@ -57,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skills.py::TestSkillInit::test_a_broken_closing_section_is_refused"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_a_broken_closing_section_is_refused"
         },
         {
           "env": null,
@@ -65,7 +83,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skills.py::TestSkillInit::test_it_stays_under_its_ceiling"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_it_stays_under_its_ceiling"
         },
         {
           "env": null,
@@ -73,15 +91,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestSkillInit::test_it_names_the_four_questions_in_order"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_it_names_the_two_questions_in_order"
         },
         {
           "env": null,
-          "id": "PROOF-5",
+          "id": "PROOF-11",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestSkillInit::test_a_fifth_question_or_a_missing_gate_is_refused"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_a_third_question_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestSkillInit::test_a_missing_gate_is_refused"
         },
         {
           "env": null,
@@ -89,15 +115,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skills.py::TestSkillInit::test_it_shows_the_eight_settings"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_it_shows_the_seven_settings"
         },
         {
           "env": null,
-          "id": "PROOF-6",
+          "id": "PROOF-13",
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skills.py::TestSkillInit::test_a_ninth_key_or_a_stray_sentence_is_refused"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_an_eighth_key_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_init.py::TestSkillInit::test_a_stray_sentence_is_refused"
         },
         {
           "env": null,
@@ -105,15 +139,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skills.py::TestSkillInit::test_it_writes_the_tests_setting_and_installs_nothing"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_it_writes_an_empty_tests_setting_and_installs_nothing"
         },
         {
           "env": null,
-          "id": "PROOF-7",
+          "id": "PROOF-15",
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skills.py::TestSkillInit::test_a_missing_jest_sentence_is_refused"
+          "test": "dev/test_skill_init.py::TestSkillInit::test_a_missing_suggestion_sentence_is_refused"
         }
       ],
       "rules": {
@@ -128,7 +162,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/skills/skill_init.md"
 }

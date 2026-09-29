@@ -2,14 +2,16 @@
   "feature": "reports",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "8625b81c0740886ebc6936cbe7d83e001d05fcaa8b0f55731ee976ec3a048f22",
-        "spec": "b9733dafaee5e46ae7d3f306a6a7a7c63546ced4b7b3b52208a809dc01f03c93",
-        "tests": "67cb58cae1e1d8d63eb6a1145204cc76215c242343186246e45e7fb17b92e9b9"
+        "code": "08a8510703a0220c9294c24a9d69a36caed39e25d5009ed861275d278b0e4261",
+        "spec": "2da129edcaed9f83df72a5c48c959f2456fb62334991bd3310959a836ffa0e74",
+        "tests": "a2ad4ec633a3440aaee64f35045f3b7d9feb3a1b2d97829fc5440ab91ad41c81"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -17,7 +19,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_reports.py::TestTheMarker::test_every_comment_syntax_is_read_and_a_bad_one_is_named"
+          "test": "dev/test_reports.py::TestTheMarker::test_every_comment_syntax_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_comment_naming_no_id_is_not_a_marker"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_marker_after_code_is_not_read"
         },
         {
           "env": null,
@@ -145,7 +163,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_reports.py::TestThroughARun::test_a_stale_report_is_never_read"
+          "test": "dev/test_reports.py::TestThroughARun::test_an_old_report_is_never_read"
         },
         {
           "env": null,
@@ -197,11 +215,115 @@
         },
         {
           "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_reports.py::TestThroughARun::test_two_markers_naming_no_spec_are_each_named"
+        },
+        {
+          "env": null,
           "id": "PROOF-20",
           "manual": false,
           "result": "pass",
           "rule": "RULE-20",
           "test": "dev/test_reports.py::TestThroughARun::test_a_suite_missing_a_part_is_left_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_near_miss_is_listed_as_json"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_wrong_command_line_exits_2"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_file_no_suite_reads_is_not_listed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_reports.py::TestNearMisses::test_purlin_in_capitals"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_reports.py::TestNearMisses::test_no_space_after_the_colon"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_marker_naming_what_exists_is_not_a_near_miss"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_comment_naming_no_id_has_no_fix"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_reports.py::TestNearMisses::test_an_id_that_is_neither_proof_nor_rule_has_no_fix"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_feature_one_character_off"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_proof_id_one_character_off"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_misspelled_proof_word"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_reports.py::TestNearMisses::test_an_id_one_character_from_several_is_not_a_near_miss"
         }
       ],
       "rules": {
@@ -218,6 +340,10 @@
         "RULE-19": "passed",
         "RULE-2": "passed",
         "RULE-20": "passed",
+        "RULE-21": "passed",
+        "RULE-22": "passed",
+        "RULE-23": "passed",
+        "RULE-24": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
@@ -229,7 +355,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/run/reports.md"
 }

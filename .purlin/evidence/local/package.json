@@ -2,14 +2,16 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "f39abc4e71da1fb7dc56aa6dad30b697896861cb03369d69f487748a60ef0db2",
-        "spec": "40f88bf7a3b1d62351e24801cbaca3504242df33a143dc2e9e9bf1c1c8e13ac3",
-        "tests": "b48771ffa167e4fc13e37efe68d72984217b13f2dcfd98b57c1120e40b1bb084"
+        "code": "cc2e82f31ac92eb994c224aa1eaccef30d7d70af729b8ce3af31569ca0c31ae8",
+        "spec": "cfca205c658ff07f18575d72505762be481092579592fbb6da7e2bdaa76c39da",
+        "tests": "430bfc808a13b9fe671aff9ed37d170cba7fad371767cf91c204a41366c2804b"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -21,11 +23,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_export.py::TestTheFile::test_with_no_version_it_writes_nothing_and_says_how_to_name_one"
+        },
+        {
+          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_export.py::TestTheFile::test_release_names_the_version_the_file_and_the_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_export.py::TestTheFile::test_release_names_a_version_where_the_project_states_none"
         },
         {
           "env": null,
@@ -41,7 +59,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_export.py::TestTheState::test_a_project_with_no_evidence_is_work_in_progress"
+          "test": "dev/test_export.py::TestTheState::test_a_project_with_no_evidence_is_not_finished"
         },
         {
           "env": null,
@@ -49,7 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_export.py::TestTheState::test_a_rule_with_no_test_holds_the_state"
+          "test": "dev/test_export.py::TestTheState::test_a_rule_with_no_proof_is_left_to_write_one_for"
         },
         {
           "env": null,
@@ -57,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_export.py::TestTheState::test_a_rule_with_no_audit_holds_the_state"
+          "test": "dev/test_export.py::TestTheState::test_rules_no_audit_has_read_are_left_to_audit"
         },
         {
           "env": null,
@@ -65,7 +83,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_export.py::TestTheState::test_an_unsigned_rule_holds_the_state"
+          "test": "dev/test_export.py::TestTheState::test_rules_not_signed_are_left_to_sign"
         },
         {
           "env": null,
@@ -73,7 +91,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_export.py::TestTheState::test_a_met_gate_without_the_tag_is_still_not_for_approval"
+          "test": "dev/test_export.py::TestTheState::test_at_passed_rules_that_pass_are_finished"
         },
         {
           "env": null,
@@ -81,7 +99,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_export.py::TestTheState::test_below_signed_a_tag_on_the_commit_never_reads_signed"
+          "test": "dev/test_export.py::TestTheState::test_at_strong_rules_that_are_strong_are_finished"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_export.py::TestTheState::test_at_signed_with_every_rule_signed_the_tag_is_left"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_export.py::TestTheState::test_the_package_written_for_the_tag_is_finished"
         },
         {
           "env": null,
@@ -89,7 +123,55 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_its_words_proofs_tests_results_audit_and_signature"
+          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_its_words_its_proof_and_its_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_its_result_and_the_machine"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_what_the_audit_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_who_signed_it_and_with_which_key"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_what_its_signature_locked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_export.py::TestTheContent::test_at_signed_a_rule_carries_every_status"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_export.py::TestTheContent::test_at_passed_a_rule_carries_one_status"
         },
         {
           "env": null,
@@ -106,14 +188,6 @@
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_export.py::TestTheContent::test_a_rule_with_no_proof_carries_the_tests_marked_with_its_id"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_export.py::TestTheContent::test_a_rule_carries_only_the_statuses_its_level_asks_for"
         },
         {
           "env": null,
@@ -195,7 +269,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/export/package.md"
 }

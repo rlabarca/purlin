@@ -2,14 +2,16 @@
   "feature": "purlin_version",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "a51701f555843aed174be6136c289a75d64d6e747de728ffdc289c70519c6e02",
-        "spec": "d83377af5e9017f13ac559a88e1a00106fa1e28ad7c46a14a0195b2d180afc09",
+        "code": "5c43b014b5bb87d408d273753ef5e39c7a7dac7dfc0dbf666e68e102cffcf5fd",
+        "spec": "792c8182b3c065f917bfe8d20d7e68e399745f43d1a78e8a00cfc237190fb434",
         "tests": "4fb6d26d9498024b6591bb69242df13948d7eb960ff121d61482d314b42fa3a0"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -97,7 +99,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/instructions/purlin_version.md"
 }

@@ -2,14 +2,16 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:30Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:36Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "c2ac416fd11fee9b42390b6f96a2de3462f24b0c97ad4087e484d696bbe16765",
-        "spec": "fed06f0fb0b8f3f6c95680251c812361077b5e0e4f6e3b225cadc3af546d7159",
-        "tests": "82ffa8f37505e36b4ad8b026c1daa7571adae67a26035839cf2c6c512ec13e58"
+        "code": "9dbf961ccef79bc900d087b0ed2963b9d2c0e3b9cf582e64ade0913ea6b02fe4",
+        "spec": "900e1c7780b933d2a9cf417ee1a11f1ce53333811383777d11bccfc7bcf01777",
+        "tests": "78b4cf5858e75fe40805b1a9cfa0a94d73e06b704898357f2fdca21a923bae75"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -33,7 +35,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_passed_level_is_read_only_at_the_gate_passed"
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_passing_rule_is_read_at_the_gate_passed"
         },
         {
           "env": null,
@@ -261,14 +263,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_ai_audit.py::TestWriting::test_the_triple_moves_with_the_text"
-        },
-        {
-          "env": null,
           "id": "PROOF-30",
           "manual": false,
           "result": "pass",
@@ -314,6 +308,30 @@
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_a_rule_that_is_not_there_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_ai_audit.py::TestTheAnswer::test_a_note_is_not_a_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_ai_audit.py::TestTheAnswer::test_a_finding_and_a_note_are_kept_apart"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_ai_audit.py::TestThePrompt::test_the_prompt_asks_for_notes_on_a_long_or_double_proof"
         }
       ],
       "rules": {
@@ -324,6 +342,7 @@
         "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-15": "passed",
+        "RULE-16": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
@@ -336,7 +355,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/review/ai_audit.md"
 }

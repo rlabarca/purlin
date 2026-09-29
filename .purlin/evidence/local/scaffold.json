@@ -2,14 +2,16 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "f5d91588fb6a3373d02a316e01d016d6ddab18f4aa250d546c2581fee47841ce",
-        "spec": "c881443826f30f70d3a5556b8435a98a17b1b6d6f108779b62b919665a8920a5",
-        "tests": "4782ff338f602057ad3cc847ffe0645b54ff982d76359622103b1bbf421cf360"
+        "code": "e6129aa9a8b3c49fb6b9ef6df0ecc72188cd3a6b5d8cc403ca73692a271a6ab5",
+        "spec": "40c9c5e4fae6e95e931502b553ee5083aea52f1941a9d0ef6ed4e9cde8d06c60",
+        "tests": "3e7ba695d537623b6dc4b398b3a69fb093d50529804edbd911ff12b29e53c04e"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -17,7 +19,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_init_scaffold.py::TestTheOneQuestion::test_a_project_with_code_is_asked_three_questions_and_no_others"
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_at_strong_a_project_with_code_is_asked_two_questions"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_at_passed_a_project_with_code_is_asked_the_gate_alone"
         },
         {
           "env": null,
@@ -25,7 +35,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_init_scaffold.py::TestTheOneQuestion::test_each_answer_derives_its_own_settings"
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_each_answer_derives_its_own_settings"
         },
         {
           "env": null,
@@ -33,7 +43,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_init_scaffold.py::TestTheOneQuestion::test_with_mutation_off_there_is_no_minimum"
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_with_mutation_off_there_is_no_minimum"
         },
         {
           "env": null,
@@ -41,7 +51,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_init_scaffold.py::TestTheOneQuestion::test_the_gate_flag_answers_the_question_without_asking"
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_the_gate_flag_answers_the_question_without_asking"
         },
         {
           "env": null,
@@ -49,7 +59,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_init_scaffold.py::TestNobodyIsNamed::test_the_gate_is_remembered_when_no_flag_names_one"
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_the_gate_is_remembered_when_no_flag_names_one"
         },
         {
           "env": null,
@@ -57,7 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_init_scaffold.py::TestTheOneQuestion::test_an_unreadable_answer_falls_back_to_passed"
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_an_unreadable_answer_falls_back_to_passed"
         },
         {
           "env": null,
@@ -65,79 +75,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_init_scaffold.py::TestTheOneQuestion::test_the_config_holds_the_shape"
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_the_config_holds_the_seven_keys"
         },
         {
           "env": null,
-          "id": "PROOF-5",
+          "id": "PROOF-54",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_init_scaffold.py::TestTheOneQuestion::test_audit_parallel_keeps_a_value_in_range_only"
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_the_template_carries_the_same_seven_keys"
         },
         {
           "env": null,
-          "id": "PROOF-5",
+          "id": "PROOF-55",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_init_scaffold.py::TestTheOneQuestion::test_a_child_run_and_an_in_process_run_agree"
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_audit_parallel_keeps_a_value_in_range"
         },
         {
           "env": null,
-          "id": "PROOF-5",
+          "id": "PROOF-56",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_init_scaffold.py::TestTheOneQuestion::test_the_template_carries_the_same_shape"
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_audit_parallel_out_of_range_is_put_back_to_4"
         },
         {
           "env": null,
-          "id": "PROOF-6",
+          "id": "PROOF-57",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_init_scaffold.py::TestTheTwoQuestions::test_an_empty_tree_is_asked_for_its_command"
+          "rule": "RULE-5",
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_a_child_run_and_an_in_process_run_agree"
         },
         {
           "env": null,
-          "id": "PROOF-6",
+          "id": "PROOF-58",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_init_scaffold.py::TestTheTwoQuestions::test_the_command_and_the_report_are_the_suite_written"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_init_scaffold.py::TestTheTwoQuestions::test_a_trx_report_and_a_dash_name_their_formats"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_init_scaffold.py::TestTheTwoQuestions::test_no_report_makes_each_test_file_pass_by_its_exit_code"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_init_scaffold.py::TestEachLanguage::test_detection_writes_that_framework_s_suite"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_init_scaffold.py::TestEachLanguage::test_each_command_carries_the_flag_that_writes_its_report"
+          "rule": "RULE-5",
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_a_key_outside_the_seven_is_not_written_back"
         },
         {
           "env": null,
@@ -145,15 +123,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_init_scaffold.py::TestEachLanguage::test_nothing_is_written_into_the_test_suite"
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_nothing_is_written_into_a_pytest_suite"
         },
         {
           "env": null,
-          "id": "PROOF-8",
+          "id": "PROOF-59",
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_init_scaffold.py::TestEachLanguage::test_a_runner_config_the_project_wrote_is_left_alone"
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_nothing_is_written_into_a_node_suite"
+        },
+        {
+          "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_nothing_is_written_into_a_node_suite"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_runner_config_the_project_wrote_is_left_alone"
         },
         {
           "env": null,
@@ -161,23 +155,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_init_scaffold.py::TestEachLanguage::test_a_framework_that_needs_something_added_is_told_what"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_a_node_project_is_told_about_stryker"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_scaffold.py::TestNobodyIsNamed::test_no_gate_asks_who_may_sign"
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_node_project_is_told_about_stryker"
         },
         {
           "env": null,
@@ -185,23 +163,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_init_scaffold.py::TestNobodyIsNamed::test_raising_the_gate_writes_the_setting_and_no_workflow"
+          "test": "dev/test_init_scaffold.py::TestTheGateMoves::test_raising_the_gate_writes_the_setting_and_no_workflow"
         },
         {
           "env": null,
-          "id": "PROOF-12",
+          "id": "PROOF-62",
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_init_scaffold.py::TestNobodyIsNamed::test_raising_to_signed_keeps_the_workflow_trust_asked_for"
+          "test": "dev/test_init_scaffold.py::TestTheGateMoves::test_raising_to_signed_keeps_the_workflow"
         },
         {
           "env": null,
-          "id": "PROOF-12",
+          "id": "PROOF-63",
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_init_scaffold.py::TestNobodyIsNamed::test_lowering_writes_the_setting_and_deletes_nothing"
+          "test": "dev/test_init_scaffold.py::TestTheGateMoves::test_lowering_writes_the_setting_and_deletes_nothing"
         },
         {
           "env": null,
@@ -209,31 +187,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_a_trusted_project_with_no_foreign_proof_gets_no_workflow"
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_a_project_with_no_foreign_proof_gets_no_workflow"
         },
         {
           "env": null,
-          "id": "PROOF-13",
+          "id": "PROOF-64",
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_a_proof_this_machine_cannot_prove_writes_one"
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_at_passed_the_reason_names_the_test"
         },
         {
           "env": null,
-          "id": "PROOF-13",
+          "id": "PROOF-65",
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_answering_no_to_trust_writes_one"
-        },
-        {
-          "env": null,
-          "id": "PROOF-13",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_with_no_remote_nothing_is_written"
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_at_strong_the_reason_names_the_proof"
         },
         {
           "env": null,
@@ -241,7 +211,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_heading_is_true_for_any_count_of_reasons"
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_two_foreign_systems_are_one_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_with_no_remote_nothing_is_written"
         },
         {
           "env": null,
@@ -249,11 +227,43 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_host_is_read_from_the_remote"
+          "test": "dev/test_init_scaffold.py::TestTheHost::test_the_host_is_read_from_the_url"
         },
         {
           "env": null,
-          "id": "PROOF-14",
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_init_scaffold.py::TestTheHost::test_a_known_host_is_printed_and_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_init_scaffold.py::TestTheHost::test_a_known_host_is_printed_and_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_init_scaffold.py::TestTheHost::test_a_host_that_is_neither_says_what_still_works"
+        },
+        {
+          "env": null,
+          "id": "PROOF-70",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_init_scaffold.py::TestTheHost::test_no_remote_reads_no_host"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
@@ -261,47 +271,23 @@
         },
         {
           "env": null,
-          "id": "PROOF-14",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_init_scaffold.py::TestThePieces::test_the_host_is_read_from_the_url"
-        },
-        {
-          "env": null,
-          "id": "PROOF-14",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_init_scaffold.py::TestThePieces::test_no_remote_reads_no_host"
-        },
-        {
-          "env": null,
           "id": "PROOF-15",
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_matrix_is_rendered_from_the_env_tags"
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_windows_and_macos_tags_are_the_matrix"
         },
         {
           "env": null,
-          "id": "PROOF-15",
+          "id": "PROOF-72",
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_windows_and_macos_tags_each_add_their_runner"
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_one_foreign_system_is_the_whole_matrix"
         },
         {
           "env": null,
-          "id": "PROOF-15",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_no_env_tag_means_one_linux_job"
-        },
-        {
-          "env": null,
-          "id": "PROOF-15",
+          "id": "PROOF-73",
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
@@ -317,19 +303,27 @@
         },
         {
           "env": null,
-          "id": "PROOF-42",
+          "id": "PROOF-74",
           "manual": false,
           "result": "pass",
           "rule": "RULE-42",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_last_step_checks_the_gate_and_verifies"
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_last_step_is_the_test_run"
         },
         {
           "env": null,
-          "id": "PROOF-42",
+          "id": "PROOF-75",
           "manual": false,
           "result": "pass",
           "rule": "RULE-42",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_azure_pipeline_carries_the_same_two"
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_azure_pipeline_has_the_same_triggers"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_azure_pipeline_ends_on_the_test_run"
         },
         {
           "env": null,
@@ -401,7 +395,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-20",
-          "test": "dev/test_init_scaffold.py::TestNobodyIsNamed::test_a_second_run_at_the_same_gate_changes_nothing"
+          "test": "dev/test_init_scaffold.py::TestTheGateMoves::test_a_second_run_at_the_same_gate_changes_nothing"
         },
         {
           "env": null,
@@ -453,7 +447,7 @@
         },
         {
           "env": null,
-          "id": "PROOF-44",
+          "id": "PROOF-77",
           "manual": false,
           "result": "pass",
           "rule": "RULE-44",
@@ -461,15 +455,7 @@
         },
         {
           "env": null,
-          "id": "PROOF-44",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-44",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_host_cli_is_reported_either_way"
-        },
-        {
-          "env": null,
-          "id": "PROOF-44",
+          "id": "PROOF-78",
           "manual": false,
           "result": "pass",
           "rule": "RULE-44",
@@ -477,19 +463,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-30",
+          "id": "PROOF-79",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_init_scaffold.py::TestTheFlags::test_dry_run_writes_nothing_and_prints_the_plan"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_init_scaffold.py::TestTheFlags::test_dry_run_outside_a_repository_still_prints_the_plan"
+          "rule": "RULE-44",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_gh_present_or_absent_is_named_and_the_workflow_written"
         },
         {
           "env": null,
@@ -513,11 +491,11 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-32",
-          "test": "dev/test_init_scaffold.py::TestTheFlags::test_add_keeps_what_was_detected"
+          "test": "dev/test_init_scaffold.py::TestTheFlags::test_add_appends_to_the_suites_already_there"
         },
         {
           "env": null,
-          "id": "PROOF-32",
+          "id": "PROOF-98",
           "manual": false,
           "result": "pass",
           "rule": "RULE-32",
@@ -533,35 +511,19 @@
         },
         {
           "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-33",
-          "test": "dev/test_init_scaffold.py::TestTheFlags::test_update_with_dry_run_asks_the_upgrade_what_is_pending"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-33",
-          "test": "dev/test_init_scaffold.py::TestTheFlags::test_update_with_dry_run_lists_what_an_older_project_needs"
-        },
-        {
-          "env": null,
           "id": "PROOF-34",
           "manual": false,
           "result": "pass",
           "rule": "RULE-34",
-          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_next_step_is_the_last_line"
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_with_no_spec_the_last_line_sends_you_to_write_one"
         },
         {
           "env": null,
-          "id": "PROOF-34",
+          "id": "PROOF-80",
           "manual": false,
           "result": "pass",
           "rule": "RULE-34",
-          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_next_step_reads_the_state_once_specs_exist"
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_with_a_spec_it_ends_on_what_is_left_to_do"
         },
         {
           "env": null,
@@ -581,7 +543,71 @@
         },
         {
           "env": null,
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_init_e2e_gates.sh::test_init_e2e_gates.sh"
+        },
+        {
+          "env": null,
+          "id": "PROOF-91",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_init_e2e_gates.sh::test_init_e2e_gates.sh"
+        },
+        {
+          "env": null,
+          "id": "PROOF-92",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_init_e2e_gates.sh::test_init_e2e_gates.sh"
+        },
+        {
+          "env": null,
+          "id": "PROOF-93",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_init_e2e_gates.sh::test_init_e2e_gates.sh"
+        },
+        {
+          "env": null,
           "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_init_e2e_wiring.sh::test_init_e2e_wiring.sh"
+        },
+        {
+          "env": null,
+          "id": "PROOF-94",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_init_e2e_wiring.sh::test_init_e2e_wiring.sh"
+        },
+        {
+          "env": null,
+          "id": "PROOF-95",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_init_e2e_wiring.sh::test_init_e2e_wiring.sh"
+        },
+        {
+          "env": null,
+          "id": "PROOF-96",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_init_e2e_wiring.sh::test_init_e2e_wiring.sh"
+        },
+        {
+          "env": null,
+          "id": "PROOF-97",
           "manual": false,
           "result": "pass",
           "rule": "RULE-37",
@@ -593,7 +619,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-37",
-          "test": "dev/test_reports.py::test_a_go_module_runs_through_the_command_init_writes"
+          "test": "dev/test_init_scaffold.py::test_a_go_module_runs_through_the_command_its_first_run_suggests"
         },
         {
           "env": null,
@@ -645,7 +671,7 @@
         },
         {
           "env": null,
-          "id": "PROOF-45",
+          "id": "PROOF-81",
           "manual": false,
           "result": "pass",
           "rule": "RULE-45",
@@ -653,15 +679,23 @@
         },
         {
           "env": null,
-          "id": "PROOF-45",
+          "id": "PROOF-82",
           "manual": false,
           "result": "pass",
           "rule": "RULE-45",
-          "test": "dev/test_init_scaffold.py::TestMutationTesting::test_a_framework_with_no_engine_is_asked_nothing"
+          "test": "dev/test_init_scaffold.py::TestMutationTesting::test_at_strong_a_framework_with_no_engine_is_told_why"
         },
         {
           "env": null,
-          "id": "PROOF-45",
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_init_scaffold.py::TestMutationTesting::test_at_passed_a_framework_with_no_engine_is_told_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-84",
           "manual": false,
           "result": "pass",
           "rule": "RULE-45",
@@ -677,7 +711,15 @@
         },
         {
           "env": null,
-          "id": "PROOF-46",
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_init_scaffold.py::TestMutationTesting::test_yes_with_no_gate_takes_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
           "manual": false,
           "result": "pass",
           "rule": "RULE-46",
@@ -697,28 +739,35 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-48",
-          "test": "dev/test_init_scaffold.py::TestTheFlags::test_a_tests_setting_the_project_carries_is_kept"
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_a_tests_setting_the_project_carries_is_kept"
         },
         {
           "env": null,
-          "id": "PROOF-49",
+          "id": "PROOF-87",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-49",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_at_passed_the_trust_lines_name_tests_and_no_signing"
+          "rule": "RULE-50",
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_a_project_with_tests_is_asked_nothing_about_them"
         },
         {
           "env": null,
-          "id": "PROOF-50",
+          "id": "PROOF-88",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-49",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_the_trust_reason_names_the_tests_at_passed"
+          "rule": "RULE-50",
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_an_empty_project_is_asked_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_init_scaffold.py::TestTheAnchorsFolder::test_no_folder_for_anchors_is_made"
         }
       ],
       "rules": {
         "RULE-1": "passed",
-        "RULE-10": "passed",
         "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
@@ -732,7 +781,6 @@
         "RULE-23": "passed",
         "RULE-24": "passed",
         "RULE-3": "passed",
-        "RULE-30": "passed",
         "RULE-31": "passed",
         "RULE-32": "passed",
         "RULE-33": "passed",
@@ -749,17 +797,16 @@
         "RULE-46": "passed",
         "RULE-47": "passed",
         "RULE-48": "passed",
-        "RULE-49": "passed",
         "RULE-5": "passed",
-        "RULE-6": "passed",
-        "RULE-7": "passed",
+        "RULE-50": "passed",
+        "RULE-51": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/init/scaffold.md"
 }

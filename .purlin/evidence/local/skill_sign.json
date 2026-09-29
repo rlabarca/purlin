@@ -2,14 +2,16 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:32Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:38Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "8668932275b069f0b6a928c66a08680e0347e5d70e9a5e7aaa10ac7b6a8c0c1a",
-        "spec": "d4b3dc4f35dcba524b963982453342b8498681b6b57258f58cd548648497363b",
-        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
+        "code": "ca088ab4f788bfb8ab1493e45b26c3bed07f2b1734aabc73a749a3869597431e",
+        "spec": "39cd933add6b6a38e4c753d04caf42cb6c0a611a80a4e64b9f3bb0a2c965c174",
+        "tests": "36f408a8dcd4d6d8c7d4323358733a029db8bd75e88fc3bc80b5be25be962f87"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -17,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestSkillSign::test_the_frontmatter_names_the_skill"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_frontmatter_names_the_skill"
         },
         {
           "env": null,
@@ -25,7 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestSkillSign::test_a_broken_frontmatter_is_refused"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_broken_frontmatter_is_refused"
         },
         {
           "env": null,
@@ -33,15 +35,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestSkillSign::test_it_shows_what_the_audit_found_before_it_writes_the_signature"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_shows_what_the_audit_found_before_it_writes_the_signature"
         },
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-9",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestSkillSign::test_a_signature_before_the_audit_is_refused"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_signature_before_the_audit_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_no_sync_status_call_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_an_audit_path_outside_the_plugin_is_reported"
         },
         {
           "env": null,
@@ -49,7 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skills.py::TestSkillSign::test_it_closes_by_naming_the_next_step"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_closes_by_naming_the_next_step"
         },
         {
           "env": null,
@@ -57,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skills.py::TestSkillSign::test_a_broken_closing_section_is_refused"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_broken_closing_section_is_refused"
         },
         {
           "env": null,
@@ -65,7 +83,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skills.py::TestSkillSign::test_it_stays_under_its_ceiling"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_stays_under_its_ceiling"
         },
         {
           "env": null,
@@ -73,15 +91,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestSkillSign::test_a_signature_counts_on_a_signed_commit_and_its_hashes"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_signature_counts_on_a_signed_commit_and_its_hashes"
         },
         {
           "env": null,
-          "id": "PROOF-5",
+          "id": "PROOF-12",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestSkillSign::test_a_missing_condition_is_refused"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_missing_condition_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_changed_clause_is_reported"
         },
         {
           "env": null,
@@ -89,7 +115,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skills.py::TestSkillSign::test_the_walk_takes_one_of_three_answers"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_walk_takes_one_of_three_answers"
         },
         {
           "env": null,
@@ -97,15 +123,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skills.py::TestSkillSign::test_it_says_what_each_gate_leaves_it_able_to_do"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_what_each_gate_leaves_it_able_to_do"
         },
         {
           "env": null,
-          "id": "PROOF-7",
+          "id": "PROOF-15",
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skills.py::TestSkillSign::test_a_gate_row_broken_is_refused"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_gate_table_with_no_passed_row_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_signed_row_that_asks_nothing_is_reported"
         },
         {
           "env": null,
@@ -113,31 +147,73 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_skills.py::TestSkillSign::test_the_tag_carries_the_evidence_package_and_nothing_is_pushed"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_tag_carries_the_evidence_package_and_nothing_is_pushed"
         },
         {
           "env": null,
-          "id": "PROOF-8",
+          "id": "PROOF-17",
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_skills.py::TestSkillSign::test_a_broken_tag_section_is_refused"
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_tag_line_before_the_package_line_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_tag_section_that_does_not_stop_below_signed_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_where_the_version_comes_from_and_asks_for_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_no_offer_to_write_the_version_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_shows_the_key_commands_and_offers_to_run_them"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_no_offer_to_run_the_key_commands_is_reported"
         }
       ],
       "rules": {
         "RULE-1": "passed",
+        "RULE-10": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
-        "RULE-8": "passed"
+        "RULE-8": "passed",
+        "RULE-9": "passed"
       },
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/skills/skill_sign.md"
 }

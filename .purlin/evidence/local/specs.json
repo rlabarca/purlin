@@ -2,38 +2,40 @@
   "feature": "specs",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:32Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:38Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "fd506747ba51a8b4f48153ce5e286a86a8001d73503c7b55b63147d36ac24524",
-        "spec": "5d78e40474c1db8d7db5800e05a312e97abef3d24a4f3046b9c640c244c5eb1a",
-        "tests": "b18705dc1ecc31d73b82a1295d0097eee7873d6e3fdec26eee665c116a25a5e6"
+        "code": "9c7590cbde4b9d0464f799250ec4fc0779dcd423a9db79a94214a0cbfd9a0b5f",
+        "spec": "c8f2015df34af32fb9fc8f6d8f74973068c6147c1138936eb817c7b7f1298ec7",
+        "tests": "eb51a72a7cafc07da687e521e7c90c6d117fc685c9d749a93f83d034d4048c9e"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
           "id": "PROOF-1",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_rule_tags_are_read_off_the_end_and_stripped"
+          "rule": "RULE-3",
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_a_bracket_at_the_end_of_a_rule_is_part_of_its_text"
         },
         {
           "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_bracketed_text_that_is_not_a_tag_stays_in_the_claim"
+          "rule": "RULE-3",
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_a_bracket_at_the_end_of_a_rule_enters_its_hash"
         },
         {
           "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_rule_tags_are_read_off_the_end_and_stripped"
+          "rule": "RULE-3",
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_reflowing_a_proof_keeps_its_hash"
         },
         {
           "env": null,
@@ -41,7 +43,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_the_hash_ignores_the_tags_and_the_whitespace"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_reflowing_a_rule_keeps_its_hash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_a_changed_word_changes_a_rules_hash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_a_changed_word_changes_a_proofs_hash"
         },
         {
           "env": null,
@@ -49,7 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_env_is_parsed_and_bounded_to_three_values"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_env_is_parsed_and_bounded_to_three_values"
         },
         {
           "env": null,
@@ -57,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_env_is_parsed_and_bounded_to_three_values"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_env_is_parsed_and_bounded_to_three_values"
         },
         {
           "env": null,
@@ -65,7 +83,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_a_second_env_tag_is_refused_not_merged"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_a_second_env_tag_is_refused_not_merged"
         },
         {
           "env": null,
@@ -73,7 +91,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_unknown_tags_are_ignored_with_one_warning_naming_the_files"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_unknown_tags_are_ignored_with_one_warning_naming_the_files"
         },
         {
           "env": null,
@@ -81,7 +99,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_unknown_tags_are_ignored_with_one_warning_naming_the_files"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_unknown_tags_are_ignored_with_one_warning_naming_the_files"
         },
         {
           "env": null,
@@ -89,7 +107,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_a_source_is_a_git_url_plus_a_path_or_whole"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_a_source_is_a_git_url_plus_a_path_or_whole"
         },
         {
           "env": null,
@@ -97,7 +115,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_a_path_field_supplies_the_path_for_a_bare_source_url"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_a_path_field_supplies_the_path_for_a_bare_source_url"
         },
         {
           "env": null,
@@ -105,7 +123,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-11",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_an_anchor_carries_its_source_and_its_pin"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_an_anchor_carries_its_source_and_its_pin"
         },
         {
           "env": null,
@@ -113,7 +131,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_requires_and_global_pull_rules_into_a_feature"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_requires_and_global_pull_rules_into_a_feature"
         },
         {
           "env": null,
@@ -121,7 +139,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_every_spec_is_keyed_by_its_filename_stem"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_every_spec_is_keyed_by_its_filename_stem"
         },
         {
           "env": null,
@@ -129,25 +147,14 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_a_spec_that_cannot_be_read_is_skipped"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_mcp_server.py::TestSpecParsing::test_the_level_tag_takes_the_gates_three_words"
+          "test": "dev/test_specs_reader.py::TestSpecParsing::test_a_spec_that_cannot_be_read_is_skipped"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
         "RULE-10": "passed",
         "RULE-11": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
-        "RULE-15": "passed",
-        "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
@@ -159,7 +166,7 @@
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/mcp/specs.md"
 }

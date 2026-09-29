@@ -2,14 +2,16 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-09-28T19:11:31Z",
-      "commit": "3310a0ce79a00c44e1dc6175e4a399249a185cfa",
-      "dirty": false,
+      "at": "2026-09-29T04:28:37Z",
+      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "dirty": true,
       "fingerprint": {
-        "code": "f37bfcb643b9eba00f2ccdb5159bd5ac9923d561266a6693026b83b7c18df73f",
-        "spec": "383829d4e97294b9c17243e70b3feb0cc7329f4d052528a5cf782a527a0f60b6",
-        "tests": "2aac0b1757145371d6f6fe0482ed94d55594d61e69e583e4e8dfcd4ab989a099"
+        "code": "22ddd184394aa6c357ddaf036bc0ce94d7458c69d612a893faf91b830dc538b7",
+        "spec": "bee37b13ebf11e62b6b0eb2c683f2c36e32ac5228b689001db2b65b7447c785c",
+        "tests": "40ef6c424aaca8852124f4f2ffe687cedf4950d6748a81063b908ffb7b694668"
       },
+      "hostname": "Richs-MacBook-Pro.local",
+      "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
@@ -17,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_the_frontmatter_names_the_agent"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_the_frontmatter_names_the_agent"
         },
         {
           "env": null,
@@ -25,7 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_a_broken_frontmatter_is_refused"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_a_broken_frontmatter_is_refused"
         },
         {
           "env": null,
@@ -33,7 +35,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_the_core_loop_runs_in_order"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_the_core_loop_runs_in_order"
         },
         {
           "env": null,
@@ -41,7 +43,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_a_loop_out_of_order_or_stated_twice_is_refused"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_a_loop_out_of_order_or_stated_twice_is_refused"
         },
         {
           "env": null,
@@ -49,7 +51,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_there_are_four_nevers"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_there_are_four_nevers"
         },
         {
           "env": null,
@@ -57,7 +59,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_a_never_missing_or_misplaced_is_refused"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_a_never_missing_or_misplaced_is_refused"
         },
         {
           "env": null,
@@ -65,7 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_the_routing_table_covers_the_three_roles"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_the_routing_table_covers_the_three_roles"
         },
         {
           "env": null,
@@ -73,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_a_foreign_role_or_command_is_refused"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_a_foreign_role_or_command_is_refused"
         },
         {
           "env": null,
@@ -81,15 +83,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_it_reads_the_state_before_it_answers"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_it_reads_the_state_before_it_answers"
         },
         {
           "env": null,
-          "id": "PROOF-5",
+          "id": "PROOF-8",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_a_state_paragraph_broken_is_refused"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_the_sentence_worded_otherwise_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_a_step_dropped_from_the_paragraph_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_out_of_date_given_another_meaning_is_refused"
         },
         {
           "env": null,
@@ -97,7 +115,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_it_stays_under_its_ceiling"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_it_stays_under_its_ceiling"
         },
         {
           "env": null,
@@ -105,7 +123,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_it_says_what_a_rename_moves"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_it_says_what_a_rename_moves"
         },
         {
           "env": null,
@@ -113,7 +131,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skills.py::TestPurlinAgent::test_a_rename_section_broken_is_refused"
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_a_rename_section_broken_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_it_says_every_run_ends_on_left_to_do"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_agent.py::TestPurlinAgent::test_the_next_step_left_unnamed_is_refused"
         }
       ],
       "rules": {
@@ -123,12 +157,13 @@
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
-        "RULE-7": "passed"
+        "RULE-7": "passed",
+        "RULE-8": "passed"
       },
       "runner": "rich-labarca"
     }
   },
-  "schema": "purlin-evidence/1",
+  "schema": "purlin-evidence/2",
   "source": "local",
   "spec": "specs/instructions/purlin_agent.md"
 }
