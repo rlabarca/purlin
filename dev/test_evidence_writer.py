@@ -266,11 +266,32 @@ def test_a_run_names_the_machine_its_tests_ran_on(tmp_path):
         platform.node(), platform.node())
 
 
+NAMELESS_HOST = (
+    '"""The host reports no name: every Python process started here."""\n'
+    'import platform\n'
+    'platform.node = lambda: ""\n')
+
+
 # purlin: evidence_writer PROOF-42
-def test_a_host_with_no_name_is_the_machine_unknown(monkeypatch):
-    monkeypatch.setattr(platform, 'node', lambda: '')
-    section = _build({'PROOF-1': PLAIN}, {'PROOF-1': [_seen('pass')]})
-    assert section['machine'] == 'unknown'
+def test_a_run_on_a_host_with_no_name_names_the_machine_unknown(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    # The run, and every Python process it starts, meets a host whose name
+    # is empty: the interpreter loads this module before anything else.
+    host = tmp_path / 'nameless_host'
+    host.mkdir()
+    (host / 'sitecustomize.py').write_text(NAMELESS_HOST, encoding='utf-8')
+    env = dict(os.environ, PYTHONPATH=str(host))
+
+    result = subprocess.run(
+        [sys.executable, RUN_SCRIPT, '--project-root', str(root), '--all',
+         '--test'], capture_output=True, encoding='utf-8', cwd=str(root),
+        env=env)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert _evidence(root)['platforms'][HERE]['machine'] == 'unknown'
 
 
 # ---------------------------------------------------------------------------

@@ -97,7 +97,7 @@
 - PROOF-39 (RULE-10): In a git checkout whose `main` has been pushed to a remote, holding committed evidence for a feature `gone` that no spec defines under both `local` and `ci`, a `--all --test --commit` run prints `Evidence committed.`, its last commit deletes `.purlin/evidence/local/gone.json` and `.purlin/evidence/ci/gone.json`, and the remote's `main` is still the commit pushed before
 - PROOF-40 (RULE-10): In a git checkout where the spec `feat` was edited and not committed and a run has written its evidence, the work and then the results are committed; the results' commit reads `purlin: evidence at <sha7>`, naming the work's commit, which is its parent
 - PROOF-41 (RULE-16): A `--all --test` run on this machine writes a section whose `machine` and `hostname` both read this machine's host name
-- PROOF-42 (RULE-16): On a host that reports no name, a run writes a section whose `machine` reads `unknown`
+- PROOF-42 (RULE-16): On a host that reports no name, a `--all --test` run writes a section whose `machine` reads `unknown`
 - PROOF-43 (RULE-17): A section that saw the same results over the same fingerprint as the one on disk, taken on the machine `build-2` where the file names `build-1`, replaces it: the file's section reads `build-2`
 - PROOF-44 (RULE-17): A section that differs from the one on disk only in its `hostname`, `fv-az456` where the file holds `fv-az123`, leaves the file byte for byte as it was
 - PROOF-45 (RULE-18): An audit that read `RULE-1` and gave the note `PROOF-1 holds two cases.` writes an `audit.rules` entry for `RULE-1` whose `notes` hold that one sentence
