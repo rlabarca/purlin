@@ -8,9 +8,9 @@ are in `dev/skill_checks.py`.
 import re
 
 from skill_checks import (carries, closing_outcomes, frontmatter_problems,
-                          frontmatter_refusals, next_step_problems,
-                          next_step_refusals, read, refusals, replace, resub,
-                          sections, skill_ceiling_problems, skill_path,
+                          frontmatter_refusals, next_step_problems, read,
+                          refusals, replace, resub, sections,
+                          skill_ceiling_problems, skill_path,
                           undirected_outcome_problems)
 
 
@@ -51,32 +51,73 @@ class TestSkillExport:
             'system']) == []
 
     # purlin: skill_export PROOF-4
-    def test_it_names_the_three_states(self):
+    def test_it_names_the_two_states(self):
         assert export_state_problems() == []
 
-    # purlin: skill_export PROOF-4
-    def test_another_state_for_the_signer_is_refused(self, monkeypatch):
+    # purlin: skill_export PROOF-7
+    def test_a_state_row_that_drops_left_to_do_is_refused(self, monkeypatch):
         rel = skill_path('export')
         assert refusals(monkeypatch, export_state_problems, [
-            (rel, replace('whose state is `signed`:',
-                          'whose state is `gate <gate> met`:'),
-             "does not carry 'Only `purlin:sign` writes a package whose "
-             "state is `signed`'"),
+            (rel, replace('holds the lines of `Left to do`',
+                          'holds the work'),
+             "does not carry 'holds the lines of `Left to do`'"),
         ]) == []
 
     # purlin: skill_export PROOF-5
     def test_it_closes_by_naming_the_next_step(self):
-        assert export_outcome_problems() == []
+        assert export_outcome_problems(FAILURE_OUTCOMES) == []
 
-    # purlin: skill_export PROOF-5
-    def test_a_broken_closing_section_is_refused(self, monkeypatch):
+    # purlin: skill_export PROOF-13
+    def test_each_state_names_the_next_step(self):
+        assert export_outcome_problems(STATE_OUTCOMES) == []
+
+    # purlin: skill_export PROOF-8
+    def test_a_skill_without_its_closing_section_is_refused(self,
+                                                             monkeypatch):
         rel = skill_path('export')
-        assert next_step_refusals(
-            monkeypatch, 'export', '| `work in progress` | `→ Run',
-            '| `signed` | `→ Hand .purlin/evidence/package/<version>.json '
-            'to the system of record.` |') == []
-        assert refusals(monkeypatch, export_outcome_problems, [
-            (rel, replace('| `--check` named a mismatch | `→ Export the '
+        text = read(rel)
+        last = text.rindex('\n## ')
+        assert refusals(monkeypatch, closing_problems, [
+            (rel, lambda t: t[:last + 1],
+             '%s closes with the section %r' % (rel, 'Checking a package')),
+        ]) == []
+
+    # purlin: skill_export PROOF-9
+    def test_a_closing_section_without_arrows_is_refused(self, monkeypatch):
+        rel = skill_path('export')
+        last = read(rel).rindex('\n## ')
+        assert refusals(monkeypatch, closing_problems, [
+            (rel, lambda t: t[:last] + t[last:].replace('\u2192', '->'),
+             '%s closing section gives no directive' % rel),
+        ]) == []
+
+    # purlin: skill_export PROOF-10
+    def test_a_closing_table_of_one_row_is_refused(self, monkeypatch):
+        rel = skill_path('export')
+        last = read(rel).rindex('\n## ')
+        second = '| No version |'
+        assert refusals(monkeypatch, closing_problems, [
+            (rel, lambda t: t[:t.index(second, last)],
+             '%s closing section names 1 outcomes, expected at least 2'
+             % rel),
+        ]) == []
+
+    # purlin: skill_export PROOF-11
+    def test_a_finished_row_without_its_arrow_is_refused(self, monkeypatch):
+        rel = skill_path('export')
+        row = ('| `finished` | `\u2192 Hand .purlin/evidence/package/'
+               '<version>.json to the system of record.` |')
+        assert refusals(monkeypatch, closing_problems, [
+            (rel, replace(row, row.replace('\u2192 ', '')),
+             '%s closing outcome gives no \u2192 directive' % rel),
+        ]) == []
+
+    # purlin: skill_export PROOF-12
+    def test_a_table_without_the_mismatch_row_is_refused(self, monkeypatch):
+        rel = skill_path('export')
+        assert refusals(monkeypatch,
+                        lambda: export_outcome_problems(FAILURE_OUTCOMES), [
+            (rel, replace('| `--check` named a mismatch | `\u2192 Export the '
                           'package again at its tag: purlin:export` |\n'),
              '%s closing section has no row for %r'
              % (rel, '`--check` named a mismatch')),
@@ -108,29 +149,37 @@ def export_command_problems():
 
 def export_state_problems():
     return carries(skill_path('export'), [
-        '`work in progress`', '`gate <gate> met`', '`signed`',
-        'Only `purlin:sign` writes a package whose state is `signed`'])
+        '`finished`', '`not finished`', 'holds the lines of `Left to do`'])
 
 
-# Each outcome of the export's closing table, and the directive its row gives.
-EXPORT_OUTCOMES = {
+# The outcomes of the export's closing table where the export stopped short,
+# and the directive each row gives.
+FAILURE_OUTCOMES = {
     'Evidence not committed': '`→ Run: purlin:test --commit`',
-    '`work in progress`': '`→ Run: purlin:status`',
-    '`gate <gate> met` at the gate `signed`': '`→ Run: purlin:sign`',
-    '`signed`': '`→ Hand .purlin/evidence/package/<version>.json to the '
-                'system of record.`',
+    'No version': '`→ Run: purlin:export --release <version>`',
     '`--check` named a mismatch': '`→ Export the package again at its tag: '
                                   'purlin:export`',
 }
 
+# The outcomes of the closing table for each state the package reads.
+STATE_OUTCOMES = {
+    '`not finished`': '`→ Run: <the command of the first line of left>`',
+    '`finished`': '`→ Hand .purlin/evidence/package/<version>.json to the '
+                  'system of record.`',
+}
 
-def export_outcome_problems():
+
+def closing_problems():
+    return (next_step_problems('export')
+            + undirected_outcome_problems('export'))
+
+
+def export_outcome_problems(outcomes):
     rel = skill_path('export')
-    problems = (next_step_problems('export')
-                + undirected_outcome_problems('export'))
+    problems = closing_problems()
     rows = [[cell.strip() for cell in row.strip('|').split('|')]
             for row in closing_outcomes(sections(read(rel))[-1][1])]
-    for outcome, directive in EXPORT_OUTCOMES.items():
+    for outcome, directive in outcomes.items():
         if [outcome, directive] not in rows:
             problems.append('%s closing section has no row for %r' % (
                 rel, outcome))

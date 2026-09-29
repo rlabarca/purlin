@@ -3,10 +3,10 @@ name: export
 description: Write the evidence package for a version, the data file a regulated system of record reviews
 ---
 
-Write one data file that holds the evidence for a version: every rule's words, its proofs, its
-tests, each result on each operating system, what the audit found, who signed it, and whether
-it meets the gate. A reviewer who cannot open the repository reads it in the system that holds
-the authority to sign the version off.
+Write one data file that holds the evidence for a version: whether it is finished, the count at
+each step, what is left to do, and every rule's words, its proofs, its tests, each result on each
+operating system, what the audit found and who signed it. A reviewer who cannot open the
+repository reads it in the system that holds the authority to sign the version off.
 
 Purlin makes no claim that the software is compliant. The package is evidence for review in a
 regulated document and sign-off system, such as Veeva; how it is shown is that system's job.
@@ -18,7 +18,7 @@ is relative to the plugin root; see `references/purlin_commands.md#path-resoluti
 ## Usage
 
 ```
-purlin:export                     Write the package for the VERSION file's value
+purlin:export                     Write the package for the version the project states
 purlin:export --release <name>    Name the version, the file and the tag another way
 purlin:export --commit            The same, then commit the package
 purlin:export --check <file>      Check a package against its fingerprint
@@ -35,8 +35,12 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/export/package.py" [--release <name>] [--
 It writes `.purlin/evidence/package/<version>.json` and prints the path and the state:
 
 ```
-Evidence package written to .purlin/evidence/package/1.4.0.json. State: work in progress, 38 of 42 rules meet the gate signed. Not for approval.
+Evidence package written to .purlin/evidence/package/1.4.0.json. State: not finished.
 ```
+
+The version is the one `purlin:sign` names its tag for: the `VERSION` file, else the version the
+project's package description states. With neither, the script prints `No version: nothing in
+this project states one. Name it with --release <version>.` and writes nothing.
 
 Print its lines verbatim. It works at every gate and at any time. It reads only what git holds:
 evidence or a signature that is written and not committed is left out, and each such file is
@@ -46,13 +50,11 @@ named on a line of its own and in the package's `warnings`.
 
 | State | What it means |
 |-------|---------------|
-| `work in progress` | At least one rule does not meet the gate. Not for approval |
-| `gate <gate> met` | Every rule meets the gate, and the version is not signed and tagged: the gate is `passed` or `strong`, where no tag is written, or `signed` with no tag yet. Not for approval |
-| `signed` | Every rule meets the gate `signed`, and the package is the one the tag carries |
+| `finished` | Nothing is left to do at the package's gate: `left` is empty |
+| `not finished` | `left` holds the lines of `Left to do`, first the next step, each with its command |
 
-Only `purlin:sign` writes a package whose state is `signed`: at the gate `signed`, when every
-rule meets it, it writes the package, commits it as a signed commit, and writes the tag on that
-commit, so the tagged code carries the package that describes it. Below `signed` it writes none.
+The package also carries `rules`, the total, and `steps`, the count that reached each step up to
+the gate, as `purlin:status` says them. The receiving system reads the state beside the gate.
 
 ## Step 3: commit only when asked
 
@@ -75,7 +77,7 @@ always gives the same bytes, so a package exported again at the tag matches the 
 | What the export found | The line to print |
 |-----------------------|-------------------|
 | Evidence not committed | `→ Run: purlin:test --commit` |
-| `work in progress` | `→ Run: purlin:status` |
-| `gate <gate> met` at the gate `signed` | `→ Run: purlin:sign` |
-| `signed` | `→ Hand .purlin/evidence/package/<version>.json to the system of record.` |
+| No version | `→ Run: purlin:export --release <version>` |
+| `not finished` | `→ Run: <the command of the first line of left>` |
+| `finished` | `→ Hand .purlin/evidence/package/<version>.json to the system of record.` |
 | `--check` named a mismatch | `→ Export the package again at its tag: purlin:export` |
