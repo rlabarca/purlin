@@ -21,8 +21,8 @@ and `signed` asks whether a person signed the rule, the proof and the test toget
 above the gate does not exist, which is why raising the gate is what makes a column, a filter or
 a tile appear. [hard_gates.md](../references/hard_gates.md) is the one home of the gate.
 
-Raising the gate is additive. On a project that already has a config, init asks before each
-write and touches nothing else. Lowering the gate rewrites one setting in `.purlin/config.json`
+Raising the gate is additive. On a project that already has a config, init writes what is
+missing and touches nothing else. Lowering the gate rewrites one setting in `.purlin/config.json`
 and deletes nothing: the evidence and the signatures stay where they are, and the cells above
 the new gate are not read. A team can drop to `passed` for a spike and come back up without
 losing a file.
@@ -60,7 +60,6 @@ gate raises every unmarked rule with it.
 |------|--------------|
 | `--gate <level>` | sets the gate, at setup or later |
 | `--mutation` | turns mutation testing on without asking |
-| `--add <language>` | adds one more entry to the `tests` setting |
 | `--update` | brings a project set up by an older Purlin onto the installed one |
 | `--dry-run` | prints the plan and writes nothing |
 | `--yes` | takes every default, so mutation testing stays off |

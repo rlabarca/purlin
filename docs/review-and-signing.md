@@ -77,7 +77,7 @@ audit's own sentence, or `Nothing yet: no audit has read this rule's text, proof
 The walk reports and recommends nothing: it says what was measured and what was seen, and you
 decide. To read one rule in full beforehand, with its test body, the test strength beside
 `min_strength` and the model that read it, run
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py" --feature <feature> --rule RULE-N`.
+`sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py" --feature <feature> --rule RULE-N`.
 [running-and-evidence.md](running-and-evidence.md#purlinaudit) says how the audit reads a rule,
 and [review_criteria.md](../references/review_criteria.md) is what it reads against.
 

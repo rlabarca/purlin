@@ -99,9 +99,10 @@ matrix is one Linux job, plus one job per operating system the `@env` tags name.
 The workflow runs on a push to a `run/*` branch and on a push of a `signed/*` tag, which only a
 project at `signed` writes.
 `purlin:test --remote` creates the run branch, waits for the run, pulls back what the runner
-committed under `.purlin/evidence/ci/`, and deletes the branch. The runner runs the marked tests
-and no audit. The tag run reruns the tests on a clean machine, checks that every signature still
-binds the rule, proof, test and audit it names and that every file under `ci/` was committed by
+committed under `.purlin/evidence/ci/`, and deletes the branch. The runner runs the tests
+[hard_gates.md](../references/hard_gates.md#where-a-runner-runs-and-when-a-project-has-one)
+names, and no audit. The tag run reruns the tests on a clean machine, checks that every
+signature still binds the rule, proof, test and audit it names and that every file under `ci/` was committed by
 the runner itself, and ends with the gate check. Evidence from either folder counts at every
 gate. [running-and-evidence.md](running-and-evidence.md) has it in full.
 
@@ -158,10 +159,11 @@ a proof tagged for another system reads `not run`, with the reason `<os>: no run
 that system runs it.
 
 **What does `partial` mean?** The passed cell keeps one entry per operating system a current
-run covered, and it reads `partial` when the rule's tests passed on some of them and failed or
-did not run on the others. `partial` is not met, and it has its own tile and its own filter on
-the board at every gate. Test strength is not measured per operating system; one number covers
-the feature.
+run covered, each section answering for the proofs it lists, and it reads `partial` when two
+systems that each have a current section disagree. A system a proof is tagged for with no
+current section makes it read `not run`. `partial` is not met, and the rule is left to do as
+`to fix`. Test strength does not depend on the system:
+[hard_gates.md](../references/hard_gates.md#the-three-steps) says how it is measured.
 
 ## Read next
 

@@ -99,18 +99,21 @@ gate line is the check. The exit code follows the tests, whatever the gate line 
 test failed and no marker is wrong, 1 otherwise, because a test run cannot make an audit or a
 signature appear.
 
-A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating
-system. On a machine that does not match, the run prints one sentence rather than a pass or a
-failure, and the rule's passed cell reads `not run`:
+A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` is proven only by a run on that
+operating system; [hard_gates.md](../references/hard_gates.md#where-a-runner-runs-and-when-a-project-has-one)
+says which machine proves which proof, the untagged ones included. On your machine the run
+counts the proofs tagged for another system in one line per system, rather than a pass or a
+failure, and their rules' passed cells read `not run`, with the reason `<os>: no run yet`:
 
 ```
-login PROOF-4 needs windows; this machine is macos. A remote runner runs it: purlin:init adds one.
+3 proofs need Windows; this machine is macOS. Run purlin:test --remote.
 ```
 
-A proof with no `@env` is satisfied by a run on any operating system. The passed cell keeps one
-entry per operating system a current run covered: the word, the source and when the run
-happened. It reads `partial` when the rule's tests passed on some of them and failed or did not
-run on the others, and `partial` is not met.
+A proof tagged for another system with no test tied to it is not counted in that line: its
+rule's line names it as a proof with no test. The passed cell keeps one entry per operating
+system a current run covered: the word, the source and when the run happened. Each section
+answers only for the proofs it lists. The cell reads `partial` when two systems that each have
+a current section disagree, and `partial` is not met.
 
 ## purlin:audit
 
@@ -225,14 +228,15 @@ none run on a remote runner.
 | Stryker | Jest and Vitest | `npm install --save-dev @stryker-mutator/core` |
 | Stryker.NET | xUnit | `dotnet tool install -g dotnet-stryker` |
 
-Go, shell and SQL have no engine. Their rules report `n/a` rather than a number, and such a
-rule meets the strong cell when the audit found nothing: the cell's reason reads `no mutation
-score measured`.
+Go, shell and SQL have no engine. Such a rule shows no strength, and it meets the strong cell
+when the audit found nothing: the cell's reason reads `no mutation score measured`.
 
-Stryker and Stryker.NET report which test caught which break, so a rule carries its own tests'
-number. mutmut reports totals per file, so every rule in that feature carries the same number.
-An engine that runs past the run's `--arm-timeout`, 3600 seconds by default, measures nothing:
-its rules report `n/a` and the run says why.
+Test strength is one share per feature, whatever the engine, so every rule of a feature carries
+the same number. [hard_gates.md](../references/hard_gates.md#the-three-steps) says what a
+rule reads when its feature's share could not be measured. An engine that runs past
+`--arm-timeout`, 3600 seconds by default, for one feature measures nothing for it, and the run
+prints `purlin: the engine timed out after 3600 s, so the breaks it made measure nothing: run
+purlin:audit --arm-timeout <seconds> to give it longer`.
 
 mutmut switches a break on only in a module imported by its full dotted name, so a test that
 imports a file through a `sys.path` entry never switches one on; import by the dotted path.
@@ -296,28 +300,23 @@ branch of its own, described below.
 ## When a project has a runner
 
 Most have none. At every gate a rule reaches `passed`, `strong` and `signed` on your machine.
-`purlin:init` writes a CI workflow for two reasons and no other:
+`purlin:init` writes a CI workflow for one reason: a proof in `specs/` is tagged `@env` for an
+operating system this machine is not, so only a runner can prove it. Which machine proves which
+proof, and which systems the runner file names, is in
+[hard_gates.md](../references/hard_gates.md#where-a-runner-runs-and-when-a-project-has-one).
 
-- **A proof in `specs/` is tagged `@env` for an operating system this machine is not**, so only
-  a runner can prove it.
-- **The project set `trust: remote`**: you answered no to the trust question, `Do you trust
-  your own machine for the tests? [y/n]` at the gate `passed` and `Do you trust your own
-  machine for the tests and the signing? [y/n]` from `strong` up, so the tests run on a clean
-  machine, and `purlin:sign` refuses a rule with a test whose feature has no current `ci`
-  section.
-
-With neither, init prints `No remote runner: every test runs on this operating system and you
-trust this machine, so nothing has to run remotely.` at the gate `passed`, and from `strong` up
-the same line with `every proof` in place of `every test`. Where one is called for, it writes
-`.github/workflows/purlin.yml` on GitHub, or `purlin.azure-pipelines.yml` at the project root
-on Azure DevOps. The job is named `purlin`.
+With no such proof, init prints `No remote runner: every proof runs on this operating system,
+so nothing has to run remotely.`, and at the gate `passed` the same line with `every test` in
+place of `every proof`. Where one is called for, it writes `.github/workflows/purlin.yml` on
+GitHub, or `purlin.azure-pipelines.yml` at the project root on Azure DevOps. The job is named
+`purlin`.
 
 Where one exists, `purlin:test --remote` hands this commit to it and brings back what it wrote:
 
 ```mermaid
 flowchart TD
     Y["you run<br>purlin:test --remote"] --> P["Purlin pushes this commit<br>to run/#lt;branch#gt;-#lt;sha7#gt;"]
-    P --> R["the git host's runner<br>runs the marked tests<br>on Linux and on each<br>operating system<br>an @env proof names"]
+    P --> R["each job of the git host's<br>runner runs the tests of the<br>proofs tagged for its system"]
     R --> C["the runner commits<br>.purlin/evidence/ci/<br>onto the run branch"]
     C -->|"Purlin waits for<br>the run to finish"| H["Purlin pulls the<br>evidence home with<br>git pull --ff-only"]
     H --> D["Purlin deletes<br>the run branch"]
@@ -337,44 +336,30 @@ deletes around one run, and a push of a `signed/*` tag.
 
 | The run | What it does | Commits |
 |---|---|---|
-| a `run/*` branch | Runs the marked tests | its own section of each feature's `.purlin/evidence/ci/<feature>.json`, onto that branch |
-| a `signed/*` tag | Reruns the marked tests on a clean machine, checks that every signature still binds the rule, the proof, the test and the audit it names, checks that every file under `.purlin/evidence/ci/` was committed by the runner's own identity, then runs the gate check | nothing |
+| a `run/*` branch | Runs the tests tied to the proofs tagged for the job's system | its own section of each such feature's `.purlin/evidence/ci/<feature>.json`, onto that branch |
+| a `signed/*` tag | Reruns the same tests on a clean machine | nothing |
 
-No breaks and no AI audit run on the runner. Every run ends with the gate check:
+A run on a ref that is neither prints `This run is on <ref>, which is neither a run branch nor a
+signed tag: the tests ran and nothing is written.`
 
-```yaml
-      - name: Check the gate
-        shell: bash
-        run: python3 "$PURLIN_ROOT/scripts/ci/gate_check.py" --check --verify
-```
+A `ci` section lists only the proofs tagged for the runner's system and the rules they prove,
+and names its machine `remote runner, <system>`, with the name the host lent the runner kept
+beside it as `hostname`
+([evidence_format.md](../references/formats/evidence_format.md)).
 
-It exits 1 when a rule does not meet the gate, or when `--verify` finds a signature that no
-longer binds this code or a `ci/` file the runner did not commit, and the job fails. It writes
-nothing. `purlin:sign` asks the same question of the same cells before it writes a tag, so the
-tag and a green run mean the same thing. A red run on a pushed tag is the git host's word that
-this version is not proven.
+No breaks and no AI audit run on the runner. The test step is the last step: it ends on the
+summary and `Left to do`, and its exit code is the job's. The job fails only when one of the
+tests it runs fails or could not run; a rule not yet audited or signed never fails it.
 
-The matrix carries `ubuntu-latest` first, then one job per operating system the `@env` tags in
-`specs/` name. Each job writes its own section, merged into the file at the branch's head. A
-checkout that carries `scripts/run/purlin_run.py` runs that Purlin; any other project's job
-clones Purlin at the release the project pins, and the `PURLIN_REF` repository variable moves
-that pin.
-
-### Who committed a ci/ file
-
-A person could write a file under `ci/`, so the tag run reads the commit that last changed each
-one. On GitHub, a runner's commit made through the Git Data API carries `GitHub
-<noreply@github.com>` as its committer and `github-actions[bot]` as its author, and GitHub signs
-it; a signature status of `B` fails the file. On Azure DevOps the tag run asks the host with
-the build service's token, `SYSTEM_ACCESSTOKEN`: its own `authenticatedUser.id` must equal the
-`push.pushedBy.id` of the commit, and a different id, a refusal or no answer within 30 seconds
-fails the file. On your own machine there is no token, so `gate_check.py --check --verify`
-counts those files as not checked. On either host a squash merge or a rebase that rewrites a
-`ci/` commit makes the file fail, so merge a run branch without rewriting it.
+The matrix carries one job per operating system the `@env` tags in `specs/` name that the
+machine running setup is not. Each job writes its own section, merged into the file at the
+branch's head. A checkout that carries `scripts/run/purlin_run.py` runs that Purlin; any other
+project's job clones Purlin at the release the project pins, and the `PURLIN_REF` repository
+variable moves that pin.
 
 ### purlin:test --remote
 
-Use it for the two reasons above. It pushes a branch of its own, never the branch you are on:
+Use it for the reason above. It pushes a branch of its own, never the branch you are on:
 
 1. It refuses a detached head and an uncommitted change, because the run would prove something
    other than what is on disk.

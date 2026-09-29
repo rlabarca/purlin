@@ -10,7 +10,7 @@ the table `purlin:test --commit` commits.
 
 `purlin:init` copies the page to `purlin-report.html` at the project root. The page is
 gitignored, so each person has their own copy. The copy does not refresh itself: after a plugin
-update, run `purlin:init` again and it asks before it replaces the copy.
+update, run `purlin:init` again and it replaces the copy.
 
 Open it in any browser. It reads `.purlin/report-data.js`, which `purlin:status`,
 `purlin:test`, `purlin:audit` and `purlin:sign` each write as they finish. Nothing writes it in
@@ -64,7 +64,7 @@ line, since proofs are optional there. `Strong` joins at `strong` and `Signed` a
 | `Rules` | how many rules the spec owns, then, where it proves rules from an anchor it requires or from a global anchor, `15 (+6 shared)` | each anchor the shared rules come from and how many, as `security_no_dangerous_patterns · 6`; none where there are no shared rules |
 | `Proofs` | `24 · 3 no test`: how many proof lines the spec holds and how many no marker above a test names, whether or not that test has run. A `@manual` proof counts as no gap | which proofs those are |
 | `Tests` | `21 of 24 · 1 partial · 2 failing`: how many rules passed everywhere they ran, then the two words that say they did not | one line per operating system a current run covered, newest first: `linux · ci · 9 days old · 22 passed · 1 failed · 1 not run` |
-| `Strong` | `18 of 20 · 71%`: how many rules reached `strong` of those whose level is `strong` or `signed`, and the test strength, `n/a` where nothing measured one; empty where no rule's level asks for the audit | where the newest audit came from, how old it is, and `minimum strength 80%` |
+| `Strong` | `2 of 4 · 86%`: how many of the spec's rules reached `strong`, then the test strength where one was measured; `0 of 26` alone where none was | where the newest audit came from, how old it is, and `minimum strength 80%`; the percentage's own hover reads `Test strength: the tests caught 86 of every 100 deliberate breaks of the code.` |
 | `Signed` | `1 of 4`: how many rules carry a signature that counts, of those whose level is `signed`; empty where none is | each signer with the date of their newest signature, then how many are `stale` |
 
 Shared rules count toward every feature that proves them, in `Proofs`, `Tests`, `Strong` and

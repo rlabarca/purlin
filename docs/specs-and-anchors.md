@@ -88,10 +88,11 @@ no signature.
 
 A level tag is never required: a rule without one takes the project's gate, and at the `passed` gate `purlin:spec` writes none at all, because the gate is the ceiling and every rule is read as `passed` there.
 
-Ids are assigned in increasing order and never reused. A deleted rule leaves its number
-vacant and every other rule keeps the number it had; a gap in the sequence is legal and
-nothing reports it. Renumbering would silently repoint every test marker and every signature
-that already names the old id.
+Ids are assigned in increasing order and never reused. A new id is one more than the highest the file has held since it was last written whole; a number deleted since then is never used again.
+A deleted rule leaves its number vacant and every other rule keeps the number it had; a gap in
+the sequence is legal and nothing reports it. A rule number written twice is warned of, as
+`login: RULE-2 is written twice; the second is read. Run purlin:spec login.` Renumbering would
+silently repoint every test marker and every signature that already names the old id.
 
 A rule about what the software must never do is an ordinary rule whose proof asserts absence.
 There is no separate syntax for it:
@@ -137,11 +138,12 @@ written by a person, never by a machine.
 - PROOF-53 (RULE-29): Lock a file and verify a second process cannot open it @env(windows)
 ```
 
-At most one `@env` per proof. A proof with no `@env` is satisfied by a run on any operating
-system. A proof with one is passed only when a run on that system passes it, and a rule with
-proofs on two systems needs both. On another machine the run does not count the proof, and the
-passed cell reads `not run` with the reason `windows: no run yet`. Where the project has a
-remote runner, its matrix gets one job per system the tags name.
+At most one `@env` per proof. Which run proves a proof with no `@env`, and which systems a
+remote runner's matrix names, is in
+[hard_gates.md](../references/hard_gates.md#where-a-runner-runs-and-when-a-project-has-one).
+A proof with one is passed only when a run on that system passes it, and a rule with proofs on
+two systems needs both. On another machine the run does not count the proof, and the passed
+cell reads `not run` with the reason `windows: no run yet`.
 
 ## Ids across branches
 
@@ -185,6 +187,8 @@ file does not carry:
 > Source: https://github.com/acme/policies.git specs/no_eval.md
 > Pinned: abc1234def5678
 ```
+
+The file is a spec in Purlin's format that holds at least one rule. `add` refuses any other source, a text file, a description in words or a file with no rule, and writes nothing.
 
 A pin is always a commit, never a branch. A branch moves, and an anchor whose rules changed
 under a project with no diff to read is exactly what pinning exists to prevent.
