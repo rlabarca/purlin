@@ -179,8 +179,6 @@ that writes no proof line has no proofs here.
 
 The Queue tab is the rules whose next step is a person. It exists at `strong` and above.
 
-![The Queue tab at the gate signed: 2 rules need a person, one hand check for invoice RULE-3 and one signature for login RULE-2, each with its claim, level and command](images/dashboard-queue.png)
-
 The heading says `<n> rules need a person`, with the line `Hand checks <h> · Signatures <s>`.
 The columns are `Spec`, `Rule`, `What it claims`, `Level`, `Needs` and `Command`, and rows come
 by feature, then by rule number. The claim is cut at 90 characters; the rule screen has the
