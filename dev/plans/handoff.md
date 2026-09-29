@@ -1,4 +1,4 @@
-# Handoff, 2026-09-29
+# Handoff, 2026-09-29, evening
 
 For the session that continues Purlin 0.10.0. Read this, then `dev/plans/three-levels.md`
 decisions 31 to 58 (together they are the product as the owner settled it), then
@@ -44,26 +44,49 @@ claim of compliance: it hands evidence to a system of record.
 
 ## What is left, in order
 
-1. **The owner answers the questions of `phase2-report.md`**, grouped, those a decision already
-   answers dropped, most basic first; and settles the product faults left for the owner.
-2. **The words an agent chose** where no decision gave them: section 9 of `phase1-plan.md` and
-   the integration reports.
-3. **Windows** (decision 82): an agent sorts the rules about files, paths and starting
-   programs and shows the owner the list; then they are marked `@env(windows)`, setup writes
-   the runner file, and `purlin:test --remote` is run once.
-4. **Sanity check 3** (decision 64): the docs against the rules, and `purlin:spec-from-code`
-   run for real on three small projects at each gate, held to the measures of decisions 66
-   and 81.
-5. **More sanity checks**, each its own fresh agent, in the order the owner picks: a QA person
+The prompt for the next session is `dev/plans/next-agent-prompt.md`.
+
+1. **Decisions 94 and 95 are built**: the answers to the second fan-out's questions, the 55
+   readings of `phase2-questions.md`, and Windows. The owner sees the final Windows list before
+   any rule is marked (decision 82).
+2. **Windows is run for real**: setup writes the runner file, and `purlin:test --remote` is
+   run once, which also proves the remote run against GitHub for the first time. The owner is
+   asked before the first remote run.
+3. **Sanity check 3** (decision 64): the docs against the rules, and `purlin:spec-from-code`
+   run for real on three small projects at each gate, held to decisions 66 and 81.
+4. **More sanity checks**, each its own fresh agent, in the order the owner picks: a QA person
    writes proofs; an upgrade from a real 0.9.5 project; a hostile reviewer who tries to make an
    unproven rule read as proven.
-6. **Every page is read again against the code** (decision 63), with the screenshots retaken
-   last. The slide for the third gate and the README's ten-minute path are ahead of the docs.
-7. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/`, the slides.
-8. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
+5. **Every page is read again against the code** (decision 63), with the screenshots retaken
+   last. Three pages still say `n/a`; the ten-minute path still types its rules by hand.
+6. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/`, the slides.
+7. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
    push the work as a branch; on the work machine run `dev/manual/check_azure_remote.py`
    against a real Azure DevOps project, then `purlin:audit`, `purlin:sign`, the push of the
    tag, the release.
+
+## Words for the owner to read
+
+Chosen by an agent where no decision gave them. The owner was shown these on 2026-09-29 and
+has not yet said which to change.
+
+| Where | What it says |
+|---|---|
+| The signed panel on a rule's page | `Signed by <name>, <email>, on <date> <time> UTC with the key ending ...<last 4>.` then, per system, `On <System> the tests ran on <machine>.` |
+| A hand check, explained on the dashboard | `A hand check is you checking the rule and signing it in one act; purlin:sign asks what you saw and records it.` |
+| Under the filter buttons | `Type <command> in Claude Code.` |
+| Signing with nothing waiting | `Nothing is waiting for someone to test by hand or to sign.` |
+| Signing a name that is not a rule | `<feature> <RULE-N> is not a rule any spec has.` |
+| A run started by a pushed signed tag | `Tag run: nothing is written. This run reruns the tests on <ref>.` |
+| Setup, when no remote runner is needed | `every proof runs on this operating system, so nothing has to run remotely` |
+| Setup, with no git host or an unknown one | `Git host not read from a remote.` |
+| Setup, with no tool for breaking code | `Without it test strength is not measured.` |
+| A comment that is nearly right | `` `purln` is one letter from `purlin`. `` |
+| The evidence package refusing a tag | `the committed evidence still has work left to do` |
+| The warning for a minimum that is not a number | `no minimum applies` |
+
+Two small things seen and not changed: the warning `1 spec files carry tags` has its plural
+wrong, and at 1500 pixels the board shortens `security_no_dangerous_patterns` with an ellipsis.
 
 ## Small things known and not fixed
 
