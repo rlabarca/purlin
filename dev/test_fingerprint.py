@@ -54,14 +54,31 @@ class Project(object):
         return result.stdout
 
     def write(self, rel, text):
+        """Write `text` with line feeds alone, on every system."""
         path = os.path.join(self.root, rel)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, 'w', encoding='utf-8') as handle:
+        with open(path, 'w', encoding='utf-8', newline='') as handle:
             handle.write(text)
 
     def commit(self):
         self.git('add', '-A')
         self.git('commit', '-q', '-m', 'feat: fixture')
+
+    def check_out_again(self, autocrlf):
+        """Check every tracked file out afresh under `core.autocrlf`.
+
+        With `true`, git writes each text file with a carriage return before
+        every line feed, as a Windows checkout does.
+        """
+        self.git('config', 'core.autocrlf', autocrlf)
+        for rel in self.git('ls-files', '-z').split('\0'):
+            if rel:
+                os.remove(os.path.join(self.root, rel))
+        self.git('checkout', '--', '.')
+
+    def read_bytes(self, rel):
+        with open(os.path.join(self.root, rel), 'rb') as handle:
+            return handle.read()
 
     def fp(self, feature):
         return fingerprint.fingerprint(self.root, feature)
@@ -110,11 +127,20 @@ def _changed(before, after):
 # --- RULE-1 and RULE-21 -----------------------------------------------------
 
 # purlin: evidence PROOF-1
+# purlin: evidence PROOF-71
 def test_a_fingerprint_is_three_parts_of_64_hex_characters(project):
-    first = project.fp('login')
-    assert sorted(first) == ['code', 'spec', 'tests']
-    for value in first.values():
-        assert len(value) == 64 and all(c in '0123456789abcdef' for c in value)
+    project.check_out_again('false')
+    assert b'\r' not in project.read_bytes('src/login.py')
+    plain = project.fp('login')
+    project.check_out_again('true')
+    assert b'\r\n' in project.read_bytes('src/login.py')
+    converted = project.fp('login')
+    for first in (plain, converted):
+        assert sorted(first) == ['code', 'spec', 'tests']
+        for value in first.values():
+            assert len(value) == 64 and all(
+                c in '0123456789abcdef' for c in value)
+    assert converted['code'] == plain['code']
 
 
 # purlin: evidence PROOF-32
@@ -226,6 +252,7 @@ def test_an_edit_to_a_file_outside_the_scope_changes_nothing(project):
 
 
 # purlin: evidence PROOF-7
+# purlin: evidence PROOF-72
 def test_a_scoped_folder_reaches_a_tracked_file_one_folder_down(project):
     project.login(scope='src')
     project.write('src/deep/token.py', 'TOKEN = 1\n')
@@ -356,6 +383,7 @@ def test_a_marked_file_no_suite_names_is_not_counted(project):
 
 
 # purlin: evidence PROOF-12
+# purlin: evidence PROOF-73
 def test_a_javascript_marker_is_counted(project):
     project.write('web/login.test.js', JS_TEST)
     project.commit()
@@ -420,6 +448,7 @@ def test_an_untracked_file_changes_no_part(folder_scoped):
 
 
 # purlin: evidence PROOF-46
+# purlin: evidence PROOF-74
 def test_untracked_files_in_the_scope_or_beside_a_marker_file_are_listed(
         folder_scoped):
     folder_scoped.write('src/new_token.py', 'NEW = 1\n')

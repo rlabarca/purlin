@@ -8,6 +8,7 @@ taken by the real fingerprint module over that repository.
 
 import json
 import os
+import platform
 import subprocess
 import sys
 
@@ -156,6 +157,15 @@ def test_a_system_that_names_itself_win32_is_windows(monkeypatch):
 def test_a_system_that_names_itself_darwin_is_macos(monkeypatch):
     monkeypatch.setattr(sys, 'platform', 'darwin')
     assert evidence.host_os() == 'macos'
+
+
+# purlin: evidence PROOF-75
+@pytest.mark.skipif(platform.system() != 'Windows',
+                    reason='only a Windows machine can show its own name')
+def test_on_windows_the_reader_names_its_own_machine_windows():
+    # Nothing is simulated: the system is asked by its own call, not through
+    # the value the reader reads.
+    assert evidence.host_os() == 'windows'
 
 
 def _stored_now(root):

@@ -46,6 +46,7 @@
 ## Proof
 
 - PROOF-1 (RULE-1): In a git repository where `login` covers the committed file `src/login.py`, the fingerprint of `login` carries exactly the three parts `code`, `spec` and `tests`, each 64 lowercase hex characters
+- PROOF-71 (RULE-1): On Windows, with `core.autocrlf` set to `true`, `login` covers the committed file `src/login.py`; its fingerprint carries the three parts `code`, `spec` and `tests`, and `code` equals the one taken of the same commit with `core.autocrlf` set to `false` @env(windows)
 - PROOF-32 (RULE-21): `login` covers the committed file `src/login.py`, which is then edited and not committed; the fingerprint of `login` taken after the edit differs from the one taken before in `code` and in no other part
 - PROOF-2 (RULE-2): The rule `Valid credentials return 200` of `login` is reworded to `Valid credentials return 201`; the fingerprint of `login` differs from the one taken before in `spec` alone
 - PROOF-33 (RULE-22): The `> Description:` of `login` is rewritten from `What it does.` to `Something else entirely.`; all three parts of the fingerprint of `login` equal the ones taken before
@@ -57,6 +58,7 @@
 - PROOF-6 (RULE-4): `login` covers `src/login.py`, and that file is edited; the fingerprint of `login` differs from the one taken before in `code` alone
 - PROOF-36 (RULE-4): `login` covers `src/login.py`, and `src/other.py`, a tracked file outside the scope, is edited; all three parts of the fingerprint of `login` are as they were
 - PROOF-7 (RULE-24): `login` covers the folder `src`, which holds the tracked file `src/deep/token.py` one folder down; editing `src/deep/token.py` changes the fingerprint in `code` alone
+- PROOF-72 (RULE-24): On Windows, `login` covers the folder `src`, which holds the tracked file `src/deep/token.py` one folder down; editing that file changes the fingerprint in `code` alone @env(windows)
 - PROOF-8 (RULE-25): `login` covers the glob `src/**/*.py`, and the tracked file `src/deep/token.py`, one folder down, is edited; the fingerprint of `login` differs from the one taken before in `code` alone
 - PROOF-37 (RULE-25): `login` covers the glob `src/**/*.py`, and the tracked file `src/login.py`, directly in `src`, is edited; the fingerprint of `login` differs from the one taken before in `code` alone
 - PROOF-38 (RULE-25): `login` covers the glob `src/**/*.py`, and the tracked file `src/notes.txt` is edited; the fingerprint of `login` is the same as before
@@ -70,6 +72,7 @@
 - PROOF-43 (RULE-7): The committed file `tests/test_other.py`, named by a suite of the `tests` setting, carries a marker for `billing` and none for `login`; rewriting it leaves the fingerprint of `login` as it was
 - PROOF-44 (RULE-7): The committed file `scripts/check_login.py` carries `# purlin: login PROOF-1` above a test, and no suite of the `tests` setting names it; editing it leaves the fingerprint of `login` as it was
 - PROOF-12 (RULE-7): The committed JavaScript file `web/login.test.js`, named by a suite's glob `**/*.test.js`, carries `// purlin: login PROOF-2` above its test; editing it changes the fingerprint of `login` in `tests` alone
+- PROOF-73 (RULE-7): On Windows, the committed file `web/login.test.js`, named by a suite's pattern `**/*.test.js`, carries `// purlin: login PROOF-2` above its test; editing it changes the fingerprint of `login` in `tests` alone @env(windows)
 - PROOF-45 (RULE-26): A copy of a JavaScript test carrying `// purlin: login PROOF-2` is committed under `node_modules/pkg/`, named by the suite's glob `**/*.test.js`; editing it leaves the fingerprint of `login` as it was
 - PROOF-65 (RULE-26): A copy of a JavaScript test carrying `// purlin: login PROOF-2` is committed under `bin/`, named by the suite's glob `**/*.test.js`; editing it leaves the fingerprint of `login` as it was
 - PROOF-66 (RULE-26): A copy of a JavaScript test carrying `// purlin: login PROOF-2` is committed under `obj/`, named by the suite's glob `**/*.test.js`; editing it leaves the fingerprint of `login` as it was
@@ -77,6 +80,7 @@
 - PROOF-68 (RULE-26): A copy of a JavaScript test carrying `// purlin: login PROOF-2` is committed under `.cache/`, named by the suite's glob `**/*.test.js`; editing it leaves the fingerprint of `login` as it was
 - PROOF-13 (RULE-8): `login` covers `src` and its marker file is `tests/test_login.py`; `src/new_token.py` and `tests/helper.py` are written and not added to git, and the fingerprint of `login` equals the one taken before
 - PROOF-46 (RULE-8): `login` covers `src` and its marker file is `tests/test_login.py`; `src/new_token.py`, `tests/helper.py` and `docs/notes.md` are written and not added to git; the files listed as untracked are exactly `src/new_token.py` and `tests/helper.py`
+- PROOF-74 (RULE-8): On Windows, `login` covers `src` and its marker file is `tests/test_login.py`; `src/new_token.py`, `tests/helper.py` and `docs/notes.md` are written and not added to git; the files listed as untracked are exactly `src/new_token.py` and `tests/helper.py` @env(windows)
 - PROOF-47 (RULE-8): `login` covers `src`, `.gitignore` lists `src/*.log`, and `src/debug.log` and `src/new_token.py` are written and not added to git; the one file listed as untracked is `src/new_token.py`
 - PROOF-14 (RULE-8): `login` covers `src`, and `src/new_token.py` is written and not added to git; once it is added, and not committed, the fingerprint differs from the one taken before it was written in `code` alone, and no file is listed as untracked
 - PROOF-15 (RULE-9): In a project whose one spec is `login`, asking for the fingerprint of `nosuch` fails with `KeyError`, and its message names `nosuch`
@@ -93,6 +97,7 @@
 - PROOF-25 (RULE-27): On a system that names itself `freebsd14`, the reader gives the machine it runs on as `linux`
 - PROOF-53 (RULE-27): On a system that names itself `win32`, the reader gives the machine it runs on as `windows`
 - PROOF-54 (RULE-27): On a system that names itself `darwin`, the reader gives the machine it runs on as `macos`
+- PROOF-75 (RULE-27): On Windows, with nothing simulated, the reader gives the machine it runs on as `windows` @env(windows)
 - PROOF-21 (RULE-15): A `local` `macos` section of `login` stores the fingerprint of `login` taken now; checked against a fingerprint taken again, it reads current, with no part out of date
 - PROOF-55 (RULE-15): A `local` `macos` section of `login` stores the fingerprint taken now, and `src/login.py` is then edited; checked against a fingerprint taken again, it reads out of date on exactly `code`
 - PROOF-56 (RULE-15): A `local` `macos` section of `login` stores the fingerprint taken now, and then `src/login.py` and the text of RULE-1 are both edited; the section reads out of date on exactly `spec` and `code`
