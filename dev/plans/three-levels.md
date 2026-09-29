@@ -787,6 +787,10 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     not reached a step, what the audit found, who signed it and with which key, the machine
     its tests ran on for each system, and its proofs with their tests. The docs carry one
     screenshot of the dashboard, the board with a rule unfolded.
+87. **The `No proof` box comes first** (added 2026-09-29). On the dashboard the boxes read,
+    left to right, `No proof`, `Passing`, `Strong`, `Signed`, in the order the work is done.
+    The filter buttons follow the same order as the terminal's `Left to do`, in which writing
+    a proof is already first.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
