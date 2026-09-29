@@ -111,12 +111,14 @@ def rule_word(proof_ids, proofs, observed, host_os):
                 if not (proofs.get(pid) or {}).get('manual')]
     if not runnable:
         return 'passed'
-    if any(observed.get(pid) == 'fail' for pid in runnable):
-        return 'failed'
     foreign = [pid for pid in runnable
                if (proofs.get(pid) or {}).get('env')
                and (proofs.get(pid) or {}).get('env') != host_os]
     here = [pid for pid in runnable if pid not in foreign]
+    # A test tied to a proof another system owns proves nothing here,
+    # whatever it did, so only a proof that could run here can fail the rule.
+    if any(observed.get(pid) == 'fail' for pid in here):
+        return 'failed'
     if here and all(observed.get(pid) == 'pass' for pid in here):
         return 'passed' if not foreign else 'not run'
     if any(observed.get(pid) for pid in runnable):
@@ -153,8 +155,8 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     rule with no proof whose test is marked by the rule's own id. One
     `proofs` entry is written per (id, test) pair, and one with an empty
     `test` for a proof nothing observed. A tied test that neither passed
-    nor failed is `missing`, or `not run` where its proof is tagged for
-    another operating system.
+    nor failed is `missing`, and a proof tagged for another operating
+    system reads `not run` whatever its tied test did here.
 
     `only`, on a remote runner, is the proofs tagged for its system: the
     section then lists those proofs alone and the rules they prove, and
@@ -195,11 +197,15 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
             seen = entries_by_proof.get(proof_id) or []
             base = {'id': proof_id, 'rule': rule_id, 'env': env,
                     'manual': bool(proof.get('manual'))}
-            unseen = 'not run' if env and env != host_os else 'missing'
+            foreign = bool(env and env != host_os)
+            unseen = 'not run' if foreign else 'missing'
             for entry in seen:
                 status = entry.get('status')
+                # A test carrying a Mac proof's marker and a Windows proof's
+                # marker runs on the Mac and proves the Mac proof alone.
                 listed.append(dict(base, result=(
-                    status if status in ('pass', 'fail') else unseen),
+                    status if status in ('pass', 'fail') and not foreign
+                    else unseen),
                     test='%s::%s' % (entry.get('test_file', ''),
                                      entry.get('test_name', ''))))
             if not seen:

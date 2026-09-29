@@ -127,9 +127,11 @@ Each `proofs` entry:
 
 A test is tied to its proof by the marker comment above it, as
 `references/formats/marker_format.md` says. A proof whose test was skipped, or
-that no case in the report is, reads `missing` with the test named, and `not
-run` when the proof is tagged `@env` for another operating system. A proof no
-test is tied to has one entry with an empty `test`, reading the same way.
+that no case in the report is, reads `missing` with the test named. A proof
+tagged `@env` for another operating system than the section's reads `not run`
+whatever its tied test did there: a test carrying a Mac proof's marker and a
+Windows proof's marker runs on the Mac and proves only the Mac proof. A proof
+no test is tied to has one entry with an empty `test`, reading the same way.
 
 A reader takes a proof's result in a section as the worst of its entries:
 `fail` where one failed, else `not run` where one reads `missing` or `not

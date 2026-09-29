@@ -429,6 +429,21 @@ def test_a_ci_section_lists_only_the_proofs_tagged_for_its_system():
     assert section['rules'] == {'RULE-1': 'passed'}
 
 
+# purlin: evidence_writer PROOF-76
+def test_a_test_proves_only_the_proof_tagged_for_the_system_it_ran_on():
+    info = _info(proofs={'PROOF-1': {'manual': False, 'env': 'macos'},
+                         'PROOF-2': {'manual': False, 'env': 'windows'}},
+                 by_rule={'RULE-1': ['PROOF-1', 'PROOF-2']})
+    one_test = _seen('pass', 'test_both', 'tests/both.py')
+    section = writer.build_section(
+        info, {'PROOF-1': [one_test], 'PROOF-2': [one_test]}, 'macos',
+        'a' * 40, False, 'dev', PRINT)
+    assert [(entry['id'], entry['result'], entry['test'])
+            for entry in section['proofs']] == [
+        ('PROOF-1', 'pass', 'tests/both.py::test_both'),
+        ('PROOF-2', 'not run', 'tests/both.py::test_both')]
+
+
 def _no_proof(rule_id, seen):
     """The section for a spec whose one rule has no proof, and what it lists."""
     section = writer.build_section(
