@@ -685,9 +685,10 @@ def _what_moved(signature, inp):
     finding something different, not an edit.
     """
     from purlin import signatures as signatures_module
-    if signatures_module.is_current(signature, inp.get('rule_hash'),
-                                    inp.get('proof_hash'),
-                                    inp.get('test_hash')):
+    # The rule's hashes with the signature's own audit hash: current then
+    # means only what the audit found moved.
+    if signatures_module.is_current(signature, dict(
+            inp, audit_hash=signature.get('audit_hash'))):
         return AUDIT_MOVED
     return HASHES_MOVED
 
@@ -695,9 +696,7 @@ def _what_moved(signature, inp):
 def _binds(signature, inp, audit):
     """True when a signature still binds the rule's current evidence."""
     from purlin import signatures as signatures_module
-    return signatures_module.is_current(
-        signature, inp.get('rule_hash'), inp.get('proof_hash'),
-        inp.get('test_hash'), audit)
+    return signatures_module.is_current(signature, dict(inp, audit_hash=audit))
 
 
 # ---------------------------------------------------------------------------

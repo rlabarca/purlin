@@ -196,12 +196,24 @@ def next_step_problems(name):
     return problems
 
 
+NOTHING_LEFT = 'Nothing left to do.'
+
+
 def undirected_outcome_problems(name):
-    """Every outcome of the closing section that gives no `\u2192` directive."""
+    """Every outcome of the closing section that gives no `\u2192` directive.
+
+    One outcome is let through with none, the one that reads `Nothing left
+    to do.`: at the gates `passed` and `strong` a finished project names no
+    command. A second such outcome is reported like any other."""
     rel = skill_path(name)
     body = sections(read(rel))[-1][1]
+    undirected = [outcome for outcome in closing_outcomes(body)
+                  if '\u2192' not in outcome]
+    finished = [outcome for outcome in undirected if NOTHING_LEFT in outcome]
+    if finished:
+        undirected.remove(finished[0])
     return ['%s closing outcome gives no \u2192 directive: %s' % (rel, outcome)
-            for outcome in closing_outcomes(body) if '\u2192' not in outcome]
+            for outcome in undirected]
 
 
 def sentence_with(rel, needles):

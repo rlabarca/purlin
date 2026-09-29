@@ -166,22 +166,49 @@ def load_signatures(project_root, features):
     return found
 
 
-def is_current(signature, rule_hash, proof_hash, test_hash, audit=None):
-    """True when a signature still binds what it was given for.
+# The fields of a rule entry `is_current` compares, in the order they are
+# read. `signed_hash` is the one hash format 11 of the signature stores.
+BOUND_FIELDS = ('rule_hash', 'proof_hash', 'test_hash', 'audit_hash')
 
+
+def signed_hash(entry):
+    """sha256 over the seven lines a signature is made over.
+
+    `applies_to`, `rule_hash`, `proof_hash`, `test_hash`, `code_hash`,
+    `audit_hash`, and `machines` written as `os=machine` pairs, sorted and
+    joined with `,`. `entry` is a payload rule entry, or a signature, which
+    carries the same fields; a field it lacks reads as the empty string.
+    """
+    machines = entry.get('machines') or {}
+    pairs = ','.join(sorted('%s=%s' % (name, machines[name] or '')
+                            for name in machines))
+    lines = [str(entry.get(key) or '') for key in (
+        'applies_to', 'rule_hash', 'proof_hash', 'test_hash', 'code_hash',
+        'audit_hash')]
+    lines.append(pairs)
+    digest = hashlib.sha256()
+    digest.update('\n'.join(lines).encode('utf-8'))
+    return digest.hexdigest()
+
+
+def is_current(signature, entry):
+    """True when a signature still binds the rule entry it is compared with.
+
+    `entry` is the payload's rule entry, or any dict carrying its hashes.
     Every part of the triple is compared, so changing a rule, rewording a
     proof or editing a test all stale the signature. So is the audit's own
     evidence: a re-audit that observes something different is a new answer
-    to the question the signer was answering. The level the signature logs
-    is not compared.
+    to the question the signer was answering, compared wherever the entry
+    carries an `audit_hash`. The level the signature logs is not compared.
     """
-    if not signature:
+    if not signature or entry is None:
         return False
-    for key, value in (('rule_hash', rule_hash), ('proof_hash', proof_hash),
-                       ('test_hash', test_hash)):
-        if signature.get(key) != value:
+    for key in BOUND_FIELDS[:3]:
+        if signature.get(key) != entry.get(key):
             return False
-    if audit is not None and str(signature.get('audit_hash') or '') != str(audit):
+    audit = entry.get('audit_hash')
+    if audit is not None and str(signature.get('audit_hash') or '') != str(
+            audit):
         return False
     return True
 
@@ -217,22 +244,30 @@ def commit_date(project_root, rel_path):
     return result.stdout.strip() or None
 
 
-def counts(project_root, signature, gate='signed'):
-    """`(True, '')` when a signature counts under the gate, or `(False, reason)`.
+def counts(project_root, signature):
+    """`(True, '')` when a signature counts, or `(False, reason)`.
 
     Whether the hashes still match is `is_current`; this answers how the file
-    was committed. Below `signed` a committed signature counts. Under
-    `signed` the commit that added it must be signed and verify, and that is
-    all: the signature counts on whatever commit carries it, whoever wrote
-    it and whoever last committed to the test file.
+    was committed. Below the project's gate `signed` a committed signature
+    counts. At `signed` the commit that added it must be signed and verify,
+    and that is all: the signature counts on whatever commit carries it,
+    whoever wrote it and whoever last committed to the test file. The gate
+    is read from the project's `.purlin/config.json`.
     """
     if not signature:
         return False, 'no signature'
     path = signature.get('path')
     if not path:
         return False, 'the signature is not committed'
-    if gate != 'signed':
+    if _project_gate(project_root) != 'signed':
         return True, ''
     if not commit_is_signed(project_root, path):
         return False, 'the signing commit is not signed'
     return True, ''
+
+
+def _project_gate(project_root):
+    """The gate `.purlin/config.json` resolves to."""
+    from config_engine import resolve_config
+    from purlin import gate as gate_module
+    return gate_module.resolve_gate(resolve_config(project_root)).gate

@@ -978,6 +978,33 @@ def pending(project_root):
                           'files': files})
     return found
 
+# The settings keys only 0.9.5 wrote. A settings file carrying any of them was
+# written by that release and has not been through `purlin:init --update`.
+SET_UP_BY_095_KEYS = ('test_framework', 'spec_dir', 'pre_push', 'report',
+                      'digest')
+
+
+def set_up_by_095(project_root):
+    """True when 0.9.5 set this project up and it was not upgraded since.
+
+    Read from what 0.9.5 left and this release never writes: a settings
+    file with no `tests`, or with one of the keys only 0.9.5 wrote, or a
+    proof or receipt file under `specs/`. A project with no settings file
+    is not one: that is a missing settings file, which a run names on its
+    own. The dashboard page and the version stamp are not read, so a
+    plugin update alone never makes this true.
+    """
+    root = os.path.abspath(project_root)
+    if not os.path.isfile(os.path.join(root, '.purlin', 'config.json')):
+        return False
+    config = _config(root)
+    if 'tests' not in config:
+        return True
+    if any(key in config for key in SET_UP_BY_095_KEYS):
+        return True
+    return bool(_files_under(root, 'specs', (PROOF_FILE_GLOB, RUN_FILE_GLOB)))
+
+
 def scope_advice(project_root):
     """The line naming every feature spec with no `> Scope:` line, or None.
 

@@ -141,10 +141,7 @@ def verify(project_root, payload):
                 problems.append('%s: no rule %s %s is in this project'
                                 % (path, key[0], key[1]))
                 continue
-            if not signatures_module.is_current(
-                    signature, entry.get('rule_hash'),
-                    entry.get('proof_hash'), entry.get('test_hash'),
-                    entry.get('audit_hash')):
+            if not signatures_module.is_current(signature, entry):
                 problems.append('%s: what it binds is not this code' % path)
     found, not_checked, notice = _provenance(project_root)
     return problems + found, not_checked, notice

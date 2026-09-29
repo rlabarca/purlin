@@ -202,9 +202,7 @@ class TestStale:
         entry = project.rule(rule)
         found = project.load().get(('login', rule)) or []
         return [s for s in found
-                if purlin_signatures.is_current(
-                    s, entry['rule_hash'], entry['proof_hash'],
-                    entry['test_hash'], entry['audit_hash'])]
+                if purlin_signatures.is_current(s, entry)]
 
     # purlin: signatures PROOF-6
     def test_a_fresh_signature_is_current(self, proved):
@@ -447,11 +445,11 @@ class TestTheSignedCommit:
         sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])
         found = at_strong.load()[('login', 'RULE-1')][0]
 
-        counted, reason = purlin_signatures.counts(
-            at_strong.root, found, gate='signed')
+        at_strong.config(gate='signed')
+        counted, reason = purlin_signatures.counts(at_strong.root, found)
         assert counted, reason
-        counted, reason = purlin_signatures.counts(
-            at_strong.root, found, gate='strong')
+        at_strong.config(gate='strong')
+        counted, reason = purlin_signatures.counts(at_strong.root, found)
         assert counted, reason
 
         unsigned = sign_one(at_strong, 'RULE-2')
@@ -462,11 +460,11 @@ class TestTheSignedCommit:
             .strip() == 'N'
         found = next(item for item in at_strong.load()[('login', 'RULE-2')]
                      if item['path'] == unsigned)
-        counted, reason = purlin_signatures.counts(
-            at_strong.root, found, gate='signed')
+        at_strong.config(gate='signed')
+        counted, reason = purlin_signatures.counts(at_strong.root, found)
         assert not counted and reason == 'the signing commit is not signed'
-        counted, reason = purlin_signatures.counts(
-            at_strong.root, found, gate='strong')
+        at_strong.config(gate='strong')
+        counted, reason = purlin_signatures.counts(at_strong.root, found)
         assert counted, (
             'below signed a committed signature counts: %s' % reason)
 
@@ -483,8 +481,8 @@ class TestTheSignedCommit:
             .strip() == 'U'
         found = next(item for item in at_strong.load()[('login', 'RULE-2')]
                      if item['path'] == untrusted)
-        counted, reason = purlin_signatures.counts(
-            at_strong.root, found, gate='signed')
+        at_strong.config(gate='signed')
+        counted, reason = purlin_signatures.counts(at_strong.root, found)
         assert not counted, 'a key the project does not trust verifies nothing'
 
         # Signed by the trusted key, with someone else as the commit's
@@ -497,8 +495,7 @@ class TestTheSignedCommit:
             .strip() == 'G bob@else.org'
         found = next(item for item in at_strong.load()[('login', 'RULE-2')]
                      if item['path'] == other)
-        counted, reason = purlin_signatures.counts(
-            at_strong.root, found, gate='signed')
+        counted, reason = purlin_signatures.counts(at_strong.root, found)
         assert counted, reason
 
     # purlin: signatures PROOF-24

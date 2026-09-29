@@ -391,9 +391,7 @@ def _signatures(tree, rule, signatures):
     """Every signature that still binds the rule's current hashes."""
     out = []
     for signature in signatures:
-        if not signatures_module.is_current(
-                signature, rule.get('rule_hash'), rule.get('proof_hash'),
-                rule.get('test_hash'), rule.get('audit_hash')):
+        if not signatures_module.is_current(signature, rule):
             continue
         path = signature.get('path')
         out.append({

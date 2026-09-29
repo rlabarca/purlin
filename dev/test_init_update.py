@@ -476,7 +476,10 @@ def test_no_key_nothing_reads_is_written_back(tmp_path, layout):
     written = json.loads(_read(root, '.purlin/config.json'))
     assert 'report' not in written, written
     source = _read(ROOT, 'scripts/init/update.py')
-    assert "'report'" not in source, 'the update writes a key nothing reads'
+    # The one place the name stands is the list of keys only 0.9.5 wrote,
+    # which the update reads to tell such a project and never writes.
+    assert source.count("'report'") == 1, 'the update writes a key nothing reads'
+    assert 'report' in update.SET_UP_BY_095_KEYS
 
 
 # purlin: update PROOF-11
