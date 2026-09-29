@@ -181,8 +181,8 @@ A marker's result:
 | `not run` | every case was skipped, some were skipped and none failed, or the report holds no case for its test |
 
 In the evidence a `pass` or `fail` is written as it is, and `not run` is
-written as `missing`, except for a proof tagged `@env` for another operating
-system, which is written as `not run`. The test is named as `<file>::<name>`: `Class::test_x`
+written as `missing`. A proof tagged `@env` for another operating system is
+written as `not run` whatever its test did. The test is named as `<file>::<name>`: `Class::test_x`
 for Python, `outer > inner > title` for JavaScript and TypeScript,
 `Class.Method` for C#, `TestX` for Go, and the file's own name for a file of
 an `exit` suite.
