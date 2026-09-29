@@ -791,6 +791,11 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     left to right, `No proof`, `Passing`, `Strong`, `Signed`, in the order the work is done.
     The filter buttons follow the same order as the terminal's `Left to do`, in which writing
     a proof is already first.
+88. **The dashboard's top corner** (added 2026-09-29). The box `at <sha>` goes: `Data: <age>
+    old` says whether the page is current, and the evidence package carries the commit. The
+    box for the last signed version shows at the gate `signed` only, as `signed/<version>`
+    with no sha, or `no signed tag`; at the first two gates there is no such box. The box
+    `gate: <gate>` stays.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
