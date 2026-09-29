@@ -107,7 +107,7 @@ def _changed(before, after):
     return [part for part in fingerprint.PARTS if before[part] != after[part]]
 
 
-# --- RULE-1 -----------------------------------------------------------------
+# --- RULE-1 and RULE-21 -----------------------------------------------------
 
 # purlin: evidence PROOF-1
 def test_a_fingerprint_is_three_parts_of_64_hex_characters(project):
@@ -124,7 +124,7 @@ def test_an_edit_not_committed_changes_the_fingerprint(project):
     assert _changed(first, project.fp('login')) == ['code']
 
 
-# --- RULE-2 -----------------------------------------------------------------
+# --- RULE-2 and RULE-22 -----------------------------------------------------
 
 # purlin: evidence PROOF-2
 def test_a_reworded_rule_changes_spec_alone(project):
@@ -161,7 +161,7 @@ def test_manual_added_to_a_proof_changes_spec_alone(project):
     assert _changed(first, project.fp('login')) == ['spec']
 
 
-# --- RULE-3 -----------------------------------------------------------------
+# --- RULE-3 and RULE-23 -----------------------------------------------------
 
 # purlin: evidence PROOF-4
 def test_an_anchor_rule_edit_reaches_every_feature_that_requires_it(tmp_path):
@@ -209,7 +209,7 @@ def test_an_anchor_that_is_not_global_leaves_a_feature_that_does_not_name_it(
     assert project.fp('login') == first
 
 
-# --- RULE-4 -----------------------------------------------------------------
+# --- RULE-4, RULE-24 and RULE-25 --------------------------------------------
 
 # purlin: evidence PROOF-6
 def test_an_edit_to_a_scoped_file_changes_code_alone(project):
@@ -326,7 +326,7 @@ def test_a_spec_with_no_scope_is_incomplete_and_its_code_part_is_empty(
     assert len(fp['spec']) == 64 and len(fp['tests']) == 64
 
 
-# --- RULE-7 -----------------------------------------------------------------
+# --- RULE-7 and RULE-26 -----------------------------------------------------
 
 # purlin: evidence PROOF-11
 def test_an_edit_to_a_marked_test_file_changes_tests_alone(project):
@@ -364,21 +364,41 @@ def test_a_javascript_marker_is_counted(project):
     assert _changed(first, project.fp('login')) == ['tests']
 
 
-SKIPPED = ('node_modules/pkg', 'bin', 'obj', 'mutants', '.cache')
+def _assert_skipped_folder_not_counted(project, folder):
+    """A marked test committed under `folder` leaves `login` unchanged when
+    edited."""
+    path = '%s/login.test.js' % folder
+    project.write(path, JS_TEST)
+    project.git('add', '-f', path)
+    project.git('commit', '-q', '-m', 'test: fixture')
+    first = project.fp('login')
+    project.write(path, JS_TEST + '// edited\n')
+    assert project.fp('login') == first, path
 
 
 # purlin: evidence PROOF-45
-def test_a_marked_file_in_a_skipped_folder_is_not_counted(project):
-    copies = ['%s/login.test.js' % folder for folder in SKIPPED]
-    for path in copies:
-        project.write(path, JS_TEST)
-    project.git('add', '-f', *copies)
-    project.git('commit', '-q', '-m', 'test: fixture')
-    first = project.fp('login')
-    for path in copies:
-        project.write(path, JS_TEST + '// edited\n')
-        assert project.fp('login') == first, path
-        project.write(path, JS_TEST)
+def test_a_marked_file_under_node_modules_is_not_counted(project):
+    _assert_skipped_folder_not_counted(project, 'node_modules/pkg')
+
+
+# purlin: evidence PROOF-65
+def test_a_marked_file_under_bin_is_not_counted(project):
+    _assert_skipped_folder_not_counted(project, 'bin')
+
+
+# purlin: evidence PROOF-66
+def test_a_marked_file_under_obj_is_not_counted(project):
+    _assert_skipped_folder_not_counted(project, 'obj')
+
+
+# purlin: evidence PROOF-67
+def test_a_marked_file_under_mutants_is_not_counted(project):
+    _assert_skipped_folder_not_counted(project, 'mutants')
+
+
+# purlin: evidence PROOF-68
+def test_a_marked_file_under_a_dot_folder_is_not_counted(project):
+    _assert_skipped_folder_not_counted(project, '.cache')
 
 
 # --- RULE-8 -----------------------------------------------------------------

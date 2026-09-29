@@ -306,10 +306,21 @@ def test_reading_evidence_writes_nothing(root):
 
 
 # purlin: evidence PROOF-26
-def test_the_words_a_person_reads_for_each_system():
-    assert [(evidence.os_word(key), evidence.os_short(key))
-            for key in ('windows', 'macos', 'linux')] == [
-        ('Windows', 'Win'), ('macOS', 'Mac'), ('Linux/Unix', 'Lin')]
+def test_windows_reads_windows_and_win():
+    assert (evidence.os_word('windows'), evidence.os_short('windows')) == (
+        'Windows', 'Win')
+
+
+# purlin: evidence PROOF-69
+def test_macos_reads_macos_and_mac():
+    assert (evidence.os_word('macos'), evidence.os_short('macos')) == (
+        'macOS', 'Mac')
+
+
+# purlin: evidence PROOF-70
+def test_linux_reads_linux_unix_and_lin():
+    assert (evidence.os_word('linux'), evidence.os_short('linux')) == (
+        'Linux/Unix', 'Lin')
 
 
 # purlin: evidence PROOF-27

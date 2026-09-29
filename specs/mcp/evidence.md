@@ -14,46 +14,54 @@
 
 ## Rules
 
-- RULE-1: A fingerprint is three 64-character sha256 hex strings named `spec`, `code` and `tests`, taken from the working tree, so an edit that is not committed changes it
-- RULE-2: The `spec` part covers the rule and proof lines of the feature, of every spec it requires transitively and of every global anchor; editing a rule's text changes `spec` and no other part, and editing `> Description:` changes no part
-- RULE-3: Editing a rule of an anchor changes the `spec` part of every feature that requires the anchor, directly or through another spec, and, when the anchor carries `> Global: true`, of every feature; a feature that does not require an anchor without `> Global: true` is left unchanged
-- RULE-4: The `code` part covers the tracked files the `> Scope:` entries reach: a file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a glob; editing a file it reaches changes `code` and no other part
+- RULE-1: A fingerprint is three 64-character sha256 hex strings named `spec`, `code` and `tests`
+- RULE-2: The `spec` part covers the rule and proof lines of the feature, of every spec it requires transitively and of every global anchor; editing a rule's text changes `spec` and no other part
+- RULE-3: Editing a rule of an anchor changes the `spec` part of every feature that requires the anchor, directly or through another spec
+- RULE-4: The `code` part covers the tracked files the `> Scope:` entries reach, and an entry naming a file reaches that file; editing a file it reaches changes `code` and no other part
 - RULE-5: A scope entry that reaches no tracked file, because the path does not exist or the glob matches nothing, is listed as unmatched, and the fingerprint is still taken
 - RULE-6: A spec with no `> Scope:` line is reported incomplete with the reason `no > Scope: line`, and its fingerprint is still taken, with a `code` part that is the sha256 of the empty string
-- RULE-7: The `tests` part covers every tracked test file, one a suite of the `tests` setting names, carrying a marker for the feature; editing such a file changes `tests` and no other part; a marker for another feature, and a file under a folder whose name begins with `.` or is `node_modules`, `bin`, `obj` or `mutants`, are not counted
+- RULE-7: The `tests` part covers every tracked test file, one a suite of the `tests` setting names, carrying a marker for the feature; editing such a file changes `tests` and no other part; a marker for another feature is not counted
 - RULE-8: An untracked file changes no part of the fingerprint; an untracked file under the feature's scope or in the directory of one of its marker files is listed as untracked, and a file git ignores is not listed
 - RULE-9: Asking for the fingerprint of a name no spec defines raises `KeyError` naming that name
 - RULE-10: Comparing a stored fingerprint with one taken now names the parts that differ in the order `spec`, `code`, `tests`; a stored fingerprint that is missing or is not an object differs on all three
 - RULE-11: The reader loads `.purlin/evidence/local/<feature>.json` and `.purlin/evidence/ci/<feature>.json`; a source with no file reads as no evidence and adds no warning
 - RULE-12: A file that is not valid JSON, is not a JSON object, or whose `schema` is not `purlin-evidence/2` is ignored with one warning naming its path
 - RULE-13: A file whose `source` field disagrees with the folder it sits in is ignored with exactly one warning naming its path, the source it names and the folder
-- RULE-14: Each of the keys `windows`, `macos` and `linux` under `platforms` is one section, so a file holding two operating systems gives two sections; sections are listed `local` first, then in that operating system order, and any other key is skipped; the machine the reader runs on is `windows` on Windows, `macos` on macOS, and `linux` on any other system
+- RULE-14: Each of the keys `windows`, `macos` and `linux` under `platforms` is one section, so a file holding two operating systems gives two sections; sections are listed `local` first, then in that operating system order, and any other key is skipped
 - RULE-15: A section is current when its stored `spec`, `code` and `tests` hashes all equal a fingerprint taken now; otherwise it is out of date and the reader names each part that differs
-- RULE-16: The audit entry for a rule is returned only while its `rule_hash`, `proof_hash` and `test_hash` all equal the ones asked for, whatever its `commit`; where both sources hold a matching entry the later `at` wins, and the entry names its source
+- RULE-16: The audit entry for a rule is returned only while its `rule_hash`, `proof_hash` and `test_hash` all equal the ones asked for, whatever its `commit`
 - RULE-17: The newest section is the one with the latest `at` across both sources, `local` winning a tie, and there is none when neither file holds a section
 - RULE-18: Reading evidence writes nothing: the evidence folder holds the same files with the same bytes after a load as before it
 - RULE-19: A person reads each operating system as `Windows`, `macOS` or `Linux/Unix`, and in a small box as `Win`, `Mac` or `Lin`; a stored word other than `windows`, `macos` and `linux` reads as `Linux/Unix` and `Lin`
 - RULE-20: A section's result for a proof is the worst of the entries it lists against that proof: `fail` where one failed, else `not run` where one reads `missing` or `not run`, else `pass`, so a proof has passed only when every test tied to it ran and passed
+- RULE-21: A fingerprint is taken from the working tree, so an edit that is not committed changes it
+- RULE-22: Editing `> Description:` changes no part of the fingerprint
+- RULE-23: Editing a rule of an anchor carrying `> Global: true` changes the `spec` part of every feature; a feature that does not require an anchor without `> Global: true` is left unchanged
+- RULE-24: A `> Scope:` entry naming a directory reaches every tracked file under it
+- RULE-25: A `> Scope:` entry holding `*`, `?` or `[` is a glob
+- RULE-26: A test file under a folder whose name begins with `.` or is `node_modules`, `bin`, `obj` or `mutants` is not counted in the `tests` part
+- RULE-27: The machine the reader runs on is `windows` on Windows, `macos` on macOS, and `linux` on any other system
+- RULE-28: Where both sources hold a matching audit entry, the later `at` wins, and the entry names its source
 
 ## Proof
 
 - PROOF-1 (RULE-1): In a git repository where `login` covers the committed file `src/login.py`, the fingerprint of `login` carries exactly the three parts `code`, `spec` and `tests`, each 64 lowercase hex characters
-- PROOF-32 (RULE-1): `login` covers the committed file `src/login.py`, which is then edited and not committed; the fingerprint of `login` taken after the edit differs from the one taken before in `code` and in no other part
+- PROOF-32 (RULE-21): `login` covers the committed file `src/login.py`, which is then edited and not committed; the fingerprint of `login` taken after the edit differs from the one taken before in `code` and in no other part
 - PROOF-2 (RULE-2): The rule `Valid credentials return 200` of `login` is reworded to `Valid credentials return 201`; the fingerprint of `login` differs from the one taken before in `spec` alone
-- PROOF-33 (RULE-2): The `> Description:` of `login` is rewritten from `What it does.` to `Something else entirely.`; all three parts of the fingerprint of `login` equal the ones taken before
+- PROOF-33 (RULE-22): The `> Description:` of `login` is rewritten from `What it does.` to `Something else entirely.`; all three parts of the fingerprint of `login` equal the ones taken before
 - PROOF-3 (RULE-2): `login` names `> Requires: api`, and the proof line of the anchor `api` is changed from `GET /x; verify the header` to `GET /y; verify the header`; the fingerprint of `login` differs from the one taken before in `spec` alone
 - PROOF-34 (RULE-2): `@manual` is added to the end of the one proof line of `login`; the fingerprint of `login` differs from the one taken before in `spec` alone
 - PROOF-4 (RULE-3): The anchor `api` is required by `orders`, `orders` is required by `login`, and `billing` requires nothing; `api` RULE-1 is reworded from `Carry a request id` to `Carry a trace id`; the fingerprints of `api`, `orders` and `login` each differ in `spec` alone, and the fingerprint of `billing` is the same as before
-- PROOF-5 (RULE-3): The anchor `security` carries `> Global: true`, and `login` does not name it in `> Requires:`; `security` RULE-1 is reworded from `No eval anywhere` to `No exec anywhere`, and the fingerprint of `login` differs from the one taken before in `spec` alone
-- PROOF-35 (RULE-3): The anchor `security` carries no `> Global:` line, and `login` does not name it in `> Requires:`; `security` RULE-1 is reworded from `No eval anywhere` to `No exec anywhere`, and the fingerprint of `login` is the same as before
+- PROOF-5 (RULE-23): The anchor `security` carries `> Global: true`, and `login` does not name it in `> Requires:`; `security` RULE-1 is reworded from `No eval anywhere` to `No exec anywhere`, and the fingerprint of `login` differs from the one taken before in `spec` alone
+- PROOF-35 (RULE-23): The anchor `security` carries no `> Global:` line, and `login` does not name it in `> Requires:`; `security` RULE-1 is reworded from `No eval anywhere` to `No exec anywhere`, and the fingerprint of `login` is the same as before
 - PROOF-6 (RULE-4): `login` covers `src/login.py`, and that file is edited; the fingerprint of `login` differs from the one taken before in `code` alone
 - PROOF-36 (RULE-4): `login` covers `src/login.py`, and `src/other.py`, a tracked file outside the scope, is edited; all three parts of the fingerprint of `login` are as they were
-- PROOF-7 (RULE-4): `login` covers the folder `src`, which holds the tracked file `src/deep/token.py` one folder down; editing `src/deep/token.py` changes the fingerprint in `code` alone
-- PROOF-8 (RULE-4): `login` covers the glob `src/**/*.py`, and the tracked file `src/deep/token.py`, one folder down, is edited; the fingerprint of `login` differs from the one taken before in `code` alone
-- PROOF-37 (RULE-4): `login` covers the glob `src/**/*.py`, and the tracked file `src/login.py`, directly in `src`, is edited; the fingerprint of `login` differs from the one taken before in `code` alone
-- PROOF-38 (RULE-4): `login` covers the glob `src/**/*.py`, and the tracked file `src/notes.txt` is edited; the fingerprint of `login` is the same as before
-- PROOF-39 (RULE-4): `login` covers `src/logi?.py`, and the tracked file `src/login.py` is edited; the fingerprint of `login` differs from the one taken before in `code` alone, so the entry was read as a glob
-- PROOF-40 (RULE-4): `login` covers `src/[l]ogin.py`, and the tracked file `src/login.py` is edited; the fingerprint of `login` differs from the one taken before in `code` alone, so the entry was read as a glob
+- PROOF-7 (RULE-24): `login` covers the folder `src`, which holds the tracked file `src/deep/token.py` one folder down; editing `src/deep/token.py` changes the fingerprint in `code` alone
+- PROOF-8 (RULE-25): `login` covers the glob `src/**/*.py`, and the tracked file `src/deep/token.py`, one folder down, is edited; the fingerprint of `login` differs from the one taken before in `code` alone
+- PROOF-37 (RULE-25): `login` covers the glob `src/**/*.py`, and the tracked file `src/login.py`, directly in `src`, is edited; the fingerprint of `login` differs from the one taken before in `code` alone
+- PROOF-38 (RULE-25): `login` covers the glob `src/**/*.py`, and the tracked file `src/notes.txt` is edited; the fingerprint of `login` is the same as before
+- PROOF-39 (RULE-25): `login` covers `src/logi?.py`, and the tracked file `src/login.py` is edited; the fingerprint of `login` differs from the one taken before in `code` alone, so the entry was read as a glob
+- PROOF-40 (RULE-25): `login` covers `src/[l]ogin.py`, and the tracked file `src/login.py` is edited; the fingerprint of `login` differs from the one taken before in `code` alone, so the entry was read as a glob
 - PROOF-9 (RULE-5): In a project where `src/gone.py` does not exist and no `.rs` file is tracked, the scope entries `src/login.py`, `src/gone.py` and `lib/*.rs` reach exactly `src/login.py`, and the entries listed as unmatched are exactly `src/gone.py` then `lib/*.rs`
 - PROOF-41 (RULE-5): The `> Scope:` of `login` names `src/login.py`, `src/gone.py`, which does not exist, and `lib/*.rs`, which matches no tracked file; its fingerprint is taken with no error, its `code` part equals that of a `login` whose scope names `src/login.py` alone, and `login` is not reported incomplete
 - PROOF-42 (RULE-5): `src/draft.py` is written and not added to git, and the `> Scope:` line of `login` names `src/login.py` and `src/draft.py`; the entries read from that line reach exactly `src/login.py`, and the one listed as unmatched is `src/draft.py`
@@ -62,7 +70,11 @@
 - PROOF-43 (RULE-7): The committed file `tests/test_other.py`, named by a suite of the `tests` setting, carries a marker for `billing` and none for `login`; rewriting it leaves the fingerprint of `login` as it was
 - PROOF-44 (RULE-7): The committed file `scripts/check_login.py` carries `# purlin: login PROOF-1` above a test, and no suite of the `tests` setting names it; editing it leaves the fingerprint of `login` as it was
 - PROOF-12 (RULE-7): The committed JavaScript file `web/login.test.js`, named by a suite's glob `**/*.test.js`, carries `// purlin: login PROOF-2` above its test; editing it changes the fingerprint of `login` in `tests` alone
-- PROOF-45 (RULE-7): Copies of a JavaScript test carrying `// purlin: login PROOF-2` are committed under `node_modules/pkg/`, `bin/`, `obj/`, `mutants/` and `.cache/`, each named by the suite's glob `**/*.test.js`; editing any one of them leaves the fingerprint of `login` as it was
+- PROOF-45 (RULE-26): A copy of a JavaScript test carrying `// purlin: login PROOF-2` is committed under `node_modules/pkg/`, named by the suite's glob `**/*.test.js`; editing it leaves the fingerprint of `login` as it was
+- PROOF-65 (RULE-26): A copy of a JavaScript test carrying `// purlin: login PROOF-2` is committed under `bin/`, named by the suite's glob `**/*.test.js`; editing it leaves the fingerprint of `login` as it was
+- PROOF-66 (RULE-26): A copy of a JavaScript test carrying `// purlin: login PROOF-2` is committed under `obj/`, named by the suite's glob `**/*.test.js`; editing it leaves the fingerprint of `login` as it was
+- PROOF-67 (RULE-26): A copy of a JavaScript test carrying `// purlin: login PROOF-2` is committed under `mutants/`, named by the suite's glob `**/*.test.js`; editing it leaves the fingerprint of `login` as it was
+- PROOF-68 (RULE-26): A copy of a JavaScript test carrying `// purlin: login PROOF-2` is committed under `.cache/`, named by the suite's glob `**/*.test.js`; editing it leaves the fingerprint of `login` as it was
 - PROOF-13 (RULE-8): `login` covers `src` and its marker file is `tests/test_login.py`; `src/new_token.py` and `tests/helper.py` are written and not added to git, and the fingerprint of `login` equals the one taken before
 - PROOF-46 (RULE-8): `login` covers `src` and its marker file is `tests/test_login.py`; `src/new_token.py`, `tests/helper.py` and `docs/notes.md` are written and not added to git; the files listed as untracked are exactly `src/new_token.py` and `tests/helper.py`
 - PROOF-47 (RULE-8): `login` covers `src`, `.gitignore` lists `src/*.log`, and `src/debug.log` and `src/new_token.py` are written and not added to git; the one file listed as untracked is `src/new_token.py`
@@ -78,9 +90,9 @@
 - PROOF-52 (RULE-12): `.purlin/evidence/local/login.json` is well formed and its `schema` reads `purlin-evidence/1`; loading the evidence of `login` reads no `local` file and gives exactly one warning, `.purlin/evidence/local/login.json carries the schema "purlin-evidence/1", not purlin-evidence/2; it is ignored.`
 - PROOF-19 (RULE-13): `.purlin/evidence/ci/login.json` is written with its `source` reading `local`; loading the evidence of `login` reads no `ci` file and gives exactly one warning, `.purlin/evidence/ci/login.json names the source "local" but sits in ci/; it is ignored.`
 - PROOF-20 (RULE-14): The `local` file of `login` holds sections under `linux`, `macos` and `solaris`, and the `ci` file one under `windows`; the sections listed are exactly `local` `macos`, `local` `linux` and `ci` `windows`, in that order, and none is listed for `solaris`
-- PROOF-25 (RULE-14): On a system that names itself `freebsd14`, the reader gives the machine it runs on as `linux`
-- PROOF-53 (RULE-14): On a system that names itself `win32`, the reader gives the machine it runs on as `windows`
-- PROOF-54 (RULE-14): On a system that names itself `darwin`, the reader gives the machine it runs on as `macos`
+- PROOF-25 (RULE-27): On a system that names itself `freebsd14`, the reader gives the machine it runs on as `linux`
+- PROOF-53 (RULE-27): On a system that names itself `win32`, the reader gives the machine it runs on as `windows`
+- PROOF-54 (RULE-27): On a system that names itself `darwin`, the reader gives the machine it runs on as `macos`
 - PROOF-21 (RULE-15): A `local` `macos` section of `login` stores the fingerprint of `login` taken now; checked against a fingerprint taken again, it reads current, with no part out of date
 - PROOF-55 (RULE-15): A `local` `macos` section of `login` stores the fingerprint taken now, and `src/login.py` is then edited; checked against a fingerprint taken again, it reads out of date on exactly `code`
 - PROOF-56 (RULE-15): A `local` `macos` section of `login` stores the fingerprint taken now, and then `src/login.py` and the text of RULE-1 are both edited; the section reads out of date on exactly `spec` and `code`
@@ -89,13 +101,15 @@
 - PROOF-58 (RULE-16): The `local` file holds an audit entry for RULE-1 with the hashes `r`, `p` and `t`; asked for RULE-1 with `r`, `p` and `t2`, the reader returns no entry
 - PROOF-59 (RULE-16): The `local` file holds an audit entry for RULE-1 with the hashes `r`, `p` and `t`; asked for RULE-1 with `r2`, `p` and `t`, the reader returns no entry
 - PROOF-60 (RULE-16): The `local` file holds an audit entry for RULE-1 with the hashes `r`, `p` and `t`; asked for RULE-1 with `r`, `p2` and `t`, the reader returns no entry
-- PROOF-61 (RULE-16): The `local` file holds an audit entry for RULE-1 dated `2026-09-01T00:00:00Z`, and the `ci` file one with the same hashes dated `2026-09-02T00:00:00Z` and another commit; the reader returns the `ci` entry, carrying its commit and the path `.purlin/evidence/ci/login.json`
-- PROOF-62 (RULE-16): The `local` file holds an audit entry for RULE-1 dated `2026-09-03T00:00:00Z`, and the `ci` file one with the same hashes dated `2026-09-02T00:00:00Z` and another commit; the reader returns the `local` entry, carrying its own commit and the path `.purlin/evidence/local/login.json`
+- PROOF-61 (RULE-28): The `local` file holds an audit entry for RULE-1 dated `2026-09-01T00:00:00Z`, and the `ci` file one with the same hashes dated `2026-09-02T00:00:00Z` and another commit; the reader returns the `ci` entry, carrying its commit and the path `.purlin/evidence/ci/login.json`
+- PROOF-62 (RULE-28): The `local` file holds an audit entry for RULE-1 dated `2026-09-03T00:00:00Z`, and the `ci` file one with the same hashes dated `2026-09-02T00:00:00Z` and another commit; the reader returns the `local` entry, carrying its own commit and the path `.purlin/evidence/local/login.json`
 - PROOF-23 (RULE-17): Neither evidence file of `login` exists; the reader gives no newest section
 - PROOF-63 (RULE-17): The `local` file of `login` holds a `macos` section dated `2026-09-01T00:00:00Z`, and the `ci` file a `linux` section dated `2026-09-03T00:00:00Z`; the newest section is `ci` `linux`
 - PROOF-64 (RULE-17): The `local` file of `login` holds a `macos` section and the `ci` file a `linux` section, both dated `2026-09-01T00:00:00Z`; the newest section is `local` `macos`
 - PROOF-24 (RULE-18): The `local` file of `login` holds a section and an audit entry, and the `ci` file holds `{not json`; the evidence is loaded, its sections are checked against a fingerprint taken now, and an audit entry and the newest section are asked for; afterwards `.purlin/evidence/` holds the same files with the same bytes, none added and none removed
-- PROOF-26 (RULE-19): The stored words `windows`, `macos` and `linux` read `Windows`, `macOS` and `Linux/Unix` in full, and `Win`, `Mac` and `Lin` in a small box
+- PROOF-26 (RULE-19): The stored word `windows` reads `Windows` in full and `Win` in a small box
+- PROOF-69 (RULE-19): The stored word `macos` reads `macOS` in full and `Mac` in a small box
+- PROOF-70 (RULE-19): The stored word `linux` reads `Linux/Unix` in full and `Lin` in a small box
 - PROOF-27 (RULE-19): The stored word `solaris` reads `Linux/Unix` in full and `Lin` in a small box
 - PROOF-28 (RULE-20): A section lists `PROOF-1` twice, `pass` with one test and `missing` with another; the reader gives `PROOF-1` the result `not run`
 - PROOF-29 (RULE-20): A section lists `PROOF-1` twice, `missing` with one test and `fail` with another; the reader gives `PROOF-1` the result `fail`
