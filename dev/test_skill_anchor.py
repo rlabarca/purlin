@@ -1,8 +1,8 @@
 """Text checks for the anchor skill, `skills/anchor/SKILL.md`.
 
 Every rule of `specs/skills/skill_anchor.md` is proved here, one test per
-proof. A refusal is shown by pointing a check at a copy of a file with one
-thing broken; the file on disk is never touched. The readers, the shared
+proof. Each test also points its check at copies of a file with one thing
+broken, which the check must refuse; the file on disk is never touched. The readers, the shared
 checks and the broken-copy helpers are in `dev/skill_checks.py`; the checks
 only the anchor skill needs are at the foot of this file.
 """
@@ -16,244 +16,196 @@ from skill_checks import (COMMAND_REF, carries, field, flat, frontmatter,
                           undirected_outcome_problems)
 
 REL = skill_path('anchor')
-SCRIPT = '"${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py"'
-
-
-def refused(monkeypatch, check, edit, expected, rel=REL):
-    """The problems `check` missed on a copy of `rel` broken by `edit`:
-    empty when the copy is refused with `expected`."""
-    return refusals(monkeypatch, check, [(rel, edit, expected)])
+SCRIPT = ('sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" '
+          '"${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py"')
 
 
 class TestFrontmatter:
-    """RULE-1: the frontmatter names the skill and the command reference
-    carries its row."""
+    """RULE-1: the frontmatter names the skill. RULE-8: the command
+    reference carries its row."""
 
     # purlin: skill_anchor PROOF-1
-    def test_the_skill_opens_with_its_name_and_a_one_line_description(self):
+    def test_the_skill_opens_with_its_name_and_a_one_line_description(
+            self, monkeypatch):
         assert skill_frontmatter_problems() == []
+        value = description()
+        assert refusals(monkeypatch, skill_frontmatter_problems, [
+            (REL, replace('name: anchor\n'),
+             "%s frontmatter name is None, expected 'anchor'" % REL),
+            (REL, replace(description_line(), 'description:'),
+             NO_DESCRIPTION),
+            (REL, replace(description_line(), 'description:\n' + value),
+             NO_DESCRIPTION),
+            (REL, replace(description_line(), 'description: |\n  ' + value),
+             NO_DESCRIPTION),
+            (REL, replace(description_line(),
+                          description_line() + '\n  and a second line'),
+             NO_DESCRIPTION),
+        ]) == []
 
     # purlin: skill_anchor PROOF-9
-    def test_the_command_reference_has_a_row_for_the_command(self):
-        assert command_row_problems() == []
-
-    # purlin: skill_anchor PROOF-10
-    def test_a_skill_with_no_name_line_fails(self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace('name: anchor\n'),
-                       "%s frontmatter name is None, expected 'anchor'"
-                       % REL) == []
-
-    # purlin: skill_anchor PROOF-11
-    def test_an_empty_description_fails(self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace(description_line(), 'description:'),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_anchor PROOF-12
-    def test_a_description_on_the_line_below_fails(self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace(description_line(),
-                               'description:\n' + description()),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_anchor PROOF-13
-    def test_a_description_opened_as_a_block_fails(self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace(description_line(),
-                               'description: |\n  ' + description()),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_anchor PROOF-14
-    def test_a_description_running_on_to_a_second_line_fails(
+    def test_the_command_reference_has_a_row_for_the_command(
             self, monkeypatch):
-        assert refused(monkeypatch, skill_frontmatter_problems,
-                       replace(description_line(),
-                               description_line() + '\n  and a second line'),
-                       NO_DESCRIPTION) == []
-
-    # purlin: skill_anchor PROOF-15
-    def test_a_command_reference_without_the_row_fails(self, monkeypatch):
+        assert command_row_problems() == []
         row = next(line for line in read(COMMAND_REF).splitlines()
                    if line.startswith('| `purlin:anchor '))
-        assert refused(monkeypatch, command_row_problems,
-                       replace(row + '\n'),
-                       '%s carries no row for purlin:anchor' % COMMAND_REF,
-                       rel=COMMAND_REF) == []
+        assert refusals(monkeypatch, command_row_problems, [
+            (COMMAND_REF, replace(row + '\n'),
+             '%s carries no row for purlin:anchor' % COMMAND_REF),
+        ]) == []
 
 
 class TestTheScript:
-    """RULE-2: the upstream script is run for `add` and `sync`, and the
-    `sync` section names the read-only check `purlin:drift` runs too."""
+    """RULE-2: the upstream script is started for `add` and `sync`. RULE-9:
+    the `sync` section names the read-only check `purlin:drift` runs too."""
 
     # purlin: skill_anchor PROOF-2
-    def test_the_script_is_given_with_add_and_with_sync(self):
+    def test_the_script_is_given_with_add_and_with_sync(self, monkeypatch):
         assert script_problems() == []
+        assert refusals(monkeypatch, script_problems, [
+            (REL, replace('upstream.py" add <git-url>',
+                          'upstream.py" address <git-url>'),
+             '%s gives the script on no line as the subcommand add' % REL),
+            (REL, replace('upstream.py" sync [', 'upstream.py" syncall ['),
+             '%s gives the script on no line as the subcommand sync' % REL),
+            (REL, replace('sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" '
+                          '"${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" '
+                          'add', 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/'
+                          'anchor/upstream.py" add'),
+             '%s gives the script on no line as the subcommand add' % REL),
+        ]) == []
 
     # purlin: skill_anchor PROOF-16
-    def test_the_sync_section_names_the_check_drift_runs(self):
+    def test_the_sync_section_names_the_check_drift_runs(self, monkeypatch):
         assert sync_section_problems() == []
-
-    # purlin: skill_anchor PROOF-17
-    def test_the_script_followed_by_address_fails(self, monkeypatch):
-        assert refused(monkeypatch, script_problems,
-                       replace('upstream.py" add <git-url>',
-                               'upstream.py" address <git-url>'),
-                       '%s gives the script on no line as the subcommand add'
-                       % REL) == []
-
-    # purlin: skill_anchor PROOF-18
-    def test_the_script_followed_by_syncall_fails(self, monkeypatch):
-        assert refused(monkeypatch, script_problems,
-                       replace('upstream.py" sync [',
-                               'upstream.py" syncall ['),
-                       '%s gives the script on no line as the subcommand sync'
-                       % REL) == []
-
-    # purlin: skill_anchor PROOF-19
-    def test_a_check_that_rewrites_fails(self, monkeypatch):
-        assert refused(monkeypatch, sync_section_problems,
-                       replace('`--check` reports without writing',
-                               '`--check` reports and rewrites'),
-                       "sync section does not carry '`--check` reports "
-                       "without writing'") == []
-
-    # purlin: skill_anchor PROOF-20
-    def test_drift_running_its_own_check_fails(self, monkeypatch):
-        assert refused(monkeypatch, sync_section_problems,
-                       replace('`purlin:drift` runs the same check',
-                               '`purlin:drift` runs its own check'),
-                       "sync section does not carry '`purlin:drift` runs "
-                       "the same check'") == []
+        assert refusals(monkeypatch, sync_section_problems, [
+            (REL, replace('`--check` reports without writing',
+                          '`--check` reports and rewrites'),
+             "sync section does not carry '`--check` reports without "
+             "writing'"),
+            (REL, replace('`purlin:drift` runs the same check',
+                          '`purlin:drift` runs its own check'),
+             "sync section does not carry '`purlin:drift` runs the same "
+             "check'"),
+        ]) == []
 
 
 class TestTheNextStep:
     """RULE-3: the closing section gives a directive for every outcome."""
 
     # purlin: skill_anchor PROOF-3
-    def test_every_closing_outcome_names_the_next_step(self):
+    def test_every_closing_outcome_names_the_next_step(self, monkeypatch):
         assert closing_problems() == []
-
-    # purlin: skill_anchor PROOF-6
-    def test_an_outcome_with_no_directive_fails(self, monkeypatch):
-        assert refused(monkeypatch, closing_problems,
-                       replace(', `→ Run: purlin:status`'),
-                       '%s closing outcome gives no → directive: - Pin '
-                       'current and nothing moved' % REL) == []
-
-    # purlin: skill_anchor PROOF-21
-    def test_a_skill_with_no_closing_section_fails(self, monkeypatch):
         before = sections(read(REL))[-2][0]
         assert before == 'Changing a pinned rule'
-        assert refused(monkeypatch, closing_problems,
-                       lambda t: t[:t.rindex('\n## ') + 1],
-                       "%s closes with the section 'Changing a pinned rule', "
-                       "which does not name the next step" % REL) == []
 
-    # purlin: skill_anchor PROOF-22
-    def test_a_closing_section_with_no_arrow_fails(self, monkeypatch):
         def no_arrow(text):
             last = text.rindex('\n## ')
-            return text[:last] + text[last:].replace('→', '->')
-        assert refused(monkeypatch, closing_problems, no_arrow,
-                       '%s closing section gives no directive' % REL) == []
+            return text[:last] + text[last:].replace('\u2192', '->')
 
-    # purlin: skill_anchor PROOF-23
-    def test_a_closing_section_with_one_outcome_fails(self, monkeypatch):
         def one_outcome(text):
             last = text.rindex('\n## ')
             return text[:text.index('- Anchor added or synced', last)]
-        assert refused(monkeypatch, closing_problems, one_outcome,
-                       '%s closing section names 1 outcomes, expected at '
-                       'least 2' % REL) == []
+        assert refusals(monkeypatch, closing_problems, [
+            (REL, replace(', `\u2192 Run: purlin:status`'),
+             '%s closing outcome gives no \u2192 directive: - Pin current and '
+             'nothing moved' % REL),
+            (REL, lambda t: t[:t.rindex('\n## ') + 1],
+             "%s closes with the section 'Changing a pinned rule', which does "
+             "not name the next step" % REL),
+            (REL, no_arrow, '%s closing section gives no directive' % REL),
+            (REL, one_outcome,
+             '%s closing section names 1 outcomes, expected at least 2' % REL),
+        ]) == []
 
 
 class TestTheCeiling:
     """RULE-4: the skill holds at most 160 lines."""
 
     # purlin: skill_anchor PROOF-4
-    def test_the_skill_holds_at_most_160_lines(self):
+    def test_the_skill_holds_at_most_160_lines(self, monkeypatch):
         assert skill_ceiling_problems('anchor') == []
+        assert refusals(monkeypatch, lambda: skill_ceiling_problems('anchor'), [
+            (REL, padded_to(161), '%s is 161 lines, ceiling 160' % REL),
+        ]) == []
 
     # purlin: skill_anchor PROOF-24
     def test_a_skill_of_exactly_160_lines_passes(self, monkeypatch):
         assert on_copy(monkeypatch, REL, padded_to(160),
                        lambda: skill_ceiling_problems('anchor')) == []
 
-    # purlin: skill_anchor PROOF-25
-    def test_a_skill_of_161_lines_fails(self, monkeypatch):
-        assert refused(monkeypatch, lambda: skill_ceiling_problems('anchor'),
-                       padded_to(161),
-                       '%s is 161 lines, ceiling 160' % REL) == []
-
 
 class TestThePin:
-    """RULE-5: a pin is a commit, and a pinned rule is never edited here."""
+    """RULE-5: a pin is a commit. RULE-10: a pinned rule is never edited
+    here. RULE-11: a change goes upstream. RULE-12: a rule of this project
+    alone goes in a local anchor."""
 
     # purlin: skill_anchor PROOF-5
-    def test_a_pin_is_a_commit_never_a_branch(self):
+    def test_a_pin_is_a_commit_never_a_branch(self, monkeypatch):
         assert pin_problems() == []
-
-    # purlin: skill_anchor PROOF-26
-    def test_a_pin_that_may_be_a_branch_fails(self, monkeypatch):
-        assert refused(monkeypatch, pin_problems,
-                       replace('A pin is always a commit, never a branch.',
-                               'A pin is a commit or a branch.'),
-                       "does not carry 'A pin is always a commit, never a "
-                       "branch.'") == []
+        assert refusals(monkeypatch, pin_problems, [
+            (REL, replace('A pin is always a commit, never a branch.',
+                          'A pin is a commit or a branch.'),
+             "does not carry 'A pin is always a commit, never a branch.'"),
+        ]) == []
 
     # purlin: skill_anchor PROOF-27
-    def test_a_pinned_rule_is_never_edited_in_place(self):
+    def test_a_pinned_rule_is_never_edited_in_place(self, monkeypatch):
         assert changing_problems(NEVER_EDIT) == []
-
-    # purlin: skill_anchor PROOF-28
-    def test_editing_a_pinned_rule_in_place_fails(self, monkeypatch):
-        assert refused(monkeypatch, lambda: changing_problems(NEVER_EDIT),
-                       replace(NEVER_EDIT, 'Edit a pinned rule in place when '
-                               'the change is small.'),
-                       "Changing a pinned rule section does not carry %r"
-                       % NEVER_EDIT) == []
+        assert refusals(monkeypatch, lambda: changing_problems(NEVER_EDIT), [
+            (REL, replace(NEVER_EDIT, 'Edit a pinned rule in place when the '
+                          'change is small.'),
+             "Changing a pinned rule section does not carry %r" % NEVER_EDIT),
+        ]) == []
 
     # purlin: skill_anchor PROOF-29
-    def test_a_change_goes_to_the_source_repository(self):
+    def test_a_change_goes_to_the_source_repository(self, monkeypatch):
         assert changing_problems(PULL_REQUEST) == []
-
-    # purlin: skill_anchor PROOF-30
-    def test_a_change_committed_to_the_local_copy_fails(self, monkeypatch):
-        assert refused(monkeypatch, lambda: changing_problems(PULL_REQUEST),
-                       replace(PULL_REQUEST, 'a commit to the local copy'),
-                       "Changing a pinned rule section does not carry %r"
-                       % PULL_REQUEST) == []
+        assert refusals(monkeypatch, lambda: changing_problems(PULL_REQUEST), [
+            (REL, replace(PULL_REQUEST, 'a commit to the local copy'),
+             "Changing a pinned rule section does not carry %r"
+             % PULL_REQUEST),
+        ]) == []
 
     # purlin: skill_anchor PROOF-31
-    def test_a_local_rule_goes_in_an_anchor_that_requires_the_pin(self):
+    def test_a_local_rule_goes_in_an_anchor_that_requires_the_pin(
+            self, monkeypatch):
         assert local_anchor_problems() == []
-
-    # purlin: skill_anchor PROOF-32
-    def test_a_local_rule_in_the_pinned_copy_fails(self, monkeypatch):
-        assert refused(monkeypatch, local_anchor_problems,
-                       replace('goes in a separate local anchor that says',
-                               'goes in the pinned copy, which says'),
-                       "Changing a pinned rule section has no sentence "
-                       "carrying both 'separate local anchor' and "
-                       "'`> Requires: <the pinned one>`'") == []
+        assert refusals(monkeypatch, local_anchor_problems, [
+            (REL, replace('goes in a separate local anchor that says',
+                          'goes in the pinned copy, which says'),
+             "Changing a pinned rule section has no sentence carrying both "
+             "'separate local anchor' and '`> Requires: <the pinned one>`'"),
+        ]) == []
 
 
 class TestTheFolder:
     """RULE-6: the folder for anchors comes with the first anchor."""
 
     # purlin: skill_anchor PROOF-7
-    def test_the_first_anchor_creates_the_folder(self):
+    def test_the_first_anchor_creates_the_folder(self, monkeypatch):
         assert folder_problems() == []
+        assert refusals(monkeypatch, folder_problems, [
+            (REL, replace('is created with the first anchor, written here or '
+                          'brought in by `add`.', 'is created at setup.'),
+             'create section does not say the folder is created with the '
+             'first anchor'),
+        ]) == []
 
-    # purlin: skill_anchor PROOF-8
-    def test_a_folder_made_at_setup_fails(self, monkeypatch):
-        assert refused(monkeypatch, folder_problems,
-                       replace('is created with the first anchor, written '
-                               'here or brought in by `add`.',
-                               'is created at setup.'),
-                       'create section does not say the folder is created '
-                       'with the first anchor') == []
+
+class TestTheSource:
+    """RULE-7: an anchor's source is a spec in Purlin's format, kept in a
+    git repository; any other source is refused."""
+
+    # purlin: skill_anchor PROOF-33
+    def test_the_source_is_a_spec_in_a_repository(self, monkeypatch):
+        assert source_problems() == []
+        assert refusals(monkeypatch, source_problems, [
+            (REL, replace('is refused and\nnothing is written',
+                          'is written as it is'),
+             "add section does not carry 'is refused and nothing is "
+             "written'"),
+        ]) == []
 
 
 # ---------------------------------------------------------------------------
@@ -353,3 +305,16 @@ def folder_problems():
         return []
     return ['%s create section does not say the folder is created with the '
             'first anchor: %r' % (REL, needle)]
+
+
+SOURCE = ("The file is a spec in Purlin's format that holds at least one "
+          'rule, kept in a git repository.')
+
+
+def source_problems():
+    body = flat(section(read(REL), r'^add$') or '')
+    return ['%s add section does not carry %r' % (REL, needle)
+            for needle in (SOURCE, 'Any other source',
+                           'is refused and nothing is written',
+                           'the refusal names `purlin:anchor create <name>`')
+            if needle not in body]

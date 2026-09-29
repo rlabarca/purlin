@@ -39,7 +39,7 @@ the anchor itself when it governs all of them.
 ## add
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" add <git-url> --path <file>
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" add <git-url> --path <file>
 ```
 
 Fetches the anchor from another repository and writes the local copy under
@@ -53,16 +53,15 @@ Fetches the anchor from another repository and writes the local copy under
 **A pin is always a commit, never a branch.** A branch moves, and an anchor whose rules
 changed under a project with no diff to read is exactly what pinning exists to prevent.
 
-When the source file is free text rather than rules, the script writes the text and prints
-`<name>: written to <path>, pinned <sha7>` and then `the source is free text: no rules written
-yet. Run purlin:anchor create <name>.` Write the rules from the text with `purlin:anchor create`
-and say so in the local copy's `> Description:`, so nobody mistakes your reading for the
-author's words.
+The file is a spec in Purlin's format that holds at least one rule, kept in a git repository.
+Any other source, a text file, a description in words or a file with no rule, is refused and
+nothing is written; the refusal names `purlin:anchor create <name>`, which writes the rules in
+this project instead.
 
 ## sync
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" sync [<name> | --all] [--check] [--json]
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" sync [<name> | --all] [--check] [--json]
 ```
 
 `--check` reports without writing, one line per anchor: `security_baseline: the pin abc1234
@@ -96,3 +95,4 @@ Name the next step from the state:
 - Anchor added or synced, rules changed: `→ Run: purlin:test`, whose `Left to do` names what
   the change sent back to be audited or signed.
 - Pin current and nothing moved: say so in one line, `→ Run: purlin:status`
+- Anchor refused, its source not a spec: `→ Run: purlin:anchor create <name>`
