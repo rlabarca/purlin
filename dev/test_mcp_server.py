@@ -4,15 +4,20 @@ What the server answers on stdin, and the package hygiene it keeps. The
 throwaway project and its helpers are in `dev/mcp_project.py`.
 """
 
+import errno
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+from unittest import mock
+
+import pytest
 
 from mcp_project import PROJECT_ROOT, SERVER_PY, _rpc, project
 # `mcp_project` puts `scripts/mcp` on the path.
+import config_engine
 from purlin import server as purlin_srv
 
 
@@ -263,6 +268,50 @@ class TestWhichWorkspace:
 
 
 # ---------------------------------------------------------------------------
+# A settings file that cannot be read
+# ---------------------------------------------------------------------------
+
+TRAILING_COMMA = '{\n  "gate": "passed",}\n'
+
+
+def _unreadable(root):
+    """Give the workspace a settings file with a trailing comma; its bytes and sentence."""
+    with open(_config_file(root), 'wb') as handle:
+        handle.write(TRAILING_COMMA.encode('utf-8'))
+    with pytest.raises(json.JSONDecodeError) as refused:
+        json.loads(TRAILING_COMMA)
+    assert refused.value.lineno == 2
+    return _read_bytes(_config_file(root)), (
+        '.purlin/config.json cannot be read: %s at line 2. Fix the file by '
+        'hand; nothing ran and nothing was saved.' % refused.value.msg)
+
+
+class TestAnUnreadableSettingsFile:
+
+    # purlin: server PROOF-139
+    def test_sync_status_answers_the_sentence(self, project):
+        _before, sentence = _unreadable(project.root)
+        responses, _stderr = _rpc(project.root, _call('sync_status'))
+        assert _text(responses[0]) == sentence
+
+    # purlin: server PROOF-140
+    def test_drift_answers_the_sentence(self, project):
+        _before, sentence = _unreadable(project.root)
+        responses, _stderr = _rpc(project.root, _call('drift'))
+        assert _text(responses[0]) == sentence
+
+    # purlin: server PROOF-141
+    def test_the_configuration_tool_answers_the_sentence_and_writes_nothing(
+            self, project):
+        before, sentence = _unreadable(project.root)
+        responses, _stderr = _rpc(project.root, _call(
+            'purlin_config', {'action': 'write', 'key': 'gate',
+                              'value': 'strong'}))
+        assert _text(responses[0]) == sentence
+        assert _read_bytes(_config_file(project.root)) == before
+
+
+# ---------------------------------------------------------------------------
 # A tool that fails
 # ---------------------------------------------------------------------------
 
@@ -340,6 +389,51 @@ class TestTheConfigurationTool:
         assert whole == on_disk, whole
         assert sorted(whole) == ['gate', 'project_name', 'tests'], whole
 
+    # purlin: server PROOF-142
+    def test_a_read_of_an_absent_key_answers_it_as_null(self, project):
+        with open(_config_file(project.root), encoding='utf-8') as handle:
+            assert 'ci' not in json.load(handle)
+        responses, _stderr = _rpc(project.root, _call(
+            'purlin_config', {'action': 'read', 'key': 'ci'}))
+        assert _text(responses[0]) == '{\n  "ci": null\n}'
+
+    # purlin: server PROOF-143
+    def test_a_read_of_a_key_stored_as_null_answers_it_as_null(self, project):
+        path = _config_file(project.root)
+        with open(path, encoding='utf-8') as handle:
+            held = json.load(handle)
+        with open(path, 'w', encoding='utf-8') as handle:
+            json.dump(dict(held, min_strength=None), handle)
+        responses, _stderr = _rpc(project.root, _call(
+            'purlin_config', {'action': 'read', 'key': 'min_strength'}))
+        assert _text(responses[0]) == '{\n  "min_strength": null\n}'
+
+    # purlin: server PROOF-144
+    def test_a_save_that_fails_says_the_setting_was_not_saved(self, project):
+        before = _read_bytes(_config_file(project.root))
+
+        def fill_the_disk(_obj, handle, **_kwargs):
+            handle.write('{"gate": ')
+            raise OSError(errno.ENOSPC, 'No space left on device')
+
+        with mock.patch.object(config_engine.json, 'dump',
+                               side_effect=fill_the_disk):
+            responses, _stderr = _rpc(project.root, _call(
+                'purlin_config', {'action': 'write', 'key': 'gate',
+                                  'value': 'strong'}))
+        assert _text(responses[0]) == \
+            'The setting was not saved: No space left on device.'
+        assert _read_bytes(_config_file(project.root)) == before
+
+    # purlin: server PROOF-145
+    def test_a_setting_purlin_does_not_know_is_written(self, project):
+        responses, _stderr = _rpc(project.root, _call(
+            'purlin_config', {'action': 'write', 'key': 'team',
+                              'value': 'blue'}))
+        assert _text(responses[0]) == 'Set \'team\' = "blue"'
+        with open(_config_file(project.root), encoding='utf-8') as handle:
+            assert json.load(handle)['team'] == 'blue'
+
     # purlin: server PROOF-10
     def test_a_write_naming_no_key_is_refused(self, project):
         before = _read_bytes(_config_file(project.root))
@@ -357,6 +451,82 @@ class TestTheConfigurationTool:
         assert _text(responses[0]) == \
             "Unknown action: delete. Use 'read' or 'write'."
         assert _read_bytes(_config_file(project.root)) == before
+
+
+def _refused(project, arguments):
+    """The configuration tool's answer to a write, asserting the file is unchanged."""
+    before = _read_bytes(_config_file(project.root))
+    responses, _stderr = _rpc(project.root, _call(
+        'purlin_config', dict(arguments, action='write')))
+    assert _read_bytes(_config_file(project.root)) == before
+    return _text(responses[0])
+
+
+class TestAWriteTheToolRefuses:
+
+    # purlin: server PROOF-146
+    def test_a_known_setting_given_no_value_is_refused(self, project):
+        assert _refused(project, {'key': 'gate'}) == \
+            'A change needs a value; nothing was saved.'
+
+    # purlin: server PROOF-147
+    def test_a_gate_of_gold_is_refused(self, project):
+        assert _refused(project, {'key': 'gate', 'value': 'gold'}) == (
+            '"gold" is not accepted for gate; it takes passed, strong or '
+            'signed. Nothing was saved.')
+
+    # purlin: server PROOF-148
+    def test_an_engine_purlin_does_not_run_is_refused(self, project):
+        assert _refused(project, {'key': 'mutation_engine',
+                                  'value': 'pitest'}) == (
+            '"pitest" is not accepted for mutation_engine; it takes none, '
+            'auto, mutmut, stryker or stryker_net. Nothing was saved.')
+
+    # purlin: server PROOF-149
+    def test_a_minimum_strength_above_100_is_refused(self, project):
+        assert _refused(project, {'key': 'min_strength', 'value': 101}) == (
+            '"101" is not accepted for min_strength; it takes a whole number '
+            'from 0 to 100, or null. Nothing was saved.')
+
+    # purlin: server PROOF-150
+    def test_an_audit_parallel_above_16_is_refused(self, project):
+        assert _refused(project, {'key': 'audit_parallel', 'value': 17}) == (
+            '"17" is not accepted for audit_parallel; it takes a whole number '
+            'from 1 to 16. Nothing was saved.')
+
+    # purlin: server PROOF-151
+    def test_tests_given_as_text_is_refused(self, project):
+        assert _refused(project, {'key': 'tests', 'value': 'pytest'}) == (
+            '"pytest" is not accepted for tests; it takes a list. Nothing was '
+            'saved.')
+
+    # purlin: server PROOF-152
+    def test_a_ci_of_gitlab_is_refused(self, project):
+        assert _refused(project, {'key': 'ci', 'value': 'gitlab'}) == (
+            '"gitlab" is not accepted for ci; it takes github, azure or none. '
+            'Nothing was saved.')
+
+    # purlin: server PROOF-153
+    def test_a_minimum_strength_of_null_is_written(self, project):
+        responses, _stderr = _rpc(project.root, _call(
+            'purlin_config', {'action': 'write', 'key': 'min_strength',
+                              'value': None}))
+        assert _text(responses[0]) == "Set 'min_strength' = null"
+        with open(_config_file(project.root), encoding='utf-8') as handle:
+            held = json.load(handle)
+        assert 'min_strength' in held and held['min_strength'] is None, held
+
+    # purlin: server PROOF-154
+    def test_a_gate_of_null_is_refused(self, project):
+        assert _refused(project, {'key': 'gate', 'value': None}) == (
+            '"null" is not accepted for gate; it takes passed, strong or '
+            'signed. Nothing was saved.')
+
+    # purlin: server PROOF-155
+    def test_a_write_of_the_version_is_refused(self, project):
+        assert _refused(project, {'key': 'version', 'value': '9.9.9'}) == (
+            "version is written by purlin:init from Purlin's own version; "
+            "nothing was saved.")
 
 
 # ---------------------------------------------------------------------------

@@ -22,8 +22,9 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from config_engine import (PROJECT_ROOT_SOURCES, resolve_config,
-                           resolve_project_root, update_config)
+from config_engine import (PROJECT_ROOT_SOURCES, config_problem,
+                           resolve_config, resolve_project_root,
+                           update_config)
 from purlin import PURLIN_VERSION
 from purlin import console as console_module
 from purlin import drift as drift_module
@@ -106,24 +107,83 @@ TOOLS = [
 ]
 
 
+NOT_SAVED = 'The setting was not saved: %s.'
+NO_VALUE = 'A change needs a value; nothing was saved.'
+NOT_ACCEPTED = '"%s" is not accepted for %s; it takes %s. Nothing was saved.'
+VERSION_NOT_WRITTEN = ("version is written by purlin:init from Purlin's own "
+                       "version; nothing was saved.")
+
+
+def _one_of(*words):
+    return lambda value: isinstance(value, str) and value in words
+
+
+def _whole_number(low, high, null=False):
+    def accepts(value):
+        if value is None:
+            return null
+        return (isinstance(value, int) and not isinstance(value, bool)
+                and low <= value <= high)
+    return accepts
+
+
+# Each setting Purlin reads, with what it accepts and the words a refusal
+# names it by. A key not listed here is written as given.
+KNOWN_SETTINGS = {
+    'gate': (_one_of('passed', 'strong', 'signed'),
+             'passed, strong or signed'),
+    'mutation_engine': (_one_of('none', 'auto', 'mutmut', 'stryker',
+                                'stryker_net'),
+                        'none, auto, mutmut, stryker or stryker_net'),
+    'min_strength': (_whole_number(0, 100, null=True),
+                     'a whole number from 0 to 100, or null'),
+    'audit_parallel': (_whole_number(1, 16), 'a whole number from 1 to 16'),
+    'tests': (lambda value: isinstance(value, list), 'a list'),
+    'ci': (_one_of('github', 'azure', 'none'), 'github, azure or none'),
+}
+
+
+def _write_refusal(key, arguments):
+    """Why a write of `key` is refused, in the tool's words, or None."""
+    if key == 'version':
+        return VERSION_NOT_WRITTEN
+    if key not in KNOWN_SETTINGS:
+        return None
+    if 'value' not in arguments:
+        return NO_VALUE
+    accepts, accepted = KNOWN_SETTINGS[key]
+    value = arguments['value']
+    if accepts(value):
+        return None
+    shown = value if isinstance(value, str) else json.dumps(value)
+    return NOT_ACCEPTED % (shown, key, accepted)
+
+
 def handle_purlin_config(project_root, arguments):
-    """Read or write one key of `.purlin/config.json`, or dump the whole file."""
+    """Read or write one key of `.purlin/config.json`, or dump the whole file.
+
+    A key that is absent or stored as null reads as `{"<key>": null}`, the
+    shape of a found key, so a reader handles one shape.
+    """
     action = arguments.get('action', 'read')
     key = arguments.get('key')
     value = arguments.get('value')
-    config = resolve_config(project_root)
 
     if action == 'read':
+        config = resolve_config(project_root)
         if key:
-            found = config.get(key)
-            if found is None:
-                return "Key '%s' not found in config." % key
-            return json.dumps({key: found}, indent=2)
+            return json.dumps({key: config.get(key)}, indent=2)
         return json.dumps(config, indent=2)
     if action == 'write':
         if not key:
             return "Error: 'key' is required for write action."
-        update_config(project_root, key, value)
+        refusal = _write_refusal(key, arguments)
+        if refusal:
+            return refusal
+        try:
+            update_config(project_root, key, value)
+        except OSError as error:
+            return NOT_SAVED % (error.strerror or error)
         return "Set '%s' = %s" % (key, json.dumps(value))
     return "Unknown action: %s. Use 'read' or 'write'." % action
 
@@ -198,6 +258,11 @@ def handle_request(request, project_root):
         if not os.path.isfile(os.path.join(call_root, '.purlin', 'config.json')):
             return _text_result(req_id,
                                 _no_workspace_text(call_root, root_source))
+        # A settings file that cannot be read stops every tool the same way,
+        # before anything reads it as empty or writes over it.
+        problem = config_problem(call_root)
+        if problem:
+            return _text_result(req_id, problem)
 
         try:
             if tool_name == 'sync_status':
