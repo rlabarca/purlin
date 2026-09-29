@@ -83,7 +83,9 @@ The version string lives in one file: `VERSION` at the root. Never hand-edit any
 
 1. `bash dev/bump_version.sh <semver>` writes `VERSION` and propagates it everywhere.
 2. Commit `VERSION` and every file the script touched in the same commit.
-3. Tag and push.
+3. Run `purlin:sign` at the gate `signed`. It writes the signed tag `signed/<version>` once
+   nothing is left to do.
+4. The owner pushes the tag: `git push origin signed/<version>`.
 
 Derived locations, with the script's header comment as the authoritative list:
 `.claude-plugin/plugin.json` (what the plugin loader reports) and `.purlin/config.json` (this
