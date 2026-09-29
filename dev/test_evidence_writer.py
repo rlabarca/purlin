@@ -909,7 +909,8 @@ def test_outside_git_the_files_are_written_and_nothing_is_committed(tmp_path):
 
     assert (root / '.purlin' / 'evidence' / 'local' / 'feat.json').exists()
     assert (root / '.purlin' / 'tests.md').exists()
-    assert 'there is no git repository to commit it to' in out
+    assert ('Evidence written; there is no git repository to commit it to.'
+            in out.splitlines()), out
 
 
 # ---------------------------------------------------------------------------
