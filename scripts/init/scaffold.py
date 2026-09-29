@@ -83,8 +83,8 @@ REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
 MUTANTS_IGNORE = ('# The copy mutmut breaks, rebuilt on every run, never committed\n'
                   'mutants/\n')
 
-_STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
-                 'strength reads n/a.')
+_STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it test strength '
+                 'is not measured.')
 
 
 def runner_label(gate):

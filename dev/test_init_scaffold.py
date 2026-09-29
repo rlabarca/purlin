@@ -696,8 +696,8 @@ def _told_about_stryker(language, gate):
     made = Project(language)
     try:
         output = made.run('--gate', gate, '--mutation')
-        assert ('%s: Stryker measures the breaks. Without it the test '
-                'strength reads n/a.' % language in output.splitlines()), output
+        assert ('%s: Stryker measures the breaks. Without it test strength '
+                'is not measured.' % language in output.splitlines()), output
     finally:
         made.close()
 
