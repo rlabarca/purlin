@@ -138,10 +138,10 @@ def test_nothing_on_the_table_is_aligned_right(browser,  # noqa: F811
 # purlin: purlin_report PROOF-142
 def test_a_shared_count_is_one_line_from_1024_up(browser,  # noqa: F811
                                                  tmp_path):
-    """A spec that proves an anchor's rules reads `1 (+1 shared)`, and that
-    value is one line too."""
+    """A spec that proves an anchor's rules reads `1 (+1)`, and that value
+    is one line too."""
     found = _at_every_width(browser, tmp_path, 'team', lambda page: (
-        '1 (+1 shared)' in page.inner_text('.tr[data-feature="receipt"]'),
+        '1 (+1)' in page.inner_text('.tr[data-feature="receipt"]'),
         page.evaluate(WRAPPED)))
     assert found == {width: (True, 0) for width in WIDTHS}, found
 
@@ -247,7 +247,7 @@ def test_a_shared_count_is_one_line_at_every_width(browser, tmp_path):  # noqa: 
         team = open_board(browser, tmp_path / ('team%d' % width),
                           payload_named('team'),
                           viewport={'width': width, 'height': 900})
-        assert '1 (+1 shared)' in team.inner_text('.tr[data-feature="receipt"]')
+        assert '1 (+1)' in team.inner_text('.tr[data-feature="receipt"]')
         assert team.evaluate(SIDEWAYS) == 0, width
         assert team.evaluate(BROKEN_VALUES) == [], width
         team.close()
@@ -293,5 +293,50 @@ def test_a_narrow_board_is_blocks_of_labelled_pairs(browser, tmp_path):  # noqa:
         "el => getComputedStyle(el, '::before').content")
     page.close()
     assert heads is False
-    assert receipt.startswith('▶ receipt 1 (+1 shared)'), receipt
+    assert receipt.startswith('▶ receipt 1 (+1) '), receipt
     assert label == '"Rules"', label
+
+
+# Each row of boxes, by the top of its boxes: the height of every box in it.
+BOX_ROWS = """() => {
+  const rows = {};
+  document.querySelectorAll('.tile').forEach(t => {
+    const box = t.getBoundingClientRect();
+    const top = Math.round(box.top);
+    (rows[top] = rows[top] || []).push(Math.round(box.height));
+  });
+  return Object.values(rows);
+}"""
+
+
+# purlin: purlin_report PROOF-175
+def test_the_boxes_in_a_row_are_one_height(browser, tmp_path):  # noqa: F811
+    for width in EVERY_WIDTH:
+        page = _board_at(browser, tmp_path, 'regulated', width)
+        rows = page.evaluate(BOX_ROWS)
+        page.close()
+        assert rows and all(len(set(row)) == 1 for row in rows), (width, rows)
+
+
+# How many lines the `Passing` box's second line takes, counted as in
+# `BROKEN_VALUES`, and its text as a person reads it.
+TOTAL_LINE = """() => {
+  const el = document.querySelector('.tile-t');
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const tops = new Set(Array.from(range.getClientRects())
+    .filter(r => r.width >= 1).map(r => Math.round(r.top)));
+  return [el.innerText.trim(), tops.size];
+}"""
+
+
+# purlin: purlin_report PROOF-173
+def test_the_total_is_one_line_at_every_width(browser, tmp_path):  # noqa: F811
+    for width in EVERY_WIDTH:
+        payload = payload_named('regulated')
+        payload['summary']['rules'] = 563
+        page = open_board(browser, tmp_path / ('total%d' % width), payload,
+                          viewport={'width': width, 'height': 900})
+        found = page.evaluate(TOTAL_LINE)
+        page.close()
+        assert found == ['563 RULES TOTAL', 1], (width, found)

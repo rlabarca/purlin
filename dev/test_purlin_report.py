@@ -344,8 +344,8 @@ def test_the_board_opens_on_the_boxes_under_the_gate(browser, tmp_path):
     payload = payload_named('regulated')
     page = open_board(browser, tmp_path, payload)
     bar = page.inner_text('.topbar')
-    assert texts(page, '.topbar .tag')[0] == 'gate: signed', bar
-    assert 'Data:' in bar
+    assert page.inner_text('.topbar .fresh').startswith('Data: '), bar
+    assert texts(page, '.topbar .tag') == ['gate: signed', 'signed/1.4.0'], bar
     first = page.evaluate(
         "() => { const s = document.querySelector('.strip');"
         " const sec = s.closest('section');"
@@ -527,12 +527,13 @@ def test_a_step_box_counts_the_rules_that_reached_it(browser, tmp_path):
     page = open_board(browser, tmp_path, payload)
     found = boxes(page)
     assert [(label, count) for label, count, _ in found] == [
-        ('Passing', '7'), ('Strong', '2'), ('Signed', '1'),
-        ('No proof', '0')], found
-    assert page.eval_on_selector(
-        '.tile-l', 'el => getComputedStyle(el).textTransform') == 'uppercase'
+        ('No proof', '0'), ('Passing', '7'), ('Strong', '2'),
+        ('Signed', '1')], found
+    assert page.eval_on_selector_all(
+        '.tile-l', 'els => els.map(e => getComputedStyle(e).textTransform)'
+    ) == ['uppercase'] * 5
     warn = page.evaluate(RESOLVE_TOKEN, '--state-warn')
-    assert [colour for _, _, colour in found[:3]] == [warn] * 3, found
+    assert [colour for _, _, colour in found[1:]] == [warn] * 3, found
     page.close()
 
 
@@ -550,23 +551,65 @@ def test_a_step_every_rule_reached_is_green(browser, tmp_path):
     assert payload['summary']['rules'] == 10
     payload['summary']['steps'] = {'passed': 10, 'strong': 10, 'signed': 10}
     page = open_board(browser, tmp_path, payload)
-    found = boxes(page)[:3]
+    found = boxes(page)[1:]
+    assert [label for label, _, _ in found] == ['Passing', 'Strong', 'Signed']
     passed = page.evaluate(RESOLVE_TOKEN, '--state-pass')
     assert [(count, colour) for _, count, colour in found] == [
         ('10', passed)] * 3, found
     page.close()
 
 
-# purlin: purlin_report PROOF-121
-def test_the_summary_sentence_stands_above_the_boxes(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    above = page.evaluate(
-        "() => { const s = document.querySelector('.sentence');"
-        " const box = document.querySelector('.tile');"
-        " return [s.innerText, !!(s.compareDocumentPosition(box)"
-        " & Node.DOCUMENT_POSITION_FOLLOWING)]; }")
-    assert above == ['10 rules. 7 pass their tests. 2 are strong. 1 is signed.',
-                     True], above
+def second_lines(page):
+    """Each box's label and the second line under it, or None."""
+    return page.eval_on_selector_all(
+        '.tile', "els => els.map(e => [e.querySelector('.tile-l')"
+        ".textContent.trim(), e.querySelector('.tile-t')"
+        " ? e.querySelector('.tile-t').innerText.trim() : null])")
+
+
+# The face, size, colour and casing an element is drawn in.
+LOOK = """el => { const s = getComputedStyle(el);
+  return [s.fontFamily, s.fontSize, s.color, s.textTransform,
+          s.letterSpacing]; }"""
+
+
+# purlin: purlin_report PROOF-170
+def test_the_passing_box_carries_the_total(browser, tmp_path):
+    payload = payload_named('regulated')
+    assert payload['summary']['rules'] == 10
+    page = open_board(browser, tmp_path, payload)
+    assert second_lines(page) == [['No proof', None],
+                                  ['Passing', '10 RULES TOTAL'],
+                                  ['Strong', None], ['Signed', None]]
+    total = page.query_selector('.tile-t')
+    label = total.evaluate_handle('el => el.previousElementSibling')
+    assert label.evaluate(LOOK) == total.evaluate(LOOK)
+    page.close()
+
+
+# purlin: purlin_report PROOF-171
+def test_the_total_is_the_payloads_count(browser, tmp_path):
+    payload = payload_named('regulated')
+    payload['summary']['rules'] = 563
+    page = open_board(browser, tmp_path, payload)
+    assert page.inner_text('.tile-t').strip() == '563 RULES TOTAL'
+    page.close()
+
+
+# purlin: purlin_report PROOF-172
+def test_one_rule_reads_rule_total(browser, tmp_path):
+    payload = payload_named('solo')
+    payload['summary']['rules'] = 1
+    page = open_board(browser, tmp_path, payload)
+    assert page.inner_text('.tile-t').strip() == '1 RULE TOTAL'
+    page.close()
+
+
+# purlin: purlin_report PROOF-174
+def test_a_strong_project_has_no_proof_passing_and_strong(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('team'))
+    assert [label for label, _, _ in boxes(page)] == [
+        'No proof', 'Passing', 'Strong']
     page.close()
 
 
@@ -620,6 +663,29 @@ def test_a_proof_no_test_runs_is_named_beside_the_total(browser, tmp_path):
     assert count_cells(team)['invoice']['Proofs'] == (
         '2 · 1 no test')
     team.close()
+
+
+# purlin: purlin_report PROOF-176
+def test_a_strength_nobody_measured_is_not_shown(browser, tmp_path):
+    payload = payload_named('team')
+    login = payload['features'][0]
+    assert login['name'] == 'login'
+    login['rollup']['test_strength'] = None
+    login['test_strength'] = None
+    page = open_board(browser, tmp_path, payload)
+    assert count_cells(page)['login']['Strong'] == '2 of 3'
+    page.close()
+
+
+# purlin: purlin_report PROOF-177
+def test_a_percentage_says_what_it_is(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    login = page.locator('.tr[data-feature="login"] b', has_text='86%')
+    assert login.count() == 1
+    assert login.get_attribute('title') == (
+        'Test strength: the tests caught 86 of every 100 deliberate breaks '
+        'of the code.')
+    page.close()
 
 
 # purlin: purlin_report PROOF-44
@@ -686,10 +752,10 @@ def test_a_rule_with_no_proof_is_counted_in_its_own_box(browser, tmp_path):
     page = open_board(browser, tmp_path,
                       with_invoice_rule_2_unproved(payload_named('team')))
     found = boxes(page)
-    assert [label for label, _, _ in found] == ['Passing', 'Strong',
-                                                'No proof'], found
-    assert found[-1][1:] == ['1', page.evaluate(RESOLVE_TOKEN,
-                                                '--state-warn')], found
+    assert [label for label, _, _ in found] == ['No proof', 'Passing',
+                                                'Strong'], found
+    assert found[0][1:] == ['1', page.evaluate(RESOLVE_TOKEN,
+                                               '--state-warn')], found
     page.close()
 
 
@@ -697,8 +763,8 @@ def test_a_rule_with_no_proof_is_counted_in_its_own_box(browser, tmp_path):
 def test_the_no_proof_box_at_zero_is_green(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('team'))
     found = boxes(page)
-    assert found[-1] == ['No proof', '0',
-                         page.evaluate(RESOLVE_TOKEN, '--state-pass')], found
+    assert found[0] == ['No proof', '0',
+                        page.evaluate(RESOLVE_TOKEN, '--state-pass')], found
     page.close()
 
 
@@ -1253,10 +1319,12 @@ def test_coming_back_to_an_old_tab_reloads_it(browser, tmp_path):
 # purlin: purlin_report PROOF-28
 def test_the_freshness_line_is_a_button_styled_as_the_theme_button(
         browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+    payload = payload_named('regulated')
+    payload['generated_at'] = stamp_ago(7 * 3600)
+    page = open_board(browser, tmp_path, payload)
     node = page.query_selector('.topbar [data-act="reload"]')
     assert node.evaluate('el => el.tagName') == 'BUTTON'
-    assert 'Data:' in node.inner_text()
+    assert node.inner_text().strip() == 'Data: 7 hours old'
     assert 'btn' in node.get_attribute('class').split()
     assert 'btn' in page.get_attribute('[data-act="theme"]', 'class').split()
     assert page.eval_on_selector(
@@ -1264,6 +1332,29 @@ def test_the_freshness_line_is_a_button_styled_as_the_theme_button(
         'el => getComputedStyle(el).borderTopWidth') == page.eval_on_selector(
         '[data-act="theme"]', 'el => getComputedStyle(el).borderTopWidth')
     page.close()
+
+
+def freshness_hover(browser, tmp_path, seconds):
+    payload = payload_named('regulated')
+    payload['generated_at'] = stamp_ago(seconds)
+    page = open_board(browser, tmp_path, payload)
+    found = page.get_attribute('.topbar [data-act="reload"]', 'title')
+    page.close()
+    return found
+
+
+# purlin: purlin_report PROOF-178
+def test_old_data_says_it_is_old_and_how_to_refresh(browser, tmp_path):
+    assert freshness_hover(browser, tmp_path, 7 * 3600) == (
+        'This data is old. To refresh it, type purlin:status in Claude Code. '
+        'Press here to reload the page.')
+
+
+# purlin: purlin_report PROOF-179
+def test_fresh_data_says_how_to_refresh(browser, tmp_path):
+    assert freshness_hover(browser, tmp_path, 30) == (
+        'To refresh it, type purlin:status in Claude Code. '
+        'Press here to reload the page.')
 
 
 # purlin: purlin_report PROOF-139
@@ -1370,7 +1461,8 @@ def test_the_audit_panel_with_no_strength_measured(browser, tmp_path):
     payload = payload_named('team')
     payload['features'][0]['rules'][1]['cells']['strong']['strength'] = None
     lines = audit_lines(browser, tmp_path, payload, 'login', 'RULE-2')
-    assert 'no mutation score measured' in lines, lines
+    assert lines[:2] == ['Strong. It found nothing.',
+                         'Read by example-model-1 on 2026-09-12 09:14 UTC'], lines
 
 
 # purlin: purlin_report PROOF-147
@@ -1393,9 +1485,10 @@ def test_the_top_bar_states_the_signed_tag(browser, tmp_path):
     payload = payload_named('regulated')
     assert payload['gate']['gate'] == 'signed'
     assert payload['tag']['name'] == 'signed/1.4.0'
-    bar = top_bar(browser, tmp_path, payload)
-    assert 'signed/1.4.0 · a1b2c3d' in bar, bar
-    assert 'no signed tag' not in bar
+    assert payload['tag']['commit'].startswith('a1b2c3d')
+    page = open_board(browser, tmp_path, payload)
+    assert texts(page, '.topbar .tag')[1] == 'signed/1.4.0'
+    page.close()
 
 
 # purlin: purlin_report PROOF-148
@@ -1996,9 +2089,11 @@ def test_a_shared_rule_counts_toward_the_spec_that_proves_it(browser,
                                                              tmp_path):
     page = open_board(browser, tmp_path, payload_named('team'))
     cells = count_cells(page)
-    assert cells['receipt']['Rules'] == '1 (+1 shared)'
+    assert cells['receipt']['Rules'] == '1 (+1)'
     assert cells['login']['Rules'] == '3'
-    assert hovers(page)['receipt']['Rules'] == 'checkout_design · 1'
+    assert hovers(page)['receipt']['Rules'] == (
+        '1 rule of its own, and 1 more it must also meet, from shared rules:'
+        '\ncheckout_design · 1')
     page.close()
 
 
@@ -2110,8 +2205,8 @@ def test_a_real_projects_shared_rules_count_toward_it(browser, tmp_path,
     rules_hover = hovers(page)['lock']['Rules']
     found = boxes(page)
     page.close()
-    assert rules == '2 (+6 shared)'
-    assert rules_hover == 'security · 6'
+    assert rules == '2 (+6)'
+    assert rules_hover.split('\n')[-1] == 'security · 6'
     assert [(label, count) for label, count, _ in found] == [
         ('Passing', '8')], found
 
@@ -2214,7 +2309,7 @@ def test_the_badges_add_up_to_the_step_boxes(browser, tmp_path):
     page.close()
     assert [seen.count(word) for word in ('PASSED', 'STRONG', 'SIGNED')] == [
         7, 2, 1], seen
-    assert [int(count) for _, count, _ in found[:3]] == [7, 2, 1]
+    assert [int(count) for _, count, _ in found[1:]] == [7, 2, 1]
 
 
 # purlin: purlin_report PROOF-168
