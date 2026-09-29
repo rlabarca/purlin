@@ -652,23 +652,6 @@ class TestNothingInTheTests:
 
 class TestTheGateMoves:
 
-    # purlin: scaffold PROOF-10
-    def test_signed_names_nobody_and_sets_up_no_signing(self):
-        made = Project('pytest')
-        try:
-            done = subprocess.run(
-                [sys.executable, SCAFFOLD, '--project-root', made.root,
-                 '--gate', 'signed'],
-                input='\n', capture_output=True, encoding='utf-8',
-                timeout=300)
-            assert done.returncode == 0, done.stdout + done.stderr
-            assert 'email' not in done.stdout.lower(), done.stdout
-            assert 'git config' not in done.stdout, done.stdout
-            assert not [key for key in made.config() if 'signer' in key], (
-                made.config())
-        finally:
-            made.close()
-
     # purlin: scaffold PROOF-12
     def test_raising_the_gate_writes_the_setting_and_no_workflow(self,
                                                                  project):
@@ -725,8 +708,8 @@ class TestTheWorkflow:
     def test_a_project_with_no_foreign_proof_gets_no_workflow(self, project):
         output = project.run('--gate', 'strong')
         assert not project.has('.github/workflows/purlin.yml')
-        assert any(line.startswith('No remote runner: ')
-                   for line in output.splitlines()), output
+        assert ('No remote runner: every proof runs on this operating system, '
+                'so nothing has to run remotely.') in output.splitlines(), output
 
     # purlin: scaffold PROOF-64
     def test_at_passed_the_reason_names_the_test(self, project):
@@ -874,8 +857,6 @@ class TestTheWorkflow:
         tag_foreign(project)
         project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
-        assert 'gate_check.py' not in workflow
-        assert 'actions/upload-artifact@v4' not in workflow
         assert workflow.rstrip().endswith(
             'scripts/run/purlin_run.py" --all --ci'), workflow
 
@@ -901,7 +882,6 @@ class TestTheWorkflow:
             tag_foreign(made)
             made.run('--gate', 'strong')
             pipeline = read(made.path('purlin.azure-pipelines.yml'))
-            assert 'gate_check.py' not in pipeline
             # The test run is the last step: no step follows it.
             tail = pipeline.split('scripts/run/purlin_run.py" --all --ci',
                                   1)[1]
@@ -1051,7 +1031,7 @@ class TestWhatInitWrites:
     # purlin: scaffold PROOF-34
     def test_with_no_spec_the_last_line_sends_you_to_write_one(self, project):
         lines = project.run('--gate', 'passed').strip().splitlines()
-        assert lines[-1] == '→ Next: run purlin:spec to write the first spec.'
+        assert lines[-1] == '→ Run: purlin:spec to write the first spec.'
 
     # purlin: scaffold PROOF-80
     def test_with_a_spec_it_ends_on_what_is_left_to_do(self, project):

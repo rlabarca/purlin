@@ -47,12 +47,12 @@ without the question, at any gate.
 ## Run it
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --project-root . --gate <level>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --project-root . --gate <gate>
 ```
 
 | Flag | What it does |
 |------|--------------|
-| `--gate <level>` | Sets the gate, at setup or later. Lowering changes the setting and deletes nothing |
+| `--gate <gate>` | Sets the gate, at setup or later. Lowering changes the setting and deletes nothing |
 | `--mutation` | Turns mutation testing on without asking |
 | `--yes` | Takes the default answer to every question and every write |
 | `--update` | Brings a project Purlin 0.9.5 set up to the installed release. See below |
@@ -187,9 +187,9 @@ prints `→ Run: purlin:init --update` above its summary, and a test run stops a
 
 Say what was written. The script ends on the lines `purlin:status` ends on, the summary and
 `Left to do`, whose first line is the next step, or, with no spec yet, on
-`→ Next: run purlin:spec to write the first spec.` Name the next step from what the tree shows:
+`→ Run: purlin:spec to write the first spec.` Name the next step from what the tree shows:
 
-- No specs and no code: `→ Next: purlin:spec "<one sentence about what the software must do>"`.
-- Code but no specs: `→ Next: purlin:spec-from-code`.
-- Specs but no tests: `→ Next: purlin:build <name>`.
-- Gate raised to `signed` and a spec names no files in `> Scope:`: `→ Next: purlin:spec <name>`.
+- No specs and no code: `→ Run: purlin:spec "<one sentence about what the software must do>"`.
+- Code but no specs: `→ Run: purlin:spec-from-code`.
+- Specs but no tests: `→ Run: purlin:build <name>`.
+- Gate raised to `signed` and a spec names no files in `> Scope:`: `→ Run: purlin:spec <name>`.

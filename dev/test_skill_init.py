@@ -130,7 +130,7 @@ class TestSkillInit:
     def test_a_run_line_without_the_gate_is_refused(self, monkeypatch):
         rel = skill_path('init')
         assert refusals(monkeypatch, scaffold_flag_problems, [
-            (rel, replace('--project-root . --gate <level>',
+            (rel, replace('--project-root . --gate <gate>',
                           '--project-root .'),
              '%s has no single line carrying all of' % rel),
         ]) == []
@@ -150,7 +150,7 @@ class TestSkillInit:
     def test_a_broken_closing_section_is_refused(self, monkeypatch):
         assert next_step_refusals(
             monkeypatch, 'init', '- Code but no specs',
-            '- Code but no specs: `→ Next: purlin:spec-from-code`.') == []
+            '- Code but no specs: `→ Run: purlin:spec-from-code`.') == []
 
     # purlin: skill_init PROOF-4
     def test_it_stays_under_its_ceiling(self):

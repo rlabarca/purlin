@@ -87,13 +87,6 @@ _STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
                  'strength reads n/a.')
 
 
-def trust_question(gate):
-    """The trust question in the words the gate uses."""
-    if gate == 'passed':
-        return 'Do you trust your own machine for the tests? [y/n]'
-    return 'Do you trust your own machine for the tests and the signing? [y/n]'
-
-
 def runner_label(gate):
     """What a skip line calls the runner file: at `passed`, not `CI`."""
     return 'the runner file' if gate == 'passed' else 'the CI workflow'
@@ -467,11 +460,10 @@ def write_workflow(plan, root, purlin_ref, gate=None):
     rel = workflow_module.workflow_path(host)
     plan.write(rel, workflow_module.render_workflow(
         host, env_tags, purlin_ref), own=True)
-    plan.note('  the matrix is %s: ubuntu-latest always, then the @env tags '
-              'in specs/.'
+    plan.note('  the matrix is %s, the systems the @env tags in specs/ name.'
               % ', '.join(workflow_module.runners_for(env_tags)))
     plan.note('  it runs on a push to a run/* branch and on a push of a '
-              'signed/* tag, and ends with the gate check.')
+              'signed/* tag.')
     return host
 
 
@@ -481,7 +473,7 @@ def next_step(root):
     That is the summary and `Left to do`, whose first line is the next step.
     A project with no spec yet has neither, and is sent to write one.
     """
-    first = '%s Next: run purlin:spec to write the first spec.' % ARROW
+    first = '%s Run: purlin:spec to write the first spec.' % ARROW
     try:
         report = status_module.sync_status(root)
     except Exception:                                          # noqa: BLE001
@@ -619,7 +611,7 @@ def main(argv=None):
     # machine cannot prove. A project with none runs nothing remotely.
     tags = workflow_module.env_tags_in_specs(root)
     wanted, reasons = workflow_module.wanted(
-        tags, None, evidence_module.host_os(), gate)
+        tags, evidence_module.host_os(), gate)
     print_remote_reasons(reasons, gate)
     if wanted and not git_remote(root):
         wanted = False
