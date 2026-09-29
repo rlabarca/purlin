@@ -1,12 +1,13 @@
 # Feature: summary
 
-> Description: The one sentence and the one list every surface ends on. The
->   sentence counts the rules and the steps they reached, up to the gate, each
->   step containing the next. `Left to do` names each kind of work left, with
->   its count and the command that clears it, in the order the work is done,
->   or says that nothing is left. The status table, a test run, an audit, the
->   sign walk, drift's view for QA, the evidence package and the dashboard read
->   these words from the payload and write none of their own.
+> Description: The one sentence and the one list every command ends on in the
+>   terminal. The sentence counts the rules and the steps they reached, up to
+>   the gate, each step containing the next. `Left to do` names each kind of
+>   work left, with its count and the command that clears it, in the order the
+>   work is done, or says that nothing is left. The status table, a test run,
+>   an audit, the sign walk, drift's view for QA and the evidence package read
+>   these words from the payload and write none of their own; the dashboard
+>   names its filter buttons by the lines of `Left to do` and shows no sentence.
 > Scope: scripts/mcp/purlin/summary.py
 > Stack: python/stdlib
 
