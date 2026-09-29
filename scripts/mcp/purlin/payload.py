@@ -102,13 +102,16 @@ reaches no tracked file, carries `incomplete: true` and `incomplete_reason`
 (`no > Scope: line` or `> Scope: names nothing that exists`), its rollup
 carries `incomplete: true`, and `summary.incomplete` counts such specs. An
 anchor is never incomplete. Every cell reads as usual, except that at the
-gate `signed` such a spec's rules read `unsigned` in the signed cell.
+gate `signed` such a spec's rules read `unsigned` in the signed cell, and at
+`strong` and `signed`, with mutation testing on and no strength measured,
+`weak` in the strong cell.
 
 `summary.steps` counts the rules that reached each step up to the gate, each
 step containing the next, and `summary.sentence` says it in one line.
 `left` is the work left, one entry per kind in the order it is done, each
 with its count, its text and the command that clears it, `to_correct`
-counting the comments above tests that name nothing a spec has; `finished` is true
+counting the comments above tests that name something no spec has or a rule
+that has proofs; `finished` is true
 when `left` is empty, and `last_line` is then the line said in its place.
 Each rule carries its own `left`, the one kind it is counted under, or null.
 `scripts/mcp/purlin/summary.py` is the one place those words are written.
@@ -186,7 +189,8 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     # here rather than once per rule.
     evidence = _read_evidence(project_root, features, warnings)
     # Why each feature spec names no files, where it names none. Its rules'
-    # cells are read as usual; only the signed cell reads it, at `signed`.
+    # cells are read as usual but for the signed cell at `signed`, and the
+    # strong cell where mutation testing is on and measured nothing.
     incomplete = {name: fingerprint_module.incomplete_reason(
         project_root, name, features) for name in sorted(features)}
     could_not_run = evidence_module.could_not_run(project_root)

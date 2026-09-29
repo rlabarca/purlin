@@ -24,7 +24,8 @@ cell above the gate is absent, not empty.
             proofs are optional at the gate `passed` and required above it.
             `waiting` while the passed cell is not met, because the audit
             reads a test that passes; `weak` means only that the audit found
-            fault or a measured strength fell under the minimum.
+            fault or, with mutation testing on, the strength fell under the
+            minimum or was not measured.
 
     signed  Met when a person signed what the rule is now: its text, its
             proof, its test, its feature's code, what the audit found and
@@ -305,17 +306,12 @@ def _passed_cell(inp, cfg):
     # a proof is tagged for and no section covers is waited for, not failed.
     words = [entry['word'] for entry in platforms.values()
              if entry.get('source') is not None]
-    if 'passed' in words and any(word != 'passed' for word in words):
-        # The platforms disagree, so neither `passed` nor `failed` is true of
-        # the rule. `partial` is the only honest word, and it is not met.
-        cell['word'] = 'partial'
-        cell['source'] = _passing_source(platforms)
-        cell['current'] = True
-        cell['counts'] = True
-        cell['missing_env'] = [name for name in sorted(platforms)
-                               if platforms[name].get('source') is None]
-        cell['reasons'] = _platform_reasons(platforms)
-        return cell
+    disagree = 'passed' in words and any(word != 'passed' for word in words)
+    if disagree and 'failed' in words:
+        # A test failed on one system and passed on another, so neither
+        # `passed` nor `failed` is true of the rule. `partial` is the only
+        # honest word, it is not met, and like a failure it comes first.
+        return _partial(cell, platforms)
 
     failing = _failing_where(proofs, current)
     if failing:
@@ -335,6 +331,10 @@ def _passed_cell(inp, cfg):
             cell['reasons'] = [NO_TEST_FOR % ', '.join(untested)]
             return cell
 
+    if disagree:
+        # One system passed and another ran the tests without passing them.
+        return _partial(cell, platforms)
+
     passes, missing_env, used = _section_passes(proofs, ran)
     if passes or missing_env:
         cell['source'] = _named_source(entry['source'] for entry in used)
@@ -353,6 +353,18 @@ def _passed_cell(inp, cfg):
     marked = inp.get('marked') or ()
     if any(proof.get('tests') or proof.get('id') in marked for proof in proofs):
         cell['word'] = 'not run'
+    return cell
+
+
+def _partial(cell, platforms):
+    """The passed cell where two systems that each have a current section disagree."""
+    cell['word'] = 'partial'
+    cell['source'] = _passing_source(platforms)
+    cell['current'] = True
+    cell['counts'] = True
+    cell['missing_env'] = [name for name in sorted(platforms)
+                           if platforms[name].get('source') is None]
+    cell['reasons'] = _platform_reasons(platforms)
     return cell
 
 

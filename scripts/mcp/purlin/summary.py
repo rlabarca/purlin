@@ -44,8 +44,8 @@ from purlin import states                                      # noqa: E402
 # Each is `(kind, one, many, command)`: the words after the count for one
 # and for any other count, and the command that clears it. `%s` in the
 # words of `to_test_remote` is the systems it waits for. `to_correct` counts
-# the comments above tests that name nothing a spec has, and `to_tag` the
-# version; every other kind counts rules.
+# the comments above tests that name something no spec has or a rule that
+# has proofs, and `to_tag` the version; every other kind counts rules.
 KINDS = (
     ('no_proof', 'rule to write a proof for', 'rules to write a proof for',
      'purlin:spec'),
@@ -224,8 +224,8 @@ def left(features, gate, here_os, tag=None, corrections=0):
     `features` is the payload's feature entries; each rule is counted once,
     under the feature that owns it, so only a rule labelled `own` is read.
     `tag` is the payload's `tag`, the `signed/*` tag on HEAD or None.
-    `corrections` is how many comments above tests name nothing a spec has,
-    at every gate. A kind at zero is left out. At the gate `signed`, with no
+    `corrections` is how many comments above tests name something no spec
+    has or a rule that has proofs, at every gate. A kind at zero is left out. At the gate `signed`, with no
     other kind left and no tag on HEAD, the one line is `the version to tag`.
     """
     counts = {}

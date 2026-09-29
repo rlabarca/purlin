@@ -35,7 +35,7 @@ ARROW = '→'
 
 
 # ---------------------------------------------------------------------------
-# RULE-1: the frontmatter and the command reference's row
+# RULE-1 and RULE-6: the frontmatter and the command reference's row
 # ---------------------------------------------------------------------------
 
 class TestFrontmatter:
@@ -115,7 +115,7 @@ def status_number_problems():
 
 
 # ---------------------------------------------------------------------------
-# RULE-3: the closing section names the next step
+# RULE-3, RULE-7 and RULE-8: the closing section names the next step
 # ---------------------------------------------------------------------------
 
 class TestNextStep:
@@ -258,7 +258,7 @@ def lines_long(count):
 
 
 # ---------------------------------------------------------------------------
-# RULE-5: naming a spec
+# RULE-5 and RULE-9: naming a spec
 # ---------------------------------------------------------------------------
 
 class TestWithAName:

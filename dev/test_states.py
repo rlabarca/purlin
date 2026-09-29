@@ -420,6 +420,19 @@ class TestThePassedCell:
         assert (cell['source'], cell['current'], cell['counts']) == (
             None, False, False), cell
 
+    # purlin: states PROOF-214
+    def test_a_proof_with_no_test_comes_before_a_partial_run(self, project):
+        project.spec(TWO_PROOFS_SPEC)
+        _commit_tests(project, 'PROOF-1')
+        project.evidence([_entry('PROOF-1', 'RULE-1')], os_name='macos',
+                         commit_it=False)
+        project.evidence([_entry('PROOF-1', 'RULE-1', status='not run')],
+                         os_name='linux', source='ci',
+                         at='2026-09-13T13:00:00Z', commit_it=False)
+        cell = project.cell('RULE-1', 'passed')
+        assert cell['word'] == 'no test', cell
+        assert cell['reasons'] == ['no test for PROOF-2'], cell
+
     # purlin: states PROOF-204
     def test_a_proof_waiting_on_another_system_reads_not_run(self, project):
         project.spec(TWO_PROOFS_SPEC.replace('a token\n',
@@ -2531,7 +2544,8 @@ class TestASpecThatNamesNoFiles:
 
     # purlin: states PROOF-138
     def test_below_signed_it_waits_for_nothing(self):
-        made = Project(spec=NO_SCOPE_SPEC, gate='strong')
+        made = Project(spec=NO_SCOPE_SPEC, gate='strong',
+                       extra_config={'mutation_engine': 'none'})
         try:
             made.evidence(PASSING)
             made.audit('RULE-1')
