@@ -15,7 +15,6 @@ import subprocess
 import sys
 import tempfile
 
-import pytest
 
 DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
@@ -25,7 +24,6 @@ for _path in (os.path.join(ROOT, 'scripts', 'mcp'),
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-import sign as sign_module  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import gate as purlin_gate  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
@@ -38,8 +36,7 @@ SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'sign.py')
 
 
 # The three gates by position: the one a project sits at by default, the one
-# that turns the breaks and the queue on, and the one that asks for a
-# signature.
+# that asks for an audit, and the one that asks for a signature.
 FIRST_GATE = purlin_gate.GATES[0]
 REVIEW_GATE = purlin_gate.GATES[1]
 SIGNING_GATE = purlin_gate.GATES[-1]
@@ -50,8 +47,7 @@ SPEC = (
     '> Description: Signing in with an email and a password.\n'
     '> Scope: src/login.py\n\n'
     '## Rules\n\n'
-    '- RULE-1: Valid credentials return 200 with a session token '
-    '[level: passed]\n'
+    '- RULE-1: Valid credentials return 200 with a session token\n'
     '- RULE-2: Invalid credentials return 401 and the body "denied"\n\n'
     '## Proof\n\n'
     '- PROOF-1 (RULE-1): POST /login with the password "secret"; verify 200 '
@@ -80,6 +76,17 @@ TEST_FILE = (
 
 TEST_NAMES = {'PROOF-1': 'test_valid_credentials_return_200',
               'PROOF-2': 'test_a_bad_password_is_denied'}
+
+
+# The name a section records beside the machine, logged and never compared.
+HOSTNAME = 'runner-17'
+
+
+def machine_of(source, os_name):
+    """The machine a section records: a runner by its kind, a person's host by name."""
+    if source == 'ci':
+        return 'remote runner, %s' % purlin_evidence.os_word(os_name)
+    return 'jane-laptop'
 
 
 def sha256(text):
@@ -184,7 +191,8 @@ class Project(object):
         data = self._read_evidence(rel, source)
         data['platforms'][os_name] = {
             'commit': self.head(), 'dirty': False, 'at': at,
-            'runner': runner,
+            'runner': runner, 'machine': machine_of(source, os_name),
+            'hostname': HOSTNAME,
             'fingerprint': purlin_fingerprint.fingerprint(self.root, 'login'),
             'rules': {}, 'proofs': proofs}
         if audited:
@@ -205,7 +213,7 @@ class Project(object):
             with open(path, encoding='utf-8') as handle:
                 return json.load(handle)
         except (IOError, OSError, ValueError):
-            return {'schema': 'purlin-evidence/1', 'feature': feature,
+            return {'schema': purlin_evidence.SCHEMA, 'feature': feature,
                     'source': source, 'spec': 'specs/auth/%s.md' % feature,
                     'platforms': {}}
 
@@ -260,105 +268,31 @@ def signing_key(root, email='jane@acme.com'):
     key = os.path.join(root, '.git', 'signing-key')
     subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C', email,
                     '-f', key], check=True)
-    with open(key + '.pub', encoding='utf-8') as handle:
-        public = handle.read().strip()
-    allowed = os.path.join(root, '.git', 'allowed-signers')
-    write(allowed, '%s %s\n' % (email, public))
     for name, value in (('user.email', email), ('user.name', 'Jane'),
                         ('gpg.format', 'ssh'),
-                        ('user.signingkey', key + '.pub'),
-                        ('commit.gpgsign', 'true'),
-                        ('gpg.ssh.allowedSignersFile', allowed)):
+                        ('user.signingkey', key + '.pub')):
         git(root, 'config', name, value)
     return key + '.pub'
 
 
-# What the git host's build identity looks like on GitHub.
-CI_COMMITTER = 'github-actions[bot]'
-CI_EMAIL = '41898282+github-actions[bot]@users.noreply.github.com'
+def commit_all(root, message='purlin: evidence at abc1234'):
+    """Stage and commit everything, as the run that wrote the evidence does."""
+    git(root, 'add', '-A')
+    git(root, 'commit', '-q', '-m', message)
 
 
-def ci_signing_key(root):
-    """A throwaway ssh key this project trusts, for the CI commit to sign with.
+def signing_project(signer='jane@acme.com'):
+    """A project at the signing gate whose two rules wait to be signed.
 
-    The key and the allowed-signers file live inside the project's own `.git`
-    and nowhere else. `None` when the machine has no `ssh-keygen`, and then
-    the commit is made unsigned.
+    Both rules pass on a runner and carry an audit reading `strong`, so the
+    only thing left is a person. The signer's key is set up last.
     """
-    key = os.path.join(root, '.git', 'ci-signing-key')
-    if not os.path.exists(key + '.pub'):
-        made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
-                               '-C', CI_EMAIL, '-f', key],
-                              capture_output=True, text=True)
-        if made.returncode != 0:
-            return None
-    with open(key + '.pub', encoding='utf-8') as handle:
-        public = handle.read().strip()
-    allowed = os.path.join(root, '.git', 'ci-allowed-signers')
-    write(allowed, '%s %s\n' % (CI_EMAIL, ' '.join(public.split()[:2])))
-    git(root, 'config', 'gpg.ssh.allowedSignersFile', allowed)
-    return key + '.pub'
-
-
-def commit_as_ci(root, message='purlin: evidence at abc1234'):
-    """Commit everything staged under the build identity, as CI does.
-
-    CI writes through the git host's API, which signs the commit: the reader
-    reads an unsigned commit claiming that identity as a person's, so a
-    fixture that leaves the signature out is not what CI writes and a file
-    it wrote would be read as a developer's on any machine that can check
-    signatures. The signature here is a throwaway ssh key the project itself
-    trusts. Call it before `signing_key`, which points the allowed-signers
-    file back at the person.
-    """
-    environment = dict(os.environ,
-                       GIT_COMMITTER_NAME=CI_COMMITTER,
-                       GIT_COMMITTER_EMAIL=CI_EMAIL)
-    key = ci_signing_key(root)
-    subprocess.run(['git', 'add', '-A'], cwd=root, capture_output=True,
-                   text=True)
-    command = ['git']
-    if key:
-        command += ['-c', 'gpg.format=ssh', '-c', 'user.signingkey=' + key]
-    command += ['commit', '-q', '-m', message]
-    if key:
-        command.append('-S')
-    subprocess.run(command, cwd=root, env=environment, capture_output=True,
-                   text=True)
-
-
-def sign_one(project, rule='RULE-1', email='jane@acme.com', evidence=None,
-             gate='passed', level=None, note=None):
-    """Write one signature for a rule and return its project-relative path."""
-    entry = project.rule(rule)
-    return sign_module.write_signature(
-        project.root, 'login', rule, email, evidence, gate,
-        entry['level'] if level is None else level, entry=entry, note=note)
-
-
-# The spec with both rules at the level `signed`, the gate's own.
-EVERY_RULE_SIGNED = SPEC.replace(' [level: passed]', '')
-
-
-def signing_project(every_rule=True, signer='jane@acme.com', audits=True):
-    """A project at the signing gate whose rules are waiting to be signed.
-
-    The evidence is CI's, and the person's signing key is configured last so
-    the allowed-signers file names the person rather than the build
-    identity. With `every_rule` both rules take the gate's level, `signed`;
-    without it `RULE-1` is marked `[level: passed]` and asks for none. Every
-    rule whose level is `signed` carries an audit entry, so its tests and its
-    audit are met and the only thing outstanding is a person.
-    """
-    made = Project(gate=SIGNING_GATE,
-                   spec=EVERY_RULE_SIGNED if every_rule else SPEC)
+    made = Project(gate=SIGNING_GATE)
     made.proofs()
     made.evidence(runner='ci', commit_it=False, source='ci')
-    if audits:
-        made.audit('RULE-2')
-        if every_rule:
-            made.audit('RULE-1')
-    commit_as_ci(made.root)
+    made.audit('RULE-1')
+    made.audit('RULE-2')
+    commit_all(made.root)
     signing_key(made.root, signer)
     return made
 
@@ -381,58 +315,6 @@ def name_the_model(made, rule):
     write(path, json.dumps(data, indent=2, sort_keys=True))
 
 
-def signed_project(spec=SPEC, version='2.1.0', gate=SIGNING_GATE):
-    """A project at `signed` whose rules pass, one audited strong, both committed.
-
-    `RULE-1` is marked `[level: passed]`, so `RULE-2` is the one rule that
-    asks for a signature. The signer's key is set up last. With `gate` the
-    same project is made at another gate.
-    """
-    made = Project(spec=spec, gate=gate, config={'min_strength': 50})
-    made.proofs()
-    made.tests_ran_at = made.head()
-    made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
-    made.audit('RULE-2')
-    name_the_model(made, 'RULE-2')
-    write(os.path.join(made.root, 'VERSION'), version + '\n')
-    commit_as_ci(made.root)
-    signing_key(made.root)
-    return made
-
-
-def sign_the_queue(made):
-    payload = made.payload()
-    targets = sign_module.queued(payload)
-    if targets:
-        sign_module.sign_and_commit(made.root, targets, 'jane@acme.com',
-                                    payload=payload)
-    return targets
-
-
-@pytest.fixture
-def signed():
-    made = signed_project()
-    yield made
-    made.close()
-
-
-@pytest.fixture
-def tagged():
-    """A signed project whose tag `purlin:sign` has written."""
-    made = signed_project()
-    sign_the_queue(made)
-    out = _Out()
-    assert sign_module.tag_if_met(made.root, out) == 'signed/2.1.0', out.text()
-    made.tag_output = out.text()
-    yield made
-    made.close()
-
-
-def _read(root, rel):
-    with open(os.path.join(root, *rel.split('/')), encoding='utf-8') as handle:
-        return handle.read()
-
-
 class _Out(object):
     """Somewhere for the walk and the tag to print, read back as one string."""
 
@@ -447,23 +329,3 @@ class _Out(object):
 
     def text(self):
         return ''.join(self.lines)
-
-
-def _signed_project(version='2.1.0', trust='local', key=True):
-    """A project at `signed` whose two rules both have what they need.
-
-    `key` writes the signer's own key over the allowed-signers file CI's
-    commit left, which is what lets a signature this project writes count.
-    A case that signs nothing does not need it, and asking twice would have
-    `ssh-keygen` stop for an overwrite nobody is there to answer.
-    """
-    made = Project(gate=SIGNING_GATE,
-                   config={'min_strength': 50, 'trust': trust})
-    made.proofs()
-    made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
-    made.audit('RULE-2')
-    write(os.path.join(made.root, 'VERSION'), version + '\n')
-    commit_as_ci(made.root)
-    if key:
-        signing_key(made.root)
-    return made

@@ -39,14 +39,6 @@ def _git(root, *args, **kwargs):
                           text=True, env=kwargs.get('env'))
 
 
-# The committer a CI evidence commit carries in these fixtures. An evidence
-# file's source is the folder it sits in, and nothing the server reads asks
-# who committed it; that is the tag run's question, proved in
-# `dev/test_provenance.py`.
-CI_COMMITTER = {'GIT_COMMITTER_NAME': 'github-actions[bot]',
-                'GIT_COMMITTER_EMAIL': 'noreply@github.com'}
-
-
 def _write(path, text):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', encoding='utf-8') as handle:
@@ -58,8 +50,7 @@ SPEC = (
     '> Description: Signing in with an email and a password.\n'
     '> Scope: src/login.py\n\n'
     '## Rules\n\n'
-    '- RULE-1: Valid credentials return 200 with a session token '
-    '[level: signed]\n'
+    '- RULE-1: Valid credentials return 200 with a session token\n'
     '- RULE-2: Invalid credentials return 401 and the body "denied"\n\n'
     '## Proof\n\n'
     '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200 and a '
@@ -130,8 +121,8 @@ class Project(object):
         section carries the fingerprint taken now, so it is current until the
         spec, the scoped code or the tests change. `source` is `ci` or
         `local` and defaults to `ci` when `ci=True`, so a test that wanted
-        the git host's own evidence gets the git host's own folder and
-        committer. `claimed_source` writes a different word into the file,
+        a runner's evidence gets the runner's own folder and machine.
+        `claimed_source` writes a different word into the file,
         which is how a test makes the two disagree. With `audited` the file
         carries an `audit` whose `mutation` holds `strength`.
         """
@@ -143,12 +134,13 @@ class Project(object):
             with open(path, encoding='utf-8') as handle:
                 data = json.load(handle)
         except (IOError, OSError, ValueError):
-            data = {'schema': 'purlin-evidence/1', 'feature': feature,
+            data = {'schema': purlin_evidence.SCHEMA, 'feature': feature,
                     'spec': 'specs/auth/%s.md' % feature, 'platforms': {}}
         data['source'] = claimed_source or source
         data['platforms'][os_name] = {
             'commit': self.head(), 'dirty': False, 'at': at,
-            'runner': runner,
+            'runner': runner, 'machine': _machine(source, os_name),
+            'hostname': 'host-1',
             'fingerprint': fingerprint or purlin_fingerprint.fingerprint(
                 self.root, feature),
             'rules': {},
@@ -164,43 +156,42 @@ class Project(object):
                                  'commit': self.head()}
         _write(path, json.dumps(data, indent=2, sort_keys=True))
         if commit_it:
-            env = None
-            if ci:
-                env = dict(os.environ)
-                env.update(CI_COMMITTER)
             _git(self.root, 'add', '-A')
-            _git(self.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234',
-                 env=env)
+            _git(self.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
         return rel
 
     def signature(self, rule_id, feature='login', category='auth',
-                  signer='jane@acme.com', commit_it=True, **overrides):
-        """Write one signature file for a rule's current hashes."""
-        rule = self.rule(rule_id, feature)
+                  listed_under=None, signer='jane@acme.com', commit_it=True,
+                  **fields):
+        """Write one signature file over what the rule is now, as `purlin:sign` does.
+
+        It is made for the feature the rule is listed under, over that
+        feature's code and the machines its results came from, and names the
+        hash of all of them, so it binds the rule until any of them moves.
+        `fields` adds or overrides what the file records.
+        """
+        rule = _listed(self.payload(), rule_id, feature, listed_under)
         data = {
-            'schema': 'purlin-signature/1', 'feature': feature,
-            'rule': rule_id, 'level': rule['level'], 'signer': signer,
-            'note': None, 'timestamp': '2026-09-13T12:00:00Z',
+            'schema': 'purlin-signature/2', 'feature': feature,
+            'rule': rule_id, 'applies_to': rule['applies_to'],
+            'signed_hash': purlin_signatures.signed_hash(rule),
             'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],
-            'test_hash': rule['test_hash'],
-            'test_hash_kind': rule['test_hash_kind'],
-            'audit_hash': rule['audit_hash'],
+            'test_hash': rule['test_hash'], 'code_hash': rule['code_hash'],
+            'audit_hash': rule['audit_hash'], 'machines': rule['machines'],
+            'test_hash_kind': rule['test_hash_kind'], 'signer': signer,
+            'key_fingerprint': None, 'timestamp': '2026-09-13T12:00:00Z',
         }
-        data.update(overrides)
-        data['triple'] = purlin_signatures.triple_hash(
-            data['rule_hash'], data['proof_hash'], data['test_hash'])[:16]
-        slug = purlin_signatures.signer_slug(signer)
-        hash8 = purlin_signatures.triple_hash(
-            rule['rule_hash'], rule['proof_hash'], rule['test_hash'])[:8]
-        directory = os.path.join(self.root, 'specs', category,
-                                 feature + '.signatures')
-        name = '%s.%s.%s.json' % (rule_id, hash8, slug)
-        _write(os.path.join(directory, name), json.dumps(data))
+        data.update(fields)
+        name = '%s.%s.%s.json' % (rule_id, data['signed_hash'][:8],
+                                  purlin_signatures.signer_slug(signer))
+        path = os.path.join(self.root, 'specs', category,
+                            feature + '.signatures', name)
+        _write(path, json.dumps(data))
         if commit_it:
             _git(self.root, 'add', '-A')
             _git(self.root, 'commit', '-q', '-m', 'sign(%s): %s'
                  % (feature, rule_id))
-        return os.path.join(directory, name)
+        return path
 
     def audit(self, rule_id, feature='login', settled=True, observations=(),
               source='local', word=None, **extra):
@@ -217,7 +208,7 @@ class Project(object):
             with open(path, encoding='utf-8') as handle:
                 data = json.load(handle)
         except (IOError, OSError, ValueError):
-            data = {'schema': 'purlin-evidence/1', 'feature': feature,
+            data = {'schema': purlin_evidence.SCHEMA, 'feature': feature,
                     'source': source, 'spec': 'specs/auth/%s.md' % feature,
                     'platforms': {}}
         audit = data.setdefault('audit', {'mutation': None, 'rules': {}})
@@ -234,24 +225,19 @@ class Project(object):
         return rel
 
     def sign_commits(self, email='jane@acme.com'):
-        """Configure a throwaway ssh signing key, so a commit verifies here.
+        """Configure a throwaway ssh signing key, so every commit here is signed.
 
         `dev/test_signatures.py` proves the reader that judges a signature;
-        this only has to make one signed commit exist so the payload can read
+        this only has to make signed commits exist so the payload can read
         a signature that counts.
         """
         key = os.path.join(self.root, '.git', 'signing-key')
         subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C',
                         email, '-f', key], check=True)
-        with open(key + '.pub', encoding='utf-8') as handle:
-            public = handle.read().strip()
-        allowed = os.path.join(self.root, '.git', 'allowed-signers')
-        _write(allowed, '%s %s\n' % (email, public))
         for name, value in (('user.email', email), ('user.name', 'Jane'),
                             ('gpg.format', 'ssh'),
                             ('user.signingkey', key + '.pub'),
-                            ('commit.gpgsign', 'true'),
-                            ('gpg.ssh.allowedSignersFile', allowed)):
+                            ('commit.gpgsign', 'true')):
             _git(self.root, 'config', name, value)
 
     def payload(self):
@@ -273,57 +259,26 @@ class Project(object):
         _write(path, json.dumps(settings))
 
 
-# One spec with a rule at each level under the gate `signed`, and a rule at
-# `passed` and one at `strong` whose tests fail: a rule is asked only what its
-# level asks.
-LEVELS_SPEC = (
-    '# Feature: login\n\n'
-    '> Description: One rule at each level.\n'
-    '> Scope: src/login.py\n\n'
-    '## Rules\n\n'
-    '- RULE-1: Valid credentials return 200 [level: passed]\n'
-    '- RULE-2: Invalid credentials return 401 [level: strong]\n'
-    '- RULE-3: Five failures lock the account\n'
-    '- RULE-4: The page loads in a second [level: passed]\n'
-    '- RULE-5: A locked account returns 423 [level: strong]\n\n'
-    '## Proof\n\n'
-    '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200\n'
-    '- PROOF-2 (RULE-2): POST /login with a bad password; verify 401\n'
-    '- PROOF-3 (RULE-3): POST /login 5 times with a bad password; verify the '
-    'sixth returns 423\n'
-    '- PROOF-4 (RULE-4): GET /; verify the reply arrives within 1000 ms\n'
-    '- PROOF-5 (RULE-5): POST /login to a locked account; verify 423\n'
-)
-
-
-ONE_PASSED_SPEC = (
-    '# Feature: notes\n\n'
-    '> Description: A spec whose one rule asks for its tests alone.\n'
-    '> Scope: src/login.py\n\n'
-    '## Rules\n\n'
-    '- RULE-1: A note keeps its text [level: passed]\n\n'
-    '## Proof\n\n'
-    '- PROOF-1 (RULE-1): Save the note "hi"; verify it reads "hi"\n'
-)
-
-
-def _levels_project(gate='signed'):
-    """A `signed` project with a rule at each level, three audited strong."""
-    made = Project(spec=LEVELS_SPEC, gate=gate)
-    made.evidence([_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2'),
-                   _entry('PROOF-3', 'RULE-3'),
-                   _entry('PROOF-4', 'RULE-4', status='fail'),
-                   _entry('PROOF-5', 'RULE-5', status='fail')])
-    for rule_id in ('RULE-1', 'RULE-2', 'RULE-3'):
-        made.audit(rule_id)
-    return made
-
-
 @pytest.fixture
 def project():
     made = Project()
     yield made
     made.close()
+
+
+def _listed(data, rule_id, feature='login', listed_under=None):
+    """A rule's entry in a payload, as the feature it is listed under lists it."""
+    under = next(f for f in data['features']
+                 if f['name'] == (listed_under or feature))
+    return next(r for r in under['rules']
+                if r['id'] == rule_id and r['feature'] == feature)
+
+
+def _machine(source, os_name):
+    """The `machine` a section names: a runner by its kind, a person's by name."""
+    if source == 'ci':
+        return 'remote runner, ' + purlin_evidence.os_word(os_name)
+    return 'dev-machine'
 
 
 def _test_of(entry, feature):

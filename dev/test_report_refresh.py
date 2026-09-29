@@ -101,7 +101,7 @@ def test_an_audit_writes_the_data_file(tmp_path, claude):  # noqa: F811
 
 # purlin: purlin_report PROOF-59
 def test_a_signature_writes_the_data_file(capsys):
-    made = signing_project(every_rule=False)
+    made = signing_project()
     try:
         path = os.path.join(made.root, DATA)
         if os.path.exists(path):

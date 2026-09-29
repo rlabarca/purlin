@@ -42,10 +42,9 @@ def _project(tmp_path, tests=None, gate='passed'):
 
 
 def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1,
-          level=None, scope='src/', requires=None):
+          scope='src/', requires=None):
     """A two-section spec. Each proof is `(id, rule, tag_suffix)`.
 
-    `level` marks every rule with that `[level: ...]` tag.
     `scope` is the `> Scope:` line's value, None for no line at all, and
     `requires` the `> Requires:` line's.
     """
@@ -55,10 +54,8 @@ def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1,
     if scope is not None:
         lines.append('> Scope: %s' % scope)
     lines.extend(['', '## Rules', ''])
-    tag = ' [level: %s]' % level if level else ''
     for index in range(1, rules + 1):
-        lines.append('- RULE-%d: the software does thing %d%s'
-                     % (index, index, tag))
+        lines.append('- RULE-%d: the software does thing %d' % (index, index))
     lines.extend(['', '## Proof', ''])
     for proof_id, rule_id, suffix in proofs:
         lines.append('- %s (%s): observe thing%s'

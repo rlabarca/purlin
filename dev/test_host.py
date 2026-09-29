@@ -92,7 +92,7 @@ def section(result='pass', at=SECTION_AT, commit=SHA_SEEN):
 
 
 def evidence_file(feature='greeting', platforms=None, source='ci'):
-    return {'schema': 'purlin-evidence/1', 'feature': feature,
+    return {'schema': 'purlin-evidence/2', 'feature': feature,
             'source': source, 'spec': 'specs/core/%s.md' % feature,
             'platforms': platforms if platforms is not None
             else {'linux': section()}}

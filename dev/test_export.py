@@ -46,9 +46,10 @@ import sign as sign_module                                    # noqa: E402
 from purlin import PURLIN_VERSION                             # noqa: E402
 from purlin import evidence as evidence_module                # noqa: E402
 from purlin import signatures as signatures_module            # noqa: E402
-from sign_project import (CRITERIA, EVERY_RULE_SIGNED, MODEL,  # noqa: E402
-                          SIGNING_GATE, TEST_FILE, Project, commit_as_ci,
-                          git, name_the_model, signing_key, status, write)
+from sign_project import (CRITERIA, MODEL, SIGNING_GATE,  # noqa: E402
+                          SPEC, TEST_FILE, Project, commit_all, git,
+                          machine_of, name_the_model, signing_key, status,
+                          write)
 
 PACKAGE_PY = os.path.join(ROOT, 'scripts', 'export', 'package.py')
 
@@ -59,12 +60,11 @@ TOP_LEVEL = ['schema', 'state', 'rules', 'steps', 'left', 'purlin_version',
 UTC = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 
 # A rule with a requirement's number in its words and no proof at all.
-SPEC_WITH_A_THIRD_RULE = EVERY_RULE_SIGNED.replace(
+SPEC_WITH_A_THIRD_RULE = SPEC.replace(
     '\n\n## Proof',
     '\n- RULE-3: A locked account returns 423 (URS-042)\n\n## Proof')
 
 # The host name a runner lends, kept beside the machine and never compared.
-HOSTNAME = 'runner-17'
 
 NO_VERSION = ('No version: nothing in this project states one. '
               'Name it with --release <version>.')
@@ -109,30 +109,7 @@ def line(kind, count, text, command):
     return {'kind': kind, 'count': count, 'text': text, 'command': command}
 
 
-def machine_of(source, os_name):
-    """The machine a section records: a runner by its kind, a person's host by name."""
-    if source == 'ci':
-        return 'remote runner, %s' % evidence_module.os_word(os_name)
-    return 'jane-laptop'
-
-
-def stamp_evidence(made):
-    """Give every evidence file the reader's schema and each section its machine."""
-    for source in evidence_module.SOURCES:
-        rel = '.purlin/evidence/%s/login.json' % source
-        path = os.path.join(made.root, *rel.split('/'))
-        if not os.path.exists(path):
-            continue
-        with open(path, encoding='utf-8') as handle:
-            data = json.load(handle)
-        data['schema'] = evidence_module.SCHEMA
-        for os_name, section in (data.get('platforms') or {}).items():
-            section['machine'] = machine_of(source, os_name)
-            section['hostname'] = HOSTNAME
-        write(path, json.dumps(data, indent=2, sort_keys=True))
-
-
-def made_project(gate=SIGNING_GATE, spec=EVERY_RULE_SIGNED, version='2.1.0',
+def made_project(gate=SIGNING_GATE, spec=SPEC, version='2.1.0',
                  audited=True):
     """A project whose two rules pass on a runner, both committed.
 
@@ -149,10 +126,9 @@ def made_project(gate=SIGNING_GATE, spec=EVERY_RULE_SIGNED, version='2.1.0',
         made.audit('RULE-1')
         made.audit('RULE-2')
         name_the_model(made, 'RULE-2')
-    stamp_evidence(made)
     if version:
         write(os.path.join(made.root, 'VERSION'), version + '\n')
-    commit_as_ci(made.root)
+    commit_all(made.root)
     made.public_key = signing_key(made.root)
     return made
 
@@ -300,7 +276,7 @@ class TestTheState:
 
     # purlin: package PROOF-4
     def test_a_project_with_no_evidence_is_not_finished(self):
-        made = Project(spec=EVERY_RULE_SIGNED)
+        made = Project(spec=SPEC)
         try:
             write(os.path.join(made.root, 'VERSION'), '1.0.0\n')
             git(made.root, 'add', '-A')
@@ -508,7 +484,6 @@ class TestTheContent:
                     'test': 'tests/test_login.py::'
                             'test_a_locked_account_returns_423'})
             write(path, json.dumps(data, indent=2, sort_keys=True))
-            stamp_evidence(made)
             git(made.root, 'add', '-A')
             git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
             export(made.root)
@@ -559,13 +534,10 @@ class TestWhatGitHolds:
 # ---------------------------------------------------------------------------
 
 def _clone_at_the_tag(made):
-    """A second clone of the project, checked out at the tag, able to verify."""
+    """A second clone of the project, checked out at the tag."""
     parent = tempfile.mkdtemp()
     clone = os.path.join(parent, 'second')
     git(parent, 'clone', '-q', made.root, clone)
-    allowed = os.path.join(made.root, '.git', 'allowed-signers')
-    git(clone, 'config', 'gpg.format', 'ssh')
-    git(clone, 'config', 'gpg.ssh.allowedSignersFile', allowed)
     git(clone, 'checkout', '-q', 'signed/2.1.0')
     return parent, clone
 
