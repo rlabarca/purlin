@@ -65,7 +65,7 @@
     {
       "category": "auth",
       "current": true,
-      "description": null,
+      "description": "Signing in with an email address and a password, and locking an account after repeated failures.",
       "evidence": {
         "ci": {
           "committed": true,
@@ -93,13 +93,13 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "asks_signed": 3,
-        "asks_strong": 3,
+        "asks_signed": 4,
+        "asks_strong": 4,
         "failing": 0,
         "hand_checks": 0,
         "incomplete": false,
         "manual": 0,
-        "met": 2,
+        "met": 1,
         "not_audited": 0,
         "partial": 1,
         "passed": 1,
@@ -109,7 +109,7 @@
         "queue": 1,
         "rules": 4,
         "signed": 1,
-        "stale": 1,
+        "stale": 0,
         "strong": 1,
         "test_strength": 86,
         "untested": 0
@@ -153,13 +153,13 @@
             },
             "signed": {
               "at": "2026-09-12T10:02:11Z",
-              "machine": "jane-laptop",
-              "os": "macos",
+              "key_fingerprint": "SHA256:q2Vx7Tn0cL4pWm8bRz1Kd9HfYs3JgAe6uNi5oXy4Q",
               "path": "specs/auth/login.signatures/RULE-1.1a2b3c4d.jane-doe.json",
               "reasons": [
                 "by jane@acme.com"
               ],
               "signer": "jane@acme.com",
+              "signer_name": "Jane Doe",
               "word": "signed"
             },
             "strong": {
@@ -187,7 +187,10 @@
           "left": null,
           "level": "signed",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "remote runner, Linux/Unix",
+            "windows": "remote runner, Windows"
+          },
           "meets_gate": true,
           "proof_hash": "prule1log",
           "proofs": [
@@ -249,15 +252,13 @@
               "word": "passed"
             },
             "signed": {
-              "at": "2026-09-08T16:40:53Z",
-              "machine": "sam-desktop",
-              "os": "linux",
-              "path": "specs/auth/login.signatures/RULE-2.5e6f7a8b.sam-acme.json",
-              "reasons": [
-                "hashes changed after the signature"
-              ],
-              "signer": "sam@acme.com",
-              "word": "stale"
+              "at": null,
+              "key_fingerprint": null,
+              "path": null,
+              "reasons": [],
+              "signer": null,
+              "signer_name": null,
+              "word": "unsigned"
             },
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
@@ -276,7 +277,7 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "stale": true
+            "stale": false
           },
           "hand_checked": false,
           "id": "RULE-2",
@@ -284,7 +285,10 @@
           "left": "to_sign",
           "level": "signed",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "remote runner, Linux/Unix",
+            "windows": "remote runner, Windows"
+          },
           "meets_gate": false,
           "proof_hash": "prule2log",
           "proofs": [
@@ -346,6 +350,28 @@
               "reasons": [],
               "source": "ci",
               "word": "passed"
+            },
+            "signed": {
+              "at": null,
+              "key_fingerprint": null,
+              "path": null,
+              "reasons": [
+                "waiting for the audit"
+              ],
+              "signer": null,
+              "signer_name": null,
+              "word": "waiting"
+            },
+            "strong": {
+              "evidence": ".purlin/evidence/ci/login.json",
+              "findings": [
+                "PROOF-3 reads the status code alone; no test reads when the lock expires."
+              ],
+              "reasons": [
+                "PROOF-3 reads the status code alone; no test reads when the lock expires."
+              ],
+              "strength": 86,
+              "word": "weak"
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
@@ -362,11 +388,14 @@
           "hand_checked": false,
           "id": "RULE-3",
           "label": "own",
-          "left": null,
-          "level": "passed",
-          "level_marked": "passed",
-          "machines": {},
-          "meets_gate": true,
+          "left": "to_strengthen",
+          "level": "signed",
+          "level_marked": null,
+          "machines": {
+            "linux": "remote runner, Linux/Unix",
+            "windows": "remote runner, Windows"
+          },
+          "meets_gate": false,
           "proof_hash": "prule3log",
           "proofs": [
             {
@@ -422,13 +451,13 @@
             },
             "signed": {
               "at": null,
-              "machine": null,
-              "os": null,
+              "key_fingerprint": null,
               "path": null,
               "reasons": [
                 "waiting for the audit"
               ],
               "signer": null,
+              "signer_name": null,
               "word": "waiting"
             },
             "strong": {
@@ -458,7 +487,10 @@
           "left": "to_fix",
           "level": "signed",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "remote runner, Linux/Unix",
+            "windows": "remote runner, Windows"
+          },
           "meets_gate": false,
           "proof_hash": "prule4log",
           "proofs": [
@@ -513,7 +545,7 @@
     {
       "category": "billing",
       "current": true,
-      "description": null,
+      "description": "Invoices and credit notes: their lines, their totals and what they print.",
       "evidence": {
         "ci": {
           "committed": true,
@@ -541,13 +573,13 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "asks_signed": 2,
-        "asks_strong": 2,
+        "asks_signed": 3,
+        "asks_strong": 3,
         "failing": 0,
         "hand_checks": 1,
         "incomplete": false,
         "manual": 1,
-        "met": 1,
+        "met": 0,
         "not_audited": 0,
         "partial": 0,
         "passed": 3,
@@ -598,6 +630,26 @@
               "reasons": [],
               "source": "ci",
               "word": "passed"
+            },
+            "signed": {
+              "at": null,
+              "key_fingerprint": null,
+              "path": null,
+              "reasons": [
+                "waiting for the audit"
+              ],
+              "signer": null,
+              "signer_name": null,
+              "word": "waiting"
+            },
+            "strong": {
+              "evidence": ".purlin/evidence/ci/invoice.json",
+              "findings": [],
+              "reasons": [
+                "strength 64% under 80%"
+              ],
+              "strength": 64,
+              "word": "weak"
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
@@ -614,11 +666,14 @@
           "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
-          "left": null,
-          "level": "passed",
-          "level_marked": "passed",
-          "machines": {},
-          "meets_gate": true,
+          "left": "to_strengthen",
+          "level": "signed",
+          "level_marked": null,
+          "machines": {
+            "linux": "remote runner, Linux/Unix",
+            "macos": "remote runner, macOS"
+          },
+          "meets_gate": false,
           "proof_hash": "prule1inv",
           "proofs": [
             {
@@ -682,13 +737,13 @@
             },
             "signed": {
               "at": null,
-              "machine": null,
-              "os": null,
+              "key_fingerprint": null,
               "path": null,
               "reasons": [
                 "waiting for the audit"
               ],
               "signer": null,
+              "signer_name": null,
               "word": "waiting"
             },
             "strong": {
@@ -721,7 +776,10 @@
           "left": "to_strengthen",
           "level": "signed",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "remote runner, Linux/Unix",
+            "macos": "remote runner, macOS"
+          },
           "meets_gate": false,
           "proof_hash": "prule2inv",
           "proofs": [
@@ -764,11 +822,11 @@
             },
             "signed": {
               "at": null,
-              "machine": null,
-              "os": null,
+              "key_fingerprint": null,
               "path": null,
               "reasons": [],
               "signer": null,
+              "signer_name": null,
               "word": "unsigned"
             },
             "strong": {
@@ -911,13 +969,13 @@
             },
             "signed": {
               "at": null,
-              "machine": null,
-              "os": null,
+              "key_fingerprint": null,
               "path": null,
               "reasons": [
                 "waiting for the audit"
               ],
               "signer": null,
+              "signer_name": null,
               "word": "waiting"
             },
             "strong": {
@@ -949,7 +1007,9 @@
           "left": "to_strengthen",
           "level": "signed",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "remote runner, Linux/Unix"
+          },
           "meets_gate": false,
           "proof_hash": "prule1che",
           "proofs": [
@@ -1050,13 +1110,13 @@
             },
             "signed": {
               "at": null,
-              "machine": null,
-              "os": null,
+              "key_fingerprint": null,
               "path": null,
               "reasons": [
                 "waiting for the audit"
               ],
               "signer": null,
+              "signer_name": null,
               "word": "waiting"
             },
             "strong": {
@@ -1135,13 +1195,13 @@
             },
             "signed": {
               "at": null,
-              "machine": null,
-              "os": null,
+              "key_fingerprint": null,
               "path": null,
               "reasons": [
                 "waiting for the audit"
               ],
               "signer": null,
+              "signer_name": null,
               "word": "waiting"
             },
             "strong": {
@@ -1171,7 +1231,9 @@
           "left": "to_audit",
           "level": "signed",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "remote runner, Linux/Unix"
+          },
           "meets_gate": false,
           "proof_hash": "prule2exp",
           "proofs": [
@@ -1213,8 +1275,7 @@
     "ci": "github",
     "gate": "signed",
     "min_strength": 80,
-    "mutation_engine": "auto",
-    "trust": "local"
+    "mutation_engine": "auto"
   },
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
@@ -1246,9 +1307,9 @@
     },
     {
       "command": "purlin:build",
-      "count": 2,
+      "count": 4,
       "kind": "to_strengthen",
-      "text": "2 rules to strengthen"
+      "text": "4 rules to strengthen"
     },
     {
       "command": "purlin:sign",
@@ -1293,25 +1354,23 @@
       "level": "signed",
       "need": "signature",
       "owner": "login",
-      "reasons": [
-        "hashes changed after the signature"
-      ],
+      "reasons": [],
       "rule": "RULE-2",
       "text": "Five failed attempts lock the account for fifteen minutes.",
-      "word": "stale"
+      "word": "unsigned"
     }
   ],
   "remote_url": "https://github.com/acme/ledger.git",
   "schema_version": 10,
   "summary": {
-    "asks_signed": 8,
-    "asks_strong": 8,
+    "asks_signed": 10,
+    "asks_strong": 10,
     "failing": 0,
     "features": 4,
     "hand_checks": 1,
     "incomplete": 0,
     "manual": 1,
-    "met": 3,
+    "met": 1,
     "not_audited": 1,
     "partial": 1,
     "passed": 6,
@@ -1320,13 +1379,13 @@
     "proofs_without_test_ids": [],
     "queue": 2,
     "rules": 10,
-    "sentence": "10 rules. 7 pass their tests. 4 are strong. 3 are signed.",
+    "sentence": "10 rules. 7 pass their tests. 2 are strong. 1 is signed.",
     "signed": 1,
-    "stale": 1,
+    "stale": 0,
     "steps": {
       "passed": 7,
-      "signed": 3,
-      "strong": 4
+      "signed": 1,
+      "strong": 2
     },
     "strong": 1,
     "untested": 1

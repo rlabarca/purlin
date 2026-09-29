@@ -51,7 +51,7 @@
     {
       "category": "auth",
       "current": true,
-      "description": null,
+      "description": "Signing in with an email address and a password, and locking an account after repeated failures.",
       "evidence": {
         "ci": {
           "committed": true,
@@ -74,7 +74,7 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "asks_strong": 2,
+        "asks_strong": 3,
         "failing": 0,
         "hand_checks": 0,
         "incomplete": false,
@@ -82,14 +82,14 @@
         "met": 2,
         "not_audited": 0,
         "partial": 0,
-        "passed": 2,
+        "passed": 1,
         "proofs": 3,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "queue": 0,
         "rules": 3,
         "stale": 0,
-        "strong": 1,
+        "strong": 2,
         "test_strength": 71,
         "untested": 0
       },
@@ -155,8 +155,10 @@
           "label": "own",
           "left": "to_strengthen",
           "level": "strong",
-          "level_marked": "strong",
-          "machines": {},
+          "level_marked": null,
+          "machines": {
+            "linux": "remote runner, Linux/Unix"
+          },
           "meets_gate": false,
           "proof_hash": "prule1log",
           "proofs": [
@@ -237,7 +239,9 @@
           "left": null,
           "level": "strong",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "remote runner, Linux/Unix"
+          },
           "meets_gate": true,
           "proof_hash": "prule2log",
           "proofs": [
@@ -276,7 +280,7 @@
           },
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": null,
-          "bucket": "passed",
+          "bucket": "strong",
           "cells": {
             "passed": {
               "counts": true,
@@ -292,6 +296,13 @@
               "reasons": [],
               "source": "ci",
               "word": "passed"
+            },
+            "strong": {
+              "evidence": ".purlin/evidence/ci/login.json",
+              "findings": [],
+              "reasons": [],
+              "strength": 71,
+              "word": "strong"
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
@@ -309,9 +320,11 @@
           "id": "RULE-3",
           "label": "own",
           "left": null,
-          "level": "passed",
-          "level_marked": "passed",
-          "machines": {},
+          "level": "strong",
+          "level_marked": null,
+          "machines": {
+            "linux": "remote runner, Linux/Unix"
+          },
           "meets_gate": true,
           "proof_hash": "prule3log",
           "proofs": [
@@ -349,7 +362,7 @@
     {
       "category": "billing",
       "current": true,
-      "description": null,
+      "description": "Invoices and credit notes: their lines, their totals and what they print.",
       "evidence": {
         "ci": {
           "committed": true,
@@ -452,7 +465,9 @@
           "left": "to_strengthen",
           "level": "strong",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "remote runner, Linux/Unix"
+          },
           "meets_gate": false,
           "proof_hash": "prule1inv",
           "proofs": [
@@ -651,7 +666,9 @@
           "left": null,
           "level": "strong",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "remote runner, Linux/Unix"
+          },
           "meets_gate": true,
           "proof_hash": "prule1rec",
           "proofs": [
@@ -732,7 +749,9 @@
           "left": null,
           "level": "strong",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "sam-desktop"
+          },
           "meets_gate": true,
           "proof_hash": "prule1che",
           "proofs": [
@@ -869,7 +888,9 @@
           "left": null,
           "level": "strong",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "linux": "sam-desktop"
+          },
           "meets_gate": true,
           "proof_hash": "prule1che",
           "proofs": [
@@ -909,8 +930,7 @@
     "ci": "github",
     "gate": "strong",
     "min_strength": 70,
-    "mutation_engine": "auto",
-    "trust": "local"
+    "mutation_engine": "auto"
   },
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
@@ -948,7 +968,7 @@
   "remote_url": "https://github.com/acme/ledger.git",
   "schema_version": 10,
   "summary": {
-    "asks_strong": 6,
+    "asks_strong": 7,
     "failing": 0,
     "features": 4,
     "hand_checks": 0,
@@ -957,7 +977,7 @@
     "met": 4,
     "not_audited": 0,
     "partial": 0,
-    "passed": 3,
+    "passed": 2,
     "proofs": 7,
     "proofs_without_test": 1,
     "proofs_without_test_ids": [
@@ -971,7 +991,7 @@
       "passed": 6,
       "strong": 4
     },
-    "strong": 3,
+    "strong": 4,
     "untested": 1
   },
   "tag": null,

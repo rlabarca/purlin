@@ -29,7 +29,7 @@
     {
       "category": "auth",
       "current": true,
-      "description": null,
+      "description": "Signing in with an email address and a password, and locking an account after repeated failures.",
       "evidence": {
         "ci": null,
         "local": {
@@ -112,7 +112,9 @@
           "left": null,
           "level": "passed",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "macos": "jane-laptop"
+          },
           "meets_gate": true,
           "proof_hash": "prule1log",
           "proofs": [
@@ -249,7 +251,7 @@
     {
       "category": "billing",
       "current": true,
-      "description": null,
+      "description": "Invoices and credit notes: their lines, their totals and what they print.",
       "evidence": {
         "ci": null,
         "local": {
@@ -330,7 +332,9 @@
           "left": null,
           "level": "passed",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "macos": "jane-laptop"
+          },
           "meets_gate": true,
           "proof_hash": "prule1inv",
           "proofs": [
@@ -395,7 +399,9 @@
           "left": null,
           "level": "passed",
           "level_marked": null,
-          "machines": {},
+          "machines": {
+            "macos": "jane-laptop"
+          },
           "meets_gate": true,
           "proof_hash": "prule2inv",
           "proofs": [
@@ -437,8 +443,7 @@
     "ci": "github",
     "gate": "passed",
     "min_strength": null,
-    "mutation_engine": "auto",
-    "trust": "local"
+    "mutation_engine": "auto"
   },
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
