@@ -828,6 +828,47 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     measured. The model is told `test strength: not measured`, in words. Setup's line about
     a missing tool is reworded, since the cell no longer reads `n/a`. The stand-in inside a
     signature stays as it is: no person reads it, and changing it would end every signature.
+94. **The answers to the second fan-out's questions** (added 2026-09-29), which are grouped in
+    `phase2-questions.md`.
+    - **A rule about a command's instructions says what the instructions tell the agent**, and
+      its test reads the instructions. That the agent follows them is shown by the sanity
+      checks before each release, which run the commands for real.
+    - **A mistake Purlin can see in a spec is warned of, with its fix.** The status and every
+      test run print one line naming the spec, the mistake and the command that fixes it, and
+      carry on: an entry of the covered files that finds no file, two specs with one name, a
+      rule number used twice, a proof line that cannot be read, a first heading that names
+      another feature. Nothing is refused.
+    - **Test strength is one share per feature**, in every language. The working per rule and
+      the rules about it go.
+    - **A rule that lists several separate things is split by claim**, its proofs moved
+      unchanged.
+    - **The first test run suggests a command for every test tool it recognises**, confirmed
+      together. Setup's flag for adding a tool goes.
+    - **With breaking the code on purpose turned on, nothing measured means not strong.** A
+      tool not installed, or out of time, makes the rule weak with a reason naming the command
+      that fixes it. A tool that cannot run on this operating system counts as no tool, and
+      the audit alone decides.
+    - **The 55 readings** of `phase2-questions.md`, "One sensible reading", are applied. The
+      owner reads the list afterwards and says which to reverse.
+95. **Windows, settled** (added 2026-09-29). Tests run on Windows only where what they check
+    could differ because of files or the operating system.
+    - **A remote run on a system runs only the tests tied to proofs tagged for that system.**
+      This holds for every project, not this one alone: the tags are what is run.
+    - **The list** is the 90 rules the sort found, less those a Windows run could show nothing
+      new about (a rule whose only test reads a text file, a rule only Purlin's maintainers
+      run, the two about console characters that another rule covers), plus the five that rest
+      on line endings.
+    - **Each rule on the list gets one more proof, tagged `@env(windows)`**, tied to the same
+      test by a second comment. The Mac keeps proving the proof it has.
+    - **Of the six tests that stop a Windows run today**: the two walks from setup to a signed
+      tag and the file link are Mac only; finding the GitHub program, starting SQLite and the
+      file that cannot be read run on Windows, the last with a Windows way of locking the file
+      written for it. The walks stop reporting success where they did not walk.
+    - **The four places that are probably wrong on Windows are fixed first**, and the tests'
+      stand-in programs get the endings Windows uses, so that each fix is shown by a test. The
+      skills start Purlin's scripts through the interpreter lookup the plugin's server uses.
+    - **The whole path on Windows is not walked for 0.10.0.** Its parts are proven there and
+      the whole on the Mac; the release notes say so.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
