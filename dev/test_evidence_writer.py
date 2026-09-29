@@ -1147,6 +1147,30 @@ def test_a_first_audit_without_mutation_testing_writes_null(tmp_path):
     assert _evidence(root)['audit']['mutation'] is None
 
 
+NO_REPORT = 'mutmut ran and wrote no report: run purlin:audit again'
+NOT_INSTALLED = 'mutmut is not installed: run "pip install mutmut"'
+
+
+# purlin: evidence_writer PROOF-79
+def test_a_score_that_differs_only_in_why_nothing_was_measured_replaces_it(
+        tmp_path):
+    root = tmp_path
+    _put(root, _file(platforms={'linux': _section()}, audit={
+        'mutation': {'engine': 'mutmut', 'score': None,
+                     'at': '2026-09-01T00:00:00Z', 'commit': 'a' * 40,
+                     'missing': NO_REPORT},
+        'rules': {}}))
+
+    writer.write_audit(str(root), 'local', 'feat', _info(), {},
+                       {'engine': 'mutmut', 'score': None,
+                        'at': '2026-09-02T00:00:00Z', 'commit': 'b' * 40,
+                        'missing': NOT_INSTALLED}, True)
+
+    mutation = _evidence(root)['audit']['mutation']
+    assert (mutation['missing'], mutation['at']) == (
+        NOT_INSTALLED, '2026-09-02T00:00:00Z')
+
+
 # purlin: evidence_writer PROOF-54
 def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
     root = _project(tmp_path, gate='strong')

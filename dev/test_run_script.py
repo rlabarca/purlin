@@ -1024,6 +1024,31 @@ class TestTheGateDecidesTheBreaks:
             'weak', ['strength 80% under 90%']), cell
         assert code == 1, output
 
+    # purlin: run_script PROOF-213
+    def test_an_engine_that_measured_nothing_says_why(
+            self, tmp_path, evidence_run, monkeypatch, capsys):
+        sentence = 'mutmut is not installed: run "pip install mutmut"'
+
+        def run_breaks(project_root, engine, scope):
+            return {'engine': 'mutmut', 'available': False,
+                    'reason': sentence,
+                    'features': {'feat': {
+                        'scope_score': {'score': None, 'killed': 0,
+                                        'survived': 0},
+                        'missing': sentence}},
+                    'log': ''}
+        monkeypatch.setitem(sys.modules, 'mutation', _FakeModule(
+            select_engine=lambda config, frameworks: 'mutmut',
+            run_breaks=run_breaks))
+        root = _pytest_project(tmp_path, gate='strong')
+        _config(root, mutation_engine='auto')
+        _spec(root, 'feat')
+        evidence_run(root, '--all', '--audit')
+        output = capsys.readouterr().out
+        assert _evidence(root)['audit']['mutation']['missing'] == sentence
+        assert output.splitlines().count('purlin: %s' % sentence) == 1, \
+            output
+
     @staticmethod
     def _two_features_audited(tmp_path, evidence_run):
         root = _pytest_project(tmp_path, gate='strong', body=(

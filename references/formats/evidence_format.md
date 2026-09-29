@@ -144,7 +144,7 @@ passed.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `audit.mutation` | object or null | `engine` (string), `score` (int or null), `at` and `commit`. Null when mutation testing is off |
+| `audit.mutation` | object or null | `engine` (string), `score` (int or null), `at` and `commit`, and `missing` (string), present only when the engine the settings selected measured nothing for the feature and `score` is null: the sentence saying why, such as `mutmut is not installed: run "pip install mutmut"`. Null when mutation testing is off |
 | `audit.rules` | object | `RULE-N` to the audit of that rule |
 
 Each `audit.rules` entry:
@@ -215,7 +215,9 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
   `audit.rules[<rule>]` for each rule the model answered for and leaves every
   other entry as it is. It replaces `audit.mutation` for each feature it
   measured, which is a feature with at least one rule being read, when
-  mutation testing is on.
+  mutation testing is on, and keeps the one there when `engine`, `score` and
+  `missing` are all the same: two entries that differ in `missing` alone are
+  different.
 - Every write drops the `rules` and `audit.rules` entries of rules the spec no
   longer carries.
 - Every run deletes the files under `local/` and `ci/` whose feature has no

@@ -314,8 +314,9 @@ def merge_audit(data, source, feature, spec_path, entries, mutation,
                 mutation_ran, rule_ids):
     """`data` with `audit.rules[R]` replaced for each entry given.
 
-    `audit.mutation` is replaced when mutation testing ran; a file with no
-    `audit` yet gets one whose `mutation` is null otherwise. An entry that
+    `audit.mutation` is replaced when mutation testing ran, unless it holds
+    the same `engine`, `score` and `missing`; a file with no `audit` yet
+    gets one whose `mutation` is null otherwise. An entry that
     repeats the one there over the same three hashes keeps its `at` and
     `commit`, so reading a rule again finds nothing new to commit.
     """
@@ -335,10 +336,10 @@ def merge_audit(data, source, feature, spec_path, entries, mutation,
     audit['rules'] = rules
     if mutation_ran:
         kept = audit.get('mutation')
+        same = ('engine', 'score', 'missing')
         if not (isinstance(kept, dict)
-                and (kept.get('engine'), kept.get('score'))
-                == ((mutation or {}).get('engine'),
-                    (mutation or {}).get('score'))):
+                and [kept.get(key) for key in same]
+                == [(mutation or {}).get(key) for key in same]):
             audit['mutation'] = mutation
     elif 'mutation' not in audit:
         audit['mutation'] = None

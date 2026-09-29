@@ -1206,11 +1206,16 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
         breaks = _run_breaks(project_root, args, features, measured)
         commit = head_commit(project_root)
         for name in measured:
-            score = (((breaks.get('features') or {}).get(name) or {})
-                     .get('scope_score') or {}).get('score')
+            answer = (breaks.get('features') or {}).get(name) or {}
+            score = (answer.get('scope_score') or {}).get('score')
             mutation = {'engine': breaks.get('engine') or 'none',
                         'score': score, 'at': evidence_writer.now_iso(),
                         'commit': commit}
+            # Why the engine the settings selected measured nothing here:
+            # not installed, out of time, or no report.
+            missing = answer.get('missing') or ''
+            if missing:
+                mutation['missing'] = missing
             evidence_writer.write_audit(project_root, 'local', name,
                                         features.get(name) or {}, {},
                                         mutation, True)
@@ -1334,11 +1339,17 @@ def _run_breaks(project_root, args, features, selected):
     print('Measuring the breaks with the %s engine.' % engine)
     answer = run_breaks(project_root, engine,
                         scope_by_feature(features, selected))
-    # An installed engine answers a reason only when it measured nothing it
-    # set out to, a timeout being the one case, so the person sees why test
-    # strength was not measured rather than finding it in the log.
-    if answer.get('available') and answer.get('reason'):
-        print('purlin: %s' % answer['reason'])
+    # Why test strength was not measured, said once each, so the person
+    # sees it rather than finding it in the log: the engine's reason, then
+    # each feature's sentence not already said.
+    said = []
+    for sentence in [answer.get('reason') or ''] + [
+            (found or {}).get('missing') or ''
+            for _name, found in sorted((answer.get('features') or {})
+                                       .items())]:
+        if sentence and sentence not in said:
+            said.append(sentence)
+            print('purlin: %s' % sentence)
     return answer
 
 
