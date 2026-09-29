@@ -4,6 +4,7 @@ Ensures the Purlin version string is defined in exactly one place (the VERSION
 file) and all references to it read from that file or match its value.
 """
 
+import ast
 import glob
 import json
 import os
@@ -231,34 +232,20 @@ def test_a_project_init_sets_up_is_stamped_with_the_version_file(tmp_path):
 
 
 # purlin: purlin_version PROOF-5
-def test_the_plugin_manifest_carries_the_version_file():
+def test_the_plugin_manifest_carries_the_version_file(tmp_path):
     assert_matches_version_file(PLUGIN_MANIFEST, '.claude-plugin/plugin.json')
-
-
-# purlin: purlin_version PROOF-24
-def test_a_manifest_with_no_version_key_fails(tmp_path):
+    # The check fails a copy with no `version` key and a copy left behind.
     assert_missing_key_fails(PLUGIN_MANIFEST, '.claude-plugin/plugin.json',
                              tmp_path)
-
-
-# purlin: purlin_version PROOF-25
-def test_a_manifest_left_at_an_old_version_fails(tmp_path):
     assert_stale_version_fails(PLUGIN_MANIFEST, '.claude-plugin/plugin.json',
                                tmp_path)
 
 
 # purlin: purlin_version PROOF-6
-def test_this_repositorys_settings_carry_the_version_file():
+def test_this_repositorys_settings_carry_the_version_file(tmp_path):
     assert_matches_version_file(PROJECT_CONFIG, '.purlin/config.json')
-
-
-# purlin: purlin_version PROOF-26
-def test_settings_with_no_version_key_fail(tmp_path):
+    # The check fails a copy with no `version` key and a copy left behind.
     assert_missing_key_fails(PROJECT_CONFIG, '.purlin/config.json', tmp_path)
-
-
-# purlin: purlin_version PROOF-27
-def test_settings_left_at_an_old_version_fail(tmp_path):
     assert_stale_version_fails(PROJECT_CONFIG, '.purlin/config.json',
                                tmp_path)
 
@@ -292,15 +279,12 @@ def package_copy_with(tmp_path, added):
 
 
 # purlin: purlin_version PROOF-4
-def test_the_package_carries_no_version_literal():
+def test_the_package_carries_no_version_literal(tmp_path):
     found = release_literals(PACKAGE_DIR)
     assert found == [], (
         f"Found release version string(s) in the package outside "
         f"comments: {found}. The version is read from the VERSION file.")
-
-
-# purlin: purlin_version PROOF-22
-def test_a_version_literal_added_to_a_module_is_found(tmp_path):
+    # The check finds a literal added to a copy of one module.
     copy = package_copy_with(tmp_path, "RELEASE = '0.10.0'")
     assert release_literals(copy) == [('server.py', '0.10.0')]
 
@@ -311,7 +295,93 @@ def test_a_version_on_a_whole_line_comment_is_not_found(tmp_path):
     assert release_literals(copy) == []
 
 
-# --- RULE-7: the bump script and its check --------------------------------
+# --- RULE-7: nothing but the bump script sets a new number ---------------
+
+# A module that writes one of these files is one a `version` field is
+# written from.
+VERSION_FILES = ('config.json', 'plugin.json')
+
+
+def _version_values(tree):
+    """(line, value) for each value given a `version` key: in a dict
+    written out, to `x['version'] = ...`, or as `version=...`."""
+    found = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            found += [(value.lineno, value)
+                      for key, value in zip(node.keys, node.values)
+                      if isinstance(key, ast.Constant)
+                      and key.value == 'version']
+        elif isinstance(node, ast.Assign):
+            found += [(node.lineno, node.value) for target in node.targets
+                      if isinstance(target, ast.Subscript)
+                      and isinstance(target.slice, ast.Constant)
+                      and target.slice.value == 'version']
+        elif isinstance(node, ast.Call):
+            found += [(keyword.value.lineno, keyword.value)
+                      for keyword in node.keywords
+                      if keyword.arg == 'version']
+    return found
+
+
+def _reads_version_file(value, source, readers):
+    """True when `value` gives no number (None), or reads the VERSION file:
+    its text names `VERSION`, or it calls a function of the same module
+    whose body names the file."""
+    if isinstance(value, ast.Constant) and value.value is None:
+        return True
+    text = ast.get_source_segment(source, value) or ''
+    if 'VERSION' in text:
+        return True
+    return any(isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+               and node.func.id in readers for node in ast.walk(value))
+
+
+def version_writes_not_from_the_file(scripts_dir):
+    """`<path>:<line>: <value>` for each `version` value, in a module under
+    `scripts_dir` that names the settings file or the plugin manifest,
+    that is not read from the VERSION file."""
+    found = []
+    for path in sorted(glob.glob(os.path.join(scripts_dir, '**', '*.py'),
+                                 recursive=True)):
+        with open(path, encoding='utf-8') as f:
+            source = f.read()
+        if not any(name in source for name in VERSION_FILES):
+            continue
+        tree = ast.parse(source)
+        readers = {node.name for node in ast.walk(tree)
+                   if isinstance(node, ast.FunctionDef)
+                   and "'VERSION'" in (ast.get_source_segment(source, node)
+                                       or '')}
+        rel = os.path.relpath(path, scripts_dir).replace(os.sep, '/')
+        found += ['%s:%d: %s' % (rel, line,
+                                 ast.get_source_segment(source, value))
+                  for line, value in _version_values(tree)
+                  if not _reads_version_file(value, source, readers)]
+    return found
+
+
+# purlin: purlin_version PROOF-37
+def test_every_version_field_the_scripts_write_is_read_from_the_file(
+        tmp_path):
+    scripts_dir = os.path.join(PROJECT_ROOT, 'scripts')
+    assert version_writes_not_from_the_file(scripts_dir) == []
+    # The scan finds a number written into a copy of the upgrade.
+    copy = tmp_path / 'scripts'
+    shutil.copytree(scripts_dir, str(copy),
+                    ignore=shutil.ignore_patterns('__pycache__'))
+    upgrade = copy / 'init' / 'update.py'
+    text = upgrade.read_text(encoding='utf-8')
+    assert "'version': _version()," in text
+    upgrade.write_text(text.replace("'version': _version(),",
+                                    "'version': '9.9.9',", 1),
+                       encoding='utf-8')
+    found = version_writes_not_from_the_file(str(copy))
+    assert len(found) == 1 and found[0].startswith('init/update.py:'), found
+    assert found[0].endswith(": '9.9.9'"), found
+
+
+# --- RULE-12, RULE-13, RULE-14: the bump script and its check -------------
 
 DERIVED = [
     os.path.join('.claude-plugin', 'plugin.json'),
@@ -499,18 +569,22 @@ def test_the_one_version_row_names_the_version_file():
     rows = version_rows(os.path.join(PROJECT_ROOT, OWNER))
     assert rows, f"no `version` field row found in {OWNER}"
     assert owner_row_problems(rows) == []
+    # The check finds a copy of the row that restates a number.
+    restated = [row.replace('`VERSION`', '`0.9.0`') for row in rows]
+    assert all('VERSION' not in row for row in restated), restated
+    problems = owner_row_problems(restated)
+    for row in restated:
+        assert f"restates 0.9.0: {row}" in problems, problems
+        assert f"does not name the VERSION file: {row}" in problems, problems
 
 
 # purlin: purlin_version PROOF-34
-def test_no_second_copy_of_the_version_row_exists():
+def test_no_second_copy_of_the_version_row_exists(tmp_path):
     copies = second_copies(PROJECT_ROOT)
     assert copies == [], (
         f"a second `version` field row lives in {copies}; "
         f"{OWNER} is the field's one documented home")
-
-
-# purlin: purlin_version PROOF-35
-def test_a_version_row_added_to_a_skill_is_found(tmp_path):
+    # The check finds a row added to a copy of the init skill.
     for base in ('skills', 'references'):
         shutil.copytree(os.path.join(PROJECT_ROOT, base),
                         str(tmp_path / base))
@@ -518,15 +592,3 @@ def test_a_version_row_added_to_a_skill_is_found(tmp_path):
               encoding='utf-8') as f:
         f.write('\n| `version` | `"0.9.0"` |\n')
     assert second_copies(str(tmp_path)) == ['skills/init/SKILL.md']
-
-
-# purlin: purlin_version PROOF-36
-def test_the_version_row_restating_a_number_is_found(tmp_path):
-    rows = version_rows(os.path.join(PROJECT_ROOT, OWNER))
-    assert rows, f"no `version` field row found in {OWNER}"
-    restated = [row.replace('`VERSION`', '`0.9.0`') for row in rows]
-    assert all('VERSION' not in row for row in restated), restated
-    problems = owner_row_problems(restated)
-    for row in restated:
-        assert f"restates 0.9.0: {row}" in problems, problems
-        assert f"does not name the VERSION file: {row}" in problems, problems

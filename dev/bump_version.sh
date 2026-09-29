@@ -3,7 +3,8 @@
 #
 # `VERSION` at the project root is the source of truth. Every other location
 # that carries a literal version is DERIVED from it, and this script is the only
-# thing that should ever write those literals. A human edits nothing by hand:
+# thing that sets a new number: setup and the upgrade copy it from VERSION into a
+# project's settings. A human edits nothing by hand:
 #
 #   bash dev/bump_version.sh 0.10.1     # set VERSION, propagate everywhere
 #   bash dev/bump_version.sh --check    # verify, exit 1 on drift (CI gate)
@@ -18,7 +19,7 @@
 #   scripts/mcp/purlin/__init__.py  reads VERSION at runtime via _read_version()
 #   skills/init/SKILL.md          documents the field, never restates a number
 #
-# Governed by specs/instructions/purlin_version.md (RULE-6/7/8).
+# Governed by specs/instructions/purlin_version.md (RULE-5, 6, 7, 12, 13 and 14).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
