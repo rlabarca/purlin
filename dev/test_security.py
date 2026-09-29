@@ -113,12 +113,14 @@ def _pattern_hits(paths, table, strip=True):
     return hits
 
 
-# RULE-4: a quoted value given to a name ending in a credential word, with `=`
-# in every language and also with `:` in JS and TS object fields.
+# RULE-4: a quoted value given to a name containing a credential word, with
+# `=` in every language and also with `:` in JS and TS object fields. The
+# group is the whole name, so a finding says which name matched.
+_CRED_NAME = r'(\w*(?:password|secret|api_key|token)\w*)'
 _CRED_ASSIGN = re.compile(
-    r'(password|secret|api_key|token)\s*=\s*["\'][^"\']+["\']', re.IGNORECASE)
+    _CRED_NAME + r'\s*=\s*["\'][^"\']+["\']', re.IGNORECASE)
 _CRED_FIELD = re.compile(
-    r'(password|secret|api_key|token)\s*:\s*["\'][^"\']+["\']', re.IGNORECASE)
+    _CRED_NAME + r'\s*:\s*["\'][^"\']+["\']', re.IGNORECASE)
 
 
 def _credential_hits(paths):
@@ -311,17 +313,25 @@ class TestSecurityPatterns:
         assert not hits, "\n".join(f"Found hardcoded credential in {path}: {matches}"
                                    for path, matches in hits)
 
-    # purlin: security_no_dangerous_patterns PROOF-4
+    # purlin: security_no_dangerous_patterns PROOF-7
     def test_planted_credential_is_found(self, tmp_path):
-        planted = [('a.py', 'API_KEY = "abc"\n'), ('a.py', "db_password='x'\n"),
-                   ('a.sh', 'GITHUB_TOKEN="abc"\n'),
-                   ('a.js', 'const cfg = { password: "x" };\n'),
-                   ('a.ts', 'const auth = { Token : "abc" };\n')]
+        planted = [('a.py', 'API_KEY = "abc"\n', 'API_KEY'),
+                   ('a.py', "db_password='x'\n", 'db_password'),
+                   ('a.sh', 'GITHUB_TOKEN="abc"\n', 'GITHUB_TOKEN'),
+                   ('a.py', 'TOKEN_NAME = "abc"\n', 'TOKEN_NAME'),
+                   ('a.js', 'const cfg = { password: "x" };\n', 'password'),
+                   ('a.ts', 'const auth = { Token : "abc" };\n', 'Token')]
+        for index, (name, text, matched) in enumerate(planted):
+            path = _plant(tmp_path, index, name, text)
+            assert _credential_hits([path]) == [(path, [matched])], (
+                name, text, _credential_hits([path]))
+
+    # purlin: security_no_dangerous_patterns PROOF-8
+    def test_an_empty_value_a_comparison_or_a_test_file_is_not_counted(
+            self, tmp_path):
         clean = [('a.py', 'API_KEY = ""\n'), ('a.py', 'if token == "x":\n    pass\n'),
                  ('test_a.py', 'password = "x"\n'),
                  ('a.py', 'row = {"password": ""}\n')]
-        assert not _misses(tmp_path, planted, _credential_hits), \
-            "a planted credential went unfound"
         assert not _false_alarms(tmp_path, clean, _credential_hits), \
             "an empty value, a comparison or a test file was counted"
 
@@ -420,112 +430,110 @@ def _record_launches(monkeypatch):
     return calls
 
 
+def _project(tmp_path, sources=()):
+    """A committed project holding one anchor per `(name, source)`."""
+    project = tmp_path / 'project'
+    purlin_dir = project / '.purlin'
+    purlin_dir.mkdir(parents=True)
+    (purlin_dir / 'config.json').write_text(
+        json.dumps({'version': '1.0.0', 'project_name': 'spy'}))
+    anchors = project / 'specs' / '_anchors'
+    anchors.mkdir(parents=True)
+    for name, source in sources:
+        _write_anchor(str(anchors), name, source,
+                      '1234567890abcdef1234567890abcdef12345678')
+    _git(['-c', 'init.defaultBranch=main', 'init', '-q'], cwd=str(project))
+    _git(['config', 'user.email', 'test@test.com'], cwd=str(project))
+    _git(['config', 'user.name', 'Test'], cwd=str(project))
+    _git(['add', '-A'], cwd=str(project))
+    _git(['commit', '-q', '-m', 'chore: project under test'], cwd=str(project))
+    return project
+
+
+def _branch_changing_a_spec(project):
+    """A branch and two commits changing a spec, so drift measures a range from
+    the checkout and hands git revisions: a count, a diff, a show."""
+    _git(['checkout', '-q', '-b', 'topic'], cwd=str(project))
+    spec = project / 'specs' / 'demo' / 'demo.md'
+    spec.parent.mkdir(parents=True)
+    for body in ('- RULE-1: One\n', '- RULE-1: One\n- RULE-2: Two\n'):
+        spec.write_text('# Feature: demo\n\n## Rules\n\n' + body)
+        _git(['add', '-A'], cwd=str(project))
+        _git(['commit', '-q', '-m', 'spec(demo): rules'], cwd=str(project))
+
+
+def _launched_by(monkeypatch, read):
+    """`(result, git argvs)` of `read()`, every git command it started."""
+    calls = _record_launches(monkeypatch)
+    result = read()
+    monkeypatch.undo()
+    return result, [argv for argv in calls if argv and argv[0] == 'git']
+
+
+def _is_revision(arg):
+    """A commit, a range or a `<commit>:<path>`; the fixed word `HEAD` alone,
+    which Purlin writes itself, is left out."""
+    if arg.startswith('-') or arg == 'HEAD':
+        return False
+    return bool(_SHA.search(arg)) or 'HEAD' in arg
+
+
+def _is_path_operand(arg):
+    """A path the tests hand git here: `specs/` or a spec path under it."""
+    if _SHA.search(arg):
+        return False  # `<sha>:specs/x.md` is a revision
+    return arg == 'specs/' or arg.startswith('specs/') or arg.endswith('.md')
+
+
 class TestGitArgvHardening:
     """RULE-6: nothing repository-supplied reaches git in option position."""
 
     # purlin: security_no_dangerous_patterns PROOF-6
-    def test_source_url_never_reaches_git_in_option_position(self, tmp_path,
+    def test_a_hostile_source_is_refused_before_any_command(self, tmp_path,
                                                              monkeypatch):
-        project = tmp_path / 'project'
-        purlin_dir = project / '.purlin'
-        purlin_dir.mkdir(parents=True)
-        (purlin_dir / 'config.json').write_text(
-            json.dumps({'version': '1.0.0', 'project_name': 'spy'}))
-        anchors = project / 'specs' / '_anchors'
-        anchors.mkdir(parents=True)
-
-        # A reachable source, so a legitimate ls-remote really happens. Without
-        # it the positive control below would pass vacuously.
-        bare = str(tmp_path / 'good-policy.git')
-        good_sha = _make_bare_repo(bare, str(tmp_path / 'good-work'))
-        _write_anchor(str(anchors), 'good_policy', bare, good_sha)
-        _write_anchor(str(anchors), 'evil_policy', EVIL_SOURCE,
-                      '1234567890abcdef1234567890abcdef12345678')
-        _write_anchor(str(anchors), 'ext_policy', EXT_SOURCE,
-                      '1234567890abcdef1234567890abcdef12345678')
-        _write_anchor(str(anchors), 'fd_policy', FD_SOURCE,
-                      '1234567890abcdef1234567890abcdef12345678')
-
-        _git(['-c', 'init.defaultBranch=main', 'init', '-q'], cwd=str(project))
-        _git(['config', 'user.email', 'test@test.com'], cwd=str(project))
-        _git(['config', 'user.name', 'Test'], cwd=str(project))
-        _git(['add', '-A'], cwd=str(project))
-        _git(['commit', '-q', '-m', 'chore: project under test'], cwd=str(project))
-
-        calls = _record_launches(monkeypatch)
-        text = purlin_status.sync_status(str(project))
-        monkeypatch.undo()
-        status_calls = list(calls)
-
-        # A branch and two commits changing a spec, so drift measures a range
-        # from the checkout and hands git revisions: a count, a diff, a show.
-        _git(['checkout', '-q', '-b', 'topic'], cwd=str(project))
-        spec = project / 'specs' / 'demo' / 'demo.md'
-        spec.parent.mkdir(parents=True)
-        for body in ('- RULE-1: One\n', '- RULE-1: One\n- RULE-2: Two\n'):
-            spec.write_text('# Feature: demo\n\n## Rules\n\n' + body)
-            _git(['add', '-A'], cwd=str(project))
-            _git(['commit', '-q', '-m', 'spec(demo): rules'], cwd=str(project))
-        calls = _record_launches(monkeypatch)
-        purlin_drift.drift(str(project))
-        monkeypatch.undo()
-        drift_calls = list(calls)
-        calls = status_calls + drift_calls
-
-        assert status_calls and drift_calls, "no subprocess calls captured"
-
-        # Each rejected Source never reaches git at all, and certainly never
-        # ahead of an end-of-options separator.
+        project = _project(tmp_path, [('evil_policy', EVIL_SOURCE),
+                                      ('ext_policy', EXT_SOURCE),
+                                      ('fd_policy', FD_SOURCE)])
+        text, calls = _launched_by(
+            monkeypatch, lambda: purlin_status.sync_status(str(project)))
+        assert calls, "no git command captured"
         for rejected in (EVIL_SOURCE, EXT_SOURCE, FD_SOURCE):
             for argv in calls:
                 assert rejected not in argv, (
-                    f"{rejected!r} reached git; RULE-6 rejects it before any "
+                    f"{rejected!r} reached git; RULE-6 refuses it before any "
                     f"subprocess starts: {argv}")
+        for reason in ('(source rejected: begins with "-")',
+                       '(source rejected: names an ext:: transport)',
+                       '(source rejected: names an fd:: transport)'):
+            assert reason in text, (
+                f"status text does not name the rejection {reason!r}:\n{text}")
 
-        # Positive control: the safe url did reach ls-remote, and
-        # --end-of-options sits immediately in front of it every time.
-        ls_remotes = [a for a in calls
-                      if len(a) >= 2 and a[0] == 'git' and a[1] == 'ls-remote']
-        assert ls_remotes, \
-            "no git ls-remote captured; the positive control would be vacuous"
+    # purlin: security_no_dangerous_patterns PROOF-9
+    def test_a_source_reaches_ls_remote_after_end_of_options(self, tmp_path,
+                                                             monkeypatch):
+        bare = str(tmp_path / 'good-policy.git')
+        _make_bare_repo(bare, str(tmp_path / 'good-work'))
+        project = _project(tmp_path, [('good_policy', bare)])
+        _text, calls = _launched_by(
+            monkeypatch, lambda: purlin_status.sync_status(str(project)))
+        ls_remotes = [a for a in calls if len(a) >= 2 and a[1] == 'ls-remote']
+        assert ls_remotes, "no git ls-remote captured"
         for argv in ls_remotes:
-            assert bare in argv, f"expected the safe url in {argv}"
-            url_idx = argv.index(bare)
-            assert url_idx > 0 and argv[url_idx - 1] == '--end-of-options', \
-                f"--end-of-options does not precede the url: {argv}"
+            assert bare in argv, f"expected the repository in {argv}"
+            at = argv.index(bare)
+            assert at > 0 and argv[at - 1] == '--end-of-options', (
+                f"--end-of-options does not precede the repository: {argv}")
 
-        # `--` precedes every path argument. The path operands the server hands
-        # git here are repository-relative: `specs/` and spec paths under it.
-        def _is_path_operand(arg):
-            if _SHA.search(arg):
-                return False  # `<sha>:specs/x.md` is a revision, checked below
-            return arg == 'specs/' or arg.startswith('specs/') or arg.endswith('.md')
-
-        carried_a_path = []
-        for argv in calls:
-            if not argv or argv[0] != 'git':
-                continue
-            operands = [i for i, a in enumerate(argv) if _is_path_operand(a)]
-            if not operands:
-                continue
-            carried_a_path.append(argv)
-            first = min(operands)
-            assert first > 0 and argv[first - 1] == '--', (
-                f"a path argument reaches git with no -- immediately before "
-                f"it, so a path beginning with '-' would be read as an "
-                f"option: {argv}")
-        assert carried_a_path, (
-            "no captured git argv carried a path operand, so the -- check "
-            "would pass by matching nothing")
-
-        # --end-of-options immediately precedes the first revision operand, a
-        # commit sha, a range or a `<sha>:<path>`, in every git command.
+    # purlin: security_no_dangerous_patterns PROOF-10
+    def test_every_revision_follows_end_of_options(self, tmp_path,
+                                                   monkeypatch):
+        project = _project(tmp_path)
+        _branch_changing_a_spec(project)
+        _report, calls = _launched_by(
+            monkeypatch, lambda: purlin_drift.drift(str(project)))
         took_a_revision = set()
         for argv in calls:
-            if not argv or argv[0] != 'git':
-                continue
-            revisions = [i for i, a in enumerate(argv)
-                         if _SHA.search(a) and not a.startswith('-')]
+            revisions = [i for i, a in enumerate(argv) if _is_revision(a)]
             if not revisions:
                 continue
             took_a_revision.add(argv[1])
@@ -534,11 +542,23 @@ class TestGitArgvHardening:
                 f"a revision reaches git with no --end-of-options immediately "
                 f"before it: {argv}")
         assert {'rev-list', 'diff', 'show'} <= took_a_revision, (
-            f"drift handed git no revision in some of rev-list, diff and show, "
-            f"so the check above covers only {sorted(took_a_revision)}")
+            f"drift handed git no revision in some of rev-list, diff and show; "
+            f"only {sorted(took_a_revision)}")
 
-        for reason in ('(source rejected: begins with "-")',
-                       '(source rejected: names an ext:: transport)',
-                       '(source rejected: names an fd:: transport)'):
-            assert reason in text, (
-                f"status text does not name the rejection {reason!r}:\n{text}")
+    # purlin: security_no_dangerous_patterns PROOF-11
+    def test_every_path_follows_a_double_dash(self, tmp_path, monkeypatch):
+        project = _project(tmp_path)
+        _branch_changing_a_spec(project)
+        _report, calls = _launched_by(
+            monkeypatch, lambda: purlin_drift.drift(str(project)))
+        carried_a_path = []
+        for argv in calls:
+            operands = [i for i, a in enumerate(argv) if _is_path_operand(a)]
+            if not operands:
+                continue
+            carried_a_path.append(argv)
+            first = min(operands)
+            assert first > 0 and argv[first - 1] == '--', (
+                f"a path reaches git with no -- immediately before it, so a "
+                f"path beginning with '-' would be read as an option: {argv}")
+        assert carried_a_path, "no git command carried a path"
