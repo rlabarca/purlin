@@ -7,7 +7,8 @@
 >   reads the same function, so the advisory a developer sees and the work
 >   the script does cannot disagree. Every migration asks before it writes,
 >   every file it rewrites is copied beside itself first, and one commit
->   carries the whole run.
+>   carries the whole run. It also tells a project 0.9.5 set up and nobody
+>   upgraded, which a test run stops on.
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
 
@@ -40,6 +41,7 @@
 - RULE-29: Each marker v0.9.5's plugins read becomes the comment `purlin: <feature> PROOF-<n>` above the same test, in the file's own comment syntax: the pytest `proof` mark with whatever follows its first two arguments, the Jest and Vitest tag, which leaves the title, the xUnit trait naming the proof and the SQL `@purlin` comment; a shell script's calls to the harness naming a proof become one comment each at its top, and each call, the line loading the harness and the closing call become a no-op; each file is backed up first, and one line per file names how many markers it rewrote, adding for a shell or SQL script that the file is one test now and passes when it exits 0
 - RULE-30: A marker the upgrade cannot place above one test, such as a module-wide `pytestmark`, is named by file and line with what to do, and left as it was
 - RULE-31: A `purlin-report.html` at the project root that is a link, as 0.9.5 left it, or whose bytes are not the page the plugin ships is replaced with a copy of that page, the bytes `purlin:init` writes; a project with no page there is left without one
+- RULE-32: A project reads as set up by 0.9.5 and not upgraded when its `.purlin/config.json` has no `tests` key, carries one of the keys only 0.9.5 wrote, `test_framework`, `spec_dir`, `pre_push`, `report` or `digest`, or a proof file or run file sits under `specs/`; a project with no settings file does not, and neither the dashboard page nor the version stamp is read
 
 ## Proof
 
@@ -97,3 +99,11 @@
 - PROOF-56 (RULE-26): At the gate `passed`, the sample v0.9.5 project given a `conftest.py` is asked no mutation question and gets `mutation_engine` `none` and `min_strength` null
 - PROOF-57 (RULE-26): At the gate `passed`, the sample v0.9.5 project with no test tool an engine exists for is asked no mutation question, and its output carries no `no engine breaks` line
 - PROOF-58 (RULE-26): At the gate `strong`, a sample v0.9.5 config already carrying `mutation_engine` `auto` is asked no mutation question and keeps `auto`
+- PROOF-59 (RULE-32): After the update with `--yes`, the sample v0.9.5 project no longer reads as set up by 0.9.5 and not upgraded
+- PROOF-60 (RULE-32): The updated sample project whose `.purlin/config.json` then loses its `tests` key reads as set up by 0.9.5 and not upgraded
+- PROOF-61 (RULE-32): The updated sample project whose `.purlin/config.json` is given one of `test_framework`, `spec_dir`, `pre_push`, `report` or `digest` reads as set up by 0.9.5 and not upgraded
+- PROOF-62 (RULE-32): The updated sample project given the proof file `specs/core/login.proofs-unit.json` reads as set up by 0.9.5 and not upgraded
+- PROOF-63 (RULE-32): The updated sample project given the run file `specs/core/login.receipt.json` reads as set up by 0.9.5 and not upgraded
+- PROOF-64 (RULE-32): A folder holding `.purlin/` with no `.purlin/config.json` in it does not read as set up by 0.9.5
+- PROOF-65 (RULE-32): The updated sample project whose settings file then names the version `0.9.2` does not read as set up by 0.9.5, while the update has `config` pending again
+- PROOF-66 (RULE-32): The updated sample project given a `purlin-report.html` at its root holding other bytes than the page the plugin ships does not read as set up by 0.9.5, while the update has `dashboard` pending

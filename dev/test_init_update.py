@@ -32,6 +32,7 @@ What each group proves:
 *backups*     every rewritten file leaves its previous bytes beside it
 *commit*      one commit, naming the migrations it carries
 *status*      `sync_status` says to run the update while anything is pending
+*set up*      a project 0.9.5 set up and nobody upgraded is told apart
 """
 
 import fnmatch
@@ -1493,3 +1494,79 @@ def test_a_run_that_leaves_work_names_it(tmp_path, capsys, monkeypatch):
     assert printed[-1] == ('→ Next: run purlin:init --update again for '
                            'plugins.')
 
+
+# --- a project 0.9.5 set up and nobody upgraded -------------------------------
+
+def _updated(tmp_path):
+    root = _project(tmp_path, V095)
+    _apply(root)
+    return root
+
+
+# purlin: update PROOF-59
+def test_an_updated_project_is_not_one_0_9_5_set_up(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    assert update.set_up_by_095(root)
+    _apply(root)
+    capsys.readouterr()
+    assert not update.set_up_by_095(root)
+
+
+# purlin: update PROOF-60
+def test_a_settings_file_with_no_tests_reads_as_0_9_5(tmp_path, capsys):
+    root = _updated(tmp_path)
+    capsys.readouterr()
+    _set_config(root, tests=None)
+    assert update.set_up_by_095(root)
+
+
+@pytest.mark.parametrize('key', ('test_framework', 'spec_dir', 'pre_push',
+                                 'report', 'digest'))
+# purlin: update PROOF-61
+def test_a_key_only_0_9_5_wrote_reads_as_0_9_5(tmp_path, capsys, key):
+    root = _updated(tmp_path)
+    capsys.readouterr()
+    assert not update.set_up_by_095(root)
+    _set_config(root, **{key: 'pytest'})
+    assert update.set_up_by_095(root)
+
+
+# purlin: update PROOF-62
+def test_a_proof_file_under_specs_reads_as_0_9_5(tmp_path, capsys):
+    root = _updated(tmp_path)
+    capsys.readouterr()
+    _write(root, 'specs/core/login.proofs-unit.json', '{}\n')
+    assert update.set_up_by_095(root)
+
+
+# purlin: update PROOF-63
+def test_a_run_file_under_specs_reads_as_0_9_5(tmp_path, capsys):
+    root = _updated(tmp_path)
+    capsys.readouterr()
+    _write(root, 'specs/core/login.receipt.json', '{}\n')
+    assert update.set_up_by_095(root)
+
+
+# purlin: update PROOF-64
+def test_no_settings_file_is_not_a_0_9_5_project(tmp_path):
+    root = str(tmp_path / 'unset')
+    os.makedirs(os.path.join(root, '.purlin'))
+    assert not update.set_up_by_095(root)
+
+
+# purlin: update PROOF-65
+def test_the_version_stamp_is_not_read(tmp_path, capsys):
+    root = _updated(tmp_path)
+    capsys.readouterr()
+    _set_config(root, version='0.9.2')
+    assert 'config' in _ids(root)
+    assert not update.set_up_by_095(root)
+
+
+# purlin: update PROOF-66
+def test_the_dashboard_page_is_not_read(tmp_path, capsys):
+    root = _updated(tmp_path)
+    capsys.readouterr()
+    _write(root, 'purlin-report.html', '<html>an older copy</html>\n')
+    assert 'dashboard' in _ids(root)
+    assert not update.set_up_by_095(root)
