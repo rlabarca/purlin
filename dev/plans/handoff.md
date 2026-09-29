@@ -8,18 +8,22 @@ decisions 31 to 58 (together they are the product as the owner settled it), then
 
 - `main` is local only. Nothing has been pushed, tagged, audited or signed. The owner pushes;
   no agent does.
-- Full sweep on `main`: **1370 passed across 7 suites, 0 failed.** `bash dev/run_tests.sh`.
-- This repository through its own tool: 1325 of 1325 markers tied to a test, **563 of 563
-  rules pass their tests**, 0 are strong, 0 are signed. It prints `563 rules. 563 pass their
-  tests. 0 are strong. 0 are signed.` and `Left to do: 563 rules to audit: purlin:audit`. The
+- Full sweep on `main`: **2112 passed across 7 suites, 0 failed.** `bash dev/run_tests.sh`.
+- This repository through its own tool: 2057 of 2057 markers tied to a test, **564 of 564
+  rules pass their tests**, 0 are strong, 0 are signed. It prints `564 rules. 564 pass their
+  tests. 0 are strong. 0 are signed.` and `Left to do: 564 rules to audit: purlin:audit`.
+  2056 proofs, each one case of at most 60 words with a test of its own. The
   audit and the signing are the owner's to run.
-- The evidence of that run is committed (`purlin: evidence at 5b87c2b`).
+- The evidence of that run is committed (`purlin: evidence at 28c049a`).
 - `.purlin/config.json` here: gate `signed`, mutation testing on. No runner file: no rule names
   another operating system yet (decision 82).
 - No branch but `main` is left on this machine, and no worktree.
 - The slides: https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is, ten of them, built by
   `dev/plans/deck/build_deck.py`. The owner edits them in place: read each slide from the deck
   before publishing it, and take the owner's words into the builder.
+- Decisions 85 to 93 were made on 2026-09-29; the proofs were split and the dashboard
+  changed to them, and `phase2-report.md` is what the lanes brought back: 79 questions for the
+  owner, the product faults left for the owner, and the list of 90 rules for Windows.
 - Decisions 60 to 84 were made on 2026-09-28 and are in `three-levels.md`. The product changes
   they ask for are done: `phase1-plan.md` is the plan, `phase1-interfaces.md` and
   `phase1-lanes-report.md` what was built. Sanity check 2 is `sanity-2-new-user.md`; the first
@@ -40,13 +44,10 @@ claim of compliance: it hands evidence to a system of record.
 
 ## What is left, in order
 
-1. **The owner reviews the words a user now reads** that an agent chose where no decision
-   gave them: section 9 of `phase1-plan.md`, and section 7 of the integration's report in
-   `phase1-lanes-report.md`. `CLAUDE.md` has four lines that are now wrong, listed there.
-2. **The proofs are split to one proof, one case** (decision 71), the 37 gaps still open are
-   closed, the 124 proofs of rules that were marked lower are rewritten to the guideline
-   (decision 73), and the 128 rules the first rewrite flagged are sorted (decision 71). In
-   parallel, by ownership of files, as the product changes were.
+1. **The owner answers the questions of `phase2-report.md`**, grouped, those a decision already
+   answers dropped, most basic first; and settles the product faults left for the owner.
+2. **The words an agent chose** where no decision gave them: section 9 of `phase1-plan.md` and
+   the integration reports.
 3. **Windows** (decision 82): an agent sorts the rules about files, paths and starting
    programs and shows the owner the list; then they are marked `@env(windows)`, setup writes
    the runner file, and `purlin:test --remote` is run once.
