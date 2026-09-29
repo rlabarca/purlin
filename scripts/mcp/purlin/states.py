@@ -616,7 +616,8 @@ def _strong_cell(inp, cfg, passed, counting_signatures):
             and strength < min_strength):
         reasons.append('strength %d%% under %d%%'
                        % (round(strength), min_strength))
-    if mutation_on and gate in ('strong', 'signed') and inp.get('incomplete'):
+    if (mutation_on and strength is None and gate in ('strong', 'signed')
+            and inp.get('incomplete')):
         # Nothing names the code to break, so nothing was measured, and
         # with breaking on nothing measured is not strong.
         reasons.append(NOT_MEASURED % (NO_CODE_FILES % inp.get('feature')))
