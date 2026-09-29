@@ -12,12 +12,13 @@ over exactly those lines.
 
 What each group proves:
 
-*pending*     what `--check` finds in the old layout, what it prints, what it
-              exits with, and that it writes nothing
+*pending*     what the update finds in the old layout, and the root it refuses
 *applying*    `--yes` applies every migration, a second run finds nothing, and
               a declined migration stays pending
-*specs*       no proof file and no run file survives beside a spec
-*config*      the file that is left is the gate and what the gate derives
+*specs*       no proof file and no run file survives beside a spec, and the
+              old cache folder goes
+*config*      the file that is left is the gate, what the gate derives, and
+              the host
 *tags*        the Windows tag becomes `@env(windows)`, and the kind of test
               goes from every proof line
 *hooks*       the pre-commit and pre-push hooks v0.9.5 installed go
@@ -50,6 +51,7 @@ UPDATE = os.path.join(ROOT, 'scripts', 'init', 'update.py')
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
+import scaffold  # noqa: E402
 import update  # noqa: E402
 from purlin import status as status_module  # noqa: E402
 
@@ -68,6 +70,10 @@ OLD_PRE_PUSH = ('#!/usr/bin/env bash\n'
                 '# Purlin pre-push hook: proof coverage check.\n')
 
 VERSION = open(os.path.join(ROOT, 'VERSION'), encoding='utf-8').read().strip()
+
+# The keys of the config this release writes, sorted.
+SEVEN_KEYS = ['audit_parallel', 'ci', 'gate', 'min_strength',
+              'mutation_engine', 'tests', 'version']
 
 
 # --- building a project to run against --------------------------------------
@@ -173,21 +179,21 @@ def _ids(root):
     return [item['id'] for item in update.pending(root)]
 
 
+def _config(root):
+    return json.loads(_read(root, '.purlin/config.json'))
+
+
+def _set_config(root, **values):
+    config = _config(root)
+    for key, value in values.items():
+        if value is None:
+            config.pop(key, None)
+        else:
+            config[key] = value
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+
+
 # --- what a project still needs ---------------------------------------------
-
-# purlin: update PROOF-3
-def test_check_on_the_v095_layout_names_every_migration(tmp_path, capsys):
-    root = _project(tmp_path, V095)
-    assert update.main(['--check', '--project-root', root]) == 1
-    printed = capsys.readouterr().out
-    for migration_id in _ids(root):
-        assert migration_id in printed
-    assert 'Run: purlin:init --update' in printed
-    _apply(root)
-    capsys.readouterr()
-    assert update.main(['--check', '--project-root', root]) == 0
-    assert capsys.readouterr().out.startswith('Nothing is pending')
-
 
 # purlin: update PROOF-2
 def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
@@ -211,24 +217,6 @@ def test_a_retired_hook_adds_the_hook_migration(tmp_path):
         assert expected in found, found
 
 
-# purlin: update PROOF-3
-def test_check_exits_1_while_anything_is_pending(tmp_path):
-    root = _project(tmp_path, V095)
-    done = subprocess.run([sys.executable, UPDATE, '--check',
-                           '--project-root', root],
-                          capture_output=True, text=True)
-    assert done.returncode == 1
-    assert 'untracked-files' in done.stdout
-
-
-# purlin: update PROOF-3
-def test_check_writes_nothing(tmp_path):
-    root = _project(tmp_path, V095)
-    before = _git(root, 'status', '--porcelain').stdout
-    update.main(['--check', '--project-root', root])
-    assert _git(root, 'status', '--porcelain').stdout == before
-
-
 # purlin: update PROOF-1
 def test_every_pending_entry_says_what_it_does_and_to_which_files(tmp_path):
     root = _project(tmp_path, V095)
@@ -244,11 +232,14 @@ def test_every_pending_entry_says_what_it_does_and_to_which_files(tmp_path):
 
 
 # purlin: update PROOF-4
-def test_a_root_without_purlin_exits_2(tmp_path, capsys):
+def test_a_root_without_purlin_exits_2(tmp_path):
     empty = str(tmp_path / 'empty')
     os.makedirs(empty)
-    assert update.main(['--check', '--project-root', empty]) == 2
-    assert 'nothing to update' in capsys.readouterr().err
+    done = subprocess.run([sys.executable, UPDATE, '--project-root', empty],
+                          capture_output=True, text=True)
+    assert done.returncode == 2
+    assert 'nothing to update' in done.stderr
+    assert 'Run purlin:init first.' in done.stderr
 
 
 # purlin: update PROOF-1
@@ -267,12 +258,10 @@ def test_yes_applies_every_migration(tmp_path, capsys, layout):
     assert _apply(root) == 0
     capsys.readouterr()
     assert update.pending(root) == []
-    assert update.main(['--check', '--project-root', root]) == 0
-    assert 'Nothing is pending' in capsys.readouterr().out
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
-# purlin: update PROOF-5
+# purlin: update PROOF-33
 def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,
                                                            layout):
     root = _project(tmp_path, layout)
@@ -281,6 +270,7 @@ def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,
     tree = _git(root, 'status', '--porcelain').stdout
     capsys.readouterr()
     assert _apply(root) == 0
+    assert 'Nothing is pending' in capsys.readouterr().out
     assert _git(root, 'rev-parse', 'HEAD').stdout.strip() == head
     assert _git(root, 'status', '--porcelain').stdout == tree
 
@@ -335,7 +325,7 @@ def test_no_proof_or_verification_file_remains_tracked(tmp_path, layout):
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
-# purlin: update PROOF-8
+# purlin: update PROOF-34
 def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):
     root = _project(tmp_path, layout)
     assert '.purlin/report-data.js' in _tracked(root)
@@ -346,8 +336,18 @@ def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):
     assert '.purlin/report-data.js' in ignored
 
 
-# purlin: update PROOF-8
-def test_a_committed_cache_is_untracked_and_left_on_disk(tmp_path):
+# purlin: update PROOF-35
+def test_an_ignored_cache_is_deleted(tmp_path):
+    root = _project(tmp_path, V095)
+    cache = os.path.join(root, '.purlin', 'cache')
+    assert os.listdir(cache), 'the fixture carries a cache'
+    assert not any(rel.startswith('.purlin/cache/') for rel in _tracked(root))
+    _apply(root)
+    assert not os.path.exists(cache)
+
+
+# purlin: update PROOF-36
+def test_a_committed_cache_is_deleted_from_git_and_from_disk(tmp_path):
     """The v0.9.5 fixture ignores its cache, so commit one the way a project would."""
     root = _project(tmp_path, V095)
     _git(root, 'add', '-f', '.purlin/cache')
@@ -356,7 +356,7 @@ def test_a_committed_cache_is_untracked_and_left_on_disk(tmp_path):
     assert 'untracked-files' in _ids(root)
     _apply(root)
     assert not any(rel.startswith('.purlin/cache/') for rel in _tracked(root))
-    assert os.path.isdir(os.path.join(root, '.purlin', 'cache'))
+    assert not os.path.exists(os.path.join(root, '.purlin', 'cache'))
 
 
 # --- the config --------------------------------------------------------------
@@ -372,37 +372,77 @@ def test_the_config_is_the_gate_shape(tmp_path, layout):
     assert config['mutation_engine'] == 'none'
     assert config['min_strength'] is None
     assert config['audit_parallel'] == 4
-    assert sorted(config) == ['audit_parallel', 'ci', 'gate', 'min_strength',
-                              'mutation_engine', 'tests', 'trust', 'version']
+    assert sorted(config) == SEVEN_KEYS
     assert config['ci'] == 'github'
-    assert config['trust'] in ('local', 'remote')
 
 
-@pytest.mark.parametrize('gate', ('strong', 'signed'))
-# purlin: update PROOF-10
-def test_the_config_is_the_gate_shape_at_every_gate(tmp_path, capsys,
-                                                    monkeypatch, gate):
+def _config_at(tmp_path, monkeypatch, gate):
+    """The config the update leaves with the gate question answered `gate`."""
     root = _project(tmp_path, V095)
     _answers(monkeypatch, [('Gate [', gate)])
     _apply(root, argv=())
+    return _config(root)
+
+
+# purlin: update PROOF-37
+def test_the_config_is_the_gate_shape_at_strong(tmp_path, capsys, monkeypatch):
+    config = _config_at(tmp_path, monkeypatch, 'strong')
     capsys.readouterr()
-    config = json.loads(_read(root, '.purlin/config.json'))
-    assert config['gate'] == gate
+    assert config['gate'] == 'strong'
     assert config['audit_parallel'] == 4
-    assert sorted(config) == ['audit_parallel', 'ci', 'gate', 'min_strength',
-                              'mutation_engine', 'tests', 'trust', 'version']
+    assert sorted(config) == SEVEN_KEYS
+
+
+# purlin: update PROOF-38
+def test_the_config_is_the_gate_shape_at_signed(tmp_path, capsys, monkeypatch):
+    config = _config_at(tmp_path, monkeypatch, 'signed')
+    capsys.readouterr()
+    assert config['gate'] == 'signed'
+    assert config['audit_parallel'] == 4
+    assert sorted(config) == SEVEN_KEYS
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
-# purlin: update PROOF-10
+# purlin: update PROOF-39
 def test_retired_keys_are_gone(tmp_path, layout):
     root = _project(tmp_path, layout)
-    before = json.loads(_read(root, '.purlin/config.json'))
-    retired = update._gate().RETIRED_KEYS
-    assert any(key in before for key in retired), before
+    before = _config(root)
+    assert 'spec_dir' in before and 'pre_push' in before, before
     _apply(root)
-    after = json.loads(_read(root, '.purlin/config.json'))
-    assert [key for key in retired if key in after] == []
+    after = _config(root)
+    assert 'spec_dir' not in after and 'pre_push' not in after, after
+
+
+# purlin: update PROOF-40
+def test_no_remote_writes_ci_none(tmp_path):
+    root = _project(tmp_path, V095, remote=False)
+    _apply(root)
+    assert _config(root)['ci'] == 'none'
+
+
+# purlin: update PROOF-41
+def test_another_host_writes_ci_none(tmp_path):
+    root = _project(tmp_path, V095, remote=False)
+    _git(root, 'remote', 'add', 'origin', 'https://gitlab.com/acme/demo.git')
+    _apply(root)
+    assert _config(root)['ci'] == 'none'
+
+
+# purlin: update PROOF-42
+def test_an_azure_remote_writes_ci_azure(tmp_path):
+    root = _project(tmp_path, V095, remote=False)
+    _git(root, 'remote', 'add', 'origin',
+         'https://dev.azure.com/acme/demo/_git/demo')
+    _apply(root)
+    assert _config(root)['ci'] == 'azure'
+
+
+# purlin: update PROOF-43
+def test_a_ci_the_project_named_is_kept(tmp_path):
+    root = _project(tmp_path, V095)
+    _set_config(root, ci='none')
+    _apply(root)
+    assert _config(root)['ci'] == 'none'
 
 
 # purlin: update PROOF-12
@@ -412,7 +452,7 @@ def test_the_gate_defaults_to_passed(tmp_path):
     assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'passed'
 
 
-# purlin: update PROOF-12
+# purlin: update PROOF-45
 def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):
     root = _project(tmp_path, V095)
     config = json.loads(_read(root, '.purlin/config.json'))
@@ -423,20 +463,21 @@ def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):
     assert written['gate'] == 'strong'
 
 
-# purlin: update PROOF-12
+# purlin: update PROOF-46
 def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
                                                      monkeypatch):
     root = _project(tmp_path, V095)
     asked = _answers(monkeypatch, [('Gate [', 'signed')])
     _apply(root, argv=())
-    capsys.readouterr()
+    printed = capsys.readouterr().out
+    assert scaffold.GATE_QUESTION in printed, printed
     assert any('Gate [' in prompt for prompt in asked)
     assert len([prompt for prompt in asked if 'Gate [' in prompt]) == 1
     written = json.loads(_read(root, '.purlin/config.json'))
     assert written['gate'] == 'signed'
 
 
-# purlin: update PROOF-12
+# purlin: update PROOF-48
 def test_the_gate_the_project_named_is_the_default(tmp_path, capsys,
                                                    monkeypatch):
     root = _project(tmp_path, V095)
@@ -452,7 +493,7 @@ def test_the_gate_the_project_named_is_the_default(tmp_path, capsys,
     assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'signed'
 
 
-# purlin: update PROOF-12
+# purlin: update PROOF-47
 def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,
                                                          monkeypatch):
     root = _project(tmp_path, V095)
@@ -482,7 +523,7 @@ def test_no_key_nothing_reads_is_written_back(tmp_path, layout):
     assert 'report' in update.SET_UP_BY_095_KEYS
 
 
-# purlin: update PROOF-11
+# purlin: update PROOF-44
 def test_a_dashboard_switch_set_off_is_not_written_back_either(tmp_path):
     root = _project(tmp_path, V095)
     config = json.loads(_read(root, '.purlin/config.json'))
@@ -893,21 +934,29 @@ def test_a_config_with_no_key_to_drop_prints_no_dropped_line(tmp_path, capsys):
 MUTATION = 'Measure test strength by breaking the code on purpose?'
 
 
+def _asked_at(asked, needle):
+    """The position of the one prompt carrying `needle` among those asked."""
+    found = [index for index, prompt in enumerate(asked) if needle in prompt]
+    assert len(found) == 1, asked
+    return found[0]
+
+
 # purlin: update PROOF-26
 def test_the_mutation_question_defaults_to_no(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
-    asked = _answers(monkeypatch, [(MUTATION, '')])
+    asked = _answers(monkeypatch, [('Gate [', 'strong'), (MUTATION, '')])
     _apply(root, argv=())
     capsys.readouterr()
-    assert any(prompt.startswith(MUTATION + ' It needs mutmut')
-               for prompt in asked), asked
-    written = json.loads(_read(root, '.purlin/config.json'))
+    assert asked[_asked_at(asked, MUTATION)].startswith(
+        MUTATION + ' It needs mutmut'), asked
+    assert _asked_at(asked, 'Gate [') < _asked_at(asked, MUTATION)
+    written = _config(root)
     assert written['mutation_engine'] == 'none'
     assert written['min_strength'] is None
 
 
-# purlin: update PROOF-26
+# purlin: update PROOF-54
 def test_yes_turns_it_on_at_the_gate_s_minimum(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
@@ -920,10 +969,10 @@ def test_yes_turns_it_on_at_the_gate_s_minimum(tmp_path, capsys, monkeypatch):
     assert 'run purlin:init to wire mutmut' in printed
 
 
-# purlin: update PROOF-26
+# purlin: update PROOF-55
 def test_no_engine_means_no_question(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
-    asked = _answers(monkeypatch)
+    asked = _answers(monkeypatch, [('Gate [', 'strong')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
     assert not [prompt for prompt in asked if MUTATION in prompt], asked
@@ -932,15 +981,37 @@ def test_no_engine_means_no_question(tmp_path, capsys, monkeypatch):
     assert "no engine breaks this project's code" in printed
 
 
-# purlin: update PROOF-26
+# purlin: update PROOF-56
+def test_at_passed_no_mutation_question_is_asked(tmp_path, capsys,
+                                                  monkeypatch):
+    root = _project(tmp_path, V095)
+    _write(root, 'conftest.py', '')
+    asked = _answers(monkeypatch, [('Gate [', 'passed')])
+    _apply(root, argv=())
+    capsys.readouterr()
+    assert not [prompt for prompt in asked if MUTATION in prompt], asked
+    written = _config(root)
+    assert written['mutation_engine'] == 'none'
+    assert written['min_strength'] is None
+
+
+# purlin: update PROOF-57
+def test_at_passed_no_engine_is_named(tmp_path, capsys, monkeypatch):
+    root = _project(tmp_path, V095)
+    asked = _answers(monkeypatch, [('Gate [', 'passed')])
+    _apply(root, argv=())
+    printed = capsys.readouterr().out
+    assert not [prompt for prompt in asked if MUTATION in prompt], asked
+    assert 'no engine breaks' not in printed, printed
+
+
+# purlin: update PROOF-58
 def test_a_mutation_setting_already_written_is_kept(tmp_path, capsys,
                                                     monkeypatch):
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
-    config = json.loads(_read(root, '.purlin/config.json'))
-    config['mutation_engine'] = 'auto'
-    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
-    asked = _answers(monkeypatch)
+    _set_config(root, mutation_engine='auto')
+    asked = _answers(monkeypatch, [('Gate [', 'strong')])
     _apply(root, argv=())
     capsys.readouterr()
     assert not [prompt for prompt in asked if MUTATION in prompt], asked
@@ -1178,17 +1249,15 @@ def test_purlin_yml_carries_the_matrix_the_tags_name(tmp_path):
 
 
 # purlin: update PROOF-15
-def test_purlin_yml_carries_this_releases_triggers_and_gate_check(tmp_path):
+def test_purlin_yml_carries_this_releases_triggers(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
     text = _read(root, '.github/workflows/purlin.yml')
     assert "branches: ['run/**']" in text
     assert "tags: ['signed/**']" in text
-    assert 'name: Check the gate' in text
-    assert 'scripts/ci/gate_check.py" --check --verify' in text
 
 
-# purlin: update PROOF-15
+# purlin: update PROOF-49
 def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
                                                     monkeypatch):
     root = _project(tmp_path, V095)
@@ -1203,7 +1272,7 @@ def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
             if rel.startswith('.github/')] == []
 
 
-# purlin: update PROOF-15
+# purlin: update PROOF-50
 def test_a_project_with_no_remote_gets_no_workflow(tmp_path, capsys):
     root = _project(tmp_path, V095, remote=False)
     _apply(root)
@@ -1215,7 +1284,7 @@ def test_a_project_with_no_remote_gets_no_workflow(tmp_path, capsys):
     assert 'left the workflow unwritten; a prerequisite is missing' in printed
 
 
-# purlin: update PROOF-15
+# purlin: update PROOF-51
 def test_a_host_init_writes_no_workflow_for_gets_none(tmp_path, capsys):
     root = _project(tmp_path, V095, remote=False)
     _git(root, 'remote', 'add', 'origin', 'https://gitlab.com/acme/demo.git')
@@ -1406,15 +1475,16 @@ def test_what_the_update_prints_carries_no_emoji(tmp_path, capsys):
         assert ord(char) < 0x2190 or char in '→─', repr(char)
 
 
-# purlin: update PROOF-20
+# purlin: update PROOF-52
 def test_the_run_ends_by_naming_the_next_step(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _apply(root)
     printed = capsys.readouterr().out.rstrip().splitlines()
-    assert printed[-1].startswith('→ Next: run purlin:status')
+    assert printed[-1] == ('→ Next: run purlin:status to see where every '
+                           'rule stands.')
 
 
-# purlin: update PROOF-20
+# purlin: update PROOF-53
 def test_a_run_that_leaves_work_names_it(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
     _answers(monkeypatch, [('Apply plugins', 'n')])
@@ -1422,3 +1492,4 @@ def test_a_run_that_leaves_work_names_it(tmp_path, capsys, monkeypatch):
     printed = capsys.readouterr().out.rstrip().splitlines()
     assert printed[-1] == ('→ Next: run purlin:init --update again for '
                            'plugins.')
+

@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """Bring a project an older Purlin set up onto this release.
 
-    python3 scripts/init/update.py [--check] [--yes] [--project-root DIR]
+    python3 scripts/init/update.py [--yes] [--project-root DIR]
 
-`purlin:init --update` is the command you run, and init hands it here; its
-`--dry-run` is this script's `--check`. This file is the part of the upgrade
-that has to be deterministic, so the skill asks and this script edits.
+`purlin:init --update` is the command you run, and init hands it here. This
+file is the part of the upgrade that has to be deterministic, so the skill
+asks and this script edits.
 
 `pending(project_root)` returns the migrations a project still needs: an id, one
-line saying what it does, and the files it touches. `--check` prints that list
-and exits 1 while anything is pending, and `sync_status` reads the same
-function, so the advisory you see and the work this script does cannot disagree.
-The detectors read the layout v0.9.5 left, and a project lands straight on this
-release's layout. Every migration asks before it writes, and every file
-it rewrites is copied beside itself first as `<name>.local-<sha8>.bak`. `--yes`
-answers yes to every question. A file this release deletes rather than rewrites
-is left in git history instead of copied.
+line saying what it does, and the files it touches. The run prints that list
+before it asks, and `sync_status` reads the same function, so the advisory you
+see and the work this script does cannot disagree. The detectors read the
+layout v0.9.5 left, and a project lands straight on this release's layout.
+Every migration asks before it writes, and every file it rewrites is copied
+beside itself first as `<name>.local-<sha8>.bak`. `--yes` answers yes to every
+question. A file this release deletes rather than rewrites is left in git
+history instead of copied.
 
-Exit codes: 0 nothing pending or the run applied what was, 1 `--check` with
-something pending, 2 no Purlin project at that root.
+Exit codes: 0 nothing pending or the run applied what was, 2 no Purlin project
+at that root.
 """
 
 import argparse
@@ -31,7 +31,7 @@ import shutil
 import subprocess
 import sys
 
-EXIT_OK, EXIT_PENDING, EXIT_BAD_INVOCATION = 0, 1, 2
+EXIT_OK, EXIT_BAD_INVOCATION = 0, 2
 
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
@@ -110,12 +110,10 @@ TEST_EXTENSIONS = ('.py', '.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.cs',
                    '.sh', '.bash', '.sql')
 SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
 _COMMIT = 'chore(update): migrate to %s (%s)'
-
-GATE_QUESTION = """
-What must be true of every rule before a version is proven?
-  passed  every rule's tests pass
-  strong  tests pass and the audit finds them sound
-  signed  strong, and a person signs each rule"""
+# What `ci` may say: the git host a remote runner reads, or `none`.
+CI_VALUES = ('github', 'azure', 'none')
+# The gates at which the mutation question is asked, as init asks it.
+MUTATION_GATES = ('strong', 'signed')
 
 # --- helpers ---------------------------------------------------------------
 def _read(path):
@@ -138,7 +136,7 @@ def _git(root, *args):
     return done.returncode == 0, (done.stdout + done.stderr).strip()
 
 def _untrack(root, rel):
-    _git(root, 'rm', '-q', '--cached', '--ignore-unmatch', '--', rel)
+    _git(root, 'rm', '-r', '-q', '--cached', '--ignore-unmatch', '--', rel)
 
 def _back_up_copy(path, rel):
     """Copy the bytes about to change, named for their sha256, and say where."""
@@ -205,11 +203,17 @@ def _confirm(question, assume_yes):
         return False
     return answer.strip().lower() in ('y', 'yes')
 
-def _host(root):
-    ok, out = _git(root, 'remote', 'get-url', 'origin')
-    if ok and ('dev.azure.com' in out or 'visualstudio.com' in out):
-        return 'azure'
-    return 'github'
+def _ci(root, old):
+    """`github`, `azure` or `none`: the value the project named, else its host.
+
+    `none` is a project with no remote, or with a host neither GitHub nor
+    Azure DevOps: everything on its own machine works, and only a remote run
+    needs one of the two.
+    """
+    named = str(old.get('ci') or '').strip().lower()
+    if named in CI_VALUES:
+        return named
+    return _init().git_host(root) or 'none'
 
 def _s(items):
     return '' if len(items) == 1 else 's'
@@ -259,8 +263,12 @@ def _apply_design_refs(root, files, args, out):
 def _detect_untracked(root):
     hits = _files_under(root, 'specs', (PROOF_FILE_GLOB, RUN_FILE_GLOB))
     ok, tracked = _git(root, 'ls-files')
-    hits += [rel for rel in (tracked.splitlines() if ok else [])
-             if rel == DASHBOARD_DATA or rel.startswith(CACHE_DIR + '/')]
+    listed = tracked.splitlines() if ok else []
+    hits += [rel for rel in listed if rel == DASHBOARD_DATA]
+    # The cache 0.9.5 kept is gone outright, tracked or ignored.
+    if (os.path.isdir(os.path.join(root, *CACHE_DIR.split('/')))
+            or any(rel.startswith(CACHE_DIR + '/') for rel in listed)):
+        hits.append(CACHE_DIR + '/')
     path = os.path.join(root, '.gitignore')
     lines = _read(path).splitlines() if os.path.isfile(path) else []
     if any(line not in lines for line in IGNORE_LINES):
@@ -268,7 +276,7 @@ def _detect_untracked(root):
     return sorted(set(hits))
 
 def _apply_untracked(root, files, args, out):
-    gone = 0
+    gone, cache = 0, False
     for rel in files:
         if rel == '.gitignore':
             continue
@@ -277,6 +285,10 @@ def _apply_untracked(root, files, args, out):
         if rel.startswith('specs/'):
             os.remove(os.path.join(root, rel))
             gone += 1
+        elif rel == CACHE_DIR + '/':
+            shutil.rmtree(os.path.join(root, *CACHE_DIR.split('/')),
+                          ignore_errors=True)
+            cache = True
     if '.gitignore' in files:
         path = os.path.join(root, '.gitignore')
         text = _read(path) if os.path.isfile(path) else ''
@@ -287,9 +299,11 @@ def _apply_untracked(root, files, args, out):
         _write(path, text + '\n# Regenerated locally, never committed\n'
                + ''.join(line + '\n' for line in missing))
         out.done('.gitignore')
-    out.say('deleted %d file%s beside the specs and untracked the dashboard '
-            'data and the cache; a run writes no file beside a spec, and '
-            'evidence lives in %s' % (gone, '' if gone == 1 else 's', EVIDENCE_DIR))
+    out.say('deleted %d file%s beside the specs%s, and untracked the '
+            'dashboard data; a run writes no file beside a spec, and evidence '
+            'lives in %s' % (gone, '' if gone == 1 else 's',
+                             ' and the folder %s/' % CACHE_DIR if cache
+                             else '', EVIDENCE_DIR))
 
 def _detect_hooks(root):
     """Every git hook v0.9.5 installed. This release installs none."""
@@ -306,7 +320,7 @@ def _apply_hooks(root, files, args, out):
     A push is a person's act and a gate is the git host's, so a hook in front
     of either was a convenience that had to be explained and could be
     skipped. What is left is the tag: `purlin:sign` writes `signed/<version>`
-    at the gate `signed` when every rule meets it, and a person pushes it.
+    at the gate `signed` when nothing is left to do, and a person pushes it.
     """
     for rel in files:
         path = os.path.join(root, rel)
@@ -330,7 +344,6 @@ def _detect_config(root):
              or 'mutation_engine' not in config
              or 'audit_parallel' not in config
              or config.get('version') != _version()
-             or config.get('trust') not in gate.TRUST_VALUES
              or any(key in config for key in gate.RETIRED_KEYS))
     return ['.purlin/config.json'] if stale else []
 
@@ -348,38 +361,14 @@ def _gate_default(old):
     return 'strong' if str(old.get(PRE_PUSH_KEY)).strip() == 'strict' else 'passed'
 
 
-def _ask_trust(default, assume_yes, gate_name):
-    """The trust question, asked again on an update.
-
-    A yes is `local`, which is a project whose own runs count and whose own
-    signature is the evidence. A no is `remote`, and `purlin:sign` then
-    refuses a rule whose tests have no run from the remote runner for the
-    commit being signed.
-    """
-    gate = _gate()
-    default = default if default in gate.TRUST_VALUES else gate.DEFAULT_TRUST
-    if assume_yes:
-        return default
-    try:
-        answer = input('%s [%s] ' % (
-            _init().trust_question(gate_name),
-            'y' if default == 'local' else 'n')).strip().lower()
-    except (EOFError, KeyboardInterrupt):
-        return default
-    if answer.startswith('y'):
-        return 'local'
-    if answer.startswith('n'):
-        return 'remote'
-    return default
-
-
 def _ask_mutation(root, framework, assume_yes, out):
     # `framework` is the list of suite names the update writes.
     """`none` or `auto`: the mutation question init asks, asked on an update.
 
     Released 0.9.5 had no such setting, so the question is new to a project
-    it set up. It is asked only where an engine exists for a framework the
-    project carries, and the default is no.
+    it set up. It is asked only at the gates where it runs, `strong` and
+    `signed`, and only where an engine exists for a framework the project
+    carries, and the default is no.
     """
     init = _init()
     named = list(framework)
@@ -401,10 +390,14 @@ def _ask_mutation(root, framework, assume_yes, out):
     return 'auto'
 
 def _ask_gate(default, assume_yes):
-    """The one question init asks, asked once more on an update."""
+    """The gate question init asks, asked once more on an update."""
     if assume_yes:
         return default
-    print(GATE_QUESTION)
+    init = _init()
+    print('')
+    print(init.GATE_QUESTION)
+    for line in init.GATE_CHOICES:
+        print('  ' + line)
     try:
         answer = input('Gate [%s]: ' % default).strip().lower()
     except (EOFError, KeyboardInterrupt):
@@ -440,26 +433,27 @@ def _tests_setting(root, old):
 
 
 def _apply_config(root, files, args, out):
-    gate = _gate()
     old = _config(root)
     path = os.path.join(root, '.purlin', 'config.json')
     out.kept(_back_up_copy(path, '.purlin/config.json'))
     chosen = _ask_gate(_gate_default(old), args.yes)
-    resolved = gate.resolve_gate(dict(old, gate=chosen))
     tests, unwired = _tests_setting(root, old)
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
     init = _init()
     names = [entry.get('name') for entry in tests if isinstance(entry, dict)]
-    mutation = (old['mutation_engine'] if 'mutation_engine' in old
-                else _ask_mutation(root, names, args.yes, out))
+    if 'mutation_engine' in old:
+        mutation = old['mutation_engine']
+    elif chosen in MUTATION_GATES:
+        mutation = _ask_mutation(root, names, args.yes, out)
+    else:
+        mutation = 'none'
     config = {
         'version': _version(), 'gate': chosen, 'mutation_engine': mutation,
         'min_strength': init.min_strength_for(chosen, mutation),
         'audit_parallel': init.audit_parallel(old),
         'tests': tests,
-        'ci': old.get('ci') or _host(root),
-        'trust': _ask_trust(resolved.trust, args.yes, chosen),
+        'ci': _ci(root, old),
     }
     # Every key the old file carried that this one does not: the retired
     # ones, and the ones 0.9.5 wrote that nothing here reads. The framework
@@ -533,8 +527,7 @@ def _apply_workflows(root, files, args, out):
     flow = _flow()
     from purlin import evidence as evidence_module
     tags = flow.env_tags_in_specs(root)
-    write_one, reasons = flow.wanted(tags, _config(root).get('trust'),
-                                     evidence_module.host_os(),
+    write_one, reasons = flow.wanted(tags, None, evidence_module.host_os(),
                                      _config(root).get('gate'))
     if not write_one:
         out.say('wrote no workflow: %s'
@@ -561,9 +554,10 @@ def _apply_workflows(root, files, args, out):
            flow.render_workflow(host, tags, 'v' + _version()))
     out.done(rel)
     out.say('wrote %s for %s, covering %s'
-            % (rel, host, ', '.join(tags) if tags else 'linux'))
+            % (rel, host, ', '.join(evidence_module.os_word(tag)
+                                    for tag in (tags or ['linux']))))
     out.say('it runs on a push to a run/* branch and on a push of a signed/* '
-            'tag, and ends with the gate check')
+            'tag')
 
 
 def _detect_evidence(root):
@@ -943,7 +937,8 @@ MIGRATIONS = (
      _detect_os_tags, _apply_os_tags),
     ('kind-tags', 'drop the kind of test from every proof line',
      _detect_kind_tags, _apply_kind_tags),
-    ('untracked-files', 'drop the proof files and untrack the dashboard data',
+    ('untracked-files', 'drop the proof files and the old cache, and untrack '
+     'the dashboard data',
      _detect_untracked, _apply_untracked),
     ('hooks', 'remove the git hooks an older release installed',
      _detect_hooks, _apply_hooks),
@@ -1042,7 +1037,6 @@ def _print_pending(items, root):
                                      if len(item['files']) > 6 else [])
         print('  %s: %s\n      %s'
               % (item['id'], item['description'], '\n      '.join(names)))
-    print('%s Run: purlin:init --update' % ARROW)
 
 def _commit(root, applied, paths):
     """One commit for the whole update, naming the migrations it carries."""
@@ -1061,9 +1055,8 @@ def main(argv=None):
     console_module.force_utf8_stdio()
     parser = argparse.ArgumentParser(
         prog='update.py', description=__doc__.splitlines()[0])
-    for flag, note in (('--check', 'print what is pending and write nothing'),
-                       ('--yes', 'answer yes to every question')):
-        parser.add_argument(flag, action='store_true', help=note)
+    parser.add_argument('--yes', action='store_true',
+                        help='answer yes to every question')
     parser.add_argument('--project-root', default='.')
     args = parser.parse_args(argv)
 
@@ -1080,8 +1073,6 @@ def main(argv=None):
             print(advice)
         return EXIT_OK
     _print_pending(items, root)
-    if args.check:
-        return EXIT_PENDING
     print('')
     appliers = dict((m[0], m[3]) for m in MIGRATIONS)
     report, applied = _Report(), []
