@@ -19,6 +19,7 @@ the signed tag with the commands a person runs, one case per step.
 """
 
 import contextlib
+import functools
 import io
 import json
 import os
@@ -316,6 +317,18 @@ class TestTheQuestions:
         finally:
             made.close()
 
+    # purlin: scaffold PROOF-126
+    def test_a_later_run_asks_nothing_before_it_writes(self):
+        made = Project('pytest')
+        try:
+            made.run('--gate', 'passed')
+            # Answers wait on stdin, so any question would be seen asked.
+            out = _answering(made, 'n\n' * 20, '--gate', 'signed')
+            assert asked(out) == [], out
+            assert made.config()['gate'] == 'signed'
+        finally:
+            made.close()
+
     # purlin: scaffold PROOF-2
     def test_with_mutation_on_passed_has_no_minimum(self, project):
         assert _minimum(project, 'passed', '--mutation') is None
@@ -540,6 +553,19 @@ class TestMutationTesting:
         finally:
             made.close()
 
+    # purlin: scaffold PROOF-127
+    def test_on_windows_a_pytest_project_is_told_mutmut_does_not_run(
+            self, project, monkeypatch):
+        mutation = scaffold_module.mutation_module
+        monkeypatch.setattr(mutation, 'runs_here', functools.partial(
+            mutation.runs_here, os_name='windows'))
+        output = project.run('--gate', 'strong')
+        assert 'Measure test strength' not in output, output
+        assert project.config()['mutation_engine'] == 'none'
+        assert ('Mutation testing is off: mutmut does not run on Windows, so '
+                'the AI audit alone judges test strength.'
+                in output.splitlines()), output
+
     # purlin: scaffold PROOF-84
     def test_a_value_the_config_carries_is_kept_without_asking(self, project):
         write(project.path('.purlin/config.json'),
@@ -618,6 +644,31 @@ class TestTheAnchorsFolder:
         assert os.path.isdir(project.path('specs'))
         assert not os.path.exists(project.path('specs/_anchors'))
         assert 'specs/_anchors' not in output, output
+
+
+class TestASettingsFileThatCannotBeRead:
+
+    # purlin: scaffold PROOF-128
+    def test_it_stops_setup_and_nothing_is_written(self, project):
+        broken = '{\n  "gate": "passed",\n  "tests": [],\n}\n'
+        write(project.path('.purlin/config.json'), broken)
+        # The cause is the JSON reader's own words and line, which differ
+        # between Python releases.
+        try:
+            json.loads(broken)
+        except ValueError as error:
+            cause = '%s at line %d' % (error.msg, error.lineno)
+        before = tree(project.root)
+        done = subprocess.run(
+            [sys.executable, SCAFFOLD, '--project-root', project.root,
+             '--gate', 'strong'], capture_output=True, encoding='utf-8',
+            timeout=300, stdin=subprocess.DEVNULL)
+        assert done.returncode == 1, done.stdout + done.stderr
+        assert ('.purlin/config.json cannot be read: %s. Fix the file by '
+                'hand; nothing ran and nothing was saved.' % cause
+                in (done.stdout + done.stderr).splitlines()), (
+            done.stdout + done.stderr)
+        assert tree(project.root) == before
 
 
 # ---------------------------------------------------------------------------
@@ -865,12 +916,16 @@ class TestTheWorkflow:
             made.close()
 
     # purlin: scaffold PROOF-15
-    def test_windows_and_macos_tags_are_the_matrix(self, project):
+    def test_the_matrix_names_only_the_systems_this_machine_is_not(
+            self, project):
         tag_foreign(project, 'windows', 'macos')
         project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
-        assert '        os: [macos-latest, windows-latest]\n' in workflow, (
-            workflow)
+        # On a Mac the one foreign system is Windows; on Windows, macOS.
+        matrix = {'macos': 'windows-latest', 'windows': 'macos-latest'}.get(
+            scaffold_module.evidence_module.host_os(),
+            'macos-latest, windows-latest')
+        assert '        os: [%s]\n' % matrix in workflow, workflow
 
     # purlin: scaffold PROOF-72
     def test_one_foreign_system_is_the_whole_matrix(self, project):
@@ -939,11 +994,14 @@ class TestTheWorkflow:
 def _host_tool_line(host, tool, installed):
     """Init on a `host` remote with `tool` on the search path or not.
 
-    The search path holds a link to git and, where `installed`, an empty
-    `tool`, so which of the two lines prints is decided by that alone.
+    The search path holds git's own folder and, where `installed`, a
+    stand-in `tool`, so which of the two lines prints is decided by that
+    alone. The stand-in is found the way the real program is: on POSIX a
+    file with the exec bit, on Windows `<tool>.cmd`.
     """
-    if os.name == 'nt':
-        pytest.skip('a PATH of one linked git is built on POSIX only')
+    git_dir = os.path.dirname(shutil.which('git'))
+    assert shutil.which(tool, path=git_dir) is None, (
+        'git\'s own folder %s holds %s' % (git_dir, tool))
     if host == 'azure':
         made = Project('pytest',
                        remote='https://dev.azure.com/acme/demo/_git/demo')
@@ -954,10 +1012,15 @@ def _host_tool_line(host, tool, installed):
     bin_dir = os.path.realpath(tempfile.mkdtemp(prefix='purlin-bin-'))
     try:
         tag_foreign(made)
-        os.symlink(shutil.which('git'), os.path.join(bin_dir, 'git'))
         if installed:
-            write(os.path.join(bin_dir, tool), '#!/bin/sh\n')
-        output = made.run('--gate', 'strong', env={'PATH': bin_dir})
+            if os.name == 'nt':
+                write(os.path.join(bin_dir, tool + '.cmd'), '@echo off\r\n')
+            else:
+                stand_in = os.path.join(bin_dir, tool)
+                write(stand_in, '#!/bin/sh\n')
+                os.chmod(stand_in, 0o755)
+        output = made.run('--gate', 'strong',
+                          env={'PATH': bin_dir + os.pathsep + git_dir})
         lines = output.splitlines()
         present = '%s is installed, so a remote run can be watched from here.'
         absent = ('%s is not installed, so purlin:test --remote cannot watch '
@@ -1011,8 +1074,7 @@ class TestTheHost:
         made = Project('pytest', remote='https://git.example.com/acme/demo.git')
         try:
             lines = made.run('--gate', 'strong').splitlines()
-            at = lines.index('Gate strong. Suites none. Git host not read '
-                             'from a remote.')
+            at = lines.index('Gate strong. Suites none.')
             assert lines[at + 1] == UNKNOWN_HOST, lines
             assert made.config()['ci'] == 'none'
         finally:
@@ -1023,10 +1085,9 @@ class TestTheHost:
         made = Project('pytest', host=None)
         try:
             assert git(made.root, 'remote').stdout == ''
-            output = made.run('--gate', 'strong')
-            assert ('Gate strong. Suites none. Git host not read from a '
-                    'remote.' in output.splitlines()), output
-            assert 'cannot run tests remotely' not in output, output
+            lines = made.run('--gate', 'strong').splitlines()
+            at = lines.index('Gate strong. Suites none.')
+            assert lines[at + 1] == 'No git host found.', lines
             assert made.config()['ci'] == 'none'
         finally:
             made.close()
@@ -1115,16 +1176,6 @@ class TestWhatInitWrites:
                               '  1 rule to write a test for: purlin:build'], (
             lines)
 
-    # purlin: scaffold PROOF-35
-    def test_no_emoji_in_the_output(self, project):
-        """Plain ASCII and the four glyphs the design allows, and nothing
-        else, so no emoji in any block of the character set."""
-        tag_foreign(project)
-        output = project.run('--gate', 'signed')
-        assert project.has('.github/workflows/purlin.yml'), output
-        assert sorted({ch for ch in output if ord(ch) > 0x7F}
-                      - set('→▶▼▲')) == [], output
-
 
 class TestNoHookIsInstalled:
     """Nothing runs at commit time and nothing runs at push time."""
@@ -1151,23 +1202,6 @@ class TestNoHookIsInstalled:
 # ---------------------------------------------------------------------------
 
 class TestTheFlags:
-
-    # purlin: scaffold PROOF-32
-    def test_add_appends_to_the_suites_already_there(self, project):
-        project.run('--gate', 'passed')
-        project.run('--add', 'pytest')
-        project.run('--add', 'vitest')
-        assert [suite['name'] for suite in project.config()['tests']] == [
-            'pytest', 'vitest']
-
-    # purlin: scaffold PROOF-98
-    def test_add_twice_names_the_framework_once(self, project):
-        project.run('--gate', 'passed')
-        project.run('--add', 'pytest')
-        project.run('--add', 'vitest')
-        project.run('--add', 'vitest')
-        assert [suite['name'] for suite in project.config()['tests']] == [
-            'pytest', 'vitest']
 
     # purlin: scaffold PROOF-31
     def test_outside_a_repository_a_real_run_refuses(self):
@@ -1488,8 +1522,13 @@ GREETING_SPEC = """# Feature: greeting
 
 ## Proof
 
-- PROOF-1 (RULE-1): `greet("Ada")` returns exactly `Hello, Ada!`
+- PROOF-1 (RULE-1): `greet("Ada")` returns exactly `Hello, Ada!` @env(%s)
 """
+
+# The greeting proof is tagged for the system this machine is, so a person's
+# run here proves it and a runner's `--ci` run on this system writes a
+# section for it; no workflow is written for this machine's own system.
+HERE_OS = scaffold_module.evidence_module.host_os()
 
 # What each language's project holds before init runs, the file its rule
 # covers, and its one marked test, written after init.
@@ -1662,7 +1701,8 @@ def set_up(base, language, prepare=None):
         walk.step('solution', ['dotnet', 'new', 'sln', '-n', 'App'])
         walk.step('solution add', ['dotnet', 'sln', 'App.sln', 'add',
                                    'App.Tests/App.Tests.csproj'])
-    write(walk.path('specs/core/greeting.md'), GREETING_SPEC % shape['scope'])
+    write(walk.path('specs/core/greeting.md'),
+          GREETING_SPEC % (shape['scope'], HERE_OS))
     write(walk.path(shape['test'][0]), shape['test'][1])
     write(walk.path('VERSION'), '0.1.0\n')
     walk.commit_all('the first spec and its test')

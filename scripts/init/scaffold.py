@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """purlin:init: two questions at most, then every file a project needs.
 
-    scaffold.py [--gate passed|strong|signed] [--mutation]
-                [--add <language>] [--update]
+    scaffold.py [--gate passed|strong|signed] [--mutation] [--update]
                 [--project-root DIR] [--plugin-root DIR] [--yes]
 
 Init asks these, in this order, and nothing else:
 
     What must be true of every rule before a version is proven?
     Measure test strength by breaking the code on purpose? [y/N], only at
-      the gates `strong` and `signed`, and only where an engine exists for a
-      framework the tree carries
+      the gates `strong` and `signed`, and only where an engine that runs on
+      this operating system exists for a framework the tree carries
 
 Everything else is derived from those answers or read from the tree: the git
 host from the remote URL, and the minimum test strength from the gate when
@@ -37,8 +36,9 @@ command that fixes it; nothing is written then.
 Both ways of loading Purlin work, and neither is written into a project: this
 checkout under `--plugin-dir`, and the marketplace copy under the plugin cache.
 
-Exit codes: 0 the project is set up, 1 nothing could be done, 2 the invocation
-was wrong or the directory is not a git repository.
+Exit codes: 0 the project is set up, 1 the settings file cannot be read, 2
+the invocation was wrong, the directory is not a git repository, or the
+project root does not exist.
 """
 
 import argparse
@@ -55,6 +55,8 @@ for _path in (os.path.join(PLUGIN_ROOT, 'scripts', 'mcp'),
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+import config_engine                                          # noqa: E402
+import mutation as mutation_module                            # noqa: E402
 import workflow as workflow_module                            # noqa: E402
 from mutation import ENGINE_BY_FRAMEWORK, mutmut              # noqa: E402
 from purlin import (console as console_module,                # noqa: E402
@@ -64,6 +66,7 @@ from purlin import (console as console_module,                # noqa: E402
                     specs as specs_module, status as status_module)
 
 EXIT_OK = 0
+EXIT_UNREADABLE_SETTINGS = 1
 EXIT_BAD_INVOCATION = 2
 
 ARROW = '→'
@@ -78,6 +81,7 @@ GATE_CHOICES = (
 NOT_A_GATE = 'purlin: "%s" is not a gate; reading it as %s.'
 
 REMOTE_INTRO = 'A remote runner is written because:'
+NO_GIT_HOST = 'No git host found.'
 REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
                     'it')
 
@@ -243,23 +247,12 @@ class Console(object):
             answer = ''
         return answer or default
 
-    def confirm(self, question, gated):
-        if not gated or not self.interactive:
-            return True
-        try:
-            return input('%s [Y/n]: ' % question).strip().lower() in (
-                '', 'y', 'yes')
-        except EOFError:
-            return True
-
 
 class Plan(object):
     """Every write, as one line, in the order the summary prints it."""
 
-    def __init__(self, root, console, gated):
+    def __init__(self, root):
         self.root = root
-        self.console = console
-        self.gated = gated
         self.lines = []
 
     def note(self, text):
@@ -272,9 +265,8 @@ class Plan(object):
         path = os.path.join(self.root, rel)
         if os.path.isdir(path):
             return self.note('kept %s/' % rel)
-        if self.allowed(rel, 'create %s/' % rel):
-            os.makedirs(path, exist_ok=True)
-            self.note('wrote %s/' % rel)
+        os.makedirs(path, exist_ok=True)
+        self.note('wrote %s/' % rel)
 
     def write(self, rel, text, own=False, perm=None, source=None,
               exact=False):
@@ -290,8 +282,6 @@ class Plan(object):
             current = _read_bytes(path) if exact else _read(path)
             if not own or current == text:
                 return self.note('kept %s' % rel)
-        if not self.allowed(rel, 'write %s' % rel):
-            return
         os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
         if exact:
             with open(path, 'wb') as handle:
@@ -321,12 +311,6 @@ class Plan(object):
         if current:
             current = current.rstrip('\n') + '\n\n'
         self.write(rel, current + block, own=True)
-
-    def allowed(self, rel, question):
-        if self.console.confirm(question, self.gated):
-            return True
-        self.skip(rel, 'declined')
-        return False
 
 
 # --- The steps -------------------------------------------------------------
@@ -374,7 +358,7 @@ def write_config(plan, plugin_root, existing, gate, host, tests,
 
 def write_engine(plan, root, selected):
     """The engine that breaks the code, wired like the other config files."""
-    if 'pytest' in selected:
+    if 'pytest' in selected and mutation_module.runs_here('mutmut'):
         rel, style, section = mutmut.config_target(root)
         sources, tests = mutmut_paths(root)
         plan.append(rel, mutmut.mutmut_config_block(sources, tests, style),
@@ -393,28 +377,43 @@ def write_evidence(plan, plugin_root):
 
 
 def engine_for(selected):
-    """The engine that breaks the code of the first framework that has one."""
+    """The engine that breaks the code of the first framework that has one
+    able to run on this operating system; an engine that cannot run here
+    counts as none."""
     for framework in selected:
         engine = ENGINE_BY_FRAMEWORK.get(framework, 'none')
-        if engine != 'none':
+        if engine != 'none' and mutation_module.runs_here(engine):
             return engine
     return None
+
+
+def _no_engine_line(selected):
+    """Why mutation testing is off where no engine can break this code here.
+
+    An engine exists for a framework the tree carries and cannot run on this
+    operating system: the line says so, not that no engine exists.
+    """
+    for framework in selected:
+        engine = ENGINE_BY_FRAMEWORK.get(framework, 'none')
+        if engine != 'none' and not mutation_module.runs_here(engine):
+            return NO_ENGINE_HERE
+    return NO_ENGINE % (', '.join(selected) or "this project's")
 
 
 def resolve_mutation(console, existing, selected, turn_on, gate):
     """`(mutation_engine, the line to print or None)`.
 
     A value the project already wrote is kept and nothing is asked. With no
-    engine for any framework the tree carries, nothing is asked either:
-    mutation testing stays off, and at `strong` and `signed` one line says
-    why. Otherwise `--mutation` turns it on, and at those two gates the
+    engine for any framework the tree carries that can run on this operating
+    system, nothing is asked either: mutation testing stays off, and at
+    `strong` and `signed` one line says why. Otherwise `--mutation` turns it on, and at those two gates the
     question decides, defaulting to no; at `passed` it stays off unasked.
     """
     engine = engine_for(selected)
     if engine is None:
         if gate == 'passed':
             return 'none', None
-        return 'none', NO_ENGINE % (', '.join(selected) or "this project's")
+        return 'none', _no_engine_line(selected)
     written = str((existing or {}).get('mutation_engine') or '').strip()
     if written and not turn_on:
         return written, None
@@ -446,7 +445,8 @@ def print_remote_reasons(reasons, gate=None):
 
 
 def write_workflow(plan, root, purlin_ref, gate=None):
-    """The workflow the git host runs, with the matrix the `@env` tags name.
+    """The workflow the git host runs, with one job per system the `@env`
+    tags name that this machine is not.
 
     The prerequisites are checked first and nothing is written when one is
     missing: a workflow file is no use without the remote that holds it and
@@ -454,17 +454,19 @@ def write_workflow(plan, root, purlin_ref, gate=None):
     """
     ok, host, lines = workflow_module.prerequisites(root)
     # The line naming a host that is neither of the two is already in the
-    # summary, beside the host; it is not said twice.
+    # summary, under its first line; it is not said twice.
     for line in lines:
         if line not in plan.lines:
             plan.note(line)
     if not ok:
         return plan.skip(runner_label(gate), 'a prerequisite is missing')
-    env_tags = workflow_module.env_tags_in_specs(root)
+    env_tags = workflow_module.foreign_tags(
+        workflow_module.env_tags_in_specs(root), evidence_module.host_os())
     rel = workflow_module.workflow_path(host)
     plan.write(rel, workflow_module.render_workflow(
         host, env_tags, purlin_ref), own=True)
-    plan.note('  the matrix is %s, the systems the @env tags in specs/ name.'
+    plan.note('  the matrix is %s, the systems the @env tags in specs/ name '
+              'that this machine is not.'
               % ', '.join(workflow_module.runners_for(env_tags)))
     plan.note('  it runs on a push to a run/* branch and on a push of a '
               'signed/* tag.')
@@ -494,7 +496,6 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(
         prog='scaffold.py', description='Set a project up for Purlin')
     parser.add_argument('--gate', choices=gate_module.GATES, default=None)
-    parser.add_argument('--add', default=None, help='one more framework')
     parser.add_argument('--project-root', default='.')
     parser.add_argument('--plugin-root', default=None)
     for flag in ('--update', '--yes', '--mutation'):
@@ -511,29 +512,17 @@ def delegate_update(args):
                        + (['--yes'] if args.yes else []))
 
 
-def resolve_tests(existing, add):
+def resolve_tests(existing):
     """`(the suites named, the tests setting to write)`.
 
     A `tests` setting the project already carries is kept as it is; a project
     with none gets an empty one, and nothing is asked: the first test run
-    suggests the command. `--add` appends the entry of one more framework,
-    once however many times it is added.
+    suggests the command.
     """
     written = (existing or {}).get('tests')
     tests = [dict(entry) for entry in written] if isinstance(
         written, list) else []
     names = [entry.get('name') for entry in tests if isinstance(entry, dict)]
-    for part in str(add or '').split(','):
-        name = part.strip()
-        if not name:
-            continue
-        if name not in frameworks_module.ENTRIES:
-            print('purlin: "%s" is not a framework init writes a command for; '
-                  'add it under "tests" in .purlin/config.json.' % name)
-            continue
-        if name not in names:
-            tests.append(frameworks_module.entry_for(name))
-            names.append(name)
     return [name for name in names if name], tests
 
 
@@ -544,12 +533,16 @@ def frameworks_carried(root, names):
 
 
 def _existing_config(root):
-    """The project's own `.purlin/config.json`, or None when it has none."""
-    try:
-        value = json.loads(_read(root, '.purlin', 'config.json'))
-    except ValueError:
+    """The project's own `.purlin/config.json`, or None when it has none.
+
+    Called once `config_engine.config_problem` has answered None, so a file
+    that is there reads as a JSON object.
+    """
+    path = os.path.join(root, '.purlin', 'config.json')
+    if not os.path.lexists(path):
         return None
-    return value if isinstance(value, dict) else None
+    with open(path, 'r', encoding='utf-8') as handle:
+        return json.load(handle)
 
 
 def main(argv=None):
@@ -572,11 +565,16 @@ def main(argv=None):
         print(NOT_A_REPOSITORY, file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
+    # A settings file that cannot be read stops setup before anything is
+    # asked or written: rewriting it would lose every setting it holds.
+    problem = config_engine.config_problem(root)
+    if problem:
+        print(problem, file=sys.stderr)
+        return EXIT_UNREADABLE_SETTINGS
+
     existing = _existing_config(root)
     console = Console(args.yes)
-    # A first run's questions are its consent. A later run asks before each
-    # write, because it changes something a person already answered.
-    plan = Plan(root, console, gated=existing is not None)
+    plan = Plan(root)
 
     gate = args.gate or (existing or {}).get('gate')
     if gate not in gate_module.GATES:
@@ -586,17 +584,19 @@ def main(argv=None):
             print(NOT_A_GATE % (gate, gate_module.DEFAULT_GATE))
             gate = gate_module.DEFAULT_GATE
 
-    names, tests = resolve_tests(existing, args.add)
+    names, tests = resolve_tests(existing)
     carried = frameworks_carried(root, names)
     mutation, no_engine = resolve_mutation(console, existing, carried,
                                            args.mutation, gate)
     host = git_host(root)
 
-    plan.note('Gate %s. Suites %s. Git host %s.'
-              % (gate, ', '.join(names) or 'none',
-                 host or 'not read from a remote'))
-    if host is None and origin_url(root):
-        plan.note(workflow_module.UNKNOWN_HOST)
+    summary = 'Gate %s. Suites %s.' % (gate, ', '.join(names) or 'none')
+    if host:
+        plan.note('%s Git host %s.' % (summary, host))
+    else:
+        plan.note(summary)
+        plan.note(workflow_module.UNKNOWN_HOST if git_remote(root)
+                  else NO_GIT_HOST)
     if no_engine:
         plan.note(no_engine)
     for name in ('.purlin', 'specs'):
