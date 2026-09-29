@@ -817,6 +817,9 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     563 pass their tests. 0 are strong. 0 are signed.` leaves the dashboard: the boxes carry
     the counts. The terminal keeps it, since it has no boxes. This amends decisions 68 and
     79, which showed the same thing in both places.
+    The total is kept in the `Passing` box: under its label, in the label's own font and
+    colour, a second line reads `563 RULES TOTAL` (`1 RULE TOTAL` for one), from the
+    payload's count and never recounted in the page. The other boxes carry no such line.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
