@@ -51,8 +51,8 @@ EVIDENCE_PATHSPEC = '.purlin/evidence'
 RUN_BRANCH_PREFIX = 'run/'
 REF_HEADS = 'refs/heads/'
 REF_TAGS = 'refs/tags/'
-# The tag `purlin:sign` writes when every rule meets the gate, and the one
-# ref besides a run branch that starts a CI run.
+# The tag `purlin:sign` writes when nothing is left to do, and the one ref
+# besides a run branch that starts a CI run.
 SIGNED_TAG_PREFIX = 'signed/'
 
 # The tree entry's file-permission key and value, spelled the way GitHub's
@@ -224,9 +224,20 @@ def commits_here(project_root):
 
 def no_commit_line(project_root):
     """The one line a CI run prints where it commits nothing."""
-    return ('Tag run: nothing is written. This run reruns the tests and '
-            'checks the evidence already committed to %s.'
+    return ('Tag run: nothing is written. This run reruns the tests on %s.'
             % (current_branch(project_root) or 'this ref'))
+
+
+# The name a remote runner's section gives its machine: its kind and its
+# system, not the name the host lent it, so a second remote run names the
+# same machine.
+REMOTE_MACHINE = 'remote runner, %s'
+
+
+def runner_machine(os_name):
+    """`remote runner, <Windows|macOS|Linux/Unix>` for a runner on `os_name`."""
+    from purlin import evidence as evidence_reader
+    return REMOTE_MACHINE % evidence_reader.os_word(os_name)
 
 
 def _read_bytes(project_root, rel_path):

@@ -146,20 +146,20 @@ def test_the_template_still_carries_the_placeholders():
 
 # purlin: host PROOF-41
 def test_a_project_with_no_env_tag_gets_no_workflow():
-    wanted, reasons = workflow_module.wanted([], 'local', 'macos')
+    wanted, reasons = workflow_module.wanted([], 'macos')
     assert wanted is False and reasons == []
 
 
 # purlin: host PROOF-42
 def test_a_proof_tagged_for_another_system_gets_a_workflow_for_that_reason():
-    wanted, reasons = workflow_module.wanted(['windows'], 'local', 'macos')
+    wanted, reasons = workflow_module.wanted(['windows'], 'macos')
     assert wanted is True and len(reasons) == 1, reasons
     assert 'windows' in reasons[0]
 
 
 # purlin: host PROOF-43
 def test_a_tag_naming_this_machines_own_system_gets_no_workflow():
-    wanted, reasons = workflow_module.wanted(['macos'], 'local', 'macos')
+    wanted, reasons = workflow_module.wanted(['macos'], 'macos')
     assert wanted is False, reasons
 
 

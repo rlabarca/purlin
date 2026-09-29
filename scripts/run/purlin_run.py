@@ -188,10 +188,6 @@ NO_TEST_TOOL = ('No test command is set in .purlin/config.json, and no test '
 RULE_FAILS = '%s %s fails: %s. Run purlin:build %s.'
 RULE_HAS_NO_TEST = '%s %s has no test. Run purlin:build %s.'
 
-# The name a remote runner's section gives its machine: its kind, not the
-# name the host lent it, so a second remote run names the same machine.
-REMOTE_MACHINE = 'remote runner, %s'
-
 # What the run says about the markers it read, once per run.
 TIED_LINE = 'Markers: %d tied to a test, %d not tied.'
 
@@ -620,7 +616,8 @@ def machine_name(args, os_name):
     remote runner names its kind and system, `remote runner, Windows`.
     """
     if args.action == 'ci':
-        return REMOTE_MACHINE % evidence_reader.os_word(os_name)
+        from host import runner_machine
+        return runner_machine(os_name)
     return platform.node() or 'unknown'
 
 
@@ -714,10 +711,8 @@ def commit_the_work(project_root, paths):
 
 def commit_the_evidence(project_root, work, removed=()):
     """The second commit, naming the first, or HEAD where nothing was."""
-    line = evidence_writer.commit_local(
+    evidence_writer.commit_local(
         project_root, work or head_commit(project_root), removed)
-    if isinstance(line, str):
-        print(line)
 
 
 def _prune(project_root, features):
@@ -1128,9 +1123,9 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
         for rule in feature.get('rules') or ():
             if rule.get('feature') != feature.get('name'):
                 continue
-            if ai_audit.is_read(rule, gate, again=args.all):
+            if ai_audit.is_read(rule, again=args.all):
                 to_read.append((feature['name'], rule['id']))
-            elif ai_audit.is_read(rule, gate, again=True):
+            elif ai_audit.is_read(rule, again=True):
                 skipped += 1
     to_read.sort(key=lambda pair: (pair[0], _rule_number(pair[1])))
 

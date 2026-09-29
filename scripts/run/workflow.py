@@ -114,11 +114,11 @@ FOREIGN_OS_REASON = ('A proof in specs/ is tagged @env for %s, which this '
 # The same at the gate `passed`, whose words are rules and tests.
 FOREIGN_OS_REASON_AT_PASSED = ('A test is tagged @env for %s, which this '
                                'machine is not, so only a runner can run it.')
-NO_REASON = ('every proof runs on this operating system and you trust this '
-             'machine, so nothing has to run remotely')
+NO_REASON = ('every proof runs on this operating system, so nothing has to '
+             'run remotely')
 # The same at the gate `passed`, whose words are rules and tests.
-NO_REASON_AT_PASSED = ('every test runs on this operating system and you '
-                       'trust this machine, so nothing has to run remotely')
+NO_REASON_AT_PASSED = ('every test runs on this operating system, so nothing '
+                       'has to run remotely')
 
 
 def no_reason(gate):
@@ -131,12 +131,12 @@ def foreign_reason(gate):
     return FOREIGN_OS_REASON_AT_PASSED if gate == 'passed' else FOREIGN_OS_REASON
 
 
-def wanted(env_tags, trust, host_os, gate=None):
+def wanted(env_tags, host_os, gate=None):
     """`(write one, the reasons)` for a project's workflow, in the gate's words.
 
     One reason and no other: a proof tagged `@env` for another operating
     system cannot be proven here. A project with none gets no workflow at
-    all. `trust` is not read.
+    all.
     """
     reasons = []
     foreign = sorted({str(tag).strip().lower() for tag in (env_tags or ())

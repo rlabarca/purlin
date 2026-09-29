@@ -571,13 +571,20 @@ def evidence_run(monkeypatch, tmp_path):
             'log': 'breaks.log'}
 
     # `commits_here` answers True here; the cases that turn it off set it
-    # for themselves.
+    # for themselves. The machine a runner's section names is the real
+    # module's answer.
+    _load_run_script()
+    loaded = importlib.util.spec_from_file_location(
+        'real_host', os.path.join(REPO, 'scripts', 'run', 'host.py'))
+    real_host = importlib.util.module_from_spec(loaded)
+    loaded.loader.exec_module(real_host)
     monkeypatch.setitem(sys.modules, 'host', _FakeModule(
         commit_files=commit_files,
         commits_here=lambda project_root: calls['commits_here'],
+        runner_machine=real_host.runner_machine,
         no_commit_line=lambda project_root: (
-            'Tag run: nothing is written. This run reruns the tests and '
-            'checks the evidence already committed to signed/0.10.0.')))
+            'Tag run: nothing is written. This run reruns the tests on '
+            'signed/0.10.0.')))
     monkeypatch.setitem(sys.modules, 'mutation', _FakeModule(
         select_engine=select_engine, run_breaks=run_breaks))
 
@@ -763,7 +770,8 @@ class TestWhereEachArmCommits:
         loaded.loader.exec_module(real)
         monkeypatch.setitem(sys.modules, 'host', _FakeModule(
             commit_files=sys.modules['host'].commit_files,
-            commits_here=real.commits_here, no_commit_line=real.no_commit_line))
+            commits_here=real.commits_here, no_commit_line=real.no_commit_line,
+            runner_machine=real.runner_machine))
         monkeypatch.setenv('GITHUB_REPOSITORY', 'owner/project')
         monkeypatch.setenv('GITHUB_REF', ref)
         monkeypatch.setenv('GITHUB_REF_NAME', ref.split('/', 2)[2])
@@ -1140,7 +1148,7 @@ class TestWhichRulesTheAuditReads:
         anchor = [prompt for prompt in prompts
                   if 'every answer is JSON' in prompt]
         assert len(prompts) == 2 and len(anchor) == 1, prompts
-        assert 'shared RULE-1 (' in anchor[0], anchor[0]
+        assert re.search(r'^shared RULE-1$', anchor[0], re.M), anchor[0]
         assert sorted(_audited(root, 'feat')) == ['RULE-1']
         assert sorted(_audited(root, 'shared')) == ['RULE-1']
 
@@ -1191,7 +1199,7 @@ class TestWhenTheModelCannotBeReached:
         # line; the fake's own launcher stays, only what it runs is replaced.
         (directory / 'claude').write_text(
             '#!%s\nimport json, sys\n'
-            'if "feat RULE-1 (" in sys.stdin.read():\n    sys.exit(1)\n'
+            'if "\\nfeat RULE-1\\n" in sys.stdin.read():\n    sys.exit(1)\n'
             'print(json.dumps({"type": "result", "result": "It looks fine."}))'
             '\n' % sys.executable, encoding='utf-8')
         root = _many(tmp_path, 2)
