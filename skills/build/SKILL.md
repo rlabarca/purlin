@@ -81,7 +81,7 @@ and come back. Any signature on the rule then ends, which is correct: a person h
 ## Repairing a comment that is nearly a marker
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/markers.py" --near-misses --project-root .
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/markers.py" --near-misses --project-root .
 ```
 
 It prints one JSON list of the comments that are nearly markers, each with its `file`, `line`,
@@ -95,11 +95,11 @@ purlin:test <name>
 
 Never run the test framework directly. `purlin:test` runs the project's own test command, ties
 each result to the marker above its test, writes the evidence and prints the state of each
-rule; where no test command is set it suggests one and writes it once the person confirms, so
-write no entry yourself. It names every marker it could not tie to exactly one test, by file and
-line; fix each before going on. Iterate until every rule the feature owns has a passing test.
-A proof tagged `@env` for another operating system is not run here, and the run says it
-`needs <os>`; `purlin:test --remote` runs it on a runner of that system.
+rule; where no test command is set it suggests one for each test tool it recognises and writes
+them once the person confirms, so write no entry yourself. It names every marker it could not
+tie to exactly one test, by file and line; fix each before going on. Iterate until every rule
+the feature owns has a passing test. A proof tagged `@env` for another operating system is not
+run here: the run counts such proofs in one line per system that names `purlin:test --remote`.
 
 Never write evidence or a signature by hand. `purlin:test` and `purlin:audit` write the
 evidence, `purlin:sign` writes signatures and the tag.
@@ -107,9 +107,9 @@ evidence, `purlin:sign` writes signatures and the tag.
 ## Committing
 
 One commit per build, with the `feat(<name>):` prefix and the changeset body described in
-`references/commit_conventions.md`. The body has three sections: **Changeset**, a
-`RULE-N → file:line` line for every rule the build addressed; **Decisions**, the judgment calls
-you made between real alternatives; and **Review**, the places a developer should look hardest.
+`references/commit_conventions.md`. The body has three sections, which open with `Changeset:`,
+`Decisions:` and `Review:`: a `RULE-N → file:line` line for every rule the build addressed; the
+judgment calls you made between real alternatives; and the places a developer should look hardest.
 Omit Decisions when every rule had one obvious implementation, and omit Review when nothing
 needs a second pair of eyes. Changeset is never omitted. `references/commit_conventions.md`
 carries the exact rendering; follow it rather than inventing one.
@@ -122,7 +122,7 @@ rewrite the line in the same commit as the code. Commit the code and the tests t
 
 `purlin:test` ended on the summary and `Left to do`. Name the next step from them:
 
-- Every rule has a passing test, gate `passed`: `→ Run: git push`
+- `Left to do` is empty, at the gate `passed` or `strong`: `Nothing left to do.`
 - Every rule has a passing test, gate `strong` or `signed`: `→ Run: purlin:audit`, which has a
   model read each rule, proof and test, and breaks the code where mutation testing is on.
 - Some rules still have no test: name them and what is missing, `→ Run: purlin:build <feature>`

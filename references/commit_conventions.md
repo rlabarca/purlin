@@ -110,6 +110,7 @@ developer's review artefact and it stays in git history.
 ```
 feat(auth_login): implement RULE-1, RULE-2, RULE-3
 
+Changeset:
 RULE-1 → src/auth.py:34         Sanitize the input before the query
 RULE-2 → src/auth.py:71         Sliding window, 60 requests per minute
 RULE-3 → src/auth.py:102        Lock the account after five failed attempts
