@@ -52,9 +52,10 @@ function cellRow(rule, name) {
    the gate asks for the audit, which is where the rule has a strong cell:
    its answer,
    each finding on its own line as the audit wrote it, the test strength
-   beside the minimum this gate asks for or `no mutation score measured`,
-   then the model that read the rule and when. The audit writes sentences,
-   so there is no list of check names to render here. */
+   beside the minimum this gate asks for where one was measured and nothing
+   of strength where none was, then the model that read the rule and when.
+   The audit writes sentences, so there is no list of check names to render
+   here. */
 function auditPanel(rule) {
   var cell = cellOf(rule, 'strong');
   if (!cell) { return ''; }
@@ -74,9 +75,10 @@ function auditPanel(rule) {
     lines.push(line(answer === 'strong' ? 'Strong.' : 'Weak.'));
   }
   findings.forEach(function (text) { lines.push(line(text)); });
-  lines.push(line(cell.strength == null ? 'no mutation score measured'
-    : 'Test strength ' + Math.round(cell.strength) + '%, against a minimum '
-      + 'of ' + minStrength() + '%.'));
+  if (cell.strength != null) {
+    lines.push(line('Test strength ' + Math.round(cell.strength) + '%, against '
+      + 'a minimum of ' + minStrength() + '%.'));
+  }
   if (audit) {
     lines.push('<p class="sec">Read by <span class="mono">'
       + esc(audit.model || 'unknown') + '</span> on '

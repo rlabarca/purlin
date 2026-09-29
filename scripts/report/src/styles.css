@@ -48,12 +48,12 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
 
 /* --- step boxes ----------------------------------------------------- */
-.sentence{margin:0 0 var(--space-4);font-size:var(--ui-lg);color:var(--text-primary)}
 .strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
 .tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-2)}
 .tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
 .tile-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+.tile-l.tile-t{margin-top:var(--space-1);white-space:nowrap}
 
 /* --- the spec table -------------------------------------------------- */
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
@@ -109,6 +109,10 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
+/* The light theme's sunken ground is the darkest tan the page draws on, and
+   the secondary and muted inks measure under 7 to 1 there, so text on it is
+   set in the primary ink, which measures above. */
+[data-theme="light"] .specs>.rule,[data-theme="light"] .specs>.rule-proofs,[data-theme="light"] .specs>.desc,[data-theme="light"] pre.code{--text-secondary:var(--text-primary);--text-muted:var(--text-primary)}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 
 /* --- the rule screen ------------------------------------------------- */

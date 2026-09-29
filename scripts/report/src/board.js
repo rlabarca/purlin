@@ -2,22 +2,21 @@
    specs hold the rules that have not got there yet, filtered by the work
    left to do. */
 
-/* The payload's summary sentence, the one the terminal prints, then one box
-   per step the gate reaches, each counting the rules that reached it, as the
-   payload's `summary.steps` counts them: green once every rule has reached
-   the step, amber until then. From `strong` up a `No proof` box follows
-   them, counting the rules that have no proof yet. Each box carries the
-   hover its column carries, read over every spec. */
+/* The boxes, in the order the work is done. From `strong` up, where every
+   rule needs a proof, the `No proof` box comes first, counting the rules
+   that have none yet; then one box per step the gate reaches, each counting
+   the rules that reached it, as the payload's `summary.steps` counts them:
+   green once every rule has reached the step, amber until then. The
+   `Passing` box carries the project's total under its label, the payload's
+   count and not one the page makes. Each box carries the hover its column
+   carries, read over every spec. The terminal prints a summary sentence; the
+   boxes carry the same counts, so the page prints none. */
 function statStrip() {
   var summary = DATA.summary || {};
   var steps = summary.steps || {};
+  var total = summary.rules || 0;
   var project = wholeProject();
-  var boxes = GATE_LEVELS.filter(level).map(function (step) {
-    var count = steps[step] || 0;
-    return box(STEP_LABELS[step], count,
-               count === (summary.rules || 0) ? 'pass' : 'warn',
-               stepHover(step, project));
-  });
+  var boxes = [];
   if (level('strong')) {
     var missing = noProofLines();
     var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
@@ -25,16 +24,26 @@ function statStrip() {
     boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
       missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
   }
-  return '<p class="sentence">' + esc(summary.sentence || '') + '</p>'
-    + '<div class="strip"><div class="tiles">' + boxes.join('')
+  GATE_LEVELS.filter(level).forEach(function (step) {
+    var reached = steps[step] || 0;
+    boxes.push(box(STEP_LABELS[step], reached,
+                   reached === total ? 'pass' : 'warn',
+                   stepHover(step, project),
+                   step === 'passed' ? total + (total === 1 ? ' rule total'
+                     : ' rules total') : null));
+  });
+  return '<div class="strip"><div class="tiles">' + boxes.join('')
     + '</div></div>';
 }
 
-/* One box: its count in its tone, its label, and its hover where it has one. */
-function box(label, count, hue, lines) {
+/* One box: its count in its tone, its label, a second line under the label
+   where it has one, and its hover where it has one. */
+function box(label, count, hue, lines, under) {
   return '<div class="tile"' + (lines.length ? hover(lines) : '')
     + '><div class="tile-v" style="color:var(--state-' + hue + ')">' + count
-    + '</div><div class="tile-l">' + esc(label) + '</div></div>';
+    + '</div><div class="tile-l">' + esc(label) + '</div>'
+    + (under ? '<div class="tile-l tile-t">' + esc(under) + '</div>' : '')
+    + '</div>';
 }
 
 /* What a step box says beyond its count, which is what its column says for
@@ -145,19 +154,25 @@ function share(count, total) {
 }
 
 /* How many of the rules the spec proves the audit found strong, its own and
-   the shared ones alike, and the strength of the newest record beside it. A
-   signed rule is still strong, so its strong cell reads `strong` too. */
+   the shared ones alike, and beside it the test strength of the newest
+   record, where one was measured; where none was, the cell says nothing of
+   strength. A signed rule is still strong, so its strong cell reads `strong`
+   too. The percentage carries its own hover saying what it is. */
 function strongCell(feature) {
   var rollup = feature.rollup || {};
   var rules = feature.rules || [];
   if (!rules.length) { return ''; }
   var value = rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
-  return '<span' + hover(auditLines(feature)) + '>'
-    + counts([share(reading(rules, 'strong'), rules.length),
-      [value == null ? 'n/a' : Math.floor(value) + '%', '',
-        value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
-    + '</span>';
+  var parts = [share(reading(rules, 'strong'), rules.length)];
+  if (value != null) {
+    var pct = Math.floor(value);
+    parts.push([pct + '%', '', value >= minStrength() ? 'pass' : 'fail',
+      ['Test strength: the tests caught ' + pct + ' of every 100 deliberate '
+        + 'breaks of the code.']]);
+  }
+  var cell = counts(parts);
+  return '<span' + hover(auditLines(feature)) + '>' + cell + '</span>';
 }
 
 /* How many of the rules the spec proves carry a signature that counts. Who

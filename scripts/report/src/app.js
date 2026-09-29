@@ -37,7 +37,9 @@ var NO_PROOF = 'No proof';
    `purlin:status`, so these are its
    `COLUMNS` and its cell words: a string changed there is changed here in
    the same commit. `Proofs` is drawn where `showsProofs` says, as
-   `board.shows_proofs` decides it for the status table. */
+   `board.shows_proofs` decides it for the status table. The one difference
+   is the `Rules` cell: the terminal reads `16 (+6 shared)` and the page
+   `16 (+6)`, the page's hover saying what the second number is. */
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 
 /* The one separator every cell, hover and line puts between two parts, which
@@ -168,7 +170,8 @@ function ruleNamed(owner, id) {
    drawn, because the column's total is the number the row is about; a later
    part at zero is not, because nothing is waiting there. Each item is
    `[count, word, tone]`, and a word may be empty where the count already
-   reads as a sentence (`5 of 24`). The separator rides inside the part it
+   reads as a sentence (`5 of 24`); a fourth member, where there is one, is
+   the part's own hover. The separator rides inside the part it
    introduces, so a cell narrow enough to wrap breaks between parts and never
    leaves a lone dot at the end of a line. */
 function counts(items) {
@@ -176,7 +179,8 @@ function counts(items) {
     return index === 0 || item[0];
   }).map(function (item, index) {
     var hue = index === 0 && !item[0] ? 'idle' : item[2];
-    return '<b' + (hue ? ' style="color:var(--state-' + hue + ')"' : '') + '>'
+    return '<b' + (item[3] ? hover(item[3]) : '')
+      + (hue ? ' style="color:var(--state-' + hue + ')"' : '') + '>'
       + (index ? '<i class="sec">·</i> ' : '')
       + esc(item[1] ? item[0] + ' ' + item[1] : item[0]) + '</b>';
   }).join('') + '</span>';

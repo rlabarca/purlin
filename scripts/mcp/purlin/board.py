@@ -16,8 +16,8 @@ The columns, left to right:
     Proofs   how many proof lines it writes, and how many have no test; at
              `passed` only where the project writes a proof line at all
     Tests    how many rules pass, and how many are partial or failing
-    Strong   how many of its rules are strong, and the test strength, at
-             `strong` and above
+    Strong   how many of its rules are strong, and the test strength where
+             one was measured, at `strong` and above
     Signed   how many of its rules are signed, at `signed`
 
 Every when, who and platform detail lives in a hover on the dashboard and on
@@ -75,11 +75,6 @@ def strong_met(rollup):
 def signed_met(rollup):
     """How many of a spec's rules meet the signed cell."""
     return rollup.get('signed') or 0
-
-
-def strength_text(strength):
-    """A test strength as a percentage, or `n/a` where nothing measured one."""
-    return 'n/a' if strength is None else '%d%%' % int(strength)
 
 
 def shared_counts(rules):
@@ -141,12 +136,19 @@ def tests_cell(rollup):
 
 
 def strong_cell(rollup):
-    """`<n> of <rules> · <strength>`, or empty for a spec with no rules."""
+    """`<n> of <rules>`, then `· <strength>%` where a strength was measured.
+
+    Where nothing measured one the cell says nothing of strength, rather than
+    printing a stand-in. Empty for a spec with no rules.
+    """
     total = rollup.get('rules') or 0
     if not total:
         return ''
-    return '%d of %d%s%s' % (strong_met(rollup), total, DOT,
-                             strength_text(rollup.get('test_strength')))
+    text = '%d of %d' % (strong_met(rollup), total)
+    strength = rollup.get('test_strength')
+    if strength is not None:
+        text += '%s%d%%' % (DOT, int(strength))
+    return text
 
 
 def signed_cell(rollup):
