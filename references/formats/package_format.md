@@ -1,4 +1,4 @@
-> Format-Version: 3
+> Format-Version: 4
 
 # Package format
 
@@ -188,17 +188,20 @@ decide what the package may be used for.
 
 `rules`, `steps` and `left` are what `purlin:status` says of the commit the
 package reads. Each rule is counted under one kind, the first that applies,
-and a kind at zero has no line:
+and a kind at zero has no line. `to_correct` counts test comments, not rules,
+and is carried by the project:
 
 | `kind` | `text`, for one rule and for more | `command` |
 |---|---|---|
 | `no_proof` | `1 rule to write a proof for`, `<n> rules to write a proof for` | `purlin:spec` |
+| `to_correct` | `1 test comment to correct`, `<n> test comments to correct` | `purlin:build` |
 | `to_fix` | `1 rule to fix`, `<n> rules to fix` | `purlin:build` |
 | `no_test` | `1 rule to write a test for`, `<n> rules to write a test for` | `purlin:build` |
 | `to_test` | `1 rule to test`, `<n> rules to test` | `purlin:test` |
 | `to_test_remote` | `1 rule to test on <systems>`, `<n> rules to test on <systems>` | `purlin:test --remote` |
 | `to_test_by_hand` | `1 rule to test by hand`, `<n> rules to test by hand` | `purlin:sign` |
 | `to_audit` | `1 rule to audit`, `<n> rules to audit` | `purlin:audit` |
+| `to_measure` | `1 rule to measure`, `<n> rules to measure` | `purlin:audit` |
 | `to_strengthen` | `1 rule to strengthen`, `<n> rules to strengthen` | `purlin:build` |
 | `no_scope` | `1 rule to tie to its files`, `<n> rules to tie to their files` | `purlin:spec` |
 | `to_sign` | `1 rule to sign`, `<n> rules to sign` | `purlin:sign` |
