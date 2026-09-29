@@ -68,13 +68,12 @@ question, answered by a model that read the test beside it.
 
 ## What test strength says
 
-Test strength is one share per feature, in every language: of the deliberate breaks made
-to the feature's code, the share its tests caught, as an integer percent. The model is shown
-that one share for the feature the rule belongs to, beside `min_strength` from
-`.purlin/config.json`, as `Test strength: 71 percent (minimum 80)`. Where nothing was
-measured, or the engine cannot run on this system, the model is shown
-`Test strength: not measured`; `references/hard_gates.md`, "The three steps", says when that
-leaves a rule `weak`.
+The model is shown the test strength of the feature the rule belongs to: of the deliberate
+breaks made to that feature's code, the share its tests caught, as an integer percent beside
+`min_strength` from `.purlin/config.json`, as `Test strength: 71 percent (minimum 80)`. Where
+nothing was measured, or the engine cannot run on this system, the model is shown
+`Test strength: not measured`. `references/hard_gates.md`, "The three steps", says what test
+strength is and when it leaves a rule `weak`.
 
 It says one thing: the feature's tests noticed when its behaviour changed. It does not say
 the tests prove the right rule, that the proof text matches the test, or that the rule is
