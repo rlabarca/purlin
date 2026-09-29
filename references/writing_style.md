@@ -29,13 +29,23 @@ and the three roles are product, developer and QA.
 **Limits stated.** Say what Purlin cannot do as plainly as what it can: "Purlin can't prove code
 is right. It gives you a paper trail." State the gap rather than skip it.
 
-**Exact numbers.** "42 specs", "71% test strength", "Twelve rules changed. Two signatures went
-stale." Figures are exact and unrounded, and they usually close a section rather than open it.
+**Exact numbers.** "42 specs", "71% test strength", "40 rules. 35 pass their tests." Figures
+are exact and unrounded, and they usually close a section rather than open it.
 
 **Machine text in monospace.** Anything the machine produced, commands, rule ids, file paths,
 shas, gates, cell words and transcripts, is set in monospace: backticks in Markdown, Courier New
 on a page. Anything a person wrote is in the running typeface. Readers use the typeface to tell
 whose claim they are reading.
+
+**Every output says what to do next.** An agent seeking a goal can read any output, know which
+rule is affected and what to do, and improve the project by doing it. A command's ending names
+the command to run next, except `Nothing left to do.`, which closes a finished project at the
+gates `passed` and `strong`.
+
+**Systems by their names.** Wherever a person reads an operating system it is `Windows`,
+`macOS` or `Linux/Unix`, and in the dashboard's small boxes `Win`, `Mac` or `Lin`. The stored
+words, `windows`, `macos` and `linux`, are machine text: a spec's `@env(...)` and the evidence
+use them, and a person reads them only there.
 
 **No emoji.** Not in the docs, not in the dashboard, not in the CLI output, not in a test or a
 fixture.
@@ -46,5 +56,5 @@ rhetorical questions, and no sentence that describes a benefit without naming th
 ## Sentence shapes
 
 - Definitions: "*Gate*: the one project setting, `passed`, `strong` or `signed`."
-- Consequences: "If any of the three change, the signature goes stale."
+- Consequences: "If the code changes, the signature ends and the rule is left to do as `to sign`."
 - Instructions: "Run it at the start of a session and before a release."

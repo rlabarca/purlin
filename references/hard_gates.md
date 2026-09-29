@@ -1,105 +1,120 @@
 # The gate
 
-The gate is the one project setting: what must be true of every rule before a version is
-proven. It is defined here and nowhere else. A skill, a doc or a script that needs it links to
-this page rather than restating it.
+The gate is the one project setting: the last step every rule must reach before a version is
+finished. It is defined here and nowhere else. A skill, a doc or a script that needs it links
+to this page rather than restating it.
 
 **A gate is a setting, and at `signed` a marker too:**
 
-1. The setting saying what has to be true of every rule. `purlin:status` and the gate check
-   say whether every rule meets it.
-2. At the gate `signed`, a marker that says one commit met it, which anyone can check. That
-   marker is the tag: `purlin:sign` writes the signed tag `signed/<version>` at the gate
-   `signed` when every rule meets it, and no tag is written while one falls short. Below
-   `signed` no tag is written at all. What the tag means, formally, is below under "What
-   `signed/<version>` means".
+1. The setting saying what has to be true of every rule. Every run, every audit and
+   `purlin:status` end on the summary and `Left to do`, which say how far the rules have gone
+   and what is left before the version is finished.
+2. At the gate `signed`, a marker that says one commit is finished, which anyone can check.
+   That marker is the tag: `purlin:sign` writes the signed tag `signed/<version>` when nothing
+   is left to do and every result came from committed work. Below `signed` no tag is written
+   at all. What the tag means, formally, is below under "What `signed/<version>` means".
 
-Where a project at `signed` has a remote runner, the push of that tag starts a run that reruns
-the marked tests on a clean machine and checks every committed signature and every `ci/`
-evidence file against the tagged code, so the tag is a claim someone else can test rather than
-one you have to take on trust.
+## The three steps
 
-## The three levels
-
-A rule answers up to three questions, one per level, and each answer is a **cell**. `gate` in
-`.purlin/config.json` says how many of the three the project asks. A rule **meets the gate**
-when every cell up to its level is met. `purlin:init` asks the one question that sets it:
-`What must be true of every rule before a version is proven?`
+A rule goes through up to three steps, `passed`, `strong` and `signed`, each containing the one
+before, and the answer to each is a **cell**. `gate` in `.purlin/config.json` says how many of
+the three the project asks, and every rule is asked what the gate asks. `purlin:init` asks the one
+question that sets it: `What must be true of every rule before a version is proven?`
 
 | Gate | Who it fits | Cells that exist | What every rule must have |
 |------|-------------|------------------|---------------------------|
-| `passed` | A developer working alone | passed | Every rule's passed cell is met, on every operating system a current section covered. A pass from either source counts |
-| `strong` | A team: product, developers and QA | + strong | Every rule whose level is `strong` or `signed` has a strong cell that is met: the AI audit read its current rule, proof and test and found nothing, and where mutation testing is on the test strength is at or above `min_strength`. Evidence from either source counts |
-| `signed` | The same team, with a person's signature on each rule | + signed | Every rule whose level is `signed` has a counting signature |
+| `passed` | A developer working alone | passed | Every test tied to the rule ran and passed, on every system a current section covered. A pass from either source counts. A rule with a `@manual` proof is checked by hand |
+| `strong` | A team: product, developers and QA | + strong | At least one proof, and a strong cell that is met: the AI audit read its current rule, proof and test and found nothing, and where mutation testing is on the test strength is at or above `min_strength`. Evidence from either source counts |
+| `signed` | The same team, with a person's signature on each rule | + signed | A counting signature |
 
-Each level derives defaults you can override:
+Each gate derives a default you can override:
 
 | Derived | `passed` | `strong` | `signed` |
 |---------|----------|----------|----------|
 | `min_strength`, with mutation testing on | unused | 70 | 80 |
-| The level of an unmarked rule | `passed` | `strong` | `signed` |
 
-`purlin:init --gate <level>` changes the level later. Raising it adds what is missing and asks
+`purlin:init --gate <gate>` changes the gate later. Raising it adds what is missing and asks
 before each write. Lowering it changes the setting and deletes nothing.
 
-Under `passed` no strength is measured, no level above `passed` is read, no queue exists and no
-signature is asked for. Mutation testing is a question of its own, off by default, and no gate
-turns it on. The breaks run on a person's machine and nowhere else: a runner reruns the tests
-and checks the evidence, and evidence either source wrote counts, so the strength a person
+Under `passed` no strength is measured and no signature is asked for; a hand check is still
+signed, because it stands for the test. Mutation testing is asked about only at `strong` and
+`signed`, and is off by default. The breaks run on a person's machine and nowhere else: a
+runner reruns the tests, and evidence either source wrote counts, so the strength a person
 measured is the strength every reader sees.
 
-## The level
+## When a version is finished
 
-Every rule has a **level**, `passed`, `strong` or `signed`, meaning what the gate means: its
-tests; its tests and the audit; its tests, the audit and a signature. A rule marked
-`[level: passed]`, `[level: strong]` or `[level: signed]` asks for what it names, and a rule
-with no mark takes the project's gate. The gate is the ceiling: a mark above the gate is read
-as the gate, and `purlin:status` says how many rules are marked above it.
+A version is finished when nothing is left to do: every rule has reached every step up to the
+gate, and at `signed` the tag is written. The terminal, the dashboard, a remote runner's test
+step and the evidence package say it the same way, with the summary and `Left to do`:
 
-The level decides three things and nothing else decides them:
+```
+40 rules. 35 pass their tests. 30 are strong. 20 are signed.
+Left to do:
+  5 rules to audit: purlin:audit
+  10 rules to sign: purlin:sign
+```
 
-- **Which cells block.** A rule meets the gate when its passed cell is met, its strong cell is
-  met if its level is `strong` or `signed`, and its signed cell is met if its level is
-  `signed`. A rule has no cell above its level, so nothing above it blocks the rule, is
-  shown for it or is counted for it.
-- **Whether the AI audit reads it.** Under the gate `strong` or `signed` the audit reads every
-  rule whose level is `strong` or `signed`, and no other. Under the gate `passed` it reads
-  every rule, and what it finds blocks nothing.
-- **Whether it needs a signature.** A rule needs one exactly when its level is `signed`.
+**The summary** names the steps up to the gate and no others: `<N> rules. <p> pass their
+tests.`, then ` <s> are strong.` at `strong` and `signed`, then ` <g> are signed.` at `signed`.
+Each step contains the next. `p` counts the rules whose passed cell reads `passed` and, where a
+proof is `@manual`, that are checked by hand; `s` counts those of them whose strong cell reads
+`strong`; `g` counts those of them whose signed cell reads `signed`. A rule is counted once,
+under the feature that owns it.
 
-The **queue** is the one list of the rules that wait on a person, each row saying what it
-needs. A `hand check` is a rule whose level is `strong` or `signed` and whose strong cell reads
-`manual test`. A `signature` is a rule whose level is `signed`, whose passed and strong cells
-are met, and that does not have a counting signature. A rule that needs both is one
-`hand check` row, and a rule whose level is `passed` is never in the queue.
+**`Left to do`** gives each rule at most one kind, the first that applies, in this order. A
+line carries a count and a command and names no rule; a run names each rule where it reports
+the problem. A kind at zero is left out, and the first line is the next step.
+
+| Kind | When it applies | The line | Command |
+|------|-----------------|----------|---------|
+| `no_proof` | at `strong` and `signed`, no proof line names the rule | `<n> rules to write a proof for` | `purlin:spec` |
+| `to_fix` | the passed cell reads `failed` or `partial` | `<n> rules to fix` | `purlin:build` |
+| `no_test` | the passed cell reads `no test` | `<n> rules to write a test for` | `purlin:build` |
+| `to_test` | the passed cell reads `not run` or `out of date`, and this machine can run it | `<n> rules to test` | `purlin:test` |
+| `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `purlin:test --remote` |
+| `to_test_by_hand` | a proof is `@manual` and the rule is not checked by hand, at any gate | `<n> rules to test by hand` | `purlin:sign` |
+| `to_audit` | at `strong` and `signed`, the strong cell reads `not audited` | `<n> rules to audit` | `purlin:audit` |
+| `to_strengthen` | the strong cell reads `weak` | `<n> rules to strengthen` | `purlin:build` |
+| `no_scope` | at `signed`, the rule is not signed and its spec names no files | `<n> rules to tie to their files` | `purlin:spec` |
+| `to_sign` | at `signed`, the signed cell does not read `signed` | `<n> rules to sign` | `purlin:sign` |
+| `to_tag` | at `signed`, every other kind is at zero and no `signed/*` tag points at HEAD | `the version to tag` | `purlin:sign` |
+
+A count of 1 reads `1 rule to fix`, `1 rule to tie to its files`, and so on. The systems read
+`Linux/Unix`, `macOS` and `Windows`, in that order, joined by `, ` and ` and `.
+
+**When nothing is left**, the summary is followed by one line. At `passed` and `strong` it is
+`Nothing left to do.` and names no command. At `signed` it names the release step:
+`Nothing left to do. Push the tag to release it: git push origin signed/<version>`.
+
+**Purlin refuses nothing a person does.** A person may sign, commit or push at any time. What
+Purlin will not do is state that a version is finished when it is not: the tag is the one
+statement it withholds, and the lines under "What `signed/<version>` means" say why.
 
 ## Which evidence counts
 
 **The evidence is one file per feature per source.** `purlin:test` runs the marked tests and
-writes this operating system's section of `.purlin/evidence/local/<feature>.json` and the
-table `.purlin/tests.md`. `purlin:audit` runs the tests and the breaks and writes the same
-section plus what the audit found, under `audit`, into the same file. Neither commits unless
-you add `--commit`, which commits the evidence under your own identity as
-`purlin: evidence at <sha7>`. Neither ever pushes. A remote run writes its own section under
-`.purlin/evidence/ci/` and always commits it. A teammate reads the files on the git host
+writes this system's section of `.purlin/evidence/local/<feature>.json` and the table
+`.purlin/tests.md`. `purlin:audit` runs the tests and the breaks and writes the same section
+plus what the audit found, under `audit`, into the same file. Neither commits unless you add
+`--commit`, which makes two commits under your own identity: first the specs, the marked tests
+and the settings the results describe, then the evidence, naming the first
+(`references/commit_conventions.md`). Neither ever pushes. A remote run writes its own section
+under `.purlin/evidence/ci/` and always commits it. A teammate reads the files on the git host
 without running anything.
 
 **The folder is the source.** A file's own `source` field must say the same word as the
 folder it sits in, and a file where the two disagree is ignored with one warning naming it.
-What keeps the `ci/` folder honest is the tag run: it reads the commit that last changed each
-file under `ci/` and fails the job where the identity is not the runner's own. The git host
-itself does not guard the folder.
 
 | Source | The folder | Counts under |
 |--------|------------|--------------|
-| `ci` | `.purlin/evidence/ci/<feature>.json`, written by the CI identity through the git host's API | `passed`, `strong`, `signed` |
+| `ci` | `.purlin/evidence/ci/<feature>.json`, written by a remote runner | `passed`, `strong`, `signed` |
 | `local` | `.purlin/evidence/local/<feature>.json`, written by `purlin:test` and `purlin:audit` on anyone's machine | `passed`, `strong`, `signed` |
 
-**Both sources count at every gate.** What a signature locks is the evidence, not the machine
-that produced it: the tests a person ran are the tests a runner runs, and the breaks they
-measured are the breaks a runner would measure. A project that wants a runner's word before a
-signature says so once, by answering no to init's trust question, and then `purlin:sign`
-refuses a rule with a test whose feature has no current `ci` section.
+**A result counts wherever it ran, and records where.** Each section names its machine: the
+host's name for a person's run, and `remote runner, <system>` for a remote runner's, with the
+name the host lent the runner kept beside it. The tests a person ran are the tests a runner
+runs, and the breaks they measured are the breaks a runner would measure.
 
 A section describes the checkout while its fingerprint, over the spec, the code the spec's
 `> Scope:` covers and the tests, is the one taken now. A pass that is not current makes the
@@ -107,116 +122,98 @@ passed cell read `out of date`, naming what changed, and the next run clears it.
 
 ## Where a runner runs, and when a project has one
 
-**A project has a remote runner for two reasons and no others.** A proof in `specs/` is
-tagged `@env` for an operating system your machine is not, so only a runner can prove it.
-Or you answered no to init's trust question, so the tests a signature rests on run on a
-clean machine. A project with neither gets no workflow: at the gate `signed`, `purlin:sign`
-writes the tag, you push it, and nothing runs remotely.
+**A project has a remote runner for one reason:** a proof in `specs/` is tagged `@env` for a
+system your machine is not, so only a runner can prove it. The runner runs the systems the
+rules name and no others. A project with no such proof gets no workflow: at the gate `signed`,
+`purlin:sign` writes the tag, you push it, and nothing runs remotely. A project whose git host
+is neither GitHub nor Azure DevOps has `ci: none` in its settings, and everything on your own
+machine works as it does anywhere else.
 
 Where a workflow exists it triggers on two things: a push to a `run/*` branch, which is the
 branch `purlin:test --remote` creates and deletes around one run, and a push of a
-`signed/<version>` tag, which `purlin:sign` writes at the gate `signed` alone, so only a project
-at `signed` has a tag run. `purlin:test --remote` is the one push Purlin makes, and it pushes a
+`signed/<version>` tag. `purlin:test --remote` is the one push Purlin makes, and it pushes a
 run branch rather than the branch you are on. Every other push is yours.
 
 | The run | What starts it | What it writes |
 |---------|----------------|----------------|
 | A remote run | `purlin:test --remote` pushes `run/<branch>-<sha7>` | Its own section of each feature's `.purlin/evidence/ci/<feature>.json`, committed on that branch at every gate. `purlin:test --remote` pulls it home and deletes the branch |
-| A tag run | a person pushes `signed/<version>` | Nothing. It reruns the marked tests on a clean machine |
+| A tag run | a person pushes `signed/<version>` | Nothing. It runs the marked tests on a clean machine and nothing else |
 
-Both runs end with `gate_check.py --check --verify`.
-
-**What the check verifies.** Every signature must still bind the rule, proof, test and audit
-it names, so a tag cannot stand over code that changed after it was signed. Every file under
-`.purlin/evidence/ci/` must have been committed by the runner's own identity, read off the
-commit that last changed it, so a person cannot write evidence as the runner's. A file that
-fails either is named under `Evidence` and the job fails.
-
-| Git host | How the runner's identity is read |
-|----------|-----------------------------------|
-| GitHub | the commit's committer `noreply@github.com` and author `github-actions[bot]`, with a signature that does not contradict them |
-| Azure DevOps | `push.pushedBy.id` of the commit, from `_apis/git/repositories/<repo>/commits/<sha>`, against the run's own `authenticatedUser.id` from `_apis/connectionData`, both asked with `SYSTEM_ACCESSTOKEN`. The committer's name is never read |
-
-On Azure DevOps a different id, a commit with no `push`, HTTP 401 or 403, or no answer within
-30 seconds fails the file. Off a runner there is no token: the gate check prints `ci/ provenance
-is checked by the tag run; this machine has no token.` and counts the files as not checked,
-neither passed nor failed. The live behaviour on Azure DevOps is confirmed by a hand-run check
-on a machine with Azure DevOps access.
-
-A squash merge or a rebase that rewrites a `ci/` commit breaks the check on either host: the
-commit that last changed the file is then a person's.
-
-The breaks run only on a person's machine. Test strength is what `purlin:audit` measures there,
-and evidence either source wrote counts at every gate.
+The test step ends on the summary and `Left to do`, and that ending is what you read. The job
+fails only when a test fails or could not run; a rule not yet audited or signed never fails it.
 
 ## When a signature counts
 
 **Signing is logged, not policed.** Purlin keeps a log you can prove and trace: where the
-tests ran, and who signed that the rule, the proof, the test and what the audit found belong
-together. It does not decide who may sign. The signature file names the signer, the machine it
-was made on and that machine's operating system, and git names the commit's author.
+tests ran, and who signed that the rule, the proof, the test, the code and what the audit
+found belong together. It does not decide who may sign; the system of record decides who was
+entitled. The signature file names the signer as git holds them, name and email, the time and
+the fingerprint of the key, and not the machine it was signed on.
 
-Under `signed` a signature counts when two things are true:
+A signature is made over the rule, its proof, its test, the code the feature's `> Scope:`
+lists, what the audit found, and the machine the tests ran on for each system. At every gate
+it counts when two things are true:
 
-- The commit that added the signature file is cryptographically signed and the signature
-  verifies.
-- The signature's bound hashes still match the current rule text, proof text, test body and
-  what the audit found.
+- The commit that added the signature file carries a signature. Purlin checks that it is
+  present and looks no further: any key will do.
+- What it was made over is unchanged. Run again on the same machine with nothing changed, the
+  signature still counts. A result from a system the signature did not cover is added beside
+  the others and ends nothing; a new machine for a system it covered ends it. A remote runner
+  is named by its kind, so a second remote run ends nothing.
 
-A signature counts on whatever commit carries it, on any branch. Below `signed` a committed
-signature counts, and under `strong` what it meets is a `manual test` cell.
+A signature that no longer matches ends with no message: its cell reads `unsigned`, and the
+rule is left to do as `to sign`. A signature counts on whatever commit carries it, on any
+branch. An anchor's rule is signed once in each feature it applies to, a change to that
+feature's files ends that one signature, and the rule counts as signed when it is signed in
+every one of them.
 
-**Trust.** `purlin:init` asks `Do you trust your own machine for the tests and the signing?
-[y/n]`, or at the gate `passed` `Do you trust your own machine for the tests? [y/n]`, and writes `trust: local` or `trust: remote`. Under `local`, the default, your own run
-is the evidence and `purlin:sign` signs what you ran. Under `remote`, `purlin:sign` refuses a
-rule with a test whose feature has no current `ci` section and says to run
-`purlin:test --remote` first. Trust binds signing alone: it is read when a rule is signed, and
-by no cell and not by the tag. `purlin:init --update` asks again.
-
-`purlin:init --gate signed` prints the one-time signing setup each signer runs. It works with a
-single QA person, works the same on both git hosts, and needs nothing configured on the git
-host beyond the signer's public key.
-
-A rule needs a signature exactly when its level is `signed`. A rule whose level is lower
-still shows its signed cell, and that cell does not keep it from meeting the gate.
+Before signing starts `purlin:sign` confirms only that there is a key to sign with. With none
+it shows the commands that set one up, offers to run them, and carries on. When it finishes it
+prints `Signed 3 rules as jane@acme.com with the key ending ...Xy4Q.`
 
 ## What `signed/<version>` means
 
 This is the one definition of the tag. Every other page points here.
 
-At the tagged commit, every rule meets the gate. A rule meets the gate when the cells its
-level asks for are met:
+At the tagged commit nothing is left to do at the gate `signed`: every rule's passed cell is
+met over evidence current for its spec, its code and its tests, every rule's strong cell is
+met, and every rule has a counting signature. At the gate `signed` a rule whose spec names no
+files in `> Scope:` cannot be signed, because a signature cannot be tied to the code it
+governs.
 
-- **Its passed cell**, always, over evidence current for its spec, its code and its tests.
-- **Its strong cell**, where its level is `strong` or `signed`.
-- **A counting signature**, where its level is `signed`: a signature in a signed commit that
-  verifies, whose bound hashes still match the rule, the proof, the test and what the audit
-  found. At the gate `signed` a rule whose spec names no files in `> Scope:` has none, because
-  a signature cannot be tied to the code it governs.
+`purlin:sign` writes the tag only at the gate `signed`, as a signed tag (`git tag -s`), and
+never over a tag that is already there. It writes it only when both hold:
 
-A rule whose level is below `signed` needs no signature and does not hold the tag back for
-one. `trust: remote` is not part of the definition: it is read when a rule is signed, and by no
-cell and not by the tag. `purlin:sign` writes the tag only at the gate `signed`, when every
-rule meets it and every feature's evidence is committed, as a signed tag (`git tag -s`), and
-never over a tag that is already there; a person pushes it. Below `signed` it writes no tag and
-no package. The tagged commit carries the evidence package,
-`.purlin/evidence/package/<version>.json`, written from the evidence below it
-(`references/formats/package_format.md`). Where a project has a remote runner, the push starts
-a run that checks the same thing against the tagged code on a clean machine.
+- **Nothing is left to do.** While anything is, the tag is not written and the summary and
+  `Left to do` say what is left.
+- **Every result came from committed work.** `git status --porcelain` lists no path outside
+  `.purlin/`, and no evidence file is uncommitted. Otherwise it prints one of these:
+  - `No tag: the working tree holds changes that are not committed, so the results do not describe a commit. Commit them, then run purlin:sign.`
+  - `No tag: <feature> has results that are not committed. Run purlin:test --commit.`
+
+**The version** is read from the `VERSION` file at the project root, then the `version` of
+`package.json`, then `[project]` and then `[tool.poetry]` `version` in `pyproject.toml`, then
+`<Version>` in the first `*.csproj` at the root. With none of them `purlin:sign` asks for one
+and offers to write it to `VERSION`; `--release <name>` names the tag something else.
+
+The tagged commit carries the evidence package, `.purlin/evidence/package/<version>.json`,
+written from the evidence below it (`references/formats/package_format.md`). Once the tag is
+written `purlin:sign` prints `Tagged signed/<version> at <sha7>.` and then
+`Nothing left to do. Push the tag to release it: git push origin signed/<version>`, and a
+person pushes it. Below `signed` `purlin:sign` writes no tag and no package.
 
 ## CI writes no signature file
 
 A runner runs the marked tests and, on a run branch, writes its section of the evidence. It
-signs nothing. A signature directory holds only files a person wrote, and the tag run checks
-that every `ci/` file was committed by the runner itself.
+signs nothing. A signature directory holds only files a person wrote.
 
 What a runner cannot settle it says out loud. A `@manual` proof makes the strong cell read
-`manual test`, and a signature file for the current hashes meets it: a committed one under
-`strong`, one in a signed commit under `signed`. The signer writes the one line with `--note`.
+`manual test`, and the rule is left to do as `to test by hand` until a person checks it and
+signs with `purlin:sign`, at any gate, writing what they saw with `--note` when they give one.
 An AI audit that could not tell whether the test observes what the proof names makes the cell
 read `weak`, with the reason `the AI audit could not decide`; that is build work, and the next
-`purlin:audit` reads the rule again. A rule whose level is `strong` or `signed` that no audit
-has reached reads `not audited`, and what moves it is `purlin:audit`, not a person.
+`purlin:audit` reads the rule again. A rule that no audit has reached reads `not audited`, and
+what moves it is `purlin:audit`, not a person.
 
 ## What is not a gate
 
@@ -225,20 +222,20 @@ has reached reads `not audited`, and what moves it is `purlin:audit`, not a pers
 - Committing without running an audit.
 - A rule whose passed cell reads `out of date`. The spec, the code or the tests moved; the next
   run clears it.
-- A proof tagged `@env` for an operating system this machine is not. It is listed as
-  `<os>: no run yet`, and a remote run's matrix proves it.
+- A proof tagged `@env` for a system this machine is not. It is listed as `<os>: no run yet`,
+  and a remote run proves it.
 - Pushing a branch. A push is a person's act, to any branch, and Purlin runs nothing at push
   time or at commit time.
 
 ## Platforms
 
-Each section of the evidence names the operating system it ran on. The passed cell lists one
-**platform** per operating system a current section covers, each with its own word, its
-source and when it ran, and the cell's own word rolls them up. Where the platforms disagree the
-cell reads `partial`: a rule whose tests pass on Linux and fail on Windows is neither passed nor
-failed, `partial` is not met, and it blocks the gate exactly as a failure does. A rule with a
-proof tagged `@env` for an operating system no current section covers reads `not run`, with
-the reason `<os>: no run yet`. Test strength is platform independent, because the breaks are
+Each section of the evidence names the system it ran on. The passed cell lists one
+**platform** per system a current section covers, each with its own word, its source and when
+it ran, and the cell's own word rolls them up. Where the platforms disagree the cell reads
+`partial`: a rule whose tests pass on Linux/Unix and fail on Windows is neither passed nor
+failed, `partial` is not met, and the rule is left to do as `to fix`, as a failure is. A rule
+with a proof tagged `@env` for a system no current section covers reads `not run`, with the
+reason `<os>: no run yet`. Test strength is independent of the system, because the breaks are
 measured once per feature.
 
 ## What stands behind an instruction
@@ -246,6 +243,6 @@ measured once per feature.
 `.purlin/config.json` is a file in the repository, and an agent can edit it. Every NEVER in
 `agents/purlin.md`, the rule that an agent does not push among them, is an instruction to the
 agent and not a mechanism that stops it. What stands behind the gate runs outside the agent's
-turn: at the gate `signed`, `purlin:sign` writes `signed/<version>` only when every rule meets
-it, and where a project has a remote runner the tag run reruns the tests on a clean machine and
-checks the committed evidence against the tagged code.
+turn: at the gate `signed`, `purlin:sign` writes `signed/<version>` only when nothing is left
+to do and every result came from committed work, and where a project has a remote runner the
+tag run reruns the tests on a clean machine.
