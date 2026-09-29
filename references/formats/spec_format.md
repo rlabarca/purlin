@@ -3,13 +3,20 @@
 # Spec format
 
 The 2-section format every spec uses. A spec opens with `# Feature: <name>` or
-`# Anchor: <name>`.
+`# Anchor: <name>`, where `<name>` is the file name without `.md`. The file
+name is the spec's name, whatever the first line says; `# Anchor:` makes a spec
+an anchor wherever it is kept. A first line of either form naming another
+feature is warned of.
 
 ## Location
 
 ```
 specs/<category>/<name>.md
 ```
+
+A spec is known by `<name>` alone. Two specs with one name in different
+folders are warned of: only one is read, and the warning names both files and
+the `git mv` that renames the other.
 
 ## Template
 
@@ -50,7 +57,7 @@ belongs in `> Description:`, which the dashboard displays.
 |-------|----------|-------------|
 | `> Description:` | No | Plain-language description. Continuation lines start with `>` and are not themselves `> Field:` lines. Displayed in the dashboard. |
 | `> Requires:` | No | Comma-separated list of other spec or anchor names whose rules also apply |
-| `> Scope:` | At the gate `signed` | Comma-separated paths this feature touches: a file, a directory, or a glob holding `*`, `?` or `[`. The evidence carries a fingerprint of the tracked files they reach, which is what tells a code change from a rule change. Below `signed` it is optional: a feature spec with none, or one that reaches no tracked file, is reported as naming no files (`incomplete` in the payload), its tests run on every `purlin:test`, and nothing blocks. At `signed` such a spec's rules cannot be signed and no tag is written. An anchor never needs one |
+| `> Scope:` | At the gate `signed` | Comma-separated paths this feature touches: a file, a directory, or a glob holding `*`, `?` or `[`. The evidence carries a fingerprint of the tracked files they reach, which is what tells a code change from a rule change. Below `signed` it is optional: a feature spec with none, or one that reaches no tracked file, is reported as naming no files (`incomplete` in the payload), its tests run on every `purlin:test`, and nothing blocks. At `signed` such a spec's rules cannot be signed and no tag is written. An entry that finds no file git tracks, where the others reach files, is warned of. An anchor never needs one |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` |
 | `> Source:` | No | Anchors only. A git URL plus a path in that repo. See the anchor format |
 | `> Pinned:` | No | Anchors only. The commit sha of the source |
@@ -81,7 +88,10 @@ Rule ids are assigned in increasing order and never reused. A retired rule
 leaves its number vacant and the rules that remain keep the numbers they had,
 so a gap in the sequence is legal and the parser reports nothing for it.
 Renumbering would silently repoint every test marker and every signature that
-already names the old id. Unnumbered lines under `## Rules` are reported.
+already names the old id.
+A new id is one more than the highest the file has held since it was last written whole; a number deleted since then is never used again.
+Unnumbered lines under `## Rules` are reported. A rule id written twice is
+warned of; the rule is read once, with the text of its second line.
 
 A rule line carries no tag. Its text is everything after the id, bracketed
 text at the end included, and every rule is asked for what the project's gate
@@ -117,7 +127,8 @@ evidence, and required from `strong` up: there a rule whose test passes and
 that has no proof reads `no proof` in its strong cell, with the reason `the rule
 has a test and no proof`, and counts under `Left to do` as a rule to write a
 proof for. Several proofs can name the same rule, and one proof can name
-several rules when it drives a flow through all of them.
+several rules when it drives a flow through all of them. A list item under
+`## Proof` of any other form is not read as a proof and is warned of.
 
 ### The manual tag
 

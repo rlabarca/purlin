@@ -170,10 +170,13 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     for name in sorted(features):
         unnumbered = features[name].get('unnumbered_lines') or []
         if unnumbered:
+            lines = ('1 line' if len(unnumbered) == 1
+                     else '%d lines' % len(unnumbered))
+            verb = 'is' if len(unnumbered) == 1 else 'are'
             warnings.append(
-                'WARNING: %d lines under ## Rules in %s are not numbered; a '
-                'rule is `- RULE-N: <text>`.'
-                % (len(unnumbered), features[name]['spec_path']))
+                'WARNING: %s under ## Rules in %s %s not numbered; a rule is '
+                '`- RULE-N: <text>`. Run purlin:spec %s.'
+                % (lines, features[name]['spec_path'], verb, name))
     for line in specs_module.spec_mistakes(project_root, features):
         warnings.append(line)
 

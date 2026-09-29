@@ -56,6 +56,7 @@ _PATH_RE = re.compile(r'^>\s*Path:\s*(.+)', re.MULTILINE)
 _DESCRIPTION_RE = re.compile(r'^>\s*Description:\s*(.+)', re.MULTILINE)
 _STACK_RE = re.compile(r'^>\s*Stack:\s*(.+)', re.MULTILINE)
 _META_FIELD_RE = re.compile(r'^>\s*[A-Z][A-Za-z-]+:')
+_HEADING_RE = re.compile(r'^#\s+(?:Feature|Anchor):\s*(.*?)\s*$')
 
 # The fields 0.9.5 wrote that the format does not carry. A spec that still
 # carries one parses; the field is ignored and the file is named once in the
@@ -232,7 +233,15 @@ def scan_specs(project_root):
     `requires`, `scope`, `rules` (`{RULE-N: text}`), `rule_order`,
     `proofs` (`{PROOF-N: {rules, text, manual, env}}`), `proof_env`,
     `proofs_by_rule`, `source`, `source_path`, `pinned`,
-    `has_rules_section`, `unnumbered_lines` and `unknown_tags`.
+    `has_rules_section`, `unnumbered_lines`, `unknown_tags`, and the three
+    that `spec_mistakes` reads: `doubled_rules` (each rule id written more
+    than once, in the order first written), `unread_proof_lines` (each list
+    item under `## Proof` that is not a proof line) and `heading_name` (the
+    name the first line gives, or None).
+
+    Where two specs share a file name the one reached last in the walk is
+    read. A rule id written twice is read once, in the place first written,
+    with the text of the last line that carries it.
     """
     features = {}
     for spec_path in spec_files(project_root):
@@ -254,13 +263,18 @@ def _parse_spec(name, rel_path, content):
 
     rules = {}
     rule_order = []
+    doubled = []
     unnumbered = []
     rules_section = extract_section(content, '## Rules')
     if rules_section is not None:
         for m in _RULE_RE.finditer(rules_section):
             rule_id = m.group(1)
+            if rule_id in rules:
+                if rule_id not in doubled:
+                    doubled.append(rule_id)
+            else:
+                rule_order.append(rule_id)
             rules[rule_id] = m.group(2).strip()
-            rule_order.append(rule_id)
         for line in rules_section.strip().splitlines():
             line = line.strip()
             if line.startswith('- ') and not _RULE_RE.match(line):
@@ -269,11 +283,14 @@ def _parse_spec(name, rel_path, content):
     proofs = {}
     proof_env = {}
     proofs_by_rule = {}
+    unread_proof_lines = []
     proof_section = extract_section(content, '## Proof')
     if proof_section:
         for line in proof_section.strip().splitlines():
             m = _PROOF_LINE_RE.match(line.strip())
             if not m:
+                if line.strip().startswith('- '):
+                    unread_proof_lines.append(line.strip())
                 continue
             proof_id = m.group(1)
             rule_ids = _split_list(m.group(2))
@@ -305,6 +322,10 @@ def _parse_spec(name, rel_path, content):
     parts = rel_path.split('/')
     category = parts[1] if len(parts) >= 3 else ''
 
+    first_line = next((line for line in content.splitlines() if line.strip()),
+                      '')
+    heading_match = _HEADING_RE.match(first_line.strip())
+
     return {
         'name': name,
         'spec_path': rel_path,
@@ -326,6 +347,9 @@ def _parse_spec(name, rel_path, content):
         'has_rules_section': rules_section is not None,
         'unnumbered_lines': unnumbered,
         'unknown_tags': sorted(set(unknown_tags)),
+        'doubled_rules': doubled,
+        'unread_proof_lines': unread_proof_lines,
+        'heading_name': heading_match.group(1) if heading_match else None,
     }
 
 
@@ -344,18 +368,79 @@ def unknown_tag_warning(features):
                    for tag in info.get('unknown_tags', ())})
     shown = carriers[:5]
     more = '' if len(carriers) <= 5 else ', and %d more' % (len(carriers) - 5)
-    return ('%d spec files carry tags this release does not read (%s); they are '
-            'ignored: %s%s' % (len(carriers), ', '.join(tags),
-                               ', '.join(shown), more))
+    count = ('1 spec file carries' if len(carriers) == 1
+             else '%d spec files carry' % len(carriers))
+    return ('%s tags this release does not read (%s); they are ignored: %s%s'
+            % (count, ', '.join(tags), ', '.join(shown), more))
+
+
+SCOPE_FINDS_NOTHING = ('%s: > Scope: names %s, which finds no file in git. '
+                       'Run purlin:spec %s.')
+SAME_NAME = ('%s and %s are both named %s; only %s is read. Rename one: '
+             'git mv %s %s/<new name>.md')
+RULE_WRITTEN_TWICE = ('%s: %s is written twice; the second is read. '
+                      'Run purlin:spec %s.')
+PROOF_LINE_UNREAD = ('%s: a line under ## Proof cannot be read: %s. '
+                     'Run purlin:spec %s.')
+HEADING_NAMES_OTHER = ('%s: the first line names %s, but the file is %s.md, so '
+                       'it is read as %s. Run purlin:spec %s.')
+
+# How much of a proof line that cannot be read its warning quotes.
+PROOF_LINE_SHOWN = 60
 
 
 def spec_mistakes(project_root, features):
     """One line per mistake Purlin can see in a spec, each naming its fix.
 
     `features` is `scan_specs`' answer. The lines are warned of and nothing
-    is refused. None are read yet, so the answer is empty.
+    is refused. They come in the order of the five mistakes, each sorted by
+    feature: a `> Scope:` entry that finds no tracked file, two specs with
+    one name, a rule id written twice, a line under `## Proof` that is not a
+    proof line, and a first line naming another feature. A spec whose every
+    scope entry finds nothing has the one line `incomplete_reason` gives and
+    none here.
     """
-    return []
+    # Imported here: `fingerprint` imports this module.
+    from purlin import fingerprint as fingerprint_module
+    lines = []
+    for name in sorted(features):
+        scope = [entry for entry in features[name].get('scope') or ()
+                 if entry.strip()]
+        if not scope:
+            continue
+        files, unmatched = fingerprint_module.expand_scope(project_root, scope)
+        if not files:
+            continue
+        for entry in unmatched:
+            lines.append(SCOPE_FINDS_NOTHING % (name, entry, name))
+
+    by_name = {}
+    for spec_path in spec_files(project_root):
+        rel_path = os.path.relpath(spec_path, project_root).replace(os.sep, '/')
+        stem = os.path.splitext(os.path.basename(spec_path))[0]
+        by_name.setdefault(stem, []).append(rel_path)
+    for name in sorted(by_name):
+        if len(by_name[name]) < 2 or name not in features:
+            continue
+        kept = features[name]['spec_path']
+        for dropped in by_name[name]:
+            if dropped == kept:
+                continue
+            lines.append(SAME_NAME % (kept, dropped, name, kept, dropped,
+                                      dropped.rsplit('/', 1)[0]))
+
+    for name in sorted(features):
+        for rule_id in features[name].get('doubled_rules') or ():
+            lines.append(RULE_WRITTEN_TWICE % (name, rule_id, name))
+    for name in sorted(features):
+        for line in features[name].get('unread_proof_lines') or ():
+            lines.append(PROOF_LINE_UNREAD
+                         % (name, line[:PROOF_LINE_SHOWN], name))
+    for name in sorted(features):
+        other = features[name].get('heading_name')
+        if other and other != name:
+            lines.append(HEADING_NAMES_OTHER % (name, other, name, name, name))
+    return lines
 
 
 def global_anchors(features):

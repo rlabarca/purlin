@@ -5,7 +5,6 @@ One test per proof. Where several proofs share a starting spec, the spec is
 written by a helper in this file and each test reads one case from it.
 """
 
-import glob
 import json
 import os
 import re
@@ -71,18 +70,23 @@ def _read_spec_proof(tmp_path, line):
     return purlin_specs.scan_specs(str(root))['lock']['proofs']['PROOF-1']
 
 
-def _proof_section_items(content):
-    section = re.search(r'^## Proof\s*\n(.*?)(?=^## |\Z)', content,
-                        re.MULTILINE | re.DOTALL)
-    if not section:
-        return []
-    return [line.strip() for line in section.group(1).strip().splitlines()
-            if line.strip().startswith('- ')]
+def _git_project(root, *tracked):
+    """Make `root` a git repository that tracks exactly `tracked`."""
+    subprocess.run(['git', 'init', '-q'], cwd=str(root), check=True)
+    if tracked:
+        subprocess.run(['git', 'add', '--'] + list(tracked), cwd=str(root),
+                       check=True)
 
 
-def _this_projects_specs():
-    return sorted(glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**', '*.md'),
-                            recursive=True))
+def _login(root, first_line='# Feature: login', scope=None, rules=None,
+           proofs=None):
+    """`specs/test/login.md`, with the lines given and one rule by default."""
+    text = first_line + '\n\n'
+    if scope is not None:
+        text += '> Scope: %s\n\n' % scope
+    text += '## Rules\n\n' + (rules or '- RULE-1: One\n')
+    text += '\n## Proof\n\n' + (proofs or '- PROOF-1 (RULE-1): Test one\n')
+    _write(root, 'specs/test/login.md', text)
 
 
 # ---------------------------------------------------------------------------
@@ -138,10 +142,27 @@ def test_a_rule_line_with_no_id_is_reported_as_not_numbered(tmp_path):
            '- RULE-1: A proper rule\n\n'
            '## Proof\n- PROOF-1 (RULE-1): Test\n')
     result = purlin_status.sync_status(str(root))
-    assert ('WARNING: 1 lines under ## Rules in specs/test/test_feat.md '
-            'are not numbered; a rule is `- RULE-N: <text>`.') in result, (
-        f"the warning must name the spec, count its one line and give the "
-        f"form: {result}")
+    assert ('WARNING: 1 line under ## Rules in specs/test/test_feat.md '
+            'is not numbered; a rule is `- RULE-N: <text>`. '
+            'Run purlin:spec test_feat.') in result.splitlines(), (
+        f"the warning must name the spec, count its one line, give the "
+        f"form and name the fix: {result}")
+
+
+# purlin: schema_spec_format PROOF-45
+def test_two_rule_lines_with_no_id_are_counted_in_the_plural(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'specs/test/test_feat.md',
+           '# Feature: test_feat\n\n'
+           '## Rules\n'
+           '- the first constraint without an id\n'
+           '- RULE-1: A proper rule\n'
+           '- the second constraint without an id\n\n'
+           '## Proof\n- PROOF-1 (RULE-1): Test\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('WARNING: 2 lines under ## Rules in specs/test/test_feat.md '
+            'are not numbered; a rule is `- RULE-N: <text>`. '
+            'Run purlin:spec test_feat.') in result.splitlines(), result
 
 
 # purlin: schema_spec_format PROOF-14
@@ -165,18 +186,23 @@ def test_a_gap_in_the_rule_numbers_is_reported_as_nothing(tmp_path):
     assert ids == ['RULE-1', 'RULE-3', 'RULE-20'], ids
 
 
+# purlin: schema_spec_format PROOF-46
+def test_a_rule_number_written_twice_is_warned_of_and_read_once(tmp_path):
+    root = _project(tmp_path)
+    _login(root, rules='- RULE-1: One\n- RULE-2: Old text\n'
+                       '- RULE-2: New text\n',
+           proofs='- PROOF-1 (RULE-1): Test one\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: RULE-2 is written twice; the second is read. '
+            'Run purlin:spec login.') in result.splitlines(), result
+    rules = _feature(root, 'login')['rules']
+    assert [(r['id'], r['text']) for r in rules] == [
+        ('RULE-1', 'One'), ('RULE-2', 'New text')], rules
+
+
 # ---------------------------------------------------------------------------
 # RULE-3: the proof line
 # ---------------------------------------------------------------------------
-
-# purlin: schema_spec_format PROOF-3
-def test_every_proof_line_of_this_project_names_a_proof_and_its_rule():
-    pattern = re.compile(r'^-\s+PROOF-\d+\s+\(RULE-\d+\)')
-    for path in _this_projects_specs():
-        with open(path, encoding='utf-8') as f:
-            content = f.read()
-        for line in _proof_section_items(content):
-            assert pattern.match(line), f"Bad proof line in {path}: {line}"
 
 
 def _flow_spec(tmp_path):
@@ -214,6 +240,31 @@ def test_a_proof_line_naming_no_rule_is_not_read_as_a_proof(tmp_path):
     info = _flow_spec(tmp_path)
     assert 'PROOF-3' not in info['proofs'], (
         f"a line naming no rule is not read as a proof: {info['proofs']}")
+
+
+# purlin: schema_spec_format PROOF-47
+def test_a_proof_line_that_cannot_be_read_is_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _login(root, proofs='- PROOF-1 (RULE-1): Test one\n'
+                        '- PROOF-7 shows the lockout\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: a line under ## Proof cannot be read: '
+            '- PROOF-7 shows the lockout. Run purlin:spec login.') \
+        in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-48
+def test_a_long_proof_line_that_cannot_be_read_is_quoted_to_60_characters(
+        tmp_path):
+    root = _project(tmp_path)
+    line = ('- PROOF-8 shows that a locked account stays locked for fifteen '
+            'minutes after the fifth try')
+    assert len(line) == 90
+    _login(root, proofs='- PROOF-1 (RULE-1): Test one\n' + line + '\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: a line under ## Proof cannot be read: '
+            '- PROOF-8 shows that a locked account stays locked for fifte. '
+            'Run purlin:spec login.') in result.splitlines(), result
 
 
 # ---------------------------------------------------------------------------
@@ -398,15 +449,40 @@ def test_an_edit_inside_the_scope_changes_the_code_fingerprint(tmp_path):
 # RULE-7: the first-level heading
 # ---------------------------------------------------------------------------
 
-# purlin: schema_spec_format PROOF-7
-def test_every_first_level_heading_of_this_project_names_a_feature_or_an_anchor():
-    valid = re.compile(r'^# (Feature|Anchor): ')
-    for path in _this_projects_specs():
-        with open(path, encoding='utf-8') as f:
-            content = f.read()
-        for heading in re.findall(r'^# .+', content, re.MULTILINE):
-            assert valid.match(heading), \
-                f"Invalid heading in {path}: {heading}"
+# purlin: schema_spec_format PROOF-49
+def test_a_first_line_naming_another_feature_is_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _login(root, first_line='# Feature: checkout')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: the first line names checkout, but the file is '
+            'login.md, so it is read as login. Run purlin:spec login.') \
+        in result.splitlines(), result
+    names = [f['name'] for f in
+             purlin_payload.build_payload(str(root))['features']]
+    assert names == ['login'], names
+
+
+# purlin: schema_spec_format PROOF-50
+def test_a_first_line_of_neither_form_is_read_by_the_file_name_and_not_warned_of(
+        tmp_path):
+    root = _project(tmp_path)
+    _login(root, first_line='Login rules')
+    result = purlin_status.sync_status(str(root))
+    assert 'first line' not in result, result
+    assert 'Login rules' not in result, result
+    names = [f['name'] for f in
+             purlin_payload.build_payload(str(root))['features']]
+    assert names == ['login'], names
+
+
+# purlin: schema_spec_format PROOF-51
+def test_an_anchor_first_line_makes_a_spec_an_anchor_outside_the_anchors_folder(
+        tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'specs/test/base.md',
+           '# Anchor: base\n\n## Rules\n- RULE-1: Base rule\n\n'
+           '## Proof\n- PROOF-1 (RULE-1): Test\n')
+    assert _feature(root, 'base')['is_anchor'] is True
 
 
 # ---------------------------------------------------------------------------
@@ -653,3 +729,61 @@ def test_a_heading_one_letter_off_is_neither_section(tmp_path):
     near = purlin_specs.scan_specs(str(root))['near']
     assert near['has_rules_section'] is False, near
     assert (near['rules'], near['proofs']) == ({}, {}), near
+
+
+# ---------------------------------------------------------------------------
+# RULE-13: two specs with one name
+# ---------------------------------------------------------------------------
+
+# purlin: schema_spec_format PROOF-52
+def test_two_specs_with_one_name_are_warned_of_with_the_rename(tmp_path):
+    root = _project(tmp_path)
+    for folder in ('auth', 'admin'):
+        _write(root, 'specs/%s/login.md' % folder,
+               '# Feature: login\n\n## Rules\n- RULE-1: One\n\n'
+               '## Proof\n- PROOF-1 (RULE-1): Test\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('specs/auth/login.md and specs/admin/login.md are both named '
+            'login; only specs/auth/login.md is read. Rename one: git mv '
+            'specs/admin/login.md specs/admin/<new name>.md') \
+        in result.splitlines(), result
+
+
+# ---------------------------------------------------------------------------
+# RULE-14: a scope entry that finds no file
+# ---------------------------------------------------------------------------
+
+# purlin: schema_spec_format PROOF-53
+def test_a_scope_entry_that_finds_nothing_is_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'src/app.py', 'x = 1\n')
+    _login(root, scope='src/app.py, src/gone.py')
+    _git_project(root, 'src/app.py')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: > Scope: names src/gone.py, which finds no file in git. '
+            'Run purlin:spec login.') in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-54
+def test_a_scope_entry_naming_an_untracked_file_is_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'src/app.py', 'x = 1\n')
+    _write(root, 'src/new.py', 'x = 2\n')
+    _login(root, scope='src/app.py, src/new.py')
+    _git_project(root, 'src/app.py')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: > Scope: names src/new.py, which finds no file in git. '
+            'Run purlin:spec login.') in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-55
+def test_a_scope_whose_every_entry_finds_nothing_gets_only_the_existing_line(
+        tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'src/app.py', 'x = 1\n')
+    _login(root, scope='src/gone.py')
+    _git_project(root, 'src/app.py')
+    result = purlin_status.sync_status(str(root))
+    assert ('1 spec names no files, so its tests run every time: login.'
+            in result.splitlines()), result
+    assert 'which finds no file in git' not in result, result
