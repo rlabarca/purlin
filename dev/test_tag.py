@@ -50,6 +50,16 @@ def sign_all(made):
                                        payload=payload)
 
 
+def walked(made, release=None):
+    """Run the walk, as `purlin:sign` with no argument does. Its lines and tag."""
+    out = _Out()
+    result = sign_module.walk(made.root, out=out, release=release)
+    return out.text().splitlines(), result['tag']
+
+
+NOTHING_WAITING = 'Nothing is waiting for someone to test by hand or to sign.'
+
+
 def no_tag_and_no_package(made):
     """True when the project holds no `signed/*` tag and no package folder."""
     tags = git(made.root, 'tag', '-l', 'signed/*').stdout.strip()
@@ -72,9 +82,9 @@ def tagged():
     made = ready()
     sign_all(made)
     made.walked_from = made.head()
-    out = _Out()
-    assert sign_module.tag_if_met(made.root, out) == 'signed/2.1.0', out.text()
-    made.tag_output = out.text()
+    lines, tag = walked(made)
+    assert tag == 'signed/2.1.0', lines
+    made.tag_output = '\n'.join(lines)
     yield made
     made.close()
 
@@ -116,9 +126,8 @@ class TestTheTag:
             assert git(finished.root, 'push', '-q', 'origin',
                        'main').returncode == 0
             before = git(finished.root, 'ls-remote', 'origin').stdout
-            out = _Out()
-            assert sign_module.tag_if_met(finished.root, out) == \
-                'signed/2.1.0', out.text()
+            lines, tag = walked(finished)
+            assert tag == 'signed/2.1.0', lines
             assert git(finished.root, 'ls-remote', 'origin').stdout == before
         finally:
             shutil.rmtree(remote, ignore_errors=True)
@@ -155,49 +164,50 @@ class TestNoTag:
 
     # purlin: signatures PROOF-68
     def test_while_work_is_left_it_prints_the_summary_ending(self):
-        made = ready()
+        made = ready(audited=())
         try:
-            out = _Out()
-            assert sign_module.tag_if_met(made.root, out) is None
+            lines, tag = walked(made)
             ending = purlin_summary.ending(made.payload())
-            assert out.text() == ending + '\n', out.text()
-            assert ending.splitlines()[-1] == '  2 rules to sign: purlin:sign'
+            assert lines == [NOTHING_WAITING] + ending.splitlines(), lines
+            assert lines[-1] == '  2 rules to audit: purlin:audit', lines
+            assert tag is None
             assert git(made.root, 'tag', '-l').stdout.strip() == ''
         finally:
             made.close()
 
     # purlin: signatures PROOF-103
     def test_no_tag_over_one_already_written(self, finished):
-        assert sign_module.tag_if_met(finished.root, _Out(),
-                                      release='beta') == 'signed/beta'
-        again = _Out()
-        assert sign_module.tag_if_met(finished.root, again,
-                                      release='beta') is None
-        assert again.text().splitlines() == [
+        assert walked(finished, release='beta')[1] == 'signed/beta'
+        lines, tag = walked(finished, release='beta')
+        assert tag is None
+        assert lines == [
+            NOTHING_WAITING,
             'No tag: signed/beta is already written. Name another with '
-            '--release <name>.']
+            '--release <name>.'], lines
         assert git(finished.root, 'tag', '-l').stdout.split() == [
             'signed/beta']
 
     # purlin: signatures PROOF-74
     def test_no_tag_over_results_that_are_not_committed(self, finished):
         record(finished, at='2026-09-14T12:00:00Z')
-        out = _Out()
-        assert sign_module.tag_if_met(finished.root, out) is None
-        assert out.text().splitlines() == [
+        lines, tag = walked(finished)
+        assert tag is None
+        assert lines == [
+            NOTHING_WAITING,
             'No tag: login has results that are not committed. Run '
-            'purlin:test --commit.'], out.text()
+            'purlin:test --commit.'], lines
         assert git(finished.root, 'tag', '-l').stdout.strip() == ''
 
     # purlin: signatures PROOF-105
     def test_no_tag_over_work_that_is_not_committed(self, finished):
         write(os.path.join(finished.root, 'notes.txt'), 'a draft\n')
-        out = _Out()
-        assert sign_module.tag_if_met(finished.root, out) is None
-        assert out.text().splitlines() == [
+        lines, tag = walked(finished)
+        assert tag is None
+        assert lines == [
+            NOTHING_WAITING,
             'No tag: the working tree holds changes that are not committed, '
             'so the results do not describe a commit. Commit them, then run '
-            'purlin:sign.'], out.text()
+            'purlin:sign.'], lines
         assert git(finished.root, 'tag', '-l').stdout.strip() == ''
 
     # purlin: signatures PROOF-111
@@ -205,12 +215,12 @@ class TestNoTag:
         made = ready(version=None)
         try:
             sign_all(made)
-            out = _Out()
-            assert sign_module.tag_if_met(made.root, out) is None
-            assert out.text().splitlines() == [
+            lines, tag = walked(made)
+            assert tag is None
+            assert lines == [
+                NOTHING_WAITING,
                 'No version: nothing in this project states one. Name it with '
-                '--release <version>, or write it to a VERSION file.'], \
-                out.text()
+                '--release <version>, or write it to a VERSION file.'], lines
             assert git(made.root, 'tag', '-l').stdout.strip() == ''
         finally:
             made.close()
@@ -299,10 +309,11 @@ class TestThePackage:
         write(os.path.join(finished.root, '.purlin', 'evidence', 'package'),
               'in the way\n')
         head = finished.head()
-        out = _Out()
-        assert sign_module.tag_if_met(finished.root, out) is None
-        assert out.text().startswith('No tag: the evidence package was not '
-                                     'committed: '), out.text()
+        lines, tag = walked(finished)
+        assert tag is None
+        assert lines[0] == NOTHING_WAITING, lines
+        assert lines[1].startswith('No tag: the evidence package was not '
+                                   'committed: '), lines
         assert git(finished.root, 'tag', '-l').stdout.strip() == ''
         assert finished.head() == head
 
@@ -341,6 +352,9 @@ class TestBelowSigned:
             assert len(result['commits']) == 1, out.text()
             assert out.text().endswith(
                 purlin_summary.ending(made.payload()) + '\n'), out.text()
+            assert out.text().splitlines()[-2:] == [
+                '2 rules. 2 pass their tests. 2 are strong.',
+                'Nothing left to do.'], out.text()
             assert result['tag'] is None and no_tag_and_no_package(made)
         finally:
             made.close()
@@ -352,40 +366,49 @@ class TestBelowSigned:
 
 class TestTheAuditHash:
 
+    # An entry reading `strong` with no finding, as one audit wrote it.
+    ONE = {'verdict': 'strong', 'findings': [], 'rule_hash': 'r',
+           'at': '2026-09-13T12:00:00Z', 'commit': 'a' * 40,
+           'path': '.purlin/evidence/local/login.json'}
+
     # purlin: signatures PROOF-64
-    def test_it_reads_the_evidence_and_nothing_that_moves_on_its_own(self):
-        one = {'verdict': 'strong', 'findings': [], 'rule_hash': 'r',
-               'at': '2026-09-13T12:00:00Z', 'commit': 'a' * 40,
-               'path': '.purlin/evidence/local/login.json'}
-        same = dict(one, at='2026-09-27T09:00:00Z', commit='b' * 40,
+    def test_what_moves_on_its_own_does_not_move_it(self):
+        same = dict(self.ONE, at='2026-09-27T09:00:00Z', commit='b' * 40,
                     path='.purlin/evidence/ci/login.json',
                     model='claude-opus-4-1-20250805', criteria='c' * 64)
-        assert purlin_signatures.audit_hash(one, 90) == \
+        assert purlin_signatures.audit_hash(self.ONE, 90) == \
             purlin_signatures.audit_hash(same, 90)
 
-        found = dict(one, findings=['PROOF-2 reads the status alone.'])
-        found['verdict'] = 'weak'
+    # purlin: signatures PROOF-138
+    def test_a_weak_verdict_with_a_finding_moves_it(self):
+        found = dict(self.ONE, verdict='weak',
+                     findings=['PROOF-2 reads the status alone.'])
         assert purlin_signatures.audit_hash(found, 90) != \
-            purlin_signatures.audit_hash(one, 90)
+            purlin_signatures.audit_hash(self.ONE, 90)
 
-        undecided = dict(one)
-        undecided['verdict'] = 'undecided'
+    # purlin: signatures PROOF-139
+    def test_an_undecided_verdict_moves_it(self):
+        undecided = dict(self.ONE, verdict='undecided')
         assert purlin_signatures.audit_hash(undecided, 90) != \
-            purlin_signatures.audit_hash(one, 90)
-        assert purlin_signatures.audit_hash(one, 70) != \
-            purlin_signatures.audit_hash(one, 90)
+            purlin_signatures.audit_hash(self.ONE, 90)
 
-    # purlin: signatures PROOF-64
-    def test_no_entry_hashes_the_empty_string(self):
-        assert purlin_signatures.audit_hash(None) == \
-            hashlib.sha256(b'').hexdigest()
+    # purlin: signatures PROOF-140
+    def test_another_test_strength_moves_it(self):
+        assert purlin_signatures.audit_hash(self.ONE, 70) != \
+            purlin_signatures.audit_hash(self.ONE, 90)
 
-    # purlin: signatures PROOF-64
+    # purlin: signatures PROOF-141
     def test_the_order_of_the_findings_does_not_move_it(self):
         one = {'verdict': 'weak', 'findings': ['b.', 'a.']}
         other = {'verdict': 'weak', 'findings': ['a.', 'b.']}
         assert purlin_signatures.audit_hash(one) == \
             purlin_signatures.audit_hash(other)
+
+    # purlin: signatures PROOF-142
+    def test_no_entry_hashes_the_empty_string(self):
+        empty = purlin_signatures.audit_hash(None)
+        assert empty == hashlib.sha256(b'').hexdigest()
+        assert empty.startswith('e3b0c442')
 
     def _signed_rule_2(self, made, capsys):
         assert sign_module.main(['login', 'RULE-2', '--project-root',

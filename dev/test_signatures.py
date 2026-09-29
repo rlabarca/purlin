@@ -256,7 +256,7 @@ class TestTheHashes:
         finally:
             made.close()
 
-    # purlin: signatures PROOF-5
+    # purlin: signatures PROOF-126
     def test_a_manual_proof_beside_a_tested_one_reads_file(self, proved):
         proved.spec(SPEC + '- PROOF-3 (RULE-1): A person signs in by hand '
                     'and sees the home page @manual\n')
@@ -276,7 +276,11 @@ class TestCurrent:
     def test_a_fresh_signature_is_current(self, proved):
         sign_one(proved)
         assert len(current(proved)) == 1
-        # What the audit observed is part of it too: a new finding ends it.
+
+    # purlin: signatures PROOF-127
+    def test_a_new_audit_finding_ends_it(self, proved):
+        sign_one(proved)
+        assert len(current(proved)) == 1
         proved.audit('RULE-1', findings=['PROOF-1 reads the status alone.'])
         assert current(proved) == []
 
@@ -336,37 +340,45 @@ class TestCurrent:
 class TestTheMachines:
     """A signature is made over the machine each system's tests ran on."""
 
-    def _signed_over(self, made, machines):
-        entry = dict(made.rule('RULE-1'), machines=machines)
-        rel = sign_one(made, entry=entry)
-        return read_json(made.root, rel), entry
+    def _signed_over_jane(self, made, windows=False):
+        """`login RULE-1` signed over macOS results from jane-laptop."""
+        record(made, os_name='macos', machine=MACHINE)
+        if windows:
+            record(made, source='ci', os_name='windows',
+                   machine='remote runner, Windows')
+        sign_one(made)
+        assert len(current(made)) == 1
 
     # purlin: signatures PROOF-119
     def test_the_same_machine_again_ends_nothing(self, proved):
-        signature, entry = self._signed_over(proved, {'macos': 'jane-laptop'})
-        assert purlin_signatures.is_current(
-            signature, dict(entry, machines={'macos': 'jane-laptop'}))
+        self._signed_over_jane(proved)
+        record(proved, os_name='macos', machine=MACHINE,
+               at='2026-09-14T12:00:00Z')
+        assert len(current(proved)) == 1
 
     # purlin: signatures PROOF-120
     def test_another_machine_for_a_system_it_names_ends_it(self, proved):
-        signature, entry = self._signed_over(proved, {'macos': 'jane-laptop'})
-        assert not purlin_signatures.is_current(
-            signature, dict(entry, machines={'macos': 'omar-desktop'}))
+        self._signed_over_jane(proved)
+        record(proved, os_name='macos', machine='omar-desktop',
+               at='2026-09-14T12:00:00Z')
+        assert current(proved) == []
 
     # purlin: signatures PROOF-121
     def test_a_new_system_ends_nothing(self, proved):
-        signature, entry = self._signed_over(proved, {'macos': 'jane-laptop'})
-        assert purlin_signatures.is_current(signature, dict(
-            entry, machines={'macos': 'jane-laptop',
-                             'windows': 'remote runner, Windows'}))
+        self._signed_over_jane(proved)
+        record(proved, source='ci', os_name='windows',
+               machine='remote runner, Windows')
+        assert proved.rule('RULE-1')['machines'] == {
+            'macos': MACHINE, 'windows': 'remote runner, Windows'}
+        assert len(current(proved)) == 1
 
     # purlin: signatures PROOF-122
     def test_a_system_it_names_that_is_gone_ends_it(self, proved):
-        signature, entry = self._signed_over(
-            proved, {'macos': 'jane-laptop',
-                     'windows': 'remote runner, Windows'})
-        assert not purlin_signatures.is_current(
-            signature, dict(entry, machines={'macos': 'jane-laptop'}))
+        self._signed_over_jane(proved, windows=True)
+        os.remove(os.path.join(proved.root, '.purlin', 'evidence', 'ci',
+                               'login.json'))
+        assert proved.rule('RULE-1')['machines'] == {'macos': MACHINE}
+        assert current(proved) == []
 
 
 # ---------------------------------------------------------------------------
@@ -405,36 +417,40 @@ class TestTheFile:
         assert data['note'] is None
         assert data['timestamp'].endswith('Z')
 
-    # purlin: signatures PROOF-63
-    def test_the_evidence_it_names_is_the_file_the_run_wrote(self, proved):
-        """A signature names the evidence file a reader can open."""
-        assert sign_module.evidence_for(proved.payload(), 'login') == \
-            '.purlin/evidence/local/login.json'
-        record(proved, source='ci')
-        assert sign_module.evidence_for(proved.payload(), 'login') == \
-            '.purlin/evidence/local/login.json', 'the local file comes first'
-        os.remove(os.path.join(proved.root, '.purlin', 'evidence', 'local',
-                               'login.json'))
-        assert sign_module.evidence_for(proved.payload(), 'login') == \
-            '.purlin/evidence/ci/login.json'
-        assert sign_module.evidence_for(proved.payload(), 'nosuch') is None
+    def _evidence_named(self, sources, capsys):
+        """`login RULE-1` signed with evidence from `sources`. Its `evidence`."""
+        made = Project(spec=SPEC)
+        try:
+            for source in sources:
+                record(made, source=source)
+            key(made.root)
+            assert sign_module.main(['login', 'RULE-1', '--project-root',
+                                     made.root]) == 0
+            capsys.readouterr()
+            path, = git(made.root, 'show', '--name-only', '--format=',
+                        'HEAD').stdout.split()
+            return read_json(made.root, path)['evidence']
+        finally:
+            made.close()
 
     # purlin: signatures PROOF-63
-    def test_a_written_signature_names_the_ci_file_or_none(self, proved):
-        key(proved.root)
-        record(proved, source='ci')
-        evidence = os.path.join(proved.root, '.purlin', 'evidence')
-        os.remove(os.path.join(evidence, 'local', 'login.json'))
-        written = []
-        for gone in ('local', 'ci'):
-            if gone == 'ci':
-                os.remove(os.path.join(evidence, 'ci', 'login.json'))
-            assert sign_module.sign_and_commit(
-                proved.root, [('login', 'RULE-1')], EMAIL)
-            path, = git(proved.root, 'show', '--name-only', '--format=',
-                        'HEAD').stdout.split()
-            written.append(read_json(proved.root, path)['evidence'])
-        assert written == ['.purlin/evidence/ci/login.json', None], written
+    def test_the_local_file_is_named(self, capsys):
+        assert self._evidence_named(['local'], capsys) == \
+            '.purlin/evidence/local/login.json'
+
+    # purlin: signatures PROOF-135
+    def test_the_local_file_comes_before_the_ci_one(self, capsys):
+        assert self._evidence_named(['local', 'ci'], capsys) == \
+            '.purlin/evidence/local/login.json'
+
+    # purlin: signatures PROOF-136
+    def test_the_ci_file_is_named_when_it_is_the_only_one(self, capsys):
+        assert self._evidence_named(['ci'], capsys) == \
+            '.purlin/evidence/ci/login.json'
+
+    # purlin: signatures PROOF-137
+    def test_no_evidence_file_names_none(self, capsys):
+        assert self._evidence_named([], capsys) is None
 
     # purlin: signatures PROOF-14
     def test_the_reader_finds_it(self, proved):
@@ -444,16 +460,28 @@ class TestTheFile:
         assert loaded[('login', 'RULE-1')][0]['signer'] == EMAIL
         path = loaded[('login', 'RULE-1')][0]['path']
         assert path.startswith('specs/auth/login.signatures/RULE-1.'), path
-        # The same file anywhere but beside the spec is not read.
-        name = os.path.basename(path)
+
+    def _copied_elsewhere(self, made):
+        """Sign `login RULE-1` and copy its file to three other folders."""
+        path = made.root + '/' + sign_one(made)
         for elsewhere in ('specs/login.signatures', 'signatures',
                           'specs/auth/signatures'):
-            os.makedirs(os.path.join(proved.root, elsewhere))
-            shutil.copy(os.path.join(proved.root, path),
-                        os.path.join(proved.root, elsewhere, name))
+            os.makedirs(os.path.join(made.root, elsewhere))
+            shutil.copy(path, os.path.join(made.root, elsewhere,
+                                           os.path.basename(path)))
+        return path
+
+    # purlin: signatures PROOF-128
+    def test_a_copy_anywhere_else_is_not_read(self, proved):
+        path = self._copied_elsewhere(proved)
         assert [s['path'] for s in proved.load()[('login', 'RULE-1')]] == [
-            path]
-        os.remove(os.path.join(proved.root, path))
+            os.path.relpath(path, proved.root)]
+        assert os.path.relpath(path, proved.root).startswith(
+            'specs/auth/login.signatures/')
+
+    # purlin: signatures PROOF-129
+    def test_the_copies_alone_are_no_signature(self, proved):
+        os.remove(self._copied_elsewhere(proved))
         assert ('login', 'RULE-1') not in proved.load()
 
     # purlin: signatures PROOF-75
@@ -523,6 +551,18 @@ NO_KEY_LINES = ['No key to sign with. These commands set one up:',
                 '  git config user.signingkey ~/.ssh/id_ed25519.pub']
 
 
+def all_across_two_features(made, capsys):
+    """`--all` over both `login` rules and `billing`'s hand check.
+
+    Returns the commit the run began on; the output is left on `made.output`.
+    """
+    add_billing(made)
+    before = made.head()
+    assert sign_module.main(['--all', '--project-root', made.root]) == 0
+    made.output = capsys.readouterr().out
+    return before
+
+
 def add_billing(made):
     """A second feature, `billing`, whose one rule is a hand check, committed."""
     made.spec('# Feature: billing\n\n'
@@ -583,13 +623,10 @@ class TestTheSignedCommit:
                                    for name in at_signed.signatures()]
 
     # purlin: signatures PROOF-24
-    def test_a_batch_across_features_names_each_one(self):
-        assert sign_module.commit_message(
-            [('login', 'RULE-1'), ('login', 'RULE-2')]) == (
-            'sign(login): RULE-1 RULE-2')
-        assert sign_module.commit_message(
-            [('login', 'RULE-1'), ('billing', 'RULE-3')]) == (
-            'sign(batch): login RULE-1, billing RULE-3')
+    def test_a_batch_across_features_names_each_one(self, at_signed, capsys):
+        all_across_two_features(at_signed, capsys)
+        assert git(at_signed.root, 'log', '-1', '--format=%s').stdout \
+            .strip() == 'sign(batch): billing RULE-1, login RULE-1 RULE-2'
 
     # purlin: signatures PROOF-112
     def test_it_closes_by_naming_the_signer_and_the_key(self, at_signed,
@@ -667,15 +704,32 @@ class TestWhatCounts:
 class TestTheNote:
 
     # purlin: signatures PROOF-16
-    def test_a_note_records_what_the_signer_checked(self, at_signed, capsys):
+    def test_a_note_records_what_the_signer_checked(self, capsys):
+        made = ready(spec=MANUAL_SPEC)
+        try:
+            assert made.rule('RULE-2')['left'] == 'to_test_by_hand'
+            code = sign_module.main(
+                ['login', 'RULE-2', '--note', 'I ran the lockout by hand.',
+                 '--project-root', made.root])
+            capsys.readouterr()
+            assert code == 0
+            path = made.load()[('login', 'RULE-2')][0]['path']
+            assert read_json(made.root, path)['note'] == \
+                'I ran the lockout by hand.'
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-145
+    def test_one_note_goes_on_each_rule_named(self, at_signed, capsys):
         code = sign_module.main(
-            ['login', 'RULE-2', '--note', 'I ran the lockout by hand.',
+            ['login', 'RULE-1', 'RULE-2', '--note', 'I read both by hand.',
              '--project-root', at_signed.root])
         capsys.readouterr()
         assert code == 0
-        path = at_signed.load()[('login', 'RULE-2')][0]['path']
-        assert read_json(at_signed.root, path)['note'] == \
-            'I ran the lockout by hand.'
+        loaded = at_signed.load()
+        notes = [read_json(at_signed.root, loaded[('login', rule)][0]['path'])
+                 ['note'] for rule in ('RULE-1', 'RULE-2')]
+        assert notes == ['I read both by hand.'] * 2, notes
 
     def _refused(self, made, capsys, argv):
         before = made.head()
@@ -730,14 +784,14 @@ class TestWhatIsSigned:
 
     # purlin: signatures PROOF-90
     def test_all_across_two_features_is_one_commit(self, at_signed, capsys):
-        add_billing(at_signed)
-        assert sign_module.main(['--all', '--project-root',
-                                 at_signed.root]) == 0
-        capsys.readouterr()
-        assert git(at_signed.root, 'log', '-1', '--format=%s').stdout \
-            .strip() == 'sign(batch): billing RULE-1, login RULE-1 RULE-2'
-        assert len(os.listdir(os.path.join(
-            at_signed.root, 'specs', 'pay', 'billing.signatures'))) == 1
+        before = all_across_two_features(at_signed, capsys)
+        assert git(at_signed.root, 'rev-list', '--count',
+                   before + '..HEAD').stdout.strip() == '1'
+        carried = sorted(git(at_signed.root, 'show', '--name-only',
+                             '--format=', 'HEAD').stdout.split())
+        assert [path.rsplit('/', 1)[0] for path in carried] == [
+            'specs/auth/login.signatures'] * 2 + [
+            'specs/pay/billing.signatures'], carried
 
     # purlin: signatures PROOF-70
     def test_at_strong_all_signs_the_hand_check(self, capsys):
@@ -801,6 +855,20 @@ class TestWhatIsSigned:
         finally:
             made.close()
 
+    # purlin: signatures PROOF-143
+    def test_a_bare_feature_with_nothing_waiting_says_so_and_ends(
+            self, capsys):
+        made = ready(gate=REVIEW_GATE)
+        try:
+            code = sign_module.main(['login', '--project-root', made.root])
+            assert capsys.readouterr().out.splitlines() == [
+                'Nothing is waiting for someone to test by hand or to sign.',
+                '2 rules. 2 pass their tests. 2 are strong.',
+                'Nothing left to do.']
+            assert (code, made.signatures()) == (0, [])
+        finally:
+            made.close()
+
     # purlin: signatures PROOF-125
     def test_a_rule_no_spec_has_is_named_and_nothing_is_signed(self, capsys):
         made = ready(gate=REVIEW_GATE)
@@ -841,16 +909,32 @@ class TestWhatIsSigned:
         capsys.readouterr()
         assert shown == [('billing', 'RULE-1'), ('login', 'RULE-1'),
                          ('login', 'RULE-2')], shown
-        assert waiting_pairs(at_signed.payload()) == shown
+
+    # purlin: signatures PROOF-130
+    def test_all_signs_in_the_same_order(self, at_signed, capsys):
+        all_across_two_features(at_signed, capsys)
+        lines = at_signed.output.splitlines()
+        assert lines[0].startswith('Signed 3 rules as '), lines
+        assert lines[1:4] == ['  billing RULE-1', '  login RULE-1',
+                              '  login RULE-2'], lines
 
     # purlin: signatures PROOF-30
-    def test_a_hand_check_waits_once(self):
-        made = ready(spec=MANUAL_SPEC)
+    def test_a_bare_feature_signs_a_hand_check_and_a_rule_to_sign(
+            self, capsys):
+        made = ready(spec=MANUAL_SPEC, audited=('RULE-1',))
         try:
-            rule = made.rule('RULE-2')
-            assert rule['left'] == 'to_test_by_hand', rule['left']
-            assert waiting_pairs(made.payload(), 'login').count(
-                ('login', 'RULE-2')) == 1
+            assert [made.rule(rule)['left'] for rule in ('RULE-1', 'RULE-2')] \
+                == ['to_sign', 'to_test_by_hand']
+            before = made.head()
+            assert sign_module.main(['login', '--project-root', made.root]) \
+                == 0
+            capsys.readouterr()
+            assert [name.split('.')[0] for name in made.signatures()] == [
+                'RULE-1', 'RULE-2']
+            assert git(made.root, 'rev-list', '--count',
+                       before + '..HEAD').stdout.strip() == '1'
+            assert git(made.root, 'log', '-1', '--format=%s').stdout.strip() \
+                == 'sign(login): RULE-1 RULE-2'
         finally:
             made.close()
 
@@ -1005,6 +1089,16 @@ def listed(made, feature, applies_to, rule='RULE-1'):
 
 class TestAnchors:
 
+    # purlin: signatures PROOF-131
+    def test_all_signs_an_anchor_rule_once(self, at_signed, capsys):
+        with_anchor(at_signed)
+        assert sign_module.main(['--all', '--project-root',
+                                 at_signed.root]) == 0
+        lines = capsys.readouterr().out.splitlines()
+        assert lines[0].startswith('Signed 2 rules as '), lines
+        assert lines[1:3] == ['  billing RULE-1', '  secure RULE-1'], lines
+        assert not lines[3].startswith('  '), lines
+
     # purlin: signatures PROOF-113
     def test_an_anchor_rule_is_signed_once_per_feature(self, at_signed,
                                                        capsys):
@@ -1059,6 +1153,14 @@ class TestAnyBranch:
         assert cell['word'] == 'signed', cell
         assert not any('branch' in reason or 'main' in reason
                        for reason in cell.get('reasons') or ()), cell
+
+    # purlin: signatures PROOF-134
+    def test_the_branch_that_does_not_carry_it_is_unsigned(self, at_signed,
+                                                           capsys):
+        git(at_signed.root, 'checkout', '-q', '-b', 'side')
+        assert sign_module.main(['login', 'RULE-2', '--project-root',
+                                 at_signed.root]) == 0
+        capsys.readouterr()
         git(at_signed.root, 'checkout', '-q', 'main')
         assert at_signed.rule('RULE-2')['cells']['signed']['word'] == \
             'unsigned'
@@ -1071,7 +1173,19 @@ class TestAnyBranch:
 class TestTheCommandLine:
 
     # purlin: signatures PROOF-28
-    def test_help_exits_zero_and_a_bad_option_exits_two(self):
+    def test_help_exits_zero(self, capsys):
         assert sign_module.main(['--help']) == 0
+        assert capsys.readouterr().out.splitlines()[0] == (
+            'Write the signatures a person attests, and commit them signed.')
+
+    # purlin: signatures PROOF-132
+    def test_an_unknown_option_after_a_feature_exits_two(self, capsys):
         assert sign_module.main(['login', '--nope']) == 2
+        assert capsys.readouterr().err.splitlines() == [
+            sign_module.USAGE, 'sign.py: unknown option --nope']
+
+    # purlin: signatures PROOF-133
+    def test_an_unknown_option_alone_exits_two(self, capsys):
         assert sign_module.main(['--nope']) == 2
+        assert capsys.readouterr().err.splitlines() == [
+            sign_module.USAGE, 'sign.py: unknown option --nope']
