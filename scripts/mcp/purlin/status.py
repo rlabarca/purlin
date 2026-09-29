@@ -203,6 +203,10 @@ def _pin_lines(project_root):
     rows = drift_module.pin_report(project_root, features)
     lines = []
     for row in rows:
+        # An anchor whose source names no repository is read as any spec;
+        # purlin:drift and the anchor check name it, and the status does not.
+        if row.get('not_a_spec'):
+            continue
         if row.get('reason'):
             lines.append('%s: (source rejected: %s)'
                          % (row['anchor'], row['reason']))
