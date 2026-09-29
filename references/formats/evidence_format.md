@@ -1,4 +1,4 @@
-> Format-Version: 4
+> Format-Version: 5
 
 # Evidence format
 
@@ -100,6 +100,10 @@ present only once an audit has run.
 | `fingerprint` | object | `spec`, `code` and `tests`, three sha256 hex strings. See "The fingerprint" |
 | `rules` | object | `RULE-N` to one word for what this run saw |
 | `proofs` | array | one entry per (proof, test) pair |
+
+A `ci` section answers only for the proofs tagged `@env` for the runner's
+own system: its `proofs` list those proofs alone, and its `rules` the rules
+they prove. A feature with no such proof gets no `ci` file from that runner.
 
 Each `rules` value:
 

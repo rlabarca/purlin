@@ -415,6 +415,20 @@ def test_a_manual_proof_is_listed_missing_and_manual():
             for entry in listed] == [('missing', True, '')]
 
 
+# purlin: evidence_writer PROOF-75
+def test_a_ci_section_lists_only_the_proofs_tagged_for_its_system():
+    info = _info(proofs={'PROOF-1': PLAIN,
+                         'PROOF-2': {'manual': False, 'env': HERE}},
+                 by_rule={'RULE-1': ['PROOF-1', 'PROOF-2']})
+    section = writer.build_section(
+        info, {'PROOF-1': [_seen('pass', 'test_a')],
+               'PROOF-2': [_seen('pass', 'test_b')]},
+        HERE, 'a' * 40, False, 'ci', PRINT, only={'PROOF-2'})
+    assert [(entry['id'], entry['result']) for entry in section['proofs']] \
+        == [('PROOF-2', 'pass')]
+    assert section['rules'] == {'RULE-1': 'passed'}
+
+
 def _no_proof(rule_id, seen):
     """The section for a spec whose one rule has no proof, and what it lists."""
     section = writer.build_section(

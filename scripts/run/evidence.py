@@ -144,7 +144,8 @@ def _observed(entries_by_id):
 
 
 def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
-                  fingerprint, at=None, machine=None, hostname=None):
+                  fingerprint, at=None, machine=None, hostname=None,
+                  only=None):
     """One platform section for one feature this run covered.
 
     `entries_by_proof` is `{id: [entry, ...]}`, what the run tied to each
@@ -154,6 +155,10 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     `test` for a proof nothing observed. A tied test that neither passed
     nor failed is `missing`, or `not run` where its proof is tagged for
     another operating system.
+
+    `only`, on a remote runner, is the proofs tagged for its system: the
+    section then lists those proofs alone and the rules they prove, and
+    each rule is read from those proofs alone.
 
     `machine` is where the tests ran: the host's name on a person's machine,
     `remote runner, <system>` on a remote runner. `hostname` is the host's
@@ -166,6 +171,10 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     listed = []
     for rule_id in info.get('rule_order') or ():
         proof_ids = by_rule.get(rule_id) or []
+        if only is not None:
+            proof_ids = [pid for pid in proof_ids if pid in only]
+            if not proof_ids:
+                continue
         if not proof_ids:
             # No proof: a test marked with the rule's own id answers for it.
             seen = entries_by_proof.get(rule_id) or []

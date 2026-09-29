@@ -22,7 +22,8 @@ spec, code or tests, one with an untracked file under its scope or beside
 its tests, and one whose spec names no files. Before anything runs the run
 prints what it selected and why, what it skipped, and each untracked file
 that selected a feature; with nothing selected it says so and runs no test.
-`--ci` with no feature named runs every feature.
+`--ci` with no feature named runs every feature that has a proof tagged
+`@env` for the runner's system.
 
 **How the tests run.** The settings file names the project's own suites
 under `tests`, each with its command, where its report lands, the report's
@@ -62,14 +63,20 @@ evidence lines the audit prints one line, `AI audit: <n> rules read, <s>
 strong, <w> weak.`, then one line per reason a rule could not be audited,
 then the status table, the summary sentence and `Left to do`.
 
-`--ci` is the arm a remote runner runs. On a run branch it writes this
-runner's section of `.purlin/evidence/ci/<feature>.json` and always commits
-it, through the git host's API, because the evidence exists nowhere else. No
-breaks run there and the AI audit is not called. On a tag run it runs the
-tests and writes nothing.
+`--ci` is the arm a remote runner runs. It answers only for the proofs
+tagged `@env` for the runner's own system: a feature with none is not run,
+`{files}` is the test files carrying those proofs' markers, a suite with no
+such file is not started, and only those markers count for missing evidence
+and for the exit code. A file holding other tests beside them is started
+whole, and the results of the others are neither written nor counted. On a
+run branch it writes this runner's section of
+`.purlin/evidence/ci/<feature>.json`, listing those proofs and the rules they
+prove, and always commits it, through the git host's API, because the
+evidence exists nowhere else. No breaks run there and the AI audit is not
+called. On a tag run it runs the same tests and writes nothing.
 
-A proof the spec tags `@env` for another operating system is not run here.
-The run says so in one sentence and names `purlin:test --remote`.
+A proof the spec tags `@env` for another operating system is not run on a
+person's machine. The run says so and names `purlin:test --remote`.
 
 No arm and no engine ever reads this process's stdin, and none may ask git
 for a password: a runner is nobody's terminal, and a command that stops for
@@ -83,7 +90,8 @@ test failed or did not run, evidence is missing, a marker names nothing a
 spec has, there is no settings file, an older Purlin set the project up and
 it was not upgraded, no test command is set, or, for `--audit` above the
 gate `passed`, a rule it read is weak or could not be audited; 2 the command
-line was wrong. `--ci` exits 1 only when a test failed or could not run.
+line was wrong. `--ci` exits 1 only when a test tied to a proof tagged for
+its system failed or could not run.
 
 The flow is one pass. Resolve the configuration and the suites, scan the
 specs and the markers, run each suite, then check two things no test
@@ -296,6 +304,18 @@ def foreign_env_proofs(features, selected, os_name):
             if env and env != os_name:
                 out.append((name, proof_id, env))
     return out
+
+
+def tagged_here(features, selected, os_name):
+    """`{(feature, proof_id)}` for the proofs tagged `@env` for `os_name`.
+
+    What a remote runner answers for: it runs only the tests tied to these
+    proofs, and a feature with none of them is not run there.
+    """
+    return {(name, proof_id) for name in selected
+            for proof_id, proof in ((features.get(name) or {})
+                                    .get('proofs') or {}).items()
+            if proof.get('env') == os_name}
 
 
 # ---------------------------------------------------------------------------
@@ -515,17 +535,23 @@ def marker_results(scan, suites, runs):
     return index
 
 
-def marked_files(scan, suite, selected):
+def marked_files(scan, suite, selected, proofs=None):
     """The `/` relative paths, sorted, of one suite's files a run gives `{files}`.
 
-    A file is given when it carries a marker of a feature in `selected`. The
-    files are read from the disk, tracked or not, so a new test is run
-    before anyone has added it.
+    A file is given when it carries a marker of a feature in `selected`, or,
+    where `proofs` names the `(feature, proof_id)` pairs a remote runner
+    answers for, a marker of one of them. The files are read from the disk,
+    tracked or not, so a new test is run before anyone has added it.
     """
     wanted = set(selected)
+
+    def carries(found):
+        if proofs is None:
+            return bool(found.features() & wanted)
+        return any(marker.key() in proofs for marker in found.markers)
     return sorted(path for path, found in scan.items()
                   if markers_module.suite_of(path, [suite]) is suite
-                  and found.features() & wanted)
+                  and carries(found))
 
 
 # ---------------------------------------------------------------------------
@@ -593,8 +619,13 @@ def machine_name(args, os_name):
     return platform.node() or 'unknown'
 
 
-def build_sections(project_root, args, features, selected, index, os_name):
-    """`{feature: section}`, one section per feature this run covered."""
+def build_sections(project_root, args, features, selected, index, os_name,
+                   proofs=None):
+    """`{feature: section}`, one section per feature this run covered.
+
+    `proofs`, on a remote runner, is the `(feature, proof_id)` pairs tagged
+    for its system: each section lists those proofs alone.
+    """
     commit = head_commit(project_root)
     dirty = working_tree_dirty(project_root)
     runner = runner_name(project_root, args)
@@ -617,7 +648,9 @@ def build_sections(project_root, args, features, selected, index, os_name):
             info, entries, os_name, commit, dirty, runner,
             fingerprint_module.fingerprint(project_root, name, features,
                                            markers),
-            machine=machine, hostname=platform.node())
+            machine=machine, hostname=platform.node(),
+            only=(None if proofs is None else
+                  {pid for feature, pid in proofs if feature == name}))
     return sections
 
 
@@ -774,12 +807,21 @@ def main(argv=None):
         if not selected:
             return _nothing_to_run(project_root, args, features, cfg)
 
+    # A remote runner answers only for the proofs tagged for its own system:
+    # a feature with none of them is not run there, and only their markers
+    # count for missing evidence and for the exit code.
+    remote_proofs = None
+    if args.action == 'ci':
+        remote_proofs = tagged_here(features, selected, os_name)
+        selected = [name for name in selected
+                    if any(feature == name for feature, _p in remote_proofs)]
     foreign = foreign_env_proofs(features, selected, os_name)
     foreign_ids = {(feature, proof_id) for feature, proof_id, _env in foreign}
     # A run over every feature runs every suite whole. A narrower run gives
     # each suite the files that carry a marker of a feature it runs, and a
-    # suite with none of those is not started.
-    narrow = len(selected) < len(features)
+    # suite with none of those is not started. A remote runner gives each
+    # suite the files that carry a marker of a proof it answers for.
+    narrow = remote_proofs is not None or len(selected) < len(features)
     scan = markers_module.scan(project_root, suites)
 
     log = []
@@ -788,7 +830,7 @@ def main(argv=None):
     for suite in suites:
         files = []
         if narrow:
-            files = marked_files(scan, suite, selected)
+            files = marked_files(scan, suite, selected, remote_proofs)
             if not files:
                 continue
         # One line per suite before it starts, so a job log says where a run
@@ -809,6 +851,9 @@ def main(argv=None):
     for (feature, marker_id), entries in sorted(index.items()):
         if feature not in selected or (feature, marker_id) in foreign_ids:
             continue
+        if remote_proofs is not None \
+                and (feature, marker_id) not in remote_proofs:
+            continue
         for entry in entries:
             if entry['status'] in (reports_module.PASS, reports_module.FAIL):
                 continue
@@ -824,7 +869,8 @@ def main(argv=None):
         if suite is None or suite.name not in ran_suites:
             continue
         for marker in found.untied:
-            if marker.feature in selected:
+            if marker.feature in selected and (
+                    remote_proofs is None or marker.key() in remote_proofs):
                 missing.append('%s %s at %s:%d' % (marker.feature, marker.id,
                                                    path, marker.line))
     # A marker naming nothing a spec has fails the run, whatever the tests did.
@@ -850,7 +896,7 @@ def main(argv=None):
           % (', '.join(ran) or 'nothing',
              '1 feature' if len(selected) == 1
              else '%d features' % len(selected)))
-    if foreign:
+    if foreign and remote_proofs is None:
         print('')
         for feature, proof_id, env in foreign:
             print(FOREIGN_PROOF % (feature, proof_id,
@@ -859,8 +905,16 @@ def main(argv=None):
 
     # A failing test is a result the evidence records, so it fails the run
     # without being called missing; only a suite that left nothing to read,
-    # or a marker with no result, is missing evidence.
-    tests_failed = bool(failures or any(done.failed_tests for done in runs))
+    # or a marker with no result, is missing evidence. A remote runner
+    # starts a file of mixed tests whole, and only the tests tied to the
+    # proofs it answers for can fail it.
+    if remote_proofs is None:
+        tests_failed = bool(failures
+                            or any(done.failed_tests for done in runs))
+    else:
+        tests_failed = bool(failures or any(
+            entry['status'] == reports_module.FAIL
+            for key in remote_proofs for entry in index.get(key) or ()))
     exit_code = 1 if (tests_failed or wrong) else 0
     if failures:
         print('')
@@ -873,7 +927,7 @@ def main(argv=None):
         work = commit_the_work(project_root,
                                work_paths(scan, features, selected))
     sections = build_sections(project_root, args, features, selected, index,
-                              os_name)
+                              os_name, remote_proofs)
     problems = rule_problems(features, sections, index)
     if problems:
         print('')
@@ -1276,9 +1330,13 @@ def _ci(project_root, features, sections, log, os_name):
     _prune(project_root, features)
     print(evidence_writer.written_line(paths, 'ci'))
     commit = head_commit(project_root)
+    # The merge drops, in every section of a file, the rules its spec no
+    # longer carries, so it is handed each feature's whole list of rules:
+    # another system's section keeps the rules this runner does not list.
     merge = evidence_writer.merge_for_host(
-        os_name, {name: list((info or {}).get('rule_order') or ())
-                  for name, info in features.items()})
+        os_name, {name: list((features.get(name) or {}).get('rule_order')
+                             or ())
+                  for name in sections})
     commit_files(project_root, paths, evidence_writer.COMMIT_SUBJECT
                  % (commit[:7] or 'an unknown commit'), merge)
     print(evidence_writer.COMMITTED)

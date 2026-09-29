@@ -36,6 +36,12 @@ from purlin import payload as purlin_payload  # noqa: E402
 from run_project import (RUN_SCRIPT, _project,  # noqa: E402,F401
                          _pytest_project, _run, _spec, claude)
 
+# The system this machine is, and a feature's one proof tagged for it: a
+# remote runner runs only the tests tied to proofs tagged for its system, so
+# every `--ci` fixture tags its proof this way.
+HERE_OS = purlin_evidence.host_os()
+TAGGED_HERE = (('PROOF-1', 'RULE-1', ' @env(%s)' % HERE_OS),)
+
 
 # ---------------------------------------------------------------------------
 # Building a project to run against
@@ -652,7 +658,7 @@ class TestTheCiArmCommitsItsSection:
     @staticmethod
     def _ci(tmp_path, evidence_run, capsys, gate='strong'):
         root = _pytest_project(tmp_path, gate=gate)
-        _spec(root, 'feat')
+        _spec(root, 'feat', proofs=TAGGED_HERE)
         _git_repo(root)
         code, calls = evidence_run(root, '--all', '--ci')
         return root, code, calls, capsys.readouterr().out
@@ -713,7 +719,7 @@ class TestTheCiArmCommitsItsSection:
             '# purlin: feat PROOF-1\n'
             'def test_no():\n'
             '    assert 1 == 2\n'))
-        _spec(root, 'feat')
+        _spec(root, 'feat', proofs=TAGGED_HERE)
         code, _calls = evidence_run(root, '--all', '--ci')
         output = capsys.readouterr().out
         assert code == 1, output
@@ -728,10 +734,72 @@ class TestTheCiArmCommitsItsSection:
             '# purlin: nosuch PROOF-1\n'
             'def test_other():\n'
             '    assert True\n'))
-        _spec(root, 'feat')
+        _spec(root, 'feat', proofs=TAGGED_HERE)
         code, _calls = evidence_run(root, '--all', '--ci')
         output = capsys.readouterr().out
         assert 'names nosuch PROOF-1, which no spec has' in output, output
+        assert code == 0, output
+
+    @staticmethod
+    def _mixed(tmp_path, evidence_run, capsys, untagged='True'):
+        """`feat`'s PROOF-1 (RULE-1) carries no tag and PROOF-2 (RULE-2) is
+        tagged for this machine's system; one test file holds both tests,
+        the untagged one asserting `untagged`. `(root, code, calls, output)`."""
+        root = _pytest_project(tmp_path, gate='strong', body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_untagged():\n'
+            '    assert %s\n\n'
+            '# purlin: feat PROOF-2\n'
+            'def test_tagged():\n'
+            '    assert True\n' % untagged))
+        _spec(root, 'feat', rules=2, proofs=(
+            ('PROOF-1', 'RULE-1', ''),
+            ('PROOF-2', 'RULE-2', ' @env(%s)' % HERE_OS)))
+        _git_repo(root)
+        code, calls = evidence_run(root, '--all', '--ci')
+        return root, code, calls, capsys.readouterr().out
+
+    # purlin: run_script PROOF-207
+    def test_the_section_lists_only_the_proofs_tagged_for_its_system(
+            self, tmp_path, evidence_run, capsys):
+        root, code, _calls, output = self._mixed(tmp_path, evidence_run,
+                                                 capsys)
+        section = _evidence(root, source='ci')['platforms'][HERE_OS]
+        assert [(entry['id'], entry['result'])
+                for entry in section['proofs']] == [('PROOF-2', 'pass')], \
+            output
+        assert section['rules'] == {'RULE-2': 'passed'}, output
+        assert code == 0, output
+
+    # purlin: run_script PROOF-208
+    def test_a_feature_with_no_proof_tagged_for_its_system_gets_no_file(
+            self, tmp_path, evidence_run, capsys):
+        root = _pytest_project(tmp_path, gate='strong', body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_ok():\n'
+            '    assert True\n\n'
+            '# purlin: other PROOF-1\n'
+            'def test_other():\n'
+            '    assert True\n'))
+        _spec(root, 'feat', proofs=TAGGED_HERE)
+        _spec(root, 'other')
+        _git_repo(root)
+        code, calls = evidence_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+        assert (root / '.purlin' / 'evidence' / 'ci' / 'feat.json').exists()
+        assert not (root / '.purlin' / 'evidence' / 'ci'
+                    / 'other.json').exists(), output
+        assert [paths for paths, _m, _merge in calls['commit']] == [
+            ['.purlin/evidence/ci/feat.json']], output
+        assert code == 0, output
+
+    # purlin: run_script PROOF-209
+    def test_an_untagged_test_that_fails_beside_a_tagged_one_does_not_fail_it(
+            self, tmp_path, evidence_run, capsys):
+        _root, code, _calls, output = self._mixed(
+            tmp_path, evidence_run, capsys, untagged='1 == 2')
         assert code == 0, output
 
 
@@ -740,7 +808,7 @@ class TestTheLog:
     # purlin: run_script PROOF-15
     def test_the_log_is_written(self, tmp_path, evidence_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat')
+        _spec(root, 'feat', proofs=TAGGED_HERE)
         evidence_run(root, '--all', '--ci')
         capsys.readouterr()
         log = root / '.purlin' / 'runtime' / 'run.log'
@@ -819,7 +887,7 @@ class TestWhereEachArmCommits:
             self, tmp_path, evidence_run, capsys, monkeypatch):
         """A tag run reruns the tests and adds no evidence."""
         root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat')
+        _spec(root, 'feat', proofs=TAGGED_HERE)
         purlin_run = _load_run_script()
         evidence_run(root, '--all', '--test')
         local = _file(root, '.purlin/evidence/local/feat.json')
@@ -838,7 +906,7 @@ class TestWhereEachArmCommits:
     def test_a_run_on_the_branch_that_keeps_it_commits(
             self, tmp_path, evidence_run, capsys, monkeypatch):
         root = _pytest_project(tmp_path, gate='strong')
-        _spec(root, 'feat')
+        _spec(root, 'feat', proofs=TAGGED_HERE)
         self._on_ref(monkeypatch, 'refs/heads/run/main-4f1c2ab')
         _code, calls = evidence_run(root, '--all', '--ci')
         output = capsys.readouterr().out
@@ -883,7 +951,7 @@ class TestTheGateDecidesTheBreaks:
         _install, directory = claude
         root = _pytest_project(tmp_path, gate=gate)
         _config(root, mutation_engine='auto')
-        _spec(root, 'feat')
+        _spec(root, 'feat', proofs=TAGGED_HERE)
         _code, calls = evidence_run(root, '--all', '--ci')
         capsys.readouterr()
         assert calls['breaks'] == []
@@ -1704,10 +1772,10 @@ def _tail(output, suite):
     return lines[start + 1:lines.index('--- end of %s output ---' % suite)]
 
 
-def _hundred_lines(tmp_path, gate='passed'):
+def _hundred_lines(tmp_path, gate='passed', proofs=(('PROOF-1', 'RULE-1', ''),)):
     """A project whose one shell test prints `line 1` to `line 100` and fails."""
     root = _project(tmp_path, tests=[suites.shell_suite()], gate=gate)
-    _spec(root, 'feat')
+    _spec(root, 'feat', proofs=proofs)
     (root / 'tests').mkdir()
     (root / 'tests' / 'long.test.sh').write_text(
         '# purlin: feat PROOF-1\n'
@@ -1784,7 +1852,7 @@ class TestAFailingSuiteStatesItsReason:
             '# purlin: feat PROOF-1\n'
             'def test_bad():\n'
             '    assert 1 == 2\n'))
-        _spec(root, 'feat')
+        _spec(root, 'feat', proofs=TAGGED_HERE)
         evidence_run(root, '--all', '--ci')
         capsys.readouterr()
         log = root / '.purlin' / 'runtime' / 'run.log'
@@ -1796,7 +1864,8 @@ class TestAFailingSuiteStatesItsReason:
     def _logged(tmp_path, evidence_run, capsys, action):
         """The lines `line N` the run log holds after `action` over a shell
         test that prints `line 1` to `line 100` and fails."""
-        root = _hundred_lines(tmp_path, gate='strong')
+        root = _hundred_lines(tmp_path, gate='strong', proofs=(
+            TAGGED_HERE if action == '--ci' else (('PROOF-1', 'RULE-1', ''),)))
         evidence_run(root, '--all', action)
         capsys.readouterr()
         lines = (root / '.purlin' / 'runtime' / 'run.log').read_text(
@@ -1840,7 +1909,8 @@ class TestAnEmptyProjectRootIsRefused:
 # ---------------------------------------------------------------------------
 
 def _touched_project(tmp_path, names=('login', 'export'), gate='passed',
-                     requires=None, failing=()):
+                     requires=None, failing=(),
+                     proofs=(('PROOF-1', 'RULE-1', ''),)):
     """A committed checkout of features that each own one source file and
     one test file, run once with `--commit` so every feature has evidence.
 
@@ -1860,7 +1930,8 @@ def _touched_project(tmp_path, names=('login', 'export'), gate='passed',
             '    assert %s\n' % (name, name,
                                  '1 == 2' if name in failing else 'True'),
             encoding='utf-8')
-        _spec(root, name, scope='src/%s.py' % name, requires=requires)
+        _spec(root, name, scope='src/%s.py' % name, requires=requires,
+              proofs=proofs)
     _git_repo(root)
     sha = _head(root)
     _code, output = _run(root, '--test', '--commit')
@@ -2209,7 +2280,7 @@ class TestARunCoversWhatTheChangeTouched:
     # purlin: run_script PROOF-194
     def test_ci_with_no_feature_named_runs_every_feature(
             self, tmp_path, evidence_run, capsys):
-        root, _sha = _touched_project(tmp_path)
+        root, _sha = _touched_project(tmp_path, proofs=TAGGED_HERE)
         code, calls = evidence_run(root, '--ci')
         output = capsys.readouterr().out
         assert code == 0, output
