@@ -2,13 +2,13 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
-        "code": "2d875f0afa71f42c826075054f3ffb4911552903a019002d181447601b7c7940",
-        "spec": "bd39816e863cb4dab7b24b751eec64039db078268b81b3e0301b4b7aeaaa2e61",
-        "tests": "f89b46ca7b2aa7d4dfb2a239d91475e401b93d642a76fdcd28a665639ecc4991"
+        "code": "7a456e65ad5222341ee7ad2d2d41a0154b484b175e37b7c17ed1bb05a5f0f39e",
+        "spec": "c723ee091226a0215a87568d1aa8c15354deaf9b3bb521b8bb35a6e740fa7594",
+        "tests": "9206f240d5a876d591f725f19f3ad456636c703e98890848a4b0bfb3d889381d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -43,6 +43,14 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_evidence_writer.py::test_the_runner_is_the_slug_of_the_git_email"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-1",
+          "test": "dev/test_evidence_writer.py::test_a_test_run_writes_the_feature_file_with_one_section"
         },
         {
           "env": null,
@@ -213,6 +221,14 @@
           "test": "dev/test_evidence_writer.py::test_a_run_replaces_its_own_section_and_no_other"
         },
         {
+          "env": "windows",
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-4",
+          "test": "dev/test_evidence_writer.py::test_a_run_writes_its_section_beside_the_others_as_they_were"
+        },
+        {
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -283,6 +299,14 @@
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_evidence_writer.py::test_a_section_over_another_fingerprint_replaces_the_one_on_disk"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-7",
+          "test": "dev/test_evidence_writer.py::test_a_second_run_that_saw_the_same_thing_leaves_the_file_alone"
         },
         {
           "env": null,
@@ -581,6 +605,14 @@
           "test": "dev/test_evidence_writer.py::test_a_ci_section_names_the_host_the_runner_was_lent"
         },
         {
+          "env": "windows",
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_writer.py::test_a_run_names_the_machine_its_tests_ran_on"
+        },
+        {
           "env": null,
           "id": "PROOF-43",
           "manual": false,
@@ -646,14 +678,14 @@
         }
       ],
       "rules": {
-        "RULE-1": "passed",
+        "RULE-1": "not run",
         "RULE-10": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-15": "passed",
-        "RULE-16": "passed",
+        "RULE-16": "not run",
         "RULE-17": "passed",
         "RULE-18": "passed",
         "RULE-19": "passed",
@@ -662,10 +694,10 @@
         "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-3": "passed",
-        "RULE-4": "passed",
+        "RULE-4": "not run",
         "RULE-5": "passed",
         "RULE-6": "passed",
-        "RULE-7": "passed",
+        "RULE-7": "not run",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },

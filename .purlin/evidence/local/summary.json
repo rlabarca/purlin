@@ -2,13 +2,13 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:57Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "ef498e80a82d91331ed4a10346375d686536f2ede9a70449ff0ed15aa30fd8bd",
         "spec": "91afd3368befae559b6f3915ab96c531afaf394f3f2005a886a3c4669db071b5",
-        "tests": "d600e0f4b2aef5c5ae168bbe83792ffbef7aed1d53400db6203680ff20ff7b6c"
+        "tests": "89c301a67b05a827a82e946e8f2f7d12ffb9740ca5932bdb15e23abc34bf206a"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

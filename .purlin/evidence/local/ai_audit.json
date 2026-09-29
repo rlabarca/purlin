@@ -2,13 +2,13 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "f0b9864ea4f7763dc257025173db9770faeb69dd725b24c1e29d33a1784f3c1d",
-        "spec": "d92bee6b6f07ce448ac56de798f179baa80390b2f2559b90c449616a3678de16",
-        "tests": "0afbd0b5727639c35083338d01235a1a655878a4a67b886b5926d15d42f52824"
+        "spec": "024abf865075e5a6c437084441bd6142a1a14ae19801e20261c9919f7d7127fa",
+        "tests": "8a330f04f20f8c2e6b3a115653e6f4e6d98aac4fd5296dfdbe9428146bc7b736"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -139,6 +139,14 @@
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_ai_audit.py::TestTheCall::test_a_call_is_given_300_seconds_and_stdin_closes_after_the_prompt"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-3",
+          "test": "dev/test_ai_audit.py::TestTheCall::test_the_prompt_goes_on_stdin_and_never_in_the_arguments"
         },
         {
           "env": null,
@@ -565,6 +573,14 @@
           "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_call_past_its_limit_is_named"
         },
         {
+          "env": "windows",
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-19",
+          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_call_past_its_limit_is_named"
+        },
+        {
           "env": null,
           "id": "PROOF-26",
           "manual": false,
@@ -599,11 +615,11 @@
         "RULE-16": "passed",
         "RULE-17": "passed",
         "RULE-18": "passed",
-        "RULE-19": "passed",
+        "RULE-19": "not run",
         "RULE-2": "passed",
         "RULE-20": "passed",
         "RULE-21": "passed",
-        "RULE-3": "passed",
+        "RULE-3": "not run",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

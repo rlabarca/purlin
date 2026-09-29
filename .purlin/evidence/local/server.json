@@ -2,13 +2,13 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
-        "code": "4dcfb19dc9f4e0335f7dd4c2bec3abdf0fc957904abe46e17939ecd344bfe12d",
-        "spec": "e337860a0ce3280f202569763e4ff0ca19aefc1cbe0db03f468a5d6dd5f99903",
-        "tests": "060e996cd9863eb8f827aee23b341ef66f7ff22fc233ceeb69a9ff77ab12146b"
+        "code": "f4543891f34ffd29124061d7edf6fc4f494a86406d69e6020387b00968679d27",
+        "spec": "074415a3efbcfeeb5d31d474c929864c5035fc2ce7cfe1492afcc71da5e180c9",
+        "tests": "daf1bd5f98bc98112532ca6b780391b3d7b2f36359e54920375adc83e5279f3a"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -69,6 +69,14 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_stdout_holds_one_answer_per_tool_call_and_nothing_else"
         },
         {
+          "env": "windows",
+          "id": "PROOF-159",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-5",
+          "test": "dev/test_mcp_server.py::TestTransport::test_stdout_holds_the_answer_alone_and_the_startup_line_is_on_stderr"
+        },
+        {
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -81,6 +89,14 @@
           "id": "PROOF-129",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_a_workspace_named_from_the_home_folder_is_found"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-160",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-6",
           "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_a_workspace_named_from_the_home_folder_is_found"
         },
@@ -219,6 +235,14 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_plugin_entry_asks_the_resolver_for_a_soft_exit"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-161",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-22",
+          "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_manifest_command_starts_a_server_that_answers"
         },
         {
           "env": null,
@@ -377,7 +401,7 @@
         "RULE-1": "passed",
         "RULE-10": "passed",
         "RULE-2": "passed",
-        "RULE-22": "passed",
+        "RULE-22": "not run",
         "RULE-23": "passed",
         "RULE-24": "passed",
         "RULE-25": "passed",
@@ -389,8 +413,8 @@
         "RULE-30": "passed",
         "RULE-31": "passed",
         "RULE-4": "passed",
-        "RULE-5": "passed",
-        "RULE-6": "passed",
+        "RULE-5": "not run",
+        "RULE-6": "not run",
         "RULE-7": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"

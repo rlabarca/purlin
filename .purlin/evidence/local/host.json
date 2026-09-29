@@ -2,13 +2,13 @@
   "feature": "host",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "4fedf883c63147f4d1cc1b7a2aaa1b6c5db772e9b5b79ef168c7863e93df666b",
-        "spec": "bf7ec488570fdceafd8460296e420c4a9413c384fb6a528fa8569477e2bb0ae3",
-        "tests": "db5b47a68f2b967716df5969522e61b71831e05bb01f4214a5eb04d0b7785b54"
+        "spec": "85fcd5c8d938c88f1679033ab801aed11edc6713adc0b09c9396eb50bdc349a1",
+        "tests": "6f382ca8613c78f5fd342bb067855a8435cf75d7bbb265050fd931d3fa92a5e9"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -51,6 +51,14 @@
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_host.py::test_a_file_that_is_not_text_gets_a_blob_of_its_own"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-116",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-5",
+          "test": "dev/test_host.py::test_the_tree_entry_carries_the_file_and_its_permission"
         },
         {
           "env": null,
@@ -221,6 +229,14 @@
           "test": "dev/test_host.py::test_a_failed_push_starts_no_run"
         },
         {
+          "env": "windows",
+          "id": "PROOF-117",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-12",
+          "test": "dev/test_host.py::test_a_green_run_pushes_watches_pulls_and_deletes"
+        },
+        {
           "env": null,
           "id": "PROOF-12",
           "manual": false,
@@ -371,6 +387,14 @@
           "result": "pass",
           "rule": "RULE-31",
           "test": "dev/test_remote.py::test_without_az_the_run_is_neither_found_nor_pulled"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-120",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-31",
+          "test": "dev/test_remote.py::test_a_succeeded_run_is_brought_home_green"
         },
         {
           "env": null,
@@ -613,6 +637,14 @@
           "test": "dev/test_host_pathspec.py::test_the_commit_carries_the_new_file_and_the_deletion"
         },
         {
+          "env": "windows",
+          "id": "PROOF-118",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-24",
+          "test": "dev/test_host_pathspec.py::test_a_run_that_spells_paths_the_windows_way_commits_the_removal"
+        },
+        {
           "env": null,
           "id": "PROOF-30",
           "manual": false,
@@ -651,6 +683,14 @@
           "result": "pass",
           "rule": "RULE-27",
           "test": "dev/test_host.py::test_the_azure_project_that_is_the_workspace_pushes"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-119",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-27",
+          "test": "dev/test_host.py::test_the_project_that_is_the_workspace_commits"
         },
         {
           "env": null,
@@ -766,17 +806,17 @@
         }
       ],
       "rules": {
-        "RULE-12": "passed",
+        "RULE-12": "not run",
         "RULE-17": "passed",
         "RULE-18": "passed",
         "RULE-19": "passed",
         "RULE-20": "passed",
         "RULE-22": "passed",
-        "RULE-24": "passed",
-        "RULE-27": "passed",
+        "RULE-24": "not run",
+        "RULE-27": "not run",
         "RULE-28": "passed",
         "RULE-30": "passed",
-        "RULE-31": "passed",
+        "RULE-31": "not run",
         "RULE-32": "passed",
         "RULE-33": "passed",
         "RULE-34": "passed",
@@ -786,7 +826,7 @@
         "RULE-38": "passed",
         "RULE-39": "passed",
         "RULE-40": "passed",
-        "RULE-5": "passed",
+        "RULE-5": "not run",
         "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed"

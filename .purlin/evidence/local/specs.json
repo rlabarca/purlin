@@ -2,13 +2,13 @@
   "feature": "specs",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:57Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "44b5d6b0b76d6f975025858767eb0df0796c925f0ea71b926f29fb72115abd1c",
-        "spec": "1a8c1bf0d74dc0cb118672cdbca2d75442b7bbe612c1d665fae3fb23b68a788e",
-        "tests": "dfcdf727c007db2a4c5f2badb4edbcc417a2402553f750f26b402cfbd23b6ea0"
+        "spec": "80379df0cf4faad1ab0860bc5ea055318da6fd0371c65e45b5c57f37abd45f37",
+        "tests": "69fec256fb93b579c8cd9bc8fc7be231fd241c3e45471dab5a692f1fb2f9d276"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -129,6 +129,14 @@
           "id": "PROOF-33",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_specs_reader.py::TestAnchors::test_the_anchors_folder_alone_makes_an_anchor"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-11",
           "test": "dev/test_specs_reader.py::TestAnchors::test_the_anchors_folder_alone_makes_an_anchor"
         },
@@ -261,6 +269,14 @@
           "test": "dev/test_specs_reader.py::TestTheScan::test_a_spec_that_cannot_be_read_is_skipped"
         },
         {
+          "env": "windows",
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-20",
+          "test": "dev/test_specs_reader.py::TestTheScan::test_a_spec_that_cannot_be_read_is_skipped"
+        },
+        {
           "env": null,
           "id": "PROOF-40",
           "manual": false,
@@ -271,13 +287,13 @@
       ],
       "rules": {
         "RULE-10": "passed",
-        "RULE-11": "passed",
+        "RULE-11": "not run",
         "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-17": "passed",
         "RULE-18": "passed",
         "RULE-19": "passed",
-        "RULE-20": "passed",
+        "RULE-20": "not run",
         "RULE-21": "passed",
         "RULE-3": "passed",
         "RULE-7": "passed",

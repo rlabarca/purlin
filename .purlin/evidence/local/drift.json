@@ -2,13 +2,13 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "b67b30b12adb7e02567031ad878184c4bcf4ea0578a4064974ae25b4cab4dc3d",
-        "spec": "355dc5297b6656af1d8bbbca2ae711850b17533d14027c7138bccd0eeffbf11a",
-        "tests": "1483b1a982de58dfa7798dd5022f6e7edcf9d06b8b47765801d236823073cd54"
+        "spec": "d7c4f9142bbb40aac80936300689d3813b1463c73186ca1d60fcd958bc646b2d",
+        "tests": "53f486e3483654c09a52c47050817b54c02054000f36dee8240c03dade41680a"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -389,6 +389,14 @@
           "test": "dev/test_drift.py::TestSpecsNotCommitted::test_specs_all_committed_print_no_such_line"
         },
         {
+          "env": "windows",
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-17",
+          "test": "dev/test_drift.py::TestSpecsNotCommitted::test_specs_all_committed_print_no_such_line"
+        },
+        {
           "env": null,
           "id": "PROOF-27",
           "manual": false,
@@ -485,7 +493,7 @@
         "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-15": "passed",
-        "RULE-17": "passed",
+        "RULE-17": "not run",
         "RULE-18": "passed",
         "RULE-19": "passed",
         "RULE-2": "passed",

@@ -2,13 +2,13 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
-        "code": "e9db759415f74e0d4692cce461b899179cc6ed5b69a76d36075e223fec260952",
-        "spec": "a0cc46c2c9853dfb425d098c2cb2254f931cf2f33de7e14e8892ecd88f3aa7ca",
-        "tests": "290d4c97ef577d535ec758b4ad934e8fd919c6e7c1828080c3bdfb66fcdd9670"
+        "code": "3551ef9c3886ccd9c4fa053da404f80c3e29d09d79281cfd467489f59990c835",
+        "spec": "5b2d37ca0bcac36bc28224c027b9dea3b28e84bc741e6d6621f8352a4c50e11b",
+        "tests": "7302a354c7466f75dc8dfddad14caf54e24008d7938bb4fe4154c869aa7d2d1d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -37,6 +37,14 @@
           "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_a_file_gives_way_to_the_climb"
         },
         {
+          "env": "windows",
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-1",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_an_existing_folder_wins_over_a_marker"
+        },
+        {
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -51,6 +59,14 @@
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_stops_at_the_nearest_marker"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-2",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_reaches_the_marker_above_the_start"
         },
         {
           "env": null,
@@ -101,6 +117,14 @@
           "test": "dev/test_config_engine.py::TestWriting::test_the_written_value_is_what_the_settings_read"
         },
         {
+          "env": "windows",
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-8",
+          "test": "dev/test_config_engine.py::TestWriting::test_a_write_adds_its_key_to_the_settings_file"
+        },
+        {
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -139,6 +163,14 @@
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_a_disk_full_partway_leaves_the_previous_file_and_no_temporary"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-10",
+          "test": "dev/test_config_engine.py::TestAtomicWrite::test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole"
         },
         {
           "env": null,
@@ -181,6 +213,14 @@
           "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_each_way_has_its_own_sentence"
         },
         {
+          "env": "windows",
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-13",
+          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_the_variable_is_found_by_env"
+        },
+        {
           "env": null,
           "id": "PROOF-32",
           "manual": false,
@@ -214,16 +254,16 @@
         }
       ],
       "rules": {
-        "RULE-1": "passed",
-        "RULE-10": "passed",
-        "RULE-13": "passed",
+        "RULE-1": "not run",
+        "RULE-10": "not run",
+        "RULE-13": "not run",
         "RULE-14": "passed",
         "RULE-15": "passed",
-        "RULE-2": "passed",
+        "RULE-2": "not run",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-7": "passed",
-        "RULE-8": "passed",
+        "RULE-8": "not run",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

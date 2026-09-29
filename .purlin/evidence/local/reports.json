@@ -2,13 +2,13 @@
   "feature": "reports",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "72fa0a6214fe515ec25771e7fdd1431818f1c2effe1f2cdc18c254f3624f253d",
-        "spec": "f90fad632c206a6ae0e381b312f8e6f99f03d98df3d3fdf24b9a36ea13d31eaf",
-        "tests": "aa93d8c0c048191282bd071238ea7c171a2a12f515177d32960cd9e4bf7a8295"
+        "spec": "6c55e604d7d908afbbe95d89d368c5c15ab3a62fb14a9bbb3f9fe0bb28b918c2",
+        "tests": "5cbbc3b853719f70a55d80443448d92448168b490dba9aa5140085438ffb8a2d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -121,6 +121,14 @@
           "id": "PROOF-48",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_file_no_suite_matches_is_not_read"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-99",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-3",
           "test": "dev/test_reports.py::TestTheMarker::test_a_file_no_suite_matches_is_not_read"
         },
@@ -357,6 +365,14 @@
           "test": "dev/test_reports.py::TestTheTie::test_a_go_case_of_no_package_is_tied_to_nothing"
         },
         {
+          "env": "windows",
+          "id": "PROOF-100",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-10",
+          "test": "dev/test_reports.py::TestTheTie::test_a_jest_case_names_its_file"
+        },
+        {
           "env": null,
           "id": "PROOF-11",
           "manual": false,
@@ -501,6 +517,14 @@
           "test": "dev/test_reports.py::TestThroughARun::test_an_exit_suite_runs_its_command_once_per_file"
         },
         {
+          "env": "windows",
+          "id": "PROOF-101",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-15",
+          "test": "dev/test_reports.py::TestThroughARun::test_an_exit_suite_gives_each_file_its_exit_code"
+        },
+        {
           "env": null,
           "id": "PROOF-16",
           "manual": false,
@@ -525,6 +549,14 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_path_holding_a_space_is_one_argument"
         },
         {
+          "env": "windows",
+          "id": "PROOF-102",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-16",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_path_holding_a_space_is_one_argument"
+        },
+        {
           "env": null,
           "id": "PROOF-17",
           "manual": false,
@@ -537,6 +569,14 @@
           "id": "PROOF-85",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_reports.py::TestThroughARun::test_an_old_report_folder_is_deleted_before_the_suite_runs"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-103",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-17",
           "test": "dev/test_reports.py::TestThroughARun::test_an_old_report_folder_is_deleted_before_the_suite_runs"
         },
@@ -651,6 +691,14 @@
           "result": "pass",
           "rule": "RULE-21",
           "test": "dev/test_reports.py::TestNearMisses::test_a_file_no_suite_reads_is_not_listed"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-104",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-21",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_near_miss_is_listed_as_json"
         },
         {
           "env": null,
@@ -799,19 +847,19 @@
       ],
       "rules": {
         "RULE-1": "passed",
-        "RULE-10": "passed",
+        "RULE-10": "not run",
         "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
-        "RULE-15": "passed",
-        "RULE-16": "passed",
-        "RULE-17": "passed",
+        "RULE-15": "not run",
+        "RULE-16": "not run",
+        "RULE-17": "not run",
         "RULE-18": "passed",
         "RULE-19": "passed",
         "RULE-2": "passed",
         "RULE-20": "passed",
-        "RULE-21": "passed",
+        "RULE-21": "not run",
         "RULE-22": "passed",
         "RULE-23": "passed",
         "RULE-24": "passed",
@@ -819,7 +867,7 @@
         "RULE-26": "passed",
         "RULE-27": "passed",
         "RULE-28": "passed",
-        "RULE-3": "passed",
+        "RULE-3": "not run",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

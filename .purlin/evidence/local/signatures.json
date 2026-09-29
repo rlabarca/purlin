@@ -2,13 +2,13 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "40a9942914af60d09ca5814d3364277800ebfdaf8c9c1440b1b84307d00d470e",
-        "spec": "727f1fdd2492b5f9714e69f2eef3dc3ebcb9e6c8a5cb7322885d5341ebe58972",
-        "tests": "e66267d3528f6d5e84527c1bf34140b448d5fe8bc9ac2592c630ae5920d058c9"
+        "spec": "05f18857281c236c7fd558a4cd5b3a7e535071ab26732f69d20e30723a66a5a7",
+        "tests": "2e83764cbed036b6a1fff1f51e08bc49354196fbd6dbe80b526a5667b864426c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -301,10 +301,26 @@
           "test": "dev/test_signatures.py::TestTheSignedCommit::test_the_script_runs_as_a_command"
         },
         {
+          "env": "windows",
+          "id": "PROOF-153",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-17",
+          "test": "dev/test_signatures.py::TestTheSignedCommit::test_an_existing_key_file_is_not_made_again"
+        },
+        {
           "env": null,
           "id": "PROOF-23",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_signatures.py::TestTheSignedCommit::test_one_signed_commit_carries_the_feature"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-154",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-18",
           "test": "dev/test_signatures.py::TestTheSignedCommit::test_one_signed_commit_carries_the_feature"
         },
@@ -347,6 +363,14 @@
           "result": "pass",
           "rule": "RULE-20",
           "test": "dev/test_signatures.py::TestWhatCounts::test_a_signed_commit_by_another_author_counts"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-155",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-20",
+          "test": "dev/test_signatures.py::TestWhatCounts::test_a_commit_signed_with_the_signers_key_counts"
         },
         {
           "env": null,
@@ -485,6 +509,14 @@
           "test": "dev/test_tag.py::TestTheTag::test_the_tag_is_signed_and_names_the_commit_and_the_gate"
         },
         {
+          "env": "windows",
+          "id": "PROOF-156",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-45",
+          "test": "dev/test_tag.py::TestTheTag::test_the_tag_is_signed_and_names_the_commit_and_the_gate"
+        },
+        {
           "env": null,
           "id": "PROOF-68",
           "manual": false,
@@ -505,6 +537,14 @@
           "id": "PROOF-75",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-50",
+          "test": "dev/test_signatures.py::TestTheFile::test_it_records_the_signer_as_git_holds_them_and_the_key"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-157",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-50",
           "test": "dev/test_signatures.py::TestTheFile::test_it_records_the_signer_as_git_holds_them_and_the_key"
         },
@@ -643,6 +683,14 @@
           "result": "pass",
           "rule": "RULE-60",
           "test": "dev/test_signatures.py::TestTheKey::test_a_key_that_is_not_ssh_is_no_key"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-158",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-60",
+          "test": "dev/test_signatures.py::TestTheKey::test_a_private_key_path_reads_the_public_key_beside_it"
         },
         {
           "env": null,
@@ -908,10 +956,10 @@
         "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-16": "passed",
-        "RULE-17": "passed",
-        "RULE-18": "passed",
+        "RULE-17": "not run",
+        "RULE-18": "not run",
         "RULE-19": "passed",
-        "RULE-20": "passed",
+        "RULE-20": "not run",
         "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-23": "passed",
@@ -919,11 +967,11 @@
         "RULE-4": "passed",
         "RULE-42": "passed",
         "RULE-43": "passed",
-        "RULE-45": "passed",
+        "RULE-45": "not run",
         "RULE-46": "passed",
         "RULE-49": "passed",
         "RULE-5": "passed",
-        "RULE-50": "passed",
+        "RULE-50": "not run",
         "RULE-53": "passed",
         "RULE-54": "passed",
         "RULE-55": "passed",
@@ -932,7 +980,7 @@
         "RULE-58": "passed",
         "RULE-59": "passed",
         "RULE-6": "passed",
-        "RULE-60": "passed",
+        "RULE-60": "not run",
         "RULE-61": "passed",
         "RULE-62": "passed",
         "RULE-63": "passed",

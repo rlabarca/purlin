@@ -2,13 +2,13 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "1978b9a4e0ca5800dbf585e520b02d54ac309c08c206149c165fbc2c30161509",
-        "spec": "d302ffd80ad5486de1723d06562df499b12b2e4b23f4ea8f497d94173e99ddc2",
-        "tests": "22102890ab6dc351388cb34362c056ddc8c8809578b15cf61929c18eab226c3b"
+        "spec": "eddd8edcecb075ecad1b514db534445ed983a9966fd3c2165b10e43e02ddd86f",
+        "tests": "ef08e22a92dcb6f28e5e24dd42dd357bc1eda13ce6a6c35903ee26d37e45561f"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -149,6 +149,14 @@
           "test": "dev/test_run_script.py::TestTheTestArmRunsEachSuite::test_a_sql_script_with_a_statement_that_errors_fails"
         },
         {
+          "env": "windows",
+          "id": "PROOF-225",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-4",
+          "test": "dev/test_run_script.py::TestTheTestArmRunsEachSuite::test_a_sql_script_whose_statements_succeed_passes"
+        },
+        {
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -235,6 +243,14 @@
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_run_script.py::TestEnvScopedProofs::test_several_foreign_proofs_are_counted_in_one_line"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-226",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-10",
+          "test": "dev/test_run_script.py::TestEnvScopedProofs::test_a_foreign_env_proof_is_listed_as_needing_its_os"
         },
         {
           "env": null,
@@ -363,6 +379,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_run_script.py::TestTheCiArmCommitsItsSection::test_an_untagged_test_that_fails_beside_a_tagged_one_does_not_fail_it"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-227",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-12",
+          "test": "dev/test_run_script.py::TestTheCiArmCommitsItsSection::test_the_ci_arm_writes_its_section_and_commits"
         },
         {
           "env": null,
@@ -509,10 +533,26 @@
           "test": "dev/test_run_script.py::TestHostOs::test_any_other_system_reads_linux"
         },
         {
+          "env": "windows",
+          "id": "PROOF-228",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-21",
+          "test": "dev/test_run_script.py::TestHostOs::test_this_windows_machine_reads_windows"
+        },
+        {
           "env": null,
           "id": "PROOF-57",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_run_script.py::TestTheConsoleCodecNeverEndsTheRun::test_a_cp1252_console_gets_the_glyphs_and_no_traceback"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-229",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-39",
           "test": "dev/test_run_script.py::TestTheConsoleCodecNeverEndsTheRun::test_a_cp1252_console_gets_the_glyphs_and_no_traceback"
         },
@@ -573,6 +613,14 @@
           "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_the_audit_keeps_every_line_past_sixty_in_the_log"
         },
         {
+          "env": "windows",
+          "id": "PROOF-230",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-40",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_a_killed_suite_prints_its_tail"
+        },
+        {
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -585,6 +633,14 @@
           "id": "PROOF-62",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_run_script.py::TestTheMutmutCopy::test_the_copy_mutmut_leaves_is_never_collected"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-231",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-43",
           "test": "dev/test_run_script.py::TestTheMutmutCopy::test_the_copy_mutmut_leaves_is_never_collected"
         },
@@ -989,6 +1045,14 @@
           "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_the_run_after_that_has_nothing_to_run"
         },
         {
+          "env": "windows",
+          "id": "PROOF-232",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-55",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_an_untracked_file_selects_the_feature_and_is_named"
+        },
+        {
           "env": null,
           "id": "PROOF-94",
           "manual": false,
@@ -1059,6 +1123,14 @@
           "result": "pass",
           "rule": "RULE-58",
           "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_suite_with_none_of_the_features_tests_is_not_started"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-233",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-58",
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_named_feature_runs_only_its_test_files"
         },
         {
           "env": null,
@@ -1235,6 +1307,14 @@
           "result": "pass",
           "rule": "RULE-63",
           "test": "dev/test_run_script.py::TestNoTestCommand::test_the_page_shows_the_same_entries"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-234",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-63",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_pytest_is_suggested_its_own_entry"
         },
         {
           "env": null,
@@ -1423,21 +1503,21 @@
       ],
       "rules": {
         "RULE-1": "passed",
-        "RULE-10": "passed",
+        "RULE-10": "not run",
         "RULE-11": "passed",
-        "RULE-12": "passed",
+        "RULE-12": "not run",
         "RULE-15": "passed",
         "RULE-16": "passed",
         "RULE-17": "passed",
         "RULE-2": "passed",
         "RULE-20": "passed",
-        "RULE-21": "passed",
+        "RULE-21": "not run",
         "RULE-3": "passed",
-        "RULE-39": "passed",
-        "RULE-4": "passed",
-        "RULE-40": "passed",
+        "RULE-39": "not run",
+        "RULE-4": "not run",
+        "RULE-40": "not run",
         "RULE-41": "passed",
-        "RULE-43": "passed",
+        "RULE-43": "not run",
         "RULE-45": "passed",
         "RULE-47": "passed",
         "RULE-48": "passed",
@@ -1447,15 +1527,15 @@
         "RULE-51": "passed",
         "RULE-52": "passed",
         "RULE-54": "passed",
-        "RULE-55": "passed",
+        "RULE-55": "not run",
         "RULE-56": "passed",
         "RULE-57": "passed",
-        "RULE-58": "passed",
+        "RULE-58": "not run",
         "RULE-59": "passed",
         "RULE-60": "passed",
         "RULE-61": "passed",
         "RULE-62": "passed",
-        "RULE-63": "passed",
+        "RULE-63": "not run",
         "RULE-64": "passed",
         "RULE-65": "passed",
         "RULE-66": "passed",

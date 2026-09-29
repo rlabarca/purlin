@@ -2,13 +2,13 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:57Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "4f7b411615431184e0c2b23c2626794ce05894274d29e4b10e4975d9d21a7845",
-        "spec": "9b2ee6c849b8efa2d890418e13fe8b4b02dd908ce4e8df8cf624ca2f55791f19",
-        "tests": "a9f5481d613f36e9d1faf8865e3b9a198fcfd0cd1e370a9e0bbec7ca2a9189fd"
+        "spec": "b328044f83b0752da999f04ddf033ab18e8834598e55d0294c0b7355b6bed45f",
+        "tests": "edcc019cff5311023afbaaa3a4fea6d036a107723d2d7e780e97b2813c427f82"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -77,6 +77,14 @@
           "test": "dev/test_init_update.py::test_yes_takes_the_default_of_the_gate_and_mutation_questions"
         },
         {
+          "env": "windows",
+          "id": "PROOF-117",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-5",
+          "test": "dev/test_init_update.py::test_running_yes_twice_changes_nothing_the_second_time"
+        },
+        {
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -131,6 +139,14 @@
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_init_update.py::test_a_backup_is_not_written_twice"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-118",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-7",
+          "test": "dev/test_init_update.py::test_every_backed_up_file_keeps_its_bytes_from_before_the_run"
         },
         {
           "env": null,
@@ -309,6 +325,14 @@
           "test": "dev/test_init_update.py::test_prose_that_is_not_a_tag_is_left_alone"
         },
         {
+          "env": "windows",
+          "id": "PROOF-124",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-13",
+          "test": "dev/test_init_update.py::test_the_retired_windows_tag_becomes_env"
+        },
+        {
           "env": null,
           "id": "PROOF-15",
           "manual": false,
@@ -403,6 +427,14 @@
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_init_update.py::test_a_run_that_applies_nothing_writes_no_commit"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-121",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-18",
+          "test": "dev/test_init_update.py::test_nothing_is_left_uncommitted_but_the_backups"
         },
         {
           "env": null,
@@ -509,6 +541,14 @@
           "test": "dev/test_init_update.py::test_an_env_tag_after_the_kind_of_test_is_kept"
         },
         {
+          "env": "windows",
+          "id": "PROOF-125",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-23",
+          "test": "dev/test_init_update.py::test_an_env_tag_after_the_kind_of_test_is_kept"
+        },
+        {
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -547,6 +587,14 @@
           "result": "pass",
           "rule": "RULE-24",
           "test": "dev/test_init_update.py::test_a_git_source_and_its_pin_stay"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-126",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-24",
+          "test": "dev/test_init_update.py::test_the_picture_reference_of_the_feature_is_removed"
         },
         {
           "env": null,
@@ -621,6 +669,14 @@
           "test": "dev/test_init_update.py::test_a_readme_already_there_is_left_alone"
         },
         {
+          "env": "windows",
+          "id": "PROOF-122",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-28",
+          "test": "dev/test_init_update.py::test_the_evidence_folder_gets_its_readme"
+        },
+        {
           "env": null,
           "id": "PROOF-29",
           "manual": false,
@@ -669,6 +725,14 @@
           "test": "dev/test_init_update.py::test_each_rewritten_test_file_is_backed_up"
         },
         {
+          "env": "windows",
+          "id": "PROOF-123",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-29",
+          "test": "dev/test_init_update.py::test_the_shell_harness_calls_become_one_comment"
+        },
+        {
           "env": null,
           "id": "PROOF-30",
           "manual": false,
@@ -677,7 +741,7 @@
           "test": "dev/test_init_update.py::test_a_marker_it_cannot_place_is_named_and_left"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-31",
           "manual": false,
           "result": "pass",
@@ -733,6 +797,14 @@
           "test": "dev/test_init_update.py::test_a_cache_the_gitignore_does_not_name_is_deleted_too"
         },
         {
+          "env": "windows",
+          "id": "PROOF-119",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-34",
+          "test": "dev/test_init_update.py::test_a_committed_cache_is_deleted_from_git_and_from_disk"
+        },
+        {
           "env": null,
           "id": "PROOF-82",
           "manual": false,
@@ -779,6 +851,14 @@
           "result": "pass",
           "rule": "RULE-35",
           "test": "dev/test_init_update.py::test_each_file_the_wiring_leaves_is_backed_up"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-120",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-35",
+          "test": "dev/test_init_update.py::test_a_conftest_holding_more_keeps_the_rest"
         },
         {
           "env": null,
@@ -841,35 +921,35 @@
         "RULE-1": "passed",
         "RULE-10": "passed",
         "RULE-12": "passed",
-        "RULE-13": "passed",
+        "RULE-13": "not run",
         "RULE-15": "passed",
         "RULE-16": "passed",
-        "RULE-18": "passed",
+        "RULE-18": "not run",
         "RULE-19": "passed",
         "RULE-2": "passed",
         "RULE-20": "passed",
         "RULE-21": "passed",
-        "RULE-23": "passed",
-        "RULE-24": "passed",
+        "RULE-23": "not run",
+        "RULE-24": "not run",
         "RULE-25": "passed",
         "RULE-26": "passed",
         "RULE-27": "passed",
-        "RULE-28": "passed",
-        "RULE-29": "passed",
+        "RULE-28": "not run",
+        "RULE-29": "not run",
         "RULE-30": "passed",
         "RULE-31": "passed",
         "RULE-33": "passed",
-        "RULE-34": "passed",
-        "RULE-35": "passed",
+        "RULE-34": "not run",
+        "RULE-35": "not run",
         "RULE-36": "passed",
         "RULE-37": "passed",
         "RULE-38": "passed",
         "RULE-39": "passed",
         "RULE-4": "passed",
         "RULE-40": "passed",
-        "RULE-5": "passed",
+        "RULE-5": "not run",
         "RULE-6": "passed",
-        "RULE-7": "passed",
+        "RULE-7": "not run",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },

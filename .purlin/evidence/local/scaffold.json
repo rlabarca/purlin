@@ -2,13 +2,13 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
-        "code": "28bcab2f700b6dcbe64e466f73b8edb5785d4cc294a470a3be6c83dcb984bd70",
-        "spec": "b4f40d49cf04cd247c591dd66100eb6d0f3d0bca65da5a8de28f06b29aa21f4c",
-        "tests": "97a80cee4a04af5f9d556feb5404974933a9d34e36350872c08a0a1e7430ef22"
+        "code": "068ba23d8bd96cf094a65a2d844bdc658464ee62563956aad8a4e0de16788f43",
+        "spec": "06f75ed99017c978746329bb2447867e8f14f4fef4323ad5787da14c02de7b21",
+        "tests": "46e25d68802b3e277ebd71a00d6839444510088b6a6141ea6c99b74b3aa36f19"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -237,6 +237,14 @@
           "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_at_passed_the_reason_names_the_test"
         },
         {
+          "env": "windows",
+          "id": "PROOF-129",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-13",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_at_passed_the_reason_names_the_test"
+        },
+        {
           "env": null,
           "id": "PROOF-65",
           "manual": false,
@@ -413,6 +421,14 @@
           "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_gitignore_block_is_added_once"
         },
         {
+          "env": "windows",
+          "id": "PROOF-130",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-19",
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_gitignore_block_is_added_once"
+        },
+        {
           "env": null,
           "id": "PROOF-110",
           "manual": false,
@@ -437,10 +453,26 @@
           "test": "dev/test_init_scaffold.py::TestTheGateMoves::test_a_second_run_at_the_same_gate_changes_nothing"
         },
         {
+          "env": "windows",
+          "id": "PROOF-131",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-20",
+          "test": "dev/test_init_scaffold.py::TestTheGateMoves::test_a_second_run_at_the_same_gate_changes_nothing"
+        },
+        {
           "env": null,
           "id": "PROOF-21",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_nothing_a_project_holds_names_the_plugin"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-132",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-21",
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_nothing_a_project_holds_names_the_plugin"
         },
@@ -461,10 +493,26 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_the_copy_sets_a_project_up_the_same_way"
         },
         {
+          "env": "windows",
+          "id": "PROOF-133",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-22",
+          "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_the_copy_sets_a_project_up_the_same_way"
+        },
+        {
           "env": null,
           "id": "PROOF-23",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_no_project_file_points_at_the_repository_s_own_dev_folder"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-134",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-23",
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_no_project_file_points_at_the_repository_s_own_dev_folder"
         },
@@ -505,6 +553,14 @@
           "id": "PROOF-78",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-60",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_gh_installed_is_named_and_the_workflow_written"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-135",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-60",
           "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_gh_installed_is_named_and_the_workflow_written"
         },
@@ -581,7 +637,7 @@
           "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_with_a_spec_it_ends_on_what_is_left_to_do"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-36",
           "manual": false,
           "result": "pass",
@@ -589,7 +645,7 @@
           "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_at_passed_the_test_run_commits_the_work_then_its_evidence"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-90",
           "manual": false,
           "result": "pass",
@@ -597,7 +653,7 @@
           "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_raised_to_strong_one_rule_is_left_to_audit"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-117",
           "manual": false,
           "result": "pass",
@@ -605,7 +661,7 @@
           "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_the_audit_writes_into_the_evidence_and_commits_it"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-91",
           "manual": false,
           "result": "pass",
@@ -613,7 +669,7 @@
           "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_a_runner_s_run_on_the_signed_tag_writes_nothing"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-118",
           "manual": false,
           "result": "pass",
@@ -621,7 +677,7 @@
           "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_a_runner_s_run_on_a_run_branch_writes_its_evidence"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-92",
           "manual": false,
           "result": "pass",
@@ -629,7 +685,7 @@
           "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_raised_to_signed_one_rule_is_left_to_sign"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-119",
           "manual": false,
           "result": "pass",
@@ -637,7 +693,7 @@
           "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_signing_the_rule_makes_a_signed_commit_naming_the_signer"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-93",
           "manual": false,
           "result": "pass",
@@ -645,7 +701,7 @@
           "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_with_the_rule_signed_the_signed_tag_is_written"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-37",
           "manual": false,
           "result": "pass",
@@ -653,7 +709,7 @@
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_python_project_runs_its_marked_test"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-94",
           "manual": false,
           "result": "pass",
@@ -661,7 +717,7 @@
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_typescript_project_runs_its_marked_test"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-95",
           "manual": false,
           "result": "pass",
@@ -669,7 +725,7 @@
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_csharp_project_runs_its_marked_test"
         },
         {
-          "env": null,
+          "env": "macos",
           "id": "PROOF-96",
           "manual": false,
           "result": "pass",
@@ -813,6 +869,14 @@
           "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_the_first_run_writes_the_readme"
         },
         {
+          "env": "windows",
+          "id": "PROOF-136",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-47",
+          "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_the_first_run_writes_the_readme"
+        },
+        {
           "env": null,
           "id": "PROOF-124",
           "manual": false,
@@ -872,16 +936,16 @@
       "rules": {
         "RULE-1": "passed",
         "RULE-12": "passed",
-        "RULE-13": "passed",
+        "RULE-13": "not run",
         "RULE-14": "passed",
         "RULE-15": "passed",
         "RULE-18": "passed",
-        "RULE-19": "passed",
+        "RULE-19": "not run",
         "RULE-2": "passed",
-        "RULE-20": "passed",
-        "RULE-21": "passed",
-        "RULE-22": "passed",
-        "RULE-23": "passed",
+        "RULE-20": "not run",
+        "RULE-21": "not run",
+        "RULE-22": "not run",
+        "RULE-23": "not run",
         "RULE-24": "passed",
         "RULE-3": "passed",
         "RULE-31": "passed",
@@ -896,7 +960,7 @@
         "RULE-44": "passed",
         "RULE-45": "passed",
         "RULE-46": "passed",
-        "RULE-47": "passed",
+        "RULE-47": "not run",
         "RULE-48": "passed",
         "RULE-5": "passed",
         "RULE-50": "passed",
@@ -909,7 +973,7 @@
         "RULE-57": "passed",
         "RULE-58": "passed",
         "RULE-59": "passed",
-        "RULE-60": "passed",
+        "RULE-60": "not run",
         "RULE-61": "passed",
         "RULE-62": "passed",
         "RULE-63": "passed",

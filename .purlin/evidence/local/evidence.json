@@ -2,13 +2,13 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "230e1086e5bfeeb0bd0f4457b01c26a2d28f95caccb6f5e90e39b0e5b79f30d4",
-        "spec": "53f27edd4fdda1ba204b15b83ebfa7cd6723293e228c1ea5d30598b4d1b556f6",
-        "tests": "72a4bf6b9f4134c9d11877e1874a7f68c41b950a9242b44480826659fc07c788"
+        "spec": "0285c45e2f87f2feacbfe4e23079e976d5b0b76088eadfe7ab8bd1c4ed27eb03",
+        "tests": "f51c37ae257cb94fed9c75f21ef6b967f014de1ab6a0ad0451da2c33280d65bc"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -17,6 +17,14 @@
           "id": "PROOF-1",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_fingerprint.py::test_a_fingerprint_is_three_parts_of_64_hex_characters"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-1",
           "test": "dev/test_fingerprint.py::test_a_fingerprint_is_three_parts_of_64_hex_characters"
         },
@@ -133,6 +141,14 @@
           "test": "dev/test_fingerprint.py::test_a_javascript_marker_is_counted"
         },
         {
+          "env": "windows",
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-7",
+          "test": "dev/test_fingerprint.py::test_a_javascript_marker_is_counted"
+        },
+        {
           "env": null,
           "id": "PROOF-13",
           "manual": false,
@@ -145,6 +161,14 @@
           "id": "PROOF-46",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_fingerprint.py::test_untracked_files_in_the_scope_or_beside_a_marker_file_are_listed"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-8",
           "test": "dev/test_fingerprint.py::test_untracked_files_in_the_scope_or_beside_a_marker_file_are_listed"
         },
@@ -453,6 +477,14 @@
           "test": "dev/test_fingerprint.py::test_a_scoped_folder_reaches_a_tracked_file_one_folder_down"
         },
         {
+          "env": "windows",
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-24",
+          "test": "dev/test_fingerprint.py::test_a_scoped_folder_reaches_a_tracked_file_one_folder_down"
+        },
+        {
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -557,6 +589,14 @@
           "test": "dev/test_evidence_reader.py::test_a_system_that_names_itself_darwin_is_macos"
         },
         {
+          "env": "windows",
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-27",
+          "test": "dev/test_evidence_reader.py::test_on_windows_the_reader_names_its_own_machine_windows"
+        },
+        {
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -574,7 +614,7 @@
         }
       ],
       "rules": {
-        "RULE-1": "passed",
+        "RULE-1": "not run",
         "RULE-10": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
@@ -590,17 +630,17 @@
         "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-23": "passed",
-        "RULE-24": "passed",
+        "RULE-24": "not run",
         "RULE-25": "passed",
         "RULE-26": "passed",
-        "RULE-27": "passed",
+        "RULE-27": "not run",
         "RULE-28": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "passed",
+        "RULE-7": "not run",
+        "RULE-8": "not run",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

@@ -2,13 +2,13 @@
   "feature": "mutation",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
-        "code": "e36d756b4e7fa898de09339272b09a7430ddcf5cb185b899cf7f850d824a7c79",
-        "spec": "f8702a8eb49edadf59a21b7adab038c0f37d8d8c3e75465b162bc820047c96ed",
-        "tests": "8623b00f6c3aadc7afdef20acaa1e1a764941a73c64d48e869d8600a9c2f5b97"
+        "code": "6b5bbb6e1df50931ef476b187c09029e824409bf5aab4aeb0b4efeb467653a1d",
+        "spec": "fa0c83975fa9126d569ed0f482082c39bf071d09b0c249aa1ef6a2a3d8c1cdc6",
+        "tests": "fe5491bbd7e1f751c338a0597b1b4112d541f6e9cc3f033b018bcc1be5d97c18"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -125,6 +125,14 @@
           "test": "dev/test_mutation_adapters.py::test_a_run_over_two_features_starts_stryker_once_for_each"
         },
         {
+          "env": "windows",
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-5",
+          "test": "dev/test_mutation_adapters.py::test_stryker_is_given_a_config_scoped_to_the_features_files"
+        },
+        {
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -161,6 +169,14 @@
           "id": "PROOF-7",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_mutation_adapters.py::test_the_projects_own_stryker_is_started_over_one_on_the_path"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-7",
           "test": "dev/test_mutation_adapters.py::test_the_projects_own_stryker_is_started_over_one_on_the_path"
         },
@@ -249,6 +265,14 @@
           "id": "PROOF-50",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_mutation_adapters.py::test_stryker_net_answering_its_version_is_installed"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-14",
           "test": "dev/test_mutation_adapters.py::test_stryker_net_answering_its_version_is_installed"
         },
@@ -429,6 +453,14 @@
           "test": "dev/test_mutation_adapters.py::test_a_stryker_feature_that_timed_out_measures_nothing"
         },
         {
+          "env": "windows",
+          "id": "PROOF-91",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-22",
+          "test": "dev/test_mutation_adapters.py::test_a_stryker_feature_that_timed_out_measures_nothing"
+        },
+        {
           "env": null,
           "id": "PROOF-66",
           "manual": false,
@@ -565,6 +597,14 @@
           "test": "dev/test_mutation_adapters.py::test_a_report_several_folders_down_is_read"
         },
         {
+          "env": "windows",
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-30",
+          "test": "dev/test_mutation_adapters.py::test_a_report_several_folders_down_is_read"
+        },
+        {
           "env": null,
           "id": "PROOF-48",
           "manual": false,
@@ -605,6 +645,14 @@
           "test": "dev/test_mutation_adapters.py::test_on_windows_mutmut_is_no_engine"
         },
         {
+          "env": "windows",
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-32",
+          "test": "dev/test_mutation_adapters.py::test_on_windows_mutmut_is_no_engine"
+        },
+        {
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -617,7 +665,7 @@
         "RULE-1": "passed",
         "RULE-12": "passed",
         "RULE-13": "passed",
-        "RULE-14": "passed",
+        "RULE-14": "not run",
         "RULE-15": "passed",
         "RULE-16": "passed",
         "RULE-17": "passed",
@@ -625,7 +673,7 @@
         "RULE-19": "passed",
         "RULE-2": "passed",
         "RULE-20": "passed",
-        "RULE-22": "passed",
+        "RULE-22": "not run",
         "RULE-23": "passed",
         "RULE-24": "passed",
         "RULE-25": "passed",
@@ -634,13 +682,13 @@
         "RULE-28": "passed",
         "RULE-29": "passed",
         "RULE-3": "passed",
-        "RULE-30": "passed",
+        "RULE-30": "not run",
         "RULE-31": "passed",
-        "RULE-32": "passed",
+        "RULE-32": "not run",
         "RULE-33": "passed",
-        "RULE-5": "passed",
+        "RULE-5": "not run",
         "RULE-6": "passed",
-        "RULE-7": "passed",
+        "RULE-7": "not run",
         "RULE-8": "passed"
       },
       "runner": "rich-labarca"

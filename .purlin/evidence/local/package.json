@@ -2,13 +2,13 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-29T23:03:56Z",
+      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "dirty": false,
       "fingerprint": {
         "code": "45ef658ee9b78204fce688b2e562748c3af030c6527f9400b0f630a11db3f10c",
-        "spec": "3ea5d8f95bfdca01fd02d6e627b059ef0a9daaecb59598f9faab2bf849e3abef",
-        "tests": "a9c29df6690c8721cd832c9adae759180be8cf3fbf6236fe3093d6e00a43ee64"
+        "spec": "7201b36eb225330cd79b0c3f224878c4e523618552311077e56be24a5a7701b1",
+        "tests": "41869baa29854a6269e1471008931445d57509688ffa5a4bc9fc1d78bb4219ee"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -17,6 +17,14 @@
           "id": "PROOF-1",
           "manual": false,
           "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_export.py::TestTheFile::test_it_writes_the_version_file_prints_the_state_and_commits_nothing"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "not run",
           "rule": "RULE-1",
           "test": "dev/test_export.py::TestTheFile::test_it_writes_the_version_file_prints_the_state_and_commits_nothing"
         },
@@ -165,6 +173,14 @@
           "test": "dev/test_export.py::TestTheBytes::test_a_second_clone_at_the_tag_gives_the_committed_bytes"
         },
         {
+          "env": "windows",
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-8",
+          "test": "dev/test_export.py::TestTheBytes::test_a_second_clone_at_the_tag_gives_the_committed_bytes"
+        },
+        {
           "env": null,
           "id": "PROOF-16",
           "manual": false,
@@ -195,6 +211,14 @@
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_export.py::TestTheFingerprint::test_check_refuses_carriage_returns_before_each_newline"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-9",
+          "test": "dev/test_export.py::TestTheFingerprint::test_check_passes_a_package_as_written"
         },
         {
           "env": null,
@@ -310,7 +334,7 @@
         }
       ],
       "rules": {
-        "RULE-1": "passed",
+        "RULE-1": "not run",
         "RULE-10": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
@@ -327,8 +351,8 @@
         "RULE-5": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
-        "RULE-8": "passed",
-        "RULE-9": "passed"
+        "RULE-8": "not run",
+        "RULE-9": "not run"
       },
       "runner": "rich-labarca"
     }
