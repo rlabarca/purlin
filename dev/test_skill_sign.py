@@ -1,16 +1,18 @@
 """Text checks for the sign skill, `skills/sign/SKILL.md`.
 
 Every rule of `specs/skills/skill_sign.md` is proved here, one test per
-proof. The readers, the checks and the broken copies this file shares with
-the other skill test files are in `dev/skill_checks.py`; the checks only
-this spec needs are below the tests.
+proof; where a broken copy of the skill could slip past a check, the test
+also shows that the check reports it. The readers, the checks and the broken
+copies this file shares with the other skill test files are in
+`dev/skill_checks.py`; the checks only this spec needs are below the tests.
 """
 
 import re
 
-from skill_checks import (COMMAND_REF, flat, frontmatter, frontmatter_problems,
-                          field, in_order, next_step_problems, on_copy, read,
-                          refusals, replace, section,
+from skill_checks import (COMMAND_REF, closing_outcomes, flat, frontmatter,
+                          frontmatter_problems, field, in_order,
+                          next_step_problems, next_step_refusals, on_copy,
+                          read, refusals, replace, section, sections,
                           skill_ceiling_problems, skill_path, swap_first,
                           table_rows, undirected_outcome_problems)
 
@@ -19,54 +21,28 @@ SKILL = skill_path('sign')
 
 class TestSkillSign:
 
-    # RULE-1: the frontmatter and the command reference.
+    # RULE-1: the frontmatter.
 
     # purlin: skill_sign PROOF-1
-    def test_the_frontmatter_names_the_skill_on_one_line(self):
+    def test_the_frontmatter_names_the_skill_on_one_line(self, monkeypatch):
         assert skill_frontmatter_problems() == []
-
-    # purlin: skill_sign PROOF-23
-    def test_the_command_reference_carries_a_row_for_sign(self):
-        assert command_row_problems() == []
-
-    # purlin: skill_sign PROOF-24
-    def test_a_frontmatter_with_no_name_is_reported(self, monkeypatch):
+        line = description_line()
         assert refusals(monkeypatch, frontmatter_check, [
             (SKILL, replace('name: sign\n'),
-             "%s frontmatter name is None, expected 'sign'" % SKILL)]) == []
-
-    # purlin: skill_sign PROOF-25
-    def test_an_empty_description_is_reported(self, monkeypatch):
-        assert refusals(monkeypatch, frontmatter_check, [
-            (SKILL, replace(description_line(), 'description:'),
-             NO_DESCRIPTION)]) == []
-
-    # purlin: skill_sign PROOF-26
-    def test_an_empty_description_followed_by_the_name_is_reported(
-            self, monkeypatch):
-        assert refusals(monkeypatch, frontmatter_check, [
-            (SKILL, replace('name: sign\n' + description_line(),
-                            'description:\nname: sign'),
-             NO_DESCRIPTION)]) == []
-
-    # purlin: skill_sign PROOF-27
-    def test_a_description_written_as_a_block_is_reported(self, monkeypatch):
-        line = description_line()
-        assert refusals(monkeypatch, frontmatter_check, [
+             "%s frontmatter name is None, expected 'sign'" % SKILL),
+            (SKILL, replace(line, 'description:'), NO_DESCRIPTION),
+            (SKILL, replace('name: sign\n' + line,
+                            'description:\nname: sign'), NO_DESCRIPTION),
             (SKILL, replace(line, 'description: |\n  ' + description()),
-             NO_DESCRIPTION)]) == []
-
-    # purlin: skill_sign PROOF-28
-    def test_a_description_run_onto_a_second_line_is_reported(
-            self, monkeypatch):
-        line = description_line()
-        assert refusals(monkeypatch, frontmatter_check, [
+             NO_DESCRIPTION),
             (SKILL, replace(line, line + '\n  and a second line'),
              NO_DESCRIPTION)]) == []
 
-    # purlin: skill_sign PROOF-29
-    def test_a_command_reference_with_no_sign_row_is_reported(
-            self, monkeypatch):
+    # RULE-11: the command reference.
+
+    # purlin: skill_sign PROOF-23
+    def test_the_command_reference_carries_a_row_for_sign(self, monkeypatch):
+        assert command_row_problems() == []
         row = next(line for line in read(COMMAND_REF).splitlines()
                    if line.startswith('| `purlin:sign'))
         edit = replace(row + '\n')
@@ -76,128 +52,79 @@ class TestSkillSign:
             (COMMAND_REF, edit,
              '%s carries no row for purlin:sign' % COMMAND_REF)]) == []
 
-    # RULE-2: what waits, what the audit found, and the two scripts.
+    # RULE-2: what waits.
 
     # purlin: skill_sign PROOF-2
-    def test_what_waits_is_read_from_sync_status(self):
+    def test_what_waits_is_read_from_sync_status(self, monkeypatch):
         assert sign_waiting_problems() == []
+        assert refusals(monkeypatch, sign_waiting_problems, [
+            (SKILL, replace('```\nsync_status()\n```\n'),
+             '%s does not read left, to_test_by_hand and to_sign from '
+             'sync_status' % SKILL)]) == []
+
+    # RULE-12: what the audit found, read before anything is written.
 
     # purlin: skill_sign PROOF-30
     def test_it_says_to_read_what_the_audit_found_before_writing(self):
         assert sign_read_first_problems() == []
 
     # purlin: skill_sign PROOF-31
-    def test_the_audit_script_comes_before_the_signing_script(self):
-        assert sign_script_problems() == []
-
-    # purlin: skill_sign PROOF-9
-    def test_a_signing_script_named_before_the_audit_is_reported(
+    def test_the_audit_script_comes_before_the_signing_script(
             self, monkeypatch):
+        assert sign_script_problems() == []
         assert refusals(monkeypatch, sign_script_problems, [
             (SKILL, swap_first(SIGN_SCRIPTS[0], SIGN_SCRIPTS[1]),
-             'out of order, at offsets')]) == []
-
-    # purlin: skill_sign PROOF-10
-    def test_no_sync_status_call_is_reported(self, monkeypatch):
-        assert refusals(monkeypatch, sign_waiting_problems, [
-            (SKILL, replace('```\nsync_status()\n```\n'),
-             '%s does not read left, to_test_by_hand and to_sign from '
-             'sync_status' % SKILL)]) == []
-
-    # purlin: skill_sign PROOF-11
-    def test_an_audit_path_outside_the_plugin_is_reported(self, monkeypatch):
-        assert refusals(monkeypatch, sign_script_problems, [
+             'out of order, at offsets'),
             (SKILL, replace(SIGN_SCRIPTS[0], '"scripts/review/ai_audit.py"'),
              '%s does not carry %r' % (SKILL, SIGN_SCRIPTS[0]))]) == []
 
     # RULE-3: the closing section.
 
     # purlin: skill_sign PROOF-3
-    def test_it_closes_by_naming_the_next_step(self):
-        assert (next_step_problems('sign')
-                + undirected_outcome_problems('sign')) == []
+    def test_it_closes_by_naming_the_next_step(self, monkeypatch):
+        assert closing_check() == []
+        assert next_step_refusals(
+            monkeypatch, 'sign', '| `Left to do:` and its lines',
+            '| A case was added | `→ Run: purlin:build <feature>` |') == []
 
-    # purlin: skill_sign PROOF-32
-    def test_a_file_with_no_closing_section_is_reported(self, monkeypatch):
-        last = read(SKILL).rindex('\n## ')
-        assert refusals(monkeypatch, closing_check, [
-            (SKILL, lambda text: text[:last + 1],
-             "%s closes with the section 'Step 6: the version and the tag', "
-             "which does not name the next step" % SKILL)]) == []
-
-    # purlin: skill_sign PROOF-33
-    def test_a_closing_section_with_no_arrow_is_reported(self, monkeypatch):
-        last = read(SKILL).rindex('\n## ')
-        assert refusals(monkeypatch, closing_check, [
-            (SKILL, lambda text: text[:last] + text[last:].replace('→',
-                                                                   '->'),
-             '%s closing section gives no directive' % SKILL)]) == []
-
-    # purlin: skill_sign PROOF-34
-    def test_a_closing_table_of_one_outcome_is_reported(self, monkeypatch):
-        last = read(SKILL).rindex('\n## ')
-        second = '| `Left to do:` and its lines'
-        assert refusals(monkeypatch, closing_check, [
-            (SKILL, lambda text: text[:text.index(second, last)],
-             '%s closing section names 1 outcomes, expected at least 2'
-             % SKILL)]) == []
-
-    # purlin: skill_sign PROOF-35
-    def test_one_outcome_with_no_arrow_is_reported(self, monkeypatch):
-        row = '| A case was added | `→ Run: purlin:build <feature>` |'
-        assert refusals(monkeypatch, closing_check, [
-            (SKILL, replace(row, row.replace('→ ', '')),
-             '%s closing outcome gives no → directive: | A case was '
-             'added |' % SKILL)]) == []
+    # purlin: skill_sign PROOF-44
+    def test_an_unknown_rule_is_sent_to_the_status(self):
+        assert closing_row_problems(NOT_A_RULE_ROW) == []
 
     # RULE-4: the ceiling.
 
     # purlin: skill_sign PROOF-4
-    def test_it_stays_under_its_ceiling(self):
+    def test_it_stays_under_its_ceiling(self, monkeypatch):
         assert skill_ceiling_problems('sign') == []
-
-    # purlin: skill_sign PROOF-36
-    def test_a_skill_of_exactly_185_lines_is_let_through(self, monkeypatch):
         assert on_copy(monkeypatch, SKILL, lengthen_to(185),
                        lambda: skill_ceiling_problems('sign')) == []
-
-    # purlin: skill_sign PROOF-37
-    def test_a_skill_of_186_lines_is_reported(self, monkeypatch):
         assert refusals(monkeypatch, lambda: skill_ceiling_problems('sign'), [
             (SKILL, lengthen_to(186),
              '%s is 186 lines, ceiling 185' % SKILL)]) == []
 
-    # RULE-5: when a signature counts.
+    # RULE-5: the two things that make a signature count.
 
     # purlin: skill_sign PROOF-5
-    def test_a_signature_counts_on_two_conditions(self):
+    def test_a_signature_counts_on_two_conditions(self, monkeypatch):
         assert sign_count_problems() == []
-
-    # purlin: skill_sign PROOF-38
-    def test_it_says_whose_signature_counts(self):
-        assert sign_whose_problems() == []
-
-    # purlin: skill_sign PROOF-12
-    def test_a_missing_condition_is_reported(self, monkeypatch):
-        row = next(line for line in read(SKILL).splitlines()
-                   if line.startswith('| ' + SIGN_COUNTS[0]))
-        assert refusals(monkeypatch, sign_count_problems, [
-            (SKILL, replace(row + '\n'),
-             '%s table A signature counts when has no row %r'
-             % (SKILL, SIGN_COUNTS[0]))]) == []
-
-    # purlin: skill_sign PROOF-39
-    def test_a_third_condition_is_reported(self, monkeypatch):
-        row = next(line for line in read(SKILL).splitlines()
-                   if line.startswith('| ' + SIGN_COUNTS[1]))
+        first = next(line for line in read(SKILL).splitlines()
+                     if line.startswith('| ' + SIGN_COUNTS[0]))
+        second = next(line for line in read(SKILL).splitlines()
+                      if line.startswith('| ' + SIGN_COUNTS[1]))
         extra = '| The signer is on a list | A change to the list |'
         assert refusals(monkeypatch, sign_count_problems, [
-            (SKILL, replace(row, row + '\n' + extra),
+            (SKILL, replace(first + '\n'),
+             '%s table A signature counts when has no row %r'
+             % (SKILL, SIGN_COUNTS[0])),
+            (SKILL, replace(second, second + '\n' + extra),
              '%s table A signature counts when has a third row '
              "'The signer is on a list'" % SKILL)]) == []
 
-    # purlin: skill_sign PROOF-13
-    def test_a_changed_clause_is_reported(self, monkeypatch):
+    # RULE-13: whose signature counts.
+
+    # purlin: skill_sign PROOF-38
+    def test_it_says_whose_signature_counts(self, monkeypatch):
+        assert sign_whose_problems() == []
         assert refusals(monkeypatch, sign_whose_problems, [
             (SKILL, replace('whoever last committed\nto the test file',
                             'whoever committed last'),
@@ -212,71 +139,60 @@ class TestSkillSign:
     # RULE-7: what each gate leaves it able to do.
 
     # purlin: skill_sign PROOF-7
-    def test_it_says_what_each_gate_leaves_it_able_to_do(self):
+    def test_it_says_what_each_gate_leaves_it_able_to_do(self, monkeypatch):
         assert sign_gate_problems() == []
-
-    # purlin: skill_sign PROOF-15
-    def test_a_gate_table_with_no_passed_row_is_reported(self, monkeypatch):
         passed = next(line for line in read(SKILL).splitlines()
                       if line.startswith('| `passed` |'))
         assert refusals(monkeypatch, sign_gate_problems, [
             (SKILL, replace(passed + '\n'),
-             '%s gate table has no `passed` row' % SKILL)]) == []
-
-    # purlin: skill_sign PROOF-16
-    def test_a_signed_row_that_asks_nothing_is_reported(self, monkeypatch):
-        assert refusals(monkeypatch, sign_gate_problems, [
+             '%s gate table has no `passed` row' % SKILL),
             (SKILL, replace('| Every rule waits for a signature once',
                             '| Rules wait once'),
              "%s signed row does not name 'Every rule waits for a signature"
              % SKILL)]) == []
 
-    # RULE-8: the package, the tag, and no push.
+    # RULE-8: the package and the tag.
 
     # purlin: skill_sign PROOF-8
     def test_at_signed_it_commits_the_package_and_tags_that_commit(self):
         assert sign_tag_problems() == []
 
     # purlin: skill_sign PROOF-40
-    def test_it_prints_the_package_line_above_the_tag_line(self):
+    def test_it_prints_the_package_line_above_the_tag_line(self, monkeypatch):
         assert sign_tag_line_problems() == []
-
-    # purlin: skill_sign PROOF-17
-    def test_the_tag_line_before_the_package_line_is_reported(
-            self, monkeypatch):
         assert refusals(monkeypatch, sign_tag_line_problems, [
             (SKILL, swap_first(SIGN_PACKAGE_LINE, SIGN_TAG_LINE),
              '%s tag section prints the tag line before the package line'
              % SKILL)]) == []
 
-    # purlin: skill_sign PROOF-41
-    def test_below_signed_it_writes_no_tag_and_no_package(self):
-        assert tag_section_says(BELOW_SIGNED) == []
+    # RULE-14: below signed.
 
-    # purlin: skill_sign PROOF-18
-    def test_a_tag_section_that_does_not_stop_below_signed_is_reported(
-            self, monkeypatch):
+    # purlin: skill_sign PROOF-41
+    def test_below_signed_it_writes_no_tag_and_no_package(self, monkeypatch):
+        assert tag_section_says(BELOW_SIGNED) == []
         assert refusals(monkeypatch, lambda: tag_section_says(BELOW_SIGNED), [
             (SKILL, replace(BELOW_SIGNED + '.', ''),
              '%s tag section does not carry %r'
              % (SKILL, BELOW_SIGNED))]) == []
 
+    # RULE-15: no push.
+
     # purlin: skill_sign PROOF-42
     def test_it_never_pushes(self):
         assert tag_section_says(NEVER_PUSHES) == []
 
-    # RULE-9: the version.
+    # RULE-9: where the version comes from.
 
     # purlin: skill_sign PROOF-19
     def test_it_says_where_the_version_comes_from(self):
         assert sign_version_problems() == []
 
-    # purlin: skill_sign PROOF-43
-    def test_with_no_version_it_asks_and_offers_to_write_one(self):
-        assert sign_version_offer_problems() == []
+    # RULE-16: no version stated.
 
-    # purlin: skill_sign PROOF-20
-    def test_no_offer_to_write_the_version_is_reported(self, monkeypatch):
+    # purlin: skill_sign PROOF-43
+    def test_with_no_version_it_asks_and_offers_to_write_one(
+            self, monkeypatch):
+        assert sign_version_offer_problems() == []
         assert refusals(monkeypatch, sign_version_offer_problems, [
             (SKILL, replace('offer to write it to a', 'then use'),
              '%s tag section does not offer to write the version'
@@ -285,15 +201,19 @@ class TestSkillSign:
     # RULE-10: the key.
 
     # purlin: skill_sign PROOF-21
-    def test_it_shows_the_key_commands_and_offers_to_run_them(self):
+    def test_it_shows_the_key_commands_and_offers_to_run_them(
+            self, monkeypatch):
         assert sign_key_problems() == []
-
-    # purlin: skill_sign PROOF-22
-    def test_no_offer_to_run_the_key_commands_is_reported(self, monkeypatch):
         assert refusals(monkeypatch, sign_key_problems, [
             (SKILL, replace('offer to run them', 'tell them'),
              "%s key section does not say 'offer to run them'"
              % SKILL)]) == []
+
+    # RULE-17: what the script exits with when the tag is refused.
+
+    # purlin: skill_sign PROOF-45
+    def test_it_says_what_a_refused_tag_exits_with(self):
+        assert tag_section_says(TAG_EXITS) == []
 
 
 # ---------------------------------------------------------------------------
@@ -368,6 +288,19 @@ def sign_script_problems():
 
 def closing_check():
     return next_step_problems('sign') + undirected_outcome_problems('sign')
+
+
+# The unknown rule's line, as signing prints it, and the step it is given.
+NOT_A_RULE_ROW = ('| `<feature> <RULE-N> is not a rule any spec has. Run '
+                  'purlin:status <feature> to see its rules.` | '
+                  '`→ Run: purlin:status <feature>` |')
+
+
+def closing_row_problems(row):
+    body = sections(read(SKILL))[-1][1]
+    if row in closing_outcomes(body):
+        return []
+    return ['%s closing table has no row %r' % (SKILL, row)]
 
 
 def lengthen_to(count):
@@ -462,6 +395,10 @@ SIGN_PACKAGE_LINE = ('Evidence package committed: '
 SIGN_TAG_LINE = 'Tagged signed/1.4.0 at a1b2c3d.'
 BELOW_SIGNED = 'Below `signed` it writes no tag and no package'
 NEVER_PUSHES = 'this skill never pushes'
+TAG_EXITS = ('It exits 1 when the tag was refused for a reason to fix, '
+             'uncommitted work or results, no version, a package not '
+             'committed or git failing to write the tag, and 0 when the tag '
+             'already exists')
 
 
 def tag_section():

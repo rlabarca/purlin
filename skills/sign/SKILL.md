@@ -70,7 +70,7 @@ Every other kind is work for another command, named on its own line of `Left to 
 the audit read and found for a rule before anything is written:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py" --feature <feature> --rule RULE-N
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py" --feature <feature> --rule RULE-N
 ```
 
 It carries the rule text, the proof text, the test body, the test strength beside
@@ -82,7 +82,7 @@ this skill must not help with.
 ## Step 3: walk it
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"
 ```
 
 With no argument the script opens on those two lines, or on
@@ -97,15 +97,12 @@ commit carries the signatures.
 **Sign.** The rule, the proof and the test belong together.
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py" <feature> RULE-N [RULE-M ...]
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py" <feature> RULE-N [RULE-M ...] [--note "<text>"]
 ```
 
-Add `--note "<text>"` for a hand check, so the note says what was seen.
-
-**Add a case.** The person says in plain language what is missing: "it should also reject an
-expired token". Write it into the spec as a new proof line with the next free proof id, leave
-the test for the next `purlin:build`, and move on. This skill writes specs and signatures,
-never code.
+**Add a case.** The person says in plain language what is missing: "it should also reject an expired
+token". Write it into the spec as a new proof line with the next free proof id, leave the test for
+the next `purlin:build`, and move on. This skill writes specs and signatures, never code.
 
 **Skip.** Move to the next rule and leave it as it is. A skipped rule waits again next time:
 nothing is marked as seen by being seen.
@@ -146,6 +143,8 @@ Nothing left to do. Push the tag to release it: git push origin signed/1.4.0
 
 While other work is left it prints the summary and `Left to do` instead. It writes no tag while
 the working tree or any feature's results are not committed, and none over a tag that exists.
+It exits 1 when the tag was refused for a reason to fix, uncommitted work or results, no version,
+a package not committed or git failing to write the tag, and 0 when the tag already exists.
 With no version stated it prints `No version: nothing in this project states one.`: ask the
 person for the version, offer to write it to a `VERSION` file at the root, and run the walk
 again, or pass `--release <version>`. Below `signed` it writes no tag and no package. Pushing the
@@ -171,4 +170,5 @@ Commits: a1b2c3d
 | `No tag: the working tree holds changes that are not committed` | `→ Commit them, then run: purlin:sign` |
 | `No version:` | `→ Write the version the person gives to VERSION, then run: purlin:sign` |
 | `No key to sign with.` | `→ Run the commands it printed, then run: purlin:sign` |
+| `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.` | `→ Run: purlin:status <feature>` |
 | `Nothing left to do.` | Nothing: the work at this gate is done |
