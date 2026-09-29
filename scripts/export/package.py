@@ -5,15 +5,16 @@
     package.py --check FILE
 
 The package holds, for every rule, its words, its proofs, its tests, each
-result on each operating system, what the audit found and who signed it, with
-the statuses its level asks for and whether the rule meets the gate. It is
-written to
+result on each operating system and the machine it ran on, what the audit
+found, who signed it, its statuses up to the gate and the one kind of work it
+waits for. Above them it carries the total, the count at each step, what is
+left to do and the state. It is written to
 
     .purlin/evidence/package/<version>.json
 
-where `<version>` is the `VERSION` file's value, the config's `version` where
-there is none, or what `--release <name>` names: the same name `purlin:sign`
-gives the tag `signed/<version>`.
+where `<version>` is the version the project states, read as `purlin:sign`
+reads it for the tag `signed/<version>`, or what `--release <name>` names.
+With neither, the command prints `No version: ...`, writes nothing and exits 1.
 
 **It is evidence for review.** Purlin hands the package to a regulated
 document and sign-off system, which holds the controlled document, the
@@ -34,20 +35,19 @@ with `\\n` line ends and a trailing newline on every operating system. The
 `fingerprint` field is the sha256 of the file's own bytes with that field set
 to the empty string. `--check FILE` recomputes it.
 
-**State.** `signed` when every rule meets the gate `signed` and the package
-is written for the tag, or read at the commit the tag names; `gate <gate> met`
-when every rule meets a gate but the version is not signed and tagged: the
-gate is `passed` or `strong`, where no tag is ever written and a tag found on
-the commit changes nothing, or `signed` with no tag on the commit yet;
-`work in progress` otherwise. Every state but `signed` carries
-`not_for_approval: true`.
+**State.** `finished` when nothing is left to do, `not finished` otherwise.
+`steps` and `left` are the payload's own, the words of `purlin:status`. At
+the gate `signed` the last line left is `the version to tag`, and the package
+leaves it out when it is written for the tag or read at the commit the tag
+names: the package the tag carries describes a finished version.
 
 Run by itself it writes the file and commits nothing; `--commit` commits it
 as `purlin: evidence at <sha7>`. At the gate `signed`, `purlin:sign` writes
 and commits it before it writes the tag; below `signed` it writes neither. `references/formats/package_format.md` holds every field.
 
-Exit codes: 0 written, or the check matched; 1 the check did not match or the
-package could not be written; 2 the command line was wrong.
+Exit codes: 0 written, or the check matched; 1 the check did not match, the
+project states no version, or the package could not be written; 2 the command
+line was wrong.
 """
 
 import hashlib
@@ -73,23 +73,29 @@ from purlin import (PURLIN_VERSION,                            # noqa: E402
                     signatures as signatures_module,
                     specs as specs_module)
 
-SCHEMA = 'purlin-package/1'
+SCHEMA = 'purlin-package/2'
 PACKAGE_DIR = '.purlin/evidence/package'
 TAG_PREFIX = 'signed/'
 
 # The top-level keys in the order the file carries them. The state is what a
 # reader sees first after the schema.
-TOP_LEVEL = ('schema', 'state', 'not_for_approval', 'rules_meeting_gate',
-             'rules_short_of_gate', 'purlin_version', 'project', 'version',
-             'tag', 'commit', 'gate', 'trust', 'mutation_engine',
+TOP_LEVEL = ('schema', 'state', 'rules', 'steps', 'left', 'purlin_version',
+             'project', 'version', 'tag', 'commit', 'gate', 'mutation_engine',
              'min_strength', 'features', 'warnings', 'fingerprint')
 
-SIGNED = 'signed'
-IN_PROGRESS = 'work in progress'
+FINISHED = 'finished'
+NOT_FINISHED = 'not finished'
 CELLS = ('passed', 'strong', 'signed')
+TO_TAG = 'to_tag'
 
-WRITTEN = 'Evidence package written to %s. State: %s, %d of %d rules meet the gate %s.'
-NOT_FOR_APPROVAL = 'Not for approval.'
+# The locked hashes of a signature, as the signature file stores them.
+LOCKED = ('signed_hash', 'rule_hash', 'proof_hash', 'test_hash',
+          'test_hash_kind', 'code_hash', 'audit_hash')
+
+WRITTEN = 'Evidence package written to %s. State: %s.'
+NO_VERSION = ('No version: nothing in this project states one. '
+              'Name it with --release <version>.')
+SHORT = 'the committed evidence reads %d of %d rules short of the gate'
 NOT_COMMITTED = '%s is written and not committed; the package leaves it out.'
 MATCHES = 'The package matches its fingerprint.'
 COMMITTED = 'Package committed.'
@@ -103,6 +109,10 @@ EXIT_BAD_INVOCATION = 2
 
 class PackageError(Exception):
     """The package could not be built or written; the message says why."""
+
+
+class NoVersion(PackageError):
+    """The project states no version and `--release` named none."""
 
 
 # ---------------------------------------------------------------------------
@@ -199,9 +209,10 @@ class _Checkout(object):
 # ---------------------------------------------------------------------------
 
 def version_name(project_root, release=None):
-    """The version the package and the tag are named for."""
+    """The version the package and the tag are named for, or None where there is none."""
     import sign as sign_module
-    return sign_module.tag_name(project_root, release)[len(TAG_PREFIX):]
+    name = sign_module.tag_name(project_root, release)
+    return name[len(TAG_PREFIX):] if name else None
 
 
 def package_path(version):
@@ -226,12 +237,15 @@ def build(project_root, release=None, for_tag=False):
     """The package as a dict, its top-level keys in the format's order.
 
     `for_tag` says the package is being written for the tag `purlin:sign` is
-    about to write, which is what lets the state read `signed`.
+    about to write, so `the version to tag` is not left to do. Raises
+    `NoVersion` where the project states no version and `release` is None.
     """
+    version = version_name(project_root, release)
+    if not version:
+        raise NoVersion(NO_VERSION)
     commit = evidence_commit(project_root)
     if commit is None:
         raise PackageError('the project has no commit yet')
-    version = version_name(project_root, release)
     tag = TAG_PREFIX + version
     warnings = [NOT_COMMITTED % path
                 for path in uncommitted_evidence(project_root)]
@@ -249,32 +263,28 @@ def build(project_root, release=None, for_tag=False):
         if warning not in warnings:
             warnings.append(warning)
 
-    rules = [rule for feature in entries for rule in feature['rules']]
-    meeting = sum(1 for rule in rules if rule['meets_gate'])
-    short = len(rules) - meeting
+    # The tag this package is for is the tag the last line asks for, so the
+    # package written for it, or read again at the commit it names, does not
+    # list it as left to do.
+    tagged = for_tag or _tag_names_commit(project_root, tag, commit)
+    left = [dict(item) for item in payload.get('left') or ()
+            if not (tagged and item.get('kind') == TO_TAG)]
+    summary = payload.get('summary') or {}
     settings = payload.get('gate') or {}
     gate = settings.get('gate') or gate_module.DEFAULT_GATE
-    if short:
-        state = IN_PROGRESS
-    elif gate == SIGNED and (for_tag or _tag_names_commit(project_root, tag,
-                                                          commit)):
-        state = SIGNED
-    else:
-        state = 'gate %s met' % gate
 
     values = {
         'schema': SCHEMA,
-        'state': state,
-        'not_for_approval': state != SIGNED,
-        'rules_meeting_gate': meeting,
-        'rules_short_of_gate': short,
+        'state': NOT_FINISHED if left else FINISHED,
+        'rules': summary.get('rules') or 0,
+        'steps': dict(summary.get('steps') or {}),
+        'left': left,
         'purlin_version': PURLIN_VERSION,
         'project': payload.get('project'),
         'version': version,
         'tag': tag,
         'commit': commit,
         'gate': gate,
-        'trust': settings.get('trust'),
         'mutation_engine': settings.get('mutation_engine'),
         'min_strength': settings.get('min_strength'),
         'features': entries,
@@ -295,6 +305,14 @@ def _features(tree, payload, features):
     """`features[]`, by name, each carrying its own rules by number."""
     all_signatures = signatures_module.load_signatures(tree, features)
     markers = fingerprint_module.marker_index(tree)
+    # Every payload entry of a rule, by its owner, its id and the feature it
+    # is listed under: an anchor's rule is signed once in each feature it
+    # applies to, and each signature is compared with that feature's entry.
+    listed = {}
+    for feature in payload.get('features') or ():
+        for rule in feature.get('rules') or ():
+            listed[(rule.get('feature'), rule.get('id'),
+                    rule.get('applies_to') or feature.get('name'))] = rule
     out = []
     for feature in sorted(payload.get('features') or (),
                           key=lambda entry: entry.get('name') or ''):
@@ -313,21 +331,20 @@ def _features(tree, payload, features):
             'scope': list(feature.get('scope') or ()),
             'requires': list(feature.get('requires') or ()),
             'anchor': bool(feature.get('is_anchor')),
-            'rules': [_rule(tree, rule, loaded, sections,
+            'rules': [_rule(tree, rule, loaded, sections, listed,
                             all_signatures.get((name, rule.get('id')), []))
                       for rule in own],
         })
     return out
 
 
-def _rule(tree, rule, loaded, sections, signatures):
+def _rule(tree, rule, loaded, sections, listed, signatures):
     rule_id = rule.get('id')
     proofs = rule.get('proofs') or ()
     return {
         'id': rule_id,
         'text': rule.get('text') or '',
-        'level': rule.get('level'),
-        'level_marked': bool(rule.get('level_marked')),
+        'left': rule.get('left'),
         'proofs': [{'id': proof.get('id'), 'text': proof.get('text') or '',
                     'manual': bool(proof.get('manual')),
                     'env': proof.get('env')} for proof in proofs],
@@ -339,10 +356,9 @@ def _rule(tree, rule, loaded, sections, signatures):
                     for test in rule.get('tests') or ()],
         'results': _results(rule_id, proofs, sections),
         'audit': _audit(rule, loaded),
-        'signatures': _signatures(tree, rule, signatures),
+        'signatures': _signatures(tree, rule, listed, signatures),
         'statuses': {name: _status(rule, name) for name in CELLS
                      if name in (rule.get('cells') or {})},
-        'meets_gate': bool(rule.get('meets_gate')),
     }
 
 
@@ -363,6 +379,7 @@ def _results(rule_id, proofs, sections):
                     'result': word, 'at': section.get('at'),
                     'commit': section.get('commit'),
                     'runner': section.get('runner'),
+                    'machine': section.get('machine'),
                     'current': bool(entry['current']),
                     'out_of_date': sorted(entry['out_of_date'])})
     out.sort(key=lambda item: (item['os'], item['source']))
@@ -387,38 +404,44 @@ def _audit(rule, loaded):
             'source': entry.get('source')}
 
 
-def _signatures(tree, rule, signatures):
-    """Every signature that still binds the rule's current hashes."""
+def _signatures(tree, rule, listed, signatures):
+    """Every signature that still binds the rule where it applies.
+
+    Each signature is compared with the entry of the feature it applies to,
+    the rule's owner where the signature names none.
+    """
+    owner = rule.get('feature')
     out = []
     for signature in signatures:
-        if not signatures_module.is_current(signature, rule):
+        entry = listed.get((owner, rule.get('id'),
+                            signature.get('applies_to') or owner))
+        if not signatures_module.is_current(signature, entry):
             continue
         path = signature.get('path')
         out.append({
             'signer': signature.get('signer'),
+            'signer_name': signature.get('signer_name'),
+            'key_fingerprint': signature.get('key_fingerprint'),
+            'applies_to': signature.get('applies_to'),
+            'machines': dict(signature.get('machines') or {}),
             'at': signature.get('timestamp'),
             'committed_at': signatures_module.commit_date(tree, path),
-            'machine': signature.get('machine'),
-            'os': signature.get('os'),
             'note': signature.get('note'),
-            'level': signature.get('level'),
             'gate': signature.get('gate'),
             'path': path,
-            'commit_verifies': signatures_module.commit_is_signed(tree, path),
-            'locked': {key: signature.get(key) for key in (
-                'triple', 'rule_hash', 'proof_hash', 'test_hash',
-                'test_hash_kind', 'audit_hash')},
+            'signed_commit': signatures_module.counts(tree, signature)[0],
+            'locked': {key: signature.get(key) for key in LOCKED},
         })
     out.sort(key=lambda item: (str(item['at']), str(item['signer']),
-                               str(item['path'])))
+                               str(item['applies_to']), str(item['path'])))
     return out
 
 
 def _status(rule, name):
     """One status: its word and its reasons.
 
-    Only a cell the rule has is asked for: a status the rule's level, or the
-    gate, does not reach is left out of `statuses` altogether.
+    Only a cell the rule has is asked for: a status above the gate is left
+    out of `statuses` altogether.
     """
     cell = (rule.get('cells') or {}).get(name) or {}
     return {'word': cell.get('word'),
@@ -535,31 +558,25 @@ def commit(project_root, rel, package, signed=False):
 
 def summary_lines(rel, package):
     """What the command prints: the path and the state, then the warnings."""
-    total = package['rules_meeting_gate'] + package['rules_short_of_gate']
-    lines = [WRITTEN % (rel, package['state'], package['rules_meeting_gate'],
-                        total, package['gate'])]
-    if package['not_for_approval']:
-        lines[0] += ' ' + NOT_FOR_APPROVAL
-    lines.extend(package['warnings'])
-    return lines
+    return [WRITTEN % (rel, package['state'])] + list(package['warnings'])
 
 
 def write_for_tag(project_root, release=None):
     """Build, write and commit the package the tag carries. `(path, None)` or `(None, why)`.
 
-    Every rule must meet the gate in the committed evidence, so a package
-    that would read `work in progress` stops the tag. The commit is signed,
-    with the key the signer signs every other commit with.
+    Nothing may be left to do in the committed evidence, so a package that
+    would read `not finished` stops the tag. The commit is signed, with the
+    key the signer signs every other commit with.
     """
     try:
         package = build(project_root, release, for_tag=True)
     except PackageError as error:
         return None, str(error)
-    if package['rules_short_of_gate']:
-        return None, ('the committed evidence reads %d of %d rules short of '
-                      'the gate' % (package['rules_short_of_gate'],
-                                    package['rules_short_of_gate']
-                                    + package['rules_meeting_gate']))
+    if package['state'] != FINISHED:
+        rules = [rule for feature in package['features']
+                 for rule in feature['rules']]
+        return None, SHORT % (sum(1 for rule in rules if rule['left']),
+                              len(rules))
     try:
         rel = write(project_root, package)
         commit(project_root, rel, package, signed=True)
@@ -627,6 +644,9 @@ def main(argv=None):
     try:
         package = build(root, args['release'])
         rel = write(root, package)
+    except NoVersion:
+        print(NO_VERSION)
+        return EXIT_FAILED
     except (PackageError, IOError, OSError) as error:
         print('export: the package was not written: %s.' % error)
         return EXIT_FAILED
