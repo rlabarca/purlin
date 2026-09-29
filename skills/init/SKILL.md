@@ -8,8 +8,7 @@ description: Set a project up for Purlin, and change the gate later
 Set a project up for spec-driven development, and change the one setting later when the team or
 the obligations change. **Paths.** Every `references/`, `templates/` and `scripts/` path below
 is inside the plugin and is reached through `${CLAUDE_PLUGIN_ROOT}`; a project carries none of
-them. When `python3` is not on PATH, run `sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh"
-<script> [args]`, which resolves the interpreter and execs it.
+them.
 
 ## The questions
 
@@ -40,32 +39,26 @@ file exists and `[mutmut]` into `setup.cfg` otherwise, plus a `mutants/` line in
 or a line naming Stryker for a jest, vitest or .NET project. A no writes
 `mutation_engine: none` and `min_strength: null` and wires nothing; the AI audit alone judges
 test strength. A config with no `mutation_engine` is read as `none`, which is off. Where no
-engine exists init asks nothing, writes `none` and, at `strong` and `signed`, prints one line
-saying so. `--yes` takes every default, so mutation testing stays off; `--mutation` turns it on
+engine exists, or it cannot run on this operating system (mutmut on Windows), init asks nothing,
+writes `none` and, at `strong` and `signed`, prints one line saying so. `--yes` takes every default, so mutation testing stays off; `--mutation` turns it on
 without the question, at any gate.
 
 ## Run it
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --project-root . --gate <gate>
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --project-root . --gate <gate>
 ```
 
 | Flag | What it does |
 |------|--------------|
 | `--gate <gate>` | Sets the gate, at setup or later. Lowering changes the setting and deletes nothing |
 | `--mutation` | Turns mutation testing on without asking |
-| `--yes` | Takes the default answer to every question and every write |
+| `--yes` | Takes the default answer to every question |
 | `--update` | Brings a project Purlin 0.9.5 set up to the installed release. See below |
-| `--add <language>` | Adds one framework's entry to the `tests` setting |
 
-The first run writes without asking again: its questions are the consent. A later run, on a
-project that already has `.purlin/config.json`, asks `[Y/n]` before each write, so raising the
-gate writes the setting, and the gate's `min_strength` where mutation testing is on, and
-touches nothing you decline. Lowering the gate rewrites the setting and deletes nothing: the
-workflow, the evidence and the signatures stay where they are.
-
-`--add <language>` appends that framework's entry to the `tests` setting beside the ones
-already there, once however many times it is added. One `purlin:test` then runs them all.
+A later run asks nothing before it writes. Raising the gate writes the setting, and the gate's
+`min_strength` where mutation testing is on. Lowering the gate rewrites the setting and deletes
+nothing: the workflow, the evidence and the signatures stay where they are.
 
 ## What init writes
 
@@ -73,9 +66,9 @@ It writes `.purlin/` and `specs/`; `.purlin/config.json` with the answers and wh
 derive; a block in `.gitignore`; and `.purlin/evidence/` with one README saying what the folder
 holds. The folder for anchors, `specs/_anchors/`, is made when the first anchor is written. It
 installs nothing in the project's tests and asks nothing about them: it writes the `tests`
-setting as an empty list, and the first `purlin:test` suggests the entry for the test tool it
-recognises, the command with the flag that writes the report Purlin reads, and writes it once
-the person agrees. `references/supported_frameworks.md` shows every entry, and
+setting as an empty list, and the first `purlin:test` suggests a command for each test tool it
+recognises, each with the flag that writes the report Purlin reads, and writes them together
+once the person agrees. `references/supported_frameworks.md` shows every entry, and
 `references/formats/marker_format.md` is the contract. The `.gitignore` block covers
 `.purlin/runtime/`, where a run's reports and log land, `.purlin/report-data.js`, and
 `purlin-report.html`, the dashboard page init copies to the project root so it opens from
@@ -105,9 +98,9 @@ the file, from 1 to 16.
 ```
 
 `ci` is the git host read from the remote URL, `github` or `azure`, and `none` where there is
-no remote or it names neither. Where it names neither, init prints `The origin remote is neither
-GitHub nor Azure DevOps. Everything on this machine works with any host; only purlin:test
---remote needs one of those two.` Read and change the file with the `purlin_config` tool
+no remote or it names neither. Under its first summary line init prints `No git host found.`
+where there is no remote, and `This git host cannot run tests remotely. Everything on this
+machine works.` where the remote names neither. Read and change the file with the `purlin_config` tool
 rather than by hand, so a key the installed Purlin does not read is reported instead of kept.
 
 ## The remote runner
@@ -132,8 +125,8 @@ same checks run under `--update`.
 ## What each gate brings
 
 Mutation testing is the answer to its own question, not the gate's. Where a workflow is called
-for, it gets a matrix of one job per operating system the `@env` tags in `specs/` name, each
-running the same tests and writing its own section.
+for, it gets a matrix of one job per operating system the `@env` tags name that this machine is
+not, each writing its own section (`references/hard_gates.md`, "Where a runner runs").
 
 Under `signed`, every rule needs a signature, and init asks nothing about it and names nobody:
 anyone can sign, and a signature names its signer. Init prints no signing setup. `purlin:sign`
@@ -149,15 +142,15 @@ Nobody types that arm; the workflow carries it.
 
 | The run | What it does |
 |---------|--------------|
-| a `signed/**` tag | Reruns the marked tests on a clean machine and commits nothing |
-| a `run/*` branch | Runs the marked tests, then commits its own section of each feature's `.purlin/evidence/ci/` file onto that branch through the git host's API, at every gate |
+| a `signed/**` tag | Reruns the tests `references/hard_gates.md`, "Where a runner runs", names, on a clean machine, and commits nothing |
+| a `run/*` branch | Runs the tests `references/hard_gates.md`, "Where a runner runs", names, then commits its own section of each feature's `.purlin/evidence/ci/` file onto that branch through the git host's API, at every gate |
 
 The runner writes no signature.
 
 ## Bringing a 0.9.5 project forward
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root .
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root .
 ```
 
 `--update` reads the layout Purlin 0.9.5 leaves in a project and lists each pending migration
