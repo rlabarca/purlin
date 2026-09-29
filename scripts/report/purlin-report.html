@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Purlin board</title>
 <style id="purlin-tokens">
-:root{--purlin-navy-900:#092936;--purlin-navy-800:#0C3444;--purlin-cream-100:#E4DDD4;--purlin-blush-200:#E6BEB0;--purlin-copper-500:#C0793F;--purlin-slate-300:#93AEB8;--purlin-slate-200:#BFCED5;--purlin-cream-050:#F1ECE5;--purlin-blush-100:#F6E8E2;--purlin-slate-100:#E2E9EC;--slate-950:#0F172A;--slate-900:#172034;--slate-800:#1E293C;--slate-750:#263350;--slate-700:#334155;--slate-500:#64738B;--slate-400:#94A2B8;--slate-350:#BBC4D2;--slate-300:#CBD5E1;--slate-200:#E2E8F0;--slate-100:#E1E5EB;--white:#FFFFFF;--green-500:#22C55D;--green-600:#269655;--green-300:#3AC968;--green-100:#C6EDCF;--amber-500:#F59E0C;--red-500:#EF4444;--teal-400:#2DD4BF;--green-700:#15803D;--amber-700:#B45309;--red-700:#B91C1C;--teal-700:#0F766E;--copper-700:#8F5626;--purlin-paper-050:#FBF8EC;--purlin-paper-100:#F4EFDF;--purlin-paper-200:#E4DDD4;--purlin-paper-300:#D3C9BC;--purlin-ink-700:#1B4A5C;--purlin-ink-600:#345865;--purlin-ink-500:#4D676F;--purlin-ink-650:#3B4F56;}
+:root{--purlin-navy-900:#092936;--purlin-navy-800:#0C3444;--purlin-cream-100:#E4DDD4;--purlin-blush-200:#E6BEB0;--purlin-copper-500:#C0793F;--purlin-slate-300:#93AEB8;--purlin-slate-200:#BFCED5;--purlin-cream-050:#F1ECE5;--purlin-blush-100:#F6E8E2;--purlin-slate-100:#E2E9EC;--slate-950:#0F172A;--slate-900:#172034;--slate-800:#1E293C;--slate-750:#263350;--slate-700:#334155;--slate-500:#64738B;--slate-400:#94A2B8;--slate-350:#BBC4D2;--slate-300:#CBD5E1;--slate-200:#E2E8F0;--slate-100:#E1E5EB;--white:#FFFFFF;--green-500:#22C55D;--green-600:#269655;--green-300:#3AC968;--green-100:#C6EDCF;--amber-500:#F59E0C;--red-500:#EF4444;--teal-400:#2DD4BF;--green-700:#15803D;--amber-700:#B45309;--red-700:#B91C1C;--teal-700:#0F766E;--copper-700:#8F5626;--purlin-paper-050:#FBF8EC;--purlin-paper-100:#E8E3D4;--purlin-paper-200:#D9D2C9;--purlin-paper-300:#C8BFB3;--purlin-ink-700:#1B4A5C;--purlin-ink-600:#345865;--purlin-ink-500:#4D676F;--purlin-ink-650:#384B52;}
 :root{--color-scheme:dark;--canvas:var(--purlin-navy-800);--canvas-deep:var(--purlin-navy-900);--surface-1:rgba(228,221,212,.06);--surface-2:rgba(228,221,212,.10);--surface-sunken:var(--purlin-navy-900);--surface-veil:rgba(228,221,212,.30);--text-primary:var(--purlin-cream-050);--text-secondary:var(--purlin-blush-100);--text-muted:var(--purlin-slate-100);--text-accent:var(--purlin-copper-500);--text-inverse:var(--purlin-navy-900);--border-hairline:rgba(228,221,212,.18);--border-default:rgba(228,221,212,.30);--border-strong:rgba(228,221,212,.45);--border-accent:var(--purlin-copper-500);--accent:var(--purlin-copper-500);--accent-contrast:var(--purlin-navy-900);--state-pass:var(--green-500);--state-pass-soft:rgba(34,197,93,.14);--state-warn:var(--amber-500);--state-warn-soft:rgba(245,158,12,.14);--state-fail:var(--red-500);--state-fail-soft:rgba(239,68,68,.14);--state-neutral:var(--teal-400);--state-neutral-soft:rgba(45,212,191,.14);--state-idle:var(--slate-100);--focus-ring:var(--purlin-blush-200);--link:var(--purlin-blush-100);--link-hover:var(--purlin-copper-500);}
 [data-theme="light"]{--color-scheme:light;--canvas:var(--purlin-paper-050);--canvas-deep:var(--purlin-paper-100);--surface-1:var(--white);--surface-2:var(--purlin-paper-100);--surface-sunken:var(--purlin-paper-200);--surface-veil:rgba(12,52,68,.05);--text-primary:var(--purlin-navy-800);--text-secondary:var(--purlin-ink-700);--text-muted:var(--purlin-ink-650);--text-accent:var(--copper-700);--text-inverse:var(--purlin-paper-050);--border-hairline:rgba(12,52,68,.12);--border-default:rgba(12,52,68,.20);--border-strong:rgba(12,52,68,.38);--border-accent:var(--copper-700);--accent:var(--copper-700);--accent-contrast:var(--purlin-paper-050);--state-pass:var(--green-700);--state-pass-soft:rgba(21,128,61,.12);--state-warn:var(--amber-700);--state-warn-soft:rgba(180,83,9,.12);--state-fail:var(--red-700);--state-fail-soft:rgba(185,28,28,.12);--state-neutral:var(--teal-700);--state-neutral-soft:rgba(15,118,110,.12);--state-idle:var(--purlin-ink-650);--focus-ring:var(--copper-700);--link:var(--copper-700);--link-hover:var(--purlin-navy-800);}
 :root{--font-sans:Arial,"Helvetica Neue",Helvetica,sans-serif;--font-mono:"Courier New",Courier,monospace;--type-hero:180px;--type-display:98px;--type-title:48px;--type-subtitle:33px;--type-lead:30px;--type-body-lg:22.5px;--type-body:20.25px;--type-body-sm:18px;--type-caption:15.75px;--type-micro:15px;--ui-metric-xl:44px;--ui-metric:32px;--ui-lg:18px;--ui-base:15px;--ui-sm:13px;--ui-xs:11px;--leading-tight:.8;--leading-snug:1.12;--leading-normal:1.35;--leading-relaxed:1.5;--tracking-hero:-.006em;--tracking-normal:0;--tracking-wide:.055em;--tracking-label:.12em;--weight-regular:400;--weight-bold:700;}
@@ -47,6 +47,7 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .sec{color:var(--text-secondary)}
 .tag{display:inline-flex;flex:none;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--accent);color:var(--text-primary);white-space:nowrap}
 .tag.plain{border-color:var(--text-muted);color:var(--text-muted)}
+.kv .tag.plain{color:var(--text-secondary)}
 .os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:0 5px;border-radius:var(--radius-sm);border:1px solid;white-space:nowrap;line-height:1.5}
 .os.pass{border-color:var(--state-pass);color:var(--state-pass)}
 .os.fail{border-color:var(--state-fail);color:var(--state-fail)}
@@ -63,19 +64,19 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .pill b{font-weight:var(--weight-bold)}
 .pill.solid b{color:var(--canvas-deep)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
-.sentence{margin:0 0 var(--space-4);font-size:var(--ui-lg);color:var(--text-primary)}
 .strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
 .tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-2)}
 .tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
 .tile-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
-.todo{font-size:var(--ui-base);color:var(--text-primary)}
+.tile-l.tile-t{margin-top:var(--space-1);white-space:nowrap}
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
 .chip{white-space:nowrap;font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
 .chip:hover{background:var(--hover-tint)}
 .chip b{font-family:var(--font-mono);font-weight:var(--weight-regular);margin-left:var(--space-2);color:var(--text-muted)}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .chip[aria-pressed="true"] b{color:var(--accent)}
+.cmdline,.lastline{margin:0 0 var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
 .tbl{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
 .tbl.specs{display:grid;grid-template-columns:calc(var(--space-6) - var(--space-3)) var(--cols) calc(var(--space-6) - var(--space-3));column-gap:var(--space-3)}
 .specs>*{grid-column:1/-1}
@@ -118,6 +119,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
+[data-theme="light"] .specs>.rule,[data-theme="light"] .specs>.rule-proofs,[data-theme="light"] .specs>.desc,[data-theme="light"] pre.code{--text-secondary:var(--text-primary);--text-muted:var(--text-primary)}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 .kv{display:grid;grid-template-columns:170px 1fr;gap:var(--space-3) var(--space-6);margin:0;font-size:var(--ui-base)}
 .kv dt{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary);padding-top:2px}
@@ -161,57 +163,52 @@ function themeButton() {
   return '<button class="btn glyph" data-act="theme" title="' + next
     + '" aria-label="' + next + '">\u25d0</button>';
 }
-function strongFilter(id, label) {
-  var word = label.toLowerCase();
-  return {id: id, label: label, step: 'strong', test: function (rule) {
-    return cellWord(rule, 'strong') === word;
-  }};
+var VERSION_KINDS = ['to_tag'];
+function leftLabel(item) {
+  var text = String(item.text || '');
+  var at = text.indexOf(' to ');
+  var words = at >= 0 ? text.slice(at + 1) : text;
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
-function allFilters() {
-  return [{id: 'no-proof', label: NO_PROOF, step: 'strong',
-           test: function (rule) { return rule.left === 'no_proof'; }},
-          strongFilter('weak', 'Weak'),
-          strongFilter('not-audited', 'Not audited')];
-}
-function offeredFilters() {
-  return allFilters().filter(function (f) { return level(f.step); });
-}
-function activeFilters() {
-  return offeredFilters().filter(function (f) { return VIEW.filters[f.id]; });
-}
-function filterCount(f) {
-  var found = 0;
-  (DATA.features || []).forEach(function (feature) {
-    ownRules(feature).forEach(function (r) { found += f.test(r, feature) ? 1 : 0; });
+function leftItems() { return (DATA && DATA.left) || []; }
+function chosenItem() {
+  var found = null;
+  leftItems().forEach(function (item) {
+    if (item.kind === VIEW.filter) { found = item; }
   });
   return found;
 }
 function visibleRules(feature) {
-  var active = activeFilters();
-  if (!active.length) { return ownRules(feature); }
+  var item = chosenItem();
+  if (!item || VERSION_KINDS.indexOf(item.kind) >= 0) {
+    return ownRules(feature);
+  }
   return ownRules(feature).filter(function (rule) {
-    return active.every(function (f) { return f.test(rule, feature); });
+    return rule.left === item.kind;
   });
 }
 function filtersMarkup() {
-  var offered = offeredFilters();
-  if (!offered.length) { return ''; }
-  return '<div class="filters">' + offered.map(function (f) {
-    return '<button class="chip" data-act="filter" data-filter="' + f.id
-      + '" aria-pressed="' + (VIEW.filters[f.id] ? 'true' : 'false') + '">'
-      + esc(f.label) + '<b>' + filterCount(f) + '</b></button>';
-  }).join('') + '</div>';
+  var items = leftItems();
+  if (!items.length) {
+    return DATA.last_line ? '<p class="lastline">' + esc(DATA.last_line)
+      + '</p>' : '';
+  }
+  var chosen = chosenItem();
+  return '<div class="filters">' + items.map(function (item) {
+    return '<button class="chip" data-act="filter" data-filter="'
+      + esc(item.kind) + '" aria-pressed="'
+      + (chosen && chosen.kind === item.kind ? 'true' : 'false') + '">'
+      + esc(leftLabel(item)) + '<b>' + esc(item.count) + '</b></button>';
+  }).join('') + '</div>'
+    + (chosen ? '<p class="cmdline">Type <span class="cmd">'
+      + esc(chosen.command) + '</span> in Claude Code.</p>' : '');
 }
 function statStrip() {
   var summary = DATA.summary || {};
   var steps = summary.steps || {};
+  var total = summary.rules || 0;
   var project = wholeProject();
-  var boxes = GATE_LEVELS.filter(level).map(function (step) {
-    var count = steps[step] || 0;
-    return box(STEP_LABELS[step], count,
-               count === (summary.rules || 0) ? 'pass' : 'warn',
-               stepHover(step, project));
-  });
+  var boxes = [];
   if (level('strong')) {
     var missing = noProofLines();
     var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
@@ -219,14 +216,23 @@ function statStrip() {
     boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
       missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
   }
-  return '<p class="sentence">' + esc(summary.sentence || '') + '</p>'
-    + '<div class="strip"><div class="tiles">' + boxes.join('')
+  GATE_LEVELS.filter(level).forEach(function (step) {
+    var reached = steps[step] || 0;
+    boxes.push(box(STEP_LABELS[step], reached,
+                   reached === total ? 'pass' : 'warn',
+                   stepHover(step, project),
+                   step === 'passed' ? total + (total === 1 ? ' rule total'
+                     : ' rules total') : null));
+  });
+  return '<div class="strip"><div class="tiles">' + boxes.join('')
     + '</div></div>';
 }
-function box(label, count, hue, lines) {
+function box(label, count, hue, lines, under) {
   return '<div class="tile"' + (lines.length ? hover(lines) : '')
     + '><div class="tile-v" style="color:var(--state-' + hue + ')">' + count
-    + '</div><div class="tile-l">' + esc(label) + '</div></div>';
+    + '</div><div class="tile-l">' + esc(label) + '</div>'
+    + (under ? '<div class="tile-l tile-t">' + esc(under) + '</div>' : '')
+    + '</div>';
 }
 function stepHover(step, project) {
   if (step === 'passed') { return platformLines(project); }
@@ -243,19 +249,6 @@ function noProofLines() {
     byFeature[name] += 1;
   });
   return names.sort().map(function (name) { return [name, byFeature[name]]; });
-}
-function leftToDo() {
-  var items = DATA.left || [];
-  if (!items.length) {
-    return '<div class="panel todo"><p>' + esc(DATA.last_line || '')
-      + '</p></div>';
-  }
-  return '<p class="eyebrow">Left to do</p><div class="panel todo">'
-    + items.map(function (item) {
-      return '<p><span>' + esc(item.text) + ':</span> <span class="cmd">'
-        + esc(item.command) + '</span></p>';
-    }).join('') + '<p class="sec">Type each command in Claude Code.</p>'
-    + '</div>';
 }
 function boardColumns() {
   var columns = [{label: COLUMNS[0], width: '1.7fr', floor: 200},
@@ -285,9 +278,10 @@ function rulesCell(feature) {
   var own = ownRules(feature).length;
   if (!shared.length) { return '<span class="mono">' + own + '</span>'; }
   var more = shared.reduce(function (sum, pair) { return sum + pair[1]; }, 0);
-  return '<span' + hover(shared.map(function (pair) {
-      return pair[0] + DOT + pair[1];
-    })) + '>' + counts([[own + ' (+' + more + ' shared)', '', '']])
+  return '<span' + hover([own + (own === 1 ? ' rule' : ' rules') + ' of its own, and '
+      + more + ' more it must also meet, from shared rules:']
+    .concat(shared.map(function (pair) { return pair[0] + DOT + pair[1]; })))
+    + '>' + counts([[own + ' (+' + more + ')', '', '']])
     + '</span>';
 }
 function testsCell(feature) {
@@ -312,11 +306,15 @@ function strongCell(feature) {
   if (!rules.length) { return ''; }
   var value = rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
-  return '<span' + hover(auditLines(feature)) + '>'
-    + counts([share(reading(rules, 'strong'), rules.length),
-      [value == null ? 'n/a' : Math.floor(value) + '%', '',
-        value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
-    + '</span>';
+  var parts = [share(reading(rules, 'strong'), rules.length)];
+  if (value != null) {
+    var pct = Math.floor(value);
+    parts.push([pct + '%', '', value >= minStrength() ? 'pass' : 'fail',
+      ['Test strength: the tests caught ' + pct + ' of every 100 deliberate '
+        + 'breaks of the code.']]);
+  }
+  var cell = counts(parts);
+  return '<span' + hover(auditLines(feature)) + '>' + cell + '</span>';
 }
 function signedCell(feature) {
   var rules = feature.rules || [];
@@ -359,10 +357,7 @@ function featureRow(feature, columns) {
       + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '">'
       + '<span class="rid">' + esc(rule.id) + '</span>'
       + '<span class="rt">' + esc(rule.text) + '</span>'
-      + '<span class="rp">' + GATE_LEVELS.map(function (name) {
-        var cell = cellOf(rule, name);
-        return cell ? pill(cell.word) : '';
-      }).join('') + '</span>'
+      + '<span class="rp">' + badges(rule) + '</span>'
       + '<span class="rm">' + proofsToggle(rule, shown) + '</span></div>'
       + (shown ? proofsUnder(rule) : '');
   }).join('');
@@ -441,8 +436,7 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  var head = '<section>' + statStrip() + '</section><section>' + leftToDo()
-    + '</section>';
+  var head = '<section>' + statStrip() + '</section>';
   var table = order.length
     ? '<div class="tbl specs" style="--cols:' + columns.map(function (c) {
         return 'minmax(' + (c.floor ? c.floor + 'px' : 'max-content') + ','
@@ -452,7 +446,7 @@ function renderBoard() {
       }).join('') + '</div>' + order.map(function (name) {
         return groupBand(name, groups[name], columns);
       }).join('') + '</div>'
-    : '<div class="panel empty">No rule matches every filter you set.</div>';
+    : '<div class="panel empty">No rule is left of this kind.</div>';
   return head + '<section><p class="eyebrow">Specs</p>' + filtersMarkup()
     + table + '</section>';
 }
@@ -481,7 +475,8 @@ function cellRow(rule, name) {
   }).join('; ');
   var beside = name === 'passed' ? platformBoxes(cell)
     : name === 'signed' && cell.signer ? '<span class="mono sec">'
-      + esc(cell.signer + ' \u00b7 ' + when(cell.at)) + '</span>' : '';
+      + unbroken(cell.signer) + ' \u00b7 ' + unbroken(when(cell.at))
+      + '</span>' : '';
   return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
     + (beside ? ' ' + beside : '')
     + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
@@ -506,13 +501,14 @@ function auditPanel(rule) {
     lines.push(line(answer === 'strong' ? 'Strong.' : 'Weak.'));
   }
   findings.forEach(function (text) { lines.push(line(text)); });
-  lines.push(line(cell.strength == null ? 'no mutation score measured'
-    : 'Test strength ' + Math.round(cell.strength) + '%, against a minimum '
-      + 'of ' + minStrength() + '%.'));
+  if (cell.strength != null) {
+    lines.push(line('Test strength ' + Math.round(cell.strength) + '%, against '
+      + 'a minimum of ' + minStrength() + '%.'));
+  }
   if (audit) {
     lines.push('<p class="sec">Read by <span class="mono">'
       + esc(audit.model || 'unknown') + '</span> on '
-      + esc(moment(audit.at)) + '</p>');
+      + unbroken(moment(audit.at)) + '</p>');
     if (audit.path) {
       lines.push('<p class="sec">' + hostLink(audit.path, audit.path) + '</p>');
     }
@@ -520,6 +516,9 @@ function auditPanel(rule) {
   return '<div class="panel"><h2>Audit</h2>' + lines.join('') + '</div>';
 }
 function line(text) { return '<p class="sec">' + esc(text) + '</p>'; }
+function unbroken(text) {
+  return '<span class="nowrap">' + esc(text) + '</span>';
+}
 function signaturesFor(feature, rule) {
   return (feature.signatures || []).filter(function (path) {
     return path.split('/').pop().indexOf(rule.id + '.') === 0;
@@ -532,9 +531,11 @@ function signPanel(feature, rule) {
     var who = [cell.signer_name, cell.signer].filter(Boolean).join(', ')
       || 'a person';
     var key = String(cell.key_fingerprint || '');
-    var lines = ['Signed by ' + who + (cell.signer_name ? ',' : '') + ' on '
-      + moment(cell.at)
-      + (key ? ' with the key ending ...' + key.slice(-4) : '') + '.'];
+    var first = '<p class="sec">' + esc('Signed by ' + who
+      + (cell.signer_name ? ',' : '') + ' on ') + unbroken(moment(cell.at))
+      + esc(key ? ' with the key ending ...' + key.slice(-4) + '.' : '.')
+      + '</p>';
+    var lines = [];
     var machines = rule.machines || {};
     Object.keys(machines).sort().forEach(function (os) {
       lines.push('On ' + systemWords(os).word + ' the tests ran on '
@@ -543,8 +544,8 @@ function signPanel(feature, rule) {
     lines.push('The signature covers the rule, its proof, its test, the '
       + 'code the spec lists, what the audit found and the machine the '
       + 'tests ran on, as this screen shows them.');
-    return '<div class="panel"><h2>Signed</h2>' + lines.map(line).join('')
-      + '</div>';
+    return '<div class="panel"><h2>Signed</h2>' + first
+      + lines.map(line).join('') + '</div>';
   }
   var hand = rule.left === 'to_test_by_hand';
   return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
@@ -631,7 +632,7 @@ function renderRule() {
 }
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
-            features: {}, groups: {}, filters: {}, proofs: {}};
+            features: {}, groups: {}, filter: null, proofs: {}};
 var SCHEMA = 10;
 var REFRESH_AFTER = 60;
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
@@ -725,7 +726,8 @@ function counts(items) {
     return index === 0 || item[0];
   }).map(function (item, index) {
     var hue = index === 0 && !item[0] ? 'idle' : item[2];
-    return '<b' + (hue ? ' style="color:var(--state-' + hue + ')"' : '') + '>'
+    return '<b' + (item[3] ? hover(item[3]) : '')
+      + (hue ? ' style="color:var(--state-' + hue + ')"' : '') + '>'
       + (index ? '<i class="sec">·</i> ' : '')
       + esc(item[1] ? item[0] + ' ' + item[1] : item[0]) + '</b>';
   }).join('') + '</span>';
@@ -873,6 +875,31 @@ function cellOf(rule, name) {
 function cellWord(rule, name) {
   return (cellOf(rule, name) || {}).word || null;
 }
+function reachedSteps(rule) {
+  var out = [];
+  if (cellWord(rule, 'passed') !== 'passed') { return out; }
+  var manual = (rule.proofs || []).some(function (proof) {
+    return proof.manual;
+  });
+  if (manual && !rule.hand_checked) { return out; }
+  out.push('passed');
+  if (cellWord(rule, 'strong') !== 'strong') { return out; }
+  out.push('strong');
+  if (cellWord(rule, 'signed') === 'signed') { out.push('signed'); }
+  return out;
+}
+function testFailed(rule) {
+  var cell = cellOf(rule, 'passed') || {};
+  if (cell.word === 'failed') { return true; }
+  var platforms = cell.platforms || {};
+  return Object.keys(platforms).some(function (os) {
+    return platforms[os].word === 'failed';
+  });
+}
+function badges(rule) {
+  return reachedSteps(rule).map(pill).join('')
+    + (testFailed(rule) ? pill('failed') : '');
+}
 function featureNamed(name) {
   var found = null;
   (DATA.features || []).forEach(function (f) {
@@ -882,8 +909,10 @@ function featureNamed(name) {
 }
 function ageLine() {
   var age = ageText(DATA && DATA.generated_at);
-  return {hue: age.old ? 'warn' : 'pass', text: 'Data: ' + age.text
-    + (age.old ? ' — run purlin:status to refresh' : '')};
+  return {hue: age.old ? 'warn' : 'pass', text: 'Data: ' + age.text,
+    how: (age.old ? 'This data is old. ' : '')
+      + 'To refresh it, type purlin:status in Claude Code. '
+      + 'Press here to reload the page.'};
 }
 function signedTag() {
   var found = DATA && DATA.tag;
@@ -901,21 +930,19 @@ function tagChip() {
   }
   return '<span class="tag"' + hover(['The signed tag on this commit'
       + (found.at ? DOT + found.at : '')]) + '>'
-    + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
+    + esc(found.name) + '</span>';
 }
 function topBar() {
   var line = ageLine();
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
   return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
     + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
-    + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
+    + '<button class="btn fresh" data-act="reload"' + hover([line.how])
+    + ' style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
     + (gate ? tag('gate: ' + gate, true) : '')
     + (level('signed') ? tagChip() : '')
-    + (DATA && DATA.commit
-       ? '<span class="tag plain" title="The commit this data was generated at">at '
-         + esc(String(DATA.commit).slice(0, 7)) + '</span>' : '')
     + themeButton() + '</header>';
 }
 function tabs() {
@@ -979,7 +1006,7 @@ function onClick(event) {
     VIEW.rule = VIEW.feature = null;
   } else if (act === 'filter') {
     var id = node.getAttribute('data-filter');
-    VIEW.filters[id] = !VIEW.filters[id];
+    VIEW.filter = VIEW.filter === id ? null : id;
   } else if (act === 'group') {
     var group = node.getAttribute('data-group');
     VIEW.groups[group] = VIEW.groups[group] === false;
@@ -1027,6 +1054,7 @@ function tickAge() {
   if (!text) { return; }
   var line = ageLine();
   node.style.color = 'var(--state-' + line.hue + ')';
+  node.title = line.how;
   text.textContent = line.text;
 }
 function refreshIfOld() {
