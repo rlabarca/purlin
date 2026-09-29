@@ -16,12 +16,10 @@ from skill_checks import (carries, closing_outcomes, flat,
                           table_rows, undirected_outcome_problems)
 
 
-# The four questions init asks, in order, each by the words the skill uses.
+# The two questions init asks, in order, each by the words the skill uses.
 INIT_QUESTIONS = (
     'What must be true of every rule before a version is proven?',
-    'empty repository',
     'Measure test strength by breaking the code on purpose?',
-    'trusted',
 )
 
 
@@ -50,19 +48,16 @@ def init_question_problems():
         if needle not in flat(item):
             problems.append('%s question %r does not carry %r'
                             % (rel, flat(item)[:40], needle))
-    if 'The default is no' not in flat(items[2]):
-        problems.append('%s does not say the mutation default is no' % rel)
-    for needle in ('What command runs the tests?',
-                   'where that command writes its report'):
+    for needle in ('only at', '`strong`', '`signed`', 'The default is no'):
         if needle not in flat(items[1]):
-            problems.append('%s second question does not carry %r'
+            problems.append('%s mutation question does not carry %r'
                             % (rel, needle))
     return problems
 
 
-# The eight keys of the settings file init writes, as RULE-6 names them.
+# The seven keys of the settings file init writes, as RULE-6 names them.
 INIT_KEYS = ('version', 'gate', 'mutation_engine', 'min_strength',
-             'audit_parallel', 'tests', 'ci', 'trust')
+             'audit_parallel', 'tests', 'ci')
 
 
 def init_config_problems():
@@ -78,7 +73,7 @@ def init_config_problems():
         problems.append('%s shows the keys %s, the template carries %s'
                         % (rel, shown, template))
     for key in sorted(set(shown) - set(INIT_KEYS)):
-        problems.append('%s shows the key %r, which is not one of the eight'
+        problems.append('%s shows the key %r, which is not one of the seven'
                         % (rel, key))
     for key in sorted(set(INIT_KEYS) - set(shown)):
         problems.append('%s does not show the key %r' % (rel, key))
@@ -92,10 +87,8 @@ def init_config_problems():
 def init_tests_setting_problems():
     return carries(skill_path('init'), [
         "installs nothing in the project's tests",
-        'For each framework it detects it writes one entry of the `tests` '
-        'setting',
-        'with the flag that writes the report Purlin reads already in it',
-        'Jest needs the package `jest-junit`',
+        'it writes the `tests` setting as an empty list',
+        'the first `purlin:test` suggests the entry',
         'references/supported_frameworks.md',
         'references/formats/marker_format.md'])
 
@@ -114,17 +107,29 @@ class TestSkillInit:
     def test_it_runs_the_scaffold_script(self):
         assert scaffold_flag_problems() == []
 
-    # purlin: skill_init PROOF-2
-    def test_a_flag_missing_or_foreign_is_refused(self, monkeypatch):
+    # purlin: skill_init PROOF-8
+    def test_a_flag_left_out_of_the_table_is_refused(self, monkeypatch):
         rel = skill_path('init')
         assert refusals(monkeypatch, scaffold_flag_problems, [
-            (rel, replace('| `--dry-run` | Prints the plan and writes '
-                          'nothing |\n'),
-             '%s does not hand a person --dry-run' % rel),
-            (rel, replace('| `--dry-run` |',
+            (rel, replace("| `--add <language>` | Adds one framework's entry "
+                          "to the `tests` setting |\n"),
+             '%s does not hand a person --add' % rel),
+        ]) == []
+
+    # purlin: skill_init PROOF-9
+    def test_a_flag_the_script_does_not_take_is_refused(self, monkeypatch):
+        rel = skill_path('init')
+        assert refusals(monkeypatch, scaffold_flag_problems, [
+            (rel, replace('| `--add <language>` |',
                           '| `--force` | Overwrites every file |\n'
-                          '| `--dry-run` |'),
+                          '| `--add <language>` |'),
              '%s names --force, which scaffold.py does not take' % rel),
+        ]) == []
+
+    # purlin: skill_init PROOF-10
+    def test_a_run_line_without_the_gate_is_refused(self, monkeypatch):
+        rel = skill_path('init')
+        assert refusals(monkeypatch, scaffold_flag_problems, [
             (rel, replace('--project-root . --gate <level>',
                           '--project-root .'),
              '%s has no single line carrying all of' % rel),
@@ -152,50 +157,60 @@ class TestSkillInit:
         assert skill_ceiling_problems('init') == []
 
     # purlin: skill_init PROOF-5
-    def test_it_names_the_four_questions_in_order(self):
+    def test_it_names_the_two_questions_in_order(self):
         assert init_question_problems() == []
 
-    # purlin: skill_init PROOF-5
-    def test_a_fifth_question_or_a_missing_gate_is_refused(self, monkeypatch):
+    # purlin: skill_init PROOF-11
+    def test_a_third_question_is_refused(self, monkeypatch):
         rel = skill_path('init')
         assert refusals(monkeypatch, init_question_problems, [
-            (rel, replace('4. **Trust**', '4. **Colour**, on every first '
-                          'run: which colour.\n5. **Trust**'),
-             '%s names 5 questions, expected 4' % rel),
+            (rel, replace('2. **Mutation testing**', '2. **Colour**, on every '
+                          'first run: which colour.\n3. **Mutation testing**'),
+             '%s names 3 questions, expected 2' % rel),
+        ]) == []
+
+    # purlin: skill_init PROOF-12
+    def test_a_missing_gate_is_refused(self, monkeypatch):
+        rel = skill_path('init')
+        assert refusals(monkeypatch, init_question_problems, [
             (rel, replace('| `strong` | that, and'),
              '%s gives the gates' % rel),
-            (rel, replace('What command runs the tests?', 'What runs?'),
-             "%s second question does not carry 'What command runs the "
-             "tests?'" % rel),
         ]) == []
 
     # purlin: skill_init PROOF-6
-    def test_it_shows_the_eight_settings(self):
+    def test_it_shows_the_seven_settings(self):
         assert init_config_problems() == []
 
-    # purlin: skill_init PROOF-6
-    def test_a_ninth_key_or_a_stray_sentence_is_refused(self, monkeypatch):
+    # purlin: skill_init PROOF-13
+    def test_an_eighth_key_is_refused(self, monkeypatch):
         rel = skill_path('init')
         assert refusals(monkeypatch, init_config_problems, [
-            (rel, replace('  "ci": "github",', '  "ci": "github",\n'
-                          '  "colour": "blue",'),
-             "%s shows the key 'colour', which is not one of the eight" % rel),
+            (rel, replace('  "ci": "github"\n', '  "ci": "github",\n'
+                          '  "colour": "blue"\n'),
+             "%s shows the key 'colour', which is not one of the seven" % rel),
+        ]) == []
+
+    # purlin: skill_init PROOF-14
+    def test_a_stray_sentence_is_refused(self, monkeypatch):
+        rel = skill_path('init')
+        assert refusals(monkeypatch, init_config_problems, [
             (rel, replace('is 4 and is not asked;', 'is 4;'),
              "%s has no sentence carrying all of '`audit_parallel`', "
              "'is not asked'" % rel),
         ]) == []
 
     # purlin: skill_init PROOF-7
-    def test_it_writes_the_tests_setting_and_installs_nothing(self):
+    def test_it_writes_an_empty_tests_setting_and_installs_nothing(self):
         assert init_tests_setting_problems() == []
 
-    # purlin: skill_init PROOF-7
-    def test_a_missing_jest_sentence_is_refused(self, monkeypatch):
+    # purlin: skill_init PROOF-15
+    def test_a_missing_suggestion_sentence_is_refused(self, monkeypatch):
         rel = skill_path('init')
         assert refusals(monkeypatch, init_tests_setting_problems, [
-            (rel, replace('Jest needs the package `jest-junit`, installed '
-                          'with\n`npm install --save-dev jest-junit`. '),
-             "%s does not carry 'Jest needs the package `jest-junit`'" % rel),
+            (rel, replace('the first `purlin:test` suggests the entry',
+                          'the first run fills it'),
+             "%s does not carry 'the first `purlin:test` suggests the "
+             "entry'" % rel),
         ]) == []
 
 
@@ -203,7 +218,7 @@ class TestSkillInit:
 # skill hands a person that the script does not take is an invocation the
 # script exits 2 on.
 SCAFFOLD_FLAGS = ('--project-root', '--gate', '--mutation', '--yes',
-                  '--update', '--add', '--dry-run')
+                  '--update', '--add')
 
 
 def scaffold_flag_problems():
