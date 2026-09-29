@@ -11,7 +11,6 @@
 # DERIVED LOCATIONS: the complete list. Add a row here when a new file starts
 # carrying a version literal, and `--check` starts guarding it in the same edit.
 #
-#   templates/config.json        .version   stamped into new projects by purlin:init
 #   .claude-plugin/plugin.json   .version   what the Claude plugin loader reports
 #   .purlin/config.json          .version   this repo's own project stamp (optional)
 #
@@ -28,7 +27,6 @@ VERSION_FILE="$ROOT/VERSION"
 
 # Derived locations, as "relative/path.json". Each one's `version` key is rewritten.
 DERIVED=(
-  "templates/config.json"
   ".claude-plugin/plugin.json"
   ".purlin/config.json"
 )
@@ -39,7 +37,6 @@ Usage: bash dev/bump_version.sh <semver>   Set VERSION and propagate to derived 
        bash dev/bump_version.sh --check    Verify derived locations match VERSION
 
 Derived locations (see the header comment for the authoritative list):
-  templates/config.json        .version
   .claude-plugin/plugin.json   .version
   .purlin/config.json          .version   (optional: only if the repo is itself a Purlin project)
 EOF

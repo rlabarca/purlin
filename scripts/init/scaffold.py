@@ -348,15 +348,16 @@ def min_strength_for(gate, mutation):
 
 def write_config(plan, plugin_root, existing, gate, host, tests,
                  mutation='none'):
-    """`.purlin/config.json`: the template's keys and no other.
+    """`.purlin/config.json`: `version`, then the template's keys, and no other.
 
-    Each value is the answer, what the answers derive, or what the project
-    already wrote. `tests` is the `tests` setting, one entry per suite, and
-    `ci` is the host read from the remote, or `none` where there is no remote
-    or it names neither host.
+    `version` is the plugin's `VERSION`. Each other value is the answer, what
+    the answers derive, or what the project already wrote. `tests` is the
+    `tests` setting, one entry per suite, and `ci` is the host read from the
+    remote, or `none` where there is no remote or it names neither host.
     """
     template = json.loads(_read(plugin_root, 'templates', 'config.json'))
-    config = dict(template)
+    config = {'version': None}
+    config.update(template)
     config.update((key, value) for key, value in (existing or {}).items()
                   if key in template)
     config.update({'version': _read(plugin_root, 'VERSION').strip(),

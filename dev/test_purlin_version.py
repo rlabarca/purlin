@@ -14,7 +14,6 @@ import sys
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 VERSION_FILE = os.path.join(PROJECT_ROOT, 'VERSION')
-CONFIG_TEMPLATE = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
 PLUGIN_MANIFEST = os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json')
 PACKAGE_DIR = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin')
 PROJECT_CONFIG = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
@@ -207,23 +206,6 @@ def assert_stale_version_fails(live_path, name, tmp_path):
     assert problem and '0.9.2' in problem and '0.10.0' in problem, problem
 
 
-# purlin: purlin_version PROOF-3
-def test_the_settings_template_carries_the_version_file():
-    assert_matches_version_file(CONFIG_TEMPLATE, 'templates/config.json')
-
-
-# purlin: purlin_version PROOF-19
-def test_a_template_with_no_version_key_fails(tmp_path):
-    assert_missing_key_fails(CONFIG_TEMPLATE, 'templates/config.json',
-                             tmp_path)
-
-
-# purlin: purlin_version PROOF-20
-def test_a_template_left_at_an_old_version_fails(tmp_path):
-    assert_stale_version_fails(CONFIG_TEMPLATE, 'templates/config.json',
-                               tmp_path)
-
-
 def _git(root, *args):
     subprocess.run(['git', *args], cwd=str(root), check=True,
                    capture_output=True, text=True)
@@ -332,7 +314,6 @@ def test_a_version_on_a_whole_line_comment_is_not_found(tmp_path):
 # --- RULE-7: the bump script and its check --------------------------------
 
 DERIVED = [
-    os.path.join('templates', 'config.json'),
     os.path.join('.claude-plugin', 'plugin.json'),
     os.path.join('.purlin', 'config.json'),
 ]
@@ -386,7 +367,6 @@ def check_line(output, rel):
     return lines[0][1:]
 
 
-TEMPLATE_REL = 'templates/config.json'
 MANIFEST_REL = '.claude-plugin/plugin.json'
 SETTINGS_REL = '.purlin/config.json'
 
@@ -407,7 +387,7 @@ def test_the_check_passes_a_project_that_agrees(tmp_path):
     root, script = fake_project(tmp_path, '9.8.7')
     ok = run_script(script, '--check')
     assert ok.returncode == 0, f"{ok.stdout}\n{ok.stderr}"
-    for rel in (TEMPLATE_REL, MANIFEST_REL, SETTINGS_REL):
+    for rel in (MANIFEST_REL, SETTINGS_REL):
         assert check_line(ok.stdout, rel) == ['ok', '9.8.7'], ok.stdout
 
 
@@ -420,18 +400,18 @@ def test_the_check_names_the_location_that_drifted(tmp_path):
         f"--check exited {bad.returncode} on a drifted tree, expected 1"
     assert check_line(bad.stdout, SETTINGS_REL) == \
         ['DRIFT', '1.2.3', '(expected', '9.8.7)'], bad.stdout
-    for rel in (TEMPLATE_REL, MANIFEST_REL):
-        assert check_line(bad.stdout, rel) == ['ok', '9.8.7'], bad.stdout
+    assert check_line(bad.stdout, MANIFEST_REL) == ['ok', '9.8.7'], \
+        bad.stdout
 
 
 # purlin: purlin_version PROOF-30
 def test_the_check_names_a_location_with_no_version_key(tmp_path):
     root, script = fake_project(tmp_path, '9.8.7')
-    write_version(root, TEMPLATE_REL, None)
+    write_version(root, MANIFEST_REL, None)
     bad = run_script(script, '--check')
     assert bad.returncode == 1, \
         f"--check exited {bad.returncode} with a key missing, expected 1"
-    assert check_line(bad.stdout, TEMPLATE_REL) == \
+    assert check_line(bad.stdout, MANIFEST_REL) == \
         ['FAIL', 'no', '"version"', 'key'], bad.stdout
 
 
@@ -454,7 +434,6 @@ def test_the_bump_skips_absent_settings_without_creating_them(tmp_path):
     assert run.returncode == 0, \
         f"bump failed with the settings file absent:\n{run.stdout}\n{run.stderr}"
     assert read_version_file(root) == '2.0.0'
-    assert read_version(root, TEMPLATE_REL) == '2.0.0'
     assert read_version(root, MANIFEST_REL) == '2.0.0'
     assert not (root / SETTINGS_REL).exists(), \
         "the bump created the absent .purlin/config.json"
@@ -468,8 +447,8 @@ def test_the_check_reports_absent_settings_and_passes(tmp_path):
         f"--check failed with the settings file absent:\n{check.stdout}"
     assert check_line(check.stdout, SETTINGS_REL)[0] == 'absent', \
         check.stdout
-    for rel in (TEMPLATE_REL, MANIFEST_REL):
-        assert check_line(check.stdout, rel) == ['ok', '2.0.0'], check.stdout
+    assert check_line(check.stdout, MANIFEST_REL) == ['ok', '2.0.0'], \
+        check.stdout
 
 
 # --- RULE-8: the one table row that describes the version field ----------

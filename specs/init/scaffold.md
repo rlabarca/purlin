@@ -20,7 +20,7 @@
 - RULE-2: With mutation testing on, each gate derives its own minimum test strength: none at `passed`, 70 at `strong` and 80 at `signed`; with it off the minimum is null at every gate
 - RULE-3: `--gate` answers the question without asking it, and a later run with no flag keeps the gate the config already names
 - RULE-4: An answer that is not one of the three gates is read as `passed` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently
-- RULE-5: The config init writes carries exactly `version`, `gate`, `mutation_engine`, `min_strength`, `audit_parallel`, `tests` and `ci` at every gate, and no other key, whatever the project's own file held; `audit_parallel` is 4 and is never asked; `templates/config.json` carries the same seven keys, with `tests` empty and `ci` `none`
+- RULE-5: The config init writes carries exactly `version`, `gate`, `mutation_engine`, `min_strength`, `audit_parallel`, `tests` and `ci` at every gate, and no other key, whatever the project's own file held; `audit_parallel` is 4 and is never asked; `templates/config.json` carries exactly six keys, in this order: `gate`, `mutation_engine`, `min_strength`, `audit_parallel`, `tests`, `ci`, with `tests` empty and `ci` `none`
 - RULE-8: init writes nothing into a project's test suite: no `conftest.py`, no Jest or Vitest configuration and no logger, and a runner configuration the project wrote is left as it was and not named in the summary
 - RULE-9: With mutation testing on, a Vitest, Jest or .NET project is told in one line that Stryker measures the breaks and that without it test strength is not measured
 - RULE-12: Raising the gate writes the setting and keeps every file an earlier run wrote; lowering it writes the setting and deletes nothing
@@ -66,7 +66,7 @@
 - PROOF-104 (RULE-3): A project set up once with `--gate strong` is set up again with no `--gate` and every question at its default; the gate question is not asked, and its settings still read `gate` `strong`, not the default `passed`
 - PROOF-4 (RULE-4): Init is run and `whenever` is typed at the gate question; it exits 0, prints the line `purlin: "whenever" is not a gate; reading it as passed.`, and the settings file reads `gate` `passed`
 - PROOF-5 (RULE-5): Init at `--gate strong` writes a settings file whose keys are exactly `audit_parallel`, `ci`, `gate`, `min_strength`, `mutation_engine`, `tests` and `version`, with `version` equal to the plugin's `VERSION` file and `audit_parallel` 4; the only question shown is the mutation question, and no line names `audit_parallel`
-- PROOF-54 (RULE-5): The settings template, `templates/config.json`, carries exactly the same seven keys; its `version` is the plugin's `VERSION` file, `tests` is an empty list and `ci` reads `none`
+- PROOF-54 (RULE-5): The settings template, `templates/config.json`, carries exactly six keys, in this order: `gate`, `mutation_engine`, `min_strength`, `audit_parallel`, `tests`, `ci`; `tests` is an empty list and `ci` reads `none`
 - PROOF-55 (RULE-5): A project whose settings carry `audit_parallel` 9 is set up again with no flag but `--yes`; its settings still read `audit_parallel` 9
 - PROOF-56 (RULE-5): A project whose settings carry `audit_parallel` 40, outside the range 1 to 16, is set up again with no flag but `--yes`; its settings read `audit_parallel` 4
 - PROOF-58 (RULE-5): A project whose settings carry a key `colour` beside the seven is set up again at `--gate passed`; the settings it writes hold exactly the seven keys and no `colour`

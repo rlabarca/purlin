@@ -1,5 +1,4 @@
 {
-  "version": "0.10.0",
   "gate": "passed",
   "mutation_engine": "none",
   "min_strength": null,

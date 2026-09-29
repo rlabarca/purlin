@@ -390,11 +390,10 @@ class TestTheSettings:
         assert 'audit_parallel' not in output
 
     # purlin: scaffold PROOF-54
-    def test_the_template_carries_the_same_seven_keys(self):
+    def test_the_template_carries_six_keys_in_order(self):
         template = json.loads(read(TEMPLATE_CONFIG))
-        assert sorted(template) == CONFIG_KEYS
-        assert template['version'] == read(
-            os.path.join(ROOT, 'VERSION')).strip()
+        assert list(template) == ['gate', 'mutation_engine', 'min_strength',
+                                  'audit_parallel', 'tests', 'ci']
         assert template['tests'] == []
         assert template['ci'] == 'none'
 

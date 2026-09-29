@@ -19,7 +19,6 @@ on:
   push:
     paths:
       - 'VERSION'
-      - 'templates/config.json'
       - '.claude-plugin/plugin.json'
       - '.purlin/config.json'
       - 'dev/bump_version.sh'
@@ -27,7 +26,6 @@ on:
   pull_request:
     paths:
       - 'VERSION'
-      - 'templates/config.json'
       - '.claude-plugin/plugin.json'
       - '.purlin/config.json'
       - 'dev/bump_version.sh'

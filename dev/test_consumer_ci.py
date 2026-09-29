@@ -297,9 +297,9 @@ def test_the_config_is_the_shape_this_release_reads():
     assert config['version'] == PURLIN_REF[1:]
     template = json.loads(read(os.path.join('templates', 'config.json'),
                                root=ROOT))
-    assert list(config) == list(template), (
+    assert list(config) == ['version'] + list(template), (
         'the fixture config carries %s where init writes %s'
-        % (list(config), list(template)))
+        % (list(config), ['version'] + list(template)))
 
 
 # purlin: host PROOF-87
