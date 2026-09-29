@@ -84,7 +84,7 @@ function leftToDo() {
 
    `width` is the share of the table the column asks for once every column
    holds its content. A value never breaks inside itself, `42 · 2 no test`
-   and `15 (+6 shared)` alike, so each value column is at least as wide as
+   and `15 (+6)` alike, so each value column is at least as wide as
    its widest value: the rows share the table's own tracks, so that width is
    the same in every row. The spec's name is the one text that gives way,
    cut with an ellipsis at `floor` pixels, its full path in the hover. Under
@@ -122,9 +122,9 @@ function proofsCell(feature) {
 }
 
 /* How many rules the spec owns, then how many it proves from an anchor it
-   requires or from a global anchor, as `15 (+6 shared)`, one value that
-   never breaks, with the hover naming each anchor and how many rules come
-   from it. Shared rules count toward the spec everywhere, and are listed
+   requires or from a global anchor, as `15 (+6)`, one value that never
+   breaks, with the hover saying what the second number is and naming each
+   anchor and how many rules come from it. Shared rules count toward the spec everywhere, and are listed
    once, under their anchor. A spec with none reads its own count alone, as
    `board.rules_cell` does. */
 function rulesCell(feature) {
@@ -132,9 +132,10 @@ function rulesCell(feature) {
   var own = ownRules(feature).length;
   if (!shared.length) { return '<span class="mono">' + own + '</span>'; }
   var more = shared.reduce(function (sum, pair) { return sum + pair[1]; }, 0);
-  return '<span' + hover(shared.map(function (pair) {
-      return pair[0] + DOT + pair[1];
-    })) + '>' + counts([[own + ' (+' + more + ' shared)', '', '']])
+  return '<span' + hover([own + (own === 1 ? ' rule' : ' rules') + ' of its own, and '
+      + more + ' more it must also meet, from shared rules:']
+    .concat(shared.map(function (pair) { return pair[0] + DOT + pair[1]; })))
+    + '>' + counts([[own + ' (+' + more + ')', '', '']])
     + '</span>';
 }
 
