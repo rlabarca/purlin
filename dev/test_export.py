@@ -8,18 +8,21 @@ command runs as a separate process, as a person runs it.
 What each group holds:
 
 *the file*        where it is written, its name, what it prints, that it
-                  commits nothing unless asked, and the project with no version
+                  commits nothing, the project with no version, and the
+                  commit the package names
 *the state*       `finished` and `not finished`, with the total, the count at
                   each step and what is left to do
 *the content*     what one rule carries, and what it never carries
-*what git holds*  evidence written and not committed is left out and named
+*what git holds*  evidence or a signature written and not committed is
+                  left out and named
 *the bytes*       the same tag gives the same bytes, from a second clone too
-*the fingerprint* `--check` on a package as written and on one edited after
+*the fingerprint* what it is taken over, and `--check` on a package as
+                  written and on one edited after
+*committing*      `--commit`, run once, run again, and beside a staged change
 
-Every rule of the spec here takes the gate: none is marked lower, so each
-carries every status up to it. Each evidence section records the machine it
-ran on, as the evidence format has it. The tagged project gets its package
-from the call `purlin:sign` makes before it tags, and its tag from git.
+Each evidence section records the machine it ran on, as the evidence format
+has it. The tagged project gets its package from the call `purlin:sign`
+makes before it tags, and its tag from git.
 """
 
 import base64
@@ -64,10 +67,12 @@ SPEC_WITH_A_THIRD_RULE = SPEC.replace(
     '\n\n## Proof',
     '\n- RULE-3: A locked account returns 423 (URS-042)\n\n## Proof')
 
-# The host name a runner lends, kept beside the machine and never compared.
-
 NO_VERSION = ('No version: nothing in this project states one. '
               'Name it with --release <version>.')
+
+NOT_COMMITTED = '%s is written and not committed; the package leaves it out.'
+
+PACKAGE_REL = '.purlin/evidence/package/2.1.0.json'
 
 
 def export(root, *args):
@@ -240,32 +245,19 @@ class TestTheFile:
                     'proj', 'signed', 'none', 50)
         assert package['commit'] == unsigned.head()
 
-    # purlin: package PROOF-10
-    def test_commit_commits_the_file_as_evidence_and_once(self, unsigned):
-        head = unsigned.head()
-        code, lines = export(unsigned.root, '--commit')
+    # purlin: package PROOF-30
+    def test_a_code_change_committed_after_the_evidence_is_the_commit_named(
+            self, unsigned):
+        evidence_at = unsigned.head()
+        write(os.path.join(unsigned.root, 'src', 'login.py'),
+              'def login(user, password):\n'
+              '    return 200 if password == "secret" else 403\n')
+        commit_all(unsigned.root, 'fix(login): refuse with 403')
+        code_change = unsigned.head()
+        assert code_change != evidence_at
+        code, lines = export(unsigned.root)
         assert code == 0, lines
-        assert lines[-1] == 'Package committed.', lines
-        assert git(unsigned.root, 'log', '-1',
-                   '--format=%s').stdout.strip() == \
-            'purlin: evidence at %s' % head[:7]
-        assert status(unsigned.root) == ''
-        committed = unsigned.head()
-        code, lines = export(unsigned.root, '--commit')
-        assert lines[-1] == 'Package unchanged.', lines
-        assert unsigned.head() == committed
-        assert read_package(unsigned.root)['commit'] == head
-
-    # purlin: package PROOF-10
-    def test_commit_leaves_a_change_staged_elsewhere_out(self, unsigned):
-        write(os.path.join(unsigned.root, 'src', 'login.py'), '# edited\n')
-        git(unsigned.root, 'add', 'src/login.py')
-        code, lines = export(unsigned.root, '--commit')
-        assert code == 0, lines
-        assert git(unsigned.root, 'show', '--name-only', '--format=',
-                   'HEAD').stdout.split() == [
-            '.purlin/evidence/package/2.1.0.json']
-        assert status(unsigned.root) == 'M  src/login.py\n'
+        assert read_package(unsigned.root)['commit'] == code_change
 
 
 # ---------------------------------------------------------------------------
@@ -520,13 +512,27 @@ class TestWhatGitHolds:
         unsigned.evidence(strength=90, runner='ci', source='ci',
                           commit_it=False, at='2026-09-14T12:00:00Z')
         code, lines = export(unsigned.root)
-        warning = ('.purlin/evidence/ci/login.json is written and not '
-                   'committed; the package leaves it out.')
+        warning = NOT_COMMITTED % '.purlin/evidence/ci/login.json'
         assert warning in lines, lines
         package = read_package(unsigned.root)
         assert package['warnings'] == [warning]
         assert [r['at'] for r in rule_of(package, 'RULE-2')['results']] == [
             '2026-09-13T12:00:00Z']
+
+    # purlin: package PROOF-31
+    def test_a_signature_not_committed_is_left_out_and_named(self, unsigned):
+        assert sign_module.sign_and_commit(
+            unsigned.root, [('login', 'RULE-2')], 'jane@acme.com')
+        git(unsigned.root, 'reset', '-q', 'HEAD~1')
+        [written] = [line[3:] for line in status(unsigned.root).splitlines()]
+        assert written.startswith('specs/auth/login.signatures/RULE-2.'), \
+            written
+        code, lines = export(unsigned.root)
+        assert code == 0, lines
+        assert NOT_COMMITTED % written in lines, lines
+        package = read_package(unsigned.root)
+        assert package['warnings'] == [NOT_COMMITTED % written]
+        assert rule_of(package, 'RULE-2')['signatures'] == []
 
 
 # ---------------------------------------------------------------------------
@@ -595,45 +601,95 @@ class TestTheBytes:
 # The fingerprint
 # ---------------------------------------------------------------------------
 
+def _exported(made):
+    """Export the project; the package file's path and its bytes."""
+    code, lines = export(made.root)
+    assert code == 0, lines
+    return (os.path.join(made.root, *PACKAGE_REL.split('/')),
+            read_bytes(made.root, PACKAGE_REL))
+
+
 class TestTheFingerprint:
 
     # purlin: package PROOF-16
     def test_check_passes_a_package_as_written(self, unsigned):
-        export(unsigned.root)
-        path = os.path.join(unsigned.root, '.purlin', 'evidence', 'package',
-                            '2.1.0.json')
+        path, _ = _exported(unsigned)
         code, lines = export(unsigned.root, '--check', path)
         assert (code, lines) == (0, ['The package matches its fingerprint.'])
-        assert re.match(r'^[0-9a-f]{64}$', read_package(unsigned.root)[
-            'fingerprint'])
-        assert read_package(unsigned.root)['fingerprint'] == \
-            fingerprint_by_hand(read_bytes(
-                unsigned.root, '.purlin/evidence/package/2.1.0.json'))
+
+    # purlin: package PROOF-32
+    def test_the_fingerprint_is_the_sha256_of_the_file_with_it_emptied(
+            self, unsigned):
+        _, data = _exported(unsigned)
+        recorded = json.loads(data.decode('utf-8'))['fingerprint']
+        assert re.match(r'^[0-9a-f]{64}$', recorded), recorded
+        assert recorded == fingerprint_by_hand(data)
 
     # purlin: package PROOF-17
     def test_check_names_an_edit_made_after(self, unsigned):
-        export(unsigned.root)
-        path = os.path.join(unsigned.root, '.purlin', 'evidence', 'package',
-                            '2.1.0.json')
-        with open(path, 'rb') as handle:
-            data = handle.read()
+        path, data = _exported(unsigned)
         edited = data.replace(b'"unsigned"', b'"signed"', 1)
         assert edited != data
         with open(path, 'wb') as handle:
             handle.write(edited)
         code, lines = export(unsigned.root, '--check', path)
-        assert code == 1
-        assert lines[0].startswith('The package does not match its '
-                                   'fingerprint: the package records the '
-                                   'fingerprint '), lines
+        assert code == 1, lines
         recorded = json.loads(data.decode('utf-8'))['fingerprint']
         gives = fingerprint_by_hand(edited)
         assert recorded != gives
         assert lines[0] == ('The package does not match its fingerprint: the '
                             'package records the fingerprint %s and its '
                             'content gives %s.' % (recorded, gives)), lines
+
+    # purlin: package PROOF-33
+    def test_check_refuses_carriage_returns_before_each_newline(
+            self, unsigned):
+        path, data = _exported(unsigned)
         with open(path, 'wb') as handle:
             handle.write(data.replace(b'\n', b'\r\n'))
         code, lines = export(unsigned.root, '--check', path)
-        assert code == 1
-        assert 'not in the canonical form' in lines[0], lines
+        assert (code, lines) == (1, [
+            'The package does not match its fingerprint: the fingerprint '
+            'matches the content, but the bytes are not in the canonical '
+            'form.'])
+
+
+# ---------------------------------------------------------------------------
+# Committing
+# ---------------------------------------------------------------------------
+
+class TestCommitting:
+
+    # purlin: package PROOF-10
+    def test_commit_commits_the_package_as_evidence_at_head(self, unsigned):
+        head = unsigned.head()
+        code, lines = export(unsigned.root, '--commit')
+        assert code == 0, lines
+        assert lines[-1] == 'Package committed.', lines
+        assert git(unsigned.root, 'log', '-1',
+                   '--format=%s').stdout.strip() == \
+            'purlin: evidence at %s' % head[:7]
+        assert status(unsigned.root) == ''
+
+    # purlin: package PROOF-34
+    def test_a_second_commit_over_the_same_evidence_is_unchanged(
+            self, unsigned):
+        evidence_at = unsigned.head()
+        code, lines = export(unsigned.root, '--commit')
+        assert (code, lines[-1]) == (0, 'Package committed.'), lines
+        committed = unsigned.head()
+        code, lines = export(unsigned.root, '--commit')
+        assert code == 0, lines
+        assert lines[-1] == 'Package unchanged.', lines
+        assert unsigned.head() == committed
+        assert read_package(unsigned.root)['commit'] == evidence_at
+
+    # purlin: package PROOF-35
+    def test_commit_leaves_a_change_staged_elsewhere_out(self, unsigned):
+        write(os.path.join(unsigned.root, 'src', 'login.py'), '# edited\n')
+        git(unsigned.root, 'add', 'src/login.py')
+        code, lines = export(unsigned.root, '--commit')
+        assert code == 0, lines
+        assert git(unsigned.root, 'show', '--name-only', '--format=',
+                   'HEAD').stdout.split() == [PACKAGE_REL]
+        assert status(unsigned.root) == 'M  src/login.py\n'
