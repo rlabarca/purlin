@@ -10,8 +10,8 @@
 ## Rules
 
 - RULE-1: `skills/sign/SKILL.md` opens with a frontmatter block whose `name` is `sign` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:sign`
-- RULE-2: The skill reads what waits for a person from `sync_status` as each rule's `left`, `to_test_by_hand` or `to_sign`, shows what the audit read and found with `scripts/review/ai_audit.py` before it writes anything, and writes the signature with `scripts/review/sign.py`, both scripts inside `${CLAUDE_PLUGIN_ROOT}`
-- RULE-3: The last section of `skills/sign/SKILL.md` names the next step and computes it from the cells the skill found, giving a `→` directive for each outcome
+- RULE-2: The skill reads what waits for a person from `sync_status` as each rule's `left`, `to_test_by_hand` or `to_sign`, says to read what the audit read and found before anything is written, and names `scripts/review/ai_audit.py`, which shows it, ahead of `scripts/review/sign.py`, which writes the signature, both inside `${CLAUDE_PLUGIN_ROOT}`
+- RULE-3: The last section of `skills/sign/SKILL.md` names the next step for each way the walk can end, pairing what it ended on with a `→` directive, except `Nothing left to do.`, which at the gates `passed` and `strong` names no command
 - RULE-4: The whole of `skills/sign/SKILL.md` is at most 185 lines
 - RULE-5: The skill states the two things that make a signature count, a last commit signed with any key and a signature still made over the rule, the proof, the test, the code, what the audit found and the machine each system's tests ran on, and that it counts whoever wrote it, whoever last committed to the test file, and on whatever branch carries it
 - RULE-6: The skill names the walk's three answers, sign, add a case and skip, and says that a skipped rule waits again next time
