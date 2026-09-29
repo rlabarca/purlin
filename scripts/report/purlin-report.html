@@ -119,6 +119,8 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
+.ptests p,.tests p{display:flex;align-items:flex-start;gap:var(--space-3)}
+.ptests .dot,.tests .dot{margin-top:.45em}
 [data-theme="light"] .specs>.rule,[data-theme="light"] .specs>.rule-proofs,[data-theme="light"] .specs>.desc,[data-theme="light"] pre.code{--text-secondary:var(--text-primary);--text-muted:var(--text-primary)}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 .kv{display:grid;grid-template-columns:170px 1fr;gap:var(--space-3) var(--space-6);margin:0;font-size:var(--ui-base)}
@@ -565,9 +567,11 @@ function proofWord(proof) {
 }
 function testLines(tests) {
   return (tests || []).map(function (t) {
-    return '<p><span class="mono">' + esc(t.file) + ' :: '
-      + esc(t.name).split('::').join('::<wbr>')
-      + '</span> ' + pill(TEST_WORDS[t.result] || 'not run') + '</p>';
+    var word = TEST_WORDS[t.result] || 'not run';
+    return '<p><span class="dot" role="img" title="' + esc(word)
+      + '" aria-label="' + esc(word) + '" style="color:var(--state-'
+      + tone(word) + ')"></span><span class="mono">' + esc(t.file) + ' :: '
+      + esc(t.name).split('::').join('::<wbr>') + '</span></p>';
   }).join('');
 }
 function proofDetail(proof) {

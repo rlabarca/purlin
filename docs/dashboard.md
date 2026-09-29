@@ -112,7 +112,8 @@ of the proofs reads `failed` or `no test`, and `no proof` where the rule has non
 or pressing Enter on it, opens the rule's proofs beneath the row and turns the glyph to `▼`; a
 screen reader hears whether it is open. Each proof reads its id, its words in full, its own
 result (`passed`, `failed`, `no test`, `not run` or `hand check`), its `@manual` and `@env`
-tags, and each of its tests as `tests/test_login.py :: test_no_cookie` with that test's result.
+tags, and each of its tests as `tests/test_login.py :: test_no_cookie` behind a dot in the colour of
+that test's result, with the result's word in the dot's hover.
 A rule with no proof shows the tests marked with its own id the same way. Every rule's proofs
 are closed when the page loads and when you open a spec, and opening one rule's leaves the
 others as they were. A filter that hides a rule hides its proofs with it. A project at `passed`

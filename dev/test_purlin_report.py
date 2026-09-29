@@ -1722,11 +1722,13 @@ def _rule_marked_with_its_id(browser, tmp_path, passing):
     page = open_board(browser, tmp_path / 'page', payload)
     open_rule(page, 'lock', 'RULE-1')
     lines = texts(page, '.tests p')
+    dots = test_dots(page, '.tests p')
+    tone = resolved(page, '--state-pass' if passing else '--state-fail')
     seen = list(page.evaluate(SEEN))
     page.close()
-    word = 'PASSED' if passing else 'FAILED'
-    assert lines == ['tests/test_lock.py :: test_five_wrong_passwords_lock '
-                     + word], lines
+    assert lines == ['tests/test_lock.py :: test_five_wrong_passwords_lock'], \
+        lines
+    assert dots == [['passed' if passing else 'failed', tone, 0]], dots
     found = sorted({match.group(0) for text in seen if text
                     for match in HIGHER_WORDS_NO_PROOFS.finditer(text)})
     assert found == [], found
@@ -1900,6 +1902,20 @@ def resolved(page, token):
         " const v = getComputedStyle(s).color; s.remove(); return v; }", token)
 
 
+def test_dots(page, selector='.rule-proofs .ptests p'):
+    """Each test line's dot: its hover, its colour, and how many badges the
+    line carries beside it."""
+    return page.eval_on_selector_all(
+        selector,
+        "els => els.map(e => { const d = e.firstElementChild;"
+        " return [d.classList.contains('dot') ? d.getAttribute('title') : null,"
+        " getComputedStyle(d).backgroundColor,"
+        " e.querySelectorAll('.pill').length]; })")
+
+
+test_dots.__test__ = False
+
+
 def proof_lines(page, selector='.rule-proofs .proof'):
     """What the open proofs beneath the rows read, one line per row."""
     return page.eval_on_selector_all(
@@ -1974,12 +1990,22 @@ def test_an_unfolded_rule_reads_each_proof(browser, tmp_path):
         'On Windows, open http://localhost/session and read that no cookie '
         'is set.',
         'Result', 'FAILED', 'Tags', '@env(windows)',
-        'Tests', 'tests/test_login.py :: test_no_cookie FAILED',
+        'Tests', 'tests/test_login.py :: test_no_cookie',
         'PROOF-5',
         'Read the Set-Cookie header of a 200 response and verify it carries '
         'Secure.',
         'Result', 'PASSED',
-        'Tests', 'tests/test_login.py :: test_secure_flag PASSED']
+        'Tests', 'tests/test_login.py :: test_secure_flag']
+    page.close()
+
+
+# purlin: purlin_report PROOF-180
+def test_a_test_line_starts_with_a_dot_in_its_results_colour(browser,
+                                                             tmp_path):
+    page = unfolded(browser, tmp_path, 'login', 'RULE-4')
+    assert test_dots(page) == [
+        ['failed', resolved(page, '--state-fail'), 0],
+        ['passed', resolved(page, '--state-pass'), 0]]
     page.close()
 
 
@@ -2030,7 +2056,8 @@ def test_a_rule_with_no_proof_shows_the_test_marked_with_its_id(browser,
     assert toggles(page)['RULE-3']['label'] == 'no proof'
     page.click(toggle_for('login', 'RULE-3'))
     assert proof_lines(page) == [
-        'Tests', 'tests/test_login.py :: test_locks PASSED']
+        'Tests', 'tests/test_login.py :: test_locks']
+    assert test_dots(page) == [['passed', resolved(page, '--state-pass'), 0]]
     page.close()
 
 

@@ -109,6 +109,8 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
+.ptests p,.tests p{display:flex;align-items:flex-start;gap:var(--space-3)}
+.ptests .dot,.tests .dot{margin-top:.45em}
 /* The light theme's sunken ground is the darkest tan the page draws on, and
    the secondary and muted inks measure under 7 to 1 there, so text on it is
    set in the primary ink, which measures above. */

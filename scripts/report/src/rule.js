@@ -161,14 +161,17 @@ function proofWord(proof) {
   return word === 'hand check' && !level('strong') ? 'manual' : word;
 }
 
-/* Tests, one line each, `file :: name` and the word its run gave it. A
-   narrow line may break after a `::`, between a test's class and its name,
-   rather than inside either. */
+/* Tests, one line each: a dot in the colour of the word its run gave it,
+   the word in the dot's hover, then `file :: name`. A narrow line may break
+   after a `::`, between a test's class and its name, rather than inside
+   either. */
 function testLines(tests) {
   return (tests || []).map(function (t) {
-    return '<p><span class="mono">' + esc(t.file) + ' :: '
-      + esc(t.name).split('::').join('::<wbr>')
-      + '</span> ' + pill(TEST_WORDS[t.result] || 'not run') + '</p>';
+    var word = TEST_WORDS[t.result] || 'not run';
+    return '<p><span class="dot" role="img" title="' + esc(word)
+      + '" aria-label="' + esc(word) + '" style="color:var(--state-'
+      + tone(word) + ')"></span><span class="mono">' + esc(t.file) + ' :: '
+      + esc(t.name).split('::').join('::<wbr>') + '</span></p>';
   }).join('');
 }
 
