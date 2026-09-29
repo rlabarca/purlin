@@ -1,9 +1,10 @@
 # Feature: skill_spec
 
 > Description: What `skills/spec/SKILL.md` must say. The spec skill turns a requirement in any
->   form into rules and proofs, so its text decides how ids are allocated and how the
->   skill hands over to the build.
-> Scope: skills/spec/SKILL.md
+>   form into rules and proofs, so its text decides how ids are allocated, how each proof is
+>   shaped, which the guide `references/spec_quality_guide.md` sets, and how the skill hands
+>   over to the build.
+> Scope: skills/spec/SKILL.md, references/spec_quality_guide.md
 > Stack: markdown, Claude Code skill definition
 
 ## Rules
@@ -11,9 +12,10 @@
 - RULE-1: `skills/spec/SKILL.md` opens with a frontmatter block whose `name` is `spec` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec`
 - RULE-2: The skill allocates rule and proof ids against `origin/main`, read with `git show origin/main:<spec>`, never against the working tree
 - RULE-3: The skill closes by naming `purlin:build` in one fixed line, `Spec saved: <name>. Next: purlin:build <name>`, with nothing printed after it, and never starts building itself
-- RULE-4: The whole of `skills/spec/SKILL.md` is at most 210 lines [level: passed]
+- RULE-4: The whole of `skills/spec/SKILL.md` is at most 210 lines
 - RULE-5: The skill writes `> Scope:` on every spec it creates, naming the files the requirement touches or the paths `purlin:build` will create, and says that a spec naming no files has its tests run on every `purlin:test` and cannot be signed at the gate `signed`
 - RULE-6: Before it saves, the skill prints each rule with its proofs under it and asks whether to change any, saves the spec only once the person is satisfied, and drafts every proof against the guideline for a good proof
+- RULE-7: The skill writes each proof as one case, one starting situation and one action in at most 60 words, with a refusal or a boundary as a proof of its own, and sends the reader to the guide's `One proof, one case`, which says the same
 
 ## Proof
 
@@ -23,3 +25,6 @@
 - PROOF-4 (RULE-4): Read `skills/spec/SKILL.md` and count its lines; verify the count is at most 210. Appending prose until the file passes 210 lines fails, and the failure reports the count it found beside the ceiling
 - PROOF-5 (RULE-5): The spec skill says, in one sentence, "Write `> Scope:` on every spec you create", naming "the files the requirement touches" and "the paths `purlin:build` will create"; in one sentence it says of "A spec that names no files" that "every run includes it" and that "at the gate `signed` its rules cannot be signed"; and its numbered step that writes the metadata names `> Scope:`. A copy of the skill with the sentence that says to write `> Scope:` deleted fails the check, which names that sentence as missing; a copy without "the files the requirement touches", or without "at the gate `signed`", is reported as having no sentence that carries all of it; a copy whose metadata step drops `> Scope:` is reported
 - PROOF-6 (RULE-6): The spec skill, read with its line wrapping ignored, carries "Print each rule with its proofs under it and ask whether to change any", "Save the spec when the person is satisfied", "Draft every proof against `references/spec_quality_guide.md`, \"Writing proofs\"" and "at least one failure case", and in its numbered procedure the step that prints the rules comes before the step that saves the spec. A copy of the skill with the step that prints the rules deleted fails the check, which names that step as missing; a copy with the print and save steps swapped is reported as saving the spec before it prints the rules; a copy that drafts proofs against "the guide" rather than the guideline is reported
+- PROOF-7 (RULE-7): The spec skill says, in one sentence, `Write each proof as one case`, `in at most 60 words`, `a refusal or a boundary as a proof of its own` and `"One proof, one case"`, and the guide has a section headed `One proof, one case` that carries `at most 60 words`
+- PROOF-8 (RULE-7): A copy of the spec skill with `, and a refusal or a boundary as a proof of its own` deleted is reported as having no sentence that carries all of it
+- PROOF-9 (RULE-7): A copy of the guide whose section `One proof, one case` no longer says `at most 60 words` is reported as not stating the limit

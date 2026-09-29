@@ -12,6 +12,8 @@ from skill_checks import (carries, flat, frontmatter_problems,
                           section, sections, sentence_with,
                           skill_ceiling_problems, skill_path, swap_first)
 
+GUIDE = 'references/spec_quality_guide.md'
+
 
 class TestSkillSpec:
 
@@ -108,6 +110,44 @@ class TestSkillSpec:
              '%s procedure does not name > Scope: in the metadata step'
              % rel),
         ]) == []
+
+    # purlin: skill_spec PROOF-7
+    def test_it_writes_each_proof_as_one_case(self):
+        assert one_case_problems() == []
+
+    # purlin: skill_spec PROOF-8
+    def test_a_skill_without_the_refusal_case_is_refused(self, monkeypatch):
+        rel = skill_path('spec')
+        assert refusals(monkeypatch, one_case_problems, [
+            (rel, resub(r', and a refusal or a boundary as a proof of its\s+'
+                        r'own'),
+             "%s has no sentence carrying all of 'Write each proof as one "
+             "case'" % rel),
+        ]) == []
+
+    # purlin: skill_spec PROOF-9
+    def test_a_guide_without_the_limit_is_refused(self, monkeypatch):
+        assert refusals(monkeypatch, one_case_problems, [
+            (GUIDE, resub(r'(^### One proof, one case\n.*?)at\s+most 60 '
+                          r'words', r'\1briefly'),
+             "%s section 'One proof, one case' does not state 'at most 60 "
+             "words'" % GUIDE),
+        ]) == []
+
+
+def one_case_problems():
+    problems = sentence_with(skill_path('spec'), [
+        'Write each proof as one case', 'in at most 60 words',
+        'a refusal or a boundary as a proof of its own',
+        '"One proof, one case"'])
+    body = re.search(r'^### One proof, one case\n(.*?)(?=^#)', read(GUIDE),
+                     re.S | re.M)
+    if body is None:
+        problems.append("%s has no section 'One proof, one case'" % GUIDE)
+    elif 'at most 60 words' not in flat(body.group(1)):
+        problems.append("%s section 'One proof, one case' does not state "
+                        "'at most 60 words'" % GUIDE)
+    return problems
 
 
 def spec_id_problems():

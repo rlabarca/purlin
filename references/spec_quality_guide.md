@@ -5,8 +5,8 @@ metadata fields, see [references/formats/spec_format.md](formats/spec_format.md)
 bad-to-good rewrites taken from real projects, see
 [references/rule_examples.md](rule_examples.md). For what the AI audit checks, and
 what a person checks after it, see
-[references/review_criteria.md](review_criteria.md). For what the gate and each level ask
-of a rule, see [references/hard_gates.md](hard_gates.md).
+[references/review_criteria.md](review_criteria.md). For what each gate asks of a rule, see
+[references/hard_gates.md](hard_gates.md).
 
 ## Writing rules
 
@@ -27,8 +27,8 @@ Every rule must pass one question: **if a developer rebuilt this feature from on
 spec, would they get this wrong without this rule?**
 
 If the answer is "no, they would figure it out" or "QA would catch it immediately", it
-is not a rule. Cut it. This question comes before everything else: coverage, levels
-and proof text are all wasted on a rule that does not earn its line.
+is not a rule. Cut it. This question comes before everything else: coverage and proof
+text are both wasted on a rule that does not earn its line.
 
 Two more questions for every candidate rule:
 
@@ -78,22 +78,6 @@ Then the supporting dimensions: each distinct error response, boundary condition
 as maximum lengths and retry limits, performance constraints, and what happens when a
 dependency fails.
 
-### Choosing the level
-
-One mark goes at the end of a rule line: `[level: passed|strong|signed]`. It says what the rule
-must have to meet the gate, in the gate's own words: tests; tests and the audit; tests, the
-audit and a signature. It is read at the `strong` gate and above: under `passed` it is never
-asked for and changes nothing. A rule with no mark takes the project's gate, and a mark above
-the gate is read as the gate.
-
-Leave the mark off where the rule needs everything the gate asks for. Mark `[level: passed]`
-where a passing test is the whole of what the rule needs: the audit does not read it and no
-one signs it. Under the gate `signed`, mark `[level: strong]` where an audit that found the
-tests sound is enough and no person needs to sign the rule.
-
-Mark rules as you write them: marking a spec later is a separate pass over every line. A
-signature logs the rule's level and does not lock it, so a new mark stales no signature.
-
 ## Writing proofs
 
 A proof is one line saying how a rule will be shown to hold: what is done, what is observed,
@@ -106,8 +90,8 @@ every proof against it, with the checks in
 
 Proofs are optional at the gate `passed`, where a rule's passing tests are the whole of its
 evidence: a test marked `purlin: <feature> RULE-<n>` answers a rule that has no proof. From
-`strong` up every rule whose level is `strong` or `signed` needs at least one proof, and one
-whose test passes with no proof reads `no proof` and does not meet the gate.
+`strong` up every rule needs at least one proof, and one whose test passes with no proof reads
+`no proof` in its strong cell.
 
 Each point below carries a pair: a poor proof, and the one that replaces it.
 
@@ -172,10 +156,13 @@ mechanics: no call, no assertion, no mock, no fixture, no spy.
 
 The first is a test. The second is a proof, and any test that shows it will do.
 
-### One proof, one thing shown
+### One proof, one case
 
-Each proof shows one thing, so a failure says which thing broke. Several proofs may serve one
-rule, as the allowed case and the refused case do; one test may carry out several proofs.
+A proof holds one case: one starting situation, one action, and the results seen from it, in
+at most 60 words. A refusal or a boundary is a case of its own, so it is a proof of its own.
+Several proofs may serve one rule, and one test may carry out several proofs; a failure then
+says which case broke. The AI audit notes a proof longer than 60 words, or one holding a second
+case, and does not find the rule weak for it.
 
 - Poor: "Change the password, sign out, sign back in with the new password and check the
   activity log."
@@ -248,18 +235,17 @@ or are `@manual`. Where no test could observe what the proof names, the proof is
 
 `@manual` means there is no test, so nothing can run and there is no test body for the AI
 audit to read. The rule's strong cell reads `manual test` with the reason `manual proof`.
-A signature file carrying a one-line note meets it, written by a person:
-`purlin:sign <feature> RULE-N --note "<what you saw>"`. CI never writes that file, at
-any level and under any gate. Use `@manual` where judgment is the only instrument,
-and keep the rule's `> Scope:` tight: when a scope file changes, the signature goes
-stale and someone must look again.
+A person checks it and signs, in one act, at any gate: `purlin:sign <feature> RULE-N`, with
+`--note "<what you saw>"` when they write what they saw. CI never writes that signature,
+under any gate. Use `@manual` where judgment is the only instrument, and keep the rule's
+`> Scope:` tight: when a scope file changes, the signature ends and someone must look again.
 
 ## When a rule is stuck
 
 Find the rule in the status table, read the cell that blocks it, then read the row. The
 gate decides how many cells exist: under `passed` only the first, under `strong` the first
-two, under `signed` all three. A rule's level decides which of them block it. A cell reading
-`waiting` is never the one that blocks: the cell below it is, and its row says what moves both.
+two, under `signed` all three. A cell reading `waiting` is never the one that blocks: the cell
+below it is, and its row says what moves both.
 
 | Cell | Word | What it means | What moves it |
 |---|---|---|---|
@@ -274,10 +260,9 @@ two, under `signed` all three. A rule's level decides which of them block it. A 
 | strong | `weak`, with a sentence the model wrote | The AI audit settled the question and observed that the test does not read what the proof names. | Write the assertion the sentence asks for. `purlin:build`, then `purlin:audit`. |
 | strong | `no proof` | The rule's test passes and no proof says what it shows, so the audit has nothing to read the test against. | Write the proof with `purlin:spec`, then `purlin:audit`. |
 | strong | `manual test` | The proof is `@manual`, so no test can be written and a person runs it. | `purlin:sign <feature> RULE-N --note "<what you saw>"`. |
-| strong | `not audited` | The rule's level is `strong` or `signed` and no audit has read this rule, proof and test, so the evidence holds no audit entry for the current hashes. | `purlin:audit`, which writes the entry into the evidence. |
+| strong | `not audited` | No audit has read this rule, proof and test, so the evidence holds no audit entry for the current hashes. | `purlin:audit`, which writes the entry into the evidence. |
 | strong | `weak`, `the AI audit could not decide: ...` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:build`: make the proof or the test say plainly what is observed; the next `purlin:audit` reads the rule again. |
-| signed | `unsigned` | No signature file for the current hashes, and the rule's level is `signed`, so it needs one. | `purlin:sign <feature> RULE-N`, which writes it in a signed commit. |
-| signed | `stale` | The rule text, the proof text, the test body or what the audit found changed after the signature. | Read what changed, then sign again or fix what broke. |
+| signed | `unsigned` | No signature matches the rule as it stands: none was made, or the rule, its proof, its test, its feature's code, what the audit found or the machine its tests ran on changed after it. | `purlin:sign <feature> RULE-N`, which writes it in a signed commit. |
 
 ## When a test fails, fix the code
 

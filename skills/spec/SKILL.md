@@ -91,22 +91,9 @@ be signed and no tag is written.
 
 ## Rules
 
-One claim per line, in the present tense, saying what the software does rather than how. One
-tag sits at the end of the line and is read off it, so the claim text stays clean:
-
-| Tag | Values | Default | What it decides |
-|-----|--------|---------|-----------------|
-| `[level: ...]` | `passed`, `strong`, `signed` | the project's gate | What the rule must have to meet the gate, in the gate's own words: tests; tests and the audit; tests, the audit and a signature. The gate is the ceiling, so a mark above it is read as the gate |
-
-A rule with no tag takes the project's gate, so leave it off unless the rule needs less than
-the rest.
-
-**Write no level tag at the gate `passed`.** Nothing reads one there, and a tag a reader
-cannot act on is a tag they have to ask about. At `strong` and above leave every rule
-unmarked and mark the exceptions: a rule whose evidence is its tests alone takes
-`[level: passed]`, and under `signed` a rule that needs the audit and no signature takes
-`[level: strong]`. A signature logs the rule's level and does not lock it, so re-marking a
-rule stales no signature.
+One claim per line, in the present tense, saying what the software does rather than how.
+Every rule is asked for what the project's gate asks, so a rule line carries the claim and
+nothing else.
 
 A rule about what the software must never do is an ordinary rule with a proof that asserts
 absence. There is no separate syntax for it.
@@ -116,15 +103,16 @@ absence. There is no separate syntax for it.
 Draft every proof against `references/spec_quality_guide.md`, "Writing proofs", the one home
 of what a good proof is: what is done, what is observed, the expected value, at least one
 failure case, and no file path or function name, so a person who cannot read code can judge
-it. QA reads every proof you draft. Write at least one proof for every rule: the gate
-`passed` lets a rule go without one, and from `strong` up a rule without one does not meet the
-gate. Several proofs may name one
-rule, and one proof may name several rules when it drives a flow through all of them:
-`- PROOF-7 (RULE-2, RULE-3, RULE-4): ...`.
+it. QA reads every proof you draft. Write each proof as one case, one starting situation and
+one action in at most 60 words, and a refusal or a boundary as a proof of its own, as the
+guide's "One proof, one case" says. Write at least one proof for every rule: the gate `passed`
+lets a rule go without one, and from `strong` up a rule without one reads `no proof`. Several
+proofs may name one rule, and one proof may name several rules when it drives a flow through
+all of them: `- PROOF-7 (RULE-2, RULE-3, RULE-4): ...`.
 
-Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has no test: at
-`strong` and above its rule reads `manual test` until a signature carrying a one-line note
-settles it, and that note is always written by a person.
+Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has no test: a
+person checks it and signs with `purlin:sign`, at any gate, writing what they saw when they
+choose to.
 
 Add `@env(windows)`, `@env(macos)` or `@env(linux)` when the claim can only be proved on one
 operating system. Those three are the whole vocabulary. A proof with no `@env` is satisfied by
@@ -150,14 +138,14 @@ already names the old id, so do not do it by hand.
 `purlin:build` calls this skill when a rule turns out to be wrong while the code is being
 written: the claim contradicts another rule, or it cannot be observed as stated. Fix the rule
 text in place, keep the id, and say in the commit what changed and why. Changing rule text
-stales any signature bound to it, which is the point: a person has to look again.
+ends any signature bound to it, which is the point: a person has to look again.
 
 ## After a merge conflict
 
 Two branches that allocated the same number before either fetched leave a spec with one id
 twice. Keep both rules, give the incoming one the next free number, and move its test markers
 and its signature filenames with it. When the conflict is two different texts on the same line,
-show both versions, ask which survives, and say which signatures that answer stales.
+show both versions, ask which survives, and say which signatures that answer ends.
 
 Two branches that advanced the same anchor pin resolve to the newer sha.
 
@@ -174,4 +162,4 @@ Spec saved: <name>. Next: purlin:build <name>
 Never start the build yourself: the person runs `purlin:build` when they choose to.
 
 When you edited an existing spec rather than creating one, say what moved before the offer:
-which rules were added, which text changed, and which signatures that stales.
+which rules were added, which text changed, and which signatures that ends.
