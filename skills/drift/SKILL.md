@@ -108,4 +108,4 @@ One line per kind of thing the view showed, in the order below, then stop.
 | A test file changed | `→ Run: purlin:test <feature>` |
 | A rule to test by hand or to sign | `→ Run: purlin:sign` |
 | Spec files not committed | `→ Commit the spec files, then run purlin:drift again.` |
-| Only the first line, or only `No rule was added, ...` | `→ Nothing changed that the specs, the tests or the signatures need.` |
+| Only the first line, or only `No rule was added, ...` | `→ Nothing changed that the specs, the tests or the signatures need. Run: purlin:status` |
