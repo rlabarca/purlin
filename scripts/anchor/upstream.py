@@ -206,7 +206,7 @@ def compose_copy(content, source_line, pinned, note=None):
     """The local copy: the author's body with the tracking fields after its title."""
     body = strip_tracking(content or '').lstrip('\n')
     fields = ['> Source: %s' % source_line, '> Pinned: %s' % pinned]
-    for text in ([note] if isinstance(note, str) else list(note or ())):
+    for text in note or ():
         if text and '> Note: %s' % text not in body:
             fields.append('> Note: %s' % text)
     heading = _HEADING_RE.search(body)

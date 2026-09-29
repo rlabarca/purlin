@@ -24,7 +24,7 @@
 - RULE-11: `sync <name>` rewrites the copy from the source at its new head, advances `> Pinned:`, and reports the rule delta as added, removed and changed ids plus a one-line summary
 - RULE-12: A source whose rules did not move reports no rule changes and still advances the pin
 - RULE-15: One run reaches each distinct source once, however many anchors are pinned to it
-- RULE-21: `--help` names `add` and `sync`, and a call with no arguments exits 2 naming `--project-root`
+- RULE-21: `--help` names `add` and `sync`
 - RULE-22: Every file `add` and `sync` write lies under the project root they were given
 - RULE-23: A sync keeps every `> Note:` line the local copy carried, in order, beside the tracking fields it rewrites, because a note is the consumer's own text
 - RULE-24: `add` refuses a source that is not a spec in Purlin's format kept in a git repository, whether a file on disk, a description in words or a file in a repository holding no rule: it prints `<name>: not added. <what> is not a spec in Purlin's format kept in a git repository. Run purlin:anchor create <name> to write its rules in this project.`, writes nothing and exits 2
@@ -32,6 +32,7 @@
 - RULE-26: `sync --check` exits 1 when a pin is behind
 - RULE-27: `sync --check` exits 2 when a named anchor does not exist or a source cannot be read
 - RULE-28: Without `--json`, each anchor behind gets a line naming it and the `purlin:anchor sync <name>` that fixes it
+- RULE-29: A call with no arguments exits 2 naming `--project-root`
 
 ## Proof
 
@@ -60,7 +61,7 @@
 - PROOF-15 (RULE-15): Two anchors are pinned from the same repository; `sync --check` returns two rows, and exactly one process it starts names that repository
 - PROOF-38 (RULE-15): Two anchors are pinned from the same repository and a new version is published, so both are behind; `sync` with no name returns two rows reading `synced`, and exactly one `git clone` it starts names that repository
 - PROOF-21 (RULE-21): `--help` exits 0 and its text names the commands `add` and `sync`
-- PROOF-37 (RULE-21): The script is run with no arguments at all from inside a project; it exits 2 and prints text naming `--project-root`
+- PROOF-37 (RULE-29): The script is run with no arguments at all from inside a project; it exits 2 and prints text naming `--project-root`
 - PROOF-22 (RULE-22): An anchor is added, a new version is published and the anchor is synced; the folder around the project still holds exactly its four entries, `policies.git`, `policies_work`, `project` and `project.git`
 - PROOF-23 (RULE-23): An anchor's copy carries the notes `run the setup script first` and `the pin moves on each release` under its tracking lines; after a new version is published and the anchor is synced, the copy carries the new pin and both `> Note:` lines, each once and in that order
 - PROOF-40 (RULE-24): `policy.txt`, a text file in the project, is added as the anchor `refunds`; it exits 2 and prints `refunds: not added. policy.txt is not a spec in Purlin's format kept in a git repository. Run purlin:anchor create refunds to write its rules in this project.`, starts no process, and creates no `specs/_anchors/`
