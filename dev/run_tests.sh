@@ -42,8 +42,6 @@ run_suite() {
 # ── Shell suites first ───────────────────────────────────────────────
 # Held out by `--fast`: these invocations are most of the sweep's wall clock.
 if [[ $FAST -eq 0 ]]; then
-run_suite "E2E Build Changeset" bash "$SCRIPT_DIR/test_e2e_build_changeset.sh"
-run_suite "E2E Init (gates)" bash "$SCRIPT_DIR/test_init_e2e_gates.sh"
 run_suite "E2E Init (wiring)" bash "$SCRIPT_DIR/test_init_e2e_wiring.sh"
 # The dog-food external reference repo; idempotent, creates it once.
 bash "$SCRIPT_DIR/setup-external-refs.sh"

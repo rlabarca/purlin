@@ -4,14 +4,15 @@
 # Init adds nothing to a C# project's tests. The project file and the marked
 # test are committed before init runs, so git answers what init changed or
 # added; init itself needs no `dotnet`, so this runs on every host but
-# Windows, which has no POSIX shell for it.
+# Windows, which has no POSIX shell for it: there it exits 1, since a suite
+# judged by how it ends has no way to say it did not run.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 
-# Windows is skipped: this needs a POSIX shell. The host check is written
-# once, in the file this sources.
+# Windows does not run it: this needs a POSIX shell. The host check is
+# written once, in the file this sources.
 # shellcheck source=dev/windows_skip.sh
 . "$HERE/windows_skip.sh"
 purlin_skip_on_windows
