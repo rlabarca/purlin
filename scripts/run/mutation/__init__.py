@@ -118,7 +118,7 @@ def execute(command, cwd, report_path=None, timeout=None):
     environment = dict(os.environ)
     environment['GIT_TERMINAL_PROMPT'] = '0'
     try:
-        process = subprocess.Popen(command, cwd=cwd or '.',
+        process = subprocess.Popen([*command], cwd=cwd or '.',
                                    stdin=subprocess.DEVNULL,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT,
@@ -217,12 +217,28 @@ def timed_out_feature(engine, feature, scope_files, tests_by_rule):
                           'unavailable')[feature]
 
 
-def run_breaks(project_root, engine, scope_by_feature, tests_by_rule):
+def runs_here(engine, os_name=None):
+    """Whether `engine` can run on this operating system.
+
+    False only for `mutmut` on Windows: `os_name == 'windows'`, or, with no
+    `os_name` given, `os.name == 'nt'`. True for every other engine and
+    system.
+    """
+    if engine != 'mutmut':
+        return True
+    if os_name is None:
+        return os.name != 'nt'
+    return os_name != 'windows'
+
+
+def run_breaks(project_root, engine, scope_by_feature, tests_by_rule=None):
     """Break the scope files of every feature and report what the tests caught.
 
-    `scope_by_feature` is `{feature: [scope file paths]}` and `tests_by_rule`
-    is `{(feature, "RULE-N"): [{"file", "name"}]}`, the tests the evidence
-    ties to each rule.
+    `scope_by_feature` is `{feature: [scope file paths]}`. The run passes it
+    alone and reads only `scope_score`: test strength is one share per
+    feature. `tests_by_rule`, `{(feature, "RULE-N"): [{"file", "name"}]}`,
+    is optional and fills the per-rule entries only for a caller that gives
+    it.
 
     An engine name outside `ENGINES`, or a binary that is not installed,
     answers `engine: none` with the reason in words rather than raising.
