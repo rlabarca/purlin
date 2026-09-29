@@ -14,9 +14,9 @@
 - RULE-3: A notification produces no response, and input that is not JSON answers error code `-32700`
 - RULE-4: An unknown tool name and an unknown method each answer error code `-32601`
 - RULE-5: Stdout carries JSON-RPC responses and nothing else; the startup line naming the version and the root goes to stderr
-- RULE-6: A call may name its own workspace with `project_root`, which is resolved and used for that call alone; without it the tool uses the root the server resolved at startup
-- RULE-7: A root holding no `.purlin/config.json` answers with a line naming that root, how it was chosen and what to run, rather than reporting a project with nothing in it
-- RULE-8: A tool that raises answers with the text `Error running <tool>` and the message, so one bad call never ends the session
+- RULE-6: A call may name its own workspace with `project_root`, which is resolved, a leading `~` standing for the home folder, and used for that call alone; without it the tool uses the root the server resolved at startup
+- RULE-7: A tool called on a root holding no `.purlin/config.json` answers only with that root, how it was chosen and what to do, rather than reporting or writing a project there
+- RULE-8: A tool that raises answers the text `Error running <tool>: <message>`, so one bad call never ends the session
 - RULE-9: The configuration tool reads the whole of `.purlin/config.json` or one named key, and a write sets that key in `.purlin/config.json`
 - RULE-10: A write naming no key answers that a key is required, and an action that is neither read nor write answers that the action is unknown, in both cases leaving the config as it was
 - RULE-22: The plugin manifest starts the server through `sh` and the interpreter resolver, and the last argument it passes names `scripts/mcp/purlin/server.py`
@@ -31,6 +31,7 @@
 - PROOF-4 (RULE-4): A client calls the tool `nope`, which the server does not serve; the answer is an error with the code `-32601` and the message `Unknown tool: nope`
 - PROOF-127 (RULE-4): A client sends a request for the method `nope/at/all`, which the server does not know; the answer is an error with the code `-32601` and the message `Unknown method: nope/at/all`
 - PROOF-5 (RULE-5): A client starts the server as its own process in a workspace folder and sends `initialize`; stdout holds exactly 1 line, the JSON-RPC answer, and stderr holds the line `Purlin MCP server v<version> started (root: <root>, ...)`, the version being the text of the `VERSION` file and the root that folder
+- PROOF-138 (RULE-5): A client starts the server as its own process in a workspace and calls `sync_status`, `drift` and the configuration tool, with the ids 1, 2 and 3; stdout holds exactly 3 lines, each a JSON-RPC answer, with the ids 1, 2 and 3 in that order
 - PROOF-6 (RULE-6): The server is started in an empty folder, and a client calls `sync_status` with `project_root` naming a workspace that holds the spec `login`; the answer is that workspace's status table, opening `Purlin status: proj`, and names `login`
 - PROOF-128 (RULE-6): The server is started in an empty folder; a client calls `sync_status` naming a workspace with `project_root`, then calls it again naming none; the second answer is for the empty startup folder and opens `No Purlin workspace at` followed by that folder's path
 - PROOF-129 (RULE-6): The server is started in an empty folder, the home folder holds the workspace `ws` with the spec `login`, and a client calls `sync_status` with `project_root` written as `~/ws`; the answer is that workspace's status table, opening `Purlin status: proj`, and names `login`

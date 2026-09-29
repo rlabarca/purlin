@@ -92,6 +92,20 @@ class TestTransport:
         assert os.path.realpath(started.group(2)) == os.path.realpath(
             project.root), stderr
 
+    # purlin: server PROOF-138
+    def test_stdout_holds_one_answer_per_tool_call_and_nothing_else(
+            self, project):
+        requests = [_call('sync_status', req_id=1),
+                    _call('drift', {'since': '1'}, req_id=2),
+                    _call('purlin_config', {'action': 'read'}, req_id=3)]
+        stdout, _stderr = _child(
+            project.root, ''.join(json.dumps(r) + '\n' for r in requests))
+        lines = stdout.splitlines()
+        assert len(lines) == 3, stdout
+        answers = [json.loads(line) for line in lines]
+        assert [(a['jsonrpc'], a['id']) for a in answers] == [
+            ('2.0', 1), ('2.0', 2), ('2.0', 3)], stdout
+
     # purlin: server PROOF-2
     def test_tools_list_names_the_three_tools_each_taking_an_optional_root(
             self, project):
