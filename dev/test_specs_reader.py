@@ -24,55 +24,41 @@ from purlin import specs as purlin_specs
 class TestSpecParsing:
 
     # purlin: specs PROOF-1
-    # purlin: specs PROOF-3
-    def test_rule_tags_are_read_off_the_end_and_stripped(self, project):
+    def test_a_bracket_at_the_end_of_a_rule_is_part_of_its_text(self, project):
+        project.spec('# Feature: login\n\n## Rules\n\n'
+                     '- RULE-1: Tokens expire [owner: qa]\n')
         info = purlin_specs.scan_specs(project.root)['login']
-        assert info['rules']['RULE-1'] == (
-            'Valid credentials return 200 with a session token'), info['rules']
-        assert info['rule_meta']['RULE-1'] == {'level': 'signed'}
-        # A rule that names no tag carries no metadata at all.
-        assert info['rule_meta']['RULE-2'] == {}
+        assert info['rules']['RULE-1'] == 'Tokens expire [owner: qa]', (
+            info['rules'])
 
     # purlin: specs PROOF-2
-    def test_bracketed_text_that_is_not_a_tag_stays_in_the_claim(self):
-        # At the very end of the line, alone, it is still not a tag.
-        assert purlin_specs.split_rule_tags('Tokens expire [owner: qa]') == (
-            'Tokens expire [owner: qa]', {})
-        text, meta = purlin_specs.split_rule_tags(
-            'Tokens expire [owner: qa] [level: strong]')
-        assert text == 'Tokens expire [owner: qa]'
-        assert meta == {'level': 'strong'}
+    def test_a_bracket_at_the_end_of_a_rule_enters_its_hash(self):
+        assert purlin_specs.rule_text_hash('Tokens expire [owner: qa]') != (
+            purlin_specs.rule_text_hash('Tokens expire'))
 
-    # purlin: specs PROOF-4
-    def test_the_hash_ignores_the_tags_and_the_whitespace(self):
-        plain = purlin_specs.rule_text_hash('Tokens expire after 24 hours')
-        tagged, _meta = purlin_specs.split_rule_tags(
-            'Tokens  expire   after 24 hours [level: strong]')
-        assert purlin_specs.rule_text_hash(tagged) == plain, (
-            're-tagging or reflowing a rule must not change its rule text hash')
-        # A rule broken across a line break is the same rule.
-        assert purlin_specs.rule_text_hash(
-            'Tokens expire\n  after 24 hours') == plain
-        # A changed word is a changed rule.
-        assert purlin_specs.rule_text_hash(
-            'Tokens expire after 12 hours') != plain
-        # The proof text hash normalises whitespace the same way.
+    # purlin: specs PROOF-3
+    def test_reflowing_a_proof_keeps_its_hash(self):
         proof = purlin_specs.proof_text_hash('Wait 24 hours; verify 401')
         assert purlin_specs.proof_text_hash(
             'Wait  24\n hours;   verify 401') == proof
-        assert purlin_specs.proof_text_hash('Wait 12 hours; verify 401') != proof
+
+    # purlin: specs PROOF-4
+    def test_reflowing_a_rule_keeps_its_hash(self):
+        plain = purlin_specs.rule_text_hash('Tokens expire after 24 hours')
+        assert purlin_specs.rule_text_hash(
+            'Tokens  expire   after 24 hours') == plain
+        assert purlin_specs.rule_text_hash(
+            'Tokens expire\n  after 24 hours') == plain
 
     # purlin: specs PROOF-17
-    def test_the_level_tag_takes_the_gates_three_words(self):
-        claim = 'Tokens expire after 24 hours'
-        hashes = set()
-        for level in ('passed', 'strong', 'signed'):
-            text, meta = purlin_specs.split_rule_tags(
-                '%s [level: %s]' % (claim, level))
-            assert meta == {'level': level}, meta
-            assert text == claim and '[' not in text, text
-            hashes.add(purlin_specs.rule_text_hash(text))
-        assert len(hashes) == 1, hashes
+    def test_a_changed_word_changes_a_rules_hash(self):
+        assert purlin_specs.rule_text_hash('Tokens expire after 12 hours') != (
+            purlin_specs.rule_text_hash('Tokens expire after 24 hours'))
+
+    # purlin: specs PROOF-18
+    def test_a_changed_word_changes_a_proofs_hash(self):
+        assert purlin_specs.proof_text_hash('Wait 12 hours; verify 401') != (
+            purlin_specs.proof_text_hash('Wait 24 hours; verify 401'))
 
     # purlin: specs PROOF-5
     # purlin: specs PROOF-6
@@ -361,8 +347,7 @@ class TestGate:
     def test_the_settings_written_out_are_the_ones_a_project_can_name(self):
         written = purlin_gate.resolve_gate({'gate': 'signed'}).as_dict()
         assert sorted(written) == [
-            'audit_parallel', 'ci', 'gate', 'min_strength', 'mutation_engine',
-            'trust']
+            'audit_parallel', 'ci', 'gate', 'min_strength', 'mutation_engine']
 
     def test_a_named_key_overrides_the_derived_default(self):
         cfg = purlin_gate.resolve_gate({'gate': 'strong', 'min_strength': 95})
@@ -392,26 +377,7 @@ class TestGate:
         for key in ('spec_dir', 'audit_criteria'):
             assert key in retired[0], retired[0]
 
-    def test_trust_is_local_or_remote_and_defaults_to_local(self):
-        assert purlin_gate.resolve_gate({}).trust == 'local'
-        assert purlin_gate.resolve_gate({'trust': 'remote'}).trust == 'remote'
-        cfg = purlin_gate.resolve_gate({'trust': 'whenever'})
-        assert cfg.trust == 'local'
-        assert any('trust' in w for w in cfg.warnings), cfg.warnings
-
     def test_the_hook_setting_is_a_key_this_release_does_not_read(self):
         cfg = purlin_gate.resolve_gate({'pre_push': 'on'})
         assert any('purlin:init --update' in w for w in cfg.warnings), \
             cfg.warnings
-
-    def test_a_level_is_the_lower_of_its_tag_and_the_gate(self):
-        level_of = purlin_gate.level_of
-        for marked, gate, level in ((None, 'passed', 'passed'),
-                                    (None, 'strong', 'strong'),
-                                    (None, 'signed', 'signed'),
-                                    ('passed', 'signed', 'passed'),
-                                    ('strong', 'signed', 'strong'),
-                                    ('signed', 'strong', 'strong'),
-                                    ('signed', 'passed', 'passed'),
-                                    ('often', 'signed', 'signed')):
-            assert level_of(marked, gate) == level, (marked, gate)

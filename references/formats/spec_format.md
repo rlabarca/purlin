@@ -1,4 +1,4 @@
-> Format-Version: 17
+> Format-Version: 18
 
 # Spec format
 
@@ -24,7 +24,7 @@ specs/<category>/<name>.md
 
 ## Rules
 
-- RULE-1: <Testable constraint> [level: passed]
+- RULE-1: <Testable constraint>
 - RULE-2: <Another testable constraint>
 
 ## Proof
@@ -74,7 +74,7 @@ in the run's warnings, and `purlin:init --update` removes it.
 ## Rules format
 
 ```
-- RULE-N: <description> [level: <level>]
+- RULE-N: <description>
 ```
 
 Rule ids are assigned in increasing order and never reused. A retired rule
@@ -83,25 +83,10 @@ so a gap in the sequence is legal and the parser reports nothing for it.
 Renumbering would silently repoint every test marker and every signature that
 already names the old id. Unnumbered lines under `## Rules` are reported.
 
-### The rule tag
-
-The one tag sits at the end of the line and is read off it, so the text that
-remains is the claim alone: reflowing the whitespace leaves the rule text hash
-the same. The level uses the gate's three words and means what the gate means:
-tests; tests and audit; tests, audit and signature. A signature records the
-level the rule had when it was signed and does not lock it, so re-marking a
-rule stales no signature.
-
-| Tag | Values | Default | Meaning |
-|-----|--------|---------|---------|
-| `[level: ...]` | `passed`, `strong`, `signed` | the project's gate | The evidence the rule must have to meet the gate. `passed` asks for passing tests; `strong` for passing tests and an audit that found them sound; `signed` for both and a signature |
-
-A rule that names no level takes the project's gate, which is an answer
-rather than a gap. The gate is the ceiling: a rule's level is the lower of its
-tag and the gate, so a tag above the gate is read as the gate and
-`purlin:status` says how many rules are marked above it. A value that is not
-one of the three words is read as no tag. Any other bracketed text at the end
-of the line is not a tag: it stays in the claim.
+A rule line carries no tag. Its text is everything after the id, bracketed
+text at the end included, and every rule is asked for what the project's gate
+asks. The rule text hash is taken over that text with runs of whitespace
+normalised to one space, so reflowing a line leaves the hash the same.
 
 A rule no proof line names is read from a test marked with the rule's own id,
 `purlin: <feature> RULE-<n>`; with no such test its passed cell reads `no test`,
@@ -130,9 +115,9 @@ A proof describes what a test asserts, not how it is written. Proofs are
 optional at the gate `passed`, where a rule's passing tests are the whole of its
 evidence, and required from `strong` up: there a rule whose test passes and
 that has no proof reads `no proof` in its strong cell, with the reason `the rule
-has a test and no proof`, and does not meet the gate. Several proofs can name
-the same rule, and one proof can name several rules when it drives a flow
-through all of them.
+has a test and no proof`, and counts under `Left to do` as a rule to write a
+proof for. Several proofs can name the same rule, and one proof can name
+several rules when it drives a flow through all of them.
 
 ### The manual tag
 
@@ -147,7 +132,7 @@ Append `@manual` to a proof that no test can settle:
 | Tag | When to use |
 |-----|-------------|
 | (none) | A marked test settles the proof, whatever it needs to run |
-| `@manual` | A person's judgment is the only instrument. No test, so the rule's strong cell reads `manual test`; the evidence is a signature file carrying a one-line note, always written by a person |
+| `@manual` | A person's judgment is the only instrument. No test, so the rule's strong cell reads `manual test`; the evidence is a signature a person writes with `purlin:sign`, carrying a one-line note of what they saw when one is given |
 
 `@manual` and `@env` are the only tags a proof line carries. Any other trailing
 `@<name>` is not a tag: it stays in the proof text. `purlin:test` runs every

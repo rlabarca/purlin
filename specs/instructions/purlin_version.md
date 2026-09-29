@@ -16,9 +16,9 @@
 - RULE-3: The `version` field of `templates/config.json`, which `purlin:init` stamps into a new project, equals the `VERSION` file
 - RULE-4: No module of the `purlin` package carries a release version literal outside its comments
 - RULE-5: The `version` field of `.claude-plugin/plugin.json`, which is what the plugin loader reports and what a consumer installs against, equals the `VERSION` file
-- RULE-6: Where `.purlin/config.json` exists, because the repository is itself a Purlin project, its `version` field equals the `VERSION` file: the project's own stamp never lags the framework it ships [level: passed]
+- RULE-6: Where `.purlin/config.json` exists, because the repository is itself a Purlin project, its `version` field equals the `VERSION` file: the project's own stamp never lags the framework it ships
 - RULE-7: `dev/bump_version.sh <semver>` is the one propagation entry point: it writes the `VERSION` file and sets the version field in every derived location, it refuses an argument that is not semver before writing anything, and `dev/bump_version.sh --check` exits non-zero naming each location that disagrees while still reporting the ones that match
-- RULE-8: The one table that describes the config `version` field, in `references/drift_criteria.md`, states the `VERSION` file as its source rather than restating a release number, and no second copy of that row lives anywhere under `skills/` or `references/` [level: passed]
+- RULE-8: The one table that describes the config `version` field, in `references/drift_criteria.md`, states the `VERSION` file as its source rather than restating a release number, and no second copy of that row lives anywhere under `skills/` or `references/`
 
 ## Proof
 

@@ -6,12 +6,9 @@ a markdown file with two sections, `## Rules` and `## Proof`, and a block of
 `references/formats/spec_format.md` documents; the anchor fields are the ones
 `references/formats/anchor_format.md` documents.
 
-Rule lines carry their tags at the end:
+A rule line is its id and its text, and the text is everything after the id:
 
-    - RULE-3: Expired tokens are rejected with 401 [level: passed]
-
-The tag is read off the end and stripped, so `rule_text_hash` sees the claim
-alone.
+    - RULE-3: Expired tokens are rejected with 401
 
 Proof lines carry at most one operating system, and `@manual` where no test
 can settle the rule:
@@ -42,9 +39,6 @@ _RULE_RE = re.compile(r'^-\s+(RULE-\d+):\s*(.+)', re.MULTILINE)
 _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)')
 
-# The rule tag, read off the end so the text that remains is the claim alone.
-_RULE_TAG_RE = re.compile(r'\s*\[(level):\s*([^\]]+)\]\s*$')
-
 # A trailing tag is metadata appended after the description: ` @manual`,
 # ` @env(linux)`. It must not match a description whose prose merely ends in
 # an @word, e.g. "verify the doc lists @manual, @env and @word", so the
@@ -74,29 +68,6 @@ _RETIRED_FIELD_RE = re.compile(
 # ---------------------------------------------------------------------------
 # Tags
 # ---------------------------------------------------------------------------
-
-def split_rule_tags(text):
-    """`(clean_text, meta)` for one rule line's description.
-
-    `meta` carries `level` only where the line named one, because the level
-    a rule that names none takes is the project's gate and this module does
-    not read the gate. An unrecognised value is kept as written: the reader
-    is better served by seeing what the spec says than by a silent
-    correction, and the payload reads such a rule as unmarked. Any other
-    bracketed text at the end of the line is not a tag and stays in the
-    text.
-    """
-    meta = {}
-    text = text.rstrip()
-    while True:
-        m = _RULE_TAG_RE.search(text)
-        if not m:
-            break
-        name, value = m.group(1), m.group(2).strip()
-        meta.setdefault(name, value)
-        text = text[:m.start()].rstrip()
-    return text, meta
-
 
 def split_proof_tags(desc):
     """`(clean_desc, manual, env, unknown)` for one proof line's description.
@@ -149,17 +120,16 @@ def _normalise(text):
 
 
 def rule_text_hash(text):
-    """The R of the rule/proof/test triple a signature binds.
+    """The rule hash a signature binds.
 
-    The tags are already off the text by the time a caller holds it, and
-    whitespace is normalised here, so reflowing a long rule line does not
-    stale the signatures that bind it.
+    It is taken over the rule's whole text with whitespace normalised, so
+    reflowing a long rule line does not end the signatures that bind it.
     """
     return hashlib.sha256(_normalise(text).encode('utf-8')).hexdigest()
 
 
 def proof_text_hash(text):
-    """The P of the triple. Same normalisation as `rule_text_hash`."""
+    """The proof hash a signature binds. Same normalisation as `rule_text_hash`."""
     return hashlib.sha256(_normalise(text).encode('utf-8')).hexdigest()
 
 
@@ -259,8 +229,7 @@ def scan_specs(project_root):
 
     `spec_path` (relative, `/` separated), `category` (the directory under
     `specs/`), `name`, `is_anchor`, `is_global`, `description`, `stack`,
-    `requires`, `scope`, `rules` (`{RULE-N: text}` with tags stripped),
-    `rule_meta` (`{RULE-N: {level}}`), `rule_order`,
+    `requires`, `scope`, `rules` (`{RULE-N: text}`), `rule_order`,
     `proofs` (`{PROOF-N: {rules, text, manual, env}}`), `proof_env`,
     `proofs_by_rule`, `source`, `source_path`, `pinned`,
     `has_rules_section`, `unnumbered_lines` and `unknown_tags`.
@@ -284,16 +253,13 @@ def _parse_spec(name, rel_path, content):
     unknown_tags = []
 
     rules = {}
-    rule_meta = {}
     rule_order = []
     unnumbered = []
     rules_section = extract_section(content, '## Rules')
     if rules_section is not None:
         for m in _RULE_RE.finditer(rules_section):
             rule_id = m.group(1)
-            text, meta = split_rule_tags(m.group(2).strip())
-            rules[rule_id] = text
-            rule_meta[rule_id] = meta
+            rules[rule_id] = m.group(2).strip()
             rule_order.append(rule_id)
         for line in rules_section.strip().splitlines():
             line = line.strip()
@@ -350,7 +316,6 @@ def _parse_spec(name, rel_path, content):
         'requires': _split_list(requires_match.group(1)) if requires_match else [],
         'scope': _split_list(scope_match.group(1)) if scope_match else [],
         'rules': rules,
-        'rule_meta': rule_meta,
         'rule_order': rule_order,
         'proofs': proofs,
         'proof_env': proof_env,
