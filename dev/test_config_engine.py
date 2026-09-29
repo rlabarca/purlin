@@ -1,17 +1,16 @@
 """Tests for config_engine: the project root and the one settings file.
 
 `.purlin/config.json` is committed; the resolver reads it whole and a write
-sets one top-level key in it.
+sets one top-level key in it. One test per proof: each shows one case.
 """
 
 import contextlib
+import errno
 import io
 import json
 import os
-import shutil
 import subprocess
 import sys
-import tempfile
 from unittest import mock
 
 import pytest
@@ -22,272 +21,337 @@ from config_engine import (PROJECT_ROOT_SOURCES, find_project_root,
                            resolve_config, resolve_project_root,
                            update_config)
 
+SCRIPT = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp',
+                      'config_engine.py')
 
-class TestFindProjectRoot:
 
-    def setup_method(self):
-        self.tmpdir = tempfile.mkdtemp()
-        self._old_env = os.environ.get('PURLIN_PROJECT_ROOT')
-        os.environ.pop('PURLIN_PROJECT_ROOT', None)
+@pytest.fixture
+def tmp(tmp_path, monkeypatch):
+    """A real temporary folder, with `PURLIN_PROJECT_ROOT` unset."""
+    monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
+    return os.path.realpath(str(tmp_path))
 
-    def teardown_method(self):
-        shutil.rmtree(self.tmpdir)
-        if self._old_env is None:
-            os.environ.pop('PURLIN_PROJECT_ROOT', None)
-        else:
-            os.environ['PURLIN_PROJECT_ROOT'] = self._old_env
+
+def _folder(*parts):
+    path = os.path.join(*parts)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _marked(*parts):
+    """A folder holding a `.purlin/` marker."""
+    path = os.path.join(*parts)
+    os.makedirs(os.path.join(path, '.purlin'), exist_ok=True)
+    return path
+
+
+# -- The project root --------------------------------------------------------
+
+class TestProjectRoot:
 
     # purlin: config_engine PROOF-1
-    def test_env_var_takes_precedence_only_when_the_directory_exists(self):
-        os.makedirs(os.path.join(self.tmpdir, '.purlin'))
-        os.environ['PURLIN_PROJECT_ROOT'] = self.tmpdir
-        assert find_project_root() == self.tmpdir
+    def test_the_variable_naming_an_existing_folder_wins_over_a_marker(
+            self, tmp, monkeypatch):
+        chosen = _folder(tmp, 'chosen')
+        start = _folder(_marked(tmp, 'other'), 'src')
+        monkeypatch.setenv('PURLIN_PROJECT_ROOT', chosen)
+        assert find_project_root(start_dir=start) == chosen
 
-        # The 'and the directory exists' half of the rule: a stale root that
-        # was deleted (a worktree removed, a container rebuilt) is not handed
-        # back. The climb runs instead and finds the real marker.
-        gone = os.path.join(self.tmpdir, 'deleted_root')
-        assert not os.path.isdir(gone)
-        os.environ['PURLIN_PROJECT_ROOT'] = gone
-        marker_root = os.path.join(self.tmpdir, 'real_project')
-        os.makedirs(os.path.join(marker_root, '.purlin'))
-        deep = os.path.join(marker_root, 'src')
-        os.makedirs(deep)
-        assert find_project_root(start_dir=deep) == marker_root, (
-            "PURLIN_PROJECT_ROOT names a directory that does not exist; "
-            "find_project_root must fall through to the .purlin climb")
+    # purlin: config_engine PROOF-16
+    def test_the_variable_naming_a_missing_path_gives_way_to_the_climb(
+            self, tmp, monkeypatch):
+        gone = os.path.join(tmp, 'gone')
+        project = _marked(tmp, 'real_project')
+        start = _folder(project, 'src')
+        monkeypatch.setenv('PURLIN_PROJECT_ROOT', gone)
+        assert not os.path.exists(gone)
+        assert find_project_root(start_dir=start) == project
+
+    # purlin: config_engine PROOF-17
+    def test_the_variable_naming_a_file_gives_way_to_the_climb(
+            self, tmp, monkeypatch):
+        a_file = os.path.join(tmp, 'settings.txt')
+        with open(a_file, 'w', encoding='utf-8') as f:
+            f.write('not a folder\n')
+        project = _marked(tmp, 'real_project')
+        start = _folder(project, 'src')
+        monkeypatch.setenv('PURLIN_PROJECT_ROOT', a_file)
+        assert find_project_root(start_dir=start) == project
 
     # purlin: config_engine PROOF-2
-    def test_climbs_to_purlin_marker(self):
-        root = os.path.join(self.tmpdir, 'a')
-        os.makedirs(os.path.join(root, '.purlin'))
-        deep = os.path.join(root, 'b', 'c')
-        os.makedirs(deep)
-        result = find_project_root(start_dir=deep)
-        assert result == root
+    def test_the_climb_reaches_the_marker_above_the_start(self, tmp):
+        root = _marked(tmp, 'a')
+        start = _folder(root, 'b', 'c')
+        assert find_project_root(start_dir=start) == root
+
+    # purlin: config_engine PROOF-18
+    def test_the_climb_stops_at_the_nearest_marker(self, tmp):
+        outer = _marked(tmp, 'outer')
+        inner = _marked(outer, 'inner')
+        start = _folder(inner, 'src')
+        assert find_project_root(start_dir=start) == inner
 
     # purlin: config_engine PROOF-3
-    def test_falls_back_to_cwd(self):
-        bare = os.path.join(self.tmpdir, 'no_marker')
-        os.makedirs(bare)
-        result = find_project_root(start_dir=bare)
-        assert result == os.path.abspath(os.getcwd())
+    def test_with_no_marker_the_root_is_the_working_directory(
+            self, tmp, monkeypatch):
+        work = _folder(tmp, 'work')
+        start = _folder(tmp, 'bare')
+        monkeypatch.chdir(work)
+        assert find_project_root(start_dir=start) == work
+
+
+class TestHowTheRootWasFound:
+    """Each case: the root with the way it was found, and the root alone."""
+
+    @staticmethod
+    def _both(start):
+        return resolve_project_root(start_dir=start), find_project_root(
+            start_dir=start)
 
     # purlin: config_engine PROOF-15
-    def test_resolve_project_root_names_how_it_resolved(self):
-        project = os.path.join(self.tmpdir, 'project')
-        deep = os.path.join(project, 'src')
-        os.makedirs(os.path.join(project, '.purlin'))
-        os.makedirs(deep)
+    def test_a_marker_above_the_start_is_found_by_climb(self, tmp):
+        project = _marked(tmp, 'project')
+        start = _folder(project, 'src')
+        found, alone = self._both(start)
+        assert found == (project, 'climb')
+        assert alone == project
 
-        # 1. The climb, with nothing in the environment to beat it.
-        assert resolve_project_root(start_dir=deep) == (project, 'climb')
+    # purlin: config_engine PROOF-28
+    def test_the_variable_is_found_by_env(self, tmp, monkeypatch):
+        project = _marked(tmp, 'project')
+        start = _folder(project, 'src')
+        elsewhere = _folder(tmp, 'elsewhere')
+        monkeypatch.setenv('PURLIN_PROJECT_ROOT', elsewhere)
+        found, alone = self._both(start)
+        assert found == (elsewhere, 'env')
+        assert alone == elsewhere
 
-        # 2. The environment wins over the marker the climb would have found.
-        elsewhere = os.path.join(self.tmpdir, 'elsewhere')
-        os.makedirs(elsewhere)
-        os.environ['PURLIN_PROJECT_ROOT'] = elsewhere
-        assert resolve_project_root(start_dir=deep) == (elsewhere, 'env')
+    # purlin: config_engine PROOF-29
+    def test_a_missing_variable_path_is_passed_over_for_climb(
+            self, tmp, monkeypatch):
+        project = _marked(tmp, 'project')
+        start = _folder(project, 'src')
+        monkeypatch.setenv('PURLIN_PROJECT_ROOT', os.path.join(tmp, 'gone'))
+        found, alone = self._both(start)
+        assert found == (project, 'climb')
+        assert alone == project
 
-        # 3. A root that does not exist does not win; the climb answers again.
-        gone = os.path.join(self.tmpdir, 'gone')
-        assert not os.path.isdir(gone)
-        os.environ['PURLIN_PROJECT_ROOT'] = gone
-        assert resolve_project_root(start_dir=deep) == (project, 'climb')
+    # purlin: config_engine PROOF-30
+    def test_no_marker_anywhere_is_named_cwd(self, tmp, monkeypatch):
+        work = _folder(tmp, 'work')
+        start = _folder(tmp, 'bare')
+        monkeypatch.chdir(work)
+        found, alone = self._both(start)
+        assert found == (work, 'cwd')
+        assert alone == work
 
-        # 4. No marker anywhere above: cwd, and said to be cwd.
-        os.environ.pop('PURLIN_PROJECT_ROOT', None)
-        bare = os.path.join(self.tmpdir, 'bare')
-        os.makedirs(bare)
-        root, source = resolve_project_root(start_dir=bare)
-        assert source == 'cwd', source
-        assert root == os.path.abspath(os.getcwd())
-
-        # The fallback is named, not silent, and so is every other case.
-        assert sorted(PROJECT_ROOT_SOURCES) == ['climb', 'cwd', 'env']
-        assert all(isinstance(v, str) and v.strip()
-                   for v in PROJECT_ROOT_SOURCES.values()), PROJECT_ROOT_SOURCES
-        cwd_text = PROJECT_ROOT_SOURCES['cwd']
-        assert 'working directory' in cwd_text and 'marker' in cwd_text, cwd_text
-
-        # The two entry points cannot answer differently.
-        for start, env in ((deep, None), (deep, elsewhere), (deep, gone),
-                           (bare, None)):
-            if env is None:
-                os.environ.pop('PURLIN_PROJECT_ROOT', None)
-            else:
-                os.environ['PURLIN_PROJECT_ROOT'] = env
-            assert (find_project_root(start_dir=start)
-                    == resolve_project_root(start_dir=start)[0])
+    # purlin: config_engine PROOF-31
+    def test_each_way_has_its_own_sentence(self):
+        assert PROJECT_ROOT_SOURCES == {
+            'env': 'the PURLIN_PROJECT_ROOT environment variable',
+            'climb': 'climbing from the working directory to a .purlin/ marker',
+            'cwd': ('the working directory, with no .purlin/ marker in it '
+                    'or above it'),
+        }
 
 
-class TestResolveConfig:
+# -- Reading the settings file -----------------------------------------------
 
-    def setup_method(self):
-        self.project_root = tempfile.mkdtemp()
-        self.purlin_dir = os.path.join(self.project_root, '.purlin')
-        os.makedirs(self.purlin_dir)
+@pytest.fixture
+def project(tmp):
+    """A project folder holding `.purlin/` and no settings file yet."""
+    return _marked(tmp, 'project')
 
-    def teardown_method(self):
-        shutil.rmtree(self.project_root)
 
-    def _write_shared(self, data):
-        with open(os.path.join(self.purlin_dir, 'config.json'), 'w',
-                  encoding='utf-8') as f:
-            json.dump(data, f)
+def _settings(project):
+    return os.path.join(project, '.purlin', 'config.json')
+
+
+def _write(project, data):
+    with open(_settings(project), 'w', encoding='utf-8') as f:
+        json.dump(data, f)
+
+
+def _read(project):
+    with open(_settings(project), encoding='utf-8') as f:
+        return json.load(f)
+
+
+def _purlin_files(project):
+    return sorted(os.listdir(os.path.join(project, '.purlin')))
+
+
+class TestReading:
 
     # purlin: config_engine PROOF-4
-    def test_the_config_is_config_json_whole(self):
-        self._write_shared({"team": "default", "shared": "base"})
-        assert resolve_config(self.project_root) == {
-            "team": "default", "shared": "base"}
+    def test_the_settings_file_is_read_whole(self, project):
+        held = {"team": "default", "shared": {"paths": ["a", "b"]}}
+        _write(project, held)
+        assert resolve_config(project) == held
 
     # purlin: config_engine PROOF-7
-    def test_no_config_returns_empty(self):
-        result = resolve_config(self.project_root)
-        assert result == {}
+    def test_no_settings_file_reads_as_empty(self, project):
+        assert _purlin_files(project) == []
+        assert resolve_config(project) == {}
 
 
-class TestUpdateConfig:
+# -- Writing one key ---------------------------------------------------------
 
-    def setup_method(self):
-        self.project_root = tempfile.mkdtemp()
-        self.purlin_dir = os.path.join(self.project_root, '.purlin')
-        self.path = os.path.join(self.purlin_dir, 'config.json')
-        os.makedirs(self.purlin_dir)
-
-    def teardown_method(self):
-        shutil.rmtree(self.project_root)
-
-    def _write(self, data):
-        with open(self.path, 'w', encoding='utf-8') as f:
-            json.dump(data, f)
-
-    def _read(self):
-        with open(self.path, encoding='utf-8') as f:
-            return json.load(f)
+class TestWriting:
 
     # purlin: config_engine PROOF-8
-    def test_a_write_reaches_config_json(self):
-        self._write({"team": "v1"})
-        update_config(self.project_root, "user_pref", "dark")
-        assert self._read() == {"team": "v1", "user_pref": "dark"}
-        assert os.listdir(self.purlin_dir) == ['config.json']
+    def test_a_write_adds_its_key_to_the_settings_file(self, project):
+        _write(project, {"team": "v1"})
+        update_config(project, "user_pref", "dark")
+        assert _read(project) == {"team": "v1", "user_pref": "dark"}
+        assert _purlin_files(project) == ['config.json']
 
-    # purlin: config_engine PROOF-8
-    def test_a_write_creates_config_json_when_absent(self):
-        assert not os.path.exists(self.path)
-        update_config(self.project_root, "new", True)
-        assert self._read() == {"new": True}
+    # purlin: config_engine PROOF-24
+    def test_a_write_creates_the_settings_file_when_absent(self, project):
+        assert _purlin_files(project) == []
+        update_config(project, "new", True)
+        assert _read(project) == {"new": True}
 
     # purlin: config_engine PROOF-12
-    def test_the_written_value_is_what_the_resolver_reads(self):
-        self._write({"gate": "passed", "version": "0.9.0"})
-        update_config(self.project_root, "gate", "strong")
-        assert resolve_config(self.project_root) == {
+    def test_the_written_value_is_what_the_settings_read(self, project):
+        _write(project, {"gate": "passed", "version": "0.9.0"})
+        update_config(project, "gate", "strong")
+        assert resolve_config(project) == {
             "gate": "strong", "version": "0.9.0"}
 
     # purlin: config_engine PROOF-9
-    def test_a_write_preserves_every_other_key(self):
-        self._write({"existing": "keep", "shade": "old"})
-        update_config(self.project_root, "added", "new")
-        update_config(self.project_root, "shade", "new")
-        assert self._read() == {"existing": "keep", "shade": "new",
-                                "added": "new"}
+    def test_adding_a_key_keeps_every_other_key_as_it_was(self, project):
+        _write(project, {"existing": "keep", "nested": {"list": [1, 2]}})
+        update_config(project, "added", "new")
+        assert _read(project) == {"existing": "keep",
+                                  "nested": {"list": [1, 2]},
+                                  "added": "new"}
+
+    # purlin: config_engine PROOF-25
+    def test_changing_a_key_keeps_every_other_key_as_it_was(self, project):
+        _write(project, {"existing": "keep", "shade": "old"})
+        update_config(project, "shade", "new")
+        assert _read(project) == {"existing": "keep", "shade": "new"}
+
+
+class TestAtomicWrite:
 
     # purlin: config_engine PROOF-10
-    def test_atomic_replacement(self):
-        # Behavioral proof of the atomic mechanism: the durable file is produced
-        # by renaming a .tmp via os.replace, never by an in-place write.
+    def test_the_whole_file_is_written_beside_and_moved_onto_it(self, project):
+        _write(project, {"key": "old"})
+        target = _settings(project)
         real_replace = os.replace
-        replace_calls = []
+        moves = []
 
-        def spy_replace(src, dst):
-            replace_calls.append((src, dst))
+        def watch_the_move(src, dst):
+            with open(src, encoding='utf-8') as f:
+                moves.append((src, dst, json.load(f)))
             return real_replace(src, dst)
 
-        with mock.patch.object(config_engine.os, 'replace', side_effect=spy_replace):
-            update_config(self.project_root, "key", "val")
-
-        assert replace_calls, "update_config is not atomic: os.replace was never called"
-        src, dst = replace_calls[-1]
-        assert src.endswith('.tmp'), f"expected rename from a .tmp file, got {src!r}"
-        assert os.path.abspath(dst) == os.path.abspath(self.path), \
-            f"os.replace target {dst!r} is not config.json"
-
-        # No partial write: file exists, is valid JSON with the new key, no .tmp left.
-        assert not os.path.exists(self.path + '.tmp')
-        assert self._read()["key"] == "val"
-
-        # An interrupted rename must leave the original file untouched (no partial write).
-        self._write({"key": "val"})
         with mock.patch.object(config_engine.os, 'replace',
-                               side_effect=OSError("simulated crash mid-rename")):
-            try:
-                update_config(self.project_root, "key", "other")
-            except OSError:
-                pass
-        assert self._read() == {"key": "val"}, "interrupted write corrupted the config"
-        assert not os.path.exists(self.path + '.tmp')
+                               side_effect=watch_the_move):
+            update_config(project, "key", "val")
+
+        assert [(os.path.abspath(s), os.path.abspath(d), held)
+                for s, d, held in moves] == [
+            (os.path.abspath(target + '.tmp'), os.path.abspath(target),
+             {"key": "val"})]
+        assert _purlin_files(project) == ['config.json']
+        assert _read(project) == {"key": "val"}
+
+    # purlin: config_engine PROOF-26
+    def test_a_failed_move_leaves_the_previous_file_and_no_temporary(
+            self, project):
+        _write(project, {"key": "val"})
+        with mock.patch.object(config_engine.os, 'replace',
+                               side_effect=OSError("the move failed")):
+            with contextlib.suppress(OSError):
+                update_config(project, "key", "other")
+        assert _read(project) == {"key": "val"}
+        assert _purlin_files(project) == ['config.json']
+
+    # purlin: config_engine PROOF-27
+    def test_a_disk_full_partway_leaves_the_previous_file_and_no_temporary(
+            self, project):
+        _write(project, {"key": "val"})
+
+        def fill_the_disk(obj, f, **_):
+            f.write('{"key": ')
+            raise OSError(errno.ENOSPC, 'No space left on device')
+
+        with mock.patch.object(config_engine.json, 'dump',
+                               side_effect=fill_the_disk):
+            with contextlib.suppress(OSError):
+                update_config(project, "key", "other")
+        assert _read(project) == {"key": "val"}
+        assert _purlin_files(project) == ['config.json']
 
 
-class TestCLI:
+# -- The command line --------------------------------------------------------
 
-    def setup_method(self):
-        self.project_root = tempfile.mkdtemp()
-        self.purlin_dir = os.path.join(self.project_root, '.purlin')
-        os.makedirs(self.purlin_dir)
+def _main(project, *args):
+    """The command line's `main()` in this process: (exit code, out, err).
 
-    def teardown_method(self):
-        shutil.rmtree(self.project_root)
+    In-process is what lets a mutation run see which case caught a break; the
+    first case below also starts the script as a child.
+    """
+    out, err = io.StringIO(), io.StringIO()
+    code = 0
+    with mock.patch.object(sys, 'argv', ['config_engine.py'] + list(args)), \
+            mock.patch.dict(os.environ, {'PURLIN_PROJECT_ROOT': project}), \
+            contextlib.redirect_stdout(out), \
+            contextlib.redirect_stderr(err):
+        try:
+            config_engine.main()
+        except SystemExit as stop:
+            code = stop.code if isinstance(stop.code, int) else 1
+    return code, out.getvalue(), err.getvalue()
 
-    def _write(self, data):
-        with open(os.path.join(self.purlin_dir, 'config.json'), 'w',
-                  encoding='utf-8') as f:
-            json.dump(data, f)
+
+class TestCommandLine:
 
     # purlin: config_engine PROOF-5
-    def test_cli_key(self):
-        self._write({"version": "0.9.0"})
-        script = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp', 'config_engine.py')
-        env = {**os.environ, 'PURLIN_PROJECT_ROOT': self.project_root}
-
+    def test_key_prints_the_value_as_its_own_process(self, project):
+        _write(project, {"version": "0.9.0"})
         r = subprocess.run(
-            [sys.executable, script, '--key', 'version'],
-            capture_output=True, text=True, cwd=self.project_root, env=env,
+            [sys.executable, SCRIPT, '--key', 'version'],
+            capture_output=True, text=True, cwd=project,
+            env={**os.environ, 'PURLIN_PROJECT_ROOT': project},
         )
         assert r.returncode == 0
-        assert r.stdout.strip() == "0.9.0"
+        assert r.stdout == "0.9.0\n"
 
-    def _main(self, *args):
-        """The command line's `main()` in this process: (exit code, stdout).
+    # purlin: config_engine PROOF-5
+    def test_key_prints_the_value(self, project):
+        _write(project, {"version": "0.9.0"})
+        assert _main(project, '--key', 'version')[:2] == (0, "0.9.0\n")
 
-        In-process is what lets a mutation run see which case caught a break;
-        the case above still starts the script as a child.
-        """
-        out = io.StringIO()
-        code = 0
-        env = {'PURLIN_PROJECT_ROOT': self.project_root}
-        with mock.patch.object(sys, 'argv', ['config_engine.py'] + list(args)), \
-                mock.patch.dict(os.environ, env), \
-                contextlib.redirect_stdout(out), \
-                contextlib.redirect_stderr(io.StringIO()):
-            try:
-                config_engine.main()
-            except SystemExit as stop:
-                code = stop.code if isinstance(stop.code, int) else 1
-        return code, out.getvalue()
-
-    # purlin: config_engine PROOF-4
-    def test_dump_in_process_prints_the_config(self):
-        self._write({"team": "default", "shared": "base"})
-        code, out = self._main('--dump')
+    # purlin: config_engine PROOF-19
+    def test_dump_prints_the_whole_settings_as_json(self, project):
+        _write(project, {"team": "default", "shared": "base"})
+        code, out, _ = _main(project, '--dump')
         assert code == 0
         assert json.loads(out) == {"team": "default", "shared": "base"}
 
-    # purlin: config_engine PROOF-5
-    def test_key_in_process_prints_the_value(self):
-        self._write({"version": "0.9.0"})
-        code, out = self._main('--key', 'version')
-        assert code == 0
-        assert out == "0.9.0\n"
+    # purlin: config_engine PROOF-20
+    def test_key_the_settings_do_not_hold_prints_an_empty_line(self, project):
+        _write(project, {"version": "0.9.0"})
+        assert _main(project, '--key', 'missing')[:2] == (0, "\n")
+
+    # purlin: config_engine PROOF-21
+    def test_no_argument_is_refused_with_the_usage(self, project):
+        _write(project, {"version": "0.9.0"})
+        assert _main(project) == (
+            1, "", "Usage: config_engine.py [--dump | --key <name>]\n")
+
+    # purlin: config_engine PROOF-22
+    def test_key_with_no_name_is_refused_with_its_usage(self, project):
+        _write(project, {"version": "0.9.0"})
+        assert _main(project, '--key') == (
+            1, "", "Usage: config_engine.py --key <name>\n")
+
+    # purlin: config_engine PROOF-23
+    def test_an_unknown_argument_is_refused_and_named(self, project):
+        _write(project, {"version": "0.9.0"})
+        assert _main(project, '--show') == (
+            1, "", "Unknown argument: --show\n")
