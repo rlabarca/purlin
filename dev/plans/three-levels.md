@@ -796,6 +796,12 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     box for the last signed version shows at the gate `signed` only, as `signed/<version>`
     with no sha, or `no signed tag`; at the first two gates there is no such box. The box
     `gate: <gate>` stays.
+89. **The rule's page stays, and holds the detail** (added 2026-09-29). This withdraws
+    decision 86 and the last part of decision 85. Clicking a rule opens its own page, which
+    shows why the rule has not reached a step, what the audit found, who signed it and with
+    which key, and the machine its tests ran on for each system. An unfolded row on the
+    board shows what it showed before: the rule's proofs, each with its result, its tags and
+    its tests, and nothing more. The docs carry two screenshots, the board and one rule.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
