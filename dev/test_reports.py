@@ -139,39 +139,39 @@ def _trx(rows):
 class TestTheMarker:
 
     # purlin: reports PROOF-1
-    def test_every_comment_syntax_is_read_and_a_bad_one_is_named(self):
+    def test_every_comment_syntax_is_read(self):
         text = '\n'.join([
             '# purlin: login PROOF-1', '// purlin: login PROOF-2',
             '-- purlin: login PROOF-3', '; purlin: login PROOF-4',
             '% purlin: login PROOF-5', "' purlin: login PROOF-6",
-            '/* purlin: login RULE-7 */', '<!-- purlin: login PROOF-8 -->',
-            '# purlin: login']) + '\n'
-        found, malformed = markers.comment_markers(text, '.txt')
+            '/* purlin: login RULE-7 */',
+            '<!-- purlin: login PROOF-8 -->']) + '\n'
+        found = markers.comment_markers(text, '.txt')
         assert [(m.feature, m.id, m.line) for m in found] == [
             ('login', 'PROOF-1', 1), ('login', 'PROOF-2', 2),
             ('login', 'PROOF-3', 3), ('login', 'PROOF-4', 4),
             ('login', 'PROOF-5', 5), ('login', 'PROOF-6', 6),
             ('login', 'RULE-7', 7), ('login', 'PROOF-8', 8)]
-        assert malformed == [(9, '# purlin: login')]
-        scan = {'tests/x.txt': markers.read_text('tests/x.txt', text, 'exit')}
-        assert reports.malformed_lines(scan) == [(
-            'purlin: tests/x.txt:9 is not a marker; write purlin: <feature> '
-            'PROOF-<n>')]
-        # A marker after code on the same line is not a whole-line comment:
-        # it is neither read nor named as a bad marker.
+
+    # purlin: reports PROOF-26
+    def test_a_comment_naming_no_id_is_not_a_marker(self):
+        assert markers.comment_markers('# purlin: login\n', '.txt') == []
+
+    # purlin: reports PROOF-27
+    def test_a_marker_after_code_is_not_read(self):
         after_code = 'x = 1  # purlin: login PROOF-1\n'
         for ext in ('.txt', '.py'):
-            assert markers.comment_markers(after_code, ext) == ([], []), ext
+            assert markers.comment_markers(after_code, ext) == [], ext
 
     # purlin: reports PROOF-2
     def test_a_marker_in_a_string_or_a_here_document_is_not_read(self):
         python = ('BODY = """\n# purlin: login PROOF-1\n"""\n\n'
                   '# purlin: login PROOF-1\ndef test_x():\n    pass\n')
-        found, _bad = markers.comment_markers(python, '.py')
+        found = markers.comment_markers(python, '.py')
         assert [(m.id, m.line) for m in found] == [('PROOF-1', 5)]
         shell = ("cat > other.sh <<'EOF'\n# purlin: login PROOF-1\nEOF\n"
                  '# purlin: login PROOF-2\nexit 0\n')
-        found, _bad = markers.comment_markers(shell, '.sh')
+        found = markers.comment_markers(shell, '.sh')
         assert [m.id for m in found] == ['PROOF-2']
 
     # purlin: reports PROOF-3
@@ -586,7 +586,7 @@ class TestThroughARun:
         assert (root / 'shell.txt').read_text(encoding='utf-8') == 'bash\n'
 
     # purlin: reports PROOF-17
-    def test_a_stale_report_is_never_read(self, tmp_path):
+    def test_an_old_report_is_never_read(self, tmp_path):
         suite = {'name': 'pytest', 'run': 'true',
                  'report': '.purlin/runtime/reports/pytest.xml',
                  'format': 'junit', 'files': ['tests/test_*.py']}
@@ -656,84 +656,63 @@ class TestThroughARun:
         assert ('Evidence is missing: the pytest suite wrote no report at '
                 '.purlin/runtime/reports/pytest.xml.') in out
 
+    @staticmethod
+    def _names_nothing(tmp_path, marker):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', _WELL_FORMED + (
+            '# purlin: %s\ndef test_x():\n    pass\n' % marker))
+        code, out = _run(root, '--all', '--test')
+        return code, out, out.splitlines()
+
     # purlin: reports PROOF-19
     def test_a_marker_naming_a_feature_no_spec_has_fails_the_run(
             self, tmp_path):
-        root = _project(tmp_path, [suites.pytest_suite()])
-        _write(root, 'tests/test_login.py', _WELL_FORMED + (
-            '# purlin: nosuch PROOF-1\ndef test_x():\n    pass\n'))
-        code, out = _run(root, '--all', '--test')
-        lines = out.splitlines()
-        wrong = ('purlin: nosuch PROOF-1 at tests/test_login.py:13 names a '
-                 'feature no spec has')
-        assert wrong in lines, out
-        assert lines[lines.index(wrong) + 1] == (
-            'Remove the comment, or write the proof it names.'), out
-        assert 'Evidence is missing' not in out
+        code, out, lines = self._names_nothing(tmp_path, 'nosuch PROOF-1')
+        assert ('tests/test_login.py:13 names nosuch PROOF-1, which no spec '
+                'has. Correct the comment, or run purlin:build to repair '
+                'it.') in lines, out
         assert out.strip().splitlines()[-1] == 'Nothing left to do.', out
         assert code == 1
 
     # purlin: reports PROOF-25
     def test_two_markers_naming_no_spec_are_each_named(self, tmp_path):
         root = _project(tmp_path, [suites.pytest_suite()])
-        wrong = ('purlin: nosuch PROOF-1 at tests/test_login.py:13 names a '
-                 'feature no spec has')
         _write(root, 'tests/test_login.py', _WELL_FORMED + (
             '# purlin: nosuch PROOF-1\ndef test_x():\n    pass\n\n'
             '# purlin: other PROOF-2\ndef test_y():\n    pass\n'))
         code, out = _run(root, '--all', '--test')
+        advice = ' Correct the comment, or run purlin:build to repair it.'
         lines = out.splitlines()
-        second = ('purlin: other PROOF-2 at tests/test_login.py:17 names a '
-                  'feature no spec has')
-        assert wrong in lines and second in lines, out
-        assert lines[lines.index(second) + 1] == (
-            'Remove each comment, or write the proof it names.'), out
-        assert 'Remove the comment' not in out
+        assert ('tests/test_login.py:13 names nosuch PROOF-1, which no spec '
+                'has.' + advice) in lines, out
+        assert ('tests/test_login.py:17 names other PROOF-2, which no spec '
+                'has.' + advice) in lines, out
         assert code == 1
 
     # purlin: reports PROOF-21
     def test_a_marker_naming_a_proof_no_spec_has_fails_the_run(
             self, tmp_path):
-        root = _project(tmp_path, [suites.pytest_suite()])
-        _write(root, 'tests/test_login.py', _WELL_FORMED + (
-            '# purlin: login PROOF-9\ndef test_x():\n    pass\n'))
-        code, out = _run(root, '--all', '--test')
-        lines = out.splitlines()
-        wrong = ('purlin: login PROOF-9 at tests/test_login.py:13 names a '
-                 'proof no spec has')
-        assert wrong in lines, out
-        assert lines[lines.index(wrong) + 1] == (
-            'Remove the comment, or write the proof it names.'), out
+        code, out, lines = self._names_nothing(tmp_path, 'login PROOF-9')
+        assert ('tests/test_login.py:13 names login PROOF-9, which no spec '
+                'has. Correct the comment, or run purlin:build to repair '
+                'it.') in lines, out
         assert code == 1
 
     # purlin: reports PROOF-22
     def test_a_marker_naming_a_rule_no_spec_has_fails_the_run(
             self, tmp_path):
-        root = _project(tmp_path, [suites.pytest_suite()])
-        _write(root, 'tests/test_login.py', _WELL_FORMED + (
-            '# purlin: login RULE-9\ndef test_x():\n    pass\n'))
-        code, out = _run(root, '--all', '--test')
-        lines = out.splitlines()
-        wrong = ('purlin: login RULE-9 at tests/test_login.py:13 names a '
-                 'rule no spec has')
-        assert wrong in lines, out
-        assert lines[lines.index(wrong) + 1] == (
-            'Remove the comment, or write the proof it names.'), out
+        code, out, lines = self._names_nothing(tmp_path, 'login RULE-9')
+        assert ('tests/test_login.py:13 names login RULE-9, which no spec '
+                'has. Correct the comment, or run purlin:build to repair '
+                'it.') in lines, out
         assert code == 1
 
     # purlin: reports PROOF-23
     def test_a_marker_naming_a_rule_that_has_proofs_fails_the_run(
             self, tmp_path):
-        root = _project(tmp_path, [suites.pytest_suite()])
-        _write(root, 'tests/test_login.py', _WELL_FORMED + (
-            '# purlin: login RULE-1\ndef test_x():\n    pass\n'))
-        code, out = _run(root, '--all', '--test')
-        lines = out.splitlines()
-        wrong = ('purlin: login RULE-1 at tests/test_login.py:13 names a '
-                 'rule that has proofs; name one of them')
-        assert wrong in lines, out
-        assert lines[lines.index(wrong) + 1] == (
-            'Remove the comment, or write the proof it names.'), out
+        code, out, lines = self._names_nothing(tmp_path, 'login RULE-1')
+        assert ('purlin: login RULE-1 at tests/test_login.py:13 names a '
+                'rule that has proofs; name one of them') in lines, out
         assert code == 1
 
     # purlin: reports PROOF-24
@@ -741,9 +720,8 @@ class TestThroughARun:
         root = _project(tmp_path, [suites.pytest_suite()])
         _write(root, 'tests/test_login.py', _WELL_FORMED)
         code, out = _run(root, '--all', '--test')
-        assert 'names a' not in out, out
-        assert 'Remove the comment' not in out, out
-        assert 'Remove each comment' not in out, out
+        assert 'which no spec has' not in out, out
+        assert 'names a rule that has proofs' not in out, out
         assert code == 0, out
 
     # purlin: reports PROOF-20
@@ -769,6 +747,102 @@ class TestThroughARun:
         assert [line for line in lines if line.startswith('Running')] == [
             'Running the pytest suite.'], out
         assert code == 0, out
+
+
+# ---------------------------------------------------------------------------
+# Comments that are nearly a marker
+# ---------------------------------------------------------------------------
+
+MARKERS_SCRIPT = os.path.join(REPO, 'scripts', 'mcp', 'purlin', 'markers.py')
+
+# The features a near miss is read against: `login` with three proofs.
+LOGIN = {'login': {'proofs': {'PROOF-1': {}, 'PROOF-2': {}, 'PROOF-3': {}},
+                   'rules': {'RULE-1': '', 'RULE-2': '', 'RULE-3': ''}}}
+
+
+def _near_misses(root, *args):
+    done = subprocess.run(
+        [sys.executable, MARKERS_SCRIPT] + list(args or (
+            '--near-misses', '--project-root', str(root))),
+        capture_output=True, encoding='utf-8', cwd=str(root))
+    return done.returncode, done.stdout, done.stderr
+
+
+class TestNearMisses:
+
+    # purlin: reports PROOF-28
+    def test_a_near_miss_is_listed_as_json(self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', '# purln: login PROOF-1\n'
+                                            'def test_a():\n    pass\n')
+        code, out, err = _near_misses(root)
+        (entry,) = json.loads(out)
+        assert {key: entry[key] for key in ('file', 'line', 'text', 'fix')} \
+            == {'file': 'tests/test_login.py', 'line': 1,
+                'text': '# purln: login PROOF-1',
+                'fix': '# purlin: login PROOF-1'}, out
+        assert '`purln`' in entry['why'], entry
+        assert code == 0, err
+
+    # purlin: reports PROOF-29
+    def test_a_wrong_command_line_exits_2(self, tmp_path):
+        code, _out, err = _near_misses(tmp_path, '--near-misses',
+                                       '--nonsense')
+        assert code == 2
+        assert err.startswith('Usage: markers.py --near-misses'), err
+
+    # purlin: reports PROOF-30
+    def test_a_file_no_suite_reads_is_not_listed(self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'notes/login.txt', '# purln: login PROOF-1\n')
+        code, out, _err = _near_misses(root)
+        assert json.loads(out) == [] and code == 0, out
+
+    # purlin: reports PROOF-31
+    def test_purlin_in_capitals(self):
+        fix, why = markers.near_miss('# PURLIN: login PROOF-1', LOGIN)
+        assert fix == '# purlin: login PROOF-1'
+        assert why == '`PURLIN` is `purlin` in capitals.'
+
+    # purlin: reports PROOF-32
+    def test_no_space_after_the_colon(self):
+        fix, why = markers.near_miss('// purlin:login PROOF-1', LOGIN)
+        assert fix == '// purlin: login PROOF-1'
+        assert why == 'There is no space after the colon.'
+
+    # purlin: reports PROOF-33
+    def test_a_marker_naming_what_exists_is_not_a_near_miss(self):
+        assert markers.near_miss('# purlin: login PROOF-1', LOGIN) is None
+
+    # purlin: reports PROOF-34
+    def test_a_comment_naming_no_id_has_no_fix(self):
+        fix, _why = markers.near_miss('# purlin: login', LOGIN)
+        assert fix is None
+
+    # purlin: reports PROOF-38
+    def test_an_id_that_is_neither_proof_nor_rule_has_no_fix(self):
+        fix, _why = markers.near_miss('# purlin: login TEST-1', LOGIN)
+        assert fix is None
+
+    # purlin: reports PROOF-35
+    def test_a_feature_one_character_off(self):
+        fix, why = markers.near_miss('# purlin: logn PROOF-1', LOGIN)
+        assert fix == '# purlin: login PROOF-1'
+        assert '`logn`' in why and '`login`' in why, why
+
+    # purlin: reports PROOF-36
+    def test_a_proof_id_one_character_off(self):
+        fix, _why = markers.near_miss('# purlin: login PROOF-30', LOGIN)
+        assert fix == '# purlin: login PROOF-3'
+
+    # purlin: reports PROOF-39
+    def test_a_misspelled_proof_word(self):
+        fix, _why = markers.near_miss('# purlin: login PROF-2', LOGIN)
+        assert fix == '# purlin: login PROOF-2'
+
+    # purlin: reports PROOF-37
+    def test_an_id_one_character_from_several_is_not_a_near_miss(self):
+        assert markers.near_miss('# purlin: login PROOF-4', LOGIN) is None
 
 
 # ---------------------------------------------------------------------------

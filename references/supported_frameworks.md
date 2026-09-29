@@ -4,12 +4,21 @@ Purlin runs your project's own test command and reads the report it writes. A te
 to a proof by one comment above it, `purlin: <feature> PROOF-<n>`. `references/formats/marker_format.md` is the contract: the
 marker, the `tests` setting, the four report formats and how a result is tied to its marker.
 
-`purlin:init` detects every framework below that the project uses and writes one entry of
-the `tests` setting for each, with the flag that writes the report already in the command.
-It says in one line what a framework needs added before it can write that report. Where it
-detects none, it asks for the command that runs the tests and where the report lands.
+A new project's `tests` setting is empty. Its first test run detects the frameworks below,
+in the order they are listed, runs nothing, and suggests the entry of the first it finds, with
+the flag that writes the report already in the command:
 
-## What init detects, and what it needs
+```
+No test command is set in .purlin/config.json, so nothing ran.
+Suggested for pytest: python3 -m pytest --ignore=mutants {files} --junitxml={report}
+Suggested entry: {"name": "pytest", ...}
+```
+
+A framework that needs something added before it can write that report gets one more line
+saying what. `purlin:test` shows you the entry, asks, writes it under `tests` and runs again.
+Where the run detects none, `purlin:test` reads the project and proposes an entry instead.
+
+## What the first run detects, and what it needs
 
 | Framework | Detected by | Needs added |
 |-----------|-------------|-------------|
@@ -22,9 +31,10 @@ detects none, it asks for the command that runs the tests and where the report l
 | shell | a `*.test.sh` file | nothing |
 
 Detection descends the tree, skipping dot directories, `node_modules`, `bin`, `obj` and
-`mutants/`. A project can carry several frameworks, and gets one suite for each.
+`mutants/`. A project that carries several frameworks is suggested the first; a second suite
+is a second entry under `tests`.
 
-## The entry init writes
+## The entry suggested
 
 Each entry is written under `tests` in `.purlin/config.json`. `{report}` is where Purlin wants
 the report, and `{files}` is replaced by the test files of the features a run covers, or by
@@ -159,8 +169,7 @@ the stream `go test -json` prints on Go 1.27.1.
 ```
 
 An entry is yours to change once it is written: a different command, another report path,
-narrower globs. `purlin:init` keeps a `tests` setting a project already carries, and `--add
-<framework>` appends one more entry.
+narrower globs.
 
 ## Any other framework
 

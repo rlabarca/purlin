@@ -31,6 +31,18 @@ carrying `[Fact]`, `[Theory]`, `[Test]`, `[TestCase]` or `[TestMethod]`; a Go
 `func TestX(t *testing.T)`. A Python comment is read with the tokenizer, so a
 marker-shaped line inside a string is not a marker; a shell file's here
 documents are stepped over for the same reason.
+
+A comment that is nearly a marker ties nothing, and a run says nothing of it.
+`near_misses` finds each one for `purlin:build`, which shows the fix, asks and
+edits:
+
+    python3 scripts/mcp/purlin/markers.py --near-misses [--project-root DIR]
+
+prints one JSON array of `{"file", "line", "text", "fix", "why"}` and exits 0;
+a wrong command line exits 2. A near miss is `purlin` misspelled by one
+letter or in capitals, no space after the colon, a `purlin:` comment that
+cannot be read (its `fix` is null), or a feature name, a PROOF or a RULE id
+one edit from one that exists.
 """
 
 import ast
@@ -125,13 +137,11 @@ class FileMarkers(object):
     """What one test file holds: its markers, its tests and how they tie.
 
     `tests` lists every test declared in the file, each with the markers tied
-    to it. `untied` lists the markers no test follows. `malformed` lists
-    `(line, text)` for a `purlin:` comment that is not a marker. For a file
-    of an `exit` suite `whole` is True and every marker belongs to the file.
+    to it. `untied` lists the markers no test follows. For a file of an
+    `exit` suite `whole` is True and every marker belongs to the file.
     """
 
-    __slots__ = ('path', 'format', 'markers', 'tests', 'untied', 'malformed',
-                 'whole')
+    __slots__ = ('path', 'format', 'markers', 'tests', 'untied', 'whole')
 
     def __init__(self, path, fmt):
         self.path = path
@@ -139,7 +149,6 @@ class FileMarkers(object):
         self.markers = []
         self.tests = []
         self.untied = []
-        self.malformed = []
         self.whole = fmt == 'exit'
 
     def features(self):
@@ -319,13 +328,13 @@ def _segment_regex(part):
 # ---------------------------------------------------------------------------
 
 def parse_comment(line):
-    """`(feature, id)` for a marker line, `False` for a malformed one, else None."""
+    """`(feature, id)` for a marker line, else None."""
     found = _COMMENT_RE.match(line)
     if not found:
         return None
     body = _BODY_RE.match(found.group('rest'))
     if not body:
-        return False
+        return None
     return body.group('feature'), body.group('id')
 
 
@@ -366,29 +375,31 @@ def _shell_lines(text):
     return out
 
 
-def comment_markers(text, ext):
-    """`(markers, malformed)` for one file's text."""
+def comment_lines(text, ext):
+    """`[(line number, text)]` for the lines of one file a marker may sit on.
+
+    A Python file's whole-line comments, as the tokenizer reads them; a
+    shell file's lines outside its here documents; every line of any other.
+    """
     if ext in _PY_EXTENSIONS:
         lines = _python_comment_lines(text)
-        if lines is None:
-            lines = list(enumerate(text.splitlines(), 1))
+        if lines is not None:
+            return lines
     elif ext in _SHELL_EXTENSIONS:
-        lines = _shell_lines(text)
-    else:
-        lines = list(enumerate(text.splitlines(), 1))
-    markers, malformed = [], []
-    for number, line in lines:
+        return _shell_lines(text)
+    return list(enumerate(text.splitlines(), 1))
+
+
+def comment_markers(text, ext):
+    """The markers in one file's text, in line order."""
+    markers = []
+    for number, line in comment_lines(text, ext):
         if 'purlin:' not in line:
             continue
         parsed = parse_comment(line)
-        if parsed is None:
-            continue
-        if parsed is False:
-            malformed.append((number, line.strip()))
-            continue
-        markers.append(Marker(parsed[0], parsed[1], number))
-    return markers, malformed
-
+        if parsed is not None:
+            markers.append(Marker(parsed[0], parsed[1], number))
+    return markers
 
 
 # ---------------------------------------------------------------------------
@@ -764,7 +775,7 @@ def read_text(path, text, fmt):
     """`FileMarkers` for `text`, the content of `path`."""
     result = FileMarkers(path, fmt)
     ext = os.path.splitext(path)[1].lower()
-    result.markers, result.malformed = comment_markers(text, ext)
+    result.markers = comment_markers(text, ext)
     if fmt == 'exit':
         return result
     tests = declared_tests(text, ext) if result.markers else []
@@ -875,7 +886,7 @@ def scan(project_root, suites=None, tracked_only=False):
         if 'purlin:' not in text:
             continue
         found = read_text(path, text, suite.format)
-        if found.markers or found.malformed:
+        if found.markers:
             out[path] = found
     return out
 
@@ -906,3 +917,162 @@ def marker_index(project_root):
         for feature in found.features():
             index.setdefault(feature, set()).add(path)
     return {name: sorted(paths) for name, paths in index.items()}
+
+
+# ---------------------------------------------------------------------------
+# Comments that are nearly a marker
+# ---------------------------------------------------------------------------
+
+# A comment whose first word, followed by a colon, may be `purlin` misspelled.
+_LOOSE_RE = re.compile(
+    r"""^(?P<lead>\s*(?:\#|//|--|;|%|'|/\*|<!--)\s*)"""
+    r"""(?P<word>[A-Za-z0-9]{5,7}):(?P<gap>\s*)(?P<rest>.*?)"""
+    r"""(?P<tail>\s*(?:\*/|-->)?\s*)$""")
+# What follows the colon, with an id of any spelling.
+_LOOSE_BODY_RE = re.compile(r'^(?P<feature>\w+)\s+(?P<kind>[A-Za-z]+)-'
+                            r'(?P<number>\d+)$')
+_KINDS = ('PROOF', 'RULE')
+
+# Why a `purlin:` comment that cannot be read is a near miss.
+UNREADABLE = ('the comment names no `<feature> PROOF-<n>` or '
+              '`<feature> RULE-<n>`')
+
+NEAR_MISSES_USAGE = ('Usage: markers.py --near-misses '
+                     '[--project-root DIR]')
+
+
+def one_edit(one, other):
+    """True when changing, adding or removing one character makes `other`."""
+    if one == other or abs(len(one) - len(other)) > 1:
+        return False
+    if len(one) == len(other):
+        return sum(a != b for a, b in zip(one, other)) == 1
+    short, long_ = (one, other) if len(one) < len(other) else (other, one)
+    for index in range(len(long_)):
+        if long_[:index] + long_[index + 1:] == short:
+            return True
+    return False
+
+
+def _only(candidates):
+    """The one candidate, or None when there are none or several."""
+    return candidates[0] if len(candidates) == 1 else None
+
+
+def near_miss(line, features):
+    """`(fix, why)` for a comment that is nearly a marker, else None.
+
+    `features` is `specs.scan_specs`' answer. `fix` is the line as it should
+    read, or None where the comment cannot be read; `why` is one sentence.
+    """
+    found = _LOOSE_RE.match(line)
+    if not found:
+        return None
+    word = found.group('word')
+    if word != 'purlin' and not one_edit(word.lower(), 'purlin') \
+            and word.lower() != 'purlin':
+        return None
+    why = []
+    if word.lower() == 'purlin' and word != 'purlin':
+        why.append('`%s` is `purlin` in capitals' % word)
+    elif word != 'purlin':
+        why.append('`%s` is one letter from `purlin`' % word)
+    if not found.group('gap'):
+        why.append('there is no space after the colon')
+    body = _LOOSE_BODY_RE.match(found.group('rest'))
+    kind = body.group('kind') if body else ''
+    fixed = kind.upper() if kind.upper() in _KINDS else _only(
+        [name for name in _KINDS if one_edit(kind.upper(), name)])
+    if fixed is None:
+        why.append(UNREADABLE)
+        return None, _sentence(why)
+    if kind.upper() != fixed:
+        why.append('`%s` is one character from `%s`' % (kind, fixed))
+    elif kind != fixed:
+        why.append('`%s` is `%s` in lower case' % (kind, fixed))
+    kind = fixed
+    feature = body.group('feature')
+    if feature not in features:
+        fixed = _only(sorted(name for name in features
+                             if one_edit(feature, name)))
+        if fixed is not None:
+            why.append('`%s` is one character from the feature `%s`'
+                       % (feature, fixed))
+            feature = fixed
+    marker_id = '%s-%s' % (kind, body.group('number'))
+    info = features.get(feature)
+    if info is not None:
+        known = set(info.get('proofs') or {}) | set(info.get('rules') or {})
+        if marker_id not in known:
+            fixed = _only(sorted(name for name in known
+                                 if one_edit(marker_id, name)))
+            if fixed is not None:
+                why.append('`%s` is one character from `%s`, which %s has'
+                           % (marker_id, fixed, feature))
+                marker_id = fixed
+    if not why:
+        return None
+    fix = '%spurlin: %s %s%s' % (found.group('lead'), feature, marker_id,
+                                 found.group('tail'))
+    return fix.strip(), _sentence(why)
+
+
+def _sentence(parts):
+    """The reasons as one sentence: joined, the first letter raised, a stop."""
+    text = '; '.join(parts)
+    return text[:1].upper() + text[1:] + '.'
+
+
+def near_misses(project_root, features, suites=None):
+    """`[{file, line, text, fix, why}]`, one per comment nearly a marker.
+
+    Only a file one suite's globs match is read, as for a marker, in path
+    and line order.
+    """
+    if suites is None:
+        suites = read_suites(project_root)[0]
+    out = []
+    for path in test_files(project_root, suites):
+        full = os.path.join(project_root, *path.split('/'))
+        try:
+            with open(full, 'r', encoding='utf-8') as handle:
+                text = handle.read()
+        except (IOError, OSError, UnicodeDecodeError):
+            continue
+        if ':' not in text:
+            continue
+        ext = os.path.splitext(path)[1].lower()
+        for number, line in comment_lines(text, ext):
+            if ':' not in line:
+                continue
+            miss = near_miss(line, features)
+            if miss is None:
+                continue
+            out.append({'file': path, 'line': number, 'text': line.strip(),
+                        'fix': miss[0], 'why': miss[1]})
+    return out
+
+
+def main(argv):
+    """`--near-misses [--project-root DIR]`: print the near misses as JSON."""
+    root = '.'
+    args = list(argv)
+    if '--near-misses' not in args:
+        args = None
+    else:
+        args.remove('--near-misses')
+        if args[:1] == ['--project-root'] and len(args) == 2 \
+                and args[1].strip():
+            root = args[1]
+            args = []
+    if args is None or args or not os.path.isdir(root):
+        print(NEAR_MISSES_USAGE, file=sys.stderr)
+        return 2
+    from purlin import specs as specs_module
+    features = specs_module.scan_specs(root)
+    print(json.dumps(near_misses(root, features)))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

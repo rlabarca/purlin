@@ -1,4 +1,4 @@
-> Format-Version: 1
+> Format-Version: 2
 
 # Marker format
 
@@ -27,14 +27,15 @@ The shape is `purlin: <feature> PROOF-<n>`: the feature is the spec's name,
 and the proof is one of its `## Proof` lines. The marker names the proof only;
 the spec already says which rule a proof serves.
 
-Where a rule has no proof, which is allowed at the gate `passed` and for a rule
-marked `[level: passed]`, the marker names the rule instead:
-`purlin: <feature> RULE-<n>`. A rule that has proofs is marked by one of them.
+Where a rule has no proof, which is allowed at the gate `passed`, the marker
+names the rule instead: `purlin: <feature> RULE-<n>`. A rule that has proofs is
+marked by one of them.
 
 `purlin:` is read after any of `#`, `//`, `--`, `;`, `%` and `'`, and inside a
 one-line `/* */` or `<!-- -->`. The comment is the whole line, leading
-whitespace aside. A `purlin:` comment of any other shape is reported as not a
-marker, by file and line.
+whitespace aside. A `purlin:` comment of any other shape ties nothing, and a
+run says nothing of it: `purlin:build` finds and repairs it (see "Comments
+that are nearly a marker" below).
 
 A Python file's comments are read with Python's own tokenizer, so a
 marker-shaped line inside a string is not a marker. A shell file's here
@@ -101,7 +102,8 @@ that file name in any directory. A file two suites match belongs to the
 first.
 
 An entry with no `run`, a `format` outside the four, or no `files` is left out,
-and the run says so in one line. Purlin writes reports under
+and the run says so in one line. With no entry left, the run runs nothing and
+suggests one (`references/supported_frameworks.md`). Purlin writes reports under
 `.purlin/runtime/reports/`, which git ignores, and deletes a suite's report
 before the suite runs, so a report from an earlier run is never read. An entry
 that names no `report` gets `.purlin/runtime/reports/<name>.xml` for `junit`,
@@ -176,7 +178,8 @@ A marker's result:
 | `not run` | every case was skipped, some were skipped and none failed, or the report holds no case for its test |
 
 In the evidence a `pass` or `fail` is written as it is, and `not run` is
-written as `missing`, with the test named as `<file>::<name>`: `Class::test_x`
+written as `missing`, except for a proof tagged `@env` for another operating
+system, which is written as `not run`. The test is named as `<file>::<name>`: `Class::test_x`
 for Python, `outer > inner > title` for JavaScript and TypeScript,
 `Class.Method` for C#, `TestX` for Go, and the file's own name for a file of
 an `exit` suite.
@@ -188,17 +191,39 @@ Purlin never guesses. Each of these is printed as one line, by file and line:
 | Line | Counts as |
 |------|-----------|
 | `purlin: <feature> <id> at <file>:<line> is tied to no test` | `not run` |
-| `purlin: <file>:<line> is not a marker; write purlin: <feature> PROOF-<n>` | nothing |
-| `purlin: <feature> <id> at <file>:<line> names a feature no spec has` | nothing, and fails the run |
-| `purlin: <feature> <id> at <file>:<line> names a proof no spec has` | nothing, and fails the run |
-| `purlin: <feature> <id> at <file>:<line> names a rule no spec has` | nothing, and fails the run |
+| `<file>:<line> names <feature> <ID>, which no spec has. Correct the comment, or run purlin:build to repair it.` | nothing, and fails the run |
 | `purlin: <feature> <id> at <file>:<line> names a rule that has proofs; name one of them` | nothing, and fails the run |
 | `purlin: the report's <name> matches <n> tests in <file>, so its result is not counted` | `not run` for those tests |
 
-After the lines of the four that fail the run, one line says what to do:
-`Remove the comment, or write the proof it names.`, or `Remove each comment, or write the
-proof it names.` when there are several. The run then exits 1, whatever its tests did.
+The second line covers a feature no spec has, and a proof or a rule its feature's
+spec does not have. A run with either of the two that fail it exits 1, whatever
+its tests did.
 
 A run also prints `Markers: <n> tied to a test, <k> not tied.`, and ends with
 `Evidence is missing: ...` and exit code 1 when a suite left no report to
 read, or when a marker of a feature it covers has no `pass` or `fail`.
+
+## Comments that are nearly a marker
+
+A test run does not look for them. `purlin:build` does, through
+
+```
+python3 scripts/mcp/purlin/markers.py --near-misses [--project-root DIR]
+```
+
+which reads every file one suite's `files` globs match, prints one JSON array and
+exits 0; a wrong command line exits 2. Each entry is one comment:
+
+| Field | What it holds |
+|-------|---------------|
+| `file` | the file, relative to the project root, `/` separated |
+| `line` | the line number, from 1 |
+| `text` | the comment as written, leading whitespace aside |
+| `fix` | the marker it meant, or null where the comment cannot be read |
+| `why` | one sentence saying what is wrong |
+
+A comment is a near miss when `purlin` is misspelled by one letter or written in
+capitals, when there is no space after the colon, when a `purlin:` comment names
+no feature and PROOF or RULE id that can be read, or when its feature, or its
+PROOF or RULE id, is one character from exactly one that exists. One character
+from two or more is not a near miss: Purlin never guesses.

@@ -1,11 +1,12 @@
 """Which test frameworks a project uses, and the `tests` entry each one gets.
 
 Detection answers all the matches, not the first: a project can carry pytest
-for the server and vitest for the client. `purlin:init` writes one entry of
-the `tests` setting for each framework it detects, with the report flag
-already in the command, and says in one line what a framework needs added
-before it can write a report. Where it detects nothing it asks for the command
-and where the report lands.
+for the server and vitest for the client. The first test run in a project
+whose `tests` setting is empty suggests the entry of the first framework it
+detects, in the order of `ENTRIES`, with the report flag already in the
+command, and says in one line what that framework needs added before it can
+write a report. Where it detects none, `purlin:test` reads the project and
+proposes an entry.
 
 Nothing of Purlin is installed in a project's test suite: every entry below
 runs the project's own test command and reads the report that command writes.
@@ -26,9 +27,9 @@ REPORTS = '.purlin/runtime/reports'
 _JS_TEST_GLOBS = ['**/*.%s.%s' % (kind, ext) for kind in ('test', 'spec')
                   for ext in ('js', 'jsx', 'mjs', 'cjs', 'ts', 'tsx')]
 
-# The entry of the `tests` setting init writes for each framework, and the
-# one line it prints about what the framework needs added. Each command is
-# the framework's own, with the flag that writes the report Purlin reads.
+# The entry of the `tests` setting suggested for each framework, in the order
+# detection tries them. Each command is the framework's own, with the flag
+# that writes the report Purlin reads.
 ENTRIES = {
     'pytest': {
         'run': 'python3 -m pytest --ignore=mutants {files} --junitxml={report}',
@@ -189,8 +190,7 @@ _DETECTORS = (
 def detect_frameworks(project_root):
     """Every framework detected under `project_root`, in registry order.
 
-    Empty when nothing matches: `purlin:init` then asks for the command that
-    runs the tests and where the report lands.
+    Empty when nothing matches.
     """
     found = []
     for framework_id, test in _DETECTORS:
@@ -203,7 +203,7 @@ def detect_frameworks(project_root):
 
 
 def entry_for(framework):
-    """The `tests` entry init writes for one framework, as a new dict."""
+    """The `tests` entry for one framework, as a new dict."""
     base = ENTRIES[framework]
     return {'name': framework, 'run': base['run'], 'report': base['report'],
             'format': base['format'], 'files': list(base['files'])}
@@ -212,3 +212,13 @@ def entry_for(framework):
 def entries_for(frameworks):
     """The `tests` setting for a list of frameworks, unknown names left out."""
     return [entry_for(name) for name in frameworks if name in ENTRIES]
+
+
+def suggest(project_root):
+    """The `tests` entry the first test run suggests, or None.
+
+    The entry of the first framework detected, in registry order; None where
+    none is detected.
+    """
+    found = detect_frameworks(project_root)
+    return entry_for(found[0]) if found else None

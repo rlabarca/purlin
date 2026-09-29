@@ -6,6 +6,14 @@
     purlin_run.py [--feature NAME ... | --all] --audit [--commit]
                   [--arm-timeout SECONDS] [--project-root DIR]
 
+**Before anything runs.** With no `.purlin/config.json` the run says so,
+names `purlin:init`, writes nothing and exits 1. In a project an older Purlin
+set up and nobody upgraded (`update.set_up_by_095`) it names
+`purlin:init --update` the same way. With the `tests` setting empty it
+writes nothing and exits 1: where it detects a test tool it knows, it prints
+that tool's entry to add (`frameworks.suggest`), and otherwise it asks for
+`purlin:test`, which reads the project and proposes one.
+
 **Which features run.** `--feature` names them and `--all` runs every one.
 With neither, `--test` and `--audit` run the features the change touched:
 `fingerprint.selection` selects a feature with no section for this
@@ -13,8 +21,8 @@ operating system, one whose newest such section was taken over another
 spec, code or tests, one with an untracked file under its scope or beside
 its tests, and one whose spec names no files. Before anything runs the run
 prints what it selected and why, what it skipped, and each untracked file
-that selected a feature; with nothing selected it says so, runs no test,
-and exits on the gate. `--ci` with no feature named runs every feature.
+that selected a feature; with nothing selected it says so and runs no test.
+`--ci` with no feature named runs every feature.
 
 **How the tests run.** The settings file names the project's own suites
 under `tests`, each with its command, where its report lands, the report's
@@ -27,46 +35,41 @@ marker of a feature it runs, and starts no suite that has none.
 
 `--test` is what `purlin:test` runs: the suites run, and the run writes this
 operating system's section of `.purlin/evidence/local/<feature>.json` for
-every feature it covered, re-renders `.purlin/tests.md` from every evidence
-file, and ends on the status table, the summary sentence and `Left to do`,
-which count every rule under `specs/`. It exits on the tests alone: 1 where
-a test failed, evidence is missing or a marker names nothing a spec has,
-else 0. It writes and does not
-commit. `--commit` commits the evidence and the table under the person's
-own identity as `purlin: evidence at <sha7>`; nothing here ever pushes. `--remote` hands the
-commit to the git host's runner instead and brings back what that runner
-wrote.
+every feature it covered and re-renders `.purlin/tests.md` from every
+evidence file. It names each rule that fails or has no test, with the
+command that fixes it, and ends on the status table, the summary sentence
+and `Left to do`, which count every rule under `specs/`. It writes and does
+not commit. `--commit` makes two commits under the person's own identity:
+the specs of the features run, the test files carrying their markers and
+the settings file, then the evidence and the table, which name the first;
+nothing here ever pushes. `--remote` hands the run to the git host's runner
+instead and brings back what that runner wrote.
 
 `--audit` is what `purlin:audit` runs: the tests, as `--test` runs them, then
 the breaks where mutation testing is on, then the AI audit, then the evidence
 write. The AI audit reads each own rule of the features run that has a proof
-with a test, whose passed cell reads `passed`, and that has no audit entry for its
-current rule, proof and test hashes; under a gate above `passed` a rule whose
-level is `passed` is not read. `--all` runs every feature and reads every
-such rule again; with no feature named and no `--all`, the tests run on the
-selection above and every feature's rules are read, skipping those that
-match their last audit. One model call per
-rule, `audit_parallel` at once (`scripts/review/ai_audit.py` makes them).
-Before the first call the run prints `AI audit: <n> rules to read, <k> at a
-time.` and carries on without asking. What the audit found lands in the same
-evidence file, under `audit`, and `--commit` commits it the same way. A rule
-the model could not be reached for gets nothing written and reads `not
-audited`; at `strong` and above that exits 1. After the evidence lines the
-audit prints one line, `AI audit: <n> rules read, <s> strong, <w> weak.`,
-then one line per reason a rule could not be audited, then the status table,
-the summary sentence and `Left to do`. At the gate `passed` nothing the audit
-found makes the run exit 1; above it the run exits 1 when a rule is short of
-its passed cell or, where its level asks for one, its strong cell.
+with a test, whose passed cell reads `passed`, and that has no audit entry for
+its current rule, proof and test hashes. `--all` runs every feature and reads
+every such rule again; with no feature named and no `--all`, the tests run
+on the selection above and every feature's rules are read, skipping those
+that match their last audit. One model call per rule, `audit_parallel` at
+once (`scripts/review/ai_audit.py` makes them). Before the first call the
+run prints `AI audit: <n> rules to read, <k> at a time.` and carries on
+without asking. What the audit found lands in the same evidence file, under
+`audit`, and `--commit` commits it the same way. A rule the model could not
+be reached for gets nothing written and reads `not audited`. After the
+evidence lines the audit prints one line, `AI audit: <n> rules read, <s>
+strong, <w> weak.`, then one line per reason a rule could not be audited,
+then the status table, the summary sentence and `Left to do`.
 
-`--ci` is the arm the CI job runs. On a run branch it writes this runner's
-section of `.purlin/evidence/ci/<feature>.json` and always commits it,
-through the git host's API, because the evidence exists nowhere else. No
-breaks run there and the AI audit is not called. On a tag run it writes
-nothing at all: the rerun and the gate check with `--verify` are what a tag
-run is for.
+`--ci` is the arm a remote runner runs. On a run branch it writes this
+runner's section of `.purlin/evidence/ci/<feature>.json` and always commits
+it, through the git host's API, because the evidence exists nowhere else. No
+breaks run there and the AI audit is not called. On a tag run it runs the
+tests and writes nothing.
 
-A proof the spec tags `@env` for another operating system is not run here. The
-run says so in one sentence and names the command that adds a remote runner.
+A proof the spec tags `@env` for another operating system is not run here.
+The run says so in one sentence and names `purlin:test --remote`.
 
 No arm and no engine ever reads this process's stdin, and none may ask git
 for a password: a runner is nobody's terminal, and a command that stops for
@@ -75,10 +78,12 @@ gets `--arm-timeout` seconds, 3600 by default; past it the arm is killed,
 what it printed is kept, the run reports the timeout as missing evidence and
 carries on.
 
-Exit codes: 0 everything asked for happened, 1 a test failed, evidence is
-missing, a marker names nothing a spec has or, for `--audit` above the gate
-`passed`, a rule is short of what the audit answers for, 2 the command line
-was wrong.
+Exit codes for `--test` and `--audit`: 0 everything asked happened; 1 a tied
+test failed or did not run, evidence is missing, a marker names nothing a
+spec has, there is no settings file, an older Purlin set the project up and
+it was not upgraded, no test command is set, or, for `--audit` above the
+gate `passed`, a rule it read is weak or could not be audited; 2 the command
+line was wrong. `--ci` exits 1 only when a test failed or could not run.
 
 The flow is one pass. Resolve the configuration and the suites, scan the
 specs and the markers, run each suite, then check two things no test
@@ -96,7 +101,9 @@ printed by file and line and fails the run.
 writes.
 """
 
+import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -104,7 +111,8 @@ import sys
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _MCP_DIR = os.path.join(os.path.dirname(_HERE), 'mcp')
 _REVIEW_DIR = os.path.join(os.path.dirname(_HERE), 'review')
-for _path in (_MCP_DIR, _REVIEW_DIR, _HERE):
+_INIT_DIR = os.path.join(os.path.dirname(_HERE), 'init')
+for _path in (_MCP_DIR, _REVIEW_DIR, _INIT_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
@@ -134,9 +142,10 @@ USAGE = (
 REMOTE_IS_A_TEST = ('a remote runner runs the tests, so --remote belongs to '
                     '--test. Run: purlin:test --remote')
 
-# What the run says about a proof tagged for an operating system it is not on.
-FOREIGN_PROOF = ('%s %s needs %s; this machine is %s. A remote runner runs '
-                 'it: purlin:init adds one.')
+# What the run says about a proof tagged for an operating system it is not
+# on, each system in the words a person reads.
+FOREIGN_PROOF = ('%s %s needs %s; this machine is %s. Run purlin:test '
+                 '--remote.')
 
 # The one line `--commit` gets anywhere but `--test` and `--audit`. A runner
 # always commits, and a remote run commits nothing here.
@@ -159,9 +168,29 @@ TIMED_OUT = 124
 # assertion of every framework init writes a command for.
 ARM_TAIL_LINES = 60
 
-# What the run says when the settings name no suite.
-NO_SUITES = ('No test suite: .purlin/config.json names no tests, so nothing '
-             'ran. purlin:init writes them.')
+# What the run says, and does not run, before any test.
+SETTINGS_PATH = os.path.join('.purlin', 'config.json')
+NO_SETTINGS = ('No .purlin/config.json here, so nothing ran. Run purlin:init '
+               'to write it.')
+SET_UP_BY_AN_OLDER_PURLIN = (
+    'This project was set up by an older Purlin and not upgraded, so nothing '
+    'ran. Run purlin:init --update.')
+NO_TEST_COMMAND = ('No test command is set in .purlin/config.json, so nothing '
+                   'ran.')
+SUGGESTED_FOR = 'Suggested for %s: %s'
+SUGGESTED_ENTRY = 'Suggested entry: %s'
+NO_TEST_TOOL = ('No test command is set in .purlin/config.json, and no test '
+                'tool Purlin knows was found, so nothing ran. Run purlin:test '
+                'to have one proposed.')
+
+# What the run says about each rule of the features it ran that fails or
+# has no test, before the status.
+RULE_FAILS = '%s %s fails: %s. Run purlin:build %s.'
+RULE_HAS_NO_TEST = '%s %s has no test. Run purlin:build %s.'
+
+# The name a remote runner's section gives its machine: its kind, not the
+# name the host lent it, so a second remote run names the same machine.
+REMOTE_MACHINE = 'remote runner, %s'
 
 # What the run says about the markers it read, once per run.
 TIED_LINE = 'Markers: %d tied to a test, %d not tied.'
@@ -584,19 +613,25 @@ def tests_by_rule(project_root, selected):
 # The evidence
 # ---------------------------------------------------------------------------
 
-def write_sections(project_root, args, features, selected, index, os_name,
-                   source):
-    """One section per feature this run covered, merged into its file. The paths.
+def machine_name(args, os_name):
+    """What a section names the machine it ran on.
 
-    Each file is read from disk and only this operating system's section is
-    replaced, so a `--feature` run, and a run on another machine, leave
-    every other section as it was.
+    A person's own run names the host, `unknown` where it has no name; a
+    remote runner names its kind and system, `remote runner, Windows`.
     """
+    if args.action == 'ci':
+        return REMOTE_MACHINE % evidence_reader.os_word(os_name)
+    return platform.node() or 'unknown'
+
+
+def build_sections(project_root, args, features, selected, index, os_name):
+    """`{feature: section}`, one section per feature this run covered."""
     commit = head_commit(project_root)
     dirty = working_tree_dirty(project_root)
     runner = runner_name(project_root, args)
     markers = fingerprint_module.marker_index(project_root)
-    paths = []
+    machine = machine_name(args, os_name)
+    sections = {}
     for name in selected:
         info = features.get(name) or {}
         entries = {}
@@ -609,13 +644,80 @@ def write_sections(project_root, args, features, selected, index, os_name,
             found = index.get((name, marker_id), [])
             if found:
                 entries[marker_id] = found
-        section = evidence_writer.build_section(
+        sections[name] = evidence_writer.build_section(
             info, entries, os_name, commit, dirty, runner,
             fingerprint_module.fingerprint(project_root, name, features,
-                                           markers))
-        paths.append(evidence_writer.write_section(
-            project_root, source, name, info, os_name, section))
-    return paths
+                                           markers),
+            machine=machine, hostname=platform.node())
+    return sections
+
+
+def write_sections(project_root, features, sections, os_name, source):
+    """Merge each section into its feature's file. The paths.
+
+    Each file is read from disk and only this operating system's section is
+    replaced, so a `--feature` run, and a run on another machine, leave
+    every other section as it was.
+    """
+    return [evidence_writer.write_section(
+        project_root, source, name, features.get(name) or {}, os_name,
+        section) for name, section in sections.items()]
+
+
+def rule_problems(features, sections, index):
+    """One line per rule of the features run that fails or has no test.
+
+    Read from the words this run's sections give each rule, so the lines,
+    the evidence and the exit code say the same. A failing rule names each
+    of its tests that failed here.
+    """
+    lines = []
+    for name, section in sections.items():
+        info = features.get(name) or {}
+        by_rule = info.get('proofs_by_rule') or {}
+        for rule_id in info.get('rule_order') or ():
+            word = (section.get('rules') or {}).get(rule_id)
+            if word == 'failed':
+                failing = []
+                for marker_id in (by_rule.get(rule_id) or [rule_id]):
+                    for entry in index.get((name, marker_id)) or ():
+                        test = '%s::%s' % (entry['test_file'],
+                                           entry['test_name'])
+                        if entry['status'] == reports_module.FAIL \
+                                and test not in failing:
+                            failing.append(test)
+                lines.append(RULE_FAILS % (name, rule_id, ', '.join(failing),
+                                           name))
+            elif word == 'no test':
+                lines.append(RULE_HAS_NO_TEST % (name, rule_id, name))
+    return lines
+
+
+def work_paths(scan, features, selected):
+    """What the first commit of `--commit` holds, sorted.
+
+    The spec of each feature run, the test files carrying a marker of one,
+    and the settings file.
+    """
+    wanted = set(selected)
+    paths = {(features.get(name) or {}).get('spec_path') for name in selected}
+    paths.update(path for path, found in scan.items()
+                 if found.features() & wanted)
+    paths.add('.purlin/config.json')
+    return sorted(path for path in paths if path)
+
+
+def commit_the_work(project_root, paths):
+    """The first of the two commits: the sha the evidence names, or None."""
+    return evidence_writer.commit_work(project_root, paths)
+
+
+def commit_the_evidence(project_root, work, removed=()):
+    """The second commit, naming the first, or HEAD where nothing was."""
+    line = evidence_writer.commit_local(
+        project_root, work or head_commit(project_root), removed)
+    if isinstance(line, str):
+        print(line)
 
 
 def _prune(project_root, features):
@@ -627,28 +729,19 @@ def _prune(project_root, features):
     return removed
 
 
-def project_counts(project_root):
-    """What a run's exit code reads, over every rule under specs/.
+def failed_rules(project_root):
+    """How many rules under specs/ read `failed` in the evidence they stand on.
 
     Each rule is counted once, under the feature that owns it, and the
-    project is counted rather than the run, so a `--feature` run answers for
-    every rule and not only for the features it ran. `failed` counts the
-    rules whose passed cell reads `failed`; `short_of_audit` those short of
-    what the audit answers for: the passed cell, and the strong cell where
-    the rule's level asks for one.
+    project is counted rather than the run: this is what a run that ran no
+    test answers with.
     """
     payload = payload_module.build_payload(project_root, generated_by='run')
-    counts = {'failed': 0, 'short_of_audit': 0}
-    for feature in payload.get('features') or ():
-        for rule in feature.get('rules') or ():
-            if rule.get('feature') != feature.get('name'):
-                continue
-            passed = (rule.get('cells') or {}).get('passed')
-            if (passed or {}).get('word') == 'failed':
-                counts['failed'] += 1
-            if rule.get('blocked_by') in ('passed', 'strong'):
-                counts['short_of_audit'] += 1
-    return counts
+    return sum(1 for feature in payload.get('features') or ()
+               for rule in feature.get('rules') or ()
+               if rule.get('feature') == feature.get('name')
+               and ((rule.get('cells') or {}).get('passed') or {}).get('word')
+               == 'failed')
 
 
 # ---------------------------------------------------------------------------
@@ -671,6 +764,11 @@ def main(argv=None):
               file=sys.stderr)
         return 2
 
+    stopped = settings_stop(project_root)
+    if stopped:
+        print(stopped)
+        return 1
+
     config = resolve_config(project_root)
     cfg = gate_module.resolve_gate(config)
     for warning in cfg.warnings:
@@ -683,6 +781,14 @@ def main(argv=None):
     if not features:
         print(status_module.NO_SPECS)
         return 1
+    suites, suite_problems = markers_module.read_suites(project_root, config)
+    for problem in suite_problems:
+        print('purlin: %s.' % problem)
+    if not suites:
+        for line in no_test_command_lines(project_root):
+            print(line)
+        return 1
+
     os_name = host_os()
     if args.all or (not args.features and args.action == 'ci'):
         selected = sorted(features)
@@ -700,12 +806,6 @@ def main(argv=None):
             'purlin:%s' % args.action)
         if not selected:
             return _nothing_to_run(project_root, args, features, cfg)
-
-    suites, suite_problems = markers_module.read_suites(project_root, config)
-    for problem in suite_problems:
-        print('purlin: %s.' % problem)
-    if not suites:
-        print(NO_SUITES)
 
     foreign = foreign_env_proofs(features, selected, os_name)
     foreign_ids = {(feature, proof_id) for feature, proof_id, _env in foreign}
@@ -765,12 +865,8 @@ def main(argv=None):
     if scan:
         print('')
         print(TIED_LINE % (tied, untied))
-        for line in (reports_module.untied_lines(scan)
-                     + reports_module.malformed_lines(scan) + wrong):
+        for line in reports_module.untied_lines(scan) + wrong:
             print(line)
-        if wrong:
-            print(reports_module.FIX_ONE if len(wrong) == 1
-                  else reports_module.FIX_MANY)
     if missing:
         # Loud failure B: a marker of a feature this run covers has no result.
         # Five are named and the rest counted: a reader acts on the first few
@@ -790,31 +886,44 @@ def main(argv=None):
     if foreign:
         print('')
         for feature, proof_id, env in foreign:
-            print(FOREIGN_PROOF % (feature, proof_id, env, os_name))
+            print(FOREIGN_PROOF % (feature, proof_id,
+                                   evidence_reader.os_word(env),
+                                   evidence_reader.os_word(os_name)))
 
     # A failing test is a result the evidence records, so it fails the run
     # without being called missing; only a suite that left nothing to read,
     # or a marker with no result, is missing evidence.
-    exit_code = 1 if (failures or wrong
-                      or any(done.failed_tests for done in runs)) else 0
+    tests_failed = bool(failures or any(done.failed_tests for done in runs))
+    exit_code = 1 if (tests_failed or wrong) else 0
     if failures:
         print('')
         for failure in failures:
             print('Evidence is missing: %s.' % failure)
 
+    work = None
+    if args.commit:
+        print('')
+        work = commit_the_work(project_root,
+                               work_paths(scan, features, selected))
+    sections = build_sections(project_root, args, features, selected, index,
+                              os_name)
+    problems = rule_problems(features, sections, index)
+    if problems:
+        print('')
+        for line in problems:
+            print(line)
+
     if args.action == 'ci':
         # Called whatever the arms found: a run that reports missing evidence
         # still commits what it saw, which is where a reader finds out what
-        # went missing.
-        ci_code = _ci(project_root, args, features, selected, index, log,
-                      os_name)
+        # went missing. Only the tests decide the job's exit code.
+        _ci(project_root, features, sections, log, os_name)
         print('')
         print(status_module.sync_status(project_root))
-        return exit_code or ci_code
+        return 1 if tests_failed else 0
 
     print('')
-    paths = write_sections(project_root, args, features, selected, index,
-                           os_name, 'local')
+    paths = write_sections(project_root, features, sections, os_name, 'local')
     removed = _prune(project_root, features)
     if args.action == 'audit':
         # The tests ran on the selection; the audit reads every feature's
@@ -822,16 +931,48 @@ def main(argv=None):
         # proof and test match its last audit.
         return _audit(project_root, args, features,
                       selected if args.features else sorted(features), log,
-                      cfg, paths, removed, exit_code)
+                      cfg, paths, removed, exit_code, work)
     evidence_writer.write_table(project_root)
     print(evidence_writer.written_line(paths))
     if args.commit:
-        print(evidence_writer.commit_local(project_root,
-                                           head_commit(project_root), removed))
+        commit_the_evidence(project_root, work, removed)
 
     print('')
     print(status_module.sync_status(project_root))
     return exit_code
+
+
+def settings_stop(project_root):
+    """The line a run stops on before anything runs, or None.
+
+    No settings file, or a project an older Purlin set up that was not
+    upgraded: each names the command that puts it right.
+    """
+    import update as update_module
+    if not os.path.isfile(os.path.join(project_root, SETTINGS_PATH)):
+        return NO_SETTINGS
+    if update_module.set_up_by_095(project_root):
+        return SET_UP_BY_AN_OLDER_PURLIN
+    return None
+
+
+def no_test_command_lines(project_root):
+    """What a run with no suite prints: the entry to add, or where to get one.
+
+    Where a test tool Purlin knows is detected, its entry, as one line of
+    JSON to put under `tests`, and what the tool needs added before it can
+    write its report; otherwise `purlin:test`, which reads the project and
+    proposes one.
+    """
+    entry = frameworks_module.suggest(project_root)
+    if entry is None:
+        return [NO_TEST_TOOL]
+    lines = [NO_TEST_COMMAND, SUGGESTED_FOR % (entry['name'], entry['run']),
+             SUGGESTED_ENTRY % json.dumps(entry)]
+    needs = frameworks_module.NEEDS.get(entry['name'])
+    if needs:
+        lines.append(needs)
+    return lines
 
 
 # ---------------------------------------------------------------------------
@@ -907,26 +1048,27 @@ def untracked_lines(rows):
 def _nothing_to_run(project_root, args, features, cfg):
     """A run with no feature named that selected nothing. The exit code.
 
-    No test runs. `--commit` still commits evidence an earlier run wrote,
-    because that is the command a refused signature names. `--audit` goes
-    on to the AI audit, which reads every rule that has no audit of its
-    current text, proof and test. Otherwise the run ends on the tests line
-    and the gate line, exiting 1 where a rule's tests fail in the evidence
-    it stands on and 0 otherwise.
+    No test runs. `--commit` still commits the settings and evidence an
+    earlier run wrote, because that is the command a refused tag names.
+    `--audit` goes on to the AI audit, which reads every rule that has no
+    audit of its current text, proof and test. The tests this run answers
+    with are the ones the evidence already holds: a rule whose tests fail
+    there exits 1.
     """
     print(NOTHING_TO_RUN % ('purlin:%s' % args.action))
-    if args.action == 'audit':
-        return _audit(project_root, args, features, sorted(features), [],
-                      cfg, [], [], 0)
+    exit_code = 1 if failed_rules(project_root) else 0
+    work = None
     if args.commit:
         print('')
-        print(evidence_writer.commit_local(project_root,
-                                           head_commit(project_root)))
+        work = commit_the_work(project_root, work_paths({}, features, []))
+    if args.action == 'audit':
+        return _audit(project_root, args, features, sorted(features), [],
+                      cfg, [], [], exit_code, work)
+    if args.commit:
+        commit_the_evidence(project_root, work)
     print('')
     print(status_module.sync_status(project_root))
-    # No test ran, so the tests this run answers with are the ones the
-    # evidence already holds: a rule whose tests fail there fails the run.
-    return 1 if project_counts(project_root)['failed'] else 0
+    return exit_code
 
 
 def _write_log(project_root, log):
@@ -955,7 +1097,6 @@ SKIPPED = ('%d %s skipped; %s text, proof and test match %s last audit. '
            'purlin:audit --all reads them again.')
 NOT_ON_PATH_LINE = 'Install Claude Code, then run purlin:audit again.'
 TRY_AGAIN_LINE = 'Run purlin:audit again.'
-WENT_STALE = '%d %s went stale: %s audit findings changed.'
 
 
 def _plural(count, one, many):
@@ -963,7 +1104,7 @@ def _plural(count, one, many):
 
 
 def _audit(project_root, args, features, selected, log, cfg, paths, removed,
-           exit_code):
+           exit_code, work=None):
     """The `--audit` arm, after the tests: the breaks, the AI audit, the write.
 
     Which rules are read is `ai_audit.is_read`'s answer. The breaks run only
@@ -971,11 +1112,11 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     read. One model call per rule, `cfg.audit_parallel` at once. What each
     answer found goes under `audit.rules` in the feature's local evidence;
     a rule the model could not be reached for gets nothing, and the reason
-    goes to `.purlin/runtime/` for the strong cell to name. Returns the exit
-    code.
+    goes to `.purlin/runtime/` for the strong cell to name. `work` is the
+    first commit `--commit` made, which the evidence commit names. Returns
+    the exit code.
     """
     import ai_audit
-    from purlin import signatures as signatures_module
 
     _write_log(project_root, log)
     gate = cfg.gate
@@ -1021,14 +1162,12 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     results = ai_audit.audit_all(project_root, readings, cfg.audit_parallel)
 
     commit = head_commit(project_root)
-    signatures = signatures_module.load_signatures(project_root, features)
     entries_by_feature = {}
     failures = {}
     answered = []
     counts = {'strong': 0, 'weak': 0, 'undecided': 0}
     causes = {}
-    went_stale = 0
-    for (feature, rule_id), reading, found in zip(to_read, readings, results):
+    for (feature, rule_id), found in zip(to_read, results):
         entry = ai_audit.rule_entry(payload, feature, rule_id) or {}
         if found.get('why'):
             causes[found['why']] = causes.get(found['why'], 0) + 1
@@ -1041,13 +1180,6 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
         counts[found['verdict']] += 1
         written = evidence_writer.audit_entry(entry, found, commit)
         entries_by_feature.setdefault(feature, {})[rule_id] = written
-        before = entry.get('audit_hash')
-        after = signatures_module.audit_hash(written,
-                                             reading.get('test_strength'))
-        if after != before:
-            for signature in signatures.get((feature, rule_id)) or ():
-                if signatures_module.is_current(signature, entry):
-                    went_stale += 1
     for feature, entries in sorted(entries_by_feature.items()):
         evidence_writer.write_audit(project_root, 'local', feature,
                                     features.get(feature) or {}, entries,
@@ -1056,10 +1188,6 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     evidence_writer.write_table(project_root)
 
     print('')
-    if went_stale:
-        print(WENT_STALE % (went_stale,
-                            _plural(went_stale, 'signature', 'signatures'),
-                            _plural(went_stale, 'its', 'their')))
     # The files the tests wrote, then any the audit alone wrote into: a run
     # that selected nothing for its tests still writes what the audit found.
     written = list(paths)
@@ -1070,8 +1198,7 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     if written:
         print(evidence_writer.written_line(written))
     if args.commit:
-        print(evidence_writer.commit_local(project_root,
-                                           head_commit(project_root), removed))
+        commit_the_evidence(project_root, work, removed)
     # The one line the audit keeps before the ending: what it read and found,
     # then why any rule could not be read.
     print(_summary_line(counts, skipped))
@@ -1084,12 +1211,27 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     print(status_module.sync_status(project_root))
     if gate == 'passed':
         return exit_code
-    counts = project_counts(project_root)
-    # A finding blocks: the audit answers for the passed cell and, where a
-    # rule's level asks for one, the strong cell. It cannot make a signature
-    # appear, so a rule waiting on one does not fail the audit.
-    return (exit_code or (1 if causes else 0)
-            or (1 if counts['short_of_audit'] else 0))
+    # Above `passed` a rule it read that is weak, or that it could not
+    # audit, fails it. It cannot make a signature appear, so a rule waiting
+    # on one does not fail the audit.
+    return exit_code or (1 if causes or weak_rules(project_root, answered)
+                         else 0)
+
+
+def weak_rules(project_root, read):
+    """How many of the rules `read` names have a strong cell reading `weak`.
+
+    What the model found and the strength the breaks measured both make the
+    cell weak, so the cell is what is read.
+    """
+    wanted = set(read)
+    payload = payload_module.build_payload(project_root, generated_by='audit')
+    return sum(1 for feature in payload.get('features') or ()
+               for rule in feature.get('rules') or ()
+               if rule.get('feature') == feature.get('name')
+               and (feature['name'], rule.get('id')) in wanted
+               and ((rule.get('cells') or {}).get('strong') or {}).get('word')
+               == 'weak')
 
 
 def _summary_line(counts, skipped):
@@ -1145,7 +1287,7 @@ def _run_breaks(project_root, args, features, selected):
 # CI
 # ---------------------------------------------------------------------------
 
-def _ci(project_root, args, features, selected, index, log, os_name):
+def _ci(project_root, features, sections, log, os_name):
     """The `--ci` arm: on a run branch, this runner's sections, committed.
 
     A runner writes only its own operating system's section of
@@ -1153,20 +1295,18 @@ def _ci(project_root, args, features, selected, index, log, os_name):
     host's API, merged on every attempt into what the branch's head holds,
     because its evidence exists nowhere else. No breaks run here and the AI
     audit is not called: `purlin:audit` on a person's machine does both. A
-    tag run writes nothing: what it is for is the rerun on a clean machine
-    and the check the gate step makes over what is already committed.
+    tag run runs the tests and writes nothing.
     """
     from host import commit_files, commits_here, no_commit_line
 
     if not commits_here(project_root):
         print('')
         print(no_commit_line(project_root))
-        return 0
+        return
 
     _write_log(project_root, log)
     print('')
-    paths = write_sections(project_root, args, features, selected, index,
-                           os_name, 'ci')
+    paths = write_sections(project_root, features, sections, os_name, 'ci')
     _prune(project_root, features)
     print(evidence_writer.written_line(paths, 'ci'))
     commit = head_commit(project_root)
@@ -1176,7 +1316,6 @@ def _ci(project_root, args, features, selected, index, log, os_name):
     commit_files(project_root, paths, evidence_writer.COMMIT_SUBJECT
                  % (commit[:7] or 'an unknown commit'), merge)
     print(evidence_writer.COMMITTED)
-    return 0
 
 
 def _remote(project_root, args, cfg=None):
