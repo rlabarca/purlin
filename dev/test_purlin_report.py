@@ -998,6 +998,9 @@ def test_a_chosen_button_names_its_command(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click(chip_for('To audit'))
     assert page.evaluate(COMMAND_LINE) == 'Type purlin:audit in Claude Code.'
+    assert page.evaluate(
+        "() => document.querySelector('.cmdline').getBoundingClientRect().top"
+        " >= document.querySelector('.filters').getBoundingClientRect().bottom")
     assert 'courier' in page.eval_on_selector(
         '.cmdline .cmd', 'el => getComputedStyle(el).fontFamily').lower()
     page.close()
@@ -1826,6 +1829,13 @@ def login_open(browser, tmp_path, payload=None):
     return page
 
 
+# Whether the reasons beneath an unfolded rule come before its first proof.
+WHY_FIRST = """() => { const why = document.querySelector('.rule-proofs .why');
+  const proof = document.querySelector('.rule-proofs .proof');
+  return !!why && !!proof && !!(why.compareDocumentPosition(proof)
+    & Node.DOCUMENT_POSITION_FOLLOWING); }"""
+
+
 def unfolded(browser, tmp_path, feature, rule, name='regulated'):
     """The board of one sample with one spec open and one rule unfolded."""
     page = open_board(browser, tmp_path, payload_named(name))
@@ -2248,6 +2258,7 @@ def test_an_unfolded_weak_rule_says_why_and_what_the_audit_found(browser,
         'Audit', 'Weak. PROOF-3 reads the status code alone; no test reads '
         'when the lock expires.']
     assert proof_lines(page)[0] == 'PROOF-3'
+    assert page.evaluate(WHY_FIRST)
     page.close()
 
 
@@ -2257,6 +2268,7 @@ def test_an_unfolded_rule_that_reached_every_step_reads_the_audit(browser,
     page = unfolded(browser, tmp_path, 'login', 'RULE-1')
     assert why_lines(page) == ['Audit', 'Strong. It found nothing.']
     assert proof_lines(page)[0] == 'PROOF-1'
+    assert page.evaluate(WHY_FIRST)
     page.close()
 
 
@@ -2267,6 +2279,7 @@ def test_an_unfolded_rule_no_audit_read_says_so(browser, tmp_path):
         'Strong', 'NOT AUDITED no audit has run on this code',
         'Signed', 'WAITING waiting for the audit',
         'Audit', 'No audit has read this rule’s text, proof and test yet.']
+    assert page.evaluate(WHY_FIRST)
     page.close()
 
 
@@ -2274,4 +2287,5 @@ def test_an_unfolded_rule_no_audit_read_says_so(browser, tmp_path):
 def test_an_unfolded_rule_at_passed_has_no_audit_row(browser, tmp_path):
     page = unfolded(browser, tmp_path, 'login', 'RULE-2', name='solo')
     assert why_lines(page) == ['Passed', 'NO TEST']
+    assert page.evaluate(WHY_FIRST)
     page.close()
