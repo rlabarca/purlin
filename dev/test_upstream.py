@@ -8,10 +8,11 @@ a path to a bare repository on disk.
 What the tests hold:
 
 `add`      writes the local copy with `> Source:` and `> Pinned:`, derives a
-           name when none is given, and turns a free-text source into a copy
-           carrying a note instead of rules
-`sync`     reports the rule delta, advances the pin, and reaches each source
-           once per run
+           name when none is given, and refuses a source that is not a spec
+           in Purlin's format kept in a git repository
+`sync`     reports the rule delta, advances the pin, fetches each source once
+           per run, and reports an anchor whose source names no repository
+           as `error`
 `--check`  changes nothing and exits 1 when a pin is behind
 """
 
@@ -240,14 +241,6 @@ def _files(root):
     return held
 
 
-def _policy(workspace, text='Every refund is countersigned by a second '
-                            'person.\n'):
-    """A text file in the project, the free-text source. Returns its path."""
-    source = os.path.join(workspace.root, 'policy.txt')
-    _write(source, text)
-    return source
-
-
 # ---------------------------------------------------------------------------
 # add
 # ---------------------------------------------------------------------------
@@ -287,8 +280,10 @@ def test_the_pin_is_the_full_head_sha_and_names_no_branch(workspace):
 
 # purlin: upstream PROOF-3
 def test_with_no_name_the_anchor_is_named_after_its_file(workspace):
+    """The path is spelled with the running system's separator, so a run on
+    Windows types it with a backslash."""
     result = upstream.add(workspace.root, workspace.anchor_repo,
-                          path='specs/no_secrets.md')
+                          path=os.path.join('specs', 'no_secrets.md'))
     assert result['anchor'] == 'no_secrets'
     assert _anchors_held(workspace) == ['no_secrets.md']
 
@@ -353,59 +348,6 @@ def test_a_repository_source_starts_git_and_writes_the_copy(workspace, started):
     assert _add(workspace)['status'] == 'added'
     assert any(args[:1] == ['git'] for args in started), started
     assert _anchors_held(workspace) == ['no_eval.md']
-
-
-# ---------------------------------------------------------------------------
-# add: a free-text source
-# ---------------------------------------------------------------------------
-
-# purlin: upstream PROOF-7
-def test_a_text_file_becomes_an_anchor_with_a_note_and_no_rules(workspace):
-    _policy(workspace)
-    result = upstream.add(workspace.root, 'policy.txt', name='refunds')
-    assert result['status'] == 'no_rules'
-    lines = _copy_text(workspace, 'refunds').splitlines()
-    assert 'Every refund is countersigned by a second person.' in lines, lines
-    assert ('> Note: the source is free text, so no rules are written from '
-            'it yet. Run purlin:anchor create to write them.') in lines, lines
-    assert '## Rules' in lines and '## Proof' in lines, lines
-    assert not any('RULE-' in line for line in lines), lines
-
-
-# purlin: upstream PROOF-24
-def test_adding_unchanged_text_again_keeps_the_pin(workspace):
-    source = _policy(workspace)
-    first = upstream.add(workspace.root, source, name='refunds')['pinned']
-    again = upstream.add(workspace.root, source, name='refunds')['pinned']
-    assert first and again == first
-
-
-# purlin: upstream PROOF-28
-def test_rewording_the_text_moves_the_pin(workspace):
-    source = _policy(workspace)
-    first = upstream.add(workspace.root, source, name='refunds')['pinned']
-    _policy(workspace, 'Every refund over 100.00 is countersigned by a second '
-                       'person.\n')
-    moved = upstream.add(workspace.root, source, name='refunds')
-    assert moved['pinned'] != first
-    lines = _copy_text(workspace, 'refunds').splitlines()
-    assert '> Pinned: %s' % moved['pinned'] in lines, lines
-    assert '> Pinned: %s' % first not in lines, lines
-    assert ('Every refund over 100.00 is countersigned by a second person.'
-            in lines), lines
-
-
-# purlin: upstream PROOF-29
-def test_a_text_file_named_by_its_full_path_is_free_text(workspace, started):
-    """A full path begins with the character a repository on disk does, so
-    the file has to win: a text file is not a repository."""
-    source = _policy(workspace, 'Nothing is deleted without a record.\n')
-    del started[:]
-    result = upstream.add(workspace.root, source, name='refunds')
-    assert result['status'] == 'no_rules'
-    assert ('Nothing is deleted without a record.'
-            in _copy_text(workspace, 'refunds').splitlines())
-    assert started == [], started
 
 
 # ---------------------------------------------------------------------------
@@ -547,6 +489,27 @@ def test_sync_from_the_command_line_prints_the_delta(workspace):
         % (workspace.first_sha[:7], new_sha[:7])]
 
 
+# purlin: upstream PROOF-39
+def test_a_source_with_crlf_endings_syncs_to_a_copy_with_no_carriage_return(
+        workspace):
+    _add(workspace)
+    _git(['config', 'core.autocrlf', 'false'], workspace.anchor_work)
+    path = os.path.join(workspace.anchor_work, 'specs', 'no_eval.md')
+    with open(path, 'w', encoding='utf-8', newline='') as handle:
+        handle.write(ANCHOR_V2.replace('\n', '\r\n'))
+    new_sha = _publish(workspace.anchor_work, 'publish with CRLF endings')
+    published = subprocess.run(
+        ['git', 'show', 'HEAD:specs/no_eval.md'], cwd=workspace.anchor_work,
+        capture_output=True, check=True).stdout
+    assert b'\r\n' in published
+
+    upstream.sync(workspace.root, names=['no_eval'])
+    with open(upstream.anchor_path(workspace.root, 'no_eval'), 'rb') as handle:
+        copy = handle.read()
+    assert ('> Pinned: %s\n' % new_sha).encode('ascii') in copy
+    assert b'\r' not in copy
+
+
 # purlin: upstream PROOF-12
 def test_sync_says_so_when_only_the_prose_moved(workspace):
     _add(workspace)
@@ -557,22 +520,6 @@ def test_sync_says_so_when_only_the_prose_moved(workspace):
     assert row['rule_changes'] == {'added': [], 'removed': [], 'changed': []}
     assert row['pinned'] == new_sha
     assert '> Pinned: %s' % new_sha in _copy_text(workspace).splitlines()
-
-
-# purlin: upstream PROOF-14
-def test_sync_all_covers_every_repository_anchor_and_no_others(workspace,
-                                                               started):
-    _add(workspace)
-    upstream.add(workspace.root, workspace.anchor_repo,
-                 path='specs/no_secrets.md')
-    upstream.add(workspace.root, _policy(workspace), name='refunds')
-    _advance(workspace)
-    del started[:]
-
-    result = upstream.sync(workspace.root)
-    assert sorted(row['anchor'] for row in result['anchors']) == [
-        'no_eval', 'no_secrets']
-    assert not any('policy.txt' in ' '.join(args) for args in started), started
 
 
 # purlin: upstream PROOF-15
@@ -586,6 +533,22 @@ def test_check_reaches_a_shared_source_once(workspace, started):
     assert len(result['anchors']) == 2
     reached = [args for args in started if workspace.anchor_repo in args]
     assert len(reached) == 1, started
+
+
+# purlin: upstream PROOF-38
+def test_sync_fetches_a_shared_source_once(workspace, started):
+    """Two anchors behind on one repository is one clone of it, not two."""
+    _add(workspace)
+    upstream.add(workspace.root, workspace.anchor_repo,
+                 path='specs/no_secrets.md')
+    _advance(workspace)
+    del started[:]
+    result = upstream.sync(workspace.root)
+    assert [row['status'] for row in result['anchors']] == ['synced',
+                                                             'synced']
+    clones = [args for args in started
+              if args[:2] == ['git', 'clone'] and workspace.anchor_repo in args]
+    assert len(clones) == 1, started
 
 
 # ---------------------------------------------------------------------------
@@ -621,3 +584,148 @@ def test_nothing_is_written_outside_the_project_root(workspace):
     parent = os.path.dirname(workspace.root)
     assert sorted(os.listdir(parent)) == [
         'policies.git', 'policies_work', 'project', 'project.git']
+
+
+# ---------------------------------------------------------------------------
+# A source that is not a spec in Purlin's format kept in a git repository
+# ---------------------------------------------------------------------------
+
+POLICY = 'Every refund is countersigned by a second person.\n'
+
+REFUNDS = """# Anchor: refunds
+
+> Source: %s
+> Pinned: 0123456789ab
+
+## Rules
+
+- RULE-1: Every refund is countersigned by a second person
+
+## Proof
+
+- PROOF-1 (RULE-1): A refund of 10.00 waits for a second person @manual
+"""
+
+
+def _without_anchor_folder(workspace):
+    """The project as a new one is: `specs/_anchors/` not made yet."""
+    os.rmdir(os.path.join(workspace.root, 'specs', '_anchors'))
+
+
+def _runtime_files(workspace):
+    """Every file under `.purlin/runtime/anchors/`, the fetched checkouts."""
+    runtime = os.path.join(workspace.root, '.purlin', 'runtime', 'anchors')
+    return [os.path.join(folder, name)
+            for folder, _dirs, names in os.walk(runtime) for name in names]
+
+
+def _hand_anchor(workspace, source):
+    """An anchor already in the project whose `> Source:` is `source`."""
+    path = upstream.anchor_path(workspace.root, 'refunds')
+    _write(path, REFUNDS % source)
+    with open(path, 'rb') as handle:
+        return handle.read()
+
+
+def _refused(what):
+    return ("refunds: not added. %s is not a spec in Purlin's format kept in "
+            "a git repository. Run purlin:anchor create refunds to write its "
+            "rules in this project." % what)
+
+
+def _not_a_spec(source):
+    return ("refunds: its source, %s, is not a spec in Purlin's format kept in "
+            "a git repository, so it cannot be checked. Run purlin:spec "
+            "refunds to take out its > Source: and > Pinned: lines and keep it "
+            "as this project's own anchor." % source)
+
+
+# purlin: upstream PROOF-40
+def test_add_refuses_a_text_file_in_the_project(workspace, started):
+    _write(os.path.join(workspace.root, 'policy.txt'), POLICY)
+    _without_anchor_folder(workspace)
+    before = _files(os.path.join(workspace.root, 'specs'))
+    del started[:]
+    code, out = _cli(workspace, ['add', 'policy.txt', '--name', 'refunds'])
+    assert code == 2
+    assert out.splitlines() == [_refused('policy.txt')]
+    assert started == [], started
+    assert not os.path.exists(os.path.join(workspace.root, 'specs', '_anchors'))
+    assert _files(os.path.join(workspace.root, 'specs')) == before
+
+
+# purlin: upstream PROOF-41
+def test_add_refuses_a_description_in_words(workspace, started):
+    _without_anchor_folder(workspace)
+    del started[:]
+    code, out = _cli(workspace, ['add', 'Every refund is countersigned',
+                                 '--name', 'refunds'])
+    assert code == 2
+    assert out.splitlines() == [_refused('The description given')]
+    assert started == [], started
+    assert not os.path.exists(os.path.join(workspace.root, 'specs', '_anchors'))
+
+
+# purlin: upstream PROOF-42
+def test_add_refuses_a_repository_file_that_holds_no_rule(workspace):
+    _write(os.path.join(workspace.anchor_work, 'docs', 'refunds.md'),
+           '# Refunds\n\n' + POLICY)
+    _publish(workspace.anchor_work, 'publish the refunds policy as prose')
+    _without_anchor_folder(workspace)
+    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path',
+                                 'docs/refunds.md', '--name', 'refunds'])
+    assert code == 2
+    assert out.splitlines() == [_refused('docs/refunds.md')]
+    assert not os.path.exists(os.path.join(workspace.root, 'specs', '_anchors'))
+    assert _runtime_files(workspace) == []
+
+
+# purlin: upstream PROOF-43
+def test_check_reports_an_anchor_from_a_text_file_as_error(workspace, started):
+    _write(os.path.join(workspace.root, 'policy.txt'), POLICY)
+    _hand_anchor(workspace, 'policy.txt')
+    before = _files(workspace.root)
+    del started[:]
+    code, out = _cli(workspace, ['sync', '--check'])
+    assert code == 2
+    assert out.splitlines() == [_not_a_spec('policy.txt')]
+    assert started == [], started
+    assert _files(workspace.root) == before
+
+
+# purlin: upstream PROOF-44
+def test_sync_by_name_reports_an_anchor_from_words_as_error(workspace,
+                                                            started):
+    words = 'Every refund is countersigned'
+    held = _hand_anchor(workspace, words)
+    del started[:]
+    code, out = _cli(workspace, ['sync', 'refunds', '--json'])
+    assert code == 2
+    row = json.loads(out)['anchors'][0]
+    assert row['status'] == 'error'
+    assert row['not_a_spec'] is True
+    assert 'refunds: %s' % row['error'] == _not_a_spec(words)
+    assert started == [], started
+    with open(upstream.anchor_path(workspace.root, 'refunds'), 'rb') as handle:
+        assert handle.read() == held
+
+
+# purlin: upstream PROOF-45
+def test_sync_all_reports_the_text_file_anchor_and_syncs_the_others(
+        workspace, started):
+    _add(workspace)
+    upstream.add(workspace.root, workspace.anchor_repo,
+                 path='specs/no_secrets.md')
+    _write(os.path.join(workspace.root, 'policy.txt'), POLICY)
+    held = _hand_anchor(workspace, 'policy.txt')
+    _advance(workspace)
+    del started[:]
+    code, out = _cli(workspace, ['sync', '--json'])
+    assert code == 2
+    rows = {row['anchor']: row['status']
+            for row in json.loads(out)['anchors']}
+    assert rows == {'no_eval': 'synced', 'no_secrets': 'synced',
+                    'refunds': 'error'}
+    assert not any('policy.txt' in ' '.join(args) for args in started), started
+    with open(upstream.anchor_path(workspace.root, 'refunds'), 'rb') as handle:
+        assert handle.read() == held

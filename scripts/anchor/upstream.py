@@ -20,12 +20,13 @@ Every command takes `--project-root DIR`; without it the root is the one
 `config_engine` resolves from the working directory.
 
 `add` fetches the file at the source's default branch head and writes the local
-copy. A source that is not a repository is free text: the copy carries the text
-and a note saying no rules are written from it yet, because writing them is
-the skill's job, not this module's.
+copy. The file is a spec in Purlin's format kept in a git repository: `add`
+refuses a file on disk, a description in words or a file that holds no rule,
+and writes nothing.
 
-`sync` names the rules that changed and advances the pin. `--check` changes nothing and exits
-1 when a pin is behind, 2 when a source could not be read. `--json` prints the
+`sync` names the rules that changed and advances the pin, fetching each distinct
+source once per run. `--check` changes nothing and exits 1 when a pin is behind,
+2 when a source could not be read or names no repository. `--json` prints the
 same answer for the skill. A consumer never edits a pinned rule in place.
 """
 
@@ -114,11 +115,17 @@ def remote_head(project_root, url, cache=None):
     return remote.get('sha'), '' if remote.get('sha') else 'no HEAD ref returned'
 
 
-def fetch_source(project_root, url):
+def fetch_source(project_root, url, cache=None):
     """`(checkout_dir, head_sha, error)` for one source.
 
-    The fetch is shallow: the head is all an add or a sync reads.
+    The fetch is shallow: the head is all an add or a sync reads. A `cache`
+    keyed on the url holds each answer for the rest of the run, so every
+    anchor pinned to one source reads the one checkout.
     """
+    if cache is not None:
+        if url not in cache:
+            cache[url] = fetch_source(project_root, url)
+        return cache[url]
     safe, reason = drift_module.source_url_is_safe(url)
     if not safe:
         return None, None, 'source rejected: %s' % reason
@@ -244,13 +251,18 @@ def format_rule_diff(diff):
 # add
 # ---------------------------------------------------------------------------
 
-FREE_TEXT_NOTE = ('the source is free text, so no rules are written from it '
-                  'yet. Run purlin:anchor create to write them.')
+# The refusal of a source that is not a spec in Purlin's format kept in a git
+# repository: what was given, then the anchor's name.
+NOT_A_SPEC = ("not added. %s is not a spec in Purlin's format kept in a git "
+              "repository. Run purlin:anchor create %s to write its rules in "
+              "this project.")
+
+WORDS_GIVEN = 'The description given'
 
 
 def _default_name(source, path):
     base = path or source
-    base = base.rstrip('/').split('/')[-1]
+    base = re.split(r'[\\/]', base.rstrip('/\\'))[-1]
     for suffix in ('.git', '.md', '.txt'):
         if base.endswith(suffix):
             base = base[:-len(suffix)]
@@ -259,24 +271,17 @@ def _default_name(source, path):
 
 def add(project_root, source, path=None, name=None):
     """Fetch an anchor from a source and write the local copy. Returns a dict."""
+    given = path
+    path = path.replace('\\', '/') if path else path
     name = name or _default_name(source, path)
     result = {'command': 'add', 'anchor': name, 'source': source, 'path': path}
     safe, reason = drift_module.source_url_is_safe(source)
     if not safe:
         result.update({'status': 'error', 'error': 'source rejected: %s' % reason})
         return result
-    is_free_text, text = _free_text(project_root, source)
-    if is_free_text:
-        pinned = hashlib.sha256(text.encode('utf-8')).hexdigest()[:12]
-        body = text if text.lstrip().startswith('#') else (
-            '# Anchor: %s\n\n%s' % (name, text))
-        if '## Rules' not in body:
-            body = body.rstrip('\n') + '\n\n## Rules\n\n## Proof\n'
-        copy = compose_copy(body, source, pinned, note=FREE_TEXT_NOTE)
-        _write(anchor_path(project_root, name), copy)
-        result.update({'status': 'no_rules', 'pinned': pinned,
-                       'spec_path': 'specs/_anchors/%s.md' % name,
-                       'note': FREE_TEXT_NOTE})
+    if not drift_module.source_is_repository(project_root, source):
+        what = source if _is_file(project_root, source) else WORDS_GIVEN
+        result.update({'status': 'error', 'error': NOT_A_SPEC % (what, name)})
         return result
 
     checkout, head, error = fetch_source(project_root, source)
@@ -287,6 +292,10 @@ def add(project_root, source, path=None, name=None):
     if error:
         result.update({'status': 'error', 'error': error})
         return result
+    if not parse_rules(name, content):
+        _rmtree(checkout)
+        result.update({'status': 'error', 'error': NOT_A_SPEC % (given, name)})
+        return result
     source_line = '%s %s' % (source, path)
     _write(anchor_path(project_root, name),
            compose_copy(content, source_line, head))
@@ -296,36 +305,24 @@ def add(project_root, source, path=None, name=None):
     return result
 
 
-def is_repository(project_root, source):
-    """True when a `> Source:` names a repository rather than free text.
-
-    A path to a readable file satisfies the git-url test as well, because
-    `/home/me/policy.txt` begins with a slash; the file wins, since a text
-    file is not a repository. Anything that is neither a file nor a git url
-    is free text too, and the person writes the rules from it.
-    """
-    for candidate in (os.path.join(project_root, source), source):
-        if os.path.isfile(candidate):
-            return False
-    return drift_module._looks_like_git(source)
-
-
-def _free_text(project_root, source):
-    """`(is_free_text, text)` for a source, the text empty unless it is a file."""
-    if is_repository(project_root, source):
-        return False, ''
-    for candidate in (os.path.join(project_root, source), source):
-        if os.path.isfile(candidate):
-            with open(candidate, 'r', encoding='utf-8') as handle:
-                return True, handle.read()
-    return True, ''
+def _is_file(project_root, source):
+    """True when a source refused as no repository names a file on disk."""
+    return any(os.path.isfile(candidate)
+               for candidate in (os.path.join(project_root, source), source))
 
 
 def _write(path, text):
+    """Write a copy Purlin composed: `\\n` line endings on every system.
+
+    The text is written as it stands (`newline=''`), with every `\\r\\n` it
+    held turned to `\\n` first, so the copy carries no carriage return
+    whatever line endings its source had.
+    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    text = (text or '').replace('\r\n', '\n')
     if text and not text.endswith('\n'):
         text += '\n'
-    with open(path, 'w', encoding='utf-8') as handle:
+    with open(path, 'w', encoding='utf-8', newline='') as handle:
         handle.write(text)
 
 
@@ -334,11 +331,10 @@ def _write(path, text):
 # ---------------------------------------------------------------------------
 
 def pinned_anchors(project_root):
-    """`{name: info}` for every anchor whose `> Source:` names a repository."""
+    """`{name: info}` for every anchor carrying a `> Source:`."""
     features = specs_module.scan_specs(project_root)
     return {name: info for name, info in sorted(features.items())
-            if info.get('is_anchor') and info.get('source')
-            and is_repository(project_root, info['source'])}
+            if info.get('is_anchor') and info.get('source')}
 
 
 def sync(project_root, names=None, check=False):
@@ -346,6 +342,7 @@ def sync(project_root, names=None, check=False):
     anchors = pinned_anchors(project_root)
     wanted = list(names) if names else sorted(anchors)
     cache = {}
+    fetched = {}
     rows = []
     for name in wanted:
         info = anchors.get(name)
@@ -353,16 +350,22 @@ def sync(project_root, names=None, check=False):
             rows.append({'anchor': name, 'status': 'error',
                          'error': 'no anchor named %s carries a git source' % name})
             continue
-        rows.append(_sync_one(project_root, name, info, cache, check))
+        rows.append(_sync_one(project_root, name, info, cache, fetched,
+                              check))
     behind = [r for r in rows if r['status'] in ('behind', 'synced')]
     errors = [r for r in rows if r['status'] == 'error']
     return {'command': 'sync', 'checked': bool(check), 'anchors': rows,
             'behind': len(behind), 'errors': len(errors)}
 
 
-def _sync_one(project_root, name, info, cache, check):
+def _sync_one(project_root, name, info, cache, fetched, check):
     row = {'anchor': name, 'source': info['source'],
            'path': info.get('source_path'), 'pinned': info.get('pinned')}
+    if not drift_module.source_is_repository(project_root, info['source']):
+        row.update({'status': 'error', 'not_a_spec': True,
+                    'error': drift_module.not_a_spec_source(name,
+                                                            info['source'])})
+        return row
     head, error = remote_head(project_root, info['source'], cache)
     if error:
         row.update({'status': 'error', 'error': error})
@@ -376,7 +379,8 @@ def _sync_one(project_root, name, info, cache, check):
         row['status'] = 'behind' if pinned else 'unpinned'
         return row
 
-    checkout, _head, error = fetch_source(project_root, info['source'])
+    checkout, _head, error = fetch_source(project_root, info['source'],
+                                          fetched)
     if error:
         row.update({'status': 'error', 'error': error})
         return row
@@ -408,12 +412,8 @@ def _render(result):
         lines.append('%s: written to %s, pinned %s'
                      % (result['anchor'], result['spec_path'],
                         result['pinned'][:7]))
-        if result['status'] == 'no_rules':
-            lines.append('  the source is free text: no rules written yet. Run '
-                         'purlin:anchor create %s.' % result['anchor'])
-        else:
-            lines.append('  %d rules. Run purlin:status to see them.'
-                         % len(result['rules']))
+        lines.append('  %d rules. Run purlin:status to see them.'
+                     % len(result['rules']))
         return lines
     for row in result['anchors']:
         name = row['anchor']
@@ -432,6 +432,8 @@ def _render(result):
             lines.append('%s: %s. Pin advanced from %s to %s.'
                          % (name, row['summary'], (row.get('previous') or 'none')[:7],
                             row['pinned'][:7]))
+        elif row.get('not_a_spec'):
+            lines.append('%s: %s' % (name, row['error']))
         else:
             lines.append('%s: the source could not be read (%s).'
                          % (name, row.get('error', 'unknown')))
@@ -458,7 +460,7 @@ def build_parser():
     sub = parser.add_subparsers(dest='command')
 
     add_parser = sub.add_parser('add', help='fetch an anchor and write the copy')
-    add_parser.add_argument('source', help='a git url, or a file of free text')
+    add_parser.add_argument('source', help='a git url')
     add_parser.add_argument('--path', default=None,
                             help='the path to the anchor inside the source')
     add_parser.add_argument('--name', default=None,
