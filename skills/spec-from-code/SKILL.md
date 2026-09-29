@@ -11,9 +11,10 @@ the way in. Afterwards every new rule comes from `purlin:spec`.
 **Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
 through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them.
 
-**The honest limit.** A rule read off code says what the code does, not what it should do. A
-bug becomes a rule if you are not careful, and every rule this skill writes is a draft until a
-person reads it. Say so when you hand the result over.
+**The honest limit.** Every rule is written from what its test expects, passing or not, and
+no test is run first: a failing test keeps its rule failing until the code is fixed. Where no
+test covers the code, the rule says what the code does, not what it should do, so every rule
+this skill writes is a draft until a person reads it. Say so when you hand the result over.
 
 ## Before you start
 
@@ -38,12 +39,14 @@ this skill writes specs and nothing can read them until the project is set up.
    `spec(<name>):` prefix from `references/commit_conventions.md`. Write the position to
    `.purlin/runtime/spec-from-code.json` after each commit, so a session that ends halfway
    resumes at the next feature instead of starting over.
-6. **Report.** Print the count of features, the count of rules, how many rules already
-   have a passing test, and each proof an existing test already shows, beside that test.
+6. **Report.** Print the count of features and of rules, each proof an existing test
+   already shows beside that test, and each test left untied with its reason. Give every
+   source file a rule where you can, and end the report by listing the source files that got
+   none, for a person or an agent to decide.
 
 ## What the rules look like
 
-Every rule this skill writes carries `[level: passed]`:
+A spec this skill writes:
 
 ```markdown
 # Feature: rate_limit
@@ -53,17 +56,14 @@ Every rule this skill writes carries `[level: passed]`:
 
 ## Rules
 
-- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429 [level: passed]
-- RULE-2: Include a Retry-After header on every 429 response [level: passed]
+- RULE-1: Reject a client with more than 60 requests in a rolling minute with HTTP 429
+- RULE-2: Include a Retry-After header on every 429 response
 
 ## Proof
 
 - PROOF-1 (RULE-1): One client sends 61 requests within one minute; the first 60 return 200 and the 61st returns 429
 - PROOF-2 (RULE-2): The 429 answer to a 61st request carries a `Retry-After` header holding a whole number of seconds above 0
 ```
-
-`passed` is correct because nobody has judged yet whether the rule is worth an audit and a
-signature. The level is re-marked later, in one pass, and re-marking it stales no signature.
 
 For the rule and proof grammar read `references/formats/spec_format.md`; for what makes a rule
 worth keeping read `references/spec_quality_guide.md`.
@@ -74,8 +74,12 @@ Write every proof to `references/spec_quality_guide.md`, "Writing proofs". When 
 already shows what a proof asks, the proof says what that test shows, in the same words it
 would use if no test existed, and never names the test. Then tie the two: offer to add the
 marker comment above that test, `purlin: <feature> PROOF-<n>` in the file's own comment
-syntax, and write no new test. A test that shows part of what the proof asks is not that
-test; leave it unmarked and let `purlin:build` write one.
+syntax, and write no new test.
+
+Tie every test the project already has. A test is left untied for one of three reasons, and
+the report lists each such test with its reason: it shows only part of what a rule needs, it
+repeats a test already tied, or it tests code the project does not own. `purlin:build` writes
+the test a rule still lacks.
 
 When nothing tests it, write the proof as if the test existed. The rule then reads `no test`
 in its passed cell and `purlin:build` writes the test on the next pass.
@@ -89,8 +93,6 @@ and note the behaviour in `> Description:`.
   module can see.
 - Do not copy an implementation into a rule. "Uses a Redis sorted set" is not a claim about
   the software's behaviour; "rejects the 61st request in a minute" is.
-- Do not write `[level: strong]` or `[level: signed]`. That judgment belongs to the people
-  who own the product.
 - Do not write evidence or signatures. `purlin:test` and `purlin:audit` write the evidence,
   and `purlin:sign` writes signatures.
 

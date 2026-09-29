@@ -63,41 +63,59 @@ class TestSkillSpecFromCode:
     def test_it_stays_under_its_ceiling(self):
         assert skill_ceiling_problems('spec-from-code') == []
 
-    # purlin: skill_spec_from_code PROOF-5
-    def test_every_rule_it_writes_is_at_the_passed_level(self):
-        assert spec_from_code_tag_problems() == []
-
-    # purlin: skill_spec_from_code PROOF-5
-    def test_a_rule_above_passed_or_no_stated_level_is_refused(
-            self, monkeypatch):
-        rel = skill_path('spec-from-code')
-        assert refusals(monkeypatch, spec_from_code_tag_problems, [
-            (rel, replace('HTTP 429 [level: passed]', 'HTTP 429 [level: strong]'),
-             '%s example rule carries no [level: passed]: - RULE-1' % rel),
-            (rel, resub(r'^- RULE-.*?\n(?=\n)'),
-             '%s shows no example rule' % rel),
-            (rel, replace('Every rule this skill writes carries '
-                          '`[level: passed]`:', 'For example:'),
-             "does not carry 'Every rule this skill writes carries "
-             "`[level: passed]`'"),
-        ]) == []
-
     # purlin: skill_spec_from_code PROOF-6
     def test_it_ties_an_existing_test_by_its_marker(self):
         assert spec_from_code_marker_problems() == []
 
-    # purlin: skill_spec_from_code PROOF-6
-    def test_a_partial_test_marked_or_an_untied_offer_is_refused(
-            self, monkeypatch):
+    # purlin: skill_spec_from_code PROOF-10
+    def test_an_offer_outside_its_paragraph_is_refused(self, monkeypatch):
         rel = skill_path('spec-from-code')
         assert refusals(monkeypatch, spec_from_code_marker_problems, [
-            (rel, replace('test; leave it unmarked and let', 'test; let'),
-             "has no sentence carrying all of 'A test that shows part of "
-             "what the proof asks', 'is not that test', 'leave it unmarked'"),
             (rel, replace('never names the test. Then tie the two:',
                           'never names the test.\n\nThen tie the two:'),
              '%s does not offer the marker, and write no new test, in the '
              'paragraph on a test that already shows the proof' % rel),
+        ]) == []
+
+    # purlin: skill_spec_from_code PROOF-7
+    def test_the_report_ends_on_the_files_with_no_rule(self):
+        assert spec_from_code_files_problems() == []
+
+    # purlin: skill_spec_from_code PROOF-11
+    def test_a_report_without_the_files_is_refused(self, monkeypatch):
+        rel = skill_path('spec-from-code')
+        assert refusals(monkeypatch, spec_from_code_files_problems, [
+            (rel, resub(r'end the report by listing the source files that '
+                        r'got\s+none', 'end the report'),
+             "%s has no sentence carrying all of 'Give every source file a "
+             "rule where you can'" % rel),
+        ]) == []
+
+    # purlin: skill_spec_from_code PROOF-8
+    def test_a_test_is_left_untied_for_three_reasons(self):
+        assert spec_from_code_untied_problems() == []
+
+    # purlin: skill_spec_from_code PROOF-12
+    def test_a_missing_reason_is_refused(self, monkeypatch):
+        rel = skill_path('spec-from-code')
+        assert refusals(monkeypatch, spec_from_code_untied_problems, [
+            (rel, resub(r', or it tests code the project\s+does not own'),
+             "%s has no sentence carrying all of 'A test is left untied for "
+             "one of three reasons'" % rel),
+        ]) == []
+
+    # purlin: skill_spec_from_code PROOF-9
+    def test_every_rule_is_written_from_what_its_test_expects(self):
+        assert spec_from_code_expects_problems() == []
+
+    # purlin: skill_spec_from_code PROOF-13
+    def test_a_skill_that_may_run_the_tests_first_is_refused(
+            self, monkeypatch):
+        rel = skill_path('spec-from-code')
+        assert refusals(monkeypatch, spec_from_code_expects_problems, [
+            (rel, resub(r', and\s+no test is run first'),
+             "%s has no sentence carrying all of 'Every rule is written from "
+             "what its test expects, passing or not'" % rel),
         ]) == []
 
 
@@ -128,11 +146,7 @@ def spec_from_code_marker_problems():
     rel = skill_path('spec-from-code')
     problems = carries(rel, [
         'offer to add the marker comment above that test',
-        'purlin: <feature> PROOF-<n>', 'write no new test',
-        'is not that test'])
-    problems += sentence_with(rel, [
-        'A test that shows part of what the proof asks', 'is not that test',
-        'leave it unmarked'])
+        'purlin: <feature> PROOF-<n>', 'write no new test'])
     # The offer belongs to the case of a test that already shows the proof.
     paragraphs = [flat(p) for p in read(rel).split('\n\n')]
     if not any('already shows what a proof asks' in p
@@ -144,18 +158,22 @@ def spec_from_code_marker_problems():
     return problems
 
 
-def spec_from_code_tag_problems():
-    rel = skill_path('spec-from-code')
-    problems = []
-    examples = [line for line in read(rel).splitlines()
-                if line.startswith('- RULE-')]
-    if not examples:
-        problems.append('%s shows no example rule' % rel)
-    for line in examples:
-        if '[level: passed]' not in line:
-            problems.append('%s example rule carries no [level: passed]: %s'
-                            % (rel, line))
-    problems.extend(carries(rel, [
-        'Every rule this skill writes carries `[level: passed]`',
-        'Do not write `[level: strong]` or `[level: signed]`']))
-    return problems
+def spec_from_code_files_problems():
+    return sentence_with(skill_path('spec-from-code'), [
+        'Give every source file a rule where you can',
+        'end the report by listing the source files that got none'])
+
+
+def spec_from_code_untied_problems():
+    return sentence_with(skill_path('spec-from-code'), [
+        'A test is left untied for one of three reasons',
+        'the report lists each such test with its reason',
+        'it shows only part of what a rule needs',
+        'it repeats a test already tied',
+        'it tests code the project does not own'])
+
+
+def spec_from_code_expects_problems():
+    return sentence_with(skill_path('spec-from-code'), [
+        'Every rule is written from what its test expects, passing or not',
+        'no test is run first'])
