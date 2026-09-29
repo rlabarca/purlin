@@ -21,7 +21,7 @@
 - RULE-7: Where nothing is left the ending is the sentence and one line: `Nothing left to do.` at the gates `passed` and `strong`, and `Nothing left to do. Push the tag to release it: git push origin <tag>` at `signed`, naming the `signed/*` tag on HEAD
 - RULE-8: Each rule is counted under at most one kind, the first that applies in this order: at `strong` or `signed`, no proof line (`to write a proof for`); a passed cell reading `failed` or `partial` (`to fix`); `no test` (`to write a test for`); `out of date`, or `not run` where this machine's system is among those it waits for or it names none (`to test`); `not run` for other systems only (`to test on`); a `@manual` proof no person has checked by hand (`to test by hand`); at `strong` or `signed`, a strong cell reading neither `strong` nor `weak` (`to audit`); `weak` (`to strengthen`); at `signed`, a signed cell not reading `signed`, where the owning spec names no files (`to tie to its files`) and otherwise (`to sign`); a rule that reached every step up to the gate is counted under none
 - RULE-9: The step counts contain one another: `pass their tests` counts the rules whose passed cell reads `passed` and, where a proof is `@manual`, that a person checked by hand; `are strong` counts those of them whose strong cell reads `strong`; `are signed` counts those of them whose signed cell reads `signed`
-- RULE-10: The `to test on` line names the systems its rules wait for in the words `Linux/Unix`, `macOS` and `Windows`, in that order, joined by `, ` and ` and `
+- RULE-10: The `to test on` line names the systems its rules wait for in the words `Linux/Unix`, `macOS` and `Windows`, in that order, joined by ` and `; this machine's own system is never among them, since a rule that waits for it is counted `to test`, so the line names one system or two
 - RULE-11: At the gate `signed`, where no rule is counted under any kind and no `signed/*` tag points at HEAD, `Left to do` holds one line, `the version to tag: purlin:sign`; at `passed` and `strong` it never does
 
 ## Proof
@@ -33,7 +33,7 @@
 - PROOF-5 (RULE-2): At the gate `signed`, a project of one rule that passes its tests, is strong and is signed reads `1 rule. 1 passes its tests. 1 is strong. 1 is signed.`
 - PROOF-6 (RULE-2): At the gate `strong`, one rule that passes its tests and has not been audited gives the one line `1 rule to audit: purlin:audit` under `Left to do:`
 - PROOF-7 (RULE-3): At the gate `signed`, a project of two rules whose tests both fail reads `2 rules. 0 pass their tests. 0 are strong. 0 are signed.`
-- PROOF-8 (RULE-4): At the gate `signed`, on macOS, a project holding two rules of each of the ten kinds of rule work ends on `Left to do:` and ten lines, each `  2 rules <words>: <command>` with its kind's words and command, the fifth reading `2 rules to test on Windows: purlin:test --remote`
+- PROOF-8 (RULE-4): At the gate `signed`, on macOS, a project holding two rules of each of the ten kinds of rule work ends on `Left to do:` and ten lines in the order RULE-4 lists the kinds, each reading `  2 rules <words>: <command>` with that kind's words and command, the fifth `  2 rules to test on Windows: purlin:test --remote`
 - PROOF-9 (RULE-4): At the gate `signed`, one strong, unsigned rule whose spec names no files gives the line `1 rule to tie to its files: purlin:spec`
 - PROOF-10 (RULE-5): At the gate `signed`, a rule waiting to be signed listed before a rule whose test fails gives `1 rule to fix: purlin:build` on the line above `1 rule to sign: purlin:sign`
 - PROOF-11 (RULE-6): At the gate `strong`, three rules that pass their tests and have not been audited give exactly one line under `Left to do:`, `3 rules to audit: purlin:audit`
@@ -47,7 +47,8 @@
 - PROOF-19 (RULE-9): At the gate `signed`, a rule that passes its tests, that the audit found weak and that carries a counting signature, reads `1 rule. 1 passes its tests. 0 are strong. 0 are signed.`
 - PROOF-20 (RULE-9): At the gate `passed`, a rule whose one proof is `@manual` and that nobody has checked by hand reads `1 rule. 0 pass their tests.` and gives `1 rule to test by hand: purlin:sign`
 - PROOF-21 (RULE-9): At the gate `passed`, a rule whose one proof is `@manual` and that a person has checked by hand reads `1 rule. 1 passes its tests.` and `Nothing left to do.`
-- PROOF-22 (RULE-10): On macOS, one rule waiting only on `linux` and one waiting only on `windows` give `2 rules to test on Linux/Unix and Windows: purlin:test --remote`
+- PROOF-22 (RULE-10): At the gate `passed`, on macOS, one rule waiting only on `windows` and one waiting only on `linux` give the one line `2 rules to test on Linux/Unix and Windows: purlin:test --remote`
+- PROOF-28 (RULE-10): At the gate `passed`, on macOS, one rule waiting only on `macos` and one waiting only on `windows` give `1 rule to test: purlin:test` and `1 rule to test on Windows: purlin:test --remote`, and no line names macOS
 - PROOF-23 (RULE-8): On macOS, a rule waiting on `macos` and `windows` is counted as `1 rule to test: purlin:test`, since this machine can run part of it
 - PROOF-24 (RULE-11): At the gate `signed`, every rule signed and no `signed/*` tag on HEAD, `Left to do:` holds the one line `the version to tag: purlin:sign`
 - PROOF-25 (RULE-11): At the gate `strong`, every rule strong and no tag anywhere, the ending's last line is `Nothing left to do.` and no line names a tag

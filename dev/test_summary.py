@@ -274,12 +274,22 @@ class TestTheSteps:
 class TestTheSystems:
 
     # purlin: summary PROOF-22
-    def test_the_systems_are_named_in_their_words_and_order(self):
+    def test_two_systems_are_named_in_their_words_and_order(self):
         rules = [rule(passed='not run', missing_env=['windows']),
                  rule(passed='not run', missing_env=['linux'])]
         assert ending(rules, 'passed', here='macos')[2:] == [
             '  2 rules to test on Linux/Unix and Windows: '
             'purlin:test --remote']
+
+    # purlin: summary PROOF-28
+    def test_this_machines_own_system_is_never_named_on_the_line(self):
+        rules = [rule(passed='not run', missing_env=['macos']),
+                 rule(passed='not run', missing_env=['windows'])]
+        lines = ending(rules, 'passed', here='macos')
+        assert lines[2:] == ['  1 rule to test: purlin:test',
+                             '  1 rule to test on Windows: '
+                             'purlin:test --remote'], lines
+        assert not any('macOS' in line for line in lines), lines
 
 
 class TestTheTag:
