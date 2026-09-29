@@ -97,6 +97,7 @@ def tagged():
 class TestTheTag:
 
     # purlin: signatures PROOF-67
+    # purlin: signatures PROOF-156
     def test_the_tag_is_signed_and_names_the_commit_and_the_gate(self,
                                                                  tagged):
         body = git(tagged.root, 'cat-file', 'tag', 'signed/2.1.0').stdout

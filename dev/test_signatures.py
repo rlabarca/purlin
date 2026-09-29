@@ -103,11 +103,27 @@ def commit_all(made, message='purlin: evidence at abc1234'):
     git(made.root, 'commit', '-q', '-m', message)
 
 
+def owner_only(private_key):
+    """On Windows, leave the private key readable by its owner alone.
+
+    Windows' own `ssh-keygen` refuses to sign with a key file other accounts
+    can read, and a file in the temporary folder inherits that folder's
+    permissions. `icacls` ships with Windows. Elsewhere `ssh-keygen` already
+    wrote the key readable by its owner alone, so nothing is done.
+    """
+    if os.name != 'nt':
+        return
+    subprocess.run(['icacls', private_key, '/inheritance:r', '/grant:r',
+                    '%s:F' % os.environ['USERNAME']],
+                   check=True, capture_output=True)
+
+
 def key(root, email=EMAIL, name='Jane', file='signing-key'):
     """A throwaway ssh key, named as this checkout's signing key. Its `.pub`."""
     path = os.path.join(root, '.git', file)
     subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C', email,
                     '-f', path], check=True)
+    owner_only(path)
     for setting, value in (('user.email', email), ('user.name', name),
                            ('gpg.format', 'ssh'),
                            ('user.signingkey', path + '.pub')):
@@ -487,6 +503,7 @@ class TestTheFile:
         assert ('login', 'RULE-1') not in proved.load()
 
     # purlin: signatures PROOF-75
+    # purlin: signatures PROOF-157
     def test_it_records_the_signer_as_git_holds_them_and_the_key(
             self, capsys):
         made = ready(signer=False)
@@ -517,9 +534,15 @@ class TestTheKey:
             fingerprint_of(public)
 
     # purlin: signatures PROOF-116
+    # purlin: signatures PROOF-158
     def test_a_private_key_path_reads_the_public_key_beside_it(self, proved):
         public = key(proved.root)
-        git(proved.root, 'config', 'user.signingkey', public[:-len('.pub')])
+        private = public[:-len('.pub')]
+        if os.name == 'nt':
+            # The path as a person on Windows writes it: every `/` a `\`.
+            private = private.replace('/', '\\')
+            assert '\\' in private, private
+        git(proved.root, 'config', 'user.signingkey', private)
         assert purlin_signatures.key_fingerprint(proved.root) == \
             fingerprint_of(public)
 
@@ -590,6 +613,7 @@ class TestTheSignedCommit:
         assert proved.signatures() == []
 
     # purlin: signatures PROOF-95
+    # purlin: signatures PROOF-153
     def test_an_existing_key_file_is_not_made_again(self, proved, home,
                                                      capsys):
         write(str(home / '.ssh' / 'id_ed25519'), 'a private key\n')
@@ -608,6 +632,7 @@ class TestTheSignedCommit:
         assert proved.signatures() == []
 
     # purlin: signatures PROOF-23
+    # purlin: signatures PROOF-154
     def test_one_signed_commit_carries_the_feature(self, at_signed, capsys):
         before = at_signed.head()
         code = sign_module.main(['login', '--project-root', at_signed.root])
@@ -666,6 +691,7 @@ class TestWhatCounts:
         return purlin_signatures.counts(made.root, found)
 
     # purlin: signatures PROOF-25
+    # purlin: signatures PROOF-155
     def test_a_commit_signed_with_the_signers_key_counts(self, proved):
         key(proved.root)
         assert self._committed(proved, 'RULE-1', '-c', 'commit.gpgsign=true',
@@ -684,6 +710,7 @@ class TestWhatCounts:
         stranger = os.path.join(proved.root, '.git', 'stranger-key')
         subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C',
                         'mallory@else.org', '-f', stranger], check=True)
+        owner_only(stranger)
         assert self._committed(
             proved, 'RULE-1', '-c', 'user.signingkey=' + stranger + '.pub',
             '-c', 'commit.gpgsign=true', 'sign(login): RULE-1',
