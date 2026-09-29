@@ -13,12 +13,13 @@ access confirms that part.
 
 What each group proves:
 
-*remote URL*  the organisation, project and repository come out of the
-              three remote forms, a user part and a percent-encoded name
+*remote URL*  the organisation and project the run is looked up in come
+              out of the three remote forms, a user part and a
+              percent-encoded name, and a URL in none of them is refused
 *commands*    the argv of the lookup and of the poll
 *the wait*    a run not registered at first and then found, `inProgress`
               then `completed` with each of the four results, the 60-second
-              and 90-minute limits shortened, and no `az` on PATH
+              and 90-minute limits, and no `az` on PATH
 """
 
 import os
@@ -150,38 +151,49 @@ def azure_run(monkeypatch, tmp_path):
 # The remote URL
 # ---------------------------------------------------------------------------
 
+def _looked_up_in(fake):
+    """`(organization, project)` the first lookup named."""
+    first = fake.az_calls()[0]
+    return (first[first.index('--organization') + 1],
+            first[first.index('--project') + 1])
+
+
 # purlin: host PROOF-36
 @pytest.mark.parametrize('url', [
     'https://dev.azure.com/acme/widgets/_git/shop',
     'git@ssh.dev.azure.com:v3/acme/widgets/shop',
     'https://acme.visualstudio.com/widgets/_git/shop',
-    'https://acme@dev.azure.com/acme/widgets/_git/shop',
 ])
-def test_each_remote_form_names_the_organisation_project_and_repository(url):
-    assert remote_module.parse_azure_remote(url) == ('acme', 'widgets', 'shop')
+def test_each_remote_form_names_the_organisation_and_the_project(azure_run,
+                                                                url):
+    fake, _clock = azure_run(origin=url)
+
+    assert remote_module.run_remote('/project') == 0
+    assert _looked_up_in(fake) == ('https://dev.azure.com/acme', 'widgets')
 
 
-# purlin: host PROOF-36
+# purlin: host PROOF-73
+def test_a_user_part_before_the_host_is_ignored(azure_run):
+    fake, _clock = azure_run(
+        origin='https://acme@dev.azure.com/acme/widgets/_git/shop')
+
+    assert remote_module.run_remote('/project') == 0
+    assert _looked_up_in(fake) == ('https://dev.azure.com/acme', 'widgets')
+
+
+# purlin: host PROOF-74
 @pytest.mark.parametrize('url', [
     'https://dev.azure.com/acme/My%20Widgets/_git/shop',
     'git@ssh.dev.azure.com:v3/acme/My%20Widgets/shop',
 ])
-def test_a_percent_encoded_project_is_decoded(url):
-    assert remote_module.parse_azure_remote(url) == (
-        'acme', 'My Widgets', 'shop')
+def test_a_percent_encoded_project_is_decoded(azure_run, url):
+    fake, _clock = azure_run(origin=url)
+
+    assert remote_module.run_remote('/project') == 0
+    assert _looked_up_in(fake) == ('https://dev.azure.com/acme', 'My Widgets')
 
 
-# purlin: host PROOF-36
-@pytest.mark.parametrize('url', [
-    'https://github.com/acme/widgets.git',
-    'https://dev.azure.com/acme/widgets',
-    '',
-])
-def test_a_url_in_no_azure_form_reads_none(url):
-    assert remote_module.parse_azure_remote(url) is None
-
-
-# purlin: host PROOF-36
+# purlin: host PROOF-75
 def test_a_remote_in_no_azure_form_is_refused_before_the_push(azure_run,
                                                               capsys):
     fake, _clock = azure_run(origin='https://dev.azure.com/acme/widgets')
@@ -200,15 +212,23 @@ def test_a_remote_in_no_azure_form_is_refused_before_the_push(azure_run,
 # ---------------------------------------------------------------------------
 
 # purlin: host PROOF-37
-def test_the_lookup_and_the_poll_name_the_organisation_and_the_project(
+def test_the_lookup_names_the_organisation_the_project_and_the_run_branch(
         azure_run):
+    fake, _clock = azure_run()
+
+    remote_module.run_remote('/project')
+    assert fake.az_calls()[0] == LIST
+
+
+# purlin: host PROOF-76
+def test_the_poll_names_the_run_the_organisation_and_the_project(azure_run):
     fake, _clock = azure_run()
 
     assert remote_module.run_remote('/project') == 0
     assert fake.az_calls() == [LIST, SHOW]
 
 
-# purlin: host PROOF-37
+# purlin: host PROOF-77
 def test_a_run_not_registered_at_first_is_asked_for_again(azure_run):
     fake, clock = azure_run(lookups=('', '', '42'))
 
@@ -217,64 +237,68 @@ def test_a_run_not_registered_at_first_is_asked_for_again(azure_run):
     assert clock.slept == [3, 3]
 
 
-# purlin: host PROOF-37
-@pytest.mark.parametrize('result, code', [
-    ('succeeded', 0),
-    ('failed', 1),
-    ('canceled', 1),
-    ('partiallySucceeded', 1),
-])
-def test_a_completed_run_is_brought_home_whatever_its_result(azure_run, capsys,
-                                                            result, code):
+# purlin: host PROOF-78
+def test_a_succeeded_run_is_brought_home_green(azure_run, capsys):
     fake, clock = azure_run(polls=('inProgress\t', 'inProgress\t',
-                                   'completed\t%s' % result))
+                                   'completed\tsucceeded'))
 
-    assert remote_module.run_remote('/project') == code
+    assert remote_module.run_remote('/project') == 0
     assert fake.az_calls() == [LIST, SHOW, SHOW, SHOW]
     assert clock.slept == [15, 15]
     assert fake.not_az() == [PUSH, PULL, DELETE]
     printed = capsys.readouterr().out
-    assert 'Run 42 completed: %s.' % result in printed
-    assert ('The run finished red.' in printed) is (code == 1)
+    assert 'Run 42 completed: succeeded.' in printed.splitlines()
+    assert 'The run finished red.' not in printed
     assert printed.rstrip().endswith('the status table')
 
 
-# purlin: host PROOF-37
-def test_no_run_within_the_find_limit_deletes_the_branch_and_fails(
-        azure_run, monkeypatch, capsys):
-    monkeypatch.setattr(remote_module, 'FIND_SECONDS', 9)
+# purlin: host PROOF-79
+@pytest.mark.parametrize('result', ['failed', 'canceled', 'partiallySucceeded'])
+def test_a_run_that_did_not_succeed_is_brought_home_red(azure_run, capsys,
+                                                        result):
+    fake, _clock = azure_run(polls=('completed\t%s' % result,))
+
+    assert remote_module.run_remote('/project') == 1
+    assert fake.not_az() == [PUSH, PULL, DELETE]
+    printed = capsys.readouterr().out
+    lines = printed.splitlines()
+    assert 'Run 42 completed: %s.' % result in lines
+    assert 'The run finished red. The table below is what came back.' in lines
+    assert printed.rstrip().endswith('the status table')
+
+
+# purlin: host PROOF-80
+def test_no_run_within_a_minute_deletes_the_branch_and_fails(azure_run,
+                                                             capsys):
     fake, clock = azure_run(lookups=('',))
 
     assert remote_module.run_remote('/project') == 1
-    assert clock.slept == [3, 3, 3]
-    assert fake.az_calls() == [LIST] * 4
+    assert fake.az_calls() == [LIST] * 21
+    assert clock.slept == [3] * 20
     assert fake.not_az() == [PUSH, DELETE]
     printed = capsys.readouterr().out
-    assert 'No run registered for %s within 9 seconds' % RUN_BRANCH in printed
+    assert 'No run registered for %s within 60 seconds' % RUN_BRANCH in printed
     assert 'git pull --ff-only origin %s' % RUN_BRANCH in printed
     assert 'the status table' not in printed
 
 
-# purlin: host PROOF-37
-def test_a_run_past_the_poll_limit_is_left_for_the_person(azure_run,
-                                                           monkeypatch,
-                                                           capsys):
-    monkeypatch.setattr(remote_module, 'POLL_SECONDS', 120)
+# purlin: host PROOF-81
+def test_a_run_past_ninety_minutes_is_left_for_the_person(azure_run, capsys):
     fake, clock = azure_run(polls=('inProgress\t',))
 
     assert remote_module.run_remote('/project') == 1
-    assert clock.slept == [15] * 8
-    assert fake.az_calls() == [LIST] + [SHOW] * 9
+    assert clock.slept == [15] * 360
+    assert fake.az_calls() == [LIST] + [SHOW] * 361
     assert fake.not_az() == [PUSH]
     printed = capsys.readouterr().out
-    assert 'Run 42 on %s has not completed after 2 minutes' % RUN_BRANCH \
+    assert 'Run 42 on %s has not completed after 90 minutes' % RUN_BRANCH \
         in printed
     assert 'git pull --ff-only origin %s' % RUN_BRANCH in printed
     assert 'git push origin --delete %s' % RUN_BRANCH in printed
     assert 'the status table' not in printed
 
 
-# purlin: host PROOF-37
+# purlin: host PROOF-82
 def test_without_az_the_run_is_neither_found_nor_pulled(azure_run, capsys):
     fake, _clock = azure_run(az=False)
 
@@ -287,7 +311,7 @@ def test_without_az_the_run_is_neither_found_nor_pulled(azure_run, capsys):
     assert 'the status table' not in printed
 
 
-# purlin: host PROOF-37
+# purlin: host PROOF-83
 def test_no_process_can_wait_forever_or_prompt(azure_run):
     fake, _clock = azure_run(lookups=('', '42'),
                              polls=('inProgress\t', 'completed\tfailed'))
@@ -300,11 +324,3 @@ def test_no_process_can_wait_forever_or_prompt(azure_run):
         assert kwargs['env']['GIT_TERMINAL_PROMPT'] == '0', argv
         assert kwargs['env']['AZURE_EXTENSION_USE_DYNAMIC_INSTALL'] == 'no', \
             argv
-
-
-# purlin: host PROOF-37
-def test_the_intervals_and_limits_are_the_modules_own():
-    assert remote_module.FIND_EVERY == 3
-    assert remote_module.FIND_SECONDS == 60
-    assert remote_module.POLL_EVERY == 15
-    assert remote_module.POLL_SECONDS == 5400

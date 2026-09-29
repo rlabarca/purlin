@@ -153,8 +153,10 @@ def test_a_project_with_no_env_tag_gets_no_workflow():
 # purlin: host PROOF-42
 def test_a_proof_tagged_for_another_system_gets_a_workflow_for_that_reason():
     wanted, reasons = workflow_module.wanted(['windows'], 'macos')
-    assert wanted is True and len(reasons) == 1, reasons
-    assert 'windows' in reasons[0]
+    assert wanted is True
+    assert reasons == [
+        'A proof in specs/ is tagged @env for windows, which this machine is '
+        'not, so only a runner can prove it.'], reasons
 
 
 # purlin: host PROOF-43
@@ -287,7 +289,7 @@ def test_the_fixture_is_complete_and_every_file_is_tracked():
             'would not carry it' % (FIXTURE_REL, rel))
 
 
-# purlin: host PROOF-20
+# purlin: host PROOF-84
 def test_the_config_is_the_shape_this_release_reads():
     config = json.loads(read('.purlin/config.json'))
     assert config['gate'] == 'strong'
@@ -300,7 +302,7 @@ def test_the_config_is_the_shape_this_release_reads():
         % (list(config), list(template)))
 
 
-# purlin: host PROOF-20
+# purlin: host PROOF-87
 def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():
     data = payload_module.build_payload(FIXTURE, generated_by='test')
     assert data['warnings'] == []
@@ -316,21 +318,8 @@ def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():
     assert data['evidence'] == {}, 'no run has happened in the fixture'
 
 
-# purlin: host PROOF-20
-def test_the_fixtures_tests_pass_against_its_own_module():
-    sys.path.insert(0, FIXTURE)
-    try:
-        import greeting
-    finally:
-        sys.path.remove(FIXTURE)
-    assert greeting.greet('Ada') == 'Hello, Ada!'
-    assert greeting.greet('') == 'Hello, world!'
-    assert isinstance(greeting.os_tag(), str)
-
-
-# purlin: host PROOF-20
-def test_the_fixtures_own_test_file_runs_and_names_nothing_of_purlin(tmp_path):
-    """The fixture's tests, run by themselves; the Linux one passes on Linux alone."""
+# purlin: host PROOF-85
+def test_the_fixtures_own_test_file_names_nothing_of_purlin():
     test_file = 'tests/test_greeting.py'
     imported = set()
     for line in read(test_file).splitlines():
@@ -340,6 +329,11 @@ def test_the_fixtures_own_test_file_runs_and_names_nothing_of_purlin(tmp_path):
     assert imported == {'os', 'sys', 'greeting'}, imported
     assert 'scripts' not in read(test_file) and 'dev/' not in read(test_file)
 
+
+# purlin: host PROOF-86
+def test_the_fixtures_own_test_file_runs_by_itself(tmp_path):
+    """The fixture's tests, run by themselves; the Linux one passes on Linux alone."""
+    test_file = 'tests/test_greeting.py'
     ini = tmp_path / 'pytest.ini'
     ini.write_text('[pytest]\n', encoding='utf-8')
     report = tmp_path / 'report.xml'

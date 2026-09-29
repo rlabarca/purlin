@@ -63,27 +63,6 @@ class _WindowsOs(object):
         return getattr(os, name)
 
 
-# purlin: host PROOF-26
-def test_a_run_that_spells_paths_the_windows_way_finds_the_removal(
-        tmp_path, monkeypatch):
-    root = str(tmp_path)
-    _git(root, 'init', '-q', '-b', 'main')
-    _git(root, 'config', 'user.email', 'dev@example.com')
-    _git(root, 'config', 'user.name', 'Dev')
-    _git(root, 'config', 'commit.gpgsign', 'false')
-    gone = '.purlin/evidence/ci/retired.json'
-    _write(root, gone)
-    _write(root, '.purlin/evidence/ci/login.json')
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-q', '-m', 'evidence')
-    os.remove(os.path.join(root, *gone.split('/')))
-
-    monkeypatch.setattr(host_module, 'os', _WindowsOs())
-    assert host_module.os.path.join('.purlin', 'evidence') == \
-        '.purlin\\evidence'
-    assert host_module.deleted_files(root) == [gone]
-
-
 class _Host(object):
     """Just enough of GitHub for one commit: every call is kept."""
 
@@ -115,12 +94,11 @@ class _Host(object):
         return _Answer()
 
 
-# purlin: host PROOF-27
-def test_the_commit_carries_the_new_file_and_the_deletion(tmp_path,
-                                                          monkeypatch):
-    """The tree the CI commit builds adds the file it was handed and drops
-    the one the run removed."""
-    root = str(tmp_path)
+def _repository_with_a_removed_file(root):
+    """A repository whose last commit holds two evidence files, one gone.
+
+    Answers the two paths, `(removed, kept)`.
+    """
     _git(root, 'init', '-q', '-b', 'main')
     _git(root, 'config', 'user.email', 'dev@example.com')
     _git(root, 'config', 'user.name', 'Dev')
@@ -132,10 +110,11 @@ def test_the_commit_carries_the_new_file_and_the_deletion(tmp_path,
     _git(root, 'add', '-A')
     _git(root, 'commit', '-q', '-m', 'evidence')
     os.remove(os.path.join(root, *gone.split('/')))
-    _write(root, kept, '{"feature": "login"}\n')
+    return gone, kept
 
-    assert host_module.deleted_files(root) == [gone]
 
+def _on_github(monkeypatch):
+    """The GitHub variables of a run branch job, and its answers recorded."""
     for variable in ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY',
                      'SYSTEM_TEAMFOUNDATIONCOLLECTIONURI'):
         monkeypatch.delenv(variable, raising=False)
@@ -144,12 +123,47 @@ def test_the_commit_carries_the_new_file_and_the_deletion(tmp_path,
     monkeypatch.setenv('GITHUB_REF_NAME', 'main')
     fake = _Host()
     monkeypatch.setattr(urllib.request, 'urlopen', fake)
+    return fake
 
+
+def _tree_sent(fake):
+    return [body for verb, url, body in fake.calls
+            if url.endswith('/trees')][0]['tree']
+
+
+# purlin: host PROOF-95
+def test_a_run_that_spells_paths_the_windows_way_commits_the_removal(
+        tmp_path, monkeypatch):
+    """Paths joined with `\\`, as on Windows; git itself is this machine's."""
+    root = str(tmp_path)
+    gone, _kept = _repository_with_a_removed_file(root)
+    fake = _on_github(monkeypatch)
+    monkeypatch.setattr(host_module, 'os', _WindowsOs())
+    assert host_module.os.path.join('.purlin', 'evidence') == \
+        '.purlin\\evidence'
+
+    host_module.commit_files(root, [], 'purlin: evidence at 1111111')
+
+    tree = _tree_sent(fake)
+    assert [entry['path'] for entry in tree] == [gone]
+    assert tree[0]['sha'] is None and 'content' not in tree[0]
+
+
+# purlin: host PROOF-27
+def test_the_commit_carries_the_new_file_and_the_deletion(tmp_path,
+                                                          monkeypatch):
+    """The tree the CI commit builds adds the file it was handed and drops
+    the one the run removed."""
+    root = str(tmp_path)
+    gone, kept = _repository_with_a_removed_file(root)
+    _write(root, kept, '{"feature": "login"}\n')
+
+    assert host_module.deleted_files(root) == [gone]
+
+    fake = _on_github(monkeypatch)
     host_module.commit_files(root, [kept], 'purlin: evidence at 1111111')
 
-    tree = [body for verb, url, body in fake.calls
-            if url.endswith('/trees')][0]['tree']
-    by_path = {entry['path']: entry for entry in tree}
+    by_path = {entry['path']: entry for entry in _tree_sent(fake)}
     assert sorted(by_path) == sorted([kept, gone])
     assert by_path[kept].get('content') == '{"feature": "login"}\n'
     assert by_path[gone].get('sha') is None

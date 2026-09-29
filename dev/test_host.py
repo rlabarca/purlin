@@ -33,7 +33,6 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'run'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-import ci as ci_module  # noqa: E402
 import evidence as writer  # noqa: E402
 import host as host_module  # noqa: E402
 import remote as remote_module  # noqa: E402
@@ -241,6 +240,7 @@ def github_env(monkeypatch):
     monkeypatch.setenv('GITHUB_TOKEN', 'a-token')
     monkeypatch.setenv('GITHUB_REF_NAME', 'main')
     monkeypatch.delenv('GITHUB_HEAD_REF', raising=False)
+    monkeypatch.delenv('GITHUB_REF', raising=False)
     monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)
     _no_workspace(monkeypatch)
 
@@ -258,7 +258,8 @@ def azure_env(monkeypatch):
     # An Azure build reads no GitHub variable. The run this suite runs inside
     # may itself be a GitHub Actions job, whose GITHUB_REF_NAME would
     # otherwise name the branch this fixture is here to decide.
-    for name in ('GITHUB_REPOSITORY', 'GITHUB_REF_NAME', 'GITHUB_HEAD_REF'):
+    for name in ('GITHUB_REPOSITORY', 'GITHUB_REF_NAME', 'GITHUB_HEAD_REF',
+                 'GITHUB_REF'):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -302,7 +303,7 @@ def test_the_ci_commit_is_one_tree_then_commit_then_ref(project, github_env,
     assert [url for url in host.urls() if url.endswith('/blobs')] == []
 
 
-# purlin: host PROOF-5
+# purlin: host PROOF-54
 def test_the_ci_commit_sends_no_author_and_no_committer(project, github_env,
                                                         monkeypatch):
     """The commit is the git host's, so the git host signs it.
@@ -321,7 +322,7 @@ def test_the_ci_commit_sends_no_author_and_no_committer(project, github_env,
     assert 'author' not in body and 'committer' not in body
 
 
-# purlin: host PROOF-5
+# purlin: host PROOF-55
 def test_the_tree_entry_carries_the_file_and_its_permission(project,
                                                             github_env,
                                                             monkeypatch):
@@ -336,7 +337,7 @@ def test_the_tree_entry_carries_the_file_and_its_permission(project,
     assert entry['path'] == path
     assert entry['type'] == 'blob'
     assert 'sha' not in entry, 'a text file asked for a blob of its own'
-    assert entry[host_module._PERM_KEY] == host_module._FILE_PERM
+    assert entry[host_module._PERM_KEY] == '100644'
     assert json.loads(entry['content'])['feature'] == 'greeting'
     with open(os.path.join(project, *path.split('/')), 'rb') as handle:
         on_disk = handle.read()
@@ -344,7 +345,7 @@ def test_the_tree_entry_carries_the_file_and_its_permission(project,
         'the tree carried text other than the file on disk'
 
 
-# purlin: host PROOF-5
+# purlin: host PROOF-56
 def test_the_ci_commit_carries_every_file_in_one_tree(project, github_env,
                                                       monkeypatch):
     """One run covers many features, and one tree request carries them all."""
@@ -365,7 +366,7 @@ def test_the_ci_commit_carries_every_file_in_one_tree(project, github_env,
         'two files that are all text asked for two blobs'
 
 
-# purlin: host PROOF-5
+# purlin: host PROOF-57
 def test_a_file_that_is_not_text_gets_a_blob_of_its_own(project, github_env,
                                                         monkeypatch):
     """Bytes that are not UTF-8 cannot travel inline, so they go as a blob.
@@ -444,10 +445,11 @@ def test_a_refusal_that_asks_for_a_pause_is_waited_out_and_retried(
     assert sha == 'c' * 40
     assert host.trees == 2, 'the refused tree request was not sent again'
     assert slept == [1.0]
-    assert 'git host asked for a pause of 1 s' in capsys.readouterr().out
+    assert 'The git host asked for a pause of 1 s.' in \
+        capsys.readouterr().out.splitlines()
 
 
-# purlin: host PROOF-22
+# purlin: host PROOF-90
 def test_the_reset_time_is_read_when_there_is_no_retry_after(
         project, github_env, monkeypatch, slept):
     reset = str(int(time.time()) + 30)
@@ -462,7 +464,7 @@ def test_the_reset_time_is_read_when_there_is_no_retry_after(
     assert 25 <= slept[0] <= 30, slept
 
 
-# purlin: host PROOF-22
+# purlin: host PROOF-91
 def test_a_pause_longer_than_the_cap_is_shortened_to_it(
         project, github_env, monkeypatch, slept):
     host = FakeHost(refuse_trees=1, refuse_headers={'Retry-After': '900'})
@@ -471,11 +473,10 @@ def test_a_pause_longer_than_the_cap_is_shortened_to_it(
 
     host_module.commit_files(project, [path], 'purlin: evidence at 4f1c2ab')
 
-    assert slept == [float(host_module.PAUSE_CAP_SECONDS)]
-    assert host_module.PAUSE_CAP_SECONDS == 120
+    assert slept == [120.0]
 
 
-# purlin: host PROOF-22
+# purlin: host PROOF-93
 def test_a_fourth_refusal_is_raised_with_its_status(project, github_env,
                                                     monkeypatch, slept):
     host = FakeHost(refuse_trees=99, refuse_headers={'Retry-After': '1'})
@@ -487,11 +488,11 @@ def test_a_fourth_refusal_is_raised_with_its_status(project, github_env,
 
     assert raised.value.code == 403
     assert '403' in str(raised.value)
-    assert host.trees == host_module.PAUSE_RETRIES + 1
-    assert len(slept) == host_module.PAUSE_RETRIES
+    assert host.trees == 4
+    assert slept == [1.0, 1.0, 1.0]
 
 
-# purlin: host PROOF-22
+# purlin: host PROOF-94
 def test_a_refusal_that_asks_for_no_pause_is_raised_at_once(
         project, github_env, monkeypatch, slept):
     """A 403 with no header saying how long to wait is a real refusal."""
@@ -507,7 +508,7 @@ def test_a_refusal_that_asks_for_no_pause_is_raised_at_once(
     assert slept == []
 
 
-# purlin: host PROOF-22
+# purlin: host PROOF-92
 def test_a_429_asking_for_a_pause_is_waited_out_too(project, github_env,
                                                     monkeypatch, slept):
     host = FakeHost(refuse_trees=1, refuse_status=429,
@@ -538,7 +539,7 @@ def test_the_ref_update_is_retried_when_the_branch_moved(project, github_env,
     assert len(heads) == 2, 'the retry did not re-read the branch head'
 
 
-# purlin: host PROOF-6
+# purlin: host PROOF-58
 def test_the_retry_gives_up_and_raises(project, github_env, monkeypatch):
     host = FakeHost(fail_patch=99)
     monkeypatch.setattr(urllib.request, 'urlopen', host)
@@ -548,10 +549,10 @@ def test_the_retry_gives_up_and_raises(project, github_env, monkeypatch):
         host_module.commit_files(project, [path], 'purlin: evidence at 4f1c2ab')
 
     assert raised.value.code == 422
-    assert host.patched == host_module.REF_RETRIES
+    assert host.patched == 3
 
 
-# purlin: host PROOF-6
+# purlin: host PROOF-59
 def test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once(
         project, github_env, monkeypatch):
     class Refusing(FakeHost):
@@ -572,26 +573,50 @@ def test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once(
     assert host.patched == 1, 'a refusal that is not a race was retried'
 
 
-# purlin: host PROOF-7
-def test_no_token_writes_no_commit(project, monkeypatch, capsys):
-    monkeypatch.setenv('GITHUB_REPOSITORY', 'acme/widgets')
-    monkeypatch.delenv('GITHUB_TOKEN', raising=False)
+NO_GITHUB_VARIABLES = ('No GITHUB_REPOSITORY and GITHUB_TOKEN, so no evidence '
+                       'was committed.')
+
+
+def _commit_with_one_variable(project, monkeypatch, capsys, present,
+                              missing):
+    """A CI commit on GitHub with `present` set and `missing` not set.
+
+    Answers `(the sha, the requests sent, the lines printed)`; an error the
+    commit raised fails the test that called it.
+    """
+    monkeypatch.setenv(present[0], present[1])
+    monkeypatch.delenv(missing, raising=False)
     monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)
     _no_workspace(monkeypatch)
     host = FakeHost()
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = write_ci(project)
+    capsys.readouterr()
+    sha = host_module.commit_files(project, [path],
+                                   'purlin: evidence at 4f1c2ab')
+    return sha, host.calls, capsys.readouterr().out.splitlines()
 
-    assert host_module.commit_files(project, [path], 'x') == ''
-    assert 'GITHUB_TOKEN' in capsys.readouterr().out
-    assert host.calls == [], 'a run with no token sent a request'
 
-    # The other half of the rule: a token and no repository name.
-    monkeypatch.setenv('GITHUB_TOKEN', 'a-token')
-    monkeypatch.delenv('GITHUB_REPOSITORY', raising=False)
-    assert host_module.commit_files(project, [path], 'x') == ''
-    assert 'GITHUB_REPOSITORY' in capsys.readouterr().out
-    assert host.calls == [], 'a run with no repository name sent a request'
+# purlin: host PROOF-7
+def test_no_token_writes_no_commit(project, monkeypatch, capsys):
+    sha, calls, printed = _commit_with_one_variable(
+        project, monkeypatch, capsys, ('GITHUB_REPOSITORY', 'acme/widgets'),
+        'GITHUB_TOKEN')
+
+    assert sha == ''
+    assert calls == [], 'a run with no token sent a request'
+    assert printed == [NO_GITHUB_VARIABLES], printed
+
+
+# purlin: host PROOF-60
+def test_no_repository_name_writes_no_commit(project, monkeypatch, capsys):
+    sha, calls, printed = _commit_with_one_variable(
+        project, monkeypatch, capsys, ('GITHUB_TOKEN', 'a-token'),
+        'GITHUB_REPOSITORY')
+
+    assert sha == ''
+    assert calls == [], 'a run with no repository name sent a request'
+    assert printed == [NO_GITHUB_VARIABLES], printed
 
 
 # purlin: host PROOF-8
@@ -605,9 +630,16 @@ def test_the_azure_push_sends_the_ref_and_the_content(project, azure_env,
                                         'purlin: evidence at 4f1c2ab')
 
     assert sha == 'c' * 40
-    body = host.body_for('/pushes?', method='POST')
+    assert host.urls() and all(
+        url.startswith('https://dev.azure.com/acme/widgets/_apis/git/')
+        for url in host.urls()), host.urls()
+    pushes = [body for verb, url, body in host.calls
+              if verb == 'POST' and '/pushes?' in url]
+    assert len(pushes) == 1, pushes
+    body = pushes[0]
     assert body['refUpdates'] == [{'name': 'refs/heads/main',
                                    'oldObjectId': '1' * 40}]
+    assert len(body['commits'][0]['changes']) == 1
     change = body['commits'][0]['changes'][0]
     assert change['changeType'] == 'add'
     assert change['item']['path'] == '/' + path
@@ -615,7 +647,7 @@ def test_the_azure_push_sends_the_ref_and_the_content(project, azure_env,
     assert json.loads(change['newContent']['content'])['feature'] == 'greeting'
 
 
-# purlin: host PROOF-8
+# purlin: host PROOF-61
 def test_the_azure_push_retries_when_the_object_id_is_stale(project, azure_env,
                                                             monkeypatch):
     host = FakeHost(fail_patch=1, azure=True)
@@ -628,11 +660,6 @@ def test_the_azure_push_retries_when_the_object_id_is_stale(project, azure_env,
     assert sha == 'c' * 40
     assert host.patched == 2
     assert len([url for url in host.urls('GET') if '/refs?' in url]) == 2
-
-
-# purlin: host PROOF-8
-def test_the_host_is_read_from_the_build_variables(github_env, azure_env):
-    assert host_module.detect_host() == 'azure'
 
 
 # purlin: host PROOF-52
@@ -656,7 +683,7 @@ def test_the_azure_push_names_the_whole_run_branch(project, azure_env,
         'refs/heads/run/main-4f1c2ab']
 
 
-# purlin: host PROOF-8
+# purlin: host PROOF-62
 def test_a_file_the_branch_already_holds_is_pushed_as_an_edit(
         project, azure_env, monkeypatch):
     """The Pushes API refuses `add` for a path that exists.
@@ -671,8 +698,10 @@ def test_a_file_the_branch_already_holds_is_pushed_as_an_edit(
 
     host_module.commit_files(project, [path], 'purlin: evidence at 4f1c2ab')
 
-    change = host.body_for('/pushes?', method='POST')['commits'][0][
-        'changes'][0]
+    changes = host.body_for('/pushes?', method='POST')['commits'][0][
+        'changes']
+    assert len(changes) == 1, changes
+    change = changes[0]
     assert change['changeType'] == 'edit'
     assert host_module.azure_change('a.json', '{}', False)['changeType'] == \
         'add'
@@ -713,7 +742,7 @@ def test_the_section_is_merged_into_what_the_branch_holds(
     assert contents[0].endswith('ref=' + '1' * 40)
 
 
-# purlin: host PROOF-38
+# purlin: host PROOF-99
 def test_a_retry_reads_the_file_again_at_the_new_parent(
         project, github_env, monkeypatch):
     """The branch moved because another runner committed; its section stays."""
@@ -758,7 +787,7 @@ def test_an_azure_retry_merges_and_turns_an_add_into_an_edit(
     assert sorted(merged['platforms']) == ['linux', 'windows']
 
 
-# purlin: host PROOF-38
+# purlin: host PROOF-100
 def test_a_rule_the_spec_does_not_carry_is_dropped_in_the_merge(
         project, github_env, monkeypatch):
     path = write_ci(project)
@@ -780,22 +809,38 @@ def test_a_rule_the_spec_does_not_carry_is_dropped_in_the_merge(
 # The workspace check
 # ---------------------------------------------------------------------------
 
+NOT_THE_WORKSPACE = ('%s is not the workspace this job checked out, so no '
+                     'evidence was committed.')
+
+
+def _commit_under_a_workspace(project, monkeypatch, capsys, variable, folder,
+                              azure=False):
+    """A CI commit of one evidence file with `variable` naming `folder`.
+
+    Answers `(the sha, the fake git host, the lines printed)`.
+    """
+    if variable:
+        monkeypatch.setenv(variable, folder)
+    host = FakeHost(azure=azure)
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = write_ci(project)
+    capsys.readouterr()
+    sha = host_module.commit_files(project, [path],
+                                   'purlin: evidence at 4f1c2ab')
+    return sha, host, capsys.readouterr().out.splitlines()
+
+
 # purlin: host PROOF-30
-def test_with_no_workspace_variable_every_project_is_its_own(monkeypatch,
-                                                              tmp_path):
-    for variable in ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY'):
-        monkeypatch.delenv(variable, raising=False)
-    assert ci_module.is_the_workspace('/anywhere/at/all') is True
-    checkout = tmp_path / 'the-checkout'
-    checkout.mkdir()
-    monkeypatch.setenv('BUILD_SOURCESDIRECTORY', str(checkout))
-    assert ci_module.is_the_workspace(str(checkout)) is True
-    assert ci_module.is_the_workspace('/anywhere/at/all') is False
-    # GitHub names its checkout in its own variable, read the same way.
-    monkeypatch.delenv('BUILD_SOURCESDIRECTORY')
-    monkeypatch.setenv('GITHUB_WORKSPACE', str(checkout))
-    assert ci_module.is_the_workspace(str(checkout)) is True
-    assert ci_module.is_the_workspace('/anywhere/at/all') is False
+def test_with_no_workspace_variable_every_project_is_its_own(
+        project, github_env, monkeypatch, capsys):
+    """Off a job's checkout nothing is refused: a person's own run commits."""
+    sha, host, printed = _commit_under_a_workspace(
+        project, monkeypatch, capsys, None, None)
+
+    assert sha == 'c' * 40
+    assert [url.rsplit('/git/', 1)[-1] for url in host.urls('POST')] == [
+        'trees', 'commits']
+    assert printed == []
 
 
 # purlin: host PROOF-32
@@ -806,89 +851,119 @@ def test_a_project_that_is_not_the_workspace_commits_nothing(
     A fixture project that reached it would land its own evidence on the
     branch the job is reviewing.
     """
-    monkeypatch.setenv('GITHUB_WORKSPACE', str(tmp_path / 'the-checkout'))
-    host = FakeHost()
-    monkeypatch.setattr(urllib.request, 'urlopen', host)
-    path = write_ci(project)
+    sha, host, printed = _commit_under_a_workspace(
+        project, monkeypatch, capsys, 'GITHUB_WORKSPACE',
+        str(tmp_path / 'the-checkout'))
 
-    assert host_module.commit_files(project, [path],
-                                         'purlin: evidence at 4f1c2ab') == ''
+    assert sha == ''
     assert host.urls() == []
-    assert 'no evidence was committed' in capsys.readouterr().out
-
-    # The allowed case beside it: the project that is the workspace commits.
-    monkeypatch.setenv('GITHUB_WORKSPACE', project)
-    assert host_module.commit_files(project, [path],
-                                    'purlin: evidence at 4f1c2ab') == 'c' * 40
-    assert len(host.urls('POST')) == 2, 'the workspace sent no tree and commit'
+    assert printed == [NOT_THE_WORKSPACE % project], printed
 
 
-# purlin: host PROOF-32
+# purlin: host PROOF-96
+def test_the_project_that_is_the_workspace_commits(project, github_env,
+                                                   monkeypatch, capsys):
+    sha, host, printed = _commit_under_a_workspace(
+        project, monkeypatch, capsys, 'GITHUB_WORKSPACE', project)
+
+    assert sha == 'c' * 40
+    assert [url.rsplit('/git/', 1)[-1] for url in host.urls('POST')] == [
+        'trees', 'commits']
+
+
+# purlin: host PROOF-97
 def test_an_azure_project_that_is_not_the_workspace_commits_nothing(
         project, azure_env, monkeypatch, tmp_path, capsys):
-    monkeypatch.setenv('BUILD_SOURCESDIRECTORY', str(tmp_path / 'the-checkout'))
-    host = FakeHost(azure=True)
-    monkeypatch.setattr(urllib.request, 'urlopen', host)
-    path = write_ci(project)
+    sha, host, printed = _commit_under_a_workspace(
+        project, monkeypatch, capsys, 'BUILD_SOURCESDIRECTORY',
+        str(tmp_path / 'the-checkout'), azure=True)
 
-    assert host_module.commit_files(project, [path],
-                                    'purlin: evidence at 4f1c2ab') == ''
+    assert sha == ''
     assert host.urls() == []
-    assert 'no evidence was committed' in capsys.readouterr().out
+    assert printed == [NOT_THE_WORKSPACE % project], printed
 
-    monkeypatch.setenv('BUILD_SOURCESDIRECTORY', project)
-    assert host_module.commit_files(project, [path],
-                                    'purlin: evidence at 4f1c2ab') == 'c' * 40
-    assert len(host.urls('POST')) == 1, 'the workspace sent no push'
+
+# purlin: host PROOF-98
+def test_the_azure_project_that_is_the_workspace_pushes(project, azure_env,
+                                                        monkeypatch, capsys):
+    sha, host, printed = _commit_under_a_workspace(
+        project, monkeypatch, capsys, 'BUILD_SOURCESDIRECTORY', project,
+        azure=True)
+
+    assert sha == 'c' * 40
+    assert len([url for url in host.urls('POST') if '/pushes?' in url]) == 1
 
 
 # ---------------------------------------------------------------------------
 # Handing the run to the git host
 # ---------------------------------------------------------------------------
 
-# purlin: host PROOF-12
-def test_the_git_host_is_read_from_the_remote(project):
-    git(project, 'remote', 'add', 'origin',
-        'https://dev.azure.com/acme/widgets/_git/widgets')
-    assert remote_module._host(project) == 'azure'
-    git(project, 'remote', 'set-url', 'origin',
-        'https://github.com/acme/widgets.git')
-    assert remote_module._host(project) == 'github'
+NOT_ON_A_BRANCH = ('This checkout is not on a branch, so there is nothing to '
+                   'push.')
+NOT_COMMITTED = ('This checkout has changes that are not committed, so a run '
+                 'would prove something other than what is here. Commit them, '
+                 'then run purlin:test --remote again.')
+
+
+def _record_commands(monkeypatch, code=0):
+    """Every command `--remote` starts to change something, kept and answered.
+
+    Reads of the checkout still run against the real repository; a push, a
+    watch, a pull and a delete are recorded here and never started.
+    """
+    started = []
+
+    def record(root, argv, **_kw):
+        started.append(list(argv))
+        return code
+
+    monkeypatch.setattr(remote_module, '_run', record)
+    return started
 
 
 # purlin: host PROOF-12
 def test_a_detached_head_has_nothing_to_push(project, capsys, monkeypatch):
     head = git(project, 'rev-parse', 'HEAD').stdout.strip()
     git(project, 'checkout', '--quiet', head)
-    started = []
-    monkeypatch.setattr(remote_module, '_run',
-                        lambda root, argv, **_kw: started.append(argv))
+    started = _record_commands(monkeypatch)
+
     assert remote_module.run_remote(project) == 1
-    assert 'not on a branch' in capsys.readouterr().out
+    assert capsys.readouterr().out.splitlines() == [NOT_ON_A_BRANCH]
     assert started == [], 'a detached HEAD started %r' % started
 
 
-# purlin: host PROOF-12
+# purlin: host PROOF-63
 def test_a_dirty_tree_is_refused_before_anything_is_pushed(project, capsys,
                                                            monkeypatch):
     """A run against a commit the tree no longer matches proves the wrong thing."""
     with open(os.path.join(project, 'uncommitted.txt'), 'w',
               encoding='utf-8') as handle:
         handle.write('x\n')
-    started = []
-    monkeypatch.setattr(remote_module, '_run',
-                        lambda root, argv, marked=False: started.append(argv))
+    started = _record_commands(monkeypatch)
+
     assert remote_module.run_remote(project) == 1
-    printed = capsys.readouterr().out
-    assert 'changes that are not committed' in printed
-    assert started == []
+    assert capsys.readouterr().out.splitlines() == [NOT_COMMITTED]
+    assert started == [], 'a tree with uncommitted changes started %r' % started
 
 
-# purlin: host PROOF-12
-def test_the_run_branch_names_the_branch_and_the_commit(project):
+# purlin: host PROOF-64
+def test_the_run_branch_names_the_branch_and_the_commit(project, with_remote,
+                                                        capsys, monkeypatch):
+    """The push is recorded and answered as failed, so the run stops there.
+
+    `origin` is a bare repository beside the project, so nothing here can
+    reach a git host even if the push were started.
+    """
+    git(project, 'checkout', '--quiet', '-b', 'feature-x')
     head = git(project, 'rev-parse', 'HEAD').stdout.strip()
-    name = remote_module.run_branch_name(project, 'feature-x')
-    assert name == 'run/feature-x-%s' % head[:7]
+    run_branch = 'run/feature-x-%s' % head[:7]
+    started = _record_commands(monkeypatch, code=1)
+
+    assert remote_module.run_remote(project) == 1
+    printed = capsys.readouterr().out.splitlines()
+    assert 'Pushing feature-x as %s.' % run_branch in printed, printed
+    assert started == [['git', 'push', 'origin',
+                        'HEAD:refs/heads/%s' % run_branch]]
 
 
 class FakeProcesses(object):
@@ -896,8 +971,8 @@ class FakeProcesses(object):
 
     The branch is `feature-x`, HEAD is a fixed sha and `origin` is a GitHub
     URL. Every process other than those reads is kept in `started`, in order,
-    with the directory it was started in and whether the push marker was in
-    its environment.
+    with the directory it was started in; `log` holds the same with the
+    lookups of the run in their place among them.
     """
 
     def __init__(self, push=0, watch=0, run_id='987', run_ids=None):
@@ -906,7 +981,7 @@ class FakeProcesses(object):
         self.started = []
         self.cwds = []
         self.listed = []
-        self.slept = []
+        self.log = []
         # `run_ids`, when given, is what each lookup answers in turn: `''` is
         # a run not registered yet.
         self.answers = [('[{"databaseId": %s}]' % one if one else '[]')
@@ -925,6 +1000,7 @@ class FakeProcesses(object):
                 argv, 0, 'https://github.com/acme/widgets.git\n', '')
         if argv[:3] == ['git', 'status', '--porcelain']:
             return subprocess.CompletedProcess(argv, 0, '', '')
+        self.log.append(argv)
         if argv[:3] == ['gh', 'run', 'list']:
             self.listed.append(argv)
             answer = (self.answers.pop(0) if len(self.answers) > 1
@@ -938,6 +1014,21 @@ class FakeProcesses(object):
         elif argv[:1] == ['gh']:
             code = self.watch
         return subprocess.CompletedProcess(argv, code, '', '')
+
+
+class Clock(object):
+    """`time.time` and `time.sleep` for `remote.py`: time moves on a sleep."""
+
+    def __init__(self, waits):
+        self.now = 1000.0
+        self.waits = waits
+
+    def time(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.waits.append(seconds)
+        self.now += seconds
 
 
 @pytest.fixture
@@ -954,8 +1045,11 @@ def remote_run(monkeypatch, tmp_path):
         monkeypatch.setattr(remote_module.subprocess, 'run', fake)
         monkeypatch.setattr(remote_module, '_table',
                             lambda project_root: 'the status table')
-        # Every wait is recorded rather than spent.
-        monkeypatch.setattr(remote_module.time, 'sleep', fake.slept.append)
+        # Every wait is recorded rather than spent, and the clock moves by it.
+        fake.slept = []
+        clock = Clock(fake.slept)
+        monkeypatch.setattr(remote_module.time, 'time', clock.time)
+        monkeypatch.setattr(remote_module.time, 'sleep', clock.sleep)
         return fake
     return arrange
 
@@ -968,79 +1062,126 @@ LIST = ['gh', 'run', 'list', '--branch', RUN_BRANCH, '--limit', '1',
         '--json', 'databaseId']
 PULL = ['git', 'pull', '--ff-only', 'origin', RUN_BRANCH]
 DELETE = ['git', 'push', 'origin', '--delete', RUN_BRANCH]
-
-
-class _Gate(object):
-    """The one field `run_remote` reads off the resolved gate."""
-
-    def __init__(self, gate):
-        self.gate = gate
-
-
-STRONG = _Gate('strong')
+NO_GH = ('GitHub CLI `gh` is not installed, so the run cannot be watched. '
+         'Open the run on %s instead, then run: git pull --ff-only origin %s'
+         % (RUN_BRANCH, RUN_BRANCH))
+NO_RUN = ('No run registered for %s within 60 seconds. Open it on the git '
+          'host, then run: git pull --ff-only origin %s'
+          % (RUN_BRANCH, RUN_BRANCH))
 
 
 # purlin: host PROOF-24
-def test_the_github_branch_pushes_watches_pulls_and_deletes(project,
-                                                            remote_run,
-                                                            capsys):
-    fake = remote_run()
-
-    assert remote_module.run_remote(project, cfg=STRONG) == 0
-    assert fake.started == [PUSH, WATCH, PULL, DELETE]
-    assert fake.cwds == [project] * 4
-    printed = capsys.readouterr().out
-    assert 'Pushing feature-x as %s.' % RUN_BRANCH in printed
-    assert 'Waiting for the purlin.yml workflow on %s.' % RUN_BRANCH in printed
-    assert 'finished red' not in printed
-    assert printed.rstrip().endswith('the status table')
-
-
-# purlin: host PROOF-24
-def test_a_red_run_still_pulls_and_prints_the_table(project, remote_run,
-                                                    capsys):
-    fake = remote_run(watch=1)
-
-    assert remote_module.run_remote(project, cfg=STRONG) == 1
-    assert fake.started == [PUSH, WATCH, PULL, DELETE]
-    printed = capsys.readouterr().out
-    assert 'The run finished red. The table below is what came back.' in printed
-    assert printed.rstrip().endswith('the status table')
-
-
-# purlin: host PROOF-24
-def test_at_passed_the_evidence_comes_home_too(project, remote_run, capsys):
-    """At `passed` the runner commits its evidence, so the pull is the same."""
+def test_a_green_run_pushes_watches_pulls_and_deletes(project, remote_run,
+                                                      capsys):
     fake = remote_run()
 
     assert remote_module.run_remote(project) == 0
     assert fake.started == [PUSH, WATCH, PULL, DELETE]
+    assert fake.cwds == [project] * 4
     printed = capsys.readouterr().out
-    assert 'Pushing feature-x as %s.' % RUN_BRANCH in printed
-    assert 'Waiting for the purlin.yml workflow on %s.' % RUN_BRANCH in printed
+    assert 'finished red' not in printed
     assert printed.rstrip().endswith('the status table')
 
 
-# purlin: host PROOF-24
+# purlin: host PROOF-65
+def test_a_green_run_says_what_it_pushed_and_what_it_waits_for(project,
+                                                               remote_run,
+                                                               capsys):
+    remote_run()
+
+    assert remote_module.run_remote(project) == 0
+    printed = capsys.readouterr().out.splitlines()
+    pushing = 'Pushing feature-x as %s.' % RUN_BRANCH
+    waiting = 'Waiting for the purlin.yml workflow on %s.' % RUN_BRANCH
+    assert pushing in printed and waiting in printed, printed
+    assert printed.index(pushing) < printed.index(waiting)
+
+
+# purlin: host PROOF-66
+def test_the_run_is_looked_up_by_its_branch_before_it_is_watched(project,
+                                                                 remote_run):
+    """`gh run watch` with no id prompts and errors off a terminal."""
+    fake = remote_run()
+
+    assert remote_module.run_remote(project) == 0
+    assert fake.listed == [LIST]
+    assert fake.log == [PUSH, LIST, WATCH, PULL, DELETE]
+
+
+# purlin: host PROOF-67
+@pytest.mark.parametrize('gate', ['passed', 'strong', 'signed'])
+def test_the_evidence_comes_home_at_every_gate(project, remote_run, gate):
+    """The runner commits its evidence at every gate, so the pull is the same."""
+    os.makedirs(os.path.join(project, '.purlin'), exist_ok=True)
+    with open(os.path.join(project, '.purlin', 'config.json'), 'w',
+              encoding='utf-8') as handle:
+        json.dump({'gate': gate, 'tests': []}, handle)
+    fake = remote_run()
+
+    assert remote_module.run_remote(project) == 0
+    assert fake.started == [PUSH, WATCH, PULL, DELETE]
+
+
+# purlin: host PROOF-68
+def test_a_red_run_still_pulls_and_prints_the_table(project, remote_run,
+                                                    capsys):
+    fake = remote_run(watch=1)
+
+    assert remote_module.run_remote(project) == 1
+    assert fake.started == [PUSH, WATCH, PULL, DELETE]
+    printed = capsys.readouterr().out
+    assert 'The run finished red. The table below is what came back.' in \
+        printed.splitlines()
+    assert printed.rstrip().endswith('the status table')
+
+
+# purlin: host PROOF-69
+def test_the_lookup_is_asked_again_while_the_run_registers(project,
+                                                          remote_run):
+    """A run takes a few seconds to appear after the push."""
+    fake = remote_run(run_ids=['', '', '987'])
+
+    assert remote_module.run_remote(project) == 0
+    assert fake.listed == [LIST, LIST, LIST]
+    assert fake.slept == [3, 3]
+    assert fake.started == [PUSH, WATCH, PULL, DELETE]
+
+
+# purlin: host PROOF-70
+def test_a_run_that_never_registers_is_reported_and_the_branch_deleted(
+        project, remote_run, capsys):
+    fake = remote_run(run_id='')
+
+    assert remote_module.run_remote(project) == 1
+    assert fake.listed == [LIST] * 21
+    assert fake.slept == [3] * 20
+    assert fake.started == [PUSH, DELETE]
+    printed = capsys.readouterr().out.splitlines()
+    assert NO_RUN in printed, printed
+    assert 'the status table' not in printed
+
+
+# purlin: host PROOF-71
 def test_without_gh_the_run_is_neither_watched_nor_pulled(project, remote_run,
                                                           capsys):
     fake = remote_run(gh=False)
 
     assert remote_module.run_remote(project) == 1
     assert fake.started == [PUSH]
-    printed = capsys.readouterr().out
-    assert 'GitHub CLI `gh` is not installed' in printed
+    printed = capsys.readouterr().out.splitlines()
+    assert NO_GH in printed, printed
     assert 'the status table' not in printed
 
 
-# purlin: host PROOF-24
+# purlin: host PROOF-72
 def test_a_failed_push_starts_no_run(project, remote_run, capsys):
     fake = remote_run(push=1)
 
     assert remote_module.run_remote(project) == 1
     assert fake.started == [PUSH]
+    assert fake.listed == []
     printed = capsys.readouterr().out
-    assert 'The push failed, so no run was started.' in printed
+    assert 'The push failed, so no run was started.' in printed.splitlines()
     assert 'Waiting for' not in printed
 
 
@@ -1076,7 +1217,7 @@ def _off_a_runner(monkeypatch):
     for name in ('GITHUB_REPOSITORY', 'GITHUB_REF_NAME', 'GITHUB_HEAD_REF',
                  'GITHUB_BASE_REF', 'SYSTEM_TEAMFOUNDATIONCOLLECTIONURI',
                  'SYSTEM_PULLREQUEST_PULLREQUESTID', 'BUILD_SOURCEBRANCH',
-                 'BUILD_SOURCEBRANCHNAME'):
+                 'BUILD_SOURCEBRANCHNAME', 'GITHUB_REF'):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -1086,36 +1227,43 @@ def test_off_a_runner_every_commit_is_the_persons_own(project, monkeypatch):
     assert host_module.commits_here(project) is True
 
 
-# purlin: host PROOF-33
+# purlin: host PROOF-101
 def test_a_run_branch_commits(project, monkeypatch, github_env):
     monkeypatch.setenv('GITHUB_REF_NAME', 'run/main-4f1c2ab')
     assert host_module.commits_here(project) is True
 
 
-# purlin: host PROOF-33
+# purlin: host PROOF-102
 def test_any_other_branch_commits_nothing(project, monkeypatch, github_env):
     monkeypatch.setenv('GITHUB_REF_NAME', 'topic')
     assert host_module.commits_here(project) is False
 
 
-# purlin: host PROOF-33
+# purlin: host PROOF-103
 def test_a_tag_run_commits_nothing_and_says_so(project, monkeypatch,
                                               github_env):
     """A tag run is there to verify, so it has no evidence to add."""
     monkeypatch.setenv('GITHUB_REF', 'refs/tags/signed/0.10.0')
     monkeypatch.setenv('GITHUB_REF_NAME', 'signed/0.10.0')
-    assert host_module.is_a_tag_run() is True
     assert host_module.commits_here(project) is False
-    line = host_module.no_commit_line(project)
-    assert line.startswith('Tag run: nothing is written.'), line
+    assert host_module.no_commit_line(project) == (
+        'Tag run: nothing is written. This run reruns the tests on '
+        'signed/0.10.0.')
 
 
-# purlin: host PROOF-33
-def test_the_azure_ref_is_read_whole(project, monkeypatch, azure_env):
+# purlin: host PROOF-104
+def test_the_last_part_of_an_azure_ref_alone_commits_nothing(project,
+                                                            monkeypatch,
+                                                            azure_env):
     """`BUILD_SOURCEBRANCHNAME` is a ref's last part, so `run/x` reaches it as `x`."""
     monkeypatch.setenv('BUILD_SOURCEBRANCHNAME', 'main-4f1c2ab')
     monkeypatch.delenv('BUILD_SOURCEBRANCH', raising=False)
     assert host_module.commits_here(project) is False
+
+
+# purlin: host PROOF-105
+def test_the_whole_azure_ref_is_read_first(project, monkeypatch, azure_env):
+    monkeypatch.setenv('BUILD_SOURCEBRANCHNAME', 'main-4f1c2ab')
     monkeypatch.setenv('BUILD_SOURCEBRANCH', 'refs/heads/run/main-4f1c2ab')
     assert host_module.commits_here(project) is True
 
@@ -1133,13 +1281,12 @@ def test_the_default_branch_is_what_origin_points_at(project):
     assert host_module.default_branch(project) == 'trunk'
 
 
-# purlin: host PROOF-21
+# purlin: host PROOF-88
 def test_with_no_remote_the_default_branch_is_the_one_head_names(tmp_path):
-    """A `master` repository is not told its signature is off the branch.
+    """A git configured for `master` makes a `master` repository.
 
-    A git configured for `master` makes one, and that repository has no
-    `origin/HEAD` to read: answering `main` there sends the gate looking for a
-    branch that does not exist and every signature reads as not on it.
+    That repository has no `origin/HEAD` to read, and `main` is a guess that
+    names a branch it does not have.
     """
     root = str(tmp_path / 'no-remote')
     os.makedirs(root)
@@ -1147,7 +1294,7 @@ def test_with_no_remote_the_default_branch_is_the_one_head_names(tmp_path):
     assert host_module.default_branch(root) == 'master'
 
 
-# purlin: host PROOF-21
+# purlin: host PROOF-89
 def test_a_detached_head_falls_back_to_main(project):
     git(project, 'checkout', '--quiet',
         git(project, 'rev-parse', 'HEAD').stdout.strip())
@@ -1158,36 +1305,3 @@ def teardown_module(module):
     """Leave nothing behind: every repository lived under pytest's tmp_path."""
     shutil.rmtree(os.path.join(DEV, '__pycache__'), ignore_errors=True)
 
-
-# purlin: host PROOF-24
-def test_the_run_is_looked_up_by_its_branch_before_it_is_watched(project,
-                                                                 remote_run):
-    """`gh run watch` with no id prompts and errors off a terminal."""
-    fake = remote_run()
-
-    assert remote_module.run_remote(project, cfg=STRONG) == 0
-    assert fake.listed == [LIST]
-    assert WATCH in fake.started
-
-
-# purlin: host PROOF-24
-def test_the_lookup_is_asked_again_while_the_run_registers(project,
-                                                          remote_run):
-    """A run takes a few seconds to appear after the push."""
-    fake = remote_run(run_ids=['', '', '987'])
-
-    assert remote_module.run_remote(project, cfg=STRONG) == 0
-    assert fake.listed == [LIST, LIST, LIST]
-    assert fake.slept == [3, 3]
-    assert fake.started == [PUSH, WATCH, PULL, DELETE]
-
-
-# purlin: host PROOF-24
-def test_a_run_that_never_registers_is_reported_and_the_branch_deleted(
-        project, remote_run, capsys):
-    fake = remote_run(run_id='')
-
-    assert remote_module.run_remote(project, cfg=STRONG) == 1
-    assert fake.started == [PUSH, DELETE]
-    printed = capsys.readouterr().out
-    assert 'No run registered for %s' % RUN_BRANCH in printed
