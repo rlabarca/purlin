@@ -820,6 +820,11 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     The total is kept in the `Passing` box: under its label, in the label's own font and
     colour, a second line reads `563 RULES TOTAL` (`1 RULE TOTAL` for one), from the
     payload's count and never recounted in the page. The other boxes carry no such line.
+93. **Test strength shows only when it was measured** (added 2026-09-29). The `Strong` cell
+    reads `0 of 26` where no strength was measured, and `2 of 4 · 86%` where one was; `n/a`
+    is printed nowhere, on the dashboard or in the terminal. On the dashboard the hover of a
+    percentage says what it is: `Test strength: the tests caught 86 of every 100 deliberate
+    breaks of the code.`
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
