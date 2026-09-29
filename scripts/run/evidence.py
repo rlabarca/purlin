@@ -16,20 +16,24 @@ home of the merge rules this module follows:
 - Every run deletes the files under `local/` and `ci/` whose feature has no
   spec.
 
-A run that saw the same thing over the same fingerprint leaves the file as it
-was, so running the tests twice has nothing new to commit.
+A run that saw the same thing over the same fingerprint on the same machine
+leaves the file as it was, so running the tests twice has nothing new to
+commit.
 
 **Written, and committed when asked.** `purlin:test` and `purlin:audit`
-write the files and do not commit them. `--commit` commits the `local/`
-files and the table under the person's own identity as
-`purlin: evidence at <sha7>`, and nothing here pushes. A remote runner is the
-one writer that always commits, through the git host's API, because its
-evidence exists nowhere else; `host.py` makes that commit and hands each file
-back here to be merged into what its parent holds.
+write the files and do not commit them. `--commit` makes two commits under
+the person's own identity, and nothing here pushes: first the specs, the
+marked tests and the settings the results describe, as
+`purlin: specs, tests and settings for <feature>, ...`, then the `local/`
+files and the table as `purlin: evidence at <sha7>`, naming the first. A
+remote runner is the one writer that always commits, through the git host's
+API, because its evidence exists nowhere else; `host.py` makes that commit
+and hands each file back here to be merged into what its parent holds.
 """
 
 import json
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -47,6 +51,8 @@ EVIDENCE_DIR = reader.EVIDENCE_DIR
 TABLE_PATH = '.purlin/tests.md'
 
 COMMIT_SUBJECT = 'purlin: evidence at %s'
+WORK_SUBJECT = 'purlin: specs, tests and settings for %s'
+WORK_COMMITTED = 'Committed %s, the work these results describe:'
 WRITTEN_ONE = 'Evidence written to %s.'
 WRITTEN_MANY = 'Evidence written to %s/%s/ for %d features.'
 COMMITTED = 'Evidence committed.'
@@ -74,6 +80,11 @@ def runner_slug(email):
     return slug or 'unknown'
 
 
+def local_machine():
+    """The `machine` a person's section carries: the host's name, or `unknown`."""
+    return platform.node() or 'unknown'
+
+
 def full_path(project_root, rel):
     return os.path.join(project_root, *rel.split('/'))
 
@@ -85,11 +96,13 @@ def full_path(project_root, rel):
 def rule_word(proof_ids, proofs, observed, host_os):
     """The word one rule reads in a section, from this run alone.
 
-    A `@manual` proof declares that no test is written for it, so a rule
-    whose proofs are all manual has nothing for a run to observe and reads
-    `passed`, as its passed cell does. A proof another operating system owns
-    was not run here, so the rule reads `not run` rather than claiming there
-    is no test.
+    `observed` holds each proof's worst test: `fail`, then `not run`, then
+    `pass`, so a rule reads `passed` only when every test tied to every
+    proof that could run here ran and passed. A `@manual` proof declares
+    that no test is written for it, so a rule whose proofs are all manual
+    has nothing for a run to observe and reads `passed`, as its passed cell
+    does. A proof another operating system owns was not run here, so the
+    rule reads `not run` rather than claiming there is no test.
     """
     written = list(proof_ids or ())
     if not written:
@@ -111,28 +124,40 @@ def rule_word(proof_ids, proofs, observed, host_os):
     return 'no test'
 
 
+_WORST = {'fail': 2, 'not run': 1, 'pass': 0}
+
+
 def _observed(entries_by_id):
-    """`{id: 'pass' | 'fail'}`: `fail` wins where two tests claim one id."""
+    """`{id: 'fail' | 'not run' | 'pass'}`, the worst test tied to each id.
+
+    A tied test that neither passed nor failed reads `not run`.
+    """
     observed = {}
     for marker_id, entries in entries_by_id.items():
         for entry in entries:
             status = entry.get('status')
-            if status not in ('pass', 'fail'):
-                continue
-            if observed.get(marker_id) != 'fail':
-                observed[marker_id] = status
+            word = status if status in ('pass', 'fail') else 'not run'
+            known = observed.get(marker_id)
+            if known is None or _WORST[word] > _WORST[known]:
+                observed[marker_id] = word
     return observed
 
 
 def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
-                  fingerprint, at=None):
+                  fingerprint, at=None, machine=None, hostname=None):
     """One platform section for one feature this run covered.
 
     `entries_by_proof` is `{id: [entry, ...]}`, what the run tied to each
     marker of this feature, where `id` is a `PROOF-N`, or a `RULE-N` for a
     rule with no proof whose test is marked by the rule's own id. One
     `proofs` entry is written per (id, test) pair, and one with an empty
-    `test` for a proof nothing observed.
+    `test` for a proof nothing observed. A tied test that neither passed
+    nor failed is `missing`, or `not run` where its proof is tagged for
+    another operating system.
+
+    `machine` is where the tests ran: the host's name on a person's machine,
+    `remote runner, <system>` on a remote runner. `hostname` is the host's
+    own name, kept and never compared. Each defaults to this host.
     """
     proofs = info.get('proofs') or {}
     by_rule = info.get('proofs_by_rule') or {}
@@ -161,21 +186,22 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
             seen = entries_by_proof.get(proof_id) or []
             base = {'id': proof_id, 'rule': rule_id, 'env': env,
                     'manual': bool(proof.get('manual'))}
+            unseen = 'not run' if env and env != host_os else 'missing'
             for entry in seen:
                 status = entry.get('status')
                 listed.append(dict(base, result=(
-                    status if status in ('pass', 'fail') else 'missing'),
+                    status if status in ('pass', 'fail') else unseen),
                     test='%s::%s' % (entry.get('test_file', ''),
                                      entry.get('test_name', ''))))
             if not seen:
-                foreign = env and env != host_os
-                listed.append(dict(base, result=(
-                    'not run' if foreign else 'missing'), test=''))
+                listed.append(dict(base, result=unseen, test=''))
     return {
         'commit': commit or '',
         'dirty': bool(dirty),
         'at': at or now_iso(),
         'runner': runner,
+        'machine': machine or local_machine(),
+        'hostname': platform.node() if hostname is None else hostname,
         'fingerprint': dict(fingerprint),
         'rules': rules,
         'proofs': listed,
@@ -197,12 +223,14 @@ def _rule_marked_word(status, seen):
 def _same_observation(one, other):
     """True when two sections saw the same thing over the same fingerprint.
 
-    `commit`, `dirty` and `at` say when and where a run happened, not what it
-    saw, so a run that repeats the last one leaves the file as it was.
+    `commit`, `dirty` and `at` say when a run happened, not what it saw, and
+    `hostname` is kept and never compared, so a run that repeats the last
+    one on the same machine leaves the file as it was. A run on another
+    `machine` replaces the section.
     """
     def seen(section):
         return {key: value for key, value in (section or {}).items()
-                if key not in ('commit', 'dirty', 'at')}
+                if key not in ('commit', 'dirty', 'at', 'hostname')}
     return json.loads(json.dumps(seen(one))) == json.loads(json.dumps(
         seen(other)))
 
@@ -301,17 +329,23 @@ def audit_entry(rule, found, commit, at=None):
 
     `rule` is the payload's rule entry, whose three hashes key the entry, and
     `found` what the AI audit answered for it: its `verdict` (`strong`,
-    `weak` or `undecided`), its `findings`, the `model` that answered and the
-    sha256 of the `criteria` it was sent.
+    `weak` or `undecided`), its `findings`, the `model` that answered, the
+    sha256 of the `criteria` it was sent, and any `notes`, the sentences
+    about a proof longer than the standard or holding two cases, which enter
+    no hash and are written only when there are some.
     """
-    return {'rule_hash': rule.get('rule_hash'),
-            'proof_hash': rule.get('proof_hash'),
-            'test_hash': rule.get('test_hash'),
-            'verdict': found.get('verdict'),
-            'findings': [str(line) for line in found.get('findings') or ()],
-            'model': found.get('model') or 'unknown',
-            'criteria': found.get('criteria') or '',
-            'at': at or now_iso(), 'commit': commit or ''}
+    entry = {'rule_hash': rule.get('rule_hash'),
+             'proof_hash': rule.get('proof_hash'),
+             'test_hash': rule.get('test_hash'),
+             'verdict': found.get('verdict'),
+             'findings': [str(line) for line in found.get('findings') or ()],
+             'model': found.get('model') or 'unknown',
+             'criteria': found.get('criteria') or '',
+             'at': at or now_iso(), 'commit': commit or ''}
+    notes = [str(line) for line in found.get('notes') or ()]
+    if notes:
+        entry['notes'] = notes
+    return entry
 
 
 def _same_audit(one, other):
@@ -465,8 +499,10 @@ def prune(project_root, features):
 def counts(section):
     """`(rules, passed, failing, no_test)` for one section.
 
-    `No test` is every rule that is neither `passed` nor `failed`, so a rule
-    waiting on another operating system is counted there rather than
+    A rule is `passed` only where the section reads it so, which is only
+    when every test tied to it ran and passed. `No test` is every rule that
+    is neither `passed` nor `failed`, so a rule waiting on another operating
+    system, or on a test that did not run, is counted there rather than
     dropped from the row.
     """
     words = list(((section or {}).get('rules') or {}).values())
@@ -504,8 +540,8 @@ def render_table(rows):
         section = entry['section']
         rules, passed, failing, no_test = counts(section)
         last = ' · '.join([str(section.get('commit') or '')[:7] or '-',
-                           str(section.get('at') or '-'), entry['os'],
-                           entry['source']])
+                           str(section.get('at') or '-'),
+                           reader.os_word(entry['os']), entry['source']])
         lines.append('| %s | %d | %d | %d | %d | %s |'
                      % (feature, rules, passed, failing, no_test, last))
     lines.extend(['', TABLE_NOTE])
@@ -537,21 +573,78 @@ def written_line(paths, source='local'):
 
 
 # ---------------------------------------------------------------------------
-# The person's own commit
+# The person's own two commits
 # ---------------------------------------------------------------------------
 
-def commit_local(project_root, commit, removed=()):
-    """Commit the `local/` files, the table and what the run removed. The line.
+def commit_work(project_root, paths):
+    """Commit the work a run's results describe. The sha the evidence names.
 
-    The commit is the person's own, under their own identity, and nothing
-    here pushes. A file a run removed from `ci/` because its feature has no
-    spec is committed as that removal; nothing else under `ci/` is staged,
-    because that folder is the runner's.
+    `paths` are the specs of the features run, the test files carrying
+    their markers and `.purlin/config.json`. Those that changed are
+    committed under the person's own identity as
+    `purlin: specs, tests and settings for <feature>, ...`, the features
+    being the specs named, and the commit and each path it changed are
+    printed. Returns the new commit's full sha, HEAD's when none of `paths`
+    changed, and `''` outside a git repository.
     """
-    return commit_paths(
+    if _git(project_root, ['rev-parse', '--git-dir']) is None:
+        return ''
+    head = (_git(project_root, ['rev-parse', '--verify', '-q', 'HEAD'])
+            or '').strip()
+    paths = [path for path in _unique(paths) if _known(project_root, path)]
+    if not paths:
+        return head
+    listed = _git(project_root, ['status', '--porcelain', '--'] + paths)
+    if not (listed or '').strip():
+        return head
+    features = _unique(_feature_of(path) for path in paths
+                       if _feature_of(path))
+    if (_git(project_root, ['add', '--all', '--'] + paths) is None
+            or _git(project_root, ['commit', '-m', WORK_SUBJECT
+                                   % ', '.join(features), '--'] + paths)
+            is None):
+        return head
+    sha = (_git(project_root, ['rev-parse', 'HEAD']) or '').strip()
+    changed = _git(project_root, ['show', '--no-renames', '--name-only',
+                                  '--format=', sha]) or ''
+    print(WORK_COMMITTED % sha[:7])
+    for path in changed.splitlines():
+        if path.strip():
+            print('  %s' % path.strip())
+    return sha
+
+
+def _feature_of(path):
+    """The feature a spec path names, `specs/<category>/<feature>.md`, or None."""
+    parts = str(path).split('/')
+    if len(parts) >= 2 and parts[0] == 'specs' and parts[-1].endswith('.md'):
+        return parts[-1][:-len('.md')]
+    return None
+
+
+def _unique(items):
+    out = []
+    for item in items or ():
+        if item not in out:
+            out.append(item)
+    return out
+
+
+def commit_local(project_root, work_sha, removed=()):
+    """Commit the `local/` files, the table and what the run removed.
+
+    The second of a run's two commits. Its subject names `work_sha`, the
+    commit `commit_work` made, or HEAD when it made none. The commit is the
+    person's own, under their own identity, and nothing here pushes. A file
+    a run removed from `ci/` because its feature has no spec is committed as
+    that removal; nothing else under `ci/` is staged, because that folder is
+    the runner's. Prints `Evidence committed.`, `Evidence unchanged.`, or
+    that there is no git repository to commit to.
+    """
+    print(commit_paths(
         project_root,
         ['%s/local' % EVIDENCE_DIR, TABLE_PATH] + list(removed or ()),
-        COMMIT_SUBJECT % (str(commit or '')[:7] or 'an unknown commit'))
+        COMMIT_SUBJECT % (str(work_sha or '')[:7] or 'an unknown commit')))
 
 
 def commit_paths(project_root, paths, message):

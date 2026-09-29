@@ -1,13 +1,14 @@
 """Tests for `scripts/run/evidence.py`, the evidence writer, and the run's use of it.
 
-The pure parts, a section, the merge and the table, are called directly. The
-run-level parts build a throwaway project under `tmp_path` and drive the real
-run script against it.
+The pure parts, a section, the merge, the table and the two commits, are
+called directly. The run-level parts build a throwaway project under
+`tmp_path` and drive the real run script against it.
 """
 
 import hashlib
 import json
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -32,6 +33,8 @@ import suites                                                 # noqa: E402
 STAMP = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
 HERE = reader.host_os()
 OTHER = 'windows' if HERE != 'windows' else 'linux'
+PRINT = {'spec': 's', 'code': 'c', 'tests': 't'}
+WORK = ['specs/a/feat.md', 'tests/test_feat.py', '.purlin/config.json']
 
 
 # ---------------------------------------------------------------------------
@@ -53,16 +56,15 @@ def _project(tmp_path, gate='passed', name='project'):
 
 
 def _spec(root, name='feat', rules=1, proofs=(('PROOF-1', 'RULE-1', ''),),
-          level='passed'):
+          description='A feature.'):
     folder = root / 'specs' / 'a'
     folder.mkdir(parents=True, exist_ok=True)
     lines = ['# Feature: %s' % name, '',
-             '> Description: A feature.',
+             '> Description: %s' % description,
              '> Scope: src/feat.py',
              '> Stack: python', '', '## Rules', '']
     for index in range(1, rules + 1):
-        lines.append('- RULE-%d: The thing works, case %d [level: %s]'
-                     % (index, index, level))
+        lines.append('- RULE-%d: The thing works, case %d' % (index, index))
     lines.extend(['', '## Proof', ''])
     for proof_id, rule_id, tail in proofs:
         lines.append('- %s (%s): Call it with 2; verify it answers 4%s'
@@ -95,6 +97,14 @@ def _repo(root):
     _git(root, 'commit', '-q', '-m', 'the spec and its test')
 
 
+def _head(root):
+    return _git(root, 'rev-parse', 'HEAD').strip()
+
+
+def _subjects(root):
+    return _git(root, 'log', '--format=%s').splitlines()
+
+
 def _run(root, *args):
     result = subprocess.run(
         [sys.executable, RUN_SCRIPT, '--project-root', str(root)] + list(args),
@@ -108,9 +118,10 @@ def _evidence(root, feature='feat', source='local'):
 
 
 def _section(result='pass', at='2026-09-01T00:00:00Z', commit='a' * 40,
-             rules=None):
+             rules=None, machine='build-1', hostname='build-1'):
     return {'commit': commit, 'dirty': False, 'at': at, 'runner': 'dev',
-            'fingerprint': {'spec': 's', 'code': 'c', 'tests': 't'},
+            'machine': machine, 'hostname': hostname,
+            'fingerprint': dict(PRINT),
             'rules': rules or {'RULE-1': 'passed' if result == 'pass'
                                else 'failed'},
             'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1', 'result': result,
@@ -119,7 +130,7 @@ def _section(result='pass', at='2026-09-01T00:00:00Z', commit='a' * 40,
 
 
 def _file(source='local', platforms=None, audit=None, feature='feat'):
-    data = {'schema': 'purlin-evidence/1', 'feature': feature,
+    data = {'schema': reader.SCHEMA, 'feature': feature,
             'source': source, 'spec': 'specs/a/%s.md' % feature,
             'platforms': platforms or {}}
     if audit is not None:
@@ -142,6 +153,30 @@ def _info(rules=('RULE-1',), proofs=None, by_rule=None):
                                else {'RULE-1': ['PROOF-1']})}
 
 
+def _seen(status, name='test_a', path='tests/a.py'):
+    """What a run tied to a marker: one test and how it ended."""
+    return {'status': status, 'test_file': path, 'test_name': name}
+
+
+def _build(proofs, seen, **extra):
+    """The section a run writes for one rule, `RULE-1`, with these proofs."""
+    info = _info(proofs=proofs, by_rule={'RULE-1': sorted(proofs)})
+    return writer.build_section(info, seen, HERE, 'a' * 40, False, 'dev',
+                                PRINT, **extra)
+
+
+def _rule_word(proofs, seen):
+    return _build(proofs, seen)['rules']['RULE-1']
+
+
+def _listed(proofs, seen, proof_id='PROOF-1'):
+    return [entry for entry in _build(proofs, seen)['proofs']
+            if entry['id'] == proof_id]
+
+
+PLAIN = {'manual': False, 'env': None}
+
+
 # ---------------------------------------------------------------------------
 # The section a run writes
 # ---------------------------------------------------------------------------
@@ -157,102 +192,195 @@ def test_a_test_run_writes_the_feature_file_with_one_section(tmp_path):
 
     assert code == 0, out
     data = _evidence(root)
-    assert data['schema'] == 'purlin-evidence/1'
-    assert data['source'] == 'local'
-    assert data['feature'] == 'feat'
-    assert data['spec'] == 'specs/a/feat.md'
+    assert (data['schema'], data['feature'], data['source'],
+            data['spec']) == ('purlin-evidence/1', 'feat', 'local',
+                              'specs/a/feat.md')
     assert list(data['platforms']) == [HERE]
-    section = data['platforms'][HERE]
-    assert sorted(section) == ['at', 'commit', 'dirty', 'fingerprint',
-                               'proofs', 'rules', 'runner']
-    assert section['commit'] == _git(root, 'rev-parse', 'HEAD').strip()
+    assert sorted(data['platforms'][HERE]) == [
+        'at', 'commit', 'dirty', 'fingerprint', 'hostname', 'machine',
+        'proofs', 'rules', 'runner']
+
+
+# purlin: evidence_writer PROOF-16
+def test_the_section_names_the_commit_time_runner_and_fingerprint(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+
+    code, out = _run(root, '--all', '--test')
+
+    assert code == 0, out
+    section = _evidence(root)['platforms'][HERE]
+    assert section['commit'] == _head(root)
     assert len(section['commit']) == 40
+    assert section['dirty'] is False
     assert STAMP.match(section['at'])
     assert section['runner'] == 'dev'
     assert section['fingerprint'] == fingerprint_module.fingerprint(
         str(root), 'feat')
     assert section['rules'] == {'RULE-1': 'passed'}
-    assert section['dirty'] is False
-    assert section['proofs'] == [
-        {'id': 'PROOF-1', 'rule': 'RULE-1', 'result': 'pass', 'env': None,
-         'manual': False, 'test': 'tests/test_feat.py::test_ok'}]
 
-    # A tracked file changed and not committed, and an email of another shape.
+
+# purlin: evidence_writer PROOF-17
+def test_a_changed_tree_is_dirty_and_the_runner_is_the_email_slug(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
     (root / 'src' / 'feat.py').write_text('VALUE = 3\n', encoding='utf-8')
     _git(root, 'config', 'user.email', 'Jane.Doe+ci@Example.com')
+
     code, out = _run(root, '--all', '--test')
+
     assert code == 0, out
     section = _evidence(root)['platforms'][HERE]
     assert section['dirty'] is True
     assert section['runner'] == 'jane-doe-ci'
 
 
-# purlin: evidence_writer PROOF-2
-def test_a_rule_reads_the_word_this_run_saw():
-    plain = {'PROOF-1': {}, 'PROOF-2': {}}
-    assert writer.rule_word(['PROOF-1'], plain, {'PROOF-1': 'pass'},
-                            'linux') == 'passed'
-    assert writer.rule_word(['PROOF-1', 'PROOF-2'], plain,
-                            {'PROOF-1': 'pass', 'PROOF-2': 'fail'},
-                            'linux') == 'failed'
-    foreign = {'PROOF-1': {}, 'PROOF-2': {'env': 'windows'}}
-    assert writer.rule_word(['PROOF-1', 'PROOF-2'], foreign,
-                            {'PROOF-1': 'pass'}, 'linux') == 'not run'
-    assert writer.rule_word(['PROOF-1'], plain, {}, 'linux') == 'no test'
-    assert writer.rule_word([], plain, {}, 'linux') == 'no test'
-    assert writer.rule_word(['PROOF-1'], {'PROOF-1': {'manual': True}}, {},
-                            'linux') == 'passed'
-    assert writer.rule_word(['PROOF-1'], {'PROOF-1': {'env': 'linux'}},
-                            {'PROOF-1': 'pass'}, 'linux') == 'passed'
-    assert writer.rule_word(['PROOF-1', 'PROOF-2'], foreign,
-                            {'PROOF-1': 'fail'}, 'linux') == 'failed'
-    manual = {'PROOF-1': {'manual': True}, 'PROOF-2': {}}
-    assert writer.rule_word(['PROOF-1', 'PROOF-2'], manual,
-                            {'PROOF-2': 'fail'}, 'linux') == 'failed'
+# purlin: evidence_writer PROOF-41
+def test_a_run_names_the_machine_its_tests_ran_on(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
 
+    code, out = _run(root, '--all', '--test')
+
+    assert code == 0, out
+    section = _evidence(root)['platforms'][HERE]
+    assert platform.node()
+    assert (section['machine'], section['hostname']) == (
+        platform.node(), platform.node())
+
+
+# purlin: evidence_writer PROOF-42
+def test_a_host_with_no_name_is_the_machine_unknown(monkeypatch):
+    monkeypatch.setattr(platform, 'node', lambda: '')
+    section = _build({'PROOF-1': PLAIN}, {'PROOF-1': [_seen('pass')]})
+    assert section['machine'] == 'unknown'
+
+
+# ---------------------------------------------------------------------------
+# The word a rule reads
+# ---------------------------------------------------------------------------
+
+# purlin: evidence_writer PROOF-2
+def test_a_rule_whose_one_test_passed_reads_passed():
+    assert _rule_word({'PROOF-1': PLAIN},
+                      {'PROOF-1': [_seen('pass')]}) == 'passed'
+
+
+# purlin: evidence_writer PROOF-18
+def test_a_rule_with_a_failing_proof_reads_failed():
+    assert _rule_word({'PROOF-1': PLAIN, 'PROOF-2': PLAIN},
+                      {'PROOF-1': [_seen('pass')],
+                       'PROOF-2': [_seen('fail', 'test_b')]}) == 'failed'
+
+
+# purlin: evidence_writer PROOF-19
+def test_a_rule_waiting_on_another_system_reads_not_run():
+    assert _rule_word({'PROOF-1': PLAIN,
+                       'PROOF-2': {'manual': False, 'env': OTHER}},
+                      {'PROOF-1': [_seen('pass')]}) == 'not run'
+
+
+# purlin: evidence_writer PROOF-20
+def test_a_rule_whose_proof_has_no_test_reads_no_test():
+    assert _rule_word({'PROOF-1': PLAIN}, {}) == 'no test'
+
+
+# purlin: evidence_writer PROOF-21
+def test_a_rule_whose_one_proof_is_manual_reads_passed():
+    assert _rule_word({'PROOF-1': {'manual': True, 'env': None}},
+                      {}) == 'passed'
+
+
+# purlin: evidence_writer PROOF-22
+def test_a_proof_tagged_for_this_system_that_passed_reads_passed():
+    assert _rule_word({'PROOF-1': {'manual': False, 'env': HERE}},
+                      {'PROOF-1': [_seen('pass')]}) == 'passed'
+
+
+# purlin: evidence_writer PROOF-23
+def test_a_failure_outweighs_a_proof_owed_by_another_system():
+    assert _rule_word({'PROOF-1': PLAIN,
+                       'PROOF-2': {'manual': False, 'env': OTHER}},
+                      {'PROOF-1': [_seen('fail')]}) == 'failed'
+
+
+# purlin: evidence_writer PROOF-24
+def test_a_manual_proof_does_not_hide_a_failure():
+    assert _rule_word({'PROOF-1': {'manual': True, 'env': None},
+                       'PROOF-2': PLAIN},
+                      {'PROOF-2': [_seen('fail')]}) == 'failed'
+
+
+# purlin: evidence_writer PROOF-25
+def test_a_rule_with_a_skipped_test_beside_a_passing_one_reads_not_run():
+    assert _rule_word({'PROOF-1': PLAIN},
+                      {'PROOF-1': [_seen('pass'),
+                                   _seen('not run', 'test_b')]}) == 'not run'
+
+
+# purlin: evidence_writer PROOF-26
+def test_a_rule_whose_one_test_was_skipped_reads_not_run():
+    assert _rule_word({'PROOF-1': PLAIN},
+                      {'PROOF-1': [_seen('not run')]}) == 'not run'
+
+
+# ---------------------------------------------------------------------------
+# The proofs a section lists
+# ---------------------------------------------------------------------------
 
 # purlin: evidence_writer PROOF-3
 def test_one_proof_entry_per_proof_and_test():
-    info = _info(rules=('RULE-1', 'RULE-2'),
-                 proofs={'PROOF-1': {'manual': False, 'env': None},
-                         'PROOF-2': {'manual': False, 'env': None},
-                         'PROOF-3': {'manual': False, 'env': OTHER}},
-                 by_rule={'RULE-1': ['PROOF-1', 'PROOF-3'],
-                          'RULE-2': ['PROOF-2']})
-    seen = {'PROOF-1': [
-        {'status': 'pass', 'test_file': 'tests/a.py', 'test_name': 'test_a'},
-        {'status': 'pass', 'test_file': 'tests/b.py', 'test_name': 'test_b'}]}
-    section = writer.build_section(info, seen, HERE, 'a' * 40, False, 'dev',
-                                   {'spec': 's', 'code': 'c', 'tests': 't'})
-    by_id = {}
-    for entry in section['proofs']:
+    listed = _listed({'PROOF-1': PLAIN}, {'PROOF-1': [
+        _seen('pass', 'test_a', 'tests/a.py'),
+        _seen('fail', 'test_b', 'tests/b.py')]})
+    assert [(entry['result'], entry['test']) for entry in listed] == [
+        ('pass', 'tests/a.py::test_a'), ('fail', 'tests/b.py::test_b')]
+    for entry in listed:
         assert sorted(entry) == ['env', 'id', 'manual', 'result', 'rule',
                                  'test']
-        by_id.setdefault(entry['id'], []).append(entry)
-    assert [(e['result'], e['test']) for e in by_id['PROOF-1']] == [
-        ('pass', 'tests/a.py::test_a'), ('pass', 'tests/b.py::test_b')]
-    assert [(e['result'], e['test']) for e in by_id['PROOF-2']] == [
-        ('missing', '')]
-    assert [(e['result'], e['env']) for e in by_id['PROOF-3']] == [
-        ('not run', OTHER)]
-    assert by_id['PROOF-3'][0]['test'] == ''
 
-    # A failing test, a @manual proof, and the rule each entry names.
-    info['proofs'].update({'PROOF-4': {'manual': False, 'env': None},
-                           'PROOF-5': {'manual': True, 'env': None}})
-    info['proofs_by_rule']['RULE-2'] = ['PROOF-2', 'PROOF-4', 'PROOF-5']
-    seen['PROOF-4'] = [{'status': 'fail', 'test_file': 'tests/c.py',
-                        'test_name': 'test_c'}]
-    section = writer.build_section(info, seen, HERE, 'a' * 40, False, 'dev',
-                                   {'spec': 's', 'code': 'c', 'tests': 't'})
-    assert [(e['id'], e['rule'], e['result'], e['manual'], e['test'])
-            for e in section['proofs']] == [
-        ('PROOF-1', 'RULE-1', 'pass', False, 'tests/a.py::test_a'),
-        ('PROOF-1', 'RULE-1', 'pass', False, 'tests/b.py::test_b'),
-        ('PROOF-3', 'RULE-1', 'not run', False, ''),
-        ('PROOF-2', 'RULE-2', 'missing', False, ''),
-        ('PROOF-4', 'RULE-2', 'fail', False, 'tests/c.py::test_c'),
-        ('PROOF-5', 'RULE-2', 'missing', True, '')]
+
+# purlin: evidence_writer PROOF-27
+def test_a_proof_with_no_test_is_listed_missing():
+    listed = _listed({'PROOF-1': PLAIN}, {})
+    assert [(entry['result'], entry['test']) for entry in listed] == [
+        ('missing', '')]
+
+
+# purlin: evidence_writer PROOF-28
+def test_a_proof_owed_by_another_system_with_no_test_is_not_run():
+    listed = _listed({'PROOF-1': {'manual': False, 'env': OTHER}}, {})
+    assert [(entry['result'], entry['env'], entry['test'])
+            for entry in listed] == [('not run', OTHER, '')]
+
+
+# purlin: evidence_writer PROOF-29
+def test_a_skipped_test_of_a_proof_owed_by_another_system_is_not_run():
+    listed = _listed({'PROOF-1': {'manual': False, 'env': OTHER}},
+                     {'PROOF-1': [_seen('not run', 'test_w', 'tests/w.py')]})
+    assert [(entry['result'], entry['test']) for entry in listed] == [
+        ('not run', 'tests/w.py::test_w')]
+
+
+# purlin: evidence_writer PROOF-30
+def test_a_skipped_test_of_a_proof_owed_here_is_missing():
+    listed = _listed({'PROOF-1': PLAIN},
+                     {'PROOF-1': [_seen('not run', 'test_s', 'tests/s.py')]})
+    assert [(entry['result'], entry['test']) for entry in listed] == [
+        ('missing', 'tests/s.py::test_s')]
+
+
+# purlin: evidence_writer PROOF-31
+def test_a_manual_proof_is_listed_missing_and_manual():
+    listed = _listed({'PROOF-1': {'manual': True, 'env': None}}, {})
+    assert [(entry['result'], entry['manual'], entry['test'])
+            for entry in listed] == [('missing', True, '')]
 
 
 # purlin: evidence_writer PROOF-15
@@ -265,7 +393,7 @@ def test_a_rule_with_no_proof_is_answered_by_its_rule_marked_test():
         'RULE-2': [{'status': 'fail', 'test_file': 'tests/b.py',
                     'test_name': 'test_b'}]}
     section = writer.build_section(info, seen, HERE, 'a' * 40, False, 'dev',
-                                   {'spec': 's', 'code': 'c', 'tests': 't'})
+                                   PRINT)
     assert section['rules'] == {'RULE-1': 'passed', 'RULE-2': 'failed',
                                 'RULE-3': 'no test'}
     assert [(e['id'], e['rule'], e['result'], e['test'])
@@ -280,7 +408,7 @@ def test_a_rule_with_no_proof_is_answered_by_its_rule_marked_test():
                      'test_name': 'test_d'},
                     {'status': 'fail', 'test_file': 'tests/e.py',
                      'test_name': 'test_e'}]},
-        HERE, 'a' * 40, False, 'dev', {'spec': 's', 'code': 'c', 'tests': 't'})
+        HERE, 'a' * 40, False, 'dev', PRINT)
     assert two['rules'] == {'RULE-4': 'failed'}
     assert [(e['id'], e['rule'], e['result'], e['test'])
             for e in two['proofs']] == [
@@ -386,7 +514,7 @@ def test_a_run_removes_the_evidence_of_a_feature_with_no_spec(tmp_path):
 # purlin: evidence_writer PROOF-6
 def test_a_feature_run_and_an_audit_run_remove_it_too(tmp_path):
     root = _project(tmp_path, gate='strong')
-    _spec(root, level='strong')
+    _spec(root)
     _test_file(root)
     live = _put(root, _file(source='ci', platforms={'linux': _section()}),
                 source='ci')
@@ -435,12 +563,43 @@ def test_a_run_that_saw_the_same_thing_leaves_the_file_alone(tmp_path):
     assert _evidence(root)['platforms'][HERE] == moved
 
 
+# purlin: evidence_writer PROOF-43
+def test_a_section_from_another_machine_replaces_the_one_on_disk(tmp_path):
+    root = tmp_path
+    _put(root, _file(platforms={'linux': _section(machine='build-1')}))
+
+    writer.write_section(str(root), 'local', 'feat', _info(), 'linux',
+                         _section(machine='build-2',
+                                  at='2026-09-02T00:00:00Z'))
+
+    assert _evidence(root)['platforms']['linux']['machine'] == 'build-2'
+
+
+# purlin: evidence_writer PROOF-44
+def test_a_section_that_differs_only_in_its_hostname_is_not_written(tmp_path):
+    root = tmp_path
+    path = _put(root, _file(platforms={
+        'linux': _section(hostname='fv-az123')}))
+    before = path.read_bytes()
+
+    writer.write_section(str(root), 'local', 'feat', _info(), 'linux',
+                         _section(hostname='fv-az456'))
+
+    assert path.read_bytes() == before
+
+
 # ---------------------------------------------------------------------------
 # The table
 # ---------------------------------------------------------------------------
 
+def _table_lines(root):
+    writer.write_table(str(root))
+    return (root / '.purlin' / 'tests.md').read_text(
+        encoding='utf-8').splitlines()
+
+
 # purlin: evidence_writer PROOF-8
-def test_the_table_counts_each_features_newest_section(tmp_path):
+def test_a_row_counts_the_features_newest_section(tmp_path):
     root = tmp_path
     three = _section(at='2026-09-03T00:00:00Z', commit='c' * 40,
                      rules={'RULE-1': 'passed', 'RULE-2': 'failed',
@@ -449,37 +608,43 @@ def test_the_table_counts_each_features_newest_section(tmp_path):
          source='ci', feature='one')
     _put(root, _file(feature='one', platforms={
         'macos': _section(at='2026-09-01T00:00:00Z')}), feature='one')
+
+    assert ('| one | 3 | 1 | 1 | 1 | ccccccc · 2026-09-03T00:00:00Z · '
+            'Linux/Unix · ci |') in _table_lines(root)
+
+
+# purlin: evidence_writer PROOF-32
+def test_the_table_opens_on_the_newest_commit_and_its_columns(tmp_path):
+    root = tmp_path
+    _put(root, _file(feature='one', platforms={
+        'macos': _section(at='2026-09-02T00:00:00Z', commit='b' * 40)}),
+         feature='one')
+    _put(root, _file(feature='two', platforms={
+        'linux': _section(at='2026-09-04T00:00:00Z', commit='d' * 40)}),
+         feature='two')
+
+    lines = _table_lines(root)
+
+    assert lines[0] == '# Tests at ddddddd'
+    assert lines[2] == ('| Feature | Rules | Passed | Failing | No test | '
+                        'Last run |')
+
+
+# purlin: evidence_writer PROOF-33
+def test_an_older_section_in_the_other_source_does_not_answer(tmp_path):
+    root = tmp_path
     _put(root, _file(feature='two', platforms={
         'macos': _section(at='2026-09-02T00:00:00Z', commit='b' * 40)}),
          feature='two')
-
-    writer.write_table(str(root))
-    text = (root / '.purlin' / 'tests.md').read_text(encoding='utf-8')
-    lines = text.splitlines()
-    assert lines[0] == '# Tests at ccccccc'
-    assert lines[2] == ('| Feature | Rules | Passed | Failing | No test | '
-                        'Last run |')
-    assert ('| one | 3 | 1 | 1 | 1 | ccccccc · 2026-09-03T00:00:00Z · linux '
-            '· ci |') in lines
-    assert ('| two | 1 | 1 | 0 | 0 | bbbbbbb · 2026-09-02T00:00:00Z · macos '
-            '· local |') in lines
-
-    # An older ci section for two, and a newer feature three, not sorted first.
     _put(root, _file(source='ci', feature='two', platforms={
         'linux': _section(at='2026-09-01T12:00:00Z', commit='e' * 40)}),
          source='ci', feature='two')
-    _put(root, _file(feature='three', platforms={
-        'linux': _section(at='2026-09-04T00:00:00Z', commit='d' * 40)}),
-         feature='three')
-    writer.write_table(str(root))
-    lines = (root / '.purlin' / 'tests.md').read_text(
-        encoding='utf-8').splitlines()
-    assert lines[0] == '# Tests at ddddddd'
-    assert ('| two | 1 | 1 | 0 | 0 | bbbbbbb · 2026-09-02T00:00:00Z · macos '
-            '· local |') in lines
+
+    assert ('| two | 1 | 1 | 0 | 0 | bbbbbbb · 2026-09-02T00:00:00Z · macOS '
+            '· local |') in _table_lines(root)
 
 
-# purlin: evidence_writer PROOF-8
+# purlin: evidence_writer PROOF-34
 def test_a_feature_run_leaves_the_other_rows_as_they_were(tmp_path):
     root = _project(tmp_path)
     _spec(root, 'one')
@@ -498,6 +663,19 @@ def test_a_feature_run_leaves_the_other_rows_as_they_were(tmp_path):
     assert [line for line in table.splitlines() if line.startswith('| two')]
 
 
+# purlin: evidence_writer PROOF-35
+def test_a_rule_with_a_skipped_test_is_not_counted_passed(tmp_path):
+    root = tmp_path
+    section = _build({'PROOF-1': PLAIN},
+                     {'PROOF-1': [_seen('pass'), _seen('not run', 'test_b')]})
+    writer.write_section(str(root), 'local', 'feat', _info(), HERE, section)
+
+    row = [line for line in _table_lines(root) if line.startswith('| feat ')]
+
+    assert [cell.strip() for cell in row[0].split('|')[1:6]] == [
+        'feat', '1', '0', '0', '1']
+
+
 # ---------------------------------------------------------------------------
 # Written, and committed when asked
 # ---------------------------------------------------------------------------
@@ -508,37 +686,37 @@ def test_a_run_writes_and_does_not_commit(tmp_path):
     _spec(root)
     _test_file(root)
     _repo(root)
-    head = _git(root, 'rev-parse', 'HEAD').strip()
+    head = _head(root)
 
     code, out = _run(root, '--all', '--test')
 
     assert code == 0, out
     assert 'Evidence written to .purlin/evidence/local/feat.json.' in out
-    assert _git(root, 'rev-parse', 'HEAD').strip() == head
+    assert _head(root) == head
     assert '.purlin/evidence/' in _git(root, 'status', '--porcelain',
                                        '--untracked-files=all')
     assert '?? .purlin/tests.md' in _git(root, 'status', '--porcelain',
                                          '--untracked-files=all')
 
 
-# purlin: evidence_writer PROOF-9
+# purlin: evidence_writer PROOF-37
 def test_an_audit_run_writes_and_does_not_commit(tmp_path):
     root = _project(tmp_path, gate='strong')
-    _spec(root, level='strong')
+    _spec(root)
     _test_file(root)
     _repo(root)
-    head = _git(root, 'rev-parse', 'HEAD').strip()
+    head = _head(root)
 
     _code, out = _run(root, '--all', '--audit')
 
     assert 'Evidence written to .purlin/evidence/local/feat.json.' in out
-    assert _git(root, 'rev-parse', 'HEAD').strip() == head
+    assert _head(root) == head
     listed = _git(root, 'status', '--porcelain', '--untracked-files=all')
     assert '?? .purlin/evidence/local/feat.json' in listed, listed
     assert '?? .purlin/tests.md' in listed, listed
 
 
-# purlin: evidence_writer PROOF-9
+# purlin: evidence_writer PROOF-36
 def test_several_features_name_the_folder(tmp_path):
     root = _project(tmp_path)
     _spec(root, 'one')
@@ -558,29 +736,38 @@ def test_commit_commits_the_evidence_and_the_table_once(tmp_path):
     _spec(root)
     _test_file(root)
     _repo(root)
-    head = _git(root, 'rev-parse', 'HEAD').strip()
+    head = _head(root)
 
     code, out = _run(root, '--all', '--test', '--commit')
 
     assert code == 0, out
     assert 'Evidence committed.' in out
     assert 'git push' not in out
-    assert _git(root, 'log', '-1', '--format=%s').strip() == (
-        'purlin: evidence at %s' % head[:7])
-    assert _git(root, 'log', '-1', '--format=%ae').strip() == \
-        'dev@example.com'
+    assert _subjects(root)[0] == 'purlin: evidence at %s' % head[:7]
+    assert _git(root, 'log', '-1', '--format=%an %ae').strip() == \
+        'Dev dev@example.com'
     touched = _git(root, 'show', '--name-only', '--format=', 'HEAD').split()
     assert sorted(touched) == ['.purlin/evidence/local/feat.json',
                                '.purlin/tests.md']
 
-    assert _git(root, 'log', '-1', '--format=%an').strip() == 'Dev'
+
+# purlin: evidence_writer PROOF-38
+def test_a_second_commit_run_with_nothing_new_commits_nothing(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    _run(root, '--all', '--test', '--commit')
+    commits = len(_subjects(root))
 
     code, out = _run(root, '--all', '--test', '--commit')
+
+    assert code == 0, out
     assert 'Evidence unchanged.' in out, out
-    assert len(_git(root, 'log', '--format=%s').splitlines()) == 2
+    assert len(_subjects(root)) == commits
 
 
-# purlin: evidence_writer PROOF-10
+# purlin: evidence_writer PROOF-39
 def test_commit_carries_the_removal_and_pushes_nothing(tmp_path):
     root = _project(tmp_path)
     _spec(root)
@@ -604,8 +791,112 @@ def test_commit_carries_the_removal_and_pushes_nothing(tmp_path):
                    'HEAD').splitlines()
     assert 'D\t.purlin/evidence/local/gone.json' in changed, changed
     assert 'D\t.purlin/evidence/ci/gone.json' in changed, changed
-    assert _git(root, 'rev-parse', 'HEAD').strip() != pushed
+    assert _head(root) != pushed
     assert _git(remote, 'rev-parse', 'main').strip() == pushed
+
+
+def _edited(root):
+    """A checkout whose spec and test file changed after its last commit."""
+    _spec(root, description='A feature, reworded.')
+    (root / 'tests' / 'test_feat.py').write_text(
+        'import pytest\n\n'
+        '# purlin: feat PROOF-1\n'
+        'def test_ok():\n'
+        '    assert 2 + 2 == 4\n', encoding='utf-8')
+
+
+# purlin: evidence_writer PROOF-40
+def test_the_results_commit_names_the_work_commit(tmp_path, capsys):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    _spec(root, description='A feature, reworded.')
+    _put(root, _file(platforms={HERE: _section()}))
+
+    work = writer.commit_work(str(root), WORK)
+    writer.commit_local(str(root), work)
+
+    assert _subjects(root)[0] == 'purlin: evidence at %s' % work[:7]
+    assert _git(root, 'rev-parse', 'HEAD^').strip() == work
+
+
+# purlin: evidence_writer PROOF-47
+def test_the_work_is_committed_first_and_each_file_named(tmp_path, capsys):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    _edited(root)
+    capsys.readouterr()
+
+    work = writer.commit_work(str(root), WORK)
+
+    assert work == _head(root)
+    assert _subjects(root)[0] == 'purlin: specs, tests and settings for feat'
+    assert sorted(_git(root, 'show', '--name-only', '--format=',
+                       'HEAD').split()) == ['specs/a/feat.md',
+                                            'tests/test_feat.py']
+    assert capsys.readouterr().out.splitlines() == [
+        'Committed %s, the work these results describe:' % work[:7],
+        '  specs/a/feat.md', '  tests/test_feat.py']
+
+
+# purlin: evidence_writer PROOF-48
+def test_the_work_commit_names_every_feature_run(tmp_path, capsys):
+    root = _project(tmp_path)
+    _spec(root, 'one')
+    _spec(root, 'two')
+    _repo(root)
+    _spec(root, 'one', description='One, reworded.')
+    _spec(root, 'two', description='Two, reworded.')
+
+    writer.commit_work(str(root), ['specs/a/one.md', 'specs/a/two.md',
+                                   '.purlin/config.json'])
+
+    assert _subjects(root)[0] == \
+        'purlin: specs, tests and settings for one, two'
+
+
+# purlin: evidence_writer PROOF-49
+def test_committed_work_makes_no_commit_and_the_results_name_head(
+        tmp_path, capsys):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    head = _head(root)
+    _put(root, _file(platforms={HERE: _section()}))
+    capsys.readouterr()
+
+    work = writer.commit_work(str(root), WORK)
+
+    assert work == head
+    assert capsys.readouterr().out == ''
+    assert _head(root) == head
+    writer.commit_local(str(root), work)
+    assert _subjects(root)[0] == 'purlin: evidence at %s' % head[:7]
+
+
+# purlin: evidence_writer PROOF-50
+def test_a_commit_run_makes_the_two_commits(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    _spec(root, description='A feature, reworded.')
+
+    code, out = _run(root, '--all', '--test', '--commit')
+
+    assert code == 0, out
+    work = _git(root, 'rev-parse', 'HEAD^').strip()
+    assert _subjects(root)[:2] == [
+        'purlin: evidence at %s' % work[:7],
+        'purlin: specs, tests and settings for feat']
+    lines = out.splitlines()
+    at = lines.index('Committed %s, the work these results describe:'
+                     % work[:7])
+    assert lines[at + 1] == '  specs/a/feat.md'
 
 
 # purlin: evidence_writer PROOF-11
@@ -630,54 +921,81 @@ def _entry(word='strong'):
             'verdict': word, 'findings': [], 'at': 'x', 'commit': 'y'}
 
 
+FIRST_MUTATION = {'engine': 'mutmut', 'score': 71, 'at': 'a', 'commit': 'c'}
+
+
 # purlin: evidence_writer PROOF-12
-def test_an_audit_replaces_the_entries_it_read_and_no_others(tmp_path):
+def test_an_audit_adds_the_entry_it_read_and_keeps_the_others(tmp_path):
     root = tmp_path
     info = _info(rules=('RULE-1', 'RULE-2'))
     earlier = _entry('weak')
     _put(root, _file(platforms={'linux': _section()},
                      audit={'mutation': None, 'rules': {'RULE-2': earlier}}))
-    first = {'engine': 'mutmut', 'score': 71, 'at': 'a', 'commit': 'c'}
 
     writer.write_audit(str(root), 'local', 'feat', info,
-                       {'RULE-1': _entry()}, first, True)
+                       {'RULE-1': _entry()}, FIRST_MUTATION, True)
+
     audit = _evidence(root)['audit']
     assert audit['rules'] == {'RULE-1': _entry(), 'RULE-2': earlier}
-    assert audit['mutation'] == first
+    assert (audit['mutation']['engine'], audit['mutation']['score']) == (
+        'mutmut', 71)
 
-    # RULE-2 read again: its entry is replaced, RULE-1's kept.
+
+# purlin: evidence_writer PROOF-51
+def test_an_audit_replaces_the_entry_it_read_again(tmp_path):
+    root = tmp_path
+    info = _info(rules=('RULE-1', 'RULE-2'))
+    _put(root, _file(platforms={'linux': _section()},
+                     audit={'mutation': None,
+                            'rules': {'RULE-1': _entry(),
+                                      'RULE-2': _entry('weak')}}))
+
     writer.write_audit(str(root), 'local', 'feat', info,
                        {'RULE-2': _entry('strong')}, None, False)
+
     assert _evidence(root)['audit']['rules'] == {'RULE-1': _entry(),
                                                  'RULE-2': _entry('strong')}
 
-    writer.write_audit(str(root), 'local', 'feat', info, {},
+
+# purlin: evidence_writer PROOF-52
+def test_an_audit_without_mutation_testing_keeps_the_score(tmp_path):
+    root = tmp_path
+    _put(root, _file(platforms={'linux': _section()},
+                     audit={'mutation': FIRST_MUTATION, 'rules': {}}))
+
+    writer.write_audit(str(root), 'local', 'feat', _info(), {},
                        {'engine': 'mutmut', 'score': 5, 'at': 'b',
                         'commit': 'd'}, False)
-    assert _evidence(root)['audit']['mutation'] == first
 
-    _put(root, _file(feature='fresh'), feature='fresh')
-    writer.write_audit(str(root), 'local', 'fresh', info,
+    assert _evidence(root)['audit']['mutation']['score'] == 71
+
+
+# purlin: evidence_writer PROOF-53
+def test_a_first_audit_without_mutation_testing_writes_null(tmp_path):
+    root = tmp_path
+    _put(root, _file(platforms={'linux': _section()}))
+
+    writer.write_audit(str(root), 'local', 'feat', _info(),
                        {'RULE-1': _entry()}, None, False)
-    assert _evidence(root, 'fresh')['audit']['mutation'] is None
+
+    assert _evidence(root)['audit']['mutation'] is None
 
 
-# purlin: evidence_writer PROOF-12
+# purlin: evidence_writer PROOF-54
 def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
     root = _project(tmp_path, gate='strong')
-    _spec(root, level='strong')
+    _spec(root)
     _test_file(root)
     _repo(root)
 
-    code, out = _run(root, '--all', '--audit')
+    _code, out = _run(root, '--all', '--audit')
 
-    assert 'Evidence written to .purlin/evidence/local/feat.json.' in out
     entry = _evidence(root)['audit']['rules']['RULE-1']
     data = payload_module.build_payload(str(root))
     rule = next(r for f in data['features'] for r in f['rules']
                 if r['id'] == 'RULE-1')
     assert (entry['rule_hash'], entry['proof_hash'], entry['test_hash']) == (
-        rule['rule_hash'], rule['proof_hash'], rule['test_hash'])
+        rule['rule_hash'], rule['proof_hash'], rule['test_hash']), out
     assert entry['verdict'] == 'strong'
     assert entry['findings'] == []
     assert entry['model'] == 'claude-fake-1'
@@ -686,9 +1004,7 @@ def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
         assert entry['criteria'] == hashlib.sha256(
             handle.read().encode('utf-8')).hexdigest()
     assert STAMP.match(entry['at'])
-    assert entry['commit'] == _git(root, 'rev-parse', 'HEAD').strip()
-    assert rule['cells']['strong']['evidence'] == \
-        '.purlin/evidence/local/feat.json'
+    assert entry['commit'] == _head(root)
 
 
 # purlin: evidence_writer PROOF-14
@@ -737,6 +1053,42 @@ def test_a_repeated_entry_keeps_its_time_and_a_new_model_replaces_it(tmp_path):
         assert (entry[key], entry['at'], entry['commit']) == (
             value, key, key), entry
 
+
+HASHES = {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't'}
+
+
+# purlin: evidence_writer PROOF-45
+def test_an_audit_entry_carries_the_notes_the_audit_gave(tmp_path):
+    root = tmp_path
+    _put(root, _file(platforms={'linux': _section()}))
+    found = {'verdict': 'strong', 'findings': [], 'model': 'claude-a',
+             'criteria': 'c' * 64, 'notes': ['PROOF-1 holds two cases.']}
+
+    writer.write_audit(str(root), 'local', 'feat', _info(),
+                       {'RULE-1': writer.audit_entry(HASHES, found, 'y')},
+                       None, False)
+
+    assert _evidence(root)['audit']['rules']['RULE-1']['notes'] == [
+        'PROOF-1 holds two cases.']
+
+
+# purlin: evidence_writer PROOF-46
+def test_an_audit_entry_with_no_notes_has_no_notes_field(tmp_path):
+    root = tmp_path
+    _put(root, _file(platforms={'linux': _section()}))
+    found = {'verdict': 'strong', 'findings': [], 'model': 'claude-a',
+             'criteria': 'c' * 64}
+
+    writer.write_audit(str(root), 'local', 'feat', _info(),
+                       {'RULE-1': writer.audit_entry(HASHES, found, 'y')},
+                       None, False)
+
+    assert 'notes' not in _evidence(root)['audit']['rules']['RULE-1']
+
+
+# ---------------------------------------------------------------------------
+# What is ignored
+# ---------------------------------------------------------------------------
 
 # purlin: evidence_writer PROOF-13
 def test_neither_the_evidence_nor_the_table_is_ignored():
