@@ -58,8 +58,7 @@ for _path in (_MCP_DIR, _HERE):
 
 import marked_tests                                           # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
-                    payload as payload_module,
-                    signatures as signatures_module)
+                    payload as payload_module)
 
 USAGE = ('Usage: ai_audit.py --feature <f> [--rule RULE-N] '
          '[--project-root DIR]')
@@ -106,14 +105,14 @@ def rule_entry(payload, feature, rule):
     return None
 
 
-def is_read(entry, gate=None, again=False):
+def is_read(entry, again=False):
     """True when the audit reads this rule.
 
     A rule is read when it is its feature's own, at least one of its proofs
     has a test, its passed cell reads `passed`, and it has no audit entry for
     its current rule, proof and test hashes. The same rules are read at every
-    gate, so `gate` changes nothing. `again` drops the condition about an
-    existing entry, which is what `--all` asks for.
+    gate. `again` drops the condition about an existing entry, which is what
+    `--all` asks for.
     """
     entry = entry or {}
     if entry.get('label', 'own') != 'own':
@@ -145,9 +144,6 @@ def reading_for(project_root, payload, feature, rule):
         'rule_hash': entry.get('rule_hash'),
         'proof_hash': entry.get('proof_hash'),
         'test_hash': entry.get('test_hash'),
-        'triple_hash': signatures_module.triple_hash(
-            entry.get('rule_hash'), entry.get('proof_hash'),
-            entry.get('test_hash')),
         'tests': _test_layer(project_root, feature, entry),
         'test_strength': _feature_entry(payload, feature).get('test_strength'),
         'min_strength': gate.get('min_strength'),

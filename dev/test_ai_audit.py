@@ -40,8 +40,8 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 import ai_audit as audit_module  # noqa: E402
 import fake_claude  # noqa: E402
 import marked_tests  # noqa: E402
-from sign_project import (REVIEW_GATE, SIGNING_GATE, SPEC,  # noqa: E402
-                          TEST_FILE, Project)
+from sign_project import (FIRST_GATE, REVIEW_GATE, SIGNING_GATE,  # noqa: E402
+                          SPEC, TEST_FILE, Project)
 
 AI_AUDIT_PY = os.path.join(ROOT, 'scripts', 'review', 'ai_audit.py')
 CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
@@ -109,41 +109,46 @@ class TestWhichRulesAreRead:
 
     # purlin: ai_audit PROOF-1
     def test_a_passing_rule_with_no_entry_is_read(self):
-        assert audit_module.is_read(self._rule(), 'strong') is True
+        assert audit_module.is_read(self._rule()) is True
 
     # purlin: ai_audit PROOF-2
     def test_a_rule_that_did_not_pass_or_has_no_test_is_not_read(self):
         assert audit_module.is_read(self._rule(cells={'passed': {
-            'word': 'failed'}}), 'strong') is False
+            'word': 'failed'}})) is False
         assert audit_module.is_read(self._rule(proofs=[
-            {'id': 'PROOF-1', 'manual': True, 'tests': []}]), 'strong') \
+            {'id': 'PROOF-1', 'manual': True, 'tests': []}])) \
             is False
-        assert audit_module.is_read(self._rule(label='required'),
-                                    'strong') is False
+        assert audit_module.is_read(self._rule(label='required')) is False
 
     # purlin: ai_audit PROOF-3
     def test_a_passing_rule_is_read_at_the_gate_passed(self):
-        assert audit_module.is_read(self._rule(), 'passed') is True
+        made = Project(gate=FIRST_GATE)
+        try:
+            made.proofs()
+            made.evidence(audited=False)
+            assert audit_module.is_read(made.rule('RULE-2')) is True
+        finally:
+            made.close()
 
     # purlin: ai_audit PROOF-4
     def test_an_entry_for_the_current_hashes_is_skipped_unless_again(self):
         audited = self._rule(audit={'verdict': 'strong', 'findings': []})
-        assert audit_module.is_read(audited, 'strong') is False
-        assert audit_module.is_read(audited, 'strong', again=True) is True
+        assert audit_module.is_read(audited) is False
+        assert audit_module.is_read(audited, again=True) is True
 
     # purlin: ai_audit PROOF-4
     def test_an_entry_for_earlier_text_does_not_stop_a_reading(self,
                                                                at_strong):
-        assert audit_module.is_read(at_strong.rule('RULE-2'), 'strong')
+        assert audit_module.is_read(at_strong.rule('RULE-2'))
         at_strong.audit('RULE-2')
-        assert not audit_module.is_read(at_strong.rule('RULE-2'), 'strong')
+        assert not audit_module.is_read(at_strong.rule('RULE-2'))
         at_strong.spec(SPEC.replace('return 401 and the body',
                                     'return 401 with the body'))
         at_strong.evidence()
         reworded = at_strong.rule('RULE-2')
         assert reworded['cells']['passed']['word'] == 'passed', reworded
         assert not reworded.get('audit'), reworded
-        assert audit_module.is_read(reworded, 'strong') is True
+        assert audit_module.is_read(reworded) is True
 
 
 class TestWhatOneRuleIsReadWith:
@@ -587,22 +592,6 @@ class TestWriting:
                                   at_strong.root]) == 0
         capsys.readouterr()
         assert self._files(at_strong.root) == before
-
-    # purlin: ai_audit PROOF-28
-    def test_the_triple_moves_with_the_text(self, proved):
-        first = read(proved, 'RULE-1')
-        assert read(proved, 'RULE-1')['triple_hash'] == first['triple_hash']
-        proved.spec(SPEC.replace('return 200 with a session token',
-                                 'return 200 with a short session token'))
-        assert read(proved, 'RULE-1')['triple_hash'] != first['triple_hash']
-        proved.spec(SPEC)
-        assert read(proved, 'RULE-1')['triple_hash'] == first['triple_hash']
-        proved.spec(SPEC.replace('verify 200 and a token',
-                                 'verify 200 and a token that expires'))
-        assert read(proved, 'RULE-1')['triple_hash'] != first['triple_hash']
-        proved.spec(SPEC)
-        proved.edit_test(TEST_FILE.replace('== 200', '== 200  # checked'))
-        assert read(proved, 'RULE-1')['triple_hash'] != first['triple_hash']
 
     # purlin: ai_audit PROOF-29
     def test_the_rendering_names_the_rule_and_what_the_audit_found(

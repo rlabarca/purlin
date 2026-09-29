@@ -118,8 +118,9 @@ the audit read.
 A `@manual` proof has no test, so there is no test body to read and no AI audit is asked
 for. Its strong cell reads `manual test`.
 
-What a person does with what the audit found is one of three things, and `purlin:sign` takes
-each:
+A rule the audit found weak is build work: it shows under `Left to do` as a rule to
+strengthen, and `purlin:build` works on it. `purlin:sign` walks the rules left to test by hand
+and to sign, and takes one of three answers for each:
 
 - **Sign it.** The test proves the proof. `purlin:sign <feature> RULE-N`.
 - **Add a case.** The test is right as far as it goes and a case is missing, usually the
