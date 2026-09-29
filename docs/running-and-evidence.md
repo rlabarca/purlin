@@ -348,14 +348,14 @@ beside it as `hostname`
 ([evidence_format.md](../references/formats/evidence_format.md)).
 
 No breaks and no AI audit run on the runner. The test step is the last step: it ends on the
-summary and `Left to do`, and its exit code is the job's. The job fails only when one of the
-tests it runs fails or could not run; a rule not yet audited or signed never fails it.
+summary and `Left to do`, and its exit code is the job's. The job fails only when a test whose
+result it records fails or could not run; a rule not yet audited or signed never fails it.
 
-The matrix carries one job per operating system the `@env` tags in `specs/` name that the
-machine running setup is not. Each job writes its own section, merged into the file at the
-branch's head. A checkout that carries `scripts/run/purlin_run.py` runs that Purlin; any other
-project's job clones Purlin at the release the project pins, and the `PURLIN_REF` repository
-variable moves that pin.
+The matrix carries one job per operating system that
+[hard_gates.md](../references/hard_gates.md#where-a-runner-runs-and-when-a-project-has-one)
+names. Each job writes its own section, merged into the file at the branch's head. A checkout
+that carries `scripts/run/purlin_run.py` runs that Purlin; any other project's job clones Purlin
+at the release the project pins, and the `PURLIN_REF` repository variable moves that pin.
 
 ### purlin:test --remote
 

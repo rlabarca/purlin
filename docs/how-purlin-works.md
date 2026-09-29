@@ -102,9 +102,9 @@ project at `signed` writes.
 committed under `.purlin/evidence/ci/`, and deletes the branch. The runner runs the tests
 [hard_gates.md](../references/hard_gates.md#where-a-runner-runs-and-when-a-project-has-one)
 names, and no audit. The tag run reruns the tests on a clean machine, checks that every
-signature still binds the rule, proof, test and audit it names and that every file under `ci/` was committed by
-the runner itself, and ends with the gate check. Evidence from either folder counts at every
-gate. [running-and-evidence.md](running-and-evidence.md) has it in full.
+signature still binds the rule, proof, test and audit it names and that every file under
+`ci/` was committed by the runner itself, and ends with the gate check. Evidence from either
+folder counts at every gate. [running-and-evidence.md](running-and-evidence.md) has it in full.
 
 ## Questions every developer asks
 

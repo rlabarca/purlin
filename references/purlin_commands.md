@@ -162,8 +162,8 @@ A run names each rule where it reports the problem:
 - `<feature> <RULE-N> has no test. Run purlin:build <feature>.`, where none of them has one.
 - `<file>:<line> names <feature> <ID>, which no spec has. Correct the comment, or run purlin:build to repair it.`
 
-`purlin:sign` and `scripts/review/ai_audit.py --rule` name a rule no spec has, last, above the
-summary: `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`
+`purlin:sign`, last and above the summary, and `scripts/review/ai_audit.py --rule` name a rule no
+spec has: `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`
 
 `markers.py --near-misses --project-root <dir>` is what `purlin:build` runs to find a marker
 comment that is nearly right. It prints one JSON array of `{"file", "line", "text", "fix",

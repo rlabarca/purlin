@@ -41,7 +41,7 @@ anything in your test suite: a test is any test in your own suite with one comme
 - **The audit calls a model.** `purlin:audit` runs the tests, then one model call per rule,
   four at a time by default (`audit_parallel`, 1 to 16), and writes what it found into the
   evidence with the model's name on every finding. From the gate `strong` up a finding makes
-  the rule `weak`. A proof longer than the standard, or holding two cases, is written among the
+  the rule `weak`. A proof longer than 60 words, or holding two cases, is written among the
   audit's notes and does not make the rule weak.
 - **Test strength, one share per feature.** Mutation testing is optional and off by default;
   where it is on, the share of deliberate breaks the tests caught must reach `min_strength`.

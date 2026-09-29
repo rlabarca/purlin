@@ -84,7 +84,7 @@ counts test comments, not rules, and is carried by the project.
 | `to_test_by_hand` | a proof is `@manual` and the rule is not checked by hand, at any gate | `<n> rules to test by hand` | `purlin:sign` |
 | `to_audit` | at `strong` and `signed`, the strong cell reads `not audited` | `<n> rules to audit` | `purlin:audit` |
 | `to_measure` | with mutation testing on, the strong cell reads `weak` only because its feature's strength could not be measured | `<n> rules to measure` | `purlin:audit` |
-| `to_strengthen` | the strong cell reads `weak` | `<n> rules to strengthen` | `purlin:build` |
+| `to_strengthen` | the strong cell reads `weak`, and not because its spec names no code files | `<n> rules to strengthen` | `purlin:build` |
 | `no_scope` | at `signed`, the rule is not signed and its spec names no files; at `strong` and `signed` with mutation testing on, its strong cell reads `weak` because its spec names no code files | `<n> rules to tie to their files` | `purlin:spec` |
 | `to_sign` | at `signed`, the signed cell does not read `signed` | `<n> rules to sign` | `purlin:sign` |
 | `to_tag` | at `signed`, every other kind is at zero and no `signed/*` tag points at HEAD | `the version to tag` | `purlin:sign` |
@@ -153,13 +153,14 @@ run branch rather than the branch you are on. Every other push is yours.
 | The run | What starts it | What it writes |
 |---------|----------------|----------------|
 | A remote run | `purlin:test --remote` pushes `run/<branch>-<sha7>` | Its own section of each feature's `.purlin/evidence/ci/<feature>.json`, committed on that branch at every gate. `purlin:test --remote` pulls it home and deletes the branch |
-| A tag run | a person pushes `signed/<version>` | Nothing. On a clean machine it runs the tests a remote runner runs, as the paragraph above says, and nothing else |
+| A tag run | a person pushes `signed/<version>` | Nothing. On a clean machine it runs the tests a remote runner runs ("Which machine proves which proof", above), and nothing else |
 
 A run on a ref that is neither a `run/*` branch nor a `signed/*` tag prints
 `This run is on <ref>, which is neither a run branch nor a signed tag: the tests ran and nothing is written.`
 
 The test step ends on the summary and `Left to do`, and that ending is what you read. The job
-fails only when a test fails or could not run; a rule not yet audited or signed never fails it.
+fails only when a test whose result it records fails or could not run; a rule not yet audited
+or signed never fails it.
 
 ## When a signature counts
 
@@ -223,7 +224,7 @@ person pushes it. Below `signed` `purlin:sign` writes no tag and no package.
 
 ## CI writes no signature file
 
-A runner runs the tests "Where a runner runs, and when a project has one" names and, on a run
+A runner runs the tests named under "Which machine proves which proof", above, and, on a run
 branch, writes its section of the evidence. It signs nothing. A signature directory holds only
 files a person wrote.
 
