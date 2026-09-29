@@ -606,6 +606,7 @@ class TestMutationTesting:
 class TestTheEvidenceFolder:
 
     # purlin: scaffold PROOF-47
+    # purlin: scaffold PROOF-136
     def test_the_first_run_writes_the_readme(self, project):
         output = project.run('--gate', 'passed')
         readme = project.path('.purlin/evidence/README.md')
@@ -795,6 +796,7 @@ class TestTheGateMoves:
             '.purlin/config.json', REPORT_DATA]
 
     # purlin: scaffold PROOF-20
+    # purlin: scaffold PROOF-131
     def test_a_second_run_at_the_same_gate_changes_nothing(self, project):
         project.run('--gate', 'strong')
         files = tree(project.root)
@@ -819,6 +821,7 @@ class TestTheWorkflow:
                 'so nothing has to run remotely.') in output.splitlines(), output
 
     # purlin: scaffold PROOF-64
+    # purlin: scaffold PROOF-129
     def test_at_passed_the_reason_names_the_test(self, project):
         named = tag_foreign(project)
         output = project.run('--gate', 'passed')
@@ -888,6 +891,7 @@ class TestTheWorkflow:
             made.close()
 
     # purlin: scaffold PROOF-78
+    # purlin: scaffold PROOF-135
     def test_gh_installed_is_named_and_the_workflow_written(self):
         _host_tool_line('github', 'gh', installed=True)
 
@@ -1015,7 +1019,9 @@ def _host_tool_line(host, tool, installed):
         tag_foreign(made)
         if installed:
             if os.name == 'nt':
-                write(os.path.join(bin_dir, tool + '.cmd'), '@echo off\r\n')
+                # Bytes, so text mode adds no second carriage return.
+                with open(os.path.join(bin_dir, tool + '.cmd'), 'wb') as handle:
+                    handle.write(b'@echo off\r\n')
             else:
                 stand_in = os.path.join(bin_dir, tool)
                 write(stand_in, '#!/bin/sh\n')
@@ -1126,15 +1132,22 @@ class TestWhatInitWrites:
         assert summary_paths(output)['purlin-report.html'] == 'copied', output
 
     # purlin: scaffold PROOF-19
+    # purlin: scaffold PROOF-130
     def test_the_gitignore_block_is_added_once(self, project):
-        write(project.path('.gitignore'), 'node_modules/\n')
+        # The project's own file ends its line the way this system's editors
+        # do: a carriage return and a line feed on Windows.
+        ending = b'\r\n' if os.name == 'nt' else b'\n'
+        with open(project.path('.gitignore'), 'wb') as handle:
+            handle.write(b'node_modules/' + ending)
         project.run('--gate', 'passed')
-        first = read(project.path('.gitignore'))
+        first = tree(project.root)['.gitignore']
         project.run('--gate', 'passed')
-        assert read(project.path('.gitignore')) == first
-        assert first.startswith('node_modules/\n')
-        assert '.purlin/runtime/' in first
-        assert first.count('.purlin/report-data.js') == 1
+        # Byte for byte, so a line ending the second run rewrote is seen.
+        assert tree(project.root)['.gitignore'] == first
+        text = first.decode('utf-8')
+        assert text.splitlines()[0] == 'node_modules/', text
+        assert '.purlin/runtime/' in text
+        assert text.count('.purlin/report-data.js') == 1, text
 
     # purlin: scaffold PROOF-110
     def test_the_engine_block_joins_a_pyproject_once(self, project):
@@ -1279,6 +1292,7 @@ class TestTheMarketplacePath:
         return cache, installed
 
     # purlin: scaffold PROOF-22
+    # purlin: scaffold PROOF-133
     def test_the_copy_sets_a_project_up_the_same_way(self):
         cache, installed = self.copy_plugin()
         made = Project('pytest')
@@ -1308,6 +1322,7 @@ class TestTheMarketplacePath:
             shutil.rmtree(cache, ignore_errors=True)
 
     # purlin: scaffold PROOF-21
+    # purlin: scaffold PROOF-132
     def test_nothing_a_project_holds_names_the_plugin(self):
         cache, installed = self.copy_plugin()
         made = Project('pytest')
@@ -1316,6 +1331,11 @@ class TestTheMarketplacePath:
                      script=os.path.join(installed, 'scripts', 'init',
                                          'scaffold.py'),
                      env={'CLAUDE_PLUGIN_ROOT': installed})
+            # The copy's path as a file could hold it: with `\`, with `/`,
+            # and with each `\` doubled as JSON writes it. On a Mac the three
+            # are one path.
+            spellings = {installed, installed.replace('\\', '/'),
+                         installed.replace('\\', '\\\\')}
             for base, _dirs, names in os.walk(made.root):
                 if '.git' in base.split(os.sep):
                     continue
@@ -1325,7 +1345,8 @@ class TestTheMarketplacePath:
                         text = read(path)
                     except (UnicodeDecodeError, OSError):
                         continue
-                    assert installed not in text, path
+                    for spelled in spellings:
+                        assert spelled not in text, (path, spelled)
         finally:
             made.close()
             shutil.rmtree(cache, ignore_errors=True)
@@ -1352,6 +1373,7 @@ class TestTheMarketplacePath:
             shutil.rmtree(cache, ignore_errors=True)
 
     # purlin: scaffold PROOF-23
+    # purlin: scaffold PROOF-134
     def test_no_project_file_points_at_the_repository_s_own_dev_folder(self):
         made = Project('pytest')
         try:
@@ -1366,8 +1388,11 @@ class TestTheMarketplacePath:
                     except (UnicodeDecodeError, OSError):
                         continue
                     assert '/dev/' not in text.replace('/dev/null', ''), path
-                    # Nor a relative path into it, such as `dev/test_x.py`.
-                    assert not re.search(r'(?<![\w./-])dev/', text), path
+                    # Windows spells the folder with `\`.
+                    assert '\\dev\\' not in text, path
+                    # Nor a relative path into it, such as `dev/test_x.py` or
+                    # `dev\test_x.py`.
+                    assert not re.search(r'(?<![\w./\\-])dev[/\\]', text), path
         finally:
             made.close()
 

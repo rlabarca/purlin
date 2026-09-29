@@ -371,9 +371,14 @@ def write_engine(plan, root, selected):
 
 
 def write_evidence(plan, plugin_root):
-    """`.purlin/evidence/` and the README that says what the folder holds."""
+    """`.purlin/evidence/` and the README that says what the folder holds.
+
+    The README is handed over as bytes, so it is the file the plugin ships
+    on every system: text mode on Windows would end each line in two bytes.
+    """
     plan.directory(EVIDENCE_DIR)
-    plan.write(EVIDENCE_DIR + '/README.md', _read(plugin_root, EVIDENCE_README))
+    plan.write(EVIDENCE_DIR + '/README.md',
+               _read_bytes(plugin_root, EVIDENCE_README), exact=True)
 
 
 def engine_for(selected):
