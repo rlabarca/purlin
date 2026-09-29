@@ -1,6 +1,6 @@
 """Tests for `scripts/review/ai_audit.py`: the prompt, the call, the answer.
 
-The throwaway project is `dev/test_signatures.py`'s, so a spec, a test file, a
+The throwaway project is `dev/sign_project.py`'s, so a spec, a test file, a
 runtime proof file and the evidence are written by the test and nothing reads
 this repository's own specs. No test reaches the real model: every call lands
 on the fake `claude` that `dev/fake_claude.py` writes, first on PATH, or on a
@@ -18,9 +18,11 @@ What each group holds:
             not settled is `undecided`; the model and the criteria are named;
             the lines under `notes:` are notes and change no verdict
 *failure*   the four ways the model cannot be reached, each with its reason
-*writing*   reading and printing a rule writes no file
+*writing*   reading, asking and printing a rule write no file
+*command*   the command line: its exits and what it prints
 """
 
+import contextlib
 import hashlib
 import json
 import os
@@ -47,25 +49,33 @@ AI_AUDIT_PY = os.path.join(ROOT, 'scripts', 'review', 'ai_audit.py')
 CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
 
 FINDING = 'PROOF-2 asserts the status but never the body the rule names.'
+NO_SETTLED_LINE = 'claude answered without a settled line'
+
+
+@contextlib.contextmanager
+def passing_project(gate=REVIEW_GATE, spec=SPEC, statuses=None,
+                    strength=90):
+    """A project at `gate` whose tests ran with `statuses`, closed after."""
+    made = Project(spec=spec, gate=gate)
+    try:
+        made.proofs(statuses)
+        made.evidence(statuses, strength=strength)
+        yield made
+    finally:
+        made.close()
 
 
 @pytest.fixture
 def proved():
-    made = Project()
-    made.proofs()
-    made.evidence()
-    yield made
-    made.close()
+    with passing_project(gate=FIRST_GATE) as made:
+        yield made
 
 
 @pytest.fixture
 def at_strong():
     """The same project at `strong`, where an unmarked rule is read."""
-    made = Project(gate=REVIEW_GATE)
-    made.proofs()
-    made.evidence()
-    yield made
-    made.close()
+    with passing_project() as made:
+        yield made
 
 
 @pytest.fixture
@@ -92,69 +102,140 @@ def criteria_text():
         return handle.read()
 
 
+def ask(project, rule='RULE-2'):
+    """What the audit found for `rule`, asked of whichever `claude` is first."""
+    return audit_module.audit_one(project.root, read(project, rule),
+                                  criteria_text())
+
+
+def command(project, capsys, *args):
+    """`(exit code, printed text)` for the command run on `project`."""
+    code = audit_module.main(list(args) + ['--project-root', project.root])
+    return code, capsys.readouterr().out
+
+
 # ---------------------------------------------------------------------------
-# What is read
+# Which rules are read
 # ---------------------------------------------------------------------------
 
 class TestWhichRulesAreRead:
 
-    @staticmethod
-    def _rule(**overrides):
-        rule = {'label': 'own', 'audit': None,
-                'cells': {'passed': {'word': 'passed'}},
-                'proofs': [{'id': 'PROOF-1', 'manual': False,
-                            'tests': [{'file': 't.py', 'name': 'test_x'}]}]}
-        rule.update(overrides)
-        return rule
-
     # purlin: ai_audit PROOF-1
-    def test_a_passing_rule_with_no_entry_is_read(self):
-        assert audit_module.is_read(self._rule()) is True
+    def test_a_passing_rule_with_no_entry_is_read_at_strong(self, at_strong):
+        rule = at_strong.rule('RULE-2')
+        assert rule['cells']['passed']['word'] == 'passed', rule
+        assert not rule.get('audit'), rule
+        assert audit_module.is_read(rule) is True
 
     # purlin: ai_audit PROOF-2
-    def test_a_rule_that_did_not_pass_or_has_no_test_is_not_read(self):
-        assert audit_module.is_read(self._rule(cells={'passed': {
-            'word': 'failed'}})) is False
-        assert audit_module.is_read(self._rule(proofs=[
-            {'id': 'PROOF-1', 'manual': True, 'tests': []}])) \
-            is False
-        assert audit_module.is_read(self._rule(label='required')) is False
+    def test_a_rule_whose_test_failed_is_not_read(self):
+        failed = {'PROOF-1': 'pass', 'PROOF-2': 'fail'}
+        with passing_project(statuses=failed) as made:
+            rule = made.rule('RULE-2')
+            assert rule['cells']['passed']['word'] == 'failed', rule
+            assert audit_module.is_read(rule) is False
+
+    # purlin: ai_audit PROOF-48
+    def test_a_rule_whose_one_proof_is_manual_is_not_read(self):
+        spec = SPEC.replace('verify 401 and the body "denied"',
+                            'verify 401 and the body "denied" @manual')
+        with passing_project(spec=spec) as made:
+            rule = made.rule('RULE-2')
+            assert rule['cells']['passed']['word'] == 'passed', rule
+            assert [proof['manual'] for proof in rule['proofs']] == [True]
+            assert audit_module.is_read(rule) is False
+
+    # purlin: ai_audit PROOF-49
+    def test_a_required_rule_is_read_only_where_its_feature_lists_it(
+            self, at_strong):
+        at_strong.spec('# Feature: portal\n\n'
+                       '> Description: The portal a person signs in to.\n'
+                       '> Scope: src/login.py\n'
+                       '> Requires: login\n\n'
+                       '## Rules\n\n'
+                       '- RULE-1: The portal opens\n\n'
+                       '## Proof\n\n'
+                       '- PROOF-1 (RULE-1): Open the portal; it opens\n',
+                       name='portal')
+        features = {entry['name']: entry
+                    for entry in at_strong.payload()['features']}
+        required = [rule for rule in features['portal']['rules']
+                    if rule['feature'] == 'login']
+        own = features['login']['rules']
+        assert sorted(rule['id'] for rule in required) == ['RULE-1',
+                                                           'RULE-2']
+        assert [audit_module.is_read(rule) for rule in required] == [
+            False, False]
+        assert [audit_module.is_read(rule) for rule in own] == [True, True]
 
     # purlin: ai_audit PROOF-3
-    def test_a_passing_rule_is_read_at_the_gate_passed(self):
-        made = Project(gate=FIRST_GATE)
-        try:
-            made.proofs()
-            made.evidence(audited=False)
+    def test_a_passing_rule_is_read_at_the_gate_passed(self, proved):
+        assert audit_module.is_read(proved.rule('RULE-2')) is True
+
+    # purlin: ai_audit PROOF-50
+    def test_a_passing_rule_is_read_at_the_gate_signed(self):
+        with passing_project(gate=SIGNING_GATE) as made:
             assert audit_module.is_read(made.rule('RULE-2')) is True
-        finally:
-            made.close()
 
     # purlin: ai_audit PROOF-4
-    def test_an_entry_for_the_current_hashes_is_skipped_unless_again(self):
-        audited = self._rule(audit={'verdict': 'strong', 'findings': []})
-        assert audit_module.is_read(audited) is False
-        assert audit_module.is_read(audited, again=True) is True
-
-    # purlin: ai_audit PROOF-4
-    def test_an_entry_for_earlier_text_does_not_stop_a_reading(self,
-                                                               at_strong):
-        assert audit_module.is_read(at_strong.rule('RULE-2'))
+    def test_a_rule_with_a_current_entry_is_not_read(self, at_strong):
         at_strong.audit('RULE-2')
-        assert not audit_module.is_read(at_strong.rule('RULE-2'))
-        at_strong.spec(SPEC.replace('return 401 and the body',
-                                    'return 401 with the body'))
-        at_strong.evidence()
-        reworded = at_strong.rule('RULE-2')
-        assert reworded['cells']['passed']['word'] == 'passed', reworded
-        assert not reworded.get('audit'), reworded
-        assert audit_module.is_read(reworded) is True
+        rule = at_strong.rule('RULE-2')
+        assert rule['audit']['verdict'] == 'strong', rule
+        assert audit_module.is_read(rule) is False
 
+    # purlin: ai_audit PROOF-51
+    def test_a_rule_with_a_current_entry_is_read_when_asked_again(
+            self, at_strong):
+        at_strong.audit('RULE-2')
+        assert audit_module.is_read(at_strong.rule('RULE-2'),
+                                    again=True) is True
+
+    @staticmethod
+    def _changed_after_its_entry(project, change):
+        """RULE-2 after an entry is recorded and `change` runs, tests rerun."""
+        project.audit('RULE-2')
+        assert project.rule('RULE-2').get('audit')
+        change(project)
+        project.evidence()
+        return project.rule('RULE-2')
+
+    # purlin: ai_audit PROOF-52
+    def test_a_rule_whose_text_changed_is_read_again(self, at_strong):
+        rule = self._changed_after_its_entry(at_strong, lambda made: made.spec(
+            SPEC.replace('return 401 and the body',
+                         'return 401 with the body')))
+        assert rule['cells']['passed']['word'] == 'passed', rule
+        assert not rule.get('audit'), rule
+        assert audit_module.is_read(rule) is True
+
+    # purlin: ai_audit PROOF-53
+    def test_a_rule_whose_proof_changed_is_read_again(self, at_strong):
+        rule = self._changed_after_its_entry(at_strong, lambda made: made.spec(
+            SPEC.replace('verify 401 and the body "denied"',
+                         'verify 401 and the body reads "denied"')))
+        assert rule['cells']['passed']['word'] == 'passed', rule
+        assert not rule.get('audit'), rule
+        assert audit_module.is_read(rule) is True
+
+    # purlin: ai_audit PROOF-54
+    def test_a_rule_whose_test_changed_is_read_again(self, at_strong):
+        rule = self._changed_after_its_entry(
+            at_strong, lambda made: made.edit_test(TEST_FILE.replace(
+                'login("ada", "wrong")', 'login("ada", "bad")')))
+        assert rule['cells']['passed']['word'] == 'passed', rule
+        assert not rule.get('audit'), rule
+        assert audit_module.is_read(rule) is True
+
+
+# ---------------------------------------------------------------------------
+# What one rule is read with
+# ---------------------------------------------------------------------------
 
 class TestWhatOneRuleIsReadWith:
 
     # purlin: ai_audit PROOF-5
-    def test_the_test_body_is_shown_beside_the_rule(self, proved):
+    def test_the_test_source_is_shown_beside_the_rule(self, proved):
         test = read(proved, 'RULE-1')['tests'][0]
         assert test['file'] == 'tests/test_login.py'
         assert test['name'] == 'test_valid_credentials_return_200'
@@ -178,104 +259,105 @@ class TestWhatOneRuleIsReadWith:
         assert read(proved, 'RULE-99') is None
 
     # purlin: ai_audit PROOF-8
-    def test_the_strength_comes_off_the_evidence(self, at_strong):
+    def test_the_strength_is_read_beside_the_minimum(self, at_strong):
         reading = read(at_strong, 'RULE-2')
         assert (reading['test_strength'], reading['min_strength']) == (90, 70)
-        made = Project()
-        try:
-            made.proofs()
-            made.evidence(strength=None)
-            assert 'Test strength: n/a' in audit_module.render(
-                read(made, 'RULE-2'))
-        finally:
-            made.close()
+
+    # purlin: ai_audit PROOF-63
+    def test_no_measured_strength_prints_n_a(self, capsys):
+        with passing_project(strength=None) as made:
+            code, printed = command(made, capsys, '--feature', 'login',
+                                    '--rule', 'RULE-2')
+        assert code == 0
+        assert 'Test strength: n/a   minimum 70' in printed, printed
 
 
 class TestTheJavaScriptReader:
+    """Each case is a tricky test followed by a plain one in one file."""
 
-    @staticmethod
-    def _bodies(feature, text, tmp_path):
-        """`{proof: source}` for every marked test in one TypeScript file."""
+    NEXT = ('it("the next test", () => {\n'
+            '  expect(2).toBe(2);\n'
+            '});\n', 'expect(2).toBe(2)')
+
+    def _both(self, tmp_path, first, second=None):
+        """The source found for the first and the second marked test."""
+        second_text, _token = second or self.NEXT
+        text = ('import { it, expect } from "vitest";\n\n'
+                '// purlin: rx PROOF-1\n' + first + '\n'
+                '// purlin: rx PROOF-2\n' + second_text)
         (tmp_path / 'tests').mkdir(exist_ok=True)
         (tmp_path / 'tests' / 'rx.test.ts').write_text(text, encoding='utf-8')
-        found = {}
-        for number in range(1, 10):
-            proof = 'PROOF-%d' % number
-            body = marked_tests.source(str(tmp_path), feature, proof,
-                                       'tests/rx.test.ts')
-            if body is not None:
-                found[proof] = body
-        return found
+        return [marked_tests.source(str(tmp_path), 'rx', proof,
+                                    'tests/rx.test.ts')
+                for proof in ('PROOF-1', 'PROOF-2')]
+
+    def _check(self, tmp_path, first, token, second=None):
+        second = second or self.NEXT
+        found, after = self._both(tmp_path, first, second)
+        assert found is not None and after is not None, (found, after)
+        assert token in found, found
+        assert second[1] not in found, found
+        assert second[1] in after, after
+        assert token not in after, after
 
     # purlin: ai_audit PROOF-9
-    def test_braces_and_apostrophes_do_not_cut_a_body(self, tmp_path):
-        text = """import { describe, it, expect } from "vitest";
-import { execSync } from "node:child_process";
+    def test_an_options_object_does_not_cut_a_body(self, tmp_path):
+        self._check(tmp_path,
+                    'it("passes options", () => {\n'
+                    '  const out = execSync("ls", { cwd: ".", encoding: '
+                    '"utf8" });\n'
+                    '  expect(out).toMatch(/./);\n'
+                    '});\n', 'expect(out).toMatch')
 
-describe("repro", () => {
-  // purlin: demo PROOF-1
-  it("execSync options trigger early-truncation", () => {
-    const out = execSync("ls", { cwd: ".", encoding: "utf8" });
-    expect(out).toMatch(/./);
-  });
-
-  // purlin: demo PROOF-2
-  it("cd's into a sibling", () => {
-    expect(1).toBe(1);
-  });
-});
-"""
-        (tmp_path / 'tests').mkdir()
-        (tmp_path / 'tests' / 'a.test.ts').write_text(text, encoding='utf-8')
-        first = marked_tests.source(str(tmp_path), 'demo', 'PROOF-1',
-                                    'tests/a.test.ts')
-        second = marked_tests.source(str(tmp_path), 'demo', 'PROOF-2',
-                                     'tests/a.test.ts')
-        assert first is not None and second is not None, (first, second)
-        assert 'expect(out).toMatch' in first, first
-        assert 'expect(1).toBe(1)' in second, second
+    # purlin: ai_audit PROOF-67
+    def test_an_apostrophe_in_a_title_does_not_cut_a_body(self, tmp_path):
+        self._check(tmp_path,
+                    'it("cd\'s into a sibling", () => {\n'
+                    '  expect(1).toBe(1);\n'
+                    '});\n', 'expect(1).toBe(1)')
 
     # purlin: ai_audit PROOF-10
-    def test_regex_literals_comments_and_division_do_not_cut_a_body(
-            self, tmp_path):
-        text = r"""import { it, expect } from "vitest";
+    def test_a_division_across_a_line_does_not_cut_a_body(self, tmp_path):
+        self._check(tmp_path,
+                    'it("division across a line", () => {\n'
+                    '  const s = "a" +\n'
+                    '    / 2;\n'
+                    '  expect(s).toBe("a");\n'
+                    '});\n', 'expect(s).toBe("a")')
 
-// purlin: rx PROOF-1
-it("division across a line", () => {
-  const s = "a" +
-    / 2;
-  expect(s).toBe("a");
-});
+    # purlin: ai_audit PROOF-68
+    def test_a_pattern_holding_a_brace_a_slash_and_quotes(self, tmp_path):
+        self._check(tmp_path,
+                    'it("a class holding a slash", () => {\n'
+                    '  const re = /[/)}"\']+/g;\n'
+                    '  expect("a)}/b".replace(re, "")).toBe("ab");\n'
+                    '});\n', 'expect("a)}/b".replace(re, ""))')
 
-// purlin: rx PROOF-2
-it("a class holding a brace, a slash and quotes", () => {
-  const re = /[}/"']+/g;
-  expect("a}/b".replace(re, "")).toBe("ab");
-});
+    # purlin: ai_audit PROOF-69
+    def test_a_pattern_with_an_escaped_slash(self, tmp_path):
+        self._check(tmp_path,
+                    'it("an escaped slash", () => {\n'
+                    '  const re = /\\/)}/;\n'
+                    '  expect("x/)}".match(re)[0]).toBe("/)}");\n'
+                    '});\n', 'expect("x/)}".match(re)[0])')
 
-// purlin: rx PROOF-3
-it("an escaped slash", () => {
-  const re = /\/}/;
-  expect("x/}".match(re)[0]).toBe("/}");
-});
+    # purlin: ai_audit PROOF-70
+    def test_braces_in_comments_do_not_cut_a_body(self, tmp_path):
+        self._check(tmp_path,
+                    'it("comments", () => {\n'
+                    '  // a } and a ) in a line comment\n'
+                    '  /* a } and a ) in a block one */\n'
+                    '  expect(1 + 1).toBe(2);\n'
+                    '});\n', 'expect(1 + 1).toBe(2)')
 
-// purlin: rx PROOF-4
-it("comments", () => {
-  // a } in a line comment
-  /* and } in a block one */
-  expect(1 + 1).toBe(2);
-});
-
-// purlin: rx PROOF-5
-it("division", () => { const q = 4 / 2; expect(q).toBe(2); });
-// purlin: rx PROOF-6
-it("division again", () => { expect(8 / 4).toBe(2); });
-"""
-        bodies = self._bodies('rx', text, tmp_path)
-        assert sorted(bodies) == ['PROOF-%d' % n for n in range(1, 7)], (
-            'a misread `/` swallowed a test: %s' % sorted(bodies))
-        for proof, body in sorted(bodies.items()):
-            assert 'expect(' in body, (proof, body)
+    # purlin: ai_audit PROOF-71
+    def test_two_one_line_tests_that_divide(self, tmp_path):
+        self._check(tmp_path,
+                    'it("division", () => { const q = 4 / 2; '
+                    'expect(q).toBe(2); });\n', 'expect(q).toBe(2)',
+                    second=('it("division again", () => { '
+                            'expect(8 / 4).toBe(2); });\n',
+                            'expect(8 / 4).toBe(2)'))
 
 
 # ---------------------------------------------------------------------------
@@ -285,18 +367,18 @@ it("division again", () => { expect(8 / 4).toBe(2); });
 class TestThePrompt:
 
     # purlin: ai_audit PROOF-11
-    def test_the_prompt_is_the_criteria_file_verbatim(self, at_strong):
+    def test_the_prompt_is_the_criteria_then_the_rule(self, at_strong):
         prompt = audit_module.model_prompt(at_strong.root,
                                            read(at_strong, 'RULE-2'))
         assert prompt.startswith(criteria_text())
-        assert 'RULE-2' in prompt
-        assert 'Invalid credentials return 401' in prompt
-        assert 'test_a_bad_password_is_denied' in prompt
-        assert 'Test strength: 90 percent (minimum 70)' in prompt
         after = prompt[len(criteria_text()):]
+        assert 'login RULE-2' in after
+        assert 'Invalid credentials return 401 and the body "denied"' in after
         assert ('POST /login with a bad password; verify 401 and the body '
                 '"denied"') in after
+        assert 'test_a_bad_password_is_denied' in after
         assert 'assert login("ada", "wrong") == 401' in after
+        assert 'Test strength: 90 percent (minimum 70)' in after
 
     # purlin: ai_audit PROOF-12
     def test_the_prompt_asks_for_observations_and_bars_a_recommendation(
@@ -334,9 +416,10 @@ class TestTheCall:
         found = audit_module.audit_one(at_strong.root, reading,
                                        criteria_text())
         calls = fake_claude.calls(directory)
-        assert found['verdict'] == 'strong', found
+        assert found.get('verdict') == 'strong', found
         assert len(calls) == 1, calls
         assert calls[0]['argv'] == ['-p', '--output-format', 'json']
+        # The fake reads its standard input to the end before it answers.
         prompt = audit_module.model_prompt(at_strong.root, reading,
                                            criteria_text())
         assert calls[0]['prompt'] == prompt
@@ -377,7 +460,7 @@ class TestTheCall:
         assert [found['verdict'] for found in results] == ['strong'] * 6
         assert fake_claude.most_at_once(calls) == 4, calls
 
-    # purlin: ai_audit PROOF-15
+    # purlin: ai_audit PROOF-55
     def test_six_rules_six_calls_each_answer_beside_its_rule(self, at_strong,
                                                              claude):
         base = read(at_strong, 'RULE-2')
@@ -416,6 +499,17 @@ class TestTheCall:
         assert len(calls) == 4, calls
         assert fake_claude.most_at_once(calls) == 2, calls
 
+    # purlin: ai_audit PROOF-56
+    def test_fewer_rules_than_the_number_all_run_together(self, at_strong,
+                                                          claude):
+        install, directory = claude
+        install(sleep=0.4)
+        reading = read(at_strong, 'RULE-2')
+        audit_module.audit_all(at_strong.root, [reading] * 2, 4)
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 2, calls
+        assert fake_claude.most_at_once(calls) == 2, calls
+
 
 # ---------------------------------------------------------------------------
 # The answer
@@ -427,9 +521,7 @@ class TestTheAnswer:
     def test_settled_with_nothing_found_is_strong(self, at_strong, claude):
         install, _directory = claude
         install(answers=['settled: yes'])
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
+        found = ask(at_strong)
         assert (found['verdict'], found['findings']) == ('strong', [])
 
     # purlin: ai_audit PROOF-18
@@ -437,60 +529,87 @@ class TestTheAnswer:
             self, at_strong, claude):
         install, _directory = claude
         install(answers=['settled: yes\n- %s\n' % FINDING])
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
+        found = ask(at_strong)
         assert (found['verdict'], found['findings']) == ('weak', [FINDING])
 
     # purlin: ai_audit PROOF-19
     def test_not_settled_is_undecided_with_its_reason(self, at_strong, claude):
         install, _directory = claude
         install(answers=['settled: no\n- The body of PROOF-2 is not shown.'])
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
+        found = ask(at_strong)
         assert (found['verdict'], found['findings']) == (
             'undecided', ['The body of PROOF-2 is not shown.'])
+
+    # purlin: ai_audit PROOF-22
+    def test_a_finding_with_no_settled_line_is_no_answer(self, at_strong,
+                                                         claude):
+        install, _directory = claude
+        install(answers=['- %s' % FINDING])
+        assert ask(at_strong) == {'why': NO_SETTLED_LINE}
+
+    # purlin: ai_audit PROOF-57
+    def test_an_empty_answer_is_no_answer(self, at_strong, claude):
+        install, _directory = claude
+        install(answers=[''])
+        assert ask(at_strong) == {'why': NO_SETTLED_LINE}
 
     # purlin: ai_audit PROOF-20
     def test_the_answer_names_its_model_and_the_criteria_it_was_sent(
             self, at_strong, claude):
         install, _directory = claude
         install(model='claude-opus-4-1-20250805')
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
+        found = ask(at_strong)
         assert found['model'] == 'claude-opus-4-1-20250805'
         assert found['criteria'] == hashlib.sha256(
             criteria_text().encode('utf-8')).hexdigest()
+
+    # purlin: ai_audit PROOF-58
+    def test_an_answer_naming_no_model_names_unknown(self, at_strong, claude):
+        install, _directory = claude
         install(model=None)
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
-        assert found['model'] == 'unknown'
+        assert ask(at_strong)['model'] == 'unknown'
+
+    @staticmethod
+    def _model_named(project, install, **fields):
+        """The model the audit names when `claude`'s JSON carries `fields`."""
+        install(raw=json.dumps(dict({'result': 'settled: yes'}, **fields)))
+        return ask(project)['model']
 
     # purlin: ai_audit PROOF-21
-    def test_the_model_that_wrote_most_is_the_one_named(self):
-        body = {'modelUsage': {'claude-haiku-3-5': {'outputTokens': 12},
-                               'claude-opus-4-1': {'outputTokens': 900}}}
-        assert audit_module.model_name(body) == 'claude-opus-4-1'
-        body = {'modelUsage': {'claude-opus-4-1': {'outputTokens': 900},
-                               'claude-haiku-3-5': {'outputTokens': 12}}}
-        assert audit_module.model_name(body) == 'claude-opus-4-1'
-        body = {'modelUsage': {'claude-opus-4-1': {'outputTokens': 12},
-                               'claude-haiku-3-5': {'outputTokens': 900}}}
-        assert audit_module.model_name(body) == 'claude-haiku-3-5'
-        assert audit_module.model_name({'model': 'claude-x-1'}) == \
-            'claude-x-1'
-        assert audit_module.model_name({}) == 'unknown'
+    def test_the_model_that_wrote_most_is_named_when_listed_second(
+            self, at_strong, claude):
+        install, _directory = claude
+        assert self._model_named(at_strong, install, modelUsage={
+            'claude-haiku-3-5': {'outputTokens': 12},
+            'claude-opus-4-1': {'outputTokens': 900}}) == 'claude-opus-4-1'
+
+    # purlin: ai_audit PROOF-59
+    def test_the_model_that_wrote_most_is_named_when_listed_first(
+            self, at_strong, claude):
+        install, _directory = claude
+        assert self._model_named(at_strong, install, modelUsage={
+            'claude-opus-4-1': {'outputTokens': 900},
+            'claude-haiku-3-5': {'outputTokens': 12}}) == 'claude-opus-4-1'
+
+    # purlin: ai_audit PROOF-60
+    def test_the_model_named_follows_the_counts_not_the_name(self, at_strong,
+                                                             claude):
+        install, _directory = claude
+        assert self._model_named(at_strong, install, modelUsage={
+            'claude-opus-4-1': {'outputTokens': 12},
+            'claude-haiku-3-5': {'outputTokens': 900}}) == 'claude-haiku-3-5'
+
+    # purlin: ai_audit PROOF-61
+    def test_a_top_level_model_is_named(self, at_strong, claude):
+        install, _directory = claude
+        assert self._model_named(at_strong, install,
+                                 model='claude-x-1') == 'claude-x-1'
 
     # purlin: ai_audit PROOF-37
     def test_a_note_is_not_a_finding(self, at_strong, claude):
         install, _directory = claude
         install(answers=['settled: yes\nnotes:\n- PROOF-2 holds two cases.'])
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
+        found = ask(at_strong)
         assert (found['verdict'], found['findings'], found['notes']) == (
             'strong', [], ['PROOF-2 holds two cases.']), found
 
@@ -499,17 +618,9 @@ class TestTheAnswer:
         install, _directory = claude
         install(answers=['settled: yes\n- %s\nnotes:\n- PROOF-2 holds two '
                          'cases.' % FINDING])
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
+        found = ask(at_strong)
         assert (found['verdict'], found['findings'], found['notes']) == (
             'weak', [FINDING], ['PROOF-2 holds two cases.']), found
-
-    # purlin: ai_audit PROOF-22
-    def test_an_answer_in_no_shape_says_nothing(self):
-        assert audit_module.parse_answer('It looks fine to me.') == ([], None)
-        assert audit_module.parse_answer('') == ([], None)
-        assert audit_module.verdict_of([], None) is None
 
 
 # ---------------------------------------------------------------------------
@@ -534,10 +645,7 @@ class TestWhenTheModelCannotBeReached:
     def test_a_non_zero_exit_is_named(self, at_strong, claude):
         install, _directory = claude
         install(exit_code=1)
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
-        assert found == {'why': 'claude exited with an error'}
+        assert ask(at_strong) == {'why': 'claude exited with an error'}
 
     # purlin: ai_audit PROOF-25
     def test_a_call_past_its_limit_is_named(self, at_strong, claude,
@@ -545,26 +653,23 @@ class TestWhenTheModelCannotBeReached:
         install, _directory = claude
         install(sleep=3)
         monkeypatch.setattr(audit_module, 'MODEL_TIMEOUT', 1)
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
-        assert found == {'why': 'claude timed out after 1 s'}
+        assert ask(at_strong) == {'why': 'claude timed out after 1 s'}
 
     # purlin: ai_audit PROOF-26
-    def test_an_answer_with_no_settled_line_is_asked_once_more(
+    def test_an_answer_with_no_settled_line_twice_is_no_answer(
             self, at_strong, claude):
         install, directory = claude
         install(answers=['It looks fine to me.'])
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
-        assert found == {'why': 'claude answered without a settled line'}
+        assert ask(at_strong) == {'why': NO_SETTLED_LINE}
         assert len(fake_claude.calls(directory)) == 2
+
+    # purlin: ai_audit PROOF-62
+    def test_a_second_answer_that_settles_is_the_answer(self, at_strong,
+                                                        claude):
+        install, directory = claude
         install(answers=['It looks fine to me.', 'settled: yes'])
-        found = audit_module.audit_one(at_strong.root,
-                                       read(at_strong, 'RULE-2'),
-                                       criteria_text())
-        assert found['verdict'] == 'strong', found
+        found = ask(at_strong)
+        assert found.get('verdict') == 'strong', found
         assert len(fake_claude.calls(directory)) == 2
 
 
@@ -576,78 +681,86 @@ class TestWriting:
 
     @staticmethod
     def _files(root):
-        found = []
+        """`{path: sha256}` for every file under `.purlin/`, runtime included."""
+        found = {}
         for current, _dirs, names in os.walk(os.path.join(root, '.purlin')):
-            found.extend(os.path.join(current, name) for name in names)
-        return sorted(found)
+            for name in names:
+                path = os.path.join(current, name)
+                with open(path, 'rb') as handle:
+                    found[path] = hashlib.sha256(handle.read()).hexdigest()
+        return found
 
     # purlin: ai_audit PROOF-27
-    def test_reading_asking_and_printing_write_no_file(self, at_strong,
-                                                       claude, capsys):
+    def test_reading_a_rule_writes_no_file(self, at_strong):
         before = self._files(at_strong.root)
-        reading = read(at_strong, 'RULE-2')
-        audit_module.audit_all(at_strong.root, [reading], 4)
-        audit_module.render(reading)
-        assert audit_module.main(['--feature', 'login', '--project-root',
-                                  at_strong.root]) == 0
-        capsys.readouterr()
+        assert any('runtime' in path for path in before), before
+        assert read(at_strong, 'RULE-2') is not None
         assert self._files(at_strong.root) == before
 
-    # purlin: ai_audit PROOF-29
-    def test_the_rendering_names_the_rule_and_what_the_audit_found(
-            self, at_strong):
-        at_strong.audit('RULE-2', findings=[FINDING])
-        rendered = audit_module.render(read(at_strong, 'RULE-2'))
-        assert 'login RULE-2' in rendered
-        assert 'Invalid credentials return 401' in rendered
-        assert 'PROOF-2' in rendered
-        assert 'Test strength: 90 percent   minimum 70' in rendered
-        assert 'What the audit found' in rendered
-        assert 'Weak, by unknown at 2026-09-13T12:05:00Z.' in rendered
-        assert FINDING in rendered
-        assert '✓' not in rendered and ':)' not in rendered
-        fresh = Project(gate=SIGNING_GATE)
-        try:
-            fresh.proofs()
-            fresh.evidence()
-            assert "Nothing yet: no audit has read this rule's text" in \
-                audit_module.render(read(fresh, 'RULE-2'))
-        finally:
-            fresh.close()
+    # purlin: ai_audit PROOF-72
+    def test_asking_the_model_writes_no_file(self, at_strong, claude):
+        _install, directory = claude
+        reading = read(at_strong, 'RULE-2')
+        before = self._files(at_strong.root)
+        found = audit_module.audit_all(at_strong.root, [reading], 4)
+        assert found[0]['verdict'] == 'strong', found
+        assert len(fake_claude.calls(directory)) == 1
+        assert self._files(at_strong.root) == before
+
+    # purlin: ai_audit PROOF-73
+    def test_printing_the_feature_writes_no_file(self, at_strong, capsys):
+        before = self._files(at_strong.root)
+        code, printed = command(at_strong, capsys, '--feature', 'login')
+        assert code == 0
+        assert 'login RULE-1' in printed and 'login RULE-2' in printed
+        assert self._files(at_strong.root) == before
 
 
 # ---------------------------------------------------------------------------
 # The command line
 # ---------------------------------------------------------------------------
 
+def _emoji(text):
+    """The characters of `text` that are emoji or pictographs."""
+    return [char for char in text
+            if 0x1F000 <= ord(char) <= 0x1FAFF
+            or 0x2600 <= ord(char) <= 0x27BF
+            or ord(char) in (0x2705, 0x274C, 0xFE0F)]
+
+
 class TestTheCommandLine:
 
     # purlin: ai_audit PROOF-30
-    def test_help_exits_zero_and_a_bad_option_exits_two(self):
+    def test_help_exits_zero_and_prints_the_usage(self, capsys):
         assert audit_module.main(['--help']) == 0
+        assert ('ai_audit.py --feature <f> [--rule RULE-N] '
+                '[--project-root DIR]') in capsys.readouterr().out
+
+    # purlin: ai_audit PROOF-74
+    def test_an_unknown_option_exits_two(self, capsys):
         assert audit_module.main(['--nope']) == 2
+        assert 'ai_audit.py: unexpected argument --nope' in \
+            capsys.readouterr().err
+
+    # purlin: ai_audit PROOF-75
+    def test_no_feature_exits_two(self, capsys):
         assert audit_module.main([]) == 2
+        assert 'ai_audit.py: --feature is required.' in \
+            capsys.readouterr().err
 
     # purlin: ai_audit PROOF-31
     def test_an_unknown_feature_exits_one(self, proved, capsys):
-        code = audit_module.main(['--feature', 'nothing',
-                                  '--project-root', proved.root])
-        capsys.readouterr()
+        code, printed = command(proved, capsys, '--feature', 'nothing')
         assert code == 1
+        assert 'audit: no rule of nothing is in this project.' in printed
 
-    # purlin: ai_audit PROOF-32
-    def test_one_rule_prints_and_a_feature_prints_every_rule(self, proved,
-                                                             capsys):
-        code = audit_module.main(['--feature', 'login', '--rule', 'RULE-1',
-                                  '--project-root', proved.root])
-        output = capsys.readouterr().out
-        assert code == 0
-        assert 'login RULE-1' in output and 'login RULE-2' not in output
-        code = audit_module.main(['--feature', 'login',
-                                  '--project-root', proved.root])
-        output = capsys.readouterr().out
-        assert code == 0
-        assert 'login RULE-1' in output and 'login RULE-2' in output
+    # purlin: ai_audit PROOF-76
+    def test_an_unknown_rule_exits_one(self, proved, capsys):
+        code, printed = command(proved, capsys, '--feature', 'login',
+                                '--rule', 'RULE-99')
+        assert code == 1
+        assert 'RULE-99' not in printed, printed
+        assert 'What the audit found' not in printed, printed
 
     # purlin: ai_audit PROOF-33
     def test_the_script_runs_as_a_command_and_calls_no_model(self, proved,
@@ -660,3 +773,44 @@ class TestTheCommandLine:
         assert result.returncode == 0, result.stdout + result.stderr
         assert 'login RULE-1' in result.stdout
         assert fake_claude.calls(directory) == []
+
+    # purlin: ai_audit PROOF-29
+    def test_the_printed_rule_names_what_the_audit_found(self, at_strong,
+                                                          capsys):
+        at_strong.audit('RULE-2', findings=[FINDING])
+        code, printed = command(at_strong, capsys, '--feature', 'login',
+                                '--rule', 'RULE-2')
+        assert code == 0
+        for line in ('login RULE-2',
+                     'Invalid credentials return 401 and the body "denied"',
+                     'PROOF-2: POST /login with a bad password',
+                     'assert login("ada", "wrong") == 401',
+                     'Test strength: 90 percent   minimum 70',
+                     'What the audit found',
+                     'Weak, by unknown at 2026-09-13T12:05:00Z.',
+                     FINDING):
+            assert line in printed, (line, printed)
+        assert _emoji(printed) == [], printed
+
+    # purlin: ai_audit PROOF-77
+    def test_a_rule_no_audit_has_read_says_so(self, at_strong, capsys):
+        code, printed = command(at_strong, capsys, '--feature', 'login',
+                                '--rule', 'RULE-2')
+        assert code == 0
+        found = printed.split('What the audit found', 1)
+        assert len(found) == 2, printed
+        assert ("Nothing yet: no audit has read this rule's text, proof and "
+                "test.") in found[1], printed
+
+    # purlin: ai_audit PROOF-32
+    def test_one_rule_named_prints_that_rule_alone(self, proved, capsys):
+        code, printed = command(proved, capsys, '--feature', 'login',
+                                '--rule', 'RULE-1')
+        assert code == 0
+        assert 'login RULE-1' in printed and 'login RULE-2' not in printed
+
+    # purlin: ai_audit PROOF-78
+    def test_a_feature_alone_prints_every_rule(self, proved, capsys):
+        code, printed = command(proved, capsys, '--feature', 'login')
+        assert code == 0
+        assert 'login RULE-1' in printed and 'login RULE-2' in printed

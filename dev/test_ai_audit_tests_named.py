@@ -1,9 +1,10 @@
 """Tests for `scripts/review/ai_audit.py`: several tests behind one proof.
 
 A proof may be backed by more than one test, and the AI audit, and a person
-reading what it read, see the source shown under each test's name. These tests hold that the
-source under a name is that test's own. The throwaway project
-is `dev/test_signatures.py`'s, with a second test marked for the same proof.
+reading what it read, see the source shown under each test's name. These tests
+hold that the source under a name is that test's own, whatever form of the
+name a runner records. The throwaway project is `dev/sign_project.py`'s, with a
+second test marked for the same proof.
 """
 
 import json
@@ -88,17 +89,94 @@ class TestEachTestShowsItsOwnSource:
 
 
 class TestANameFromARecordFindsItsSource:
+    """Two tests marked for one proof, and the name a runner records for one.
+
+    The source read for that name is that test's own, never its neighbour's.
+    """
+
+    @staticmethod
+    def _source(tmp_path, path, text, recorded):
+        (tmp_path / 'tests').mkdir(exist_ok=True)
+        (tmp_path / path).write_text(text, encoding='utf-8')
+        return marked_tests.source(str(tmp_path), 'demo', 'PROOF-1', path,
+                                   recorded)
+
+    PYTHON = (
+        'import pytest\n'
+        '\n'
+        '\n'
+        '# purlin: demo PROOF-1\n'
+        '@pytest.mark.parametrize("case", [1])\n'
+        'def test_found(case):\n'
+        '    assert case == 1\n'
+        '\n'
+        '\n'
+        '# purlin: demo PROOF-1\n'
+        'def test_other():\n'
+        '    assert 2 == 2\n'
+    )
 
     # purlin: ai_audit PROOF-36
-    def test_each_runner_name_form_finds_its_own_test(self):
-        names = ['Allowed', 'Denied', 'test_found', 'works']
-        expected = {
-            'Acme.LoginTests.Denied(user: "x")': [1],
-            'test_found[jest-case-1]': [2],
-            'TestLogin::test_found': [2],
-            'login > works': [3],
-            'test_gone': [],
-        }
-        for written, indexes in expected.items():
-            assert marked_tests.name_matches(written, names) == indexes, \
-                written
+    def test_a_name_with_a_parameter_finds_its_own_test(self, tmp_path):
+        body = self._source(tmp_path, 'tests/test_login.py', self.PYTHON,
+                            'test_found[case-1]')
+        assert body is not None and 'def test_found' in body, body
+        assert 'def test_other' not in body, body
+
+    # purlin: ai_audit PROOF-64
+    def test_a_name_with_a_class_before_it_finds_its_own_test(self,
+                                                              tmp_path):
+        body = self._source(tmp_path, 'tests/test_login.py', self.PYTHON,
+                            'TestLogin::test_found')
+        assert body is not None and 'def test_found' in body, body
+        assert 'def test_other' not in body, body
+
+    # purlin: ai_audit PROOF-65
+    def test_a_csharp_name_with_arguments_finds_its_own_test(self, tmp_path):
+        text = (
+            'using Xunit;\n'
+            '\n'
+            'namespace Acme\n'
+            '{\n'
+            '    public class LoginTests\n'
+            '    {\n'
+            '        // purlin: demo PROOF-1\n'
+            '        [Fact]\n'
+            '        public void Allowed()\n'
+            '        {\n'
+            '            Assert.Equal(200, 200);\n'
+            '        }\n'
+            '\n'
+            '        // purlin: demo PROOF-1\n'
+            '        [Theory]\n'
+            '        [InlineData("x")]\n'
+            '        public void Denied(string user)\n'
+            '        {\n'
+            '            Assert.Equal(401, 401);\n'
+            '        }\n'
+            '    }\n'
+            '}\n')
+        body = self._source(tmp_path, 'tests/LoginTests.cs', text,
+                            'Acme.LoginTests.Denied(user: "x")')
+        assert body is not None and 'public void Denied' in body, body
+        assert 'Allowed' not in body, body
+
+    # purlin: ai_audit PROOF-66
+    def test_a_typescript_name_with_a_prefix_finds_its_own_test(self,
+                                                                tmp_path):
+        text = (
+            'import { it, expect } from "vitest";\n'
+            '\n'
+            '// purlin: demo PROOF-1\n'
+            'it("works", () => {\n'
+            '  expect(200).toBe(200);\n'
+            '});\n'
+            '\n'
+            '// purlin: demo PROOF-1\n'
+            'it("refuses", () => {\n'
+            '  expect(401).toBe(401);\n'
+            '});\n')
+        body = self._source(tmp_path, 'tests/login.test.ts', text,
+                            'login > works')
+        assert body is not None and 'expect(200)' in body, body
+        assert 'refuses' not in body, body
