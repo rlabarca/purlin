@@ -1417,9 +1417,12 @@ def test_an_azure_remote_gets_the_pipeline_where_init_writes_it(tmp_path):
 def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
                                                     monkeypatch):
     root = _project(tmp_path, V095)
-    _answers(monkeypatch, [('Write .github/workflows/purlin.yml', 'n')])
+    asked = _answers(monkeypatch,
+                     [('Write .github/workflows/purlin.yml', 'n')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
+    assert ('Write .github/workflows/purlin.yml, one job per operating system '
+            'your specs name that this machine is not? [y/N] ') in asked, asked
     assert _workflows(root) == []
     assert 'run purlin:init again to add it later' in printed
     assert 'workflows' not in _ids(root)
@@ -1723,18 +1726,22 @@ def test_a_settings_file_that_cannot_be_read_stops_the_update(tmp_path,
     root = _project(tmp_path, V095)
     text = _read(root, '.purlin/config.json').rstrip()
     assert text.endswith('}')
-    _write(root, '.purlin/config.json', text[:-1].rstrip() + ',\n}\n')
+    broken = text[:-1].rstrip() + ',\n}\n'
+    _write(root, '.purlin/config.json', broken)
     _git(root, 'add', '-A')
     _git(root, 'commit', '-qm', 'a comma after the last value')
     head = _git(root, 'rev-parse', 'HEAD').stdout
     status = _git(root, 'status', '--porcelain').stdout
+    # The reader's own message and line, as this Python words them.
+    with pytest.raises(ValueError) as reader:
+        json.loads(broken)
     assert _apply(root) == 1
     captured = capsys.readouterr()
     printed = captured.out + captured.err
     line = [row for row in printed.splitlines()
             if row.startswith('.purlin/config.json cannot be read: ')]
-    assert len(line) == 1, printed
-    assert re.search(r' at line \d+\. Fix the file by hand; nothing ran and '
-                     r'nothing was saved\.$', line[0]), line
+    assert line == ['.purlin/config.json cannot be read: %s at line %d. Fix '
+                    'the file by hand; nothing ran and nothing was saved.'
+                    % (reader.value.msg, reader.value.lineno)], printed
     assert _git(root, 'status', '--porcelain').stdout == status
     assert _git(root, 'rev-parse', 'HEAD').stdout == head
