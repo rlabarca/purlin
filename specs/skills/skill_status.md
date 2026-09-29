@@ -7,22 +7,41 @@
 
 ## Rules
 
-- RULE-1: `skills/status/SKILL.md` opens with a frontmatter block whose `name` is `status` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:status`
-- RULE-2: The skill prints the sentence and the `Left to do` lines `sync_status` returned and never recounts them, so the command line and the dashboard cannot disagree
+- RULE-1: `skills/status/SKILL.md` opens with a frontmatter block whose `name` is `status` and whose `description` is one non-empty line, and the table of commands in `references/purlin_commands.md` carries a row for `purlin:status` whose purpose cell is not empty
+- RULE-2: `skills/status/SKILL.md` tells the agent to print the sentence and the `Left to do` lines `sync_status` returned and never to recount them, so the command line and the dashboard cannot disagree
 - RULE-3: The last section of `skills/status/SKILL.md` names the next step, the first line of `Left to do`, and gives a `→` directive for each kind of line but `Nothing left to do.`, which names none
 - RULE-4: The whole of `skills/status/SKILL.md` is at most 100 lines
-- RULE-5: `purlin:status <name>` shows one spec, its rules and their cells, and both `skills/status/SKILL.md` and `references/purlin_commands.md` name that form
+- RULE-5: `skills/status/SKILL.md` says that `purlin:status <name>` shows one spec, its rules and their cells, and what it does when several specs or none match the name, and `references/purlin_commands.md` names that form `purlin:status [name]`
 
 ## Proof
 
-- PROOF-1 (RULE-1): The status skill opens with a frontmatter block set between two `---` lines, whose `name` reads `status` and whose `description` holds text on its own line. The plugin's command reference has a table row whose first cell is `` `purlin:status [name]` `` and whose second cell holds its purpose. A skill whose `name:` line is deleted fails, naming the expected name `status`. A `description:` left empty, written as `""`, opened as a `|` block, moved to the line below or run on to an indented second line fails as carrying no one-line description. A command reference without that row fails, saying it carries no row for `purlin:status`
-- PROOF-2 (RULE-2): The status skill, its line wrapping ignored, carries two sentences in a row: ``Print the sentence and the `Left to do` lines `sync_status` returned. Never recount them: the command line and the dashboard must show one answer from one computation.``
-- PROOF-6 (RULE-2): A copy of the status skill whose first sentence there reads `Count the rules in the table yourself.` fails, naming the passage it no longer finds
-- PROOF-3 (RULE-3): The last section of the status skill has a heading naming the `next step` and says ``The next step is the first line of `Left to do`.``; its table has at least two outcome rows, and every row gives a `→` directive except the one reading `Nothing left to do.`
+- PROOF-1 (RULE-1): The status skill opens with a frontmatter block set between two `---` lines; its `name` reads `status`, and its `description` reads `Show every rule's cells and what blocks the gate` on that one line, with no line continuing it
+- PROOF-12 (RULE-1): The plugin's command reference has, in its table of commands, a row whose first cell reads `` `purlin:status [name]` `` and whose second cell reads `Show every rule's cells and what blocks the gate`
+- PROOF-13 (RULE-1): A copy of the status skill with its `name: status` line deleted fails, naming `status` as the name expected
+- PROOF-14 (RULE-1): A copy of the status skill whose `description:` line is left with no text fails as carrying no one-line description
+- PROOF-15 (RULE-1): A copy of the status skill whose description is written as `""` fails as carrying no one-line description
+- PROOF-16 (RULE-1): A copy of the status skill whose description is opened as a `|` block, its text on the indented line below, fails as carrying no one-line description
+- PROOF-17 (RULE-1): A copy of the status skill whose description text sits on the indented line below an empty `description:` fails as carrying no one-line description
+- PROOF-18 (RULE-1): A copy of the status skill whose description runs on to an indented second line reading `and a second line` fails as carrying no one-line description
+- PROOF-19 (RULE-1): A copy of the plugin's command reference with the `purlin:status [name]` row deleted fails, saying the reference carries no row for `purlin:status`
+- PROOF-20 (RULE-1): A copy of the plugin's command reference whose `purlin:status [name]` row has an empty second cell fails, saying the reference carries no row for `purlin:status`
+- PROOF-2 (RULE-2): The status skill, its line breaks ignored, carries these two sentences in a row: ``Print the sentence and the `Left to do` lines `sync_status` returned. Never recount them: the command line and the dashboard must show one answer from one computation.``
+- PROOF-6 (RULE-2): A copy of the status skill whose first of those two sentences reads `Count the rules in the table yourself.` fails, naming the passage ``Print the sentence and the `Left to do` lines`` it no longer finds
+- PROOF-3 (RULE-3): The last section of the status skill is headed `Step 4: name the next step`
 - PROOF-7 (RULE-3): A copy of the status skill with its last section removed fails, naming `With a name`, the heading of the section then last
-- PROOF-8 (RULE-3): A copy of the status skill with every `→` taken out of its last section fails as giving no directive
-- PROOF-9 (RULE-3): A copy of the status skill whose last section is cut after its first row fails with the count 1 beside the 2 expected
+- PROOF-22 (RULE-3): The last section of the status skill says ``The next step is the first line of `Left to do`.``
+- PROOF-11 (RULE-3): A copy of the status skill whose last section says `The next step is yours to choose.` in place of ``The next step is the first line of `Left to do`.`` fails, naming the sentence it lacks
+- PROOF-23 (RULE-3): The table in the last section of the status skill has at least 2 rows, and every row gives a `→` directive except the one reading `Nothing left to do.`, whose next step reads `None: every rule reached every step the gate asks.`
+- PROOF-8 (RULE-3): A copy of the status skill with every `→` in its last section written as `->` fails as giving no directive
+- PROOF-9 (RULE-3): A copy of the status skill whose last section is cut after the table's first row fails with the count 1 beside the 2 expected
 - PROOF-10 (RULE-3): A copy of the status skill whose row for `<n> rules to audit` loses its `→` fails, naming that row
-- PROOF-11 (RULE-3): A copy of the status skill whose last section no longer says ``The next step is the first line of `Left to do`.`` fails, naming that sentence
-- PROOF-4 (RULE-4): Read `skills/status/SKILL.md` and count its lines; verify the count is at most 100. Appending prose until the file passes 100 lines fails, and the failure reports the count it found beside the ceiling
-- PROOF-5 (RULE-5): The status skill shows the form `purlin:status <name>` and says `Naming a spec shows its rules and their standing.`, and the plugin's command reference lists the command as `purlin:status [name]`. The skill's section on a name says that when several specs match it will `list them and ask which one`, that when none does it will `print the whole table`, and that it will `print its path, its header, and one line per rule with the cells the gate creates`. A copy that takes the first of several matches, one that prints nothing when none matches, and one that prints only a line per rule each fail, naming the words they lack
+- PROOF-4 (RULE-4): The status skill as shipped is at most 100 lines long
+- PROOF-27 (RULE-4): A copy of the status skill made exactly 100 lines long passes the ceiling of 100
+- PROOF-28 (RULE-4): A copy of the status skill made 101 lines long fails, reporting `101 lines, ceiling 100`
+- PROOF-5 (RULE-5): The status skill's usage shows `purlin:status <name>` on one line with `One spec: its rules and their cells`, and the skill says `Naming a spec shows its rules and their standing.`
+- PROOF-29 (RULE-5): The plugin's command reference names the command `purlin:status [name]`
+- PROOF-30 (RULE-5): A copy of the plugin's command reference whose row reads `` `purlin:status` `` without `[name]` fails, naming `purlin:status [name]`
+- PROOF-31 (RULE-5): The status skill's section `With a name` says that when several specs match it will `list them and ask which one`, that when none does it will `print the whole table`, and that otherwise it will `print its path, its header, and one line per rule with the cells the gate creates`
+- PROOF-32 (RULE-5): A copy of the status skill whose section `With a name` says `take the first` in place of `list them and ask which one` fails, naming the words it lacks
+- PROOF-33 (RULE-5): A copy of the status skill whose section `With a name` says `print nothing` in place of `print the whole table` fails, naming the words it lacks
+- PROOF-34 (RULE-5): A copy of the status skill whose section `With a name` prints only `one line per rule`, without its path and header, fails, naming the words it lacks
