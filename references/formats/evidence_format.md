@@ -81,7 +81,7 @@ present only once an audit has run.
 | `feature` | string | the feature, the spec's name |
 | `source` | string | `local` or `ci`, the same word as the folder the file sits in |
 | `spec` | string | the spec's path, `/` separated |
-| `platforms` | object | one section per operating system, keyed `windows`, `macos` or `linux`. Any other key is skipped |
+| `platforms` | object | one section per operating system, keyed `windows`, `macos` or `linux`; a system that is neither Windows nor macOS writes under `linux`. Any other key is skipped. A person reads the three as `Windows`, `macOS` and `Linux/Unix` |
 | `audit` | object | the audit's findings, per rule |
 
 ### A platform section
@@ -119,6 +119,11 @@ Each `proofs` entry:
 A test is tied to its proof by the marker comment above it, as
 `references/formats/marker_format.md` says. A proof whose test was skipped, or
 that no case in the report is, reads `missing` with the test named.
+
+A reader takes a proof's result in a section as the worst of its entries:
+`fail` where one failed, else `not run` where one reads `missing` or `not
+run`, else `pass`. A proof has passed only when every test tied to it ran and
+passed.
 
 ### The audit
 

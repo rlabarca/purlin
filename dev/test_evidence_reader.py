@@ -213,3 +213,55 @@ def test_reading_evidence_writes_nothing(root):
     evidence.audit_entry(loaded, 'RULE-1', 'r', 'p', 't')
     evidence.newest(loaded)
     assert _snapshot(root) == before
+
+
+# purlin: evidence PROOF-25
+def test_a_system_neither_windows_nor_macos_is_linux(monkeypatch):
+    monkeypatch.setattr(sys, 'platform', 'freebsd14')
+    assert evidence.host_os() == 'linux'
+
+
+# purlin: evidence PROOF-26
+def test_the_words_a_person_reads_for_each_system():
+    assert [(evidence.os_word(key), evidence.os_short(key))
+            for key in ('windows', 'macos', 'linux')] == [
+        ('Windows', 'Win'), ('macOS', 'Mac'), ('Linux/Unix', 'Lin')]
+
+
+# purlin: evidence PROOF-27
+def test_an_unknown_system_word_reads_as_linux():
+    assert (evidence.os_word('solaris'), evidence.os_short('solaris')) == (
+        'Linux/Unix', 'Lin')
+
+
+def _listed(*results):
+    return {'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1', 'result': result,
+                        'env': None, 'manual': False, 'test': test}
+                       for result, test in results]}
+
+
+# purlin: evidence PROOF-28
+def test_a_proof_with_a_test_that_did_not_run_has_not_passed():
+    section = _listed(('pass', 'tests/a.py::test_a'),
+                      ('missing', 'tests/b.py::test_b'))
+    assert evidence.proof_results(section) == {'PROOF-1': 'not run'}
+
+
+# purlin: evidence PROOF-29
+def test_a_failing_test_outweighs_one_that_did_not_run():
+    section = _listed(('missing', 'tests/a.py::test_a'),
+                      ('fail', 'tests/b.py::test_b'))
+    assert evidence.proof_results(section) == {'PROOF-1': 'fail'}
+
+
+# purlin: evidence PROOF-30
+def test_a_proof_whose_tests_all_passed_has_passed():
+    section = _listed(('pass', 'tests/a.py::test_a'),
+                      ('pass', 'tests/b.py::test_b'))
+    assert evidence.proof_results(section) == {'PROOF-1': 'pass'}
+
+
+# purlin: evidence PROOF-31
+def test_a_proof_not_run_here_reads_not_run():
+    assert evidence.proof_results(_listed(('not run', ''))) == {
+        'PROOF-1': 'not run'}

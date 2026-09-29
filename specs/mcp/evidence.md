@@ -5,7 +5,9 @@
 >   that carry its proof markers, each read from the working tree. The reader
 >   loads a feature's two evidence files, one per source, and says which
 >   sections are current against a fingerprint taken now, which parts are out
->   of date, which audit entry answers a rule, and which section is the newest.
+>   of date, which audit entry answers a rule, which section is the newest,
+>   and what a section's result is for each proof. It names the operating
+>   system it runs on, and the words a person reads for each one.
 >   The reader never writes.
 > Scope: scripts/mcp/purlin/fingerprint.py, scripts/mcp/purlin/evidence.py
 > Stack: python/stdlib, hashlib, json, subprocess (list-only)
@@ -25,11 +27,13 @@
 - RULE-11: The reader loads `.purlin/evidence/local/<feature>.json` and `.purlin/evidence/ci/<feature>.json`; a source with no file reads as no evidence and adds no warning
 - RULE-12: A file that is not valid JSON, is not a JSON object, or whose `schema` is not `purlin-evidence/1` is ignored with one warning naming its path
 - RULE-13: A file whose `source` field disagrees with the folder it sits in is ignored with exactly one warning naming its path, the source it names and the folder
-- RULE-14: Each of the keys `windows`, `macos` and `linux` under `platforms` is one section, so a file holding two operating systems gives two sections; sections are listed `local` first, then in that operating system order, and any other key is skipped
+- RULE-14: Each of the keys `windows`, `macos` and `linux` under `platforms` is one section, so a file holding two operating systems gives two sections; sections are listed `local` first, then in that operating system order, and any other key is skipped; the machine the reader runs on is `windows` on Windows, `macos` on macOS, and `linux` on any other system
 - RULE-15: A section is current when its stored `spec`, `code` and `tests` hashes all equal a fingerprint taken now; otherwise it is out of date and the reader names each part that differs
 - RULE-16: The audit entry for a rule is returned only while its `rule_hash`, `proof_hash` and `test_hash` all equal the ones asked for, whatever its `commit`; where both sources hold a matching entry the later `at` wins, and the entry names its source
 - RULE-17: The newest section is the one with the latest `at` across both sources, `local` winning a tie, and there is none when neither file holds a section
 - RULE-18: Reading evidence writes nothing: the evidence folder holds the same files with the same bytes after a load as before it
+- RULE-19: A person reads each operating system as `Windows`, `macOS` or `Linux/Unix`, and in a small box as `Win`, `Mac` or `Lin`; a stored word other than `windows`, `macos` and `linux` reads as `Linux/Unix` and `Lin`
+- RULE-20: A section's result for a proof is the worst of the entries it lists against that proof: `fail` where one failed, else `not run` where one reads `missing` or `not run`, else `pass`, so a proof has passed only when every test tied to it ran and passed
 
 ## Proof
 
@@ -57,3 +61,10 @@
 - PROOF-22 (RULE-16): The `local` file holds an audit entry for RULE-1 with the hashes `r`, `p` and `t`, dated `2026-09-01T00:00:00Z`, whose commit is not the repository's HEAD; asked for RULE-1 with `r`, `p` and `t`, the reader returns it naming the source `local` and carrying that commit, and asked with `r`, `p` and `t2`, with `r2`, `p` and `t`, or with `r`, `p2` and `t`, it returns none; once the `ci` file holds a matching entry dated `2026-09-02T00:00:00Z` with another commit, the answer is the `ci` entry, carrying that commit and the path `.purlin/evidence/ci/login.json`; once the `local` entry is dated `2026-09-03T00:00:00Z`, the answer is the `local` entry again, carrying its own commit and the path `.purlin/evidence/local/login.json`
 - PROOF-23 (RULE-17): With no evidence file there is no newest section; with a `local` `macos` section dated `2026-09-01T00:00:00Z` and a `ci` `linux` section dated `2026-09-03T00:00:00Z`, the newest is `ci` `linux`; with the `ci` section dated `2026-09-01T00:00:00Z` as well, the newest is `local` `macos`
 - PROOF-24 (RULE-18): The `local` file of `login` holds a section and an audit entry, and the `ci` file holds `{not json`; the evidence is loaded, its sections are checked against a fingerprint taken now, and an audit entry and the newest section are asked for; afterwards `.purlin/evidence/` holds the same files with the same bytes, none added and none removed
+- PROOF-25 (RULE-14): On a system that names itself `freebsd14`, the reader gives the machine it runs on as `linux`
+- PROOF-26 (RULE-19): The stored words `windows`, `macos` and `linux` read `Windows`, `macOS` and `Linux/Unix` in full, and `Win`, `Mac` and `Lin` in a small box
+- PROOF-27 (RULE-19): The stored word `solaris` reads `Linux/Unix` in full and `Lin` in a small box
+- PROOF-28 (RULE-20): A section lists `PROOF-1` twice, `pass` with one test and `missing` with another; the reader gives `PROOF-1` the result `not run`
+- PROOF-29 (RULE-20): A section lists `PROOF-1` twice, `missing` with one test and `fail` with another; the reader gives `PROOF-1` the result `fail`
+- PROOF-30 (RULE-20): A section lists `PROOF-1` twice, `pass` with each of two tests; the reader gives `PROOF-1` the result `pass`
+- PROOF-31 (RULE-20): A section lists `PROOF-1` once, `not run` with no test named; the reader gives `PROOF-1` the result `not run`

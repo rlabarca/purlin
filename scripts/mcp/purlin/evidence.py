@@ -13,7 +13,8 @@ parts are out of date, which audit entry answers a rule whose rule, proof and
 test hashes are known, and which section is the newest across both sources.
 It also reads what a section says about each proof and which tests it
 lists, the newest `audit.mutation`, and which operating system this machine
-is, so a writer and a reader spell it the same way.
+is, so a writer and a reader spell it the same way, and the words a person
+reads for each operating system.
 
 A file that cannot be read, is not JSON, carries another schema, or names a
 source other than its folder is ignored, and the reader says so once per file
@@ -45,19 +46,20 @@ COULD_NOT_RUN_PATH = '.purlin/runtime/audit_could_not_run.json'
 
 
 # How `sys.platform` spells each operating system a section is keyed by.
-_OS_PREFIXES = (('win', 'windows'), ('darwin', 'macos'), ('linux', 'linux'))
+_OS_PREFIXES = (('win', 'windows'), ('darwin', 'macos'))
 
 
 def host_os():
     """`windows`, `macos` or `linux` for the machine this runs on.
 
     The one answer, so a run that writes a section and a cell that reads one
-    never spell an operating system two ways.
+    never spell an operating system two ways. A system that is neither
+    Windows nor macOS is `linux`.
     """
     for prefix, name in _OS_PREFIXES:
         if sys.platform.startswith(prefix):
             return name
-    return sys.platform
+    return 'linux'
 
 
 # What a person reads for each stored system word, in full and in a small
@@ -251,22 +253,30 @@ def why_not_audited(table, feature, rule_id, rule_hash, proof_hash,
     return entry.get('why') or None
 
 
-def proof_results(section):
-    """`{proof_id: 'pass' | 'fail'}` for one section.
+# A proof's result in one section is the worst of its tests', in this order.
+_WORST = {'fail': 2, 'not run': 1, 'pass': 0}
+_READ_AS = {'pass': 'pass', 'fail': 'fail', 'missing': 'not run',
+            'not run': 'not run'}
 
-    `fail` wins over `pass` where two tests claim one proof, and `missing`
-    and `not run` are left out, so a proof nothing observed reads as nothing
-    observed.
+
+def proof_results(section):
+    """`{proof_id: 'fail' | 'not run' | 'pass'}` for one section.
+
+    Each proof reads the worst of the entries the section lists against it:
+    `fail` where one failed, else `not run` where one is `missing` or `not
+    run`, else `pass`. A proof has passed only when every test tied to it
+    ran and passed.
     """
     results = {}
     for entry in (section or {}).get('proofs') or ():
         if not isinstance(entry, dict):
             continue
         proof_id = entry.get('id')
-        result = entry.get('result')
-        if not proof_id or result not in ('pass', 'fail'):
+        result = _READ_AS.get(entry.get('result'))
+        if not proof_id or result is None:
             continue
-        if results.get(proof_id) != 'fail':
+        known = results.get(proof_id)
+        if known is None or _WORST[result] > _WORST[known]:
             results[proof_id] = result
     return results
 
