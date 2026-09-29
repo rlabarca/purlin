@@ -511,7 +511,7 @@ def _evidence_file(root, feature, rule_ids):
     path = os.path.join(root, '.purlin', 'evidence', 'local',
                         '%s.json' % feature)
     _write(path, json.dumps({
-        'schema': 'purlin-evidence/1', 'feature': feature,
+        'schema': 'purlin-evidence/2', 'feature': feature,
         'source': 'local', 'spec': '',
         'platforms': {purlin_evidence.host_os(): {
             'commit': '', 'dirty': False, 'at': '2026-09-13T12:00:00Z',
@@ -810,15 +810,23 @@ class TestQaView:
         assert _qa_lines_left(tmp_path, [
             _left('to_audit', 3, '3 rules to audit', 'purlin:audit')]) == []
 
+    # purlin: drift PROOF-34
+    def test_the_qa_view_carries_the_items_it_printed(self, tmp_path):
+        view = _qa_view_left(tmp_path, [
+            _left('to_audit', 3, '3 rules to audit', 'purlin:audit'),
+            _left('to_sign', 2, '2 rules to sign', 'purlin:sign')])
+        assert view['left'] == [
+            _left('to_sign', 2, '2 rules to sign', 'purlin:sign')]
+
 
 def _left(kind, count, text, command):
     """One line of `Left to do` as the status's payload carries it."""
     return {'kind': kind, 'count': count, 'text': text, 'command': command}
 
 
-def _qa_lines_left(tmp_path, left):
-    """The QA view's lines after the first, with the status's `Left to do`
-    holding `left`, in a project where one source file changed."""
+def _qa_view_left(tmp_path, left):
+    """The QA view, with the status's `Left to do` holding `left`, in a
+    project where one source file changed."""
     from purlin import payload as purlin_payload
     root = _repo(str(tmp_path / 'proj'), LOGIN_FILES, gate='signed')
     _change(root, {'src/auth/login.py': 'def login():\n    return 2\n'})
@@ -826,7 +834,12 @@ def _qa_lines_left(tmp_path, left):
     data['left'] = left
     report = purlin_drift.compute_drift(root, since='1', network=False,
                                         data=data)
-    return report['roles']['qa']['lines'][1:]
+    return report['roles']['qa']
+
+
+def _qa_lines_left(tmp_path, left):
+    """The QA view's lines after the first."""
+    return _qa_view_left(tmp_path, left)['lines'][1:]
 
 
 # ---------------------------------------------------------------------------
@@ -899,7 +912,8 @@ class TestReportShape:
             'anchors_behind', 'code_changed', 'lines', 'out_of_date',
             'rules_without_test', 'specs_uncommitted', 'unscoped']
         assert sorted(report['roles']['qa']) == [
-            'lines', 'not_audited', 'specs_uncommitted', 'tests_changed']
+            'left', 'lines', 'not_audited', 'specs_uncommitted',
+            'tests_changed']
 
         narrowed = json.loads(purlin_drift.drift(checkout, role='qa'))
         assert sorted(narrowed) == ['role', 'since', 'view'], sorted(narrowed)

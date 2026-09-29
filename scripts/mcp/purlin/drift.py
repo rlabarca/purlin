@@ -315,6 +315,7 @@ def resolve_range(project_root, since_arg=None):
             first = first.splitlines()[0] if first else ''
             if first:
                 from_sha = _git(project_root, ['rev-parse', '--verify', '-q',
+                                               '--end-of-options',
                                                first + '^']) or None
             else:
                 from_sha = head
@@ -557,6 +558,8 @@ def _qa_view(data, changed, markers):
         'not_audited': ['%s/%s' % (feature['name'], rule['id'])
                         for feature, rule in rules
                         if rule['flags'].get('not_audited')],
+        'left': [item for item in data.get('left') or ()
+                 if item.get('kind') in summary_module.FOR_A_PERSON],
     }
 
     lines = []

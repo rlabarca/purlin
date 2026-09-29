@@ -74,9 +74,10 @@ A file deleted in the range is not on disk and is in neither list.
 |-----|------|------|
 | `tests_changed` | The changed test files that carry a marker, and the features those markers name | `6 test files changed, covering export, login.` |
 | `not_audited` | Rules whose strong cell reads `not audited`, at the gates `strong` and `signed`, as `<feature>/<RULE-N>` | No line |
+| `left` | The status's own items of `Left to do` of the kinds `to_test_by_hand` and `to_sign` | The lines below |
 
 After those lines the view prints the two lines of `Left to do` that wait for a person, in the
-words the status prints them and with no key of their own:
+words the status prints them:
 `2 rules to test by hand: purlin:sign` and `5 rules to sign: purlin:sign`. Either is left out at
 zero, and no other line of `Left to do` is printed. At the gate `passed` only a rule to test by
 hand can wait for a person.

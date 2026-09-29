@@ -485,6 +485,16 @@ def _is_path_operand(arg):
     return arg == 'specs/' or arg.startswith('specs/') or arg.endswith('.md')
 
 
+def _each_revision_follows_end_of_options(calls):
+    """Every git argv carrying a revision has `--end-of-options` just before it."""
+    for argv in calls:
+        revisions = [i for i, a in enumerate(argv) if _is_revision(a)]
+        if revisions:
+            assert argv[min(revisions) - 1] == '--end-of-options', (
+                f"a revision reaches git with no --end-of-options immediately "
+                f"before it: {argv}")
+
+
 class TestGitArgvHardening:
     """RULE-6: nothing repository-supplied reaches git in option position."""
 
@@ -544,6 +554,31 @@ class TestGitArgvHardening:
         assert {'rev-list', 'diff', 'show'} <= took_a_revision, (
             f"drift handed git no revision in some of rev-list, diff and show; "
             f"only {sorted(took_a_revision)}")
+
+    # purlin: security_no_dangerous_patterns PROOF-12
+    def test_a_date_hands_its_commit_after_end_of_options(self, tmp_path,
+                                                         monkeypatch):
+        project = _project(tmp_path)
+        _branch_changing_a_spec(project)
+        _report, calls = _launched_by(
+            monkeypatch,
+            lambda: purlin_drift.drift(str(project), since='2000-01-01'))
+        parents = [argv for argv in calls
+                   if any(a.endswith('^') and _is_revision(a) for a in argv)]
+        assert parents, f"drift handed git no <commit>^: {calls}"
+        _each_revision_follows_end_of_options(calls)
+
+    # purlin: security_no_dangerous_patterns PROOF-13
+    def test_a_count_hands_its_commits_after_end_of_options(self, tmp_path,
+                                                          monkeypatch):
+        project = _project(tmp_path)
+        _branch_changing_a_spec(project)
+        _report, calls = _launched_by(
+            monkeypatch, lambda: purlin_drift.drift(str(project), since='1'))
+        diffs = [argv for argv in calls if argv[1] == 'diff'
+                 and any(_is_revision(a) for a in argv)]
+        assert diffs, f"drift handed git no commit to diff from: {calls}"
+        _each_revision_follows_end_of_options(calls)
 
     # purlin: security_no_dangerous_patterns PROOF-11
     def test_every_path_follows_a_double_dash(self, tmp_path, monkeypatch):
