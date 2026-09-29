@@ -2448,11 +2448,14 @@ def _purlin_files(root):
                   for name in names)
 
 
+SUGGESTED_SETTING = 'Suggested tests setting: '
+
+
 def _suggested(output):
-    """The entry off the `Suggested entry:` line, or None."""
+    """The entries off the `Suggested tests setting:` line, or None."""
     for line in output.splitlines():
-        if line.startswith('Suggested entry: '):
-            return json.loads(line[len('Suggested entry: '):])
+        if line.startswith(SUGGESTED_SETTING):
+            return json.loads(line[len(SUGGESTED_SETTING):])
     return None
 
 
@@ -2464,8 +2467,9 @@ def suggestions(tmp_path_factory):
     for tool in ORDER:
         root = _no_command(tmp_path_factory.mktemp(tool), tool)
         _code, output = _run(root, '--all', '--test')
-        found[tool] = _suggested(output)
-        assert found[tool] is not None, output
+        entries = _suggested(output)
+        assert entries is not None and len(entries) == 1, output
+        found[tool] = entries[0]
     return found
 
 
@@ -2480,7 +2484,7 @@ class TestNoTestCommand:
             'No test command is set in .purlin/config.json, so nothing ran.',
             'Suggested for pytest: python3 -m pytest --ignore=mutants '
             '{files} --junitxml={report}',
-            'Suggested entry: %s' % json.dumps(entry)], output
+            'Suggested tests setting: %s' % json.dumps([entry])], output
         assert _purlin_files(root) == [
             os.path.join('.purlin', 'config.json')], output
         assert code == 1, output
@@ -2502,9 +2506,9 @@ class TestNoTestCommand:
         """The entry the run suggests in a project holding only what `tool`
         leaves."""
         _code, output = _run(_no_command(tmp_path, tool), '--all', '--test')
-        entry = _suggested(output)
-        assert entry is not None, output
-        return entry
+        entries = _suggested(output)
+        assert entries is not None and len(entries) == 1, output
+        return entries[0]
 
     # purlin: run_script PROOF-128
     def test_pytest_is_suggested_its_own_entry(self, tmp_path):
@@ -2535,10 +2539,22 @@ class TestNoTestCommand:
         assert self._suggested_for(tmp_path, 'shell')['name'] == 'shell'
 
     # purlin: run_script PROOF-129
-    def test_the_first_tool_in_the_order_is_suggested(self, tmp_path):
+    def test_every_tool_found_is_suggested_in_the_order(self, tmp_path):
         root = _no_command(tmp_path, 'pytest', 'vitest')
         _code, output = _run(root, '--all', '--test')
-        assert _suggested(output)['name'] == 'pytest', output
+        assert [entry['name'] for entry in _suggested(output)] == [
+            'pytest', 'vitest'], output
+        assert [line.split(':', 1)[0] for line in output.splitlines()
+                if line.startswith('Suggested for ')] == [
+            'Suggested for pytest', 'Suggested for vitest'], output
+
+    # purlin: run_script PROOF-221
+    def test_on_windows_the_pytest_command_starts_with_the_launcher(
+            self, tmp_path):
+        root = _no_command(tmp_path, 'pytest')
+        (entry,) = frameworks.suggest(str(root), os_name='windows')
+        assert entry['run'] == ('py -3 -m pytest --ignore=mutants {files} '
+                                '--junitxml={report}')
 
     # purlin: run_script PROOF-130
     def test_each_command_carries_the_flag_that_writes_its_report(
@@ -2589,16 +2605,16 @@ class TestNoTestCommand:
     def test_jest_is_told_it_needs_jest_junit(self, tmp_path):
         _code, output = _run(_no_command(tmp_path, 'jest'), '--all', '--test')
         lines = output.strip().splitlines()
-        assert lines[-2].startswith('Suggested entry: '), output
-        assert lines[-1] == ('jest needs the package jest-junit to write its '
+        assert lines[-3].startswith('Suggested for jest: '), output
+        assert lines[-2] == ('jest needs the package jest-junit to write its '
                              'report: run npm install --save-dev jest-junit')
 
     # purlin: run_script PROOF-135
     def test_sql_is_told_it_runs_through_sqlite3(self, tmp_path):
         _code, output = _run(_no_command(tmp_path, 'sql'), '--all', '--test')
         lines = output.strip().splitlines()
-        assert lines[-2].startswith('Suggested entry: '), output
-        assert lines[-1].startswith(
+        assert lines[-3].startswith('Suggested for sql: '), output
+        assert lines[-2].startswith(
             'sql runs each test file through the sqlite3 command, and a test '
             'fails by raising an error'), output
 
@@ -2606,8 +2622,9 @@ class TestNoTestCommand:
     def test_pytest_needs_nothing_added(self, tmp_path):
         _code, output = _run(_no_command(tmp_path, 'pytest'), '--all',
                              '--test')
-        assert output.strip().splitlines()[-1].startswith(
-            'Suggested entry: '), output
+        lines = output.strip().splitlines()
+        assert lines[-2].startswith('Suggested for pytest: '), output
+        assert lines[-1].startswith(SUGGESTED_SETTING), output
 
 
 class TestTheSettingsFile:

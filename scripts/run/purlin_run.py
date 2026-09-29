@@ -10,9 +10,10 @@
 names `purlin:init`, writes nothing and exits 1. In a project Purlin 0.9.5
 set up and nobody upgraded (`set_up_by_095`) it names `purlin:init --update`
 the same way. With the `tests` setting empty it
-writes nothing and exits 1: where it detects a test tool it knows, it prints
-that tool's entry to add (`frameworks.suggest`), and otherwise it asks for
-`purlin:test`, which reads the project and proposes one.
+writes nothing and exits 1: where it detects test tools it knows, it prints
+each tool's command and the whole `tests` setting to add
+(`frameworks.suggest`), and otherwise it asks for `purlin:test`, which
+reads the project and proposes one.
 
 **Which features run.** `--feature` names them and `--all` runs every one.
 With neither, `--test` and `--audit` run the features the change touched:
@@ -188,7 +189,7 @@ SET_UP_BY_AN_OLDER_PURLIN = (
 NO_TEST_COMMAND = ('No test command is set in .purlin/config.json, so nothing '
                    'ran.')
 SUGGESTED_FOR = 'Suggested for %s: %s'
-SUGGESTED_ENTRY = 'Suggested entry: %s'
+SUGGESTED_SETTING = 'Suggested tests setting: %s'
 NO_TEST_TOOL = ('No test command is set in .purlin/config.json, and no test '
                 'tool Purlin knows was found, so nothing ran. Run purlin:test '
                 'to have one proposed.')
@@ -1056,21 +1057,24 @@ def set_up_by_095(project_root):
 
 
 def no_test_command_lines(project_root):
-    """What a run with no suite prints: the entry to add, or where to get one.
+    """What a run with no suite prints: the setting to add, or where to get one.
 
-    Where a test tool Purlin knows is detected, its entry, as one line of
-    JSON to put under `tests`, and what the tool needs added before it can
-    write its report; otherwise `purlin:test`, which reads the project and
-    proposes one.
+    Where test tools Purlin knows are detected, each tool's command, then
+    what that tool needs added before it can write its report where it
+    needs something, then every entry as one JSON array on one line, the
+    `tests` setting to write; otherwise `purlin:test`, which reads the
+    project and proposes one.
     """
-    entry = frameworks_module.suggest(project_root)
-    if entry is None:
+    entries = frameworks_module.suggest(project_root)
+    if not entries:
         return [NO_TEST_TOOL]
-    lines = [NO_TEST_COMMAND, SUGGESTED_FOR % (entry['name'], entry['run']),
-             SUGGESTED_ENTRY % json.dumps(entry)]
-    needs = frameworks_module.NEEDS.get(entry['name'])
-    if needs:
-        lines.append(needs)
+    lines = [NO_TEST_COMMAND]
+    for entry in entries:
+        lines.append(SUGGESTED_FOR % (entry['name'], entry['run']))
+        needs = frameworks_module.NEEDS.get(entry['name'])
+        if needs:
+            lines.append(needs)
+    lines.append(SUGGESTED_SETTING % json.dumps(entries))
     return lines
 
 

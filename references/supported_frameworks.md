@@ -5,18 +5,23 @@ to a proof by one comment above it, `purlin: <feature> PROOF-<n>`. `references/f
 marker, the `tests` setting, the four report formats and how a result is tied to its marker.
 
 A new project's `tests` setting is empty. Its first test run detects the frameworks below,
-in the order they are listed, runs nothing, and suggests the entry of the first it finds, with
-the flag that writes the report already in the command:
+runs nothing, and suggests an entry for every one it finds, in the order they are listed, with
+the flag that writes the report already in each command:
 
 ```
 No test command is set in .purlin/config.json, so nothing ran.
 Suggested for pytest: python3 -m pytest --ignore=mutants {files} --junitxml={report}
-Suggested entry: {"name": "pytest", ...}
+Suggested for vitest: npx vitest run --reporter=default --reporter=junit --outputFile.junit={report} {files}
+Suggested tests setting: [{"name": "pytest", ...}, {"name": "vitest", ...}]
 ```
 
-A framework that needs something added before it can write that report gets one more line
-saying what. `purlin:test` shows you the entry, asks, writes it under `tests` and runs again.
-Where the run detects none, `purlin:test` reads the project and proposes an entry instead.
+A framework that needs something added before it can write that report gets one more line,
+right after its own, saying what. `purlin:test` shows you each command, asks once, writes the
+suggested setting under `tests` and runs again. Where the run detects none, `purlin:test`
+reads the project and proposes an entry instead.
+
+On Windows the pytest entry's command starts `py -3 -m pytest` in place of
+`python3 -m pytest`, and the rest of it is the same.
 
 ## What the first run detects, and what it needs
 
@@ -31,8 +36,8 @@ Where the run detects none, `purlin:test` reads the project and proposes an entr
 | shell | a `*.test.sh` file | nothing |
 
 Detection descends the tree, skipping dot directories, `node_modules`, `bin`, `obj` and
-`mutants/`. A project that carries several frameworks is suggested the first; a second suite
-is a second entry under `tests`.
+`mutants/`. A project that carries several frameworks is suggested an entry for each, one
+suite per entry under `tests`.
 
 ## The entry suggested
 

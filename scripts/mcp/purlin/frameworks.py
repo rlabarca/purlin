@@ -2,11 +2,12 @@
 
 Detection answers all the matches, not the first: a project can carry pytest
 for the server and vitest for the client. The first test run in a project
-whose `tests` setting is empty suggests the entry of the first framework it
-detects, in the order of `ENTRIES`, with the report flag already in the
-command, and says in one line what that framework needs added before it can
-write a report. Where it detects none, `purlin:test` reads the project and
-proposes an entry.
+whose `tests` setting is empty suggests the entry of every framework it
+detects, in the order of `ENTRIES`, with the report flag already in each
+command, and says in one line what each framework needs added before it can
+write a report. On Windows the pytest entry starts `py -3 -m pytest` in
+place of `python3 -m pytest`. Where it detects none, `purlin:test` reads the
+project and proposes an entry.
 
 Nothing of Purlin is installed in a project's test suite: every entry below
 runs the project's own test command and reads the report that command writes.
@@ -214,11 +215,25 @@ def entries_for(frameworks):
     return [entry_for(name) for name in frameworks if name in ENTRIES]
 
 
-def suggest(project_root):
-    """The `tests` entry the first test run suggests, or None.
+# The start of the pytest entry's command, and what it reads on Windows,
+# where the Python launcher is `py` and `python3` is often not on PATH.
+PYTHON_COMMAND = 'python3 -m pytest'
+WINDOWS_PYTHON_COMMAND = 'py -3 -m pytest'
 
-    The entry of the first framework detected, in registry order; None where
-    none is detected.
+
+def suggest(project_root, os_name=None):
+    """The `tests` entries the first test run suggests, as a list.
+
+    The entry of every framework detected, in registry order; empty where
+    none is detected. `os_name` is `windows` for a Windows machine, and with
+    none given it is read from this one: there the pytest entry's command
+    starts `py -3 -m pytest`.
     """
-    found = detect_frameworks(project_root)
-    return entry_for(found[0]) if found else None
+    windows = (os_name == 'windows' if os_name is not None
+               else os.name == 'nt')
+    entries = entries_for(detect_frameworks(project_root))
+    for entry in entries:
+        if windows and entry['run'].startswith(PYTHON_COMMAND):
+            entry['run'] = (WINDOWS_PYTHON_COMMAND
+                            + entry['run'][len(PYTHON_COMMAND):])
+    return entries
