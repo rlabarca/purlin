@@ -159,6 +159,10 @@ the stream `go test -json` prints on Go 1.27.1.
 }
 ```
 
+A Windows runner on GitHub or Azure DevOps has no `sqlite3`. The runner file `purlin:init`
+writes installs it there through chocolatey when a tracked file other than the runner file
+names `sqlite3`.
+
 ### shell
 
 ```json

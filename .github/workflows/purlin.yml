@@ -97,6 +97,28 @@ jobs:
           fi
           if [ -f package.json ]; then npm ci; fi
 
+      # A Windows runner has no sqlite3, the program a test command that runs
+      # SQL scripts starts. Where a tracked file other than this one names
+      # sqlite3, this installs it through chocolatey, which the image carries,
+      # and puts the folder holding sqlite3.exe on the search path of the
+      # steps after it. On Linux and macOS, and where sqlite3 is already
+      # found, it installs nothing.
+      - name: Install sqlite3 on Windows
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Windows ] && ! command -v sqlite3 >/dev/null 2>&1 \
+              && git grep -qIw sqlite3 -- . ':(exclude).github/workflows/purlin.yml'; then
+            choco install sqlite -y --no-progress
+            lib="$(cygpath -u "${ChocolateyInstall:-C:/ProgramData/chocolatey}")/lib"
+            exe=$(find "$lib" -iname sqlite3.exe -print -quit)
+            if [ -z "$exe" ]; then
+              echo "The sqlite install finished and no sqlite3.exe is under $lib."
+              exit 1
+            fi
+            cygpath -w "$(dirname "$exe")" >> "$GITHUB_PATH"
+            "$exe" -version
+          fi
+
       - name: Run the tests
         shell: bash
         env:

@@ -15,6 +15,7 @@ that Purlin reads it as one feature with one Linux-scoped proof.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -355,3 +356,163 @@ def test_the_fixtures_own_test_file_runs_by_itself(tmp_path):
         'test_os_tag_is_linux': 'passed' if on_linux else 'failed',
     }, ran.stdout + ran.stderr
     assert ran.returncode == (0 if on_linux else 1), ran.stdout + ran.stderr
+
+
+# ---------------------------------------------------------------------------
+# sqlite3 on a Windows runner
+# ---------------------------------------------------------------------------
+
+SQLITE_STEP = 'Install sqlite3 on Windows'
+CHOCO_ARGS = 'install sqlite -y --no-progress'
+# A test command that runs SQL scripts, as a project's settings name it.
+SQL_SETTINGS = ('{"tests": [{"name": "sql", '
+                '"run": "sqlite3 -bail :memory: < {files}"}]}\n')
+# The step runs under bash with a search path of stand-ins, so it is run
+# where a POSIX shell and symbolic links are at hand.
+posix_only = pytest.mark.skipif(
+    os.name == 'nt', reason='the step is run under bash with stand-in tools')
+
+
+def _github_step(text, name):
+    """The script of one GitHub step's `run: |` block, dedented."""
+    lines = text.splitlines()
+    start = lines.index('      - name: %s' % name)
+    run = next(index for index in range(start, len(lines))
+               if lines[index].strip() == 'run: |')
+    body = []
+    for line in lines[run + 1:]:
+        if line.strip() and len(line) - len(line.lstrip(' ')) < 10:
+            break
+        body.append(line[10:])
+    return '\n'.join(body).strip() + '\n'
+
+
+def _azure_step(text, name):
+    """The script of the Azure DevOps `- bash: |` step named `name`."""
+    lines = text.splitlines()
+    end = lines.index('        displayName: %s' % name)
+    start = max(index for index in range(end)
+                if lines[index] == '      - bash: |')
+    return '\n'.join(line[10:] for line in lines[start + 1:end]).strip() + '\n'
+
+
+def _standin(path, body):
+    path.write_text('#!/bin/sh\nPATH=/bin:/usr/bin\n' + body, encoding='utf-8')
+    path.chmod(0o755)
+
+
+def _run_sqlite_step(tmp_path, host, os_value, settings=SQL_SETTINGS,
+                     sqlite_found=False):
+    """Run the rendered step on this machine as a Windows runner would.
+
+    The project is a git repository holding the runner file and a settings
+    file. The search path holds git, find and dirname, a stand-in `choco`
+    that logs its arguments and leaves a `sqlite3.exe` under the chocolatey
+    folder, a stand-in `cygpath` that answers the path it is given, and a
+    `sqlite3` only when `sqlite_found`. `(exit code, stdout, choco's calls,
+    the text written to GITHUB_PATH, the folder holding sqlite3.exe)`.
+    """
+    text = workflow_module.render_workflow(host, ['windows'], PURLIN_REF)
+    rel = workflow_module.workflow_path(host)
+    script = (_github_step if host == 'github' else _azure_step)(
+        text, SQLITE_STEP)
+    project = tmp_path / 'project'
+    (project / os.path.dirname(rel) if os.path.dirname(rel)
+     else project).mkdir(parents=True, exist_ok=True)
+    (project / rel).write_text(text, encoding='utf-8')
+    (project / '.purlin').mkdir()
+    (project / '.purlin' / 'config.json').write_text(settings, encoding='utf-8')
+    for args in (['init', '-q'], ['add', '-A'],
+                 ['-c', 'user.name=T', '-c', 'user.email=t@example.com',
+                  '-c', 'commit.gpgsign=false', 'commit', '-qm', 'init']):
+        subprocess.run(['git'] + args, cwd=str(project), check=True,
+                       capture_output=True)
+    tools = tmp_path / 'bin'
+    tools.mkdir()
+    for name in ('git', 'find', 'dirname'):
+        os.symlink(shutil.which(name), str(tools / name))
+    choco_log = tmp_path / 'choco.log'
+    _standin(tools / 'choco',
+             'echo "$*" >> "$CHOCO_LOG"\n'
+             'mkdir -p "$ChocolateyInstall/lib/SQLite/tools"\n'
+             'printf "#!/bin/sh\\necho 3.46.1\\n" '
+             '> "$ChocolateyInstall/lib/SQLite/tools/sqlite3.exe"\n'
+             'chmod +x "$ChocolateyInstall/lib/SQLite/tools/sqlite3.exe"\n')
+    _standin(tools / 'cygpath', 'for last; do :; done\necho "$last"\n')
+    if sqlite_found:
+        _standin(tools / 'sqlite3', 'echo 3.46.1\n')
+    github_path = tmp_path / 'github_path'
+    github_path.write_text('', encoding='utf-8')
+    choco = tmp_path / 'choco'
+    variable = 'RUNNER_OS' if host == 'github' else 'AGENT_OS'
+    env = {'PATH': str(tools), 'HOME': str(tmp_path),
+           'ChocolateyInstall': str(choco), 'GITHUB_PATH': str(github_path),
+           'CHOCO_LOG': str(choco_log), variable: os_value}
+    # GitHub starts a bash step with -e and pipefail; Azure DevOps does not.
+    flags = ['-eo', 'pipefail'] if host == 'github' else []
+    done = subprocess.run([shutil.which('bash')] + flags + ['-c', script],
+                          cwd=str(project), env=env, capture_output=True,
+                          text=True)
+    calls = (choco_log.read_text(encoding='utf-8').splitlines()
+             if choco_log.exists() else [])
+    return (done.returncode, done.stdout + done.stderr, calls,
+            github_path.read_text(encoding='utf-8'),
+            str(choco / 'lib' / 'SQLite' / 'tools'))
+
+
+# purlin: host PROOF-121
+def test_the_sqlite_step_comes_just_before_the_test_step():
+    text = workflow_module.render_workflow('github', ['windows'], PURLIN_REF)
+    jobs = '\n'.join(parse_blocks(text)['jobs'])
+    names = step_names(jobs.splitlines())
+    assert names.index(SQLITE_STEP) == names.index('Run the tests') - 1, names
+    block = jobs.split('- name: %s' % SQLITE_STEP, 1)[1].split('- name:', 1)[0]
+    assert '        shell: bash' in block.splitlines(), block
+
+
+@posix_only
+# purlin: host PROOF-122
+def test_a_windows_runner_gets_sqlite3_when_a_tracked_file_names_it(tmp_path):
+    code, output, calls, path, folder = _run_sqlite_step(
+        tmp_path, 'github', 'Windows')
+    assert code == 0, output
+    assert calls == [CHOCO_ARGS], calls
+    assert path == folder + '\n', path
+
+
+@posix_only
+# purlin: host PROOF-123
+def test_a_macos_runner_installs_nothing(tmp_path):
+    code, output, calls, path, _folder = _run_sqlite_step(
+        tmp_path, 'github', 'macOS')
+    assert code == 0, output
+    assert calls == [] and path == '', (calls, path)
+
+
+@posix_only
+# purlin: host PROOF-124
+def test_a_project_where_only_the_runner_file_names_sqlite3_installs_nothing(
+        tmp_path):
+    code, output, calls, path, _folder = _run_sqlite_step(
+        tmp_path, 'github', 'Windows', settings='{"tests": []}\n')
+    assert code == 0, output
+    assert calls == [] and path == '', (calls, path)
+
+
+@posix_only
+# purlin: host PROOF-125
+def test_a_windows_runner_that_has_sqlite3_installs_nothing(tmp_path):
+    code, output, calls, path, _folder = _run_sqlite_step(
+        tmp_path, 'github', 'Windows', sqlite_found=True)
+    assert code == 0, output
+    assert calls == [] and path == '', (calls, path)
+
+
+@posix_only
+# purlin: host PROOF-126
+def test_an_azure_windows_agent_gets_sqlite3_on_its_search_path(tmp_path):
+    code, output, calls, path, folder = _run_sqlite_step(
+        tmp_path, 'azure', 'Windows_NT')
+    assert code == 0, output
+    assert calls == [CHOCO_ARGS], calls
+    assert '##vso[task.prependpath]%s' % folder in output.splitlines(), output
