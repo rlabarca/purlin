@@ -30,53 +30,14 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import sign as sign_module                                   # noqa: E402
 from purlin import signatures as purlin_signatures           # noqa: E402
-from test_signatures import (SIGNING_GATE, SPEC, Project,    # noqa: E402
-                             commit_as_ci, git, signing_key, write)
+from sign_project import (SIGNING_GATE, SPEC, Project,      # noqa: E402
+                          _Out, _read, _signed_project, commit_as_ci, git,
+                          signing_key, write)
+from sign_project import sign_the_queue as _sign_every_rule  # noqa: E402
 
 
 def _read_spec():
     return SPEC
-
-
-def _read(root, rel):
-    with open(os.path.join(root, *rel.split('/')), encoding='utf-8') as handle:
-        return handle.read()
-
-
-class _Out(object):
-    """Somewhere for the walk and the tag to print, read back as one string."""
-
-    def __init__(self):
-        self.lines = []
-
-    def write(self, text):
-        self.lines.append(text)
-
-    def flush(self):
-        pass
-
-    def text(self):
-        return ''.join(self.lines)
-
-
-def _signed_project(version='2.1.0', trust='local', key=True):
-    """A project at `signed` whose two rules both have what they need.
-
-    `key` writes the signer's own key over the allowed-signers file CI's
-    commit left, which is what lets a signature this project writes count.
-    A case that signs nothing does not need it, and asking twice would have
-    `ssh-keygen` stop for an overwrite nobody is there to answer.
-    """
-    made = Project(gate=SIGNING_GATE,
-                   config={'min_strength': 50, 'trust': trust})
-    made.proofs()
-    made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
-    made.audit('RULE-2')
-    write(os.path.join(made.root, 'VERSION'), version + '\n')
-    commit_as_ci(made.root)
-    if key:
-        signing_key(made.root)
-    return made
 
 
 def _audit_again_later(made, rule, at='2026-09-27T09:00:00Z'):
@@ -89,16 +50,6 @@ def _audit_again_later(made, rule, at='2026-09-27T09:00:00Z'):
     entry['at'] = at
     write(path, json.dumps(data, indent=2, sort_keys=True))
     return entry
-
-
-def _sign_every_rule(made):
-    """Sign whatever the queue holds, as the signer, and commit."""
-    payload = made.payload()
-    targets = sign_module.queued(payload)
-    if targets:
-        sign_module.sign_and_commit(made.root, targets, 'jane@acme.com',
-                                    payload=payload)
-    return targets
 
 
 # ---------------------------------------------------------------------------

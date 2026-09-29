@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import ai_audit as audit_module  # noqa: E402
 import marked_tests  # noqa: E402
-from test_signatures import TEST_FILE, Project, write  # noqa: E402
+from sign_project import TEST_FILE, Project, write  # noqa: E402
 
 SECOND_TEST = (
     '\n\n'

@@ -44,10 +44,10 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 import gate_check  # noqa: E402
 import sign as sign_module  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
-from test_signatures import (EVERY_RULE_SIGNED, SPEC,  # noqa: E402
-                             Project, commit_as_ci, git, signing_key)
-from test_tag import (_Out, _read, _sign_every_rule,  # noqa: E402
-                      _signed_project)
+from sign_project import (EVERY_RULE_SIGNED, SPEC,  # noqa: E402
+                          Project, commit_as_ci, git, signing_key)
+from sign_project import (_Out, _read, _signed_project)  # noqa: E402
+from sign_project import sign_the_queue as _sign_every_rule  # noqa: E402
 
 GATE_PY = os.path.join(ROOT, 'scripts', 'ci', 'gate_check.py')
 

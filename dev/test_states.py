@@ -13,7 +13,9 @@ import os
 import re
 import sys
 
-from mcp_project import (NO_PROOF_SPEC, ONE_RULE_SPEC, PROJECT_ROOT, Project,
+from mcp_project import (LEVELS_SPEC, NO_PROOF_SPEC, ONE_PASSED_SPEC,
+                         ONE_RULE_SPEC, PROJECT_ROOT, Project,
+                         _levels_project,
                          SPEC, _commit_tests, _entry, _git, _marked_tests,
                          _rpc, _write, project)
 # `mcp_project` puts `scripts/mcp` on the path.
@@ -1036,51 +1038,6 @@ class TestLevels:
                 False, 'signed')
         finally:
             made.close()
-
-
-# One spec with a rule at each level under the gate `signed`, and a rule at
-# `passed` and one at `strong` whose tests fail: a rule is asked only what its
-# level asks.
-LEVELS_SPEC = (
-    '# Feature: login\n\n'
-    '> Description: One rule at each level.\n'
-    '> Scope: src/login.py\n\n'
-    '## Rules\n\n'
-    '- RULE-1: Valid credentials return 200 [level: passed]\n'
-    '- RULE-2: Invalid credentials return 401 [level: strong]\n'
-    '- RULE-3: Five failures lock the account\n'
-    '- RULE-4: The page loads in a second [level: passed]\n'
-    '- RULE-5: A locked account returns 423 [level: strong]\n\n'
-    '## Proof\n\n'
-    '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200\n'
-    '- PROOF-2 (RULE-2): POST /login with a bad password; verify 401\n'
-    '- PROOF-3 (RULE-3): POST /login 5 times with a bad password; verify the '
-    'sixth returns 423\n'
-    '- PROOF-4 (RULE-4): GET /; verify the reply arrives within 1000 ms\n'
-    '- PROOF-5 (RULE-5): POST /login to a locked account; verify 423\n'
-)
-
-ONE_PASSED_SPEC = (
-    '# Feature: notes\n\n'
-    '> Description: A spec whose one rule asks for its tests alone.\n'
-    '> Scope: src/login.py\n\n'
-    '## Rules\n\n'
-    '- RULE-1: A note keeps its text [level: passed]\n\n'
-    '## Proof\n\n'
-    '- PROOF-1 (RULE-1): Save the note "hi"; verify it reads "hi"\n'
-)
-
-
-def _levels_project(gate='signed'):
-    """A `signed` project with a rule at each level, three audited strong."""
-    made = Project(spec=LEVELS_SPEC, gate=gate)
-    made.evidence([_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2'),
-                   _entry('PROOF-3', 'RULE-3'),
-                   _entry('PROOF-4', 'RULE-4', status='fail'),
-                   _entry('PROOF-5', 'RULE-5', status='fail')])
-    for rule_id in ('RULE-1', 'RULE-2', 'RULE-3'):
-        made.audit(rule_id)
-    return made
 
 
 class TestALevelAsksItsOwnQuestions:

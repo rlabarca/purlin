@@ -35,8 +35,8 @@ TEMPLATE_CONFIG = os.path.join(ROOT, 'templates', 'config.json')
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
 import scaffold as scaffold_module  # noqa: E402
 from purlin import frameworks as frameworks_module  # noqa: E402
-from test_reports import (GO_SPECS, REPO, _evidence,  # noqa: E402
-                          _fixture, _run, _write)
+from reports_project import (GO_SPECS, REPO, _evidence,  # noqa: E402
+                             _fixture, _run, _write)
 
 # What a project of each framework init writes a command for looks like on
 # disk. The table is the one place a case says "a project of this kind", so

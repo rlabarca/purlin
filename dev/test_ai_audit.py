@@ -39,8 +39,8 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 import ai_audit as audit_module  # noqa: E402
 import fake_claude  # noqa: E402
 import marked_tests  # noqa: E402
-from test_signatures import (REVIEW_GATE, SIGNING_GATE, SPEC,  # noqa: E402
-                             TEST_FILE, Project)
+from sign_project import (REVIEW_GATE, SIGNING_GATE, SPEC,  # noqa: E402
+                          TEST_FILE, Project)
 
 AI_AUDIT_PY = os.path.join(ROOT, 'scripts', 'review', 'ai_audit.py')
 CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')

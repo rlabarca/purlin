@@ -16,7 +16,7 @@ sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
 from purlin import evidence as purlin_evidence  # noqa: E402
-from test_signatures import SPEC, Project  # noqa: E402
+from sign_project import SPEC, Project  # noqa: E402
 
 
 @pytest.fixture

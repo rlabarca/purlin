@@ -37,10 +37,10 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import sign as sign_module                                    # noqa: E402
 from purlin import PURLIN_VERSION                             # noqa: E402
-from test_signatures import (CRITERIA, MODEL, SPEC,           # noqa: E402
-                             TEST_FILE, Project, git, sign_the_queue,
-                             signed, signed_project, status, tagged,
-                             write)
+from sign_project import (CRITERIA, MODEL, SPEC,           # noqa: E402
+                          TEST_FILE, Project, git, sign_the_queue,
+                          signed, signed_project, status, tagged,
+                          write)
 
 PACKAGE_PY = os.path.join(ROOT, 'scripts', 'export', 'package.py')
 

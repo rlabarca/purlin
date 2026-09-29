@@ -39,7 +39,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'run'))
 import gate_check  # noqa: E402
 import workflow  # noqa: E402
 from purlin import provenance  # noqa: E402
-from test_signatures import Project, commit_as_ci, git, write  # noqa: E402
+from sign_project import Project, commit_as_ci, git, write  # noqa: E402
 
 TOKEN = 's3cret-token-value'
 COLLECTION = 'https://dev.azure.com/acme/'

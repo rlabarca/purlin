@@ -17,7 +17,7 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-from test_signatures import TEST_NAMES, Project, write  # noqa: E402
+from sign_project import TEST_NAMES, Project, write  # noqa: E402
 
 EXTRA = 'test_only_this_machine_runs'
 
