@@ -1433,16 +1433,16 @@ class TestTheEngineBlock:
 # A Go module through the command its first test run suggests
 # ---------------------------------------------------------------------------
 
-SUGGESTED = 'Suggested entry: '
+SUGGESTED = 'Suggested tests setting: '
 
 
 def take_the_suggestion(root, output):
-    """Write the entry a first test run suggested, as `purlin:test` does."""
+    """Write the setting a first test run suggested, as `purlin:test` does."""
     (line,) = [line for line in output.splitlines()
                if line.startswith(SUGGESTED)]
     path = root / '.purlin' / 'config.json'
     config = json.loads(path.read_text(encoding='utf-8'))
-    config['tests'] = [json.loads(line[len(SUGGESTED):])]
+    config['tests'] = json.loads(line[len(SUGGESTED):])
     path.write_text(json.dumps(config, indent=2) + '\n', encoding='utf-8')
 
 
@@ -1802,7 +1802,8 @@ def csharp_project(tmp_path_factory):
 def suggested_name(walk):
     (line,) = [line for line in walk.lines('first test run')
                if line.startswith(SUGGESTED)]
-    return json.loads(line[len(SUGGESTED):])['name']
+    (entry,) = json.loads(line[len(SUGGESTED):])
+    return entry['name']
 
 
 class TestEachLanguageIsSetUp:
