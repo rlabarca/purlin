@@ -934,3 +934,17 @@ helper so imported into a helper module that carries no marker (`dev/mcp_project
 `dev/run_project.py` and `dev/sign_project.py`), and those modules are frozen for the fan-out
 with `dev/skill_checks.py`. After P0b no test file imports from another test file a different
 lane owns.
+8. **A hand check needs no note** (decision 84). `hand_checked` is true when a counting,
+   current signature exists for a rule one of whose proofs is `@manual`, with or without a
+   note. `purlin:sign` asks for the note and records it when given. L1 changes the definition
+   P0b built, which required the note; L5 asks and does not refuse.
+
+## 8. What P0b built
+
+`dev/plans/phase1-interfaces.md` records every interface as built, and is the truth where it
+and section 2 differ. Two things in it are transitional and are removed by the lane named:
+the clause of summary RULE-8 and RULE-9 that counts a cell a rule does not carry as reached
+(L1 deletes it with `[level: ...]`), and `signatures.counts` reading the gate from the settings
+file (L5). The helper modules `dev/skill_checks.py`, `dev/mcp_project.py`,
+`dev/sign_project.py`, `dev/run_project.py` and `dev/reports_project.py` are frozen for the
+fan-out: no lane edits them.

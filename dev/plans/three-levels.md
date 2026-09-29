@@ -767,6 +767,10 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     failing and failing on one system go: the step boxes, `No proof` and `Left to do`
     remain. The evidence package's `not for approval` goes: it carries the state and the
     gate.
+84. **A hand check needs no note** (added 2026-09-28). Signing a rule that is checked by
+    hand counts as the check, with or without a note. `purlin:sign` asks for the note and
+    records it when given. This keeps the owner's earlier choice and reads decision 78's
+    "writes what they saw" as what is asked, not what is required.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
