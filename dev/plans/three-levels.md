@@ -813,6 +813,10 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     lightest is 5% darker: `#F4EFDF` to `#E8E3D4`, `#E4DDD4` to `#D9D2C9`, `#D3C9BC` to
     `#C8BFB3`; the muted ink is darkened from `#3B4F56` to `#384B52` so that neutral text
     still measures 7 to 1 on every ground it is drawn on.
+92. **The dashboard carries no summary sentence** (added 2026-09-29). The line `563 rules.
+    563 pass their tests. 0 are strong. 0 are signed.` leaves the dashboard: the boxes carry
+    the counts. The terminal keeps it, since it has no boxes. This amends decisions 68 and
+    79, which showed the same thing in both places.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
