@@ -14,7 +14,7 @@
 
 - RULE-1: `add <source> --path <file>` writes the anchor to `specs/_anchors/<name>.md` with the author's body unchanged under its title, and adds `> Source: <source> <file>` and `> Pinned: <sha>`
 - RULE-2: The pin `add` writes is the source's head commit as a full 40-character sha, and no branch name reaches the copy
-- RULE-3: With no `--name`, the anchor is named after the file the `--path` names [level: passed]
+- RULE-3: With no `--name`, the anchor is named after the file the `--path` names
 - RULE-4: Tracking fields the source itself carried are stripped before the copy is written, so a copy of a copy holds one `> Source:` and one `> Pinned:`, both this project's
 - RULE-5: A `--path` the source does not hold writes no file and reports the path it could not read
 - RULE-6: A source that begins with `-`, or that names the `ext::` transport, is refused before any process starts and nothing is written
@@ -23,12 +23,12 @@
 - RULE-9: `sync --check` exits 0 when every pin is current, 1 when a pin is behind, and 2 when a named anchor does not exist or a source cannot be read
 - RULE-10: `--json` prints the whole answer as one JSON object carrying `checked`, `behind` and a row per anchor; without it the lines name the anchor behind and the `purlin:anchor sync <name>` that fixes it
 - RULE-11: `sync <name>` rewrites the copy from the source at its new head, advances `> Pinned:`, and reports the rule delta as added, removed and changed ids plus a one-line summary
-- RULE-12: A source whose rules did not move reports no rule changes and still advances the pin [level: passed]
+- RULE-12: A source whose rules did not move reports no rule changes and still advances the pin
 - RULE-14: `sync` with no name covers every anchor whose source is a repository and no others, so a free-text anchor is never fetched
-- RULE-15: One run reaches each distinct source once, however many anchors are pinned to it [level: passed]
-- RULE-21: `--help` names `add` and `sync`, and a call with no arguments exits 2 naming `--project-root` [level: passed]
+- RULE-15: One run reaches each distinct source once, however many anchors are pinned to it
+- RULE-21: `--help` names `add` and `sync`, and a call with no arguments exits 2 naming `--project-root`
 - RULE-22: Every file the module writes lies under the project root it was given
-- RULE-23: A sync keeps every `> Note:` line the local copy carried, in order, beside the tracking fields it rewrites, because a note is the consumer's own text [level: passed]
+- RULE-23: A sync keeps every `> Note:` line the local copy carried, in order, beside the tracking fields it rewrites, because a note is the consumer's own text
 
 ## Proof
 

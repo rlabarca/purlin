@@ -10,7 +10,8 @@ import re
 from skill_checks import (carries, flat, frontmatter_problems,
                           frontmatter_refusals, next_step_problems, read,
                           refusals, replace, same_line, section,
-                          skill_ceiling_problems, skill_path)
+                          skill_ceiling_problems, skill_path,
+                          undirected_outcome_problems)
 
 
 class TestSkillAnchor:
@@ -46,7 +47,33 @@ class TestSkillAnchor:
 
     # purlin: skill_anchor PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('anchor') == []
+        assert (next_step_problems('anchor')
+                + undirected_outcome_problems('anchor')) == []
+
+    # purlin: skill_anchor PROOF-6
+    def test_an_outcome_with_no_directive_is_refused(self, monkeypatch):
+        rel = skill_path('anchor')
+        assert refusals(
+            monkeypatch, lambda: undirected_outcome_problems('anchor'), [
+                (rel, replace(', `\u2192 Run: purlin:status`'),
+                 '%s closing outcome gives no \u2192 directive: - Pin current '
+                 'and nothing moved' % rel),
+            ]) == []
+
+    # purlin: skill_anchor PROOF-7
+    def test_the_first_anchor_creates_the_folder(self):
+        assert anchor_folder_problems() == []
+
+    # purlin: skill_anchor PROOF-8
+    def test_a_folder_made_at_setup_is_refused(self, monkeypatch):
+        rel = skill_path('anchor')
+        assert refusals(monkeypatch, anchor_folder_problems, [
+            (rel, replace('is created with the first anchor, written here or '
+                          'brought in by `add`.',
+                          'is created at setup.'),
+             'create section does not say the folder is created with the '
+             'first anchor'),
+        ]) == []
 
     # purlin: skill_anchor PROOF-4
     def test_it_stays_under_its_ceiling(self):
@@ -108,3 +135,14 @@ def anchor_command_problems():
                                    '`purlin:drift` runs the same check')
                     if needle not in body)
     return problems
+
+
+def anchor_folder_problems():
+    rel = skill_path('anchor')
+    body = flat(section(read(rel), r'^create$') or '')
+    needle = ('The folder `specs/_anchors/` is created with the first anchor, '
+              'written here or brought in by `add`.')
+    if needle in body:
+        return []
+    return ['%s create section does not say the folder is created with the '
+            'first anchor: %r' % (rel, needle)]

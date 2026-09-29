@@ -26,7 +26,8 @@ someone asks: a second repository is a cost, and one project does not need it.
 purlin:anchor create <name>
 ```
 
-Writes `specs/_anchors/<name>.md` with the same two sections every spec uses. Give it a
+Writes `specs/_anchors/<name>.md` with the same two sections every spec uses. The folder
+`specs/_anchors/` is created with the first anchor, written here or brought in by `add`. Give it a
 `> Description:`, a `> Scope:` and, when it helps the reader, a `> Type:` of `api`, `security`,
 `brand`, `schema` or `legal`. Rules and proofs follow the grammar in
 `references/formats/spec_format.md`.
@@ -67,13 +68,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" sync [<name> | --all]
 `--check` reports without writing, one line per anchor: `security_baseline: the pin abc1234
 is behind its source, now 9f8e7d6. Run purlin:anchor sync security_baseline.` It exits 1 when a
 pin is behind and 2 when a source could not be read. `purlin:drift` runs the same check, one
-cached lookup per source per run, so a developer sees a stale pin at the start of a session
-without asking for it.
+cached lookup per source per run, so a developer sees a pin that is behind at the start of a
+session without asking for it.
 
 Without `--check`, sync rewrites the local copy, advances the pin and prints what moved:
 `security_baseline: RULE-3 changed, RULE-6 added. Pin advanced from abc1234 to 9f8e7d6.` It
 commits nothing: commit the copy in one commit with the `anchor(<name>):` prefix, so the diff
-shows exactly which rules moved. A rule whose text moved stales its signature.
+shows exactly which rules moved. A signature on a rule whose text moved ends, and the rule is
+back to `to sign`.
 
 ## Changing a pinned rule
 
@@ -90,7 +92,7 @@ A rule that belongs only to this project goes in a separate local anchor that sa
 Name the next step from the state:
 
 - Anchor created, no feature requires it yet: name the features that should and offer to add
-  `> Requires:` to each.
-- Anchor added or synced, rules changed: `→ Next: purlin:test`, then, as the gate asks,
-  `purlin:audit` and `purlin:sign` for the signatures the change staled.
-- Pin current and nothing moved: say so in one line and stop.
+  `> Requires:` to each, `→ Run: purlin:spec <feature>`
+- Anchor added or synced, rules changed: `→ Next: purlin:test`, whose `Left to do` names what
+  the change sent back to be audited or signed.
+- Pin current and nothing moved: say so in one line, `→ Run: purlin:status`
