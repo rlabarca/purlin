@@ -116,6 +116,7 @@
 - PROOF-89 (RULE-18): After the update with `--yes` on the sample v0.9.5 project, `git status` lists at least one file, and every file it lists is untracked and ends `.bak`
 - PROOF-90 (RULE-18): With every question answered `n`, the update of the sample v0.9.5 project leaves the latest commit the one it was
 - PROOF-121 (RULE-18): On Windows, after the update with `--yes` on the sample 0.9.5 project, `git status` lists at least one file, and every file it lists is untracked and ends `.bak` @env(windows)
+- PROOF-127 (RULE-18): With the machine read as Windows, the update with `--yes` on the sample 0.9.5 project writes no runner file, and `git status` naming each untracked file lists the retired workflow's backup under `.github/workflows/` and only files ending `.bak`, each untracked
 - PROOF-19 (RULE-19): What `sync_status` prints for the sample v0.9.5 project carries the line `→ Run: purlin:init --update`
 - PROOF-91 (RULE-19): After the update with `--yes` applies everything to the sample v0.9.5 project, what `sync_status` prints carries no `Run: purlin:init --update`
 - PROOF-92 (RULE-19): In the updated sample project, whose config is clean, a new spec whose proof line ends with `@windows` makes exactly `os-tags` pending, and what `sync_status` prints carries the line `→ Run: purlin:init --update` again

@@ -1709,16 +1709,43 @@ def test_one_commit_carries_every_migration_id(tmp_path):
         VERSION, ', '.join(applied))
 
 
+def _left_after_the_update(root):
+    """`git status` after the update, every untracked file named by itself.
+
+    Without `--untracked-files=all` a folder holding nothing tracked is listed
+    as the folder: on Windows the update writes no runner file for the
+    sample's Windows tags, so `.github/` holds only the retired workflow's
+    backup and would read `?? .github/`.
+    """
+    return _git(root, 'status', '--porcelain',
+                '--untracked-files=all').stdout.splitlines()
+
+
 # purlin: update PROOF-89
 # purlin: update PROOF-121
 def test_nothing_is_left_uncommitted_but_the_backups(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
-    left = _git(root, 'status', '--porcelain').stdout.splitlines()
+    left = _left_after_the_update(root)
     assert left, 'the backups should still be sitting there'
     for line in left:
         assert line.startswith('?? '), line
         assert line.endswith('.bak'), line
+
+
+# purlin: update PROOF-127
+def test_on_a_machine_read_as_windows_only_the_backups_are_left(tmp_path,
+                                                               monkeypatch):
+    from purlin import evidence as evidence_module
+    monkeypatch.setattr(evidence_module, 'host_os', lambda: 'windows')
+    root = _project(tmp_path, V095)
+    _apply(root)
+    assert _workflows(root) == [], 'no runner file for the machine\'s own tags'
+    left = _left_after_the_update(root)
+    assert any(line.startswith('?? .github/workflows/windows-proofs.yml.')
+               for line in left), left
+    for line in left:
+        assert line.startswith('?? ') and line.endswith('.bak'), line
 
 
 # purlin: update PROOF-90
