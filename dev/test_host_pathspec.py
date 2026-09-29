@@ -132,13 +132,19 @@ def _tree_sent(fake):
 
 
 # purlin: host PROOF-95
+# purlin: host PROOF-118
 def test_a_run_that_spells_paths_the_windows_way_commits_the_removal(
         tmp_path, monkeypatch):
-    """Paths joined with `\\`, as on Windows; git itself is this machine's."""
+    """Paths joined with `\\`, as on Windows; git itself is this machine's.
+
+    Elsewhere the Windows spelling is given to the module; on Windows it is
+    the system's own, and nothing is given.
+    """
     root = str(tmp_path)
     gone, _kept = _repository_with_a_removed_file(root)
     fake = _on_github(monkeypatch)
-    monkeypatch.setattr(host_module, 'os', _WindowsOs())
+    if os.name != 'nt':
+        monkeypatch.setattr(host_module, 'os', _WindowsOs())
     assert host_module.os.path.join('.purlin', 'evidence') == \
         '.purlin\\evidence'
 

@@ -341,18 +341,26 @@ def test_the_ci_commit_sends_no_author_and_no_committer(project, github_env,
 
 
 # purlin: host PROOF-55
+# purlin: host PROOF-116
 def test_the_tree_entry_carries_the_file_and_its_permission(project,
                                                             github_env,
                                                             monkeypatch):
+    """The path is handed over as this system joins it, `\\` on Windows.
+
+    The tree entry names it with `/` all the same, and its text is the bytes
+    on disk, whatever line endings this system wrote them with.
+    """
     host = FakeHost()
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = write_ci(project)
+    as_joined_here = os.path.join(*path.split('/'))
 
-    host_module.commit_files(project, [path], 'purlin: evidence at 4f1c2ab')
+    host_module.commit_files(project, [as_joined_here],
+                             'purlin: evidence at 4f1c2ab')
 
     tree = host.body_for('/git/trees', method='POST')
     entry = tree['tree'][0]
-    assert entry['path'] == path
+    assert entry['path'] == '.purlin/evidence/ci/greeting.json'
     assert entry['type'] == 'blob'
     assert 'sha' not in entry, 'a text file asked for a blob of its own'
     assert entry[host_module._PERM_KEY] == '100644'
@@ -879,10 +887,15 @@ def test_a_project_that_is_not_the_workspace_commits_nothing(
 
 
 # purlin: host PROOF-96
+# purlin: host PROOF-119
 def test_the_project_that_is_the_workspace_commits(project, github_env,
                                                    monkeypatch, capsys):
+    """The workspace is spelled as this system spells folders, `\\` on Windows."""
+    spelled_here = os.path.normpath(project)
+    if os.name == 'nt':
+        assert '\\' in spelled_here and '/' not in spelled_here, spelled_here
     sha, host, printed = _commit_under_a_workspace(
-        project, monkeypatch, capsys, 'GITHUB_WORKSPACE', project)
+        project, monkeypatch, capsys, 'GITHUB_WORKSPACE', spelled_here)
 
     assert sha == 'c' * 40
     assert [url.rsplit('/git/', 1)[-1] for url in host.urls('POST')] == [
@@ -1089,9 +1102,12 @@ NO_RUN = ('No run registered for %s within 60 seconds. Open it on the git '
 
 
 # purlin: host PROOF-24
+# purlin: host PROOF-117
 def test_a_green_run_pushes_watches_pulls_and_deletes(project, remote_run,
                                                       capsys):
     fake = remote_run()
+    found = os.path.basename(shutil.which('gh') or '').lower()
+    assert found == ('gh.cmd' if os.name == 'nt' else 'gh'), found
 
     assert remote_module.run_remote(project) == 0
     assert fake.started == [PUSH, WATCH, PULL, DELETE]

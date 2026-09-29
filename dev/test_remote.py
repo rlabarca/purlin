@@ -269,12 +269,16 @@ def test_a_run_not_registered_at_first_is_asked_for_again(azure_run):
 
 
 # purlin: host PROOF-78
+# purlin: host PROOF-120
 def test_a_succeeded_run_is_brought_home_green(azure_run, capsys):
     fake, clock = azure_run(polls=('inProgress\t', 'inProgress\t',
                                    'completed\tsucceeded'))
 
     assert remote_module.run_remote('/project') == 0
     assert fake.az_calls() == [LIST, SHOW, SHOW, SHOW]
+    started_as = {os.path.basename(argv[0]).lower()
+                  for argv in fake.started if _is_az(argv[0])}
+    assert started_as == {'az.cmd' if os.name == 'nt' else 'az'}, started_as
     assert clock.slept == [15, 15]
     assert fake.not_az() == [PUSH, PULL, DELETE]
     printed = capsys.readouterr().out
