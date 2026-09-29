@@ -29,6 +29,7 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .sec{color:var(--text-secondary)}
 .tag{display:inline-flex;flex:none;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--accent);color:var(--text-primary);white-space:nowrap}
 .tag.plain{border-color:var(--text-muted);color:var(--text-muted)}
+.kv .tag.plain{color:var(--text-secondary)}
 .os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:0 5px;border-radius:var(--radius-sm);border:1px solid;white-space:nowrap;line-height:1.5}
 .os.pass{border-color:var(--state-pass);color:var(--state-pass)}
 .os.fail{border-color:var(--state-fail);color:var(--state-fail)}
@@ -46,14 +47,13 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .pill.solid b{color:var(--canvas-deep)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
 
-/* --- step boxes and what is left to do ------------------------------- */
+/* --- step boxes ----------------------------------------------------- */
 .sentence{margin:0 0 var(--space-4);font-size:var(--ui-lg);color:var(--text-primary)}
 .strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
 .tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-2)}
 .tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
 .tile-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
-.todo{font-size:var(--ui-base);color:var(--text-primary)}
 
 /* --- the spec table -------------------------------------------------- */
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
@@ -62,6 +62,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .chip b{font-family:var(--font-mono);font-weight:var(--weight-regular);margin-left:var(--space-2);color:var(--text-muted)}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .chip[aria-pressed="true"] b{color:var(--accent)}
+.cmdline,.lastline{margin:0 0 var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
 /* The spec table owns its tracks, the outer two being the row padding less
    one gap, and every heading and spec row takes them as a subgrid: one set
    of columns, so a heading starts where its cells start, and a value column
@@ -105,7 +106,9 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .rule-proofs{padding:var(--space-4) var(--space-6) var(--space-4) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:default}
 .rule-proofs>p{margin:0;font-size:var(--ui-sm)}
 .specs>.desc{margin:0;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);font-size:var(--ui-base);color:var(--text-secondary);contain:inline-size}
-.proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
+.why dd p{margin:0}
+.why dd p+p{margin-top:var(--space-2)}
+.why+.proof,.proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}

@@ -8,9 +8,9 @@ the data moves, and shows one project's names to every reader.
     python3 dev/build_report.py && python3 dev/capture_doc_screenshots.py
 
     dashboard-board.png   the board at the signed gate: the step boxes, the
-                          `No proof` box, what is left to do, every column,
-                          the filters, and login open with its description
-                          and one rule's proofs beneath it
+                          `No proof` box, the filter buttons named as what
+                          is left to do, every column, and login open with
+                          its description and one rule unfolded beneath it
     dashboard-rule.png    one signed rule: its cells, what the audit found,
                           its signature and its proofs
 
@@ -40,8 +40,9 @@ SCALE = 2
 
 # name -> (fixture, the clicks that reach the screen)
 SHOTS = (
-    # login open with RULE-4's two proofs beneath it: one failed on windows,
-    # one passed, which is what the closed count's warn tone stands for.
+    # login open with RULE-4 unfolded beneath it: why it has not reached a
+    # step, then its two proofs, one failed on windows and one passed, which
+    # is what the folded count's warn tone stands for.
     ('dashboard-board.png', 'regulated',
      ('[data-act="feature"][data-feature="login"]',
       '[data-act="proofs"][data-feature="login"][data-rule="RULE-4"]')),

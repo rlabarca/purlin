@@ -9,7 +9,7 @@
 
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
-            features: {}, groups: {}, filters: {}, proofs: {}};
+            features: {}, groups: {}, filter: null, proofs: {}};
 var SCHEMA = 10;
 /* The data file is rewritten when `purlin:status`, `purlin:test`,
    `purlin:audit` or `purlin:sign` finishes, and a tab left open would never
@@ -18,7 +18,7 @@ var SCHEMA = 10;
 var REFRESH_AFTER = 60;
 
 /* The three steps, lowest first. The project's gate names the
-   highest step that exists, and every cell, box, column and filter above it
+   highest step that exists, and every cell, box and column above it
    is absent rather than empty: a board that asks a question its project has
    not opted into reads as a project falling short. */
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
@@ -95,8 +95,8 @@ function gateName() {
 }
 
 /* True when the project's gate is at this step or above it, which is the
-   one question that decides whether a cell, a box, a column or a filter is
-   drawn at all. */
+   one question that decides whether a cell, a box or a column is drawn at
+   all. */
 function level(name) {
   return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
 }
@@ -376,6 +376,44 @@ function cellWord(rule, name) {
   return (cellOf(rule, name) || {}).word || null;
 }
 
+/* The steps a rule has reached, lowest first, as the step boxes count
+   them: its tests passed, and where a proof is `@manual` a person has checked
+   it by hand; then the audit found it strong; then it is signed. Each step
+   contains the next, so a rule that has not reached one has reached none
+   above it. */
+function reachedSteps(rule) {
+  var out = [];
+  if (cellWord(rule, 'passed') !== 'passed') { return out; }
+  var manual = (rule.proofs || []).some(function (proof) {
+    return proof.manual;
+  });
+  if (manual && !rule.hand_checked) { return out; }
+  out.push('passed');
+  if (cellWord(rule, 'strong') !== 'strong') { return out; }
+  out.push('strong');
+  if (cellWord(rule, 'signed') === 'signed') { out.push('signed'); }
+  return out;
+}
+
+/* Whether a test of the rule failed: its passed cell reads `failed`, or a
+   run on one operating system failed it while another passed it. */
+function testFailed(rule) {
+  var cell = cellOf(rule, 'passed') || {};
+  if (cell.word === 'failed') { return true; }
+  var platforms = cell.platforms || {};
+  return Object.keys(platforms).some(function (os) {
+    return platforms[os].word === 'failed';
+  });
+}
+
+/* The badges a folded rule carries: one per step it has reached, and
+   `FAILED` where a test fails. A step not reached draws nothing; why it was
+   not reached is read with the rule unfolded. */
+function badges(rule) {
+  return reachedSteps(rule).map(pill).join('')
+    + (testFailed(rule) ? pill('failed') : '');
+}
+
 function featureNamed(name) {
   var found = null;
   (DATA.features || []).forEach(function (f) {
@@ -508,8 +546,10 @@ function onClick(event) {
     VIEW.screen = 'board';
     VIEW.rule = VIEW.feature = null;
   } else if (act === 'filter') {
+    /* One line of what is left is chosen at a time; choosing it again
+       shows every rule. */
     var id = node.getAttribute('data-filter');
-    VIEW.filters[id] = !VIEW.filters[id];
+    VIEW.filter = VIEW.filter === id ? null : id;
   } else if (act === 'group') {
     var group = node.getAttribute('data-group');
     VIEW.groups[group] = VIEW.groups[group] === false;

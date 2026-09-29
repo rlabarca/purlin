@@ -1,5 +1,6 @@
-/* The Board: how many rules reached each step the gate asks for, what is
-   left to do, and which specs hold the rules that have not got there yet. */
+/* The Board: how many rules reached each step the gate asks for, and which
+   specs hold the rules that have not got there yet, filtered by the work
+   left to do. */
 
 /* The payload's summary sentence, the one the terminal prints, then one box
    per step the gate reaches, each counting the rules that reached it, as the
@@ -56,26 +57,6 @@ function noProofLines() {
     byFeature[name] += 1;
   });
   return names.sort().map(function (name) { return [name, byFeature[name]]; });
-}
-
-/* What is left to do, under the boxes: one line per kind of work, in the
-   order the payload gives, each with its count and the command that does
-   it, as the terminal writes them. The page composes none of it and ticks
-   nothing: a line goes when the command that clears it has run and the data
-   is written again. With nothing left, the payload's last line stands in
-   the list's place. */
-function leftToDo() {
-  var items = DATA.left || [];
-  if (!items.length) {
-    return '<div class="panel todo"><p>' + esc(DATA.last_line || '')
-      + '</p></div>';
-  }
-  return '<p class="eyebrow">Left to do</p><div class="panel todo">'
-    + items.map(function (item) {
-      return '<p><span>' + esc(item.text) + ':</span> <span class="cmd">'
-        + esc(item.command) + '</span></p>';
-    }).join('') + '<p class="sec">Type each command in Claude Code.</p>'
-    + '</div>';
 }
 
 /* The columns the gate reaches, and no others. Every when, who and platform
@@ -231,10 +212,7 @@ function featureRow(feature, columns) {
       + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '">'
       + '<span class="rid">' + esc(rule.id) + '</span>'
       + '<span class="rt">' + esc(rule.text) + '</span>'
-      + '<span class="rp">' + GATE_LEVELS.map(function (name) {
-        var cell = cellOf(rule, name);
-        return cell ? pill(cell.word) : '';
-      }).join('') + '</span>'
+      + '<span class="rp">' + badges(rule) + '</span>'
       + '<span class="rm">' + proofsToggle(rule, shown) + '</span></div>'
       + (shown ? proofsUnder(rule) : '');
   }).join('');
@@ -279,9 +257,39 @@ function proofsToggle(rule, shown) {
     + '</span></button>';
 }
 
-/* A rule's proofs, open beneath its row: each proof as the rule screen
-   draws it. A rule with no proof shows the tests marked with its own id the
-   same way, and one with neither says no proof is written. */
+/* Why an unfolded rule has not reached each step it has not reached: the
+   step, its cell's word and the reasons the payload gives, as the rule
+   screen reads them; then, where the gate asks for the audit, what the audit
+   found. A reason that repeats a finding is left to the audit's line. */
+function whyUnder(rule) {
+  var reached = reachedSteps(rule);
+  var findings = (rule.audit && rule.audit.findings) || [];
+  var rows = GATE_LEVELS.filter(function (name) {
+    return cellOf(rule, name) && reached.indexOf(name) < 0;
+  }).map(function (name) {
+    var cell = cellOf(rule, name);
+    var reasons = cellReasons(cell).filter(function (text) {
+      return !findings.some(function (found) {
+        return text.indexOf(found) >= 0;
+      });
+    }).join('; ');
+    return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
+      + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
+      + '</dd>';
+  });
+  if (cellOf(rule, 'strong')) {
+    rows.push('<dt>Audit</dt><dd>' + auditFound(rule).map(function (text) {
+      return '<p>' + esc(text) + '</p>';
+    }).join('') + '</dd>');
+  }
+  return rows.length ? '<div class="why"><dl class="kv">' + rows.join('')
+    + '</dl></div>' : '';
+}
+
+/* A rule unfolded beneath its row: why it has not reached a step and what
+   the audit found, then each proof as the rule screen draws it. A rule with
+   no proof shows the tests marked with its own id the same way, and one
+   with neither says no proof is written. */
 function proofsUnder(rule) {
   var proofs = rule.proofs || [];
   var body = proofs.length ? proofs.map(function (proof) {
@@ -291,7 +299,7 @@ function proofsUnder(rule) {
       + '<dt>Tests</dt><dd class="ptests">' + testLines(rule.tests)
       + '</dd></dl></div>'
     : '<p class="sec">No proof written.</p>';
-  return '<div class="rule-proofs">' + body + '</div>';
+  return '<div class="rule-proofs">' + whyUnder(rule) + body + '</div>';
 }
 
 /* The band over a category's specs, one row with two ends. At the left the
@@ -339,10 +347,8 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  /* The board opens on the step boxes, with what is left to do beneath
-     them. */
-  var head = '<section>' + statStrip() + '</section><section>' + leftToDo()
-    + '</section>';
+  /* The board opens on the step boxes. */
+  var head = '<section>' + statStrip() + '</section>';
   var table = order.length
     ? '<div class="tbl specs" style="--cols:' + columns.map(function (c) {
         /* The table owns the tracks and every row shares them, so a heading
@@ -355,7 +361,7 @@ function renderBoard() {
       }).join('') + '</div>' + order.map(function (name) {
         return groupBand(name, groups[name], columns);
       }).join('') + '</div>'
-    : '<div class="panel empty">No rule matches every filter you set.</div>';
+    : '<div class="panel empty">No rule is left of this kind.</div>';
   return head + '<section><p class="eyebrow">Specs</p>' + filtersMarkup()
     + table + '</section>';
 }
