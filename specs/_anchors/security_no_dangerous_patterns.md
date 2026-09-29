@@ -28,7 +28,7 @@
 - PROOF-49 (RULE-1): A planted `.py` file holding `exec (src)` is found, and the finding names its file and the form `exec(`
 - PROOF-50 (RULE-1): A planted `.py` file holding `x = eval(src)  # only a comment follows` is found, and the finding names its file and the form `eval(`
 - PROOF-15 (RULE-1): A planted `.sh` file holding `eval "$cmd"` is found, and the finding names its file and the form `eval`
-- PROOF-51 (RULE-1): A planted `.sh` file holding `    eval "$cmd"`, indented is found, and the finding names its file and the form `eval`
+- PROOF-51 (RULE-1): A planted `.sh` file holding `    eval "$cmd"`, indented, is found, and the finding names its file and the form `eval`
 - PROOF-52 (RULE-1): A planted `.sh` file holding `if eval "$cmd"; then :; fi` is found, and the finding names its file and the form `eval`
 - PROOF-53 (RULE-1): A planted `.sh` file holding `out=$(eval "$cmd")` is found, and the finding names its file and the form `eval`
 - PROOF-54 (RULE-1): A planted `.sh` file holding `true && eval "$cmd"` is found, and the finding names its file and the form `eval`
