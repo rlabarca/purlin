@@ -2,13 +2,13 @@
   "feature": "skill_test",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:38Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:48Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
         "code": "3d51cb60dcab06cbb8039bb85b49af7a1a9f8ec8e328d88cd2897f847290860b",
-        "spec": "c14c4dd0f9555748b905e61bccf884a9c09f6e5387aff920cc7b7a341edd916e",
-        "tests": "06201b20c8a6c61236e36340a6096117cb8dda8453b211caae91e4864e16b5fd"
+        "spec": "5481afdb2c3ccf1a4989ab889d73d596b60a55049fc61afdbac0a32e6c84af11",
+        "tests": "b31576f7dd66dd0489ce67c23afc1d3b9ad3c37209b172714181f13bea02e029"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -19,15 +19,71 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_the_frontmatter_names_the_skill"
+          "test": "dev/test_skill_test.py::TestTheFrontmatterAndTheCommandRow::test_the_shipped_frontmatter_names_the_skill_on_one_line"
         },
         {
           "env": null,
-          "id": "PROOF-1",
+          "id": "PROOF-19",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_a_broken_frontmatter_is_refused"
+          "test": "dev/test_skill_test.py::TestTheFrontmatterAndTheCommandRow::test_the_shipped_command_reference_has_a_row_for_the_skill"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_test.py::TestTheFrontmatterAndTheCommandRow::test_a_copy_with_no_name_line_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_test.py::TestTheFrontmatterAndTheCommandRow::test_a_copy_with_an_empty_description_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_test.py::TestTheFrontmatterAndTheCommandRow::test_a_copy_with_the_description_on_the_next_line_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_test.py::TestTheFrontmatterAndTheCommandRow::test_a_copy_with_a_bar_block_description_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_test.py::TestTheFrontmatterAndTheCommandRow::test_a_copy_with_a_folded_block_description_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_test.py::TestTheFrontmatterAndTheCommandRow::test_a_copy_with_the_description_run_onto_a_second_line_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_test.py::TestTheFrontmatterAndTheCommandRow::test_a_command_reference_without_the_row_is_reported"
         },
         {
           "env": null,
@@ -35,7 +91,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_it_runs_the_run_script_and_names_its_exit_codes"
+          "test": "dev/test_skill_test.py::TestTheRunAndItsExitCodes::test_the_shipped_skill_runs_the_script_with_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_test.py::TestTheRunAndItsExitCodes::test_the_shipped_skill_gives_each_exit_code_its_meaning_on_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_test.py::TestTheRunAndItsExitCodes::test_the_shipped_skill_says_a_run_cannot_make_an_audit_or_signature"
         },
         {
           "env": null,
@@ -43,7 +115,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_an_exit_code_moved_off_the_line_is_refused"
+          "test": "dev/test_skill_test.py::TestTheRunAndItsExitCodes::test_a_copy_with_exit_code_two_on_the_next_line_is_reported"
         },
         {
           "env": null,
@@ -51,7 +123,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_an_exit_code_reworded_is_refused"
+          "test": "dev/test_skill_test.py::TestTheRunAndItsExitCodes::test_a_copy_with_exit_code_one_reworded_is_reported"
         },
         {
           "env": null,
@@ -59,7 +131,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_the_command_without_test_is_refused"
+          "test": "dev/test_skill_test.py::TestTheRunAndItsExitCodes::test_a_copy_with_test_off_the_command_line_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_test.py::TestTheRunAndItsExitCodes::test_a_copy_without_the_cannot_sentence_is_reported"
         },
         {
           "env": null,
@@ -67,7 +147,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_it_closes_by_naming_the_next_step"
+          "test": "dev/test_skill_test.py::TestTheNextStep::test_the_shipped_closing_section_directs_every_outcome"
         },
         {
           "env": null,
@@ -75,7 +155,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_a_copy_with_no_closing_section_is_refused"
+          "test": "dev/test_skill_test.py::TestTheNextStep::test_a_copy_with_no_closing_section_is_reported"
         },
         {
           "env": null,
@@ -83,7 +163,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_a_copy_with_no_directive_is_refused"
+          "test": "dev/test_skill_test.py::TestTheNextStep::test_a_copy_with_no_arrow_in_the_closing_section_is_reported"
         },
         {
           "env": null,
@@ -91,7 +171,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_a_copy_with_one_outcome_is_refused"
+          "test": "dev/test_skill_test.py::TestTheNextStep::test_a_copy_cut_after_the_first_outcome_is_reported"
         },
         {
           "env": null,
@@ -99,7 +179,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_a_row_with_no_directive_is_refused"
+          "test": "dev/test_skill_test.py::TestTheNextStep::test_a_copy_with_one_outcome_undirected_is_reported"
         },
         {
           "env": null,
@@ -107,7 +187,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_it_stays_under_its_ceiling"
+          "test": "dev/test_skill_test.py::TestTheCeiling::test_the_shipped_skill_is_at_most_120_lines"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skill_test.py::TestTheCeiling::test_a_copy_of_exactly_120_lines_is_not_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skill_test.py::TestTheCeiling::test_a_copy_of_121_lines_is_reported_with_its_count"
         },
         {
           "env": null,
@@ -115,7 +211,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_it_names_the_evidence_the_commits_and_the_ending"
+          "test": "dev/test_skill_test.py::TestTheEvidenceAndTheEnding::test_the_shipped_skill_names_the_two_files_the_run_writes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_test.py::TestTheEvidenceAndTheEnding::test_the_shipped_skill_names_the_two_commits_in_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_test.py::TestTheEvidenceAndTheEnding::test_the_shipped_skill_names_the_two_lines_a_commit_prints"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_test.py::TestTheEvidenceAndTheEnding::test_the_shipped_skill_says_it_never_pushes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_test.py::TestTheEvidenceAndTheEnding::test_the_shipped_skill_says_the_run_ends_on_the_summary"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_test.py::TestTheEvidenceAndTheEnding::test_the_shipped_skill_says_the_first_line_left_is_the_next_step"
         },
         {
           "env": null,
@@ -123,7 +259,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_a_copy_without_the_first_commit_is_refused"
+          "test": "dev/test_skill_test.py::TestTheEvidenceAndTheEnding::test_a_copy_without_the_first_commit_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_test.py::TestTheEvidenceAndTheEnding::test_a_copy_with_the_two_commits_swapped_is_reported"
         },
         {
           "env": null,
@@ -131,7 +275,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_a_copy_without_the_next_step_is_refused"
+          "test": "dev/test_skill_test.py::TestTheEvidenceAndTheEnding::test_a_copy_without_the_next_step_sentence_is_reported"
         },
         {
           "env": null,
@@ -139,15 +283,55 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_it_says_what_a_run_with_no_feature_named_runs"
+          "test": "dev/test_skill_test.py::TestARunWithNoFeatureNamed::test_the_shipped_usage_lists_all"
         },
         {
           "env": null,
-          "id": "PROOF-6",
+          "id": "PROOF-38",
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_a_selection_paragraph_broken_is_refused"
+          "test": "dev/test_skill_test.py::TestARunWithNoFeatureNamed::test_the_shipped_paragraph_gives_the_four_reasons"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_test.py::TestARunWithNoFeatureNamed::test_the_shipped_paragraph_runs_only_the_test_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_test.py::TestARunWithNoFeatureNamed::test_the_shipped_paragraph_carries_the_whole_nothing_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_test.py::TestARunWithNoFeatureNamed::test_a_copy_without_all_in_the_usage_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_test.py::TestARunWithNoFeatureNamed::test_a_copy_with_the_nothing_line_moved_to_the_end_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_test.py::TestARunWithNoFeatureNamed::test_a_copy_whose_untracked_reason_names_no_scope_is_reported"
         },
         {
           "env": null,
@@ -155,7 +339,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_it_says_what_to_do_when_the_run_stops"
+          "test": "dev/test_skill_test.py::TestARunThatStopsBeforeAnyTest::test_the_shipped_row_for_a_suggestion_asks_writes_and_runs_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skill_test.py::TestARunThatStopsBeforeAnyTest::test_the_shipped_row_for_no_tool_reads_proposes_and_runs_again"
         },
         {
           "env": null,
@@ -163,7 +355,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skill_test.py::TestSkillTest::test_a_stop_section_without_the_tool_is_refused"
+          "test": "dev/test_skill_test.py::TestARunThatStopsBeforeAnyTest::test_a_copy_whose_suggestion_row_names_no_tool_is_reported"
         }
       ],
       "rules": {

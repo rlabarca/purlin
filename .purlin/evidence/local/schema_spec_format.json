@@ -2,13 +2,13 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:47Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
         "code": "dcbb44c5e1185039b50192a053bfddb0e38f6ef8ebae23a95bff14af48db4a7e",
-        "spec": "8120e91c623af70dfd49526bc4813afd0954268b0f04e1f12f45ccb93d7d0a2e",
-        "tests": "d060f58606f99b20934a740171fd287bde307165e8d09a40d5389da84cca7414"
+        "spec": "5a0c9445e694dcf6fe1c29488bf76c9aa32ea09e9812474e5d88e290231e86bc",
+        "tests": "c096b08005521ff82e2985fc777240cb2d380284f4d2cc237f670ff75af2b251"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -19,7 +19,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatReference::test_format_documents_two_sections"
+          "test": "dev/test_schema_spec_format.py::test_the_format_reference_names_two_sections_and_no_third"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_schema_spec_format.py::test_a_spec_with_a_heading_the_format_does_not_name_is_read_and_nothing_is_reported"
         },
         {
           "env": null,
@@ -27,7 +35,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_unnumbered_rule_triggers_warning"
+          "test": "dev/test_schema_spec_format.py::test_a_rule_line_with_no_id_is_reported_as_not_numbered"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_schema_spec_format.py::test_a_gap_in_the_rule_numbers_is_reported_as_nothing"
         },
         {
           "env": null,
@@ -35,15 +51,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatConventions::test_all_proof_lines_match_pattern"
+          "test": "dev/test_schema_spec_format.py::test_every_proof_line_of_this_project_names_a_proof_and_its_rule"
         },
         {
           "env": null,
-          "id": "PROOF-3",
+          "id": "PROOF-15",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatConventions::test_a_proof_line_names_one_rule_or_several"
+          "test": "dev/test_schema_spec_format.py::test_a_proof_line_naming_one_rule_is_a_proof_of_that_rule_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_schema_spec_format.py::test_a_proof_line_naming_two_rules_is_a_proof_of_both"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_schema_spec_format.py::test_a_proof_line_naming_no_rule_is_not_read_as_a_proof"
         },
         {
           "env": null,
@@ -51,7 +83,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_a_rule_with_no_proof_line_reads_no_proof_written"
+          "test": "dev/test_schema_spec_format.py::test_a_rule_with_no_proof_line_and_no_test_reads_no_proof_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_schema_spec_format.py::test_a_rule_with_a_proof_line_and_no_test_reads_no_test_without_the_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_schema_spec_format.py::test_a_rule_with_no_proof_line_is_answered_by_a_passing_test_marked_with_its_id"
         },
         {
           "env": null,
@@ -59,7 +107,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_requires_includes_referenced_rules"
+          "test": "dev/test_schema_spec_format.py::test_the_rules_of_a_required_anchor_are_labelled_required"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_schema_spec_format.py::test_two_required_names_are_read_in_the_order_written_after_the_own_rules"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_schema_spec_format.py::test_a_required_name_no_spec_carries_adds_no_rule"
         },
         {
           "env": null,
@@ -67,15 +131,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_scope_metadata_parsed"
+          "test": "dev/test_schema_spec_format.py::test_the_scope_is_read_as_a_list_of_its_paths"
         },
         {
           "env": null,
-          "id": "PROOF-6",
+          "id": "PROOF-22",
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatEnforcement::test_the_fingerprint_hashes_exactly_the_scoped_files"
+          "test": "dev/test_schema_spec_format.py::test_the_scope_keeps_the_order_written_and_is_not_sorted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_schema_spec_format.py::test_an_edit_outside_the_scope_leaves_the_code_fingerprint_unchanged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_schema_spec_format.py::test_an_edit_inside_the_scope_changes_the_code_fingerprint"
         },
         {
           "env": null,
@@ -83,7 +163,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatConventions::test_spec_headings_use_correct_prefix"
+          "test": "dev/test_schema_spec_format.py::test_every_first_level_heading_of_this_project_names_a_feature_or_an_anchor"
         },
         {
           "env": null,
@@ -91,7 +171,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_schema_spec_format.py::TestSpecFormatMultilineDescription::test_multiline_description_continuation"
+          "test": "dev/test_schema_spec_format.py::test_the_description_takes_its_continuation_and_not_the_next_field"
         },
         {
           "env": null,
@@ -99,15 +179,95 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_schema_spec_format.py::TestTagParsing::test_prose_ending_in_an_at_word_is_not_a_tag"
+          "test": "dev/test_schema_spec_format.py::test_a_trailing_manual_tag_is_read"
         },
         {
           "env": null,
-          "id": "PROOF-9",
+          "id": "PROOF-25",
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_schema_spec_format.py::TestTagParsing::test_real_spec_is_parsed_correctly"
+          "test": "dev/test_schema_spec_format.py::test_manual_then_env_is_read_as_manual_on_that_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_env_then_manual_reads_the_same_as_the_other_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_a_trailing_at_word_that_is_not_a_tag_is_left_in_the_text"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_an_at_word_that_is_not_a_tag_stops_the_reading"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_an_at_word_after_a_comma_is_prose"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_an_at_word_after_or_is_prose"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_an_at_word_after_and_is_prose"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_of_two_env_tags_the_last_written_is_the_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_a_doubled_manual_tag_reads_as_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_a_spec_proof_with_commas_in_its_prose_keeps_its_trailing_env_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_a_spec_proof_quoting_tags_mid_sentence_carries_no_tag"
         },
         {
           "env": null,
@@ -115,7 +275,71 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
-          "test": "dev/test_schema_spec_format.py::TestTagParsing::test_env_takes_three_values_and_nothing_else"
+          "test": "dev/test_schema_spec_format.py::test_env_windows_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_schema_spec_format.py::test_env_macos_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_schema_spec_format.py::test_env_linux_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_schema_spec_format.py::test_a_runner_name_is_not_an_operating_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_schema_spec_format.py::test_a_distribution_name_is_not_an_operating_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_schema_spec_format.py::test_a_capitalised_system_name_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_schema_spec_format.py::test_a_bare_windows_tag_sets_no_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_schema_spec_format.py::test_a_manual_tag_carrying_a_value_still_reads_as_manual"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_schema_spec_format.py::test_another_at_word_carrying_a_value_is_not_read"
         },
         {
           "env": null,
@@ -123,7 +347,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-11",
-          "test": "dev/test_schema_spec_format.py::TestAnchorNoteMetadata::test_note_field_is_ignored_by_the_parser"
+          "test": "dev/test_schema_spec_format.py::test_note_lines_are_ignored_by_the_parser"
         },
         {
           "env": null,
@@ -131,7 +355,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_schema_spec_format.py::TestAnchorNoteMetadata::test_the_section_headings_are_read_in_any_case"
+          "test": "dev/test_schema_spec_format.py::test_the_section_headings_are_read_in_any_case"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_schema_spec_format.py::test_a_heading_one_letter_off_is_neither_section"
         }
       ],
       "rules": {

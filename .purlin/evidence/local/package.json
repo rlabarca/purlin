@@ -2,13 +2,13 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:47Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
         "code": "cc2e82f31ac92eb994c224aa1eaccef30d7d70af729b8ce3af31569ca0c31ae8",
-        "spec": "cfca205c658ff07f18575d72505762be481092579592fbb6da7e2bdaa76c39da",
-        "tests": "430bfc808a13b9fe671aff9ed37d170cba7fad371767cf91c204a41366c2804b"
+        "spec": "217c1af40348eac973207780d97f31827f12eba38a58ecdc9bbbb928e0c2a5b3",
+        "tests": "f4f4a3b791dd5d731f5f1eee0b2242d64371853e00c965b490f456e5a2bbbbfc"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -52,6 +52,14 @@
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_export.py::TestTheFile::test_the_top_level_keys_come_in_the_format_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_export.py::TestTheFile::test_a_code_change_committed_after_the_evidence_is_the_commit_named"
         },
         {
           "env": null,
@@ -199,6 +207,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_export.py::TestWhatGitHolds::test_a_signature_not_committed_is_left_out_and_named"
+        },
+        {
+          "env": null,
           "id": "PROOF-13",
           "manual": false,
           "result": "pass",
@@ -231,6 +247,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_export.py::TestTheFingerprint::test_the_fingerprint_is_the_sha256_of_the_file_with_it_emptied"
+        },
+        {
+          "env": null,
           "id": "PROOF-17",
           "manual": false,
           "result": "pass",
@@ -239,11 +263,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-10",
+          "id": "PROOF-33",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_export.py::TestTheFile::test_commit_commits_the_file_as_evidence_and_once"
+          "rule": "RULE-9",
+          "test": "dev/test_export.py::TestTheFingerprint::test_check_refuses_carriage_returns_before_each_newline"
         },
         {
           "env": null,
@@ -251,7 +275,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
-          "test": "dev/test_export.py::TestTheFile::test_commit_leaves_a_change_staged_elsewhere_out"
+          "test": "dev/test_export.py::TestCommitting::test_commit_commits_the_package_as_evidence_at_head"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_export.py::TestCommitting::test_a_second_commit_over_the_same_evidence_is_unchanged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_export.py::TestCommitting::test_commit_leaves_a_change_staged_elsewhere_out"
         }
       ],
       "rules": {

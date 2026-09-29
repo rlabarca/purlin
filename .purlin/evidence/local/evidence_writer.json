@@ -2,13 +2,13 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:46Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
         "code": "6530d8ea0ca8cc2afee0a4779a1acdd4e1cb47d0ae16bdd793efeb781e466e3f",
-        "spec": "9514958539de60ca599d6700d0d44207a3703aea70305429cdda3db4b5b05f64",
-        "tests": "d56400afe904efc43ec648e49645aed185628bc1eec7b2e3c519d723ce9c440b"
+        "spec": "e303fbcce6cbe2c5c33667539cdc69d673a49fcc0fa3d732aef80723a2cc3ba7",
+        "tests": "410209212a26d5441163052584bf37b342bccea15d3439e7bfad66a0e82b6201"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -35,7 +35,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_evidence_writer.py::test_a_changed_tree_is_dirty_and_the_runner_is_the_email_slug"
+          "test": "dev/test_evidence_writer.py::test_a_changed_tree_is_dirty"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_evidence_writer.py::test_the_runner_is_the_slug_of_the_git_email"
         },
         {
           "env": null,
@@ -171,7 +179,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_evidence_writer.py::test_a_run_replaces_only_its_own_section"
+          "test": "dev/test_evidence_writer.py::test_a_run_writes_its_section_beside_the_others_as_they_were"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_evidence_writer.py::test_a_run_replaces_its_own_section_and_no_other"
         },
         {
           "env": null,
@@ -179,7 +195,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_evidence_writer.py::test_a_rule_the_spec_dropped_is_dropped_from_the_file"
+          "test": "dev/test_evidence_writer.py::test_a_section_write_drops_the_rules_the_spec_dropped"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_evidence_writer.py::test_an_audit_write_drops_the_rules_the_spec_dropped"
         },
         {
           "env": null,
@@ -191,11 +215,19 @@
         },
         {
           "env": null,
-          "id": "PROOF-6",
+          "id": "PROOF-57",
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_evidence_writer.py::test_a_feature_run_and_an_audit_run_remove_it_too"
+          "test": "dev/test_evidence_writer.py::test_a_feature_run_removes_the_evidence_of_a_feature_with_no_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_evidence_writer.py::test_an_audit_run_removes_the_evidence_of_a_feature_with_no_spec"
         },
         {
           "env": null,
@@ -203,7 +235,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_evidence_writer.py::test_a_run_that_saw_the_same_thing_leaves_the_file_alone"
+          "test": "dev/test_evidence_writer.py::test_a_second_run_that_saw_the_same_thing_leaves_the_file_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_evidence_writer.py::test_a_section_that_differs_only_in_when_it_ran_is_not_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_evidence_writer.py::test_a_section_that_saw_a_failure_replaces_the_one_on_disk"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_evidence_writer.py::test_a_section_over_another_fingerprint_replaces_the_one_on_disk"
         },
         {
           "env": null,
@@ -355,11 +411,19 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_evidence_writer.py::test_neither_the_evidence_nor_the_table_is_ignored"
+          "test": "dev/test_evidence_writer.py::test_the_ignore_lines_init_gives_name_neither_file"
         },
         {
           "env": null,
-          "id": "PROOF-13",
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_evidence_writer.py::test_this_repositorys_own_ignore_file_names_neither_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
@@ -371,7 +435,63 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_evidence_writer.py::test_a_repeated_entry_keeps_its_time_and_a_new_model_replaces_it"
+          "test": "dev/test_evidence_writer.py::test_a_repeated_entry_keeps_its_time_and_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_writer.py::test_an_entry_from_another_model_replaces_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-65",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_writer.py::test_an_entry_with_another_rule_hash_replaces_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_writer.py::test_an_entry_with_another_proof_hash_replaces_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_writer.py::test_an_entry_with_another_test_hash_replaces_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_writer.py::test_an_entry_with_another_verdict_replaces_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_writer.py::test_an_entry_with_other_findings_replaces_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-70",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_writer.py::test_an_entry_sent_other_criteria_replaces_it"
         },
         {
           "env": null,
@@ -379,7 +499,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
-          "test": "dev/test_evidence_writer.py::test_a_rule_with_no_proof_is_answered_by_its_rule_marked_test"
+          "test": "dev/test_evidence_writer.py::test_a_rule_with_no_proof_and_a_passing_marked_test_reads_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_evidence_writer.py::test_a_rule_with_no_proof_and_a_failing_marked_test_reads_failed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_evidence_writer.py::test_a_rule_with_no_proof_and_no_marked_test_reads_no_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_evidence_writer.py::test_a_rule_with_no_proof_and_one_failing_marked_test_of_two_fails"
         },
         {
           "env": null,
@@ -395,7 +539,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-16",
-          "test": "dev/test_evidence_writer.py::test_a_host_with_no_name_is_the_machine_unknown"
+          "test": "dev/test_evidence_writer.py::test_a_run_on_a_host_with_no_name_names_the_machine_unknown"
         },
         {
           "env": null,

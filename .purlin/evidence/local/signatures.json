@@ -2,13 +2,13 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:47Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
-        "code": "599893e03c0b77471a0dc2343c9caf2af141bbe39ddd664b95bba5ff895ae707",
-        "spec": "2b6073c0797828daf6224072422f9ca616d541006493ef99dcabd5d1909f08b5",
-        "tests": "524ee7e363b7078e33ade5ada2834d4250cc24274e0201b835a2397f351f9486"
+        "code": "61db9821fb84423f57a262fc5f3d09581a1f770a414fbab15cf4cd5827db46bc",
+        "spec": "190af5353dbe2ba24fd8c7a48e068b387a3d2725205c67136c416e3997b6150d",
+        "tests": "4722c097884c66b3853ab9702bd9af06f73e591cf68728afcd7a442ec297051d"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -71,7 +71,7 @@
         },
         {
           "env": null,
-          "id": "PROOF-5",
+          "id": "PROOF-126",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
@@ -84,6 +84,14 @@
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_signatures.py::TestCurrent::test_a_fresh_signature_is_current"
+        },
+        {
+          "env": null,
+          "id": "PROOF-127",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_signatures.py::TestCurrent::test_a_new_audit_finding_ends_it"
         },
         {
           "env": null,
@@ -156,6 +164,22 @@
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_signatures.py::TestTheFile::test_the_reader_finds_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-128",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_signatures.py::TestTheFile::test_a_copy_anywhere_else_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-129",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_signatures.py::TestTheFile::test_the_copies_alone_are_no_signature"
         },
         {
           "env": null,
@@ -263,6 +287,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-145",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_signatures.py::TestTheNote::test_one_note_goes_on_each_rule_named"
+        },
+        {
+          "env": null,
           "id": "PROOF-17",
           "manual": false,
           "result": "pass",
@@ -295,11 +327,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-130",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_signatures.py::TestWhatIsSigned::test_all_signs_in_the_same_order"
+        },
+        {
+          "env": null,
           "id": "PROOF-30",
           "manual": false,
           "result": "pass",
           "rule": "RULE-16",
-          "test": "dev/test_signatures.py::TestWhatIsSigned::test_a_hand_check_waits_once"
+          "test": "dev/test_signatures.py::TestWhatIsSigned::test_a_bare_feature_signs_a_hand_check_and_a_rule_to_sign"
+        },
+        {
+          "env": null,
+          "id": "PROOF-131",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_signatures.py::TestAnchors::test_all_signs_an_anchor_rule_once"
         },
         {
           "env": null,
@@ -387,7 +435,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-22",
-          "test": "dev/test_signatures.py::TestTheCommandLine::test_help_exits_zero_and_a_bad_option_exits_two"
+          "test": "dev/test_signatures.py::TestTheCommandLine::test_help_exits_zero"
+        },
+        {
+          "env": null,
+          "id": "PROOF-132",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_signatures.py::TestTheCommandLine::test_an_unknown_option_after_a_feature_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-133",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_signatures.py::TestTheCommandLine::test_an_unknown_option_alone_exits_two"
         },
         {
           "env": null,
@@ -399,11 +463,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-63",
+          "id": "PROOF-134",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_signatures.py::TestTheFile::test_the_evidence_it_names_is_the_file_the_run_wrote"
+          "rule": "RULE-23",
+          "test": "dev/test_signatures.py::TestAnyBranch::test_the_branch_that_does_not_carry_it_is_unsigned"
         },
         {
           "env": null,
@@ -411,7 +475,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-42",
-          "test": "dev/test_signatures.py::TestTheFile::test_a_written_signature_names_the_ci_file_or_none"
+          "test": "dev/test_signatures.py::TestTheFile::test_the_local_file_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-135",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_signatures.py::TestTheFile::test_the_local_file_comes_before_the_ci_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-136",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_signatures.py::TestTheFile::test_the_ci_file_is_named_when_it_is_the_only_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-137",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_signatures.py::TestTheFile::test_no_evidence_file_names_none"
         },
         {
           "env": null,
@@ -419,23 +507,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-43",
-          "test": "dev/test_tag.py::TestTheAuditHash::test_it_reads_the_evidence_and_nothing_that_moves_on_its_own"
+          "test": "dev/test_tag.py::TestTheAuditHash::test_what_moves_on_its_own_does_not_move_it"
         },
         {
           "env": null,
-          "id": "PROOF-64",
+          "id": "PROOF-138",
           "manual": false,
           "result": "pass",
           "rule": "RULE-43",
-          "test": "dev/test_tag.py::TestTheAuditHash::test_no_entry_hashes_the_empty_string"
+          "test": "dev/test_tag.py::TestTheAuditHash::test_a_weak_verdict_with_a_finding_moves_it"
         },
         {
           "env": null,
-          "id": "PROOF-64",
+          "id": "PROOF-139",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_tag.py::TestTheAuditHash::test_an_undecided_verdict_moves_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-140",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_tag.py::TestTheAuditHash::test_another_test_strength_moves_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-141",
           "manual": false,
           "result": "pass",
           "rule": "RULE-43",
           "test": "dev/test_tag.py::TestTheAuditHash::test_the_order_of_the_findings_does_not_move_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-142",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_tag.py::TestTheAuditHash::test_no_entry_hashes_the_empty_string"
         },
         {
           "env": null,
@@ -719,11 +831,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-143",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_signatures.py::TestWhatIsSigned::test_a_bare_feature_with_nothing_waiting_says_so_and_ends"
+        },
+        {
+          "env": null,
           "id": "PROOF-125",
           "manual": false,
           "result": "pass",
           "rule": "RULE-64",
           "test": "dev/test_signatures.py::TestWhatIsSigned::test_a_rule_no_spec_has_is_named_and_nothing_is_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-144",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_signatures.py::TestWhatIsSigned::test_the_rules_beside_one_no_spec_has_are_signed"
         }
       ],
       "rules": {

@@ -2,13 +2,13 @@
   "feature": "purlin_version",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:47Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
-        "code": "5c43b014b5bb87d408d273753ef5e39c7a7dac7dfc0dbf666e68e102cffcf5fd",
-        "spec": "792c8182b3c065f917bfe8d20d7e68e399745f43d1a78e8a00cfc237190fb434",
-        "tests": "4fb6d26d9498024b6591bb69242df13948d7eb960ff121d61482d314b42fa3a0"
+        "code": "a81b8d37aac467b2752f7fe6590fa8ca3221f8948ac18d375b8fc58fe173676a",
+        "spec": "56524cdb98698554f194214cdeca849d997c2cb2f551771ea7d4b960e6f6e3ef",
+        "tests": "e4004522f4a5e6f161ba2966d8d07b88cc0e0f7b28e3e565adfbf7392b70f289"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -19,7 +19,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_purlin_version.py::TestVersionFileSemver::test_version_file_exists_and_is_valid_semver"
+          "test": "dev/test_purlin_version.py::test_the_version_file_holds_one_version"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_purlin_version.py::test_a_version_with_whitespace_at_either_end_passes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_purlin_version.py::test_an_empty_version_file_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_purlin_version.py::test_two_numbers_are_not_a_version"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_purlin_version.py::test_a_letter_before_the_numbers_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_purlin_version.py::test_two_versions_on_two_lines_fail"
         },
         {
           "env": null,
@@ -27,7 +67,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_purlin_version.py::TestServerReadsVersionFromFile::test_the_package_reads_the_version_from_the_file"
+          "test": "dev/test_purlin_version.py::test_a_copied_package_reports_the_version_file_beside_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_purlin_version.py::test_the_copied_server_names_that_version_on_the_handshake"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_purlin_version.py::test_with_no_version_file_the_package_and_server_report_zero"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_purlin_version.py::test_this_checkout_reports_its_own_version_file"
         },
         {
           "env": null,
@@ -35,7 +99,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_purlin_version.py::TestTemplateVersionMatchesVersionFile::test_template_config_version_matches_version_file"
+          "test": "dev/test_purlin_version.py::test_the_settings_template_carries_the_version_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_purlin_version.py::test_a_template_with_no_version_key_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_purlin_version.py::test_a_template_left_at_an_old_version_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_purlin_version.py::test_a_project_init_sets_up_is_stamped_with_the_version_file"
         },
         {
           "env": null,
@@ -43,7 +131,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_purlin_version.py::TestNoHardcodedVersionInServer::test_no_hardcoded_version_strings_in_the_package"
+          "test": "dev/test_purlin_version.py::test_the_package_carries_no_version_literal"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_purlin_version.py::test_a_version_literal_added_to_a_module_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_purlin_version.py::test_a_version_on_a_whole_line_comment_is_not_found"
         },
         {
           "env": null,
@@ -51,7 +155,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_purlin_version.py::TestPluginManifestVersionMatchesVersionFile::test_plugin_manifest_version_matches_version_file"
+          "test": "dev/test_purlin_version.py::test_the_plugin_manifest_carries_the_version_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_purlin_version.py::test_a_manifest_with_no_version_key_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_purlin_version.py::test_a_manifest_left_at_an_old_version_fails"
         },
         {
           "env": null,
@@ -59,7 +179,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_purlin_version.py::TestProjectConfigVersionMatchesVersionFile::test_project_config_version_matches_version_file"
+          "test": "dev/test_purlin_version.py::test_this_repositorys_settings_carry_the_version_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_purlin_version.py::test_settings_with_no_version_key_fail"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_purlin_version.py::test_settings_left_at_an_old_version_fail"
         },
         {
           "env": null,
@@ -67,15 +203,55 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_purlin_version.py::TestBumpVersionScriptPropagatesAndDetectsDrift::test_bump_propagates_everywhere_and_check_reports_drift"
+          "test": "dev/test_purlin_version.py::test_the_bump_writes_the_version_everywhere"
         },
         {
           "env": null,
-          "id": "PROOF-7",
+          "id": "PROOF-28",
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_purlin_version.py::TestBumpVersionScriptPropagatesAndDetectsDrift::test_bump_rejects_non_semver_and_tolerates_absent_optional_file"
+          "test": "dev/test_purlin_version.py::test_the_check_passes_a_project_that_agrees"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_purlin_version.py::test_the_check_names_the_location_that_drifted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_purlin_version.py::test_the_check_names_a_location_with_no_version_key"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_purlin_version.py::test_the_bump_refuses_a_non_version_and_writes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_purlin_version.py::test_the_bump_skips_absent_settings_without_creating_them"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_purlin_version.py::test_the_check_reports_absent_settings_and_passes"
         },
         {
           "env": null,
@@ -83,7 +259,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_purlin_version.py::TestDocsCiteVersionFileInsteadOfALiteral::test_config_version_field_docs_carry_no_semver_literal"
+          "test": "dev/test_purlin_version.py::test_the_one_version_row_names_the_version_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_version.py::test_no_second_copy_of_the_version_row_exists"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_version.py::test_a_version_row_added_to_a_skill_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_version.py::test_the_version_row_restating_a_number_is_found"
         }
       ],
       "rules": {

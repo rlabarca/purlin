@@ -2,13 +2,13 @@
   "feature": "skill_export",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:47Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
         "code": "08f3e7a0ee4b8961b3d9aa216372743a19d0d0564cc0d82d600b8a85cb3ce69c",
-        "spec": "c8e58a155cb06b7088d08d6477af9daccb7ac712365f094ffdc3b2e57641873e",
-        "tests": "f773d369d956bc29b7ed337ec3e9506f133fd11ec338d3d7594468b7ea41cd27"
+        "spec": "d24aca42faf494d9a0c0656f4383acb59e2848108d4510829eb2236544e44f77",
+        "tests": "7802d209a8eee53c7db00ae6df9b9af0cf38dedaaf9e3f202f3091bff266fef7"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -19,15 +19,63 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skill_export.py::TestSkillExport::test_the_frontmatter_names_the_skill"
+          "test": "dev/test_skill_export.py::TestSkillExport::test_the_frontmatter_names_the_skill_on_one_line"
         },
         {
           "env": null,
-          "id": "PROOF-1",
+          "id": "PROOF-14",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skill_export.py::TestSkillExport::test_a_broken_frontmatter_is_refused"
+          "test": "dev/test_skill_export.py::TestSkillExport::test_the_command_reference_has_a_row_for_export"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_skill_without_its_name_line_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_an_empty_description_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_description_on_the_line_below_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_description_written_as_a_block_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_description_run_on_to_a_second_line_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_command_reference_without_the_row_is_refused"
         },
         {
           "env": null,
@@ -35,15 +83,39 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_export.py::TestSkillExport::test_it_runs_the_script_in_each_form"
+          "test": "dev/test_skill_export.py::TestSkillExport::test_each_form_of_the_command_has_a_line"
         },
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-21",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_export.py::TestSkillExport::test_a_missing_form_or_run_line_is_refused"
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_line_runs_the_export_script"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_skill_without_the_bare_form_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_skill_without_the_check_form_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_skill_that_only_names_the_script_is_refused"
         },
         {
           "env": null,
@@ -55,11 +127,35 @@
         },
         {
           "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_it_calls_the_package_evidence_for_review"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_skill_that_drops_the_no_claim_sentence_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-4",
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skill_export.py::TestSkillExport::test_it_names_the_two_states"
+          "test": "dev/test_skill_export.py::TestSkillExport::test_the_table_of_states_names_the_two_states"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_the_not_finished_row_says_left_holds_left_to_do"
         },
         {
           "env": null,
@@ -67,7 +163,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skill_export.py::TestSkillExport::test_a_state_row_that_drops_left_to_do_is_refused"
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_not_finished_row_without_left_to_do_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_table_of_states_without_not_finished_is_refused"
         },
         {
           "env": null,
@@ -75,7 +179,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_export.py::TestSkillExport::test_it_closes_by_naming_the_next_step"
+          "test": "dev/test_skill_export.py::TestSkillExport::test_the_last_heading_names_the_next_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_each_stop_short_names_the_next_step"
         },
         {
           "env": null,
@@ -87,11 +199,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_every_outcome_row_gives_a_directive"
+        },
+        {
+          "env": null,
           "id": "PROOF-8",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_skill_export.py::TestSkillExport::test_a_skill_without_its_closing_section_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_closing_heading_of_when_you_are_done_is_refused"
         },
         {
           "env": null,
@@ -132,6 +260,22 @@
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_skill_export.py::TestSkillExport::test_it_stays_under_its_ceiling"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_skill_of_91_lines_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_a_skill_of_exactly_90_lines_passes"
         }
       ],
       "rules": {

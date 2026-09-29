@@ -2,13 +2,13 @@
   "feature": "security_no_dangerous_patterns",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:47Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
-        "code": "62b178e2915fd91792f7ff6eb9deaf47def2e2fe7e201afe7b6b063e356de8bd",
-        "spec": "a5cc3d2893224cf1d77d905ac099955a4c85ddb02c465f55d224fde42a526e47",
-        "tests": "6932336be1d1e3ab818fb006fef67afdd3eedc05554eaacf8125832439c4ce57"
+        "code": "a5075a8ab262cae2f6e4a3a1272eabb437a4c0aa650c685a24dccfc4e07758f6",
+        "spec": "d374b443292ab3bedb49c467de09c39517474ab2c0253121b2fdd49b113f8270",
+        "tests": "0fa28fc8d06c760ffa0faa8f69a25a436c86b73a38551d14925f1127f46adf7c"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -19,15 +19,87 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_no_dynamic_code_execution"
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_no_file_under_scripts_runs_a_string_as_code"
         },
         {
           "env": null,
-          "id": "PROOF-1",
+          "id": "PROOF-14",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_planted_dynamic_code_is_found"
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_python_eval_and_exec_are_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_shell_eval_where_a_command_starts_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_shell_backticks_are_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_javascript_forms_are_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_typescript_forms_are_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_php_forms_are_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_csharp_process_start_given_a_quoted_command_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_csharp_process_start_given_a_name_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_a_comment_only_line_naming_a_form_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_security.py::TestRule1RunsNoStringAsCode::test_a_word_that_only_contains_a_form_is_not_counted"
         },
         {
           "env": null,
@@ -35,15 +107,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_no_shell_true"
+          "test": "dev/test_security.py::TestRule2OptsNoSubprocessIntoAShell::test_no_file_under_scripts_asks_for_a_shell"
         },
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-24",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_planted_shell_opt_in_is_found"
+          "test": "dev/test_security.py::TestRule2OptsNoSubprocessIntoAShell::test_python_shell_true_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_security.py::TestRule2OptsNoSubprocessIntoAShell::test_a_comment_writing_shell_true_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_security.py::TestRule2OptsNoSubprocessIntoAShell::test_javascript_and_typescript_shell_true_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_security.py::TestRule2OptsNoSubprocessIntoAShell::test_csharp_use_shell_execute_true_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_security.py::TestRule2OptsNoSubprocessIntoAShell::test_a_shell_turned_off_is_not_counted"
         },
         {
           "env": null,
@@ -51,15 +155,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_no_os_system"
+          "test": "dev/test_security.py::TestRule3CallsNoShellBuiltin::test_no_file_under_scripts_calls_the_shell_builtin"
         },
         {
           "env": null,
-          "id": "PROOF-3",
+          "id": "PROOF-29",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_planted_system_call_is_found"
+          "test": "dev/test_security.py::TestRule3CallsNoShellBuiltin::test_python_os_system_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_security.py::TestRule3CallsNoShellBuiltin::test_php_system_and_passthru_are_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_security.py::TestRule3CallsNoShellBuiltin::test_a_comment_only_line_naming_the_builtin_is_not_counted"
         },
         {
           "env": null,
@@ -67,7 +187,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_no_hardcoded_credentials"
+          "test": "dev/test_security.py::TestRule4AssignsNoCredential::test_no_file_under_scripts_assigns_a_credential"
         },
         {
           "env": null,
@@ -75,7 +195,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_planted_credential_is_found"
+          "test": "dev/test_security.py::TestRule4AssignsNoCredential::test_a_credential_given_with_an_equals_sign_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_security.py::TestRule4AssignsNoCredential::test_a_credential_field_in_javascript_or_typescript_is_found"
         },
         {
           "env": null,
@@ -83,7 +211,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_an_empty_value_a_comparison_or_a_test_file_is_not_counted"
+          "test": "dev/test_security.py::TestRule4AssignsNoCredential::test_an_empty_value_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_security.py::TestRule4AssignsNoCredential::test_a_comparison_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_security.py::TestRule4AssignsNoCredential::test_a_file_named_test_is_not_counted"
         },
         {
           "env": null,
@@ -91,15 +235,103 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_subprocess_uses_list_args"
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_no_launch_under_scripts_is_handed_a_command_string"
         },
         {
           "env": null,
-          "id": "PROOF-5",
+          "id": "PROOF-35",
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_security.py::TestSecurityPatterns::test_planted_command_string_launch_is_found"
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_python_run_not_given_a_list_in_place_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_python_run_given_a_list_or_a_star_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_python_popen_given_a_string_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_python_popen_given_a_name_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_a_launch_imported_by_name_given_a_string_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_a_launch_imported_by_name_given_a_list_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_php_proc_open_given_a_string_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_php_proc_open_given_an_array_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_javascript_spawn_without_an_args_array_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_javascript_spawn_with_an_args_array_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_csharp_arguments_set_to_a_string_is_found"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_security.py::TestRule5LaunchesWithAnArgumentVector::test_csharp_argument_list_is_not_counted"
         },
         {
           "env": null,
@@ -107,7 +339,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_security.py::TestGitArgvHardening::test_a_hostile_source_is_refused_before_any_command"
+          "test": "dev/test_security.py::TestGitArgvHardening::test_a_source_beginning_with_a_dash_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_security.py::TestGitArgvHardening::test_a_source_naming_the_ext_transport_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_security.py::TestGitArgvHardening::test_a_source_naming_the_fd_transport_is_refused"
         },
         {
           "env": null,

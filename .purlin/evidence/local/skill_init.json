@@ -2,13 +2,13 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:38Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:47Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
         "code": "c8cd42b143e0d20b514c3cc9598df7238caf134c33b3ec53057c644831d5364c",
-        "spec": "789709cdba4deb4e2517b5f9aa18a39eb797d5298224b8d801f80862c45ddc1d",
-        "tests": "904a23da004709daa8329e2dcf67a9b2af1b3de02a32494b3d99d803f9c3603a"
+        "spec": "b7ba2489fb3f6a51bec9c34f64ef17d2ffdac766fa9396c092ab26bd2fe354c3",
+        "tests": "21f6c132536220b0d10ec48757e61cff564c226fc993cc3d14ff8eb8b9224c2b"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -19,15 +19,63 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_the_frontmatter_names_the_skill"
+          "test": "dev/test_skill_init.py::TestFrontmatter::test_the_frontmatter_names_the_skill_on_one_line"
         },
         {
           "env": null,
-          "id": "PROOF-1",
+          "id": "PROOF-16",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_a_broken_frontmatter_is_refused"
+          "test": "dev/test_skill_init.py::TestFrontmatter::test_the_command_reference_has_a_row_for_init"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_init.py::TestFrontmatter::test_a_copy_with_no_name_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_init.py::TestFrontmatter::test_a_copy_with_an_empty_description_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_init.py::TestFrontmatter::test_a_copy_with_the_description_on_the_next_line_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_init.py::TestFrontmatter::test_a_copy_with_a_block_description_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_init.py::TestFrontmatter::test_a_copy_with_a_description_of_two_lines_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_init.py::TestFrontmatter::test_a_command_reference_with_no_init_row_is_refused"
         },
         {
           "env": null,
@@ -35,7 +83,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_it_runs_the_scaffold_script"
+          "test": "dev/test_skill_init.py::TestRunLine::test_one_line_runs_the_script_with_the_root_and_the_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_init.py::TestRunLine::test_the_six_flags_are_handed_to_the_reader"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_init.py::TestRunLine::test_every_flag_handed_is_one_the_script_takes"
         },
         {
           "env": null,
@@ -43,7 +107,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_a_flag_left_out_of_the_table_is_refused"
+          "test": "dev/test_skill_init.py::TestRunLine::test_a_flag_left_out_of_the_table_is_refused"
         },
         {
           "env": null,
@@ -51,7 +115,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_a_flag_the_script_does_not_take_is_refused"
+          "test": "dev/test_skill_init.py::TestRunLine::test_a_flag_the_script_does_not_take_is_refused"
         },
         {
           "env": null,
@@ -59,7 +123,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_a_run_line_without_the_gate_is_refused"
+          "test": "dev/test_skill_init.py::TestRunLine::test_a_run_line_without_the_gate_is_refused"
         },
         {
           "env": null,
@@ -67,15 +131,39 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_it_closes_by_naming_the_next_step"
+          "test": "dev/test_skill_init.py::TestClosingSection::test_it_closes_with_a_directive_for_each_state"
         },
         {
           "env": null,
-          "id": "PROOF-3",
+          "id": "PROOF-25",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_a_broken_closing_section_is_refused"
+          "test": "dev/test_skill_init.py::TestClosingSection::test_a_copy_with_no_closing_section_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_init.py::TestClosingSection::test_a_copy_with_no_arrow_in_its_closing_section_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_init.py::TestClosingSection::test_a_copy_with_one_outcome_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_init.py::TestClosingSection::test_a_copy_with_one_outcome_undirected_is_refused"
         },
         {
           "env": null,
@@ -83,7 +171,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_it_stays_under_its_ceiling"
+          "test": "dev/test_skill_init.py::TestCeiling::test_it_is_at_most_250_lines"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_skill_init.py::TestCeiling::test_a_copy_of_251_lines_is_refused"
         },
         {
           "env": null,
@@ -91,7 +187,55 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_it_names_the_two_questions_in_order"
+          "test": "dev/test_skill_init.py::TestQuestions::test_it_names_the_two_questions_in_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestQuestions::test_the_second_question_is_asked_only_where_it_runs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestQuestions::test_the_gate_table_lists_the_three_answers_in_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_strong_asks_the_two_questions_the_skill_quotes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_passed_asks_only_the_gate"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestQuestions::test_the_gate_question_offers_the_three_gates_in_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestQuestions::test_no_answer_to_the_second_question_leaves_mutation_off"
         },
         {
           "env": null,
@@ -99,7 +243,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_a_third_question_is_refused"
+          "test": "dev/test_skill_init.py::TestQuestions::test_a_third_question_is_refused"
         },
         {
           "env": null,
@@ -107,7 +251,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_a_missing_gate_is_refused"
+          "test": "dev/test_skill_init.py::TestQuestions::test_a_missing_gate_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestQuestions::test_the_questions_out_of_order_are_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestQuestions::test_a_second_question_with_no_default_is_refused"
         },
         {
           "env": null,
@@ -115,7 +275,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_it_shows_the_seven_settings"
+          "test": "dev/test_skill_init.py::TestSettings::test_it_shows_the_seven_settings"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_init.py::TestSettings::test_setup_writes_the_keys_the_skill_shows"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_init.py::TestSettings::test_one_sentence_says_audit_parallel_is_not_asked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_init.py::TestSettings::test_one_sentence_says_it_writes_the_evidence_folder"
         },
         {
           "env": null,
@@ -123,7 +307,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_an_eighth_key_is_refused"
+          "test": "dev/test_skill_init.py::TestSettings::test_an_eighth_key_is_refused"
         },
         {
           "env": null,
@@ -131,7 +315,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_a_stray_sentence_is_refused"
+          "test": "dev/test_skill_init.py::TestSettings::test_a_stray_sentence_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_init.py::TestSettings::test_an_evidence_folder_with_no_readme_is_refused"
         },
         {
           "env": null,
@@ -139,7 +331,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_it_writes_an_empty_tests_setting_and_installs_nothing"
+          "test": "dev/test_skill_init.py::TestTestsSetting::test_it_writes_an_empty_tests_setting_and_installs_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skill_init.py::TestTestsSetting::test_it_points_at_the_two_references"
         },
         {
           "env": null,
@@ -147,7 +347,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skill_init.py::TestSkillInit::test_a_missing_suggestion_sentence_is_refused"
+          "test": "dev/test_skill_init.py::TestTestsSetting::test_a_missing_suggestion_sentence_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skill_init.py::TestTestsSetting::test_a_missing_marker_format_pointer_is_refused"
         }
       ],
       "rules": {

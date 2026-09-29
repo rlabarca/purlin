@@ -2,13 +2,13 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:47Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
         "code": "41f4c0622e5ba070425f7d616334e1811d7bfab50d4a093808c88131d4e042bf",
-        "spec": "f3a4c1ddcee54b3caea5afbd14a41922dea1f9939c76c2df5051598d701f38c6",
-        "tests": "e2a644f51fdf1e214707f94148840b94554e9cd614e8b8c611d19f117e02aa4e"
+        "spec": "b6b84f8b88a5a4604b6e5ac3b429472ac831d68a2b2a09463ac9f2314634df4e",
+        "tests": "8aa4debe983a4375abc9fa1d3f6c8bf163194392345ab7cf7a7865bcf76f71c7"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -19,15 +19,55 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skill_build.py::TestSkillBuild::test_the_frontmatter_names_the_skill"
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_the_frontmatter_names_the_skill_and_the_reference_lists_it"
         },
         {
           "env": null,
-          "id": "PROOF-1",
+          "id": "PROOF-24",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_broken_frontmatter_is_refused"
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_frontmatter_with_no_name_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_an_empty_description_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_an_empty_description_is_not_read_from_the_line_below"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_description_written_as_a_block_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_description_run_onto_a_second_line_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_command_reference_with_no_build_row_is_refused"
         },
         {
           "env": null,
@@ -39,11 +79,27 @@
         },
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-30",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_test_framework_run_directly_is_refused"
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_pytest_in_place_of_the_test_skill_is_refused_twice"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_jest_in_the_usage_block_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_choosing_without_the_state_is_refused"
         },
         {
           "env": null,
@@ -51,7 +107,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_build.py::TestSkillBuild::test_it_closes_by_naming_the_next_step"
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_it_closes_by_naming_the_next_step_for_each_outcome"
         },
         {
           "env": null,
@@ -63,6 +119,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_next_step_named_from_nothing_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-4",
           "manual": false,
           "result": "pass",
@@ -71,11 +135,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-5",
+          "id": "PROOF-34",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_build.py::TestSkillBuild::test_the_commit_body_contract_holds"
+          "rule": "RULE-4",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_one_line_over_the_ceiling_is_refused"
         },
         {
           "env": null,
@@ -83,7 +147,39 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_the_commit_it_asks_for_is_named_in_full"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
           "test": "dev/test_skill_build.py::TestSkillBuild::test_changeset_is_never_left_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_decisions_and_review_are_left_out_when_empty"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_the_conventions_render_a_build_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_conventions_that_let_changeset_be_left_out_are_refused"
         },
         {
           "env": null,
@@ -95,6 +191,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_scope_that_keeps_deleted_files_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-7",
           "manual": false,
           "result": "pass",
@@ -103,11 +207,43 @@
         },
         {
           "env": null,
-          "id": "PROOF-7",
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_its_example_shows_the_marker_above_a_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_rule_with_no_proof_is_marked_with_its_own_id"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_skill_build.py::TestSkillBuild::test_writing_before_looking_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_write_step_not_in_the_projects_framework_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_rule_marker_with_no_reason_is_refused"
         },
         {
           "env": null,
@@ -124,6 +260,14 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_skill_build.py::TestSkillBuild::test_a_repair_with_no_near_miss_line_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_skill_build.py::TestSkillBuild::test_a_repair_after_the_test_run_is_refused"
         },
         {
           "env": null,

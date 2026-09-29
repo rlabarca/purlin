@@ -2,13 +2,13 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:46Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
         "code": "230e1086e5bfeeb0bd0f4457b01c26a2d28f95caccb6f5e90e39b0e5b79f30d4",
-        "spec": "e4eb118a4737e3af631461c8e400d92eb14df28b4a612c3d5197173f208875e2",
-        "tests": "020ee9995cec8ff40b343481915eb26ffb0d93033e53f20df89d07ce47ada05a"
+        "spec": "c33f4adea77d14f5535f019616abb8a341ded9013f1fe13b1d927e2c30118a8c",
+        "tests": "f8dd42bf69faffc29f681fffbda01e409dd99fbf22a7fcb37fd7cab530581e21"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -19,7 +19,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_fingerprint.py::test_a_fingerprint_is_three_hashes_read_from_the_working_tree"
+          "test": "dev/test_fingerprint.py::test_a_fingerprint_is_three_parts_of_64_hex_characters"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_fingerprint.py::test_an_edit_not_committed_changes_the_fingerprint"
         },
         {
           "env": null,
@@ -27,7 +35,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_fingerprint.py::test_a_rule_edit_changes_spec_and_a_description_edit_changes_nothing"
+          "test": "dev/test_fingerprint.py::test_a_reworded_rule_changes_spec_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_fingerprint.py::test_a_rewritten_description_changes_no_part"
         },
         {
           "env": null,
@@ -35,7 +51,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_fingerprint.py::test_a_required_proof_and_a_proof_tag_are_part_of_spec"
+          "test": "dev/test_fingerprint.py::test_a_changed_proof_of_a_required_anchor_changes_spec_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_fingerprint.py::test_manual_added_to_a_proof_changes_spec_alone"
         },
         {
           "env": null,
@@ -55,11 +79,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_fingerprint.py::test_an_anchor_that_is_not_global_leaves_a_feature_that_does_not_name_it"
+        },
+        {
+          "env": null,
           "id": "PROOF-6",
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_fingerprint.py::test_a_scoped_file_edit_changes_code_only"
+          "test": "dev/test_fingerprint.py::test_an_edit_to_a_scoped_file_changes_code_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_fingerprint.py::test_an_edit_to_a_file_outside_the_scope_changes_nothing"
         },
         {
           "env": null,
@@ -67,7 +107,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_fingerprint.py::test_a_scoped_directory_reaches_every_tracked_file_under_it"
+          "test": "dev/test_fingerprint.py::test_a_scoped_folder_reaches_a_tracked_file_one_folder_down"
         },
         {
           "env": null,
@@ -75,7 +115,39 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_fingerprint.py::test_a_glob_scope_changes_when_a_matching_file_changes"
+          "test": "dev/test_fingerprint.py::test_a_glob_reaches_a_matching_file_one_folder_down"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_fingerprint.py::test_a_glob_reaches_a_matching_file_directly_in_its_folder"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_fingerprint.py::test_a_glob_does_not_reach_a_file_it_does_not_match"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_fingerprint.py::test_an_entry_holding_a_question_mark_is_a_glob"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_fingerprint.py::test_an_entry_holding_a_bracket_is_a_glob"
         },
         {
           "env": null,
@@ -83,7 +155,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_fingerprint.py::test_a_scope_entry_that_reaches_nothing_is_listed_as_unmatched"
+          "test": "dev/test_fingerprint.py::test_entries_that_reach_nothing_are_listed_as_unmatched"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_fingerprint.py::test_the_fingerprint_is_taken_over_what_the_other_entries_reach"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_fingerprint.py::test_a_file_git_does_not_track_is_listed_as_unmatched"
         },
         {
           "env": null,
@@ -91,7 +179,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_fingerprint.py::test_a_spec_with_no_scope_names_no_files"
+          "test": "dev/test_fingerprint.py::test_a_spec_with_no_scope_is_incomplete_and_its_code_part_is_empty"
         },
         {
           "env": null,
@@ -99,7 +187,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_fingerprint.py::test_a_marked_test_edit_changes_tests_only"
+          "test": "dev/test_fingerprint.py::test_an_edit_to_a_marked_test_file_changes_tests_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_fingerprint.py::test_a_test_file_marked_for_another_feature_is_not_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_fingerprint.py::test_a_marked_file_no_suite_names_is_not_counted"
         },
         {
           "env": null,
@@ -107,7 +211,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_fingerprint.py::test_markers_of_every_framework_are_read_outside_skipped_folders"
+          "test": "dev/test_fingerprint.py::test_a_javascript_marker_is_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_fingerprint.py::test_a_marked_file_in_a_skipped_folder_is_not_counted"
         },
         {
           "env": null,
@@ -115,7 +227,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_fingerprint.py::test_an_untracked_file_is_reported_and_left_out"
+          "test": "dev/test_fingerprint.py::test_an_untracked_file_changes_no_part"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_fingerprint.py::test_untracked_files_in_the_scope_or_beside_a_marker_file_are_listed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_fingerprint.py::test_a_file_git_ignores_is_not_listed"
         },
         {
           "env": null,
@@ -139,7 +267,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
-          "test": "dev/test_fingerprint.py::test_the_compare_names_the_parts_that_differ_in_order"
+          "test": "dev/test_fingerprint.py::test_the_parts_that_differ_are_named_in_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_fingerprint.py::test_a_missing_stored_fingerprint_differs_on_all_three"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_fingerprint.py::test_a_stored_fingerprint_that_is_text_differs_on_all_three"
+        },
+        {
+          "env": null,
+          "id": "PROOF-50",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_fingerprint.py::test_two_equal_fingerprints_differ_on_no_part"
         },
         {
           "env": null,
@@ -155,7 +307,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_evidence_reader.py::test_a_malformed_file_or_another_schema_is_ignored_with_one_warning"
+          "test": "dev/test_evidence_reader.py::test_a_file_that_is_not_json_is_ignored_with_one_warning"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_evidence_reader.py::test_a_file_that_is_not_an_object_is_ignored_with_one_warning"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_evidence_reader.py::test_a_file_of_another_schema_is_ignored_with_one_warning"
         },
         {
           "env": null,
@@ -183,11 +351,51 @@
         },
         {
           "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_reader.py::test_a_system_that_names_itself_win32_is_windows"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_evidence_reader.py::test_a_system_that_names_itself_darwin_is_macos"
+        },
+        {
+          "env": null,
           "id": "PROOF-21",
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
-          "test": "dev/test_evidence_reader.py::test_a_section_is_current_until_a_part_changes"
+          "test": "dev/test_evidence_reader.py::test_a_section_storing_the_fingerprint_taken_now_is_current"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_evidence_reader.py::test_a_code_edit_puts_the_section_out_of_date_on_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_evidence_reader.py::test_a_code_and_a_rule_edit_put_it_out_of_date_on_spec_and_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_evidence_reader.py::test_a_section_with_no_fingerprint_is_out_of_date_on_all_three"
         },
         {
           "env": null,
@@ -195,7 +403,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-16",
-          "test": "dev/test_evidence_reader.py::test_an_audit_entry_answers_only_while_its_three_hashes_match"
+          "test": "dev/test_evidence_reader.py::test_an_audit_entry_answers_while_its_three_hashes_match"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_reader.py::test_an_audit_entry_for_another_test_hash_does_not_answer"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_reader.py::test_an_audit_entry_for_another_rule_hash_does_not_answer"
+        },
+        {
+          "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_reader.py::test_an_audit_entry_for_another_proof_hash_does_not_answer"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_reader.py::test_a_later_ci_audit_entry_wins"
+        },
+        {
+          "env": null,
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_reader.py::test_a_later_local_audit_entry_wins"
         },
         {
           "env": null,
@@ -203,7 +451,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_evidence_reader.py::test_the_newest_section_across_both_sources"
+          "test": "dev/test_evidence_reader.py::test_with_no_evidence_there_is_no_newest_section"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_evidence_reader.py::test_the_newest_section_is_the_latest_across_both_sources"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_evidence_reader.py::test_local_wins_a_tie_for_the_newest_section"
         },
         {
           "env": null,

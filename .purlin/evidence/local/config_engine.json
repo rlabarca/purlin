@@ -2,13 +2,13 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:36Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:46Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
         "code": "d6a9ff8a0990ffae6f54ff4d0c9f5a55f932bce0dbca276bee593fe14edbd07c",
-        "spec": "b037a97e466f23db9ea62cbc35e2929f8f9226bdfd0b2f4d1e55f4dd2d500ec4",
-        "tests": "7834a3a64fc3ca3d52fbcf306f2af6e3ae00778636486bfc8f16838a1e1e7e0f"
+        "spec": "bb43c9b25d0c45c5b76ce2029e457025735289eb1b4fbb317f652e3329240ad9",
+        "tests": "48673566d3f4e18f090ff50fa957aec9ccbb7c44e9bf722c5b1471fad8d9e11e"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -19,7 +19,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_config_engine.py::TestFindProjectRoot::test_env_var_takes_precedence_only_when_the_directory_exists"
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_an_existing_folder_wins_over_a_marker"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_a_missing_path_gives_way_to_the_climb"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_a_file_gives_way_to_the_climb"
         },
         {
           "env": null,
@@ -27,7 +43,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_config_engine.py::TestFindProjectRoot::test_climbs_to_purlin_marker"
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_reaches_the_marker_above_the_start"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_stops_at_the_nearest_marker"
         },
         {
           "env": null,
@@ -35,7 +59,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_config_engine.py::TestFindProjectRoot::test_falls_back_to_cwd"
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_with_no_marker_the_root_is_the_working_directory"
         },
         {
           "env": null,
@@ -43,15 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_config_engine.py::TestResolveConfig::test_the_config_is_config_json_whole"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_config_engine.py::TestCLI::test_dump_in_process_prints_the_config"
+          "test": "dev/test_config_engine.py::TestReading::test_the_settings_file_is_read_whole"
         },
         {
           "env": null,
@@ -59,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_config_engine.py::TestCLI::test_cli_key"
+          "test": "dev/test_config_engine.py::TestCommandLine::test_key_prints_the_value_as_its_own_process"
         },
         {
           "env": null,
@@ -67,7 +83,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_config_engine.py::TestCLI::test_key_in_process_prints_the_value"
+          "test": "dev/test_config_engine.py::TestCommandLine::test_key_prints_the_value"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_config_engine.py::TestCommandLine::test_dump_prints_the_whole_settings_as_json"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_config_engine.py::TestCommandLine::test_key_the_settings_do_not_hold_prints_an_empty_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_config_engine.py::TestCommandLine::test_no_argument_is_refused_with_the_usage"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_config_engine.py::TestCommandLine::test_key_with_no_name_is_refused_with_its_usage"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_config_engine.py::TestCommandLine::test_an_unknown_argument_is_refused_and_named"
         },
         {
           "env": null,
@@ -75,7 +131,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_config_engine.py::TestResolveConfig::test_no_config_returns_empty"
+          "test": "dev/test_config_engine.py::TestReading::test_no_settings_file_reads_as_empty"
         },
         {
           "env": null,
@@ -83,15 +139,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_config_engine.py::TestUpdateConfig::test_a_write_reaches_config_json"
+          "test": "dev/test_config_engine.py::TestWriting::test_a_write_adds_its_key_to_the_settings_file"
         },
         {
           "env": null,
-          "id": "PROOF-8",
+          "id": "PROOF-24",
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_config_engine.py::TestUpdateConfig::test_a_write_creates_config_json_when_absent"
+          "test": "dev/test_config_engine.py::TestWriting::test_a_write_creates_the_settings_file_when_absent"
         },
         {
           "env": null,
@@ -99,7 +155,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_config_engine.py::TestUpdateConfig::test_the_written_value_is_what_the_resolver_reads"
+          "test": "dev/test_config_engine.py::TestWriting::test_the_written_value_is_what_the_settings_read"
         },
         {
           "env": null,
@@ -107,7 +163,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_config_engine.py::TestUpdateConfig::test_a_write_preserves_every_other_key"
+          "test": "dev/test_config_engine.py::TestWriting::test_adding_a_key_keeps_every_other_key_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_config_engine.py::TestWriting::test_changing_a_key_keeps_every_other_key_as_it_was"
         },
         {
           "env": null,
@@ -115,7 +179,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
-          "test": "dev/test_config_engine.py::TestUpdateConfig::test_atomic_replacement"
+          "test": "dev/test_config_engine.py::TestAtomicWrite::test_the_whole_file_is_written_beside_and_moved_onto_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_config_engine.py::TestAtomicWrite::test_a_failed_move_leaves_the_previous_file_and_no_temporary"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_config_engine.py::TestAtomicWrite::test_a_disk_full_partway_leaves_the_previous_file_and_no_temporary"
         },
         {
           "env": null,
@@ -123,7 +203,39 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_config_engine.py::TestFindProjectRoot::test_resolve_project_root_names_how_it_resolved"
+          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_a_marker_above_the_start_is_found_by_climb"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_the_variable_is_found_by_env"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_a_missing_variable_path_is_passed_over_for_climb"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_no_marker_anywhere_is_named_cwd"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_each_way_has_its_own_sentence"
         }
       ],
       "rules": {

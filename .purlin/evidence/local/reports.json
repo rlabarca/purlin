@@ -2,13 +2,13 @@
   "feature": "reports",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T04:28:37Z",
-      "commit": "b225ab496f43b30eda3222c7319ed832d2713760",
+      "at": "2026-09-29T14:06:47Z",
+      "commit": "d8a38ca3fbad77f00c3d99f67b465eee111bfe49",
       "dirty": true,
       "fingerprint": {
-        "code": "08a8510703a0220c9294c24a9d69a36caed39e25d5009ed861275d278b0e4261",
-        "spec": "2da129edcaed9f83df72a5c48c959f2456fb62334991bd3310959a836ffa0e74",
-        "tests": "a2ad4ec633a3440aaee64f35045f3b7d9feb3a1b2d97829fc5440ab91ad41c81"
+        "code": "9ac054130a7f42e8e3f1c16a543dfa4c2ad716db9565fb326e31c70e1d2812a6",
+        "spec": "659fd7ad9f92645fd46d79f536921bed97b94abf37a2dac00df889d85830e52a",
+        "tests": "d9db80b954bdfde9fcc8760e9e52ba7aa63177bbbdffe46471a3d9bbea876523"
       },
       "hostname": "Richs-MacBook-Pro.local",
       "machine": "Richs-MacBook-Pro.local",
@@ -35,7 +35,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_reports.py::TestTheMarker::test_a_marker_after_code_is_not_read"
+          "test": "dev/test_reports.py::TestTheMarker::test_a_marker_after_code_in_a_text_file_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_marker_after_code_in_a_python_file_is_not_read"
         },
         {
           "env": null,
@@ -43,7 +51,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_reports.py::TestTheMarker::test_a_marker_in_a_string_or_a_here_document_is_not_read"
+          "test": "dev/test_reports.py::TestTheMarker::test_a_marker_in_a_python_string_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_marker_in_a_here_document_is_not_read"
         },
         {
           "env": null,
@@ -51,7 +67,63 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_reports.py::TestTheMarker::test_the_globs_name_the_files_a_suite_reads"
+          "test": "dev/test_reports.py::TestTheMarker::test_a_star_does_not_cross_a_folder"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_two_stars_cross_any_number_of_folders"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_glob_with_no_slash_matches_the_name_in_any_folder"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_question_mark_is_one_character_and_never_a_slash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_two_stars_may_be_no_folder_at_the_top"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_two_stars_may_be_no_folder_in_the_middle"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_file_two_suites_match_belongs_to_the_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_file_no_suite_matches_is_not_read"
         },
         {
           "env": null,
@@ -59,7 +131,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_reports.py::TestThroughARun::test_markers_above_a_decorator_and_two_on_one_test"
+          "test": "dev/test_reports.py::TestThroughARun::test_a_marker_above_a_decorator_is_tied"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_reports.py::TestThroughARun::test_two_markers_over_one_passing_test_both_pass"
+        },
+        {
+          "env": null,
+          "id": "PROOF-50",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_blank_line_and_a_comment_after_a_marker_still_tie"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_failing_test_fails_each_of_its_markers_once"
         },
         {
           "env": null,
@@ -71,11 +167,67 @@
         },
         {
           "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_reports.py::TestThroughARun::test_the_tied_markers_beside_an_untied_one_still_pass"
+        },
+        {
+          "env": null,
           "id": "PROOF-6",
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_reports.py::TestTheMarker::test_each_language_declares_its_tests"
+          "test": "dev/test_reports.py::TestTheMarker::test_python_declares_test_functions_and_methods_only"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_reports.py::TestTheMarker::test_typescript_declares_its_it_and_test_calls"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_reports.py::TestTheMarker::test_csharp_declares_its_fact_and_theory_methods"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_reports.py::TestTheMarker::test_go_declares_its_test_functions_in_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_reports.py::TestTheMarker::test_csharp_declares_every_other_test_attribute"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_title_that_is_not_a_literal_declares_no_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_reports.py::TestTheMarker::test_a_go_function_not_shaped_as_a_test_declares_none"
         },
         {
           "env": null,
@@ -95,6 +247,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_reports.py::TestTheReports::test_the_trx_outcomes_the_capture_does_not_hold"
+        },
+        {
+          "env": null,
           "id": "PROOF-9",
           "manual": false,
           "result": "pass",
@@ -103,11 +263,75 @@
         },
         {
           "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_reports.py::TestTheReports::test_a_line_of_the_stream_that_is_not_json_is_left_alone"
+        },
+        {
+          "env": null,
           "id": "PROOF-10",
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
-          "test": "dev/test_reports.py::TestTheTie::test_each_report_finds_the_file_of_its_case"
+          "test": "dev/test_reports.py::TestTheTie::test_a_python_class_names_its_module_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_reports.py::TestTheTie::test_a_vitest_class_is_the_file_path"
+        },
+        {
+          "env": null,
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_reports.py::TestTheTie::test_a_jest_case_names_its_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_reports.py::TestTheTie::test_a_trx_class_is_narrowed_by_its_namespace"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_reports.py::TestTheTie::test_a_go_package_is_read_against_go_mod"
+        },
+        {
+          "env": null,
+          "id": "PROOF-65",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_reports.py::TestTheTie::test_a_python_case_of_no_marked_file_is_tied_to_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_reports.py::TestTheTie::test_a_trx_case_of_no_marked_class_is_tied_to_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_reports.py::TestTheTie::test_a_go_case_of_no_package_is_tied_to_nothing"
         },
         {
           "env": null,
@@ -115,7 +339,39 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-11",
-          "test": "dev/test_reports.py::TestTheTie::test_every_case_of_a_parametrised_test_must_pass"
+          "test": "dev/test_reports.py::TestTheTie::test_a_parametrised_test_passes_when_every_value_passes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_reports.py::TestTheTie::test_a_parametrised_test_fails_when_one_value_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_reports.py::TestTheTie::test_a_theory_with_one_failing_row_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-70",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_reports.py::TestTheTie::test_a_go_test_with_a_failing_subtest_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_reports.py::TestTheTie::test_a_table_of_passing_rows_passes"
         },
         {
           "env": null,
@@ -123,7 +379,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_reports.py::TestTheTie::test_a_nested_title_is_narrowed_by_its_outer_parts"
+          "test": "dev/test_reports.py::TestTheTie::test_a_vitest_title_is_narrowed_by_its_outer_parts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_reports.py::TestTheTie::test_a_jest_title_is_narrowed_by_its_outer_parts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_reports.py::TestTheTie::test_a_python_test_is_narrowed_by_its_class"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_reports.py::TestTheTie::test_a_csharp_test_is_narrowed_by_its_class"
         },
         {
           "env": null,
@@ -131,7 +411,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_reports.py::TestTheTie::test_a_case_that_is_two_tests_is_counted_for_neither"
+          "test": "dev/test_reports.py::TestThroughARun::test_a_case_that_is_two_tests_is_counted_for_neither"
         },
         {
           "env": null,
@@ -139,7 +419,47 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_reports.py::TestTheTie::test_what_each_outcome_reads"
+          "test": "dev/test_reports.py::TestThroughARun::test_a_passing_test_is_pass"
+        },
+        {
+          "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_failing_test_is_fail"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_skipped_test_is_missing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_test_whose_setup_errors_is_fail"
+        },
+        {
+          "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_test_partly_skipped_and_otherwise_passing_is_missing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_test_the_report_holds_no_case_of_is_missing"
         },
         {
           "env": null,
@@ -147,7 +467,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
-          "test": "dev/test_reports.py::TestThroughARun::test_an_exit_suite_runs_each_file_as_one_test"
+          "test": "dev/test_reports.py::TestThroughARun::test_an_exit_suite_gives_each_file_its_exit_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_reports.py::TestThroughARun::test_an_exit_suite_runs_its_command_once_per_file"
         },
         {
           "env": null,
@@ -155,7 +483,39 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-16",
-          "test": "dev/test_reports.py::TestThroughARun::test_files_and_report_are_filled_in"
+          "test": "dev/test_reports.py::TestThroughARun::test_a_run_over_one_feature_gives_its_test_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_run_over_every_feature_gives_no_test_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_path_holding_a_space_is_one_argument"
+        },
+        {
+          "env": null,
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_reports.py::TestThroughARun::test_the_command_runs_through_bash"
+        },
+        {
+          "env": null,
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_reports.py::TestThroughARun::test_the_command_runs_in_the_project_root"
         },
         {
           "env": null,
@@ -163,7 +523,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_reports.py::TestThroughARun::test_an_old_report_is_never_read"
+          "test": "dev/test_reports.py::TestThroughARun::test_an_old_report_is_deleted_before_the_suite_runs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_reports.py::TestThroughARun::test_an_old_report_folder_is_deleted_before_the_suite_runs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_report_folder_is_read_file_by_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_report_of_a_dash_is_read_from_the_output"
         },
         {
           "env": null,
@@ -172,6 +556,14 @@
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_reports.py::TestThroughARun::test_a_suite_with_no_report_is_missing_evidence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-93",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_suite_leaving_an_empty_report_folder_is_missing_evidence"
         },
         {
           "env": null,
@@ -227,7 +619,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-20",
-          "test": "dev/test_reports.py::TestThroughARun::test_a_suite_missing_a_part_is_left_out"
+          "test": "dev/test_reports.py::TestThroughARun::test_a_suite_with_no_run_is_left_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_suite_of_an_unknown_format_is_left_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_suite_with_no_files_is_left_out"
         },
         {
           "env": null,
@@ -268,6 +676,14 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_reports.py::TestNearMisses::test_no_space_after_the_colon"
+        },
+        {
+          "env": null,
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_reports.py::TestNearMisses::test_purlin_misspelled_by_one_letter"
         },
         {
           "env": null,
@@ -319,11 +735,27 @@
         },
         {
           "env": null,
+          "id": "PROOF-91",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_rule_id_one_character_off"
+        },
+        {
+          "env": null,
           "id": "PROOF-37",
           "manual": false,
           "result": "pass",
           "rule": "RULE-24",
           "test": "dev/test_reports.py::TestNearMisses::test_an_id_one_character_from_several_is_not_a_near_miss"
+        },
+        {
+          "env": null,
+          "id": "PROOF-92",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_feature_one_character_from_two_is_not_a_near_miss"
         }
       ],
       "rules": {
