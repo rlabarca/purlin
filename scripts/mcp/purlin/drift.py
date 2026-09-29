@@ -12,8 +12,8 @@ Three role views come out of the same range:
 `eng`     code changed and the rules behind it, changed files under no spec's
           scope, rules with no test, anchors behind their source, features
           whose evidence is out of date
-`qa`      test files changed and the features they cover, signatures gone
-          stale and why, the size of the queue
+`qa`      test files changed and the features they cover, and the lines of
+          `Left to do` that wait for a person: to test by hand and to sign
 
 Each view is a list of lines, the first naming the range, beside the facts
 each line was built from.
@@ -30,7 +30,7 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import (fingerprint as fingerprint_module, payload as payload_module,
-                    signatures as signatures_module, specs as specs_module)
+                    specs as specs_module, summary as summary_module)
 
 ROLES = ('pm', 'eng', 'qa')
 
@@ -542,7 +542,7 @@ def _anchor_line(row):
         name, row.get('reason') or row.get('error'))
 
 
-def _qa_view(project_root, rng, changed, data, raw_features, markers):
+def _qa_view(data, changed, markers):
     covering = {}
     for feature, paths in markers.items():
         for path in paths:
@@ -550,28 +550,10 @@ def _qa_view(project_root, rng, changed, data, raw_features, markers):
     test_files = [path for path in changed if path in covering]
     covered = sorted({name for path in test_files for name in covering[path]})
 
-    signatures = signatures_module.load_signatures(project_root, raw_features)
-    stale = []
-    for feature in data.get('features', []):
-        for rule in feature.get('rules', []):
-            if rule.get('label') != 'own' or not rule['flags'].get('stale'):
-                continue
-            found = signatures.get((rule['feature'], rule['id'])) or []
-            stale.append({'feature': rule['feature'], 'rule': rule['id'],
-                          'reason': _stale_reason(found[0] if found else {},
-                                                  rule)})
-
-    rows = data.get('queue', [])
-    hand = sum(1 for row in rows if row.get('need') == 'hand check')
-    queue = {'rules': len(rows), 'hand_checks': hand,
-             'signatures': len(rows) - hand}
-
     rules = [(feature, rule) for feature in data.get('features', [])
              for rule in feature.get('rules', []) if rule['label'] == 'own']
     view = {
         'tests_changed': {'files': test_files, 'features': covered},
-        'signatures_stale': stale,
-        'queue': queue,
         'not_audited': ['%s/%s' % (feature['name'], rule['id'])
                         for feature, rule in rules
                         if rule['flags'].get('not_audited')],
@@ -581,33 +563,9 @@ def _qa_view(project_root, rng, changed, data, raw_features, markers):
     if test_files:
         lines.append('%s changed, covering %s.' % (
             _plural(len(test_files), 'test file'), ', '.join(covered)))
-    # Under the gate `passed` there is no signature and no queue, so no line
-    # names either.
-    gate = (data.get('gate') or {}).get('gate', 'passed')
-    if gate != 'passed':
-        if stale:
-            lines.append('%s: %s.' % (
-                '1 signature is stale' if len(stale) == 1
-                else '%d signatures are stale' % len(stale),
-                ', '.join('%s %s (%s)' % (row['feature'], row['rule'],
-                                          row['reason']) for row in stale)))
-        lines.append('Queue: %s. %s, %s.' % (
-            _plural(queue['rules'], 'rule'),
-            _plural(queue['hand_checks'], 'hand check'),
-            _plural(queue['signatures'], 'signature')))
+    # The rules that wait for a person, in the words the status prints them.
+    lines.extend(summary_module.left_lines(data, summary_module.FOR_A_PERSON))
     return view, lines
-
-
-# What a signature binds, in the words a stale line gives for each.
-_BOUND = (('rule_hash', 'rule text changed'), ('proof_hash', 'proofs changed'),
-          ('test_hash', 'tests changed'),
-          ('audit_hash', 'audit findings changed'))
-
-
-def _stale_reason(signature, rule):
-    parts = [words for key, words in _BOUND
-             if str(signature.get(key) or '') != str(rule.get(key) or '')]
-    return ', '.join(parts) or 'hashes changed after the signature'
 
 
 def _specs_uncommitted(project_root):
@@ -643,8 +601,7 @@ def compute_drift(project_root, since=None, network=True, data=None):
         'pm': _pm_view(project_root, rng, changed),
         'eng': _eng_view(project_root, rng, changed, data, raw_features,
                          markers, network),
-        'qa': _qa_view(project_root, rng, changed, data, raw_features,
-                       markers),
+        'qa': _qa_view(data, changed, markers),
     }
     roles = {}
     for role in ROLES:

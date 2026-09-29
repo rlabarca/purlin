@@ -761,7 +761,7 @@ class TestAnchorsBehind:
 
 
 # ---------------------------------------------------------------------------
-# RULE-15 and RULE-16: the QA view
+# RULE-15: the QA view
 # ---------------------------------------------------------------------------
 
 class TestQaView:
@@ -782,45 +782,51 @@ class TestQaView:
             'files': ['tests/test_both.py', 'tests/test_login.py'],
             'features': ['export', 'login']}
 
-    # purlin: drift PROOF-25
-    def test_signatures_stale_and_the_queue(self, tmp_path):
-        from purlin import payload as purlin_payload
+    # purlin: drift PROOF-31
+    def test_a_rule_to_test_by_hand(self, tmp_path):
+        root = _repo(str(tmp_path / 'proj'), {
+            'specs/auth/login.md': _spec(
+                'login', {'RULE-1': 'Signs a person in',
+                          'RULE-2': 'Looks right on a phone'},
+                scope='src/auth/',
+                proofs={'PROOF-1': ('RULE-1', 'Sign in and see 1'),
+                        'PROOF-2': ('RULE-2',
+                                    'Look at it on a phone @manual')}),
+            'src/auth/login.py': 'x = 1\n'}, gate='passed')
+        _change(root, {'src/auth/login.py': 'x = 2\n'})
 
-        def spec(first):
-            return _spec('login', {'RULE-1': first,
-                                   'RULE-2': 'Looks right on a phone'},
-                         scope='src/auth/',
-                         proofs={'PROOF-1': ('RULE-1', 'Sign in and see 1'),
-                                 'PROOF-2': ('RULE-2',
-                                             'Look at it on a phone @manual')})
+        assert _lines(_report(root, since='1'), 'qa') == [
+            '1 rule to test by hand: purlin:sign']
 
-        root = _repo(str(tmp_path / 'proj'),
-                     {'specs/auth/login.md': spec('Signs a person in'),
-                      'src/auth/login.py': 'x = 1\n'}, gate='strong')
-        rule = next(r for r in purlin_payload.build_payload(root)[
-            'features'][0]['rules'] if r['id'] == 'RULE-1')
-        _write(os.path.join(root, 'specs', 'auth', 'login.signatures',
-                            'RULE-1.%s.test.json' % rule['rule_hash'][:8]),
-               json.dumps({key: rule[key] for key in (
-                   'rule_hash', 'proof_hash', 'test_hash', 'audit_hash')}))
-        _commit(root, 'chore: sign RULE-1')
-        _change(root, {'specs/auth/login.md': spec('Signs a person in fast')})
-        report = _report(root, since='1')
+    # purlin: drift PROOF-32
+    def test_the_rules_to_sign_and_not_the_rest(self, tmp_path):
+        assert _qa_lines_left(tmp_path, [
+            _left('to_audit', 3, '3 rules to audit', 'purlin:audit'),
+            _left('to_sign', 2, '2 rules to sign', 'purlin:sign')]) == [
+            '2 rules to sign: purlin:sign']
 
-        assert _lines(report, 'qa') == [
-            '1 signature is stale: login RULE-1 (rule text changed).',
-            'Queue: 1 rule. 1 hand check, 0 signatures.'], _lines(report, 'qa')
-        qa = report['roles']['qa']
-        assert qa['signatures_stale'] == [
-            {'feature': 'login', 'rule': 'RULE-1',
-             'reason': 'rule text changed'}], qa
-        assert qa['queue'] == {'rules': 1, 'hand_checks': 1,
-                               'signatures': 0}, qa
+    # purlin: drift PROOF-33
+    def test_nothing_waiting_for_a_person_prints_nothing(self, tmp_path):
+        assert _qa_lines_left(tmp_path, [
+            _left('to_audit', 3, '3 rules to audit', 'purlin:audit')]) == []
 
-        _write(os.path.join(root, '.purlin', 'config.json'),
-               _config('passed'))
-        _commit(root, 'chore: the gate is passed')
-        assert _lines(_report(root, since='1'), 'qa') == []
+
+def _left(kind, count, text, command):
+    """One line of `Left to do` as the status's payload carries it."""
+    return {'kind': kind, 'count': count, 'text': text, 'command': command}
+
+
+def _qa_lines_left(tmp_path, left):
+    """The QA view's lines after the first, with the status's `Left to do`
+    holding `left`, in a project where one source file changed."""
+    from purlin import payload as purlin_payload
+    root = _repo(str(tmp_path / 'proj'), LOGIN_FILES, gate='signed')
+    _change(root, {'src/auth/login.py': 'def login():\n    return 2\n'})
+    data = purlin_payload.build_payload(root)
+    data['left'] = left
+    report = purlin_drift.compute_drift(root, since='1', network=False,
+                                        data=data)
+    return report['roles']['qa']['lines'][1:]
 
 
 # ---------------------------------------------------------------------------
@@ -893,8 +899,7 @@ class TestReportShape:
             'anchors_behind', 'code_changed', 'lines', 'out_of_date',
             'rules_without_test', 'specs_uncommitted', 'unscoped']
         assert sorted(report['roles']['qa']) == [
-            'lines', 'not_audited', 'queue', 'signatures_stale',
-            'specs_uncommitted', 'tests_changed']
+            'lines', 'not_audited', 'specs_uncommitted', 'tests_changed']
 
         narrowed = json.loads(purlin_drift.drift(checkout, role='qa'))
         assert sorted(narrowed) == ['role', 'since', 'view'], sorted(narrowed)

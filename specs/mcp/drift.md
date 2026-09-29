@@ -4,9 +4,9 @@
 >   own log of HEAD for the last action that brought changes in, and reports
 >   what changed between where HEAD stood before it and HEAD: rules added,
 >   changed and removed for the PM; code changed, rules with no test, anchors
->   behind and evidence out of date for the engineer; tests changed,
->   signatures gone stale and the size of the queue for QA. It reports facts
->   and judges nothing.
+>   behind and evidence out of date for the engineer; tests changed, and the
+>   rules waiting for someone to test by hand or to sign, for QA. It reports
+>   facts and judges nothing.
 > Scope: scripts/mcp/purlin/drift.py
 > Stack: python/stdlib, json, re, subprocess (list-only)
 
@@ -26,10 +26,9 @@
 - RULE-12: One remote listing per source per run: an anchor repository serving six anchors is reached once
 - RULE-13: An anchor row names the anchor's own spec name, never the repository path and never the file inside it
 - RULE-14: The engineer view names every feature that has evidence and whose evidence is out of date, as `1 feature is out of date: login.`
-- RULE-15: The QA view names the changed files that carry a proof marker and the features those markers name, as `2 test files changed, covering login, export.`
-- RULE-16: Under the gate `strong` or `signed` the QA view names every stale signature with what changed since it was made, as `1 signature is stale: login RULE-1 (rule text changed).`, and the size of the queue, as `Queue: 1 rule. 1 hand check, 0 signatures.`; under the gate `passed` it prints neither line
+- RULE-15: The QA view names the changed files that carry a proof marker and the features those markers name, as `2 test files changed, covering login, export.`, then prints the `to test by hand` and `to sign` lines of `Left to do` in the words the status prints them, as `1 rule to test by hand: purlin:sign`, and no other line of `Left to do`
 - RULE-17: Every view ends with `<n> spec files have changes that are not committed.` when a spec file under `specs/` differs from HEAD or is not tracked, and prints no such line when none does
-- RULE-18: The report carries exactly `since` and `roles`; the roles are exactly `pm`, `eng` and `qa`, each view carrying its lines and the facts they were built from under fixed keys; a role argument narrows the answer to exactly `since`, `role` and `view`
+- RULE-18: The report carries exactly `since` and `roles`; the roles are exactly `pm`, `eng` and `qa`, each view carrying its lines and the facts they were built from under fixed keys, save the QA view's lines of `Left to do`, which are the status's own; a role argument narrows the answer to exactly `since`, `role` and `view`
 - RULE-19: The report is serialized with no indentation and no space after a separator, because its only reader is a model paying by the token
 
 ## Proof
@@ -58,9 +57,11 @@
 - PROOF-22 (RULE-13): The anchor `local_security`, copied from the file `constraints.md` in another repository, falls behind its source; the row reading `behind` names `local_security`, and names neither that repository's path nor `constraints.md`
 - PROOF-23 (RULE-14): The spec `login` has a passing run written, and a pull then changes a file in its scope; the engineer view reads `1 feature is out of date: login.`. A feature with no run written at all is not named
 - PROOF-24 (RULE-15): A pull changes one test file carrying markers for `login` and `export` and one carrying a marker for `login`; the QA view reads `2 test files changed, covering export, login.` and a changed file carrying no marker is not counted
-- PROOF-25 (RULE-16): Under the gate `strong`, `login` RULE-1 carries a signature and its text is then reworded, and `login` RULE-2's only proof is a hand check; the QA view reads `1 signature is stale: login RULE-1 (rule text changed).` and `Queue: 1 rule. 1 hand check, 0 signatures.`. Under the gate `passed` the same project's QA view prints neither line
 - PROOF-26 (RULE-17): With one spec edited and not committed, every view ends with `1 spec file has changes that are not committed.`; with a second spec added and not tracked, `2 spec files have changes that are not committed.`; with both committed, no view prints the line
-- PROOF-27 (RULE-18): After a pull, the report carries exactly `since` and `roles`; the roles are exactly `eng`, `pm` and `qa`; the PM view carries exactly `lines`, `rules_added`, `rules_changed`, `rules_removed` and `specs_uncommitted`, the engineer view exactly `anchors_behind`, `code_changed`, `lines`, `out_of_date`, `rules_without_test`, `specs_uncommitted` and `unscoped`, and the QA view exactly `lines`, `not_audited`, `queue`, `signatures_stale`, `specs_uncommitted` and `tests_changed`. Asked for the `qa` role, the answer carries exactly `since`, `role` and `view`, its role reads `qa` and its view is the QA view of the whole report
+- PROOF-27 (RULE-18): After a pull, the report carries exactly `since` and `roles`; the roles are exactly `eng`, `pm` and `qa`; the PM view carries exactly `lines`, `rules_added`, `rules_changed`, `rules_removed` and `specs_uncommitted`, the engineer view exactly `anchors_behind`, `code_changed`, `lines`, `out_of_date`, `rules_without_test`, `specs_uncommitted` and `unscoped`, and the QA view exactly `lines`, `not_audited`, `specs_uncommitted` and `tests_changed`. Asked for the `qa` role, the answer carries exactly `since`, `role` and `view`, its role reads `qa` and its view is the QA view of the whole report
 - PROOF-28 (RULE-19): After one committed change, the report text holds no line break followed by two spaces and no colon followed by a space, reads back as a report carrying exactly `since` and `roles`, and is shorter than the same report laid out with an indent of 2
 - PROOF-29 (RULE-2): A branch of 2 commits and `main` both change the same line of one file, the merge of the branch into `main` stops on the conflict, and the file is resolved and the merge committed by hand; the range runs from `main` as it stood before the merge to HEAD, 3 commits, and names the action `merge`. A plain commit made afterwards on `main` is not taken as an action: the range still starts before the merge, 4 commits
 - PROOF-30 (RULE-5): After a merge committed by hand once its conflicts were resolved, the first line of each of the three views reads `Since your last merge, <n> <unit> ago (<sha7>..<sha7>, 3 commits).`
+- PROOF-31 (RULE-15): Under the gate `passed`, the spec `login` has one rule with an ordinary proof and one whose only proof is checked by hand, and nothing has been run or signed; the QA view reads, after its first line, exactly `1 rule to test by hand: purlin:sign`, and the rule with no test is not named
+- PROOF-32 (RULE-15): The status leaves `3 rules to audit` and `2 rules to sign`; the QA view reads, after its first line, exactly `2 rules to sign: purlin:sign`
+- PROOF-33 (RULE-15): The status leaves only `3 rules to audit`; the QA view prints nothing after its first line

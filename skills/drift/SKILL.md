@@ -19,13 +19,13 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 purlin:drift                    The view for your role, inferred from what you touched
 purlin:drift pm                 Rules added, changed and removed
 purlin:drift eng                Code changed, rules with no test, anchors behind, out of date
-purlin:drift qa                 Tests changed, signatures stale, the size of the queue
+purlin:drift qa                 Tests changed, rules to test by hand and to sign
 purlin:drift --since <N>        The last N commits instead of since your last pull
 purlin:drift --since <date>     Every commit since a date, YYYY-MM-DD
 ```
 
 Plain language reaches the same place: "what changed", "what did that pull bring in", "anything
-stale for QA". With no role, infer one from the files the session has touched: specs only is
+waiting for QA". With no role, infer one from the files the session has touched: specs only is
 `pm`, test files only is `qa`, anything else is `eng`. Say which you chose before the view.
 
 ## When to run it
@@ -74,24 +74,23 @@ anchor proof_common is behind its source (now 3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a
 3 features are out of date: login, export, cart.
 ```
 
-**qa.** What the tests and the signatures did.
+**qa.** What the tests did, and what waits for a person.
 
 ```
 Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
 6 test files changed, covering export, login.
-2 signatures are stale: login RULE-2 (audit findings changed), billing RULE-1 (rule text changed).
-Queue: 5 rules. 2 hand checks, 3 signatures.
+2 rules to test by hand: purlin:sign
+3 rules to sign: purlin:sign
 1 spec file has changes that are not committed.
 ```
 
-Under the gate `passed` there is no signature and no queue, so the `qa` view carries only the
-tests that changed.
+The two middle lines are the ones `purlin:status` prints under `Left to do`, in the same words;
+at the gate `passed` nothing is signed, so only the first of them can show.
 
 ## Step 3: what drift never does
 
 It never edits a spec, a test or a signature, never advances an anchor pin, and never counts
-`out of date` as work for a person: the code moved, the signatures stand, and the next run
-clears the cell.
+`out of date` as work for a person: the code moved, and the next run clears the cell.
 
 ## Step 4: name the next step
 
@@ -107,6 +106,6 @@ One line per kind of thing the view showed, in the order below, then stop.
 | An anchor behind its source | `→ Run: purlin:anchor sync <name>` |
 | A feature out of date | `→ Run: purlin:test <feature>; the next run clears it.` |
 | A test file changed | `→ Run: purlin:test <feature>` |
-| A stale signature, or rules in the queue | `→ Run: purlin:sign` |
+| A rule to test by hand or to sign | `→ Run: purlin:sign` |
 | Spec files not committed | `→ Commit the spec files, then run purlin:drift again.` |
 | Only the first line, or only `No rule was added, ...` | `→ Nothing changed that the specs, the tests or the signatures need.` |

@@ -1,4 +1,4 @@
-> Criteria-Version: 8
+> Criteria-Version: 9
 
 # Drift criteria
 
@@ -73,12 +73,13 @@ A file deleted in the range is not on disk and is in neither list.
 | Key | From | Line |
 |-----|------|------|
 | `tests_changed` | The changed test files that carry a marker, and the features those markers name | `6 test files changed, covering export, login.` |
-| `signatures_stale` | Signatures that do not bind the current rule, with which of the rule text, the proofs, the tests or the audit findings changed | `2 signatures are stale: login RULE-2 (audit findings changed), billing RULE-1 (rule text changed).` |
-| `queue` | The queue, counted by what each rule needs | `Queue: 5 rules. 2 hand checks, 3 signatures.` |
-| `not_audited` | Rules whose level is `strong` or `signed` that no audit has read, as `<feature>/<RULE-N>` | No line |
+| `not_audited` | Rules whose strong cell reads `not audited`, at the gates `strong` and `signed`, as `<feature>/<RULE-N>` | No line |
 
-Under the gate `passed` there is no signature and no queue, so the `qa` view prints neither line
-and reports only the tests that changed.
+After those lines the view prints the two lines of `Left to do` that wait for a person, in the
+words the status prints them and with no key of their own:
+`2 rules to test by hand: purlin:sign` and `5 rules to sign: purlin:sign`. Either is left out at
+zero, and no other line of `Left to do` is printed. At the gate `passed` only a rule to test by
+hand can wait for a person.
 
 ## Anchors behind
 
@@ -102,19 +103,18 @@ it is adopted.
 
 | Field | Written by | Read by | Default |
 |-------|-----------|---------|---------|
-| `version` | `purlin:init` | The dashboard header; `purlin:sign` and `purlin:export` where the project has no `VERSION` file of its own | From the plugin's `VERSION` file |
-| `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/gate_check.py`, every skill that names a next step | `passed` |
-| `mutation_engine` | `purlin:init`, which asks `Measure test strength by breaking the code on purpose?` where an engine exists | `scripts/run/purlin_run.py`, `sync_status` | `none` from init, and a yes writes `auto`; `none` where the key is absent. `none` turns mutation testing off, so no breaks run and `min_strength` is not applied |
-| `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` while mutation testing is off; with it on, `null` under `passed`, 70 under `strong`, 80 under `signed` |
+| `version` | `purlin:init`, `purlin:init --update` | `purlin:init --update`, which compares it with the plugin's `VERSION` file to find an upgrade | From the plugin's `VERSION` file |
+| `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, every skill that names a next step | `passed` |
+| `mutation_engine` | `purlin:init`, which asks at the gates `strong` and `signed` whether to break the code on purpose | `scripts/run/purlin_run.py`, `sync_status` | `none` from init, and a yes writes `auto`; `none` where the key is absent. `none` turns mutation testing off, so no breaks run and `min_strength` is not applied |
+| `min_strength` | `purlin:init` | `purlin:audit` | `null` while mutation testing is off; with it on, `null` under `passed`, 70 under `strong`, 80 under `signed` |
 | `audit_parallel` | `purlin:init`, with no question | `scripts/run/purlin_run.py`, which makes that many AI audit calls at once | `4`; any value that is not a whole number from 1 to 16 is read as 4 with one warning |
-| `tests` | `purlin:init`, one entry per framework it detects, or the command and report it asks for | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
-| `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure` |
-| `trust` | `purlin:init`, which asks `Do you trust your own machine for the tests and the signing?`, or `Do you trust your own machine for the tests?` at the gate `passed` | `scripts/review/sign.py`, `scripts/run/workflow.py` | `local`; the only other value is `remote` |
+| `tests` | `purlin:test`, at the first run, once you confirm the command it suggests | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
+| `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure`, and `none` with no remote or another host |
 
-`purlin:init` is the only command that writes config unprompted. Every other command reads. A
-field that is absent or set to `auto` leaves the reader to its own fallback. This table must
-name every field `templates/config.json` carries: a field written into new projects but absent
-here has no owner on this page.
+`purlin:init` is the only command that writes config unprompted. `purlin:test` writes `tests`
+once you confirm it, and every other command reads. A field that is absent or set to `auto`
+leaves the reader to its own fallback. This table must name every field `templates/config.json`
+carries: a field written into new projects but absent here has no owner on this page.
 
 ## Project root ownership
 
