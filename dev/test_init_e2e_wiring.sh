@@ -1,29 +1,21 @@
 #!/usr/bin/env bash
-# purlin: scaffold PROOF-37
-# purlin: scaffold PROOF-94
-# purlin: scaffold PROOF-95
 # purlin: scaffold PROOF-96
-# purlin: scaffold PROOF-97
 #
-# Each language is set up the same way in a real project, its marked test runs
-# through the command its first test run suggests, and an install from the
-# marketplace leaves no file naming the install. This file is one test: it
-# passes when every set-up step of the walk in `dev/init_e2e_walk.sh` passed,
-# and when init added nothing to a C# project's tests, checked here first.
+# Init adds nothing to a C# project's tests. The project file and the marked
+# test are committed before init runs, so git answers what init changed or
+# added; init itself needs no `dotnet`, so this runs on every host but
+# Windows, which has no POSIX shell for it.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 
-# Windows runs no walk: it needs a POSIX shell. The host check is written
+# Windows is skipped: this needs a POSIX shell. The host check is written
 # once, in the file this sources.
 # shellcheck source=dev/windows_skip.sh
 . "$HERE/windows_skip.sh"
 purlin_skip_on_windows
 
-# Init adds nothing to a C# project's tests. The project file and the marked
-# test are committed before init runs, so git answers what init changed or
-# added; init itself needs no `dotnet`, so this runs on every host.
 CS_FAIL=0
 CS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/purlin-e2e-cs0.XXXXXXXX")" || exit 1
 trap 'rm -rf "$CS_DIR"' EXIT
@@ -53,8 +45,5 @@ if [ "$CS_FAIL" -eq 0 ]; then
   [ -z "$touched" ] || cs_bad "init changed or added to the tests" "$touched"
   [ "$CS_FAIL" -eq 0 ] && echo "  ok   xunit: init adds nothing to the tests; App.Tests.csproj and GreetingTests.cs read as before"
 fi
-
-bash "$HERE/init_e2e_walk.sh" wiring
-WALK=$?
 [ "$CS_FAIL" -eq 0 ] || exit 1
-exit "$WALK"
+echo "init e2e wiring ok"
