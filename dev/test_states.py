@@ -11,7 +11,6 @@ import io
 import json
 import os
 import re
-import shutil
 import sys
 
 import pytest
@@ -1762,8 +1761,6 @@ class TestProofResult:
 # The status table
 # ---------------------------------------------------------------------------
 
-DASHBOARD_PAGE = os.path.join(PROJECT_ROOT, 'scripts', 'report',
-                              'purlin-report.html')
 
 # The dashboard's spec table as a reader sees it: its column headings, and
 # each spec's name and the text of each of its cells, one line each.
@@ -1787,10 +1784,17 @@ def browser():
         instance.close()
 
 
-def _dashboard(browser, folder, payload):
+@pytest.fixture(scope='module')
+def dashboard_page():
+    """The dashboard's page, built from its sources as it ships."""
+    from build_report import build
+    return build()
+
+
+def _dashboard(browser, page_text, folder, payload):
     """`(headings, {spec: cells})` of the dashboard opened over `payload`."""
     os.makedirs(os.path.join(folder, '.purlin'))
-    shutil.copyfile(DASHBOARD_PAGE, os.path.join(folder, 'purlin-report.html'))
+    _write(os.path.join(folder, 'purlin-report.html'), page_text)
     _write(os.path.join(folder, '.purlin', 'report-data.js'),
            'const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
     page = browser.new_page(viewport={'width': 1440, 'height': 1000})
@@ -1860,18 +1864,28 @@ class TestStatusTable:
 
     # purlin: states PROOF-58
     def test_the_table_and_the_dashboard_show_the_same_cells(
-            self, browser, tmp_path):
+            self, browser, dashboard_page, tmp_path):
+        shared = []
         for name, gate in (('solo', 'passed'), ('team', 'strong'),
                            ('regulated', 'signed')):
             sample = TestTheFixturesAreTheContract._fixture(name)
             headings, table = _table_cells(purlin_status._table(sample))
-            shown, dashboard = _dashboard(browser, str(tmp_path / name),
-                                          sample)
+            shown, dashboard = _dashboard(browser, dashboard_page,
+                                          str(tmp_path / name), sample)
             assert shown == headings, (name, shown, headings)
             assert sorted(dashboard) == sorted(table), (name, dashboard)
+            rules_at = headings.index('Rules')
             for spec, cells in table.items():
-                assert dashboard[spec][1:] == cells[1:], (
+                expected = list(cells)
+                if expected[rules_at].endswith(' shared)'):
+                    # The dashboard's hover says what the second number is.
+                    shared.append((spec, expected[rules_at],
+                                   dashboard[spec][rules_at]))
+                    expected[rules_at] = expected[rules_at].replace(
+                        ' shared)', ')')
+                assert dashboard[spec][1:] == expected[1:], (
                     name, spec, dashboard[spec], cells)
+        assert shared == [('receipt', '1 (+1 shared)', '1 (+1)')], shared
 
     # purlin: states PROOF-86
     def test_the_rules_cell_names_the_shared_rules(self, project):
