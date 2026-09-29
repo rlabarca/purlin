@@ -10,8 +10,9 @@ import subprocess
 
 from skill_checks import (BASH, ROOT, carries, flat, frontmatter_problems,
                           frontmatter_refusals, in_order, next_step_problems,
-                          read, refusals, replace, section, sentence_with,
-                          skill_ceiling_problems, skill_path, table_rows)
+                          read, refusals, replace, section, sections,
+                          sentence_with, skill_ceiling_problems, skill_path,
+                          table_rows, undirected_outcome_problems)
 
 
 class TestSkillBuild:
@@ -46,7 +47,46 @@ class TestSkillBuild:
 
     # purlin: skill_build PROOF-3
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('build') == []
+        assert (next_step_problems('build')
+                + undirected_outcome_problems('build')) == []
+
+    # purlin: skill_build PROOF-8
+    def test_an_outcome_with_no_directive_is_refused(self, monkeypatch):
+        rel = skill_path('build')
+        assert refusals(
+            monkeypatch, lambda: undirected_outcome_problems('build'), [
+                (rel, replace(', `\u2192 Run: purlin:build <feature>`'),
+                 '%s closing outcome gives no \u2192 directive: - Some rules '
+                 'still have no test' % rel),
+            ]) == []
+
+    # purlin: skill_build PROOF-9
+    def test_it_repairs_the_comments_that_are_nearly_markers(self):
+        assert near_miss_problems() == []
+
+    # purlin: skill_build PROOF-10
+    def test_a_repair_with_no_near_miss_line_is_refused(self, monkeypatch):
+        rel = skill_path('build')
+        assert refusals(monkeypatch, near_miss_problems, [
+            (rel, replace(' --near-misses --project-root .',
+                          ' --project-root .'),
+             '%s gives no line that finds the comments that are nearly '
+             'markers' % rel),
+        ]) == []
+
+    # purlin: skill_build PROOF-11
+    def test_the_test_run_sets_the_test_command(self):
+        assert command_setting_problems() == []
+
+    # purlin: skill_build PROOF-12
+    def test_writing_the_test_command_itself_is_refused(self, monkeypatch):
+        rel = skill_path('build')
+        assert refusals(monkeypatch, command_setting_problems, [
+            (rel, replace('so\nwrite no entry yourself.',
+                          'so\nwrite the entry with the `purlin_config` '
+                          'tool.'),
+             "%s names the 'purlin_config' tool" % rel),
+        ]) == []
 
     # purlin: skill_build PROOF-4
     def test_it_stays_under_its_ceiling(self):
@@ -162,4 +202,45 @@ def build_marker_problems():
         'it names the rule: `purlin: login RULE-2`']))
     if '# purlin: login PROOF-1\ndef test_' not in read(rel):
         problems.append('%s shows no marker above a test' % rel)
+    return problems
+
+
+# The one line that finds the comments that are nearly markers.
+NEAR_MISSES = ('python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/markers.py" '
+               '--near-misses --project-root .')
+
+
+def near_miss_problems():
+    rel = skill_path('build')
+    text = read(rel)
+    headings = [heading for heading, _body in sections(text)]
+    problems = []
+    found = [heading for heading, body in sections(text)
+             for fence in re.findall(r'```\w*\n(.*?)```', body, re.S)
+             if NEAR_MISSES in fence.splitlines()]
+    running = [heading for heading in headings
+               if re.match(r'running', heading, re.I)]
+    if not found:
+        problems.append('%s gives no line that finds the comments that are '
+                        'nearly markers: %s' % (rel, NEAR_MISSES))
+    elif not running or headings.index(found[0]) > headings.index(running[0]):
+        problems.append('%s finds the comments that are nearly markers in %r, '
+                        'which does not come before the section on running '
+                        'the tests' % (rel, found[0]))
+    problems.extend(sentence_with(rel, [
+        'Show each `fix` beside its `why`, ask, and make the edits accepted.']))
+    return problems
+
+
+def command_setting_problems():
+    rel = skill_path('build')
+    running = flat(section(read(rel), r'^running') or '')
+    problems = ['%s section on running the tests does not carry %r'
+                % (rel, needle) for needle in (
+                    'where no test command is set it suggests one and writes '
+                    'it once the person confirms',
+                    'write no entry yourself')
+                if needle not in running]
+    if 'purlin_config' in read(rel):
+        problems.append("%s names the 'purlin_config' tool" % rel)
     return problems

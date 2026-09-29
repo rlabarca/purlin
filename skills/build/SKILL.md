@@ -57,13 +57,6 @@ def test_valid_credentials_return_200():
     assert authenticate("user@test.com", "secret") == 200
 ```
 
-```typescript
-// purlin: login PROOF-1
-it('returns 200 for valid credentials', () => {
-  expect(authenticate('user@test.com', 'secret')).toBe(200);
-});
-```
-
 It names the feature and the proof; the spec already says which rule the proof serves. Where a
 rule has no proof, which the gate `passed` allows, it names the rule: `purlin: login RULE-2`. A
 test may carry several markers, one line each, and decorators may sit between marker and test.
@@ -71,8 +64,8 @@ test may carry several markers, one line each, and decorators may sit between ma
 developer wrote differ in nothing but who typed them; a test with no marker is not evidence.
 
 A test must sit where a suite of the `tests` setting in `.purlin/config.json` reaches it, under
-one of its `files` globs; a marker in a file no suite names is never read. `purlin:init` writes
-that setting, and `references/supported_frameworks.md` shows what it writes for each framework.
+one of its `files` globs; a marker in a file no suite names is never read. `purlin:test` writes
+that setting at the first run, and `references/supported_frameworks.md` shows each framework's.
 
 A test asserts the observable the proof names, against the real behaviour. A test that asserts
 a stub returns what the stub was told to return is worse than no test: it reports a rule as
@@ -83,8 +76,16 @@ weaken the test. Stop and fix the rule.
 
 A rule that contradicts another, or that no test could settle as written, is a spec problem
 and not a build problem. Call `purlin:spec <name>`, fix the rule text in place, keep the id,
-and come back. Changing rule text stales any signature bound to that rule, which is correct: a
-person has to look again.
+and come back. Any signature on the rule then ends, which is correct: a person has to look again.
+
+## Repairing a comment that is nearly a marker
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/markers.py" --near-misses --project-root .
+```
+
+It prints one JSON list of the comments that are nearly markers, each with its `file`, `line`,
+`text`, `fix` and `why`. Show each `fix` beside its `why`, ask, and make the edits accepted.
 
 ## Running them
 
@@ -94,7 +95,8 @@ purlin:test <name>
 
 Never run the test framework directly. `purlin:test` runs the project's own test command, ties
 each result to the marker above its test, writes the evidence and prints the state of each
-rule. It names every marker it could not tie to exactly one test, by file and
+rule; where no test command is set it suggests one and writes it once the person confirms, so
+write no entry yourself. It names every marker it could not tie to exactly one test, by file and
 line; fix each before going on. Iterate until every rule the feature owns has a passing test.
 A proof tagged `@env` for another operating system is not run here, and the run says it
 `needs <os>`; `purlin:test --remote` runs it on a runner of that system.
@@ -115,16 +117,14 @@ carries the exact rendering; follow it rather than inventing one.
 Before you commit, compare the files you created, changed or deleted for the feature with its
 `> Scope:`: add each new file no entry covers, remove each entry whose file you deleted, and
 rewrite the line in the same commit as the code. Commit the code and the tests together.
-`.purlin/runtime/` is ignored by git, so the reports a run reads never enter a commit.
 
 ## When you are done
 
-Print the state table from `sync_status` for the feature, then name the next step:
+`purlin:test` ended on the summary and `Left to do`. Name the next step from them:
 
 - Every rule has a passing test, gate `passed`: `→ Run: git push`
 - Every rule has a passing test, gate `strong` or `signed`: `→ Next: purlin:audit`, which has a
   model read each rule, proof and test, and breaks the code where mutation testing is on.
-- Some rules still have no test: name them and say what is missing.
-- A rule has a `@manual` proof: say that its evidence is a signature with a one-line note, and
-  point at `purlin:sign`.
-- A proof needs another operating system: say which, and point at `purlin:test --remote`.
+- Some rules still have no test: name them and what is missing, `→ Run: purlin:build <feature>`
+- A `@manual` proof: a person checks it and signs, `→ Run: purlin:sign <feature> RULE-<n>`
+- A proof needs another operating system: name it, `→ Run: purlin:test --remote`
