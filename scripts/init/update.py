@@ -200,9 +200,6 @@ def _frameworks():
 def _flow():
     return _plugin_module('run', 'workflow')
 
-def _mutation():
-    return _plugin_module('run', 'mutation')
-
 def _init():
     """scaffold.py, the one home of the questions init asks and what they write."""
     return _plugin_module('init', 'scaffold')
@@ -380,18 +377,16 @@ def _ask_mutation(root, framework, assume_yes, out):
 
     Released 0.9.5 had no such setting, so the question is new to a project
     it set up. It is asked only at the gates where it runs, `strong` and
-    `signed`, and only where an engine exists for a framework the project
-    carries, and the default is no.
+    `signed`, and only where an engine that runs on this operating system
+    exists for a framework the project carries, and the default is no.
     """
     init = _init()
     named = list(framework)
     engine = init.engine_for(named)
     if engine is None:
-        out.say(init.NO_ENGINE % (', '.join(named) or "this project's"))
-        return 'none'
-    # An engine that cannot run on this operating system counts as none.
-    if not _mutation().runs_here(engine):
-        out.say(init.NO_ENGINE_HERE)
+        # No engine, or only one that cannot run on this operating system:
+        # setup's own line names which.
+        out.say(init._no_engine_line(named))
         return 'none'
     if assume_yes:
         return 'none'
