@@ -19,9 +19,9 @@ is the authority for its half. They bind the dashboard, the CLI output, the docs
   `theme-light.css`, never a raw palette value. Both themes ship.
 - **Copy voice** follows `references/writing_style.md`: plain and declarative, second person for
   the reader, third person for the system, exact numbers, limits stated, no superlatives.
-- Docs diagrams are plain mermaid. The three screenshots, the board, the queue and one rule,
-  are taken by `dev/capture_doc_screenshots.py` from the rebuilt dashboard and the fixtures; the
-  logo is `design/assets/logo.svg`.
+- Docs diagrams are plain mermaid. The two screenshots, the board and one rule, are taken by
+  `dev/capture_doc_screenshots.py` from the rebuilt dashboard and the fixtures; the logo is
+  `design/assets/logo.svg`.
 
 ## Format reference versioning
 
@@ -31,14 +31,16 @@ file for the current number. **Bump it** when a required field is added or remov
 structure changes, or when an optional field is added, because a consumer may need to handle it.
 Do not bump for clarified wording, a new example or a typo.
 
-**When you change spec, proof, anchor, evidence or signature parsing or emission:**
+**When you change spec, proof, anchor, marker, evidence, signature or package parsing or
+emission:**
 
-1. Make the code change, in `scripts/mcp/purlin/`, `scripts/review/`, `scripts/run/` or a
-   skill definition.
+1. Make the code change, in `scripts/mcp/purlin/`, `scripts/review/`, `scripts/run/`,
+   `scripts/anchor/`, `scripts/export/` or a skill definition.
 2. Update the matching file in `references/formats/`, bumping `> Format-Version:` by 1 when the
    change is structural.
 3. Update `references/spec_quality_guide.md` when the change affects how a rule is written.
-4. Grep `docs/`, `skills/` and `agents/purlin.md` for the format and fix what is now stale.
+4. Grep `docs/`, `skills/`, `references/` and `agents/purlin.md` for the format and fix what is
+   now stale.
 5. Commit the format change in the same commit as the code change. Never let the two drift.
 
 | File | What it governs |
@@ -46,9 +48,9 @@ Do not bump for clarified wording, a new example or a typo.
 | `spec_format.md` | The 2-section spec, parsed by `sync_status` |
 | `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
 | `marker_format.md` | The marker comment above a test, the `tests` setting, the four report formats and the tie, read by `purlin_run.py` and `sync_status` |
-| `signature_format.md` | The signature `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
+| `signature_format.md` | The signature `purlin:sign` writes, read by `sync_status` and `purlin:export` |
 | `package_format.md` | The evidence package `purlin:export` and `purlin:sign` write, handed to a regulated sign-off system as evidence |
-| `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a remote run, read by `sync_status` and `scripts/ci/gate_check.py` |
+| `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a remote run, read by `sync_status` and `purlin:export` |
 
 ## Skill and reference deduplication
 
@@ -66,12 +68,12 @@ concept and consolidate any duplicate in the same commit.
 |-----------|---------------------------|
 | `references/glossary.md` | The word this project uses for each concept, its one definition, and the chain |
 | `references/purlin_commands.md` | Every command's syntax, its one purpose sentence, and what it writes |
-| `references/hard_gates.md` | The gate, the three levels, which evidence counts, when a signature counts, what `signed/<version>` means |
+| `references/hard_gates.md` | The gate, the three steps, which evidence counts, when a signature counts, what `signed/<version>` means |
 | `references/review_criteria.md` | What the AI audit looks for in a rule, its proof and its test; the instructions the model is sent |
-| `references/spec_quality_guide.md` | Writing a rule, choosing its level, the guideline for a good proof, reading the cell that blocks it |
+| `references/spec_quality_guide.md` | Writing a rule, the guideline for a good proof, reading the cell that blocks it |
 | `references/drift_criteria.md` | Drift's range and its three views, config field ownership, project root ownership |
 | `references/commit_conventions.md` | Every commit message prefix and shape |
-| `references/supported_frameworks.md` | Test framework detection, the `tests` entry init writes for each, and what each needs added |
+| `references/supported_frameworks.md` | Test framework detection, the `tests` entry the first test run suggests for each, and what each needs added |
 | `references/rule_examples.md` | Worked rules and proofs |
 | `references/writing_style.md` | How Purlin writes: voice, person, casing, numbers, machine text |
 
@@ -92,9 +94,9 @@ Add a row there and `--check` guards it in the same edit. `scripts/mcp/purlin/__
 
 `.github/workflows/version-check.yml` runs `bash dev/bump_version.sh --check` on every push or
 pull request touching a version-bearing file, then the `purlin_version` proofs. The job log prints
-`VERSION` beside each derived location marked `ok`, `DRIFT` or `absent`. Run the same command
-locally before committing a bump. `specs/instructions/purlin_version.md` covers all four locations
-plus the script itself.
+`VERSION` beside each derived location marked `ok`, `DRIFT`, `FAIL` or `absent`. Run the same
+command locally before committing a bump. `specs/instructions/purlin_version.md` covers all four
+locations plus the script itself.
 
 ## Tool folder separation
 
