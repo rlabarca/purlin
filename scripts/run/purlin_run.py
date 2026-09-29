@@ -577,34 +577,6 @@ def scope_by_feature(features, selected):
             for name in selected}
 
 
-def tests_by_rule(project_root, selected):
-    """`{(feature, rule): [{file, name}]}`: the tests the evidence ties to each rule.
-
-    Read from the evidence the run has just written, which is where the tie
-    between a result and its marker is kept, so an engine that reports which
-    test caught which break can credit each rule with its own tests.
-    """
-    payload = payload_module.build_payload(project_root, generated_by='run')
-    out = {}
-    wanted = set(selected)
-    for feature in payload.get('features') or ():
-        if feature.get('name') not in wanted:
-            continue
-        for rule in feature.get('rules') or ():
-            if rule.get('feature') != feature.get('name'):
-                continue
-            tests = []
-            for proof in rule.get('proofs') or ():
-                for test in proof.get('tests') or ():
-                    entry = {'file': test.get('file', ''),
-                             'name': test.get('name', '')}
-                    if entry not in tests:
-                        tests.append(entry)
-            if tests:
-                out[(feature['name'], rule['id'])] = tests
-    return out
-
-
 # ---------------------------------------------------------------------------
 # The evidence
 # ---------------------------------------------------------------------------
@@ -1268,8 +1240,7 @@ def _run_breaks(project_root, args, features, selected):
     mutation_module.ARM_TIMEOUT = args.arm_timeout
     print('Measuring the breaks with the %s engine.' % engine)
     answer = run_breaks(project_root, engine,
-                        scope_by_feature(features, selected),
-                        tests_by_rule(project_root, selected))
+                        scope_by_feature(features, selected))
     # An installed engine answers a reason only when it measured nothing it
     # set out to, a timeout being the one case, so the person sees why test
     # strength was not measured rather than finding it in the log.

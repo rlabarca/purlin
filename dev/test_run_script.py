@@ -612,15 +612,12 @@ def evidence_run(monkeypatch, tmp_path):
     def select_engine(config, frameworks):
         return 'mutmut'
 
-    def run_breaks(project_root, engine, scope, tests):
-        calls['breaks'].append((engine, scope, tests))
+    def run_breaks(project_root, engine, scope):
+        calls['breaks'].append((engine, scope))
         return {
             'engine': engine, 'available': True, 'reason': '',
             'features': {'feat': {
-                'scope_score': {'score': 80, 'killed': 4, 'survived': 1},
-                'rules': {'RULE-1': {'engine': engine, 'score': 80,
-                                     'killed': 4, 'survived': 1,
-                                     'attribution': 'per_scope'}}}},
+                'scope_score': {'score': 80, 'killed': 4, 'survived': 1}}},
             'log': 'breaks.log'}
 
     # `commits_here` answers True here; the cases that turn it off set it
@@ -763,36 +760,16 @@ class TestTheLog:
 class TestTheBreaks:
 
     # purlin: run_script PROOF-16
-    def test_the_breaks_are_asked_for_the_scope_and_the_tests(
+    def test_the_breaks_are_asked_for_each_features_scope_files(
             self, tmp_path, evidence_run, capsys):
         root = _pytest_project(tmp_path, gate='strong')
         _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         _code, calls = evidence_run(root, '--all', '--audit')
         capsys.readouterr()
-        engine, scope, tests = calls['breaks'][0]
+        engine, scope = calls['breaks'][0]
         assert engine == 'mutmut'
         assert scope == {'feat': ['src/']}
-        assert tests[('feat', 'RULE-1')][0]['file'] == 'tests/test_feat.py'
-
-    # purlin: run_script PROOF-160
-    def test_each_rule_is_asked_with_its_own_test_file(
-            self, tmp_path, evidence_run, claude, capsys):
-        root = _pytest_project(tmp_path, gate='strong')
-        (root / 'tests' / 'test_two.py').write_text(
-            '# purlin: feat PROOF-2\n'
-            'def test_two():\n'
-            '    assert True\n', encoding='utf-8')
-        _config(root, mutation_engine='auto')
-        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
-                                             ('PROOF-2', 'RULE-2', '')))
-        _code, calls = evidence_run(root, '--all', '--audit')
-        capsys.readouterr()
-        _engine, _scope, tests = calls['breaks'][0]
-        assert {key: [test['file'] for test in found]
-                for key, found in tests.items()} == {
-            ('feat', 'RULE-1'): ['tests/test_feat.py'],
-            ('feat', 'RULE-2'): ['tests/test_two.py']}, tests
 
 
 class TestWhereEachArmCommits:
