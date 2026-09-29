@@ -1811,14 +1811,6 @@ class TestHostOs:
         assert self._on(monkeypatch, 'freebsd14') == 'linux'
 
 
-class TestTheRunScriptCarriesNoEmoji:
-
-    # purlin: run_script PROOF-22
-    def test_no_character_is_an_emoji(self):
-        source = open(RUN_SCRIPT, encoding='utf-8').read()
-        assert all(ord(character) < 0x1F000 for character in source)
-
-
 class TestTheConsoleCodecNeverEndsTheRun:
     """A Windows console hands Python cp1252, which encodes none of the glyphs.
 

@@ -32,7 +32,6 @@
 - RULE-47: A `--ci` run writes only where the evidence it writes is kept, which is a `run/*` branch. On a tag run it runs the tests tied to the proofs tagged `@env` for its system, writes no evidence and no `.purlin/runtime/run.log`, commits nothing, and prints a line beginning `Tag run: nothing is written.`
 - RULE-20: The evidence a run wrote makes a rule's passed cell read `passed` while its fingerprint is the one taken now, committed or not; changing a scoped file makes the cell read `out of date` with the reason `code changed since <sha7>`, editing the spec `spec changed since <sha7>`, and editing a test file `tests changed since <sha7>`, where the sha is the commit the run started on; the next run clears it
 - RULE-21: The run reads the operating system it is on as `windows`, `macos` or `linux`, and a system that is neither Windows nor macOS as `linux`
-- RULE-22: The run script's source carries no emoji
 - RULE-39: The run script reconfigures stdout and stderr to UTF-8 before it prints anything, so a console whose codec is cp1252 prints the state table's glyphs instead of ending the run with an encoding error
 - RULE-40: A suite that exits non-zero or is killed has the last 60 lines of its own output printed to stdout under `--- <suite> output (last 60 lines) ---` before the status table, and `--audit` and `--ci` keep the whole of every suite's output in `.purlin/runtime/run.log`
 - RULE-41: `--project-root` with an empty value exits 2 naming the flag, rather than resolving to the working directory and running there
@@ -118,7 +117,6 @@
 - PROOF-122 (RULE-21): On a platform that names itself `win32` the run reads `windows`
 - PROOF-123 (RULE-21): On a platform that names itself `linux` the run reads `linux`
 - PROOF-124 (RULE-21): On a platform that names itself `freebsd14`, neither Windows nor macOS, the run reads `linux`
-- PROOF-22 (RULE-22): The run script's source, read as text, holds no character at or above U+1F000
 - PROOF-57 (RULE-39): With the console's encoding set to cp1252 through `PYTHONIOENCODING=cp1252`, `--all --test` over one spec and one passing marked test prints no traceback and no `UnicodeEncodeError`, prints the status table's rule line `─`, which cp1252 cannot encode, and exits 0
 - PROOF-58 (RULE-40): A project's one marked test fails; `--all --test` exits 1 and, before the `Purlin status:` line, prints the heading `--- pytest output (last 60 lines) ---`, then pytest's own `1 failed` line, then `--- end of pytest output ---`
 - PROOF-168 (RULE-40): A shell test prints `line 1` to `line 100` and exits 1; `--all --test` prints exactly `line 41` to `line 100` under `--- shell output (last 60 lines) ---`, before the status table
