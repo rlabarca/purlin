@@ -246,7 +246,10 @@ def _files(root):
 # ---------------------------------------------------------------------------
 
 # purlin: upstream PROOF-1
+# purlin: upstream PROOF-46
 def test_an_added_anchor_keeps_the_author_text_under_source_and_pin(workspace):
+    """On Windows git marks the downloaded files read-only, and a removal
+    that does not clear the bit leaves them where they are."""
     result = _add(workspace)
     assert result['status'] == 'added'
     assert result['rules'] == ['RULE-1', 'RULE-2']
@@ -257,6 +260,7 @@ def test_an_added_anchor_keeps_the_author_text_under_source_and_pin(workspace):
     assert lines[0] == '# Anchor: no_eval'
     assert lines[2:4] == tracking, lines
     assert text.replace('\n'.join(tracking) + '\n\n', '', 1) == ANCHOR_V1
+    assert _runtime_files(workspace) == []
 
 
 # purlin: upstream PROOF-25
@@ -279,6 +283,7 @@ def test_the_pin_is_the_full_head_sha_and_names_no_branch(workspace):
 
 
 # purlin: upstream PROOF-3
+# purlin: upstream PROOF-47
 def test_with_no_name_the_anchor_is_named_after_its_file(workspace):
     """The path is spelled with the running system's separator, so a run on
     Windows types it with a backslash."""
@@ -355,6 +360,7 @@ def test_a_repository_source_starts_git_and_writes_the_copy(workspace, started):
 # ---------------------------------------------------------------------------
 
 # purlin: upstream PROOF-8
+# purlin: upstream PROOF-48
 def test_check_when_behind_reports_and_changes_no_file(workspace):
     _add(workspace)
     new_sha = _advance(workspace)
@@ -397,6 +403,7 @@ def test_check_exits_2_for_an_anchor_that_does_not_exist(workspace):
 
 
 # purlin: upstream PROOF-32
+# purlin: upstream PROOF-49
 def test_check_exits_2_when_the_source_is_gone(workspace):
     _add(workspace)
     _rmtree(workspace.anchor_repo)
@@ -447,6 +454,7 @@ def test_text_when_behind_names_the_sync_that_fixes_it(workspace):
 # ---------------------------------------------------------------------------
 
 # purlin: upstream PROOF-11
+# purlin: upstream PROOF-50
 def test_sync_advances_the_pin_and_names_the_rule_delta(workspace):
     _add(workspace)
     new_sha = _advance(workspace)
@@ -463,6 +471,12 @@ def test_sync_advances_the_pin_and_names_the_rule_delta(workspace):
     lines = _copy_text(workspace).splitlines()
     assert '> Pinned: %s' % new_sha in lines
     assert '- RULE-3: No compile() in source files' in lines
+    # A file read as text on Windows hides a carriage return, so the bytes
+    # are read as they lie on disk.
+    with open(upstream.anchor_path(workspace.root, 'no_eval'), 'rb') as handle:
+        copy = handle.read()
+    assert ('> Pinned: %s\n' % new_sha).encode('ascii') in copy
+    assert b'\r' not in copy
 
 
 # purlin: upstream PROOF-35
@@ -577,6 +591,7 @@ def test_a_call_with_no_arguments_exits_2_naming_the_project_root(workspace):
 
 
 # purlin: upstream PROOF-22
+# purlin: upstream PROOF-51
 def test_nothing_is_written_outside_the_project_root(workspace):
     _add(workspace)
     _advance(workspace)

@@ -288,12 +288,16 @@ def add(project_root, source, path=None, name=None):
     if error:
         result.update({'status': 'error', 'error': error})
         return result
-    content, error = read_source_file(checkout, path)
+    # The download is read once and is not kept: every way out removes it,
+    # the read-only files git writes on Windows included.
+    try:
+        content, error = read_source_file(checkout, path)
+    finally:
+        _rmtree(checkout)
     if error:
         result.update({'status': 'error', 'error': error})
         return result
     if not parse_rules(name, content):
-        _rmtree(checkout)
         result.update({'status': 'error', 'error': NOT_A_SPEC % (given, name)})
         return result
     source_line = '%s %s' % (source, path)
