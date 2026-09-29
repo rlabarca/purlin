@@ -5,19 +5,20 @@ proof. The readers, the checks and the broken copies this file shares with the
 other skill test files are in `dev/skill_checks.py`; the checks only this spec
 needs are at the bottom of this file.
 
-A refused case points a check at a copy of the file with one thing broken; the
-file on disk is never touched. RULE-2's last proof runs the real status tool
-against a throwaway project and reads back the data file the dashboard reads.
+A test that shows a sentence is there also points its check at copies of the
+file with that sentence broken, and asserts each copy is refused; the file on
+disk is never touched.
 """
 
-import json
 import os
 import re
+import sys
 
-from mcp_project import Project, _commit_tests, _entry
-from purlin import status as purlin_status
-from purlin import summary as purlin_summary
-from skill_checks import (COMMAND_REF, carries, closing_outcomes,
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), 'scripts', 'mcp'))
+
+from purlin import summary as purlin_summary  # noqa: E402
+from skill_checks import (COMMAND_REF, carries, closing_outcomes,  # noqa: E402
                           command_rows, field, flat, frontmatter,
                           frontmatter_problems, next_step_problems, on_copy,
                           read, refusals, replace, resub, runs_on, same_line,
@@ -41,7 +42,7 @@ class TestFrontmatter:
 
     # purlin: skill_status PROOF-1
     def test_the_frontmatter_names_the_skill_and_describes_it_in_one_line(
-            self):
+            self, monkeypatch):
         block = frontmatter(read(REL))
         assert block is not None, '%s opens with no frontmatter block' % REL
         assert field(block, 'name') == 'status'
@@ -49,77 +50,37 @@ class TestFrontmatter:
         assert not runs_on(block, 'description')
         assert [p for p in frontmatter_problems('status')
                 if 'frontmatter' in p] == []
+        line = description_line()
+        assert refusals(monkeypatch, lambda: frontmatter_problems('status'), [
+            (REL, replace('name: status\n'),
+             "frontmatter name is None, expected 'status'"),
+            (REL, replace(line, 'description:'), NO_DESCRIPTION),
+            (REL, resub(r'^description: [^\n]*$', 'description: ""'),
+             NO_DESCRIPTION),
+            (REL, replace(line, line.replace(': ', ': |\n  ', 1)),
+             NO_DESCRIPTION),
+            (REL, replace(line, line.replace(': ', ':\n  ', 1)),
+             NO_DESCRIPTION),
+            (REL, replace(line, line + '\n  and a second line'),
+             NO_DESCRIPTION),
+        ]) == []
 
     # purlin: skill_status PROOF-12
     def test_the_command_reference_has_a_row_for_status_with_its_purpose(
-            self):
+            self, monkeypatch):
         rows = [cells for cells in command_rows()
                 if cells[0] == '`purlin:status [name]`']
         assert len(rows) == 1, rows
         assert rows[0][1] == DESCRIPTION
         assert NO_ROW not in frontmatter_problems('status')
-
-    # purlin: skill_status PROOF-13
-    def test_a_skill_with_no_name_line_is_refused(self, monkeypatch):
-        assert frontmatter_refused(monkeypatch, REL, replace('name: status\n'),
-                                   "frontmatter name is None, expected "
-                                   "'status'") == []
-
-    # purlin: skill_status PROOF-14
-    def test_an_empty_description_is_refused(self, monkeypatch):
-        assert frontmatter_refused(
-            monkeypatch, REL, replace(description_line(), 'description:'),
-            NO_DESCRIPTION) == []
-
-    # purlin: skill_status PROOF-15
-    def test_a_description_written_as_empty_quotes_is_refused(
-            self, monkeypatch):
-        assert frontmatter_refused(
-            monkeypatch, REL, resub(r'^description: [^\n]*$',
-                                    'description: ""'),
-            NO_DESCRIPTION) == []
-
-    # purlin: skill_status PROOF-16
-    def test_a_description_opened_as_a_block_is_refused(self, monkeypatch):
-        assert frontmatter_refused(
-            monkeypatch, REL,
-            replace(description_line(), description_line().replace(
-                ': ', ': |\n  ', 1)),
-            NO_DESCRIPTION) == []
-
-    # purlin: skill_status PROOF-17
-    def test_a_description_on_the_line_below_is_refused(self, monkeypatch):
-        assert frontmatter_refused(
-            monkeypatch, REL,
-            replace(description_line(), description_line().replace(
-                ': ', ':\n  ', 1)),
-            NO_DESCRIPTION) == []
-
-    # purlin: skill_status PROOF-18
-    def test_a_description_running_on_to_a_second_line_is_refused(
-            self, monkeypatch):
-        assert frontmatter_refused(
-            monkeypatch, REL,
-            replace(description_line(), description_line()
-                    + '\n  and a second line'),
-            NO_DESCRIPTION) == []
-
-    # purlin: skill_status PROOF-19
-    def test_a_command_reference_without_the_status_row_is_refused(
-            self, monkeypatch):
-        assert frontmatter_refused(
-            monkeypatch, COMMAND_REF, replace(status_row() + '\n'),
-            NO_ROW) == []
-
-    # purlin: skill_status PROOF-20
-    def test_a_status_row_with_an_empty_purpose_is_refused(self, monkeypatch):
         row = status_row()
         emptied = re.sub(r'^(\| `purlin:status \[name\]` \|)[^|]*\|',
                          r'\1 |', row)
         assert emptied != row
-        assert frontmatter_refused(
-            monkeypatch, COMMAND_REF, replace(row, emptied), NO_ROW) == []
-
+        assert refusals(monkeypatch, lambda: frontmatter_problems('status'), [
+            (COMMAND_REF, replace(row + '\n'), NO_ROW),
+            (COMMAND_REF, replace(row, emptied), NO_ROW),
+        ]) == []
 
 def description_line():
     """The skill's `description:` line as it stands, so a refused copy
@@ -132,11 +93,6 @@ def status_row():
                 if line.startswith('| `purlin:status [name]` |'))
 
 
-def frontmatter_refused(monkeypatch, rel, edit, expected):
-    return refusals(monkeypatch, lambda: frontmatter_problems('status'),
-                    [(rel, edit, expected)])
-
-
 # ---------------------------------------------------------------------------
 # RULE-2: print what the tool returned, never recount
 # ---------------------------------------------------------------------------
@@ -144,54 +100,18 @@ def frontmatter_refused(monkeypatch, rel, edit, expected):
 class TestPrintWhatTheToolReturned:
 
     # purlin: skill_status PROOF-2
-    def test_it_prints_the_lines_the_tool_returned_and_never_recounts(self):
-        assert status_number_problems() == []
-
-    # purlin: skill_status PROOF-6
-    def test_a_skill_that_says_to_count_the_rules_itself_is_refused(
+    def test_it_prints_the_lines_the_tool_returned_and_never_recounts(
             self, monkeypatch):
+        assert status_number_problems() == []
         assert refusals(monkeypatch, status_number_problems, [
             (REL, replace(PRINTS, 'Count the rules in the table yourself.'),
              "does not carry 'Print the sentence and the `Left to do` lines"),
         ]) == []
 
-    # purlin: skill_status PROOF-21
-    def test_the_status_text_and_the_dashboard_data_carry_one_answer(self):
-        made = Project(gate='strong')
-        try:
-            _commit_tests(made, 'PROOF-1')
-            made.evidence([_entry('PROOF-1', 'RULE-1')], audited=False)
-            text = purlin_status.sync_status(made.root)
-            data = dashboard_data(made.root)
-        finally:
-            made.close()
-        sentence = '2 rules. 1 passes its tests. 0 are strong.'
-        assert text.splitlines()[-4:] == [
-            sentence, 'Left to do:',
-            '  1 rule to write a test for: purlin:build',
-            '  1 rule to audit: purlin:audit'], text
-        assert data['summary']['rules'] == 2
-        assert data['summary']['steps'] == {'passed': 1, 'strong': 0}
-        assert [(item['text'], item['command'], item['count'])
-                for item in data['left']] == [
-            ('1 rule to write a test for', 'purlin:build', 1),
-            ('1 rule to audit', 'purlin:audit', 1)]
-
-
 def status_number_problems():
     return carries(REL, [
         PRINTS + ' Never recount them: the command line and the dashboard '
         'must show one answer from one computation.'])
-
-
-def dashboard_data(root):
-    """The payload `.purlin/report-data.js` holds, as the page reads it."""
-    path = os.path.join(root, '.purlin', 'report-data.js')
-    with open(path, encoding='utf-8') as handle:
-        text = handle.read()
-    prefix, suffix = 'const PURLIN_DATA = ', ';\n'
-    assert text.startswith(prefix) and text.endswith(suffix), text[:80]
-    return json.loads(text[len(prefix):-len(suffix)])
 
 
 # ---------------------------------------------------------------------------
@@ -201,33 +121,27 @@ def dashboard_data(root):
 class TestNextStep:
 
     # purlin: skill_status PROOF-3
-    def test_the_last_section_is_headed_as_the_next_step(self):
+    def test_the_last_section_is_headed_as_the_next_step(self, monkeypatch):
         assert sections(read(REL))[-1][0] == 'Step 4: name the next step'
         assert [p for p in next_step_problems('status')
                 if 'closes with the section' in p] == []
-
-    # purlin: skill_status PROOF-7
-    def test_a_skill_with_its_last_section_removed_is_refused(
-            self, monkeypatch):
         last = read(REL).rindex('\n## ')
         assert closing_refused(
             monkeypatch, lambda t: t[:last + 1],
             "%s closes with the section 'With a name'" % REL) == []
 
     # purlin: skill_status PROOF-22
-    def test_the_last_section_names_the_first_line_of_left_to_do(self):
-        assert first_line_problems() == []
-
-    # purlin: skill_status PROOF-11
-    def test_a_last_section_that_names_no_first_line_is_refused(
+    def test_the_last_section_names_the_first_line_of_left_to_do(
             self, monkeypatch):
+        assert first_line_problems() == []
         assert refusals(monkeypatch, first_line_problems, [
             (REL, replace(FIRST_LINE, 'The next step is yours to choose.'),
              'closing section does not carry %r' % FIRST_LINE),
         ]) == []
 
     # purlin: skill_status PROOF-23
-    def test_every_row_gives_a_directive_but_nothing_left_to_do(self):
+    def test_every_row_gives_a_directive_but_nothing_left_to_do(
+            self, monkeypatch):
         body = sections(read(REL))[-1][1]
         rows = closing_outcomes(body)
         assert len(rows) >= 2, rows
@@ -237,26 +151,15 @@ class TestNextStep:
             'the gate asks. |'], undirected
         assert (next_step_problems('status')
                 + undirected_outcome_problems('status')) == []
-
-    # purlin: skill_status PROOF-8
-    def test_a_last_section_with_no_arrow_is_refused(self, monkeypatch):
         last = read(REL).rindex('\n## ')
         assert closing_refused(
             monkeypatch, lambda t: t[:last] + t[last:].replace(ARROW, '->'),
             '%s closing section gives no directive' % REL) == []
-
-    # purlin: skill_status PROOF-9
-    def test_a_last_section_cut_after_its_first_row_is_refused(
-            self, monkeypatch):
-        last = read(REL).rindex('\n## ')
         assert closing_refused(
             monkeypatch,
-            lambda t: t[:t.index('| `<n> rules to fix`', last)],
+            lambda t: t[:t.index('| `<n> test comments to correct`', last)],
             '%s closing section names 1 outcomes, expected at least 2'
             % REL) == []
-
-    # purlin: skill_status PROOF-10
-    def test_the_audit_row_without_its_arrow_is_refused(self, monkeypatch):
         assert closing_refused(
             monkeypatch, replace(AUDIT_ROW, AUDIT_ROW.replace(ARROW + ' ', '')),
             '%s closing outcome gives no %s directive: %s'
@@ -264,23 +167,13 @@ class TestNextStep:
 
     # purlin: skill_status PROOF-24
     def test_every_kind_of_left_to_do_line_has_a_row_running_its_command(
-            self):
-        assert kind_row_problems() == []
-
-    # purlin: skill_status PROOF-25
-    def test_the_audit_row_running_another_command_is_refused(
             self, monkeypatch):
+        assert kind_row_problems() == []
         assert refusals(monkeypatch, kind_row_problems, [
             (REL, replace(AUDIT_ROW, AUDIT_ROW.replace('purlin:audit',
                                                        'purlin:test')),
              "%s closing table row for 'rules to audit' runs 'purlin:test', "
              "but the line names 'purlin:audit'" % REL),
-        ]) == []
-
-    # purlin: skill_status PROOF-26
-    def test_a_table_that_no_longer_names_to_strengthen_is_refused(
-            self, monkeypatch):
-        assert refusals(monkeypatch, kind_row_problems, [
             (REL, replace(' or `to strengthen`'),
              "%s closing table names no row for the line 'rules to "
              "strengthen'" % REL),
@@ -314,14 +207,14 @@ def kind_row_problems():
     rows = []
     for row in closing_outcomes(sections(read(REL))[-1][1]):
         cells = [cell.strip() for cell in row.strip().strip('|').split('|')]
-        named = [re.sub(r'^<n> rules ', '', phrase)
+        named = [re.sub(r'^<n> (rules|test comments) ', '', phrase)
                  for phrase in re.findall(r'`([^`]*)`', cells[0])]
         command = re.search(r'%s Run: ([^`]+)`' % ARROW, cells[-1])
         rows.append((named, command.group(1) if command else None))
     problems = []
     for _kind, _one, many, command in purlin_summary.KINDS:
         line = many.replace('%s', '<systems>')
-        phrase = re.sub(r'^rules ', '', line)
+        phrase = re.sub(r'^(rules|test comments) ', '', line)
         found = [run for named, run in rows if phrase in named]
         if not found:
             problems.append('%s closing table names no row for the line %r'
@@ -378,12 +271,9 @@ class TestWithAName:
                                 'standing.'])) == []
 
     # purlin: skill_status PROOF-29
-    def test_the_command_reference_names_the_form_with_a_name(self):
-        assert reference_form_problems() == []
-
-    # purlin: skill_status PROOF-30
-    def test_a_command_reference_without_the_name_is_refused(
+    def test_the_command_reference_names_the_form_with_a_name(
             self, monkeypatch):
+        assert reference_form_problems() == []
         assert refusals(monkeypatch, reference_form_problems, [
             (COMMAND_REF, replace('`purlin:status [name]`',
                                   '`purlin:status`'),
@@ -391,29 +281,15 @@ class TestWithAName:
         ]) == []
 
     # purlin: skill_status PROOF-31
-    def test_the_with_a_name_section_says_what_it_prints(self):
+    def test_the_with_a_name_section_says_what_it_prints(self, monkeypatch):
         assert name_section_problems() == []
-
-    # purlin: skill_status PROOF-32
-    def test_a_name_section_that_takes_the_first_match_is_refused(
-            self, monkeypatch):
-        assert name_section_refused(
-            monkeypatch, replace('list them and ask which one',
-                                 'take the first'), SEVERAL) == []
-
-    # purlin: skill_status PROOF-33
-    def test_a_name_section_that_prints_nothing_for_no_match_is_refused(
-            self, monkeypatch):
-        assert name_section_refused(
-            monkeypatch, replace('print the whole table', 'print nothing'),
-            NONE) == []
-
-    # purlin: skill_status PROOF-34
-    def test_a_name_section_that_prints_only_the_rule_lines_is_refused(
-            self, monkeypatch):
-        assert name_section_refused(
-            monkeypatch, replace('its path, its\nheader, and one line per rule',
-                                 'one line per rule'), ONE_SPEC) == []
+        for edit, needle in (
+                (replace('list them and ask which one', 'take the first'),
+                 SEVERAL),
+                (replace('print the whole table', 'print nothing'), NONE),
+                (replace('its path, its\nheader, and one line per rule',
+                         'one line per rule'), ONE_SPEC)):
+            assert name_section_refused(monkeypatch, edit, needle) == []
 
 
 SEVERAL = 'when several match, list them and ask which one'

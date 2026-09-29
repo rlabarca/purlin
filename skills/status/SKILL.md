@@ -28,7 +28,6 @@ The tool opens with `Purlin status: <project>, plugin <version>, gate <gate>`, t
 Every spec and every anchor gets a row, sorted attention first: the most rules with work left
 at the top. Anchors carry `(anchor)` after the name. Columns exist only when the gate
 creates the cell behind them, so a project at `passed` has no strong and no signed column.
-
 The table is the dashboard's board, rendered as text: the same columns, the same text in
 each cell. A reader who has learned one has learned the other.
 
@@ -60,7 +59,6 @@ Left to do:
 The sentence names the steps up to the gate, each containing the next. `Left to do` holds one
 line per kind of work, in the order it is done, with its count and its command. When nothing
 is left, `Nothing left to do.` follows the sentence instead, at `signed` with the tag's push.
-
 Print the sentence and the `Left to do` lines `sync_status` returned. Never recount them: the
 command line and the dashboard must show one answer from one computation.
 
@@ -91,10 +89,12 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 | The first line after the sentence | Next step |
 |-----------------------------------|-----------|
 | `<n> rules to write a proof for`, or `to tie to their files` | `→ Run: purlin:spec` |
+| `<n> test comments to correct` | `→ Run: purlin:build` |
 | `<n> rules to fix`, `to write a test for` or `to strengthen` | `→ Run: purlin:build` |
 | `<n> rules to test` | `→ Run: purlin:test` |
 | `<n> rules to test on <systems>` | `→ Run: purlin:test --remote` |
 | `<n> rules to audit` | `→ Run: purlin:audit` |
+| `<n> rules to measure` | `→ Run: purlin:audit` |
 | `<n> rules to test by hand`, `to sign`, or `the version to tag` | `→ Run: purlin:sign` |
 | `Nothing left to do. Push the tag to release it: ...` | `→ Run: git push origin signed/<version>` |
 | `Nothing left to do.` | None: every rule reached every step the gate asks. |
