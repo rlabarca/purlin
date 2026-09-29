@@ -9,14 +9,14 @@
 ## Rules
 
 - RULE-1: `skills/build/SKILL.md` opens with a frontmatter block whose `name` is `build` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:build`
-- RULE-2: The skill chooses what to build from `sync_status` and runs the tests through `purlin:test`, never through the test framework directly
-- RULE-3: The last section of `skills/build/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome
+- RULE-2: The skill tells the agent to choose what to build from `sync_status` and to run the tests through `purlin:test`, never through the test framework directly
+- RULE-3: The last section of `skills/build/SKILL.md` tells the agent to name the next step from the summary and `Left to do` that `purlin:test` ended on, and lists the outcomes, each with its own `→` directive
 - RULE-4: The whole of `skills/build/SKILL.md` is at most 130 lines
-- RULE-5: The commit the skill makes carries the `feat(<name>):` subject prefix and a body whose Changeset section maps every rule the build addressed as `RULE-N → file:line`, with Decisions and Review omitted when they are empty and Changeset never omitted, as `references/commit_conventions.md` renders it
-- RULE-6: The skill compares the files the build created, changed or deleted for the feature with its `> Scope:`, adds each new file no entry covers, removes each entry whose file was deleted, and rewrites the line in the same commit as the code
-- RULE-7: For each proof with no marked test the skill looks first for an existing test that already shows what the proof asks and offers to add the marker above it, writing nothing new; otherwise it writes an ordinary test in the project's own framework, folder and style with the marker comment above it, `purlin: <feature> PROOF-<n>`, or the rule's id where the rule has no proof
-- RULE-8: Before the tests run, the skill runs `scripts/mcp/purlin/markers.py --near-misses`, shows each comment it returns with its fix and the reason, asks, and makes the edits the person accepts
-- RULE-9: The skill runs the tests through `purlin:test`, which suggests and writes the test command where none is set, and the skill writes no test command itself
+- RULE-5: The skill tells the agent to make one commit per build with the `feat(<name>):` subject prefix and a body whose Changeset section maps every rule the build addressed as `RULE-N → file:line`, with Decisions and Review omitted when they are empty and Changeset never omitted, as `references/commit_conventions.md` renders it
+- RULE-6: Before it commits, the skill tells the agent to compare the files it created, changed or deleted for the feature with the spec's `> Scope:`, add each new file no entry covers, remove each entry whose file was deleted, and rewrite the line in the same commit as the code
+- RULE-7: For each proof with no marked test the skill tells the agent to look first for an existing test that already shows what the proof asks and offer to add the marker above it, writing nothing new; otherwise to write an ordinary test in the project's own framework, folder and style with the marker comment above it, `purlin: <feature> PROOF-<n>`, or the rule's id where the rule has no proof
+- RULE-8: In a section before the one on running the tests, the skill gives the command `scripts/mcp/purlin/markers.py --near-misses` and tells the agent to show each comment it returns with its fix and the reason, ask, and make the edits the person accepts
+- RULE-9: The skill tells the agent that `purlin:test` suggests and writes the test command where none is set, and that the agent writes no test command itself
 
 ## Proof
 
