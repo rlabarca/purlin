@@ -972,10 +972,9 @@ def _host_tool_line(host, tool, installed):
         made.close()
 
 
-# The line for a remote that names neither host, word for word.
-UNKNOWN_HOST = ('The origin remote is neither GitHub nor Azure DevOps. '
-                'Everything on this machine works with any host; only '
-                'purlin:test --remote needs one of those two.')
+# The line for a remote that names a git host Purlin cannot use, word for word.
+UNKNOWN_HOST = ('This git host cannot run tests remotely. Everything on this '
+                'machine works.')
 
 
 def _host_read(url, host):
@@ -1028,7 +1027,7 @@ class TestTheHost:
             output = made.run('--gate', 'strong')
             assert ('Gate strong. Suites none. Git host not read from a '
                     'remote.' in output.splitlines()), output
-            assert 'neither GitHub nor Azure DevOps' not in output, output
+            assert 'cannot run tests remotely' not in output, output
             assert made.config()['ci'] == 'none'
         finally:
             made.close()

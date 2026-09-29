@@ -1408,7 +1408,8 @@ def test_a_host_init_writes_no_workflow_for_gets_none(tmp_path, capsys):
     _apply(root)
     printed = capsys.readouterr().out
     assert _workflows(root) == []
-    assert 'remote is neither GitHub nor Azure DevOps' in printed
+    assert ('This git host cannot run tests remotely. Everything on this '
+            'machine works.') in printed
     assert 'left the workflow unwritten; a prerequisite is missing' in printed
 
 

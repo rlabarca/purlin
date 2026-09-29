@@ -75,6 +75,7 @@ GATE_CHOICES = (
     'strong  tests pass and the audit finds them sound',
     'signed  strong, and a person signs each rule',
 )
+NOT_A_GATE = 'purlin: "%s" is not a gate; reading it as %s.'
 
 REMOTE_INTRO = 'A remote runner is written because:'
 REMOTE_NO_REMOTE = ('there is no git remote, so there is no runner to read '
@@ -579,8 +580,7 @@ def main(argv=None):
         gate = console.ask(GATE_QUESTION, gate_module.DEFAULT_GATE,
                            GATE_CHOICES)
         if gate not in gate_module.GATES:
-            print('purlin: "%s" is not a gate; reading it as %s.'
-                  % (gate, gate_module.DEFAULT_GATE))
+            print(NOT_A_GATE % (gate, gate_module.DEFAULT_GATE))
             gate = gate_module.DEFAULT_GATE
 
     names, tests = resolve_tests(existing, args.add)
