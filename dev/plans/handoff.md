@@ -67,8 +67,9 @@ The prompt for the next session is `dev/plans/next-agent-prompt.md`.
 
 ## Words for the owner to read
 
-Chosen by an agent where no decision gave them. The owner was shown these on 2026-09-29 and
-has not yet said which to change.
+Chosen by an agent where no decision gave them. The owner accepted them on 2026-09-29
+(decision 96), changed the line for the git host, which is still to be built, and left the
+rest to sanity check 3.
 
 | Where | What it says |
 |---|---|
@@ -79,7 +80,8 @@ has not yet said which to change.
 | Signing a name that is not a rule | `<feature> <RULE-N> is not a rule any spec has.` |
 | A run started by a pushed signed tag | `Tag run: nothing is written. This run reruns the tests on <ref>.` |
 | Setup, when no remote runner is needed | `every proof runs on this operating system, so nothing has to run remotely` |
-| Setup, with no git host or an unknown one | `Git host not read from a remote.` |
+| Setup, with no git host | `No git host found.` (decision 96, to be built) |
+| Setup, with a git host Purlin cannot use | `This git host cannot run tests remotely. Everything on this machine works.` (decision 96, to be built) |
 | Setup, with no tool for breaking code | `Without it test strength is not measured.` |
 | A comment that is nearly right | `` `purln` is one letter from `purlin`. `` |
 | The evidence package refusing a tag | `the committed evidence still has work left to do` |

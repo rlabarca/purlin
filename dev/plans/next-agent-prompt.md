@@ -6,14 +6,14 @@ Paste everything below the line into a new session opened in
 ---
 
 You are continuing Purlin 0.10.0, a Claude Code plugin for spec-driven development that uses
-itself. The owner has closed decisions 60 to 95. Decisions 60 to 93 are built and proven on
-`main`. Your job is to build decisions 94 and 95, then run sanity check 3, then the docs.
+itself. The owner has closed decisions 60 to 96. Decisions 60 to 93 are built and proven on
+`main`. Your job is to build decisions 94, 95 and 96, then run sanity check 3, then the docs.
 
 ## Read first, in this order, in full
 
 1. `dev/plans/handoff.md`: where the tree is, what is left, how the owner wants work done.
-2. `dev/plans/three-levels.md`, decisions 60 to 95 (search `60. **`). Later decisions amend
-   earlier ones; the later holds. Decisions 94 and 95 are your work.
+2. `dev/plans/three-levels.md`, decisions 60 to 96 (search `60. **`). Later decisions amend
+   earlier ones; the later holds. Decisions 94, 95 and 96 are your work.
 3. `dev/plans/phase2-questions.md`: the section "One sensible reading" is 55 changes the owner
    has approved to be applied; "For the owner" and "Windows" are answered by decisions 94 and 95.
 4. `dev/plans/phase2-report.md`: "Where the product does not do what its rule says", "Gaps
@@ -51,7 +51,7 @@ itself. The owner has closed decisions 60 to 95. Decisions 60 to 93 are built an
 
 ## The work, in order
 
-1. **Decisions 94 and 95**, as product work: the code, the rule, the proof and the marked test
+1. **Decisions 94, 95 and 96**, as product work: the code, the rule, the proof and the marked test
    together; every proof one case of at most 60 words. This includes the 55 readings, the
    product faults they settle, the split of the rules that list several things, and Windows:
    the remote run that runs only tagged tests, the four probable faults, the trimmed and

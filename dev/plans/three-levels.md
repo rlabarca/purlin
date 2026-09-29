@@ -869,6 +869,12 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       skills start Purlin's scripts through the interpreter lookup the plugin's server uses.
     - **The whole path on Windows is not walked for 0.10.0.** Its parts are proven there and
       the whole on the Mac; the release notes say so.
+96. **The words agents chose** (added 2026-09-29). Setup prints a line for each case of the
+    git host: `No git host found.` where the project has none, and `This git host cannot run
+    tests remotely. Everything on this machine works.` where it has one Purlin cannot use.
+    The signed panel on a rule's page and the line `Nothing is waiting for someone to test by
+    hand or to sign.` stay as written. The other wordings listed in `handoff.md` stand, and
+    sanity check 3 reads every message against the rules and the writing style.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
