@@ -79,7 +79,7 @@ cat > "$TMPDIR_E2E/specs/auth/login.md" << 'SPEC'
 
 ## Rules
 
-- RULE-1: Valid credentials return 200 with a session token [level: signed]
+- RULE-1: Valid credentials return 200 with a session token
 - RULE-2: Invalid credentials return 401 and the body "denied"
 
 ## Proof
@@ -116,7 +116,7 @@ def own(rule_id):
 
 
 def proved():
-    return len([r for r in rules if not r['flags']['no_proof']])
+    return len([r for r in rules if r['proofs']])
 
 
 def count(word):
@@ -144,8 +144,8 @@ write_test() {
 
 run_tests() {
   # The tests, run the way `purlin:test` runs them: every feature, evidence
-  # written under .purlin/evidence/local/ and nothing committed. The exit
-  # code says whether the gate is met, which each phase checks itself.
+  # written under .purlin/evidence/local/ and nothing committed. Each phase
+  # checks what the run left for itself.
   python3 "$RUN" --all --test --project-root "$TMPDIR_E2E" \
     > "$TMPDIR_E2E/.run.log" 2>&1 || true
 }
@@ -160,45 +160,35 @@ check "the required rules name their owner" "api_conventions" \
 check "the global rule names its owner" "security_no_eval" \
   "$(query "print(sorted({r['feature'] for r in rules if r['label'] == 'global'})[0])")"
 
-# ── phase B: the tags ─────────────────────────────────────────────────
-echo "  --- phase B: the rule tags ---"
-check "RULE-1 is marked signed and read as the gate passed" "passed signed" \
-  "$(query "print(own('RULE-1')['level'], own('RULE-1')['level_marked'])")"
-check "RULE-2 takes the gate's level" "passed None" \
-  "$(query "print(own('RULE-2')['level'], own('RULE-2')['level_marked'])")"
-check "the tag is stripped from the text" "Valid credentials return 200 with a session token" \
-  "$(query "print(own('RULE-1')['text'])")"
-
-# ── phase C: nothing proved yet ───────────────────────────────────────
-echo "  --- phase C: with no test run ---"
+# ── phase B: nothing proved yet ───────────────────────────────────────
+echo "  --- phase B: with no test run ---"
 check "every rule has a proof line" "5" "$(query "print(proved())")"
 check "every rule's passed cell reads no test" "5" \
   "$(query "print(count('no test'))")"
-check "the feature counts five untested rules" "5" \
-  "$(query "print(feature['rollup']['untested'])")"
+check "the summary counts five rules and none passing" \
+  "5 rules. 0 pass their tests." "$(query "print(data['summary']['sentence'])")"
 
-# ── phase D: partial, then complete ───────────────────────────────────
-echo "  --- phase D: the feature's own tests run ---"
+# ── phase C: partial, then complete ───────────────────────────────────
+echo "  --- phase C: the feature's own tests run ---"
 write_test login login PROOF-1 PROOF-2
 run_tests
 check "the run wrote login's evidence" "yes" \
   "$([ -f "$TMPDIR_E2E/.purlin/evidence/local/login.json" ] && echo yes || echo no)"
 check "two rules passed" "2" "$(query "print(count('passed'))")"
-check "three rules are still untested" "3" \
-  "$(query "print(feature['rollup']['untested'])")"
+check "three rules still have no test" "3" "$(query "print(count('no test'))")"
 
-echo "  --- phase E: the required and global tests run too ---"
+echo "  --- phase D: the required and global tests run too ---"
 write_test api api_conventions PROOF-1 PROOF-2
 write_test security security_no_eval PROOF-1
 run_tests
 check "the run wrote each anchor's own evidence" "yes yes" \
   "$(for name in api_conventions security_no_eval; do [ -f "$TMPDIR_E2E/.purlin/evidence/local/$name.json" ] && printf yes || printf no; printf ' '; done | sed 's/ $//')"
 check "all five rules passed" "5" "$(query "print(count('passed'))")"
-check "all five meet the gate" "5" \
-  "$(query "print(feature['rollup']['met'])")"
+check "the summary counts all five passing" "5 rules. 5 pass their tests." \
+  "$(query "print(data['summary']['sentence'])")"
 
-# ── phase F: the status table ─────────────────────────────────────────
-echo "  --- phase F: the table ---"
+# ── phase E: the status table ─────────────────────────────────────────
+echo "  --- phase E: the table ---"
 STATUS="$(python3 -c "
 import sys
 sys.path.insert(0, '$MCP_DIR')
