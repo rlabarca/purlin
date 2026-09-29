@@ -19,6 +19,7 @@ What each group proves:
               old cache folder goes
 *config*      the file that is left is the gate, what the gate derives, and
               the host
+*tests*       the `tests` setting written from the frameworks 0.9.5 named
 *tags*        the Windows tag becomes `@env(windows)`, and the kind of test
               goes from every proof line
 *hooks*       the pre-commit and pre-push hooks v0.9.5 installed go
@@ -26,6 +27,7 @@ What each group proves:
 *markers*     each 0.9.5 marker becomes a comment above the same test
 *plugins*     the plugin copies and the wiring that loaded them go
 *design*      the Figma source and the picture fingerprint go from each spec
+*page*        the dashboard page at the root becomes the one the plugin ships
 *mutation*    the mutation question init asks, asked of a config without one
 *scope*       a spec with no `> Scope:` line is named, and changed by nothing
 *evidence*    `.purlin/evidence/` and its README
@@ -57,7 +59,6 @@ import update  # noqa: E402
 from purlin import status as status_module  # noqa: E402
 
 V095 = 'upgrade-0.9.5'
-LAYOUTS = (V095,)
 
 # The files 0.9.5 committed beside a spec, which the upgrade removes.
 LEFTOVER = ('*.proofs-*.json', '*.receipt.json')
@@ -194,31 +195,22 @@ def _set_config(root, **values):
     _write(root, '.purlin/config.json', json.dumps(config, indent=2))
 
 
+
 # --- what a project still needs ---------------------------------------------
 
-# purlin: update PROOF-2
-def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
-    root = _project(tmp_path, V095)
-    found = _ids(root)
-    for expected in ('design-refs', 'os-tags', 'untracked-files', 'config',
-                     'evidence', 'workflows', 'plugins'):
-        assert expected in found, found
-    assert found == ['design-refs', 'os-tags', 'kind-tags', 'untracked-files',
-                     'config', 'evidence', 'workflows', 'plugins']
-
-
-# purlin: update PROOF-2
-def test_a_retired_hook_adds_the_hook_migration(tmp_path):
-    root = _project(tmp_path, V095)
-    _write(root, '.git/hooks/pre-commit', OLD_PRE_COMMIT)
-    found = _ids(root)
-    assert 'hooks' in found, found
-    for expected in ('os-tags', 'untracked-files', 'config', 'workflows',
-                     'plugins'):
-        assert expected in found, found
+# The migrations the v0.9.5 fixture needs, in the order they are applied.
+EIGHT = ['design-refs', 'os-tags', 'kind-tags', 'untracked-files', 'config',
+         'evidence', 'workflows', 'plugins']
 
 
 # purlin: update PROOF-1
+def test_a_root_without_purlin_has_nothing_pending(tmp_path):
+    empty = str(tmp_path / 'bare')
+    os.makedirs(empty)
+    assert update.pending(empty) == []
+
+
+# purlin: update PROOF-67
 def test_every_pending_entry_says_what_it_does_and_to_which_files(tmp_path):
     root = _project(tmp_path, V095)
     found = update.pending(root)
@@ -232,6 +224,21 @@ def test_every_pending_entry_says_what_it_does_and_to_which_files(tmp_path):
     assert len(ids) == len(set(ids)), ids
 
 
+# purlin: update PROOF-2
+def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
+    root = _project(tmp_path, V095)
+    assert _ids(root) == EIGHT
+
+
+# purlin: update PROOF-68
+def test_a_retired_hook_adds_the_hook_migration(tmp_path):
+    root = _project(tmp_path, V095)
+    _write(root, '.git/hooks/pre-commit', OLD_PRE_COMMIT)
+    assert _ids(root) == ['design-refs', 'os-tags', 'kind-tags',
+                          'untracked-files', 'hooks', 'config', 'evidence',
+                          'workflows', 'plugins']
+
+
 # purlin: update PROOF-4
 def test_a_root_without_purlin_exits_2(tmp_path):
     empty = str(tmp_path / 'empty')
@@ -243,29 +250,22 @@ def test_a_root_without_purlin_exits_2(tmp_path):
     assert 'Run purlin:init first.' in done.stderr
 
 
-# purlin: update PROOF-1
-def test_pending_is_empty_for_a_root_without_purlin(tmp_path):
-    empty = str(tmp_path / 'bare')
-    os.makedirs(empty)
-    assert update.pending(empty) == []
-
-
 # --- applying ----------------------------------------------------------------
 
-@pytest.mark.parametrize('layout', LAYOUTS)
 # purlin: update PROOF-5
-def test_yes_applies_every_migration(tmp_path, capsys, layout):
-    root = _project(tmp_path, layout)
+def test_yes_asks_nothing_and_applies_every_migration(tmp_path, capsys,
+                                                     monkeypatch):
+    root = _project(tmp_path, V095)
+    asked = _answers(monkeypatch)
     assert _apply(root) == 0
     capsys.readouterr()
+    assert asked == []
     assert update.pending(root) == []
 
 
-@pytest.mark.parametrize('layout', LAYOUTS)
 # purlin: update PROOF-33
-def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,
-                                                           layout):
-    root = _project(tmp_path, layout)
+def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys):
+    root = _project(tmp_path, V095)
     _apply(root)
     head = _git(root, 'rev-parse', 'HEAD').stdout.strip()
     tree = _git(root, 'status', '--porcelain').stdout
@@ -276,6 +276,22 @@ def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,
     assert _git(root, 'status', '--porcelain').stdout == tree
 
 
+# purlin: update PROOF-69
+def test_yes_takes_the_default_of_the_gate_and_mutation_questions(
+        tmp_path, capsys, monkeypatch):
+    root = _project(tmp_path, V095)
+    _set_config(root, pre_push='strict')
+    _write(root, 'conftest.py', '')
+    asked = _answers(monkeypatch)
+    _apply(root)
+    capsys.readouterr()
+    assert asked == []
+    written = _config(root)
+    assert written['gate'] == 'strong'
+    assert written['mutation_engine'] == 'none'
+    assert written['min_strength'] is None
+
+
 # purlin: update PROOF-6
 def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
@@ -284,16 +300,15 @@ def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):
     asked = _answers(monkeypatch, default='n')
     assert _apply(root, argv=()) == 0
     printed = capsys.readouterr().out
-    assert 'skipped config' in printed
-    assert _ids(root) == before
     assert [prompt.split(',')[0] for prompt in asked] == [
         'Apply %s' % migration_id for migration_id in before]
     for migration_id in before:
         assert '  skipped %s\n' % migration_id in printed, migration_id
     assert _git(root, 'status', '--porcelain').stdout == tree
+    assert _ids(root) == before
 
 
-# purlin: update PROOF-6
+# purlin: update PROOF-70
 def test_one_declined_migration_does_not_stop_the_others(tmp_path, capsys,
                                                          monkeypatch):
     root = _project(tmp_path, V095)
@@ -305,30 +320,21 @@ def test_one_declined_migration_does_not_stop_the_others(tmp_path, capsys,
 
 # --- the files beside the specs ----------------------------------------------
 
-@pytest.mark.parametrize('layout', LAYOUTS)
 # purlin: update PROOF-8
-def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):
-    root = _project(tmp_path, layout)
+def test_no_proof_or_run_file_is_left_on_disk_or_tracked(tmp_path):
+    root = _project(tmp_path, V095)
     assert _walk(root, LEFTOVER), 'the fixture should start with some'
     _apply(root)
     assert _walk(root, LEFTOVER) == []
-
-
-@pytest.mark.parametrize('layout', LAYOUTS)
-# purlin: update PROOF-8
-def test_no_proof_or_verification_file_remains_tracked(tmp_path, layout):
-    root = _project(tmp_path, layout)
-    _apply(root)
     left = [rel for rel in _tracked(root)
             if any(fnmatch.fnmatch(os.path.basename(rel), p)
                    for p in LEFTOVER)]
     assert left == []
 
 
-@pytest.mark.parametrize('layout', LAYOUTS)
 # purlin: update PROOF-34
-def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):
-    root = _project(tmp_path, layout)
+def test_the_dashboard_data_is_untracked_and_ignored(tmp_path):
+    root = _project(tmp_path, V095)
     assert '.purlin/report-data.js' in _tracked(root)
     _apply(root)
     assert '.purlin/report-data.js' not in _tracked(root)
@@ -360,20 +366,35 @@ def test_a_committed_cache_is_deleted_from_git_and_from_disk(tmp_path):
     assert not os.path.exists(os.path.join(root, '.purlin', 'cache'))
 
 
+# purlin: update PROOF-75
+def test_a_cache_the_gitignore_does_not_name_is_deleted_too(tmp_path):
+    """With nothing ignoring it, the update's own commit must not add it back."""
+    root = _project(tmp_path, V095)
+    kept = [line for line in _read(root, '.gitignore').splitlines()
+            if line != '.purlin/cache/']
+    _write(root, '.gitignore', '\n'.join(kept) + '\n')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'the cache, committed')
+    assert any(rel.startswith('.purlin/cache/') for rel in _tracked(root))
+    _apply(root)
+    assert not any(rel.startswith('.purlin/cache/') for rel in _tracked(root))
+    assert not os.path.exists(os.path.join(root, '.purlin', 'cache'))
+    assert 'untracked-files' not in _ids(root)
+
+
 # --- the config --------------------------------------------------------------
 
-@pytest.mark.parametrize('layout', LAYOUTS)
 # purlin: update PROOF-10
-def test_the_config_is_the_gate_shape(tmp_path, layout):
-    root = _project(tmp_path, layout)
+def test_the_config_is_the_gate_shape(tmp_path):
+    root = _project(tmp_path, V095)
     _apply(root)
-    config = json.loads(_read(root, '.purlin/config.json'))
+    config = _config(root)
+    assert sorted(config) == SEVEN_KEYS
     assert config['version'] == VERSION
     assert config['gate'] == 'passed'
     assert config['mutation_engine'] == 'none'
     assert config['min_strength'] is None
     assert config['audit_parallel'] == 4
-    assert sorted(config) == SEVEN_KEYS
     assert config['ci'] == 'github'
 
 
@@ -403,10 +424,9 @@ def test_the_config_is_the_gate_shape_at_signed(tmp_path, capsys, monkeypatch):
     assert sorted(config) == SEVEN_KEYS
 
 
-@pytest.mark.parametrize('layout', LAYOUTS)
 # purlin: update PROOF-39
-def test_retired_keys_are_gone(tmp_path, layout):
-    root = _project(tmp_path, layout)
+def test_retired_keys_are_gone(tmp_path):
+    root = _project(tmp_path, V095)
     before = _config(root)
     assert 'spec_dir' in before and 'pre_push' in before, before
     _apply(root)
@@ -446,22 +466,47 @@ def test_a_ci_the_project_named_is_kept(tmp_path):
     assert _config(root)['ci'] == 'none'
 
 
+# purlin: update PROOF-78
+def test_an_audit_parallel_the_project_named_is_kept(tmp_path):
+    root = _project(tmp_path, V095)
+    _set_config(root, audit_parallel=8)
+    _apply(root)
+    assert _config(root)['audit_parallel'] == 8
+
+
+# purlin: update PROOF-11
+def test_a_dashboard_switch_set_on_is_not_written_back(tmp_path):
+    root = _project(tmp_path, V095)
+    assert _config(root)['report'] is True
+    _apply(root)
+    written = _config(root)
+    assert 'report' not in written, written
+
+
+# purlin: update PROOF-44
+def test_a_dashboard_switch_set_off_is_not_written_back_either(tmp_path):
+    root = _project(tmp_path, V095)
+    _set_config(root, report=False)
+    _apply(root)
+    written = _config(root)
+    assert 'report' not in written, written
+
+
 # purlin: update PROOF-12
 def test_the_gate_defaults_to_passed(tmp_path):
     root = _project(tmp_path, V095)
+    before = _config(root)
+    assert 'gate' not in before and before['pre_push'] == 'off', before
     _apply(root)
-    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'passed'
+    assert _config(root)['gate'] == 'passed'
 
 
 # purlin: update PROOF-45
 def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):
     root = _project(tmp_path, V095)
-    config = json.loads(_read(root, '.purlin/config.json'))
-    config['pre_push'] = 'strict'
-    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    _set_config(root, pre_push='strict')
     _apply(root)
-    written = json.loads(_read(root, '.purlin/config.json'))
-    assert written['gate'] == 'strong'
+    assert _config(root)['gate'] == 'strong'
 
 
 # purlin: update PROOF-46
@@ -471,27 +516,11 @@ def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
     asked = _answers(monkeypatch, [('Gate [', 'signed')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
+    assert ('What must be true of every rule before a version is proven?'
+            in printed), printed
     assert scaffold.GATE_QUESTION in printed, printed
-    assert any('Gate [' in prompt for prompt in asked)
-    assert len([prompt for prompt in asked if 'Gate [' in prompt]) == 1
-    written = json.loads(_read(root, '.purlin/config.json'))
-    assert written['gate'] == 'signed'
-
-
-# purlin: update PROOF-48
-def test_the_gate_the_project_named_is_the_default(tmp_path, capsys,
-                                                   monkeypatch):
-    root = _project(tmp_path, V095)
-    config = json.loads(_read(root, '.purlin/config.json'))
-    config['gate'] = 'signed'
-    assert config['pre_push'] == 'off'
-    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
-    asked = _answers(monkeypatch, [('Gate [', '')])
-    _apply(root, argv=())
-    capsys.readouterr()
-    assert [prompt for prompt in asked if 'Gate [' in prompt] == [
-        'Gate [signed]: ']
-    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'signed'
+    assert len([prompt for prompt in asked if prompt.startswith('Gate [')]) == 1
+    assert _config(root)['gate'] == 'signed'
 
 
 # purlin: update PROOF-47
@@ -501,98 +530,77 @@ def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,
     _answers(monkeypatch, [('Gate [', 'whenever')])
     _apply(root, argv=())
     capsys.readouterr()
-    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'passed'
+    assert _config(root)['gate'] == 'passed'
 
 
-# purlin: update PROOF-11
-@pytest.mark.parametrize('layout', LAYOUTS)
-def test_no_key_nothing_reads_is_written_back(tmp_path, layout):
-    """The dashboard switch an older release carried is not carried forward.
-
-    It is not a retired key, so `resolve_gate` never warns about it and
-    nothing would report it; the only thing that keeps it out of the file the
-    update leaves is that the update does not write it.
-    """
-    root = _project(tmp_path, layout)
-    _apply(root)
-    written = json.loads(_read(root, '.purlin/config.json'))
-    assert 'report' not in written, written
-    source = _read(ROOT, 'scripts/init/update.py')
-    # The one place the name stands is the list of keys only 0.9.5 wrote,
-    # which the update reads to tell such a project and never writes.
-    assert source.count("'report'") == 1, 'the update writes a key nothing reads'
-    assert 'report' in update.SET_UP_BY_095_KEYS
-
-
-# purlin: update PROOF-44
-def test_a_dashboard_switch_set_off_is_not_written_back_either(tmp_path):
+# purlin: update PROOF-48
+def test_the_gate_the_project_named_is_the_default(tmp_path, capsys,
+                                                   monkeypatch):
     root = _project(tmp_path, V095)
-    config = json.loads(_read(root, '.purlin/config.json'))
-    config['report'] = False
-    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
-    _apply(root)
-    written = json.loads(_read(root, '.purlin/config.json'))
-    assert 'report' not in written, written
+    assert _config(root)['pre_push'] == 'off'
+    _set_config(root, gate='signed')
+    asked = _answers(monkeypatch, [('Gate [', '')])
+    _apply(root, argv=())
+    capsys.readouterr()
+    assert [prompt for prompt in asked if 'Gate [' in prompt] == [
+        'Gate [signed]: ']
+    assert _config(root)['gate'] == 'signed'
 
+
+# --- the tests setting ---------------------------------------------------------
 
 # purlin: update PROOF-21
 def test_a_framework_the_tree_cannot_run_is_dropped(tmp_path, capsys):
     """An older release wrote down every plugin it shipped, runnable or not."""
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
-    before = json.loads(_read(root, '.purlin/config.json'))
-    assert before['test_framework'] == 'pytest,jest,shell,vitest'
+    assert _config(root)['test_framework'] == 'pytest,jest,shell,vitest'
     _apply(root)
     printed = capsys.readouterr().out
-    written = json.loads(_read(root, '.purlin/config.json'))
     from purlin import frameworks
-    assert written['tests'] == [frameworks.entry_for('pytest')]
+    assert _config(root)['tests'] == [frameworks.entry_for('pytest')]
     for name in ('jest', 'shell', 'vitest'):
         assert ('dropped %s from the tests: nothing in the tree runs it'
                 % name) in printed, printed
-    assert 'wrote the tests setting: pytest' in printed
+    assert 'wrote the tests setting: pytest\n' in printed
 
 
-# purlin: update PROOF-21
+# purlin: update PROOF-93
 def test_a_framework_the_tree_carries_is_kept(tmp_path, capsys):
     root = _project(tmp_path, V095)
+    assert _config(root)['test_framework'] == 'pytest,jest,shell,vitest'
     _write(root, 'conftest.py', '')
     _write(root, 'package.json', json.dumps({'devDependencies': {
         'jest': '^29.0.0', 'vitest': '^3.0.0'}}))
     _write(root, 'tests/login.test.sh', 'exit 0\n')
     _apply(root)
     printed = capsys.readouterr().out
-    written = json.loads(_read(root, '.purlin/config.json'))
-    assert [suite['name'] for suite in written['tests']] == [
+    assert [suite['name'] for suite in _config(root)['tests']] == [
         'pytest', 'jest', 'shell', 'vitest']
     assert 'from the tests' not in printed
 
 
-# purlin: update PROOF-21
+# purlin: update PROOF-94
 def test_xunit_is_read_as_dotnet(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _write(root, 'App.Tests/App.Tests.csproj',
            '<Project><ItemGroup><PackageReference Include="xunit" '
            'Version="2.9.0" /></ItemGroup></Project>\n')
-    config = json.loads(_read(root, '.purlin/config.json'))
-    config['test_framework'] = 'xunit'
-    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    _set_config(root, test_framework='xunit')
     _apply(root)
     printed = capsys.readouterr().out
     from purlin import frameworks
-    written = json.loads(_read(root, '.purlin/config.json'))
-    assert written['tests'] == [frameworks.entry_for('dotnet')]
-    assert 'wrote the tests setting: dotnet' in printed
+    assert _config(root)['tests'] == [frameworks.entry_for('dotnet')]
+    assert 'wrote the tests setting: dotnet\n' in printed
     assert 'from the tests' not in printed
 
 
-@pytest.mark.parametrize('named', ('auto', None))
-# purlin: update PROOF-21
-def test_auto_or_no_value_writes_what_detection_finds(tmp_path, capsys, named):
+def _detected_suites(tmp_path, capsys, named):
+    """The suites and the output with the frameworks named `named`, or none."""
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
     _write(root, 'tests/login.test.sh', 'exit 0\n')
-    config = json.loads(_read(root, '.purlin/config.json'))
+    config = _config(root)
     if named is None:
         del config['test_framework']
     else:
@@ -600,8 +608,36 @@ def test_auto_or_no_value_writes_what_detection_finds(tmp_path, capsys, named):
     _write(root, '.purlin/config.json', json.dumps(config, indent=2))
     _apply(root)
     printed = capsys.readouterr().out
-    written = json.loads(_read(root, '.purlin/config.json'))
-    assert [suite['name'] for suite in written['tests']] == ['pytest', 'shell']
+    return [suite['name'] for suite in _config(root)['tests']], printed
+
+
+# purlin: update PROOF-95
+def test_auto_writes_what_detection_finds(tmp_path, capsys):
+    suites, printed = _detected_suites(tmp_path, capsys, 'auto')
+    assert suites == ['pytest', 'shell']
+    assert 'from the tests' not in printed
+
+
+# purlin: update PROOF-96
+def test_no_framework_named_writes_what_detection_finds(tmp_path, capsys):
+    suites, printed = _detected_suites(tmp_path, capsys, None)
+    assert suites == ['pytest', 'shell']
+    assert 'from the tests' not in printed
+
+
+OWN_TESTS = [{'name': 'pytest', 'run': 'pytest -q tests',
+              'report': 'report.xml', 'format': 'junit',
+              'files': ['tests/**/*.py']}]
+
+
+# purlin: update PROOF-97
+def test_a_tests_setting_already_written_is_kept(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _set_config(root, tests=OWN_TESTS)
+    assert 'config' in _ids(root)
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert _config(root)['tests'] == OWN_TESTS
     assert 'from the tests' not in printed
 
 
@@ -669,6 +705,7 @@ OLD_TESTS = {'tests/test_login.py': (OLD_PYTEST, NEW_PYTEST),
              'tests/LoginTests.cs': (OLD_XUNIT, NEW_XUNIT),
              'tests/login.test.sh': (OLD_SHELL, NEW_SHELL),
              'tests/test_login.sql': (OLD_SQL, NEW_SQL)}
+ONE_TEST_NOW = '; the file is one test now, and passes when it exits 0'
 
 
 def _old_tests(root):
@@ -678,28 +715,59 @@ def _old_tests(root):
     _git(root, 'commit', '-qm', 'the tests 0.9.5 marked')
 
 
-# purlin: update PROOF-29
-def test_each_old_marker_becomes_a_comment_above_its_test(tmp_path, capsys):
+def _rewritten(tmp_path, capsys):
+    """The sample project with one old-marked file per framework, updated."""
     root = _project(tmp_path, V095)
     _old_tests(root)
-    assert update._detect_markers(root) == sorted(OLD_TESTS)
     _apply(root)
-    printed = capsys.readouterr().out
-    for rel, (_old, new) in OLD_TESTS.items():
-        assert _read(root, rel) == new, rel
-    assert 'rewrote 2 markers in tests/test_login.py as comments' in printed
-    assert ('rewrote 1 marker in tests/login.test.sh as comments; the file '
-            'is one test now, and passes when it exits 0') in printed
-    assert ('rewrote 1 marker in tests/test_login.sql as comments; the file '
-            'is one test now, and passes when it exits 0') in printed
-    assert 'markers' not in _ids(root)
+    return root, capsys.readouterr().out
 
 
 # purlin: update PROOF-29
+def test_the_pytest_marks_become_comments(tmp_path, capsys):
+    root, printed = _rewritten(tmp_path, capsys)
+    assert _read(root, 'tests/test_login.py') == NEW_PYTEST
+    assert '  rewrote 2 markers in tests/test_login.py as comments\n' in printed
+
+
+# purlin: update PROOF-107
+def test_the_jest_title_tags_become_comments(tmp_path, capsys):
+    root, printed = _rewritten(tmp_path, capsys)
+    assert _read(root, 'tests/login.test.js') == NEW_JEST
+    assert '  rewrote 2 markers in tests/login.test.js as comments\n' in printed
+
+
+# purlin: update PROOF-108
+def test_the_xunit_trait_becomes_a_comment(tmp_path, capsys):
+    root, printed = _rewritten(tmp_path, capsys)
+    assert _read(root, 'tests/LoginTests.cs') == NEW_XUNIT
+    assert '  rewrote 1 marker in tests/LoginTests.cs as comments\n' in printed
+
+
+# purlin: update PROOF-109
+def test_the_shell_harness_calls_become_one_comment(tmp_path, capsys):
+    root, printed = _rewritten(tmp_path, capsys)
+    assert _read(root, 'tests/login.test.sh') == NEW_SHELL
+    assert ('rewrote 1 marker in tests/login.test.sh as comments'
+            + ONE_TEST_NOW) in printed
+
+
+# purlin: update PROOF-110
+def test_the_sql_comment_becomes_the_marker(tmp_path, capsys):
+    root, printed = _rewritten(tmp_path, capsys)
+    assert _read(root, 'tests/test_login.sql') == NEW_SQL
+    assert ('rewrote 1 marker in tests/test_login.sql as comments'
+            + ONE_TEST_NOW) in printed
+
+
+# purlin: update PROOF-111
 def test_each_rewritten_test_file_is_backed_up(tmp_path):
     root = _project(tmp_path, V095)
     _old_tests(root)
+    assert [item['files'] for item in update.pending(root)
+            if item['id'] == 'markers'] == [sorted(OLD_TESTS)]
     _apply(root)
+    assert 'markers' not in _ids(root)
     for rel, (old, _new) in OLD_TESTS.items():
         folder, name = os.path.split(os.path.join(root, rel))
         (backup,) = [entry for entry in os.listdir(folder)
@@ -735,6 +803,23 @@ OLD_VITEST_CONFIG = ("import { defineConfig } from 'vitest/config';\n"
                      "  test: { reporters: ['default', "
                      "'.purlin/plugins/vitest_purlin.ts'] },\n"  # retired
                      '});\n')
+OLD_PACKAGE_JSON = json.dumps({'jest': {'reporters': [
+    'default', '.purlin/plugins/jest_purlin.js']}}) + '\n'  # retired
+WIRING = {'conftest.py': OLD_CONFTEST, 'jest.config.js': OLD_JEST_CONFIG,
+          'vitest.config.ts': OLD_VITEST_CONFIG,
+          'package.json': OLD_PACKAGE_JSON}
+CSPROJ = ('<Project><ItemGroup><Compile Include="../.purlin/plugins/'  # retired
+          'xunit_purlin.cs" /></ItemGroup></Project>\n')
+
+
+def _unwired(tmp_path, capsys):
+    """The sample project given the wiring v0.9.5's init wrote, updated."""
+    root = _project(tmp_path, V095)
+    for rel, text in WIRING.items():
+        _write(root, rel, text)
+    _write(root, 'App.Tests/App.Tests.csproj', CSPROJ)
+    _apply(root)
+    return root, capsys.readouterr().out
 
 
 # purlin: update PROOF-16
@@ -750,56 +835,74 @@ def test_the_plugin_copies_go(tmp_path):
     assert 'plugins' not in _ids(root)
 
 
-# purlin: update PROOF-16
+# purlin: update PROOF-81
 def test_a_file_the_plugin_did_not_ship_is_left_alone(tmp_path):
     root = _project(tmp_path, V095)
     _write(root, '.purlin/plugins/house_purlin.rb', '# our own reporter\n')  # retired
     _apply(root)
     assert _read(root, '.purlin/plugins/house_purlin.rb') == (  # retired
         '# our own reporter\n')
-    assert not os.path.exists(
-        os.path.join(root, '.purlin', 'plugins', 'pytest_purlin.py'))
+    assert sorted(os.listdir(os.path.join(root, '.purlin', 'plugins'))) == [
+        'house_purlin.rb']
 
 
-# purlin: update PROOF-16
-def test_the_wiring_0_9_5_wrote_goes(tmp_path, capsys):
-    root = _project(tmp_path, V095)
-    _write(root, 'conftest.py', OLD_CONFTEST)
-    _write(root, 'jest.config.js', OLD_JEST_CONFIG)
-    _write(root, 'vitest.config.ts', OLD_VITEST_CONFIG)
-    _write(root, 'package.json', json.dumps({'jest': {'reporters': [
-        'default', '.purlin/plugins/jest_purlin.js']}}) + '\n')  # retired
-    csproj = ('<Project><ItemGroup><Compile Include="../.purlin/plugins/'  # retired
-              'xunit_purlin.cs" /></ItemGroup></Project>\n')
-    _write(root, 'App.Tests/App.Tests.csproj', csproj)
-    wiring = {rel: _read(root, rel) for rel in (
-        'conftest.py', 'jest.config.js', 'vitest.config.ts', 'package.json')}
-    _apply(root)
-    printed = capsys.readouterr().out
-    for rel, text in wiring.items():
-        (backup,) = [name for name in os.listdir(root)
-                     if name.startswith(rel + '.local-')]
-        assert _read(root, backup) == text, rel
-    assert json.loads(_read(root, 'package.json')) == {
-        'jest': {'reporters': ['default']}}
-    assert "removed the plugin's wiring from package.json" in printed
-    assert _read(root, 'App.Tests/App.Tests.csproj') == csproj
+# purlin: update PROOF-82
+def test_a_conftest_holding_only_the_wiring_is_deleted(tmp_path, capsys):
+    root, printed = _unwired(tmp_path, capsys)
     assert not os.path.exists(os.path.join(root, 'conftest.py'))
     assert "removed conftest.py: it held only the plugin's wiring" in printed
-    assert _read(root, 'jest.config.js') == (
-        'module.exports = {\n  "reporters": ["default"]\n};\n')
-    assert "reporters: ['default'] }" in _read(root, 'vitest.config.ts')
-    assert "removed the plugin's wiring from jest.config.js" in printed
-    assert ('App.Tests/App.Tests.csproj compiles the xUnit logger v0.9.5 '
-            'shipped; remove that line by hand') in printed
 
 
-# purlin: update PROOF-16
+# purlin: update PROOF-83
 def test_a_conftest_holding_more_keeps_the_rest(tmp_path):
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', 'import os\n\n' + OLD_CONFTEST)
     _apply(root)
     assert _read(root, 'conftest.py') == 'import os\n\n'
+
+
+# purlin: update PROOF-84
+def test_the_jest_config_keeps_its_other_reporter(tmp_path, capsys):
+    root, printed = _unwired(tmp_path, capsys)
+    assert _read(root, 'jest.config.js') == (
+        'module.exports = {\n  "reporters": ["default"]\n};\n')
+    assert "removed the plugin's wiring from jest.config.js" in printed
+
+
+# purlin: update PROOF-85
+def test_the_vitest_config_keeps_its_other_reporter(tmp_path, capsys):
+    root, printed = _unwired(tmp_path, capsys)
+    assert _read(root, 'vitest.config.ts') == (
+        "import { defineConfig } from 'vitest/config';\n"
+        'export default defineConfig({\n'
+        "  test: { reporters: ['default'] },\n"
+        '});\n')
+    assert "removed the plugin's wiring from vitest.config.ts" in printed
+
+
+# purlin: update PROOF-86
+def test_the_package_json_keeps_its_other_reporter(tmp_path, capsys):
+    root, printed = _unwired(tmp_path, capsys)
+    assert json.loads(_read(root, 'package.json')) == {
+        'jest': {'reporters': ['default']}}
+    assert "removed the plugin's wiring from package.json" in printed
+
+
+# purlin: update PROOF-87
+def test_each_file_the_wiring_leaves_is_backed_up(tmp_path, capsys):
+    root, _printed = _unwired(tmp_path, capsys)
+    for rel, text in WIRING.items():
+        (backup,) = [name for name in os.listdir(root)
+                     if name.startswith(rel + '.local-')]
+        assert _read(root, backup) == text, rel
+
+
+# purlin: update PROOF-88
+def test_a_csproj_compiling_the_logger_is_named_and_left(tmp_path, capsys):
+    root, printed = _unwired(tmp_path, capsys)
+    assert _read(root, 'App.Tests/App.Tests.csproj') == CSPROJ
+    assert ('App.Tests/App.Tests.csproj compiles the xUnit logger v0.9.5 '
+            'shipped; remove that line by hand') in printed
 
 
 # --- design references -------------------------------------------------------
@@ -816,37 +919,44 @@ def _without(text, prefixes):
 
 
 # purlin: update PROOF-24
-def test_every_design_line_0_9_5_wrote_is_removed(tmp_path, capsys):
+def test_every_design_line_of_the_anchor_is_removed(tmp_path, capsys):
     root = _project(tmp_path, V095)
-    anchor_before = _read(root, DESIGN_ANCHOR)
-    feature_before = _read(root, DESIGN_FEATURE)
+    before = _read(root, DESIGN_ANCHOR)
     for field in DESIGN_FIELDS:
-        assert field in anchor_before, field
-    assert '> Visual-Reference: figma://' in feature_before
+        assert field in before, field
     _apply(root)
     printed = capsys.readouterr().out
-    anchor_after = _read(root, DESIGN_ANCHOR)
+    after = _read(root, DESIGN_ANCHOR)
     for field in DESIGN_FIELDS:
-        assert not [line for line in anchor_after.splitlines()
+        assert not [line for line in after.splitlines()
                     if line.startswith(field)], field
     # The kind-of-test migration rewrites the anchor's proof line too, so
     # the comparison stops short of the proof lines.
-    assert _without(anchor_after, ('- PROOF-',)) == _without(
-        anchor_before, DESIGN_FIELDS + ('- PROOF-',))
+    assert _without(after, ('- PROOF-',)) == _without(
+        before, DESIGN_FIELDS + ('- PROOF-',))
     for kept in ('> Description:', '> Type: design', '- RULE-1:'):
-        assert kept in anchor_after, kept
-    feature_after = _read(root, DESIGN_FEATURE)
-    assert not [line for line in feature_after.splitlines()
-                if line.startswith('> Visual-Reference:')]
-    assert _without(feature_after, ('- PROOF-',)) == _without(
-        feature_before, ('> Visual-Reference:', '- PROOF-'))
+        assert kept in after, kept
     assert ('removed the design reference from %s: > Source:, > Pinned:, '
-            '> Visual-Reference:, > Visual-Hash:' % DESIGN_ANCHOR) in printed
-    assert ('removed the design reference from %s: > Visual-Reference:'
+            '> Visual-Reference:, > Visual-Hash:\n' % DESIGN_ANCHOR) in printed
+
+
+# purlin: update PROOF-99
+def test_the_picture_reference_of_the_feature_is_removed(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    before = _read(root, DESIGN_FEATURE)
+    assert '> Visual-Reference: figma://' in before
+    _apply(root)
+    printed = capsys.readouterr().out
+    after = _read(root, DESIGN_FEATURE)
+    assert not [line for line in after.splitlines()
+                if line.startswith('> Visual-Reference:')]
+    assert _without(after, ('- PROOF-',)) == _without(
+        before, ('> Visual-Reference:', '- PROOF-'))
+    assert ('removed the design reference from %s: > Visual-Reference:\n'
             % DESIGN_FEATURE) in printed
 
 
-# purlin: update PROOF-24
+# purlin: update PROOF-100
 def test_each_design_rewrite_is_backed_up(tmp_path):
     root = _project(tmp_path, V095)
     before = {rel: _read(root, rel) for rel in (DESIGN_ANCHOR, DESIGN_FEATURE)}
@@ -883,19 +993,28 @@ GIT_ANCHOR = """# Anchor: no_eval
 """
 
 
-# purlin: update PROOF-24
-def test_a_figma_uri_goes_and_a_git_source_stays(tmp_path):
+def _with_anchor(tmp_path, rel, text):
     root = _project(tmp_path, V095)
-    _write(root, 'specs/_anchors/modal_design.md', FIGMA_URI_ANCHOR)
-    _write(root, 'specs/_anchors/no_eval.md', GIT_ANCHOR)
+    _write(root, rel, text)
     _git(root, 'add', '-A')
-    _git(root, 'commit', '-qm', 'two sourced anchors')
+    _git(root, 'commit', '-qm', 'a sourced anchor')
     _apply(root)
-    figma = _read(root, 'specs/_anchors/modal_design.md')
+    return _read(root, rel)
+
+
+# purlin: update PROOF-101
+def test_a_figma_uri_source_goes_with_its_pin(tmp_path):
+    figma = _with_anchor(tmp_path, 'specs/_anchors/modal_design.md',
+                         FIGMA_URI_ANCHOR)
     assert not [line for line in figma.splitlines()
                 if line.startswith(('> Source:', '> Pinned:'))], figma
     assert '- RULE-1: The modal matches the frame' in figma
-    assert _read(root, 'specs/_anchors/no_eval.md') == GIT_ANCHOR
+
+
+# purlin: update PROOF-102
+def test_a_git_source_and_its_pin_stay(tmp_path):
+    assert _with_anchor(tmp_path, 'specs/_anchors/no_eval.md',
+                        GIT_ANCHOR) == GIT_ANCHOR
 
 
 # --- the keys the config step drops -------------------------------------------
@@ -903,23 +1022,23 @@ def test_a_figma_uri_goes_and_a_git_source_stays(tmp_path):
 # purlin: update PROOF-25
 def test_every_dropped_key_is_named(tmp_path, capsys):
     root = _project(tmp_path, V095)
-    config = json.loads(_read(root, '.purlin/config.json'))
-    assert 'report' in config
-    config['audit_criteria'] = 'git@github.com:acme/q.git#criteria.md'
-    config['audit_criteria_pinned'] = 'abc1234'
-    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    config = _config(root)
+    for key in ('digest', 'report', 'spec_dir', 'pre_push'):
+        assert key in config, key
+    _set_config(root, audit_criteria='git@github.com:acme/q.git#criteria.md',
+                audit_criteria_pinned='abc1234')
     _apply(root)
     printed = capsys.readouterr().out
     assert ('dropped 6 keys this release does not read: audit_criteria, '
             'audit_criteria_pinned, digest, pre_push, report, spec_dir'
             ) in printed, printed
-    written = json.loads(_read(root, '.purlin/config.json'))
+    written = _config(root)
     for key in ('audit_criteria', 'audit_criteria_pinned', 'digest',
                 'pre_push', 'report', 'spec_dir'):
         assert key not in written, key
 
 
-# purlin: update PROOF-25
+# purlin: update PROOF-103
 def test_a_config_with_no_key_to_drop_prints_no_dropped_line(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _write(root, '.purlin/config.json', json.dumps(
@@ -964,7 +1083,7 @@ def test_yes_turns_it_on_at_the_gate_s_minimum(tmp_path, capsys, monkeypatch):
     _answers(monkeypatch, [('Gate [', 'strong'), (MUTATION, 'y')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
-    written = json.loads(_read(root, '.purlin/config.json'))
+    written = _config(root)
     assert written['mutation_engine'] == 'auto'
     assert written['min_strength'] == 70
     assert 'run purlin:init to wire mutmut' in printed
@@ -977,8 +1096,7 @@ def test_no_engine_means_no_question(tmp_path, capsys, monkeypatch):
     _apply(root, argv=())
     printed = capsys.readouterr().out
     assert not [prompt for prompt in asked if MUTATION in prompt], asked
-    assert json.loads(_read(root, '.purlin/config.json'))[
-        'mutation_engine'] == 'none'
+    assert _config(root)['mutation_engine'] == 'none'
     assert "no engine breaks this project's code" in printed
 
 
@@ -1016,8 +1134,7 @@ def test_a_mutation_setting_already_written_is_kept(tmp_path, capsys,
     _apply(root, argv=())
     capsys.readouterr()
     assert not [prompt for prompt in asked if MUTATION in prompt], asked
-    assert json.loads(_read(root, '.purlin/config.json'))[
-        'mutation_engine'] == 'auto'
+    assert _config(root)['mutation_engine'] == 'auto'
 
 
 # --- a spec with no scope -----------------------------------------------------
@@ -1032,31 +1149,53 @@ UNSCOPED = """# Feature: nowhere
 
 - PROOF-1 (RULE-1): Call it and verify it answers
 """
+UNSCOPED_ANCHOR = UNSCOPED.replace('Feature: nowhere', 'Anchor: unscoped_anchor')
+SCOPE_ADVICE = ('1 spec has no > Scope: line: nowhere. Run purlin:spec <name> '
+                'to add one. The line is optional below the gate signed and '
+                'required at signed.\n')
+
+
+def _with_specs(tmp_path, specs):
+    root = _project(tmp_path, V095)
+    for rel, text in specs.items():
+        _write(root, rel, text)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'specs with no scope')
+    return root
 
 
 # purlin: update PROOF-27
 def test_a_spec_with_no_scope_is_named_and_left_alone(tmp_path, capsys):
-    root = _project(tmp_path, V095)
-    _write(root, 'specs/core/nowhere.md', UNSCOPED)
-    _write(root, 'specs/_anchors/unscoped_anchor.md',
-           UNSCOPED.replace('Feature: nowhere', 'Anchor: unscoped_anchor'))
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-qm', 'a spec with no scope')
+    root = _with_specs(tmp_path, {
+        'specs/core/nowhere.md': UNSCOPED,
+        'specs/_anchors/unscoped_anchor.md': UNSCOPED_ANCHOR})
     _apply(root)
     printed = capsys.readouterr().out
-    assert ('1 spec has no > Scope: line: nowhere. Run purlin:spec <name> to '
-            'add one.') in printed, printed
-    assert 'required at signed' in printed
-    assert ('1 spec has no > Scope: line: nowhere. Run purlin:spec <name> to '
-            'add one. The line is optional below the gate signed and required '
-            'at signed.\n') in printed, printed
+    assert SCOPE_ADVICE in printed, printed
     assert 'unscoped_anchor' not in printed.split('Scope: line:')[1]
     assert _read(root, 'specs/core/nowhere.md') == UNSCOPED
     assert update.pending(root) == []
+
+
+# purlin: update PROOF-104
+def test_the_scope_advice_is_given_again_when_nothing_is_pending(tmp_path,
+                                                                 capsys):
+    root = _with_specs(tmp_path, {'specs/core/nowhere.md': UNSCOPED})
+    _apply(root)
+    capsys.readouterr()
     _apply(root)
     again = capsys.readouterr().out
     assert 'Nothing is pending' in again
-    assert '1 spec has no > Scope: line: nowhere.' in again
+    assert SCOPE_ADVICE in again, again
+
+
+# purlin: update PROOF-105
+def test_an_anchor_with_no_scope_gets_no_advice(tmp_path, capsys):
+    root = _with_specs(tmp_path, {
+        'specs/_anchors/unscoped_anchor.md': UNSCOPED_ANCHOR})
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert '> Scope: line' not in printed, printed
 
 
 # --- the evidence folder ------------------------------------------------------
@@ -1064,6 +1203,7 @@ def test_a_spec_with_no_scope_is_named_and_left_alone(tmp_path, capsys):
 # purlin: update PROOF-28
 def test_the_evidence_folder_gets_its_readme(tmp_path):
     root = _project(tmp_path, V095)
+    assert not os.path.exists(os.path.join(root, '.purlin', 'evidence'))
     assert 'evidence' in _ids(root)
     _apply(root)
     with open(os.path.join(root, '.purlin', 'evidence', 'README.md'),
@@ -1071,11 +1211,10 @@ def test_the_evidence_folder_gets_its_readme(tmp_path):
                   ROOT, 'templates', 'evidence-readme.md'), 'rb') as want:
         assert got.read() == want.read()
     assert '.purlin/evidence/README.md' in _tracked(root)
-    assert _walk(root, LEFTOVER) == []
     assert 'evidence' not in _ids(root)
 
 
-# purlin: update PROOF-28
+# purlin: update PROOF-106
 def test_a_readme_already_there_is_left_alone(tmp_path):
     root = _project(tmp_path, V095)
     ours = '# Our evidence\n\nWritten by hand.\n'
@@ -1087,6 +1226,8 @@ def test_a_readme_already_there_is_left_alone(tmp_path):
 
 
 # --- operating-system tags ---------------------------------------------------
+
+WINDOWS_SPEC = 'specs/audit/static_checks.md'
 
 # A spec where the Windows tag's spelling is prose in the middle of a line rather
 # than a tag at its end: the rewrite has to leave it exactly as it is.
@@ -1107,16 +1248,25 @@ PROSE_SPEC = """# Feature: runners
 # purlin: update PROOF-13
 def test_the_retired_windows_tag_becomes_env(tmp_path):
     root = _project(tmp_path, V095)
-    rel = _spec_holding(root, 'msvcrt.locking')
-    assert '@windows\n' in _read(root, rel)
+    assert _spec_holding(root, 'msvcrt.locking') == WINDOWS_SPEC
+    assert [line for line in _read(root, WINDOWS_SPEC).splitlines()
+            if line.startswith('- PROOF-53 ')][0].endswith(' @windows')
     _apply(root)
-    text = _read(root, rel)
+    text = _read(root, WINDOWS_SPEC)
     proofs = [line for line in text.splitlines()
               if line.startswith('- PROOF-53 ')]
     assert len(proofs) == 1
     assert proofs[0].endswith(' @env(windows)')
     assert '@unit' not in proofs[0]  # retired
-    assert '@windows\n' not in text
+    assert not [line for line in text.splitlines()
+                if line.endswith('@windows')]
+
+
+# purlin: update PROOF-79
+def test_prose_that_is_not_a_tag_is_left_alone(tmp_path):
+    root = _with_specs(tmp_path, {'specs/core/runners.md': PROSE_SPEC})
+    _apply(root)
+    assert _read(root, 'specs/core/runners.md') == PROSE_SPEC
 
 
 # purlin: update PROOF-23
@@ -1125,137 +1275,108 @@ def test_the_kind_of_test_is_dropped_from_every_proof_line(tmp_path):
     rel = 'specs/_anchors/proof_common.md'
     before = [line for line in _read(root, rel).splitlines()
               if line.startswith('- PROOF-')]
-    assert before[0].endswith('@integration')  # retired
+    assert before[0].endswith(' @integration')  # retired
     _apply(root)
     after = [line for line in _read(root, rel).splitlines()
              if line.startswith('- PROOF-')]
     assert len(after) == len(before)
     for line in after:
         assert not re.search(r'@(unit|integration|e2e)\s*$', line), line
+    assert after[0] == before[0][:-len(' @integration')]  # retired
     assert after[0].endswith('written to `specs/hooks/`'), after[0]
 
-    path = os.path.join(root, rel)
-    with open(path, 'a', encoding='utf-8') as handle:
-        handle.write('- PROOF-99 (RULE-1): Lock a file @e2e @env(linux)\n')  # retired
+
+# purlin: update PROOF-98
+def test_an_env_tag_after_the_kind_of_test_is_kept(tmp_path):
+    root = _project(tmp_path, V095)
+    rel = 'specs/_anchors/proof_common.md'
+    with open(os.path.join(root, rel), 'a', encoding='utf-8') as handle:
+        handle.write('- PROOF-14 (RULE-1): Lock a file @e2e @env(linux)\n')  # retired
     _apply(root)
     added = [line for line in _read(root, rel).splitlines()
-             if line.startswith('- PROOF-99 ')]
-    assert added == ['- PROOF-99 (RULE-1): Lock a file @env(linux)']
-
-
-# purlin: update PROOF-13
-def test_prose_that_is_not_a_tag_is_left_alone(tmp_path):
-    root = _project(tmp_path, V095)
-    rel = 'specs/core/runners.md'
-    _write(root, rel, PROSE_SPEC)
-    _git(root, 'add', '-A')
-    _git(root, 'commit', '-qm', 'a spec naming the tag in prose')
-    _apply(root)
-    assert _read(root, rel) == PROSE_SPEC
+             if line.startswith('- PROOF-14 ')]
+    assert added == ['- PROOF-14 (RULE-1): Lock a file @env(linux)']
 
 
 # --- hooks -------------------------------------------------------------------
 
-def _with_hooks(tmp_path):
-    """A v0.9.5 project carrying the two hooks that release installed."""
+LINT_STAGED = '#!/bin/sh\nexec ./node_modules/.bin/lint-staged\n'
+HUSKY = '#!/bin/sh\nexec ./node_modules/.bin/husky-run\n'
+
+
+def _hooks(tmp_path, pre_commit, pre_push):
+    """The sample project with these two hooks under `.git/hooks/`."""
     root = _project(tmp_path, V095)
-    _write(root, '.git/hooks/pre-commit', OLD_PRE_COMMIT)
-    _write(root, '.git/hooks/pre-push', OLD_PRE_PUSH)
+    _write(root, '.git/hooks/pre-commit', pre_commit)
+    _write(root, '.git/hooks/pre-push', pre_push)
     return root
 
 
-def _hook_files(root):
-    return [item['files'] for item in update.pending(root)
-            if item['id'] == 'hooks'][0]
-
-
 # purlin: update PROOF-9
-def test_the_pre_commit_hook_goes(tmp_path):
-    root = _with_hooks(tmp_path)
-    hook = os.path.join(root, '.git', 'hooks', 'pre-commit')
-    assert '.git/hooks/pre-commit' in _hook_files(root)
+def test_the_hooks_v0_9_5_installed_go(tmp_path):
+    root = _hooks(tmp_path, OLD_PRE_COMMIT, OLD_PRE_PUSH)
+    assert [item['files'] for item in update.pending(root)
+            if item['id'] == 'hooks'] == [['.git/hooks/pre-commit',
+                                           '.git/hooks/pre-push']]
     _apply(root)
-    assert not os.path.exists(hook)
+    for name in ('pre-commit', 'pre-push'):
+        assert not os.path.exists(os.path.join(root, '.git', 'hooks', name))
+    assert 'hooks' not in _ids(root)
 
 
-# purlin: update PROOF-9
-def test_a_foreign_hook_is_left_alone(tmp_path):
-    root = _with_hooks(tmp_path)
-    hook = os.path.join(root, '.git', 'hooks', 'pre-commit')
-    with open(hook, 'w', encoding='utf-8') as handle:
-        handle.write('#!/bin/sh\nexec ./node_modules/.bin/lint-staged\n')
+# purlin: update PROOF-76
+def test_a_foreign_hook_beside_an_old_one_is_left_alone(tmp_path):
+    root = _hooks(tmp_path, LINT_STAGED, OLD_PRE_PUSH)
     _apply(root)
-    assert os.path.isfile(hook)
+    folder = os.path.join(root, '.git', 'hooks')
+    assert not os.path.exists(os.path.join(folder, 'pre-push'))
+    assert _read(folder, 'pre-commit') == LINT_STAGED
 
 
-# purlin: update PROOF-9
+# purlin: update PROOF-77
 def test_hooks_another_tool_wrote_are_left_byte_for_byte(tmp_path):
-    root = _project(tmp_path, V095)
-    foreign = {'pre-commit': '#!/bin/sh\nexec ./node_modules/.bin/lint-staged\n',
-               'pre-push': '#!/bin/sh\nexec ./node_modules/.bin/husky-run\n'}
-    for name, text in foreign.items():
-        _write(root, '.git/hooks/' + name, text)
+    root = _hooks(tmp_path, LINT_STAGED, HUSKY)
     folder = os.path.join(root, '.git', 'hooks')
     before = sorted(os.listdir(folder))
     assert 'hooks' not in _ids(root)
     _apply(root)
     assert sorted(os.listdir(folder)) == before
-    for name, text in foreign.items():
-        assert _read(folder, name) == text, name
-
-
-# purlin: update PROOF-9
-def test_the_pre_push_hook_goes_too(tmp_path):
-    """Nothing runs at push time, so the hook is removed rather than moved."""
-    root = _with_hooks(tmp_path)
-    assert '.git/hooks/pre-push' in _hook_files(root)
-    _apply(root)
-    assert not os.path.exists(os.path.join(root, '.git', 'hooks', 'pre-push'))
-
-
-# purlin: update PROOF-9
-def test_a_project_with_the_hooks_gone_needs_the_migration_once(tmp_path):
-    root = _with_hooks(tmp_path)
-    _apply(root)
-    assert 'hooks' not in _ids(root)
-
-
-# purlin: update PROOF-2
-def test_a_project_with_no_hooks_needs_no_hook_migration(tmp_path):
-    root = _project(tmp_path, V095)
-    assert 'hooks' not in _ids(root)
+    assert _read(folder, 'pre-commit') == LINT_STAGED
+    assert _read(folder, 'pre-push') == HUSKY
 
 
 # --- workflows ---------------------------------------------------------------
 
-@pytest.mark.parametrize('layout', LAYOUTS)
-# purlin: update PROOF-15
-def test_the_retired_workflows_are_removed(tmp_path, layout):
-    root = _project(tmp_path, layout)
-    before = _walk(root, ('*.yml',))
-    assert any(rel.startswith('.github/workflows/') for rel in before)
-    _apply(root)
-    after = [rel for rel in _walk(root, ('*.yml',))
-             if rel.startswith('.github/workflows/')]
-    assert after == ['.github/workflows/purlin.yml']
+def _workflows(root):
+    """Every workflow file under `.github/` and the pipeline at the root."""
+    return [rel for rel in _walk(root, ('*.yml', '*.yaml'))
+            if rel.startswith('.github/')
+            or rel == 'purlin.azure-pipelines.yml']
 
 
 # purlin: update PROOF-15
-def test_purlin_yml_carries_the_matrix_the_tags_name(tmp_path):
+def test_one_purlin_yml_replaces_the_retired_workflow(tmp_path):
     root = _project(tmp_path, V095)
+    assert _workflows(root) == ['.github/workflows/windows-proofs.yml']
     _apply(root)
+    assert _workflows(root) == ['.github/workflows/purlin.yml']
     text = _read(root, '.github/workflows/purlin.yml')
     assert 'windows-latest' in text
     assert 'v%s' % VERSION in text
-
-
-# purlin: update PROOF-15
-def test_purlin_yml_carries_this_releases_triggers(tmp_path):
-    root = _project(tmp_path, V095)
-    _apply(root)
-    text = _read(root, '.github/workflows/purlin.yml')
     assert "branches: ['run/**']" in text
     assert "tags: ['signed/**']" in text
+
+
+# purlin: update PROOF-32
+def test_an_azure_remote_gets_the_pipeline_where_init_writes_it(tmp_path):
+    root = _project(tmp_path, V095, remote=False)
+    _git(root, 'remote', 'add', 'origin',
+         'https://dev.azure.com/acme/demo/_git/demo')
+    _apply(root)
+    assert _workflows(root) == ['purlin.azure-pipelines.yml']
+    text = _read(root, 'purlin.azure-pipelines.yml')
+    assert 'windows-latest' in text
+    assert 'v%s' % VERSION in text
 
 
 # purlin: update PROOF-49
@@ -1265,12 +1386,9 @@ def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
     _answers(monkeypatch, [('Write .github/workflows/purlin.yml', 'n')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
-    assert not os.path.exists(
-        os.path.join(root, '.github', 'workflows', 'purlin.yml'))
+    assert _workflows(root) == []
     assert 'run purlin:init again to add it later' in printed
     assert 'workflows' not in _ids(root)
-    assert [rel for rel in _walk(root, ('*.yml',))
-            if rel.startswith('.github/')] == []
 
 
 # purlin: update PROOF-50
@@ -1278,9 +1396,7 @@ def test_a_project_with_no_remote_gets_no_workflow(tmp_path, capsys):
     root = _project(tmp_path, V095, remote=False)
     _apply(root)
     printed = capsys.readouterr().out
-    assert [rel for rel in _walk(root, ('*.yml',))
-            if rel.startswith('.github/')] == []
-    assert not os.path.exists(os.path.join(root, 'purlin.azure-pipelines.yml'))
+    assert _workflows(root) == []
     assert 'No git remote, so there is no runner to read this workflow' in printed
     assert 'left the workflow unwritten; a prerequisite is missing' in printed
 
@@ -1291,53 +1407,71 @@ def test_a_host_init_writes_no_workflow_for_gets_none(tmp_path, capsys):
     _git(root, 'remote', 'add', 'origin', 'https://gitlab.com/acme/demo.git')
     _apply(root)
     printed = capsys.readouterr().out
-    assert [rel for rel in _walk(root, ('*.yml',))
-            if rel.startswith('.github/')] == []
-    assert not os.path.exists(os.path.join(root, 'purlin.azure-pipelines.yml'))
+    assert _workflows(root) == []
     assert 'remote is neither GitHub nor Azure DevOps' in printed
     assert 'left the workflow unwritten; a prerequisite is missing' in printed
 
 
-# purlin: update PROOF-32
-def test_an_azure_remote_gets_the_pipeline_where_init_writes_it(tmp_path):
-    root = _project(tmp_path, V095, remote=False)
-    _git(root, 'remote', 'add', 'origin',
-         'https://dev.azure.com/acme/demo/_git/demo')
+# purlin: update PROOF-80
+def test_no_proof_for_another_system_means_no_workflow(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    text = _read(root, WINDOWS_SPEC)
+    tag = re.compile(r'(?m)[ \t]+@windows[ \t]*$')
+    assert len(tag.findall(text)) == 2
+    _write(root, WINDOWS_SPEC, tag.sub('', text))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'no proof names Windows')
+    assert 'workflows' in _ids(root)
     _apply(root)
-    assert [rel for rel in _walk(root, ('*.yml',))
-            if rel.startswith('.github/')] == []
-    text = _read(root, 'purlin.azure-pipelines.yml')
-    assert 'windows-latest' in text
-    assert 'v%s' % VERSION in text
+    printed = capsys.readouterr().out
+    assert _workflows(root) == []
+    assert ('wrote no workflow: every test runs on this operating system'
+            in printed), printed
 
 
 # --- the dashboard page ------------------------------------------------------
+
+def _shipped_page():
+    with open(os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html'),
+              'rb') as handle:
+        return handle.read()
+
+
+def _page(root):
+    with open(os.path.join(root, 'purlin-report.html'), 'rb') as handle:
+        return handle.read()
+
 
 # purlin: update PROOF-31
 def test_the_page_linked_into_the_old_plugin_is_replaced(tmp_path):
     root = _project(tmp_path, V095)
     page = os.path.join(root, 'purlin-report.html')
+    target = os.path.join(str(tmp_path), 'plugins', 'cache', 'purlin',
+                          '0.9.5', 'purlin-report.html')
     try:
-        os.symlink(os.path.join(str(tmp_path), 'plugins', 'cache', 'purlin',
-                                '0.9.5', 'purlin-report.html'), page)
+        os.symlink(target, page)
     except (OSError, NotImplementedError):
         pytest.skip('this machine makes no symbolic link')
+    assert not os.path.exists(target)
     assert 'dashboard' in _ids(root)
     _apply(root)
-    with open(os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html'),
-              'rb') as handle:
-        shipped = handle.read()
     assert not os.path.islink(page)
-    with open(page, 'rb') as handle:
-        assert handle.read() == shipped
+    assert _page(root) == _shipped_page()
     assert 'dashboard' not in _ids(root)
+
+
+# purlin: update PROOF-112
+def test_an_older_copy_of_the_page_is_replaced(tmp_path, capsys):
+    root = _updated(tmp_path)
+    capsys.readouterr()
     _write(root, 'purlin-report.html', '<html>an older copy</html>\n')
     assert 'dashboard' in _ids(root)
-    os.remove(page)
-    assert 'dashboard' not in _ids(root)
+    _apply(root)
+    capsys.readouterr()
+    assert _page(root) == _shipped_page()
 
 
-# purlin: update PROOF-31
+# purlin: update PROOF-113
 def test_a_project_with_no_page_is_left_without_one(tmp_path):
     root = _project(tmp_path, V095)
     page = os.path.join(root, 'purlin-report.html')
@@ -1349,48 +1483,74 @@ def test_a_project_with_no_page_is_left_without_one(tmp_path):
 
 # --- backups -----------------------------------------------------------------
 
-@pytest.mark.parametrize('layout', LAYOUTS)
-# purlin: update PROOF-7
-def test_every_rewritten_file_leaves_its_previous_bytes(tmp_path, layout):
-    root = _project(tmp_path, layout)
+def _backed_up(tmp_path):
+    """`(root, every file's bytes before the run, every backup after it)`."""
+    root = _project(tmp_path, V095)
     before = {}
     for rel in _walk(root, ('*',)):
         with open(os.path.join(root, rel), 'rb') as handle:
             before[rel] = handle.read()
     _apply(root)
-    backups = _walk(root, ('*.bak',), skip_backups=False)
+    return root, before, _walk(root, ('*.bak',), skip_backups=False)
+
+
+BACKUP_NAME = re.compile(r'^(.+)\.local-([0-9a-f]{8})\.bak$')
+
+
+# purlin: update PROOF-7
+def test_every_backup_is_named_for_the_bytes_it_holds(tmp_path):
+    root, before, backups = _backed_up(tmp_path)
     names = ' '.join(backups)
     assert '.purlin/config.json.local-' in names
     assert '.gitignore.local-' in names
     assert any(rel.startswith('specs/') for rel in backups)
-    # A file two migrations rewrite has two copies, each holding the bytes
-    # it had before that migration; one of them holds its bytes from before
-    # the run, and each is named for the bytes it holds.
-    held = {}
     for rel in backups:
-        named = re.match(r'^(.+)\.local-([0-9a-f]{8})\.bak$', rel)
+        named = BACKUP_NAME.match(rel)
         assert named, rel
         assert named.group(1) in before, rel
         with open(os.path.join(root, rel), 'rb') as handle:
             data = handle.read()
         assert hashlib.sha256(data).hexdigest()[:8] == named.group(2), rel
-        held.setdefault(named.group(1), []).append(data)
+
+
+# purlin: update PROOF-71
+def test_every_backed_up_file_keeps_its_bytes_from_before_the_run(tmp_path):
+    root, before, backups = _backed_up(tmp_path)
+    held = {}
+    for rel in backups:
+        with open(os.path.join(root, rel), 'rb') as handle:
+            held.setdefault(BACKUP_NAME.match(rel).group(1), []).append(
+                handle.read())
+    assert held
     for rel, copies in held.items():
         assert before[rel] in copies, rel
 
 
-# purlin: update PROOF-7
-def test_a_backup_holds_what_the_file_said_before(tmp_path):
+# purlin: update PROOF-72
+def test_a_spec_two_migrations_rewrite_has_a_backup_from_each(tmp_path):
+    root = _project(tmp_path, V095)
+    before = _read(root, DESIGN_ANCHOR)
+    _apply(root)
+    folder, name = os.path.split(os.path.join(root, DESIGN_ANCHOR))
+    copies = sorted(_read(folder, entry) for entry in os.listdir(folder)
+                    if entry.startswith(name + '.local-'))
+    without = ''.join(line for line in before.splitlines(True)
+                      if not line.startswith(DESIGN_FIELDS))
+    assert len(before.splitlines()) - len(without.splitlines()) == 4
+    assert copies == sorted([before, without])
+
+
+# purlin: update PROOF-73
+def test_the_config_backup_holds_what_it_said_before(tmp_path):
     root = _project(tmp_path, V095)
     before = _read(root, '.purlin/config.json')
     _apply(root)
-    backups = [rel for rel in _walk(root, ('config.json.local-*.bak',),
-                                    skip_backups=False)]
+    backups = _walk(root, ('config.json.local-*.bak',), skip_backups=False)
     assert len(backups) == 1
     assert _read(root, backups[0]) == before
 
 
-# purlin: update PROOF-7
+# purlin: update PROOF-74
 def test_a_backup_is_not_written_twice(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
@@ -1401,24 +1561,21 @@ def test_a_backup_is_not_written_twice(tmp_path):
 
 # --- the commit --------------------------------------------------------------
 
-@pytest.mark.parametrize('layout', LAYOUTS)
 # purlin: update PROOF-18
-def test_one_commit_carries_every_migration_id(tmp_path, layout):
-    root = _project(tmp_path, layout)
+def test_one_commit_carries_every_migration_id(tmp_path):
+    root = _project(tmp_path, V095)
+    assert len(_git(root, 'log', '--format=%s').stdout.splitlines()) == 1
     applied = _ids(root)
     _apply(root)
     log = _git(root, 'log', '--format=%s').stdout.splitlines()
     assert len(log) == 2, log
-    subject = log[0]
-    assert subject.startswith('chore(update): migrate to %s (' % VERSION)
-    for migration_id in applied:
-        assert migration_id in subject
+    assert log[0] == 'chore(update): migrate to %s (%s)' % (
+        VERSION, ', '.join(applied))
 
 
-@pytest.mark.parametrize('layout', LAYOUTS)
-# purlin: update PROOF-18
-def test_nothing_is_left_uncommitted_but_the_backups(tmp_path, layout):
-    root = _project(tmp_path, layout)
+# purlin: update PROOF-89
+def test_nothing_is_left_uncommitted_but_the_backups(tmp_path):
+    root = _project(tmp_path, V095)
     _apply(root)
     left = _git(root, 'status', '--porcelain').stdout.splitlines()
     assert left, 'the backups should still be sitting there'
@@ -1427,7 +1584,7 @@ def test_nothing_is_left_uncommitted_but_the_backups(tmp_path, layout):
         assert line.endswith('.bak'), line
 
 
-# purlin: update PROOF-18
+# purlin: update PROOF-90
 def test_a_run_that_applies_nothing_writes_no_commit(tmp_path, capsys,
                                                      monkeypatch):
     root = _project(tmp_path, V095)
@@ -1440,20 +1597,23 @@ def test_a_run_that_applies_nothing_writes_no_commit(tmp_path, capsys,
 
 # --- the line sync_status prints ---------------------------------------------
 
+UPDATE_LINE = '→ Run: purlin:init --update'
+
+
 # purlin: update PROOF-19
 def test_status_says_it_for_a_project_that_has_not_updated(tmp_path):
     root = _project(tmp_path, V095)
-    assert 'Run: purlin:init --update' in status_module.sync_status(root)
+    assert UPDATE_LINE in status_module.sync_status(root).splitlines()
 
 
-# purlin: update PROOF-19
+# purlin: update PROOF-91
 def test_status_stops_saying_it_once_the_old_project_has_updated(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
     assert 'Run: purlin:init --update' not in status_module.sync_status(root)
 
 
-# purlin: update PROOF-19
+# purlin: update PROOF-92
 def test_status_says_it_even_when_the_config_is_already_clean(tmp_path):
     """The line must come from the pending list, not only from a config warning."""
     root = _project(tmp_path, V095)
@@ -1461,8 +1621,8 @@ def test_status_says_it_even_when_the_config_is_already_clean(tmp_path):
     _write(root, 'specs/core/later.md',
            '# Feature: later\n\n## Rules\n\n- RULE-1: x\n\n## Proof\n\n'
            '- PROOF-1 (RULE-1): y @windows\n')
-    assert update.pending(root)
-    assert 'Run: purlin:init --update' in status_module.sync_status(root)
+    assert _ids(root) == ['os-tags']
+    assert UPDATE_LINE in status_module.sync_status(root).splitlines()
 
 
 # --- the copy the update prints ----------------------------------------------
@@ -1474,6 +1634,13 @@ def test_what_the_update_prints_carries_no_emoji(tmp_path, capsys):
     printed = capsys.readouterr().out
     for char in printed:
         assert ord(char) < 0x2190 or char in '→─', repr(char)
+
+
+def _status_ending(root):
+    """The summary sentence and `Left to do` lines the status ends on."""
+    from purlin import payload as purlin_payload, summary as purlin_summary
+    return purlin_summary.ending(
+        purlin_payload.build_payload(str(root))).splitlines()
 
 
 # purlin: update PROOF-52
@@ -1495,14 +1662,7 @@ def test_a_run_that_leaves_work_names_the_update_above_the_summary(
     printed = capsys.readouterr().out.rstrip().splitlines()
     ending = _status_ending(root)
     assert printed[-len(ending):] == ending, printed
-    assert printed[-len(ending) - 1] == '→ Run: purlin:init --update', printed
-
-
-def _status_ending(root):
-    """The summary sentence and `Left to do` lines the status ends on."""
-    from purlin import payload as purlin_payload, summary as purlin_summary
-    return purlin_summary.ending(
-        purlin_payload.build_payload(str(root))).splitlines()
+    assert printed[-len(ending) - 1] == UPDATE_LINE, printed
 
 
 # --- a project 0.9.5 set up and nobody upgraded -------------------------------
