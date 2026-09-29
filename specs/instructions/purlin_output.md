@@ -1,8 +1,9 @@
 # Feature: purlin_output
 
-> Description: The one check of what Purlin prints. Every line a person reads from Purlin, in
->   the terminal, the dashboard or a file setup writes, comes from a file under `scripts/` or
->   `templates/`, so no emoji and no pictograph in those files means none in what Purlin prints.
+> Description: The one check of what Purlin prints. The files under `scripts/` print Purlin's
+>   terminal lines and build its dashboard, and setup writes a project's files from
+>   `templates/`, so no emoji and no pictograph in those two folders means none in what they
+>   print or write.
 > Scope: scripts/**, templates/**
 
 ## Rules

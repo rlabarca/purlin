@@ -80,13 +80,13 @@ class TestNoPictograph:
         assert any(rel.startswith('scripts/') for rel in rels), rels
         assert any(rel.startswith('templates/') for rel in rels), rels
         assert pictographs(ROOT, rels) == []
-        # The glyphs Purlin prints pass; a check mark, a warning sign, an
-        # emoji and a bare variation selector are each found.
+        # The glyphs Purlin prints pass; a check mark, a warning sign, a
+        # rocket and a heart with its variation selector are each found.
         assert not any(is_pictograph(c) and ord(c) not in ALLOWED
                        for c in '→▼▲─·←▶')
         (tmp_path / 'out.py').write_text(
-            'print("✅ done")\nprint("⚠ careful")\n'
-            'print("\U0001f680")\nprint("❤️")\n', encoding='utf-8')
+            'print("\u2705 done")\nprint("\u26a0 careful")\n'
+            'print("\U0001f680")\nprint("\u2764\ufe0f")\n', encoding='utf-8')
         assert pictographs(str(tmp_path), ['out.py']) == [
             'out.py:1: U+2705', 'out.py:2: U+26A0', 'out.py:3: U+1F680',
             'out.py:4: U+2764', 'out.py:4: U+FE0F']
